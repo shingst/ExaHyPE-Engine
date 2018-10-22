@@ -79,7 +79,6 @@ class exahype::runners::Runner {
    */
   int _meshRefinements;
   int _localRecomputations;
-  int _globalRecomputations;
   int _predictorReruns;
 
   #ifdef TBBInvade

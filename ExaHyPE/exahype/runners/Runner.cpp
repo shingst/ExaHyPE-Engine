@@ -89,7 +89,6 @@ exahype::runners::Runner::Runner(exahype::parser::Parser& parser, std::vector<st
     _boundingBoxSize(0.0),
     _meshRefinements(0),
     _localRecomputations(0),
-    _globalRecomputations(0),
     _predictorReruns(0) {
   #ifdef TBBInvade
   _shmInvade = nullptr;
@@ -1170,17 +1169,14 @@ void exahype::runners::Runner::postProcessTimeStepInSharedMemoryEnvironment() {
 
 
 void exahype::runners::Runner::updateStatistics() {
-  _meshRefinements      += (!exahype::solvers::LimitingADERDGSolver::oneSolverRequestedGlobalRecomputation() &&
-                           exahype::solvers::Solver::oneSolverRequestedMeshRefinement()) ? 1 : 0;
   _localRecomputations  +=  (exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalRecomputation()) ? 1 : 0;
-  _globalRecomputations +=  (exahype::solvers::LimitingADERDGSolver::oneSolverRequestedGlobalRecomputation()) ? 1 : 0;
+  _meshRefinements +=  (exahype::solvers::LimitingADERDGSolver::oneSolverRequestedGlobalRecomputation()) ? 1 : 0;
   _predictorReruns      +=  (exahype::solvers::Solver::oneSolverViolatedStabilityCondition()) ? 1 : 0;
 }
 
 void exahype::runners::Runner::printStatistics() {
   logInfo("printStatistics(...)","number of mesh refinements      = "<<_meshRefinements);
   logInfo("printStatistics(...)","number of local recomputations  = "<<_localRecomputations);
-  logInfo("printStatistics(...)","number of global recomputations = "<<_globalRecomputations);
   logInfo("printStatistics(...)","number of predictor reruns      = "<<_predictorReruns);
 }
 
@@ -1278,16 +1274,6 @@ void exahype::runners::Runner::updateMeshOrLimiterDomain(
     peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(false);
     repository.iterate(
         exahype::solvers::Solver::getMaxRefinementStatus()+1,false);
-  }
-  
-  // Only the solvers which requested a global recomputation do a rollback
-  if ( exahype::solvers::Solver::oneSolverRequestedGlobalRecomputation() ) {
-    logInfo("runTimeStepsWithFusedAlgorithmicSteps(...)","global recomputation requested by at least one solver");
-
-    logInfo("updateMeshAndSubdomains(...)","perform global rollback (if applicable)");
-    peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(false);
-    repository.switchToGlobalRollback();
-    repository.iterate(1,false);
   }
 
   // 3. Perform a grid update for those solvers that requested refinement
@@ -1451,10 +1437,6 @@ void exahype::runners::Runner::runTimeStepsWithFusedAlgorithmicSteps(
   if (exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalRecomputation()) {
     logInfo("runTimeStepsWithFusedAlgorithmicSteps(...)","local recomputation requested by at least one solver");
   }
-  if (exahype::solvers::LimitingADERDGSolver::oneSolverRequestedGlobalRecomputation()) {
-    assertion(exahype::solvers::Solver::oneSolverRequestedMeshRefinement());
-    logInfo("runTimeStepsWithFusedAlgorithmicSteps(...)","global recomputation requested by at least one solver");
-  }
   if (exahype::solvers::Solver::oneSolverRequestedMeshRefinement()) {
     logInfo("runTimeStepsWithFusedAlgorithmicSteps(...)","mesh update requested by at least one solver");
   }
@@ -1491,10 +1473,6 @@ void exahype::runners::Runner::runOneTimeStepWithThreeSeparateAlgorithmicSteps(
 
   if (exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalRecomputation()) {
     logInfo("runOneTimeStepWithThreeSeparateAlgorithmicSteps(...)","local recomputation requested by at least one solver");
-  }
-  if (exahype::solvers::LimitingADERDGSolver::oneSolverRequestedGlobalRecomputation()) {
-    assertion(exahype::solvers::Solver::oneSolverRequestedMeshRefinement());
-    logInfo("runOneTimeStepWithThreeSeparateAlgorithmicSteps(...)","global recomputation requested by at least one solver");
   }
   if (exahype::solvers::Solver::oneSolverRequestedMeshRefinement()) {
     logInfo("runOneTimeStepWithThreeSeparateAlgorithmicSteps(...)","mesh update requested by at least one solver");

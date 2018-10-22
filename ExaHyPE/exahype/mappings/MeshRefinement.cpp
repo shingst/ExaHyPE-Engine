@@ -148,7 +148,9 @@ void exahype::mappings::MeshRefinement::beginIteration( exahype::State& solverSt
     
     _allSolversAttainedStableState = true;
   }
-  if ( StillInRefiningMode && _stableIterationsInARow>1 ) {    StillInRefiningMode = false;
+  if ( StillInRefiningMode && _stableIterationsInARow>1 ) {
+    StillInRefiningMode = false;
+    _stableIterationsInARow=0; // TODO(Dominic): REMOVE AFTER DEBUGGING
     if (!IsInitialMeshRefinement) {
       logInfo("beginIteration(...)","refinement converged. switch to coarsening");
     }
@@ -177,11 +179,11 @@ void exahype::mappings::MeshRefinement::endIteration(exahype::State& solverState
   // update the solver state
   solverState.setAllSolversAttainedStableStateInPreviousIteration(_allSolversAttainedStableState);  // merge the local values
   solverState.setVerticalExchangeOfSolverDataRequired(_verticalExchangeOfSolverDataRequired);
-  // logInfo("endIteration(...)","_attainedStableState="<<_allSolversAttainedStableState);
-  // logInfo("endIteration(...)","StillInRefiningMode="<<StillInRefiningMode);
-  // logInfo("endIteration(...)","_stableIterationsInARow="<<_stableIterationsInARow);
-  // logInfo("endIteration(...)","solverState.getMaxLevel()="<<solverState.getMaxLevel());
-  // logInfo("endIteration(...)","getFinestUniformMeshLevelOfAllSolvers()="<<solvers::Solver::getFinestUniformMeshLevelOfAllSolvers());
+  //logInfo("endIteration(...)","_attainedStableState="<<_allSolversAttainedStableState);
+  //logInfo("endIteration(...)","StillInRefiningMode="<<StillInRefiningMode);
+  //logInfo("endIteration(...)","_stableIterationsInARow="<<_stableIterationsInARow);
+  //logInfo("endIteration(...)","solverState.getMaxLevel()="<<solverState.getMaxLevel());
+  //logInfo("endIteration(...)","getFinestUniformMeshLevelOfAllSolvers()="<<solvers::Solver::getFinestUniformMeshLevelOfAllSolvers());
 
   if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
     #ifndef TrackGridStatistics
@@ -369,7 +371,7 @@ void exahype::mappings::MeshRefinement::touchVertexFirstTime(
                            coarseGridCell, fineGridPositionOfVertex);
 
   fineGridVertex.mergeOnlyNeighboursMetadata(
-      exahype::State::AlgorithmSection::MeshRefinement,fineGridX,fineGridH);
+      exahype::State::AlgorithmSection::MeshRefinement,fineGridX,fineGridH,true);
 
   logTraceOutWith1Argument("touchVertexFirstTime(...)", fineGridVertex);
 }
@@ -532,14 +534,15 @@ void exahype::mappings::MeshRefinement::leaveCell(
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
     if ( solver->hasRequestedMeshRefinement() ) {
       const bool newComputeCell =
-          firstMeshRefinementIteration &&
+          !firstMeshRefinementIteration &&
           solver->progressMeshRefinementInLeaveCell(
               fineGridCell,
               fineGridVertices,
               fineGridVerticesEnumerator,
               coarseGridCell,
               fineGridPositionOfCell,
-              solverNumber);
+              solverNumber,
+              StillInRefiningMode);
 
       _allSolversAttainedStableState &=
           solver->attainedStableState(

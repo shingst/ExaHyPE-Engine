@@ -632,7 +632,8 @@ public:
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
       exahype::Cell& coarseGridCell,
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-      const int solverNumber) override;
+      const int solverNumber,
+      const bool stillInRefiningMode) override;
 
   exahype::solvers::Solver::RefinementControl eraseOrRefineAdjacentVertices(
           const int cellDescriptionsIndex,
@@ -760,27 +761,18 @@ public:
   ///////////////////////////////////
   // NEIGHBOUR
   ///////////////////////////////////
-  void mergeNeighboursMetadata(
-      const int                                 cellDescriptionsIndex1,
-      const int                                 element1,
-      const int                                 cellDescriptionsIndex2,
-      const int                                 element2,
+  void mergeNeighboursData(
+      Heap::HeapEntries&                        cellDescriptions1,
+      Heap::HeapEntries&                        cellDescriptions2,
+      const int                                 solverNumber,
       const tarch::la::Vector<DIMENSIONS, int>& pos1,
-      const tarch::la::Vector<DIMENSIONS, int>& pos2) const override;
-
-  void mergeNeighbours(
-      const int                                 cellDescriptionsIndex1,
-      const int                                 element1,
-      const int                                 cellDescriptionsIndex2,
-      const int                                 element2,
-      const tarch::la::Vector<DIMENSIONS, int>& pos1,
-      const tarch::la::Vector<DIMENSIONS, int>& pos2) override;
+      const tarch::la::Vector<DIMENSIONS, int>& pos2);
 
   void mergeWithBoundaryData(
-      const int                                 cellDescriptionsIndex,
-      const int                                 element,
+      Heap::HeapEntries&                        cellDescriptions,
+      const int                                 solverNumber,
       const tarch::la::Vector<DIMENSIONS, int>& posCell,
-      const tarch::la::Vector<DIMENSIONS, int>& posBoundary) override;
+      const tarch::la::Vector<DIMENSIONS, int>& posBoundary);
 #ifdef Parallel
   ///////////////////////////////////
   // MASTER<=>WORKER

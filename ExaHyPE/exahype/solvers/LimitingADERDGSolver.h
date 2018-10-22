@@ -177,10 +177,9 @@ private:
    * descriptions. Signature is similar to that of the solver of a Riemann problem.
    */
   void mergeSolutionMinMaxOnFace(
-      SolverPatch& pLeft,
-      SolverPatch& pRight,
-      const int faceIndexLeft,
-      const int faceIndexRight) const;
+      SolverPatch& solverPatch1,
+      SolverPatch& solverPatch2,
+      Solver::InterfaceInfo& face) const;
 
   /**
    * Checks if the updated solution
@@ -349,6 +348,11 @@ private:
       const SolverPatch& solverPatch,
       const int cellDescriptionsIndex) const;
 
+  void ensureLimiterPatchTimeStepDataIsConsistent(
+      const SolverPatch& solverPatch,
+      FiniteVolumesSolver::Heap::HeapEntries& limiterPatches,
+      const int limiterElement) const;
+
   /**
    * Uncompress solver and limiter degrees of freedom.
    */
@@ -461,7 +465,7 @@ private:
    */
   void mergeSolutionMinMaxOnFace(
       SolverPatch&  solverPatch,
-      const int     faceIndex,
+      Solver::BoundaryFaceInfo& face,
       const double* const min, const double* const  max) const;
 
 #endif
@@ -604,6 +608,21 @@ public:
   void synchroniseTimeStepping(
       SolverPatch& solverPatch,
       const int cellDescriptionsIndex) const;
+
+  /**
+   * Synchronies the solver patch with the global time step data and
+   * further copies this data to the FV patch if one is allocated
+   * for this solver patch.
+   *
+   * @param solverPatch a solution patch of the main solver
+   * @param limiterPatches list of limiter patches registered at the cell
+   * @param limiterElement element index of the limiter patch allocated for
+   *                       the solver patch, or NotFound if none has been allocated.
+   */
+  void synchroniseTimeStepping(
+      SolverPatch& solverPatch,
+      FiniteVolumesSolver::Heap::HeapEntries& limiterPatches,
+      const int limiterElement) const;
 
   /**
    * We always override the limiter time step
@@ -759,7 +778,8 @@ public:
      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
      exahype::Cell& coarseGridCell,
      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-     const int solverNumber) override;
+     const int solverNumber,
+     const bool stillInRefiningMode) override;
 
  exahype::solvers::Solver::RefinementControl eraseOrRefineAdjacentVertices(
      const int cellDescriptionsIndex,
@@ -1063,21 +1083,6 @@ public:
   ///////////////////////////////////
   // NEIGHBOUR
   ///////////////////////////////////
-  void mergeNeighboursMetadata(
-      const int                                 cellDescriptionsIndex1,
-      const int                                 element1,
-      const int                                 cellDescriptionsIndex2,
-      const int                                 element2,
-      const tarch::la::Vector<DIMENSIONS, int>& pos1,
-      const tarch::la::Vector<DIMENSIONS, int>& pos2) const final override;
-
-  void mergeNeighbours(
-      const int                                 cellDescriptionsIndex1,
-      const int                                 element1,
-      const int                                 cellDescriptionsIndex2,
-      const int                                 element2,
-      const tarch::la::Vector<DIMENSIONS, int>& pos1,
-      const tarch::la::Vector<DIMENSIONS, int>& pos2) final override;
 
   /**
    * Merge solver boundary data (and other values) of two adjacent
@@ -1119,39 +1124,25 @@ public:
    *
    * TODO(Dominic): Remove limiterstatus1 and limiterStatus2 argument.
    * They depend on the isRecomputation value
-   */
-  void mergeNeighboursBasedOnLimiterStatus(
-      const int                                 cellDescriptionsIndex1,
-      const int                                 element1,
-      const int                                 cellDescriptionsIndex2,
-      const int                                 element2,
-      const tarch::la::Vector<DIMENSIONS, int>& pos1,
-      const tarch::la::Vector<DIMENSIONS, int>& pos2,
-      const bool                                isRecomputation) const;
-
-  /**
-   * Merges the min max of two neighbours sharing a face.
    *
-   * This method is used to detect cells that are
-   * troubled after the imposition of initial conditions.
+   * @param solverPatches1
+   * @param solverPatches2
+   * @param limiterPatches1
+   * @param limiterPatches2
+   * @param solverNumber
+   * @param pos1
+   * @param pos2
+   * @param isRecomputation
    */
-  void mergeSolutionMinMaxOnFace(
-      const int                                 cellDescriptionsIndex1,
-      const int                                 element1,
-      const int                                 cellDescriptionsIndex2,
-      const int                                 element2,
-      const tarch::la::Vector<DIMENSIONS, int>& pos1,
-      const tarch::la::Vector<DIMENSIONS, int>& pos2) const;
-
-  /**
-   * Depending on the limiter status, we impose boundary conditions
-   * onto the solution of the solver or of the limiter.
-   */
-  void mergeWithBoundaryData(
-      const int                                 cellDescriptionsIndex,
-      const int                                 element,
-      const tarch::la::Vector<DIMENSIONS, int>& posCell,
-      const tarch::la::Vector<DIMENSIONS, int>& posBoundary) final override;
+  void mergeNeighboursData(
+      ADERDGSolver::Heap::HeapEntries&           solverPatches1,
+      ADERDGSolver::Heap::HeapEntries&           solverPatches2,
+      FiniteVolumesSolver::Heap::HeapEntries&    limiterPatches1,
+      FiniteVolumesSolver::Heap::HeapEntries&    limiterPatches2,
+      const int                                  solverNumber,
+      const tarch::la::Vector<DIMENSIONS, int>&  pos1,
+      const tarch::la::Vector<DIMENSIONS, int>&  pos2,
+      const bool                                 isRecomputation) const;
 
   /**
    * Merge solver boundary data (and other values) of a
@@ -1181,15 +1172,20 @@ public:
    * We thus do not need to merge these patches with boundary data
    * in the recomputation phase.
    *
-   * \param[in] isRecomputation Flag indicating if this merge is part of a solution recomputation phase.
+   * @param[in] solverPatches   a list/vector holding solver patches.
+   * @param[in] limiterPatches  a list/vector holding limiterr patches.
+   * @param[in] solverNumber    a number for a solver.
+   * @param[in] posCell         relative position of the cell  w.r.t. a vertex.
+   * @param[in] posBoundary     relative position of the boundary w.r.t. a vertex.
+   * @param[in] isRecomputation flag indicating if this merge is part of a solution recomputation phase.
    */
-  void mergeWithBoundaryDataBasedOnLimiterStatus(
-        const int                                 cellDescriptionsIndex,
-        const int                                 element,
-        const int                                 limiterStatusAsInt,
-        const tarch::la::Vector<DIMENSIONS, int>& posCell,
-        const tarch::la::Vector<DIMENSIONS, int>& posBoundary,
-        const bool                                isRecomputation);
+  void mergeWithBoundaryData(
+      ADERDGSolver::Heap::HeapEntries&          solverPatches,
+      FiniteVolumesSolver::Heap::HeapEntries&   limiterPatches,
+      const int                                 solverNumber,
+      const tarch::la::Vector<DIMENSIONS, int>& posCell,
+      const tarch::la::Vector<DIMENSIONS, int>& posBoundary,
+      const bool                                isRecomputation);
 
 #ifdef Parallel
   ///////////////////////////////////

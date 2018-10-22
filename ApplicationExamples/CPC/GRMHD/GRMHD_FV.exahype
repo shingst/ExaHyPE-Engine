@@ -1,0 +1,112 @@
+/**
+ * This file is part of the ExaHyPE project.
+ * Copyright (c) 2016  http://exahype.eu
+ * All rights reserved.
+ *
+ * The project has received funding from the European Union's Horizon 
+ * 2020 research and innovation programme under grant agreement
+ * No 671698. For copyrights and licensing, please consult the webpage.
+ *
+ * Released under the BSD 3 Open Source License.
+ * For the full license text, see LICENSE.txt
+ **/
+ 
+/**
+
+ GRMHD, ie. MHD on static curved background spacetime,
+ with Limiting ADER-DG Solver.
+
+ Here: GRMHD_FV testcase for testing NCP in Godunov.
+ Using AccretionDisk2D.
+
+ */
+exahype-project GRMHD
+
+  peano-kernel-path const          = ./Peano
+  exahype-path const               = ./ExaHyPE
+  output-directory const           = ./ApplicationExamples/CPC/GRMHD
+  architecture const               = noarch
+  log-file                         = whatever.log
+  plotter-subdirectory const       = Writers
+
+  computational-domain
+    dimension const                = 3
+    width                          = 6.28, 6.28, 6.28
+    offset                         = 0.0, 0.0, 0.0
+    end-time                       = 2.00001
+  end computational-domain
+  
+  /*shared-memory
+    identifier               = dummy
+    configure                = {}
+    cores                    = 1
+    properties-file          = sharedmemory.properties
+  end shared-memory
+  
+  distributed-memory
+    identifier       = static_load_balancing
+    configure        = {hotspot,fair,ranks_per_node:1}
+    buffer-size      = 64
+    timeout          = 60
+  end distributed-memory*/
+
+  global-optimisation
+    fuse-algorithmic-steps          = on
+    fuse-algorithmic-steps-factor   = 0.99
+    spawn-predictor-as-background-thread = off
+    spawn-amr-background-threads         = off
+    disable-vertex-exchange-in-time-steps = on
+    time-step-batch-factor           = 0.0
+    disable-metadata-exchange-in-batched-time-steps = off
+    double-compression = 0.0
+    spawn-double-compression-as-background-thread = off
+  end global-optimisation
+
+  solver Finite-Volumes GRMHDSolver_FV
+    variables const                = rho:1,vel:3,E:1,B:3,psi:1,lapse:1,shift:3,gij:6
+    patch-size const               = 3
+    maximum-mesh-size              = 0.233
+    time-stepping                  = global
+    type const         = godunov
+    terms const        = flux,ncp
+    optimisation const = generic
+    language const                 = C
+
+    plot vtk::Cartesian::vertices::ascii ConservedWriter
+      variables const = 19
+      time      = 0.0
+      repeat    = 0.00590278
+      output    = ./vtk-output/conserved
+    end plot
+    plot vtk::Cartesian::vertices::ascii ConservedWriter
+      variables const = 19
+      time      = 10000.0
+      repeat    = 0.00590278
+      output    = ./vtk-output/cartesian-2d
+      select    = z:0.0
+    end plot
+
+    plot vtk::Cartesian::cells::ascii PrimitiveWriter
+      variables const = 19
+      time      = 0.0
+      repeat    = 0.00590278
+      output    = ./vtk-output/primitive
+    end plot
+
+    plot vtk::Cartesian::cells::ascii IntegralsWriter
+      variables const = 0
+      time = 0.0
+      repeat = 0.000001
+      output = ./output/global-integrals
+    end plot
+
+    plot user::defined TimingStatistics
+      variables const = 0
+      time = 0.0
+      repeat = 0.0000000001
+      output = ./timing-benchmarks
+    end plot
+  end solver
+
+
+end exahype-project

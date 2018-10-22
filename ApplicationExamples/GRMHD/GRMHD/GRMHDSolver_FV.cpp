@@ -33,8 +33,12 @@ void GRMHD::GRMHDSolver_FV::init(const std::vector<std::string>& cmdlineargs,con
   // Just copy and pasted from GRMHDSolver_ADERDG
   // Todo: Move this to specfile once we have working constants.
   // Todo: Move this to specfile once we have working constants.
-  std::string id_default = "Fortran";
+//  std::string id_default = "Fortran";
+//  std::string bc_default = "left:exact,right:exact,top:exact,bottom:exact,front:exact,back:exact";
+
+ std::string id_default = "TOVSolver";
   std::string bc_default = "left:exact,right:exact,top:exact,bottom:exact,front:exact,back:exact";
+
 
   // alternatives:
 //  std::string id_default = "RNSID";
@@ -101,8 +105,8 @@ void GRMHD::GRMHDSolver_FV::eigenvalues(const double* const Q, const int dIndex,
 inline bool isAllZero(const double* const Q) {
 	// TODO: Check only the metric, since we see 1e-14 values in Q despite
 	// the state vector is not coming from the ID.
-	for(int i=0; i<GRMHD::GRMHDSolver_FV::NumberOfVariables; i++)
-	   { if(Q[i]!=0) return false; }
+	for(int i=9; i<GRMHD::GRMHDSolver_FV::NumberOfVariables; i++)
+	   { if(Q[i]>0) return false; }
 	return true;
 }
 

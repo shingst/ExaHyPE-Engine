@@ -941,7 +941,7 @@ int exahype::parser::Parser::getStepsTillCured(int solverNumber) const {
 }
 
 int exahype::parser::Parser::getLimiterHelperLayers(int solverNumber) const {
-  return getIntFromPath(sformat("/solvers/%d/limiter/help_layers", solverNumber), 1, isOptional);
+  return getIntFromPath(sformat("/solvers/%d/limiter/helper_layers", solverNumber), 1, isOptional);
 }
 
 std::string exahype::parser::Parser::getTypeForPlotter(int solverNumber,int plotterNumber) const {

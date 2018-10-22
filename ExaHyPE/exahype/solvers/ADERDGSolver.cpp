@@ -104,7 +104,7 @@ void exahype::solvers::ADERDGSolver::addNewCellDescription(
   const tarch::la::Vector<DIMENSIONS, double>&  cellOffset) {
   
   logDebug("addNewCellDescription(...)","Add cell description: index="<<cellDescriptionsIndex<<", type="<<CellDescription::toString(cellType) <<", level="<<level<<", parentIndex="<<parentIndex
-            << " for solver=" << solverNumber);
+           << " for solver=" << solverNumber);
 
   assertion1(Heap::getInstance().isValidIndex(cellDescriptionsIndex),cellDescriptionsIndex);
   assertion2(parentIndex == -1 || parentIndex != cellDescriptionsIndex, parentIndex, cellDescriptionsIndex);
@@ -164,7 +164,8 @@ void exahype::solvers::ADERDGSolver::addNewCellDescription(
   newCellDescription.setExtrapolatedPredictor(-1);
   newCellDescription.setFluctuation(-1);
 
-  // Limiter meta data (oscillations identificator)
+  newCellDescription.setVetoErasingChildren(false);
+  // Halo/Limiter meta data (oscillations identificator)
   newCellDescription.setRefinementFlag(false);
   newCellDescription.setRefinementStatus(Pending);
   newCellDescription.setPreviousRefinementStatus(Pending); 
@@ -374,8 +375,8 @@ void exahype::solvers::ADERDGSolver::ensureNecessaryMemoryIsAllocated(
 
     tarch::multicore::Lock lock(exahype::HeapSemaphore);
     // Allocate volume DoF for limiter
-    const int dataPerNode     = getNumberOfVariables()+getNumberOfParameters();
-    const int dataPerCell     = getDataPerCell(); // Only the solution and previousSolution store material parameters
+    const int dataPerNode = getNumberOfVariables()+getNumberOfParameters();
+    const int dataPerCell = getDataPerCell(); // Only the solution and previousSolution store material parameters
     cellDescription.setPreviousSolution( DataHeap::getInstance().createData( dataPerCell, dataPerCell ) );
     cellDescription.setSolution( DataHeap::getInstance().createData( dataPerCell, dataPerCell ) );
     checkDataHeapIndex(cellDescription,cellDescription.getPreviousSolution(),"getPreviousSolution()");
@@ -440,8 +441,8 @@ void exahype::solvers::ADERDGSolver::ensureNecessaryMemoryIsAllocated(
       checkDataHeapIndex(cellDescription,cellDescription.getSolutionMax(),"getSolutionMax()");
 
       for (int i=0; i<numberOfObservables * DIMENSIONS_TIMES_TWO; i++) {
-        DataHeap::getInstance().getData( cellDescription.getSolutionMin() )[i] = std::numeric_limits<double>::max();
-        DataHeap::getInstance().getData( cellDescription.getSolutionMax() )[i] = -std::numeric_limits<double>::max();
+        getDataHeapEntries(cellDescription.getSolutionMin())[i] = std::numeric_limits<double>::max();
+        getDataHeapEntries(cellDescription.getSolutionMax())[i] = -std::numeric_limits<double>::max();
       }
     }
 
@@ -983,10 +984,12 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInEnterCell(
   bool newComputeCell = false;
 
   // Fine grid cell based uniform mesh refinement.
-  const int fineGridCellElement =
+  const int fineGridElement =
       tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
+  const int coarseGridElement =
+      tryGetElement(coarseGridCell.getCellDescriptionsIndex(),solverNumber);
   if (
-      fineGridCellElement==exahype::solvers::Solver::NotFound &&
+      fineGridElement==exahype::solvers::Solver::NotFound &&
       tarch::la::allSmallerEquals(fineGridVerticesEnumerator.getCellSize(),getMaximumMeshSize()) &&
       tarch::la::oneGreater(coarseGridVerticesEnumerator.getCellSize(),getMaximumMeshSize())
   ) {
@@ -999,9 +1002,9 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInEnterCell(
         solverNumber);
     newComputeCell = true;
   }
-  else if ( fineGridCellElement!=exahype::solvers::Solver::NotFound ) {
+  else if ( fineGridElement!=exahype::solvers::Solver::NotFound ) {
     CellDescription& fineGridCellDescription =
-        getCellDescription(fineGridCell.getCellDescriptionsIndex(),fineGridCellElement);
+        getCellDescription(fineGridCell.getCellDescriptionsIndex(),fineGridElement);
 
     #ifdef Asserts
     const tarch::la::Vector<DIMENSIONS,double> center = fineGridCellDescription.getOffset()+0.5*fineGridCellDescription.getSize();
@@ -1009,24 +1012,7 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInEnterCell(
     assertion5(Vertex::equalUpToRelativeTolerance(fineGridVerticesEnumerator.getCellCenter(),center),
                fineGridVerticesEnumerator.getCellCenter(),center,fineGridVerticesEnumerator.getLevel(),fineGridCellDescription.getLevel(),tarch::parallel::Node::getInstance().getRank());
     assertionEquals3(fineGridVerticesEnumerator.getLevel(),fineGridCellDescription.getLevel(),fineGridVerticesEnumerator.getCellCenter(),fineGridCellDescription.getOffset()+0.5*fineGridCellDescription.getSize(),tarch::parallel::Node::getInstance().getRank());
-    // ensure that the fine grid cell descriptions's parent index is pointing to the
-    // coarse grid cell's cell descriptions index; this is important to re-establish
-    // the parent-child relations on a new worker after a fork.
-    // and to ensure
-    ensureConsistencyOfParentInformation(fineGridCellDescription,coarseGridCell.getCellDescriptionsIndex());
 
-    #if defined(Asserts) || defined(Debug)
-    const int coarseGridCellElement =
-        tryGetElement(coarseGridCell.getCellDescriptionsIndex(),solverNumber);
-    assertion5(
-        coarseGridCellElement==exahype::solvers::Solver::NotFound ||
-        fineGridCellDescription.getParentIndex()==coarseGridCell.getCellDescriptionsIndex(),
-        fineGridCellDescription.toString(),
-        getCellDescription(coarseGridCell.getCellDescriptionsIndex(),coarseGridCellElement).toString(),
-        getCellDescription(fineGridCellDescription.getParentIndex(),0).toString(),
-        fineGridCell.toString(),
-        coarseGridCell.toString()); // see mergeCellDescriptionsWithRemoteData.
-    #endif
     #ifdef Parallel // TODO(Dominic): Still needed?
     fineGridCellDescription.setAdjacentToRemoteRank(
         exahype::Cell::isAtRemoteBoundary(fineGridVertices,fineGridVerticesEnumerator));
@@ -1041,21 +1027,26 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInEnterCell(
 
     updateRefinementStatus(
         fineGridCellDescription,fineGridCellDescription.getNeighbourMergePerformed());
+    if ( coarseGridElement != exahype::solvers::Solver::NotFound ) {
+      CellDescription& coarseGridCellDescription = getCellDescription(
+          coarseGridCell.getCellDescriptionsIndex(),coarseGridElement);
+      updateCoarseGridAncestorRefinementStatus(fineGridCellDescription,coarseGridCellDescription);
+    }
 
     progressCollectiveRefinementOperationsInEnterCell(fineGridCellDescription);
 
     decideOnRefinement(fineGridCellDescription,stillInRefiningMode);
     decideOnVirtualRefinement(fineGridCellDescription);
+
+    ensureFineGridCoarseGridConsistency(fineGridCellDescription,coarseGridCell.getCellDescriptionsIndex()); // must come after refinement status update
   }
 
   // Coarse grid cell based adaptive mesh refinement operations.
   // Add new cells to the grid and veto erasing or erasing virtual children
   // requests if there are cells on the fine level.
-  const int coarseGridCellElement =
-      tryGetElement(coarseGridCell.getCellDescriptionsIndex(),solverNumber);
-  if (coarseGridCellElement!=exahype::solvers::Solver::NotFound) {
+  if (coarseGridElement!=exahype::solvers::Solver::NotFound) {
     CellDescription& coarseGridCellDescription = getCellDescription(
-        coarseGridCell.getCellDescriptionsIndex(),coarseGridCellElement);
+        coarseGridCell.getCellDescriptionsIndex(),coarseGridElement);
 
     alterErasingRequestsIfNecessary(
         coarseGridCellDescription,
@@ -1073,45 +1064,47 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInEnterCell(
   return newComputeCell;
 }
 
-void exahype::solvers::ADERDGSolver::markForRefinement(CellDescription& cellDescription) {
+int exahype::solvers::ADERDGSolver::evaluateRefinementCriterion(
+    const CellDescription& cellDescription,
+    const int solutionHeapIndex, const double& timeStamp) {
   assertion1(cellDescription.getType()==CellDescription::Type::Cell,cellDescription.toString());
   assertion1(
-      cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::None,
+      cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::None ||
+      cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::ErasingChildrenRequested,
       cellDescription.toString());
 
-  double* solution = DataHeap::getInstance().getData(cellDescription.getSolution()).data();
-  exahype::solvers::Solver::RefinementControl refinementControl =
+  const double* const solution = getDataHeapArray(solutionHeapIndex);
+
+  Solver::RefinementControl refinementControl =
       refinementCriterion(
           solution,cellDescription.getOffset()+0.5*cellDescription.getSize(),
           cellDescription.getSize(),
-          cellDescription.getCorrectorTimeStamp(), // is done after the update
+          timeStamp, // is done after the update
           cellDescription.getLevel());
 
-  switch (refinementControl) {
-  case exahype::solvers::Solver::RefinementControl::Keep:
-    cellDescription.setRefinementStatus(
-        std::max( cellDescription.getRefinementStatus(), Keep ) );
-    if ( cellDescription.getLevel()==getMaximumAdaptiveMeshLevel() ) {
-       cellDescription.setRefinementFlag(true); // only set but do not reset
-       cellDescription.setRefinementStatus(
-           std::max( cellDescription.getRefinementStatus(),_refineOrKeepOnFineGrid ) );
-    }
-    break;
-  case exahype::solvers::Solver::RefinementControl::Erase:
-    cellDescription.setRefinementStatus(
-        std::max( cellDescription.getRefinementStatus(), Erase ) );
-    break;
+  switch ( refinementControl ) {
   case exahype::solvers::Solver::RefinementControl::Refine:
-    cellDescription.setRefinementFlag(true); // only set but do not reset
-    cellDescription.setRefinementStatus(
-        std::max( cellDescription.getRefinementStatus(), _refineOrKeepOnFineGrid ) );
-    break;
+      return _refineOrKeepOnFineGrid;
+  case exahype::solvers::Solver::RefinementControl::Keep:
+    return ( cellDescription.getLevel()==getMaximumAdaptiveMeshLevel() ) ? _refineOrKeepOnFineGrid : Keep;
+  case exahype::solvers::Solver::RefinementControl::Erase:
+    return Erase;
   default:
     logError("adjustSolutionDuringMeshRefinementBody(...)",
         "unknown refinement control value=" << static_cast<int>(refinementControl) <<
         ". Please check the return values of your refinement criterion.");
     std::abort();
+    return Pending-1;
   }
+}
+
+void exahype::solvers::ADERDGSolver::markForRefinement(CellDescription& cellDescription) {
+  const int refinementStatus = evaluateRefinementCriterion(
+      cellDescription,cellDescription.getSolution(),cellDescription.getCorrectorTimeStamp());
+  if ( refinementStatus==_refineOrKeepOnFineGrid ) {
+    cellDescription.setRefinementFlag(true);
+  }
+  cellDescription.setRefinementStatus( std::max(cellDescription.getRefinementStatus(),refinementStatus) );
 }
 
 void exahype::solvers::ADERDGSolver::decideOnRefinement(
@@ -1145,45 +1138,6 @@ void exahype::solvers::ADERDGSolver::decideOnRefinement(
     }
     lock.free();
   }
-
-  // erasing
-  if (
-      !stillInRefiningMode &&
-      fineGridCellDescription.getType()==CellDescription::Type::Ancestor  &&
-      fineGridCellDescription.getRefinementEvent()==CellDescription::None &&
-      fineGridCellDescription.getRefinementStatus()==Pending
-      // this means the the former Cell now Ancestor was not yet refined during the current
-      // mesh refinement iterations.
-  ) {
-    fineGridCellDescription.setRefinementEvent(CellDescription::RefinementEvent::ErasingChildrenRequested);
-  }
-  // veto erasing
-  if (
-      !stillInRefiningMode &&
-      ((fineGridCellDescription.getType()==CellDescription::Type::Cell &&
-      (fineGridCellDescription.getRefinementStatus()!=Erase ||
-      fineGridCellDescription.getPreviousRefinementStatus()!=Erase)) 
-      ||
-      fineGridCellDescription.getType()==CellDescription::Type::Ancestor)
-  ) {
-    const int coarseGridCellElement = tryGetElement(
-        fineGridCellDescription.getParentIndex(),fineGridCellDescription.getSolverNumber());
-    if ( coarseGridCellElement!=exahype::solvers::Solver::NotFound ) {
-      auto& coarseGridCellDescription = getCellDescription(
-          fineGridCellDescription.getParentIndex(),coarseGridCellElement);
-
-      tarch::multicore::Lock lock(CoarseGridSemaphore);
-      if (
-          coarseGridCellDescription.getRefinementEvent()==CellDescription::RefinementEvent::ErasingChildrenRequested ||
-          coarseGridCellDescription.getRefinementEvent()==CellDescription::RefinementEvent::ChangeChildrenToVirtualChildrenRequested
-      ) {
-        coarseGridCellDescription.setRefinementEvent(CellDescription::None);
-        assertion1(coarseGridCellDescription.getType()==CellDescription::Type::Ancestor,
-                   coarseGridCellDescription.toString());
-      }
-      lock.free();
-    }
-  }
 }
 
 void exahype::solvers::ADERDGSolver::decideOnVirtualRefinement(
@@ -1202,7 +1156,7 @@ void exahype::solvers::ADERDGSolver::decideOnVirtualRefinement(
       fineGridCellDescription.getHasVirtualChildren() &&
       fineGridCellDescription.getAugmentationStatus()<MinimumAugmentationStatusForVirtualRefining
   ) {
-    fineGridCellDescription.setRefinementEvent(CellDescription::RefinementEvent::ErasingVirtualChildrenRequested);
+    fineGridCellDescription.setRefinementEvent( CellDescription::RefinementEvent::ErasingVirtualChildrenRequested );
   }
   else if (
       idleCellOrDescendant &&
@@ -1223,7 +1177,7 @@ void exahype::solvers::ADERDGSolver::decideOnVirtualRefinement(
       auto& coarseGridCellDescription = getCellDescription(fineGridCellDescription.getParentIndex(),
                                                            coarseGridCellElement);
       tarch::multicore::Lock lock(CoarseGridSemaphore);
-      if (coarseGridCellDescription.getRefinementEvent()==CellDescription::RefinementEvent::ErasingVirtualChildrenRequested) {
+      if ( coarseGridCellDescription.getRefinementEvent()==CellDescription::RefinementEvent::ErasingVirtualChildrenRequested ) {
         coarseGridCellDescription.setRefinementEvent(CellDescription::None);
 
         assertion1(fineGridCellDescription.getType()==CellDescription::Type::Descendant,
@@ -1240,11 +1194,11 @@ void exahype::solvers::ADERDGSolver::decideOnVirtualRefinement(
 void exahype::solvers::ADERDGSolver::alterErasingRequestsIfNecessary(
     CellDescription& coarseGridCellDescription,
     const int fineGridCellDescriptionsIndex) const {
-  const int fineGridCellElement = tryGetElement(
+  const int fineGridElement = tryGetElement(
       fineGridCellDescriptionsIndex,coarseGridCellDescription.getSolverNumber());
-  if (fineGridCellElement!=exahype::solvers::Solver::NotFound) {
+  if ( fineGridElement!=exahype::solvers::Solver::NotFound ) {
     CellDescription& fineGridCellDescription =
-       getCellDescription(fineGridCellDescriptionsIndex,fineGridCellElement);
+       getCellDescription(fineGridCellDescriptionsIndex,fineGridElement);
     if (
         fineGridCellDescription.getHasVirtualChildren()
         || fineGridCellDescription.getRefinementEvent()==CellDescription::RefinementEvent::VirtualRefining
@@ -1294,10 +1248,10 @@ void exahype::solvers::ADERDGSolver::addNewCell(
               fineGridVerticesEnumerator.getCellSize(),
               fineGridVerticesEnumerator.getVertexPosition());
 
-  const int fineGridCellElement =
+  const int fineGridElement =
       tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
   CellDescription& fineGridCellDescription =
-      getCellDescription(fineGridCell.getCellDescriptionsIndex(),fineGridCellElement);
+      getCellDescription(fineGridCell.getCellDescriptionsIndex(),fineGridElement);
   ensureNecessaryMemoryIsAllocated(fineGridCellDescription);
   
   fineGridCellDescription.setPreviousRefinementStatus(Erase); // reasonable state after rollback 
@@ -1387,10 +1341,10 @@ bool exahype::solvers::ADERDGSolver::addNewCellIfRefinementRequested(
 
   // work on fine grid
   if ( refiningOrRefiningRequested ) {
-    const int fineGridCellElement = tryGetElement(
+    const int fineGridElement = tryGetElement(
         fineGridCell.getCellDescriptionsIndex(),coarseGridCellDescription.getSolverNumber());
 
-    if ( fineGridCellElement==exahype::solvers::Solver::NotFound ) {
+    if ( fineGridElement==exahype::solvers::Solver::NotFound ) {
       addNewCell(fineGridCell,fineGridVerticesEnumerator,
                  coarseGridCellDescriptionsIndex,
                  coarseGridCellDescription.getSolverNumber());
@@ -1401,7 +1355,7 @@ bool exahype::solvers::ADERDGSolver::addNewCellIfRefinementRequested(
       fineGridCellDescription.setCreation(CellDescription::Creation::AdaptiveRefinement);
       #endif
     } else {
-      CellDescription& fineGridCellDescription = getCellDescription(fineGridCell.getCellDescriptionsIndex(),fineGridCellElement);
+      CellDescription& fineGridCellDescription = getCellDescription(fineGridCell.getCellDescriptionsIndex(),fineGridElement);
       #ifdef Parallel
       assertion4(fineGridCellDescription.getType()==CellDescription::Type::Descendant ||
                  fineGridCellDescription.getType()==CellDescription::Type::Cell,
@@ -1450,10 +1404,8 @@ void exahype::solvers::ADERDGSolver::prolongateVolumeData(
   assertion(levelCoarse < levelFine);
 
   // current solution
-  double* solutionFine   = DataHeap::getInstance().getData(
-      fineGridCellDescription.getSolution()).data();
-  double* solutionCoarse = DataHeap::getInstance().getData(
-      coarseGridCellDescription.getSolution()).data();
+  double* solutionFine   = getDataHeapArray(fineGridCellDescription.getSolution());
+  double* solutionCoarse = getDataHeapArray(coarseGridCellDescription.getSolution());
   volumeUnknownsProlongation(
       solutionFine,solutionCoarse,
       levelCoarse,levelFine,
@@ -1461,10 +1413,8 @@ void exahype::solvers::ADERDGSolver::prolongateVolumeData(
 
   // previous solution
   assertion(DataHeap::getInstance().isValidIndex(fineGridCellDescription.getPreviousSolution()));
-  double* previousSolutionFine   = DataHeap::getInstance().getData(
-      fineGridCellDescription.getPreviousSolution()).data();
-  double* previousSolutionCoarse = DataHeap::getInstance().getData(
-      coarseGridCellDescription.getPreviousSolution()).data();
+  double* previousSolutionFine   = getDataHeapArray(fineGridCellDescription.getPreviousSolution());
+  double* previousSolutionCoarse = getDataHeapArray(coarseGridCellDescription.getPreviousSolution());
   volumeUnknownsProlongation(
       previousSolutionFine,previousSolutionCoarse,
       levelCoarse,levelFine,
@@ -1483,7 +1433,7 @@ void exahype::solvers::ADERDGSolver::prolongateVolumeData(
   // TODO Dominic:
   // During the inital mesh build where we only refine
   // according to the PAD, we don't want to have a too broad refined area.
-  // We thus do not flag children cells with troubled
+  // We thus do not flag children with troubled
   if (
       !initialGrid &&
       coarseGridCellDescription.getRefinementStatus()>=_minimumRefinementStatusForTroubledCell
@@ -1502,37 +1452,56 @@ bool exahype::solvers::ADERDGSolver::attainedStableState(
   const int element = tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
   if ( element!=exahype::solvers::Solver::NotFound ) {
     CellDescription& cellDescription = getCellDescription(fineGridCell.getCellDescriptionsIndex(),element);
-
     // compute flagging gradients in inside cells
     bool flaggingHasConverged = true;
-    if (
-        (cellDescription.getType()==CellDescription::Type::Cell ||
-        cellDescription.getType()==CellDescription::Type::Ancestor)
-        &&
-        !peano::grid::aspects::VertexStateAnalysis::isOneVertexBoundary(fineGridVertices,fineGridVerticesEnumerator) ) {
-      for (int d=0; d<DIMENSIONS; d++) {
-        flaggingHasConverged &=
-            std::abs(cellDescription.getFacewiseAugmentationStatus(2*d+1)  - cellDescription.getFacewiseAugmentationStatus(2*d+0)) <= 2;
-        flaggingHasConverged &=
-            std::abs(cellDescription.getFacewiseCommunicationStatus(2*d+1) - cellDescription.getFacewiseCommunicationStatus(2*d+0)) <= 2;
-        flaggingHasConverged &=
-            std::abs(cellDescription.getFacewiseRefinementStatus(2*d+1)    - cellDescription.getFacewiseRefinementStatus(2*d+0))    <= 2;;
+    if ( !peano::grid::aspects::VertexStateAnalysis::isOneVertexBoundary(fineGridVertices,fineGridVerticesEnumerator) ) { // no check on boundary
+      if ( cellDescription.getType()==CellDescription::Type::Cell || cellDescription.getType()==CellDescription::Type::Ancestor ) {
+        for (int d=0; d<DIMENSIONS; d++) {
+          flaggingHasConverged &=
+              std::abs(cellDescription.getFacewiseAugmentationStatus(2*d+1)  - cellDescription.getFacewiseAugmentationStatus(2*d+0)) <= 2;
+          flaggingHasConverged &=
+              std::abs(cellDescription.getFacewiseCommunicationStatus(2*d+1) - cellDescription.getFacewiseCommunicationStatus(2*d+0)) <= 2;
+        }
+      }
+      // refinement status is only spread on finest level
+      if (
+          cellDescription.getType()  == CellDescription::Type::Cell &&
+          cellDescription.getLevel() == getMaximumAdaptiveMeshLevel()
+      ) {
+        for (int d=0; d<DIMENSIONS; d++) {
+          flaggingHasConverged &=
+              std::abs(cellDescription.getFacewiseRefinementStatus(2*d+1) - cellDescription.getFacewiseRefinementStatus(2*d+0)) <= 2;
+        }
       }
     }
  
-    return
-        flaggingHasConverged
-        &&
-        cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::None
-        &&
-        (cellDescription.getType()!=CellDescription::Cell || // cell must not have pending refinement status and must not require refinement on coarser grids
-          (cellDescription.getRefinementStatus()!=Pending &&
-          (cellDescription.getLevel() == getMaximumAdaptiveMeshLevel() ||
-          cellDescription.getRefinementStatus()<=0)))
-        &&
-        (cellDescription.getType()!=CellDescription::Descendant || // descendant must not have refinement status > 0 on finest level
-         cellDescription.getLevel() != getMaximumAdaptiveMeshLevel() ||
-          cellDescription.getRefinementStatus()<=0);
+    // TODO(Dominic): Debugging
+    bool stable =
+      flaggingHasConverged
+      &&
+      cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::None
+      &&
+      (cellDescription.getType()!=CellDescription::Cell || // cell must not have pending refinement status and must not require refinement on coarser grids
+      (cellDescription.getRefinementStatus()!=Pending &&
+      (cellDescription.getLevel() == getMaximumAdaptiveMeshLevel() ||
+      cellDescription.getRefinementStatus()<=0)))
+      &&
+      (cellDescription.getType()!=CellDescription::Descendant || // descendant must not have refinement status > 0 on finest level
+      cellDescription.getLevel() != getMaximumAdaptiveMeshLevel() ||
+      cellDescription.getRefinementStatus()<=0);
+
+//    if (!stable) {
+//      logInfo("attainedStableState(...)",">flaggingHasConverged="<<flaggingHasConverged);
+//      logInfo("attainedStableState(...)","type="<<cellDescription.toString(cellDescription.getType()));
+//      logInfo("attainedStableState(...)","x="<<cellDescription.getOffset());
+//      logInfo("attainedStableState(...)","level="<<cellDescription.getLevel());
+//      logInfo("attainedStableState(...)","refinementStatus="<<cellDescription.getRefinementStatus());
+//      logInfo("attainedStableState(...)","getFacewiseAugmentationStatus="<<cellDescription.getFacewiseAugmentationStatus());
+//      logInfo("attainedStableState(...)","getFacewiseCommunicationStatus="<<cellDescription.getFacewiseCommunicationStatus());
+//      logInfo("attainedStableState(...)","getFacewiseRefinementStatus="<<cellDescription.getFacewiseRefinementStatus());
+//    }
+
+    return stable;
   } else {
     return true;
   }
@@ -1544,17 +1513,19 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInLeaveCell(
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
     exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-    const int solverNumber) {
+    const int solverNumber,
+    const bool stillInRefiningMode) {
   bool newComputeCell = false;
 
-  const int fineGridCellElement =
+  const int fineGridElement =
       tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
-  if ( fineGridCellElement!=exahype::solvers::Solver::NotFound ) {
+  if ( fineGridElement!=exahype::solvers::Solver::NotFound ) {
     CellDescription& fineGridCellDescription = getCellDescription(
-            fineGridCell.getCellDescriptionsIndex(),fineGridCellElement);
+        fineGridCell.getCellDescriptionsIndex(),fineGridElement);
 
     // start or finish collective operations
-    newComputeCell |= progressCollectiveRefinementOperationsInLeaveCell(fineGridCellDescription);
+    newComputeCell |= progressCollectiveRefinementOperationsInLeaveCell(
+        fineGridCellDescription,stillInRefiningMode);
 
     // skip remainder if the refinement criterion has not been evaluated yet for a Cell
     // Reading the refinement request might result into data race but this is accepted at this point
@@ -1572,9 +1543,12 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInLeaveCell(
           coarseGridCellDescription.getSolverNumber(),
                      fineGridCellDescription.toString());
 
+      restrictVolumeDataIfErasingRequested(
+          fineGridCellDescription,coarseGridCellDescription);
+
       eraseCellDescriptionIfNecessary(
               fineGridCell.getCellDescriptionsIndex(),
-              fineGridCellElement,
+              fineGridElement,
               coarseGridCellDescription);
     }
   }
@@ -1662,29 +1636,35 @@ exahype::solvers::ADERDGSolver::eraseOrRefineAdjacentVertices(
 void exahype::solvers::ADERDGSolver::prepareVolumeDataRestriction(
     CellDescription& cellDescription) const {
   double* solution =
-      DataHeap::getInstance().getData(cellDescription.getSolution()).data();
+      getDataHeapArray(cellDescription.getSolution());
   std::fill_n(solution,getDataPerCell(),0.0);
   double* previousSolution =
-      DataHeap::getInstance().getData(cellDescription.getPreviousSolution()).data();
+      getDataHeapArray(cellDescription.getPreviousSolution());
   std::fill_n(previousSolution,getDataPerCell(),0.0);
+}
+
+void exahype::solvers::ADERDGSolver::changeCellToAncestor(CellDescription& cellDescription) {
+  assertion1(cellDescription.getType()==CellDescription::Type::Cell,
+             cellDescription.toString());
+  cellDescription.setType(CellDescription::Type::Ancestor);
+  cellDescription.setAugmentationStatus(MaximumAugmentationStatus);
+  cellDescription.setHasVirtualChildren(false); // since we might replace descendants with cells
+  cellDescription.setRefinementStatus(Keep);
+  cellDescription.setCommunicationStatus(0);
+  cellDescription.setFacewiseAugmentationStatus(0); // implicit conversion
+  cellDescription.setFacewiseRefinementStatus(Pending);
+  cellDescription.setFacewiseCommunicationStatus(0); // implicit conversion
+  ensureNoUnnecessaryMemoryIsAllocated(cellDescription);
+  cellDescription.setRefinementEvent(CellDescription::None);
 }
 
 void exahype::solvers::ADERDGSolver::progressCollectiveRefinementOperationsInEnterCell(
      CellDescription& fineGridCellDescription) {
+  fineGridCellDescription.setVetoErasingChildren(false);
+
   switch (fineGridCellDescription.getRefinementEvent()) {
     case CellDescription::Refining:
-      assertion1(fineGridCellDescription.getType()==CellDescription::Type::Cell,
-                 fineGridCellDescription.toString());
-      fineGridCellDescription.setType(CellDescription::Type::Ancestor);
-      fineGridCellDescription.setAugmentationStatus(MaximumAugmentationStatus);
-      fineGridCellDescription.setHasVirtualChildren(false); // since we might replace descendants with cells
-      fineGridCellDescription.setRefinementStatus(Keep);
-      fineGridCellDescription.setCommunicationStatus(0);
-      fineGridCellDescription.setFacewiseAugmentationStatus(0); // implicit conversion
-      fineGridCellDescription.setFacewiseRefinementStatus(Pending);
-      fineGridCellDescription.setFacewiseCommunicationStatus(0); // implicit conversion
-      ensureNoUnnecessaryMemoryIsAllocated(fineGridCellDescription);
-      fineGridCellDescription.setRefinementEvent(CellDescription::None);
+      changeCellToAncestor(fineGridCellDescription);
       break;
     case CellDescription::VirtualRefining:
       fineGridCellDescription.setHasVirtualChildren(true);
@@ -1695,47 +1675,63 @@ void exahype::solvers::ADERDGSolver::progressCollectiveRefinementOperationsInEnt
   }
 }
 
+bool exahype::solvers::ADERDGSolver::markPreviousAncestorForRefinement(CellDescription& cellDescription) {
+  assertion1(cellDescription.getType()==CellDescription::Type::Cell &&
+             (cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::ErasingChildrenRequested ||
+             cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::ChangeChildrenToVirtualChildrenRequested),
+             cellDescription.toString());
+    double* solution = getDataHeapArray(cellDescription.getSolution());
+    adjustSolution(solution,
+          cellDescription.getOffset()+0.5*cellDescription.getSize(),
+          cellDescription.getSize(),
+          cellDescription.getCorrectorTimeStamp(),
+          cellDescription.getCorrectorTimeStepSize());
+
+    double* previousSolution = getDataHeapArray(cellDescription.getPreviousSolution());
+    adjustSolution(previousSolution,
+          cellDescription.getOffset()+0.5*cellDescription.getSize(),
+          cellDescription.getSize(),
+          cellDescription.getPreviousCorrectorTimeStamp(),
+          cellDescription.getPreviousCorrectorTimeStepSize());
+
+    cellDescription.setRefinementStatus( evaluateRefinementCriterion(
+            cellDescription,cellDescription.getSolution(),cellDescription.getCorrectorTimeStamp())
+    );
+    cellDescription.setPreviousRefinementStatus( evaluateRefinementCriterion(
+            cellDescription,cellDescription.getPreviousSolution(),cellDescription.getPreviousCorrectorTimeStamp())
+    );
+
+    return cellDescription.getRefinementStatus()        !=_refineOrKeepOnFineGrid &&
+           cellDescription.getPreviousRefinementStatus()!=_refineOrKeepOnFineGrid;
+}
+
 bool exahype::solvers::ADERDGSolver::progressCollectiveRefinementOperationsInLeaveCell(
-     CellDescription& fineGridCellDescription) {
-  bool newComputeCell = false;
-  switch (fineGridCellDescription.getRefinementEvent()) {
+     CellDescription& fineGridCellDescription,
+     const bool stillInRefiningMode) {
+  switch ( fineGridCellDescription.getRefinementEvent() ) {
     case CellDescription::RefinementEvent::ErasingChildrenRequested:
-      //logInfo("progressCollectiveRefinementOperationsInLeaveCell(...)","ErasingChildren started");
-      fineGridCellDescription.setType(CellDescription::Type::Cell);
-      fineGridCellDescription.setAugmentationStatus(0);
-      fineGridCellDescription.setFacewiseAugmentationStatus(0); // implicit conversion
-      fineGridCellDescription.setCommunicationStatus(CellCommunicationStatus);
-      fineGridCellDescription.setFacewiseCommunicationStatus(CellCommunicationStatus); // implicit conversion
-      ensureNecessaryMemoryIsAllocated(fineGridCellDescription);
-      prepareVolumeDataRestriction(fineGridCellDescription);
-      fineGridCellDescription.setRefinementEvent(CellDescription::RefinementEvent::ErasingChildren);
-      #ifdef Asserts
-      fineGridCellDescription.setCreation(CellDescription::Creation::AdaptiveCoarsening);
-      #endif
+      // evaluate refinement criterion now that fine grid cells have restricted their data
+      if ( markPreviousAncestorForRefinement(fineGridCellDescription) ) {
+        fineGridCellDescription.setRefinementEvent(CellDescription::RefinementEvent::ErasingChildren);
+      } else { // veto erasing request
+        changeCellToAncestor(fineGridCellDescription);
+      }
       break;
     case CellDescription::RefinementEvent::ErasingChildren:
       //logInfo("progressCollectiveRefinementOperationsInLeaveCell(...)","ErasingChildren done");
       fineGridCellDescription.setRefinementEvent(CellDescription::RefinementEvent::None);
-      fineGridCellDescription.setPreviousRefinementStatus(Erase); // reasonable state after rollback
-      fineGridCellDescription.setRefinementStatus(Pending);
-      newComputeCell = true;
       break;
     case CellDescription::RefinementEvent::ChangeChildrenToVirtualChildrenRequested:
-      fineGridCellDescription.setType(CellDescription::Type::Cell);
-      fineGridCellDescription.setAugmentationStatus(0);
-      fineGridCellDescription.setFacewiseAugmentationStatus(0); // implicit conversion
-      fineGridCellDescription.setCommunicationStatus(CellCommunicationStatus);
-      fineGridCellDescription.setFacewiseCommunicationStatus(CellCommunicationStatus); // implicit conversion
-      ensureNecessaryMemoryIsAllocated(fineGridCellDescription);
-      prepareVolumeDataRestriction(fineGridCellDescription);
-      fineGridCellDescription.setRefinementEvent(CellDescription::RefinementEvent::ChangeChildrenToVirtualChildren);
+      // evaluate refinement criterion now that fine grid cells have restricted their data
+      if ( markPreviousAncestorForRefinement(fineGridCellDescription) ) {
+        fineGridCellDescription.setRefinementEvent(CellDescription::RefinementEvent::ChangeChildrenToVirtualChildren);
+      } else { // veto erasing request
+        changeCellToAncestor(fineGridCellDescription);
+      }
       break;
     case CellDescription::ChangeChildrenToVirtualChildren:
       fineGridCellDescription.setHasVirtualChildren(true);
       fineGridCellDescription.setRefinementEvent(CellDescription::RefinementEvent::None);
-      fineGridCellDescription.setPreviousRefinementStatus(Erase); // reasonable state after rollback
-      fineGridCellDescription.setRefinementStatus(Pending);
-      newComputeCell = true;
       break;
     case CellDescription::RefinementEvent::ErasingVirtualChildrenRequested:
       fineGridCellDescription.setRefinementEvent(CellDescription::RefinementEvent::ErasingVirtualChildren);
@@ -1747,70 +1743,44 @@ bool exahype::solvers::ADERDGSolver::progressCollectiveRefinementOperationsInLea
     default:
       break;
   }
-  return newComputeCell;
+
+  if (  // The children of this cell description have all flagged themselves and their parent (this cell) with Erase
+      !stillInRefiningMode &&
+      fineGridCellDescription.getType()==CellDescription::Type::Ancestor &&
+      fineGridCellDescription.getRefinementEvent()==CellDescription::RefinementEvent::None &&
+      fineGridCellDescription.getVetoErasingChildren()==false &&
+      fineGridCellDescription.getRefinementStatus()==Erase &&
+      fineGridCellDescription.getPreviousRefinementStatus()==Erase
+  ) {
+    //logInfo("progressCollectiveRefinementOperationsInLeaveCell(...)","ErasingChildren requested: "<<fineGridCellDescription.getRefinementStatus()<< ", "<<fineGridCellDescription.getPreviousRefinementStatus());
+    fineGridCellDescription.setType(CellDescription::Type::Cell);
+    fineGridCellDescription.setAugmentationStatus(0);
+    fineGridCellDescription.setFacewiseAugmentationStatus(0); // implicit conversion
+    fineGridCellDescription.setCommunicationStatus(CellCommunicationStatus);
+    fineGridCellDescription.setFacewiseCommunicationStatus(CellCommunicationStatus); // implicit conversion
+    ensureNecessaryMemoryIsAllocated(fineGridCellDescription);
+    prepareVolumeDataRestriction(fineGridCellDescription);
+    fineGridCellDescription.setRefinementEvent(CellDescription::RefinementEvent::ErasingChildrenRequested);
+  }
+  return false;
 }
 
 void exahype::solvers::ADERDGSolver::eraseCellDescriptionIfNecessary(
     const int cellDescriptionsIndex,
-    const int fineGridCellElement,
+    const int fineGridElement,
     CellDescription& coarseGridCellDescription) {
   tarch::multicore::Lock lock(CoarseGridSemaphore);
   const bool erasingChildren =
       coarseGridCellDescription.getRefinementEvent()==CellDescription::RefinementEvent::ErasingChildren;
-  const bool changeChildredToDescendants =
+  const bool changeChildrenToDescendants =
       coarseGridCellDescription.getRefinementEvent()==CellDescription::ChangeChildrenToVirtualChildren;
   const bool deaugmentingChildren =
       coarseGridCellDescription.getRefinementEvent()==CellDescription::RefinementEvent::ErasingVirtualChildren;
   lock.free();
 
-  if ( erasingChildren ) {
+  if ( changeChildrenToDescendants ) {
     CellDescription& fineGridCellDescription = getCellDescription(
-          cellDescriptionsIndex,fineGridCellElement);
-
-    tarch::la::Vector<DIMENSIONS,int> subcellIndex =
-        exahype::amr::computeSubcellIndex(
-            fineGridCellDescription.getOffset(),
-            fineGridCellDescription.getSize(),coarseGridCellDescription.getOffset());
-
-    // restrict values.
-    tarch::multicore::Lock lock(RestrictionSemaphore);
-    restrictVolumeData(
-        coarseGridCellDescription,
-        fineGridCellDescription,
-        subcellIndex);
-    // TODO(Dominic): Reconsider for anarchic time stepping.
-    // coarseGridCellDescription.setCorrectorTimeStamp(fineGridCellDescription.getCorrectorTimeStamp());
-    // coarseGridCellDescription.setPredictorTimeStamp(fineGridCellDescription.getPredictorTimeStamp());
-    lock.free();
-
-    // erase cell description // or change to descendant
-    fineGridCellDescription.setType(CellDescription::Erased);
-    fineGridCellDescription.setCommunicationStatus(0);
-    fineGridCellDescription.setFacewiseCommunicationStatus(0); // implicit conversion
-    ensureNoUnnecessaryMemoryIsAllocated(fineGridCellDescription);
-
-    getCellDescriptions(cellDescriptionsIndex).erase(
-        getCellDescriptions(cellDescriptionsIndex).begin()+fineGridCellElement);
-  }
-  else if ( changeChildredToDescendants ) {
-    CellDescription& fineGridCellDescription = getCellDescription(
-        cellDescriptionsIndex,fineGridCellElement);
-
-    tarch::la::Vector<DIMENSIONS,int> subcellIndex =
-        exahype::amr::computeSubcellIndex(
-            fineGridCellDescription.getOffset(),
-            fineGridCellDescription.getSize(),coarseGridCellDescription.getOffset());
-
-    // restrict values.
-    tarch::multicore::Lock lock(RestrictionSemaphore);
-    restrictVolumeData(
-        coarseGridCellDescription,
-        fineGridCellDescription,
-        subcellIndex);
-    // TODO(Dominic): Reconsider for anarchic time stepping.
-    // coarseGridCellDescription.setCorrectorTimeStamp(fineGridCellDescription.getCorrectorTimeStamp());
-    // coarseGridCellDescription.setPredictorTimeStamp(fineGridCellDescription.getPredictorTimeStamp());
-    lock.free();
+        cellDescriptionsIndex,fineGridElement);
 
     // erase cell description // or change to descendant
     fineGridCellDescription.setType(CellDescription::Type::Descendant);
@@ -1818,9 +1788,9 @@ void exahype::solvers::ADERDGSolver::eraseCellDescriptionIfNecessary(
     fineGridCellDescription.setFacewiseCommunicationStatus(0); // implicit conversion
     ensureNoUnnecessaryMemoryIsAllocated(fineGridCellDescription);
   }
-  else if ( deaugmentingChildren ) {
+  else if ( erasingChildren || deaugmentingChildren ) {
     CellDescription& fineGridCellDescription = getCellDescription(
-          cellDescriptionsIndex,fineGridCellElement);
+          cellDescriptionsIndex,fineGridElement);
 
     fineGridCellDescription.setType(CellDescription::Erased);
     fineGridCellDescription.setCommunicationStatus(0);
@@ -1828,80 +1798,90 @@ void exahype::solvers::ADERDGSolver::eraseCellDescriptionIfNecessary(
     ensureNoUnnecessaryMemoryIsAllocated(fineGridCellDescription);
 
     getCellDescriptions(cellDescriptionsIndex).erase(
-        getCellDescriptions(cellDescriptionsIndex).begin()+fineGridCellElement);
+        getCellDescriptions(cellDescriptionsIndex).begin()+fineGridElement);
   }
 }
 
-void exahype::solvers::ADERDGSolver::restrictVolumeData(
-    CellDescription&       coarseGridCellDescription,
+void exahype::solvers::ADERDGSolver::restrictVolumeDataIfErasingRequested(
     const CellDescription& fineGridCellDescription,
-    const tarch::la::Vector<DIMENSIONS, int>& subcellIndex) {
+    const CellDescription& coarseGridCellDescription) {
 //  assertion1(coarseGridCellDescription.getLimiterStatus()==CellDescription::LimiterStatus::Ok,
 //      coarseGridCellDescription.toString()); // TODO(Dominic): Does not always apply see veto
-  assertion1(fineGridCellDescription.getRefinementStatus()==-1,
-        fineGridCellDescription.toString());
-  assertion1(DataHeap::getInstance().isValidIndex(
-      fineGridCellDescription.getSolution()),fineGridCellDescription.toString());
-  assertion1(DataHeap::getInstance().isValidIndex(
-      coarseGridCellDescription.getSolution()),coarseGridCellDescription.toString());
-  assertion1(DataHeap::getInstance().isValidIndex(
-      fineGridCellDescription.getPreviousSolution()),fineGridCellDescription.toString());
-  assertion1(DataHeap::getInstance().isValidIndex(
-      coarseGridCellDescription.getPreviousSolution()),coarseGridCellDescription.toString());
+  tarch::multicore::Lock lock(CoarseGridSemaphore);
+  const bool restrictVolumeData =
+      coarseGridCellDescription.getRefinementEvent()==CellDescription::RefinementEvent::ErasingChildrenRequested ||
+      coarseGridCellDescription.getRefinementEvent()==CellDescription::RefinementEvent::ChangeChildrenToVirtualChildrenRequested;
+  lock.free();
 
-  const int levelFine  = fineGridCellDescription.getLevel();
-  const int levelCoarse = coarseGridCellDescription.getLevel();
-  assertion(levelCoarse < levelFine);
+  if ( restrictVolumeData ) {
+    //logInfo("restrictVolumeData(..)","restricting solution");
 
-  if ( !DataHeap::getInstance().isValidIndex(
-         fineGridCellDescription.getSolution()) ) {
-    logError("restrictVolumeData(..)","solution not valid for cell="<<fineGridCellDescription.toString());
-    std::abort();
+    tarch::la::Vector<DIMENSIONS,int> subcellIndex =
+        exahype::amr::computeSubcellIndex(
+            fineGridCellDescription.getOffset(),
+            fineGridCellDescription.getSize(),coarseGridCellDescription.getOffset());
+
+    // restrict values.
+    tarch::multicore::Lock lock(RestrictionSemaphore);
+    assertion1(fineGridCellDescription.getRefinementStatus()==-1,fineGridCellDescription.toString());
+    assertion1(DataHeap::getInstance().isValidIndex(fineGridCellDescription.getSolution()),fineGridCellDescription.toString());
+    assertion1(DataHeap::getInstance().isValidIndex(coarseGridCellDescription.getSolution()),coarseGridCellDescription.toString());
+    assertion1(DataHeap::getInstance().isValidIndex(fineGridCellDescription.getPreviousSolution()),fineGridCellDescription.toString());
+    assertion1(DataHeap::getInstance().isValidIndex(coarseGridCellDescription.getPreviousSolution()),coarseGridCellDescription.toString());
+
+    const int levelFine   = fineGridCellDescription.getLevel();
+    const int levelCoarse = coarseGridCellDescription.getLevel();
+    assertion(levelCoarse < levelFine);
+
+    if ( !DataHeap::getInstance().isValidIndex(fineGridCellDescription.getSolution()) ) {
+      logError("restrictVolumeData(..)","solution not valid for cell="<<fineGridCellDescription.toString());
+      std::abort();
+    }
+
+    // restrict current solution
+    double* solutionFine   = getDataHeapArray(fineGridCellDescription.getSolution());
+    double* solutionCoarse = getDataHeapArray(coarseGridCellDescription.getSolution());
+    volumeUnknownsRestriction(
+        solutionCoarse,solutionFine,
+        levelCoarse,levelFine,
+        subcellIndex);
+
+    // restrict next solution
+    double* previousSolutionFine   = getDataHeapArray(fineGridCellDescription.getPreviousSolution());
+    double* previousSolutionCoarse = getDataHeapArray(coarseGridCellDescription.getPreviousSolution());
+    volumeUnknownsRestriction(
+        previousSolutionCoarse,previousSolutionFine,
+        levelCoarse,levelFine,
+        subcellIndex);
+
+    // TODO(Dominic): Do later, move out
+
+    // Reset the min and max
+    const int numberOfObservables = getDMPObservables();
+    if ( numberOfObservables>0 ) {
+      double* solutionMin = getDataHeapArray(coarseGridCellDescription.getSolutionMin());
+      std::fill_n(solutionMin,DIMENSIONS_TIMES_TWO*numberOfObservables,
+          std::numeric_limits<double>::max());
+      double* solutionMax = getDataHeapArray(coarseGridCellDescription.getSolutionMax());
+      std::fill_n(solutionMax,DIMENSIONS_TIMES_TWO*numberOfObservables,
+          -std::numeric_limits<double>::max()); // Be aware of "-"
+    }
+
+    // TODO(Dominic): What to do with the time step data for anarchic time stepping?
+    // Tobias proposed some waiting procedure. Until they all have reached
+    // a certain time level.
+    //  coarseGridCellDescription.setCorrectorTimeStamp(fineGridCellDescription.getCorrectorTimeStamp());
+    //  coarseGridCellDescription.setPredictorTimeStamp(fineGridCellDescription.getPredictorTimeStamp());
+    //  coarseGridCellDescription.setCorrectorTimeStepSize(fineGridCellDescription.getCorrectorTimeStepSize());
+    //  coarseGridCellDescription.setPredictorTimeStepSize(fineGridCellDescription.getPredictorTimeStepSize());
+    // TODO(Dominic): Reconsider for anarchic time stepping.
+    // coarseGridCellDescription.setCorrectorTimeStamp(fineGridCellDescription.getCorrectorTimeStamp());
+    // coarseGridCellDescription.setPredictorTimeStamp(fineGridCellDescription.getPredictorTimeStamp());
+    lock.free();
   }
-
-  // restrict current solution
-  double* solutionFine   = DataHeap::getInstance().getData(
-      fineGridCellDescription.getSolution()).data();
-  double* solutionCoarse = DataHeap::getInstance().getData(
-      coarseGridCellDescription.getSolution()).data();
-  volumeUnknownsRestriction(
-      solutionCoarse,solutionFine,
-      levelCoarse,levelFine,
-      subcellIndex);
-
-  // restrict next solution
-  double* previousSolutionFine   = DataHeap::getInstance().getData(
-      fineGridCellDescription.getPreviousSolution()).data();
-  double* previousSolutionCoarse = DataHeap::getInstance().getData(
-      coarseGridCellDescription.getPreviousSolution()).data();
-  volumeUnknownsRestriction(
-      previousSolutionCoarse,previousSolutionFine,
-      levelCoarse,levelFine,
-      subcellIndex);
-
-  // Reset the min and max
-  const int numberOfObservables = getDMPObservables();
-  if (numberOfObservables>0) {
-    double* solutionMin = DataHeap::getInstance().getData(
-        coarseGridCellDescription.getSolutionMin()).data();
-    std::fill_n(solutionMin,DIMENSIONS_TIMES_TWO*numberOfObservables,
-        std::numeric_limits<double>::max());
-    double* solutionMax = DataHeap::getInstance().getData(
-        coarseGridCellDescription.getSolutionMax()).data();
-    std::fill_n(solutionMax,DIMENSIONS_TIMES_TWO*numberOfObservables,
-        -std::numeric_limits<double>::max()); // Be aware of "-"
-  }
-
-  // TODO(Dominic): What to do with the time step data for anarchic time stepping?
-  // Tobias proposed some waiting procedure. Until they all have reached
-  // a certain time level.
-//  coarseGridCellDescription.setCorrectorTimeStamp(fineGridCellDescription.getCorrectorTimeStamp());
-//  coarseGridCellDescription.setPredictorTimeStamp(fineGridCellDescription.getPredictorTimeStamp());
-//  coarseGridCellDescription.setCorrectorTimeStepSize(fineGridCellDescription.getCorrectorTimeStepSize());
-//  coarseGridCellDescription.setPredictorTimeStepSize(fineGridCellDescription.getPredictorTimeStepSize());
 }
 
-void exahype::solvers::ADERDGSolver::ensureConsistencyOfParentInformation(
+void exahype::solvers::ADERDGSolver::ensureFineGridCoarseGridConsistency(
     CellDescription& fineGridCellDescription,
     const int coarseGridCellDescriptionsIndex) {
 
@@ -1914,6 +1894,7 @@ void exahype::solvers::ADERDGSolver::ensureConsistencyOfParentInformation(
         fineGridCellDescription.toString());
     fineGridCellDescription.setParentIndex(coarseGridCellDescriptionsIndex);
 
+    // coarse to fine grid
     if ( fineGridCellDescription.getType()==CellDescription::Type::Descendant ) {
       CellDescription& coarseGridCellDescription = getCellDescription(coarseGridCellDescriptionsIndex,coarseGridElement);
       if ( coarseGridCellDescription.getType()==CellDescription::Type::Cell ) {
@@ -1925,6 +1906,12 @@ void exahype::solvers::ADERDGSolver::ensureConsistencyOfParentInformation(
         fineGridCellDescription.setParentOffset(coarseGridCellDescription.getParentOffset());
       }
     }
+
+    #if defined(Asserts) || defined(Debug)
+    assertion2(coarseGridElement==exahype::solvers::Solver::NotFound || fineGridCellDescription.getParentIndex()==coarseGridCellDescriptionsIndex,
+        fineGridCellDescription.toString(), getCellDescription(coarseGridCellDescriptionsIndex,coarseGridElement).toString());
+    #endif
+
   } else {
     fineGridCellDescription.setParentIndex(multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
   }
@@ -1941,20 +1928,10 @@ void exahype::solvers::ADERDGSolver::finaliseStateUpdates(
       const int solverNumber) {
   const int element =
       tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
-  if (element!=exahype::solvers::Solver::NotFound) {
+  if ( element!=exahype::solvers::Solver::NotFound ) {
     CellDescription& cellDescription = getCellDescription(fineGridCell.getCellDescriptionsIndex(),element);
     cellDescription.setRefinementFlag(false);
-
-    // Allow ancestors to be erased in the next batch of mesh refinment iterations
-    if ( cellDescription.getType() != CellDescription::Type::Cell ) {
-      cellDescription.setRefinementStatus(Pending);
-    }
-
     cellDescription.setPreviousAugmentationStatus(cellDescription.getAugmentationStatus());
-    // only for global recomputation since we do a rollback here
-    if ( getMeshUpdateEvent()==MeshUpdateEvent::RefinementRequested ) {
-      cellDescription.setRefinementStatus(cellDescription.getPreviousRefinementStatus());
-    }
   }
 }
 
@@ -1967,7 +1944,7 @@ void exahype::solvers::ADERDGSolver::validateCellDescriptionData(
   const bool afterCompression,
   const std::string& methodTraceOfCaller) const {
   #if defined(Debug) || defined(Asserts)
-  if (validateTimeStepData) {
+  if ( validateTimeStepData ) {
     assertion2(std::isfinite(cellDescription.getPredictorTimeStepSize()),
         cellDescription.toString(),toString());
     assertion3(cellDescription.getPredictorTimeStepSize()<
@@ -1996,11 +1973,11 @@ void exahype::solvers::ADERDGSolver::validateCellDescriptionData(
     assertion1(DataHeap::getInstance().isValidIndex(cellDescription.getExtrapolatedPredictor()),cellDescription.toString());
     assertion1(DataHeap::getInstance().isValidIndex(cellDescription.getFluctuation()),cellDescription.toString());
 
-    double* luh = DataHeap::getInstance().getData(cellDescription.getSolution()).data();
-    double* lduh = DataHeap::getInstance().getData(cellDescription.getUpdate()).data();
+    double* luh = getDataHeapArray(cellDescription.getSolution());
+    double* lduh = getDataHeapArray(cellDescription.getUpdate());
 
-    double* lQhbnd = DataHeap::getInstance().getData(cellDescription.getExtrapolatedPredictor()).data();
-    double* lFhbnd = DataHeap::getInstance().getData(cellDescription.getFluctuation()).data();
+    double* lQhbnd = getDataHeapArray(cellDescription.getExtrapolatedPredictor());
+    double* lFhbnd = getDataHeapArray(cellDescription.getFluctuation());
 
     int dataPerCell             = getDataPerCell();
     int updateSize              = getUpdateSize();
@@ -2039,7 +2016,7 @@ exahype::solvers::ADERDGSolver::evaluateRefinementCriteriaAfterSolutionUpdate(
 
   cellDescription.setRefinementFlag(false);
   if ( cellDescription.getType()==CellDescription::Type::Cell ) {
-    const double* solution = DataHeap::getInstance().getData(cellDescription.getSolution()).data();
+    const double* solution = getDataHeapArray(cellDescription.getSolution());
     RefinementControl refinementControl = refinementCriterion(
                       solution,cellDescription.getOffset()+0.5*cellDescription.getSize(),
                       cellDescription.getSize(),
@@ -2088,6 +2065,7 @@ exahype::solvers::ADERDGSolver::evaluateRefinementCriteriaAfterSolutionUpdate(
       return MeshUpdateEvent::None;
     }
   } else {
+    cellDescription.setRefinementStatus(Pending); // Cannot override the refinement / limiter status in other cells
     return MeshUpdateEvent::None;
   }
 }
@@ -2137,7 +2115,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
     const bool isLastIterationOfBatch,
     const bool isAtRemoteBoundary) {
   CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
-  if (cellDescription.getType()==CellDescription::Type::Cell) {
+  if ( cellDescription.getType()==CellDescription::Type::Cell ) {
     const bool isAMRSkeletonCell     = ADERDGSolver::belongsToAMRSkeleton(cellDescription,isAtRemoteBoundary);
     const bool isSkeletonCell        = isAMRSkeletonCell || isAtRemoteBoundary;
     const bool mustBeDoneImmediately = isSkeletonCell && PredictionSweeps==1;
@@ -2246,15 +2224,26 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegralBody(
 
   validateCellDescriptionData(cellDescription,true,false,"exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegralBody [pre]");
 
-  double* luh  = DataHeap::getInstance().getData(cellDescription.getSolution()).data();
-  double* lduh = DataHeap::getInstance().getData(cellDescription.getUpdate()).data();
-  double* lQhbnd = DataHeap::getInstance().getData(cellDescription.getExtrapolatedPredictor()).data();
-  double* lFhbnd = DataHeap::getInstance().getData(cellDescription.getFluctuation()).data();
+  double* luh  = getDataHeapArray(cellDescription.getSolution());
+  double* lduh = getDataHeapArray(cellDescription.getUpdate());
+  double* lQhbnd = getDataHeapArray(cellDescription.getExtrapolatedPredictor());
+  double* lFhbnd = getDataHeapArray(cellDescription.getFluctuation());
 
   #if defined(Debug) || defined(Asserts)
   for (int i=0; i<getDataPerCell(); i++) { // cellDescription.getCorrectorTimeStepSize==0.0 is an initial condition
     assertion3(tarch::la::equals(cellDescription.getCorrectorTimeStepSize(),0.0) || std::isfinite(luh[i]),cellDescription.toString(),"performPredictionAndVolumeIntegral(...)",i);
   }
+  #endif
+
+  #if !defined(SharedMemoryParallelisation) && !defined(Parallel) && defined(Asserts)
+  static int counter = 0;
+  static double timeStamp = 0;
+  if ( !tarch::la::equals(timeStamp,_minCorrectorTimeStamp,1e-9) ) {
+    logInfo("performPredictionAndVolumeIntegralBody(...)","#predictions="<<counter);
+    timeStamp = _minCorrectorTimeStamp;
+    counter=0;
+  }
+  counter++;
   #endif
 
   fusedSpaceTimePredictorVolumeIntegral(
@@ -2307,7 +2296,7 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
 double exahype::solvers::ADERDGSolver::computeTimeStepSize(CellDescription& cellDescription) {
   if (cellDescription.getType()==CellDescription::Type::Cell) {
     assertion1(cellDescription.getRefinementEvent()==CellDescription::None,cellDescription.toString());
-    const double* luh = exahype::DataHeap::getInstance().getData(cellDescription.getSolution()).data();
+    const double* luh = getDataHeapArray(cellDescription.getSolution());
 
     validateCellDescriptionData(cellDescription,false,false,"computeTimeStepSizes(...)");
     double admissibleTimeStepSize = stableTimeStepSize(luh,cellDescription.getSize());
@@ -2495,10 +2484,11 @@ void exahype::solvers::ADERDGSolver::adjustSolutionDuringMeshRefinementBody(
 void exahype::solvers::ADERDGSolver::adjustSolution(CellDescription& cellDescription) {
   assertion1(cellDescription.getType()==CellDescription::Type::Cell,cellDescription.toString());    
   assertion1(
-      cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::None
+      cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::None ||
+      cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::ErasingChildrenRequested
       ,cellDescription.toString());
 
-  double* solution = exahype::DataHeap::getInstance().getData(cellDescription.getSolution()).data();
+  double* solution = getDataHeapArray(cellDescription.getSolution());
   adjustSolution(
       solution,
       cellDescription.getOffset()+0.5*cellDescription.getSize(),
@@ -2520,9 +2510,21 @@ void exahype::solvers::ADERDGSolver::updateSolution(
     cellDescription.getType()==CellDescription::Type::Cell &&
     cellDescription.getRefinementEvent()==CellDescription::None
   ) {
-    double* newSolution = DataHeap::getInstance().getData(cellDescription.getSolution()).data();
+    assertion1(cellDescription.getNeighbourMergePerformed().all(),cellDescription.toString());
+    #if !defined(SharedMemoryParallelisation) && !defined(Parallel) && defined(Asserts)
+    static int counter = 0;
+    static double timeStamp = 0;
+    if ( !tarch::la::equals(timeStamp,_minCorrectorTimeStamp,1e-9) ) {
+      logInfo("mergeNeighboursData(...)","#updateSolution="<<counter);
+      timeStamp = _minCorrectorTimeStamp;
+      counter=0;
+    }
+    counter++;
+    #endif
+
+    double* newSolution = getDataHeapArray(cellDescription.getSolution());
     if (backupPreviousSolution) {
-      double* solution  = DataHeap::getInstance().getData(cellDescription.getPreviousSolution()).data();
+      double* solution  = getDataHeapArray(cellDescription.getPreviousSolution());
       std::copy(newSolution,newSolution+getDataPerCell(),solution); // Copy (current solution) in old solution field.
 
       #if defined(Debug) || defined(Asserts)
@@ -2532,7 +2534,7 @@ void exahype::solvers::ADERDGSolver::updateSolution(
       #endif
     }
 
-    double* update       = exahype::DataHeap::getInstance().getData(cellDescription.getUpdate()).data();
+    double* update       = getDataHeapArray(cellDescription.getUpdate());
     #if defined(Debug) || defined(Asserts)
     for (int i=0; i<getUnknownsPerCell(); i++) { // update does not store parameters
       assertion3(tarch::la::equals(cellDescription.getCorrectorTimeStepSize(),0.0)  || std::isfinite(update[i]),cellDescription.toString(),"updateSolution",i);
@@ -2596,7 +2598,7 @@ void exahype::solvers::ADERDGSolver::prolongateFaceDataToDescendant(
   assertion(levelCoarse < levelFine);
   const int levelDelta = levelFine - levelCoarse;
 
-  DataHeap::HeapEntries& update = DataHeap::getInstance().getData(cellDescription.getUpdate());
+  DataHeap::HeapEntries& update = getDataHeapEntries(cellDescription.getUpdate());
   std::fill(update.begin(),update.end(),0.0);
 
   for (int d = 0; d < DIMENSIONS; ++d) {
@@ -2618,14 +2620,14 @@ void exahype::solvers::ADERDGSolver::prolongateFaceDataToDescendant(
       // extrapolated predictor
       assertion1(DataHeap::getInstance().isValidIndex(cellDescription.getExtrapolatedPredictor()),cellDescription.toString());
       assertion1(DataHeap::getInstance().isValidIndex(parentCellDescription.getExtrapolatedPredictor()),parentCellDescription.toString());
-      double* lQhbndFine = DataHeap::getInstance().getData(cellDescription.getExtrapolatedPredictor()).data() +
+      double* lQhbndFine = getDataHeapArray(cellDescription.getExtrapolatedPredictor()) +
           (faceIndex * numberOfFaceDof);
-      const double* lQhbndCoarse = DataHeap::getInstance().getData(parentCellDescription.getExtrapolatedPredictor()).data() +
+      const double* lQhbndCoarse = getDataHeapArray(parentCellDescription.getExtrapolatedPredictor()) +
           (faceIndex * numberOfFaceDof);
       // flux
-      double* lFhbndFine = DataHeap::getInstance().getData(cellDescription.getFluctuation()).data() +
+      double* lFhbndFine = getDataHeapArray(cellDescription.getFluctuation()) +
           (faceIndex * numberOfFluxDof);
-      const double* lFhbndCoarse = DataHeap::getInstance().getData(parentCellDescription.getFluctuation()).data() +
+      const double* lFhbndCoarse = getDataHeapArray(parentCellDescription.getFluctuation()) +
           (faceIndex * numberOfFluxDof);
 
       faceUnknownsProlongation(lQhbndFine,lFhbndFine,lQhbndCoarse,
@@ -2650,14 +2652,14 @@ void exahype::solvers::ADERDGSolver::prolongateObservablesMinAndMax(
   const int numberOfObservables = getDMPObservables();
   if (numberOfObservables>0) {
     // fine
-    double* minFine = DataHeap::getInstance().getData(cellDescription.getSolutionMin()).data() +
+    double* minFine = getDataHeapArray(cellDescription.getSolutionMin()) +
         (faceIndex * numberOfObservables);
-    double* maxFine = DataHeap::getInstance().getData(cellDescription.getSolutionMax()).data() +
+    double* maxFine = getDataHeapArray(cellDescription.getSolutionMax()) +
         (faceIndex * numberOfObservables);
     // coarse
-    const double* minCoarse = DataHeap::getInstance().getData(cellDescriptionParent.getSolutionMin()).data() +
+    const double* minCoarse = getDataHeapArray(cellDescriptionParent.getSolutionMin()) +
         (faceIndex * numberOfObservables);
-    const double* maxCoarse = DataHeap::getInstance().getData(cellDescriptionParent.getSolutionMax()).data() +
+    const double* maxCoarse = getDataHeapArray(cellDescriptionParent.getSolutionMax()) +
         (faceIndex * numberOfObservables);
 
     std::copy_n( minCoarse,numberOfObservables, minFine );
@@ -2694,7 +2696,7 @@ void exahype::solvers::ADERDGSolver::prolongateFaceData(
                  parentCellDescription.getType()==CellDescription::Type::Descendant
                  ,parentCellDescription.toString());
 
-      waitUntilCompletedTimeStep<CellDescription>(parentCellDescription,false); // TODO(Dominic): We wait for skeleton jobs here. It might make sense to receiveDanglingMessages here too
+      waitUntilCompletedTimeStep<CellDescription>(parentCellDescription,true,false); // TODO(Dominic): We wait for skeleton jobs here. It might make sense to receiveDanglingMessages here too
       prolongateFaceDataToDescendant(cellDescription,parentCellDescription,subcellPosition.subcellIndex);
     } else {
       exahype::solvers::Solver::SubcellPosition subcellPosition =
@@ -2708,7 +2710,7 @@ void exahype::solvers::ADERDGSolver::prolongateFaceData(
           subcellPosition.parentCellDescriptionsIndex,subcellPosition.parentElement);
       assertion1(parentCellDescription.getType()==CellDescription::Type::Cell,parentCellDescription.toString());
 
-      waitUntilCompletedTimeStep<CellDescription>(parentCellDescription,false); // TODO(Dominic): We wait for skeleton jobs here. It might make sense to receiveDanglingMessages here too
+      waitUntilCompletedTimeStep<CellDescription>(parentCellDescription,true,false); // TODO(Dominic): We wait for skeleton jobs here. It might make sense to receiveDanglingMessages here too
       cellDescription.setHasCompletedTimeStep(false); // done here in order to skip lookup of cell description in job constructor
       ProlongationJob prolongationJob( *this, cellDescription, parentCellDescription, subcellPosition.subcellIndex);
       Solver::submitPredictionJob(prolongationJob,false);
@@ -2721,7 +2723,7 @@ void exahype::solvers::ADERDGSolver::prolongateFaceData(
       tarch::parallel::Node::getInstance().getRank());
 }
 
-void exahype::solvers::ADERDGSolver::restriction( // TODO(Dominic): Does it still make sense?
+void exahype::solvers::ADERDGSolver::restriction(
     const int fineGridCellDescriptionsIndex,
     const int fineGridElement) {
   CellDescription& cellDescription = getCellDescription(fineGridCellDescriptionsIndex,fineGridElement);
@@ -2738,10 +2740,8 @@ void exahype::solvers::ADERDGSolver::restriction( // TODO(Dominic): Does it stil
 
     // restrict update and minMax
     restrictToTopMostParent(cellDescription,
-                            subcellPosition.parentCellDescriptionsIndex,
-                            subcellPosition.parentElement);
+      subcellPosition.parentCellDescriptionsIndex,subcellPosition.parentElement);
   }
-  // TODO(Dominic): Merge again; Have veto mechanism per face; set at interface with Ancestor
 }
 
 void exahype::solvers::ADERDGSolver::restrictToTopMostParent( // TODO must be merged with faceIntegral
@@ -2764,8 +2764,8 @@ void exahype::solvers::ADERDGSolver::restrictToTopMostParent( // TODO must be me
              parentCellDescription.toString());
   #endif
 
-  DataHeap::HeapEntries& updateFine   = DataHeap::getInstance().getData(cellDescription.getUpdate());
-  DataHeap::HeapEntries& updateCoarse = DataHeap::getInstance().getData(parentCellDescription.getUpdate());
+  DataHeap::HeapEntries& updateFine   = getDataHeapEntries(cellDescription.getUpdate());
+  DataHeap::HeapEntries& updateCoarse = getDataHeapEntries(parentCellDescription.getUpdate());
 
   // Add
   tarch::multicore::Lock lock(RestrictionSemaphore);
@@ -2808,14 +2808,14 @@ void exahype::solvers::ADERDGSolver::restrictObservablesMinAndMax(
     const int faceIndex) const {
   const int numberOfObservables = getDMPObservables();
   // fine
-  double* minFine = DataHeap::getInstance().getData(cellDescription.getSolutionMin()).data() +
+  double* minFine = getDataHeapArray(cellDescription.getSolutionMin()) +
       (faceIndex * numberOfObservables);
-  double* maxFine = DataHeap::getInstance().getData(cellDescription.getSolutionMax()).data() +
+  double* maxFine = getDataHeapArray(cellDescription.getSolutionMax()) +
       (faceIndex * numberOfObservables);
   // coarse
-  double* minCoarse = DataHeap::getInstance().getData(parentCellDescription.getSolutionMin()).data() +
+  double* minCoarse = getDataHeapArray(parentCellDescription.getSolutionMin()) +
       (faceIndex * numberOfObservables);
-  double* maxCoarse = DataHeap::getInstance().getData(parentCellDescription.getSolutionMax()).data() +
+  double* maxCoarse = getDataHeapArray(parentCellDescription.getSolutionMax()) +
       (faceIndex * numberOfObservables);
 
   tarch::multicore::Lock lock(RestrictionSemaphore);
@@ -2909,13 +2909,12 @@ void exahype::solvers::ADERDGSolver::mergeWithAugmentationStatus(
   cellDescription.setFacewiseAugmentationStatus( faceIndex, otherAugmentationStatus );
 }
 
-void
-exahype::solvers::ADERDGSolver::updateRefinementStatus(
+void exahype::solvers::ADERDGSolver::updateRefinementStatus(
     CellDescription& cellDescription,
     const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) const {
-  if ( 
+  if (
     cellDescription.getRefinementStatus()<_minimumRefinementStatusForTroubledCell &&
-    cellDescription.getLevel()==getMaximumAdaptiveMeshLevel() 
+    cellDescription.getLevel()==getMaximumAdaptiveMeshLevel()
   ) {
     int max = ( cellDescription.getRefinementFlag() ) ? _refineOrKeepOnFineGrid : Erase;
     for (unsigned int i=0; i<DIMENSIONS_TIMES_TWO; i++) {
@@ -2927,6 +2926,24 @@ exahype::solvers::ADERDGSolver::updateRefinementStatus(
   }
 }
 
+void exahype::solvers::ADERDGSolver::updateCoarseGridAncestorRefinementStatus(
+    const CellDescription& fineGridCellDescription,
+    CellDescription& coarseGridCellDescription) {
+  // fine to coarse grid
+  if ( coarseGridCellDescription.getType()==CellDescription::Type::Ancestor ) {
+    tarch::multicore::Lock lock(CoarseGridSemaphore);
+    if ( fineGridCellDescription.getType()==CellDescription::Type::Cell ) {
+      coarseGridCellDescription.setRefinementStatus(
+          std::max( coarseGridCellDescription.getRefinementStatus(), fineGridCellDescription.getRefinementStatus()) );
+      coarseGridCellDescription.setPreviousRefinementStatus(
+          std::max( coarseGridCellDescription.getPreviousRefinementStatus(), fineGridCellDescription.getPreviousRefinementStatus()) );
+    } else if ( fineGridCellDescription.getType()==CellDescription::Type::Ancestor ) {
+      coarseGridCellDescription.setVetoErasingChildren(true);
+    }
+    lock.free();
+  }
+}
+
 // TODO(Dominic): Check that we have rolled back in time as well
 void exahype::solvers::ADERDGSolver::rollbackSolutionGlobally(
     const int cellDescriptionsIndex, const int solverElement,
@@ -2934,7 +2951,7 @@ void exahype::solvers::ADERDGSolver::rollbackSolutionGlobally(
   CellDescription& cellDescription = ADERDGSolver::getCellDescription(cellDescriptionsIndex,solverElement);
 
   // 1. Rollback time step data
-  if (fusedTimeStepping) {
+  if ( fusedTimeStepping ) {
     rollbackToPreviousTimeStepFused(cellDescription);
   } else {
     rollbackToPreviousTimeStep(cellDescription);
@@ -2943,106 +2960,141 @@ void exahype::solvers::ADERDGSolver::rollbackSolutionGlobally(
   if (cellDescription.getType()==CellDescription::Type::Cell) {
     swapSolutionAndPreviousSolution(cellDescription);
   }
+
+  // 3. Reset the previous refinement status on the finest mesh level
+  if ( cellDescription.getLevel()==getMaximumAdaptiveMeshLevel() ) {
+    cellDescription.setRefinementStatus(cellDescription.getPreviousRefinementStatus());
+  } else {
+    cellDescription.setRefinementStatus(Pending);
+    cellDescription.setPreviousRefinementStatus(Pending);
+  }
 }
 
-
-// merge metadata
 void exahype::solvers::ADERDGSolver::mergeNeighboursMetadata(
-    const int                                 cellDescriptionsIndex1,
-    const int                                 element1,
-    const int                                 cellDescriptionsIndex2,
-    const int                                 element2,
-    const tarch::la::Vector<DIMENSIONS, int>& pos1,
-    const tarch::la::Vector<DIMENSIONS, int>& pos2) const {
+    Heap::HeapEntries&                           cellDescriptions1,
+    Heap::HeapEntries&                           cellDescriptions2,
+    const int                                    solverNumber,
+    const tarch::la::Vector<DIMENSIONS, int>&    pos1,
+    const tarch::la::Vector<DIMENSIONS, int>&    pos2,
+    const tarch::la::Vector<DIMENSIONS, double>& x,
+    const tarch::la::Vector<DIMENSIONS, double>& h,
+    const bool                                   checkThoroughly) const {
+  assertion2(tarch::la::countEqualEntries(pos1,pos2)==(DIMENSIONS-1),pos1,pos2);
+  Solver::InterfaceInfo face(pos1,pos2);
 
-  CellDescription& cellDescription1  = getCellDescription(cellDescriptionsIndex1,element1);
-  CellDescription& cellDescription2 = getCellDescription(cellDescriptionsIndex2,element2);
+  const int element1 = indexOfCellDescription(cellDescriptions1,solverNumber);
+  const int element2 = indexOfCellDescription(cellDescriptions2,solverNumber);
 
-  const int direction    = tarch::la::equalsReturnIndex(pos1,pos2);
-  const int orientation1 = (1 + pos2(direction) - pos1(direction))/2;
-  const int orientation2 = 1-orientation1;
+  if ( element1!=Solver::NotFound && element2!=Solver::NotFound ) {
+    CellDescription& cellDescription1 = cellDescriptions1[element1];
+    CellDescription& cellDescription2 = cellDescriptions2[element2];
 
-  const int faceIndex1 = 2*direction+orientation1;
-  const int faceIndex2 = 2*direction+orientation2;
+    bool mergeMetadata = true;
+    if ( checkThoroughly ) {
+      const tarch::la::Vector<DIMENSIONS,double> baryCentreFrom1 =
+          exahype::Cell::computeFaceBarycentre(cellDescription1.getOffset(),cellDescription1.getSize(),face._direction,face._orientation1);
+      const tarch::la::Vector<DIMENSIONS,double> baryCentreFrom2 =
+          exahype::Cell::computeFaceBarycentre(cellDescription2.getOffset(),cellDescription2.getSize(),face._direction,face._orientation2);
+      const tarch::la::Vector<DIMENSIONS,double> baryCentreFromVertex =
+          exahype::Vertex::computeFaceBarycentre(x,h,face._direction,pos2); // or pos 1
+      mergeMetadata &= Vertex::equalUpToRelativeTolerance(baryCentreFrom1,baryCentreFromVertex) &&
+                       Vertex::equalUpToRelativeTolerance(baryCentreFrom2,baryCentreFromVertex);
+    }
+    if ( mergeMetadata ) {
+      mergeWithCommunicationStatus(cellDescription1,face._faceIndex1,cellDescription2.getCommunicationStatus());
+      mergeWithAugmentationStatus(cellDescription1,face._faceIndex1,cellDescription2.getAugmentationStatus());
+      mergeWithRefinementStatus(cellDescription1,face._faceIndex1,cellDescription2.getRefinementStatus());
 
-  mergeWithCommunicationStatus(cellDescription1,faceIndex1,cellDescription2.getCommunicationStatus());
-  mergeWithAugmentationStatus(cellDescription1,faceIndex1,cellDescription2.getAugmentationStatus());
-  mergeWithRefinementStatus(cellDescription1,faceIndex1,cellDescription2.getRefinementStatus());
+      mergeWithCommunicationStatus(cellDescription2,face._faceIndex2,cellDescription1.getCommunicationStatus());
+      mergeWithAugmentationStatus(cellDescription2,face._faceIndex2,cellDescription1.getAugmentationStatus());
+      mergeWithRefinementStatus(cellDescription2,face._faceIndex2,cellDescription1.getRefinementStatus());
 
-  mergeWithCommunicationStatus(cellDescription2,faceIndex2,cellDescription1.getCommunicationStatus());
-  mergeWithAugmentationStatus(cellDescription2,faceIndex2,cellDescription1.getAugmentationStatus());
-  mergeWithRefinementStatus(cellDescription2,faceIndex2,cellDescription1.getRefinementStatus());
+      cellDescription1.setNeighbourMergePerformed(face._faceIndex1,true); // here we only set, doesn't matter if operation is done twice.
+      cellDescription2.setNeighbourMergePerformed(face._faceIndex2,true);
+    }
+  }
 }
 
 // merge compute data
-void exahype::solvers::ADERDGSolver::mergeNeighbours(
-    const int                                 cellDescriptionsIndex1,
-    const int                                 element1,
-    const int                                 cellDescriptionsIndex2,
-    const int                                 element2,
+void exahype::solvers::ADERDGSolver::mergeNeighboursData(
+    Heap::HeapEntries&                        cellDescriptions1,
+    Heap::HeapEntries&                        cellDescriptions2,
+    const int                                 solverNumber,
     const tarch::la::Vector<DIMENSIONS, int>& pos1,
     const tarch::la::Vector<DIMENSIONS, int>& pos2) {
   assertion1(tarch::la::countEqualEntries(pos1,pos2)==(DIMENSIONS-1),tarch::la::countEqualEntries(pos1,pos2));
-  const int direction    = tarch::la::equalsReturnIndex(pos1, pos2);
-  const int orientation1 = (1 + pos2(direction) - pos1(direction))/2;
+  const int element1 = indexOfCellDescription(cellDescriptions1,solverNumber);
+  const int element2 = indexOfCellDescription(cellDescriptions2,solverNumber);
 
-  const int indexOfRightFaceOfLeftCell = 2*direction+1;
-  const int indexOfLeftFaceOfRightCell = 2*direction+0;
+  if ( element1 != Solver::NotFound && element2 != Solver::NotFound ) {
+    CellDescription& cellDescription1 = cellDescriptions1[element1];
+    CellDescription& cellDescription2 = cellDescriptions2[element2];
 
-  CellDescription& cellDescriptionLeft  =
-      (orientation1==1) ?
-          getCellDescription(cellDescriptionsIndex1,element1)
-          :
-          getCellDescription(cellDescriptionsIndex2,element2);
-  CellDescription& cellDescriptionRight =
-      (orientation1==1)
-          ?
-          getCellDescription(cellDescriptionsIndex2,element2)
-          :
-          getCellDescription(cellDescriptionsIndex1,element1);
+    Solver::InterfaceInfo face(pos1,pos2);
 
-  waitUntilCompletedTimeStep<CellDescription>(cellDescriptionLeft,false);
-  waitUntilCompletedTimeStep<CellDescription>(cellDescriptionRight,false);
+    if ( !cellDescription1.getNeighbourMergePerformed(face._faceIndex1) ) { // check
+      assertion(!cellDescription2.getNeighbourMergePerformed(face._faceIndex2) );
+      #if !defined(SharedMemoryParallelisation) && !defined(Parallel) && defined(Asserts)
+      static int counter = 0;
+      static double timeStamp = 0;
+      if ( !tarch::la::equals(timeStamp,_minCorrectorTimeStamp,1e-9) ) {
+        logInfo("mergeNeighboursData(...)","#riemanns="<<counter);
+        timeStamp = _minCorrectorTimeStamp;
+        counter=0;
+      }
+      counter++;
+      #endif
 
-  // synchronise time stepping if necessary
-  synchroniseTimeStepping(cellDescriptionLeft);
-  synchroniseTimeStepping(cellDescriptionRight);
+      waitUntilCompletedTimeStep<CellDescription>(cellDescription1,false,false);
+      waitUntilCompletedTimeStep<CellDescription>(cellDescription2,false,false);
 
-  if ( CompressionAccuracy > 0.0 ) {
-    peano::datatraversal::TaskSet uncompression(
-      [&] () -> bool {
-        uncompress(cellDescriptionLeft);
-        return false;
-      },
-      [&] () -> bool {
-        uncompress(cellDescriptionRight);
-        return false;
-      },
-      peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
-      peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
-      true
-    );
+      // synchronise time stepping if necessary
+      synchroniseTimeStepping(cellDescription1);
+      synchroniseTimeStepping(cellDescription2);
+
+      if ( CompressionAccuracy > 0.0 ) {
+        peano::datatraversal::TaskSet uncompression(
+            [&] () -> bool {
+          uncompress(cellDescription1);
+          return false;
+        },
+        [&] () -> bool {
+          uncompress(cellDescription1);
+          return false;
+        },
+        peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
+        peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
+        true
+        );
+      }
+
+      //
+      // 1. Solve Riemann problem (merge data)
+      //
+      CellDescription& cellDescriptionLeft  =
+          (face._orientation1==1) ? cellDescription1 : cellDescription2;
+      CellDescription& cellDescriptionRight =
+          (face._orientation1==1) ? cellDescription2 : cellDescription1;
+      solveRiemannProblemAtInterface(cellDescriptionLeft,cellDescriptionRight,face);
+
+      cellDescription1.setNeighbourMergePerformed(face._faceIndex1,true);
+      cellDescription2.setNeighbourMergePerformed(face._faceIndex2,true);
+    }
   }
-
-  solveRiemannProblemAtInterface(
-      cellDescriptionLeft,cellDescriptionRight,indexOfRightFaceOfLeftCell,indexOfLeftFaceOfRightCell);
 }
-
-
 
 void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
     CellDescription& pLeft,
     CellDescription& pRight,
-    const int faceIndexLeft,
-    const int faceIndexRight) {
+    Solver::InterfaceInfo& face) {
   if (
       (pLeft.getCommunicationStatus()==CellCommunicationStatus &&
-      pLeft.getFacewiseCommunicationStatus(faceIndexLeft) >= MinimumCommunicationStatusForNeighbourCommunication &&
-      pLeft.getFacewiseAugmentationStatus(faceIndexLeft)  <  MaximumAugmentationStatus) // excludes Ancestors
+      pLeft.getFacewiseCommunicationStatus(face._faceIndexLeft) >= MinimumCommunicationStatusForNeighbourCommunication &&
+      pLeft.getFacewiseAugmentationStatus(face._faceIndexLeft)  <  MaximumAugmentationStatus) // excludes Ancestors
       ||
       (pRight.getCommunicationStatus()==CellCommunicationStatus &&
-      pRight.getFacewiseCommunicationStatus(faceIndexRight) >= MinimumCommunicationStatusForNeighbourCommunication &&
-      pRight.getFacewiseAugmentationStatus(faceIndexRight)  <  MaximumAugmentationStatus) // excludes Ancestors
+      pRight.getFacewiseCommunicationStatus(face._faceIndexRight) >= MinimumCommunicationStatusForNeighbourCommunication &&
+      pRight.getFacewiseAugmentationStatus(face._faceIndexRight)  <  MaximumAugmentationStatus) // excludes Ancestors
   ) {
     assertion1(DataHeap::getInstance().isValidIndex(pLeft.getExtrapolatedPredictor()),pLeft.toString());
     assertion1(DataHeap::getInstance().isValidIndex(pLeft.getFluctuation()),pLeft.toString());
@@ -3050,72 +3102,65 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
     assertion1(DataHeap::getInstance().isValidIndex(pRight.getFluctuation()),pRight.toString());
     assertion1(pLeft.getRefinementEvent()==CellDescription::None,pLeft.toString());
     assertion1(pRight.getRefinementEvent()==CellDescription::None,pRight.toString());
-    assertionEquals4(pLeft.getNeighbourMergePerformed(faceIndexLeft),pRight.getNeighbourMergePerformed(faceIndexRight),faceIndexLeft,faceIndexRight,pLeft.toString(),pRight.toString());
-    assertion4(std::abs(faceIndexLeft-faceIndexRight)==1,faceIndexLeft,faceIndexRight,pLeft.toString(),pRight.toString());
+
+    //
+    // 1. The Riemann solves
+    //
 
     const int dataPerFace = getBndFaceSize();
     const int dofPerFace  = getBndFluxSize();
 
-    double* QL = DataHeap::getInstance() .getData(pLeft.getExtrapolatedPredictor()).data() + /// !!! Be aware of the dataPerFace, Left, Right
-        (faceIndexLeft * dataPerFace);
-    double* QR = DataHeap::getInstance().getData(pRight.getExtrapolatedPredictor()).data() +
-        (faceIndexRight * dataPerFace);
+    double* QL = getDataHeapArray(pLeft.getExtrapolatedPredictor()) + /// !!! Be aware of the dataPerFace, Left, Right
+        (face._faceIndexLeft * dataPerFace);
+    double* QR = getDataHeapArray(pRight.getExtrapolatedPredictor()) +
+        (face._faceIndexRight * dataPerFace);
 
-    double* FL = DataHeap::getInstance().getData(pLeft.getFluctuation()).data() + /// !!! Be aware of the dofPerFace, Left, Right
-        (faceIndexLeft * dofPerFace);
-    double* FR = DataHeap::getInstance().getData(pRight.getFluctuation()).data() +
-        (faceIndexRight * dofPerFace);
+    double* FL = getDataHeapArray(pLeft.getFluctuation()) + /// !!! Be aware of the dofPerFace, Left, Right
+        (face._faceIndexLeft * dofPerFace);
+    double* FR = getDataHeapArray(pRight.getFluctuation()) +
+        (face._faceIndexRight * dofPerFace);
 
     // todo Time step must be interpolated in local time stepping case
     // both time step sizes are the same, so the min has no effect here.
-    assertion1(faceIndexLeft>=0,faceIndexLeft);
-    assertion1(faceIndexRight>=0,faceIndexRight);
-    assertion1(faceIndexLeft<DIMENSIONS_TIMES_TWO,faceIndexLeft);
-    assertion1(faceIndexRight<DIMENSIONS_TIMES_TWO,faceIndexRight);
-    assertion1(faceIndexRight%2==0,faceIndexRight);
-    const int normalDirection = (faceIndexRight - (faceIndexRight %2))/2;
-    assertion3(normalDirection==(faceIndexLeft - (faceIndexLeft %2))/2,normalDirection,faceIndexLeft,faceIndexRight);
-    assertion3(normalDirection<DIMENSIONS,normalDirection,faceIndexLeft,faceIndexRight);
-
-    assertion3(std::isfinite(pLeft.getCorrectorTimeStepSize()),pLeft.toString(),faceIndexLeft,normalDirection);
-    assertion3(std::isfinite(pRight.getCorrectorTimeStepSize()),pRight.toString(),faceIndexRight,normalDirection);
-    assertion3(pLeft.getCorrectorTimeStepSize()>=0.0,pLeft.toString(),faceIndexLeft,normalDirection);
-    assertion3(pRight.getCorrectorTimeStepSize()>=0.0,pRight.toString(),faceIndexRight,normalDirection);
+    assertion3(std::isfinite(pLeft.getCorrectorTimeStepSize()),pLeft.toString(),face._faceIndexLeft,face._direction);
+    assertion3(std::isfinite(pRight.getCorrectorTimeStepSize()),pRight.toString(),face._faceIndexRight,face._direction);
+    assertion3(pLeft.getCorrectorTimeStepSize()>=0.0,pLeft.toString(),face._faceIndexLeft,face._direction);
+    assertion3(pRight.getCorrectorTimeStepSize()>=0.0,pRight.toString(),face._faceIndexRight,face._direction);
 
     #if defined(Debug) || defined(Asserts)
     for(int i=0; i<dataPerFace; ++i) {
-      assertion5(tarch::la::equals(pLeft.getCorrectorTimeStepSize(),0.0) || std::isfinite(QL[i]),pLeft.toString(),faceIndexLeft,normalDirection,i,QL[i]);
-      assertion5(tarch::la::equals(pRight.getCorrectorTimeStepSize(),0.0) || std::isfinite(QR[i]),pRight.toString(),faceIndexRight,normalDirection,i,QR[i]);
+      assertion5(tarch::la::equals(pLeft.getCorrectorTimeStepSize(),0.0) || std::isfinite(QL[i]),pLeft.toString(),face._faceIndexLeft,face._direction,i,QL[i]);
+      assertion5(tarch::la::equals(pRight.getCorrectorTimeStepSize(),0.0) || std::isfinite(QR[i]),pRight.toString(),face._faceIndexRight,face._direction,i,QR[i]);
     }
     for(int i=0; i<dofPerFace; ++i) {
-      assertion5(tarch::la::equals(pLeft.getCorrectorTimeStepSize(),0.0) || std::isfinite(FL[i]),pLeft.toString(),faceIndexLeft,normalDirection,i,FL[i]);
-      assertion5(tarch::la::equals(pRight.getCorrectorTimeStepSize(),0.0) || std::isfinite(FR[i]),pRight.toString(),faceIndexRight,normalDirection,i,FR[i]);
+      assertion5(tarch::la::equals(pLeft.getCorrectorTimeStepSize(),0.0) || std::isfinite(FL[i]),pLeft.toString(),face._faceIndexLeft,face._direction,i,FL[i]);
+      assertion5(tarch::la::equals(pRight.getCorrectorTimeStepSize(),0.0) || std::isfinite(FR[i]),pRight.toString(),face._faceIndexRight,face._direction,i,FR[i]);
     }
     #endif
-    
-    riemannSolver( // TODO(Dominic): Merge Riemann solver directly with the face integral and push the result on update
-                   // does not make sense to overwrite the flux when performing local time stepping; coarse grid flux must be constant, or not?
+
+    riemannSolver(
         FL,FR,QL,QR,
         std::min(pLeft.getCorrectorTimeStepSize(),
             pRight.getCorrectorTimeStepSize()),
-        normalDirection, false, -1);
-    
+        face._direction, false, -1); // TODO(Dominic): Merge Riemann solver directly with the face integral and push the result on update
+                                     // does not make sense to overwrite the flux when performing local time stepping; coarse grid flux must be constant, or not?
+
     #if defined(Debug) || defined(Asserts)
     for(int i=0; i<dofPerFace; ++i) {
       assertion8(tarch::la::equals(pLeft.getCorrectorTimeStepSize(),0.0) || (std::isfinite(FL[i]) && std::isfinite(FR[i])),
-                 pLeft.toString(),faceIndexLeft,pRight.toString(),faceIndexRight,normalDirection,i,FL[i],FR[i]);
-    }  
+                 pLeft.toString(),face._faceIndexLeft,pRight.toString(),face._faceIndexRight,face._direction,i,FL[i],FR[i]);
+    }
     #endif
 
-    // directly perform the face integral afterwards
+    //
+    // 2. directly perform the face integral afterwards
+    //
+
     int levelDeltaLeft  = 0;
     int levelDeltaRight = 0;
     tarch::la::Vector<DIMENSIONS-1,int> subfaceIndexLeft(0);
     tarch::la::Vector<DIMENSIONS-1,int> subfaceIndexRight(0);
 
-    const int orientationLeft  = faceIndexLeft % 2;
-    const int orientationRight = 1-orientationLeft;
-    const int direction        = (faceIndexLeft-orientationLeft)/2;
     if ( pLeft.getType()==CellDescription::Type::Descendant ) {
       levelDeltaLeft = pLeft.getLevel() - pLeft.getParentCellLevel();
 
@@ -3124,9 +3169,9 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
               pLeft.getOffset(),pLeft.getSize(),
                 pLeft.getParentOffset());
 
-      subfaceIndexLeft = exahype::amr::getSubfaceIndex(subcellIndex,direction);
+      subfaceIndexLeft = exahype::amr::getSubfaceIndex(subcellIndex,face._direction);
     }
-    if (  pRight.getType()==CellDescription::Type::Descendant ) {
+    if ( pRight.getType()==CellDescription::Type::Descendant ) {
       levelDeltaRight = pRight.getLevel() - pRight.getParentCellLevel();
 
       const tarch::la::Vector<DIMENSIONS,int> subcellIndex =
@@ -3134,70 +3179,82 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
               pRight.getOffset(),pRight.getSize(),
               pRight.getParentOffset());
 
-      subfaceIndexRight = exahype::amr::getSubfaceIndex(subcellIndex,direction);
+      subfaceIndexRight = exahype::amr::getSubfaceIndex(subcellIndex,face._direction);
     }
-    DataHeap::HeapEntries& updateLeft  = DataHeap::getInstance().getData(pLeft.getUpdate());
-    DataHeap::HeapEntries& updateRight = DataHeap::getInstance().getData(pRight.getUpdate());
+    DataHeap::HeapEntries& updateLeft  = getDataHeapEntries(pLeft.getUpdate());
+    DataHeap::HeapEntries& updateRight = getDataHeapEntries(pRight.getUpdate());
 
-    faceIntegral(updateLeft.data(),FL,direction,orientationLeft,subfaceIndexLeft,levelDeltaLeft,pLeft.getSize());
-    faceIntegral(updateRight.data(),FR,direction,orientationRight,subfaceIndexRight,levelDeltaRight,pRight.getSize());
+    constexpr int orientationLeft  = 1;
+    constexpr int orientationRight = 0;
+    faceIntegral(updateLeft.data(),FL,face._direction,orientationLeft,subfaceIndexLeft,levelDeltaLeft,pLeft.getSize());
+    faceIntegral(updateRight.data(),FR,face._direction,orientationRight,subfaceIndexRight,levelDeltaRight,pRight.getSize());
   }
 }
 
 void exahype::solvers::ADERDGSolver::mergeWithBoundaryData(
-    const int                                 cellDescriptionsIndex,
-    const int                                 element,
+    Heap::HeapEntries&                        cellDescriptions,
+    const int                                 solverNumber,
     const tarch::la::Vector<DIMENSIONS, int>& posCell,
     const tarch::la::Vector<DIMENSIONS, int>& posBoundary) {
-  if (tarch::la::countEqualEntries(posCell,posBoundary)!=(DIMENSIONS-1)) {
-    return; // We only consider faces; no corners.
-  }
+  assertion2(tarch::la::countEqualEntries(posCell,posBoundary)==(DIMENSIONS-1),posCell.toString(),posBoundary.toString());
+  Solver::BoundaryFaceInfo face(posCell,posBoundary);
 
-  CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
+  const int element = indexOfCellDescription(cellDescriptions,solverNumber);
+  if ( element != Solver::NotFound ) {
+    CellDescription& cellDescription = cellDescriptions[element];
 
-  synchroniseTimeStepping(cellDescription);
+    if ( !cellDescription.getNeighbourMergePerformed(face._faceIndex) ) { // check flag
+      synchroniseTimeStepping(cellDescription);
 
-  waitUntilCompletedTimeStep<CellDescription>(cellDescription,false);
+      waitUntilCompletedTimeStep<CellDescription>(cellDescription,false,false);
 
-  if (cellDescription.getType()==CellDescription::Type::Cell) {
-    const int direction   = tarch::la::equalsReturnIndex(posCell, posBoundary);
-    const int orientation = (1 + posBoundary(direction) - posCell(direction))/2;
-    const int faceIndex   = 2*direction+orientation;
+      if ( cellDescription.getType()==CellDescription::Type::Cell ) {
+        uncompress(cellDescription);
 
-    uncompress(cellDescription);
+        applyBoundaryConditions(cellDescription,face);
 
-    applyBoundaryConditions(cellDescription,faceIndex);
+        mergeWithAugmentationStatus(cellDescription,face._faceIndex,BoundaryStatus);
+        mergeWithCommunicationStatus(cellDescription,face._faceIndex,BoundaryStatus);
+        mergeWithRefinementStatus(cellDescription,face._faceIndex,BoundaryStatus);
+      }
 
-    mergeWithAugmentationStatus(cellDescription,faceIndex,BoundaryStatus);
-    mergeWithCommunicationStatus(cellDescription,faceIndex,BoundaryStatus);
-    mergeWithRefinementStatus(cellDescription,faceIndex,BoundaryStatus);
+      cellDescription.setNeighbourMergePerformed(face._faceIndex,true); // set flag
+    }
   }
 }
 
-void exahype::solvers::ADERDGSolver::applyBoundaryConditions(CellDescription& p,const int faceIndex) {
+void exahype::solvers::ADERDGSolver::applyBoundaryConditions(CellDescription& p,Solver::BoundaryFaceInfo& face) {
   assertion1(p.getType()==CellDescription::Type::Cell,p.toString());
   assertion1(p.getRefinementEvent()==CellDescription::None,p.toString());
   assertion1(DataHeap::getInstance().isValidIndex(p.getExtrapolatedPredictor()),p.toString());
   assertion1(DataHeap::getInstance().isValidIndex(p.getFluctuation()),p.toString());
+  #if !defined(SharedMemoryParallelisation) && !defined(Parallel) && defined(Asserts)
+  static int counter = 0;
+  static double timeStamp = 0;
+  if ( !tarch::la::equals(timeStamp,_minCorrectorTimeStamp,1e-9) ) {
+    logInfo("applyBoundaryConditions(...)","#boundaryConditions="<<counter);
+    timeStamp = _minCorrectorTimeStamp;
+    counter=0;
+  }
+  counter++;
+  #endif
 
   const int dataPerFace = getBndFaceSize();
   const int dofPerFace  = getBndFluxSize();
-  double* QIn = DataHeap::getInstance().getData(p.getExtrapolatedPredictor()).data() +
-      (faceIndex * dataPerFace);
-  double* FIn = DataHeap::getInstance().getData(p.getFluctuation()).data() +
-      (faceIndex * dofPerFace);
-  const double* luh = DataHeap::getInstance().getData(p.getSolution()).data();
-  double* update = DataHeap::getInstance().getData(p.getUpdate()).data();
+  double* QIn = getDataHeapArray(p.getExtrapolatedPredictor()) +
+      (face._faceIndex * dataPerFace);
+  double* FIn = getDataHeapArray(p.getFluctuation()) +
+      (face._faceIndex * dofPerFace);
+  const double* luh = getDataHeapArray(p.getSolution());
+  double* update = getDataHeapArray(p.getUpdate());
 
-  const int orientation = faceIndex % 2;
-  const int direction   = (faceIndex - orientation)/2;
   #if defined(Debug) || defined(Asserts)
-  assertion2(direction<DIMENSIONS,faceIndex,direction);
+  assertion2(face._direction<DIMENSIONS,face._faceIndex,face._direction);
   for(int i=0; i<dataPerFace; ++i) {
-    assertion5(std::isfinite(QIn[i]), p.toString(),faceIndex, direction, i, QIn[i]);
+    assertion5(std::isfinite(QIn[i]), p.toString(),face._faceIndex,face._direction,i,QIn[i]);
   }
   for(int i=0; i<dofPerFace; ++i) {
-    assertion5(std::isfinite(FIn[i]), p.toString(),faceIndex, direction, i, FIn[i]);
+    assertion5(std::isfinite(FIn[i]), p.toString(),face._faceIndex,face._direction,i,FIn[i]);
   } 
   #endif
 
@@ -3210,14 +3267,14 @@ void exahype::solvers::ADERDGSolver::applyBoundaryConditions(CellDescription& p,
       p.getSize(),
       p.getCorrectorTimeStamp(),
       p.getCorrectorTimeStepSize(),
-      direction,orientation);
+      face._direction,face._orientation);
 
   #if defined(Debug) || defined(Asserts)
-  assertion4(std::isfinite(p.getCorrectorTimeStamp()),p.toString(),faceIndex,direction,p.getCorrectorTimeStamp());
-  assertion4(std::isfinite(p.getCorrectorTimeStepSize()),p.toString(),faceIndex,direction,p.getCorrectorTimeStepSize());
-  assertion4(p.getCorrectorTimeStepSize()>=0.0, p.toString(),faceIndex, direction,p.getCorrectorTimeStepSize());
+  assertion4(std::isfinite(p.getCorrectorTimeStamp()),p.toString(),face._faceIndex,face._direction,p.getCorrectorTimeStamp());
+  assertion4(std::isfinite(p.getCorrectorTimeStepSize()),p.toString(),face._faceIndex,face._direction,p.getCorrectorTimeStepSize());
+  assertion4(p.getCorrectorTimeStepSize()>=0.0, p.toString(),face._faceIndex,face._direction,p.getCorrectorTimeStepSize());
   for(int i=0; i<dofPerFace; ++i) {
-    assertion5(tarch::la::equals(p.getCorrectorTimeStepSize(),0.0) || std::isfinite(FIn[i]),p.toString(),faceIndex,direction,i,FIn[i]);
+    assertion5(tarch::la::equals(p.getCorrectorTimeStepSize(),0.0) || std::isfinite(FIn[i]),p.toString(),face._faceIndex,face._direction,i,FIn[i]);
   }
   #endif
 }
@@ -3421,20 +3478,31 @@ void exahype::solvers::ADERDGSolver::deduceChildCellErasingEvents(CellDescriptio
     tarch::multicore::Lock lock(CoarseGridSemaphore);
 
     switch (coarseGridCellDescription.getRefinementEvent()) {
-    case CellDescription::RefinementEvent::ErasingChildrenRequested: {
+    case CellDescription::RefinementEvent::ErasingChildrenRequested: {  // TODO(Dominic): Fix this part too
+      assertion1(coarseGridCellDescription.getType()==CellDescription::Type::Ancestor,
+          coarseGridCellDescription.toString());
+      cellDescription.setRefinementEvent(CellDescription::RefinementEvent::ErasingRequested);
+    } break;
+    case CellDescription::RefinementEvent::ErasingChildren: {  // TODO(Dominic): Fix this part too
       assertion1(coarseGridCellDescription.getType()==CellDescription::Type::Ancestor,
           coarseGridCellDescription.toString());
       cellDescription.setRefinementEvent(CellDescription::RefinementEvent::Erasing);
     } break;
-    case CellDescription::RefinementEvent::ErasingVirtualChildrenRequested: {
+    //
+    case CellDescription::RefinementEvent::ChangeChildrenToVirtualChildrenRequested: {
+      assertion1(coarseGridCellDescription.getType()==CellDescription::Type::Ancestor,coarseGridCellDescription.toString());
+      cellDescription.setRefinementEvent(CellDescription::RefinementEvent::ChangeToVirtualCellRequested);
+    } break;
+    case CellDescription::RefinementEvent::ChangeChildrenToVirtualChildren: {
+      assertion1(coarseGridCellDescription.getType()==CellDescription::Type::Ancestor,coarseGridCellDescription.toString());
+      cellDescription.setRefinementEvent(CellDescription::RefinementEvent::ChangeToVirtualCell);
+    } break;
+    //
+    case CellDescription::RefinementEvent::ErasingVirtualChildren: {
       assertion1(coarseGridCellDescription.getType()==CellDescription::Type::Cell ||
           coarseGridCellDescription.getType()==CellDescription::Type::Descendant,coarseGridCellDescription.toString());
       cellDescription.setRefinementEvent(CellDescription::RefinementEvent::ErasingVirtualCell);
     }  break;
-    case CellDescription::RefinementEvent::ChangeChildrenToVirtualChildrenRequested: {
-      assertion1(coarseGridCellDescription.getType()==CellDescription::Type::Ancestor,coarseGridCellDescription.toString());
-      cellDescription.setRefinementEvent(CellDescription::RefinementEvent::ChangeToVirtualCell);
-    } break;
     default:
       break;
     }
@@ -3593,8 +3661,8 @@ void exahype::solvers::ADERDGSolver::progressMeshRefinementInPrepareSendToMaster
 
   // send out data
   if (
-      cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::Erasing ||
-      cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::ChangeToVirtualCell
+      cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::ErasingRequested ||
+      cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::ChangeToVirtualCellRequested
   ) {
     sendDataToWorkerOrMasterDueToForkOrJoin(masterRank,cellDescriptionsIndex,element,
         peano::heap::MessageType::MasterWorkerCommunication,x,level); // assumes blocking/copy
@@ -3626,18 +3694,26 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInMergeWithMaster(
     const int                                    level,
     const bool                                   stillInRefiningMode) {
   CellDescription& cellDescription = getCellDescription(localCellDescriptionsIndex,localElement);
-  ensureConsistencyOfParentInformation(cellDescription,coarseGridCellDescriptionsIndex);
+  ensureFineGridCoarseGridConsistency(cellDescription,coarseGridCellDescriptionsIndex);
   #ifdef Asserts
   cellDescription.setCreation(CellDescription::Creation::ReceivedFromWorker);
   #endif
 
-  // receive the data
-  if (
-      cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::Erasing ||
-      cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::ChangeToVirtualCell
+  const int coarseGridElement = tryGetElement(
+      cellDescription.getParentIndex(),cellDescription.getSolverNumber());
+  if ( // receive restricted data
+      cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::ErasingRequested ||
+      cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::ChangeToVirtualCellRequested
   ) {
+    assertion1(coarseGridElement!=exahype::solvers::Solver::NotFound,cellDescription.toString());
     mergeWithWorkerOrMasterDataDueToForkOrJoin(worker,localCellDescriptionsIndex,localElement,
         peano::heap::MessageType::MasterWorkerCommunication,x,level); // assumes blocking/copy
+
+    // use the received data
+    CellDescription& coarseGridCellDescription =
+        getCellDescription(cellDescription.getParentIndex(),coarseGridElement); // TODO(Dominic): Have helper function for that
+
+    restrictVolumeDataIfErasingRequested(cellDescription,coarseGridCellDescription);
   }
 
   // work with the data
@@ -3646,10 +3722,6 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInMergeWithMaster(
       cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::ChangeToVirtualCell ||
       cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::ErasingVirtualCell
   ) {
-    // use the received data
-    const int coarseGridElement = tryGetElement(
-        cellDescription.getParentIndex(),cellDescription.getSolverNumber());
-    assertion1(coarseGridElement!=exahype::solvers::Solver::NotFound,cellDescription.toString());
     CellDescription& coarseGridCellDescription =
         getCellDescription(cellDescription.getParentIndex(),coarseGridElement); // TODO(Dominic): Have helper function for that
     assertion2( coarseGridCellDescription.getRefinementEvent()==CellDescription::RefinementEvent::ErasingChildren ||
@@ -3659,9 +3731,14 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInMergeWithMaster(
 
     eraseCellDescriptionIfNecessary(localCellDescriptionsIndex,localElement,coarseGridCellDescription);
   }
-  
 
-  progressCollectiveRefinementOperationsInLeaveCell(cellDescription);
+  if ( coarseGridElement != exahype::solvers::Solver::NotFound ) {
+    CellDescription& coarseGridCellDescription = getCellDescription(
+        cellDescription.getParentIndex(),coarseGridElement);
+    updateCoarseGridAncestorRefinementStatus(cellDescription,coarseGridCellDescription);
+  }
+
+  progressCollectiveRefinementOperationsInLeaveCell(cellDescription,stillInRefiningMode);
   // ignore return value as responsibiliy is still on fine grid.
 
   // check if any cell description requires vertical communication
@@ -3707,10 +3784,10 @@ void exahype::solvers::ADERDGSolver::sendDataToWorkerOrMasterDueToForkOrJoin(
     assertion2(DataHeap::getInstance().isValidIndex(cellDescription.getPreviousSolution()),
             cellDescriptionsIndex,cellDescription.toString());
     DataHeap::getInstance().sendData(
-        DataHeap::getInstance().getData(cellDescription.getSolution()).data(),
+        getDataHeapArray(cellDescription.getSolution()),
         getDataPerCell(), toRank, x, level,messageType);
     DataHeap::getInstance().sendData(
-        DataHeap::getInstance().getData(cellDescription.getPreviousSolution()).data(),
+        getDataHeapArray(cellDescription.getPreviousSolution()),
         getDataPerCell(), toRank, x, level,messageType);
   }
 }
@@ -3743,8 +3820,8 @@ void exahype::solvers::ADERDGSolver::mergeWithWorkerOrMasterDataDueToForkOrJoin(
     logDebug("mergeWithRemoteDataDueToForkOrJoin(...)","[solution] receive from rank "<<fromRank<<
              ", cell: "<< x << ", level: " << level);
 
-    DataHeap::getInstance().getData(cellDescription.getSolution()).clear();
-    DataHeap::getInstance().getData(cellDescription.getPreviousSolution()).clear();
+    getDataHeapEntries(cellDescription.getSolution()).clear();
+    getDataHeapEntries(cellDescription.getPreviousSolution()).clear();
     DataHeap::getInstance().receiveData(cellDescription.getSolution(),
         fromRank,x,level,messageType);
     DataHeap::getInstance().receiveData(cellDescription.getPreviousSolution(),
@@ -3785,24 +3862,21 @@ void exahype::solvers::ADERDGSolver::mergeWithNeighbourMetadata(
     const tarch::la::Vector<DIMENSIONS, int>& dest,
     const int                                 cellDescriptionsIndex,
     const int                                 element) const {
-  if (tarch::la::countEqualEntries(src,dest)==DIMENSIONS-1) { // only consider faces
-    const int direction   = tarch::la::equalsReturnIndex(src, dest);
-    const int orientation = (1 + src(direction) - dest(direction))/2;
-    const int faceIndex   = 2*direction+orientation;
+  assertion(tarch::la::countEqualEntries(src,dest)==DIMENSIONS-1); // only consider faces
+  Solver::BoundaryFaceInfo face(dest,src);
 
-    const int neighbourAugmentationStatus =
-        neighbourMetadata[exahype::NeighbourCommunicationMetadataAugmentationStatus];
-    const int neighbourCommunicationStatus       =
-        neighbourMetadata[exahype::NeighbourCommunicationMetadataCommunicationStatus      ];
-    const int neighbourRefinementStatus      =
-        neighbourMetadata[exahype::NeighbourCommunicationMetadataLimiterStatus   ];
+  const int neighbourAugmentationStatus =
+      neighbourMetadata[exahype::NeighbourCommunicationMetadataAugmentationStatus];
+  const int neighbourCommunicationStatus       =
+      neighbourMetadata[exahype::NeighbourCommunicationMetadataCommunicationStatus      ];
+  const int neighbourRefinementStatus      =
+      neighbourMetadata[exahype::NeighbourCommunicationMetadataLimiterStatus   ];
 
-    CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
+  CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
 
-    mergeWithAugmentationStatus (cellDescription,faceIndex,neighbourAugmentationStatus);
-    mergeWithCommunicationStatus(cellDescription,faceIndex,neighbourCommunicationStatus);
-    mergeWithRefinementStatus   (cellDescription,faceIndex,neighbourRefinementStatus);
-  }
+  mergeWithAugmentationStatus (cellDescription,face._faceIndex,neighbourAugmentationStatus);
+  mergeWithCommunicationStatus(cellDescription,face._faceIndex,neighbourCommunicationStatus);
+  mergeWithRefinementStatus   (cellDescription,face._faceIndex,neighbourRefinementStatus);
 }
 
 void exahype::solvers::ADERDGSolver::sendDataToNeighbour(
@@ -3813,11 +3887,8 @@ void exahype::solvers::ADERDGSolver::sendDataToNeighbour(
     const tarch::la::Vector<DIMENSIONS, int>&     dest,
     const tarch::la::Vector<DIMENSIONS, double>&  x,
     const int                                     level) {
-  assertion( tarch::la::countEqualEntries(src,dest)==(DIMENSIONS-1) );
-
-  const int direction    = tarch::la::equalsReturnIndex(src, dest);
-  const int orientation  = (1 + dest(direction) - src(direction))/2;
-  const int faceIndex    = 2*direction+orientation;
+  assertion(tarch::la::countEqualEntries(src,dest)==(DIMENSIONS-1));
+  Solver::BoundaryFaceInfo face(src,dest);
 
   CellDescription& cellDescription = Heap::getInstance().getData(cellDescriptionsIndex)[element];
   if (
@@ -3830,24 +3901,12 @@ void exahype::solvers::ADERDGSolver::sendDataToNeighbour(
     const int dofPerFace  = getBndFluxSize();
     const int dataPerFace = getBndFaceSize();
 
-    const double* lQhbnd = DataHeap::getInstance().getData(
-        cellDescription.getExtrapolatedPredictor()).data() +
-        (faceIndex * dataPerFace);
-    const double* lFhbnd = DataHeap::getInstance().getData(
-        cellDescription.getFluctuation()).data() +
-        (faceIndex * dofPerFace);
+    const double* lQhbnd = getDataHeapArray(cellDescription.getExtrapolatedPredictor()) +
+        (face._faceIndex * dataPerFace);
+    const double* lFhbnd = getDataHeapArray(cellDescription.getFluctuation()) +
+        (face._faceIndex * dofPerFace);
 
-/*
-    #ifdef Asserts
-    tarch::la::Vector<DIMENSIONS,double> faceBarycentre =
-            exahype::Cell::computeFaceBarycentre(
-                cellDescription.getOffset(),cellDescription.getSize(),direction,orientation);
-    logInfo("sendDataToNeighbour(...)", "send "<<DataMessagesPerNeighbourCommunication<<" msgs to rank " <<
-            toRank << " vertex="<<x.toString()<<" face=" << faceBarycentre.toString());
-    #endif
-*/
-
-    waitUntilCompletedTimeStep<CellDescription>(cellDescription,true);
+    waitUntilCompletedTimeStep<CellDescription>(cellDescription,true,true);
 
     // Send order: lQhbnd,lFhbnd,observablesMin,observablesMax
     // Receive order: observablesMax,observablesMin,lFhbnd,lQhbnd
@@ -3898,34 +3957,24 @@ void exahype::solvers::ADERDGSolver::mergeWithNeighbourData(
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const int                                    level) {
   assertionEquals(tarch::la::countEqualEntries(src,dest),DIMENSIONS-1); // only faces
+  Solver::BoundaryFaceInfo face(dest,src);
 
   CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
 
   synchroniseTimeStepping(cellDescription);
 
-  const int direction    = tarch::la::equalsReturnIndex(src, dest);
-  const int orientation  = (1 + src(direction) - dest(direction))/2;
-  const int faceIndex    = 2*direction+orientation;
   if(
-      (cellDescription.getCommunicationStatus()                ==CellCommunicationStatus &&
-      cellDescription.getFacewiseCommunicationStatus(faceIndex)>=MinimumCommunicationStatusForNeighbourCommunication &&
-      cellDescription.getFacewiseAugmentationStatus(faceIndex) < MaximumAugmentationStatus)
+      (cellDescription.getCommunicationStatus()                       ==CellCommunicationStatus &&
+      cellDescription.getFacewiseCommunicationStatus(face._faceIndex) >=MinimumCommunicationStatusForNeighbourCommunication &&
+      cellDescription.getFacewiseAugmentationStatus(face._faceIndex)  < MaximumAugmentationStatus)
       ||
-      (cellDescription.getFacewiseCommunicationStatus(faceIndex)==CellCommunicationStatus &&
-      cellDescription.getCommunicationStatus()                  >=MinimumCommunicationStatusForNeighbourCommunication &&
-      cellDescription.getAugmentationStatus()                   < MaximumAugmentationStatus)
+      (cellDescription.getFacewiseCommunicationStatus(face._faceIndex)==CellCommunicationStatus &&
+      cellDescription.getCommunicationStatus()                        >=MinimumCommunicationStatusForNeighbourCommunication &&
+      cellDescription.getAugmentationStatus()                         < MaximumAugmentationStatus)
   ){
-    assertion3(cellDescription.getNeighbourMergePerformed(faceIndex),
-        faceIndex,cellDescriptionsIndex,cellDescription.toString());
-/*
-    #ifdef Asserts
-    tarch::la::Vector<DIMENSIONS,double> faceBarycentre =
-        exahype::Cell::computeFaceBarycentre(
-            cellDescription.getOffset(),cellDescription.getSize(),direction,orientation);
-    logInfo("mergeWithNeighbourData(...)", "receive "<<DataMessagesPerNeighbourCommunication<<" msgs from rank " <<
-        fromRank << " vertex="<<x.toString()<<" face=" << faceBarycentre.toString());
-    #endif
-*/
+    assertion3(cellDescription.getNeighbourMergePerformed(face._faceIndex),face._faceIndex,
+               cellDescriptionsIndex,cellDescription.toString());
+
     // Send order: lQhbnd,lFhbnd
     // Receive order: lFhbnd,lQhbnd
     // TODO(Dominic): If anarchic time stepping, receive the time step too.
@@ -3940,7 +3989,7 @@ void exahype::solvers::ADERDGSolver::mergeWithNeighbourData(
 
     solveRiemannProblemAtInterface(
         cellDescription,
-        faceIndex,
+        face._faceIndex,
         _receivedExtrapolatedPredictor.data(),
         _receivedFluctuations.data(),
         fromRank);
@@ -3969,10 +4018,10 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
   const int direction   = (faceIndex-orientation)/2;
   if ( orientation==0 ) {
     const double* const QL = lQhbnd;
-    const double* const QR = DataHeap::getInstance().getData(cellDescription.getExtrapolatedPredictor()).data() +
+    const double* const QR = getDataHeapArray(cellDescription.getExtrapolatedPredictor()) +
         (faceIndex * dataPerFace);
     double* FL = const_cast<double*>(lFhbnd); // TODO const-correct kernels
-    double* FR = DataHeap::getInstance().getData(cellDescription.getFluctuation()).data() +
+    double* FR = getDataHeapArray(cellDescription.getFluctuation()) +
         (faceIndex * dofPerFace); // TODO const-correct kernels
     
     riemannSolver(
@@ -3996,10 +4045,10 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
     #endif
   } else {
     const double* const QR = lQhbnd;
-    const double* const QL = DataHeap::getInstance().getData(cellDescription.getExtrapolatedPredictor()).data() +
+    const double* const QL = getDataHeapArray(cellDescription.getExtrapolatedPredictor()) +
         (faceIndex * dataPerFace);
     double* FR = const_cast<double*>(lFhbnd); // TODO const-correct kernels
-    double* FL = DataHeap::getInstance().getData(cellDescription.getFluctuation()).data() +
+    double* FL = getDataHeapArray(cellDescription.getFluctuation()) +
         (faceIndex * dofPerFace); // TODO const-correct kernels
     
     riemannSolver(
@@ -4037,9 +4086,9 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
 
     subfaceIndex = exahype::amr::getSubfaceIndex(subcellIndex,direction);
   }
-  double* update = DataHeap::getInstance().getData(cellDescription.getUpdate()).data();
+  double* update = getDataHeapArray(cellDescription.getUpdate());
   const double* const boundaryFlux =
-      DataHeap::getInstance().getData(cellDescription.getFluctuation()).data() +
+      getDataHeapArray(cellDescription.getFluctuation()) +
       (faceIndex * dofPerFace);
   faceIntegral(update,boundaryFlux,direction,orientation,subfaceIndex,levelDelta,cellDescription.getSize());
 }
@@ -4539,22 +4588,22 @@ void exahype::solvers::ADERDGSolver::determineUnknownAverages(
   const int nodesPerCell = getDataPerCell()/ dataPerNode;
   const int nodesPerFace = getDataPerFace() / dataPerNode;
 
-  auto& solutionAverages              = DataHeap::getInstance().getData( cellDescription.getSolutionAverages() );
-  auto& previousSolutionAverage       = DataHeap::getInstance().getData( cellDescription.getPreviousSolutionAverages() );
-  auto& updateAverages                = DataHeap::getInstance().getData( cellDescription.getUpdateAverages() );
-  auto& extrapolatedPredictorAverages = DataHeap::getInstance().getData( cellDescription.getExtrapolatedPredictorAverages() );
-  auto& fluctuationAverages           = DataHeap::getInstance().getData( cellDescription.getFluctuationAverages() );
+  auto& solutionAverages              = getDataHeapEntries(cellDescription.getSolutionAverages());
+  auto& previousSolutionAverage       = getDataHeapEntries(cellDescription.getPreviousSolutionAverages());
+  auto& updateAverages                = getDataHeapEntries(cellDescription.getUpdateAverages());
+  auto& extrapolatedPredictorAverages = getDataHeapEntries(cellDescription.getExtrapolatedPredictorAverages());
+  auto& fluctuationAverages           = getDataHeapEntries(cellDescription.getFluctuationAverages());
 
   // patch data
   kernels::idx2 idx_cellData    (nodesPerCell,dataPerNode);
   kernels::idx2 idx_cellUnknowns(nodesPerCell,getNumberOfVariables());
   for (int i=0; i<nodesPerCell; i++) {
     for (int variableNumber=0; variableNumber<dataPerNode; variableNumber++) { // variables+parameters
-      solutionAverages[variableNumber]        += DataHeap::getInstance().getData( cellDescription.getSolution() )        [idx_cellData(i,variableNumber)];
-      previousSolutionAverage[variableNumber] += DataHeap::getInstance().getData( cellDescription.getPreviousSolution() )[idx_cellData(i,variableNumber)];
+      solutionAverages[variableNumber]        += getDataHeapEntries(cellDescription.getSolution())        [idx_cellData(i,variableNumber)];
+      previousSolutionAverage[variableNumber] += getDataHeapEntries(cellDescription.getPreviousSolution())[idx_cellData(i,variableNumber)];
     }
     for (int variableNumber=0; variableNumber<getNumberOfVariables(); variableNumber++) { // variables
-      updateAverages[variableNumber]          += DataHeap::getInstance().getData( cellDescription.getUpdate() )[idx_cellUnknowns(i,variableNumber)];
+      updateAverages[variableNumber]          += getDataHeapEntries(cellDescription.getUpdate())[idx_cellUnknowns(i,variableNumber)];
     }
   }
   for (int variableNumber=0; variableNumber<dataPerNode; variableNumber++) { // variables+parameters
@@ -4574,11 +4623,11 @@ void exahype::solvers::ADERDGSolver::determineUnknownAverages(
     for (int i=0; i<nodesPerFace; i++) {
       for (int variableNumber=0; variableNumber<dataPerNode; variableNumber++) { // variables+parameters
         extrapolatedPredictorAverages[idx_faceDataAvg(face,variableNumber)] +=
-            DataHeap::getInstance().getData( cellDescription.getExtrapolatedPredictor() )[idx_faceData(face,i,variableNumber)];
+            getDataHeapEntries(cellDescription.getExtrapolatedPredictor())[idx_faceData(face,i,variableNumber)];
       }
       for (int variableNumber=0; variableNumber<getNumberOfVariables(); variableNumber++) { // variables
         fluctuationAverages[idx_faceUnknownsAvg(face,variableNumber)] +=
-            DataHeap::getInstance().getData( cellDescription.getFluctuation() )[idx_faceUnknowns(face,i,variableNumber)];
+            getDataHeapEntries(cellDescription.getFluctuation())[idx_faceUnknowns(face,i,variableNumber)];
       }
     }
     for (int variableNumber=0; variableNumber<dataPerNode; variableNumber++) { // variables+parameters
@@ -4604,14 +4653,14 @@ void exahype::solvers::ADERDGSolver::computeHierarchicalTransform(
   kernels::idx2 idx_cellUnknowns(nodesPerCell,getNumberOfVariables());
   for (int i=0; i<nodesPerCell; i++) {
     for (int variableNumber=0; variableNumber<dataPerNode; variableNumber++) { // variables+parameters
-      DataHeap::getInstance().getData( cellDescription.getSolution() )
-                [idx_cellData(i,variableNumber)] += sign * DataHeap::getInstance().getData( cellDescription.getSolutionAverages() )[variableNumber];
-      DataHeap::getInstance().getData( cellDescription.getPreviousSolution() )
-                [idx_cellData(i,variableNumber)] += sign * DataHeap::getInstance().getData( cellDescription.getPreviousSolutionAverages() )[variableNumber];
+      getDataHeapEntries(cellDescription.getSolution())
+                [idx_cellData(i,variableNumber)] += sign * getDataHeapEntries(cellDescription.getSolutionAverages())[variableNumber];
+      getDataHeapEntries(cellDescription.getPreviousSolution())
+                [idx_cellData(i,variableNumber)] += sign * getDataHeapEntries(cellDescription.getPreviousSolutionAverages())[variableNumber];
     }
     for (int variableNumber=0; variableNumber<getNumberOfVariables(); variableNumber++) { // variables
-      DataHeap::getInstance().getData( cellDescription.getUpdate() )
-                [idx_cellUnknowns(i,variableNumber)] += sign * DataHeap::getInstance().getData( cellDescription.getUpdateAverages() )[variableNumber];
+      getDataHeapEntries(cellDescription.getUpdate())
+                [idx_cellUnknowns(i,variableNumber)] += sign * getDataHeapEntries(cellDescription.getUpdateAverages())[variableNumber];
     }
   }
 
@@ -4623,12 +4672,12 @@ void exahype::solvers::ADERDGSolver::computeHierarchicalTransform(
   for (int face=0; face<DIMENSIONS_TIMES_TWO; face++) {
     for (int i=0; i<nodesPerFace; i++) {
       for (int variableNumber=0; variableNumber<dataPerNode; variableNumber++) {  // variables+parameters
-        DataHeap::getInstance().getData( cellDescription.getExtrapolatedPredictor() )                           [idx_faceData(face,i,variableNumber)] +=
-                    sign * DataHeap::getInstance().getData( cellDescription.getExtrapolatedPredictorAverages() )[idx_faceDataAvg(face,variableNumber)];
+        getDataHeapEntries(cellDescription.getExtrapolatedPredictor())                           [idx_faceData(face,i,variableNumber)] +=
+                    sign * getDataHeapEntries(cellDescription.getExtrapolatedPredictorAverages())[idx_faceDataAvg(face,variableNumber)];
       }
       for (int variableNumber=0; variableNumber<getNumberOfVariables(); variableNumber++) {  // variables
-        DataHeap::getInstance().getData( cellDescription.getFluctuation() )                                     [idx_faceUnknowns(face,i,variableNumber)] +=
-                              sign * DataHeap::getInstance().getData( cellDescription.getFluctuationAverages() )[idx_faceUnknownsAvg(face,variableNumber)];
+        getDataHeapEntries(cellDescription.getFluctuation())                                     [idx_faceUnknowns(face,i,variableNumber)] +=
+                              sign * getDataHeapEntries(cellDescription.getFluctuationAverages())[idx_faceUnknownsAvg(face,variableNumber)];
       }
     }
   }
@@ -4658,35 +4707,35 @@ void exahype::solvers::ADERDGSolver::putUnknownsIntoByteStream(
 
   peano::datatraversal::TaskSet compressionFactorIdentification(
     [&]() -> bool { compressionOfPreviousSolution = peano::heap::findMostAgressiveCompression(
-      DataHeap::getInstance().getData( cellDescription.getPreviousSolution() ).data(),
+      getDataHeapArray(cellDescription.getPreviousSolution()),
       getDataPerCell(),
       CompressionAccuracy,true
       );
       return false;
       },
     [&] () -> bool  { compressionOfSolution = peano::heap::findMostAgressiveCompression(
-      DataHeap::getInstance().getData( cellDescription.getSolution() ).data(),
+      getDataHeapArray(cellDescription.getSolution()),
       getDataPerCell(),
       CompressionAccuracy,true
       );
       return false;
       },
     [&]() -> bool  { compressionOfUpdate = peano::heap::findMostAgressiveCompression(
-      DataHeap::getInstance().getData( cellDescription.getUpdate() ).data(),
+      getDataHeapArray(cellDescription.getUpdate()),
       getUnknownsPerCell(),
       CompressionAccuracy,true
       );
       return false;
       },
     [&]() -> bool  { compressionOfExtrapolatedPredictor = peano::heap::findMostAgressiveCompression(
-      DataHeap::getInstance().getData( cellDescription.getExtrapolatedPredictor() ).data(),
+      getDataHeapArray(cellDescription.getExtrapolatedPredictor()),
       getDataPerCellBoundary(),
       CompressionAccuracy,true
       );
       return false;
       },
     [&]() -> bool  { compressionOfFluctuation = peano::heap::findMostAgressiveCompression(
-      DataHeap::getInstance().getData( cellDescription.getFluctuation() ).data(),
+      getDataHeapArray(cellDescription.getFluctuation()),
       getUnknownsPerCellBoundary(),
       CompressionAccuracy,true
       );
@@ -4726,7 +4775,7 @@ void exahype::solvers::ADERDGSolver::putUnknownsIntoByteStream(
 
         #if defined(TrackGridStatistics)
         lock.lock();
-          PipedUncompressedBytes += DataHeap::getInstance().getData( cellDescription.getPreviousSolution() ).size() * 8.0;
+          PipedUncompressedBytes += getDataHeapEntries(cellDescription.getPreviousSolution()).size() * 8.0;
           PipedCompressedBytes   += CompressedDataHeap::getInstance().getData( cellDescription.getPreviousSolutionCompressed() ).size();
         lock.free();
         #endif
@@ -4741,8 +4790,8 @@ void exahype::solvers::ADERDGSolver::putUnknownsIntoByteStream(
       else {
         #if defined(TrackGridStatistics)
         tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-          PipedUncompressedBytes += DataHeap::getInstance().getData( cellDescription.getPreviousSolution() ).size() * 8.0;
-          PipedCompressedBytes   += DataHeap::getInstance().getData( cellDescription.getPreviousSolution() ).size() * 8.0;
+          PipedUncompressedBytes += getDataHeapEntries(cellDescription.getPreviousSolution()).size() * 8.0;
+          PipedCompressedBytes   += getDataHeapEntries(cellDescription.getPreviousSolution()).size() * 8.0;
         lock.free();
         #endif
       }
@@ -4762,7 +4811,7 @@ void exahype::solvers::ADERDGSolver::putUnknownsIntoByteStream(
 
         #if defined(TrackGridStatistics)
         lock.lock();
-          PipedUncompressedBytes += DataHeap::getInstance().getData( cellDescription.getSolution() ).size() * 8.0;
+          PipedUncompressedBytes += getDataHeapEntries(cellDescription.getSolution()).size() * 8.0;
           PipedCompressedBytes   += CompressedDataHeap::getInstance().getData( cellDescription.getSolutionCompressed() ).size();
         lock.free();
         #endif
@@ -4777,8 +4826,8 @@ void exahype::solvers::ADERDGSolver::putUnknownsIntoByteStream(
       else {
         #if defined(TrackGridStatistics)
         tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-          PipedUncompressedBytes += DataHeap::getInstance().getData( cellDescription.getSolution() ).size() * 8.0;
-          PipedCompressedBytes   += DataHeap::getInstance().getData( cellDescription.getSolution() ).size() * 8.0;
+          PipedUncompressedBytes += getDataHeapEntries(cellDescription.getSolution()).size() * 8.0;
+          PipedCompressedBytes   += getDataHeapEntries(cellDescription.getSolution()).size() * 8.0;
         lock.free();
         #endif
       }
@@ -4797,7 +4846,7 @@ void exahype::solvers::ADERDGSolver::putUnknownsIntoByteStream(
 
         #if defined(TrackGridStatistics)
         lock.lock();
-          PipedUncompressedBytes += DataHeap::getInstance().getData( cellDescription.getUpdate() ).size() * 8.0;
+          PipedUncompressedBytes += getDataHeapEntries(cellDescription.getUpdate()).size() * 8.0;
           PipedCompressedBytes   += CompressedDataHeap::getInstance().getData( cellDescription.getUpdateCompressed() ).size();
         lock.free();
         #endif
@@ -4812,8 +4861,8 @@ void exahype::solvers::ADERDGSolver::putUnknownsIntoByteStream(
       else {
         #if defined(TrackGridStatistics)
         tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-          PipedUncompressedBytes += DataHeap::getInstance().getData( cellDescription.getUpdate() ).size() * 8.0;
-          PipedCompressedBytes   += DataHeap::getInstance().getData( cellDescription.getUpdate() ).size() * 8.0;
+          PipedUncompressedBytes += getDataHeapEntries(cellDescription.getUpdate()).size() * 8.0;
+          PipedCompressedBytes   += getDataHeapEntries(cellDescription.getUpdate()).size() * 8.0;
         lock.free();
         #endif
       }
@@ -4832,7 +4881,7 @@ void exahype::solvers::ADERDGSolver::putUnknownsIntoByteStream(
 
         #if defined(TrackGridStatistics)
         lock.lock();
-          PipedUncompressedBytes += DataHeap::getInstance().getData( cellDescription.getExtrapolatedPredictor() ).size() * 8.0;
+          PipedUncompressedBytes += getDataHeapEntries(cellDescription.getExtrapolatedPredictor()).size() * 8.0;
           PipedCompressedBytes   += CompressedDataHeap::getInstance().getData( cellDescription.getExtrapolatedPredictorCompressed() ).size();
         lock.free();
         #endif
@@ -4847,8 +4896,8 @@ void exahype::solvers::ADERDGSolver::putUnknownsIntoByteStream(
       else {
         #if defined(TrackGridStatistics)
         tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-          PipedUncompressedBytes += DataHeap::getInstance().getData( cellDescription.getExtrapolatedPredictor() ).size() * 8.0;
-          PipedCompressedBytes   += DataHeap::getInstance().getData( cellDescription.getExtrapolatedPredictor() ).size() * 8.0;
+          PipedUncompressedBytes += getDataHeapEntries(cellDescription.getExtrapolatedPredictor()).size() * 8.0;
+          PipedCompressedBytes   += getDataHeapEntries(cellDescription.getExtrapolatedPredictor()).size() * 8.0;
         lock.free();
         #endif
       }
@@ -4867,7 +4916,7 @@ void exahype::solvers::ADERDGSolver::putUnknownsIntoByteStream(
 
         #if defined(TrackGridStatistics)
         lock.lock();
-          PipedUncompressedBytes += DataHeap::getInstance().getData( cellDescription.getFluctuation() ).size() * 8.0;
+          PipedUncompressedBytes += getDataHeapEntries(cellDescription.getFluctuation()).size() * 8.0;
           PipedCompressedBytes   += CompressedDataHeap::getInstance().getData( cellDescription.getFluctuationCompressed() ).size();
         lock.free();
         #endif
@@ -4882,8 +4931,8 @@ void exahype::solvers::ADERDGSolver::putUnknownsIntoByteStream(
       else {
         #if defined(TrackGridStatistics)
         tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-          PipedUncompressedBytes += DataHeap::getInstance().getData( cellDescription.getFluctuation() ).size() * 8.0;
-          PipedCompressedBytes   += DataHeap::getInstance().getData( cellDescription.getFluctuation() ).size() * 8.0;
+          PipedUncompressedBytes += getDataHeapEntries(cellDescription.getFluctuation()).size() * 8.0;
+          PipedCompressedBytes   += getDataHeapEntries(cellDescription.getFluctuation()).size() * 8.0;
         lock.free();
         #endif
       }

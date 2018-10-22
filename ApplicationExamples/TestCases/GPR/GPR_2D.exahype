@@ -28,7 +28,7 @@ exahype-project GPR
     dimension const         = 2
     width                   = 1.0, 0.3
     offset                  = -0.5, -0.15
-    end-time                = 0.1
+    end-time                = 0.01
   end computational-domain
   
   shared-memory

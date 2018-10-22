@@ -133,26 +133,6 @@ exahype::mappings::FusedTimeStep::descendSpecification(int level) const {
 exahype::mappings::FusedTimeStep::FusedTimeStep() {
 }
 
-// @todo To discuss with Dominic
-//   - Is this an appropriate name for the function? I guess we should rename it.
-//   - If I pass true, this is done only by beginIteration(). Why does the code
-//     then wait for the Enclave Jobs to finish? It waits later on (through
-//     touchVertexFirstTime anyway.
-//
-// @todo Responses
-//
-//   - Agree, it should rather be named 'updateBatchIterationCounterAndEnsureAllBackgroundJobsHaveTerminated'.
-//     Batch iteration counting must be performed before(!) we can decide on which kind of background jobs
-//     (skeleton vs. enclave) we have to wait. I thus decided to put all that into the
-//     same method.
-//
-//   - That's correct. Probably doesn't make a difference though as touchFirstTime will come right after.
-//
-//   BUT: I think we should first do a revision of the whole algorithm. I think the STP finished flag is a good idea.
-//   We only need to wait for/process enclave jobs when we want to perform a Riemann solve.
-//   With the STP flag per cell, there will not be a global wait for enclave jobs anymore.
-//   We will only need to wait for the skeleton jobs to finish, when we send out data or before we perform a prolongation.
-//
 void exahype::mappings::FusedTimeStep::updateBatchIterationCounter(bool initialiseBatchIterationCounter) {
   if (!_batchIterationCounterUpdated) {
     _batchIteration = ( initialiseBatchIterationCounter) ? 0 : _batchIteration+1;
