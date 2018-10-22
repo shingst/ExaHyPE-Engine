@@ -16,12 +16,12 @@
 #}
 {% macro allocateArray(name, size, setToZero=False) %}
 {% if tempVarsOnStack %}
-double {{name}}[{{size}}] __attribute__((aligned(ALIGNMENT)));
+double {{name}}[{{size}}] __attribute__((aligned(ALIGNMENT))){% if setToZero %}  = {0.}{% endif %};
 {% else %}
 double* {{name}} = ((double *) _mm_malloc(sizeof(double)*{{size}}, ALIGNMENT));
-{% endif %}
 {% if setToZero %}
 std::memset({{name}}, 0, sizeof(double)*{{size}});
+{% endif %}
 {% endif %}
 {% endmacro %} {##}
 {#

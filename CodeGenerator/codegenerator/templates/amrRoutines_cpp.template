@@ -286,26 +286,25 @@ void {{codeNamespace}}::volumeUnknownsProlongation(
     subintervalIndex_2    = (subcellIndexPrevious_2 - subcellIndexCurrent_2)/significance;
 {% endif %}
 
-    for (int z = 0; z < {{nDof3D}}; z++) {
-      for (int y = 0; y < {{nDof}}; y++) {
-        {{ m.matmul('volume_x', 'inputLuh', 'fineGridProjector1d[subintervalIndex_0]', 'tmpX', '(z*'~nDof~'+y)*'~nDof*nData, '0', '(z*'~nDof~'+y)*'~nDof*nDataPad) | indent(8) }}{##}
-      }
+    // will overwrite tmpX, no need to set to 0
+    for (int zy = 0; zy < {{nDof*nDof3D}}; zy++) {
+      {{ m.matmul('volume_x', 'inputLuh', 'fineGridProjector1d[subintervalIndex_0]', 'tmpX', 'zy*'~nDof*nData, '0', 'zy*'~nDof*nDataPad) | indent(6) }}{##}
     }
+    
 {% if nDim == 2 %}
     for (int x = 0; x < {{nDof}}; x++) {
       {{ m.matmul('volume_y', 'tmpX', 'fineGridProjector1d[subintervalIndex_1]', 'outputLuh', 'x*'~nDataPad, '0', 'x*'~nData) | indent(6) }}{##}
     }
 {% else %}
+    // will overwrite tmpY, no need to set to 0
     for (int z = 0; z < {{nDof}}; z++) {
       for (int x = 0; x < {{nDof}}; x++) {
         {{ m.matmul('volume_y', 'tmpX', 'fineGridProjector1d[subintervalIndex_1]', 'tmpY', '(z*'~nDof*nDof~'+x)*'~nDataPad, '0', '(z*'~nDof*nDof~'+x)*'~nDataPad) | indent(8) }}{##}
       }
     }
     
-    for (int y = 0; y < {{nDof}}; y++) {
-      for (int x = 0; x < {{nDof}}; x++) {
-        {{ m.matmul('volume_z', 'tmpY', 'fineGridProjector1d[subintervalIndex_2]', 'outputLuh', '(y*'~nDof~'+x)*'~nDataPad, '0', '(y*'~nDof~'+x)*'~nData) | indent(8) }}{##}
-      }
+    for (int yx = 0; yx < {{nDof*nDof}}; yx++) {
+      {{ m.matmul('volume_z', 'tmpY', 'fineGridProjector1d[subintervalIndex_2]', 'outputLuh', 'yx*'~nDataPad, '0', 'yx*'~nData) | indent(6) }}{##}
     }
 {% endif %}
 
@@ -376,33 +375,31 @@ void {{codeNamespace}}::volumeUnknownsRestriction(
       subcellIndexCurrent_0 = (subcellIndexCurrent_0 - subintervalIndex_0)/3;
       subintervalIndex_1    = subcellIndexCurrent_1 % 3;
       subcellIndexCurrent_1 = (subcellIndexCurrent_1 - subintervalIndex_1)/3;
-  {% if nDim==3 %}
+{% if nDim==3 %}
       subintervalIndex_2    = subcellIndexCurrent_2 % 3;
       subcellIndexCurrent_2 = (subcellIndexCurrent_2 - subintervalIndex_2)/3;
-  {% endif %}
+{% endif %}
 
-      for (int z = 0; z < {{nDof3D}}; z++) {
-        for (int y = 0; y < {{nDof}}; y++) {
-          {{ m.matmul('volume_x', 'inputLuh', 'fineGridProjector1d_T_weighted[subintervalIndex_0]', 'tmpX', '(z*'~nDof~'+y)*'~nDof*nData, '0', '(z*'~nDof~'+y)*'~nDof*nDataPad) | indent(10) }}{##}
-        }
+      // will overwrite tmpX, no need to set to 0
+      for (int zy = 0; zy < {{nDof3D*nDof}}; zy++) {
+        {{ m.matmul('volume_x', 'inputLuh', 'fineGridProjector1d_T_weighted[subintervalIndex_0]', 'tmpX', 'zy*'~nDof*nData, '0', 'zy*'~nDof*nDataPad) | indent(8) }}{##}
       }
-  {% if nDim == 2 %}
+      
+{% if nDim == 2 %}
       for (int x = 0; x < {{nDof}}; x++) {
         {{ m.matmul('volume_y', 'tmpX', 'fineGridProjector1d_T_weighted[subintervalIndex_1]', 'outputLuh', 'x*'~nDataPad, '0', 'x*'~nData) | indent(8) }}{##}
       }
-  {% else %}
+{% else %}
+      // will overwrite tmpY, no need to set to 0
       for (int z = 0; z < {{nDof}}; z++) {
         for (int x = 0; x < {{nDof}}; x++) {
           {{ m.matmul('volume_y', 'tmpX', 'fineGridProjector1d_T_weighted[subintervalIndex_1]', 'tmpY', '(z*'~nDof*nDof~'+x)*'~nDataPad, '0', '(z*'~nDof*nDof~'+x)*'~nDataPad) | indent(10) }}{##}
         }
       }
-      
-      for (int y = 0; y < {{nDof}}; y++) {
-        for (int x = 0; x < {{nDof}}; x++) {
-          {{ m.matmul('volume_z', 'tmpY', 'fineGridProjector1d_T_weighted[subintervalIndex_2]', 'outputLuh', '(y*'~nDof~'+x)*'~nDataPad, '0', '(y*'~nDof~'+x)*'~nData) | indent(10) }}{##}
-        }
+      for (int yx = 0; yx < {{nDof*nDof}}; yx++) {
+        {{ m.matmul('volume_z', 'tmpY', 'fineGridProjector1d_T_weighted[subintervalIndex_2]', 'outputLuh', 'yx*'~nDataPad, '0', 'yx*'~nData) | indent(8) }}{##}
       }
-  {% endif %}
+{% endif %}
 
       inputLuh = outputLuh;
       // Toggle pointers.
@@ -423,26 +420,27 @@ void {{codeNamespace}}::volumeUnknownsRestriction(
   
   //now at the case 1 level to do
   
-  for (int z = 0; z < {{nDof3D}}; z++) {
-    for (int y = 0; y < {{nDof}}; y++) {
-      {{ m.matmul('volume_x', 'inputLuh', 'fineGridProjector1d_T_weighted[subintervalIndex_0]', 'tmpX', '(z*'~nDof~'+y)*'~nDof*nData, '0', '(z*'~nDof~'+y)*'~nDof*nDataPad) | indent(6) }}{##}
-    }
+  // will overwrite tmpX, no need to set to 0
+  for (int zy = 0; zy < {{nDof3D*nDof}}; zy++) {
+    {{ m.matmul('volume_x', 'inputLuh', 'fineGridProjector1d_T_weighted[subintervalIndex_0]', 'tmpX', 'zy*'~nDof*nData, '0', 'zy*'~nDof*nDataPad) | indent(4) }}{##}
   }
+  
 {% if nDim == 2 %}
+  // Add to the coarse output
   for (int x = 0; x < {{nDof}}; x++) {
     {{ m.matmul('volume_y_add', 'tmpX', 'fineGridProjector1d_T_weighted[subintervalIndex_1]', 'luhCoarse', 'x*'~nDataPad, '0', 'x*'~nData) | indent(4) }}{##}
   }
 {% else %}
+  // will overwrite tmpY, no need to set to 0
   for (int z = 0; z < {{nDof}}; z++) {
     for (int x = 0; x < {{nDof}}; x++) {
       {{ m.matmul('volume_y', 'tmpX', 'fineGridProjector1d_T_weighted[subintervalIndex_1]', 'tmpY', '(z*'~nDof*nDof~'+x)*'~nDataPad, '0', '(z*'~nDof*nDof~'+x)*'~nDataPad) | indent(6) }}{##}
     }
   }
   
-  for (int y = 0; y < {{nDof}}; y++) {
-    for (int x = 0; x < {{nDof}}; x++) {
-      {{ m.matmul('volume_z_add', 'tmpY', 'fineGridProjector1d_T_weighted[subintervalIndex_2]', 'luhCoarse', '(y*'~nDof~'+x)*'~nDataPad, '0', '(y*'~nDof~'+x)*'~nData) | indent(6) }}{##}
-    }
+  // Add to the coarse output
+  for (int yx = 0; yx < {{nDof*nDof}}; yx++) {
+    {{ m.matmul('volume_z_add', 'tmpY', 'fineGridProjector1d_T_weighted[subintervalIndex_2]', 'luhCoarse', 'yx*'~nDataPad, '0', 'yx*'~nData) | indent(4) }}{##}
   }
 {% endif %}
   
