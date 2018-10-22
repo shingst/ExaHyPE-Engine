@@ -429,8 +429,7 @@ void exahype::solvers::ADERDGSolver::ensureNecessaryMemoryIsAllocated(
     checkDataHeapIndex(cellDescription,cellDescription.getExtrapolatedPredictorAverages(),"getExtrapolatedPredictorAverages()");
 
     // gradients of extrapolated predictor
-    // TODO(Lukas): Actually only variables, not data!
-    const int gradientSizePerBnd = dataPerBnd * DIMENSIONS;
+    const int gradientSizePerBnd = _numberOfVariables * power(_nodesPerCoordinateAxis, DIMENSIONS - 1) * DIMENSIONS_TIMES_TWO * DIMENSIONS;
     cellDescription.setExtrapolatedPredictorGradient( DataHeap::getInstance().createData(gradientSizePerBnd, gradientSizePerBnd) );
 
     // fluctuations
@@ -3094,7 +3093,6 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
 #endif
      */
 
-     // TODO(Lukas): Choose size of correct element.
     riemannSolver( // TODO(Dominic): Merge Riemann solver directly with the face integral and push the result on update
                    // does not make sense to overwrite the flux when performing local time stepping; coarse grid flux must be constant, or not?
         FL,FR,QL,QR,
@@ -3185,7 +3183,9 @@ void exahype::solvers::ADERDGSolver::applyBoundaryConditions(CellDescription& p,
   assertion1(DataHeap::getInstance().isValidIndex(p.getFluctuation()),p.toString());
 
   const int dataPerFace = getBndFaceSize();
-  const int gradientDataPerFace = getBndFaceSize() * DIMENSIONS;
+
+  const int gradientDataPerFace = _numberOfVariables * power(_nodesPerCoordinateAxis, DIMENSIONS - 1) * DIMENSIONS;
+  //const int gradientDataPerFace = getBndFaceSize() * DIMENSIONS;
   const int dofPerFace  = getBndFluxSize();
   double* QIn = DataHeap::getInstance().getData(p.getExtrapolatedPredictor()).data() +
       (faceIndex * dataPerFace);
