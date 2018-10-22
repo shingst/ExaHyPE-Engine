@@ -62,6 +62,9 @@ void {{codeNamespace}}::faceUnknownsProlongation(
   // tmp arrays
   {{m.allocateArray('tmpQ', nDof*nDof3D*nDataPad) | indent(2)}}{##}
   {{m.allocateArray('tmpF', nDof*nDof3D*nVarPad ) | indent(2)}}{##}
+{% if nDim == 3%}
+  {{m.allocateArray('tmpX', nDof*nDof3D*nDataPad) | indent(2)}}{##}
+{% endif %}
 
   // read only input, start with the function input = coarse
   const double* inputQ = lQhbndCoarse;
@@ -108,7 +111,6 @@ void {{codeNamespace}}::faceUnknownsProlongation(
     {{ m.matmul('face_Q_x', 'inputQ', 'fineGridProjector1d[subintervalIndex_0]', 'outputQ', '0', '0', '0') | indent(4) }}{##}
     {{ m.matmul('face_F_x', 'inputF', 'fineGridProjector1d[subintervalIndex_0]', 'outputF', '0', '0', '0') | indent(4) }}{##}
 {% else %}{# nDim == 2#}
-    {{m.allocateArray('tmpX', nDof*nDof3D*nDataPad) | indent(4)}}{##}
     for (int y = 0; y < {{nDof}}; y++) {
       // will overwrite tmpX, no need to set to 0
       {{ m.matmul('face_Q_x', 'inputQ', 'fineGridProjector1d[subintervalIndex_0]', 'tmpX', 'y*'~nDof*nDataPad, '0', 'y*'~nDof*nDataPad) | indent(6) }}{##}
@@ -125,7 +127,6 @@ void {{codeNamespace}}::faceUnknownsProlongation(
       // will overwrite outputF, no need to set to 0
       {{ m.matmul('face_F_y', 'tmpX', 'fineGridProjector1d[subintervalIndex_1]', 'outputF', 'x*'~nVarPad, '0', 'x*'~nVarPad) | indent(6) }}{##}
     }
-    {{m.freeArray("tmpX")}}{##}
 {% endif %}
     
     // Prepare next iteration.
@@ -149,6 +150,9 @@ void {{codeNamespace}}::faceUnknownsProlongation(
   }
   {{m.freeArray("tmpQ")}}{##}
   {{m.freeArray("tmpF")}}{##}
+{% if nDim == 3%}
+  {{m.freeArray("tmpX")}}{##}
+{% endif %}
 
 }
 
@@ -161,6 +165,9 @@ void {{codeNamespace}}::faceFluxRestriction(
   
   // tmp array, only allocated if needed (more than one level)
   {{m.allocateArray('tmpF', nDof*nDof3D*nVarPad ) | indent(2)}}{##}
+{% if nDim == 3%}
+  {{m.allocateArray('tmpX', nDof*nDof3D*nDataPad) | indent(2)}}{##}
+{% endif %}
 
   // read only input, start with the function input = fine
   const double* inputF = lFhbndFine;
@@ -198,7 +205,6 @@ void {{codeNamespace}}::faceFluxRestriction(
     // will overwrite outputs, no need to set to 0
     {{ m.matmul('face_F_x', 'inputF', 'fineGridProjector1d_T_weighted[subintervalIndex_0]', 'outputF', '0', '0', '0') | indent(4) }}{##}
 {% else %}{# nDim == 2#}
-    {{m.allocateArray('tmpX', nDof*nDof3D*nVarPad) | indent(4)}}{##}
     for (int y = 0; y < {{nDof}}; y++) {
       // will overwrite tmpX, no need to set to 0
       {{ m.matmul('face_F_x', 'inputF', 'fineGridProjector1d_T_weighted[subintervalIndex_0]', 'tmpX', 'y*'~nDof*nVarPad, '0', 'y*'~nDof*nVarPad) | indent(6) }}{##}
@@ -207,7 +213,6 @@ void {{codeNamespace}}::faceFluxRestriction(
       // will overwrite outputF, no need to set to 0
       {{ m.matmul('face_F_y', 'tmpX', 'fineGridProjector1d_T_weighted[subintervalIndex_1]', 'outputF', 'x*'~nVarPad, '0', 'x*'~nVarPad) | indent(6) }}{##}
     }
-    {{m.freeArray("tmpX")}}{##}
 {% endif %}
 
     // Prepare next iteration.
@@ -220,6 +225,9 @@ void {{codeNamespace}}::faceFluxRestriction(
     }
   }
   {{m.freeArray("tmpF")}}{##}
+{% if nDim == 3%}
+  {{m.freeArray("tmpX")}}{##}
+{% endif %}
 
 }
 
@@ -234,6 +242,10 @@ void {{codeNamespace}}::volumeUnknownsProlongation(
   const int levelDelta = fineGridLevel - coarseGridLevel;
 
   {{m.allocateArray('tmpLuh', nDof3D*nDof*nDof*nDataPad ) | indent(2)}}{##}
+  {{m.allocateArray('tmpX', nDof3D*nDof*nDof*nDataPad) | indent(2)}}{##}
+{% if nDim == 3 %}
+  {{m.allocateArray('tmpY', nDof3D*nDof*nDof*nDataPad) | indent(2)}}{##}
+{% endif %}
   
   // read only input, start with the function input = fine
   const double* inputLuh = luhCoarse;
@@ -274,7 +286,6 @@ void {{codeNamespace}}::volumeUnknownsProlongation(
     subintervalIndex_2    = (subcellIndexPrevious_2 - subcellIndexCurrent_2)/significance;
 {% endif %}
 
-    {{m.allocateArray('tmpX', nDof3D*nDof*nDof*nDataPad) | indent(4)}}{##}
     for (int z = 0; z < {{nDof3D}}; z++) {
       for (int y = 0; y < {{nDof}}; y++) {
         {{ m.matmul('volume_x', 'inputLuh', 'fineGridProjector1d[subintervalIndex_0]', 'tmpX', '(z*'~nDof~'+y)*'~nDof*nData, '0', '(z*'~nDof~'+y)*'~nDof*nDataPad) | indent(8) }}{##}
@@ -284,15 +295,12 @@ void {{codeNamespace}}::volumeUnknownsProlongation(
     for (int x = 0; x < {{nDof}}; x++) {
       {{ m.matmul('volume_y', 'tmpX', 'fineGridProjector1d[subintervalIndex_1]', 'outputLuh', 'x*'~nDataPad, '0', 'x*'~nData) | indent(6) }}{##}
     }
-    {{m.freeArray("tmpX")}}{##}
 {% else %}
-    {{m.allocateArray('tmpY', nDof*nDof*nDof*nDataPad) | indent(4)}}{##}
     for (int z = 0; z < {{nDof}}; z++) {
       for (int x = 0; x < {{nDof}}; x++) {
         {{ m.matmul('volume_y', 'tmpX', 'fineGridProjector1d[subintervalIndex_1]', 'tmpY', '(z*'~nDof*nDof~'+x)*'~nDataPad, '0', '(z*'~nDof*nDof~'+x)*'~nDataPad) | indent(8) }}{##}
       }
     }
-    {{m.freeArray("tmpX")}}{##}
     
     for (int y = 0; y < {{nDof}}; y++) {
       for (int x = 0; x < {{nDof}}; x++) {
@@ -318,6 +326,10 @@ void {{codeNamespace}}::volumeUnknownsProlongation(
     }
   }
   {{m.freeArray("tmpLuh")}}{##}
+  {{m.freeArray("tmpX")}}{##}
+{% if nDim == 3%}
+  {{m.freeArray("tmpY")}}{##}
+{% endif %}
 
 }
 
@@ -330,81 +342,120 @@ void {{codeNamespace}}::volumeUnknownsRestriction(
     const int* const subcellIndex
 ) {
   const int levelDelta = fineGridLevel - coarseGridLevel;
-
-  {{m.allocateArray('tmpLuh', nDof3D*nDof*nDof*nDataPad ) | indent(2)}}{##}
   
   // read only input, start with the function input = fine
   const double* inputLuh = luhFine;
-
-  // output pointer, ensures that the output of the last iteration points to the function output
-  double* outputLuh;
-  if (levelDelta % 2 == 0) {
-    outputLuh = tmpLuh;
-  } else {
-    outputLuh = luhCoarse;
-  }
-
-  int subcellIndexCurrent_0 = subcellIndex[0];
-  int subintervalIndex_0;
-  int subcellIndexCurrent_1 = subcellIndex[1];
-  int subintervalIndex_1;
+  int subintervalIndex_0 = subcellIndex[0];
+  int subintervalIndex_1 = subcellIndex[1];
 {% if nDim==3 %}
-  int subcellIndexCurrent_2 = subcellIndex[2];
-  int subintervalIndex_2;
+  int subintervalIndex_2 = subcellIndex[2];
 {% endif %}
 
-  // This loop step by step decodes the elements of subcellIndex into a tertiary basis
-  // starting with the highest significance 3^(levelDelta-1).
-  // 
-  // Per iteration, the digits corresponding to the current significances then determine
-  // the subintervals for the single level prolongation.
-  for (int l = 1; l < levelDelta+1; l++) {
+  {{m.allocateArray('tmpX', nDof3D*nDof*nDof*nDataPad) | indent(6)}}{##}
+{% if nDim == 3 %}
+  {{m.allocateArray('tmpY', nDof3D*nDof*nDof*nDataPad) | indent(6)}}{##}
+{% endif %}
+
+  if(levelDelta > 1) {
+    {{m.allocateArray('tmpLuh', nDof3D*nDof*nDof*nDataPad ) | indent(2)}}{##}
+    {{m.allocateArray('tmpLuh2', nDof3D*nDof*nDof*nDataPad ) | indent(2)}}{##}
+    int subcellIndexCurrent_0 = subcellIndex[0];
+    int subcellIndexCurrent_1 = subcellIndex[1];
+{% if nDim==3 %}
+    int subcellIndexCurrent_2 = subcellIndex[2];
+{% endif %}
+    // output pointer, ensures that the output of the last iteration points to the function output
+    double* outputLuh = tmpLuh;
+    // This loop step by step decodes the elements of subcellIndex into a tertiary basis
+    // starting with the highest significance 3^(levelDelta-1).
+    // 
+    // Per iteration, the digits corresponding to the current significances then determine
+    // the subintervals for the single level prolongation.
+    for (int l = 1; l < levelDelta; l++) {
+      subintervalIndex_0    = subcellIndexCurrent_0 % 3;
+      subcellIndexCurrent_0 = (subcellIndexCurrent_0 - subintervalIndex_0)/3;
+      subintervalIndex_1    = subcellIndexCurrent_1 % 3;
+      subcellIndexCurrent_1 = (subcellIndexCurrent_1 - subintervalIndex_1)/3;
+  {% if nDim==3 %}
+      subintervalIndex_2    = subcellIndexCurrent_2 % 3;
+      subcellIndexCurrent_2 = (subcellIndexCurrent_2 - subintervalIndex_2)/3;
+  {% endif %}
+
+      for (int z = 0; z < {{nDof3D}}; z++) {
+        for (int y = 0; y < {{nDof}}; y++) {
+          {{ m.matmul('volume_x', 'inputLuh', 'fineGridProjector1d_T_weighted[subintervalIndex_0]', 'tmpX', '(z*'~nDof~'+y)*'~nDof*nData, '0', '(z*'~nDof~'+y)*'~nDof*nDataPad) | indent(10) }}{##}
+        }
+      }
+  {% if nDim == 2 %}
+      for (int x = 0; x < {{nDof}}; x++) {
+        {{ m.matmul('volume_y', 'tmpX', 'fineGridProjector1d_T_weighted[subintervalIndex_1]', 'outputLuh', 'x*'~nDataPad, '0', 'x*'~nData) | indent(8) }}{##}
+      }
+  {% else %}
+      for (int z = 0; z < {{nDof}}; z++) {
+        for (int x = 0; x < {{nDof}}; x++) {
+          {{ m.matmul('volume_y', 'tmpX', 'fineGridProjector1d_T_weighted[subintervalIndex_1]', 'tmpY', '(z*'~nDof*nDof~'+x)*'~nDataPad, '0', '(z*'~nDof*nDof~'+x)*'~nDataPad) | indent(10) }}{##}
+        }
+      }
+      
+      for (int y = 0; y < {{nDof}}; y++) {
+        for (int x = 0; x < {{nDof}}; x++) {
+          {{ m.matmul('volume_z', 'tmpY', 'fineGridProjector1d_T_weighted[subintervalIndex_2]', 'outputLuh', '(y*'~nDof~'+x)*'~nDataPad, '0', '(y*'~nDof~'+x)*'~nData) | indent(10) }}{##}
+        }
+      }
+  {% endif %}
+
+      inputLuh = outputLuh;
+      // Toggle pointers.
+      if (outputLuh == tmpLuh) {
+        outputLuh = tmpLuh2;
+      } else {
+        outputLuh = tmpLuh;
+      }
+    }
+    
     subintervalIndex_0    = subcellIndexCurrent_0 % 3;
-    subcellIndexCurrent_0 = (subcellIndexCurrent_0 - subintervalIndex_0)/3;
     subintervalIndex_1    = subcellIndexCurrent_1 % 3;
-    subcellIndexCurrent_1 = (subcellIndexCurrent_1 - subintervalIndex_1)/3;
 {% if nDim==3 %}
     subintervalIndex_2    = subcellIndexCurrent_2 % 3;
-    subcellIndexCurrent_2 = (subcellIndexCurrent_2 - subintervalIndex_2)/3;
 {% endif %}
-
-    {{m.allocateArray('tmpX', nDof3D*nDof*nDof*nDataPad) | indent(4)}}{##}
-    for (int z = 0; z < {{nDof3D}}; z++) {
-      for (int y = 0; y < {{nDof}}; y++) {
-        {{ m.matmul('volume_x', 'inputLuh', 'fineGridProjector1d_T_weighted[subintervalIndex_0]', 'tmpX', '(z*'~nDof~'+y)*'~nDof*nData, '0', '(z*'~nDof~'+y)*'~nDof*nDataPad) | indent(8) }}{##}
-      }
-    }
-{% if nDim == 2 %}
-    for (int x = 0; x < {{nDof}}; x++) {
-      {{ m.matmul('volume_y', 'tmpX', 'fineGridProjector1d_T_weighted[subintervalIndex_1]', 'outputLuh', 'x*'~nDataPad, '0', 'x*'~nData) | indent(6) }}{##}
-    }
-    {{m.freeArray("tmpX")}}{##}
-{% else %}
-    {{m.allocateArray('tmpY', nDof*nDof*nDof*nDataPad) | indent(4)}}{##}
-    for (int z = 0; z < {{nDof}}; z++) {
-      for (int x = 0; x < {{nDof}}; x++) {
-        {{ m.matmul('volume_y', 'tmpX', 'fineGridProjector1d_T_weighted[subintervalIndex_1]', 'tmpY', '(z*'~nDof*nDof~'+x)*'~nDataPad, '0', '(z*'~nDof*nDof~'+x)*'~nDataPad) | indent(8) }}{##}
-      }
-    }
-    {{m.freeArray("tmpX")}}{##}
     
+  } // if leveldelta>1, 
+  
+  //now at the case 1 level to do
+  
+  for (int z = 0; z < {{nDof3D}}; z++) {
     for (int y = 0; y < {{nDof}}; y++) {
-      for (int x = 0; x < {{nDof}}; x++) {
-        {{ m.matmul('volume_z', 'tmpY', 'fineGridProjector1d_T_weighted[subintervalIndex_2]', 'outputLuh', '(y*'~nDof~'+x)*'~nDataPad, '0', '(y*'~nDof~'+x)*'~nData) | indent(8) }}{##}
-      }
-    }
-{% endif %}
-
-    inputLuh = outputLuh;
-
-    // Toggle pointers.
-    if (outputLuh == tmpLuh) {
-      outputLuh = luhCoarse;
-    } else {
-      outputLuh = tmpLuh;
+      {{ m.matmul('volume_x', 'inputLuh', 'fineGridProjector1d_T_weighted[subintervalIndex_0]', 'tmpX', '(z*'~nDof~'+y)*'~nDof*nData, '0', '(z*'~nDof~'+y)*'~nDof*nDataPad) | indent(6) }}{##}
     }
   }
-  {{m.freeArray("tmpLuh")}}{##}
+{% if nDim == 2 %}
+  for (int x = 0; x < {{nDof}}; x++) {
+    {{ m.matmul('volume_y_add', 'tmpX', 'fineGridProjector1d_T_weighted[subintervalIndex_1]', 'luhCoarse', 'x*'~nDataPad, '0', 'x*'~nData) | indent(4) }}{##}
+  }
+{% else %}
+  for (int z = 0; z < {{nDof}}; z++) {
+    for (int x = 0; x < {{nDof}}; x++) {
+      {{ m.matmul('volume_y', 'tmpX', 'fineGridProjector1d_T_weighted[subintervalIndex_1]', 'tmpY', '(z*'~nDof*nDof~'+x)*'~nDataPad, '0', '(z*'~nDof*nDof~'+x)*'~nDataPad) | indent(6) }}{##}
+    }
+  }
+  
+  for (int y = 0; y < {{nDof}}; y++) {
+    for (int x = 0; x < {{nDof}}; x++) {
+      {{ m.matmul('volume_z_add', 'tmpY', 'fineGridProjector1d_T_weighted[subintervalIndex_2]', 'luhCoarse', '(y*'~nDof~'+x)*'~nDataPad, '0', '(y*'~nDof~'+x)*'~nData) | indent(6) }}{##}
+    }
+  }
+{% endif %}
+  
+{% if not tempVarsOnStack %}
+  if(levelDelta > 1) {
+    {{m.freeArray("tmpLuh")}}{##}
+    {{m.freeArray("tmpLuh2")}}{##}
+  }
+  {{m.freeArray("tmpX")}}{##}
+{% if nDim == 3%}
+  {{m.freeArray("tmpY")}}{##}
+{% endif %}
+{% endif %}
 
 }
 
