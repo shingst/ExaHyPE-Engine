@@ -6,7 +6,6 @@
 //   www.exahype.eu
 // ========================
 #include "exahype/plotters/Plotter.h"
-#include "exahype/solvers/LimitingADERDGSolver.h"
 namespace GRMHD{
   class IntegralsWriter;
 
@@ -14,12 +13,10 @@ namespace GRMHD{
    * Forward declaration
    */
   class GRMHDSolver_ADERDG;
-  class GRMHDSolver_FV;
 }
 
 #include "exahype/plotters/ascii/MultipleReductionsWriter.h"
 #include "GRMHDSolver_ADERDG.h"
-#include "GRMHDSolver_FV.h"
 
 class GRMHD::IntegralsWriter: public exahype::plotters::Plotter::UserOnTheFlyPostProcessing{
   public:
@@ -33,8 +30,6 @@ class GRMHD::IntegralsWriter: public exahype::plotters::Plotter::UserOnTheFlyPos
   
   IntegralsWriter();
   IntegralsWriter(GRMHDSolver_ADERDG&  solver);
-  IntegralsWriter(GRMHDSolver_FV&      solver);
-  IntegralsWriter(exahype::solvers::LimitingADERDGSolver&  solver);
 
   virtual ~IntegralsWriter();
   void startPlotting(double time) override;
