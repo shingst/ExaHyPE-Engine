@@ -12,7 +12,7 @@
  **/ #}
 
 #include <mm_malloc.h> //g++
- 
+
 #include "{{pathToOptKernel}}/DGMatrices.h"
 
 //DGMatrices

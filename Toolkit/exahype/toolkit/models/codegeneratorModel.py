@@ -38,6 +38,7 @@ class CodegeneratorModel:
             "useGaussLobatto"    : solverContext["basis"] == "lobatto",
             # Optional int parameters (may set redundant flags)
             "usePointSources"    : solverContext["numberOfPointSources"] if solverContext["numberOfPointSources"] > 0 else -1,
+            "tempVarsOnStack"    : solverContext["tempVarsOnStack"],
             "useLimiter"         : solverContext.get("numberOfDMPObservables", -1), #not set if not limiterSolver
             "ghostLayerWidth"    : solverContext.get("ghostLayerWidth", 0), #not set if not limiterSolver
         }

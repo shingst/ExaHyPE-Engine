@@ -14,8 +14,6 @@
 #include <cstring>
 #include <algorithm>
 
-#include <tarch/la/Vector.h>
-
 #include "{{pathToOptKernel}}/Kernels.h"
 #include "{{pathToOptKernel}}/DGMatrices.h"
 #include "{{pathToOptKernel}}/Quadrature.h"
@@ -51,7 +49,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
     double* restrict PSi,   // for pointSource
     double* restrict PSderivatives, // for pointSource
     const double* const restrict luh,
-    const tarch::la::Vector<DIMENSIONS, double>& center,
+    const double* const center,
     const double dx, // Assume dx[0] == dx[1] == dx[2]
     const double tStep, // == t
     const double dt,
