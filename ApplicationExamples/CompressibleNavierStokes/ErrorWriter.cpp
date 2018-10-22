@@ -37,7 +37,7 @@ void NavierStokes::ErrorWriter::plotPatch(
   constexpr int numberOfVariables = NavierStokesSolverDG::NumberOfVariables;
   constexpr int numberOfParameters = NavierStokesSolverDG::NumberOfParameters;
   constexpr int numberOfData = numberOfVariables + numberOfParameters;
-  constexpr int order = NavierStokesSolverDG::Order
+  constexpr int order = NavierStokesSolverDG::Order;
   constexpr int basisSize = order + 1;
   constexpr int gradSize = DIMENSIONS * numberOfVariables;
 
