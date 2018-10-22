@@ -10,6 +10,7 @@
  * Released under the BSD 3 Open Source License.
  * For the full license text, see LICENSE.txt
  **/
+{% import 'subtemplates/macros.template' as m with context %}{# get template macros #}
 
 #include <cstring>
 #include <algorithm>
@@ -78,15 +79,11 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
 {% endif %}
 {% if useFluxVect %}
   // transposed F slice for flux_vect
-{% with array='Ft', blockedDim=True %}
-{% filter indent(width=2, indentfirst=True) %}{% include 'subtemplates/vectPDEsArrays.template' %}{% endfilter %}
-{% endwith %}
+  {{m.vectPDEsArrays('Ft', nVar, True) | indent(2)}}{##}
 {% endif %}
 {% if useFluxVect %}
   // transposed Q slice for flux_vect
-{% with array='Qt', blockedDim=False %}
-{% filter indent(width=2, indentfirst=True) %}{% include 'subtemplates/vectPDEsArrays.template' %}{% endfilter %}
-{% endwith %}
+  {{m.vectPDEsArrays('Qt', nData, False) | indent(2)}}{##}
 {% endif %}
 
   // 0. precompute 1/dx * dudx_T. Assume dx[0] == dx[1] == dx[2]

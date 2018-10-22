@@ -56,6 +56,6 @@ _mm_free({{name}});
   blockedDim = if there are multiple dim (for example F for flux splitted into x, y, and z)
 */
 #}
-{% macro vectPDEsArrays(array, blockedDim) %}
+{% macro vectPDEsArrays(array, size, blockedDim) %}
 {% include 'subtemplates/vectPDEsArrays.template' %}
 {% endmacro %}
