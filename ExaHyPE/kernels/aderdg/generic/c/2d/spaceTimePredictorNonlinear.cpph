@@ -36,7 +36,7 @@ namespace {
  *  We have to consider that we store parameters in luh, lQi
  *  and have to adjust the index accordingly.
  */
-template <bool useSource, bool useFlux, bool useNCP,bool useViscousFlux, typename SolverType>
+template <bool useSource, bool useFlux, bool useViscousFlux, bool useNCP, typename SolverType>
 int aderPicardLoopNonlinear(SolverType& solver,
                              const double* luh, const double dt,
                              const tarch::la::Vector<DIMENSIONS, double>& invDx,
@@ -87,8 +87,7 @@ int aderPicardLoopNonlinear(SolverType& solver,
     for (int i = 0; i < basisSize; i++) {  // time DOF
 
 
-        // Compute gradients only if nonconservative contributions have to be
-        // computed. 
+        // Compute gradients only if nonconservative contributions or viscous fluxes have to be computed.
         if(useNCP || useViscousFlux) {
             std::memset(gradQ, 0, basisSize2 * DIMENSIONS * numberOfVariables * sizeof(double));
 
@@ -536,7 +535,7 @@ void aderTimeAveragingExtrapolatorNonlinear(
 }  // namespace
 
 
-template <bool useSource, bool useFlux, bool useNCP, bool useViscousFlux, bool noTimeAveraging, typename SolverType>
+template <bool useSource, bool useFlux,bool useViscousFlux, bool useNCP,  bool noTimeAveraging, typename SolverType>
 int spaceTimePredictorNonlinear(
     SolverType& solver,
     double*  lQhbnd, double* lFhbnd,
@@ -549,7 +548,7 @@ int spaceTimePredictorNonlinear(
   constexpr int numberOfParameters = SolverType::NumberOfParameters;
   constexpr int basisSize          = SolverType::Order+1;
   
-  const int iterations = aderPicardLoopNonlinear<useSource, useFlux, useNCP,useViscousFlux, SolverType>(
+  const int iterations = aderPicardLoopNonlinear<useSource, useFlux, useViscousFlux, useNCP, SolverType>(
         solver, luh, dt, invDx,
         lQi, rhs, lFi, gradQ);
   
