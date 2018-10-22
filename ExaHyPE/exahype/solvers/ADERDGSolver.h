@@ -148,9 +148,8 @@ public:
   static int MinimumAugmentationStatusForRefining;
 
   /**
-   * Semaphore for fine grid cells restricting face or
-   * volume data to a coarse grid parent which is a
-   * computationally intense operation.
+   * Semaphore for fine grid cells restricting
+   * volume data to a coarse grid parent.
    */
   static tarch::multicore::BooleanSemaphore RestrictionSemaphore;
 
@@ -282,6 +281,11 @@ private:
    * Minimum limiter status a troubled cell can have.
    */
   const int _minimumRefinementStatusForTroubledCell;
+
+  /**
+   * Check for NaNs.
+   */
+  bool _checkForNaNs;
 
   /**
    * The current mesh update event.
@@ -630,6 +634,15 @@ private:
    *   of a parent Ancestor.
    */
   static bool belongsToAMRSkeleton(const CellDescription& cellDescription, const bool isAtRemoteBoundary);
+
+  /**
+   * Turns checking for NaNs off.
+   * If this solver is the main solver
+   * of a LimitingADERDGSolver,
+   * it does not make sense to check for
+   * NaNs as those are cured by the FV limiter.
+   */
+  void disableCheckForNaNs();
 
   /**
    * Restrict the obse
@@ -1346,7 +1359,6 @@ public:
    * Impose boundary conditions on the fluxes (or fluctuations).
    * The state is only read.
    *
-   * \param[inout] update        the update vector we want to write to
    * \param[inout] fluxIn        boundary-extrapolated (space-time) volume flux.
    *                             Can be overwritten/reused as it is updated anyway after
    *                             the next predictor computation.
@@ -1363,15 +1375,15 @@ public:
    *
    *
    */
-  virtual void boundaryConditions(double* const update,
-                                  double* const fluxIn,
-                                  const double* const stateIn,
-                                  const double* const luh,
-                                  const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
-                                  const tarch::la::Vector<DIMENSIONS,double>& cellSize,
-                                  const double t,const double dt,
-                                  const int direction,
-                                  const int orientation) = 0;
+  virtual void boundaryConditions(
+      double* const fluxIn,
+      const double* const stateIn,
+      const double* const luh,
+      const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
+      const tarch::la::Vector<DIMENSIONS,double>& cellSize,
+      const double t,const double dt,
+      const int direction,
+      const int orientation) = 0;
 
   /**
    * @brief Computes cell-local space-time predictor, volume, and face DoF
@@ -1827,7 +1839,7 @@ public:
       const bool   isAtRemoteBoundary);
 
   /**
-   * Valdiate that the data stored on and for
+   * Validate that the data stored on and for
    * the cell description is valid.
    *
    * \note Must only be called if the compression
@@ -1839,6 +1851,18 @@ public:
       const bool validateTimeStepData,
       const bool afterCompression,
       const std::string& methodTraceOfCaller) const;
+
+  /**
+   * Computes the bounds of the inputs and collects
+   * them in a message.
+   *
+   * @param QL left Riemann input state
+   * @param QR right Riemann input state
+   * @param FL left Riemann input fluxes
+   * @param FR right Riemann input fluxes
+   */
+  std::string riemannDataToString(
+      const double* const Q,const double* const F,std::string suffix) const;
 
   /**
    * Computes a time step size based on the solution

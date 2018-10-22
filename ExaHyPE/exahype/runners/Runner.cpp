@@ -804,7 +804,7 @@ bool exahype::runners::Runner::createMesh(exahype::repositories::Repository& rep
   bool meshUpdate = false;
 
   int meshSetupIterations = 0;
-  repository.switchToMeshRefinement();
+  repository.switchToMeshRefinementAndPlotTree();
 
   repository.getState().setMeshRefinementHasConverged(false);
   peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(true);
@@ -850,7 +850,7 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
 
     repository.switchToInitialPrediction();
     repository.iterate( exahype::solvers::Solver::PredictionSweeps, communicatePeanoVertices );
-    logInfo("runAsMaster(...)","computed first predictor");
+    logInfo("runAsMaster(...)","computed first predictor (number of predictor sweeps: "<<exahype::solvers::Solver::PredictionSweeps<<")");
 
     printTimeStepInfo(-1,repository);
     validateInitialSolverTimeStepData(exahype::solvers::Solver::FuseADERDGPhases);

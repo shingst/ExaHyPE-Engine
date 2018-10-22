@@ -77,11 +77,11 @@ public:
    * an invalid cell description index as long as their
    * interface is an interior face.
    */
-  void validateNeighbourhood(
+  static void validateNeighbourhood(
       const int cellDescriptionsIndex1,
       const int cellDescriptionsIndex2,
       const tarch::la::Vector<DIMENSIONS,int>& pos1,
-      const tarch::la::Vector<DIMENSIONS,int>& pos2) const;
+      const tarch::la::Vector<DIMENSIONS,int>& pos2);
 
 private:
   typedef class peano::grid::Vertex<exahype::records::Vertex> Base;
@@ -108,13 +108,13 @@ private:
    * @note Assumes a stable mesh, or at least one where no cells are deleted
    * but only added and the adjacency information is updated.
    */
-  void mergeNeighboursDataAndMetadata(
+  static void mergeNeighboursDataAndMetadata(
       const int cellDescriptionsIndex1,
       const int cellDescriptionsIndex2,
       const tarch::la::Vector<DIMENSIONS,int>& pos1,
       const tarch::la::Vector<DIMENSIONS,int>& pos2,
       const tarch::la::Vector<DIMENSIONS, double>& x,
-      const tarch::la::Vector<DIMENSIONS, double>& h) const;
+      const tarch::la::Vector<DIMENSIONS, double>& h);
 
   /**
    * Loops over the cell descriptions stored at the
@@ -131,13 +131,13 @@ private:
    * @note Assumes a stable mesh, or at least one where no cells are deleted
    * but only added and the adjacency information is updated.
    */
-  void mergeWithBoundaryData(
+  static void mergeWithBoundaryData(
       const int cellDescriptionsIndex1,
       const int cellDescriptionsIndex2,
       const tarch::la::Vector<DIMENSIONS,int>& pos1,
       const tarch::la::Vector<DIMENSIONS,int>& pos2,
       const tarch::la::Vector<DIMENSIONS, double>& x,
-      const tarch::la::Vector<DIMENSIONS, double>& h) const;
+      const tarch::la::Vector<DIMENSIONS, double>& h);
 
   #ifdef Parallel
   static constexpr int InvalidMetadataIndex = -1;
@@ -383,14 +383,16 @@ private:
    * Loop body of loop in mergeNeighbours.
    *
    * @param pos1Scalar linearised multi-index
+   * @param cellDescriptionsIndices cell descriptions indices associated with the 2^d
+   *                                cells adjacent to the vertex
    * @param x position of this vertex
    * @param h mesh size
    */
-  void mergeNeighboursLoopBody(
+  static void mergeNeighboursLoopBody(
       const int index,
+      const tarch::la::Vector<TWO_POWER_D, int>&   indices,
       const tarch::la::Vector<DIMENSIONS, double>& x,
-      const tarch::la::Vector<DIMENSIONS, double>& h) const;
-
+      const tarch::la::Vector<DIMENSIONS, double>& h);
 
 #ifdef Parallel
 
@@ -642,16 +644,17 @@ private:
    */
   class MergeNeighboursJob {
       private:
-        const exahype::Vertex& _vertex; // !!! assumes existence of member till end of life time
-        const tarch::la::Vector<DIMENSIONS, double>&      _x; // !!! assumes existence of member till end of life time
-        const tarch::la::Vector<DIMENSIONS, double>&      _h; // !!! assumes existence of member till end of life time
+        const tarch::la::Vector<TWO_POWER_D, int>   _cellDescriptionsIndices;
+        const tarch::la::Vector<DIMENSIONS, double> _x;
+        const tarch::la::Vector<DIMENSIONS, double> _h;
       public:
         MergeNeighboursJob(
-          const exahype::Vertex& vertex,                    // !!! assumes existence of member till end of life time
-          const tarch::la::Vector<DIMENSIONS, double>& x,   // !!! assumes existence of member till end of life time
-          const tarch::la::Vector<DIMENSIONS, double>& h);  // !!! assumes existence of member till end of life time
+          const tarch::la::Vector<TWO_POWER_D, int>& cellDescriptionsIndices,
+          const tarch::la::Vector<DIMENSIONS, double>& _x,
+          const tarch::la::Vector<DIMENSIONS, double>& _h
+        );
 
-          bool operator()(const tarch::la::Vector<1,int>& pos1) const;
+        bool operator()(const tarch::la::Vector<1,int>& pos1) const;
   };
 
 };

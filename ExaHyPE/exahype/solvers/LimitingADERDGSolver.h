@@ -212,7 +212,7 @@ private:
    * of the solution (per variable)
    * and makes them accessible per face.
    */
-  void determineSolverMinAndMax(SolverPatch& solverPatch);
+  void determineSolverMinAndMax(SolverPatch& solverPatch,const bool validate);
 
   /**
    * Computes the cell-local minimum and maximum

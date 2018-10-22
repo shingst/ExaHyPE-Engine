@@ -46,6 +46,8 @@ exahype::solvers::LimitingADERDGSolver::LimitingADERDGSolver(
           _DMPDifferenceScaling(DMPDifferenceScaling),
           _iterationsToCureTroubledCell(iterationsToCureTroubledCell)
 {
+  solver->disableCheckForNaNs();
+
   assertion(_solver->getTimeStepping()==_limiter->getTimeStepping());
 
   #ifdef Parallel
@@ -430,7 +432,7 @@ void exahype::solvers::LimitingADERDGSolver::adjustSolutionDuringMeshRefinementB
     }
     _solver->adjustSolution(solverPatch);
 
-    determineSolverMinAndMax(solverPatch);
+    determineSolverMinAndMax(solverPatch,false);
     if ( !evaluatePhysicalAdmissibilityCriterion(solverPatch) ) {
        solverPatch.setRefinementStatus(_solver->getMinimumRefinementStatusForTroubledCell());
        solverPatch.setIterationsToCureTroubledCell(_iterationsToCureTroubledCell+1);
@@ -859,18 +861,19 @@ void exahype::solvers::LimitingADERDGSolver::determineMinAndMax(
       }
 
       if (solverPatch.getRefinementStatus()<_solver->getMinimumRefinementStatusForActiveFVPatch()) {
-        determineSolverMinAndMax(solverPatch);
+        determineSolverMinAndMax(solverPatch,true);
       } else { // solverPatch.getRefinementStatus()>=ADERDGSolver::MinimumLimiterStatusForActiveFVPatch
         LimiterPatch& limiterPatch = getLimiterPatchForSolverPatch(solverPatch,cellDescriptionsIndex);
         determineLimiterMinAndMax(solverPatch,limiterPatch);
       }
     } else {
-      determineSolverMinAndMax(solverPatch);
+      determineSolverMinAndMax(solverPatch,true);
     }
   }
 }
 
-void exahype::solvers::LimitingADERDGSolver::determineSolverMinAndMax(SolverPatch& solverPatch) {
+void exahype::solvers::LimitingADERDGSolver::determineSolverMinAndMax(
+    SolverPatch& solverPatch, const bool validate) {
   const int numberOfObservables = _solver->getDMPObservables();
   if (numberOfObservables>0) {
     assertion1(DataHeap::getInstance().isValidIndex(solverPatch.getSolution()),
@@ -896,10 +899,14 @@ void exahype::solvers::LimitingADERDGSolver::determineSolverMinAndMax(SolverPatc
           observablesMax+i*numberOfObservables);
     }
 
-    for (int i=0; i<DIMENSIONS_TIMES_TWO*numberOfObservables; ++i) {
-      assertion2(*(observablesMin+i)<std::numeric_limits<double>::max(),i,solverPatch.toString());
-      assertion2(*(observablesMax+i)>-std::numeric_limits<double>::max(),i,solverPatch.toString());
-    } // Dead code elimination will get rid of this loop
+    #ifdef Asserts
+    if ( validate ) {
+      for (int i=0; i<DIMENSIONS_TIMES_TWO*numberOfObservables; ++i) {
+        assertion2(*(observablesMin+i)<std::numeric_limits<double>::max(),i,solverPatch.toString());
+        assertion2(*(observablesMax+i)>-std::numeric_limits<double>::max(),i,solverPatch.toString());
+      } // Dead code elimination will get rid of this loop
+    }
+    #endif
   }
 }
 

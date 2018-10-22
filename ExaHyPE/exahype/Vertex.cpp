@@ -179,7 +179,7 @@ void exahype::Vertex::validateNeighbourhood(
     const int cellDescriptionsIndex1,
     const int cellDescriptionsIndex2,
     const tarch::la::Vector<DIMENSIONS,int>& pos1,
-    const tarch::la::Vector<DIMENSIONS,int>& pos2) const {
+    const tarch::la::Vector<DIMENSIONS,int>& pos2) {
   solvers::Solver::InterfaceInfo face(pos1,pos2);
 
   for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
@@ -255,7 +255,7 @@ void exahype::Vertex::mergeWithBoundaryData(
     const tarch::la::Vector<DIMENSIONS,int>& pos1,
     const tarch::la::Vector<DIMENSIONS,int>& pos2,
     const tarch::la::Vector<DIMENSIONS, double>& x,
-    const tarch::la::Vector<DIMENSIONS, double>& h) const {
+    const tarch::la::Vector<DIMENSIONS, double>& h) {
   tarch::la::Vector<DIMENSIONS,int> posCell     = pos1;
   tarch::la::Vector<DIMENSIONS,int> posBoundary = pos2;
   int cellDescriptionsIndex                     = cellDescriptionsIndex1;
@@ -302,7 +302,7 @@ void exahype::Vertex::mergeNeighboursDataAndMetadata(
     const tarch::la::Vector<DIMENSIONS,int>& pos1,
     const tarch::la::Vector<DIMENSIONS,int>& pos2,
     const tarch::la::Vector<DIMENSIONS, double>& x,
-    const tarch::la::Vector<DIMENSIONS, double>& h) const {
+    const tarch::la::Vector<DIMENSIONS, double>& h) {
   auto& ADERDGPatches1 = solvers::ADERDGSolver::Heap::getInstance().getData(cellDescriptionsIndex1);
   auto& FVPatches1     = solvers::FiniteVolumesSolver::Heap::getInstance().getData(cellDescriptionsIndex1);
 
@@ -346,13 +346,13 @@ void exahype::Vertex::mergeNeighboursDataAndMetadata(
 tarch::la::Vector<DIMENSIONS,int> exahype::Vertex::getNeighbourMergePosition(const int index) {
   constexpr int size=2*(DIMENSIONS-1);
   #if DIMENSIONS==2
-  constexpr double ix[size]={0,1}; // each column denotes a cell position where we can do DIMENSIONS race-free neighbour merges
-  constexpr double iy[size]={0,1};
+  constexpr int ix[size]={0,1}; // each column denotes a cell position where we can do DIMENSIONS race-free neighbour merges
+  constexpr int iy[size]={0,1};
   return tarch::la::Vector<DIMENSIONS, int>(ix[index],iy[index]);
   #elif DIMENSIONS==3
-  constexpr double ix[size]={0,1,0,1};
-  constexpr double iy[size]={0,1,1,0};
-  constexpr double iz[size]={0,0,1,1};
+  constexpr int ix[size]={0,1,0,1};
+  constexpr int iy[size]={0,1,1,0};
+  constexpr int iz[size]={0,0,1,1};
   return tarch::la::Vector<DIMENSIONS, int>(ix[index],iy[index],iz[index]);
   #else
   #error DIMENSIONS must be either defined as 2 or 3.
@@ -363,13 +363,13 @@ tarch::la::Vector<DIMENSIONS,int> exahype::Vertex::getNeighbourMergePosition(con
 tarch::la::Vector<DIMENSIONS,int> exahype::Vertex::getNeighbourMergeCoPosition(const int index) {
   constexpr int size=2*(DIMENSIONS-1);
   #if DIMENSIONS==2
-  constexpr double ix[size]={0,1}; // each column denotes a cell position where we can do DIMENSIONS race-free neighbour merges
-  constexpr double iy[size]={1,0};
+  constexpr int ix[size]={0,1}; // each column denotes a cell position where we can do DIMENSIONS race-free neighbour merges
+  constexpr int iy[size]={1,0};
   return tarch::la::Vector<DIMENSIONS, int>(ix[index],iy[index]);
   #elif DIMENSIONS==3
-  constexpr double ix[size]={0,1,0,1}; // For every neighbour merge position, 3 out of four of these positions share a face.
-  constexpr double iy[size]={0,1,1,0};
-  constexpr double iz[size]={1,1,0,0}; // z coordinate is toggled;
+  constexpr int ix[size]={0,1,0,1}; // For every neighbour merge position, 3 out of four of these positions share a face.
+  constexpr int iy[size]={0,1,1,0};
+  constexpr int iz[size]={1,1,0,0}; // z coordinate is toggled;
   return tarch::la::Vector<DIMENSIONS, int>(ix[index],iy[index],iz[index]);
   #else
   #error DIMENSIONS must be either defined as 2 or 3.
@@ -379,8 +379,9 @@ tarch::la::Vector<DIMENSIONS,int> exahype::Vertex::getNeighbourMergeCoPosition(c
 
 void exahype::Vertex::mergeNeighboursLoopBody(
     const int index1,
+    const tarch::la::Vector<TWO_POWER_D, int>&   cellDescriptionsIndices,
     const tarch::la::Vector<DIMENSIONS, double>& x,
-    const tarch::la::Vector<DIMENSIONS, double>& h) const {
+    const tarch::la::Vector<DIMENSIONS, double>& h) {
   #if defined(Asserts) || defined (ValidateNeighbourHoodDuringNeighbourMerge)
   constexpr bool validate = true;
   #else
@@ -394,15 +395,17 @@ void exahype::Vertex::mergeNeighboursLoopBody(
     const tarch::la::Vector<DIMENSIONS,int> pos2=getNeighbourMergeCoPosition(index2);
     const int pos2Scalar = peano::utils::dLinearised(pos2,2);
 
-    const int cellDescriptionsIndex1 = _vertexData.getCellDescriptionsIndex(pos1Scalar);
-    const int cellDescriptionsIndex2 = _vertexData.getCellDescriptionsIndex(pos2Scalar);
+    const int cellDescriptionsIndex1 = cellDescriptionsIndices[pos1Scalar];
+    const int cellDescriptionsIndex2 = cellDescriptionsIndices[pos2Scalar];
+    assertion2(cellDescriptionsIndex1 < 1 || cellDescriptionsIndex1 != cellDescriptionsIndex2,cellDescriptionsIndex1,cellDescriptionsIndex2);
 
-    const bool isFace = tarch::la::countEqualEntries(pos1,pos2)==(DIMENSIONS-1); // only 3 of the 4 co-positions are neighbour of a position
+    const bool isFace =
+        tarch::la::countEqualEntries(pos1,pos2)==(DIMENSIONS-1); // only 3 of the 4 co-positions are neighbour of a position
 
     bool validIndex1 = isFace && cellDescriptionsIndex1 >= 0;
     bool validIndex2 = isFace && cellDescriptionsIndex2 >= 0;
-    assertion(cellDescriptionsIndex1 < 0 || exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(cellDescriptionsIndex1));
-    assertion(cellDescriptionsIndex2 < 0 || exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(cellDescriptionsIndex2));
+    assertion(cellDescriptionsIndex1 < 0 || solvers::ADERDGSolver::isValidCellDescriptionIndex(cellDescriptionsIndex1));
+    assertion(cellDescriptionsIndex2 < 0 || solvers::ADERDGSolver::isValidCellDescriptionIndex(cellDescriptionsIndex2));
 
     if ( validIndex1 && validIndex2 ) {
       mergeNeighboursDataAndMetadata(cellDescriptionsIndex1,cellDescriptionsIndex2,pos1,pos2,x,h);
@@ -431,16 +434,17 @@ void exahype::Vertex::mergeNeighbours(
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const tarch::la::Vector<DIMENSIONS, double>& h) const {
   if ( tarch::la::allSmallerEquals(h,exahype::solvers::Solver::getCoarsestMaximumMeshSizeOfAllSolvers()) ) {
-    #ifdef SharedMemoryParallelisation
+    #if false and defined(SharedMemoryParallelisation)
+    // TODO(Dominic): Disabled as it caused data races
     tarch::la::Vector<1,int> limits(2*(DIMENSIONS-1));
     tarch::la::Vector<1,int> offset(0);
     tarch::multicore::dForRange<1> range(offset,limits,1,1);
-    MergeNeighboursJob loopBody(*this,x,h);
+    MergeNeighboursJob loopBody(getCellDescriptionsIndex(),x,h);
     tarch::multicore::parallelFor(range,loopBody);
     #else
     for (int i=0; i<2*(DIMENSIONS-1); i++) { // We can separate 2*(DIMENSIONS-1) cells with non-overlapping surfaces.
-      mergeNeighboursLoopBody(i,x,h);
-    enddforx
+      mergeNeighboursLoopBody(i,getCellDescriptionsIndex(),x,h);
+    }
     #endif
   }
 }
@@ -973,15 +977,15 @@ void exahype::Vertex::receiveNeighbourData(
 #endif
 
 exahype::Vertex::MergeNeighboursJob::MergeNeighboursJob(
-  const exahype::Vertex& vertex,                  // !!! assumes existance of member till end of life time
-  const tarch::la::Vector<DIMENSIONS, double>& x, // !!! assumes existance of member till end of life time
-  const tarch::la::Vector<DIMENSIONS, double>& h) // !!! assumes existance of member till end of life time
+  const tarch::la::Vector<TWO_POWER_D, int>&   cellDescriptionsIndices,
+  const tarch::la::Vector<DIMENSIONS, double>& x,
+  const tarch::la::Vector<DIMENSIONS, double>& h)
   :
-  _vertex(vertex),
+  _cellDescriptionsIndices(cellDescriptionsIndices),
   _x(x),
   _h(h) {}
 
 bool exahype::Vertex::MergeNeighboursJob::MergeNeighboursJob::operator()(const tarch::la::Vector<1,int>& index) const {
-  _vertex.mergeNeighboursLoopBody(index[0],_x,_h);
+  mergeNeighboursLoopBody(index[0],_cellDescriptionsIndices,_x,_h);
   return false;
 }

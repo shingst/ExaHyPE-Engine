@@ -7,7 +7,7 @@
 // ========================
 // ==============================================
 // Please do not change the implementations below
-// =============================---==============
+// ==============================================
 #include "{{abstractSolver}}.h"
 
 #include "kernels/aderdg/generic/Kernels.h"
@@ -247,7 +247,7 @@ void {{project}}::{{abstractSolver}}::riemannSolver(double* FL,double* FR,const 
 {% endif %}
 }
 
-void {{project}}::{{abstractSolver}}::boundaryConditions(double* const update, double* const fluxIn,const double* const stateIn,const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const int direction,const int orientation) {
+void {{project}}::{{abstractSolver}}::boundaryConditions(double* const fluxIn,const double* const stateIn,const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const int direction,const int orientation) {
 {% if enableProfiler %}
   _profiler->start("boundaryConditions");
 {% endif %}
@@ -278,16 +278,12 @@ void {{project}}::{{abstractSolver}}::boundaryConditions(double* const update, d
     double* FR = fluxIn;  const double* const QR = stateIn;
   
     riemannSolver(FL,FR,QL,QR,dt,direction,true,faceIndex);
-  
-    kernels::aderdg::generic::{{language}}::faceIntegral{{linearOrNonlinear}}<NumberOfVariables, Order+1>(update,fluxIn,direction,orientation,cellSize);
   }
   else {
     double* FL = fluxIn;  const double* const QL = stateIn;
     double* FR = fluxOut; const double* const QR = stateOut;
 
     riemannSolver(FL,FR,QL,QR,dt,direction,true,faceIndex);
-    
-    kernels::aderdg::generic::{{language}}::faceIntegral{{linearOrNonlinear}}<NumberOfVariables, Order+1>(update,fluxIn,direction,orientation,cellSize);
   }
 {%if tempVarsOnStack==False %}
   delete[] block;
