@@ -64,7 +64,7 @@ void NavierStokes::TwoBubbles::initialValues(const double* const x,
       potentialT += bubble.tempDifference *
                     std::exp(-(d * d) / (bubble.decay * bubble.decay));
     }
-    break; // Only 1 bubble for now.
+    break;  // Only 1 bubble for now.
   }
 
   const double g = 9.81;  // [m/s^2]
@@ -76,9 +76,23 @@ void NavierStokes::TwoBubbles::initialValues(const double* const x,
   vars.j(0, 0, 0);
 #endif
 
-  const double pressure = std::pow((ns.gasConstant*ns.gamma*backgroundT*std::pow(std::pow(ns.gamma, ns.gamma/(ns.gamma - 1))*ns.referencePressure, (ns.gamma - 1)/ns.gamma) - ns.gasConstant*backgroundT*std::pow(std::pow(ns.gamma, ns.gamma/(ns.gamma - 1))*ns.referencePressure, (ns.gamma - 1)/ns.gamma) - g*ns.gamma*std::pow(ns.referencePressure, ns.gasConstant/c_p)*posZ*(ns.gamma - 1) + g*std::pow(ns.referencePressure, ns.gasConstant/c_p)*posZ*(ns.gamma - 1))/(ns.gasConstant*ns.gamma*backgroundT*(ns.gamma - 1)), ns.gamma/(ns.gamma - 1));
+  const double pressure = std::pow(
+      (ns.gasConstant * ns.gamma * backgroundT *
+           std::pow(std::pow(ns.gamma, ns.gamma / (ns.gamma - 1)) *
+                        ns.referencePressure,
+                    (ns.gamma - 1) / ns.gamma) -
+       ns.gasConstant * backgroundT *
+           std::pow(std::pow(ns.gamma, ns.gamma / (ns.gamma - 1)) *
+                        ns.referencePressure,
+                    (ns.gamma - 1) / ns.gamma) -
+       g * ns.gamma * std::pow(ns.referencePressure, ns.gasConstant / c_p) *
+           posZ * (ns.gamma - 1) +
+       g * std::pow(ns.referencePressure, ns.gasConstant / c_p) * posZ *
+           (ns.gamma - 1)) /
+          (ns.gasConstant * ns.gamma * backgroundT * (ns.gamma - 1)),
+      ns.gamma / (ns.gamma - 1));
   const double poTToT =
-          std::pow((pressure / backgroundPressure), ns.gasConstant / ns.c_p);
+      std::pow((pressure / backgroundPressure), ns.gasConstant / ns.c_p);
   const double temperature = potentialT * poTToT;
   vars.rho() = pressure / (ns.gasConstant * temperature);
   vars.E() = ns.evaluateEnergy(vars.rho(), pressure, vars.j());

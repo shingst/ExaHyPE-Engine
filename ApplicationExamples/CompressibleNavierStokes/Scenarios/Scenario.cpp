@@ -29,7 +29,8 @@ void NavierStokes::Scenario::source(
     const tarch::la::Vector<DIMENSIONS, double>& x, double t, const PDE& ns,
     const double* const Q, double* S) {
   constexpr auto NumberOfVariables = DIMENSIONS + 2;  // TODO(Lukas) generalise?
-  std::fill_n(S, NumberOfVariables, 0.0);
+  auto source = ReadOnlyVariables(S);
+  std::fill_n(S, source.SizeVariables, 0.0);
 }
 
 NavierStokes::BoundaryType NavierStokes::Scenario::getBoundaryType(int faceId) {

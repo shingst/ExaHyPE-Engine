@@ -1,18 +1,18 @@
 #include "ScenarioFactory.h"
 
-#include "Scenarios/SodShockTube.h"
-#include "Scenarios/DoubleShockTube.h"
-#include "Scenarios/SmoothWave.h"
-#include "Scenarios/EntropyWave.h"
-#include "Scenarios/TaylorGreen.h"
-#include "Scenarios/Stokes.h"
-#include "Scenarios/TwoBubbles.h"
 #include "Scenarios/ConvergenceTest/ConvergenceTest.h"
+#include "Scenarios/DoubleShockTube.h"
+#include "Scenarios/EntropyWave.h"
+#include "Scenarios/SmoothWave.h"
+#include "Scenarios/SodShockTube.h"
+#include "Scenarios/Stokes.h"
+#include "Scenarios/TaylorGreen.h"
+#include "Scenarios/TwoBubbles.h"
 
 #include <stdexcept>
 
 NavierStokes::ScenarioFactory::ScenarioPtr
-    NavierStokes::ScenarioFactory::createScenario(const std::string& scenarioName) {
+NavierStokes::ScenarioFactory::createScenario(const std::string& scenarioName) {
   if (scenarioName == "sod-shock-tube") {
     return std::move(ScenarioPtr(new SodShockTube()));
   } else if (scenarioName == "double-shock-tube") {

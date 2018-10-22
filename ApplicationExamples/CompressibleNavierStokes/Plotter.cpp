@@ -37,8 +37,10 @@ void NavierStokes::Plotter::mapQuantities(
     double* outputQuantities,
     double timeStamp
 ) {
-  const int writtenUnknowns = 5;
-  for (int i=0; i<DIMENSIONS + 2; i++){
+  auto vars = Variables(Q);
+  constexpr auto writtenUnknowns = vars.Size;
+
+  for (int i = 0; i < writtenUnknowns; ++i){
     outputQuantities[i] = Q[i];
   }
 
@@ -52,10 +54,9 @@ void NavierStokes::Plotter::mapQuantities(
     for (int i = 0; i < DIMENSIONS; ++i) {
       weight *= weights[pos[i]];
     }
-    outputQuantities[DIMENSIONS + 2] = weight;
+    outputQuantities[vars.Size] = weight;
   } else {
     // For other scenarios, plot the potential temperature.
-    Variables vars(Q);
 
     const auto& ns = solver->ns;
 
@@ -64,11 +65,8 @@ void NavierStokes::Plotter::mapQuantities(
 
     const auto potT = temperature / std::pow((pressure / ns.referencePressure), (ns.gasConstant / ns.c_p));
 
-    // Compute background potential temperature
-
-
     // Write potential temperature
-    outputQuantities[DIMENSIONS + 2] = potT;
+    outputQuantities[vars.Size] = potT;
   }
 
 }

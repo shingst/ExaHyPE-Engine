@@ -6,13 +6,13 @@
 #include <string>
 
 namespace NavierStokes {
-    class ScenarioFactory {
-    private:
-        using ScenarioPtr = std::unique_ptr<Scenario>;
-    public:
+class ScenarioFactory {
+ private:
+  using ScenarioPtr = std::unique_ptr<Scenario>;
 
-        static ScenarioPtr createScenario(const std::string& scenarioName);
-    };
-}
+ public:
+  static ScenarioPtr createScenario(const std::string& scenarioName);
+};
+}  // namespace NavierStokes
 
-#endif //COMPRESSIBLENAVIERSTOKES_SCENARIOFACTORY_H
+#endif  // COMPRESSIBLENAVIERSTOKES_SCENARIOFACTORY_H
