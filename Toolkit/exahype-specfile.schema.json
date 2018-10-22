@@ -590,7 +590,7 @@
                 "title" : "Only optimised kernels: For which PDE terms should be code generated",
                 "items" : {
                   "type" : "string",
-                  "enum" : ["fusedsource", "fluxvect", "fusedsourcevect"]
+                  "enum" : ["fusedsource", "fluxvect", "fusedsourcevect", "ncpvect"]
                 }
               },
               "language" : {

@@ -291,7 +291,7 @@ class SpecFile1Reader():
             if token_s=="usestack":
                 context["allocate_temporary_arrays"]="stack"
                 found_token=True
-            for term in ["fusedsource","fluxvect","fusedsourcevect"]:
+            for term in ["fusedsource","fluxvect","fusedsourcevect","ncpvect"]:
                 if token_s==term:
                     context[opt].append(term)
                     found_token=True
