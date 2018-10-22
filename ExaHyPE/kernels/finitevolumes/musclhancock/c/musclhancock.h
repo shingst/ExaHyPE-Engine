@@ -53,7 +53,23 @@ namespace c {
    *
    *   The implementation follows approach (ii).
    *
-   * Issues:
+   *   Discussion:
+   *
+   *   Strategy (i) might be the better approach in terms of mass conservation and
+   *   limiting unphysical oscillations but formally reduces the order of accuracy
+   *   compared to (ii).
+   *
+   *   A third approach would be to estimate slope_ij_x as slope_ij_x ~ ( u_{i,j}-u_{i+1,j-1} )
+   *   if neighbour value u_{i+1,j} is not available, where ghost cell u_{ij} is
+   *   available from a face neighbour, and ghost cell u_{i+1,j-1} is
+   *   available from another face neighbour.
+   *   As diagonal neighbours compute the same slope this way,
+   *   mass conservation is guaranteed.
+   *   However, this approach will increase dispersion errors as the slopes
+   *   are only estimated and, furthermore, also does not limit
+   *   unphysical oscillations.
+   *
+   * Issues with approach (ii):
    *
    * - Users experienced zero-valued states when performing PDE operations.
    *   Simply ignoring these states seemd to help. This might imply that these
