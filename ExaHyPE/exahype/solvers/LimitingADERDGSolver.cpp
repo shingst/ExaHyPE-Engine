@@ -1374,7 +1374,7 @@ void exahype::solvers::LimitingADERDGSolver::mergeWithBoundaryData(
     const tarch::la::Vector<DIMENSIONS, int>& posCell,
     const tarch::la::Vector<DIMENSIONS, int>& posBoundary,
     const bool                                isRecomputation) {
-  assertion2(tarch::la::countEqualEntries(posCell,posBoundary)!=(DIMENSIONS-1),posCell.toString(),posBoundary.toString());
+  assertion2(tarch::la::countEqualEntries(posCell,posBoundary)==(DIMENSIONS-1),posCell.toString(),posBoundary.toString());
   Solver::BoundaryFaceInfo face(posCell,posBoundary);
 
   const int solverElement = indexOfCellDescription(solverPatches,solverNumber);
