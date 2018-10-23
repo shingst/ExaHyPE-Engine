@@ -2626,7 +2626,6 @@ void exahype::solvers::ADERDGSolver::prolongateFaceDataToDescendant(
   const int levelFine   = cellDescription.getLevel();
   const int levelCoarse = parentCellDescription.getLevel();
   assertion(levelCoarse < levelFine);
-  const int levelDelta = levelFine - levelCoarse;
 
   DataHeap::HeapEntries& update = getDataHeapEntries(cellDescription.getUpdate());
   std::fill(update.begin(),update.end(),0.0);
@@ -2637,7 +2636,7 @@ void exahype::solvers::ADERDGSolver::prolongateFaceDataToDescendant(
     if ( cellDescription.getFacewiseCommunicationStatus(faceIndex)==CellCommunicationStatus ) {
       assertion( exahype::amr::faceIsOnBoundaryOfParent(faceIndex,subcellIndex,levelDelta) ); // necessary but not sufficient
 
-      logInfo("prolongateFaceDataToDescendant(...)","cell=" << cellDescription.getOffset() <<
+      logDebug("prolongateFaceDataToDescendant(...)","cell=" << cellDescription.getOffset() <<
                ",level=" << cellDescription.getLevel() <<
                ",face=" << faceIndex <<
                ",subcellIndex" << subcellIndex.toString() <<
@@ -2660,8 +2659,7 @@ void exahype::solvers::ADERDGSolver::prolongateFaceDataToDescendant(
       const double* lQhbndCoarse = getDataHeapArrayFacePart(parentCellDescription.getExtrapolatedPredictor(), dataPerFace,faceIndex);
       const double* lFhbndCoarse = getDataHeapArrayFacePart(parentCellDescription.getFluctuation(),           dofPerFace, faceIndex);
 
-      faceUnknownsProlongation(lQhbndFine,lFhbndFine,lQhbndCoarse,
-                               lFhbndCoarse, levelCoarse, levelFine,
+      faceUnknownsProlongation(lQhbndFine,lFhbndFine,lQhbndCoarse,lFhbndCoarse, levelCoarse, levelFine,
                                exahype::amr::getSubfaceIndex(subcellIndex,direction));
 
       // time step data TODO(LTS), still need veto
@@ -2818,7 +2816,7 @@ void exahype::solvers::ADERDGSolver::restrictToTopMostParent( // TODO must be me
 
       faceIntegral(updateFine.data(),lFhbnd,direction,orientation,subfaceIndex,levelDelta,cellDescription.getSize());
 
-      logInfo("restrictToTopMostParent(...)","cell=" << cellDescription.getOffset() <<
+      logDebug("restrictToTopMostParent(...)","cell=" << cellDescription.getOffset() <<
              ",level=" << cellDescription.getLevel() <<
              ",face=" << faceIndex <<
              ",subcellIndex" << subcellIndex.toString() <<
@@ -3196,21 +3194,6 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
 
   double* QR = getDataHeapArrayFacePart(pRight.getExtrapolatedPredictor(),dataPerFace,face._faceIndexRight);
   double* FR = getDataHeapArrayFacePart(pRight.getFluctuation(),          dofPerFace, face._faceIndexRight);
-
-  if ( // TODO(Dominic): REMOVE
-      pLeft.getType()==CellDescription::Type::Descendant ||
-      pRight.getType()==CellDescription::Type::Descendant
-  ) {
-    std::string inputInformationL = riemannDataToString(QL,FL,"L");
-    std::string inputInformationR = riemannDataToString(QR,FR,"R");
-    logInfo("solveRiemannProblemAtInterface(...)",
-            "pLeft.getOffset()=" << pLeft.getOffset() <<
-            ", pRight.getOffset()=" << pRight.getOffset()
-//            <<
-//            ", inL=" << inputInformationL <<
-//            ", inR=" << inputInformationR
-            );
-  }
 
   // todo Time step must be interpolated in local time stepping case
   // both time step sizes are the same, so the min has no effect here.
