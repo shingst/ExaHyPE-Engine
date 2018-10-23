@@ -541,7 +541,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
       solverPatch.setHasCompletedTimeStep(false); // done here in order to skip lookup of cell description in job constructor
       FusedTimeStepJob fusedTimeStepJob( *this, cellDescriptionsIndex, element,
           solverPatch.getNeighbourMergePerformed(), isSkeletonCell );
-      Solver::submitPredictionJob(fusedTimeStepJob,isSkeletonCell);
+      Solver::submitJob(fusedTimeStepJob,isSkeletonCell);
       return UpdateResult();
     }
   }

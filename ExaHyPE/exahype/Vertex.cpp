@@ -111,6 +111,61 @@ exahype::solvers::Solver::RefinementControl exahype::Vertex::evaluateRefinementC
   }
 }
 
+void exahype::Vertex::mergeOnlyNeighboursMetadataLoopBody(
+    const int pos1Scalar,
+    const int pos2Scalar,
+    const int cellDescriptionsIndex1,
+    const int cellDescriptionsIndex2,
+    const exahype::State::AlgorithmSection& section,
+    const tarch::la::Vector<DIMENSIONS, double>& x,
+    const tarch::la::Vector<DIMENSIONS, double>& h,
+    const bool                                   checkThoroughly) {
+  tarch::la::Vector<DIMENSIONS,int> pos1 = delineariseIndex2(pos1Scalar);
+  tarch::la::Vector<DIMENSIONS,int> pos2 = delineariseIndex2(pos2Scalar);
+  assertion(tarch::la::countEqualEntries(pos1,pos2)==(DIMENSIONS-1));
+
+  bool validIndex1 = cellDescriptionsIndex1 >= 0;
+  bool validIndex2 = cellDescriptionsIndex2 >= 0;
+  assertion(cellDescriptionsIndex1 < 0 || exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(cellDescriptionsIndex1));
+  assertion(cellDescriptionsIndex2 < 0 || exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(cellDescriptionsIndex2));
+
+  if ( validIndex1 && validIndex2 ) {
+    auto& ADERDGPatches1 = solvers::ADERDGSolver::Heap::getInstance().getData(cellDescriptionsIndex1);
+    auto& FVPatches1     = solvers::FiniteVolumesSolver::Heap::getInstance().getData(cellDescriptionsIndex1);
+
+    auto& ADERDGPatches2 = solvers::ADERDGSolver::Heap::getInstance().getData(cellDescriptionsIndex2);
+    auto& FVPatches2     = solvers::FiniteVolumesSolver::Heap::getInstance().getData(cellDescriptionsIndex2);
+
+    bool mergeNeighbours = ( !ADERDGPatches1.empty() && !ADERDGPatches2.empty() ) ||
+                           ( !FVPatches1.empty() && !FVPatches2.empty() );
+    if ( mergeNeighbours ) {
+      for (int solverNumber=0; solverNumber<static_cast<int>(solvers::RegisteredSolvers.size()); solverNumber++) {
+        auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
+        if (solver->isMergingMetadata(section)) {
+          switch ( solver->getType() ) {
+            case solvers::Solver::Type::ADERDG:
+              static_cast<solvers::ADERDGSolver*>(solver)->
+                mergeNeighboursMetadata(ADERDGPatches1,ADERDGPatches2,solverNumber,pos1,pos2,x,h,checkThoroughly);
+              break;
+            case solvers::Solver::Type::LimitingADERDG:
+              static_cast<solvers::LimitingADERDGSolver*>(solver)->getSolver()->
+              mergeNeighboursMetadata(ADERDGPatches1,ADERDGPatches2,solverNumber,pos1,pos2,x,h,checkThoroughly);
+              break;
+            case solvers::Solver::Type::FiniteVolumes:
+              // do nothing
+              break;
+            default:
+              assertionMsg(false,"Unrecognised solver type: "<<solvers::Solver::toString(solver->getType()));
+              logError("mergeWithBoundaryDataIfNotDoneYet(...)","Unrecognised solver type: "<<solvers::Solver::toString(solver->getType()));
+              std::abort();
+              break;
+          }
+        }
+      }
+    }
+  }
+}
+
 void exahype::Vertex::mergeOnlyNeighboursMetadata(
     const exahype::State::AlgorithmSection& section,
     const tarch::la::Vector<DIMENSIONS,     double>& x,
@@ -119,60 +174,25 @@ void exahype::Vertex::mergeOnlyNeighboursMetadata(
   assertion(!isHangingNode());
   assertion(isInside() || isBoundary());
 
-  for (int index1=0; index1<2*(DIMENSIONS-1); index1++) {
-    const tarch::la::Vector<DIMENSIONS,int> pos1=getNeighbourMergePosition(index1);
-    const int pos1Scalar = peano::utils::dLinearised(pos1,2);
-
-    for (int index2=0; index2<2*(DIMENSIONS-1); index2++) {
-      const tarch::la::Vector<DIMENSIONS,int> pos2=getNeighbourMergeCoPosition(index2);
-      const int pos2Scalar = peano::utils::dLinearised(pos2,2);
-
-      const bool isFace  = tarch::la::countEqualEntries(pos1,pos2)==(DIMENSIONS-1);
-      const int cellDescriptionsIndex1 = _vertexData.getCellDescriptionsIndex(pos1Scalar);
-      const int cellDescriptionsIndex2 = _vertexData.getCellDescriptionsIndex(pos2Scalar);
-
-      bool validIndex1 = isFace && cellDescriptionsIndex1 >= 0;
-      bool validIndex2 = isFace && cellDescriptionsIndex2 >= 0;
-      assertion(cellDescriptionsIndex1 < 0 || exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(cellDescriptionsIndex1));
-      assertion(cellDescriptionsIndex2 < 0 || exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(cellDescriptionsIndex2));
-
-      if ( validIndex1 && validIndex2 ) {
-        auto& ADERDGPatches1 = solvers::ADERDGSolver::Heap::getInstance().getData(cellDescriptionsIndex1);
-        auto& FVPatches1     = solvers::FiniteVolumesSolver::Heap::getInstance().getData(cellDescriptionsIndex1);
-
-        auto& ADERDGPatches2 = solvers::ADERDGSolver::Heap::getInstance().getData(cellDescriptionsIndex2);
-        auto& FVPatches2     = solvers::FiniteVolumesSolver::Heap::getInstance().getData(cellDescriptionsIndex2);
-
-        bool mergeNeighbours = ( !ADERDGPatches1.empty() && !ADERDGPatches2.empty() ) ||
-                               ( !FVPatches1.empty() && !FVPatches2.empty() );
-        if ( mergeNeighbours ) {
-          for (int solverNumber=0; solverNumber<static_cast<int>(solvers::RegisteredSolvers.size()); solverNumber++) {
-            auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-            if (solver->isMergingMetadata(section)) {
-              switch ( solver->getType() ) {
-                case solvers::Solver::Type::ADERDG:
-                  static_cast<solvers::ADERDGSolver*>(solver)->
-                    mergeNeighboursMetadata(ADERDGPatches1,ADERDGPatches2,solverNumber,pos1,pos2,x,h,checkThoroughly);
-                  break;
-                case solvers::Solver::Type::LimitingADERDG:
-                  static_cast<solvers::LimitingADERDGSolver*>(solver)->getSolver()->
-                  mergeNeighboursMetadata(ADERDGPatches1,ADERDGPatches2,solverNumber,pos1,pos2,x,h,checkThoroughly);
-                  break;
-                case solvers::Solver::Type::FiniteVolumes:
-                  // do nothing
-                  break;
-                default:
-                  assertionMsg(false,"Unrecognised solver type: "<<solvers::Solver::toString(solver->getType()));
-                  logError("mergeWithBoundaryDataIfNotDoneYet(...)","Unrecognised solver type: "<<solvers::Solver::toString(solver->getType()));
-                  std::abort();
-                  break;
-              }
-            }
-          }
-        }
-      }
-    }
-  }
+  #if DIMENSIONS==2
+  mergeOnlyNeighboursMetadataLoopBody(0,1,_vertexData.getCellDescriptionsIndex(0),_vertexData.getCellDescriptionsIndex(1),section,x,h,checkThoroughly);
+  mergeOnlyNeighboursMetadataLoopBody(0,2,_vertexData.getCellDescriptionsIndex(0),_vertexData.getCellDescriptionsIndex(2),section,x,h,checkThoroughly);
+  mergeOnlyNeighboursMetadataLoopBody(1,3,_vertexData.getCellDescriptionsIndex(1),_vertexData.getCellDescriptionsIndex(3),section,x,h,checkThoroughly);
+  mergeOnlyNeighboursMetadataLoopBody(2,3,_vertexData.getCellDescriptionsIndex(2),_vertexData.getCellDescriptionsIndex(3),section,x,h,checkThoroughly);
+  #elif DIMENSIONS==3
+  mergeOnlyNeighboursMetadataLoopBody(0,1,_vertexData.getCellDescriptionsIndex(0),_vertexData.getCellDescriptionsIndex(1),section,x,h,checkThoroughly);
+  mergeOnlyNeighboursMetadataLoopBody(0,2,_vertexData.getCellDescriptionsIndex(0),_vertexData.getCellDescriptionsIndex(2),section,x,h,checkThoroughly);
+  mergeOnlyNeighboursMetadataLoopBody(0,4,_vertexData.getCellDescriptionsIndex(0),_vertexData.getCellDescriptionsIndex(4),section,x,h,checkThoroughly);
+  mergeOnlyNeighboursMetadataLoopBody(1,3,_vertexData.getCellDescriptionsIndex(1),_vertexData.getCellDescriptionsIndex(3),section,x,h,checkThoroughly);
+  mergeOnlyNeighboursMetadataLoopBody(1,5,_vertexData.getCellDescriptionsIndex(1),_vertexData.getCellDescriptionsIndex(5),section,x,h,checkThoroughly);
+  mergeOnlyNeighboursMetadataLoopBody(2,3,_vertexData.getCellDescriptionsIndex(2),_vertexData.getCellDescriptionsIndex(3),section,x,h,checkThoroughly);
+  mergeOnlyNeighboursMetadataLoopBody(2,6,_vertexData.getCellDescriptionsIndex(2),_vertexData.getCellDescriptionsIndex(6),section,x,h,checkThoroughly);
+  mergeOnlyNeighboursMetadataLoopBody(3,7,_vertexData.getCellDescriptionsIndex(3),_vertexData.getCellDescriptionsIndex(7),section,x,h,checkThoroughly);
+  mergeOnlyNeighboursMetadataLoopBody(4,5,_vertexData.getCellDescriptionsIndex(4),_vertexData.getCellDescriptionsIndex(5),section,x,h,checkThoroughly);
+  mergeOnlyNeighboursMetadataLoopBody(4,6,_vertexData.getCellDescriptionsIndex(4),_vertexData.getCellDescriptionsIndex(6),section,x,h,checkThoroughly);
+  mergeOnlyNeighboursMetadataLoopBody(5,7,_vertexData.getCellDescriptionsIndex(5),_vertexData.getCellDescriptionsIndex(7),section,x,h,checkThoroughly);
+  mergeOnlyNeighboursMetadataLoopBody(6,7,_vertexData.getCellDescriptionsIndex(6),_vertexData.getCellDescriptionsIndex(7),section,x,h,checkThoroughly);
+  #endif
 }
 
 void exahype::Vertex::validateNeighbourhood(
@@ -343,43 +363,51 @@ void exahype::Vertex::mergeNeighboursDataAndMetadata(
   }
 }
 
-tarch::la::Vector<DIMENSIONS,int> exahype::Vertex::getNeighbourMergePosition(const int index) {
-  constexpr int size=2*(DIMENSIONS-1);
+tarch::la::Vector<DIMENSIONS,int> exahype::Vertex::delineariseIndex2(int index) {
   #if DIMENSIONS==2
-  constexpr int ix[size]={0,1}; // each column denotes a cell position where we can do DIMENSIONS race-free neighbour merges
-  constexpr int iy[size]={0,1};
-  return tarch::la::Vector<DIMENSIONS, int>(ix[index],iy[index]);
+  switch( index ) {
+    case 0:
+      return tarch::la::Vector<DIMENSIONS,int>(0,0);
+    case 1:
+      return tarch::la::Vector<DIMENSIONS,int>(1,0);
+    case 2:
+      return tarch::la::Vector<DIMENSIONS,int>(0,1);
+    case 3:
+      return tarch::la::Vector<DIMENSIONS,int>(1,1);
+    default:
+      logError("delineariseIndex2(index)","index must be in range [0,3]!");
+      return tarch::la::Vector<DIMENSIONS,int>(-1,-1);
+  }
   #elif DIMENSIONS==3
-  constexpr int ix[size]={0,1,0,1};
-  constexpr int iy[size]={0,1,1,0};
-  constexpr int iz[size]={0,0,1,1};
-  return tarch::la::Vector<DIMENSIONS, int>(ix[index],iy[index],iz[index]);
-  #else
-  #error DIMENSIONS must be either defined as 2 or 3.
-  return arch::la::Vector<DIMENSIONS, int>(-1);
-  #endif
-}
-
-tarch::la::Vector<DIMENSIONS,int> exahype::Vertex::getNeighbourMergeCoPosition(const int index) {
-  constexpr int size=2*(DIMENSIONS-1);
-  #if DIMENSIONS==2
-  constexpr int ix[size]={0,1}; // each column denotes a cell position where we can do DIMENSIONS race-free neighbour merges
-  constexpr int iy[size]={1,0};
-  return tarch::la::Vector<DIMENSIONS, int>(ix[index],iy[index]);
-  #elif DIMENSIONS==3
-  constexpr int ix[size]={0,1,0,1}; // For every neighbour merge position, 3 out of four of these positions share a face.
-  constexpr int iy[size]={0,1,1,0};
-  constexpr int iz[size]={1,1,0,0}; // z coordinate is toggled;
-  return tarch::la::Vector<DIMENSIONS, int>(ix[index],iy[index],iz[index]);
-  #else
-  #error DIMENSIONS must be either defined as 2 or 3.
-  return arch::la::Vector<DIMENSIONS, int>(-1);
+  switch( index ) {
+    case 0:
+      return tarch::la::Vector<DIMENSIONS,int>(0,0,0);
+    case 1:
+      return tarch::la::Vector<DIMENSIONS,int>(1,0,0);
+    case 2:
+      return tarch::la::Vector<DIMENSIONS,int>(0,1,0);
+    case 3:
+      return tarch::la::Vector<DIMENSIONS,int>(1,1,1);
+    case 4:
+      return tarch::la::Vector<DIMENSIONS,int>(0,0,1);
+    case 5:
+      return tarch::la::Vector<DIMENSIONS,int>(1,0,1);
+    case 6:
+      return tarch::la::Vector<DIMENSIONS,int>(0,1,1);
+    case 7:
+      return tarch::la::Vector<DIMENSIONS,int>(1,1,1);
+    default:
+      logError("delineariseIndex2(index)","index must be in range [0,7]!");
+      return tarch::la::Vector<DIMENSIONS,int>(-1,-1,-1);
+  }
   #endif
 }
 
 void exahype::Vertex::mergeNeighboursLoopBody(
-    const int index1,
-    const tarch::la::Vector<TWO_POWER_D, int>&   cellDescriptionsIndices,
+    const int pos1Scalar,
+    const int pos2Scalar,
+    const int cellDescriptionsIndex1,
+    const int cellDescriptionsIndex2,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const tarch::la::Vector<DIMENSIONS, double>& h) {
   #if defined(Asserts) || defined (ValidateNeighbourHoodDuringNeighbourMerge)
@@ -387,46 +415,36 @@ void exahype::Vertex::mergeNeighboursLoopBody(
   #else
   constexpr bool validate = false;
   #endif
+  assertion2(cellDescriptionsIndex1 < 1 || cellDescriptionsIndex1 != cellDescriptionsIndex2,cellDescriptionsIndex1,cellDescriptionsIndex2);
 
-  const tarch::la::Vector<DIMENSIONS,int> pos1=getNeighbourMergePosition(index1);
-  const int pos1Scalar = peano::utils::dLinearised(pos1,2);
+  tarch::la::Vector<DIMENSIONS,int> pos1 = delineariseIndex2(pos1Scalar);
+  tarch::la::Vector<DIMENSIONS,int> pos2 = delineariseIndex2(pos2Scalar);
+  assertion(tarch::la::countEqualEntries(pos1,pos2)==(DIMENSIONS-1));
 
-  for (int index2=0; index2<2*(DIMENSIONS-1); index2++) {
-    const tarch::la::Vector<DIMENSIONS,int> pos2=getNeighbourMergeCoPosition(index2);
-    const int pos2Scalar = peano::utils::dLinearised(pos2,2);
+  bool validIndex1 = cellDescriptionsIndex1 >= 0;
+  bool validIndex2 = cellDescriptionsIndex2 >= 0;
+  assertion(cellDescriptionsIndex1 < 0 || solvers::ADERDGSolver::isValidCellDescriptionIndex(cellDescriptionsIndex1));
+  assertion(cellDescriptionsIndex2 < 0 || solvers::ADERDGSolver::isValidCellDescriptionIndex(cellDescriptionsIndex2));
 
-    const int cellDescriptionsIndex1 = cellDescriptionsIndices[pos1Scalar];
-    const int cellDescriptionsIndex2 = cellDescriptionsIndices[pos2Scalar];
-    assertion2(cellDescriptionsIndex1 < 1 || cellDescriptionsIndex1 != cellDescriptionsIndex2,cellDescriptionsIndex1,cellDescriptionsIndex2);
-
-    const bool isFace =
-        tarch::la::countEqualEntries(pos1,pos2)==(DIMENSIONS-1); // only 3 of the 4 co-positions are neighbour of a position
-
-    bool validIndex1 = isFace && cellDescriptionsIndex1 >= 0;
-    bool validIndex2 = isFace && cellDescriptionsIndex2 >= 0;
-    assertion(cellDescriptionsIndex1 < 0 || solvers::ADERDGSolver::isValidCellDescriptionIndex(cellDescriptionsIndex1));
-    assertion(cellDescriptionsIndex2 < 0 || solvers::ADERDGSolver::isValidCellDescriptionIndex(cellDescriptionsIndex2));
-
-    if ( validIndex1 && validIndex2 ) {
-      mergeNeighboursDataAndMetadata(cellDescriptionsIndex1,cellDescriptionsIndex2,pos1,pos2,x,h);
-    } else if (
-        ((validIndex1 && !validIndex2 &&
-        cellDescriptionsIndex2==multiscalelinkedcell::HangingVertexBookkeeper::DomainBoundaryAdjacencyIndex)
-        ||
-        (!validIndex1 && validIndex2 &&
-        cellDescriptionsIndex1==multiscalelinkedcell::HangingVertexBookkeeper::DomainBoundaryAdjacencyIndex))
-    ) {
-      mergeWithBoundaryData(cellDescriptionsIndex1,cellDescriptionsIndex2,pos1,pos2,x,h);
-    } else if  (
-        validate
-        &&
-        validIndex1 != validIndex2
-        &&
-        cellDescriptionsIndex1!=multiscalelinkedcell::HangingVertexBookkeeper::RemoteAdjacencyIndex&&
-        cellDescriptionsIndex2!=multiscalelinkedcell::HangingVertexBookkeeper::RemoteAdjacencyIndex
-    ) {
-      validateNeighbourhood(cellDescriptionsIndex1,cellDescriptionsIndex2,pos1,pos2);
-    }
+  if ( validIndex1 && validIndex2 ) {
+    mergeNeighboursDataAndMetadata(cellDescriptionsIndex1,cellDescriptionsIndex2,pos1,pos2,x,h);
+  } else if (
+      ((validIndex1 && !validIndex2 &&
+          cellDescriptionsIndex2==multiscalelinkedcell::HangingVertexBookkeeper::DomainBoundaryAdjacencyIndex)
+          ||
+          (!validIndex1 && validIndex2 &&
+              cellDescriptionsIndex1==multiscalelinkedcell::HangingVertexBookkeeper::DomainBoundaryAdjacencyIndex))
+  ) {
+    mergeWithBoundaryData(cellDescriptionsIndex1,cellDescriptionsIndex2,pos1,pos2,x,h);
+  } else if  (
+      validate
+      &&
+      validIndex1 != validIndex2
+      &&
+      cellDescriptionsIndex1!=multiscalelinkedcell::HangingVertexBookkeeper::RemoteAdjacencyIndex&&
+      cellDescriptionsIndex2!=multiscalelinkedcell::HangingVertexBookkeeper::RemoteAdjacencyIndex
+  ) {
+    validateNeighbourhood(cellDescriptionsIndex1,cellDescriptionsIndex2,pos1,pos2);
   }
 }
 
@@ -435,16 +453,53 @@ void exahype::Vertex::mergeNeighbours(
     const tarch::la::Vector<DIMENSIONS, double>& h) const {
   if ( tarch::la::allSmallerEquals(h,exahype::solvers::Solver::getCoarsestMaximumMeshSizeOfAllSolvers()) ) {
     #if false and defined(SharedMemoryParallelisation)
-    // TODO(Dominic): Disabled as it caused data races
-    tarch::la::Vector<1,int> limits(2*(DIMENSIONS-1));
-    tarch::la::Vector<1,int> offset(0);
-    tarch::multicore::dForRange<1> range(offset,limits,1,1);
-    MergeNeighboursJob loopBody(getCellDescriptionsIndex(),x,h);
-    tarch::multicore::parallelFor(range,loopBody);
+    #if DIMENSIONS==2
+    MergeNeighboursJob loopBody0(*this,0,1,x,h);
+    MergeNeighboursJob loopBody1(*this,0,2,x,h);
+    MergeNeighboursJob loopBody2(*this,1,3,x,h);
+    MergeNeighboursJob loopBody3(*this,2,3,x,h);
+    peano::datatraversal::TaskSet spawnedSet(
+        loopBody0,loopBody1,loopBody2,loopBody3,
+        peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible  );
+    #elif DIMENSIONS==3
+    MergeNeighboursJob loopBody0 (*this,0,1,x,h);
+    MergeNeighboursJob loopBody1 (*this,0,2,x,h);
+    MergeNeighboursJob loopBody2 (*this,0,4,x,h);
+    MergeNeighboursJob loopBody3 (*this,1,3,x,h);
+    MergeNeighboursJob loopBody4 (*this,1,5,x,h);
+    MergeNeighboursJob loopBody5 (*this,2,3,x,h);
+    MergeNeighboursJob loopBody6 (*this,2,6,x,h);
+    MergeNeighboursJob loopBody7 (*this,3,7,x,h);
+    MergeNeighboursJob loopBody8 (*this,4,5,x,h);
+    MergeNeighboursJob loopBody9 (*this,4,6,x,h);
+    MergeNeighboursJob loopBody10(*this,5,7,x,h);
+    MergeNeighboursJob loopBody11(*this,6,7,x,h);
+    peano::datatraversal::TaskSet spawnedSet(
+        loopBody0,loopBody1,loopBody2,loopBody3,
+        loopBody4,loopBody5,loopBody6,loopBody7,
+        loopBody8,loopBody9,loopBody10,loopBody11,
+        peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible  );
+    #endif
     #else
-    for (int i=0; i<2*(DIMENSIONS-1); i++) { // We can separate 2*(DIMENSIONS-1) cells with non-overlapping surfaces.
-      mergeNeighboursLoopBody(i,getCellDescriptionsIndex(),x,h);
-    }
+    #if DIMENSIONS==2
+    mergeNeighboursLoopBody(0,1,_vertexData.getCellDescriptionsIndex(0),_vertexData.getCellDescriptionsIndex(1),x,h);
+    mergeNeighboursLoopBody(0,2,_vertexData.getCellDescriptionsIndex(0),_vertexData.getCellDescriptionsIndex(2),x,h);
+    mergeNeighboursLoopBody(1,3,_vertexData.getCellDescriptionsIndex(1),_vertexData.getCellDescriptionsIndex(3),x,h);
+    mergeNeighboursLoopBody(2,3,_vertexData.getCellDescriptionsIndex(2),_vertexData.getCellDescriptionsIndex(3),x,h);
+    #elif DIMENSIONS==3
+    mergeNeighboursLoopBody(0,1,_vertexData.getCellDescriptionsIndex(0),_vertexData.getCellDescriptionsIndex(1),x,h);
+    mergeNeighboursLoopBody(0,2,_vertexData.getCellDescriptionsIndex(0),_vertexData.getCellDescriptionsIndex(2),x,h);
+    mergeNeighboursLoopBody(0,4,_vertexData.getCellDescriptionsIndex(0),_vertexData.getCellDescriptionsIndex(4),x,h);
+    mergeNeighboursLoopBody(1,3,_vertexData.getCellDescriptionsIndex(1),_vertexData.getCellDescriptionsIndex(3),x,h);
+    mergeNeighboursLoopBody(1,5,_vertexData.getCellDescriptionsIndex(1),_vertexData.getCellDescriptionsIndex(5),x,h);
+    mergeNeighboursLoopBody(2,3,_vertexData.getCellDescriptionsIndex(2),_vertexData.getCellDescriptionsIndex(3),x,h);
+    mergeNeighboursLoopBody(2,6,_vertexData.getCellDescriptionsIndex(2),_vertexData.getCellDescriptionsIndex(6),x,h);
+    mergeNeighboursLoopBody(3,7,_vertexData.getCellDescriptionsIndex(3),_vertexData.getCellDescriptionsIndex(7),x,h);
+    mergeNeighboursLoopBody(4,5,_vertexData.getCellDescriptionsIndex(4),_vertexData.getCellDescriptionsIndex(5),x,h);
+    mergeNeighboursLoopBody(4,6,_vertexData.getCellDescriptionsIndex(4),_vertexData.getCellDescriptionsIndex(6),x,h);
+    mergeNeighboursLoopBody(5,7,_vertexData.getCellDescriptionsIndex(5),_vertexData.getCellDescriptionsIndex(7),x,h);
+    mergeNeighboursLoopBody(6,7,_vertexData.getCellDescriptionsIndex(6),_vertexData.getCellDescriptionsIndex(7),x,h);
+    #endif
     #endif
   }
 }
@@ -977,15 +1032,20 @@ void exahype::Vertex::receiveNeighbourData(
 #endif
 
 exahype::Vertex::MergeNeighboursJob::MergeNeighboursJob(
-  const tarch::la::Vector<TWO_POWER_D, int>&   cellDescriptionsIndices,
+  const exahype::Vertex& vertex,
+  const int              pos1Scalar,
+  const int              pos2Scalar,
   const tarch::la::Vector<DIMENSIONS, double>& x,
   const tarch::la::Vector<DIMENSIONS, double>& h)
   :
-  _cellDescriptionsIndices(cellDescriptionsIndices),
+  _pos1Scalar(pos1Scalar),
+  _pos2Scalar(pos2Scalar),
+  _cellDescriptionsIndex1(vertex._vertexData.getCellDescriptionsIndex(pos1Scalar)),
+  _cellDescriptionsIndex2(vertex._vertexData.getCellDescriptionsIndex(pos2Scalar)),
   _x(x),
   _h(h) {}
 
-bool exahype::Vertex::MergeNeighboursJob::MergeNeighboursJob::operator()(const tarch::la::Vector<1,int>& index) const {
-  mergeNeighboursLoopBody(index[0],_cellDescriptionsIndices,_x,_h);
+bool exahype::Vertex::MergeNeighboursJob::MergeNeighboursJob::operator()() const {
+  mergeNeighboursLoopBody(_pos1Scalar,_pos2Scalar,_cellDescriptionsIndex1,_cellDescriptionsIndex2,_x,_h);
   return false;
 }

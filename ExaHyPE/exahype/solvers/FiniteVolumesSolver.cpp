@@ -756,7 +756,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::FiniteVolumesSolver::fu
   } else {
     cellDescription.setHasCompletedTimeStep(false);
     FusedTimeStepJob fusedTimeStepJob( *this, cellDescriptionsIndex, element, isSkeletonCell );
-    Solver::submitPredictionJob(fusedTimeStepJob,isSkeletonCell);
+    Solver::submitJob(fusedTimeStepJob,isSkeletonCell);
     return UpdateResult();
   }
 }
