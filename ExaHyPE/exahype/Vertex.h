@@ -426,8 +426,7 @@ private:
    * face between positions [1,0,1]-[1,1,1]: adjacency index pairs 5-7
    * face between positions [0,1,1]-[1,1,1]: adjacency index pairs 6-7
    *
-   * The following python3 code can be used to compute the cell description
-   * index pairs which can be processed in parallel without causing data races:
+   * The following python3 code can be used to compute teh adjacency index pairs:
    *
    * @code{.py}
    * dim=3
@@ -723,30 +722,6 @@ private:
       const tarch::la::Vector<DIMENSIONS, double>& x,
       int level) const;
   #endif
-
-  /**
-   * A functor wrapping mergeNeighboursLoopBody.
-   */
-  class MergeNeighboursJob {
-      private:
-        const int  _pos1Scalar;
-        const int  _pos2Scalar;
-        const int  _cellDescriptionsIndex1;
-        const int  _cellDescriptionsIndex2;
-        const tarch::la::Vector<DIMENSIONS, double> _x; // copies
-        const tarch::la::Vector<DIMENSIONS, double> _h;
-      public:
-        MergeNeighboursJob(
-          const exahype::Vertex& vertex,
-          const int              pos1Scalar,
-          const int              pos2Scalar,
-          const tarch::la::Vector<DIMENSIONS, double>& x,
-          const tarch::la::Vector<DIMENSIONS, double>& h
-        );
-
-        bool operator()() const;
-  };
-
 };
 
 #endif // _EXAHYPE_VERTEX_H

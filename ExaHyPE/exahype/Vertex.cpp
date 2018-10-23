@@ -452,33 +452,92 @@ void exahype::Vertex::mergeNeighbours(
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const tarch::la::Vector<DIMENSIONS, double>& h) const {
   if ( tarch::la::allSmallerEquals(h,exahype::solvers::Solver::getCoarsestMaximumMeshSizeOfAllSolvers()) ) {
-    #if false and defined(SharedMemoryParallelisation)
+    #if defined(SharedMemoryParallelisation)
     #if DIMENSIONS==2
-    MergeNeighboursJob loopBody0(*this,0,1,x,h);
-    MergeNeighboursJob loopBody1(*this,0,2,x,h);
-    MergeNeighboursJob loopBody2(*this,1,3,x,h);
-    MergeNeighboursJob loopBody3(*this,2,3,x,h);
-    peano::datatraversal::TaskSet spawnedSet(
-        loopBody0,loopBody1,loopBody2,loopBody3,
-        peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible  );
+    peano::datatraversal::TaskSet runParallelTasks(
+    [&]() -> bool {
+      mergeNeighboursLoopBody(0,1,_vertexData.getCellDescriptionsIndex(0),_vertexData.getCellDescriptionsIndex(1),x,h);
+      return false;
+    },
+    [&]() -> bool {
+      mergeNeighboursLoopBody(0,2,_vertexData.getCellDescriptionsIndex(0),_vertexData.getCellDescriptionsIndex(2),x,h);
+      return false;
+    },
+    [&]() -> bool {
+      mergeNeighboursLoopBody(1,3,_vertexData.getCellDescriptionsIndex(1),_vertexData.getCellDescriptionsIndex(3),x,h);
+      return false;
+    },
+    [&]() -> bool {
+      mergeNeighboursLoopBody(2,3,_vertexData.getCellDescriptionsIndex(2),_vertexData.getCellDescriptionsIndex(3),x,h);
+      return false;
+    },
+    peano::datatraversal::TaskSet::TaskType::IsTaskAndRunImmediately,
+    peano::datatraversal::TaskSet::TaskType::IsTaskAndRunImmediately,
+    peano::datatraversal::TaskSet::TaskType::IsTaskAndRunImmediately,
+    peano::datatraversal::TaskSet::TaskType::IsTaskAndRunImmediately,
+    true);
     #elif DIMENSIONS==3
-    MergeNeighboursJob loopBody0 (*this,0,1,x,h);
-    MergeNeighboursJob loopBody1 (*this,0,2,x,h);
-    MergeNeighboursJob loopBody2 (*this,0,4,x,h);
-    MergeNeighboursJob loopBody3 (*this,1,3,x,h);
-    MergeNeighboursJob loopBody4 (*this,1,5,x,h);
-    MergeNeighboursJob loopBody5 (*this,2,3,x,h);
-    MergeNeighboursJob loopBody6 (*this,2,6,x,h);
-    MergeNeighboursJob loopBody7 (*this,3,7,x,h);
-    MergeNeighboursJob loopBody8 (*this,4,5,x,h);
-    MergeNeighboursJob loopBody9 (*this,4,6,x,h);
-    MergeNeighboursJob loopBody10(*this,5,7,x,h);
-    MergeNeighboursJob loopBody11(*this,6,7,x,h);
-    peano::datatraversal::TaskSet spawnedSet(
-        loopBody0,loopBody1,loopBody2,loopBody3,
-        loopBody4,loopBody5,loopBody6,loopBody7,
-        loopBody8,loopBody9,loopBody10,loopBody11,
-        peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible  );
+    [&]() -> bool {
+      mergeNeighboursLoopBody(0,1,_vertexData.getCellDescriptionsIndex(0),_vertexData.getCellDescriptionsIndex(1),x,h);
+      return false;
+    },
+    [&]() -> bool {
+      mergeNeighboursLoopBody(0,2,_vertexData.getCellDescriptionsIndex(0),_vertexData.getCellDescriptionsIndex(2),x,h);
+      return false;
+    },
+    [&]() -> bool {
+      mergeNeighboursLoopBody(0,4,_vertexData.getCellDescriptionsIndex(0),_vertexData.getCellDescriptionsIndex(4),x,h);
+      return false;
+    },
+    [&]() -> bool {
+      mergeNeighboursLoopBody(1,3,_vertexData.getCellDescriptionsIndex(1),_vertexData.getCellDescriptionsIndex(3),x,h);
+      return false;
+    },
+    [&]() -> bool {
+      mergeNeighboursLoopBody(1,5,_vertexData.getCellDescriptionsIndex(1),_vertexData.getCellDescriptionsIndex(5),x,h);
+      return false;
+    },
+    [&]() -> bool {
+      mergeNeighboursLoopBody(2,3,_vertexData.getCellDescriptionsIndex(2),_vertexData.getCellDescriptionsIndex(3),x,h);
+      return false;
+    },
+    [&]() -> bool {
+      mergeNeighboursLoopBody(2,6,_vertexData.getCellDescriptionsIndex(2),_vertexData.getCellDescriptionsIndex(6),x,h);
+      return false;
+    },
+    [&]() -> bool {
+      mergeNeighboursLoopBody(3,7,_vertexData.getCellDescriptionsIndex(3),_vertexData.getCellDescriptionsIndex(7),x,h);
+      return false;
+    },
+    [&]() -> bool {
+      mergeNeighboursLoopBody(4,5,_vertexData.getCellDescriptionsIndex(4),_vertexData.getCellDescriptionsIndex(5),x,h);
+      return false;
+    },
+    [&]() -> bool {
+      mergeNeighboursLoopBody(4,6,_vertexData.getCellDescriptionsIndex(4),_vertexData.getCellDescriptionsIndex(6),x,h);
+      return false;
+    },
+    [&]() -> bool {
+      mergeNeighboursLoopBody(5,7,_vertexData.getCellDescriptionsIndex(5),_vertexData.getCellDescriptionsIndex(7),x,h);
+      return false;
+    },
+    [&]() -> bool {
+      mergeNeighboursLoopBody(6,7,_vertexData.getCellDescriptionsIndex(6),_vertexData.getCellDescriptionsIndex(7),x,h);
+      return false;
+    },
+    peano::datatraversal::TaskSet::TaskType::IsTaskAndRunImmediately,
+    peano::datatraversal::TaskSet::TaskType::IsTaskAndRunImmediately,
+    peano::datatraversal::TaskSet::TaskType::IsTaskAndRunImmediately,
+    peano::datatraversal::TaskSet::TaskType::IsTaskAndRunImmediately,
+    peano::datatraversal::TaskSet::TaskType::IsTaskAndRunImmediately,
+    peano::datatraversal::TaskSet::TaskType::IsTaskAndRunImmediately,
+    peano::datatraversal::TaskSet::TaskType::IsTaskAndRunImmediately,
+    peano::datatraversal::TaskSet::TaskType::IsTaskAndRunImmediately,
+    peano::datatraversal::TaskSet::TaskType::IsTaskAndRunImmediately,
+    peano::datatraversal::TaskSet::TaskType::IsTaskAndRunImmediately,
+    peano::datatraversal::TaskSet::TaskType::IsTaskAndRunImmediately,
+    peano::datatraversal::TaskSet::TaskType::IsTaskAndRunImmediately,
+    true);
     #endif
     #else
     #if DIMENSIONS==2
@@ -1030,22 +1089,3 @@ void exahype::Vertex::receiveNeighbourData(
   }
 }
 #endif
-
-exahype::Vertex::MergeNeighboursJob::MergeNeighboursJob(
-  const exahype::Vertex& vertex,
-  const int              pos1Scalar,
-  const int              pos2Scalar,
-  const tarch::la::Vector<DIMENSIONS, double>& x,
-  const tarch::la::Vector<DIMENSIONS, double>& h)
-  :
-  _pos1Scalar(pos1Scalar),
-  _pos2Scalar(pos2Scalar),
-  _cellDescriptionsIndex1(vertex._vertexData.getCellDescriptionsIndex(pos1Scalar)),
-  _cellDescriptionsIndex2(vertex._vertexData.getCellDescriptionsIndex(pos2Scalar)),
-  _x(x),
-  _h(h) {}
-
-bool exahype::Vertex::MergeNeighboursJob::MergeNeighboursJob::operator()() const {
-  mergeNeighboursLoopBody(_pos1Scalar,_pos2Scalar,_cellDescriptionsIndex1,_cellDescriptionsIndex2,_x,_h);
-  return false;
-}
