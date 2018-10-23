@@ -1069,7 +1069,8 @@ int exahype::solvers::ADERDGSolver::evaluateRefinementCriterion(
   assertion1(cellDescription.getType()==CellDescription::Type::Cell,cellDescription.toString());
   assertion1(
       cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::None ||
-      cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::ErasingChildrenRequested,
+      cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::ErasingChildrenRequested ||
+      cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::ChangeChildrenToVirtualChildrenRequested,
       cellDescription.toString());
 
   const double* const solution = getDataHeapArray(solutionHeapIndex);

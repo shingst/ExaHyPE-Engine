@@ -67,18 +67,21 @@ public:
   /**
    * Loop body of loop in mergeNeighbours.
    *
+   * @note All parameters must be copied as the function
+   * might be spawned as task.
+   *
    * @param pos1Scalar             linearised adjacency index
    * @param cellDescriptionsIndex1 cell description index corresponding to the adjacency index
-   * @param x position of this vertex
-   * @param h mesh size
+   * @param x position of a vertex
+   * @param h extent of cells adjacent to the vertex
    */
   static void mergeNeighboursLoopBody(
       const int pos1Scalar,
       const int pos2Scalar,
       const int cellDescriptionsIndex1,
       const int cellDescriptionsIndex2,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const tarch::la::Vector<DIMENSIONS, double>& h);
+      const tarch::la::Vector<DIMENSIONS, double> x,
+      const tarch::la::Vector<DIMENSIONS, double> h);
 
   /**
    * Loop body of loop in mergeNeighboursMetadata.

@@ -408,8 +408,8 @@ void exahype::Vertex::mergeNeighboursLoopBody(
     const int pos2Scalar,
     const int cellDescriptionsIndex1,
     const int cellDescriptionsIndex2,
-    const tarch::la::Vector<DIMENSIONS, double>& x,
-    const tarch::la::Vector<DIMENSIONS, double>& h) {
+    const tarch::la::Vector<DIMENSIONS, double> x,
+    const tarch::la::Vector<DIMENSIONS, double> h) {
   #if defined(Asserts) || defined (ValidateNeighbourHoodDuringNeighbourMerge)
   constexpr bool validate = true;
   #else
