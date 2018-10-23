@@ -1216,7 +1216,7 @@ void exahype::solvers::ADERDGSolver::alterErasingRequestsIfNecessary(
           coarseGridCellDescription.setRefinementEvent(CellDescription::None);
         }  break;
         case CellDescription::RefinementEvent::ErasingChildrenRequested: {
-          assertion1(coarseGridCellDescription.getType()==CellDescription::Type::Ancestor,
+          assertion1(coarseGridCellDescription.getType()==CellDescription::Type::Cell,
               coarseGridCellDescription.toString());
 
           coarseGridCellDescription.setRefinementEvent(
@@ -2506,6 +2506,7 @@ void exahype::solvers::ADERDGSolver::updateSolution(
     cellDescription.getType()==CellDescription::Type::Cell &&
     cellDescription.getRefinementEvent()==CellDescription::None
   ) {
+    assertion1(cellDescription.getNeighbourMergePerformed().all(),cellDescription.toString());
     #if !defined(SharedMemoryParallelisation) && !defined(Parallel) && defined(Asserts)
     static int counter = 0;
     static double timeStamp = 0;
@@ -2553,7 +2554,6 @@ void exahype::solvers::ADERDGSolver::updateSolution(
         }
       }
     }
-    assertion1(cellDescription.getNeighbourMergePerformed().all(),cellDescription.toString());
 
     // perform the update
     solutionUpdate(newSolution,update,cellDescription.getCorrectorTimeStepSize());
@@ -2620,7 +2620,7 @@ void exahype::solvers::ADERDGSolver::prolongateFaceDataToDescendant(
     // Check if cell is at "left" or "right" d face of parent
     if ( cellDescription.getFacewiseCommunicationStatus(faceIndex)==CellCommunicationStatus ) { // TODO(Dominic): If the grid changes dynamically during the time steps,
       // we have to use the sufficient condition in order to be prepared.
-      assertion( exahype::amr::faceIsOnBoundaryOfParent(faceIndex,subcellIndex,levelDelta) ); // necessary but not sufficient
+      assertion( exahype::amr::faceIsOnBoundaryOfParent(faceIndex,subcellIndex,levelFine-levelCoarse) ); // necessary but not sufficient
 
       logDebug("prolongateFaceDataToDescendant(...)","cell=" << cellDescription.getOffset() <<
                ",level=" << cellDescription.getLevel() <<
@@ -2639,11 +2639,11 @@ void exahype::solvers::ADERDGSolver::prolongateFaceDataToDescendant(
       const int dofPerFace  = getBndFluxSize();
 
       // fine
-      double* lQhbndFine = getDataHeapArrayFacePart(cellDescription.getExtrapolatedPredictor(), dataPerFace,faceIndex);
-      double* lFhbndFine = getDataHeapArrayFacePart(cellDescription.getFluctuation(),           dofPerFace, faceIndex);
+      double* lQhbndFine = getDataHeapArrayFacePart(cellDescription.getExtrapolatedPredictor(),dataPerFace,faceIndex);
+      double* lFhbndFine = getDataHeapArrayFacePart(cellDescription.getFluctuation(),          dofPerFace, faceIndex);
       // coarse
-      const double* lQhbndCoarse = getDataHeapArrayFacePart(parentCellDescription.getExtrapolatedPredictor(), dataPerFace,faceIndex);
-      const double* lFhbndCoarse = getDataHeapArrayFacePart(parentCellDescription.getFluctuation(),           dofPerFace, faceIndex);
+      const double* lQhbndCoarse = getDataHeapArrayFacePart(parentCellDescription.getExtrapolatedPredictor(),dataPerFace,faceIndex);
+      const double* lFhbndCoarse = getDataHeapArrayFacePart(parentCellDescription.getFluctuation(),          dofPerFace, faceIndex);
 
       faceUnknownsProlongation(lQhbndFine,lFhbndFine,lQhbndCoarse,lFhbndCoarse, levelCoarse, levelFine,
                                exahype::amr::getSubfaceIndex(subcellIndex,direction));
