@@ -21,7 +21,6 @@
  #include "exahype/adapters/BroadcastAndDropNeighbourMessages.h" 
  #include "exahype/adapters/RefinementStatusSpreading.h" 
  #include "exahype/adapters/PredictionOrLocalRecomputation.h" 
- #include "exahype/adapters/GlobalRollback.h" 
  #include "exahype/adapters/MergeNeighbours.h" 
  #include "exahype/adapters/UpdateAndReduce.h" 
  #include "exahype/adapters/Prediction.h" 
