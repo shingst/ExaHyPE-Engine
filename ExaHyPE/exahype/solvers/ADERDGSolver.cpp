@@ -2618,7 +2618,8 @@ void exahype::solvers::ADERDGSolver::prolongateFaceDataToDescendant(
   for (int faceIndex = 0; faceIndex < DIMENSIONS_TIMES_TWO; ++faceIndex) {
     const int direction = faceIndex/2;
     // Check if cell is at "left" or "right" d face of parent
-    if ( cellDescription.getFacewiseCommunicationStatus(faceIndex)==CellCommunicationStatus ) {
+    if ( cellDescription.getFacewiseCommunicationStatus(faceIndex)==CellCommunicationStatus ) { // TODO(Dominic): If the grid changes dynamically during the time steps,
+      // we have to use the sufficient condition in order to be prepared.
       assertion( exahype::amr::faceIsOnBoundaryOfParent(faceIndex,subcellIndex,levelDelta) ); // necessary but not sufficient
 
       logDebug("prolongateFaceDataToDescendant(...)","cell=" << cellDescription.getOffset() <<

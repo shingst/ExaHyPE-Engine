@@ -804,7 +804,7 @@ bool exahype::runners::Runner::createMesh(exahype::repositories::Repository& rep
   bool meshUpdate = false;
 
   int meshSetupIterations = 0;
-  repository.switchToMeshRefinementAndPlotTree();
+  repository.switchToMeshRefinement();
 
   repository.getState().setMeshRefinementHasConverged(false);
   peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(true);
