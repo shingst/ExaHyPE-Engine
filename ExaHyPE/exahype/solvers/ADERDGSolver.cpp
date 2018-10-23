@@ -123,8 +123,6 @@ void exahype::solvers::ADERDGSolver::addNewCellDescription(
   newCellDescription.setType(cellType);
   newCellDescription.setParentIndex(parentIndex);
   newCellDescription.setLevel(level);
-  newCellDescription.setParentCellLevel(-1);
-  newCellDescription.setParentOffset(-1);
   newCellDescription.setRefinementEvent(refinementEvent);
 
   newCellDescription.setHasVirtualChildren(false);
@@ -1895,19 +1893,6 @@ void exahype::solvers::ADERDGSolver::ensureFineGridCoarseGridConsistency(
         fineGridCellDescription.toString());
     fineGridCellDescription.setParentIndex(coarseGridCellDescriptionsIndex);
 
-    // coarse to fine grid
-    if ( fineGridCellDescription.getType()==CellDescription::Type::Descendant ) {
-      CellDescription& coarseGridCellDescription = getCellDescription(coarseGridCellDescriptionsIndex,coarseGridElement);
-      if ( coarseGridCellDescription.getType()==CellDescription::Type::Cell ) {
-        fineGridCellDescription.setParentCellLevel(coarseGridCellDescription.getLevel());
-        fineGridCellDescription.setParentOffset(coarseGridCellDescription.getOffset());
-      } else {
-        assertion1(coarseGridCellDescription.getType()==CellDescription::Type::Descendant,coarseGridCellDescription.toString());
-        fineGridCellDescription.setParentCellLevel(coarseGridCellDescription.getParentCellLevel());
-        fineGridCellDescription.setParentOffset(coarseGridCellDescription.getParentOffset());
-      }
-    }
-
     #if defined(Asserts) || defined(Debug)
     assertion2(coarseGridElement==exahype::solvers::Solver::NotFound || fineGridCellDescription.getParentIndex()==coarseGridCellDescriptionsIndex,
         fineGridCellDescription.toString(), getCellDescription(coarseGridCellDescriptionsIndex,coarseGridElement).toString());
@@ -2521,7 +2506,6 @@ void exahype::solvers::ADERDGSolver::updateSolution(
     cellDescription.getType()==CellDescription::Type::Cell &&
     cellDescription.getRefinementEvent()==CellDescription::None
   ) {
-    assertion1(cellDescription.getNeighbourMergePerformed().all(),cellDescription.toString());
     #if !defined(SharedMemoryParallelisation) && !defined(Parallel) && defined(Asserts)
     static int counter = 0;
     static double timeStamp = 0;
@@ -2569,6 +2553,7 @@ void exahype::solvers::ADERDGSolver::updateSolution(
         }
       }
     }
+    assertion1(cellDescription.getNeighbourMergePerformed().all(),cellDescription.toString());
 
     // perform the update
     solutionUpdate(newSolution,update,cellDescription.getCorrectorTimeStepSize());
