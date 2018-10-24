@@ -429,7 +429,7 @@ void aderExtrapolatorNonlinear(const double* lQhi, const double* lGradQi, const 
     }
     
     // Matrix-Vector Products
-    for (int k = 0; k < numberOfData; k++) { 
+    for (int k = 0; k < numberOfVariables; k++) {
       for (int l = 0; l < basisSize; l++) { // x
         // Fortran: lQhbnd(:,j,1) = lQhi(:,:,j) * FLCoeff(:)
         lQhbnd[idx_lQhbnd(0, j, k)] +=
@@ -441,7 +441,7 @@ void aderExtrapolatorNonlinear(const double* lQhi, const double* lGradQi, const 
       }
     }
     if (useViscousFlux) {
-      for (int k = 0; k < numberOfData; k++) {
+      for (int k = 0; k < numberOfVariables; k++) {
         for (int l = 0; l < basisSize; l++) { // x
           for (int dim = 0; dim < DIMENSIONS; dim++) {
             lGradQhbnd[idx_lGradQhbnd(0, j, dim, k)] +=
@@ -486,7 +486,7 @@ void aderExtrapolatorNonlinear(const double* lQhi, const double* lGradQi, const 
       }
     }
     if (useViscousFlux) {
-      for (int k = 0; k < numberOfData; k++) {
+      for (int k = 0; k < numberOfVariables; k++) {
         for (int l = 0; l < basisSize; l++) { // x
           for (int dim = 0; dim < DIMENSIONS; dim++) {
             lGradQhbnd[idx_lGradQhbnd(2, j, dim, k)] +=
