@@ -52,6 +52,8 @@
   ],
   "additionalProperties" : false,
   "properties" : {
+    "_shared_memory" : {},
+    "_distributed_memory" : {},
     "project_name" : {
       "type" : "string",
       "title" : "The name of the application or PDE, will get a C++ namespace",
