@@ -98,7 +98,13 @@ class SolverController:
         # variables access class
         context["variablesMap"]  = ToolkitHelper.parse_variables(solver,"variables")
         if nParam>0:
-            context["variablesMap"] += ToolkitHelper.parse_variables(solver,"material_parameters")
+            parametersMap = ToolkitHelper.parse_variables(solver,"material_parameters")
+            # Increase offset of parameters, they are located directly after variables.
+            def increaseOffset(param):
+                param["offset"] += nVar
+                return param
+            parametersMap = [increaseOffset(param) for param in parametersMap]
+            context["variablesMap"] += parametersMap
         context["variablesMapSize"] = len(context["variablesMap"])
         context["variables_as_str"] = ToolkitHelper.variables_to_str(solver,"variables")
         context["material_parameters_as_str"]  = ToolkitHelper.variables_to_str(solver,"material_parameters")
