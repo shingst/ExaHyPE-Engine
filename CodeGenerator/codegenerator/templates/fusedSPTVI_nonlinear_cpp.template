@@ -70,19 +70,19 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
   // 0. Allocate local variable
 {% if useFluxVect %}
   // transposed F slice for flux_vect
-  {{m.vectPDEsArrays('Ft', True) | indent(2)}}{##}
+  {{m.vectPDEsArrays('Ft', nVar, True) | indent(2)}}{##}
 {% endif %}
 {% if useNCPVect or useFusedSourceVect %}
   // transposed gradQ slice for vect ncp/source
-  {{m.vectPDEsArrays('gradQt', True) | indent(2)}}{##}
+  {{m.vectPDEsArrays('gradQt', nVar, True) | indent(2)}}{##}
 {% endif %}
 {% if useFluxVect or useNCPVect or useSourceVect or useFusedSourceVect %}
   // transposed Q slice for vect PDEs
-  {{m.vectPDEsArrays('Qt', False) | indent(2)}}{##}
+  {{m.vectPDEsArrays('Qt', nData, False) | indent(2)}}{##}
 {% endif %}
 {% if useNCPVect or useSourceVect or useFusedSourceVect %}
   // transposed S slice for vect ncp/source
-  {{m.vectPDEsArrays('St', False) | indent(2)}}{##}
+  {{m.vectPDEsArrays('St', nVar, False) | indent(2)}}{##}
 {% endif %}
 
   double new_lQi_slice[{{nDof*nVarPad}}] __attribute__((aligned(ALIGNMENT))); //for step 4 (computing new lQi value), doesn't update parameters
@@ -177,7 +177,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
 {# *************************************************
    **** call to flux function over lQi into lFi ****
    ************************************************* #}
-{% with inputQ='lQi', inputQ_dataSize=nDataPad, outputF='lFi',  timeInterleaved=True, time_var='i' %}
+{% with inputQ='lQi', inputQ_dataSize=nDataPad, outputF='lFi', timeInterleaved=True, time_var='i' %}
 {% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/flux_PDE_over_xyz.template' %}{% endfilter %}
 {% endwith %}
 {% endif %}{# useFlux #}
