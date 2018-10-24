@@ -1,6 +1,7 @@
 #include "ScenarioFactory.h"
 
 #include "Scenarios/ConvergenceTest/ConvergenceTest.h"
+#include "Scenarios/DensityCurrent.h"
 #include "Scenarios/DoubleShockTube.h"
 #include "Scenarios/EntropyWave.h"
 #include "Scenarios/SmoothWave.h"
@@ -27,6 +28,8 @@ NavierStokes::ScenarioFactory::createScenario(const std::string& scenarioName) {
     return std::move(ScenarioPtr(new TaylorGreen()));
   } else if (scenarioName == "two-bubbles") {
     return std::move(ScenarioPtr(new TwoBubbles()));
+  } else if (scenarioName == "density-current") {
+    return std::move(ScenarioPtr(new DensityCurrent()));
   } else if (scenarioName == "convergence") {
     return std::move(ScenarioPtr(new ConvergenceTest()));
   }
