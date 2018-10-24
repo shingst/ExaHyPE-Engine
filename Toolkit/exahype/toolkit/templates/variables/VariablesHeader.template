@@ -263,7 +263,7 @@ class {{project}}::{{abstractSolver}}::Variables : public {{project}}::{{abstrac
     }
     tarch::la::Vector<{{var.multiplicity}},double> {{var.name}}() const {
       tarch::la::Vector<{{var.multiplicity}},double> values;
-      values={%for i in range(var.multiplicity)%}_Q[{{var.offset+i}}],{%endfor%}_Q[{{var.offset+var.multiplicity-1}}];
+      values={%for i in range(var.multiplicity - 1)%}_Q[{{var.offset+i}}],{%endfor%}_Q[{{var.offset+var.multiplicity-1}}];
       return values;
     }
     // setters for {{var.name}}
