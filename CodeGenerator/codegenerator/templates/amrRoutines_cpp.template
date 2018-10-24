@@ -354,10 +354,15 @@ void {{codeNamespace}}::volumeUnknownsRestriction(
 {% if nDim == 3 %}
   {{m.allocateArray('tmpY', nDof3D*nDof*nDof*nDataPad) | indent(6)}}{##}
 {% endif %}
+{% if not tempVarsOnStack %}{# declare them here so that they can be free later, otherwise scope error du to the if #}
+  double* tmpLuh;  //allocated and freed only if levelDelta > 1
+  double* tmpLuh2; //allocated and freed only if levelDelta > 1
+{% endif %}
+
 
   if(levelDelta > 1) {
-    {{m.allocateArray('tmpLuh', nDof3D*nDof*nDof*nDataPad ) | indent(2)}}{##}
-    {{m.allocateArray('tmpLuh2', nDof3D*nDof*nDof*nDataPad ) | indent(2)}}{##}
+    {{m.allocateArray('tmpLuh', nDof3D*nDof*nDof*nDataPad, pointerExists=True ) | indent(2)}}{##}
+    {{m.allocateArray('tmpLuh2', nDof3D*nDof*nDof*nDataPad, pointerExists=True ) | indent(2)}}{##}
     int subcellIndexCurrent_0 = subcellIndex[0];
     int subcellIndexCurrent_1 = subcellIndex[1];
 {% if nDim==3 %}
@@ -456,6 +461,12 @@ void {{codeNamespace}}::volumeUnknownsRestriction(
 {% endif %}
 
 }
+
+/**
+* Legacy code
+*
+* TODO JMG remove later
+*/
 
 
 /*

@@ -14,11 +14,11 @@
   Allocate array
 */
 #}
-{% macro allocateArray(name, size, setToZero=False) %}
+{% macro allocateArray(name, size, setToZero=False, pointerExists=False) %}
 {% if tempVarsOnStack %}
 double {{name}}[{{size}}] __attribute__((aligned(ALIGNMENT))){% if setToZero %}  = {0.}{% endif %};
 {% else %}
-double* {{name}} = ((double *) _mm_malloc(sizeof(double)*{{size}}, ALIGNMENT));
+{% if not pointerExists %}double* {% endif %}{{name}} = ((double *) _mm_malloc(sizeof(double)*{{size}}, ALIGNMENT));
 {% if setToZero %}
 std::memset({{name}}, 0, sizeof(double)*{{size}});
 {% endif %}
