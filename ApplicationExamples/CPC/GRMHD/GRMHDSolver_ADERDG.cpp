@@ -8,12 +8,7 @@
 #include "kernels/KernelUtils.h" // matrix indexing
 #include "kernels/GaussLegendreQuadrature.h"
 
-#include "exahype/disableOptimization.h" // we experience compiler bugs sometimes.
 
-#include "BoundaryConditions/BoundaryConditions_ADERDG.h"
-
-
-const double excision_radius = 1.0;
 constexpr int nVar = GRMHD::AbstractGRMHDSolver_ADERDG::NumberOfVariables;
 constexpr int order = GRMHD::AbstractGRMHDSolver_ADERDG::Order;
 constexpr int basisSize = order + 1;
@@ -21,61 +16,17 @@ constexpr int nDim = DIMENSIONS;
 
 tarch::logging::Log GRMHD::GRMHDSolver_ADERDG::_log("GRMHDSolver_ADERDG");
 
-typedef BoundaryConditions<GRMHD::GRMHDSolver_ADERDG> ADERDG_BC;
-ADERDG_BC* abc;
-
 // enable nan tracker
 #include <fenv.h>
 
 void GRMHD::GRMHDSolver_ADERDG::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
-  // NAN checker
-//  feenableexcept(FE_INVALID | FE_OVERFLOW);  // Enable all floating point exceptions but FE_INEXACT
-	
-  // Todo: Move this to specfile once we have working constants.
-  std::string id_default = "Fortran";
-  std::string bc_default = "left:exact,right:exact,top:exact,bottom:exact,front:exact,back:exact";
-
-  // alternatives:
-  //std::string id_default = "RNSID";
-  //std::string bc_default = "left:refl,right:exact,bottom:refl,top:exact,front:refl,back:exact";
-
-  // try to obtain requested initial data and boundary conditions from the
-  // environment variables, as the specfile parameter system is still broken.
-  std::string tid = getenv("EXAHYPE_ID") ? getenv("EXAHYPE_ID") : id_default;
-  std::string tbc = getenv("EXAHYPE_BC") ? getenv("EXAHYPE_BC") : bc_default;
-
-  if(!prepare_id(tid)) {
-	  logError("prepare_id", "Could not setup Initial Data '" << tid << "', probably misspelled.");
-	  std::abort();
-  }
-
-  abc = new ADERDG_BC(this);
-  //if(!abc->setFromSpecFile<exahype::parser::ParserView>(constants)) {
-  if(!abc->setFromSpecFile<StringMapView>(StringMapView(tbc))) {
-	logError("boundaryValues", "Some Boundary faces are missing in Specfile. Need: left,right,top,bottom,front,back. Got:" << tbc);
-	std::abort();
-  }
 }
 
-void __attribute__((optimize("O0"))) initialData(const double* const x,const double t,const double dt,double* Q) {
-    id->Interpolate(x, t, Q);
-    //printf("Interpoalted at x=[%f,%f,%f], t=%f, Q0=%f\n", x[0],x[1],x[2], t, Q[0]);
-    for(int i=0; i<nVar; i++) {
-      if(!std::isfinite(Q[i])) {
-        printf("NAN in i=%d at t=%f, x=[%f,%f,%f], Q[%d]=%f\n", i, t, x[0],x[1],x[2], i, Q[i]);
-      }
-    }
+void GRMHD::GRMHDSolver_ADERDG::adjustPointSolution(const double* const x,const double t,const double dt,double* Q) {
+  if (tarch::la::equals(t,0.0)) initialdata_(x,&t,Q);
 }
 
-
-void __attribute__((optimize("O0"))) GRMHD::GRMHDSolver_ADERDG::adjustPointSolution(const double* const x,const double t,const double dt,double* Q) {
-  bool insideExcisionBall = false;
-  bool hastoadjust = tarch::la::equals(t,0.0) || insideExcisionBall;
-
-  if (hastoadjust) initialData(x,t,dt,Q);
-}
-
-void __attribute__((optimize("O0"))) GRMHD::GRMHDSolver_ADERDG::eigenvalues(const double* const Q,const int d,double* lambda) {
+void  GRMHD::GRMHDSolver_ADERDG::eigenvalues(const double* const Q,const int d,double* lambda) {
   double nv[3] = {0.};
   nv[d] = 1;
   pdeeigenvalues_(lambda, Q, nv);
@@ -83,62 +34,30 @@ void __attribute__((optimize("O0"))) GRMHD::GRMHDSolver_ADERDG::eigenvalues(cons
 
 
 void GRMHD::GRMHDSolver_ADERDG::flux(const double* const Q,double** F) {
-  pdeflux_(F[0], F[1], (DIMENSIONS==3)?F[2]:nullptr, Q);
+  pdeflux_(F[0], F[1], F[2], Q);
 }
-
-// Source is zero
-/*
-void __attribute__((optimize("O0"))) GRMHD::GRMHDSolver_ADERDG::algebraicSource(const double* const Q,double* S) {
-  pdesource_(S, Q);
-}
-*/
-
 
 void GRMHD::GRMHDSolver_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int d,
   const double * const fluxIn,const double* const stateIn, double *fluxOut,double* stateOut) {
-	 // for debugging, to make sure BC are set correctly
-	double snan = std::numeric_limits<double>::signaling_NaN();
-	double weird_number = -1.234567;
-	std::memset(stateOut, weird_number, nVar * sizeof(double));
-	std::memset(fluxOut,  weird_number, nVar * sizeof(double));
-	
-	//abc->apply(ADERDG_BOUNDARY_CALL);
-	//abc->exact(ADERDG_BOUNDARY_CALL);
-	
-	/////// EXACT
-	  // employ time-integrated exact BC for AlfenWave.
-  
-  double Qgp[nVar], Fs[nDim][nVar], *F[nDim];
-  for(int dd=0; dd<nDim; dd++) F[dd] = Fs[dd];
-  // zeroise stateOut, fluxOut
-  for(int m=0; m<nVar; m++) {
-    stateOut[m] = 0;
-    fluxOut[m] = 0;
-  }
-  for(int i=0; i < basisSize; i++)  { // i == time
-    const double weight = kernels::gaussLegendreWeights[order][i];
-    const double xi = kernels::gaussLegendreNodes[order][i];
-    double ti = t + xi * dt;
+  double Qgp[nVar];
+  std::memset(stateOut, 0, nVar * sizeof(double));
+  std::memset(fluxOut, 0, nVar * sizeof(double));
 
-    initialData(x, ti, dt, Qgp);
-    flux(Qgp, F);
-    
-    for(int m=0; m < nVar; m++) {
-      stateOut[m] += weight * Qgp[m];
-      fluxOut[m] += weight * Fs[d][m];
-    }
+  double F[nDim][nVar];
+
+  for(int i=0; i < basisSize; i++)  { // i == time
+     const double weight = kernels::gaussLegendreWeights[order][i];
+     const double xi = kernels::gaussLegendreNodes[order][i];
+     double ti = t + xi * dt;
+
+     initialdata_(x,&ti, Qgp);
+     pdeflux_(F[0], F[1], (nDim==3) ? F[2] : nullptr, Qgp);
+     for(int m=0; m < nVar; m++) {
+        stateOut[m] += weight * Qgp[m];
+        fluxOut[m] += weight * F[d][m];
+     }
   }
-  ///// EXACT
 	
-	
-  for(int i=0; i<NumberOfVariables; i++) {
-	if(!std::isfinite(stateOut[i])) {
-		printf("BoundaryValues stateOut NAN in i=%d at t=%f, x=[%f,%f,%f], stateOut[%d]=%f\n", i, t, x[0],x[1],x[2], i, stateOut[i]);
-	}
-	if(!std::isfinite(fluxOut[i])) {
-		printf("BoundaryValues NAN in i=%d at t=%f, x=[%f,%f,%f], fluxOut[%d]=%f\n", i, t, x[0],x[1],x[2], i, fluxOut[i]);
-	}
-  }
 }
 
 
@@ -147,48 +66,7 @@ exahype::solvers::Solver::RefinementControl GRMHD::GRMHDSolver_ADERDG::refinemen
   return exahype::solvers::Solver::RefinementControl::Keep;
 }
 
-// only evaluated in Limiting context
-/*
-void GRMHD::GRMHDSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(
-    double* observables,const int numberOfObservables,
-    const double* const Q) const {
-  assertion(numberOfObservables==2);
-
-  observables[0] = Q[0]; // rho
-  observables[1] = Q[4]; // dens
-}
-*/
-/*
-bool GRMHD::GRMHDSolver_ADERDG::isPhysicallyAdmissible(
-      const double* const solution,
-      const double* const observablesMin,const double* const observablesMax,
-      const bool wasTroubledInPreviousTimeStep,
-      const tarch::la::Vector<DIMENSIONS,double>& center,
-      const tarch::la::Vector<DIMENSIONS,double>& dx,
-      const double t, const double dt) const {
-
-  // geometric criterion:
-  //  if ((center[0]-0.5)*(center[0]-0.5)+(center[1]-0.5)*(center[1]-0.5)<0.25*dx[0]*dx[0]) return false;
-
-  // Static criterium for startup: When the density makes a large jump,
-  // ie. at the star crust
-  //if ( QMin[0] != 0.0 && QMax[0]/QMin[0] > 1e3 ) return false;
-
-  if (observablesMin[0] < 0.0) return false;
-  if (observablesMin[1] < 0.0) return false;
-
-  // what about this kind of check?
-  
-  //for (int i=0; i<nVar; ++i) {
-//    if (!std::isfinite(QMin[i])) return false;
-  //  if (!std::isfinite(QMax[i])) return false;
-  //}
-  
-  return true;
-}
-*/
-
-void __attribute__((optimize("O0"))) GRMHD::GRMHDSolver_ADERDG::nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) {
+void  GRMHD::GRMHDSolver_ADERDG::nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) {
   pdencp_(BgradQ, Q, gradQ);
   
   for(int i=0; i<NumberOfVariables; i++) {
@@ -202,15 +80,3 @@ void __attribute__((optimize("O0"))) GRMHD::GRMHDSolver_ADERDG::nonConservativeP
   }
 }
 
-/*
-void GRMHD::GRMHDSolver_ADERDG::coefficientMatrix(const double* const Q,const int d,double* Bn) {
-  // new scheme has no coefficient matrix
-  static tarch::logging::Log _log("GRMHDSolver");
-  logError("coefficientMatrix()", "ADERDG Coefficient Matrix invoked");
-  exit(-2);
-
-  double nv[3] = {0.};
-  nv[d] = 1;
-  pdematrixb_(Bn, Q, nv);
-}
-*/

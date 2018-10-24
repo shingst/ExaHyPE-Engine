@@ -15,14 +15,8 @@
 
 
 
-GRMHD::IntegralsWriter::IntegralsWriter(exahype::solvers::LimitingADERDGSolver&  solver)
-	: IntegralsWriter() { plotForADERSolver = true; }
-
 GRMHD::IntegralsWriter::IntegralsWriter(GRMHD::GRMHDSolver_ADERDG&  solver)
 	: IntegralsWriter() { plotForADERSolver = true; }
-
-GRMHD::IntegralsWriter::IntegralsWriter(GRMHD::GRMHDSolver_FV&  solver)
-	: IntegralsWriter() { plotForADERSolver = false; }
 
 GRMHD::IntegralsWriter::IntegralsWriter() :
 	conserved("output/cons-"),
@@ -97,17 +91,12 @@ void GRMHD::IntegralsWriter::mapQuantities(
     double timeStamp
 ) {
 	// make sure this plotter has no output associated
-	assertion( outputQuantities == nullptr );
+	//assertion( outputQuantities == nullptr );
 
 
 	double dV;
-	if(plotForADERSolver) {
 		const int order = GRMHD::AbstractGRMHDSolver_ADERDG::Order;
 		dV = kernels::ADERDGVolume(order, sizeOfPatch, pos);
-	} else {
-		const int patchSize = GRMHD::AbstractGRMHDSolver_FV::PatchSize;
-		dV = tarch::la::volume(sizeOfPatch)/patchSize; // correct is probably (patchSize+1)
-	}
 
 	statistics.addValue(dV, 1);
 
@@ -125,13 +114,10 @@ void GRMHD::IntegralsWriter::mapQuantities(
       	  double vy;
 	  double vz;
 			  
-
 	  massaccretionrate_(Q, &mdot, &vx, &vy, &vz);
 	  masschange.addValue(mdot, dV);
 	}
 
-
-	
 	// reduce the conserved quantities
 	conserved.addValue(Q, dV);
 
@@ -148,11 +134,21 @@ void GRMHD::IntegralsWriter::mapQuantities(
 
 	double localError[nVar] = {0.};
 	try {
-		id->Interpolate(xpos, timeStamp, ExactCons);
+		initialdata_(xpos, &timeStamp, ExactCons);
+
 		pdecons2prim_(ExactPrim, ExactCons, &err);
 		for(int i=0; i<nVar; i++) {
-			localError[i] = std::abs(V[i] - ExactPrim[i]);
+			//localError[i] = std::abs(V[i] - ExactPrim[i]);
+            localError[i] = std::abs(Q[i] - ExactCons[i]);
 		}
+
+
+    for(int i=0; i < 19; i++){
+        outputQuantities[i] = std::abs(V[i] - ExactPrim[i]);
+        outputQuantities[i+19] =std::abs(Q[i] - ExactCons[i]);
+    }
+
+
 	} catch(const std::domain_error&) {
 		// error is 0.
 	}
