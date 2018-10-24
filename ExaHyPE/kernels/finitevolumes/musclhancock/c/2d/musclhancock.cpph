@@ -149,7 +149,11 @@ double kernels::finitevolumes::musclhancock::c::solutionUpdate(
         if(useSource || useNCP) {
           // Old code (for reference): solver.fusedSource(luh + idx(j,k,0), gradQ, Qt);
           if(useSource) {
-            solver.algebraicSource(luh + idx(j, k, 0), Qt);
+            // TODO(Lukas) Fix for sources that depend on x/t
+            const tarch::la::Vector<DIMENSIONS, double> x = {0.0, 0.0};
+            const double t = 0.0;
+            // TODO(Lukas) Check with master - might be wrong!
+            solver.algebraicSource(x, t, luh + idx(j, k, 0), Qt);
           } else {
             std::fill_n(Qt, numberOfVariables, 0.0);
           }
@@ -207,6 +211,9 @@ double kernels::finitevolumes::musclhancock::c::solutionUpdate(
               fL, fR,
               wRx + idx_w(j, k, 0),
               wLx + idx_w(j, k+1, 0),
+              slope + idx_slope(j,k,0,0),
+              slope + idx_slope(j,k+1,0,0),
+              cellSize,
               0
           );
       assert(std::isfinite(s_max_x));
@@ -229,6 +236,9 @@ double kernels::finitevolumes::musclhancock::c::solutionUpdate(
           fL, fR,
           wRy + idx_w(j, k, 0),
           wLy + idx_w(j+1, k, 0),
+          slope + idx_slope(j,k,0,0),
+          slope + idx_slope(j+1,k,0,0),
+          cellSize,
           1
       );
       assert(std::isfinite(s_max_y));
@@ -260,7 +270,11 @@ double kernels::finitevolumes::musclhancock::c::solutionUpdate(
         double* gradQ = slope + idx_slope(j, k, 0, 0); // const in time
         // Old code (for reference): solver.fusedSource(ws, gradQ, src);
         if(useSource) {
-          solver.algebraicSource(ws, src);
+          // TODO(Lukas) Fix for sources that depend on x/t
+          const tarch::la::Vector<DIMENSIONS, double> x = {0.0, 0.0};
+          const double t = 0.0;
+          solver.algebraicSource(x, t, ws, src);
+          //solver.algebraicSource(ws, src);
         } else {
           std::fill_n(src, numberOfVariables, 0.0);
         }
