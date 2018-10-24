@@ -804,8 +804,8 @@ void exahype::solvers::FiniteVolumesSolver::updateSolution(
     CellDescription& cellDescription,
     const int cellDescriptionsIndex,
     const bool backupPreviousSolution) {
-  assertion1(cellDescription.getNeighbourMergePerformed().all(),cellDescription.toString());
-  if ( !cellDescription.getNeighbourMergePerformed().all() ) {
+  assertion1( tarch::la::equals(cellDescription.getNeighbourMergePerformed(),(signed char) true),cellDescription.toString());
+  if ( !tarch::la::equals(cellDescription.getNeighbourMergePerformed(),(signed char) true) ) {
     logError("updateSolution(...)","Not all ghost layers were copied to cell="<<cellDescription.toString());
     std::terminate();
   }

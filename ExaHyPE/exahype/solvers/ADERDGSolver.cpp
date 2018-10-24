@@ -139,9 +139,7 @@ void exahype::solvers::ADERDGSolver::addNewCellDescription(
     newCellDescription.setFacewiseCommunicationStatus(CellCommunicationStatus); // implicit conversion
     // TODO(Dominic): Make sure prolongation and restriction considers this.
   }
-
-  std::bitset<DIMENSIONS_TIMES_TWO> neighbourMergePerformed;  // default construction: no bit set
-  newCellDescription.setNeighbourMergePerformed(neighbourMergePerformed);
+  newCellDescription.setNeighbourMergePerformed((signed char) 0/*implicit conversion*/);
 
   // Pass geometry information to the cellDescription description
   newCellDescription.setSize(cellSize);
@@ -1998,7 +1996,7 @@ void exahype::solvers::ADERDGSolver::validateCellDescriptionData(
 exahype::solvers::Solver::MeshUpdateEvent
 exahype::solvers::ADERDGSolver::evaluateRefinementCriteriaAfterSolutionUpdate(
     CellDescription& cellDescription,
-    const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) {
+    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed) {
   cellDescription.setPreviousRefinementStatus(cellDescription.getRefinementStatus());
 
   cellDescription.setRefinementFlag(false);
@@ -2064,7 +2062,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
     const bool isLastIterationOfBatch,
     const bool isSkeletonCell,
     const bool mustBeDoneImmediately,
-    const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed ) {
+    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed ) {
   CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
 
   // solver->synchroniseTimeStepping(cellDescription); // assumes this was done in neighbour merge
@@ -2507,8 +2505,8 @@ void exahype::solvers::ADERDGSolver::updateSolution(
     cellDescription.getType()==CellDescription::Type::Cell &&
     cellDescription.getRefinementEvent()==CellDescription::None
   ) {
-    assertion1(cellDescription.getNeighbourMergePerformed().all(),cellDescription.toString());
-    if ( !cellDescription.getNeighbourMergePerformed().all() ) {
+    assertion1( tarch::la::equals(cellDescription.getNeighbourMergePerformed(),(signed char) true),cellDescription.toString());
+    if ( !tarch::la::equals(cellDescription.getNeighbourMergePerformed(),(signed char) true) ) {
       logError("updateSolution(...)","Riemann solve was not performed on all faces of cell= "<<cellDescription.toString());
       std::terminate();
     }
@@ -2938,7 +2936,7 @@ void exahype::solvers::ADERDGSolver::mergeWithAugmentationStatus(
 
 void exahype::solvers::ADERDGSolver::updateRefinementStatus(
     CellDescription& cellDescription,
-    const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) const {
+    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,s signed char>& neighbourMergePerformed) const {
   if (
     cellDescription.getRefinementStatus()<_minimumRefinementStatusForTroubledCell &&
     cellDescription.getLevel()==getMaximumAdaptiveMeshLevel()
@@ -4428,11 +4426,11 @@ bool exahype::solvers::ADERDGSolver::PredictionJob::operator()() {
 
 
 exahype::solvers::ADERDGSolver::FusedTimeStepJob::FusedTimeStepJob(
-  ADERDGSolver& solver,
-  const int     cellDescriptionsIndex,
-  const int     element,
-  const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed,
-  const bool    isSkeletonJob):
+  ADERDGSolver&                                              solver,
+  const int                                                  cellDescriptionsIndex,
+  const int                                                  element,
+  const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
+  const bool                                                 isSkeletonJob):
   _solver(solver),
   _cellDescriptionsIndex(cellDescriptionsIndex),
   _element(element),

@@ -954,18 +954,18 @@ private:
    */
   class FusedTimeStepJob {
     private:
-      ADERDGSolver&                            _solver; // TODO not const because of kernels
-      const int                                _cellDescriptionsIndex;
-      const int                                _element;
-      const std::bitset<DIMENSIONS_TIMES_TWO>  _neighbourMergePerformed;
-      const bool                               _isSkeletonJob;
+      ADERDGSolver&                                               _solver; // TODO not const because of kernels
+      const int                                                   _cellDescriptionsIndex;
+      const int                                                   _element;
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>&  _neighbourMergePerformed;
+      const bool                                                  _isSkeletonJob;
     public:
       FusedTimeStepJob(
-        ADERDGSolver& solver,
-        const int     cellDescriptionsIndex,
-        const int     element,
-        const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed,
-        const bool    isSkeletonJob);
+        ADERDGSolver&                                              solver,
+        const int                                                  cellDescriptionsIndex,
+        const int                                                  element,
+        const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
+        const bool                                                 isSkeletonJob);
 
       bool operator()();
   };
@@ -1090,7 +1090,7 @@ public:
    */
   void updateRefinementStatus(
       CellDescription& cellDescription,
-      const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) const;
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed) const;
 
   /**
    * Construct an ADERDGSolver.
@@ -1773,7 +1773,7 @@ public:
    */
   MeshUpdateEvent evaluateRefinementCriteriaAfterSolutionUpdate(
       CellDescription& cellDescription,
-      const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed);
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed);
 
   /*! Perform prediction and volume integral for an ADERDGSolver or LimitingADERDGSolver.
    *
@@ -1963,7 +1963,7 @@ public:
         const bool isLastIterationOfBatch,
         const bool isSkeletonCell,
         const bool mustBeDoneImmediately,
-        const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed);
+        const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed);
 
   UpdateResult fusedTimeStep(
       const int cellDescriptionsIndex,

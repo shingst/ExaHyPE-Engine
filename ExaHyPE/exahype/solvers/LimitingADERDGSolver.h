@@ -301,7 +301,7 @@ private:
    */
   MeshUpdateEvent determineRefinementStatusAfterSolutionUpdate(
       SolverPatch& solverPatch,
-      const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed);
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed);
 
   /**
    * Takes the FV solution from the limiter patch and projects it on the
@@ -404,7 +404,7 @@ private:
       const bool  isLastIterationOfBatch,
       const bool  isSkeletonJob,
       const bool  mustBeDoneImmediately,
-      const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed);
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed);
 
   /**
    * Body of LimitingADERDGSolver::adjustSolutionDuringMeshRefinement(int,int).
@@ -491,14 +491,14 @@ private:
     LimitingADERDGSolver&             _solver;
     const int                         _cellDescriptionsIndex;
     const int                         _element;
-    std::bitset<DIMENSIONS_TIMES_TWO> _neighbourMergePerformed;
+    tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& _neighbourMergePerformed;
     const bool                        _isSkeletonJob;
   public:
     FusedTimeStepJob(
         LimitingADERDGSolver&                    solver,
         const int                                cellDescriptionsIndex,
         const int                                element,
-        const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed,
+        const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
         const bool                               isSkeletonJob);
 
     bool operator()();
@@ -930,7 +930,7 @@ public:
   updateRefinementStatusAndMinAndMaxAfterSolutionUpdate(
       SolverPatch& solverPatch,
       const int cellDescriptionsIndex,
-      const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed);
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed);
 
   /**
    * Similar to ::determineLimiterStatusAfterSolutionUpdate(const int,const int)
