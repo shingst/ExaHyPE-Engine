@@ -488,11 +488,11 @@ private:
    */
   class FusedTimeStepJob {
   private:
-    LimitingADERDGSolver&             _solver;
-    const int                         _cellDescriptionsIndex;
-    const int                         _element;
-    tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& _neighbourMergePerformed;
-    const bool                        _isSkeletonJob;
+    LimitingADERDGSolver&                                     _solver;
+    const int                                                 _cellDescriptionsIndex;
+    const int                                                 _element;
+    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> _neighbourMergePerformed;
+    const bool                                                _isSkeletonJob;
   public:
     FusedTimeStepJob(
         LimitingADERDGSolver&                    solver,

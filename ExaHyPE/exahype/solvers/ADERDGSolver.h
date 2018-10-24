@@ -954,11 +954,11 @@ private:
    */
   class FusedTimeStepJob {
     private:
-      ADERDGSolver&                                               _solver; // TODO not const because of kernels
-      const int                                                   _cellDescriptionsIndex;
-      const int                                                   _element;
-      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>&  _neighbourMergePerformed;
-      const bool                                                  _isSkeletonJob;
+      ADERDGSolver&                                              _solver; // TODO not const because of kernels
+      const int                                                  _cellDescriptionsIndex;
+      const int                                                  _element;
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>  _neighbourMergePerformed;
+      const bool                                                 _isSkeletonJob;
     public:
       FusedTimeStepJob(
         ADERDGSolver&                                              solver,
