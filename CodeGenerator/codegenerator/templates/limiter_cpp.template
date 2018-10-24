@@ -30,11 +30,9 @@ void {{codeNamespace}}::projectOnFVLimiterSpace(const double* const luh, double*
   //compact projection without ghostlayer
   // x
   {{m.allocateArray('tmpX', nDof3D*nDof*nDofLim*nDataPad) | indent(2)}}{##}
-  for (int z = 0; z < {{nDof3D}}; z++) {
-    for (int y = 0; y < {{nDof}}; y++) {
-      // will overwrite tmpX, no need to set to 0
-      {{ m.matmul('dg2fv_x', 'luh', 'dg2fv', 'tmpX', '(z*'~nDof~'+y)*'~nDof*nData, '0', '(z*'~nDof~'+y)*'~nDofLim*nDataPad) | indent(6) }}{##}
-    }
+  for (int zy = 0; zy < {{nDof3D*nDof}}; zy++) {
+    // will overwrite tmpX, no need to set to 0
+    {{ m.matmul('dg2fv_x', 'luh', 'dg2fv', 'tmpX', 'zy*'~nDof*nData, '0', 'zy*'~nDofLim*nDataPad) | indent(4) }}{##}
   }
   
 {%if nDim == 2%}
@@ -56,11 +54,9 @@ void {{codeNamespace}}::projectOnFVLimiterSpace(const double* const luh, double*
   {{m.freeArray("tmpX") | indent(2)}}{##}
   
   // z
-  for (int y = 0; y < {{nDofLim}}; y++) {
-    for (int x = 0; x < {{nDofLim}}; x++) {
-      // will overwrite lim, no need to set to 0
-      {{ m.matmul('dg2fv_z', 'tmpY', 'dg2fv', 'lim', '(y*'~nDofLim~'+x)*'~nDataPad, '0', '(y*'~nDofLim~'+x)*'~nData) | indent(6) }}{##}
-    }
+  for (int yx = 0; yx < {{nDofLim*nDofLim}}; yx++) {
+    // will overwrite lim, no need to set to 0
+    {{ m.matmul('dg2fv_z', 'tmpY', 'dg2fv', 'lim', 'yx*'~nDataPad, '0', 'yx*'~nData) | indent(4) }}{##}
   }
   {{m.freeArray("tmpY") | indent(2)}}{##}
 {% endif %}{# nDim == 2 #}
@@ -107,11 +103,9 @@ void {{codeNamespace}}::projectOnDGSpace(const double* const lim, double* const 
   {{m.freeArray("tmpX") | indent(2)}}{##}
   
   // z
-  for (int y = 0; y < {{nDof}}; y++) {
-    for (int x = 0; x < {{nDof}}; x++) {
-      // will overwrite luh, no need to set to 0
-      {{ m.matmul('fv2dg_z', 'tmpY', 'fv2dg', 'luh', '(y*'~nDof~'+x)*'~nDataPad, '0', '(y*'~nDof~'+x)*'~nData) | indent(6) }}{##}
-    }
+  for (int yx = 0; yx < {{nDof*nDof}}; yx++) {
+    // will overwrite luh, no need to set to 0
+    {{ m.matmul('fv2dg_z', 'tmpY', 'fv2dg', 'luh', 'yx*'~nDataPad, '0', 'yx*'~nData) | indent(4) }}{##}
   }
   {{m.freeArray("tmpY") | indent(2)}}{##}
 {% endif %}{# nDim ==2 #}
@@ -208,16 +202,12 @@ void {{codeNamespace}}::findCellLocalMinAndMax(
 
   double observables[{{nObs}}] __attribute__((aligned(ALIGNMENT)));
 
-  for (int z = 0; z < {{nDof3D}}; z++) {
-    for (int y = 0; y < {{nDof}}; y++) {
-      for (int x = 0; x < {{nDof}}; x++) {
-        solver->mapDiscreteMaximumPrincipleObservables(observables,{{nObs}},luh+(((z*{{nDof}}+y)*{{nDof}}+x)*{{nData}}));
+  for (int zyx = 0; zyx < {{nDof**nDim}}; zyx++) {
+    solver->mapDiscreteMaximumPrincipleObservables(observables,{{nObs}},luh+(zyx*{{nData}}));
 
-        for (int v = 0; v < {{nObs}}; v++) {
-          localMinPerVariables[v] = std::min ( localMinPerVariables[v], observables[v] );
-          localMaxPerVariables[v] = std::max ( localMaxPerVariables[v], observables[v] );
-        }
-      }
+    for (int v = 0; v < {{nObs}}; v++) {
+      localMinPerVariables[v] = std::min ( localMinPerVariables[v], observables[v] );
+      localMaxPerVariables[v] = std::max ( localMaxPerVariables[v], observables[v] );
     }
   }
   compareWithADERDGSolutionAtGaussLobattoNodes(luh, solver, localMinPerVariables, localMaxPerVariables);
@@ -241,11 +231,9 @@ void {{codeNamespace}}::compareWithADERDGSolutionAtGaussLobattoNodes(
 
   // x
   {{m.allocateArray('tmpX', nDof3D*nDof*nDof*nDataPad) | indent(2)}}{##}
-  for (int z = 0; z < {{nDof3D}}; z++) {
-    for (int y = 0; y < {{nDof}}; y++) {
-      // will overwrite tmpX, no need to set to 0
-      {{ m.matmul('uh2lob_x', 'luh', 'uh2lob', 'tmpX', '(z*'~nDof~'+y)*'~nDof*nData, '0', '(z*'~nDof~'+y)*'~nDof*nDataPad) | indent(6) }}{##}
-    }
+  for (int zy = 0; zy < {{nDof3D*nDof}}; zy++) {
+    // will overwrite tmpX, no need to set to 0
+    {{ m.matmul('uh2lob_x', 'luh', 'uh2lob', 'tmpX', 'zy*'~nDof*nData, '0', 'zy*'~nDof*nDataPad) | indent(4) }}{##}
   }
   
   {%if nDim == 2%}
@@ -279,16 +267,14 @@ void {{codeNamespace}}::compareWithADERDGSolutionAtGaussLobattoNodes(
   // z
   double observables[{{nObs}}] __attribute__((aligned(ALIGNMENT)));
   {{m.allocateArray('lob', nDof*nDataPad) | indent(2)}}{# no need to set to zero, gemm will overwrite #} // constant x,y slice of projected solution
-  for (int y = 0; y < {{nDof}}; y++) {
-    for (int x = 0; x < {{nDof}}; x++) {
-      // will overwrite lop, no need to set to 0
-      {{ m.matmul('uh2lob_z_slice', 'tmpY', 'uh2lob', 'lob', '(y*'~nDof~'+x)*'~nDataPad, '0', '0') | indent(6) }}{##}
-      for(int p = 0; p < {{nDof}}; p++) {
-        solver->mapDiscreteMaximumPrincipleObservables(observables, {{nObs}}, lob+p*{{nDataPad}});
-        for (int n = 0; n < {{nObs}}; n++) {
-          min[n] = std::min( min[n], observables[n] );
-          max[n] = std::max( max[n], observables[n] );
-        }
+  for (int yx = 0; yx < {{nDof}}; yx++) {
+    // will overwrite lop, no need to set to 0
+    {{ m.matmul('uh2lob_z_slice', 'tmpY', 'uh2lob', 'lob', 'yx*'~nDataPad, '0', '0') | indent(4) }}{##}
+    for(int p = 0; p < {{nDof}}; p++) {
+      solver->mapDiscreteMaximumPrincipleObservables(observables, {{nObs}}, lob+p*{{nDataPad}});
+      for (int n = 0; n < {{nObs}}; n++) {
+        min[n] = std::min( min[n], observables[n] );
+        max[n] = std::max( max[n], observables[n] );
       }
     }
   }
@@ -311,11 +297,9 @@ void {{codeNamespace}}::compareWithADERDGSolutionAtFVSubcellCenters(
   
   // x
   {{m.allocateArray('tmpX', nDof3D*nDof*nDofLim*nDataPad) | indent(2)}}{##}
-  for (int z = 0; z < {{nDof3D}}; z++) {
-    for (int y = 0; y < {{nDof}}; y++) {
-      // will overwrite tmpX, no need to set to 0
-      {{ m.matmul('dg2fv_x', 'luh', 'dg2fv', 'tmpX', '(z*'~nDof~'+y)*'~nDof*nData, '0', '(z*'~nDof~'+y)*'~nDofLim*nDataPad) | indent(6) }}{##}
-    }
+  for (int zy = 0; zy < {{nDof3D*nDof}}; zy++) {
+    // will overwrite tmpX, no need to set to 0
+    {{ m.matmul('dg2fv_x', 'luh', 'dg2fv', 'tmpX', 'zy*'~nDof*nData, '0', 'zy*'~nDofLim*nDataPad) | indent(4) }}{##}
   }
   
   {%if nDim == 2%}
@@ -349,16 +333,14 @@ void {{codeNamespace}}::compareWithADERDGSolutionAtFVSubcellCenters(
   // z
   double observables[{{nObs}}] __attribute__((aligned(ALIGNMENT)));
   {{m.allocateArray('lim', nDofLim*nDataPad) | indent(2)}}{# no need to set to zero, gemm will overwrite #} // constant x,y slice of projected solution
-  for (int y = 0; y < {{nDofLim}}; y++) {
-    for (int x = 0; x < {{nDofLim}}; x++) {
-      // will overwrite lim, no need to set to 0
-      {{ m.matmul('dg2fv_z_slice', 'tmpY', 'dg2fv', 'lim', '(y*'~nDofLim~'+x)*'~nDataPad, '0', '0') | indent(6) }}{##}
-      for(int p = 0; p < {{nDofLim}}; p++) {
-        solver->mapDiscreteMaximumPrincipleObservables(observables, {{nObs}}, lim+p*{{nDataPad}});
-        for (int n = 0; n < {{nObs}}; n++) {
-          min[n] = std::min( min[n], observables[n] );
-          max[n] = std::max( max[n], observables[n] );
-        }
+  for (int yx = 0; yx < {{nDofLim*nDofLim}}; yx++) {
+    // will overwrite lim, no need to set to 0
+    {{ m.matmul('dg2fv_z_slice', 'tmpY', 'dg2fv', 'lim', 'yx*'~nDataPad, '0', '0') | indent(4) }}{##}
+    for(int p = 0; p < {{nDofLim}}; p++) {
+      solver->mapDiscreteMaximumPrincipleObservables(observables, {{nObs}}, lim+p*{{nDataPad}});
+      for (int n = 0; n < {{nObs}}; n++) {
+        min[n] = std::min( min[n], observables[n] );
+        max[n] = std::max( max[n], observables[n] );
       }
     }
   }

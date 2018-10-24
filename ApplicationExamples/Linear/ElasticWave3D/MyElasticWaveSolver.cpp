@@ -14,7 +14,7 @@
 #include "../../../ExaHyPE/kernels/GaussLegendreQuadrature.h"
 
 #ifdef OPT_KERNELS
-#include "kernels/MyElasticWaveSolver/converter.h"
+#include "kernels/Elastic_MyElasticWaveSolver/converter.h"
 using namespace Elastic::MyElasticWaveSolver_kernels::aderdg;
 #endif
 

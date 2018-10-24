@@ -14,14 +14,14 @@
   Allocate array
 */
 #}
-{% macro allocateArray(name, size, setToZero=False) %}
+{% macro allocateArray(name, size, setToZero=False, pointerExists=False) %}
 {% if tempVarsOnStack %}
-double {{name}}[{{size}}] __attribute__((aligned(ALIGNMENT)));
+double {{name}}[{{size}}] __attribute__((aligned(ALIGNMENT))){% if setToZero %}  = {0.}{% endif %};
 {% else %}
-double* {{name}} = ((double *) _mm_malloc(sizeof(double)*{{size}}, ALIGNMENT));
-{% endif %}
+{% if not pointerExists %}double* {% endif %}{{name}} = ((double *) _mm_malloc(sizeof(double)*{{size}}, ALIGNMENT));
 {% if setToZero %}
 std::memset({{name}}, 0, sizeof(double)*{{size}});
+{% endif %}
 {% endif %}
 {% endmacro %} {##}
 {#
@@ -56,6 +56,6 @@ _mm_free({{name}});
   blockedDim = if there are multiple dim (for example F for flux splitted into x, y, and z)
 */
 #}
-{% macro vectPDEsArrays(array, blockedDim) %}
+{% macro vectPDEsArrays(array, size, blockedDim) %}
 {% include 'subtemplates/vectPDEsArrays.template' %}
 {% endmacro %}
