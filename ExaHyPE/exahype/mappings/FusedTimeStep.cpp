@@ -303,10 +303,6 @@ void exahype::mappings::FusedTimeStep::leaveCell(
       fineGridCell.isInitialised() &&
       issuePredictionJobsInThisIteration()
   ) {
-    exahype::Cell::validateThatAllNeighbourMergesHaveBeenPerformed(
-        fineGridCell.getCellDescriptionsIndex(),
-        fineGridVerticesEnumerator);
-
     const int numberOfSolvers = exahype::solvers::RegisteredSolvers.size();
     for (int solverNumber=0; solverNumber<numberOfSolvers; solverNumber++) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];

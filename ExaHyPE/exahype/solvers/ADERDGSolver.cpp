@@ -2508,6 +2508,10 @@ void exahype::solvers::ADERDGSolver::updateSolution(
     cellDescription.getRefinementEvent()==CellDescription::None
   ) {
     assertion1(cellDescription.getNeighbourMergePerformed().all(),cellDescription.toString());
+    if ( !cellDescription.getNeighbourMergePerformed().all() ) {
+      logError("updateSolution(...)","Riemann solve was not performed on all faces of cell= "<<cellDescription.toString());
+      std::terminate();
+    }
     #if !defined(SharedMemoryParallelisation) && !defined(Parallel) && defined(Asserts)
     static int counter = 0;
     static double timeStamp = 0;
@@ -2549,7 +2553,6 @@ void exahype::solvers::ADERDGSolver::updateSolution(
       for (int orientation=0; orientation<2; orientation++) {
         const int faceIndex=2*direction+orientation;
         if ( cellDescription.getFacewiseAugmentationStatus(faceIndex)<MaximumAugmentationStatus ) { // ignore Ancestors
-          assertion(cellDescription.getNeighbourMergePerformed(faceIndex)); // necessary but not sufficient
           const double* const lFhbnd = getDataHeapArrayFacePart(cellDescription.getFluctuation(),dofPerFace,faceIndex);
           faceIntegral(update,lFhbnd,direction,orientation,0/*implicit conversion*/,0,cellDescription.getSize());
         }
@@ -3056,61 +3059,59 @@ void exahype::solvers::ADERDGSolver::mergeNeighboursData(
 
     Solver::InterfaceInfo face(pos1,pos2);
 
-    if (
-        !cellDescription1.getNeighbourMergePerformed(face._faceIndex1)
-        &&
-        ((cellDescription1.getCommunicationStatus()==CellCommunicationStatus &&
-        cellDescription1.getFacewiseCommunicationStatus(face._faceIndex1) >= MinimumCommunicationStatusForNeighbourCommunication &&
-        cellDescription1.getFacewiseAugmentationStatus(face._faceIndex1)  <  MaximumAugmentationStatus) // excludes Ancestors
-        ||
-        (cellDescription2.getCommunicationStatus()==CellCommunicationStatus &&
-        cellDescription2.getFacewiseCommunicationStatus(face._faceIndex2) >= MinimumCommunicationStatusForNeighbourCommunication &&
-        cellDescription2.getFacewiseAugmentationStatus(face._faceIndex2)  <  MaximumAugmentationStatus)) // excludes Ancestors
-    ) { // check
+    if ( !cellDescription1.getNeighbourMergePerformed(face._faceIndex1) ) {
       assertion2( !cellDescription2.getNeighbourMergePerformed(face._faceIndex2), cellDescription1.toString(), cellDescription2.toString() );
-
-      #if !defined(SharedMemoryParallelisation) && !defined(Parallel) && defined(Asserts)
-      static int counter = 0;
-      static double timeStamp = 0;
-      if ( !tarch::la::equals(timeStamp,_minCorrectorTimeStamp,1e-9) ) {
-        logInfo("mergeNeighboursData(...)","#riemanns="<<counter);
-        timeStamp = _minCorrectorTimeStamp;
-        counter=0;
-      }
-      counter++;
-      #endif
-
-      waitUntilCompletedTimeStep<CellDescription>(cellDescription1,false,false);
-      waitUntilCompletedTimeStep<CellDescription>(cellDescription2,false,false);
-
-      // synchronise time stepping if necessary
-      synchroniseTimeStepping(cellDescription1);
-      synchroniseTimeStepping(cellDescription2);
-
-      if ( CompressionAccuracy > 0.0 ) {
-        peano::datatraversal::TaskSet uncompression(
-            [&] () -> bool {
-          uncompress(cellDescription1);
-          return false;
-        },
-        [&] () -> bool {
-          uncompress(cellDescription1);
-          return false;
-        },
-        peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
-        peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
-        true
-        );
-      }
-
-      //
-      // 1. Solve Riemann problem (merge data)
-      //
-      solveRiemannProblemAtInterface(cellDescription1,cellDescription2,face);
-
-      // set the flags
       cellDescription1.setNeighbourMergePerformed(face._faceIndex1,true);
       cellDescription2.setNeighbourMergePerformed(face._faceIndex2,true);
+
+      if (
+          ((cellDescription1.getCommunicationStatus()==CellCommunicationStatus &&
+          cellDescription1.getFacewiseCommunicationStatus(face._faceIndex1) >= MinimumCommunicationStatusForNeighbourCommunication &&
+          cellDescription1.getFacewiseAugmentationStatus(face._faceIndex1)  <  MaximumAugmentationStatus) // excludes Ancestors
+          ||
+          (cellDescription2.getCommunicationStatus()==CellCommunicationStatus &&
+          cellDescription2.getFacewiseCommunicationStatus(face._faceIndex2) >= MinimumCommunicationStatusForNeighbourCommunication &&
+          cellDescription2.getFacewiseAugmentationStatus(face._faceIndex2)  <  MaximumAugmentationStatus)) // excludes Ancestors
+      ) { // check
+        #if !defined(SharedMemoryParallelisation) && !defined(Parallel) && defined(Asserts)
+        static int counter = 0;
+        static double timeStamp = 0;
+        if ( !tarch::la::equals(timeStamp,_minCorrectorTimeStamp,1e-9) ) {
+          logInfo("mergeNeighboursData(...)","#riemanns="<<counter);
+          timeStamp = _minCorrectorTimeStamp;
+          counter=0;
+        }
+        counter++;
+        #endif
+
+        waitUntilCompletedTimeStep<CellDescription>(cellDescription1,false,false);
+        waitUntilCompletedTimeStep<CellDescription>(cellDescription2,false,false);
+
+        // synchronise time stepping if necessary
+        synchroniseTimeStepping(cellDescription1);
+        synchroniseTimeStepping(cellDescription2);
+
+        if ( CompressionAccuracy > 0.0 ) {
+          peano::datatraversal::TaskSet uncompression(
+              [&] () -> bool {
+            uncompress(cellDescription1);
+            return false;
+          },
+          [&] () -> bool {
+            uncompress(cellDescription1);
+            return false;
+          },
+          peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
+          peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
+          true
+          );
+        }
+
+        //
+        // 1. Solve Riemann problem (merge data)
+        //
+        solveRiemannProblemAtInterface(cellDescription1,cellDescription2,face);
+      }
     }
   }
 }
