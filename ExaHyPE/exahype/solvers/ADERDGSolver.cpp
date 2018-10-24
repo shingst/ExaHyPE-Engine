@@ -2066,7 +2066,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
   CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
 
   // solver->synchroniseTimeStepping(cellDescription); // assumes this was done in neighbour merge
-  updateSolution(cellDescription,isFirstIterationOfBatch);
+  updateSolution(cellDescription,neighbourMergePerformed,isFirstIterationOfBatch);
 
   UpdateResult result;
   result._timeStepSize    = startNewTimeStepFused(cellDescription,isFirstIterationOfBatch,isLastIterationOfBatch);
@@ -2136,7 +2136,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::update(
     uncompress(cellDescription);
 
     UpdateResult result;
-    updateSolution(cellDescriptionsIndex,element,true);
+    updateSolution(cellDescription,cellDescription.getNeighbourMergePerformed(),true);
     result._timeStepSize    = startNewTimeStep(cellDescription);
     result._meshUpdateEvent = evaluateRefinementCriteriaAfterSolutionUpdate(
         cellDescription,cellDescription.getNeighbourMergePerformed());
@@ -2500,13 +2500,14 @@ void exahype::solvers::ADERDGSolver::adjustSolution(CellDescription& cellDescrip
 
 void exahype::solvers::ADERDGSolver::updateSolution(
     CellDescription& cellDescription,
+    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
     const bool backupPreviousSolution) {
   if (
     cellDescription.getType()==CellDescription::Type::Cell &&
     cellDescription.getRefinementEvent()==CellDescription::None
   ) {
-    assertion1( tarch::la::equals(cellDescription.getNeighbourMergePerformed(),(signed char) true),cellDescription.toString());
-    if ( !tarch::la::equals(cellDescription.getNeighbourMergePerformed(),(signed char) true) ) {
+    assertion1( tarch::la::equals(neighbourMergePerformed,(signed char) true),cellDescription.toString());
+    if ( !tarch::la::equals(neighbourMergePerformed,(signed char) true) ) {
       logError("updateSolution(...)","Riemann solve was not performed on all faces of cell= "<<cellDescription.toString());
       std::terminate();
     }
@@ -2589,7 +2590,7 @@ void exahype::solvers::ADERDGSolver::updateSolution(
     const bool backupPreviousSolution) {
   // reset helper variables
   CellDescription& cellDescription  = getCellDescription(cellDescriptionsIndex,element);
-  updateSolution(cellDescription,backupPreviousSolution);
+  updateSolution(cellDescription,cellDescription.getNeighbourMergePerformed(),backupPreviousSolution);
 }
 
 void exahype::solvers::ADERDGSolver::swapSolutionAndPreviousSolution(CellDescription& cellDescription) const {

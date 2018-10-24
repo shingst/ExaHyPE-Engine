@@ -895,6 +895,7 @@ public:
   void updateSolution(
       SolverPatch& solverPatch,
       const int cellDescriptionsIndex,
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
       const bool backupPreviousSolution);
 
   /**

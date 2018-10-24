@@ -1426,17 +1426,17 @@ public:
    * the corresponding predicate hasToUpdateSolution() yields true for the
    * region and time interval.
    *
-   * \param t  The new time stamp after the solution update.
-   * \param dt The time step size that was used to update the solution.
-   *           This time step size was computed based on the old solution.
-   *           If we impose initial conditions, i.e, t=0, this value
-   *           equals 0.
+   * \param tNew  The new time stamp after the solution update.
+   * \param dtOld The time step size that was used to update the solution.
+   *              This time step size was computed based on the old solution.
+   *              If we impose initial conditions, i.e, t=0, this value
+   *              equals 0.
    */
   virtual void adjustSolution(
       double* luh, const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
       const tarch::la::Vector<DIMENSIONS, double>& dx,
       const double t,
-      const double dt) = 0;
+      const double dtOld) = 0;
 
   /**
    * @defgroup AMR Solver routines for adaptive mesh refinement
@@ -1988,25 +1988,31 @@ public:
   /**
    * Computes the surface integral contributions to the
    * cell update and then adds the update degrees
-   * on the solution degrees of freedom.
+   * to the solution degrees of freedom.
    *
-   * <h2>Solution adjustments</h2>
+   * Solution adjustments
+   * --------------------
+   *
    * After the update, the solution is at time
    * cellDescription.getCorrectorTimeStamp() + cellDescription.getCorrectorTimeStepSize().
    * The value cellDescription.getCorrectorTimeStepSize()
    * handed to the solution adjustment function is the one
    * used to update the solution.
    *
-   * \todo We will not store the update field anymore
+   * @todo We will not store the update field anymore
    * but a previous solution. We will thus only perform
    * a solution adjustment and adding of source term contributions here.
    *
-   * \param[in] backupPreviousSolution Set to true if the solution should be backed up before
-   *                                   we overwrite it by the updated solution.
+   * @param[in] cellDescription         a cell description
+   * @param[in] neighbourMergePerformed an array of bools (modelled as byte) indicating if a merge (Riemann solve) was
+   *                                    performed for all DIMENSIONS_TIMES_TWO face adjacent to a cell
+   * @param[in] backupPreviousSolution  Set to true if the solution should be backed up before
+   *                                    we overwrite it by the updated solution.
    *
    */
   void updateSolution(
       CellDescription& cellDescription,
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
       const bool backupPreviousSolution=true);
 
   /**

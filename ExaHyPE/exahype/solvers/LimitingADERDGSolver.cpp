@@ -566,7 +566,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
   SolverPatch& solverPatch = _solver->getCellDescription(cellDescriptionsIndex,element);
 
   // synchroniseTimeStepping(cellDescriptionsIndex,element); // assumes this was done in neighbour merge
-  updateSolution(solverPatch,cellDescriptionsIndex,isFirstIterationOfBatch);
+  updateSolution(solverPatch,cellDescriptionsIndex,neighbourMergePerformed,isFirstIterationOfBatch);
 
   UpdateResult result;
   result._timeStepSize = startNewTimeStepFused(
@@ -603,7 +603,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::u
     }
 
     // the actual computations
-    updateSolution(solverPatch,cellDescriptionsIndex,true);
+    updateSolution(solverPatch,cellDescriptionsIndex,neighbourMergePerformed,true);
     result._timeStepSize    = startNewTimeStep(solverPatch,cellDescriptionsIndex);
     result._meshUpdateEvent = updateRefinementStatusAndMinAndMaxAfterSolutionUpdate(
         solverPatch,cellDescriptionsIndex,solverPatch.getNeighbourMergePerformed());
@@ -673,6 +673,7 @@ void exahype::solvers::LimitingADERDGSolver::adjustSolutionDuringMeshRefinement(
 void exahype::solvers::LimitingADERDGSolver::updateSolution(
     SolverPatch& solverPatch,
     const int cellDescriptionsIndex,
+    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
     const bool backupPreviousSolution) {
   // 1. Erase old cells; now it's safe (TODO(Dominic): Add to docu)
   ensureNoLimiterPatchIsAllocatedOnHelperCell(solverPatch,cellDescriptionsIndex);
@@ -683,10 +684,10 @@ void exahype::solvers::LimitingADERDGSolver::updateSolution(
     if (solverPatch.getLevel()==getMaximumAdaptiveMeshLevel()) {
       assertion(solverPatch.getRefinementStatus()>=-1);
       if (solverPatch.getRefinementStatus()       < _solver->_minimumRefinementStatusForPassiveFVPatch) {
-        _solver->updateSolution(solverPatch,backupPreviousSolution);
+        _solver->updateSolution(solverPatch,neighbourMergePerformed,backupPreviousSolution);
       }
       else if ( solverPatch.getRefinementStatus() < _solver->_minimumRefinementStatusForActiveFVPatch ) {
-        _solver->updateSolution(solverPatch,backupPreviousSolution);
+        _solver->updateSolution(solverPatch,neighbourMergePerformed,backupPreviousSolution);
 
         LimiterPatch& limiterPatch =
             getLimiterPatchForSolverPatch(solverPatch,cellDescriptionsIndex);
@@ -700,7 +701,7 @@ void exahype::solvers::LimitingADERDGSolver::updateSolution(
         projectFVSolutionOnDGSpace(solverPatch,limiterPatch); // TODO(Dominic): Required for healing
       }
     } else {
-      _solver->updateSolution(solverPatch,backupPreviousSolution);
+      _solver->updateSolution(solverPatch,neighbourMergePerformed,backupPreviousSolution);
     }
   }
 }
