@@ -43,6 +43,7 @@ public:
   void flux           (const double* const Q, double** F);
   void viscousFlux    (const double* const Q, const double* const gradQ, double** F);
   void eigenvalues    (const double* const Q,const int normalNonZeroIndex, double* lambda);
+  void viscousEigenvalues (const double* const Q,const int normalNonZeroIndex, double* lambda);
 
   bool useNonConservativeProduct();
   void nonConservativeProduct(const double* const Q, const double* const gradQ, double* BgradQ);
