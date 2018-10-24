@@ -783,7 +783,7 @@ private:
    */
   void solveRiemannProblemAtInterface(
       records::ADERDGCellDescription& cellDescription,
-      const int faceIndex,
+      Solver::BoundaryFaceInfo& face,
       const double* const lQhbnd,
       const double* lFhbnd,
       const int fromRank);
