@@ -2936,7 +2936,7 @@ void exahype::solvers::ADERDGSolver::mergeWithAugmentationStatus(
 
 void exahype::solvers::ADERDGSolver::updateRefinementStatus(
     CellDescription& cellDescription,
-    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,s signed char>& neighbourMergePerformed) const {
+    const tarch::la::Vector<DIMENSIONS_TIMES_TWO, signed char>& neighbourMergePerformed) const {
   if (
     cellDescription.getRefinementStatus()<_minimumRefinementStatusForTroubledCell &&
     cellDescription.getLevel()==getMaximumAdaptiveMeshLevel()
