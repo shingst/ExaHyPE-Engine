@@ -27,6 +27,7 @@ class TwoBubbles : public Scenario {
               const PDE& ns, const double* const Q, double* S) override;
 
   // Constants for dry air.
+  // TODO(Lukas) Refactor these constants!
   // TODO(Lukas) Make sure that constants agree with each other.
   const double gamma = 1.4;
   const double Pr = 0.71;

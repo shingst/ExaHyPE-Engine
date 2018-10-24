@@ -1,9 +1,8 @@
 //
-// Created by lukas on 28/08/18.
-//
-
-#include "TwoBubbles.h"
 #include <array>
+
+#include "Atmosphere.h"
+#include "TwoBubbles.h"
 
 NavierStokes::TwoBubbles::Bubble::Bubble(const double tempDifference,
                                          const double size, const double decay,
@@ -76,39 +75,10 @@ void NavierStokes::TwoBubbles::initialValues(const double* const x,
   vars.j(0, 0, 0);
 #endif
 
-  const double pressure = std::pow(
-      (ns.gasConstant * ns.gamma * backgroundT *
-           std::pow(std::pow(ns.gamma, ns.gamma / (ns.gamma - 1)) *
-                        ns.referencePressure,
-                    (ns.gamma - 1) / ns.gamma) -
-       ns.gasConstant * backgroundT *
-           std::pow(std::pow(ns.gamma, ns.gamma / (ns.gamma - 1)) *
-                        ns.referencePressure,
-                    (ns.gamma - 1) / ns.gamma) -
-       g * ns.gamma * std::pow(ns.referencePressure, ns.gasConstant / c_p) *
-           posZ * (ns.gamma - 1) +
-       g * std::pow(ns.referencePressure, ns.gasConstant / c_p) * posZ *
-           (ns.gamma - 1)) /
-          (ns.gasConstant * ns.gamma * backgroundT * (ns.gamma - 1)),
-      ns.gamma / (ns.gamma - 1));
-  const double poTToT =
-      std::pow((pressure / backgroundPressure), ns.gasConstant / ns.c_p);
-  const double temperature = potentialT * poTToT;
+  const auto pressure = computeHydrostaticPressure(ns, g, posZ, backgroundT);
+  const auto temperature = potentialTToT(ns, pressure, potentialT);
   vars.rho() = pressure / (ns.gasConstant * temperature);
   vars.E() = ns.evaluateEnergy(vars.rho(), pressure, vars.j());
-
-  /*
-   const double exner = 1 - (g * posZ)/(ns.c_p * backgroundT);
-   const double pressure = ns.referencePressure * std::pow(
-           exner,
-           1/(ns.c_p/ns.gasConstant)
-           );
-  const double poTToT =
-          std::pow((pressure / backgroundPressure), ns.gasConstant / ns.c_p);
-  const double temperature = potentialT * poTToT;
-  vars.rho() = pressure / (ns.gasConstant * temperature);
-  vars.E() = ns.evaluateEnergy(vars.rho(), pressure, vars.j());
-   */
 }
 
 void NavierStokes::TwoBubbles::source(
