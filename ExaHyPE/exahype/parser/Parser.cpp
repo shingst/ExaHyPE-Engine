@@ -206,6 +206,9 @@ exahype::parser::Parser::Parser() {
           "globalfixed", exahype::solvers::Solver::TimeStepping::GlobalFixed));
 }
 
+exahype::parser::Parser::~Parser() {
+  delete _impl;
+}
 
 
 void exahype::parser::Parser::readFile(const std::string& filename) {
