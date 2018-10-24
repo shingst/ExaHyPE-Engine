@@ -6,9 +6,10 @@
 
 #include "delta/ContactPoint.h"
 #include "delta/primitives/Cylinder.h"
-#include "delta/primitives/Sphere.h"
+#include "delta/primitives/Cube.h"
 #include "delta/primitives/Cylinder.h"
 #include "delta/contactdetection/sphere.h"
+#include "delta/contactdetection/filter.h"
 #include "delta/io/vtk.h"
 
 
@@ -16,20 +17,15 @@ tarch::logging::Log EulerFV::MyEulerSolver::_log( "EulerFV::MyEulerSolver" );
 
 
 void EulerFV::MyEulerSolver::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
-<<<<<<< HEAD
-=======
+  _embeddedGeometry = new delta::primitives::Cube(
+    0.5, 0.5, 0.0,  // center
+	0.3             // h
+  );
+/*
   _embeddedGeometry = new delta::primitives::Cylinder(
     0.5, 0.5, 0.0,  // center
 	0.2,       // rdius
 	-0.1, 0.1, // min/maxZ
-	0.1
-  );
-
->>>>>>> d7c9ce5ead3f77b5afa4bfb22f481747b6b80e7b
-/*
-  _embeddedGeometry = new delta::primitives::Sphere(
-    0.5, 0.5, 0.0,  // center
-	0.4,       // rdius
 	0.1
   );
 */
@@ -40,13 +36,6 @@ void EulerFV::MyEulerSolver::init(const std::vector<std::string>& cmdlineargs,co
 	_embeddedGeometry->getYCoordinates(),
 	_embeddedGeometry->getZCoordinates(),
     "embedded-geometry.vtk"
-  );
-*/
-  _embeddedGeometry = new delta::primitives::Cylinder(
-    0.5, 0.5, 0.0,
-	0.2,
-	-0.1, 0.1,
-	0.01
   );
 }
 
@@ -74,44 +63,24 @@ void EulerFV::MyEulerSolver::adjustSolution(const double* const x,const double t
   }
 
   // Boundary stuff
-  const double maxDistance = 1e-2; // should be roughly sqrt(h)*d
-/*
+  const double maxDistance = 1e-1; // should be roughly sqrt(h)*d, but we hardcode it here
+
   std::vector< delta::ContactPoint > contact =
-    delta::contactdetection::sphereToSphere(
-<<<<<<< HEAD
+    delta::filter(
+     delta::contactdetection::sphereToTriangle(
       x[0], // voxel centre
       x[1], // voxel centre
       x[2], // voxel centre
-	  1e-4,  // voxel size -> which we mistreat as a radius here
-
-=======
->>>>>>> d7c9ce5ead3f77b5afa4bfb22f481747b6b80e7b
-      _embeddedGeometry->getCentreX(),
-      _embeddedGeometry->getCentreY(),
-      _embeddedGeometry->getCentreZ(),
-      _embeddedGeometry->getBoundingSphereRadius(),
-
-	  maxDistance
-    );
-*/
-  std::vector< delta::ContactPoint > contact =
-    delta::contactdetection::sphereToTriangle(
-      x[0], // voxel centre
-      x[1], // voxel centre
-      x[2], // voxel centre
-	  1e-4,  // voxel size -> which we mistreat as a radius here
+	  maxDistance,  // voxel size -> which we mistreat as a radius here
 
 	  _embeddedGeometry->getXCoordinates(),
       _embeddedGeometry->getYCoordinates(),
       _embeddedGeometry->getZCoordinates(),
       _embeddedGeometry->getNumberOfTriangles(),
-
-<<<<<<< HEAD
-=======
-	  1e-2,  // voxel size
->>>>>>> d7c9ce5ead3f77b5afa4bfb22f481747b6b80e7b
 	  maxDistance
-    );
+     ),
+	 maxDistance
+	);
   if ( contact.empty() ) {
     vars.inside() = 2.0*maxDistance; // If maxDistance is the epsilon environment
                                      // we can twice this.
