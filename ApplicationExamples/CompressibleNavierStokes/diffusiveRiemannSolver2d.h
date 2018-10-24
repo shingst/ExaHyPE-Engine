@@ -82,7 +82,9 @@ void riemannSolverNonlinear(
   }
 
   // Compute penalty term for entire element.
-  const double factor = 2 * ((2 * order + 1) / characteristicLength[direction]);
+  const auto pi = std::acos(-1); // not constexpr for intel compilers
+  const double factor = 2 * (2 * order + 1) / (characteristicLength[direction]
+          * std::sqrt(0.5 * pi));
   const double penalty =
       maxHyperbolicEigenvalue + factor * maxDiffusiveEigenvalue;
 
