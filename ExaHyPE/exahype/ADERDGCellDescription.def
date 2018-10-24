@@ -25,8 +25,12 @@ class exahype::records::ADERDGCellDescription {
   /**
    * These flags indicate on which face a neighbour merge, e.g. a Riemann solve or metadata merge, has already been
    * performed during the current traversal.
+   *
+   * @note we use the data type signed char even though it would be more intuitive
+   * as DaStGen converts bool array specifications into bitsets.
+   * Bitsets cannot be modified by multiple threads simultaneously.
    */
-  persistent packed bool neighbourMergePerformed[DIMENSIONS_TIMES_TWO];
+  persistent packed signed char neighbourMergePerformed[DIMENSIONS_TIMES_TWO];
   ///@}
   
   /**

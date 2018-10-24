@@ -452,7 +452,7 @@ void exahype::Vertex::mergeNeighbours(
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const tarch::la::Vector<DIMENSIONS, double>& h) const {
   if ( tarch::la::allSmallerEquals(h,exahype::solvers::Solver::getCoarsestMaximumMeshSizeOfAllSolvers()) ) {
-    #if false and defined(SharedMemoryParallelisation) // TODO(Dominic): Comment back in if it works
+    #if DIMENSIONS==2 and defined(SharedMemoryParallelisation) // TODO(Dominic): Comment back in if it works
     #if DIMENSIONS==2
     peano::datatraversal::TaskSet runParallelTasks(
     [&]() -> bool {

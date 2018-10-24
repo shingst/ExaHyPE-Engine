@@ -33,7 +33,7 @@ namespace exahype {
     *
     * 		   build date: 09-02-2014 14:40
     *
-    * @date   23/10/2018 16:25
+    * @date   24/10/2018 17:18
     */
    class exahype::records::ADERDGCellDescription { 
       
@@ -60,9 +60,9 @@ namespace exahype {
          struct PersistentRecords {
             int _solverNumber;
             #ifdef UseManualAlignment
-            std::bitset<DIMENSIONS_TIMES_TWO> _neighbourMergePerformed __attribute__((aligned(VectorisationAlignment)));
+            tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> _neighbourMergePerformed __attribute__((aligned(VectorisationAlignment)));
             #else
-            std::bitset<DIMENSIONS_TIMES_TWO> _neighbourMergePerformed;
+            tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> _neighbourMergePerformed;
             #endif
             bool _hasCompletedTimeStep;
             bool _adjacentToRemoteRank;
@@ -148,7 +148,7 @@ namespace exahype {
             /**
              * Generated
              */
-            PersistentRecords(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const bool& adjacentToRemoteRank, const bool& hasToHoldDataForMasterWorkerCommunication, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation, const Creation& creation);
+            PersistentRecords(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const bool& adjacentToRemoteRank, const bool& hasToHoldDataForMasterWorkerCommunication, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation, const Creation& creation);
             
             
             inline int getSolverNumber() const 
@@ -190,7 +190,7 @@ namespace exahype {
              * 
              * @see convert()
              */
-            inline std::bitset<DIMENSIONS_TIMES_TWO> getNeighbourMergePerformed() const 
+            inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> getNeighbourMergePerformed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -219,7 +219,7 @@ namespace exahype {
              * 
              * @see convert()
              */
-            inline void setNeighbourMergePerformed(const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) 
+            inline void setNeighbourMergePerformed(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -1515,7 +1515,7 @@ namespace exahype {
             /**
              * Generated
              */
-            ADERDGCellDescription(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const bool& adjacentToRemoteRank, const bool& hasToHoldDataForMasterWorkerCommunication, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation, const Creation& creation);
+            ADERDGCellDescription(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const bool& adjacentToRemoteRank, const bool& hasToHoldDataForMasterWorkerCommunication, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation, const Creation& creation);
             
             /**
              * Generated
@@ -1562,7 +1562,7 @@ namespace exahype {
              * 
              * @see convert()
              */
-            inline std::bitset<DIMENSIONS_TIMES_TWO> getNeighbourMergePerformed() const 
+            inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> getNeighbourMergePerformed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -1591,7 +1591,7 @@ namespace exahype {
              * 
              * @see convert()
              */
-            inline void setNeighbourMergePerformed(const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) 
+            inline void setNeighbourMergePerformed(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -1601,7 +1601,7 @@ namespace exahype {
             
             
             
-            inline bool getNeighbourMergePerformed(int elementIndex) const 
+            inline signed char getNeighbourMergePerformed(int elementIndex) const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -1614,7 +1614,7 @@ namespace exahype {
             
             
             
-            inline void setNeighbourMergePerformed(int elementIndex, const bool& neighbourMergePerformed) 
+            inline void setNeighbourMergePerformed(int elementIndex, const signed char& neighbourMergePerformed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -1623,18 +1623,6 @@ namespace exahype {
                assertion(elementIndex<DIMENSIONS_TIMES_TWO);
                _persistentRecords._neighbourMergePerformed[elementIndex]= neighbourMergePerformed;
                
-            }
-            
-            
-            
-            inline void flipNeighbourMergePerformed(int elementIndex) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               assertion(elementIndex>=0);
-               assertion(elementIndex<DIMENSIONS_TIMES_TWO);
-               _persistentRecords._neighbourMergePerformed.flip(elementIndex);
             }
             
             
@@ -3172,7 +3160,7 @@ namespace exahype {
     *
     * 		   build date: 09-02-2014 14:40
     *
-    * @date   23/10/2018 16:25
+    * @date   24/10/2018 17:18
     */
    class exahype::records::ADERDGCellDescriptionPacked { 
       
@@ -3188,6 +3176,7 @@ namespace exahype {
          
          struct PersistentRecords {
             int _solverNumber;
+            tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> _neighbourMergePerformed;
             bool _hasToHoldDataForMasterWorkerCommunication;
             tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _faceDataExchangeCounter;
             int _parentIndex;
@@ -3233,17 +3222,16 @@ namespace exahype {
             
             /** mapping of records:
             || Member 	|| startbit 	|| length
-             |  neighbourMergePerformed	| startbit 0	| #bits DIMENSIONS_TIMES_TWO
-             |  hasCompletedTimeStep	| startbit DIMENSIONS_TIMES_TWO + 0	| #bits 1
-             |  adjacentToRemoteRank	| startbit DIMENSIONS_TIMES_TWO + 1	| #bits 1
-             |  type	| startbit DIMENSIONS_TIMES_TWO + 2	| #bits 2
-             |  refinementEvent	| startbit DIMENSIONS_TIMES_TWO + 4	| #bits 5
-             |  compressionState	| startbit DIMENSIONS_TIMES_TWO + 9	| #bits 2
-             |  bytesPerDoFInPreviousSolution	| startbit DIMENSIONS_TIMES_TWO + 11	| #bits 3
-             |  bytesPerDoFInSolution	| startbit DIMENSIONS_TIMES_TWO + 14	| #bits 3
-             |  bytesPerDoFInUpdate	| startbit DIMENSIONS_TIMES_TWO + 17	| #bits 3
-             |  bytesPerDoFInExtrapolatedPredictor	| startbit DIMENSIONS_TIMES_TWO + 20	| #bits 3
-             |  bytesPerDoFInFluctuation	| startbit DIMENSIONS_TIMES_TWO + 23	| #bits 3
+             |  hasCompletedTimeStep	| startbit 0	| #bits 1
+             |  adjacentToRemoteRank	| startbit 1	| #bits 1
+             |  type	| startbit 2	| #bits 2
+             |  refinementEvent	| startbit 4	| #bits 5
+             |  compressionState	| startbit 9	| #bits 2
+             |  bytesPerDoFInPreviousSolution	| startbit 11	| #bits 3
+             |  bytesPerDoFInSolution	| startbit 14	| #bits 3
+             |  bytesPerDoFInUpdate	| startbit 17	| #bits 3
+             |  bytesPerDoFInExtrapolatedPredictor	| startbit 20	| #bits 3
+             |  bytesPerDoFInFluctuation	| startbit 23	| #bits 3
              */
             int _packedRecords0;
             
@@ -3255,7 +3243,7 @@ namespace exahype {
             /**
              * Generated
              */
-            PersistentRecords(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const bool& adjacentToRemoteRank, const bool& hasToHoldDataForMasterWorkerCommunication, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation, const Creation& creation);
+            PersistentRecords(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const bool& adjacentToRemoteRank, const bool& hasToHoldDataForMasterWorkerCommunication, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation, const Creation& creation);
             
             
             inline int getSolverNumber() const 
@@ -3297,17 +3285,12 @@ namespace exahype {
              * 
              * @see convert()
              */
-            inline std::bitset<DIMENSIONS_TIMES_TWO> getNeighbourMergePerformed() const 
+            inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> getNeighbourMergePerformed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               int mask = (int) (1 << (DIMENSIONS_TIMES_TWO)) - 1 ;
-               mask = static_cast<int>(mask << (0));
-               int tmp = static_cast<int>(_packedRecords0 & mask);
-               tmp = static_cast<int>(tmp >> (0));
-               std::bitset<DIMENSIONS_TIMES_TWO> result = tmp;
-               return result;
+               return _neighbourMergePerformed;
             }
             
             
@@ -3331,15 +3314,12 @@ namespace exahype {
              * 
              * @see convert()
              */
-            inline void setNeighbourMergePerformed(const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) 
+            inline void setNeighbourMergePerformed(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               int mask = (int) (1 << (DIMENSIONS_TIMES_TWO)) - 1 ;
-               mask = static_cast<int>(mask << (0));
-               _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-               _packedRecords0 = static_cast<int>(_packedRecords0 | neighbourMergePerformed.to_ulong() << (0));
+               _neighbourMergePerformed = (neighbourMergePerformed);
             }
             
             
@@ -3349,7 +3329,7 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-               int mask = 1 << (DIMENSIONS_TIMES_TWO);
+               int mask = 1 << (0);
    int tmp = static_cast<int>(_packedRecords0 & mask);
    return (tmp != 0);
             }
@@ -3361,7 +3341,7 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-               int mask = 1 << (DIMENSIONS_TIMES_TWO);
+               int mask = 1 << (0);
    _packedRecords0 = static_cast<int>( hasCompletedTimeStep ? (_packedRecords0 | mask) : (_packedRecords0 & ~mask));
             }
             
@@ -3372,7 +3352,7 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-               int mask = 1 << (DIMENSIONS_TIMES_TWO + 1);
+               int mask = 1 << (1);
    int tmp = static_cast<int>(_packedRecords0 & mask);
    return (tmp != 0);
             }
@@ -3384,7 +3364,7 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-               int mask = 1 << (DIMENSIONS_TIMES_TWO + 1);
+               int mask = 1 << (1);
    _packedRecords0 = static_cast<int>( adjacentToRemoteRank ? (_packedRecords0 | mask) : (_packedRecords0 & ~mask));
             }
             
@@ -3514,9 +3494,9 @@ namespace exahype {
  #endif 
  {
                int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 2));
+   mask = static_cast<int>(mask << (2));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 2));
+   tmp = static_cast<int>(tmp >> (2));
    assertion(( tmp >= 0 &&  tmp <= 3));
    return (Type) tmp;
             }
@@ -3530,9 +3510,9 @@ namespace exahype {
  {
                assertion((type >= 0 && type <= 3));
    int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 2));
+   mask = static_cast<int>(mask << (2));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(type) << (DIMENSIONS_TIMES_TWO + 2));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(type) << (2));
             }
             
             
@@ -3543,9 +3523,9 @@ namespace exahype {
  #endif 
  {
                int mask =  (1 << (5)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 4));
+   mask = static_cast<int>(mask << (4));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 4));
+   tmp = static_cast<int>(tmp >> (4));
    assertion(( tmp >= 0 &&  tmp <= 16));
    return (RefinementEvent) tmp;
             }
@@ -3559,9 +3539,9 @@ namespace exahype {
  {
                assertion((refinementEvent >= 0 && refinementEvent <= 16));
    int mask =  (1 << (5)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 4));
+   mask = static_cast<int>(mask << (4));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(refinementEvent) << (DIMENSIONS_TIMES_TWO + 4));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(refinementEvent) << (4));
             }
             
             
@@ -4502,9 +4482,9 @@ namespace exahype {
  #endif 
  {
                int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 9));
+   mask = static_cast<int>(mask << (9));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 9));
+   tmp = static_cast<int>(tmp >> (9));
    assertion(( tmp >= 0 &&  tmp <= 2));
    return (CompressionState) tmp;
             }
@@ -4518,9 +4498,9 @@ namespace exahype {
  {
                assertion((compressionState >= 0 && compressionState <= 2));
    int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 9));
+   mask = static_cast<int>(mask << (9));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(compressionState) << (DIMENSIONS_TIMES_TWO + 9));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(compressionState) << (9));
             }
             
             
@@ -4531,9 +4511,9 @@ namespace exahype {
  #endif 
  {
                int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 11));
+   mask = static_cast<int>(mask << (11));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 11));
+   tmp = static_cast<int>(tmp >> (11));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -4548,9 +4528,9 @@ namespace exahype {
  {
                assertion((bytesPerDoFInPreviousSolution >= 1 && bytesPerDoFInPreviousSolution <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 11));
+   mask = static_cast<int>(mask << (11));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInPreviousSolution) - 1) << (DIMENSIONS_TIMES_TWO + 11));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInPreviousSolution) - 1) << (11));
             }
             
             
@@ -4561,9 +4541,9 @@ namespace exahype {
  #endif 
  {
                int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 14));
+   mask = static_cast<int>(mask << (14));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 14));
+   tmp = static_cast<int>(tmp >> (14));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -4578,9 +4558,9 @@ namespace exahype {
  {
                assertion((bytesPerDoFInSolution >= 1 && bytesPerDoFInSolution <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 14));
+   mask = static_cast<int>(mask << (14));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInSolution) - 1) << (DIMENSIONS_TIMES_TWO + 14));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInSolution) - 1) << (14));
             }
             
             
@@ -4591,9 +4571,9 @@ namespace exahype {
  #endif 
  {
                int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 17));
+   mask = static_cast<int>(mask << (17));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 17));
+   tmp = static_cast<int>(tmp >> (17));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -4608,9 +4588,9 @@ namespace exahype {
  {
                assertion((bytesPerDoFInUpdate >= 1 && bytesPerDoFInUpdate <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 17));
+   mask = static_cast<int>(mask << (17));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInUpdate) - 1) << (DIMENSIONS_TIMES_TWO + 17));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInUpdate) - 1) << (17));
             }
             
             
@@ -4621,9 +4601,9 @@ namespace exahype {
  #endif 
  {
                int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 20));
+   mask = static_cast<int>(mask << (20));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 20));
+   tmp = static_cast<int>(tmp >> (20));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -4638,9 +4618,9 @@ namespace exahype {
  {
                assertion((bytesPerDoFInExtrapolatedPredictor >= 1 && bytesPerDoFInExtrapolatedPredictor <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 20));
+   mask = static_cast<int>(mask << (20));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInExtrapolatedPredictor) - 1) << (DIMENSIONS_TIMES_TWO + 20));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInExtrapolatedPredictor) - 1) << (20));
             }
             
             
@@ -4651,9 +4631,9 @@ namespace exahype {
  #endif 
  {
                int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 23));
+   mask = static_cast<int>(mask << (23));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 23));
+   tmp = static_cast<int>(tmp >> (23));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -4668,9 +4648,9 @@ namespace exahype {
  {
                assertion((bytesPerDoFInFluctuation >= 1 && bytesPerDoFInFluctuation <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 23));
+   mask = static_cast<int>(mask << (23));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInFluctuation) - 1) << (DIMENSIONS_TIMES_TWO + 23));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInFluctuation) - 1) << (23));
             }
             
             
@@ -4713,7 +4693,7 @@ namespace exahype {
             /**
              * Generated
              */
-            ADERDGCellDescriptionPacked(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const bool& adjacentToRemoteRank, const bool& hasToHoldDataForMasterWorkerCommunication, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation, const Creation& creation);
+            ADERDGCellDescriptionPacked(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const bool& adjacentToRemoteRank, const bool& hasToHoldDataForMasterWorkerCommunication, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation, const Creation& creation);
             
             /**
              * Generated
@@ -4760,17 +4740,12 @@ namespace exahype {
              * 
              * @see convert()
              */
-            inline std::bitset<DIMENSIONS_TIMES_TWO> getNeighbourMergePerformed() const 
+            inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> getNeighbourMergePerformed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               int mask = (int) (1 << (DIMENSIONS_TIMES_TWO)) - 1 ;
-               mask = static_cast<int>(mask << (0));
-               int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-               tmp = static_cast<int>(tmp >> (0));
-               std::bitset<DIMENSIONS_TIMES_TWO> result = tmp;
-               return result;
+               return _persistentRecords._neighbourMergePerformed;
             }
             
             
@@ -4794,60 +4769,38 @@ namespace exahype {
              * 
              * @see convert()
              */
-            inline void setNeighbourMergePerformed(const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) 
+            inline void setNeighbourMergePerformed(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               int mask = (int) (1 << (DIMENSIONS_TIMES_TWO)) - 1 ;
-               mask = static_cast<int>(mask << (0));
-               _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-               _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | neighbourMergePerformed.to_ulong() << (0));
+               _persistentRecords._neighbourMergePerformed = (neighbourMergePerformed);
             }
             
             
             
-            inline bool getNeighbourMergePerformed(int elementIndex) const 
+            inline signed char getNeighbourMergePerformed(int elementIndex) const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
                assertion(elementIndex>=0);
                assertion(elementIndex<DIMENSIONS_TIMES_TWO);
-               int mask = 1 << (0);
-               mask = mask << elementIndex;
-               return (_persistentRecords._packedRecords0& mask);
+               return _persistentRecords._neighbourMergePerformed[elementIndex];
+               
             }
             
             
             
-            inline void setNeighbourMergePerformed(int elementIndex, const bool& neighbourMergePerformed) 
+            inline void setNeighbourMergePerformed(int elementIndex, const signed char& neighbourMergePerformed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
                assertion(elementIndex>=0);
                assertion(elementIndex<DIMENSIONS_TIMES_TWO);
-               assertion(!neighbourMergePerformed || neighbourMergePerformed==1);
-               int shift        = 0 + elementIndex; 
-               int mask         = 1     << (shift);
-               int shiftedValue = neighbourMergePerformed << (shift);
-               _persistentRecords._packedRecords0 = _persistentRecords._packedRecords0 & ~mask;
-               _persistentRecords._packedRecords0 = _persistentRecords._packedRecords0 |  shiftedValue;
-            }
-            
-            
-            
-            inline void flipNeighbourMergePerformed(int elementIndex) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               assertion(elementIndex>=0);
-               assertion(elementIndex<DIMENSIONS_TIMES_TWO);
-               int mask = 1 << (0);
-               mask = mask << elementIndex;
-               _persistentRecords._packedRecords0^= mask;
+               _persistentRecords._neighbourMergePerformed[elementIndex]= neighbourMergePerformed;
+               
             }
             
             
@@ -4857,7 +4810,7 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-               int mask = 1 << (DIMENSIONS_TIMES_TWO);
+               int mask = 1 << (0);
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
    return (tmp != 0);
             }
@@ -4869,7 +4822,7 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-               int mask = 1 << (DIMENSIONS_TIMES_TWO);
+               int mask = 1 << (0);
    _persistentRecords._packedRecords0 = static_cast<int>( hasCompletedTimeStep ? (_persistentRecords._packedRecords0 | mask) : (_persistentRecords._packedRecords0 & ~mask));
             }
             
@@ -4880,7 +4833,7 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-               int mask = 1 << (DIMENSIONS_TIMES_TWO + 1);
+               int mask = 1 << (1);
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
    return (tmp != 0);
             }
@@ -4892,7 +4845,7 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-               int mask = 1 << (DIMENSIONS_TIMES_TWO + 1);
+               int mask = 1 << (1);
    _persistentRecords._packedRecords0 = static_cast<int>( adjacentToRemoteRank ? (_persistentRecords._packedRecords0 | mask) : (_persistentRecords._packedRecords0 & ~mask));
             }
             
@@ -5048,9 +5001,9 @@ namespace exahype {
  #endif 
  {
                int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 2));
+   mask = static_cast<int>(mask << (2));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 2));
+   tmp = static_cast<int>(tmp >> (2));
    assertion(( tmp >= 0 &&  tmp <= 3));
    return (Type) tmp;
             }
@@ -5064,9 +5017,9 @@ namespace exahype {
  {
                assertion((type >= 0 && type <= 3));
    int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 2));
+   mask = static_cast<int>(mask << (2));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(type) << (DIMENSIONS_TIMES_TWO + 2));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(type) << (2));
             }
             
             
@@ -5077,9 +5030,9 @@ namespace exahype {
  #endif 
  {
                int mask =  (1 << (5)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 4));
+   mask = static_cast<int>(mask << (4));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 4));
+   tmp = static_cast<int>(tmp >> (4));
    assertion(( tmp >= 0 &&  tmp <= 16));
    return (RefinementEvent) tmp;
             }
@@ -5093,9 +5046,9 @@ namespace exahype {
  {
                assertion((refinementEvent >= 0 && refinementEvent <= 16));
    int mask =  (1 << (5)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 4));
+   mask = static_cast<int>(mask << (4));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(refinementEvent) << (DIMENSIONS_TIMES_TWO + 4));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(refinementEvent) << (4));
             }
             
             
@@ -6166,9 +6119,9 @@ namespace exahype {
  #endif 
  {
                int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 9));
+   mask = static_cast<int>(mask << (9));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 9));
+   tmp = static_cast<int>(tmp >> (9));
    assertion(( tmp >= 0 &&  tmp <= 2));
    return (CompressionState) tmp;
             }
@@ -6182,9 +6135,9 @@ namespace exahype {
  {
                assertion((compressionState >= 0 && compressionState <= 2));
    int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 9));
+   mask = static_cast<int>(mask << (9));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(compressionState) << (DIMENSIONS_TIMES_TWO + 9));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(compressionState) << (9));
             }
             
             
@@ -6195,9 +6148,9 @@ namespace exahype {
  #endif 
  {
                int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 11));
+   mask = static_cast<int>(mask << (11));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 11));
+   tmp = static_cast<int>(tmp >> (11));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -6212,9 +6165,9 @@ namespace exahype {
  {
                assertion((bytesPerDoFInPreviousSolution >= 1 && bytesPerDoFInPreviousSolution <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 11));
+   mask = static_cast<int>(mask << (11));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInPreviousSolution) - 1) << (DIMENSIONS_TIMES_TWO + 11));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInPreviousSolution) - 1) << (11));
             }
             
             
@@ -6225,9 +6178,9 @@ namespace exahype {
  #endif 
  {
                int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 14));
+   mask = static_cast<int>(mask << (14));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 14));
+   tmp = static_cast<int>(tmp >> (14));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -6242,9 +6195,9 @@ namespace exahype {
  {
                assertion((bytesPerDoFInSolution >= 1 && bytesPerDoFInSolution <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 14));
+   mask = static_cast<int>(mask << (14));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInSolution) - 1) << (DIMENSIONS_TIMES_TWO + 14));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInSolution) - 1) << (14));
             }
             
             
@@ -6255,9 +6208,9 @@ namespace exahype {
  #endif 
  {
                int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 17));
+   mask = static_cast<int>(mask << (17));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 17));
+   tmp = static_cast<int>(tmp >> (17));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -6272,9 +6225,9 @@ namespace exahype {
  {
                assertion((bytesPerDoFInUpdate >= 1 && bytesPerDoFInUpdate <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 17));
+   mask = static_cast<int>(mask << (17));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInUpdate) - 1) << (DIMENSIONS_TIMES_TWO + 17));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInUpdate) - 1) << (17));
             }
             
             
@@ -6285,9 +6238,9 @@ namespace exahype {
  #endif 
  {
                int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 20));
+   mask = static_cast<int>(mask << (20));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 20));
+   tmp = static_cast<int>(tmp >> (20));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -6302,9 +6255,9 @@ namespace exahype {
  {
                assertion((bytesPerDoFInExtrapolatedPredictor >= 1 && bytesPerDoFInExtrapolatedPredictor <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 20));
+   mask = static_cast<int>(mask << (20));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInExtrapolatedPredictor) - 1) << (DIMENSIONS_TIMES_TWO + 20));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInExtrapolatedPredictor) - 1) << (20));
             }
             
             
@@ -6315,9 +6268,9 @@ namespace exahype {
  #endif 
  {
                int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 23));
+   mask = static_cast<int>(mask << (23));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 23));
+   tmp = static_cast<int>(tmp >> (23));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -6332,9 +6285,9 @@ namespace exahype {
  {
                assertion((bytesPerDoFInFluctuation >= 1 && bytesPerDoFInFluctuation <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 23));
+   mask = static_cast<int>(mask << (23));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInFluctuation) - 1) << (DIMENSIONS_TIMES_TWO + 23));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInFluctuation) - 1) << (23));
             }
             
             
@@ -6464,7 +6417,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   23/10/2018 16:25
+       * @date   24/10/2018 17:18
        */
       class exahype::records::ADERDGCellDescription { 
          
@@ -6487,9 +6440,9 @@ namespace exahype {
             struct PersistentRecords {
                int _solverNumber;
                #ifdef UseManualAlignment
-               std::bitset<DIMENSIONS_TIMES_TWO> _neighbourMergePerformed __attribute__((aligned(VectorisationAlignment)));
+               tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> _neighbourMergePerformed __attribute__((aligned(VectorisationAlignment)));
                #else
-               std::bitset<DIMENSIONS_TIMES_TWO> _neighbourMergePerformed;
+               tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> _neighbourMergePerformed;
                #endif
                bool _hasCompletedTimeStep;
                bool _adjacentToRemoteRank;
@@ -6574,7 +6527,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const bool& adjacentToRemoteRank, const bool& hasToHoldDataForMasterWorkerCommunication, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
+               PersistentRecords(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const bool& adjacentToRemoteRank, const bool& hasToHoldDataForMasterWorkerCommunication, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
                
                
                inline int getSolverNumber() const 
@@ -6616,7 +6569,7 @@ namespace exahype {
                 * 
                 * @see convert()
                 */
-               inline std::bitset<DIMENSIONS_TIMES_TWO> getNeighbourMergePerformed() const 
+               inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> getNeighbourMergePerformed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -6645,7 +6598,7 @@ namespace exahype {
                 * 
                 * @see convert()
                 */
-               inline void setNeighbourMergePerformed(const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) 
+               inline void setNeighbourMergePerformed(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -7921,7 +7874,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               ADERDGCellDescription(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const bool& adjacentToRemoteRank, const bool& hasToHoldDataForMasterWorkerCommunication, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
+               ADERDGCellDescription(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const bool& adjacentToRemoteRank, const bool& hasToHoldDataForMasterWorkerCommunication, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
                
                /**
                 * Generated
@@ -7968,7 +7921,7 @@ namespace exahype {
                 * 
                 * @see convert()
                 */
-               inline std::bitset<DIMENSIONS_TIMES_TWO> getNeighbourMergePerformed() const 
+               inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> getNeighbourMergePerformed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -7997,7 +7950,7 @@ namespace exahype {
                 * 
                 * @see convert()
                 */
-               inline void setNeighbourMergePerformed(const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) 
+               inline void setNeighbourMergePerformed(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -8007,7 +7960,7 @@ namespace exahype {
                
                
                
-               inline bool getNeighbourMergePerformed(int elementIndex) const 
+               inline signed char getNeighbourMergePerformed(int elementIndex) const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -8020,7 +7973,7 @@ namespace exahype {
                
                
                
-               inline void setNeighbourMergePerformed(int elementIndex, const bool& neighbourMergePerformed) 
+               inline void setNeighbourMergePerformed(int elementIndex, const signed char& neighbourMergePerformed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -8029,18 +7982,6 @@ namespace exahype {
                   assertion(elementIndex<DIMENSIONS_TIMES_TWO);
                   _persistentRecords._neighbourMergePerformed[elementIndex]= neighbourMergePerformed;
                   
-               }
-               
-               
-               
-               inline void flipNeighbourMergePerformed(int elementIndex) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion(elementIndex>=0);
-                  assertion(elementIndex<DIMENSIONS_TIMES_TWO);
-                  _persistentRecords._neighbourMergePerformed.flip(elementIndex);
                }
                
                
@@ -9548,7 +9489,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   23/10/2018 16:25
+       * @date   24/10/2018 17:18
        */
       class exahype::records::ADERDGCellDescriptionPacked { 
          
@@ -9562,6 +9503,7 @@ namespace exahype {
             
             struct PersistentRecords {
                int _solverNumber;
+               tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> _neighbourMergePerformed;
                bool _hasToHoldDataForMasterWorkerCommunication;
                tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _faceDataExchangeCounter;
                int _parentIndex;
@@ -9606,17 +9548,16 @@ namespace exahype {
                
                /** mapping of records:
                || Member 	|| startbit 	|| length
-                |  neighbourMergePerformed	| startbit 0	| #bits DIMENSIONS_TIMES_TWO
-                |  hasCompletedTimeStep	| startbit DIMENSIONS_TIMES_TWO + 0	| #bits 1
-                |  adjacentToRemoteRank	| startbit DIMENSIONS_TIMES_TWO + 1	| #bits 1
-                |  type	| startbit DIMENSIONS_TIMES_TWO + 2	| #bits 2
-                |  refinementEvent	| startbit DIMENSIONS_TIMES_TWO + 4	| #bits 5
-                |  compressionState	| startbit DIMENSIONS_TIMES_TWO + 9	| #bits 2
-                |  bytesPerDoFInPreviousSolution	| startbit DIMENSIONS_TIMES_TWO + 11	| #bits 3
-                |  bytesPerDoFInSolution	| startbit DIMENSIONS_TIMES_TWO + 14	| #bits 3
-                |  bytesPerDoFInUpdate	| startbit DIMENSIONS_TIMES_TWO + 17	| #bits 3
-                |  bytesPerDoFInExtrapolatedPredictor	| startbit DIMENSIONS_TIMES_TWO + 20	| #bits 3
-                |  bytesPerDoFInFluctuation	| startbit DIMENSIONS_TIMES_TWO + 23	| #bits 3
+                |  hasCompletedTimeStep	| startbit 0	| #bits 1
+                |  adjacentToRemoteRank	| startbit 1	| #bits 1
+                |  type	| startbit 2	| #bits 2
+                |  refinementEvent	| startbit 4	| #bits 5
+                |  compressionState	| startbit 9	| #bits 2
+                |  bytesPerDoFInPreviousSolution	| startbit 11	| #bits 3
+                |  bytesPerDoFInSolution	| startbit 14	| #bits 3
+                |  bytesPerDoFInUpdate	| startbit 17	| #bits 3
+                |  bytesPerDoFInExtrapolatedPredictor	| startbit 20	| #bits 3
+                |  bytesPerDoFInFluctuation	| startbit 23	| #bits 3
                 */
                int _packedRecords0;
                
@@ -9628,7 +9569,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const bool& adjacentToRemoteRank, const bool& hasToHoldDataForMasterWorkerCommunication, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
+               PersistentRecords(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const bool& adjacentToRemoteRank, const bool& hasToHoldDataForMasterWorkerCommunication, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
                
                
                inline int getSolverNumber() const 
@@ -9670,17 +9611,12 @@ namespace exahype {
                 * 
                 * @see convert()
                 */
-               inline std::bitset<DIMENSIONS_TIMES_TWO> getNeighbourMergePerformed() const 
+               inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> getNeighbourMergePerformed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  int mask = (int) (1 << (DIMENSIONS_TIMES_TWO)) - 1 ;
-                  mask = static_cast<int>(mask << (0));
-                  int tmp = static_cast<int>(_packedRecords0 & mask);
-                  tmp = static_cast<int>(tmp >> (0));
-                  std::bitset<DIMENSIONS_TIMES_TWO> result = tmp;
-                  return result;
+                  return _neighbourMergePerformed;
                }
                
                
@@ -9704,15 +9640,12 @@ namespace exahype {
                 * 
                 * @see convert()
                 */
-               inline void setNeighbourMergePerformed(const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) 
+               inline void setNeighbourMergePerformed(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  int mask = (int) (1 << (DIMENSIONS_TIMES_TWO)) - 1 ;
-                  mask = static_cast<int>(mask << (0));
-                  _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-                  _packedRecords0 = static_cast<int>(_packedRecords0 | neighbourMergePerformed.to_ulong() << (0));
+                  _neighbourMergePerformed = (neighbourMergePerformed);
                }
                
                
@@ -9722,7 +9655,7 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-                  int mask = 1 << (DIMENSIONS_TIMES_TWO);
+                  int mask = 1 << (0);
    int tmp = static_cast<int>(_packedRecords0 & mask);
    return (tmp != 0);
                }
@@ -9734,7 +9667,7 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-                  int mask = 1 << (DIMENSIONS_TIMES_TWO);
+                  int mask = 1 << (0);
    _packedRecords0 = static_cast<int>( hasCompletedTimeStep ? (_packedRecords0 | mask) : (_packedRecords0 & ~mask));
                }
                
@@ -9745,7 +9678,7 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-                  int mask = 1 << (DIMENSIONS_TIMES_TWO + 1);
+                  int mask = 1 << (1);
    int tmp = static_cast<int>(_packedRecords0 & mask);
    return (tmp != 0);
                }
@@ -9757,7 +9690,7 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-                  int mask = 1 << (DIMENSIONS_TIMES_TWO + 1);
+                  int mask = 1 << (1);
    _packedRecords0 = static_cast<int>( adjacentToRemoteRank ? (_packedRecords0 | mask) : (_packedRecords0 & ~mask));
                }
                
@@ -9887,9 +9820,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 2));
+   mask = static_cast<int>(mask << (2));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 2));
+   tmp = static_cast<int>(tmp >> (2));
    assertion(( tmp >= 0 &&  tmp <= 3));
    return (Type) tmp;
                }
@@ -9903,9 +9836,9 @@ namespace exahype {
  {
                   assertion((type >= 0 && type <= 3));
    int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 2));
+   mask = static_cast<int>(mask << (2));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(type) << (DIMENSIONS_TIMES_TWO + 2));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(type) << (2));
                }
                
                
@@ -9916,9 +9849,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (5)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 4));
+   mask = static_cast<int>(mask << (4));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 4));
+   tmp = static_cast<int>(tmp >> (4));
    assertion(( tmp >= 0 &&  tmp <= 16));
    return (RefinementEvent) tmp;
                }
@@ -9932,9 +9865,9 @@ namespace exahype {
  {
                   assertion((refinementEvent >= 0 && refinementEvent <= 16));
    int mask =  (1 << (5)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 4));
+   mask = static_cast<int>(mask << (4));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(refinementEvent) << (DIMENSIONS_TIMES_TWO + 4));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(refinementEvent) << (4));
                }
                
                
@@ -10875,9 +10808,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 9));
+   mask = static_cast<int>(mask << (9));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 9));
+   tmp = static_cast<int>(tmp >> (9));
    assertion(( tmp >= 0 &&  tmp <= 2));
    return (CompressionState) tmp;
                }
@@ -10891,9 +10824,9 @@ namespace exahype {
  {
                   assertion((compressionState >= 0 && compressionState <= 2));
    int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 9));
+   mask = static_cast<int>(mask << (9));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(compressionState) << (DIMENSIONS_TIMES_TWO + 9));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(compressionState) << (9));
                }
                
                
@@ -10904,9 +10837,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 11));
+   mask = static_cast<int>(mask << (11));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 11));
+   tmp = static_cast<int>(tmp >> (11));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -10921,9 +10854,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInPreviousSolution >= 1 && bytesPerDoFInPreviousSolution <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 11));
+   mask = static_cast<int>(mask << (11));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInPreviousSolution) - 1) << (DIMENSIONS_TIMES_TWO + 11));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInPreviousSolution) - 1) << (11));
                }
                
                
@@ -10934,9 +10867,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 14));
+   mask = static_cast<int>(mask << (14));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 14));
+   tmp = static_cast<int>(tmp >> (14));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -10951,9 +10884,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInSolution >= 1 && bytesPerDoFInSolution <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 14));
+   mask = static_cast<int>(mask << (14));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInSolution) - 1) << (DIMENSIONS_TIMES_TWO + 14));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInSolution) - 1) << (14));
                }
                
                
@@ -10964,9 +10897,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 17));
+   mask = static_cast<int>(mask << (17));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 17));
+   tmp = static_cast<int>(tmp >> (17));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -10981,9 +10914,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInUpdate >= 1 && bytesPerDoFInUpdate <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 17));
+   mask = static_cast<int>(mask << (17));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInUpdate) - 1) << (DIMENSIONS_TIMES_TWO + 17));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInUpdate) - 1) << (17));
                }
                
                
@@ -10994,9 +10927,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 20));
+   mask = static_cast<int>(mask << (20));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 20));
+   tmp = static_cast<int>(tmp >> (20));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -11011,9 +10944,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInExtrapolatedPredictor >= 1 && bytesPerDoFInExtrapolatedPredictor <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 20));
+   mask = static_cast<int>(mask << (20));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInExtrapolatedPredictor) - 1) << (DIMENSIONS_TIMES_TWO + 20));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInExtrapolatedPredictor) - 1) << (20));
                }
                
                
@@ -11024,9 +10957,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 23));
+   mask = static_cast<int>(mask << (23));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 23));
+   tmp = static_cast<int>(tmp >> (23));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -11041,9 +10974,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInFluctuation >= 1 && bytesPerDoFInFluctuation <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 23));
+   mask = static_cast<int>(mask << (23));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInFluctuation) - 1) << (DIMENSIONS_TIMES_TWO + 23));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInFluctuation) - 1) << (23));
                }
                
                
@@ -11066,7 +10999,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               ADERDGCellDescriptionPacked(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const bool& adjacentToRemoteRank, const bool& hasToHoldDataForMasterWorkerCommunication, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
+               ADERDGCellDescriptionPacked(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const bool& adjacentToRemoteRank, const bool& hasToHoldDataForMasterWorkerCommunication, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
                
                /**
                 * Generated
@@ -11113,17 +11046,12 @@ namespace exahype {
                 * 
                 * @see convert()
                 */
-               inline std::bitset<DIMENSIONS_TIMES_TWO> getNeighbourMergePerformed() const 
+               inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> getNeighbourMergePerformed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  int mask = (int) (1 << (DIMENSIONS_TIMES_TWO)) - 1 ;
-                  mask = static_cast<int>(mask << (0));
-                  int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-                  tmp = static_cast<int>(tmp >> (0));
-                  std::bitset<DIMENSIONS_TIMES_TWO> result = tmp;
-                  return result;
+                  return _persistentRecords._neighbourMergePerformed;
                }
                
                
@@ -11147,60 +11075,38 @@ namespace exahype {
                 * 
                 * @see convert()
                 */
-               inline void setNeighbourMergePerformed(const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) 
+               inline void setNeighbourMergePerformed(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  int mask = (int) (1 << (DIMENSIONS_TIMES_TWO)) - 1 ;
-                  mask = static_cast<int>(mask << (0));
-                  _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-                  _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | neighbourMergePerformed.to_ulong() << (0));
+                  _persistentRecords._neighbourMergePerformed = (neighbourMergePerformed);
                }
                
                
                
-               inline bool getNeighbourMergePerformed(int elementIndex) const 
+               inline signed char getNeighbourMergePerformed(int elementIndex) const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
                   assertion(elementIndex>=0);
                   assertion(elementIndex<DIMENSIONS_TIMES_TWO);
-                  int mask = 1 << (0);
-                  mask = mask << elementIndex;
-                  return (_persistentRecords._packedRecords0& mask);
+                  return _persistentRecords._neighbourMergePerformed[elementIndex];
+                  
                }
                
                
                
-               inline void setNeighbourMergePerformed(int elementIndex, const bool& neighbourMergePerformed) 
+               inline void setNeighbourMergePerformed(int elementIndex, const signed char& neighbourMergePerformed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
                   assertion(elementIndex>=0);
                   assertion(elementIndex<DIMENSIONS_TIMES_TWO);
-                  assertion(!neighbourMergePerformed || neighbourMergePerformed==1);
-                  int shift        = 0 + elementIndex; 
-                  int mask         = 1     << (shift);
-                  int shiftedValue = neighbourMergePerformed << (shift);
-                  _persistentRecords._packedRecords0 = _persistentRecords._packedRecords0 & ~mask;
-                  _persistentRecords._packedRecords0 = _persistentRecords._packedRecords0 |  shiftedValue;
-               }
-               
-               
-               
-               inline void flipNeighbourMergePerformed(int elementIndex) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion(elementIndex>=0);
-                  assertion(elementIndex<DIMENSIONS_TIMES_TWO);
-                  int mask = 1 << (0);
-                  mask = mask << elementIndex;
-                  _persistentRecords._packedRecords0^= mask;
+                  _persistentRecords._neighbourMergePerformed[elementIndex]= neighbourMergePerformed;
+                  
                }
                
                
@@ -11210,7 +11116,7 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-                  int mask = 1 << (DIMENSIONS_TIMES_TWO);
+                  int mask = 1 << (0);
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
    return (tmp != 0);
                }
@@ -11222,7 +11128,7 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-                  int mask = 1 << (DIMENSIONS_TIMES_TWO);
+                  int mask = 1 << (0);
    _persistentRecords._packedRecords0 = static_cast<int>( hasCompletedTimeStep ? (_persistentRecords._packedRecords0 | mask) : (_persistentRecords._packedRecords0 & ~mask));
                }
                
@@ -11233,7 +11139,7 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-                  int mask = 1 << (DIMENSIONS_TIMES_TWO + 1);
+                  int mask = 1 << (1);
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
    return (tmp != 0);
                }
@@ -11245,7 +11151,7 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-                  int mask = 1 << (DIMENSIONS_TIMES_TWO + 1);
+                  int mask = 1 << (1);
    _persistentRecords._packedRecords0 = static_cast<int>( adjacentToRemoteRank ? (_persistentRecords._packedRecords0 | mask) : (_persistentRecords._packedRecords0 & ~mask));
                }
                
@@ -11401,9 +11307,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 2));
+   mask = static_cast<int>(mask << (2));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 2));
+   tmp = static_cast<int>(tmp >> (2));
    assertion(( tmp >= 0 &&  tmp <= 3));
    return (Type) tmp;
                }
@@ -11417,9 +11323,9 @@ namespace exahype {
  {
                   assertion((type >= 0 && type <= 3));
    int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 2));
+   mask = static_cast<int>(mask << (2));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(type) << (DIMENSIONS_TIMES_TWO + 2));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(type) << (2));
                }
                
                
@@ -11430,9 +11336,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (5)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 4));
+   mask = static_cast<int>(mask << (4));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 4));
+   tmp = static_cast<int>(tmp >> (4));
    assertion(( tmp >= 0 &&  tmp <= 16));
    return (RefinementEvent) tmp;
                }
@@ -11446,9 +11352,9 @@ namespace exahype {
  {
                   assertion((refinementEvent >= 0 && refinementEvent <= 16));
    int mask =  (1 << (5)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 4));
+   mask = static_cast<int>(mask << (4));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(refinementEvent) << (DIMENSIONS_TIMES_TWO + 4));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(refinementEvent) << (4));
                }
                
                
@@ -12519,9 +12425,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 9));
+   mask = static_cast<int>(mask << (9));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 9));
+   tmp = static_cast<int>(tmp >> (9));
    assertion(( tmp >= 0 &&  tmp <= 2));
    return (CompressionState) tmp;
                }
@@ -12535,9 +12441,9 @@ namespace exahype {
  {
                   assertion((compressionState >= 0 && compressionState <= 2));
    int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 9));
+   mask = static_cast<int>(mask << (9));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(compressionState) << (DIMENSIONS_TIMES_TWO + 9));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(compressionState) << (9));
                }
                
                
@@ -12548,9 +12454,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 11));
+   mask = static_cast<int>(mask << (11));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 11));
+   tmp = static_cast<int>(tmp >> (11));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -12565,9 +12471,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInPreviousSolution >= 1 && bytesPerDoFInPreviousSolution <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 11));
+   mask = static_cast<int>(mask << (11));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInPreviousSolution) - 1) << (DIMENSIONS_TIMES_TWO + 11));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInPreviousSolution) - 1) << (11));
                }
                
                
@@ -12578,9 +12484,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 14));
+   mask = static_cast<int>(mask << (14));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 14));
+   tmp = static_cast<int>(tmp >> (14));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -12595,9 +12501,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInSolution >= 1 && bytesPerDoFInSolution <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 14));
+   mask = static_cast<int>(mask << (14));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInSolution) - 1) << (DIMENSIONS_TIMES_TWO + 14));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInSolution) - 1) << (14));
                }
                
                
@@ -12608,9 +12514,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 17));
+   mask = static_cast<int>(mask << (17));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 17));
+   tmp = static_cast<int>(tmp >> (17));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -12625,9 +12531,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInUpdate >= 1 && bytesPerDoFInUpdate <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 17));
+   mask = static_cast<int>(mask << (17));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInUpdate) - 1) << (DIMENSIONS_TIMES_TWO + 17));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInUpdate) - 1) << (17));
                }
                
                
@@ -12638,9 +12544,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 20));
+   mask = static_cast<int>(mask << (20));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 20));
+   tmp = static_cast<int>(tmp >> (20));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -12655,9 +12561,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInExtrapolatedPredictor >= 1 && bytesPerDoFInExtrapolatedPredictor <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 20));
+   mask = static_cast<int>(mask << (20));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInExtrapolatedPredictor) - 1) << (DIMENSIONS_TIMES_TWO + 20));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInExtrapolatedPredictor) - 1) << (20));
                }
                
                
@@ -12668,9 +12574,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 23));
+   mask = static_cast<int>(mask << (23));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 23));
+   tmp = static_cast<int>(tmp >> (23));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -12685,9 +12591,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInFluctuation >= 1 && bytesPerDoFInFluctuation <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 23));
+   mask = static_cast<int>(mask << (23));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInFluctuation) - 1) << (DIMENSIONS_TIMES_TWO + 23));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInFluctuation) - 1) << (23));
                }
                
                
@@ -12788,7 +12694,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   23/10/2018 16:25
+       * @date   24/10/2018 17:18
        */
       class exahype::records::ADERDGCellDescription { 
          
@@ -12815,9 +12721,9 @@ namespace exahype {
             struct PersistentRecords {
                int _solverNumber;
                #ifdef UseManualAlignment
-               std::bitset<DIMENSIONS_TIMES_TWO> _neighbourMergePerformed __attribute__((aligned(VectorisationAlignment)));
+               tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> _neighbourMergePerformed __attribute__((aligned(VectorisationAlignment)));
                #else
-               std::bitset<DIMENSIONS_TIMES_TWO> _neighbourMergePerformed;
+               tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> _neighbourMergePerformed;
                #endif
                bool _hasCompletedTimeStep;
                int _parentIndex;
@@ -12896,7 +12802,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation, const Creation& creation);
+               PersistentRecords(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation, const Creation& creation);
                
                
                inline int getSolverNumber() const 
@@ -12938,7 +12844,7 @@ namespace exahype {
                 * 
                 * @see convert()
                 */
-               inline std::bitset<DIMENSIONS_TIMES_TWO> getNeighbourMergePerformed() const 
+               inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> getNeighbourMergePerformed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -12967,7 +12873,7 @@ namespace exahype {
                 * 
                 * @see convert()
                 */
-               inline void setNeighbourMergePerformed(const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) 
+               inline void setNeighbourMergePerformed(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -14165,7 +14071,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               ADERDGCellDescription(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation, const Creation& creation);
+               ADERDGCellDescription(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation, const Creation& creation);
                
                /**
                 * Generated
@@ -14212,7 +14118,7 @@ namespace exahype {
                 * 
                 * @see convert()
                 */
-               inline std::bitset<DIMENSIONS_TIMES_TWO> getNeighbourMergePerformed() const 
+               inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> getNeighbourMergePerformed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -14241,7 +14147,7 @@ namespace exahype {
                 * 
                 * @see convert()
                 */
-               inline void setNeighbourMergePerformed(const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) 
+               inline void setNeighbourMergePerformed(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -14251,7 +14157,7 @@ namespace exahype {
                
                
                
-               inline bool getNeighbourMergePerformed(int elementIndex) const 
+               inline signed char getNeighbourMergePerformed(int elementIndex) const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -14264,7 +14170,7 @@ namespace exahype {
                
                
                
-               inline void setNeighbourMergePerformed(int elementIndex, const bool& neighbourMergePerformed) 
+               inline void setNeighbourMergePerformed(int elementIndex, const signed char& neighbourMergePerformed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -14273,18 +14179,6 @@ namespace exahype {
                   assertion(elementIndex<DIMENSIONS_TIMES_TWO);
                   _persistentRecords._neighbourMergePerformed[elementIndex]= neighbourMergePerformed;
                   
-               }
-               
-               
-               
-               inline void flipNeighbourMergePerformed(int elementIndex) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion(elementIndex>=0);
-                  assertion(elementIndex<DIMENSIONS_TIMES_TWO);
-                  _persistentRecords._neighbourMergePerformed.flip(elementIndex);
                }
                
                
@@ -15698,7 +15592,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   23/10/2018 16:25
+       * @date   24/10/2018 17:18
        */
       class exahype::records::ADERDGCellDescriptionPacked { 
          
@@ -15714,6 +15608,7 @@ namespace exahype {
             
             struct PersistentRecords {
                int _solverNumber;
+               tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> _neighbourMergePerformed;
                int _parentIndex;
                bool _hasVirtualChildren;
                int _level;
@@ -15757,16 +15652,15 @@ namespace exahype {
                
                /** mapping of records:
                || Member 	|| startbit 	|| length
-                |  neighbourMergePerformed	| startbit 0	| #bits DIMENSIONS_TIMES_TWO
-                |  hasCompletedTimeStep	| startbit DIMENSIONS_TIMES_TWO + 0	| #bits 1
-                |  type	| startbit DIMENSIONS_TIMES_TWO + 1	| #bits 2
-                |  refinementEvent	| startbit DIMENSIONS_TIMES_TWO + 3	| #bits 5
-                |  compressionState	| startbit DIMENSIONS_TIMES_TWO + 8	| #bits 2
-                |  bytesPerDoFInPreviousSolution	| startbit DIMENSIONS_TIMES_TWO + 10	| #bits 3
-                |  bytesPerDoFInSolution	| startbit DIMENSIONS_TIMES_TWO + 13	| #bits 3
-                |  bytesPerDoFInUpdate	| startbit DIMENSIONS_TIMES_TWO + 16	| #bits 3
-                |  bytesPerDoFInExtrapolatedPredictor	| startbit DIMENSIONS_TIMES_TWO + 19	| #bits 3
-                |  bytesPerDoFInFluctuation	| startbit DIMENSIONS_TIMES_TWO + 22	| #bits 3
+                |  hasCompletedTimeStep	| startbit 0	| #bits 1
+                |  type	| startbit 1	| #bits 2
+                |  refinementEvent	| startbit 3	| #bits 5
+                |  compressionState	| startbit 8	| #bits 2
+                |  bytesPerDoFInPreviousSolution	| startbit 10	| #bits 3
+                |  bytesPerDoFInSolution	| startbit 13	| #bits 3
+                |  bytesPerDoFInUpdate	| startbit 16	| #bits 3
+                |  bytesPerDoFInExtrapolatedPredictor	| startbit 19	| #bits 3
+                |  bytesPerDoFInFluctuation	| startbit 22	| #bits 3
                 */
                int _packedRecords0;
                
@@ -15778,7 +15672,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation, const Creation& creation);
+               PersistentRecords(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation, const Creation& creation);
                
                
                inline int getSolverNumber() const 
@@ -15820,17 +15714,12 @@ namespace exahype {
                 * 
                 * @see convert()
                 */
-               inline std::bitset<DIMENSIONS_TIMES_TWO> getNeighbourMergePerformed() const 
+               inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> getNeighbourMergePerformed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  int mask = (int) (1 << (DIMENSIONS_TIMES_TWO)) - 1 ;
-                  mask = static_cast<int>(mask << (0));
-                  int tmp = static_cast<int>(_packedRecords0 & mask);
-                  tmp = static_cast<int>(tmp >> (0));
-                  std::bitset<DIMENSIONS_TIMES_TWO> result = tmp;
-                  return result;
+                  return _neighbourMergePerformed;
                }
                
                
@@ -15854,15 +15743,12 @@ namespace exahype {
                 * 
                 * @see convert()
                 */
-               inline void setNeighbourMergePerformed(const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) 
+               inline void setNeighbourMergePerformed(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  int mask = (int) (1 << (DIMENSIONS_TIMES_TWO)) - 1 ;
-                  mask = static_cast<int>(mask << (0));
-                  _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-                  _packedRecords0 = static_cast<int>(_packedRecords0 | neighbourMergePerformed.to_ulong() << (0));
+                  _neighbourMergePerformed = (neighbourMergePerformed);
                }
                
                
@@ -15872,7 +15758,7 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-                  int mask = 1 << (DIMENSIONS_TIMES_TWO);
+                  int mask = 1 << (0);
    int tmp = static_cast<int>(_packedRecords0 & mask);
    return (tmp != 0);
                }
@@ -15884,7 +15770,7 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-                  int mask = 1 << (DIMENSIONS_TIMES_TWO);
+                  int mask = 1 << (0);
    _packedRecords0 = static_cast<int>( hasCompletedTimeStep ? (_packedRecords0 | mask) : (_packedRecords0 & ~mask));
                }
                
@@ -15936,9 +15822,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 1));
+   mask = static_cast<int>(mask << (1));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 1));
+   tmp = static_cast<int>(tmp >> (1));
    assertion(( tmp >= 0 &&  tmp <= 3));
    return (Type) tmp;
                }
@@ -15952,9 +15838,9 @@ namespace exahype {
  {
                   assertion((type >= 0 && type <= 3));
    int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 1));
+   mask = static_cast<int>(mask << (1));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(type) << (DIMENSIONS_TIMES_TWO + 1));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(type) << (1));
                }
                
                
@@ -15965,9 +15851,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (5)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 3));
+   mask = static_cast<int>(mask << (3));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 3));
+   tmp = static_cast<int>(tmp >> (3));
    assertion(( tmp >= 0 &&  tmp <= 16));
    return (RefinementEvent) tmp;
                }
@@ -15981,9 +15867,9 @@ namespace exahype {
  {
                   assertion((refinementEvent >= 0 && refinementEvent <= 16));
    int mask =  (1 << (5)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 3));
+   mask = static_cast<int>(mask << (3));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(refinementEvent) << (DIMENSIONS_TIMES_TWO + 3));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(refinementEvent) << (3));
                }
                
                
@@ -16924,9 +16810,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 8));
+   mask = static_cast<int>(mask << (8));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 8));
+   tmp = static_cast<int>(tmp >> (8));
    assertion(( tmp >= 0 &&  tmp <= 2));
    return (CompressionState) tmp;
                }
@@ -16940,9 +16826,9 @@ namespace exahype {
  {
                   assertion((compressionState >= 0 && compressionState <= 2));
    int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 8));
+   mask = static_cast<int>(mask << (8));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(compressionState) << (DIMENSIONS_TIMES_TWO + 8));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(compressionState) << (8));
                }
                
                
@@ -16953,9 +16839,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 10));
+   mask = static_cast<int>(mask << (10));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 10));
+   tmp = static_cast<int>(tmp >> (10));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -16970,9 +16856,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInPreviousSolution >= 1 && bytesPerDoFInPreviousSolution <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 10));
+   mask = static_cast<int>(mask << (10));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInPreviousSolution) - 1) << (DIMENSIONS_TIMES_TWO + 10));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInPreviousSolution) - 1) << (10));
                }
                
                
@@ -16983,9 +16869,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 13));
+   mask = static_cast<int>(mask << (13));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 13));
+   tmp = static_cast<int>(tmp >> (13));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -17000,9 +16886,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInSolution >= 1 && bytesPerDoFInSolution <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 13));
+   mask = static_cast<int>(mask << (13));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInSolution) - 1) << (DIMENSIONS_TIMES_TWO + 13));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInSolution) - 1) << (13));
                }
                
                
@@ -17013,9 +16899,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 16));
+   mask = static_cast<int>(mask << (16));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 16));
+   tmp = static_cast<int>(tmp >> (16));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -17030,9 +16916,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInUpdate >= 1 && bytesPerDoFInUpdate <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 16));
+   mask = static_cast<int>(mask << (16));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInUpdate) - 1) << (DIMENSIONS_TIMES_TWO + 16));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInUpdate) - 1) << (16));
                }
                
                
@@ -17043,9 +16929,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 19));
+   mask = static_cast<int>(mask << (19));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 19));
+   tmp = static_cast<int>(tmp >> (19));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -17060,9 +16946,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInExtrapolatedPredictor >= 1 && bytesPerDoFInExtrapolatedPredictor <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 19));
+   mask = static_cast<int>(mask << (19));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInExtrapolatedPredictor) - 1) << (DIMENSIONS_TIMES_TWO + 19));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInExtrapolatedPredictor) - 1) << (19));
                }
                
                
@@ -17073,9 +16959,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 22));
+   mask = static_cast<int>(mask << (22));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 22));
+   tmp = static_cast<int>(tmp >> (22));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -17090,9 +16976,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInFluctuation >= 1 && bytesPerDoFInFluctuation <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 22));
+   mask = static_cast<int>(mask << (22));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInFluctuation) - 1) << (DIMENSIONS_TIMES_TWO + 22));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInFluctuation) - 1) << (22));
                }
                
                
@@ -17135,7 +17021,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               ADERDGCellDescriptionPacked(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation, const Creation& creation);
+               ADERDGCellDescriptionPacked(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation, const Creation& creation);
                
                /**
                 * Generated
@@ -17182,17 +17068,12 @@ namespace exahype {
                 * 
                 * @see convert()
                 */
-               inline std::bitset<DIMENSIONS_TIMES_TWO> getNeighbourMergePerformed() const 
+               inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> getNeighbourMergePerformed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  int mask = (int) (1 << (DIMENSIONS_TIMES_TWO)) - 1 ;
-                  mask = static_cast<int>(mask << (0));
-                  int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-                  tmp = static_cast<int>(tmp >> (0));
-                  std::bitset<DIMENSIONS_TIMES_TWO> result = tmp;
-                  return result;
+                  return _persistentRecords._neighbourMergePerformed;
                }
                
                
@@ -17216,60 +17097,38 @@ namespace exahype {
                 * 
                 * @see convert()
                 */
-               inline void setNeighbourMergePerformed(const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) 
+               inline void setNeighbourMergePerformed(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  int mask = (int) (1 << (DIMENSIONS_TIMES_TWO)) - 1 ;
-                  mask = static_cast<int>(mask << (0));
-                  _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-                  _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | neighbourMergePerformed.to_ulong() << (0));
+                  _persistentRecords._neighbourMergePerformed = (neighbourMergePerformed);
                }
                
                
                
-               inline bool getNeighbourMergePerformed(int elementIndex) const 
+               inline signed char getNeighbourMergePerformed(int elementIndex) const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
                   assertion(elementIndex>=0);
                   assertion(elementIndex<DIMENSIONS_TIMES_TWO);
-                  int mask = 1 << (0);
-                  mask = mask << elementIndex;
-                  return (_persistentRecords._packedRecords0& mask);
+                  return _persistentRecords._neighbourMergePerformed[elementIndex];
+                  
                }
                
                
                
-               inline void setNeighbourMergePerformed(int elementIndex, const bool& neighbourMergePerformed) 
+               inline void setNeighbourMergePerformed(int elementIndex, const signed char& neighbourMergePerformed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
                   assertion(elementIndex>=0);
                   assertion(elementIndex<DIMENSIONS_TIMES_TWO);
-                  assertion(!neighbourMergePerformed || neighbourMergePerformed==1);
-                  int shift        = 0 + elementIndex; 
-                  int mask         = 1     << (shift);
-                  int shiftedValue = neighbourMergePerformed << (shift);
-                  _persistentRecords._packedRecords0 = _persistentRecords._packedRecords0 & ~mask;
-                  _persistentRecords._packedRecords0 = _persistentRecords._packedRecords0 |  shiftedValue;
-               }
-               
-               
-               
-               inline void flipNeighbourMergePerformed(int elementIndex) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion(elementIndex>=0);
-                  assertion(elementIndex<DIMENSIONS_TIMES_TWO);
-                  int mask = 1 << (0);
-                  mask = mask << elementIndex;
-                  _persistentRecords._packedRecords0^= mask;
+                  _persistentRecords._neighbourMergePerformed[elementIndex]= neighbourMergePerformed;
+                  
                }
                
                
@@ -17279,7 +17138,7 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-                  int mask = 1 << (DIMENSIONS_TIMES_TWO);
+                  int mask = 1 << (0);
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
    return (tmp != 0);
                }
@@ -17291,7 +17150,7 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-                  int mask = 1 << (DIMENSIONS_TIMES_TWO);
+                  int mask = 1 << (0);
    _persistentRecords._packedRecords0 = static_cast<int>( hasCompletedTimeStep ? (_persistentRecords._packedRecords0 | mask) : (_persistentRecords._packedRecords0 & ~mask));
                }
                
@@ -17343,9 +17202,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 1));
+   mask = static_cast<int>(mask << (1));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 1));
+   tmp = static_cast<int>(tmp >> (1));
    assertion(( tmp >= 0 &&  tmp <= 3));
    return (Type) tmp;
                }
@@ -17359,9 +17218,9 @@ namespace exahype {
  {
                   assertion((type >= 0 && type <= 3));
    int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 1));
+   mask = static_cast<int>(mask << (1));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(type) << (DIMENSIONS_TIMES_TWO + 1));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(type) << (1));
                }
                
                
@@ -17372,9 +17231,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (5)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 3));
+   mask = static_cast<int>(mask << (3));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 3));
+   tmp = static_cast<int>(tmp >> (3));
    assertion(( tmp >= 0 &&  tmp <= 16));
    return (RefinementEvent) tmp;
                }
@@ -17388,9 +17247,9 @@ namespace exahype {
  {
                   assertion((refinementEvent >= 0 && refinementEvent <= 16));
    int mask =  (1 << (5)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 3));
+   mask = static_cast<int>(mask << (3));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(refinementEvent) << (DIMENSIONS_TIMES_TWO + 3));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(refinementEvent) << (3));
                }
                
                
@@ -18461,9 +18320,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 8));
+   mask = static_cast<int>(mask << (8));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 8));
+   tmp = static_cast<int>(tmp >> (8));
    assertion(( tmp >= 0 &&  tmp <= 2));
    return (CompressionState) tmp;
                }
@@ -18477,9 +18336,9 @@ namespace exahype {
  {
                   assertion((compressionState >= 0 && compressionState <= 2));
    int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 8));
+   mask = static_cast<int>(mask << (8));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(compressionState) << (DIMENSIONS_TIMES_TWO + 8));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(compressionState) << (8));
                }
                
                
@@ -18490,9 +18349,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 10));
+   mask = static_cast<int>(mask << (10));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 10));
+   tmp = static_cast<int>(tmp >> (10));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -18507,9 +18366,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInPreviousSolution >= 1 && bytesPerDoFInPreviousSolution <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 10));
+   mask = static_cast<int>(mask << (10));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInPreviousSolution) - 1) << (DIMENSIONS_TIMES_TWO + 10));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInPreviousSolution) - 1) << (10));
                }
                
                
@@ -18520,9 +18379,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 13));
+   mask = static_cast<int>(mask << (13));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 13));
+   tmp = static_cast<int>(tmp >> (13));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -18537,9 +18396,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInSolution >= 1 && bytesPerDoFInSolution <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 13));
+   mask = static_cast<int>(mask << (13));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInSolution) - 1) << (DIMENSIONS_TIMES_TWO + 13));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInSolution) - 1) << (13));
                }
                
                
@@ -18550,9 +18409,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 16));
+   mask = static_cast<int>(mask << (16));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 16));
+   tmp = static_cast<int>(tmp >> (16));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -18567,9 +18426,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInUpdate >= 1 && bytesPerDoFInUpdate <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 16));
+   mask = static_cast<int>(mask << (16));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInUpdate) - 1) << (DIMENSIONS_TIMES_TWO + 16));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInUpdate) - 1) << (16));
                }
                
                
@@ -18580,9 +18439,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 19));
+   mask = static_cast<int>(mask << (19));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 19));
+   tmp = static_cast<int>(tmp >> (19));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -18597,9 +18456,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInExtrapolatedPredictor >= 1 && bytesPerDoFInExtrapolatedPredictor <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 19));
+   mask = static_cast<int>(mask << (19));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInExtrapolatedPredictor) - 1) << (DIMENSIONS_TIMES_TWO + 19));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInExtrapolatedPredictor) - 1) << (19));
                }
                
                
@@ -18610,9 +18469,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 22));
+   mask = static_cast<int>(mask << (22));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 22));
+   tmp = static_cast<int>(tmp >> (22));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -18627,9 +18486,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInFluctuation >= 1 && bytesPerDoFInFluctuation <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 22));
+   mask = static_cast<int>(mask << (22));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInFluctuation) - 1) << (DIMENSIONS_TIMES_TWO + 22));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInFluctuation) - 1) << (22));
                }
                
                
@@ -18760,7 +18619,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   23/10/2018 16:25
+       * @date   24/10/2018 17:18
        */
       class exahype::records::ADERDGCellDescription { 
          
@@ -18783,9 +18642,9 @@ namespace exahype {
             struct PersistentRecords {
                int _solverNumber;
                #ifdef UseManualAlignment
-               std::bitset<DIMENSIONS_TIMES_TWO> _neighbourMergePerformed __attribute__((aligned(VectorisationAlignment)));
+               tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> _neighbourMergePerformed __attribute__((aligned(VectorisationAlignment)));
                #else
-               std::bitset<DIMENSIONS_TIMES_TWO> _neighbourMergePerformed;
+               tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> _neighbourMergePerformed;
                #endif
                bool _hasCompletedTimeStep;
                int _parentIndex;
@@ -18863,7 +18722,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
+               PersistentRecords(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
                
                
                inline int getSolverNumber() const 
@@ -18905,7 +18764,7 @@ namespace exahype {
                 * 
                 * @see convert()
                 */
-               inline std::bitset<DIMENSIONS_TIMES_TWO> getNeighbourMergePerformed() const 
+               inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> getNeighbourMergePerformed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -18934,7 +18793,7 @@ namespace exahype {
                 * 
                 * @see convert()
                 */
-               inline void setNeighbourMergePerformed(const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) 
+               inline void setNeighbourMergePerformed(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -20112,7 +19971,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               ADERDGCellDescription(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
+               ADERDGCellDescription(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
                
                /**
                 * Generated
@@ -20159,7 +20018,7 @@ namespace exahype {
                 * 
                 * @see convert()
                 */
-               inline std::bitset<DIMENSIONS_TIMES_TWO> getNeighbourMergePerformed() const 
+               inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> getNeighbourMergePerformed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -20188,7 +20047,7 @@ namespace exahype {
                 * 
                 * @see convert()
                 */
-               inline void setNeighbourMergePerformed(const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) 
+               inline void setNeighbourMergePerformed(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -20198,7 +20057,7 @@ namespace exahype {
                
                
                
-               inline bool getNeighbourMergePerformed(int elementIndex) const 
+               inline signed char getNeighbourMergePerformed(int elementIndex) const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -20211,7 +20070,7 @@ namespace exahype {
                
                
                
-               inline void setNeighbourMergePerformed(int elementIndex, const bool& neighbourMergePerformed) 
+               inline void setNeighbourMergePerformed(int elementIndex, const signed char& neighbourMergePerformed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -20220,18 +20079,6 @@ namespace exahype {
                   assertion(elementIndex<DIMENSIONS_TIMES_TWO);
                   _persistentRecords._neighbourMergePerformed[elementIndex]= neighbourMergePerformed;
                   
-               }
-               
-               
-               
-               inline void flipNeighbourMergePerformed(int elementIndex) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion(elementIndex>=0);
-                  assertion(elementIndex<DIMENSIONS_TIMES_TWO);
-                  _persistentRecords._neighbourMergePerformed.flip(elementIndex);
                }
                
                
@@ -21615,7 +21462,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   23/10/2018 16:25
+       * @date   24/10/2018 17:18
        */
       class exahype::records::ADERDGCellDescriptionPacked { 
          
@@ -21629,6 +21476,7 @@ namespace exahype {
             
             struct PersistentRecords {
                int _solverNumber;
+               tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> _neighbourMergePerformed;
                int _parentIndex;
                bool _hasVirtualChildren;
                int _level;
@@ -21671,16 +21519,15 @@ namespace exahype {
                
                /** mapping of records:
                || Member 	|| startbit 	|| length
-                |  neighbourMergePerformed	| startbit 0	| #bits DIMENSIONS_TIMES_TWO
-                |  hasCompletedTimeStep	| startbit DIMENSIONS_TIMES_TWO + 0	| #bits 1
-                |  type	| startbit DIMENSIONS_TIMES_TWO + 1	| #bits 2
-                |  refinementEvent	| startbit DIMENSIONS_TIMES_TWO + 3	| #bits 5
-                |  compressionState	| startbit DIMENSIONS_TIMES_TWO + 8	| #bits 2
-                |  bytesPerDoFInPreviousSolution	| startbit DIMENSIONS_TIMES_TWO + 10	| #bits 3
-                |  bytesPerDoFInSolution	| startbit DIMENSIONS_TIMES_TWO + 13	| #bits 3
-                |  bytesPerDoFInUpdate	| startbit DIMENSIONS_TIMES_TWO + 16	| #bits 3
-                |  bytesPerDoFInExtrapolatedPredictor	| startbit DIMENSIONS_TIMES_TWO + 19	| #bits 3
-                |  bytesPerDoFInFluctuation	| startbit DIMENSIONS_TIMES_TWO + 22	| #bits 3
+                |  hasCompletedTimeStep	| startbit 0	| #bits 1
+                |  type	| startbit 1	| #bits 2
+                |  refinementEvent	| startbit 3	| #bits 5
+                |  compressionState	| startbit 8	| #bits 2
+                |  bytesPerDoFInPreviousSolution	| startbit 10	| #bits 3
+                |  bytesPerDoFInSolution	| startbit 13	| #bits 3
+                |  bytesPerDoFInUpdate	| startbit 16	| #bits 3
+                |  bytesPerDoFInExtrapolatedPredictor	| startbit 19	| #bits 3
+                |  bytesPerDoFInFluctuation	| startbit 22	| #bits 3
                 */
                int _packedRecords0;
                
@@ -21692,7 +21539,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
+               PersistentRecords(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
                
                
                inline int getSolverNumber() const 
@@ -21734,17 +21581,12 @@ namespace exahype {
                 * 
                 * @see convert()
                 */
-               inline std::bitset<DIMENSIONS_TIMES_TWO> getNeighbourMergePerformed() const 
+               inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> getNeighbourMergePerformed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  int mask = (int) (1 << (DIMENSIONS_TIMES_TWO)) - 1 ;
-                  mask = static_cast<int>(mask << (0));
-                  int tmp = static_cast<int>(_packedRecords0 & mask);
-                  tmp = static_cast<int>(tmp >> (0));
-                  std::bitset<DIMENSIONS_TIMES_TWO> result = tmp;
-                  return result;
+                  return _neighbourMergePerformed;
                }
                
                
@@ -21768,15 +21610,12 @@ namespace exahype {
                 * 
                 * @see convert()
                 */
-               inline void setNeighbourMergePerformed(const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) 
+               inline void setNeighbourMergePerformed(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  int mask = (int) (1 << (DIMENSIONS_TIMES_TWO)) - 1 ;
-                  mask = static_cast<int>(mask << (0));
-                  _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-                  _packedRecords0 = static_cast<int>(_packedRecords0 | neighbourMergePerformed.to_ulong() << (0));
+                  _neighbourMergePerformed = (neighbourMergePerformed);
                }
                
                
@@ -21786,7 +21625,7 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-                  int mask = 1 << (DIMENSIONS_TIMES_TWO);
+                  int mask = 1 << (0);
    int tmp = static_cast<int>(_packedRecords0 & mask);
    return (tmp != 0);
                }
@@ -21798,7 +21637,7 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-                  int mask = 1 << (DIMENSIONS_TIMES_TWO);
+                  int mask = 1 << (0);
    _packedRecords0 = static_cast<int>( hasCompletedTimeStep ? (_packedRecords0 | mask) : (_packedRecords0 & ~mask));
                }
                
@@ -21850,9 +21689,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 1));
+   mask = static_cast<int>(mask << (1));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 1));
+   tmp = static_cast<int>(tmp >> (1));
    assertion(( tmp >= 0 &&  tmp <= 3));
    return (Type) tmp;
                }
@@ -21866,9 +21705,9 @@ namespace exahype {
  {
                   assertion((type >= 0 && type <= 3));
    int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 1));
+   mask = static_cast<int>(mask << (1));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(type) << (DIMENSIONS_TIMES_TWO + 1));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(type) << (1));
                }
                
                
@@ -21879,9 +21718,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (5)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 3));
+   mask = static_cast<int>(mask << (3));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 3));
+   tmp = static_cast<int>(tmp >> (3));
    assertion(( tmp >= 0 &&  tmp <= 16));
    return (RefinementEvent) tmp;
                }
@@ -21895,9 +21734,9 @@ namespace exahype {
  {
                   assertion((refinementEvent >= 0 && refinementEvent <= 16));
    int mask =  (1 << (5)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 3));
+   mask = static_cast<int>(mask << (3));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(refinementEvent) << (DIMENSIONS_TIMES_TWO + 3));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(refinementEvent) << (3));
                }
                
                
@@ -22838,9 +22677,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 8));
+   mask = static_cast<int>(mask << (8));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 8));
+   tmp = static_cast<int>(tmp >> (8));
    assertion(( tmp >= 0 &&  tmp <= 2));
    return (CompressionState) tmp;
                }
@@ -22854,9 +22693,9 @@ namespace exahype {
  {
                   assertion((compressionState >= 0 && compressionState <= 2));
    int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 8));
+   mask = static_cast<int>(mask << (8));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(compressionState) << (DIMENSIONS_TIMES_TWO + 8));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(compressionState) << (8));
                }
                
                
@@ -22867,9 +22706,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 10));
+   mask = static_cast<int>(mask << (10));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 10));
+   tmp = static_cast<int>(tmp >> (10));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -22884,9 +22723,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInPreviousSolution >= 1 && bytesPerDoFInPreviousSolution <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 10));
+   mask = static_cast<int>(mask << (10));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInPreviousSolution) - 1) << (DIMENSIONS_TIMES_TWO + 10));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInPreviousSolution) - 1) << (10));
                }
                
                
@@ -22897,9 +22736,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 13));
+   mask = static_cast<int>(mask << (13));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 13));
+   tmp = static_cast<int>(tmp >> (13));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -22914,9 +22753,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInSolution >= 1 && bytesPerDoFInSolution <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 13));
+   mask = static_cast<int>(mask << (13));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInSolution) - 1) << (DIMENSIONS_TIMES_TWO + 13));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInSolution) - 1) << (13));
                }
                
                
@@ -22927,9 +22766,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 16));
+   mask = static_cast<int>(mask << (16));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 16));
+   tmp = static_cast<int>(tmp >> (16));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -22944,9 +22783,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInUpdate >= 1 && bytesPerDoFInUpdate <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 16));
+   mask = static_cast<int>(mask << (16));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInUpdate) - 1) << (DIMENSIONS_TIMES_TWO + 16));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInUpdate) - 1) << (16));
                }
                
                
@@ -22957,9 +22796,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 19));
+   mask = static_cast<int>(mask << (19));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 19));
+   tmp = static_cast<int>(tmp >> (19));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -22974,9 +22813,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInExtrapolatedPredictor >= 1 && bytesPerDoFInExtrapolatedPredictor <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 19));
+   mask = static_cast<int>(mask << (19));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInExtrapolatedPredictor) - 1) << (DIMENSIONS_TIMES_TWO + 19));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInExtrapolatedPredictor) - 1) << (19));
                }
                
                
@@ -22987,9 +22826,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 22));
+   mask = static_cast<int>(mask << (22));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 22));
+   tmp = static_cast<int>(tmp >> (22));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -23004,9 +22843,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInFluctuation >= 1 && bytesPerDoFInFluctuation <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 22));
+   mask = static_cast<int>(mask << (22));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInFluctuation) - 1) << (DIMENSIONS_TIMES_TWO + 22));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInFluctuation) - 1) << (22));
                }
                
                
@@ -23029,7 +22868,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               ADERDGCellDescriptionPacked(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
+               ADERDGCellDescriptionPacked(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
                
                /**
                 * Generated
@@ -23076,17 +22915,12 @@ namespace exahype {
                 * 
                 * @see convert()
                 */
-               inline std::bitset<DIMENSIONS_TIMES_TWO> getNeighbourMergePerformed() const 
+               inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> getNeighbourMergePerformed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  int mask = (int) (1 << (DIMENSIONS_TIMES_TWO)) - 1 ;
-                  mask = static_cast<int>(mask << (0));
-                  int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-                  tmp = static_cast<int>(tmp >> (0));
-                  std::bitset<DIMENSIONS_TIMES_TWO> result = tmp;
-                  return result;
+                  return _persistentRecords._neighbourMergePerformed;
                }
                
                
@@ -23110,60 +22944,38 @@ namespace exahype {
                 * 
                 * @see convert()
                 */
-               inline void setNeighbourMergePerformed(const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) 
+               inline void setNeighbourMergePerformed(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  int mask = (int) (1 << (DIMENSIONS_TIMES_TWO)) - 1 ;
-                  mask = static_cast<int>(mask << (0));
-                  _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-                  _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | neighbourMergePerformed.to_ulong() << (0));
+                  _persistentRecords._neighbourMergePerformed = (neighbourMergePerformed);
                }
                
                
                
-               inline bool getNeighbourMergePerformed(int elementIndex) const 
+               inline signed char getNeighbourMergePerformed(int elementIndex) const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
                   assertion(elementIndex>=0);
                   assertion(elementIndex<DIMENSIONS_TIMES_TWO);
-                  int mask = 1 << (0);
-                  mask = mask << elementIndex;
-                  return (_persistentRecords._packedRecords0& mask);
+                  return _persistentRecords._neighbourMergePerformed[elementIndex];
+                  
                }
                
                
                
-               inline void setNeighbourMergePerformed(int elementIndex, const bool& neighbourMergePerformed) 
+               inline void setNeighbourMergePerformed(int elementIndex, const signed char& neighbourMergePerformed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
                   assertion(elementIndex>=0);
                   assertion(elementIndex<DIMENSIONS_TIMES_TWO);
-                  assertion(!neighbourMergePerformed || neighbourMergePerformed==1);
-                  int shift        = 0 + elementIndex; 
-                  int mask         = 1     << (shift);
-                  int shiftedValue = neighbourMergePerformed << (shift);
-                  _persistentRecords._packedRecords0 = _persistentRecords._packedRecords0 & ~mask;
-                  _persistentRecords._packedRecords0 = _persistentRecords._packedRecords0 |  shiftedValue;
-               }
-               
-               
-               
-               inline void flipNeighbourMergePerformed(int elementIndex) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion(elementIndex>=0);
-                  assertion(elementIndex<DIMENSIONS_TIMES_TWO);
-                  int mask = 1 << (0);
-                  mask = mask << elementIndex;
-                  _persistentRecords._packedRecords0^= mask;
+                  _persistentRecords._neighbourMergePerformed[elementIndex]= neighbourMergePerformed;
+                  
                }
                
                
@@ -23173,7 +22985,7 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-                  int mask = 1 << (DIMENSIONS_TIMES_TWO);
+                  int mask = 1 << (0);
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
    return (tmp != 0);
                }
@@ -23185,7 +22997,7 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-                  int mask = 1 << (DIMENSIONS_TIMES_TWO);
+                  int mask = 1 << (0);
    _persistentRecords._packedRecords0 = static_cast<int>( hasCompletedTimeStep ? (_persistentRecords._packedRecords0 | mask) : (_persistentRecords._packedRecords0 & ~mask));
                }
                
@@ -23237,9 +23049,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 1));
+   mask = static_cast<int>(mask << (1));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 1));
+   tmp = static_cast<int>(tmp >> (1));
    assertion(( tmp >= 0 &&  tmp <= 3));
    return (Type) tmp;
                }
@@ -23253,9 +23065,9 @@ namespace exahype {
  {
                   assertion((type >= 0 && type <= 3));
    int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 1));
+   mask = static_cast<int>(mask << (1));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(type) << (DIMENSIONS_TIMES_TWO + 1));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(type) << (1));
                }
                
                
@@ -23266,9 +23078,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (5)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 3));
+   mask = static_cast<int>(mask << (3));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 3));
+   tmp = static_cast<int>(tmp >> (3));
    assertion(( tmp >= 0 &&  tmp <= 16));
    return (RefinementEvent) tmp;
                }
@@ -23282,9 +23094,9 @@ namespace exahype {
  {
                   assertion((refinementEvent >= 0 && refinementEvent <= 16));
    int mask =  (1 << (5)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 3));
+   mask = static_cast<int>(mask << (3));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(refinementEvent) << (DIMENSIONS_TIMES_TWO + 3));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(refinementEvent) << (3));
                }
                
                
@@ -24355,9 +24167,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 8));
+   mask = static_cast<int>(mask << (8));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 8));
+   tmp = static_cast<int>(tmp >> (8));
    assertion(( tmp >= 0 &&  tmp <= 2));
    return (CompressionState) tmp;
                }
@@ -24371,9 +24183,9 @@ namespace exahype {
  {
                   assertion((compressionState >= 0 && compressionState <= 2));
    int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 8));
+   mask = static_cast<int>(mask << (8));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(compressionState) << (DIMENSIONS_TIMES_TWO + 8));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(compressionState) << (8));
                }
                
                
@@ -24384,9 +24196,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 10));
+   mask = static_cast<int>(mask << (10));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 10));
+   tmp = static_cast<int>(tmp >> (10));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -24401,9 +24213,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInPreviousSolution >= 1 && bytesPerDoFInPreviousSolution <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 10));
+   mask = static_cast<int>(mask << (10));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInPreviousSolution) - 1) << (DIMENSIONS_TIMES_TWO + 10));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInPreviousSolution) - 1) << (10));
                }
                
                
@@ -24414,9 +24226,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 13));
+   mask = static_cast<int>(mask << (13));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 13));
+   tmp = static_cast<int>(tmp >> (13));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -24431,9 +24243,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInSolution >= 1 && bytesPerDoFInSolution <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 13));
+   mask = static_cast<int>(mask << (13));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInSolution) - 1) << (DIMENSIONS_TIMES_TWO + 13));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInSolution) - 1) << (13));
                }
                
                
@@ -24444,9 +24256,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 16));
+   mask = static_cast<int>(mask << (16));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 16));
+   tmp = static_cast<int>(tmp >> (16));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -24461,9 +24273,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInUpdate >= 1 && bytesPerDoFInUpdate <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 16));
+   mask = static_cast<int>(mask << (16));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInUpdate) - 1) << (DIMENSIONS_TIMES_TWO + 16));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInUpdate) - 1) << (16));
                }
                
                
@@ -24474,9 +24286,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 19));
+   mask = static_cast<int>(mask << (19));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 19));
+   tmp = static_cast<int>(tmp >> (19));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -24491,9 +24303,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInExtrapolatedPredictor >= 1 && bytesPerDoFInExtrapolatedPredictor <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 19));
+   mask = static_cast<int>(mask << (19));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInExtrapolatedPredictor) - 1) << (DIMENSIONS_TIMES_TWO + 19));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInExtrapolatedPredictor) - 1) << (19));
                }
                
                
@@ -24504,9 +24316,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 22));
+   mask = static_cast<int>(mask << (22));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 22));
+   tmp = static_cast<int>(tmp >> (22));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -24521,9 +24333,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInFluctuation >= 1 && bytesPerDoFInFluctuation <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 22));
+   mask = static_cast<int>(mask << (22));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInFluctuation) - 1) << (DIMENSIONS_TIMES_TWO + 22));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInFluctuation) - 1) << (22));
                }
                
                
