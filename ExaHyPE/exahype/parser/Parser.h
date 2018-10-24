@@ -526,7 +526,7 @@ class exahype::parser::Parser {
   /**
    * \return Maximum number of running background job consumer tasks.
    */
-  int getNumberOfBackgroundTasks();
+  int getNumberOfBackgroundJobConsumerTasks();
 
   /**
    * @return If multiple high priority background jobs should be consumed in a rush

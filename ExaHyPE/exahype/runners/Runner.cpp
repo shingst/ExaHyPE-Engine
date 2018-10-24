@@ -275,7 +275,7 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
   }
 
   // background jobs
-  tarch::multicore::jobs::Job::setMaxNumberOfRunningBackgroundThreads(_parser.getNumberOfBackgroundTasks());
+  tarch::multicore::jobs::Job::setMaxNumberOfRunningBackgroundThreads(_parser.getNumberOfBackgroundJobConsumerTasks());
 
   #if defined(SharedTBB)
   tarch::multicore::jobs::setMinMaxNumberOfJobsToConsumeInOneRush(
