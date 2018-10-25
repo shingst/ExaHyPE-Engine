@@ -117,9 +117,9 @@
       out << ",";
       out << "neighbourMergePerformed:[";
    for (int i = 0; i < DIMENSIONS_TIMES_TWO-1; i++) {
-      out << getNeighbourMergePerformed(i) << ",";
+      out << static_cast<int>(getNeighbourMergePerformed(i)) << ",";
    }
-   out << getNeighbourMergePerformed(DIMENSIONS_TIMES_TWO-1) << "]";
+   out << static_cast<int>(getNeighbourMergePerformed(DIMENSIONS_TIMES_TWO-1)) << "]";
       out << ",";
       out << "hasCompletedTimeStep:" << getHasCompletedTimeStep();
       out << ",";
