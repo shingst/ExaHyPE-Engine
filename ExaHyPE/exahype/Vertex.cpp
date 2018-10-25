@@ -452,7 +452,7 @@ void exahype::Vertex::mergeNeighbours(
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const tarch::la::Vector<DIMENSIONS, double>& h) const {
   if ( tarch::la::allSmallerEquals(h,exahype::solvers::Solver::getCoarsestMaximumMeshSizeOfAllSolvers()) ) {
-    #if DIMENSIONS==2 and defined(SharedMemoryParallelisation) // TODO(Dominic): Comment back in if it works
+    #if defined(SharedMemoryParallelisation) // TODO(Dominic): Comment back in if it works
     #if DIMENSIONS==2
     peano::datatraversal::TaskSet runParallelTasks(
     [&]() -> bool {
@@ -1043,7 +1043,6 @@ void exahype::Vertex::receiveNeighbourData(
           //#ifdef Asserts
           //logInfo("receiveNeighbourData(...)","from rank "<<fromRank <<" vertex="<<x.toString()<<" src="<<src.toString()<<" dest="<<dest.toString());
           //#endif
-
           bool receiveNoMetadata =
               (exahype::solvers::Solver::DisablePeanoNeighbourExchangeInTimeSteps &&
               exahype::solvers::Solver::DisableMetaDataExchangeInBatchedTimeSteps)
