@@ -603,7 +603,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::u
     }
 
     // the actual computations
-    updateSolution(solverPatch,cellDescriptionsIndex,neighbourMergePerformed,true);
+    updateSolution(solverPatch,cellDescriptionsIndex,solverPatch.getNeighbourMergePerformed(),true);
     result._timeStepSize    = startNewTimeStep(solverPatch,cellDescriptionsIndex);
     result._meshUpdateEvent = updateRefinementStatusAndMinAndMaxAfterSolutionUpdate(
         solverPatch,cellDescriptionsIndex,solverPatch.getNeighbourMergePerformed());
