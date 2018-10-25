@@ -64,10 +64,20 @@ std::bitset<DIMENSIONS_TIMES_TWO> exahype::amr::determineInsideAndOutsideFacesOf
 bool exahype::amr::onBoundaryOfParent(
     const tarch::la::Vector<DIMENSIONS, int>& subcellIndex,
     const int levelDelta){
+  const int end = tarch::la::aPowI(levelDelta,3)-1;
   bool result = false;
   for (int d = 0; d < DIMENSIONS; d++) {
     result |= subcellIndex[d] == 0;
-    result |= subcellIndex[d] == tarch::la::aPowI(levelDelta,3)-1;
+    result |= subcellIndex[d] == end;
   }
   return result;
+}
+
+bool exahype::amr::faceIsOnBoundaryOfParent(
+    const int faceIndex,
+    const tarch::la::Vector<DIMENSIONS, int>& subcellIndex,
+    const int levelDelta) {
+  const int direction   = faceIndex / 2;
+  const int orientation = faceIndex % 2;
+  return subcellIndex[direction]==orientation*(tarch::la::aPowI(levelDelta,3)-1);
 }

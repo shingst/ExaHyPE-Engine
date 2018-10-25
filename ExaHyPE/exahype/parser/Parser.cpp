@@ -206,6 +206,9 @@ exahype::parser::Parser::Parser() {
           "globalfixed", exahype::solvers::Solver::TimeStepping::GlobalFixed));
 }
 
+exahype::parser::Parser::~Parser() {
+  delete _impl;
+}
 
 
 void exahype::parser::Parser::readFile(const std::string& filename) {
@@ -1107,11 +1110,11 @@ int exahype::parser::Parser::getRanksPerNode() {
 }
 
 
-int exahype::parser::Parser::getNumberOfBackgroundTasks() {
+int exahype::parser::Parser::getNumberOfBackgroundJobConsumerTasks() {
   int result = getIntFromPath("/shared_memory/background_job_consumers",0,isOptional);
   if (result<=0) {
-    logInfo("getNumberOfBackgroundTasks()", "no number of background tasks specified. Use default");
-    result = 0;
+    logInfo("getNumberOfBackgroundTasks()", "no number of background tasks specified. Use default: #consumers = #threads / 4.");
+    result = getNumberOfThreads()/4;
   }
   return result;
 }

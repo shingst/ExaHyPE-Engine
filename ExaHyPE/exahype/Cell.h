@@ -92,19 +92,6 @@ class exahype::Cell : public peano::grid::Cell<exahype::records::Cell> {
   Cell(const Base::PersistentCell& argument);
 
   /**
-   * Validates that all incoming neighbour merges have been
-   * performed.
-   *
-   * <h2> ADER-DG and Limiting-ADERDG </h2>
-   *
-   * Descendants might border to uninitialised Peano cells.
-   * A merge is thus not performed here.
-   */
-  static void validateThatAllNeighbourMergesHaveBeenPerformed(
-      const int cellDescriptionsIndex,
-      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator);
-
-  /**
    * Here we reset helper variables that play a role in
    * the neighbour merge methods.
    * These are the cell description attributes
