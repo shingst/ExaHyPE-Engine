@@ -1519,11 +1519,14 @@ void exahype::runners::Runner::runPredictionInIsolation(repositories::Repository
     switch (solver->getType()) {
       case solvers::Solver::Type::ADERDG:
         static_cast<solvers::ADERDGSolver*>(solver)->setStabilityConditionWasViolated(true);
+        static_cast<solvers::ADERDGSolver*>(solver)->setNextMeshUpdateEvent(); // reset
         break;
       case solvers::Solver::Type::LimitingADERDG:
         static_cast<solvers::LimitingADERDGSolver*>(solver)->getSolver().get()->setStabilityConditionWasViolated(true);
+        static_cast<solvers::LimitingADERDGSolver*>(solver)->getSolver().get()->setNextMeshUpdateEvent(); // reset
         break;
       case solvers::Solver::Type::FiniteVolumes:
+        // do nothing
         break;
     }
   }
