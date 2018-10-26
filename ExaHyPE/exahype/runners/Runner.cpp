@@ -275,7 +275,7 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
   }
 
   // background jobs
-  tarch::multicore::jobs::Job::setMaxNumberOfRunningBackgroundThreads(_parser.getNumberOfBackgroundTasks());
+  tarch::multicore::jobs::Job::setMaxNumberOfRunningBackgroundThreads(_parser.getNumberOfBackgroundJobConsumerTasks());
 
   #if defined(SharedTBB)
   tarch::multicore::jobs::setMinMaxNumberOfJobsToConsumeInOneRush(
@@ -850,7 +850,7 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
 
     repository.switchToInitialPrediction();
     repository.iterate( exahype::solvers::Solver::PredictionSweeps, communicatePeanoVertices );
-    logInfo("runAsMaster(...)","computed first predictor");
+    logInfo("runAsMaster(...)","computed first predictor (number of predictor sweeps: "<<exahype::solvers::Solver::PredictionSweeps<<")");
 
     printTimeStepInfo(-1,repository);
     validateInitialSolverTimeStepData(exahype::solvers::Solver::FuseADERDGPhases);

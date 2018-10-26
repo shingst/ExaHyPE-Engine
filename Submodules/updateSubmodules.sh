@@ -62,10 +62,11 @@ update_others() {
 	if [ ! -d markupsafe ]; then
 		mkdir markupsafe
 	fi
+	rm -r markupsafe # there seems to be a dependency issue with jinja otherwise
 	if [ ! -f markupsafe/.git ]; then
 		echo "Initialize markupsafe submodule"
 		cd "$pathToTopLevel" # move to the top level (required for git version below 1.8.4)
-		git submodule update --init Submodules/markupsafe
+                git submodule update --init Submodules/markupsafe
 		cd "$scriptDir" #move back
 	else
 		echo "Update markupsafe submodule"
@@ -199,7 +200,7 @@ else
 			exit -1;;
 		t)  git config submodule.Submodules/Peano.url    git://localhost:12345/gi26det/Peano.git
 			git config submodule.Submodules/jinja.url       git://localhost:12345/pallets/jinja.git
-			git config submodule.Submodules/markupsafe.url  git://localhost:12345/pallets/markupsafe.git
+                        git config submodule.Submodules/markupsafe.url  git://localhost:12345/pallets/markupsafe.git
 			git config submodule.Submodules/attrs.url       git://localhost:12345/python-attrs/attrs.git
 			git config submodule.Submodules/pyrsistent.url  git://localhost:12345/tobgu/pyrsistent.git
 			git config submodule.Submodules/jsonschema.url  git://localhost:12345/Julian/jsonschema.git

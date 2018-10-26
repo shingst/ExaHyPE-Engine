@@ -58,7 +58,7 @@ class exahype::parser::Parser {
 
   static const std::string   _noTokenFound;
 
-  ParserImpl* _impl;
+  ParserImpl* _impl = nullptr;
 
   /**
    * Takes certain parameters from the parameters and checks their validity.
@@ -207,7 +207,7 @@ class exahype::parser::Parser {
                                            const std::string& key);
 
   Parser();
-  virtual ~Parser() {}
+  virtual ~Parser();
 
   // Disallow copy and assignment
   Parser(const Parser& other) = delete;
@@ -526,7 +526,7 @@ class exahype::parser::Parser {
   /**
    * \return Maximum number of running background job consumer tasks.
    */
-  int getNumberOfBackgroundTasks();
+  int getNumberOfBackgroundJobConsumerTasks();
 
   /**
    * @return If multiple high priority background jobs should be consumed in a rush

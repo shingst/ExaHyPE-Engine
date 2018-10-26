@@ -56,32 +56,61 @@ public:
       const tarch::la::Vector<DIMENSIONS,double>& second);
 
   /**
-   * @return positions in {0,1}^DIMENSIONS where the associated cells do not share a face.
+   * Express @p index as i = a*2^0 + b*2^1 + c*2^2.
    *
-   * @param index running from 0 till 2*(DIMENSIONS-1) (exclusive)
+   * @return the coefficients as vector [a,b] or [a,b,c] in 2D or 3D, respectively.
+   *
+   * @param index an integer in [0,3] or [0,7] in 2D or 3D, respectively.
    */
-  static tarch::la::Vector<DIMENSIONS,int> getNeighbourMergePosition(const int index);
+  static tarch::la::Vector<DIMENSIONS,int> delineariseIndex2(int index);
 
   /**
-   * These are the neighbour merge partners for the positions obtained
-   * with getNextNeighbourMergePosition(const int index).
+   * Loop body of loop in mergeNeighbours.
    *
-   * @return positions in {0,1}^DIMENSIONS where the associated cells do not share a face.
+   * @note All parameters must be copied as the function
+   * might be spawned as task.
    *
-   * @param index running from 0 till 2*(DIMENSIONS-1) (exclusive)
+   * @param pos1Scalar             linearised adjacency index
+   * @param cellDescriptionsIndex1 cell description index corresponding to the adjacency index
+   * @param x position of a vertex
+   * @param h extent of cells adjacent to the vertex
    */
-  static tarch::la::Vector<DIMENSIONS,int> getNeighbourMergeCoPosition(const int index);
+  static void mergeNeighboursLoopBody(
+      const int pos1Scalar,
+      const int pos2Scalar,
+      const int cellDescriptionsIndex1,
+      const int cellDescriptionsIndex2,
+      const tarch::la::Vector<DIMENSIONS, double> x,
+      const tarch::la::Vector<DIMENSIONS, double> h);
+
+  /**
+   * Loop body of loop in mergeNeighboursMetadata.
+   *
+   * @param pos1Scalar             linearised adjacency index
+   * @param cellDescriptionsIndex1 cell description index corresponding to the adjacency index
+   * @param x position of this vertex
+   * @param h mesh size
+   */
+  static void mergeOnlyNeighboursMetadataLoopBody(
+      const int pos1Scalar,
+      const int pos2Scalar,
+      const int cellDescriptionsIndex1,
+      const int cellDescriptionsIndex2,
+      const exahype::State::AlgorithmSection& section,
+      const tarch::la::Vector<DIMENSIONS, double>& x,
+      const tarch::la::Vector<DIMENSIONS, double>& h,
+      const bool                                   checkThoroughly);
 
   /**
    * Validate that a compute cell is not next to
    * an invalid cell description index as long as their
    * interface is an interior face.
    */
-  void validateNeighbourhood(
+  static void validateNeighbourhood(
       const int cellDescriptionsIndex1,
       const int cellDescriptionsIndex2,
       const tarch::la::Vector<DIMENSIONS,int>& pos1,
-      const tarch::la::Vector<DIMENSIONS,int>& pos2) const;
+      const tarch::la::Vector<DIMENSIONS,int>& pos2);
 
 private:
   typedef class peano::grid::Vertex<exahype::records::Vertex> Base;
@@ -108,13 +137,13 @@ private:
    * @note Assumes a stable mesh, or at least one where no cells are deleted
    * but only added and the adjacency information is updated.
    */
-  void mergeNeighboursDataAndMetadata(
+  static void mergeNeighboursDataAndMetadata(
       const int cellDescriptionsIndex1,
       const int cellDescriptionsIndex2,
       const tarch::la::Vector<DIMENSIONS,int>& pos1,
       const tarch::la::Vector<DIMENSIONS,int>& pos2,
       const tarch::la::Vector<DIMENSIONS, double>& x,
-      const tarch::la::Vector<DIMENSIONS, double>& h) const;
+      const tarch::la::Vector<DIMENSIONS, double>& h);
 
   /**
    * Loops over the cell descriptions stored at the
@@ -131,13 +160,13 @@ private:
    * @note Assumes a stable mesh, or at least one where no cells are deleted
    * but only added and the adjacency information is updated.
    */
-  void mergeWithBoundaryData(
+  static void mergeWithBoundaryData(
       const int cellDescriptionsIndex1,
       const int cellDescriptionsIndex2,
       const tarch::la::Vector<DIMENSIONS,int>& pos1,
       const tarch::la::Vector<DIMENSIONS,int>& pos2,
       const tarch::la::Vector<DIMENSIONS, double>& x,
-      const tarch::la::Vector<DIMENSIONS, double>& h) const;
+      const tarch::la::Vector<DIMENSIONS, double>& h);
 
   #ifdef Parallel
   static constexpr int InvalidMetadataIndex = -1;
@@ -370,6 +399,80 @@ private:
    * finds the riemannSolvePerfomed flags set and does nothing in
    * our current implementation.
    *
+   * Further parallelisation over the adjacent faces
+   * -----------------------------------------------
+   *
+   * Further concurrency can be found in the loops over the adjacent
+   * faces per vertex. In 2D, 3D, there are 4, 12 faces ,respectively,
+   * which can be processed in parallel. A face is defined
+   * by its adjacent cells:
+   *
+   * Adjacency index pairs in 2D:
+   *
+   * face between positions [0,0]-[1,0]: adjacency index pairs 0-1
+   * face between positions [0,0]-[0,1]: adjacency index pairs 0-2
+   * face between positions [1,0]-[1,1]: adjacency index pairs 1-3
+   * face between positions [0,1]-[1,1]: adjacency index pairs 2-3
+   *
+   * Adjacency index pairs in 3D:
+   *
+   * face between positions [0,0,0]-[1,0,0]: adjacency index pairs 0-1
+   * face between positions [0,0,0]-[0,1,0]: adjacency index pairs 0-2
+   * face between positions [0,0,0]-[0,0,1]: adjacency index pairs 0-4
+   * face between positions [1,0,0]-[1,1,0]: adjacency index pairs 1-3
+   * face between positions [1,0,0]-[1,0,1]: adjacency index pairs 1-5
+   * face between positions [0,1,0]-[1,1,0]: adjacency index pairs 2-3
+   * face between positions [0,1,0]-[0,1,1]: adjacency index pairs 2-6
+   * face between positions [1,1,0]-[1,1,1]: adjacency index pairs 3-7
+   * face between positions [0,0,1]-[1,0,1]: adjacency index pairs 4-5
+   * face between positions [0,0,1]-[0,1,1]: adjacency index pairs 4-6
+   * face between positions [1,0,1]-[1,1,1]: adjacency index pairs 5-7
+   * face between positions [0,1,1]-[1,1,1]: adjacency index pairs 6-7
+   *
+   * The following python3 code can be used to compute teh adjacency index pairs:
+   *
+   * @code{.py}
+   * dim=3
+   *
+   * print("adjacency index pairs for dim{}".format(dim))
+   *
+   * def linearise(tup):
+   *     return tup[0]+tup[1]*2+tup[2]*4
+   *
+   * lim3=1
+   * if dim==3:
+   *     lim3=2
+   *
+   * pairs = collections.OrderedDict() # keys are stored in set which removes duplicates
+   *
+   * for i2 in range(0,lim3):
+   *     for i1 in range(0,2):
+   *         for i0 in range(0,2):
+   *             for j2 in range(0,lim3):
+   *                   for j1 in range(0,2):
+   *                       for j0 in range(0,2):
+   *                         i = [i0,i1,i2]
+   *                         j = [j0,j1,j2]
+   *                         diff=0
+   *                         for d in range(0,3):
+   *                             if i[d]!=j[d]:
+   *                                 diff+=1
+   *                         if diff==1:
+   *                             minIndex = min(linearise(i),linearise(j))
+   *                             maxIndex = max(linearise(i),linearise(j))
+   *                             minPosition = [str(x) for x in i]
+   *                             maxPosition = [str(x) for x in j]
+   *                             if linearise(j)==minIndex:
+   *                                 minPosition = [str(x) for x in j]
+   *                                 maxPosition = [str(x) for x in i]
+   *                             key = "{}-{}".format(minIndex,maxIndex)
+   *                             msg = "face between positions [{}]-[{}]: adjacency index pairs {}".format(",".join(minPosition),",".join(maxPosition),key)
+   *                             pairs[key] = msg
+   *
+   * for key,value in pairs.items():
+   *     print(value)
+   * @endcode
+   *
    * <h2>Limiter identification</h2>
    * Each ADER-DG solver analyses the local min and max values within a cell.
    * This information however is not stored in the cell but on the 2d faces
@@ -378,19 +481,6 @@ private:
   void mergeNeighbours(
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const tarch::la::Vector<DIMENSIONS, double>& h) const;
-
-  /**
-   * Loop body of loop in mergeNeighbours.
-   *
-   * @param pos1Scalar linearised multi-index
-   * @param x position of this vertex
-   * @param h mesh size
-   */
-  void mergeNeighboursLoopBody(
-      const int index,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const tarch::la::Vector<DIMENSIONS, double>& h) const;
-
 
 #ifdef Parallel
 
@@ -635,25 +725,6 @@ private:
       const tarch::la::Vector<DIMENSIONS, double>& x,
       int level) const;
   #endif
-
-
-  /**
-   * A functor wrapping mergeNeighboursLoopBody.
-   */
-  class MergeNeighboursJob {
-      private:
-        const exahype::Vertex& _vertex; // !!! assumes existence of member till end of life time
-        const tarch::la::Vector<DIMENSIONS, double>&      _x; // !!! assumes existence of member till end of life time
-        const tarch::la::Vector<DIMENSIONS, double>&      _h; // !!! assumes existence of member till end of life time
-      public:
-        MergeNeighboursJob(
-          const exahype::Vertex& vertex,                    // !!! assumes existence of member till end of life time
-          const tarch::la::Vector<DIMENSIONS, double>& x,   // !!! assumes existence of member till end of life time
-          const tarch::la::Vector<DIMENSIONS, double>& h);  // !!! assumes existence of member till end of life time
-
-          bool operator()(const tarch::la::Vector<1,int>& pos1) const;
-  };
-
 };
 
 #endif // _EXAHYPE_VERTEX_H

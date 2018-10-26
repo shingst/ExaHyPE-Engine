@@ -116,10 +116,6 @@ adapter:
 adapter: 
   name: PredictionOrLocalRecomputation
   merge-with-user-defined-mapping: PredictionOrLocalRecomputation // This advances in time for local recomp.
-  
-adapter:
-  name: GlobalRollback
-  merge-with-user-defined-mapping: GlobalRollback    
  
 // Additional adapters for 4 phase time stepping
 adapter: 
