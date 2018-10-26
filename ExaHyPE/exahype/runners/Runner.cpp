@@ -907,8 +907,7 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
       // profiling of isolated adapters
       else if ( profilingTarget==parser::Parser::ProfilingTarget::Prediction ) {
         logInfo("runAsMaster(...)","step " << timeStep << "\t\trun one iteration with PredictionRerun adapter");
-        repository.switchToPredictionRerun(); // This one waits for background job termination
-        repository.iterate(exahype::solvers::Solver::PredictionSweeps,false);
+        runPredictionInIsolation(repository);
       } else if ( profilingTarget==parser::Parser::ProfilingTarget::NeigbhourMerge ) {
         logInfo("runAsMaster(...)","step " << timeStep << "\t\trun one iteration with MergeNeighours adapter");
         repository.switchToMergeNeighbours();
@@ -1513,6 +1512,23 @@ void exahype::runners::Runner::runOneTimeStepWithThreeSeparateAlgorithmicSteps(
   repository.iterate( exahype::solvers::Solver::PredictionSweeps, communicatePeanoVertices );
 
   updateStatistics();
+}
+
+void exahype::runners::Runner::runPredictionInIsolation(repositories::Repository& repository) {
+  for (auto* solver : solvers::RegisteredSolvers) {
+    switch (solver->getType()) {
+      case solvers::Solver::Type::ADERDG:
+        static_cast<solvers::ADERDGSolver*>(solver)->setStabilityConditionWasViolated(true);
+        break;
+      case solvers::Solver::Type::LimitingADERDG:
+        static_cast<solvers::LimitingADERDGSolver*>(solver)->getSolver().get()->setStabilityConditionWasViolated(true);
+        break;
+      case solvers::Solver::Type::FiniteVolumes:
+        break;
+    }
+  }
+  repository.switchToPredictionRerun(); // This one waits for background job termination
+  repository.iterate(exahype::solvers::Solver::PredictionSweeps,false);
 }
 
 void exahype::runners::Runner::validateSolverTimeStepDataForThreeAlgorithmicPhases(const bool fuseADERDGPhases) const {

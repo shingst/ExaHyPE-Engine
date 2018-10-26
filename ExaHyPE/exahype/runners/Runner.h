@@ -260,6 +260,11 @@ class exahype::runners::Runner {
   void runOneTimeStepWithThreeSeparateAlgorithmicSteps(
       exahype::repositories::Repository& repository, bool plot);
 
+  /**
+   * Run the prediction step in isolation.
+   */
+  void runPredictionInIsolation(repositories::Repository& repository);
+
   void validateSolverTimeStepDataForThreeAlgorithmicPhases(const bool fuseADERDGPhases) const;
 
   /**
