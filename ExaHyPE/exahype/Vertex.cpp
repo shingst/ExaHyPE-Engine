@@ -49,6 +49,8 @@ exahype::Vertex::Vertex(const Base::PersistentVertex& argument)
   // do nothing
 }
 
+bool exahype::Vertex::SpawnNeighbourMergeAsThread = false;
+
 bool exahype::Vertex::equalUpToRelativeTolerance(
     const tarch::la::Vector<DIMENSIONS,double>& lhs,
     const tarch::la::Vector<DIMENSIONS,double>& rhs) {
@@ -452,115 +454,115 @@ void exahype::Vertex::mergeNeighbours(
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const tarch::la::Vector<DIMENSIONS, double>& h) const {
   if ( tarch::la::allSmallerEquals(h,exahype::solvers::Solver::getCoarsestMaximumMeshSizeOfAllSolvers()) ) {
-    #if defined(SharedMemoryParallelisation) // TODO(Dominic): Comment back in if it works
-    #if DIMENSIONS==2
-    peano::datatraversal::TaskSet runParallelTasks(
-    [&]() -> bool {
+    if ( SpawnNeighbourMergeAsThread  ) {
+      #if DIMENSIONS==2
+      peano::datatraversal::TaskSet runParallelTasks(
+      [&]() -> bool {
+        mergeNeighboursLoopBody(0,1,_vertexData.getCellDescriptionsIndex(0),_vertexData.getCellDescriptionsIndex(1),x,h);
+        return false;
+      },
+      [&]() -> bool {
+        mergeNeighboursLoopBody(0,2,_vertexData.getCellDescriptionsIndex(0),_vertexData.getCellDescriptionsIndex(2),x,h);
+        return false;
+      },
+      [&]() -> bool {
+        mergeNeighboursLoopBody(1,3,_vertexData.getCellDescriptionsIndex(1),_vertexData.getCellDescriptionsIndex(3),x,h);
+        return false;
+      },
+      [&]() -> bool {
+        mergeNeighboursLoopBody(2,3,_vertexData.getCellDescriptionsIndex(2),_vertexData.getCellDescriptionsIndex(3),x,h);
+        return false;
+      },
+      peano::datatraversal::TaskSet::TaskType::IsTaskAndRunImmediately,
+      peano::datatraversal::TaskSet::TaskType::IsTaskAndRunImmediately,
+      peano::datatraversal::TaskSet::TaskType::IsTaskAndRunImmediately,
+      peano::datatraversal::TaskSet::TaskType::IsTaskAndRunImmediately,
+      true);
+      #elif DIMENSIONS==3
+      peano::datatraversal::TaskSet runParallelTasks(
+      [&]() -> bool {
+        mergeNeighboursLoopBody(0,1,_vertexData.getCellDescriptionsIndex(0),_vertexData.getCellDescriptionsIndex(1),x,h);
+        return false;
+      },
+      [&]() -> bool {
+        mergeNeighboursLoopBody(0,2,_vertexData.getCellDescriptionsIndex(0),_vertexData.getCellDescriptionsIndex(2),x,h);
+        return false;
+      },
+      [&]() -> bool {
+        mergeNeighboursLoopBody(0,4,_vertexData.getCellDescriptionsIndex(0),_vertexData.getCellDescriptionsIndex(4),x,h);
+        return false;
+      },
+      [&]() -> bool {
+        mergeNeighboursLoopBody(1,3,_vertexData.getCellDescriptionsIndex(1),_vertexData.getCellDescriptionsIndex(3),x,h);
+        return false;
+      },
+      [&]() -> bool {
+        mergeNeighboursLoopBody(1,5,_vertexData.getCellDescriptionsIndex(1),_vertexData.getCellDescriptionsIndex(5),x,h);
+        return false;
+      },
+      [&]() -> bool {
+        mergeNeighboursLoopBody(2,3,_vertexData.getCellDescriptionsIndex(2),_vertexData.getCellDescriptionsIndex(3),x,h);
+        return false;
+      },
+      [&]() -> bool {
+        mergeNeighboursLoopBody(2,6,_vertexData.getCellDescriptionsIndex(2),_vertexData.getCellDescriptionsIndex(6),x,h);
+        return false;
+      },
+      [&]() -> bool {
+        mergeNeighboursLoopBody(3,7,_vertexData.getCellDescriptionsIndex(3),_vertexData.getCellDescriptionsIndex(7),x,h);
+        return false;
+      },
+      [&]() -> bool {
+        mergeNeighboursLoopBody(4,5,_vertexData.getCellDescriptionsIndex(4),_vertexData.getCellDescriptionsIndex(5),x,h);
+        return false;
+      },
+      [&]() -> bool {
+        mergeNeighboursLoopBody(4,6,_vertexData.getCellDescriptionsIndex(4),_vertexData.getCellDescriptionsIndex(6),x,h);
+        return false;
+      },
+      [&]() -> bool {
+        mergeNeighboursLoopBody(5,7,_vertexData.getCellDescriptionsIndex(5),_vertexData.getCellDescriptionsIndex(7),x,h);
+        return false;
+      },
+      [&]() -> bool {
+        mergeNeighboursLoopBody(6,7,_vertexData.getCellDescriptionsIndex(6),_vertexData.getCellDescriptionsIndex(7),x,h);
+        return false;
+      },
+      peano::datatraversal::TaskSet::TaskType::IsTaskAndRunImmediately,
+      peano::datatraversal::TaskSet::TaskType::IsTaskAndRunImmediately,
+      peano::datatraversal::TaskSet::TaskType::IsTaskAndRunImmediately,
+      peano::datatraversal::TaskSet::TaskType::IsTaskAndRunImmediately,
+      peano::datatraversal::TaskSet::TaskType::IsTaskAndRunImmediately,
+      peano::datatraversal::TaskSet::TaskType::IsTaskAndRunImmediately,
+      peano::datatraversal::TaskSet::TaskType::IsTaskAndRunImmediately,
+      peano::datatraversal::TaskSet::TaskType::IsTaskAndRunImmediately,
+      peano::datatraversal::TaskSet::TaskType::IsTaskAndRunImmediately,
+      peano::datatraversal::TaskSet::TaskType::IsTaskAndRunImmediately,
+      peano::datatraversal::TaskSet::TaskType::IsTaskAndRunImmediately,
+      peano::datatraversal::TaskSet::TaskType::IsTaskAndRunImmediately,
+      true);
+      #endif
+    } else {
+      #if DIMENSIONS==2
       mergeNeighboursLoopBody(0,1,_vertexData.getCellDescriptionsIndex(0),_vertexData.getCellDescriptionsIndex(1),x,h);
-      return false;
-    },
-    [&]() -> bool {
       mergeNeighboursLoopBody(0,2,_vertexData.getCellDescriptionsIndex(0),_vertexData.getCellDescriptionsIndex(2),x,h);
-      return false;
-    },
-    [&]() -> bool {
       mergeNeighboursLoopBody(1,3,_vertexData.getCellDescriptionsIndex(1),_vertexData.getCellDescriptionsIndex(3),x,h);
-      return false;
-    },
-    [&]() -> bool {
       mergeNeighboursLoopBody(2,3,_vertexData.getCellDescriptionsIndex(2),_vertexData.getCellDescriptionsIndex(3),x,h);
-      return false;
-    },
-    peano::datatraversal::TaskSet::TaskType::IsTaskAndRunImmediately,
-    peano::datatraversal::TaskSet::TaskType::IsTaskAndRunImmediately,
-    peano::datatraversal::TaskSet::TaskType::IsTaskAndRunImmediately,
-    peano::datatraversal::TaskSet::TaskType::IsTaskAndRunImmediately,
-    true);
-    #elif DIMENSIONS==3
-    peano::datatraversal::TaskSet runParallelTasks(
-    [&]() -> bool {
-      mergeNeighboursLoopBody(0,1,_vertexData.getCellDescriptionsIndex(0),_vertexData.getCellDescriptionsIndex(1),x,h);
-      return false;
-    },
-    [&]() -> bool {
-      mergeNeighboursLoopBody(0,2,_vertexData.getCellDescriptionsIndex(0),_vertexData.getCellDescriptionsIndex(2),x,h);
-      return false;
-    },
-    [&]() -> bool {
-      mergeNeighboursLoopBody(0,4,_vertexData.getCellDescriptionsIndex(0),_vertexData.getCellDescriptionsIndex(4),x,h);
-      return false;
-    },
-    [&]() -> bool {
-      mergeNeighboursLoopBody(1,3,_vertexData.getCellDescriptionsIndex(1),_vertexData.getCellDescriptionsIndex(3),x,h);
-      return false;
-    },
-    [&]() -> bool {
-      mergeNeighboursLoopBody(1,5,_vertexData.getCellDescriptionsIndex(1),_vertexData.getCellDescriptionsIndex(5),x,h);
-      return false;
-    },
-    [&]() -> bool {
-      mergeNeighboursLoopBody(2,3,_vertexData.getCellDescriptionsIndex(2),_vertexData.getCellDescriptionsIndex(3),x,h);
-      return false;
-    },
-    [&]() -> bool {
-      mergeNeighboursLoopBody(2,6,_vertexData.getCellDescriptionsIndex(2),_vertexData.getCellDescriptionsIndex(6),x,h);
-      return false;
-    },
-    [&]() -> bool {
-      mergeNeighboursLoopBody(3,7,_vertexData.getCellDescriptionsIndex(3),_vertexData.getCellDescriptionsIndex(7),x,h);
-      return false;
-    },
-    [&]() -> bool {
-      mergeNeighboursLoopBody(4,5,_vertexData.getCellDescriptionsIndex(4),_vertexData.getCellDescriptionsIndex(5),x,h);
-      return false;
-    },
-    [&]() -> bool {
-      mergeNeighboursLoopBody(4,6,_vertexData.getCellDescriptionsIndex(4),_vertexData.getCellDescriptionsIndex(6),x,h);
-      return false;
-    },
-    [&]() -> bool {
-      mergeNeighboursLoopBody(5,7,_vertexData.getCellDescriptionsIndex(5),_vertexData.getCellDescriptionsIndex(7),x,h);
-      return false;
-    },
-    [&]() -> bool {
-      mergeNeighboursLoopBody(6,7,_vertexData.getCellDescriptionsIndex(6),_vertexData.getCellDescriptionsIndex(7),x,h);
-      return false;
-    },
-    peano::datatraversal::TaskSet::TaskType::IsTaskAndRunImmediately,
-    peano::datatraversal::TaskSet::TaskType::IsTaskAndRunImmediately,
-    peano::datatraversal::TaskSet::TaskType::IsTaskAndRunImmediately,
-    peano::datatraversal::TaskSet::TaskType::IsTaskAndRunImmediately,
-    peano::datatraversal::TaskSet::TaskType::IsTaskAndRunImmediately,
-    peano::datatraversal::TaskSet::TaskType::IsTaskAndRunImmediately,
-    peano::datatraversal::TaskSet::TaskType::IsTaskAndRunImmediately,
-    peano::datatraversal::TaskSet::TaskType::IsTaskAndRunImmediately,
-    peano::datatraversal::TaskSet::TaskType::IsTaskAndRunImmediately,
-    peano::datatraversal::TaskSet::TaskType::IsTaskAndRunImmediately,
-    peano::datatraversal::TaskSet::TaskType::IsTaskAndRunImmediately,
-    peano::datatraversal::TaskSet::TaskType::IsTaskAndRunImmediately,
-    true);
-    #endif
-    #else
-    #if DIMENSIONS==2
-    mergeNeighboursLoopBody(0,1,_vertexData.getCellDescriptionsIndex(0),_vertexData.getCellDescriptionsIndex(1),x,h);
-    mergeNeighboursLoopBody(0,2,_vertexData.getCellDescriptionsIndex(0),_vertexData.getCellDescriptionsIndex(2),x,h);
-    mergeNeighboursLoopBody(1,3,_vertexData.getCellDescriptionsIndex(1),_vertexData.getCellDescriptionsIndex(3),x,h);
-    mergeNeighboursLoopBody(2,3,_vertexData.getCellDescriptionsIndex(2),_vertexData.getCellDescriptionsIndex(3),x,h);
-    #elif DIMENSIONS==3
-    mergeNeighboursLoopBody(0,1,_vertexData.getCellDescriptionsIndex(0),_vertexData.getCellDescriptionsIndex(1),x,h); // 000 100
-    mergeNeighboursLoopBody(0,2,_vertexData.getCellDescriptionsIndex(0),_vertexData.getCellDescriptionsIndex(2),x,h); // 000 010
-    mergeNeighboursLoopBody(0,4,_vertexData.getCellDescriptionsIndex(0),_vertexData.getCellDescriptionsIndex(4),x,h); // 000 001
-    mergeNeighboursLoopBody(1,3,_vertexData.getCellDescriptionsIndex(1),_vertexData.getCellDescriptionsIndex(3),x,h); // 100 110
-    mergeNeighboursLoopBody(1,5,_vertexData.getCellDescriptionsIndex(1),_vertexData.getCellDescriptionsIndex(5),x,h); // 100 101
-    mergeNeighboursLoopBody(2,3,_vertexData.getCellDescriptionsIndex(2),_vertexData.getCellDescriptionsIndex(3),x,h); // 010 110
-    mergeNeighboursLoopBody(2,6,_vertexData.getCellDescriptionsIndex(2),_vertexData.getCellDescriptionsIndex(6),x,h); // 010 011
-    mergeNeighboursLoopBody(3,7,_vertexData.getCellDescriptionsIndex(3),_vertexData.getCellDescriptionsIndex(7),x,h); // 110 111
-    mergeNeighboursLoopBody(4,5,_vertexData.getCellDescriptionsIndex(4),_vertexData.getCellDescriptionsIndex(5),x,h); // 001 101
-    mergeNeighboursLoopBody(4,6,_vertexData.getCellDescriptionsIndex(4),_vertexData.getCellDescriptionsIndex(6),x,h); // 001 011
-    mergeNeighboursLoopBody(5,7,_vertexData.getCellDescriptionsIndex(5),_vertexData.getCellDescriptionsIndex(7),x,h); // 101 111
-    mergeNeighboursLoopBody(6,7,_vertexData.getCellDescriptionsIndex(6),_vertexData.getCellDescriptionsIndex(7),x,h); // 011 111
-    #endif
-    #endif
+      #elif DIMENSIONS==3
+      mergeNeighboursLoopBody(0,1,_vertexData.getCellDescriptionsIndex(0),_vertexData.getCellDescriptionsIndex(1),x,h); // 000 100
+      mergeNeighboursLoopBody(0,2,_vertexData.getCellDescriptionsIndex(0),_vertexData.getCellDescriptionsIndex(2),x,h); // 000 010
+      mergeNeighboursLoopBody(0,4,_vertexData.getCellDescriptionsIndex(0),_vertexData.getCellDescriptionsIndex(4),x,h); // 000 001
+      mergeNeighboursLoopBody(1,3,_vertexData.getCellDescriptionsIndex(1),_vertexData.getCellDescriptionsIndex(3),x,h); // 100 110
+      mergeNeighboursLoopBody(1,5,_vertexData.getCellDescriptionsIndex(1),_vertexData.getCellDescriptionsIndex(5),x,h); // 100 101
+      mergeNeighboursLoopBody(2,3,_vertexData.getCellDescriptionsIndex(2),_vertexData.getCellDescriptionsIndex(3),x,h); // 010 110
+      mergeNeighboursLoopBody(2,6,_vertexData.getCellDescriptionsIndex(2),_vertexData.getCellDescriptionsIndex(6),x,h); // 010 011
+      mergeNeighboursLoopBody(3,7,_vertexData.getCellDescriptionsIndex(3),_vertexData.getCellDescriptionsIndex(7),x,h); // 110 111
+      mergeNeighboursLoopBody(4,5,_vertexData.getCellDescriptionsIndex(4),_vertexData.getCellDescriptionsIndex(5),x,h); // 001 101
+      mergeNeighboursLoopBody(4,6,_vertexData.getCellDescriptionsIndex(4),_vertexData.getCellDescriptionsIndex(6),x,h); // 001 011
+      mergeNeighboursLoopBody(5,7,_vertexData.getCellDescriptionsIndex(5),_vertexData.getCellDescriptionsIndex(7),x,h); // 101 111
+      mergeNeighboursLoopBody(6,7,_vertexData.getCellDescriptionsIndex(6),_vertexData.getCellDescriptionsIndex(7),x,h); // 011 111
+      #endif
+    }
   }
 }
 

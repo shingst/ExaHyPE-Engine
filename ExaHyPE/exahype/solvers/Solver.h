@@ -408,6 +408,11 @@ class exahype::solvers::Solver {
   static double PipedCompressedBytes;
   #endif
 
+  /**
+   * The solvers need to do adjust some operations slightly
+   * when those are run multiple times after each other in isolation.
+   */
+  static bool ProfileUpdate;
 
   /**
    * A flag indicating we fuse the algorithmic

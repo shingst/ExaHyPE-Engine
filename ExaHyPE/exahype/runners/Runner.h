@@ -96,7 +96,12 @@ class exahype::runners::Runner {
    * Parses global optimisations and
    * prints them out. Must be used for all ranks.
    */
-  void parseOptimisations() const;
+  void initOptimisations() const;
+
+  /**
+   *
+   */
+  void initProfiling();
 
   /**
    * Setup the oracles for the shared memory parallelisation. Different

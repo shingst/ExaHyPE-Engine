@@ -255,7 +255,7 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
   tarch::multicore::Core::getInstance().configure( shminvade::SHMController::getInstance().getMaxAvailableCores() );
   #elif SharedTBB
   const int numberOfThreads = _parser.getNumberOfThreads();
-  tarch::multicore::Core::getInstance().configure(numberOfThreads,tarch::multicore::Core::UseDefaultStackSize);
+  tarch::multicore::Core::getInstance().configure(numberOfThreads,_parser.getThreadStackSize());
   #elif SharedCPP
   const int numberOfThreads = _parser.getNumberOfThreads();
   tarch::multicore::Core::getInstance().configure(numberOfThreads);
@@ -273,6 +273,9 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
     logWarning("initSharedMemoryConfiguration()", "manual pinning only supported for TBB" );
     #endif
   }
+
+  // neighbour merge task sets
+  exahype::Vertex::SpawnNeighbourMergeAsThread = _parser.getSpawnNeighbourMergeAsThread();
 
   // background jobs
   tarch::multicore::jobs::Job::setMaxNumberOfRunningBackgroundThreads(_parser.getNumberOfBackgroundJobConsumerTasks());
@@ -435,7 +438,7 @@ void exahype::runners::Runner::initDataCompression() {
 
 
 void exahype::runners::Runner::shutdownSharedMemoryConfiguration() {
-#ifdef SharedMemoryParallelisation
+  #ifdef SharedMemoryParallelisation
   tarch::multicore::jobs::plotStatistics();
 
   switch (_parser.getMulticoreOracleType()) {
@@ -445,7 +448,7 @@ void exahype::runners::Runner::shutdownSharedMemoryConfiguration() {
   case exahype::parser::Parser::MulticoreOracleType::AutotuningWithRestartAndLearning:
   case exahype::parser::Parser::MulticoreOracleType::AutotuningWithLearningButWithoutRestart:
   case exahype::parser::Parser::MulticoreOracleType::GrainSizeSampling:
-  #ifdef Parallel
+    #ifdef Parallel
     if (
       tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getNumberOfNodes()-1
       &&
@@ -458,7 +461,7 @@ void exahype::runners::Runner::shutdownSharedMemoryConfiguration() {
       peano::datatraversal::autotuning::Oracle::getInstance().plotStatistics(
           _parser.getMulticorePropertiesFile());
     }
-  #else
+    #else
     if ( tarch::multicore::Core::getInstance().getNumberOfThreads()>1 ) {
       logInfo("shutdownSharedMemoryConfiguration()",
         "wrote statistics into file "
@@ -466,10 +469,10 @@ void exahype::runners::Runner::shutdownSharedMemoryConfiguration() {
       peano::datatraversal::autotuning::Oracle::getInstance().plotStatistics(
         _parser.getMulticorePropertiesFile());
     }
-  #endif
+    #endif
     break;
   }
-#endif
+  #endif
 }
 
 int exahype::runners::Runner::getCoarsestGridLevelOfAllSolvers(
@@ -647,9 +650,11 @@ void exahype::runners::Runner::shutdownHeaps() {
 
 void exahype::runners::Runner::initHPCEnvironment() {
   peano::performanceanalysis::Analysis::getInstance().enable(false);
+
+  solvers::Solver::ProfileUpdate = _parser.getProfilingTarget()==parser::Parser::ProfilingTarget::Update;
 }
 
-void exahype::runners::Runner::parseOptimisations() const {
+void exahype::runners::Runner::initOptimisations() const {
   exahype::solvers::Solver::FuseADERDGPhases         = _parser.getFuseAlgorithmicSteps();
   exahype::solvers::Solver::WeightForPredictionRerun = _parser.getFuseAlgorithmicStepsFactor();
 
@@ -687,7 +692,7 @@ void exahype::runners::Runner::parseOptimisations() const {
 int exahype::runners::Runner::run() {
   int result = 0;
   if ( _parser.isValid() ) {
-    parseOptimisations();
+    initOptimisations();
 
     initHeaps();
 
@@ -852,9 +857,7 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
     repository.iterate( exahype::solvers::Solver::PredictionSweeps, communicatePeanoVertices );
     logInfo("runAsMaster(...)","computed first predictor (number of predictor sweeps: "<<exahype::solvers::Solver::PredictionSweeps<<")");
 
-    printTimeStepInfo(-1,repository);
-    validateInitialSolverTimeStepData(exahype::solvers::Solver::FuseADERDGPhases);
-
+    // configure time stepping loop
     double simulationEndTime   = std::numeric_limits<double>::max();
     int simulationTimeSteps = std::numeric_limits<int>::max();
     if (_parser.foundSimulationEndTime()) {
@@ -862,10 +865,14 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
     } else {
       simulationTimeSteps = _parser.getSimulationTimeSteps();
     }
+    parser::Parser::ProfilingTarget profilingTarget = _parser.getProfilingTarget();
+    if ( profilingTarget==parser::Parser::ProfilingTarget::WholeCode ) {
+      printTimeStepInfo(-1,repository);
+      validateInitialSolverTimeStepData(exahype::solvers::Solver::FuseADERDGPhases);
+    }
+    const bool skipReductionInBatchedTimeSteps      = _parser.getSkipReductionInBatchedTimeSteps();
 
-    logDebug("runAsMaster(...)","min solver time stamp: "     << solvers::Solver::getMinTimeStampOfAllSolvers());
-    logDebug("runAsMaster(...)","min solver time step size: " << solvers::Solver::getMinTimeStepSizeOfAllSolvers());
-
+    // run time stepping loop
     int timeStep = 0;
     while (
         tarch::la::greater(solvers::Solver::getMinTimeStepSizeOfAllSolvers(), 0.0) &&
@@ -877,13 +884,14 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
 
       preProcessTimeStepInSharedMemoryEnvironment();
 
+      // fused time stepping
       int numberOfStepsToRun = 1;
-      if (exahype::solvers::Solver::FuseADERDGPhases) {
+      if ( profilingTarget==parser::Parser::ProfilingTarget::WholeCode && exahype::solvers::Solver::FuseADERDGPhases  ) {
         if (plot) {
           numberOfStepsToRun = 0;
         }
         else if (
-            _parser.getSkipReductionInBatchedTimeSteps() &&
+            skipReductionInBatchedTimeSteps &&
             solvers::Solver::allSolversUseTimeSteppingScheme(solvers::Solver::TimeStepping::GlobalFixed) &&
             repository.getState().getVerticalExchangeOfSolverDataRequired()==false // known after mesh update
         ) {
@@ -892,8 +900,23 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
 
         runTimeStepsWithFusedAlgorithmicSteps(repository,numberOfStepsToRun);
         printTimeStepInfo(numberOfStepsToRun,repository);
-      } else {
+      // straightforward realisation
+      } else if ( profilingTarget==parser::Parser::ProfilingTarget::WholeCode ) {
         runOneTimeStepWithThreeSeparateAlgorithmicSteps(repository, plot);
+      }
+      // profiling of isolated adapters
+      else if ( profilingTarget==parser::Parser::ProfilingTarget::Prediction ) {
+        logInfo("runAsMaster(...)","step " << timeStep << "\t\trun one iteration with PredictionRerun adapter");
+        repository.switchToPredictionRerun(); // This one waits for background job termination
+        repository.iterate(exahype::solvers::Solver::PredictionSweeps,false);
+      } else if ( profilingTarget==parser::Parser::ProfilingTarget::NeigbhourMerge ) {
+        logInfo("runAsMaster(...)","step " << timeStep << "\t\trun one iteration with MergeNeighours adapter");
+        repository.switchToMergeNeighbours();
+        repository.iterate(1,false);
+      } else if ( profilingTarget==parser::Parser::ProfilingTarget::Update ) {
+        logInfo("runAsMaster(...)","step " << timeStep << "\t\trun one iteration with UpdateAndReduce adapter");
+        repository.switchToUpdateAndReduce();
+        repository.iterate(1,false);
       }
 
       postProcessTimeStepInSharedMemoryEnvironment();

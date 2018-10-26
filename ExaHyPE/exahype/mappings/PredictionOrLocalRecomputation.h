@@ -77,17 +77,6 @@ class exahype::mappings::PredictionOrLocalRecomputation {
    */
   exahype::State _stateCopy;
 
-  #ifdef Debug // TODO(Dominic): Exclude shared memory etc.
-  /*
-   *  Counter for the interior face solves for debugging purposes.
-   */
-  int _interiorFaceMerges;
-  /*
-   *  Counter for the boundary face solves for debugging purposes.
-   */
-  int _boundaryFaceMerges;
-  #endif
-
   /**
    * Flag indicating if one solver requested a local recomputation.
    * Is set in beginIteration(...).

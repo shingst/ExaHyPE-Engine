@@ -128,13 +128,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::initialiseLocalVariables
   }
 }
 
-exahype::mappings::PredictionOrLocalRecomputation::PredictionOrLocalRecomputation()
-  #ifdef Debug
-  :
-  _interiorFaceMerges(0),
-  _boundaryFaceMerges(0)
-  #endif
-{
+exahype::mappings::PredictionOrLocalRecomputation::PredictionOrLocalRecomputation() {
   // do nothing
 }
 
@@ -179,11 +173,6 @@ void exahype::mappings::PredictionOrLocalRecomputation::beginIteration(
   ) {
     peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
   }
-
-  #ifdef Debug // TODO(Dominic): And not parallel and not shared memory
-  _interiorFaceMerges = 0;
-  _boundaryFaceMerges = 0;
-  #endif
 
   logTraceOutWith1Argument("beginIteration(State)", solverState);
 }
@@ -237,11 +226,6 @@ void exahype::mappings::PredictionOrLocalRecomputation::endIteration(
         logDebug("endIteration(state)","[post] updatedTimeStepSize="<<solver->getMinTimeStepSize()<<", solver="<<solver->toString());
       }
     }
-
-    #if defined(Debug) // TODO(Dominic): Use logDebug if it works with filters
-    logInfo("endIteration(...)","interiorFaceSolves: " << _interiorFaceMerges);
-    logInfo("endIteration(...)","boundaryFaceSolves: " << _boundaryFaceMerges);
-    #endif
   }
 
   #ifdef Parallel
@@ -385,9 +369,6 @@ void exahype::mappings::PredictionOrLocalRecomputation::mergeNeighboursDataDurin
                   ADERDGPatches1,ADERDGPatches2,FVPatches1,FVPatches2,solverNumber,
                   pos1,pos2,true/* isRecomputation */);
         }
-        #ifdef Debug // TODO(Dominic)
-        _interiorFaceMerges++;
-        #endif
       }
     }
   } else if (
@@ -414,9 +395,6 @@ void exahype::mappings::PredictionOrLocalRecomputation::mergeNeighboursDataDurin
       if ( performLocalRecomputation(solver) ) {
         static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->
             mergeWithBoundaryData(ADERDGPatches,FVPatches,solverNumber,posCell,posBoundary,true);
-        #ifdef Debug
-        _boundaryFaceMerges++;
-        #endif
       }
     }
   }

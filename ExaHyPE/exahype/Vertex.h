@@ -46,6 +46,13 @@ namespace exahype {
 class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
 public:
   /**
+   * If set to true, then additional parallelism is introduced
+   * per vertex where the faces are processed in parallel.
+   * Concurrency level is 12 in 3D and 4 in 2D.
+   */
+  static bool SpawnNeighbourMergeAsThread;
+
+  /**
    * Compare if two vectors are equal up to a relative
    * tolerance.
    *

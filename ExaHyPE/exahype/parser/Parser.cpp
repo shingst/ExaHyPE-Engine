@@ -477,6 +477,10 @@ int exahype::parser::Parser::getNumberOfThreads() const {
   return getIntFromPath("/shared_memory/cores");
 }
 
+int exahype::parser::Parser::getThreadStackSize() const {
+  return getIntFromPath("/shared_memory/thread_stack_size",0,isOptional);
+}
+
 tarch::la::Vector<DIMENSIONS, double> exahype::parser::Parser::getDomainSize() const {
   assertion(isValid());
   tarch::la::Vector<DIMENSIONS, double> result;
@@ -669,6 +673,10 @@ bool exahype::parser::Parser::getSpawnProlongationAsBackgroundThread() const {
 
 bool exahype::parser::Parser::getSpawnAMRBackgroundThreads() const {
   return getBoolFromPath("/optimisation/spawn_amr_background_threads", false, isOptional);
+}
+
+bool exahype::parser::Parser::getSpawnNeighbourMergeAsThread() const {
+  return getBoolFromPath("/optimisation/spawn_neighour_merge_as_thread", false, isOptional);
 }
 
 bool exahype::parser::Parser::getDisableMetadataExchangeInBatchedTimeSteps() const {
@@ -1003,6 +1011,35 @@ std::string exahype::parser::Parser::getLogFileName() const {
 
 std::string exahype::parser::Parser::getProfilerIdentifier() const {
   return getStringFromPath("/profiling/profiler", "NoOpProfiler", isOptional);
+}
+
+exahype::parser::Parser::ProfilingTarget exahype::parser::Parser::getProfilingTarget() const {
+  std::string option = getStringFromPath("/profiling/profiling_target", "whole_code", isOptional);
+
+  if ( option.compare("whole_code")!=0 && (
+       #ifdef Parallel
+       true ||
+       #endif
+       foundSimulationEndTime())
+  ) {
+    logError("getProfilingTarget","Profiling target '"<<option<<"' can not be chosen if a simulation end time is specified or a parallel build is run. Only 'whole_code' is allowed in this case.");
+    invalidate();
+    return ProfilingTarget::WholeCode;
+  }
+
+  if ( option.compare("whole_code")==0 ) {
+    return ProfilingTarget::WholeCode;
+  } else if ( option.compare("neighbour_merge")==0 ) {
+    return ProfilingTarget::NeigbhourMerge;
+  } else if ( option.compare("update")==0 ) {
+    return ProfilingTarget::Update;
+  } else if ( option.compare("prediction")==0 ) {
+    return ProfilingTarget::Prediction;
+  } else {
+    logError("getProfilingTarget","Unknown profiling target: "<<option);
+    invalidate();
+    return ProfilingTarget::WholeCode;
+  }
 }
 
 std::string exahype::parser::Parser::getMetricsIdentifierList() const {
