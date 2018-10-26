@@ -235,6 +235,15 @@ class exahype::parser::Parser {
    */
   int getNumberOfThreads() const;
 
+  /**
+   * @return The thread stack size. Default
+   * is 0 which is tranlated to a library-specific default value.
+   * (TBB default: 2 MB or 4 MB).
+   * (Alexey Kukanov (Intel), Thu, 08/12/2010 - 13:10)
+   * https://software.intel.com/en-us/forums/intel-threading-building-blocks/topic/288253
+   */
+  int getThreadStackSize() const;
+
   tarch::la::Vector<DIMENSIONS, double> getDomainSize() const;
 
   tarch::la::Vector<DIMENSIONS, double> getOffset() const;
@@ -309,6 +318,11 @@ class exahype::parser::Parser {
    * use background-threads whenever this is possible.
    */
   bool getSpawnAMRBackgroundThreads() const;
+
+  /**
+   * @return If an additional 4 or 12 tasks (2D and 3D) should be spawned per vertex.
+   */
+  bool getSpawnNeighbourMergeAsThread() const;
 
   double getTimestepBatchFactor() const;
   bool getSkipReductionInBatchedTimeSteps() const;
@@ -503,6 +517,21 @@ class exahype::parser::Parser {
   std::string getProfilerIdentifier() const;
   std::string getMetricsIdentifierList() const;
   std::string getProfilingOutputFilename() const;
+
+  /**
+   * The profiling target.
+   */
+  enum class ProfilingTarget {
+    WholeCode,     //!< The whole code is profiled
+    NeigbhourMerge,//!< The neighbour merge phase is profiled
+    Prediction,    //!< The prediction phase is profiled
+    Update         //!< The update phase is profiled
+  };
+
+  /**
+   * Specify what code part you plan to run/profile.
+   */
+  ProfilingTarget getProfilingTarget() const;
 
   /**
    * @TODO This function should be renamed to createParserViewForSolver, as we also

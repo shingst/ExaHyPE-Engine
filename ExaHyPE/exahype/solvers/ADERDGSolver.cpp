@@ -2502,8 +2502,8 @@ void exahype::solvers::ADERDGSolver::updateSolution(
     cellDescription.getType()==CellDescription::Type::Cell &&
     cellDescription.getRefinementEvent()==CellDescription::None
   ) {
-    assertion1( tarch::la::equals(neighbourMergePerformed,(signed char) true),cellDescription.toString());
-    if ( !tarch::la::equals(neighbourMergePerformed,(signed char) true) ) {
+    assertion1( tarch::la::equals(cellDescription.getNeighbourMergePerformed(),(signed char) true) || ProfileUpdate,cellDescription.toString());
+    if ( !tarch::la::equals(neighbourMergePerformed,(signed char) true) && !ProfileUpdate ) {
       logError("updateSolution(...)","Riemann solve was not performed on all faces of cell= "<<cellDescription.toString());
       std::terminate();
     }
@@ -2563,6 +2563,9 @@ void exahype::solvers::ADERDGSolver::updateSolution(
         cellDescription.getSize(),
         cellDescription.getCorrectorTimeStamp()+cellDescription.getCorrectorTimeStepSize(),
         cellDescription.getCorrectorTimeStepSize());
+
+    // only for profiling
+    if ( Solver::ProfileUpdate ) { swapSolutionAndPreviousSolution(cellDescription); }
 
     #ifdef Asserts
     if ( _checkForNaNs ) {
