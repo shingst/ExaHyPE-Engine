@@ -303,14 +303,14 @@ void exahype::mappings::FusedTimeStep::leaveCell(
       fineGridCell.isInitialised() &&
       issuePredictionJobsInThisIteration()
   ) {
+    solvers::Solver::CellInfo cellInfo(fineGridCell.getCellDescriptionsIndex());
+
     const int numberOfSolvers = exahype::solvers::RegisteredSolvers.size();
     for (int solverNumber=0; solverNumber<numberOfSolvers; solverNumber++) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-      const int element = solver->tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
-      if (element!=exahype::solvers::Solver::NotFound) {
+      if ( cellInfo.foundCellDescriptionForSolver(solverNumber) ) {
         // this operates only on compute cells
-        exahype::plotters::plotPatchIfAPlotterIsActive(
-            solverNumber,fineGridCell.getCellDescriptionsIndex(),element); // TODO(Dominic) potential for IO overlap?
+        exahype::plotters::plotPatchIfAPlotterIsActive(solverNumber,cellInfo); // TODO(Dominic) potential for IO overlap?
 
         const int isLastTimeStep = 
                ( exahype::solvers::Solver::PredictionSweeps==1 ) ? 
@@ -319,14 +319,13 @@ void exahype::mappings::FusedTimeStep::leaveCell(
 
         // TODO(LTS): Merge these two functions
         exahype::solvers::Solver::UpdateResult result =
-            solver->fusedTimeStep(
-                fineGridCell.getCellDescriptionsIndex(),element,
+            solver->fusedTimeStepOrRestriction(
+                solverNumber, cellInfo,
                 _stateCopy.isFirstIterationOfBatchOrNoBatch(),
                 isLastTimeStep,
                 exahype::Cell::isAtRemoteBoundary(
                     fineGridVertices,fineGridVerticesEnumerator)
             );
-        solver->restriction(fineGridCell.getCellDescriptionsIndex(),element);
 
         _meshUpdateEvents  [solverNumber] = exahype::solvers::Solver::mergeMeshUpdateEvents( _meshUpdateEvents[solverNumber], result._meshUpdateEvent );
         _minTimeStepSizes[solverNumber]   = std::min( result._timeStepSize,                 _minTimeStepSizes[solverNumber]);
@@ -335,9 +334,7 @@ void exahype::mappings::FusedTimeStep::leaveCell(
     }
 
     // Must be performed for all cell descriptions
-    exahype::Cell::resetNeighbourMergeFlags(
-        fineGridCell.getCellDescriptionsIndex(),
-        fineGridVertices,fineGridVerticesEnumerator);
+    exahype::Cell::resetNeighbourMergeFlags(cellInfo,fineGridVertices,fineGridVerticesEnumerator);
   }
 
   logTraceOutWith1Argument("leaveCell(...)", fineGridCell);

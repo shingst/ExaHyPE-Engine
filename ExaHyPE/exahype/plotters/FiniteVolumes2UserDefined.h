@@ -41,7 +41,7 @@ class exahype::plotters::FiniteVolumes2UserDefined: public exahype::plotters::Pl
 
   void init(const std::string& filename, int orderPlusOne, int solverUnknowns, int writtenUnknowns, exahype::parser::ParserView plotterParameters) override;
 
-  void plotPatch(const int cellDescriptionsIndex, const int element) override;
+  void plotPatch(const int solverNumber,const solvers::Solver::CellInfo& cellInfo) override;
 
   virtual void plotPatch(
       const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,

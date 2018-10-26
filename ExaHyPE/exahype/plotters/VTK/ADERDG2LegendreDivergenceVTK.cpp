@@ -311,8 +311,9 @@ void exahype::plotters::ADERDG2LegendreDivergenceVTK::plotVertexData(
 }
 
 
-void exahype::plotters::ADERDG2LegendreDivergenceVTK::plotPatch(const int cellDescriptionsIndex, const int element) {
-  auto& aderdgCellDescription = exahype::solvers::ADERDGSolver::getCellDescription(cellDescriptionsIndex,element);
+void exahype::plotters::ADERDG2LegendreDivergenceVTK::plotPatch(const int solverNumber,const solvers::Solver::CellInfo& cellInfo) {
+  const int element = solvers::Solver::indexOfCellDescription(cellInfo._ADERDGCellDescriptions,solverNumber);
+  auto& aderdgCellDescription  = cellInfo._ADERDGCellDescriptions[element];
 
   if (aderdgCellDescription.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Cell) {
     double* solverSolution = DataHeap::getInstance().getData(aderdgCellDescription.getSolution()).data();

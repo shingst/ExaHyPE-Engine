@@ -57,9 +57,7 @@ class exahype::plotters::ADERDG2FlashHDF5 : public exahype::plotters::Plotter::D
 
   virtual void init(const std::string& filename, int orderPlusOne, int solverUnknowns, int writtenUnknowns, exahype::parser::ParserView  plotterParameters);
 
-  virtual void plotPatch(
-        const int cellDescriptionsIndex,
-        const int element);
+  virtual void plotPatch(const int solverNumber,const solvers::Solver::CellInfo& cellInfo);
   
   virtual void plotPatch(
       const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,

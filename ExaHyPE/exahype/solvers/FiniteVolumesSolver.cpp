@@ -733,7 +733,7 @@ void exahype::solvers::FiniteVolumesSolver::adjustSolution(CellDescription& cell
   #endif
 }
 
-exahype::solvers::Solver::UpdateResult exahype::solvers::FiniteVolumesSolver::fusedTimeStep(
+exahype::solvers::Solver::UpdateResult exahype::solvers::FiniteVolumesSolver::fusedTimeStepOrRestriction(
     const int cellDescriptionsIndex,
     const int element,
     const bool isFirstIterationOfBatch,
@@ -875,12 +875,6 @@ void exahype::solvers::FiniteVolumesSolver::prolongateFaceData(
   // do nothing
 }
 
-void exahype::solvers::FiniteVolumesSolver::restriction(
-      const int cellDescriptionsIndex,
-      const int element) {
-  // do nothing
-}
-
 void exahype::solvers::FiniteVolumesSolver::rollbackSolutionGlobally(
     const int cellDescriptionsIndex, const int solverElement,
     const bool fusedTimeStepping) const {
@@ -894,18 +888,18 @@ void exahype::solvers::FiniteVolumesSolver::rollbackSolutionGlobally(
 ///////////////////////////////////
 
 void exahype::solvers::FiniteVolumesSolver::mergeNeighboursData(
-    Heap::HeapEntries&                        cellDescriptions1,
-    Heap::HeapEntries&                        cellDescriptions2,
     const int                                 solverNumber,
+    Solver::CellInfo&                         context1,
+    Solver::CellInfo&                         context2,
     const tarch::la::Vector<DIMENSIONS, int>& pos1,
     const tarch::la::Vector<DIMENSIONS, int>& pos2) {
   assertion1(tarch::la::countEqualEntries(pos1,pos2)==(DIMENSIONS-1),tarch::la::countEqualEntries(pos1,pos2));
-  const int element1 = indexOfCellDescription(cellDescriptions1,solverNumber);
-  const int element2 = indexOfCellDescription(cellDescriptions2,solverNumber);
+  const int element1 = indexOfCellDescription(context1._FiniteVolumesCellDescriptions,solverNumber);
+  const int element2 = indexOfCellDescription(context2._FiniteVolumesCellDescriptions,solverNumber);
 
   if ( element1 != Solver::NotFound && element2 != Solver::NotFound ) {
-    CellDescription& cellDescription1 = cellDescriptions1[element1];
-    CellDescription& cellDescription2 = cellDescriptions2[element2];
+    CellDescription& cellDescription1 = context1._FiniteVolumesCellDescriptions[element1];
+    CellDescription& cellDescription2 = context2._FiniteVolumesCellDescriptions[element2];
 
     Solver::InterfaceInfo face(pos1,pos2);
 
@@ -964,16 +958,16 @@ void exahype::solvers::FiniteVolumesSolver::mergeNeighboursData(
 }
 
 void exahype::solvers::FiniteVolumesSolver::mergeWithBoundaryData(
-    Heap::HeapEntries& cellDescriptions,
-    const int solverNumber,
+    const int                                 solverNumber,
+    Solver::CellInfo&                         context,
     const tarch::la::Vector<DIMENSIONS, int>& posCell,
     const tarch::la::Vector<DIMENSIONS, int>& posBoundary) {
   assertion2(tarch::la::countEqualEntries(posCell,posBoundary)==(DIMENSIONS-1),posCell.toString(),posBoundary.toString());
   Solver::BoundaryFaceInfo face(posCell,posBoundary);
 
-  const int element = indexOfCellDescription(cellDescriptions,solverNumber);
+  const int element = indexOfCellDescription(context._FiniteVolumesCellDescriptions,solverNumber);
   if ( element != Solver::NotFound ) {
-    CellDescription& cellDescription = cellDescriptions[element];
+    CellDescription& cellDescription = context._FiniteVolumesCellDescriptions[element];
 
     if ( !cellDescription.getNeighbourMergePerformed(face._faceIndex) ) { // check flag
       assertion1( cellDescription.getType()==CellDescription::Cell, cellDescription.toString() );
@@ -1264,60 +1258,46 @@ exahype::solvers::FiniteVolumesSolver::appendNeighbourCommunicationMetadata(
   }
 }
 
-void exahype::solvers::FiniteVolumesSolver::mergeWithNeighbourMetadata(
-    const exahype::MetadataHeap::HeapEntries& metadata,
-    const tarch::la::Vector<DIMENSIONS, int>& src,
-    const tarch::la::Vector<DIMENSIONS, int>& dest,
-    const int cellDescriptionsIndex,
-    const int element) const {
-  // do nothing
-}
-
 void exahype::solvers::FiniteVolumesSolver::sendDataToNeighbour(
     const int                                     toRank,
-    const int                                     cellDescriptionsIndex,
-    const int                                     element,
+    const int                                     solverNumber,
+    Solver::CellInfo&                             cellInfo,
     const tarch::la::Vector<DIMENSIONS, int>&     src,
     const tarch::la::Vector<DIMENSIONS, int>&     dest,
     const tarch::la::Vector<DIMENSIONS, double>&  x,
     const int                                     level) {
-  assertion( tarch::la::countEqualEntries(src,dest)==(DIMENSIONS-1) );
+  assertion(tarch::la::countEqualEntries(src,dest)==(DIMENSIONS-1));
 
-  const int direction    = tarch::la::equalsReturnIndex(src, dest);
-  const int orientation  = (1 + dest(direction) - src(direction))/2;
-  const int faceIndex    = 2*direction+orientation;
+  const int element = indexOfCellDescription(cellInfo._ADERDGCellDescriptions,solverNumber);
 
-  CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
+  if ( element != Solver::NotFound ) {
+    CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[element];
 
-  assertion(DataHeap::getInstance().isValidIndex(cellDescription.getSolution()));
-  assertion(DataHeap::getInstance().isValidIndex(cellDescription.getPreviousSolution()));
+    Solver::BoundaryFaceInfo face(src,dest);
+    if ( Solver::hasToSendDataToNeighbour(cellDescription,face) ) {
+      assertion(DataHeap::getInstance().isValidIndex(cellDescription.getSolution()));
+      assertion(DataHeap::getInstance().isValidIndex(cellDescription.getPreviousSolution()));
 
-  waitUntilCompletedTimeStep<CellDescription>(cellDescription,true,true);
+      waitUntilCompletedTimeStep<CellDescription>(cellDescription,true,true);
 
-  const int numberOfFaceDof = getDataPerPatchFace();
-  double* luhbnd = getDataHeapArray(cellDescription.getExtrapolatedSolution())
-              + (faceIndex * numberOfFaceDof);
-  const double* luh = getDataHeapArray(cellDescription.getSolution());
-  boundaryLayerExtraction(luhbnd,luh,dest-src);
+      const int dataPerFace = getDataPerPatchFace();
+      double* luhbnd = getDataHeapArrayFacePart(cellDescription.getExtrapolatedSolution(),dataPerFace,face._faceIndex);
+      const double* luh = getDataHeapArray(cellDescription.getSolution());
 
-  logDebug(
-      "sendDataToNeighbour(...)",
-      "send "<<DataMessagesPerNeighbourCommunication<<" arrays to rank " <<
-      toRank << " for cell="<<cellDescription.getOffset()
-      //        << "and face=" << faceIndex
-      << " from vertex x=" << x << ", level=" << level <<
-      ", src type=" << multiscalelinkedcell::indexToString(cellDescriptionsIndex) <<
-      ", src=" << src << ", dest=" << dest <<
-      ", size="<<getDataHeapEntries(cellDescription.getExtrapolatedSolution()).size()
-      //        << ", counter=" << cellDescription.getFaceDataExchangeCounter(faceIndex)
-  );
+      boundaryLayerExtraction(luhbnd,luh,dest-src);
 
-  // Send order: minMax,lQhbnd,lFhbnd
-  // Receive order: lFhbnd,lQhbnd,minMax
-  DataHeap::getInstance().sendData(
-      luhbnd, numberOfFaceDof, toRank, x, level,
-      peano::heap::MessageType::NeighbourCommunication);
-  // TODO(Dominic): If anarchic time stepping send the time step over too.
+      // Send order: minMax,lQhbnd,lFhbnd
+      // Receive order: lFhbnd,lQhbnd,minMax
+      logDebug("sendDataToNeighbour(...)","send "<<DataMessagesPerNeighbourCommunication<<" arrays to rank=" <<toRank << ",cell="<<cellDescription.getOffset()<<",x="<<x<<",level="<<level);
+      DataHeap::getInstance().sendData(
+          luhbnd, dataPerFace, toRank, x, level,
+          peano::heap::MessageType::NeighbourCommunication);
+    } else {
+      sendEmptyDataToNeighbour(toRank,x,level);
+    }
+  } else {
+    sendEmptyDataToNeighbour(toRank,x,level);
+  }
 }
 
 void exahype::solvers::FiniteVolumesSolver::sendEmptyDataToNeighbour(
@@ -2160,7 +2140,7 @@ exahype::solvers::FiniteVolumesSolver::FusedTimeStepJob::FusedTimeStepJob(
 }
 
 bool exahype::solvers::FiniteVolumesSolver::FusedTimeStepJob::operator()() {
-  _solver.fusedTimeStep(
+  _solver.fusedTimeStepOrRestriction(
       _cellDescriptionsIndex,_element,false,false,true);
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
   {

@@ -351,7 +351,7 @@ void plotInt(tarch::plotter::griddata::Writer::CellDataWriter *writer, int cellI
 	writer->plotCell(cellIndex, static_cast<double>(data));
 }
 
-void exahype::plotters::Patch2VTK::plotPatch(const int cellDescriptionsIndex, const int element) {
+void exahype::plotters::Patch2VTK::plotPatch(const int solverNumber,const solvers::Solver::CellInfo& cellInfo) {
 	double *solution=nullptr, timeStamp=-1;
 	int RefinementStatus=-1, previousRefinementStatus=-1, level=-1;
 	tarch::la::Vector<DIMENSIONS, double> offsetOfPatch, sizeOfPatch;
@@ -360,7 +360,8 @@ void exahype::plotters::Patch2VTK::plotPatch(const int cellDescriptionsIndex, co
 	switch(_solverType) {
 		case exahype::solvers::Solver::Type::LimitingADERDG:
 		case exahype::solvers::Solver::Type::ADERDG: { // scope for variables
-			auto& solverPatch = exahype::solvers::ADERDGSolver::getCellDescription(cellDescriptionsIndex,element);
+			const int element = solvers::Solver::indexOfCellDescription(cellInfo._ADERDGCellDescriptions,solverNumber);
+			auto& solverPatch  = cellInfo._ADERDGCellDescriptions[element];
 			if(solverPatch.getType()!=exahype::solvers::ADERDGSolver::CellDescription::Type::Cell)
 				return; // plot only cells
 			solution = DataHeap::getInstance().getData(solverPatch.getSolution()).data();
@@ -386,7 +387,8 @@ void exahype::plotters::Patch2VTK::plotPatch(const int cellDescriptionsIndex, co
 			break;
 		}
 		case exahype::solvers::Solver::Type::FiniteVolumes: {
-			auto& solverPatch = exahype::solvers::FiniteVolumesSolver::getCellDescription(cellDescriptionsIndex,element);
+			const int element = solvers::Solver::indexOfCellDescription(cellInfo._FiniteVolumesCellDescriptions,solverNumber);
+			auto& solverPatch  = cellInfo._FiniteVolumesCellDescriptions[element];
 			if(solverPatch.getType()!=exahype::solvers::FiniteVolumesSolver::CellDescription::Type::Cell)
 				return; // plot only cells
 			solution = DataHeap::getInstance().getData(solverPatch.getSolution()).data();

@@ -86,12 +86,12 @@ void exahype::mappings::Plot::enterCell(
     exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
   if ( fineGridCell.isInitialised() ) {
+    solvers::Solver::CellInfo& cellInfo;
+
     for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-      const int element = solver->tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
-      if ( element!=exahype::solvers::Solver::NotFound ) {
-        exahype::plotters::plotPatchIfAPlotterIsActive(
-            solverNumber,fineGridCell.getCellDescriptionsIndex(),element);
+      if ( cellInfo.foundCellDescriptionForSolver(solverNumber) ) {
+        exahype::plotters::plotPatchIfAPlotterIsActive(solverNumber,cellInfo);
       }
     }
   }

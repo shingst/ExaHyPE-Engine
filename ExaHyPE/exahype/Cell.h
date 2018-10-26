@@ -117,7 +117,7 @@ class exahype::Cell : public peano::grid::Cell<exahype::records::Cell> {
    * send at time of 2^{d-2}-th touch of face.
    */
   static void resetNeighbourMergeFlags(
-      const int cellDescriptionsIndex,
+      const solvers::Solver::CellInfo& cellInfo,
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator);
 

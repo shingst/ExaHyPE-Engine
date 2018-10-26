@@ -44,7 +44,7 @@ void exahype::plotters::ADERDG2FlashHDF5::init(const std::string& filename, int 
 	logError("init()", "Compile with -DHDF5, otherwise you cannot use the HDF5 plotter. There will be no output going to " << filename << " today.");
 	logError("init()", "Will fail gracefully. If you want to stop the program in such a case, please set the environment variable EXAHYPE_STRICT=\"Yes\".");
 }
-void exahype::plotters::ADERDG2FlashHDF5::plotPatch(const int cellDescriptionsIndex, const int element) {}
+void exahype::plotters::ADERDG2FlashHDF5::plotPatch(const int solverNumber,const solvers::Solver::CellInfo& cellInfo) {}
 void exahype::plotters::ADERDG2FlashHDF5::plotPatch(const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* u,double timeStamp) {}
 void exahype::plotters::ADERDG2FlashHDF5::startPlotting(double time) {
 	logError("startPlotting()", "Skipping HDF5 output due to missing support.");
@@ -108,10 +108,9 @@ void exahype::plotters::ADERDG2FlashHDF5::init(const std::string& filename, int 
 	}
 }
 
-void exahype::plotters::ADERDG2FlashHDF5::plotPatch(
-        const int cellDescriptionsIndex,
-        const int element) {
-  auto& aderdgCellDescription = exahype::solvers::ADERDGSolver::getCellDescription(cellDescriptionsIndex,element);
+void exahype::plotters::ADERDG2FlashHDF5::plotPatch(const int solverNumber,const solvers::Solver::CellInfo& cellInfo) {
+  const int element = solvers::Solver::indexOfCellDescription(cellInfo._ADERDGCellDescriptions,solverNumber);
+  auto& aderdgCellDescription  = cellInfo._ADERDGCellDescriptions[element];
 
   if (aderdgCellDescription.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Cell) {
     double* solverSolution = DataHeap::getInstance().getData(aderdgCellDescription.getSolution()).data();

@@ -61,7 +61,7 @@ class exahype::plotters::ADERDG2LegendreCSV: public exahype::plotters::Plotter::
   virtual ~ADERDG2LegendreCSV();
   void init(const std::string& filename, int orderPlusOne, int solverUnknowns, int writtenUnknowns, exahype::parser::ParserView plotterParameters) override;
 
-  void plotPatch(const int cellDescriptionsIndex, const int element) override;
+  void plotPatch(const int solverNumber,const solvers::Solver::CellInfo& cellInfo) override;
   void plotPatch(
       const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
       const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* u,

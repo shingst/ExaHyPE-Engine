@@ -62,13 +62,11 @@ exahype::Cell::Cell(const Base::PersistentCell& argument) : Base(argument) {
 }
 
 void exahype::Cell::resetNeighbourMergeFlags(
-    const int cellDescriptionsIndex,
+    const solvers::Solver::CellInfo& cellInfo,
     exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator) {
-  assertion(exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(cellDescriptionsIndex));
-
   // ADER-DG
-  for (auto& p : exahype::solvers::ADERDGSolver::Heap::getInstance().getData(cellDescriptionsIndex)) {
+  for (auto& p : cellInfo._ADERDGCellDescriptions) {
     for (int faceIndex=0; faceIndex<DIMENSIONS_TIMES_TWO; faceIndex++) {
       p.setNeighbourMergePerformed(faceIndex,false);
 
@@ -86,7 +84,7 @@ void exahype::Cell::resetNeighbourMergeFlags(
   }
 
   // Finite-Volumes (loop body can be copied from ADER-DG loop)
-  for (auto& p : exahype::solvers::FiniteVolumesSolver::Heap::getInstance().getData(cellDescriptionsIndex)) {
+  for (auto& p : cellInfo._FiniteVolumesCellDescriptions) {
     for (int faceIndex=0; faceIndex<DIMENSIONS_TIMES_TWO; faceIndex++) {
       p.setNeighbourMergePerformed(faceIndex,false);
 

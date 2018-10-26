@@ -104,7 +104,7 @@ class exahype::plotters::ADERDG2CartesianVTK: public exahype::plotters::Plotter:
 
   virtual void init(const std::string& filename, int orderPlusOne, int solverUnknowns, int writtenUnknowns, exahype::parser::ParserView plotterParameters);
 
-  void plotPatch(const int cellDescriptionsIndex, const int element) override;
+  void plotPatch(const int solverNumber,const solvers::Solver::CellInfo& cellInfo) override;
 
   void plotPatch(
       const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,

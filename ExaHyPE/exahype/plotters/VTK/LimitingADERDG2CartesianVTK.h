@@ -121,7 +121,7 @@ public:
 
   virtual void init(const std::string& filename, int orderPlusOne, int solverUnknowns, int writtenUnknowns, exahype::parser::ParserView plotterParameters);
 
-  void plotPatch(const int cellDescriptionsIndex, const int element) override;
+  void plotPatch(const int solverNumber,const solvers::Solver::CellInfo& cellInfo) override;
 
   /**
    * Plot an ADER-DG solution.

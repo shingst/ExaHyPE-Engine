@@ -32,6 +32,7 @@
 
 #include "peano/utils/Globals.h"
 #include "peano/grid/VertexEnumerator.h"
+#include "peano/heap/Heap.h"
 #include "peano/heap/DoubleHeap.h"
 #include "peano/heap/CharHeap.h"
 #include "peano/heap/HeapAllocator.h"
@@ -42,6 +43,10 @@
 
 #include "exahype/profilers/Profiler.h"
 #include "exahype/profilers/simple/NoOpProfiler.h"
+
+// cell descriptions
+#include "exahype/records/ADERDGCellDescription.h"
+#include "exahype/records/FiniteVolumesCellDescription.h"
 
 #include <functional>
 
@@ -400,6 +405,137 @@ class exahype::solvers::Solver {
  public:
 
   /**
+   * Default return value of function getElement(...)
+   * If we do not find the element in a vector
+   * stored at a heap address.
+   */
+  static constexpr int NotFound = -1;
+
+  template <typename CellDescriptionHeapEntries>
+  static int indexOfCellDescription(CellDescriptionHeapEntries& cellDescriptions,const int solverNumber) {
+    int index = exahype::solvers::Solver::NotFound;
+    for (unsigned int element = 0; element < cellDescriptions.size(); ++element) {
+      if (cellDescriptions[element].getSolverNumber()==solverNumber) {
+        index = element;
+        break;
+      }
+    }
+    return index;
+  }
+
+  /**
+   * An extensible structure linking to the data of a cell.
+   * It is passed to all solver routines.
+   */
+  typedef struct CellInfo {
+    const int _cellDescriptionsIndex= NotFound;
+    peano::heap::RLEHeap<exahype::records::ADERDGCellDescription>::HeapEntries&        _ADERDGCellDescriptions;
+    peano::heap::RLEHeap<exahype::records::FiniteVolumesCellDescription>::HeapEntries& _FiniteVolumesCellDescriptions;
+    CellInfo(const int cellDescriptionsIndex,const int solverNumber) :
+      _cellDescriptionsIndex(cellDescriptionsIndex) {
+      assertion(peano::heap::RLEHeap<exahype::records::ADERDGCellDescription>::getInstance().isValidIndex(cellDescriptionsIndex));
+      assertion(peano::heap::RLEHeap<exahype::records::FiniteVolumesCellDescription>::getInstance().isValidIndex(cellDescriptionsIndex));
+      _ADERDGCellDescriptions        = peano::heap::RLEHeap<exahype::records::ADERDGCellDescription>::getInstance().getData(_cellDescriptionsIndex);
+      _FiniteVolumesCellDescriptions = peano::heap::RLEHeap<exahype::records::FiniteVolumesCellDescription>::getInstance().getData(_cellDescriptionsIndex);
+    }
+
+    /**
+     * @return if no data was found for the cell.
+     */
+    bool empty() const {
+       return _ADERDGCellDescriptions.empty() && _FiniteVolumesCellDescriptions.empty();
+    }
+
+    /**
+     * @return If there is any cell description which belogns to
+     * the solver with @p solverNumber.
+     *
+     * @param solverNumber identification number of a solver
+     */
+    bool foundCellDescriptionForSolver(const int solverNumber) const {
+      bool found = false;
+      for (auto& p : _ADERDGCellDescriptions) {
+        found |= p.getSolverNumber()==solverNumber;
+      }
+      for (auto& p : _FiniteVolumesCellDescriptions) {
+        found |= p.getSolverNumber()==solverNumber;
+      }
+      return found;
+    }
+
+  } CellInfo;
+
+  /**
+   * This struct computes and stores some
+   * commonly used indices when merging neighbouring
+   * cells via a common interfaces.
+   *
+   * TODO(Dominic): Move to more appropriate place?
+   */
+  typedef struct InterfaceInfo {
+    int _direction;     /*! coordinate direction the normal vector is aligned with (0->x,1->y,2->z) */
+    int _orientation1;  /*! orientation of the normal vector from pos1's perspective (0/1 -> pointing in/out of element) */
+    int _orientation2;  /*! orientation of the normal vector from pos2's perspective (0/1 -> pointing in/out of element) */
+    int _faceIndex1;    /*! interface index from perspective of pos1 */
+    int _faceIndex2;    /*! interface index from perspective of pos2 */
+    int _faceIndexLeft; /*! interface index from perspective of the "left" cell, i.e. the cell with orientation=1 (normal vector points out) */
+    int _faceIndexRight;/*! interface index from perspective of the "right" cell, i.e. the cell with orientation=0 (normal vector points in) */
+
+    InterfaceInfo(const tarch::la::Vector<DIMENSIONS,int>& pos1,const tarch::la::Vector<DIMENSIONS,int>& pos2)
+    :
+    _direction     (tarch::la::equalsReturnIndex(pos1, pos2)),
+    _orientation1  ((1 + pos2(_direction) - pos1(_direction))/2),
+    _orientation2  (1-_orientation1),
+    _faceIndex1    (2*_direction+_orientation1),
+    _faceIndex2    (2*_direction+_orientation2),
+    _faceIndexLeft (2*_direction+1),
+    _faceIndexRight(2*_direction+0){}
+
+    std::string toString() {
+      std::ostringstream stringstream;
+      stringstream << "(";
+      stringstream << "_direction="      << _direction;
+      stringstream << ",_orientation1="   << _orientation1;
+      stringstream << ",_orientation2="   << _orientation2;
+      stringstream << ",_faceIndex1="     << _faceIndex1;
+      stringstream << ",_faceIndex2="     << _faceIndex2;
+      stringstream << ",_faceIndexLeft="  << _faceIndexLeft;
+      stringstream << ",_faceIndexRight=" << _faceIndexRight;
+      stringstream << ")";
+      return stringstream.str();
+    }
+  } InterfaceInfo;
+
+  /**
+   * This struct computes and stores some
+   * commonly used indices when merging a cell
+   * with boundary data at a boundary face.
+   *
+   * TODO(Dominic): Move to more appropriate place?
+   */
+  typedef struct BoundaryFaceInfo {
+    int _direction;    /*! coordinate direction the normal vector is aligned with (0->x,1->y,2->z) */
+    int _orientation;  /*! orientation of the normal vector from posCell's perspective (0/1 -> pointing in/out of element) */
+    int _faceIndex;    /*! interface index from perspective of posCell */
+
+    BoundaryFaceInfo(const tarch::la::Vector<DIMENSIONS,int>& posCell,const tarch::la::Vector<DIMENSIONS,int>& posBoundary)
+    :
+    _direction  (tarch::la::equalsReturnIndex(posCell, posBoundary)),
+    _orientation((1 + posBoundary(_direction) - posCell(_direction))/2),
+    _faceIndex  (2*_direction+_orientation){}
+
+    std::string toString() {
+      std::ostringstream stringstream;
+      stringstream << "(";
+      stringstream << "_direction="   << _direction;
+      stringstream << ",_orientation=" << _orientation;
+      stringstream << ",_faceIndex1="  << _faceIndex;
+      stringstream << ")";
+      return stringstream.str();
+    }
+  } BoundaryFaceInfo;
+
+  /**
    * TrackGridStatistics is a flag from Peano that I "misuse" here as these
    * data also are grid statistics.
    */
@@ -533,7 +669,6 @@ class exahype::solvers::Solver {
    */
   enum class RefinementControl { Keep = 0, Refine = 1, Erase = 2 };
 
-
   /**
    * The limiter domain change that was detected after a solution
    * update or during the limiter status spreading.
@@ -621,76 +756,6 @@ class exahype::solvers::Solver {
   } UpdateResult;
 
   /**
-   * This struct computes and stores some
-   * commonly used indices when merging neighbouring
-   * cells via a common interfaces.
-   *
-   * TODO(Dominic): Move to more appropriate place?
-   */
-  typedef struct InterfaceInfo {
-    int _direction;     /*! coordinate direction the normal vector is aligned with (0->x,1->y,2->z) */
-    int _orientation1;  /*! orientation of the normal vector from pos1's perspective (0/1 -> pointing in/out of element) */
-    int _orientation2;  /*! orientation of the normal vector from pos2's perspective (0/1 -> pointing in/out of element) */
-    int _faceIndex1;    /*! interface index from perspective of pos1 */
-    int _faceIndex2;    /*! interface index from perspective of pos2 */
-    int _faceIndexLeft; /*! interface index from perspective of the "left" cell, i.e. the cell with orientation=1 (normal vector points out) */
-    int _faceIndexRight;/*! interface index from perspective of the "right" cell, i.e. the cell with orientation=0 (normal vector points in) */
-
-    InterfaceInfo(const tarch::la::Vector<DIMENSIONS,int>& pos1,const tarch::la::Vector<DIMENSIONS,int>& pos2)
-    :
-    _direction     (tarch::la::equalsReturnIndex(pos1, pos2)),
-    _orientation1  ((1 + pos2(_direction) - pos1(_direction))/2),
-    _orientation2  (1-_orientation1),
-    _faceIndex1    (2*_direction+_orientation1),
-    _faceIndex2    (2*_direction+_orientation2),
-    _faceIndexLeft (2*_direction+1),
-    _faceIndexRight(2*_direction+0){}
-
-    std::string toString() {
-      std::ostringstream stringstream;
-      stringstream << "(";
-      stringstream << "_direction="      << _direction;
-      stringstream << ",_orientation1="   << _orientation1;
-      stringstream << ",_orientation2="   << _orientation2;
-      stringstream << ",_faceIndex1="     << _faceIndex1;
-      stringstream << ",_faceIndex2="     << _faceIndex2;
-      stringstream << ",_faceIndexLeft="  << _faceIndexLeft;
-      stringstream << ",_faceIndexRight=" << _faceIndexRight;
-      stringstream << ")";
-      return stringstream.str();
-    }
-  } InterfaceInfo;
-
-  /**
-   * This struct computes and stores some
-   * commonly used indices when merging a cell
-   * with boundary data at a boundary face.
-   *
-   * TODO(Dominic): Move to more appropriate place?
-   */
-  typedef struct BoundaryFaceInfo {
-    int _direction;    /*! coordinate direction the normal vector is aligned with (0->x,1->y,2->z) */
-    int _orientation;  /*! orientation of the normal vector from posCell's perspective (0/1 -> pointing in/out of element) */
-    int _faceIndex;    /*! interface index from perspective of posCell */
-
-    BoundaryFaceInfo(const tarch::la::Vector<DIMENSIONS,int>& posCell,const tarch::la::Vector<DIMENSIONS,int>& posBoundary)
-    :
-    _direction  (tarch::la::equalsReturnIndex(posCell, posBoundary)),
-    _orientation((1 + posBoundary(_direction) - posCell(_direction))/2),
-    _faceIndex  (2*_direction+_orientation){}
-
-    std::string toString() {
-      std::ostringstream stringstream;
-      stringstream << "(";
-      stringstream << "_direction="   << _direction;
-      stringstream << ",_orientation=" << _orientation;
-      stringstream << ",_faceIndex1="  << _faceIndex;
-      stringstream << ")";
-      return stringstream.str();
-    }
-  } BoundaryFaceInfo;
-
-  /**
    * This struct is used in the AMR context
    * to lookup a parent cell description and
    * for computing the subcell position of the child
@@ -757,25 +822,6 @@ class exahype::solvers::Solver {
      */
      Default = 3
   };
-
-  /**
-   * Default return value of function getElement(...)
-   * If we do not find the element in a vector
-   * stored at a heap address.
-   */
-  static constexpr int NotFound = -1;
-
-  template <typename CellDescriptionHeapEntries>
-  static int indexOfCellDescription(CellDescriptionHeapEntries& cellDescriptions,const int solverNumber) {
-    int index = exahype::solvers::Solver::NotFound;
-    for (unsigned int element = 0; element < cellDescriptions.size(); ++element) {
-      if (cellDescriptions[element].getSolverNumber()==solverNumber) {
-        index = element;
-        break;
-      }
-    }
-    return index;
-  }
 
   /**
    * Checks if one of the solvers is of a certain
@@ -1635,9 +1681,9 @@ class exahype::solvers::Solver {
    * \param[in] isAtRemoteBoundary Flag indicating that the cell hosting the
    *                                    cell description is adjacent to a remote rank.
    */
-  virtual UpdateResult fusedTimeStep(
-      const int cellDescriptionsIndex,
-      const int element,
+  virtual UpdateResult fusedTimeStepOrRestriction(
+      const int  solverNumber,
+      CellInfo&  cellInfo,
       const bool isFirstIterationOfBatch,
       const bool isLastIterationOfBatch,
       const bool isAtRemoteBoundary) = 0;
@@ -1664,10 +1710,15 @@ class exahype::solvers::Solver {
    * helper variables in this method call.
    *
    * \note Has no const modifier since kernels are not const functions yet.
+   *
+   * @param cellInfo           links to the data associated with the mesh cell
+   * @param solverNumber       id of a solver
+   * @param isAtRemoteBoundary indicates if this cell is adjacent to the domain of another rank
+   * @return see UpdateResult
    */
-  virtual UpdateResult update(
-          const int cellDescriptionsIndex,
-          const int element,
+  virtual UpdateResult updateOrRestriction(
+          const int solverNumber,
+          CellInfo& cellInfo,
           const bool isAtRemoteBoundary) = 0;
 
   /**
@@ -1695,52 +1746,82 @@ class exahype::solvers::Solver {
       const int element,
       const bool isAtRemoteBoundary) const = 0;
 
-  /**
-    * Prolongates face data from a parent cell description to
-    * the cell description at address (cellDescriptionsIndex,element)
-    * in case the fine grid cell associated with the cell description is adjacent to
-    * the hull of the coarse grid cell associated with the parent cell description.
-    *
-    * Further zero out the face data of ancestors.
-    *
-    * \note This function assumes a top-down traversal of the grid and must thus
-    * be called from the enterCell(...) mapping method.
-    *
-    * \note It is assumed that this operation is applied only to helper cell descriptions
-    * of type Descendant and Ancestor. No cell description of type Cell
-    * must be touched by this operation. Otherwise, we cannot spawn
-    * the prediction and/or the compression as background task.
-    *
-    * \note Has no const modifier since kernels are not const functions yet.
-    */
-  virtual void prolongateFaceData(
-      const int cellDescriptionsIndex,
-      const int element,
-      const bool isAtRemoteBoundary) = 0;
-
-  /**
-   * Restrict data to a parent on
-   * a coarser level.
-   *
-   * \note Thread-safety must be ensured by the implementation itself.
-   *
-   * \note This function assumes a bottom-up traversal of the grid and must thus
-   * be called from the leaveCell(...) mapping method.
-   *
-   * \note Has no const modifier yet since kernels are not
-   * const yet.
-   */
-  virtual void restriction(
-      const int cellDescriptionsIndex,
-      const int element) = 0;
-
   ///////////////////////////////////
   // NEIGHBOUR
   ///////////////////////////////////
 
-  // Completely done per solver subclass
-
   #ifdef Parallel
+
+  /**
+   * Checks for a cell description (ADER-DG, FV, ...)
+   * if now is the time to send out face data to a neighbouring rank.
+   *
+   * !! Side effects !!
+   *
+   * Every call of this function decrements the
+   * cellDescription's faceDataExchangeCounter for the particular @p face.
+   *
+   * <h2>Face data exchange counters<\h2>
+   * On every cell description, we hold a field of 2*d
+   * counters. If a face is part of the MPI boundary,
+   * we initialise the corresponding counter with
+   * value 2^{d-1}.
+   *
+   * In the Prediction::prepareSendToNeighbour(...) and
+   * RiemannSolver::mergeWithNeighbour(...) routine,
+   * we then decrement the counters for the face
+   * every time one of the 2^{d-1}
+   * adjacent vertices touches the face.
+   *
+   * @param cellDescription a cell description
+   * @param face            see BoundaryFaceInfo
+   */
+  template <typename CellDescription>
+  static bool hasToSendDataToNeighbour(CellDescription& cellDescription,BoundaryFaceInfo& face) {
+    // decrement counter beforehand
+    int newCounterValue = cellDescription.getFaceDataExchangeCounter(face._faceIndex)-1;
+    assertion2(newCounterValue>=0,newCounterValue,cellDescription.toString());
+    assertion1(newCounterValue<TWO_POWER_D,newCounterValue);
+    cellDescription.setFaceDataExchangeCounter(face._faceIndex,newCounterValue);
+    return cellDescription.getFaceDataExchangeCounter(face._faceIndex)==0; // check counter
+  }
+
+  /**
+   * Checks for a cell description (ADER-DG, FV, ...) if now is the time to
+   * receive face data from a neighbouring rank.
+   *
+   * !! Side effects !!
+   *
+   * Resets the face data exchange counters of
+   * the the cell descriptions corresponding
+   * to cell position \p dest.
+   *
+   * Further sets the neighbour merge performed
+   * flag to true.
+   *
+   * <h2>Face data exchange counters<\h2>
+   * On every cell description, we hold a field of 2*d
+   * counters. If a face is part of the MPI boundary,
+   * we initialise the corresponding counter with
+   * value 2^{d-1}.
+   *
+   * When we send out data, we then decrement the counters for the face
+   * every time one of the 2^{d-1}
+   * adjacent vertices touches the face.
+   *
+   * @param cellDescription a cell description
+   * @param face            see BoundaryFaceInfo
+   * @return if we have to merge with the neighbour data. If not, it needs to be received and dropped.
+   */
+  template <typename CellDescription>
+  static bool hasToMergeWithNeighbourData(CellDescription& cellDescription,BoundaryFaceInfo& face) {
+    if ( cellDescription.getFaceDataExchangeCounter(face._faceIndex)==0 ) {
+      assertion(cellDescription.getNeighbourMergePerformed(face._faceIndex)==false);
+      cellDescription.setFaceDataExchangeCounter(face._faceIndex,TWO_POWER_D); // TODO maybe do not do that here but in the cell? Can be used to determine which cell belongs to skeleton
+      cellDescription.setNeighbourMergePerformed(face._faceIndex,true);
+    }
+  }
+
   /**
    * If a cell description was allocated at heap address \p cellDescriptionsIndex
    * for solver \p solverNumber, encode metadata of the cell description
@@ -1755,98 +1836,6 @@ class exahype::solvers::Solver {
       const tarch::la::Vector<DIMENSIONS,int>& dest,
       const int cellDescriptionsIndex,
       const int solverNumber) const = 0;
-
-  /**
-   * Merge cell description \p element in
-   * the cell descriptions array stored at \p
-   * cellDescriptionsIndex with metadata.
-   *
-   * Currently, the neighbour metadata is only the neighbour
-   * type as int \p neighbourTypeAsInt and
-   * the neighbour's limiter status as int.
-   *
-   * <h2> Number of merges </h2>
-   * Usually metadata is only merged once between neighbouring cells but
-   * at a MPI boundary, it might be merged twice.
-   * It is thus important that the inputs do not change after a merge.
-   *
-   * \param[in] element Index of the cell description
-   *                    holding the data to send out in
-   *                    the array with address \p cellDescriptionsIndex.
-   *                    This is not the solver number.
-   */
-  virtual void mergeWithNeighbourMetadata(
-      const MetadataHeap::HeapEntries&  metadata,
-      const tarch::la::Vector<DIMENSIONS, int>& src,
-      const tarch::la::Vector<DIMENSIONS, int>& dest,
-      const int cellDescriptionsIndex,
-      const int element)  const = 0;
-
-  /**
-   * Send solver data to neighbour rank. Read the data from
-   * the cell description \p element in
-   * the cell descriptions vector stored at \p
-   * cellDescriptionsIndex.
-   *
-   * \param[in] element Index of the ADERDGCellDescription
-   *                    holding the data to send out in
-   *                    the heap vector at \p cellDescriptionsIndex.
-   *                    This is not the solver number.
-   *
-   * \see tryGetElement
-   *
-   * \note Has no const modifier since kernels are not const functions yet.
-   */
-  virtual void sendDataToNeighbour(
-      const int                                    toRank,
-      const int                                    cellDescriptionsIndex,
-      const int                                    element,
-      const tarch::la::Vector<DIMENSIONS, int>&    src,
-      const tarch::la::Vector<DIMENSIONS, int>&    dest,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) = 0;
-
-  /**
-   * Send empty solver data to neighbour rank.
-   */
-  virtual void sendEmptyDataToNeighbour(
-      const int                                    toRank,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) const = 0;
-
-  /**
-   * Receive solver data from neighbour rank and write
-   * it on the cell description \p element in
-   * the cell descriptions array stored at \p
-   * cellDescriptionsIndex.
-   *
-   * \note Peano only copies the calling mapping
-   * for each thread. The solvers in the solver registry are
-   *  not copied once for each thread.
-   *
-   * \param[in] element Index of the cell description
-   *                    holding the data to send out in
-   *                    the array with address \p cellDescriptionsIndex.
-   *                    This is not the solver number.
-   */
-  virtual void mergeWithNeighbourData(
-      const int                                    fromRank,
-      const int                                    cellDescriptionsIndex,
-      const int                                    element,
-      const tarch::la::Vector<DIMENSIONS, int>&    src,
-      const tarch::la::Vector<DIMENSIONS, int>&    dest,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) = 0;
-
-  /**
-   * Drop solver data from neighbour rank.
-   */
-  virtual void dropNeighbourData(
-      const int                                    fromRank,
-      const tarch::la::Vector<DIMENSIONS, int>&    src,
-      const tarch::la::Vector<DIMENSIONS, int>&    dest,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) const = 0;
 
   ///////////////////////////////////
   // WORKER<=>MASTER

@@ -42,10 +42,12 @@ tarch::multicore::BooleanSemaphore exahype::BackgroundJobSemaphore;
 tarch::multicore::BooleanSemaphore exahype::HeapSemaphore;
 
 exahype::DataHeap::HeapEntries& exahype::getDataHeapEntries(const int index) {
+  assertion1(DataHeap::getInstance().isValidIndex(index),index);
   return DataHeap::getInstance().getData(index);
 }
 
 double* exahype::getDataHeapArray(const int index) {
+  assertion1(DataHeap::getInstance().isValidIndex(index),index);
   return getDataHeapEntries(index).data();
 }
 
@@ -827,7 +829,7 @@ void exahype::solvers::Solver::toString(std::ostream& out) const {
 // Neighbours TODO(Dominic): Move in exahype::Vertex
 
 exahype::MetadataHeap::HeapEntries exahype::gatherNeighbourCommunicationMetadata(
-    int cellDescriptionsIndex,
+    const int cellDescriptionsIndex,
     const tarch::la::Vector<DIMENSIONS,int>& src,
     const tarch::la::Vector<DIMENSIONS,int>& dest) {
   assertion1(exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(cellDescriptionsIndex),cellDescriptionsIndex);

@@ -388,22 +388,22 @@ void exahype::mappings::UpdateAndReduce::leaveCell(
   logTraceInWith4Arguments("leaveCell(...)", fineGridCell,fineGridVerticesEnumerator.toString(),coarseGridCell, fineGridPositionOfCell);
 
   if (fineGridCell.isInitialised()) {
+    solvers::Solver::CellInfo cellInfo(fineGridCell.getCellDescriptionsIndex());
+
     const int numberOfSolvers = exahype::solvers::RegisteredSolvers.size();
     for (int solverNumber=0; solverNumber<numberOfSolvers; solverNumber++) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
       const int element = solver->tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
       if (element!=exahype::solvers::Solver::NotFound) {
-        exahype::plotters::plotPatchIfAPlotterIsActive(
-            solverNumber,fineGridCell.getCellDescriptionsIndex(),element);
+        exahype::plotters::plotPatchIfAPlotterIsActive(solverNumber,cellInfo);
 
         // TODO(Dominic): Merge the two functions if possible
         exahype::solvers::Solver::UpdateResult result =
-            solver->update(
-                fineGridCell.getCellDescriptionsIndex(),element,
+            solver->updateOrRestriction(
+                solverNumber,cellInfo,
                 exahype::Cell::isAtRemoteBoundary(
                     fineGridVertices,fineGridVerticesEnumerator)
             );
-        solver->restriction(fineGridCell.getCellDescriptionsIndex(),element);
 
         _meshUpdateEvents[solverNumber] =
             exahype::solvers::Solver::mergeMeshUpdateEvents(
@@ -414,9 +414,7 @@ void exahype::mappings::UpdateAndReduce::leaveCell(
       }
     }
 
-    exahype::Cell::resetNeighbourMergeFlags(
-        fineGridCell.getCellDescriptionsIndex(),
-        fineGridVertices,fineGridVerticesEnumerator);
+    exahype::Cell::resetNeighbourMergeFlags(cellInfo,fineGridVertices,fineGridVerticesEnumerator);
   }
   logTraceOutWith1Argument("leaveCell(...)", fineGridCell);
 }

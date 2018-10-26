@@ -585,11 +585,11 @@ bool exahype::plotters::Plotter::plotDataFromSolver(int solver) const {
 
 
 void exahype::plotters::Plotter::plotPatch(
-  const int cellDescriptionsIndex,
-  const int element) {
+  const int solverNumber,
+  const solvers::Solver::CellInfo& cellInfo) {
   assertion(_device != nullptr);
   if (_device!=nullptr) {
-    _device->plotPatch(cellDescriptionsIndex,element);
+    _device->plotPatch(solverNumber,cellInfo);
   }
 }
 
@@ -610,12 +610,11 @@ void exahype::plotters::Plotter::finishedPlotting() {
 
 void exahype::plotters::plotPatchIfAPlotterIsActive(
     const int solverNumber,
-    const int cellDescriptionsIndex,
-    const int element) {
+    solvers::Solver::CellInfo& cellInfo) {
   for (auto* plotter : exahype::plotters::RegisteredPlotters) {
     if (plotter->plotDataFromSolver(solverNumber)) {
       tarch::multicore::Lock lock(exahype::plotters::SemaphoreForPlotting);
-      plotter->plotPatch(cellDescriptionsIndex,element);
+      plotter->plotPatch(solverNumber,cellInfo;
       lock.free();
     }
   }

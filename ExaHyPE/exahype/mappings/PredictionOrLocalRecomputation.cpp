@@ -373,17 +373,12 @@ void exahype::mappings::PredictionOrLocalRecomputation::mergeNeighboursDataDurin
     auto& ADERDGPatches2 = solvers::ADERDGSolver::Heap::getInstance().getData(cellDescriptionsIndex2);
     auto& FVPatches2     = solvers::FiniteVolumesSolver::Heap::getInstance().getData(cellDescriptionsIndex2);
 
-    bool mergeNeighbours = ( !ADERDGPatches1.empty() && !ADERDGPatches2.empty() ) ||
-                           ( !FVPatches1.empty() && !FVPatches2.empty() );
-
     if ( mergeNeighbours ) {
       for (int solverNumber=0; solverNumber<static_cast<int>(solvers::RegisteredSolvers.size()); solverNumber++) {
         auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
         if ( performLocalRecomputation(solver) ) {
           static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->
-              mergeNeighboursData(
-                  ADERDGPatches1,ADERDGPatches2,FVPatches1,FVPatches2,solverNumber,
-                  pos1,pos2,true/* isRecomputation */);
+              mergeNeighboursData(solverNumber,cellInfo1,cellInfo2,pos1,pos2,true/* isRecomputation */);
         }
         #ifdef Debug // TODO(Dominic)
         _interiorFaceMerges++;
@@ -406,14 +401,13 @@ void exahype::mappings::PredictionOrLocalRecomputation::mergeNeighboursDataDurin
       cellDescriptionsIndex = cellDescriptionsIndex2;
     }
 
-    auto& ADERDGPatches = solvers::ADERDGSolver::Heap::getInstance().getData(cellDescriptionsIndex);
-    auto& FVPatches     = solvers::FiniteVolumesSolver::Heap::getInstance().getData(cellDescriptionsIndex);
+    solvers::Solver::CellInfo cellInfo(cellDescriptionsIndex);
 
     for (int solverNumber=0; solverNumber<static_cast<int>(solvers::RegisteredSolvers.size()); solverNumber++) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
       if ( performLocalRecomputation(solver) ) {
         static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->
-            mergeWithBoundaryData(ADERDGPatches,FVPatches,solverNumber,posCell,posBoundary,true);
+            mergeWithBoundaryData(solverNumber,cellInfo,posCell,posBoundary,true);
         #ifdef Debug
         _boundaryFaceMerges++;
         #endif

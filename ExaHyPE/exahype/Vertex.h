@@ -174,22 +174,6 @@ private:
   /*! Helper routine for sendToNeighbour
    *
    * Loop over all the solvers and check
-   * send out empty messages for the particular
-   * solver.
-   *
-   * \note Not thread-safe.
-   */
-  void sendEmptySolverDataToNeighbour(
-      const int                                     toRank,
-      const bool                                    sendMetadata,
-      const tarch::la::Vector<DIMENSIONS, int>&     src,
-      const tarch::la::Vector<DIMENSIONS, int>&     dest,
-      const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const;
-
-  /*! Helper routine for sendToNeighbour
-   *
-   * Loop over all the solvers and check
    * if a cell description (ADERDGCellDescription,
    * FiniteVolumesCellDescription,...) is registered
    * for the solver type. If so, send
@@ -498,11 +482,12 @@ private:
   /**
    * TODO(Dominic): Add docu.
    */
-  bool hasToSendMetadataToNeighbour(
-      const tarch::la::Vector<DIMENSIONS,int>& src,
-      const tarch::la::Vector<DIMENSIONS,int>& dest,
+  static bool compareGeometryInformationOfCellDescriptionsAndVertex(
+      const tarch::la::Vector<DIMENSIONS,int>&     src,
+      const tarch::la::Vector<DIMENSIONS,int>&     dest,
+      const int                                    srcCellDescriptionsIndex,
       const tarch::la::Vector<DIMENSIONS, double>& x,
-      const tarch::la::Vector<DIMENSIONS, double>& h) const;
+      const tarch::la::Vector<DIMENSIONS, double>& h);
 
   /**
    * Returns if this vertex needs to send a metadata message to a remote rank \p toRank.
@@ -520,39 +505,44 @@ private:
    *    Then, the domain at position src will not be owned anymore by the rank that calls
    *    this function in the next iteration. However, remote ranks still expect receiving data from it.
    *
-   * @param state  The state tells us if a neighbouring rank is forking or if forking was triggered for this rank.
-   * @param src    A counter of a d-dimensional for-loop referring to the the message source
-   *               in the vector returned by getAdjacentRemoteRanks().
-   * @param dest   A counter of a d-dimensional for-loop referring to the message destination
-   *               in the vector returned by getAdjacentRemoteRanks().
-   * @param toRank The rank we want to send the message to.
+   * @param toRank        The rank we want to send the message to.
+   * @param state         The state tells us if a neighbouring rank is forking or if forking was triggered for this rank.
+   * @param srcScalar     linearised position of message source relative to vertex
+   * @param destScalar    linearised position of message destination relative to vertex
+   * @param adjacentRanks map holding the ranks adjacent to a vertex.
    *
    * @developers:
    * TODO(Dominic): Consider joins.
    * TODO(Dominic): Potentially, there is still a bug if two neighbouring ranks are
    *                forking at the same time.
    */
-  bool hasToSendMetadata(
-      const int toRank,
-      const tarch::la::Vector<DIMENSIONS,int>& src,
-      const tarch::la::Vector<DIMENSIONS,int>& dest) const;
+  static bool hasToSendMetadata(
+      const int                                 toRank,
+      const int                                 srcScalar,
+      const int                                 destScalar,
+      const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks);
+
+
+  static void exahype::Vertex::sendOnlyMetadataToNeighbourLoopBody(
+      const int                                    toRank,
+      const int                                    srcScalar,
+      const int                                    destScalar,
+      const int                                    srcCellDescriptionIndex,
+      const tarch::la::Vector<TWO_POWER_D, int>&   adjacentRanks,
+      const tarch::la::Vector<DIMENSIONS, double>& x,
+      const tarch::la::Vector<DIMENSIONS, double>& h,
+      const int                                    level,
+      const bool                                   checkThoroughly);
 
   /**
    * TODO(Dominic): Add docu
    */
   void sendOnlyMetadataToNeighbour(
-      const int toRank,
+      const int                                    toRank,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const tarch::la::Vector<DIMENSIONS, double>& h,
-      int level) const;
-
-  /**
-   * TODO(Dominic): Add docu.
-   */
-  bool hasToMergeWithNeighbourMetadata(
-      const tarch::la::Vector<DIMENSIONS,int>& src,
-      const tarch::la::Vector<DIMENSIONS,int>& dest,
-      const tarch::la::Vector<DIMENSIONS, double>& x) const;
+      const int                                    level,
+      const bool                                   checkThoroughly) const;
 
 
   /**
@@ -572,22 +562,47 @@ private:
    *    this function in the previous iteration and remote ranks have thus sent data to it.
    *
    *
-   * @param state    The state tells us if a neighbouring rank is forking or if forking was triggered for this rank.
-   * @param src      A counter of a d-dimensional for-loop referring to the the message source
-   *                 in the vector returned by getAdjacentRemoteRanks().
-   * @param dest     A counter of a d-dimensional for-loop referring to the message destination
-   *                 in the vector returned by getAdjacentRemoteRanks().
-   * @param fromRank The rank we want to send the message to.
+   * @param fromRank                  rank we expect to receive a message from
+   * @param srcScalar                 linearised position of message source
+   * @param destScalar                linearised position of message destination
+   * @param adjacentRanks             map holding the ranks adjacent to a vertex.
    *
    * TODO(Dominic): Consider joins.
    * TODO(Dominic): Potentially, there is still a bug if two neighbouring ranks are
    *                forking at the same time.
    *
    */
-  bool hasToReceiveMetadata(
-      const int fromRank,
-      const tarch::la::Vector<DIMENSIONS,int>& src,
-      const tarch::la::Vector<DIMENSIONS,int>& dest) const;
+  static bool hasToReceiveMetadata(
+      const int                                  fromRank,
+      const int                                  srcScalar,
+      const int                                  destScalar,
+      const tarch::la::Vector<TWO_POWER_D, int>& adjacentRanks);
+
+
+  /**
+   * Loop body for mergeOnlyWithNeighbourMetadata.
+   *
+   * @param fromRank                  rank we expect to receive a message from
+   * @param srcScalar                 linearised position of message source
+   * @param destScalar                linearised position of message destination
+   * @param destCellDescriptionIndex  cell descriptions index associated with cell at destination
+   * @param adjacentRanks             map holding the ranks adjacent to a vertex.
+   * @param x                         coordinates of vertex
+   * @param h                         mesh size of cells adjacent to vertex
+   * @param level                     mesh level
+   * @param checkThoroughly           compare geometry information on the cell descriptions with the parameters @p x, @p h,@p level.
+   */
+  static void mergeOnlyWithNeighbourMetadataLoopBody(
+      const int                                    fromRank,
+      const int                                    srcScalar,
+      const int                                    destScalar,
+      const int                                    destCellDescriptionIndex,
+      const tarch::la::Vector<TWO_POWER_D, int>&   adjacentRanks,
+      const tarch::la::Vector<DIMENSIONS, double>& x,
+      const tarch::la::Vector<DIMENSIONS, double>& h,
+      const int                                    level,
+      const exahype::State::AlgorithmSection&      section,
+      const bool                                   checkThoroughly);
 
   /**
    * Receive metadata from neighbouring ranks
@@ -598,11 +613,12 @@ private:
    * use it in combination with the Merging mapping.
    */
   void mergeOnlyWithNeighbourMetadata(
-      const int fromRank,
+      const int                                    fromRank,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const tarch::la::Vector<DIMENSIONS, double>& h,
-      const int level,
-      const exahype::State::AlgorithmSection& section) const;
+      const int                                    level,
+      const exahype::State::AlgorithmSection&      section,
+      const bool                                   checkThoroughly) const;
 
   /**
    * Drops the metadata received from neighbouring ranks.
@@ -612,87 +628,9 @@ private:
    * use it in combination with the Merging mapping.
    */
   void dropNeighbourMetadata(
-      const int fromRank,
+      const int                                    fromRank,
       const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int level) const;
-
-  /**
-   * Checks for all cell descriptions (ADER-DG, FV, ...)
-   * corresponding to the heap index at position \p src
-   * in getCellDescriptions() if now is the time to
-   * send out face data to a neighbouring rank.
-   *
-   * !! Side effects !!
-   *
-   * Every call of this function decrements the
-   * faceDataExchangeCounter for the face corresponding
-   * to the source and destination location pair \p src and \p dest
-   * for all cell descriptions registered at the source location \p src.
-   *
-   * \note This method should only be used
-   * if hasToSendMetadata(...) returns true.
-   *
-   * <h2>Periodic boundary conditions<h2>
-   * If periodic boundary conditions are switched on,
-   * fhe face corresponding to the adjacent cells
-   * \p src and \src dest might be inside, outside,
-   * or on the boundary.
-   *
-   * <h2>Face data exchange counters<\h2>
-   * On every cell description, we hold a field of 2*d
-   * counters. If a face is part of the MPI boundary,
-   * we initialise the corresponding counter with
-   * value 2^{d-1}.
-   *
-   * In the Prediction::prepareSendToNeighbour(...) and
-   * RiemannSolver::mergeWithNeighbour(...) routine,
-   * we then decrement the counters for the face
-   * every time one of the 2^{d-1}
-   * adjacent vertices touches the face.
-   */
-  bool hasToSendDataToNeighbour(
-      const tarch::la::Vector<DIMENSIONS,int>& src,
-      const tarch::la::Vector<DIMENSIONS,int>& dest) const;
-
-  /**
-   * Checks for all cell descriptions (ADER-DG, FV, ...)
-   * corresponding to the heap index at position \p dest
-   * in getCellDescriptions() if now is the time to
-   * receive face data from a neighbouring rank
-   *
-   * !! Side effects !!
-   *
-   * Resets the face data exchange counters of
-   * the the cell descriptions corresponding
-   * to cell position \p dest.
-   *
-   * Further sets the neighbour merge performed
-   * flag to true.
-   *
-   * \note This method should only be used
-   * if hasToReceiveMetadata(...) returns true.
-   *
-   * <h2>Periodic boundary conditions<h2>
-   * If periodic boundary conditions are switched on,
-   * fhe face corresponding to the adjacent cells
-   * \p src and \src dest might be inside, outside,
-   * or on the boundary.
-   *
-   * <h2>Face data exchange counters<\h2>
-   * On every cell description, we hold a field of 2*d
-   * counters. If a face is part of the MPI boundary,
-   * we initialise the corresponding counter with
-   * value 2^{d-1}.
-   *
-   * When we send out data, we then decrement the counters for the face
-   * every time one of the 2^{d-1}
-   * adjacent vertices touches the face.
-   *
-   * \see decrementCounters
-   */
-  bool hasToMergeWithNeighbourData(
-      const tarch::la::Vector<DIMENSIONS,int>& src,
-      const tarch::la::Vector<DIMENSIONS,int>& dest) const;
+      const int                                    level) const;
 
   /*! Send face data to neighbouring remote ranks.
    *

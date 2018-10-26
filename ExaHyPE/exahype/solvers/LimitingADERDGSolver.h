@@ -398,12 +398,13 @@ private:
    * after the time step data update.
    */
   UpdateResult fusedTimeStepBody(
-      const int   cellDescriptionsIndex,
-      const int   element,
-      const bool  isFirstIterationOfBatch,
-      const bool  isLastIterationOfBatch,
-      const bool  isSkeletonJob,
-      const bool  mustBeDoneImmediately,
+      SolverPatch& solverPatch,
+      const int    cellDescriptionsIndex,
+      const int    element,
+      const bool   isFirstIterationOfBatch,
+      const bool   isLastIterationOfBatch,
+      const bool   isSkeletonJob,
+      const bool   mustBeDoneImmediately,
       const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed);
 
   /**
@@ -430,8 +431,7 @@ private:
    */
   void sendMinAndMaxToNeighbour(
       const int                                    toRank,
-      const int                                    cellDescriptionsIndex,
-      const int                                    element,
+      const SolverPatch&                           solverPatch,
       const tarch::la::Vector<DIMENSIONS, int>&    src,
       const tarch::la::Vector<DIMENSIONS, int>&    dest,
       const tarch::la::Vector<DIMENSIONS, double>& x,
@@ -489,17 +489,18 @@ private:
   class FusedTimeStepJob {
   private:
     LimitingADERDGSolver&                                     _solver;
+    SolverPatch&                                              _solverPatch;
     const int                                                 _cellDescriptionsIndex;
     const int                                                 _element;
-    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> _neighbourMergePerformed;
+    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> _neighbourMergePerformed; // we need to copy this as it may be overwritten while the job is not processed yet!
     const bool                                                _isSkeletonJob;
   public:
     FusedTimeStepJob(
-        LimitingADERDGSolver&                    solver,
-        const int                                cellDescriptionsIndex,
-        const int                                element,
-        const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
-        const bool                               isSkeletonJob);
+        LimitingADERDGSolver& solver,
+        SolverPatch&          solverPatch,
+        const int             cellDescriptionsIndex,
+        const int             element,
+        const bool            isSkeletonJob);
 
     bool operator()();
   };
@@ -850,7 +851,7 @@ public:
       const int cellDescriptionsIndex,
       const int solverElement) const;
 
-  UpdateResult fusedTimeStep(
+  UpdateResult fusedTimeStepOrRestriction(
       const int cellDescriptionsIndex,
       const int element,
       const bool isFirstIterationOfBatch,
@@ -1136,11 +1137,9 @@ public:
    * @param isRecomputation
    */
   void mergeNeighboursData(
-      ADERDGSolver::Heap::HeapEntries&           solverPatches1,
-      ADERDGSolver::Heap::HeapEntries&           solverPatches2,
-      FiniteVolumesSolver::Heap::HeapEntries&    limiterPatches1,
-      FiniteVolumesSolver::Heap::HeapEntries&    limiterPatches2,
       const int                                  solverNumber,
+      Solver::CellInfo&                       context1,
+      Solver::CellInfo&                       context2,
       const tarch::la::Vector<DIMENSIONS, int>&  pos1,
       const tarch::la::Vector<DIMENSIONS, int>&  pos2,
       const bool                                 isRecomputation) const;
@@ -1181,9 +1180,8 @@ public:
    * @param[in] isRecomputation flag indicating if this merge is part of a solution recomputation phase.
    */
   void mergeWithBoundaryData(
-      ADERDGSolver::Heap::HeapEntries&          solverPatches,
-      FiniteVolumesSolver::Heap::HeapEntries&   limiterPatches,
       const int                                 solverNumber,
+      Solver::CellInfo&                         context,
       const tarch::la::Vector<DIMENSIONS, int>& posCell,
       const tarch::la::Vector<DIMENSIONS, int>& posBoundary,
       const bool                                isRecomputation);
@@ -1199,21 +1197,28 @@ public:
       const int cellDescriptionsIndex,
       const int solverNumber) const final override;
 
-  void mergeWithNeighbourMetadata(
-      const exahype::MetadataHeap::HeapEntries& neighbourMetadata,
-      const tarch::la::Vector<DIMENSIONS, int>& src,
-      const tarch::la::Vector<DIMENSIONS, int>& dest,
-      const int                                 cellDescriptionsIndex,
-      const int                                 element) const final override;
-
+  /**
+   * Send data to a neighbouring rank.
+   *
+   * send order:   minAndMax,solver,limiter
+   * receive order limiter,solver,minAndMax
+   *
+   * @param toRank       the rank we send data to
+   * @param solverNumber identification number of this solver
+   * @param cellInfo     links to the data assocated with the source cell
+   * @param src          relative position of message source to vertex
+   * @param dest         relative position of message destination to vertex
+   * @param x            vertex' coordinates
+   * @param level        vertex' level
+   */
   void sendDataToNeighbour(
       const int                                     toRank,
-      const int                                     cellDescriptionsIndex,
-      const int                                     element,
+      const int                                     solverNumber,
+      Solver::CellInfo&                             cellInfo,
       const tarch::la::Vector<DIMENSIONS, int>&     src,
       const tarch::la::Vector<DIMENSIONS, int>&     dest,
       const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) final override;
+      const int                                     level);
 
   /**
    * Send data or empty data to the neighbour data based
@@ -1237,8 +1242,8 @@ public:
    */
   void sendDataToNeighbourBasedOnLimiterStatus(
         const int                                    toRank,
-        const int                                    cellDescriptionsIndex,
-        const int                                    element,
+        const int                                    solverNumber,
+        CellInfo&                                    cellInfo,
         const tarch::la::Vector<DIMENSIONS, int>&    src,
         const tarch::la::Vector<DIMENSIONS, int>&    dest,
         const bool                                   isRecomputation,
@@ -1299,11 +1304,10 @@ public:
   // NEIGHBOUR - Solution Recomputation
   ///////////////////////////////////////
   /**
-   * TODO(Dominic):
-   * Add more docu.
-   *
    * We do not send the minimum and maximum solution values
    * during the solution recomputation process.
+   *
+   * We thus have this separate function.
    */
   void sendEmptySolverAndLimiterDataToNeighbour(
       const int                                     toRank,
@@ -1313,11 +1317,10 @@ public:
       const int                                     level) const;
 
   /**
-   * TODO(Dominic):
-   * Add more docu.
-   *
    * We do not send the minimum and maximum solution values
    * during the solution recomputation process.
+   *
+   * We thus have this separate function.
    */
   void dropNeighbourSolverAndLimiterData(
         const int                                     fromRank,

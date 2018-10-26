@@ -692,7 +692,7 @@ public:
    * The "hasCompletedTimeStep" flag must be only be unset when
    * a background job is spawned.
    */
-  UpdateResult fusedTimeStep(
+  UpdateResult fusedTimeStepOrRestriction(
       const int cellDescriptionsIndex,
       const int element,
       const bool isFirstIterationOfBatch,
@@ -750,10 +750,6 @@ public:
       const int element,
       const bool isAtRemoteBoundary) override;
 
-  void restriction(
-        const int cellDescriptionsIndex,
-        const int element) override;
-
   void rollbackSolutionGlobally(
       const int cellDescriptionsIndex, const int solverElement,
       const bool fusedTimeStepping) const final override;
@@ -762,15 +758,15 @@ public:
   // NEIGHBOUR
   ///////////////////////////////////
   void mergeNeighboursData(
-      Heap::HeapEntries&                        cellDescriptions1,
-      Heap::HeapEntries&                        cellDescriptions2,
       const int                                 solverNumber,
+      Solver::CellInfo&                         context1,
+      Solver::CellInfo&                         context2,
       const tarch::la::Vector<DIMENSIONS, int>& pos1,
       const tarch::la::Vector<DIMENSIONS, int>& pos2);
 
   void mergeWithBoundaryData(
-      Heap::HeapEntries&                        cellDescriptions,
       const int                                 solverNumber,
+      Solver::CellInfo&                         context,
       const tarch::la::Vector<DIMENSIONS, int>& posCell,
       const tarch::la::Vector<DIMENSIONS, int>& posBoundary);
 #ifdef Parallel
@@ -859,26 +855,40 @@ public:
       const int cellDescriptionsIndex,
       const int solverNumber) const override;
 
-  void mergeWithNeighbourMetadata(
-      const exahype::MetadataHeap::HeapEntries& metadata,
-      const tarch::la::Vector<DIMENSIONS, int>& src,
-      const tarch::la::Vector<DIMENSIONS, int>& dest,
-      const int cellDescriptionsIndex,
-      const int element) const override;
-
+  /**
+   * Send boundary layers to a neighbouring rank.
+   *
+   * @note Assumes cell is initialised. Solver offers
+   * sendEmptyDataToNeighbour for other case.
+   *
+   * @param toRank       the adjacent rank we want to send to
+   * @param solverNumber identification number for the solver
+   * @param cellInfo     links to a cells data
+   * @param src          position of message source relative to vertex
+   * @param dest         position of message destination relative to vertex
+   * @param x            vertex' position
+   * @param level        vertex' level
+   */
   void sendDataToNeighbour(
       const int                                     toRank,
-      const int                                     cellDescriptionsIndex,
-      const int                                     elementIndex,
+      const int                                     solverNumber,
+      Solver::CellInfo&                             cellInfo,
       const tarch::la::Vector<DIMENSIONS, int>&     src,
       const tarch::la::Vector<DIMENSIONS, int>&     dest,
       const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) override;
+      const int                                     level);
 
+  /**
+   * Send zero-length message to a neighbouring rank.
+   *
+   * @param toRank       the adjacent rank we want to send to
+   * @param x            vertex' position
+   * @param level        vertex' level
+   */
   void sendEmptyDataToNeighbour(
       const int                                     toRank,
       const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const override;
+      const int                                     level);
 
   void mergeWithNeighbourData(
       const int                                    fromRank,
@@ -887,7 +897,7 @@ public:
       const tarch::la::Vector<DIMENSIONS, int>&    src,
       const tarch::la::Vector<DIMENSIONS, int>&    dest,
       const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) override;
+      const int                                    level);
 
 
   void dropNeighbourData(
@@ -895,7 +905,7 @@ public:
       const tarch::la::Vector<DIMENSIONS, int>&     src,
       const tarch::la::Vector<DIMENSIONS, int>&     dest,
       const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const override;
+      const int                                     level);
 
   ///////////////////////
   // MASTER <=> WORKER

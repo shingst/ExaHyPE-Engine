@@ -105,7 +105,7 @@ class exahype::plotters::Patch2VTK: public exahype::plotters::Plotter::Device {
 
   virtual void init(const std::string& filename, int numberOfCellsPerAxis, int unknowns, int writtenUnknowns, exahype::parser::ParserView plotterParameters);
 
-  void plotPatch(const int cellDescriptionsIndex, const int element) override;
+  void plotPatch(const int solverNumber,const solvers::Solver::CellInfo& cellInfo) override;
   std::pair<int,int> plotCellBoundary(
 	tarch::la::Vector<DIMENSIONS, double> offsetOfPatch,
 	tarch::la::Vector<DIMENSIONS, double> sizeOfPatch);
