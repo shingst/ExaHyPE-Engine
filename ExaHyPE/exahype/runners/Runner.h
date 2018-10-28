@@ -260,6 +260,16 @@ class exahype::runners::Runner {
   void runOneTimeStepWithThreeSeparateAlgorithmicSteps(
       exahype::repositories::Repository& repository, bool plot);
 
+  /**
+   * Print grid statistics, e.g. number of inner cells, unrefined inner cells (leafs) ... .
+   */
+  void printGridStatistics(repositories::Repository& repository);
+
+  /**
+   * Run the prediction step in isolation.
+   */
+  void runPredictionInIsolation(repositories::Repository& repository);
+
   void validateSolverTimeStepDataForThreeAlgorithmicPhases(const bool fuseADERDGPhases) const;
 
   /**
