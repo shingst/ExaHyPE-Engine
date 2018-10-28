@@ -1033,7 +1033,7 @@ exahype::parser::Parser::ProfilingTarget exahype::parser::Parser::getProfilingTa
     return ProfilingTarget::NeigbhourMerge;
   } else if ( option.compare("update")==0 ) {
     return ProfilingTarget::Update;
-  } else if ( option.compare("prediction")==0 ) {
+  } else if ( option.compare("predictor")==0 ) {
     return ProfilingTarget::Prediction;
   } else {
     logError("getProfilingTarget","Unknown profiling target: "<<option);

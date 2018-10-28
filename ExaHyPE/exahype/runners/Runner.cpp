@@ -870,7 +870,7 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
       printTimeStepInfo(-1,repository);
       validateInitialSolverTimeStepData(exahype::solvers::Solver::FuseADERDGPhases);
     }
-    const bool skipReductionInBatchedTimeSteps      = _parser.getSkipReductionInBatchedTimeSteps();
+    const bool skipReductionInBatchedTimeSteps  = _parser.getSkipReductionInBatchedTimeSteps();
 
     // run time stepping loop
     int timeStep = 0;
@@ -906,14 +906,17 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
       }
       // profiling of isolated adapters
       else if ( profilingTarget==parser::Parser::ProfilingTarget::Prediction ) {
-        logInfo("runAsMaster(...)","step " << timeStep << "\t\trun one iteration with PredictionRerun adapter");
+        logInfo("runAsMaster(...)","step " << timeStep << "\t\trun "<<solvers::Solver::PredictionSweeps<<" iteration with PredictionRerun adapter");
+        printGridStatistics(repository);
         runPredictionInIsolation(repository);
       } else if ( profilingTarget==parser::Parser::ProfilingTarget::NeigbhourMerge ) {
         logInfo("runAsMaster(...)","step " << timeStep << "\t\trun one iteration with MergeNeighours adapter");
+        printGridStatistics(repository);
         repository.switchToMergeNeighbours();
         repository.iterate(1,false);
       } else if ( profilingTarget==parser::Parser::ProfilingTarget::Update ) {
         logInfo("runAsMaster(...)","step " << timeStep << "\t\trun one iteration with UpdateAndReduce adapter");
+        printGridStatistics(repository);
         repository.switchToUpdateAndReduce();
         repository.iterate(1,false);
       }
@@ -1512,6 +1515,26 @@ void exahype::runners::Runner::runOneTimeStepWithThreeSeparateAlgorithmicSteps(
   repository.iterate( exahype::solvers::Solver::PredictionSweeps, communicatePeanoVertices );
 
   updateStatistics();
+}
+
+void exahype::runners::Runner::printGridStatistics(repositories::Repository& repository) {
+  #if defined(TrackGridStatistics)
+  if (repository.getState().getNumberOfInnerCells()>0 and repository.getState().getMaxLevel()>0) {
+    logInfo(
+      "printGridStatistics(...)",
+      "\tinner cells/inner unrefined cells=" << repository.getState().getNumberOfInnerCells()
+      << "/" << repository.getState().getNumberOfInnerLeafCells() );
+    logInfo(
+      "printGridStatistics(...)",
+      "\tinner max/min mesh width=" << repository.getState().getMaximumMeshWidth()
+      << "/" << repository.getState().getMinimumMeshWidth()
+      );
+    logInfo(
+      "printGridStatistics(...)",
+      "\tmax level=" << repository.getState().getMaxLevel()
+      );
+  }
+  #endif
 }
 
 void exahype::runners::Runner::runPredictionInIsolation(repositories::Repository& repository) {
