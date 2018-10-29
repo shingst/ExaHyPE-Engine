@@ -411,6 +411,12 @@ class exahype::solvers::Solver {
    */
   static constexpr int NotFound = -1;
 
+  /**
+   * @return the first cell description with the given @p solverNumber.
+   *
+   * @param cellDescriptions an ordered collection of cell descriptions
+   * @param solverNumber     identification number of a solver
+   */
   template <typename CellDescriptionHeapEntries>
   static int indexOfCellDescription(CellDescriptionHeapEntries& cellDescriptions,const int solverNumber) {
     int index = exahype::solvers::Solver::NotFound;
@@ -489,7 +495,9 @@ class exahype::solvers::Solver {
     _faceIndex1    (2*_direction+_orientation1),
     _faceIndex2    (2*_direction+_orientation2),
     _faceIndexLeft (2*_direction+1),
-    _faceIndexRight(2*_direction+0){}
+    _faceIndexRight(2*_direction+0) {
+        assertionEquals(tarch::la::countEqualEntries(pos1,pos2),DIMENSIONS-1);
+    }
 
     std::string toString() {
       std::ostringstream stringstream;
@@ -522,7 +530,9 @@ class exahype::solvers::Solver {
     :
     _direction  (tarch::la::equalsReturnIndex(posCell, posBoundary)),
     _orientation((1 + posBoundary(_direction) - posCell(_direction))/2),
-    _faceIndex  (2*_direction+_orientation){}
+    _faceIndex  (2*_direction+_orientation) {
+      assertionEquals(tarch::la::countEqualEntries(posCell,posBoundary),DIMENSIONS-1);
+    }
 
     std::string toString() {
       std::ostringstream stringstream;
@@ -1784,7 +1794,7 @@ class exahype::solvers::Solver {
   template <typename CellDescription>
   static bool hasToSendDataToNeighbour(CellDescription& cellDescription,BoundaryFaceInfo& face) {
     // decrement counter beforehand
-    int newCounterValue = cellDescription.getFaceDataExchangeCounter(face._faceIndex)-1;
+    const int newCounterValue = cellDescription.getFaceDataExchangeCounter(face._faceIndex)-1;
     assertion2(newCounterValue>=0,newCounterValue,cellDescription.toString());
     assertion1(newCounterValue<TWO_POWER_D,newCounterValue);
     cellDescription.setFaceDataExchangeCounter(face._faceIndex,newCounterValue);

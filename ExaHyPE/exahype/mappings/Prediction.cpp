@@ -167,37 +167,42 @@ void exahype::mappings::Prediction::performPredictionOrProlongate(
     for (int solverNumber=0; solverNumber<numberOfSolvers; solverNumber++) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
       if (
+          cellInfo.foundCellDescriptionForSolver(solverNumber) &&
           solver->isPerformingPrediction(algorithmSection) &&
-          cellInfo.foundCellDescriptionForSolver(solverNumber)
+          performPrediction
       ) {
         switch (solver->getType()) {
           case exahype::solvers::Solver::Type::ADERDG:
             static_cast<exahype::solvers::ADERDGSolver*>(solver)->
-              performPredictionAndVolumeIntegral(
-                  solverNumber,cellInfo,isAtRemoteBoundary);
+            performPredictionAndVolumeIntegral(
+                solverNumber,cellInfo,isAtRemoteBoundary);
             break;
           case exahype::solvers::Solver::Type::LimitingADERDG:
-            static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getSolver().get()->
-              performPredictionAndVolumeIntegral(solverNumber,cellInfo,isAtRemoteBoundary);
+            static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getSolver().
+            performPredictionAndVolumeIntegral(solverNumber,cellInfo,isAtRemoteBoundary);
             break;
           case exahype::solvers::Solver::Type::FiniteVolumes:
             // do nothing
             break;
           default:
-           assertionMsg(false,"Unrecognised solver type: "<<solvers::Solver::toString(solver->getType()));
-           logError("performPredictionOrProlongate(...)","Unrecognised solver type: "<<solvers::Solver::toString(solver->getType()));
-           std::abort();
-           break;
+            assertionMsg(false,"Unrecognised solver type: "<<solvers::Solver::toString(solver->getType()));
+            logError("performPredictionOrProlongate(...)","Unrecognised solver type: "<<solvers::Solver::toString(solver->getType()));
+            std::abort();
+            break;
         }
-      } else { // we are sure here that the skeleton STPs have finished
+      } else if (
+          cellInfo.foundCellDescriptionForSolver(solverNumber) &&
+          solver->isPerformingPrediction(algorithmSection) &&
+          !performPrediction // prolongate instead
+      ) { // we are sure here that the skeleton STPs have finished
         switch (solver->getType()) {
           case exahype::solvers::Solver::Type::ADERDG:
             static_cast<exahype::solvers::ADERDGSolver*>(solver)->
-              prolongateFaceData(solverNumber,cellInfo,isAtRemoteBoundary);
+            prolongateFaceData(solverNumber,cellInfo,isAtRemoteBoundary);
             break;
           case exahype::solvers::Solver::Type::LimitingADERDG:
-            static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getSolver().get()->
-              prolongateFaceData(solverNumber,cellInfo,isAtRemoteBoundary);
+            static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getSolver().
+            prolongateFaceData(solverNumber,cellInfo,isAtRemoteBoundary);
             break;
           case exahype::solvers::Solver::Type::FiniteVolumes:
             // do nothing

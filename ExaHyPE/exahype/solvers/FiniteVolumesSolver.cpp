@@ -1324,69 +1324,44 @@ void exahype::solvers::FiniteVolumesSolver::sendEmptyDataToNeighbour(
 
 void exahype::solvers::FiniteVolumesSolver::mergeWithNeighbourData(
     const int                                    fromRank,
-    const int                                    cellDescriptionsIndex,
-    const int                                    element,
+    const int                                    solverNumber,
+    Solver::CellInfo&                            cellInfo,
     const tarch::la::Vector<DIMENSIONS, int>&    src,
     const tarch::la::Vector<DIMENSIONS, int>&    dest,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const int                                    level) {
-  assertionEquals(tarch::la::countEqualEntries(src,dest),DIMENSIONS-1); // We only consider faces; no corners.
+  const int element = indexOfCellDescription(cellInfo._ADERDGCellDescriptions,solverNumber);
+  if ( element != NotFound ) {
+    Solver::BoundaryFaceInfo face(dest,src);
+    CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[element];
+    synchroniseTimeStepping(cellDescription);
 
-  CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
+    assertion(DataHeap::getInstance().isValidIndex(cellDescription.getSolution()));
+    assertion(DataHeap::getInstance().isValidIndex(cellDescription.getPreviousSolution()));
 
-  synchroniseTimeStepping(cellDescription);
+    logDebug("mergeWithNeighbourData(...)", "receive "<<DataMessagesPerNeighbourCommunication<<" arrays from rank="<<fromRank<<",x="<<x<<",level="<<level);
 
-  const int direction   = tarch::la::equalsReturnIndex(src, dest);
-  const int orientation = (1 + src(direction) - dest(direction))/2;
-  const int faceIndex   = 2*direction+orientation;
+    // TODO(Dominic): If anarchic time stepping, receive the time step too.
+    //
+    // Copy the received boundary layer into a ghost layer of the solution.
+    // TODO(Dominic): Pipe it directly through the Riemann solver if
+    // we only use the Godunov method and not higher-order FVM methods.
+    // For methods that are higher order in time, e.g., MUSCL-Hancock, we usually need
+    // corner neighbours. This is why we currently adapt a GATHER-UPDATE algorithm
+    // instead of a SOLVE RIEMANN PROBLEM AT BOUNDARY-UPDATE INTERIOR scheme.
+    const int dataPerFace = getDataPerPatchFace();
+    double *luhbnd = getDataHeapArrayFacePart(cellDescription.getExtrapolatedSolution(),dataPerFace,face._faceIndex);
 
-  assertion3(cellDescription.getNeighbourMergePerformed(faceIndex),
-     faceIndex,cellDescriptionsIndex,cellDescription.toString());
-  assertion(DataHeap::getInstance().isValidIndex(cellDescription.getSolution()));
-  assertion(DataHeap::getInstance().isValidIndex(cellDescription.getPreviousSolution()));
+    // Send order: minMax,lQhbnd,lFhbnd
+    // Receive order: lFhbnd,lQhbnd,minMax
+    DataHeap::getInstance().receiveData(luhbnd, dataPerFace, fromRank, x, level,
+                                        peano::heap::MessageType::NeighbourCommunication);
 
-  logDebug(
-      "mergeWithNeighbourData(...)", "receive "<<DataMessagesPerNeighbourCommunication<<" arrays from rank " <<
-      fromRank << " for vertex x=" << x << ", level=" << level <<
-      ", src type=" << cellDescription.getType() <<
-      ", src=" << src << ", dest=" << dest <<
-      ", counter=" << cellDescription.getFaceDataExchangeCounter(faceIndex)
-  );
-
-  // TODO(Dominic): If anarchic time stepping, receive the time step too.
-  //
-  // Copy the received boundary layer into a ghost layer of the solution.
-  // TODO(Dominic): Pipe it directly through the Riemann solver if
-  // we only use the Godunov method and not higher-order FVM methods.
-  // For methods that are higher order in time, e.g., MUSCL-Hancock, we usually need
-  // corner neighbours. This is why we currently adapt a GATHER-UPDATE algorithm
-  // instead of a SOLVE RIEMANN PROBLEM AT BOUNDARY-UPDATE INTERIOR scheme.
-  const int numberOfFaceDof      = getDataPerPatchFace();
-  //    const int receivedBoundaryLayerIndex = DataHeap::getInstance().createData(0, numberOfFaceDof);
-  double* luhbnd = getDataHeapArray(cellDescription.getExtrapolatedSolution())
-                      + (faceIndex * numberOfFaceDof);
-  //    double* luhbnd = getDataHeapArray(receivedBoundaryLayerIndex);
-  //    assertion(getDataHeapEntries(receivedBoundaryLayerIndex).empty());
-
-
-  // Send order: minMax,lQhbnd,lFhbnd
-  // Receive order: lFhbnd,lQhbnd,minMax
-  DataHeap::getInstance().receiveData(luhbnd, numberOfFaceDof, fromRank, x, level,
-      peano::heap::MessageType::NeighbourCommunication);
-
-  logDebug(
-      "mergeWithNeighbourData(...)", "[pre] solve Riemann problem with received data." <<
-      " cellDescription=" << cellDescription.toString() <<
-      ",faceIndexForCell=" << faceIndex <<
-      ",normalOfExchangedFac=" << direction <<
-      ",x=" << x.toString() << ", level=" << level <<
-      ", counter=" << cellDescription.getFaceDataExchangeCounter(faceIndex)
-  );
-
-  double* luh = getDataHeapArray(cellDescription.getSolution());
-  ghostLayerFillingAtBoundary(luh,luhbnd,src-dest);
-
-  //    DataHeap::getInstance().deleteData(receivedBoundaryLayerIndex,true);
+    double* luh = getDataHeapArray(cellDescription.getSolution());
+    ghostLayerFillingAtBoundary(luh,luhbnd,src-dest);
+  } else {
+    dropNeighbourData(fromRank,src,dest,x,level);
+  }
 }
 
 void exahype::solvers::FiniteVolumesSolver::dropNeighbourData(

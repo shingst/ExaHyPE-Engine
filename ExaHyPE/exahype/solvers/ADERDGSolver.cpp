@@ -3960,49 +3960,51 @@ void exahype::solvers::ADERDGSolver::sendEmptyDataToNeighbour(
 // TODO(Dominic): Add to docu: We only perform a Riemann solve if a Cell is involved.
 void exahype::solvers::ADERDGSolver::mergeWithNeighbourData(
     const int                                    fromRank,
-    const int                                    cellDescriptionsIndex,
-    const int                                    element,
+    const int                                    solverNumber,
+    Solver::CellInfo&                            cellInfo,
     const tarch::la::Vector<DIMENSIONS, int>&    src,
     const tarch::la::Vector<DIMENSIONS, int>&    dest,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const int                                    level) {
-  assertionEquals(tarch::la::countEqualEntries(src,dest),DIMENSIONS-1); // only faces
-  Solver::BoundaryFaceInfo face(dest,src);
+  const int element = indexOfCellDescription(cellInfo._ADERDGCellDescriptions,solverNumber);
+  if ( element != NotFound ) {
+    Solver::BoundaryFaceInfo face(dest,src);
+    CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[element];
+    synchroniseTimeStepping(cellDescription);
 
-  CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
-
-  synchroniseTimeStepping(cellDescription);
-
-  if(
-      (cellDescription.getCommunicationStatus()                       ==CellCommunicationStatus &&
+    if(
+      hasToMergeWithNeighbourData(cellDescription,face)
+      &&
+      ((cellDescription.getCommunicationStatus()                       ==CellCommunicationStatus &&
       cellDescription.getFacewiseCommunicationStatus(face._faceIndex) >=MinimumCommunicationStatusForNeighbourCommunication &&
       cellDescription.getFacewiseAugmentationStatus(face._faceIndex)  < MaximumAugmentationStatus)
       ||
       (cellDescription.getFacewiseCommunicationStatus(face._faceIndex)==CellCommunicationStatus &&
       cellDescription.getCommunicationStatus()                        >=MinimumCommunicationStatusForNeighbourCommunication &&
-      cellDescription.getAugmentationStatus()                         < MaximumAugmentationStatus)
-  ){
-    assertion3(cellDescription.getNeighbourMergePerformed(face._faceIndex),face._faceIndex,
-               cellDescriptionsIndex,cellDescription.toString());
+      cellDescription.getAugmentationStatus()                         < MaximumAugmentationStatus))
+    ) {
+      // Send order: lQhbnd,lFhbnd
+      // Receive order: lFhbnd,lQhbnd
+      // TODO(Dominic): If anarchic time stepping, receive the time step too.
+      const int dofPerFace  = getBndFluxSize();
+      const int dataPerFace = getBndFaceSize();
+      DataHeap::getInstance().receiveData(
+          const_cast<double*>(_receivedFluctuations.data()),dofPerFace, // TODO const-correct peano
+          fromRank, x, level,peano::heap::MessageType::NeighbourCommunication);
+      DataHeap::getInstance().receiveData(                              // TODO const-correct peano
+          const_cast<double*>(_receivedExtrapolatedPredictor.data()),dataPerFace,
+          fromRank, x, level, peano::heap::MessageType::NeighbourCommunication);
 
-    // Send order: lQhbnd,lFhbnd
-    // Receive order: lFhbnd,lQhbnd
-    // TODO(Dominic): If anarchic time stepping, receive the time step too.
-    const int dofPerFace  = getBndFluxSize();
-    const int dataPerFace = getBndFaceSize();
-    DataHeap::getInstance().receiveData(
-        const_cast<double*>(_receivedFluctuations.data()),dofPerFace, // TODO const-correct peano
-        fromRank, x, level,peano::heap::MessageType::NeighbourCommunication);
-    DataHeap::getInstance().receiveData(                              // TODO const-correct peano
-        const_cast<double*>(_receivedExtrapolatedPredictor.data()),dataPerFace,
-        fromRank, x, level, peano::heap::MessageType::NeighbourCommunication);
+      solveRiemannProblemAtInterface(
+          cellDescription, face,
+          _receivedExtrapolatedPredictor.data(),
+          _receivedFluctuations.data(),
+          fromRank);
 
-    solveRiemannProblemAtInterface(
-        cellDescription, face,
-        _receivedExtrapolatedPredictor.data(),
-        _receivedFluctuations.data(),
-        fromRank);
-  } else  {
+    } else  {
+      dropNeighbourData(fromRank,src,dest,x,level);
+    }
+  } else {
     dropNeighbourData(fromRank,src,dest,x,level);
   }
 }

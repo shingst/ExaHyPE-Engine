@@ -890,15 +890,26 @@ public:
       const tarch::la::Vector<DIMENSIONS, double>&  x,
       const int                                     level);
 
+  /**
+   * Receive data and merge it if the face data exchange counter
+   * demands it. Otherwise, drop the data.
+   *
+   * @param fromRank       rank we expect to receive data from
+   * @param cellInfo       information about the cell for which we want to receive data
+   * @param solverNumber   identification number for this solver
+   * @param src            relative position of message source      to vertex.
+   * @param src            relative position of message destination to vertex.
+   * @param x              vertex' position
+   * @param level          vertex' level
+   */
   void mergeWithNeighbourData(
       const int                                    fromRank,
-      const int                                    cellDescriptionsIndex,
-      const int                                    element,
+      const int                                    solverNumber,
+      Solver::CellInfo&                            cellInfo,
       const tarch::la::Vector<DIMENSIONS, int>&    src,
       const tarch::la::Vector<DIMENSIONS, int>&    dest,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level);
-
 
   void dropNeighbourData(
       const int                                     fromRank,

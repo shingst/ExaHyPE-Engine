@@ -52,6 +52,14 @@ public:
    */
   static bool SpawnNeighbourMergeAsThread;
 
+  #if DIMENSIONS==2
+  static constexpr int pos1Scalar[4] = {0,0,1,2};
+  static constexpr int pos2Scalar[4] = {1,2,3,3};
+  #elif DIMENSIONS==3
+  static constexpr int pos1Scalar[12] = {0,0,0,1,1,2,2,3,4,4,5,6};
+  static constexpr int pos2Scalar[12] = {1,2,4,3,5,3,6,7,5,6,7,7};
+  #endif
+
   /**
    * Compare if two vectors are equal up to a relative
    * tolerance.
@@ -201,44 +209,6 @@ private:
       const int                                    destCellDescriptionIndex,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level) const;
-
-  /*! Helper routine for receiveNeighbourData.
-   *
-   * Iterates over the received metadata and
-   * drops the received neighbour data.
-   *
-   * \note Not thread-safe.
-   */
-  void dropNeighbourData(
-      const int fromRank,
-      const int srcCellDescriptionIndex,
-      const int destCellDescriptionIndex,
-      const tarch::la::Vector<DIMENSIONS,int>& src,
-      const tarch::la::Vector<DIMENSIONS,int>& dest,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int level) const;
-
-  /*!
-   * ! Helper routine for receiveNeighbourData.
-   *
-   * Iterates over the received metadata and every time
-   * we find a valid entry, we call mergeWithNeighbourData
-   * on the solver corresponding to the metadata.
-   * if we want to receive the neighbour data
-   * or if we just want to drop it.
-   *
-   * \note Not thread-safe.
-   */
-  void mergeWithNeighbourData(
-      const int fromRank,
-      const exahype::MetadataHeap::HeapEntries& receivedMetadata,
-      const bool mergeWithNeighbourMetadata,
-      const int srcCellDescriptionIndex,
-      const int destCellDescriptionIndex,
-      const tarch::la::Vector<DIMENSIONS,int>& src,
-      const tarch::la::Vector<DIMENSIONS,int>& dest,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int level) const;
   #endif
 
  public:
@@ -659,16 +629,27 @@ private:
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level) const;
 
+static void exahype::Vertex::receiveNeighbourDataLoopBody(
+  const int                                    fromRank,
+  const int                                    srcScalar,
+  const int                                    destScalar,
+  const int                                    destCellDescriptionIndex,
+  const bool                                   mergeWithReceivedData,
+  const bool                                   receiveNeighbourMetadata,
+  const tarch::la::Vector<TWO_POWER_D, int>&   adjacentRanks,
+  const tarch::la::Vector<DIMENSIONS, double>& x,
+  const int                                    level);
+
   /*! Receive data from remote ranks at all remote boundary faces adjacent to this vertex.
    *
    * TODO(Dominic): Add docu.
    */
   void receiveNeighbourData(
-      int fromRank,
-      bool mergeWithReceivedData,
-      bool isFirstIterationOfBatchOrNoBatch,
+      const int                                    fromRank,
+      const bool                                   mergeWithReceivedData,
+      const bool                                   isFirstIterationOfBatchOrNoBatch,
       const tarch::la::Vector<DIMENSIONS, double>& x,
-      int level) const;
+      const int                                    level) const;
   #endif
 };
 

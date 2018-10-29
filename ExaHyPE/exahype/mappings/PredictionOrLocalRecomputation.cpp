@@ -263,13 +263,12 @@ void exahype::mappings::PredictionOrLocalRecomputation::enterCell(
                            coarseGridCell, fineGridPositionOfCell);
 
   if ( fineGridCell.isInitialised() ) {
-    const int cellDescriptionsIndex = fineGridCell.getCellDescriptionsIndex();
+    solvers::Solver::CellInfo cellInfo(fineGridCell.getCellDescriptionsIndex());
 
     const int numberOfSolvers = exahype::solvers::RegisteredSolvers.size();
     for (int solverNumber=0; solverNumber<numberOfSolvers; solverNumber++) {
-      auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-      const int element = solver->tryGetElement(cellDescriptionsIndex,solverNumber);
-      if ( element!=exahype::solvers::Solver::NotFound ) {
+      if ( cellInfo.foundCellDescriptionForSolver(solverNumber) ) {
+        auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
         if (
             performLocalRecomputation( solver ) &&
             _stateCopy.isFirstIterationOfBatchOrNoBatch()
@@ -279,12 +278,11 @@ void exahype::mappings::PredictionOrLocalRecomputation::enterCell(
           double admissibleTimeStepSize = std::numeric_limits<double>::max();
           if ( exahype::solvers::Solver::FuseADERDGPhases ) {
             admissibleTimeStepSize = limitingADERDG->recomputeSolutionLocallyFused(
-                cellDescriptionsIndex,element,
-                exahype::Cell::isAtRemoteBoundary(
+                solverNumber,cellInfo,exahype::Cell::isAtRemoteBoundary(
                     fineGridVertices,fineGridVerticesEnumerator));
           } else {
-            admissibleTimeStepSize = limitingADERDG->recomputeSolutionLocally(
-                cellDescriptionsIndex,element);
+            admissibleTimeStepSize =
+                limitingADERDG->recomputeSolutionLocally(solverNumber,cellInfo);
           }
 
           _minTimeStepSizes[solverNumber] = std::min(
@@ -296,7 +294,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::enterCell(
         }
         else if ( performPrediction(solver) ) {
           if ( _stateCopy.isFirstIterationOfBatchOrNoBatch() ) {
-            // this operates only on compute cells
+
             exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
                 solver,fineGridCell.getCellDescriptionsIndex(),element,
                 exahype::Cell::isAtRemoteBoundary(
@@ -306,18 +304,13 @@ void exahype::mappings::PredictionOrLocalRecomputation::enterCell(
           if ( _stateCopy.isLastIterationOfBatchOrNoBatch() ) { // we are sure here that the skeleton STPs have finished
             // this operates only on helper cells
             solver->prolongateFaceData(
-                fineGridCell.getCellDescriptionsIndex(),element,
-                exahype::Cell::isAtRemoteBoundary(
-                    fineGridVertices,fineGridVerticesEnumerator));
+                cellInfo,exahype::Cell::isAtRemoteBoundary(fineGridVertices,fineGridVerticesEnumerator));
           }
         }
       }
     }
-
     if ( _stateCopy.isFirstIterationOfBatchOrNoBatch() ) {
-      exahype::Cell::resetNeighbourMergeFlags(
-          fineGridCell.getCellDescriptionsIndex(),
-          fineGridVertices,fineGridVerticesEnumerator);
+      exahype::Cell::resetNeighbourMergeFlags(cellInfo,fineGridVertices,fineGridVerticesEnumerator);
     }
   }
   logTraceOutWith1Argument("enterCell(...)", fineGridCell);

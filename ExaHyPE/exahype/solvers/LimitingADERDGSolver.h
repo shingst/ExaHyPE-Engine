@@ -452,8 +452,7 @@ private:
    */
   void mergeWithNeighbourMinAndMax(
       const int                                    fromRank,
-      const int                                    cellDescriptionsIndex,
-      const int                                    element,
+      SolverPatch&                                 solverPatch,
       const tarch::la::Vector<DIMENSIONS, int>&    src,
       const tarch::la::Vector<DIMENSIONS, int>&    dest,
       const tarch::la::Vector<DIMENSIONS, double>& x,
@@ -498,8 +497,7 @@ private:
     FusedTimeStepJob(
         LimitingADERDGSolver& solver,
         SolverPatch&          solverPatch,
-        const int             cellDescriptionsIndex,
-        const int             element,
+        CellInfo&             cellInfo,
         const bool            isSkeletonJob);
 
     bool operator()();
@@ -809,15 +807,12 @@ public:
   // CELL-LOCAL
   //////////////////////////////////
 
-  double startNewTimeStep(
-      SolverPatch& solverPatch,
-      const int cellDescriptionsIndex);
+  double startNewTimeStep(SolverPatch& solverPatch,Solver::CellInfo& cellInfo);
 
   double startNewTimeStepFused(
-        SolverPatch& solverPatch,
-        const int cellDescriptionsIndex,
-        const bool isFirstIterationOfBatch,
-        const bool isLastIterationOfBatch);
+        SolverPatch& solverPatch,CellInfo& cellInfo,
+        const bool   isFirstIterationOfBatch,
+        const bool   isLastIterationOfBatch);
 
   double updateTimeStepSizesFused(
       const int cellDescriptionsIndex,
@@ -852,15 +847,15 @@ public:
       const int solverElement) const;
 
   UpdateResult fusedTimeStepOrRestriction(
-      const int cellDescriptionsIndex,
-      const int element,
+      const int  solverNumber,
+      CellInfo&  cellInfo,
       const bool isFirstIterationOfBatch,
       const bool isLastIterationOfBatch,
       const bool isAtRemoteBoundary) final override;
 
   UpdateResult update(
-        const int cellDescriptionsIndex,
-        const int element,
+        const int  solverNumber,
+        CellInfo&  cellInfo,
         const bool isAtRemoteBoundary) final override;
 
   void compress(
@@ -907,9 +902,7 @@ public:
    * TODO(Dominic): Tobias's integer
    * flagging idea might reduce complexity here
    */
-  void determineMinAndMax(
-      const int cellDescriptionsIndex,
-      const int element);
+  void determineMinAndMax(const int solverNumber,Solver::CellInfo& cellInfo);
 
   /**
    * Evaluates a discrete maximum principle (DMP) and
@@ -1053,15 +1046,13 @@ public:
    *
    * Legend: O: Ok (ADER-DG cells), T: Troubled (FV cells), NT: FV->DG cells, NNT: DG->FV cells
    */
-  void recomputeSolution(SolverPatch& solverPatch,const int cellDescriptionsIndex);
+  void recomputeSolution(SolverPatch& solverPatch,CellInfo& cellInfo);
 
   /**
    * Invoke ::recomputeSolution(SolverPatch&)
    * \return a time step size computed with the new solution.
    */
-  double recomputeSolutionLocally(
-      const int cellDescriptionsIndex,
-      const int element);
+  double recomputeSolutionLocally(const int solverNumber,Solver::CellInfo& cellInfo);
 
   /**
    * Same as ::recomputeSolutionLocally for fused time stepping. Recomputes a new predictor as well if necessary.
@@ -1069,18 +1060,7 @@ public:
    * Further see ::fusedTimeBody regarding order of operations.
    */
   double recomputeSolutionLocallyFused(
-      const int cellDescriptionsIndex,
-      const int element,
-      const bool isAtRemoteBoundary);
-
-  void prolongateFaceData(
-      const int cellDescriptionsIndex,
-      const int element,
-      const bool isAtRemoteBoundary) final override;
-
-  void restriction(
-        const int cellDescriptionsIndex,
-        const int element) final override;
+      const int solverNumber,Solver::CellInfo& cellInfo,const bool isAtRemoteBoundary);
 
   ///////////////////////////////////
   // NEIGHBOUR
@@ -1127,19 +1107,17 @@ public:
    * TODO(Dominic): Remove limiterstatus1 and limiterStatus2 argument.
    * They depend on the isRecomputation value
    *
-   * @param solverPatches1
-   * @param solverPatches2
-   * @param limiterPatches1
-   * @param limiterPatches2
    * @param solverNumber
+   * @param cellInfo1
+   * @param cellInfo2
    * @param pos1
    * @param pos2
    * @param isRecomputation
    */
   void mergeNeighboursData(
       const int                                  solverNumber,
-      Solver::CellInfo&                       context1,
-      Solver::CellInfo&                       context2,
+      Solver::CellInfo&                          cellInfo1,
+      Solver::CellInfo&                          cellInfo2,
       const tarch::la::Vector<DIMENSIONS, int>&  pos1,
       const tarch::la::Vector<DIMENSIONS, int>&  pos2,
       const bool                                 isRecomputation) const;
@@ -1243,7 +1221,7 @@ public:
   void sendDataToNeighbourBasedOnLimiterStatus(
         const int                                    toRank,
         const int                                    solverNumber,
-        CellInfo&                                    cellInfo,
+        Solver::CellInfo&                            cellInfo,
         const tarch::la::Vector<DIMENSIONS, int>&    src,
         const tarch::la::Vector<DIMENSIONS, int>&    dest,
         const bool                                   isRecomputation,
@@ -1257,8 +1235,8 @@ public:
 
   void mergeWithNeighbourData(
       const int                                    fromRank,
-      const int                                    cellDescriptionsIndex,
-      const int                                    element,
+      const int                                    solverNumber,
+      Solver::CellInfo&                            cellInfo,
       const tarch::la::Vector<DIMENSIONS, int>&    src,
       const tarch::la::Vector<DIMENSIONS, int>&    dest,
       const tarch::la::Vector<DIMENSIONS, double>& x,
@@ -1284,8 +1262,8 @@ public:
    */
   void mergeWithNeighbourDataBasedOnLimiterStatus(
       const int                                    fromRank,
-      const int                                    cellDescriptionsIndex,
-      const int                                    element,
+      const int                                    solverNumber,
+      Solver::CellInfo&                            cellInfo,
       const tarch::la::Vector<DIMENSIONS, int>&    src,
       const tarch::la::Vector<DIMENSIONS, int>&    dest,
       const bool                                   isRecomputation,
