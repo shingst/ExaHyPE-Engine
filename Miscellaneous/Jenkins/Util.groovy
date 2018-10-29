@@ -81,7 +81,6 @@ def getModuleCode() {
     return '''
 source /etc/profile.d/modules.sh
 
-module unload pythonLib intel >/dev/null 2>&1
 module load intel/17.0 >/dev/null 2>&1
 module unload mpi.intel >/dev/null 2>&1
 module load mpi.intel/2017 >/dev/null 2>&1
