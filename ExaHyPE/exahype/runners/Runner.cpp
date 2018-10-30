@@ -669,7 +669,7 @@ void exahype::runners::Runner::initHPCEnvironment() {
   peano::performanceanalysis::Analysis::getInstance().enable(false);
 }
 
-void exahype::runners::Runner::parseOptimisations() const {
+void exahype::runners::Runner::initOptimisations() const {
   exahype::solvers::Solver::FuseADERDGPhases         = _parser.getFuseAlgorithmicSteps();
   exahype::solvers::Solver::WeightForPredictionRerun = _parser.getFuseAlgorithmicStepsFactor();
 
@@ -707,7 +707,7 @@ void exahype::runners::Runner::parseOptimisations() const {
 int exahype::runners::Runner::run() {
   int result = 0;
   if ( _parser.isValid() ) {
-    parseOptimisations();
+    initOptimisations();
 
     initHeaps();
 
