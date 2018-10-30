@@ -193,6 +193,11 @@ namespace exahype {
   double* getDataHeapArray(const int index);
 
   /**
+   * Const variant of its counterpart
+   */
+  const double* const getDataHeapArrayForReadOnlyAccess(const int index);
+
+  /**
    * Assumes the data heap array can be split into DIMENSIONS_TIMES_TWO equally sized
    * partitions (4 in 2D, 6 in 3D).
    *
@@ -209,6 +214,8 @@ namespace exahype {
    * @param index heap index of the array.
    */
   DataHeap::HeapEntries& getDataHeapEntries(const int index);
+
+  const DataHeap::HeapEntries& getDataHeapEntriesForReadOnlyAccess(const int index);
 
   /**
    * Moves a DataHeap array, i.e. copies the found

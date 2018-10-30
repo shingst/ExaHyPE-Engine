@@ -46,8 +46,16 @@ exahype::DataHeap::HeapEntries& exahype::getDataHeapEntries(const int index) {
   return DataHeap::getInstance().getData(index);
 }
 
+const exahype::DataHeap::HeapEntries& exahype::getDataHeapEntriesForReadOnlyAccess(const int index) {
+  return DataHeap::getInstance().getData(index);
+}
+
 double* exahype::getDataHeapArray(const int index) {
   assertion1(DataHeap::getInstance().isValidIndex(index),index);
+  return getDataHeapEntries(index).data();
+}
+
+const double* const exahype::getDataHeapArrayForReadOnlyAccess(const int index) {
   return getDataHeapEntries(index).data();
 }
 

@@ -28,7 +28,8 @@ exahype-project EulerADERDG
     dimension const         = 2
     width                   = 1.0, 1.0
     offset                  = 0.0, 0.0
-    end-time                = 0.01
+    /* end-time                = 0.01 */
+    time-steps              = 32
   end computational-domain
  
   /*
@@ -63,20 +64,23 @@ exahype-project EulerADERDG
     spawn-amr-background-threads = on
     /* 0.0 und 0.8 sind schon mal zwei Faktoren */
     disable-vertex-exchange-in-time-steps        = on
-    time-step-batch-factor           = 1.0
+    time-step-batch-factor           = 0.0
     disable-metadata-exchange-in-batched-time-steps = on
     double-compression = 0.0
     spawn-double-compression-as-background-thread = off
   end global-optimisation
 
 
-
+  profiling
+    profiling-target = update 
+    /* predictor, neighbour_merge, whole_code */
+  end profiling
   
   solver Limiting-ADER-DG MyEulerSolver
     variables const            = rho:1,j:3,E:1
     order const                = 5
-    maximum-mesh-size          = 5e-1    
-    maximum-mesh-depth         = 2
+    maximum-mesh-size          = 1e-2    
+    maximum-mesh-depth         = 0
     time-stepping              = global
     type const                 = nonlinear, Legendre
     terms const                = flux
