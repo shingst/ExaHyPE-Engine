@@ -2356,10 +2356,11 @@ double exahype::solvers::ADERDGSolver::startNewTimeStep(CellDescription& cellDes
 }
 
 double exahype::solvers::ADERDGSolver::updateTimeStepSizes(
-      const int cellDescriptionsIndex,
-      const int solverElement) {
-  CellDescription& cellDescription = ADERDGSolver::getCellDescription(cellDescriptionsIndex,solverElement);
-  if (cellDescription.getType()==CellDescription::Type::Cell) {
+    const int solverNumber,
+    CellInfo& cellInfo) {
+  const int element = indexOfCellDescription(cellInfo._ADERDGCellDescriptions,solverNumber);
+  if ( element != NotFound ) {
+    CellDescription& cellDescription    = cellInfo._ADERDGCellDescription
     const double admissibleTimeStepSize = computeTimeStepSize(cellDescription);
 
     cellDescription.setCorrectorTimeStepSize( admissibleTimeStepSize );
@@ -2372,19 +2373,26 @@ double exahype::solvers::ADERDGSolver::updateTimeStepSizes(
 }
 
 double exahype::solvers::ADERDGSolver::updateTimeStepSizesFused(
-      const int cellDescriptionsIndex,
-      const int solverElement) {
-  CellDescription& cellDescription = ADERDGSolver::getCellDescription(cellDescriptionsIndex,solverElement);
-  if (cellDescription.getType()==CellDescription::Type::Cell) {
-    const double admissibleTimeStepSize = computeTimeStepSize(cellDescription);
+    const int solverNumber,
+    CellInfo& cellInfo) {
+  const int element = indexOfCellDescription(cellInfo._ADERDGCellDescriptions,solverNumber);
+  if ( element != NotFound ) {
+    CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[element];
+    if (cellDescription.getType()==CellDescription::Type::Cell) {
+      const double admissibleTimeStepSize = computeTimeStepSize(cellDescription);
 
-    cellDescription.setCorrectorTimeStepSize( admissibleTimeStepSize );
-    cellDescription.setPredictorTimeStepSize( admissibleTimeStepSize );
-    cellDescription.setPredictorTimeStamp   ( cellDescription.getCorrectorTimeStamp()+admissibleTimeStepSize );
+      cellDescription.setCorrectorTimeStepSize( admissibleTimeStepSize );
+      cellDescription.setPredictorTimeStepSize( admissibleTimeStepSize );
+      cellDescription.setPredictorTimeStamp   ( cellDescription.getCorrectorTimeStamp()+admissibleTimeStepSize );
 
-    return admissibleTimeStepSize;
+      return admissibleTimeStepSize;
+    } else {
+      return std::numeric_limits<double>::max();
+    }
   }
-  return std::numeric_limits<double>::max();
+  else {
+    return std::numeric_limits<double>::max();
+  }
 }
 
 void exahype::solvers::ADERDGSolver::zeroTimeStepSizes(CellDescription& cellDescription) const {

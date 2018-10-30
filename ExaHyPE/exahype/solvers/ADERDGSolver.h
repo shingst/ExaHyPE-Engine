@@ -1907,16 +1907,14 @@ public:
    * Advances the predictor time stamp in time.
    */
   double updateTimeStepSizesFused(
-          const int cellDescriptionsIndex,
-          const int element) override final;
+      const int solverNumber,CellInfo& cellInfo) override final;
 
   /** \copydoc Solver::updateTimeStepSizesFused
    *
    * Does not advance the predictor time stamp in time.
    */
   double updateTimeStepSizes(
-        const int cellDescriptionsIndex,
-        const int element) override final;
+      const int solverNumber,CellInfo& cellInfo) override final;
 
   void zeroTimeStepSizes(CellDescription& cellDescription) const;
 

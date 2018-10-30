@@ -341,17 +341,7 @@ private:
    * with the solver patch's time step data.
    */
   void ensureLimiterPatchTimeStepDataIsConsistent(
-        const int cellDescriptionsIndex,
-        const int solverElement) const;
-
-  void ensureLimiterPatchTimeStepDataIsConsistent(
-      const SolverPatch& solverPatch,
-      const int cellDescriptionsIndex) const;
-
-  void ensureLimiterPatchTimeStepDataIsConsistent(
-      const SolverPatch& solverPatch,
-      FiniteVolumesSolver::Heap::HeapEntries& limiterPatches,
-      const int limiterElement) const;
+      const SolverPatch& solverPatch,CellInfo& cellInfo) const;
 
   /**
    * Uncompress solver and limiter degrees of freedom.
@@ -399,8 +389,7 @@ private:
    */
   UpdateResult fusedTimeStepBody(
       SolverPatch& solverPatch,
-      const int    cellDescriptionsIndex,
-      const int    element,
+      CellInfo&    cellInfo,
       const bool   isFirstIterationOfBatch,
       const bool   isLastIterationOfBatch,
       const bool   isSkeletonJob,
@@ -600,14 +589,6 @@ public:
   bool isPerformingPrediction(const exahype::State::AlgorithmSection& section) const final override;
   bool isMergingMetadata(const exahype::State::AlgorithmSection& section) const final override;
 
-  void synchroniseTimeStepping(
-          const int cellDescriptionsIndex,
-          const int element) const final override;
-
-  void synchroniseTimeStepping(
-      SolverPatch& solverPatch,
-      const int cellDescriptionsIndex) const;
-
   /**
    * Synchronies the solver patch with the global time step data and
    * further copies this data to the FV patch if one is allocated
@@ -619,9 +600,7 @@ public:
    *                       the solver patch, or NotFound if none has been allocated.
    */
   void synchroniseTimeStepping(
-      SolverPatch& solverPatch,
-      FiniteVolumesSolver::Heap::HeapEntries& limiterPatches,
-      const int limiterElement) const;
+      SolverPatch& solverPatch,CellInfo& cellInfo) const;
 
   /**
    * We always override the limiter time step
