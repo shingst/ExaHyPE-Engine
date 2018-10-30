@@ -271,11 +271,11 @@ void exahype::solvers::ADERDGSolver::ensureNoUnnecessaryMemoryIsAllocated(
 
     if (cellDescription.getSolution()>=0) {
       DataHeap::getInstance().deleteData(cellDescription.getSolutionIndex())
-      assertion(cellDescription.getSolutionCompressed()==-1);
+      assertion(cellDescription.getSolutionCompressedIndex()==-1);
     }
     else {
       assertion(CompressionAccuracy>0.0);
-      assertion(cellDescription.getSolution()==-1);
+      assertion(cellDescription.getSolutionIndex()==-1);
       CompressedDataHeap::getInstance().deleteData(cellDescription.getSolutionCompressedIndex())
     }
 
@@ -311,7 +311,7 @@ void exahype::solvers::ADERDGSolver::ensureNoUnnecessaryMemoryIsAllocated(
     // update
     assertion(DataHeap::getInstance().isValidIndex(cellDescription.getUpdateIndex()));
     if ( cellDescription.getUpdate()>=0 ) {
-      assertion(cellDescription.getUpdateCompressed()==-1);
+      assertion(cellDescription.getUpdateCompressedIndex()==-1);
 
       DataHeap::getInstance().deleteData(cellDescription.getUpdateIndex())
       cellDescription.setUpdateIndex(-1);
@@ -319,7 +319,7 @@ void exahype::solvers::ADERDGSolver::ensureNoUnnecessaryMemoryIsAllocated(
     }
     else {
       assertion(CompressionAccuracy>0.0);
-      assertion(cellDescription.getUpdate()==-1);
+      assertion(cellDescription.getUpdateIndex()==-1);
 
       CompressedDataHeap::getInstance().deleteData(cellDescription.getUpdateCompressedIndex())
       cellDescription.setUpdateCompressedIndex(-1);
@@ -333,7 +333,7 @@ void exahype::solvers::ADERDGSolver::ensureNoUnnecessaryMemoryIsAllocated(
     tarch::multicore::Lock lock(exahype::HeapSemaphore);
     if ( cellDescription.getExtrapolatedPredictor()>=0 ) {
       assertion(DataHeap::getInstance().isValidIndex(cellDescription.getExtrapolatedPredictorIndex()));
-      assertion(cellDescription.getExtrapolatedPredictorCompressed()==-1);
+      assertion(cellDescription.getExtrapolatedPredictorCompressedIndex()==-1);
 
       DataHeap::getInstance().deleteData(cellDescription.getExtrapolatedPredictorIndex())
       cellDescription.setExtrapolatedPredictorIndex(-1);
@@ -341,7 +341,7 @@ void exahype::solvers::ADERDGSolver::ensureNoUnnecessaryMemoryIsAllocated(
     }
     else {
       assertion(CompressionAccuracy>0.0);
-      assertion(cellDescription.getExtrapolatedPredictor()==-1);
+      assertion(cellDescription.getExtrapolatedPredictorIndex()==-1);
 
       CompressedDataHeap::getInstance().deleteData(cellDescription.getExtrapolatedPredictorCompressedIndex())
       cellDescription.setExtrapolatedPredictorCompressedIndex(-1);
@@ -354,7 +354,7 @@ void exahype::solvers::ADERDGSolver::ensureNoUnnecessaryMemoryIsAllocated(
     // fluctuations
     if ( cellDescription.getFluctuation()>=0 ) {
       assertion(DataHeap::getInstance().isValidIndex(cellDescription.getFluctuationIndex()));
-      assertion(cellDescription.getFluctuationCompressed()==-1);
+      assertion(cellDescription.getFluctuationCompressedIndex()==-1);
 
       DataHeap::getInstance().deleteData(cellDescription.getFluctuationIndex())
       cellDescription.setFluctuationIndex(-1);
@@ -362,7 +362,7 @@ void exahype::solvers::ADERDGSolver::ensureNoUnnecessaryMemoryIsAllocated(
     }
     else {
       assertion(CompressionAccuracy>0.0);
-      assertion(cellDescription.getFluctuation()==-1);
+      assertion(cellDescription.getFluctuationIndex()==-1);
 
       CompressedDataHeap::getInstance().deleteData(cellDescription.getFluctuationCompressedIndex())
       cellDescription.setFluctuationCompressedIndex(-1);
@@ -4755,11 +4755,11 @@ void exahype::solvers::ADERDGSolver::putUnknownsIntoByteStream(
     CellDescription& cellDescription) const {
   assertion(CompressionAccuracy>0.0);
 
-  assertion( cellDescription.getPreviousSolutionCompressed()==-1 );
-  assertion( cellDescription.getSolutionCompressed()==-1 );
-  assertion( cellDescription.getUpdateCompressed()==-1 );
-  assertion( cellDescription.getExtrapolatedPredictorCompressed()==-1 );
-  assertion( cellDescription.getFluctuationCompressed()==-1 );
+  assertion( cellDescription.getPreviousSolutionCompressedIndex()==-1 );
+  assertion( cellDescription.getSolutionCompressedIndex()==-1 );
+  assertion( cellDescription.getUpdateCompressedIndex()==-1 );
+  assertion( cellDescription.getExtrapolatedPredictorCompressedIndex()==-1 );
+  assertion( cellDescription.getFluctuationCompressedIndex()==-1 );
 
   int compressionOfPreviousSolution;
   int compressionOfSolution;
@@ -5039,35 +5039,35 @@ void exahype::solvers::ADERDGSolver::pullUnknownsFromByteStream(
       cellDescription.setFluctuationIndex( DataHeap::getInstance().createData(           unknownsPerCellBoundary, unknownsPerCellBoundary ) );
     lock.free();
 
-    if (cellDescription.getPreviousSolution()==-1) {
+    if (cellDescription.getPreviousSolutionIndex()==-1) {
       ensureAllJobsHaveTerminated(JobType::SkeletonJob);
       ensureAllJobsHaveTerminated(JobType::EnclaveJob);
       lock.lock();
         cellDescription.setPreviousSolutionIndex( DataHeap::getInstance().createData( dataPointsPerCell, dataPointsPerCell ) );
       lock.free();
     }
-    if (cellDescription.getSolution()==-1) {
+    if (cellDescription.getSolutionIndex()==-1) {
       ensureAllJobsHaveTerminated(JobType::SkeletonJob);
       ensureAllJobsHaveTerminated(JobType::EnclaveJob);
       lock.lock();
         cellDescription.setSolutionIndex( DataHeap::getInstance().createData( dataPointsPerCell, dataPointsPerCell ) );
       lock.free();
     }
-    if (cellDescription.getUpdate()==-1) {
+    if (cellDescription.getUpdateIndex()==-1) {
       ensureAllJobsHaveTerminated(JobType::SkeletonJob);
       ensureAllJobsHaveTerminated(JobType::EnclaveJob);
       lock.lock();
         cellDescription.setUpdateIndex( DataHeap::getInstance().createData( getUpdateSize(), getUpdateSize() ) );
       lock.free();
     }
-    if (cellDescription.getExtrapolatedPredictor()==-1) {
+    if (cellDescription.getExtrapolatedPredictorIndex()==-1) {
       ensureAllJobsHaveTerminated(JobType::SkeletonJob);
       ensureAllJobsHaveTerminated(JobType::EnclaveJob);
       lock.lock();
         cellDescription.setExtrapolatedPredictorIndex( DataHeap::getInstance().createData(unknownsPerCellBoundary ) );
       lock.free();
     }
-    if (cellDescription.getFluctuation()==-1) {
+    if (cellDescription.getFluctuationIndex()==-1) {
       ensureAllJobsHaveTerminated(JobType::SkeletonJob);
       ensureAllJobsHaveTerminated(JobType::EnclaveJob);
       lock.lock();
