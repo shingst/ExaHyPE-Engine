@@ -61,6 +61,12 @@ tarch::la::Vector<2,int> exahype::convertPointer( const double* const ptr ) {
   return pointer;
 }
 
+tarch::la::Vector<2,int> exahype::convertPointer( const char* const ptr ) {
+  tarch::la::Vector<2,int> pointer;
+  memcpy(&pointer[0],&ptr,8);
+  return pointer;
+}
+
 double* exahype::getDataHeapArrayFacePart(const tarch::la::Vector<2,int>& pointer,const int sizePerPartition,const int partition) {
   assertion2( partition >= 0 && partition < DIMENSIONS_TIMES_TWO, partition, DIMENSIONS_TIMES_TWO );
   return getDataHeapArray(pointer)+(sizePerPartition*partition);

@@ -198,6 +198,13 @@ namespace exahype {
   tarch::la::Vector<2,int> convertPointer(const double* const ptr);
 
   /**
+   * Stores the single bits of a double pointer in a contiguous int array of size 2.
+   *
+   * @param ptr the pointer to copy
+   */
+  tarch::la::Vector<2,int> convertPointer(const char* const ptr);
+
+  /**
    * Assumes the data heap array can be split into DIMENSIONS_TIMES_TWO equally sized
    * partitions (4 in 2D, 6 in 3D).
    *
