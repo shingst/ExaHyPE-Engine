@@ -206,6 +206,9 @@ exahype::parser::Parser::Parser() {
           "globalfixed", exahype::solvers::Solver::TimeStepping::GlobalFixed));
 }
 
+exahype::parser::Parser::~Parser() {
+  delete _impl;
+}
 
 
 void exahype::parser::Parser::readFile(const std::string& filename) {
@@ -474,6 +477,10 @@ int exahype::parser::Parser::getNumberOfThreads() const {
   return getIntFromPath("/shared_memory/cores");
 }
 
+int exahype::parser::Parser::getThreadStackSize() const {
+  return getIntFromPath("/shared_memory/thread_stack_size",0,isOptional);
+}
+
 tarch::la::Vector<DIMENSIONS, double> exahype::parser::Parser::getDomainSize() const {
   assertion(isValid());
   tarch::la::Vector<DIMENSIONS, double> result;
@@ -666,6 +673,10 @@ bool exahype::parser::Parser::getSpawnProlongationAsBackgroundThread() const {
 
 bool exahype::parser::Parser::getSpawnAMRBackgroundThreads() const {
   return getBoolFromPath("/optimisation/spawn_amr_background_threads", false, isOptional);
+}
+
+bool exahype::parser::Parser::getSpawnNeighbourMergeAsThread() const {
+  return getBoolFromPath("/optimisation/spawn_neighour_merge_as_thread", false, isOptional);
 }
 
 bool exahype::parser::Parser::getDisableMetadataExchangeInBatchedTimeSteps() const {
@@ -1002,6 +1013,35 @@ std::string exahype::parser::Parser::getProfilerIdentifier() const {
   return getStringFromPath("/profiling/profiler", "NoOpProfiler", isOptional);
 }
 
+exahype::parser::Parser::ProfilingTarget exahype::parser::Parser::getProfilingTarget() const {
+  std::string option = getStringFromPath("/profiling/profiling_target", "whole_code", isOptional);
+
+  if ( option.compare("whole_code")!=0 && (
+       #ifdef Parallel
+       true ||
+       #endif
+       foundSimulationEndTime())
+  ) {
+    logError("getProfilingTarget","Profiling target '"<<option<<"' can not be chosen if a simulation end time is specified or a parallel build is run. Only 'whole_code' is allowed in this case.");
+    invalidate();
+    return ProfilingTarget::WholeCode;
+  }
+
+  if ( option.compare("whole_code")==0 ) {
+    return ProfilingTarget::WholeCode;
+  } else if ( option.compare("neighbour_merge")==0 ) {
+    return ProfilingTarget::NeigbhourMerge;
+  } else if ( option.compare("update")==0 ) {
+    return ProfilingTarget::Update;
+  } else if ( option.compare("predictor")==0 ) {
+    return ProfilingTarget::Prediction;
+  } else {
+    logError("getProfilingTarget","Unknown profiling target: "<<option);
+    invalidate();
+    return ProfilingTarget::WholeCode;
+  }
+}
+
 std::string exahype::parser::Parser::getMetricsIdentifierList() const {
   return getStringFromPath("/profiling/metrics", "{}", isOptional);
 }
@@ -1107,11 +1147,11 @@ int exahype::parser::Parser::getRanksPerNode() {
 }
 
 
-int exahype::parser::Parser::getNumberOfBackgroundTasks() {
+int exahype::parser::Parser::getNumberOfBackgroundJobConsumerTasks() {
   int result = getIntFromPath("/shared_memory/background_job_consumers",0,isOptional);
   if (result<=0) {
-    logInfo("getNumberOfBackgroundTasks()", "no number of background tasks specified. Use default");
-    result = 0;
+    logInfo("getNumberOfBackgroundTasks()", "no number of background tasks specified. Use default: #consumers = #threads / 4.");
+    result = getNumberOfThreads()/4;
   }
   return result;
 }

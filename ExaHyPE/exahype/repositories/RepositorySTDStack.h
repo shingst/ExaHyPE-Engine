@@ -26,7 +26,6 @@
  #include "exahype/adapters/BroadcastAndDropNeighbourMessages.h" 
  #include "exahype/adapters/RefinementStatusSpreading.h" 
  #include "exahype/adapters/PredictionOrLocalRecomputation.h" 
- #include "exahype/adapters/GlobalRollback.h" 
  #include "exahype/adapters/MergeNeighbours.h" 
  #include "exahype/adapters/UpdateAndReduce.h" 
  #include "exahype/adapters/Prediction.h" 
@@ -65,7 +64,6 @@ class exahype::repositories::RepositorySTDStack: public exahype::repositories::R
     peano::grid::Grid<exahype::Vertex,exahype::Cell,exahype::State,VertexStack,CellStack,exahype::adapters::BroadcastAndDropNeighbourMessages> _gridWithBroadcastAndDropNeighbourMessages;
     peano::grid::Grid<exahype::Vertex,exahype::Cell,exahype::State,VertexStack,CellStack,exahype::adapters::RefinementStatusSpreading> _gridWithRefinementStatusSpreading;
     peano::grid::Grid<exahype::Vertex,exahype::Cell,exahype::State,VertexStack,CellStack,exahype::adapters::PredictionOrLocalRecomputation> _gridWithPredictionOrLocalRecomputation;
-    peano::grid::Grid<exahype::Vertex,exahype::Cell,exahype::State,VertexStack,CellStack,exahype::adapters::GlobalRollback> _gridWithGlobalRollback;
     peano::grid::Grid<exahype::Vertex,exahype::Cell,exahype::State,VertexStack,CellStack,exahype::adapters::MergeNeighbours> _gridWithMergeNeighbours;
     peano::grid::Grid<exahype::Vertex,exahype::Cell,exahype::State,VertexStack,CellStack,exahype::adapters::UpdateAndReduce> _gridWithUpdateAndReduce;
     peano::grid::Grid<exahype::Vertex,exahype::Cell,exahype::State,VertexStack,CellStack,exahype::adapters::Prediction> _gridWithPrediction;
@@ -83,7 +81,6 @@ class exahype::repositories::RepositorySTDStack: public exahype::repositories::R
     tarch::timing::Measurement _measureBroadcastAndDropNeighbourMessagesCPUTime;
     tarch::timing::Measurement _measureRefinementStatusSpreadingCPUTime;
     tarch::timing::Measurement _measurePredictionOrLocalRecomputationCPUTime;
-    tarch::timing::Measurement _measureGlobalRollbackCPUTime;
     tarch::timing::Measurement _measureMergeNeighboursCPUTime;
     tarch::timing::Measurement _measureUpdateAndReduceCPUTime;
     tarch::timing::Measurement _measurePredictionCPUTime;
@@ -98,7 +95,6 @@ class exahype::repositories::RepositorySTDStack: public exahype::repositories::R
     tarch::timing::Measurement _measureBroadcastAndDropNeighbourMessagesCalendarTime;
     tarch::timing::Measurement _measureRefinementStatusSpreadingCalendarTime;
     tarch::timing::Measurement _measurePredictionOrLocalRecomputationCalendarTime;
-    tarch::timing::Measurement _measureGlobalRollbackCalendarTime;
     tarch::timing::Measurement _measureMergeNeighboursCalendarTime;
     tarch::timing::Measurement _measureUpdateAndReduceCalendarTime;
     tarch::timing::Measurement _measurePredictionCalendarTime;
@@ -151,7 +147,6 @@ class exahype::repositories::RepositorySTDStack: public exahype::repositories::R
     virtual void switchToBroadcastAndDropNeighbourMessages();    
     virtual void switchToRefinementStatusSpreading();    
     virtual void switchToPredictionOrLocalRecomputation();    
-    virtual void switchToGlobalRollback();    
     virtual void switchToMergeNeighbours();    
     virtual void switchToUpdateAndReduce();    
     virtual void switchToPrediction();    
@@ -166,7 +161,6 @@ class exahype::repositories::RepositorySTDStack: public exahype::repositories::R
     virtual bool isActiveAdapterBroadcastAndDropNeighbourMessages() const;
     virtual bool isActiveAdapterRefinementStatusSpreading() const;
     virtual bool isActiveAdapterPredictionOrLocalRecomputation() const;
-    virtual bool isActiveAdapterGlobalRollback() const;
     virtual bool isActiveAdapterMergeNeighbours() const;
     virtual bool isActiveAdapterUpdateAndReduce() const;
     virtual bool isActiveAdapterPrediction() const;

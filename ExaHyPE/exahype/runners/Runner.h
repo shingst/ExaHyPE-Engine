@@ -96,7 +96,12 @@ class exahype::runners::Runner {
    * Parses global optimisations and
    * prints them out. Must be used for all ranks.
    */
-  void parseOptimisations() const;
+  void initOptimisations() const;
+
+  /**
+   *
+   */
+  void initProfiling();
 
   /**
    * Setup the oracles for the shared memory parallelisation. Different
@@ -254,6 +259,16 @@ class exahype::runners::Runner {
    */
   void runOneTimeStepWithThreeSeparateAlgorithmicSteps(
       exahype::repositories::Repository& repository, bool plot);
+
+  /**
+   * Print grid statistics, e.g. number of inner cells, unrefined inner cells (leafs) ... .
+   */
+  void printGridStatistics(repositories::Repository& repository);
+
+  /**
+   * Run the prediction step in isolation.
+   */
+  void runPredictionInIsolation(repositories::Repository& repository);
 
   void validateSolverTimeStepDataForThreeAlgorithmicPhases(const bool fuseADERDGPhases) const;
 

@@ -87,9 +87,11 @@ void riemannSolverNonlinear(SolverType& solver, double* FL, double* FR,
       if(useNCP) { // we don't use matrixB but the NCP call here.
         for(int l=0; l < numberOfVariables; l++) {
           gradQ[direction][l] = QR[idx_QLR(j, l)] - QL[idx_QLR(j, l)];
+        }
+        for(int l=0; l < numberOfData; l++) {
           Qavg[l] = 0.5 * (QR[idx_QLR(j, l)] + QL[idx_QLR(j, l)]);
         }
-
+        
         solver.nonConservativeProduct(Qavg, gradQ[0], ncp);
       }
 

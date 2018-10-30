@@ -62,8 +62,10 @@ void EulerFV::MyEulerSolver::adjustSolution(const double* const x,const double t
     vars.j(0,0,0);
   }
 
-  // Boundary stuff
-  const double maxDistance = 1e-1; // should be roughly sqrt(h)*d, but we hardcode it here
+
+  // @todo Update cookbook from here:
+  double widthOfLayerAroundObject = 2.0;
+  double voxelSize = _maximumMeshSize / PatchSize;
 
   std::vector< delta::ContactPoint > contact =
     delta::filter(
@@ -71,25 +73,25 @@ void EulerFV::MyEulerSolver::adjustSolution(const double* const x,const double t
       x[0], // voxel centre
       x[1], // voxel centre
       x[2], // voxel centre
-	  maxDistance,  // voxel size -> which we mistreat as a radius here
+	  voxelSize/2.0 * std::sqrt(DIMENSIONS), // bounding sphere around voxel
 
 	  _embeddedGeometry->getXCoordinates(),
       _embeddedGeometry->getYCoordinates(),
       _embeddedGeometry->getZCoordinates(),
       _embeddedGeometry->getNumberOfTriangles(),
-	  maxDistance
+	  voxelSize * widthOfLayerAroundObject // epsilon
      ),
-	 maxDistance
+	 voxelSize
 	);
   if ( contact.empty() ) {
-    vars.inside() = 2.0*maxDistance; // If maxDistance is the epsilon environment
+    vars.inside() = 2.0*voxelSize * widthOfLayerAroundObject; // If maxDistance is the epsilon environment
                                      // we can twice this.
   }
   else {
     vars.inside() = contact[0].distance;
     assertion6(
-      vars.inside()<=2.0 * maxDistance,
-	  vars.inside(), maxDistance,
+      vars.inside()<=2.0 * voxelSize * widthOfLayerAroundObject,
+	  vars.inside(), voxelSize,
 	  x[0], x[1], x[2],
 	  contact[0].toString()
 	);

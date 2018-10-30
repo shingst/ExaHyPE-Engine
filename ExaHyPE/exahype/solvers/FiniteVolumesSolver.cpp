@@ -756,7 +756,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::FiniteVolumesSolver::fu
   } else {
     cellDescription.setHasCompletedTimeStep(false);
     FusedTimeStepJob fusedTimeStepJob( *this, cellDescriptionsIndex, element, isSkeletonCell );
-    Solver::submitPredictionJob(fusedTimeStepJob,isSkeletonCell);
+    Solver::submitJob(fusedTimeStepJob,isSkeletonCell);
     return UpdateResult();
   }
 }
@@ -804,7 +804,11 @@ void exahype::solvers::FiniteVolumesSolver::updateSolution(
     CellDescription& cellDescription,
     const int cellDescriptionsIndex,
     const bool backupPreviousSolution) {
-  assertion1(cellDescription.getNeighbourMergePerformed().all(),cellDescription.toString());
+  assertion1( tarch::la::equals(cellDescription.getNeighbourMergePerformed(),(signed char) true) || ProfileUpdate,cellDescription.toString());
+  if ( !tarch::la::equals(cellDescription.getNeighbourMergePerformed(),(signed char) true) && !ProfileUpdate ) {
+    logError("updateSolution(...)","Not all ghost layers were copied to cell="<<cellDescription.toString());
+    std::terminate();
+  }
 
   #if !defined(SharedMemoryParallelisation) && !defined(Parallel) && defined(Asserts)
     static int counter = 0;
@@ -851,6 +855,9 @@ void exahype::solvers::FiniteVolumesSolver::updateSolution(
       cellDescription.getSize(),
       cellDescription.getTimeStamp()+cellDescription.getTimeStepSize(),
       cellDescription.getTimeStepSize());
+
+  // only for profiling
+  if ( Solver::ProfileUpdate ) { swapSolutionAndPreviousSolution(cellDescription); }
 
   validateNoNansInFiniteVolumesSolution(cellDescription,cellDescriptionsIndex,"updateSolution[post]");
 }
@@ -907,6 +914,9 @@ void exahype::solvers::FiniteVolumesSolver::mergeNeighboursData(
 
     if ( !cellDescription1.getNeighbourMergePerformed(face._faceIndex1) ) { // check
       assertion(!cellDescription2.getNeighbourMergePerformed(face._faceIndex2) );
+      cellDescription1.setNeighbourMergePerformed(face._faceIndex1,true); // set
+      cellDescription2.setNeighbourMergePerformed(face._faceIndex2,true);
+
       #if !defined(SharedMemoryParallelisation) && !defined(Parallel) && defined(Asserts)
       static int counter = 0;
       static double timeStamp = 0;
@@ -952,9 +962,6 @@ void exahype::solvers::FiniteVolumesSolver::mergeNeighboursData(
 
       ghostLayerFilling(solution1,solution2,pos2-pos1);
       ghostLayerFilling(solution2,solution1,pos1-pos2);
-
-      cellDescription1.setNeighbourMergePerformed(face._faceIndex1,true); // set
-      cellDescription2.setNeighbourMergePerformed(face._faceIndex2,true);
     }
   }
 }

@@ -45,8 +45,22 @@ exahype::DataHeap::HeapEntries& exahype::getDataHeapEntries(const int index) {
   return DataHeap::getInstance().getData(index);
 }
 
+const exahype::DataHeap::HeapEntries& exahype::getDataHeapEntriesForReadOnlyAccess(const int index) {
+  return DataHeap::getInstance().getData(index);
+}
+
 double* exahype::getDataHeapArray(const int index) {
   return getDataHeapEntries(index).data();
+}
+
+const double* const exahype::getDataHeapArrayForReadOnlyAccess(const int index) {
+  return getDataHeapEntries(index).data();
+}
+
+double* exahype::getDataHeapArrayFacePart(const int index,const int sizePerPartition,const int partition) {
+  assertionEquals( getDataHeapEntries(index).size(),static_cast<unsigned int>(DIMENSIONS_TIMES_TWO*sizePerPartition) );
+  assertion2( partition >= 0 && partition < DIMENSIONS_TIMES_TWO, partition, DIMENSIONS_TIMES_TWO );
+  return getDataHeapEntries(index).data()+(sizePerPartition*partition);
 }
 
 void exahype::moveDataHeapArray(
@@ -81,6 +95,8 @@ double exahype::solvers::Solver::PipedCompressedBytes = 0;
 #endif
 
 tarch::logging::Log exahype::solvers::Solver::_log( "exahype::solvers::Solver");
+
+bool exahype::solvers::Solver::ProfileUpdate = false;
 
 bool exahype::solvers::Solver::FuseADERDGPhases           = false;
 double exahype::solvers::Solver::WeightForPredictionRerun = 0.99;
