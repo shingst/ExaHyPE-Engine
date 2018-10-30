@@ -549,20 +549,21 @@ void exahype::solvers::FiniteVolumesSolver::ensureNecessaryMemoryIsAllocated(
           cellDescription.setPreviousSolutionIndex(DataHeap::getInstance().createData( patchSize, patchSize ));
           checkDataHeapIndex(cellDescription,cellDescription.getSolutionIndex(),"getSolutionIndex()");
           checkDataHeapIndex(cellDescription,cellDescription.getPreviousSolutionIndex(),"getPreviousSolutionIndex()");
+          cellDescription.setSolution        ( convertPointer( getDataHeapEntries(cellDescription.getSolutionIndex()).data() ) );
+          cellDescription.setPreviousSolution( convertPointer( getDataHeapEntries(cellDescription.getPreviousSolutionIndex()).data() ) );
 
           cellDescription.setSolutionCompressedIndex(-1);
-
           cellDescription.setSolutionCompressed(0);
           cellDescription.setPreviousSolutionCompressedIndex(-1);
           cellDescription.setPreviousSolutionCompressed(0);
 
           const int dataPerSubcell = getNumberOfVariables()+getNumberOfParameters();
-          cellDescription.setSolutionAveragesIndex(
-              DataHeap::getInstance().createData( dataPerSubcell, dataPerSubcell ) );
-          cellDescription.setPreviousSolutionAveragesIndex(
-              DataHeap::getInstance().createData( dataPerSubcell, dataPerSubcell ) );
+          cellDescription.setSolutionAveragesIndex        (DataHeap::getInstance().createData( dataPerSubcell, dataPerSubcell ) );
+          cellDescription.setPreviousSolutionAveragesIndex(DataHeap::getInstance().createData( dataPerSubcell, dataPerSubcell ) );
           checkDataHeapIndex(cellDescription,cellDescription.getSolutionAveragesIndex(),"getSolutionAveragesIndex()");
           checkDataHeapIndex(cellDescription,cellDescription.getPreviousSolutionAveragesIndex(),"getPreviousSolutionAveragesIndex()");
+          cellDescription.setSolutionAverages        ( convertPointer( getDataHeapEntries(cellDescription.getSolutionAveragesIndex()).data() ) );
+          cellDescription.setPreviousSolutionAverages( convertPointer( getDataHeapEntries(cellDescription.getPreviousSolutionAveragesIndex()).data() ) );
 
           // Zero out the solution and previous solution arrays. For our MUSCL-Hancock implementation which
           // does not take the corner neighbours into account e.g., it is important that the values in
@@ -573,16 +574,16 @@ void exahype::solvers::FiniteVolumesSolver::ensureNecessaryMemoryIsAllocated(
           // Allocate boundary data
           const int patchBoundarySize = getDataPerPatchBoundary();
           cellDescription.setExtrapolatedSolutionIndex(DataHeap::getInstance().createData( patchBoundarySize, patchBoundarySize ));
-          std::fill_n( getDataHeapArray(cellDescription.getExtrapolatedSolution()), patchBoundarySize, 0.0 );
           checkDataHeapIndex(cellDescription,cellDescription.getExtrapolatedSolutionIndex(),"getExtrapolatedSolutionIndex()");
+          cellDescription.setExtrapolatedSolution( convertPointer( getDataHeapEntries(cellDescription.getExtrapolatedSolutionIndex()).data() ) );
+          std::fill_n( getDataHeapArray(cellDescription.getExtrapolatedSolution()), patchBoundarySize, 0.0 );
 
           cellDescription.setExtrapolatedSolutionCompressedIndex(-1);
-
           cellDescription.setExtrapolatedSolutionCompressed(0);
 
-          cellDescription.setExtrapolatedSolutionAveragesIndex( DataHeap::getInstance().createData(
-              dataPerSubcell * 2 * DIMENSIONS, dataPerSubcell * 2 * DIMENSIONS ) );
+          cellDescription.setExtrapolatedSolutionAveragesIndex( DataHeap::getInstance().createData(dataPerSubcell*2*DIMENSIONS, dataPerSubcell*2*DIMENSIONS ) );
           checkDataHeapIndex(cellDescription,cellDescription.getExtrapolatedSolutionAveragesIndex(),"getExtrapolatedSolutionAveragesIndex()");
+          cellDescription.setExtrapolatedSolutionAverages( convertPointer( getDataHeapEntries(cellDescription.getExtrapolatedSolutionAveragesIndex()).data() ) );
         lock.free();
       }
       break;
