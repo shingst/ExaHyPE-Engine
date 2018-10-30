@@ -331,7 +331,7 @@ private:
    */
   int evaluateRefinementCriterion(
       const CellDescription& cellDescription,
-      const int solutionHeapIndex, const double& timeStamp);
+      const double* const solution, const double& timeStamp);
 
   /**
    * Query the user's refinement criterion and

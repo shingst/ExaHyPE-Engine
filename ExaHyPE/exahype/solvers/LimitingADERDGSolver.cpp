@@ -877,9 +877,9 @@ void exahype::solvers::LimitingADERDGSolver::determineSolverMinAndMax(
     SolverPatch& solverPatch, const bool validate) {
   const int numberOfObservables = _solver->getDMPObservables();
   if (numberOfObservables>0) {
-    assertion1(DataHeap::getInstance().isValidIndex(solverPatch.getSolution()),
+    assertion1(DataHeap::getInstance().isValidIndex(solverPatch.getSolutionIndex()),
             solverPatch.toString());
-    assertion1(DataHeap::getInstance().isValidIndex(solverPatch.getSolutionMin()),
+    assertion1(DataHeap::getInstance().isValidIndex(solverPatch.getSolutionMinIndex()),
             solverPatch.toString());
 
     const double* const solution = getDataHeapArray(solverPatch.getSolution());
@@ -1009,8 +1009,8 @@ void exahype::solvers::LimitingADERDGSolver::allocateLimiterPatch(
       solverPatch.getSize(),
       solverPatch.getOffset());
 
-  assertion1(DataHeap::getInstance().isValidIndex(solverPatch.getPreviousSolution()),solverPatch.toString());
-  assertion1(DataHeap::getInstance().isValidIndex(solverPatch.getSolution()),solverPatch.toString());
+  assertion1(DataHeap::getInstance().isValidIndex(solverPatch.getPreviousSolutionIndex()),solverPatch.toString());
+  assertion1(DataHeap::getInstance().isValidIndex(solverPatch.getSolutionIndex()),solverPatch.toString());
 
   LimiterPatch& limiterPatch = getLimiterPatchForSolverPatch(solverPatch,cellDescriptionsIndex);
   _limiter->ensureNecessaryMemoryIsAllocated(limiterPatch);
@@ -1479,8 +1479,8 @@ void exahype::solvers::LimitingADERDGSolver::sendMinAndMaxToNeighbour(
       const int orientation = (1 + dest(direction) - src(direction))/2;
       const int faceIndex   = 2*direction+orientation;
 
-      assertion(DataHeap::getInstance().isValidIndex(solverPatch.getSolutionMin()));
-      assertion(DataHeap::getInstance().isValidIndex(solverPatch.getSolutionMax()));
+      assertion(DataHeap::getInstance().isValidIndex(solverPatch.getSolutionMinIndex()));
+      assertion(DataHeap::getInstance().isValidIndex(solverPatch.getSolutionMaxIndex()));
       const double* observablesMin = getDataHeapArray(solverPatch.getSolutionMin()) +
           (faceIndex * numberOfObservables);
       const double* observablesMax = getDataHeapArray(solverPatch.getSolutionMax()) +

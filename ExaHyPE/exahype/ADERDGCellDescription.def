@@ -311,9 +311,13 @@ class exahype::records::ADERDGCellDescription {
    * calculations.
    *  Symbol: \f$ u_h \f$.
    */
-  persistent int solution;
-  persistent int solutionAverages;
-  persistent int solutionCompressed;
+  persistent int solutionIndex;
+  persistent int solutionAveragesIndex;
+  persistent int solutionCompressedIndex;
+  // pointers for direct access
+  persistent int solution[2];
+  persistent int solutionAverages[2];
+  persistent int solutionCompressed[2];
    
   /**
    *  Heap index pointing to the DoF of the previous solution associated with this cell
@@ -326,18 +330,26 @@ class exahype::records::ADERDGCellDescription {
    *  DoF. We can then not use the solution Update DoF anymore for
    *  performing a rollback to the previous solution.
    */
-  persistent int previousSolution;
-  persistent int previousSolutionAverages;
-  persistent int previousSolutionCompressed;
-
+  persistent int previousSolutionIndex;
+  persistent int previousSolutionAveragesIndex;
+  persistent int previousSolutionCompressedIndex;
+  // pointers for direct access
+  persistent int previousSolution[2];
+  persistent int previousSolutionAverages[2];
+  persistent int previousSolutionCompressed[2];
+  
   /**
    * Index pointing to the update DoF belonging to this cell. All volume updates
    * and face fluctuations contribute to this Symbol. Symbol:
    * \f$ \Delta u_h \f$.
    */
-  persistent int update;
-  persistent int updateAverages;
-  persistent int updateCompressed;
+  persistent int updateIndex;
+  persistent int updateAveragesIndex;
+  persistent int updateCompressedIndex;
+  // pointers for direct access
+  persistent int update[2];
+  persistent int updateAverages[2];
+  persistent int updateCompressed[2];
   ///@}
 
   /**
@@ -352,17 +364,25 @@ class exahype::records::ADERDGCellDescription {
    * the
    * cell.
    */
-  persistent int extrapolatedPredictor;
-  persistent int extrapolatedPredictorAverages;
-  persistent int extrapolatedPredictorCompressed;
+  persistent int extrapolatedPredictorIndex;
+  persistent int extrapolatedPredictorAveragesIndex;
+  persistent int extrapolatedPredictorCompressedIndex;
+  // pointers for direct access
+  persistent int extrapolatedPredictor[2];
+  persistent int extrapolatedPredictorAverages[2];
+  persistent int extrapolatedPredictorCompressed[2];
 
   /**
    * Index pointing to the normal fluxes computed at the bounding faces of the
    * cell.
    */
-  persistent int fluctuation;
-  persistent int fluctuationAverages;
-  persistent int fluctuationCompressed;
+  persistent int fluctuationIndex;
+  persistent int fluctuationAveragesIndex;
+  persistent int fluctuationCompressedIndex;
+  // pointers for direct access
+  persistent int fluctuation[2];
+  persistent int fluctuationAverages[2];
+  persistent int fluctuationCompressed[2];
   ///@}
   
   /**
@@ -371,8 +391,11 @@ class exahype::records::ADERDGCellDescription {
    * First, all the _numberOfUnknowns entries of the left face are stored, then
    * the _numberOfUnknowns of the right face and so forth.
    */
-  persistent int solutionMin;
-  persistent int solutionMax;
+  persistent int solutionMinIndex;
+  persistent int solutionMaxIndex;
+  // pointers for direct access
+  persistent int solutionMin[2];
+  persistent int solutionMax[2];
   
   /**
    * \see augmentationStatus

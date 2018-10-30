@@ -181,16 +181,21 @@ namespace exahype {
   #endif
 
   /**
-   * @return pointer to the first element of a data heap array.
+   * @return pointer to the first element of a raw data heap array.
    *
-   * @param index heap index of the array.
+   * @param pointer the single bits of a double pointer represented as contiguous int array of size 2.
+   *
+   * @note DaStGen does not the double* and long int data types. This
+   * makes this clumsy conversion necessary.
    */
-  double* getDataHeapArray(const int index);
+  double* getDataHeapArray(const tarch::la::Vector<2,int>& pointer);
 
   /**
-   * Const variant of its counterpart
+   * Stores the single bits of a double pointer in a contiguous int array of size 2.
+   *
+   * @param ptr the pointer to copy
    */
-  const double* const getDataHeapArrayForReadOnlyAccess(const int index);
+  tarch::la::Vector<2,int> convertPointer(const double* const ptr);
 
   /**
    * Assumes the data heap array can be split into DIMENSIONS_TIMES_TWO equally sized
@@ -201,7 +206,7 @@ namespace exahype {
    * @param partitionIndex   the index of the particular partition we want to have access too.
    * @return pointer to the first element of the partition.
    */
-  double* getDataHeapArrayFacePart(const int index,const int sizePerPartition,const int partitionIndex);
+  double* getDataHeapArrayFacePart(const tarch::la::Vector<2,int>& pointer,const int sizePerPartition,const int partitionIndex);
 
   /**
    * @return a data heap array as vector.
@@ -217,7 +222,7 @@ namespace exahype {
    * data at "fromIndex" to the array at "toIndex" and
    * deletes the "fromIndex" array afterwards.
    */
-  void moveDataHeapArray(const int fromIndex,const int toIndex,bool recycleFromArray);
+  void moveDataHeapEntries(const int fromIndex,const int toIndex,bool recycleFromArray);
 
   /**
    * @see waitUntilAllBackgroundTasksHaveTerminated()

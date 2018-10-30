@@ -60,25 +60,38 @@ class exahype::records::FiniteVolumesCellDescription {
    * Index referring to the old solution DoF associated with this cell
    * description.
    */
-  parallelise persistent int solution;
-  parallelise persistent int solutionAverages;
-  parallelise persistent int solutionCompressed;
+  persistent int solutionIndex;
+  persistent int solutionAveragesIndex;
+  persistent int solutionCompressedIndex;
+  // pointers for direct access
+  persistent int solution[2];
+  persistent int solutionAverages[2];
+  persistent int solutionCompressed[2];
   
   /**
    *  Index referring to the old solution DoF associated with this cell
    *  description.
    */
-  parallelise persistent int previousSolution;
-  parallelise persistent int previousSolutionAverages;
-  parallelise persistent int previousSolutionCompressed;
+  persistent int previousSolutionIndex;
+  persistent int previousSolutionAveragesIndex;
+  persistent int previousSolutionCompressedIndex;
+  // pointers for direct access
+  persistent int previousSolution[2];
+  persistent int previousSolutionAverages[2];
+  persistent int previousSolutionCompressed[2];
   
   /**
    * Index pointing to the solution DoF extrapolated to the bounding faces of
    * the cell.
    */
-  parallelise persistent int extrapolatedSolution;
-  parallelise persistent int extrapolatedSolutionAverages;
-  parallelise persistent int extrapolatedSolutionCompressed;
+  persistent int extrapolatedSolutionIndex;
+  persistent int extrapolatedSolutionAveragesIndex;
+  persistent int extrapolatedSolutionCompressedIndex;
+  // pointers for direct access
+  persistent int extrapolatedSolution[2];
+  persistent int extrapolatedSolutionAverages[2];
+  persistent int extrapolatedSolutionCompressed[2];
+  
 
   enum CompressionState {
     Uncompressed,

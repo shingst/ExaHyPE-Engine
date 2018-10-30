@@ -49,21 +49,24 @@ const exahype::DataHeap::HeapEntries& exahype::getDataHeapEntriesForReadOnlyAcce
   return DataHeap::getInstance().getData(index);
 }
 
-double* exahype::getDataHeapArray(const int index) {
-  return getDataHeapEntries(index).data();
+double* exahype::getDataHeapArray(const tarch::la::Vector<2,int>& pointer) {
+  double* ptr = nullptr;
+  memcpy(&ptr,&pointer[0],8);
+  return ptr;
 }
 
-const double* const exahype::getDataHeapArrayForReadOnlyAccess(const int index) {
-  return getDataHeapEntries(index).data();
+tarch::la::Vector<2,int> exahype::convertPointer( const double* const ptr ) {
+  tarch::la::Vector<2,int> pointer;
+  memcpy(&pointer[0],&ptr,8);
+  return pointer;
 }
 
-double* exahype::getDataHeapArrayFacePart(const int index,const int sizePerPartition,const int partition) {
-  assertionEquals( getDataHeapEntries(index).size(),static_cast<unsigned int>(DIMENSIONS_TIMES_TWO*sizePerPartition) );
+double* exahype::getDataHeapArrayFacePart(const tarch::la::Vector<2,int>& pointer,const int sizePerPartition,const int partition) {
   assertion2( partition >= 0 && partition < DIMENSIONS_TIMES_TWO, partition, DIMENSIONS_TIMES_TWO );
-  return getDataHeapEntries(index).data()+(sizePerPartition*partition);
+  return getDataHeapArray(pointer)+(sizePerPartition*partition);
 }
 
-void exahype::moveDataHeapArray(
+void exahype::moveDataHeapEntries(
     const int fromIndex,const int toIndex,bool recycleFromArray) {
   std::copy(
       getDataHeapEntries(fromIndex).begin(),
