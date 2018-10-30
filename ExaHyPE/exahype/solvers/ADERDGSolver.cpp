@@ -2524,6 +2524,7 @@ void exahype::solvers::ADERDGSolver::updateSolution(
 
     double* newSolution = getDataHeapArray(cellDescription.getSolution());
     if ( backupPreviousSolution ) {
+      //const double* const solution  = getDataHeapArrayForReadOnlyAccess(cellDescription.getPreviousSolution());
       double* solution  = getDataHeapArray(cellDescription.getPreviousSolution());
       std::copy(newSolution,newSolution+getDataPerCell(),solution); // Copy (current solution) in old solution field.
 
