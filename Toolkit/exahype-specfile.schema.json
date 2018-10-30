@@ -383,6 +383,18 @@
           "default" : 60,
           "old_format" : { "token_after" : "timeout" }
         }, 
+        "stealing" : {
+          "type" : "string", 
+          "title" : "Stealing strategy (TODO)",  
+          "enum"  : ["none", "static", "dynamic", "hybrid", "static_hardcoded"],
+          "default" : "none",
+          "old_format" : { "token_after" : "stealing" }
+	},
+        "stealing_input_file" : {
+          "type" : "string",
+          "title" : "Path to file that specifies stealing rules",
+          "default" : ""
+        },
         "buffer_size" : {
           "type" : "integer", 
           "title" : "Buffer size in bytes per MPI package", 

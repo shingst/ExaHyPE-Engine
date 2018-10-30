@@ -1915,6 +1915,17 @@ void exahype::solvers::LimitingADERDGSolver::mergeWithMasterData(
     const int                                    level) {
   _solver->mergeWithMasterData(masterRank,x,level);
 }
+
+#if defined(DistributedStealing)
+void exahype::solvers::LimitingADERDGSolver::startStealingManager() {
+  _solver->startStealingManager();
+}
+
+void exahype::solvers::LimitingADERDGSolver::stopStealingManager() {
+  _solver->stopStealingManager();
+}
+#endif
+
 #endif
 
 std::string exahype::solvers::LimitingADERDGSolver::toString() const {

@@ -128,6 +128,7 @@ void exahype::mappings::PredictionRerun::beginIteration(
 
 void exahype::mappings::PredictionRerun::endIteration(
     exahype::State& solverState) {
+
   #ifdef Parallel
   if ( _stateCopy.isFirstIterationOfBatchOrNoBatch() ) { // this is after the broadcast
     assertion(exahype::State::BroadcastInThisIteration==true);
@@ -138,6 +139,7 @@ void exahype::mappings::PredictionRerun::endIteration(
     exahype::State::BroadcastInThisIteration = true;
   }
   #endif
+
 }
 
 void exahype::mappings::PredictionRerun::enterCell(

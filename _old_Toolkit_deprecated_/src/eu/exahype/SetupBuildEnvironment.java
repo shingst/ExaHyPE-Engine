@@ -59,6 +59,27 @@ public class SetupBuildEnvironment extends DepthFirstAdapter {
 
   @Override
   public void inADistributedMemory(ADistributedMemory node) {
+    if(node.getStealing() != null) {
+      switch(node.getStealing().getText()) {
+        case "static": 
+          context.put("stealingType", "static");
+          break;
+        case "dynamic": 
+          context.put("stealingType", "dynamic");
+          break;
+        case "hybrid": 
+          context.put("stealingType", "hybrid");
+          break;
+        case "none": 
+          context.put("stealingType", "none");
+          break;
+        default:
+          System.err.println( "ERROR: Unrecognized stealing flag");
+          valid = false;
+      }
+    } else {
+      context.put("stealingType", "none");
+    }
     context.put("useDistributedMem", true);
     System.out.print("mpi ... switched on \n");
   }

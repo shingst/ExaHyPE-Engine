@@ -19,6 +19,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <atomic>
 
 #include "exahype/solvers/Solver.h"
 
@@ -30,6 +31,14 @@
 
 #include "exahype/profilers/simple/NoOpProfiler.h"
 #include "exahype/records/ADERDGCellDescription.h"
+
+#if defined(DistributedStealing)
+#include "exahype/stealing/StealingManager.h"
+#include <tbb/concurrent_hash_map.h>
+#include <tbb/concurrent_queue.h>
+#include <tbb/task.h>
+#include <tbb/task_group.h>
+#endif
 
 namespace exahype {
   namespace parser {
@@ -157,6 +166,14 @@ public:
    * Semaphore for fine grid cells accessing a coarse grid parent.
    */
   static tarch::multicore::BooleanSemaphore CoarseGridSemaphore;
+
+#if defined (DistributedStealing)
+  /**
+   * Semaphore that is used to guarantee mutual exclusion for
+   * stealing progress.
+   */
+  static tarch::multicore::BooleanSemaphore StealingSemaphore;
+#endif
 
   /**
    * Rank-local heap that stores ADERDGCellDescription instances.
@@ -820,6 +837,206 @@ private:
    */
   void deduceChildCellErasingEvents(CellDescription& cellDescription) const;
 
+#if defined(DistributedStealing)
+  /**
+   * A helper job that should run on every rank in the background while stealing
+   * is active. There should be exactly one single StealingManagerJob per rank.
+   * The stealing manager job is started and stopped in the FusedTimeStep and
+   * BroadcastAndDropNeighbourMessages mappings. It will terminate itself once
+   * all ranks have stopped their StealingManagerJob. The StealingManagerJob is
+   * required in order to dynamically receive tasks and make progress on MPI
+   * communication.
+   */
+  class StealingManagerJob : public tbb::task {
+    public:
+      enum class State {
+        Running,
+		Terminate
+      };
+	  StealingManagerJob(ADERDGSolver& solver);
+	  ~StealingManagerJob();
+	  bool run();
+      bool operator()();
+      tbb::task* execute();
+	  void terminate();
+    private:
+	  ADERDGSolver& _solver;
+	  State 	_state;
+  };
+ 
+  /**
+   * This class encapsulates all the data that a victim rank
+   * needs when a STP task is offloaded to this rank.
+   */
+  class StealablePredictionJobData {
+    public:
+	  std::vector<double>   _luh; // ndata *ndof^DIM
+	  std::vector<double>	_lduh; // nvar *ndof^DIM
+	  std::vector<double>   _lQhbnd;
+	  std::vector<double>	_lFhbnd;
+
+	  // stores metadata for a stolen/offloaded task
+	  // 1. center
+	  // 2. dx
+	  // 3. predictorTimeStamp
+	  // 4. predictorTimeStepSize
+	  double  _metadata[DIMENSIONS*2+2];
+
+	  StealablePredictionJobData(ADERDGSolver& solver);
+      ~StealablePredictionJobData();
+  };
+
+  /**
+   * These maps are needed for deallocating data that belongs to offloaded tasks
+   * and triggering a finished event on the cell description when a STP has finished
+   * and its data has been sent back.
+   */
+  tbb::concurrent_hash_map<std::pair<int,int>, StealablePredictionJobData*> _mapTagRankToStolenData;
+  tbb::concurrent_hash_map<int, CellDescription*> _mapTagToCellDesc;
+  tbb::concurrent_hash_map<int, double*> _mapTagToMetaData;
+
+  /**
+   * A StealablePredictionJob represent a PredictionJob that can be
+   * executed remotely on a different rank than the one were it
+   * was spawned.
+   */
+  class StealablePredictionJob {
+    friend class exahype::solvers::ADERDGSolver;
+    private:
+      ADERDGSolver&    				_solver;
+	  const int                     _cellDescriptionsIndex;
+	  const int                     _element;
+      const double                  _predictorTimeStamp;
+      const double                  _predictorTimeStepSize;
+      const int                     _originRank;
+      const int                     _tag;
+      double*                       _luh; // ndata *ndof^DIM
+      double*                       _lduh; // nvar *ndof^DIM
+      double*                       _lQhbnd;
+      double*                       _lFhbnd;
+      double                        _center[DIMENSIONS];
+      double                        _dx[DIMENSIONS];
+
+      // actual execution of a STP job
+      bool handleLocalExecution();
+    public:
+      // constructor for local jobs that can be stolen
+      StealablePredictionJob(
+          ADERDGSolver&     solver,
+	  	  const int cellDescriptionsIndex,
+		  const int element,
+		  const double predictorTimeStamp,
+		  const double predictorTimeStepSize
+      );
+      // constructor for remote jobs that were received from another rank
+      StealablePredictionJob(
+          ADERDGSolver&     solver,
+		  int cellDescriptionsIndex,
+		  int element,
+		  const double predictorTimeStamp,
+		  const double predictorTimeStepSize,
+		  double *luh, double *lduh,
+		  double *lQhbnd, double *lFhbnd,
+		  double *dx, double *center,
+          const int originRank,
+		  const int tag
+      );
+  
+      StealablePredictionJob(const StealablePredictionJob& stp) = delete;
+      ~StealablePredictionJob();
+
+      // call-back method: called when a job has been sent back to its origin rank
+      static void sendBackHandler(
+          exahype::solvers::Solver* solver,
+		  int tag,
+		  int rank);
+      // call-back method: called when a job has been successfully offloaded to another rank
+      static void sendHandler(
+    	  exahype::solvers::Solver* solver,
+		  int tag,
+		  int rank);
+      // call-back method: called when a remotely executed job has been returned back
+      static void receiveBackHandler(
+    	  exahype::solvers::Solver* solver,
+		  int tag,
+		  int rank);
+      // call-back method: called when a job has been received from another rank
+      static void receiveHandler(
+    	  exahype::solvers::Solver* solver,
+		  int tag,
+		  int rank);
+
+      bool operator()();
+  };
+
+  /**
+   * If a task decides to send itself away, an offload entry is generated and submitted into
+   * a concurrent TBB queue. The stealing manager will take care of sending away
+   * the tasks in the concurrent TBB queue.
+   */
+  struct OffloadEntry {
+    int destRank;
+	int cellDescriptionsIndex;
+	int element;
+	int predictorTimeStamp;
+	int predictorTimeStepSize;
+  };
+
+  // queue for outstanding offloads
+  tbb::concurrent_queue<OffloadEntry> _outstandingOffloads;
+
+  /*
+   * Packs metadata into a contiguous buffer.
+   */
+  void packMetadataToBuffer(
+      OffloadEntry& entry,
+	  double *buf) const;
+  /*
+   * Creates a StealablePredictionJob from StealablePredictionJobData.
+   */
+  StealablePredictionJob* createFromData(
+      StealablePredictionJobData *data,
+	  const int origin,
+	  const int tag);
+
+  /*
+   * Sends away data of a StealablePredictionJob to a destination rank.
+   */
+  void isendStealablePredictionJob(
+	  double *luh,
+	  double *lduh,
+	  double *lQhbnd,
+	  double *lFhbnd,
+	  int dest,
+	  int tag,
+	  MPI_Request *requests,
+	  double *metadata =nullptr);
+  /*
+   * Receives data of a StealablePredictionJob from a destination rank.
+   */
+  void irecvStealablePredictionJob(
+	  double *luh,
+	  double *lduh,
+	  double *lQhbnd,
+	  double *lFhbnd,
+      int srcRank,
+	  int tag,
+	  MPI_Request *requests,
+	  double *metadata =nullptr);
+
+  // returns a unique (locally) tag that is  used when sending away tasks
+  int getStealingTag();
+
+  /* If a StealablePredictionJob has been spawned by the master thread,
+   * it can either be submitted to Peano's job system or sent away
+   * to another rank.
+   */
+  void submitOrSendStealablePredictionJob(StealablePredictionJob *job);
+
+  // stealing manager job associated to the solver
+  StealingManagerJob *_stealingManagerJob;
+#endif
+
 #endif
 
   /**
@@ -921,6 +1138,8 @@ private:
       bool operator()();
   };
 
+
+
   /**
    * A job which performs prolongation operation
    * for a cell description.
@@ -988,7 +1207,6 @@ private:
   };
 
 public:
-
   /**
    * Compute a load balancing weight for a cell in the mesh.
    */
@@ -1123,7 +1341,7 @@ public:
           std::unique_ptr<profilers::Profiler>(
               new profilers::simple::NoOpProfiler("")));
 
-  virtual ~ADERDGSolver() {}
+  virtual ~ADERDGSolver();
 
   // Disallow copy and assignment
   ADERDGSolver(const ADERDGSolver& other) = delete;
@@ -2507,6 +2725,22 @@ public:
       const                                        int masterRank,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level) override;
+
+#ifdef DistributedStealing
+  /*
+   * Makes progress on all stealing-related MPI communication.
+   */
+  void progressStealing();
+  /*
+   * Spawns a stealing manager job and submits it as a TBB task.
+   */
+  void startStealingManager();
+  /*
+   * Tells the stealing manager job that it's time for termination.
+   */
+  void stopStealingManager();
+#endif
+
 #endif
 
   std::string toString() const override;
@@ -2514,21 +2748,22 @@ public:
   void toString (std::ostream& out) const override;
 
   /**
-   * The counterpart of uncompress.
-   *
-   * <h2> Shared memory parallelisation </h2>
-   *
-   * Different to the compression, we don't have to take care about any races:
-   * the compression is invoked by enterCell or leaveCell respectively, i.e.
-   * exactly once per cell. This can happen in parallel for multiple cells
-   * which is fine.
-   *
-   * However, we have to take care about the interplay of compression and
-   * uncompression.
-   *
-   * \param[in] isSkeletonJob decides to which queue we spawn the job if we spawn any
-   */
+  * The counterpart of uncompress.
+  *
+  * <h2> Shared memory parallelisation </h2>
+  *
+  * Different to the compression, we don't have to take care about any races:
+  * the compression is invoked by enterCell or leaveCell respectively, i.e.
+  * exactly once per cell. This can happen in parallel for multiple cells
+  * which is fine.
+  *
+  * However, we have to take care about the interplay of compression and
+  * uncompression.
+  *
+  * \param[in] isSkeletonJob decides to which queue we spawn the job if we spawn any
+  */
   void compress( CellDescription& cellDescription, const bool isSkeletonCell ) const;
+
 };
 
 #endif

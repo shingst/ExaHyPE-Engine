@@ -15,6 +15,7 @@
 
 #ifdef Parallel
 #include "exahype/repositories/Repository.h"
+#include "exahype/mappings/FinaliseMeshRefinement.h"
 #include "peano/parallel/messages/ForkMessage.h"
 #include "peano/utils/Globals.h"
 #include "peano/utils/UserInterface.h"
@@ -26,7 +27,12 @@
 
 #include "exahype/Vertex.h"
 
-#if  defined(SharedMemoryParallelisation) && defined(PerformanceAnalysis)
+#if defined(DistributedStealing)
+#include "exahype/stealing/StaticDistributor.h"
+#include "exahype/stealing/StealingManager.h"
+#endif
+
+#if defined(SharedMemoryParallelisation) && defined(PerformanceAnalysis)
 #include "sharedmemoryoracles/OracleForOnePhaseWithShrinkingGrainSize.h"
 #include "peano/datatraversal/autotuning/Oracle.h"
 #endif
@@ -100,6 +106,7 @@ int exahype::runners::Runner::runAsWorker(
 
       // -------------------------------
 
+      //repository.logIterationStatistics(false);
       repository.terminate();
     } else if (newMasterNode ==
                tarch::parallel::NodePool::JobRequestMessageAnswerValues::
@@ -117,9 +124,20 @@ void exahype::runners::Runner::runGlobalStep() {
   assertion(!peano::parallel::loadbalancing::Oracle::getInstance()
                  .isLoadBalancingActivated());
 
-  // insert yourcode here
-  // -------------------------------
+#if defined(DistributedStealing) 
+  // For the static stealing strategy, we need to allgather load information
+  // from all ranks once and compute a new target load distribution.
+#if defined(StealingStrategyStatic) 
+  logInfo("runner(...)",
+          "running global step "<<exahype::mappings::FinaliseMeshRefinement::NumberOfEnclaveCells<<
+		  ", "<<exahype::mappings::FinaliseMeshRefinement::NumberOfSkeletonCells );
+  exahype::stealing::StaticDistributor::getInstance().computeNewLoadDistribution(
+      exahype::mappings::FinaliseMeshRefinement::NumberOfEnclaveCells,
+	  exahype::mappings::FinaliseMeshRefinement::NumberOfSkeletonCells);
+#endif
+  // In any case, create a new MPI communicator for stealing related MPI communication
+  exahype::stealing::StealingManager::getInstance().createMPICommunicator();
+#endif
 
-  // -------------------------------
 }
 #endif

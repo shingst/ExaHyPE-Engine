@@ -211,6 +211,7 @@ void exahype::mappings::MeshRefinement::endIteration(exahype::State& solverState
   exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::AMRJob);
 
   logTraceOutWith1Argument("endIteration(State)", solverState);
+
 }
 
 void exahype::mappings::MeshRefinement::refineSafely(

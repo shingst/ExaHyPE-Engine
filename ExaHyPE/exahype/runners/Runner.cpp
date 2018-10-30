@@ -80,6 +80,12 @@
 #include "shminvade/SHMMultipleRanksPerNodeStrategy.h"
 #endif
 
+#if defined(DistributedStealing) 
+#include "exahype/stealing/PerformanceMonitor.h"
+#if defined(StealingStrategyStaticHardcoded)
+#include "exahype/stealing/StaticDistributor.h"
+#endif
+#endif
 
 tarch::logging::Log exahype::runners::Runner::_log("exahype::runners::Runner");
 
@@ -234,6 +240,10 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
     else {
       logWarning("initDistributedMemoryConfiguration()", "ranks are not allowed to skip any reduction (might harm performance). Use optimisation section to switch feature on" );
     }
+
+#if defined(DistributedStealing) && defined(StealingStrategyStaticHardcoded)
+    exahype::stealing::StaticDistributor::getInstance().loadDistributionFromFile(_parser.getStealingInputFile());
+#endif
 
     tarch::parallel::NodePool::getInstance().waitForAllNodesToBecomeIdle();
   }
@@ -439,6 +449,13 @@ void exahype::runners::Runner::initDataCompression() {
 
 void exahype::runners::Runner::shutdownSharedMemoryConfiguration() {
   #ifdef SharedMemoryParallelisation
+
+#ifdef DistributedStealing
+  while(!exahype::stealing::PerformanceMonitor::getInstance().isGloballyTerminated()) {
+    tarch::multicore::jobs::finishToProcessBackgroundJobs();
+  }
+#endif
+
   tarch::multicore::jobs::plotStatistics();
 
   switch (_parser.getMulticoreOracleType()) {
@@ -650,11 +667,9 @@ void exahype::runners::Runner::shutdownHeaps() {
 
 void exahype::runners::Runner::initHPCEnvironment() {
   peano::performanceanalysis::Analysis::getInstance().enable(false);
-
-  solvers::Solver::ProfileUpdate = _parser.getProfilingTarget()==parser::Parser::ProfilingTarget::Update;
 }
 
-void exahype::runners::Runner::initOptimisations() const {
+void exahype::runners::Runner::parseOptimisations() const {
   exahype::solvers::Solver::FuseADERDGPhases         = _parser.getFuseAlgorithmicSteps();
   exahype::solvers::Solver::WeightForPredictionRerun = _parser.getFuseAlgorithmicStepsFactor();
 
@@ -692,7 +707,7 @@ void exahype::runners::Runner::initOptimisations() const {
 int exahype::runners::Runner::run() {
   int result = 0;
   if ( _parser.isValid() ) {
-    initOptimisations();
+    parseOptimisations();
 
     initHeaps();
 
@@ -857,7 +872,9 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
     repository.iterate( exahype::solvers::Solver::PredictionSweeps, communicatePeanoVertices );
     logInfo("runAsMaster(...)","computed first predictor (number of predictor sweeps: "<<exahype::solvers::Solver::PredictionSweeps<<")");
 
-    // configure time stepping loop
+    printTimeStepInfo(-1,repository);
+    validateInitialSolverTimeStepData(exahype::solvers::Solver::FuseADERDGPhases);
+
     double simulationEndTime   = std::numeric_limits<double>::max();
     int simulationTimeSteps = std::numeric_limits<int>::max();
     if (_parser.foundSimulationEndTime()) {
@@ -865,14 +882,10 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
     } else {
       simulationTimeSteps = _parser.getSimulationTimeSteps();
     }
-    parser::Parser::ProfilingTarget profilingTarget = _parser.getProfilingTarget();
-    if ( profilingTarget==parser::Parser::ProfilingTarget::WholeCode ) {
-      printTimeStepInfo(-1,repository);
-      validateInitialSolverTimeStepData(exahype::solvers::Solver::FuseADERDGPhases);
-    }
-    const bool skipReductionInBatchedTimeSteps  = _parser.getSkipReductionInBatchedTimeSteps();
 
-    // run time stepping loop
+    logDebug("runAsMaster(...)","min solver time stamp: "     << solvers::Solver::getMinTimeStampOfAllSolvers());
+    logDebug("runAsMaster(...)","min solver time step size: " << solvers::Solver::getMinTimeStepSizeOfAllSolvers());
+
     int timeStep = 0;
     while (
         tarch::la::greater(solvers::Solver::getMinTimeStepSizeOfAllSolvers(), 0.0) &&
@@ -884,14 +897,13 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
 
       preProcessTimeStepInSharedMemoryEnvironment();
 
-      // fused time stepping
       int numberOfStepsToRun = 1;
-      if ( profilingTarget==parser::Parser::ProfilingTarget::WholeCode && exahype::solvers::Solver::FuseADERDGPhases  ) {
+      if (exahype::solvers::Solver::FuseADERDGPhases) {
         if (plot) {
           numberOfStepsToRun = 0;
         }
         else if (
-            skipReductionInBatchedTimeSteps &&
+            _parser.getSkipReductionInBatchedTimeSteps() &&
             solvers::Solver::allSolversUseTimeSteppingScheme(solvers::Solver::TimeStepping::GlobalFixed) &&
             repository.getState().getVerticalExchangeOfSolverDataRequired()==false // known after mesh update
         ) {
@@ -900,25 +912,8 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
 
         runTimeStepsWithFusedAlgorithmicSteps(repository,numberOfStepsToRun);
         printTimeStepInfo(numberOfStepsToRun,repository);
-      // straightforward realisation
-      } else if ( profilingTarget==parser::Parser::ProfilingTarget::WholeCode ) {
+      } else {
         runOneTimeStepWithThreeSeparateAlgorithmicSteps(repository, plot);
-      }
-      // profiling of isolated adapters
-      else if ( profilingTarget==parser::Parser::ProfilingTarget::Prediction ) {
-        logInfo("runAsMaster(...)","step " << timeStep << "\t\trun "<<solvers::Solver::PredictionSweeps<<" iteration with PredictionRerun adapter");
-        printGridStatistics(repository);
-        runPredictionInIsolation(repository);
-      } else if ( profilingTarget==parser::Parser::ProfilingTarget::NeigbhourMerge ) {
-        logInfo("runAsMaster(...)","step " << timeStep << "\t\trun one iteration with MergeNeighours adapter");
-        printGridStatistics(repository);
-        repository.switchToMergeNeighbours();
-        repository.iterate(1,false);
-      } else if ( profilingTarget==parser::Parser::ProfilingTarget::Update ) {
-        logInfo("runAsMaster(...)","step " << timeStep << "\t\trun one iteration with UpdateAndReduce adapter");
-        printGridStatistics(repository);
-        repository.switchToUpdateAndReduce();
-        repository.iterate(1,false);
       }
 
       postProcessTimeStepInSharedMemoryEnvironment();
@@ -1283,6 +1278,11 @@ void exahype::runners::Runner::initialiseMesh(exahype::repositories::Repository&
   logInfo("initialiseMesh(...)","finalise mesh refinement and compute first time step size");
   repository.switchToFinaliseMeshRefinement();
   repository.iterate();
+
+#if defined(DistributedStealing) && defined(Parallel)
+  repository.runGlobalStep();
+  exahype::runners::Runner::runGlobalStep();
+#endif
 }
 
 void exahype::runners::Runner::updateMeshOrLimiterDomain(

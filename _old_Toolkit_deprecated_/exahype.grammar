@@ -108,6 +108,7 @@ Tokens
 
   token_distributed_memory           = 'distributed-memory';
   token_configure                    = 'configure';
+  token_stealing                     = 'stealing';
   token_buffer_size                  = 'buffer-size';
   token_timeout                      = 'timeout';
 
@@ -265,13 +266,25 @@ Productions
    ;
 
   distributed_memory {->distributed_memory} =
-   [begin_token]:token_distributed_memory
-     token_identifier   [identifier_equals]:token_equals [identifier]:identifier
-     token_configure    [configure_equals]:token_equals  [configure]:configure_type
-     token_buffer_size  [buffersize_equals]:token_equals [buffersize]:int_number
-     token_timeout      [timeout_equals]:token_equals    [timeout]:int_number
-   token_end [end_token]:token_distributed_memory
-     { -> New distributed_memory( identifier,configure,buffersize,timeout ) };
+  	{without_stealing}
+	   [begin_token]:token_distributed_memory
+	     token_identifier   [identifier_equals]:token_equals [identifier]:identifier
+	     token_configure    [configure_equals]:token_equals  [configure]:configure_type
+	     token_buffer_size  [buffersize_equals]:token_equals [buffersize]:int_number
+	     token_timeout      [timeout_equals]:token_equals    [timeout]:int_number
+	   token_end [end_token]:token_distributed_memory
+	     { -> New distributed_memory( identifier,configure,Null,buffersize,timeout ) }
+	 |
+	 {with_stealing}
+	   [begin_token]:token_distributed_memory
+	     token_identifier   [identifier_equals]:token_equals [identifier]:identifier
+	     token_configure    [configure_equals]:token_equals  [configure]:configure_type
+	     token_stealing     [stealing_const]:token_const  [stealing_equals]:token_equals [stealing]:identifier
+	     token_buffer_size  [buffersize_equals]:token_equals [buffersize]:int_number
+	     token_timeout      [timeout_equals]:token_equals    [timeout]:int_number
+	   token_end [end_token]:token_distributed_memory
+	     { -> New distributed_memory( identifier,configure,stealing,buffersize,timeout ) }
+	  ;
 
   shared_memory {->shared_memory} =
    [begin_token]:token_shared_memory
@@ -642,6 +655,7 @@ Abstract Syntax Tree
   distributed_memory =
     [identifier]:identifier
     [configure]:configure_type
+    [stealing]:identifier?
     [buffersize]:int_number
     [timeout]:int_number;
 

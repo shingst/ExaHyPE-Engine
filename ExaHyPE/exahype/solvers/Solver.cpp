@@ -31,6 +31,14 @@
 #include "ADERDGSolver.h"
 #include "FiniteVolumesSolver.h"
 
+#include "tarch/timing/Watch.h"
+
+#include "exahype/stealing/StealingProfiler.h"
+
+#ifdef USE_ITAC
+#include "VT.h"
+#endif
+
 std::vector<exahype::solvers::Solver*> exahype::solvers::RegisteredSolvers;
 
 #ifdef Parallel
@@ -117,6 +125,12 @@ bool exahype::solvers::Solver::SpawnCompressionAsBackgroundJob = false;
 int exahype::solvers::Solver::NumberOfAMRBackgroundJobs = 0;
 int exahype::solvers::Solver::NumberOfEnclaveJobs = 0;
 int exahype::solvers::Solver::NumberOfSkeletonJobs = 0;
+int exahype::solvers::Solver::NumberOfRemoteJobs = 0;
+int exahype::solvers::Solver::NumberOfStolenJobs = 0;
+
+#ifdef USE_ITAC
+int event_wait = -1;
+#endif
 
 std::string exahype::solvers::Solver::toString(const JobType& jobType) {
   switch (jobType) {
@@ -144,7 +158,23 @@ int exahype::solvers::Solver::getNumberOfQueuedJobs(const JobType& jobType) {
 
 void exahype::solvers::Solver::ensureAllJobsHaveTerminated(JobType jobType) {
   bool finishedWait = false;
+  bool waitingForRemoteJobs = false;
 
+#ifdef USE_ITAC
+  VT_begin(event_wait);
+#endif
+
+#if defined(PerformanceAnalysis)
+  tarch::timing::Watch watch("exahype::stealing::", "-", false,false);
+  watch.startTimer();
+#endif
+  //  logInfo("waitUntilAllBackgroundTasksHaveTerminated()",
+  //          "there are still " << NumberOfRemoteJobs << " remote background job(s) to complete!");
+#if defined (StealingUseProfiler)
+  exahype::stealing::StealingProfiler::getInstance().beginWaitForBackgroundTasks(jobType);
+  double time_background = -MPI_Wtime();
+  double time_remote = 0;
+#endif
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
   const int queuedJobs = getNumberOfQueuedJobs(jobType);
   lock.free();
@@ -170,8 +200,46 @@ void exahype::solvers::Solver::ensureAllJobsHaveTerminated(JobType jobType) {
     tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
     const int queuedJobs = getNumberOfQueuedJobs(jobType);
     lock.free();
+    if (NumberOfRemoteJobs > 0 && NumberOfRemoteJobs == NumberOfEnclaveJobs
+        && !waitingForRemoteJobs && jobType == JobType::EnclaveJob) {
+      waitingForRemoteJobs = true;
+#if defined (DistributedStealing) && defined (StealingUseProfiler)
+      exahype::stealing::StealingProfiler::getInstance().beginWaitForRemoteTasks();
+      time_remote = -MPI_Wtime();
+#endif
+      logInfo("waitUntilAllBackgroundTasksHaveTerminated()",
+          "there are still " << NumberOfRemoteJobs << " remote background job(s) to complete!");
+
+    }
+
     finishedWait = queuedJobs == 0;
   }
+
+#if defined (DistributedStealing) && defined (StealingUseProfiler)
+  if(waitingForRemoteJobs) {
+	  time_remote += MPI_Wtime();
+	  exahype::stealing::StealingProfiler::getInstance().endWaitForRemoteTasks(time_remote);
+  }
+#endif
+#if defined (StealingUseProfiler)
+  time_background += MPI_Wtime();
+  exahype::stealing::StealingProfiler::getInstance().endWaitForBackgroundTasks(jobType, time_background);
+#endif
+
+#if defined(PerformanceAnalysis)
+  watch.stopTimer();
+  logInfo(
+      "finishBackgroundJobs()",
+      "time=" << std::fixed <<
+      watch.getCalendarTime() <<
+      ", cpu time=" <<
+      watch.getCPUTime()
+  );
+#endif
+
+#ifdef USE_ITAC
+  VT_end(event_wait);
+#endif
 }
 
 void exahype::solvers::Solver::configurePredictionPhase(const bool usePredictionBackgroundJobs, bool useProlongationBackgroundJobs) {
@@ -190,7 +258,6 @@ void exahype::solvers::Solver::configurePredictionPhase(const bool usePrediction
          2 : 1;
   #endif
 }
-
 
 exahype::solvers::Solver::Solver(
   const std::string&                     identifier,
@@ -217,6 +284,11 @@ exahype::solvers::Solver::Solver(
       _nextMaxLevel(-std::numeric_limits<int>::max()), // "-", min
       _timeStepping(timeStepping),
       _profiler(std::move(profiler)) {
+
+#ifdef USE_ITAC
+  static const char *event_name_wait = "wait_background";
+  int ierr=VT_funcdef(event_name_wait, VT_NOCLASS, &event_wait ); assert(ierr==0);
+#endif
 }
 
 

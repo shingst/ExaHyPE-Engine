@@ -1451,6 +1451,12 @@ public:
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level) final override;
 
+
+#if defined DistributedStealing
+   void startStealingManager();
+   void stopStealingManager();
+#endif
+
 #endif
 
   std::string toString() const final override;

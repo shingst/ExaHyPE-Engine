@@ -10,7 +10,7 @@
  * Released under the BSD 3 Open Source License.
  * For the full license text, see LICENSE.txt
  **/
- 
+
 #include "exahype/mappings/FusedTimeStep.h"
 
 #include "tarch/multicore/Loop.h"
@@ -27,6 +27,11 @@
 #include "exahype/solvers/LimitingADERDGSolver.h"
 
 #include "exahype/mappings/Prediction.h"
+
+#ifdef DistributedStealing
+#include "exahype/stealing/PerformanceMonitor.h"
+#include "exahype/stealing/StaticDistributor.h"
+#endif
 
 tarch::logging::Log exahype::mappings::FusedTimeStep::_log(
     "exahype::mappings::FusedTimeStep");
@@ -153,6 +158,7 @@ void exahype::mappings::FusedTimeStep::updateBatchIterationCounter(bool initiali
 void exahype::mappings::FusedTimeStep::beginIteration(
     exahype::State& solverState) {
   logTraceInWith1Argument("beginIteration(State)", solverState);
+  static bool isFirst = true;
 
   _stateCopy = solverState;
 
@@ -169,6 +175,26 @@ void exahype::mappings::FusedTimeStep::beginIteration(
     initialiseLocalVariables();
   }
 
+#ifdef DistributedStealing
+  // enable stealing manager job right at the beginning of the very first time step
+  if(isFirst) {
+    for (auto* solver : exahype::solvers::RegisteredSolvers) {
+      // currently only for ADERDG solver supported
+      if (solver->getType()==exahype::solvers::Solver::Type::ADERDG) {
+        static_cast<exahype::solvers::ADERDGSolver*>(solver)->startStealingManager();
+        isFirst=false;
+      }
+      if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
+        static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->startStealingManager();
+        isFirst=false;
+      }
+    }
+  }
+
+  if(issuePredictionJobsInThisIteration()) {
+    exahype::stealing::StaticDistributor::getInstance().resetRemainingTasksToOffload();
+  }
+#endif
   logTraceOutWith1Argument("beginIteration(State)", solverState);
 }
 

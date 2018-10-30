@@ -1206,3 +1206,11 @@ exahype::parser::Parser::TBBInvadeStrategy exahype::parser::Parser::getTBBInvade
 
   return TBBInvadeStrategy::Undef;
 }
+
+
+std::string exahype::parser::Parser::getStealingInputFile() const {
+  std::string result = getStringFromPath("/distributed_memory/stealing_input_file","",isOptional);
+  logDebug("getStealingInputFile()", "found " << result);
+  return result;
+}
+

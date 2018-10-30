@@ -1,8 +1,8 @@
 """
-.. module:: sweep_analysis
-  :platform: Unix, Windows, Mac
-  :synopsis: Submodule containing modules for analysing 
-   
+.. module:: sweep analysis
+  : platform: Unix, Windows, Mac
+  : synopsis: Submodule containing modules for analysing
+
 .. moduleauthor:: Dominic Etienne Charrier <dominic.e.charrier@durham.ac.uk>, 
 
 :synopsis: Generate benchmark suites for ExaHyPE.
@@ -47,6 +47,7 @@ def parseParameters(config):
     """
     Parse the parameters section.
     """
+
     multipleListings = False
     ungroupedParameterSpace = {}
     groupedParameterSpace  = {}
@@ -89,6 +90,7 @@ def parseParameters(config):
     
     # compile-time parameters
     compileTimeParameterSpace = collections.OrderedDict()
+    print (config.has_option("general","compile_time_parameters"))
     if  config.has_option("general","compile_time_parameters"):
         compileTimeParameters = parseList(config.get("general", "compile_time_parameters"))
         for key in compileTimeParameters:
@@ -243,3 +245,4 @@ def parseOptionsFile(optionsFile,ignoreMetadata=False):
     )
     
     return options
+

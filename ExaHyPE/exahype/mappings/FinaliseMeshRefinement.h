@@ -69,6 +69,9 @@ class exahype::mappings::FinaliseMeshRefinement {
    */
   std::vector<int> _maxLevels;
 
+  int _numberOfEnclaveCells;
+  int _numberOfSkeletonCells;
+
   /**
    * Indicates that the background tasks have terminated.
    * No further checks are required in this case.
@@ -91,6 +94,9 @@ class exahype::mappings::FinaliseMeshRefinement {
   void initialiseLocalVariables();
 
  public:
+
+  static int NumberOfEnclaveCells;
+  static int NumberOfSkeletonCells;
   /**
    * Reduce data from the worker to the master.
    *

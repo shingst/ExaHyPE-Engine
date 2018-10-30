@@ -16,6 +16,7 @@
 
 #include <limits>
 #include <iomanip>
+#include <vector>
 
 #include <algorithm>
 
@@ -40,6 +41,29 @@
 #include "kernels/KernelUtils.h"
 
 #include "tarch/multicore/Jobs.h"
+#include "tarch/multicore/Core.h"
+
+#if defined(DistributedStealing)
+#include "exahype/stealing/PerformanceMonitor.h"
+#include "exahype/stealing/StaticDistributor.h"
+#include "exahype/stealing/StealingManager.h"
+#endif
+#include "exahype/stealing/StealingProfiler.h"
+
+#include "tarch/timing/Watch.h"
+
+#ifdef USE_ITAC
+#include "VT.h"
+static int event_stp = -1;
+static int event_stealingManager = -1;
+static int event_spawn = -1;
+static int event_initial = -1;
+static int event_memory = -1;
+static int event_lock = -1;
+static int event_pack = -1;
+static int event_progress = -1;
+static int event_offload = -1;
+#endif
 
 namespace {
   constexpr const char* tags[]{"solutionUpdate",
@@ -81,6 +105,11 @@ constexpr int exahype::solvers::ADERDGSolver::Keep;
 tarch::multicore::BooleanSemaphore exahype::solvers::ADERDGSolver::RestrictionSemaphore;
 
 tarch::multicore::BooleanSemaphore exahype::solvers::ADERDGSolver::CoarseGridSemaphore;
+
+#if defined(DistributedStealing)
+tarch::multicore::BooleanSemaphore exahype::solvers::ADERDGSolver::StealingSemaphore;
+#endif
+
 
 int exahype::solvers::ADERDGSolver::computeWeight(const int cellDescriptionsIndex) {
   if ( ADERDGSolver::isValidCellDescriptionIndex(cellDescriptionsIndex) ) {
@@ -502,7 +531,11 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
      _minimumRefinementStatusForTroubledCell  (limiterHelperLayers+_minimumRefinementStatusForActiveFVPatch),
      _checkForNaNs(true),
      _meshUpdateEvent(MeshUpdateEvent::None),
-     _nextMeshUpdateEvent(MeshUpdateEvent::None) {
+     _nextMeshUpdateEvent(MeshUpdateEvent::None) 
+#if defined(DistributedStealing)
+        ,_stealingManagerJob(nullptr)
+#endif
+{
 
   // register tags with profiler
   for (const char* tag : tags) {
@@ -519,7 +552,35 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
   _receivedFluctuations.resize(getBndFluxSize());
 
   _receivedUpdate.reserve(getUpdateSize());
-  #endif
+
+  exahype::stealing::StealingProfiler::getInstance().beginPhase();
+
+#ifdef USE_ITAC
+  static const char *event_name_stp = "computeSTP";
+  static const char *event_name_stealingManager = "stealingManager";
+  static const char *event_name_spawn = "spawnSTP";
+  static const char *event_name_initial = "initialSTP";
+  static const char *event_name_lock = "lock";
+  static const char *event_name_memory = "memory";
+  static const char *event_name_pack = "pack";
+  static const char *event_name_progress = "progress";
+  static const char *event_name_offload = "offload";
+  int ierr=VT_funcdef(event_name_stp, VT_NOCLASS, &event_stp ); assertion(ierr==0);
+  ierr=VT_funcdef(event_name_stealingManager, VT_NOCLASS, &event_stealingManager ); assertion(ierr==0);
+  ierr=VT_funcdef(event_name_spawn, VT_NOCLASS, &event_spawn ); assertion(ierr==0);
+  ierr=VT_funcdef(event_name_initial, VT_NOCLASS, &event_initial ); assertion(ierr==0);
+  ierr=VT_funcdef(event_name_lock, VT_NOCLASS, &event_lock ); assertion(ierr==0);
+  ierr=VT_funcdef(event_name_memory, VT_NOCLASS, &event_memory ); assertion(ierr==0);
+  ierr=VT_funcdef(event_name_pack, VT_NOCLASS, &event_pack ); assertion(ierr==0);
+  ierr=VT_funcdef(event_name_offload, VT_NOCLASS, &event_offload ); assertion(ierr==0);
+  ierr=VT_funcdef(event_name_progress, VT_NOCLASS, &event_progress ); assertion(ierr==0);
+#endif
+
+#endif
+}
+
+exahype::solvers::ADERDGSolver::~ADERDGSolver() {
+
 }
 
 int exahype::solvers::ADERDGSolver::getUnknownsPerFace() const {
@@ -2082,6 +2143,37 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
           false, isSkeletonCell );
     cellDescription.setHasCompletedTimeStep(true);
   } else {
+#ifdef DistributedStealing
+    //skeleton cells are not considered for stealing
+    if (isSkeletonCell) {
+      cellDescription.setHasCompletedTimeStep(false);
+      PredictionJob predictionJob(
+          *this, cellDescriptionsIndex,
+		  element,
+		  cellDescription.getCorrectorTimeStamp(),
+		  cellDescription.getCorrectorTimeStepSize(),
+          false, isSkeletonCell );
+      Solver::submitJob(predictionJob,isSkeletonCell);
+      exahype::stealing::StealingProfiler::getInstance().notifySpawnedTask();
+    }
+    else {
+#ifdef USE_ITAC
+      VT_begin(event_spawn);
+#endif
+      cellDescription.setHasCompletedTimeStep(false);
+      StealablePredictionJob *stealablePredictionJob = new StealablePredictionJob(*this,
+          cellDescriptionsIndex, element,
+          cellDescription.getCorrectorTimeStamp(),
+          cellDescription.getCorrectorTimeStepSize());
+      submitOrSendStealablePredictionJob(stealablePredictionJob);
+
+      //peano::datatraversal::TaskSet spawnedSet( stealablePredictionJob, peano::datatraversal::TaskSet::TaskType::Background );
+      exahype::stealing::StealingProfiler::getInstance().notifySpawnedTask();
+#ifdef USE_ITAC
+      VT_end(event_spawn);
+#endif
+    }
+#else
     cellDescription.setHasCompletedTimeStep(false);
     PredictionJob predictionJob(
         *this, cellDescriptionsIndex, element,
@@ -2089,6 +2181,11 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
         cellDescription.getCorrectorTimeStepSize(),
         false/*is uncompressed*/, isSkeletonCell );
     Solver::submitJob(predictionJob,isSkeletonCell);
+#ifdef StealingUseProfiler
+    exahype::stealing::StealingProfiler::getInstance().notifySpawnedTask();
+#endif
+
+#endif
   }
   return result;
 }
@@ -2105,6 +2202,15 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
     const bool isSkeletonCell        = isAMRSkeletonCell || isAtRemoteBoundary;
     const bool mustBeDoneImmediately = isSkeletonCell && PredictionSweeps==1;
 
+#if defined(DistributedStealing)
+    // compute directly
+    // TODO: would it make sense to spawn a "StealableFusedTimeStepJob"?
+    return
+    fusedTimeStepBody(
+        cellDescriptionsIndex,element,
+        isFirstIterationOfBatch,isLastIterationOfBatch,isSkeletonCell, mustBeDoneImmediately,
+        cellDescription.getNeighbourMergePerformed() );
+#endif
     if (
         !SpawnPredictionAsBackgroundJob ||
         isFirstIterationOfBatch ||
@@ -2120,6 +2226,12 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
       FusedTimeStepJob fusedTimeStepJob( *this, cellDescriptionsIndex, element,
           cellDescription.getNeighbourMergePerformed(),isSkeletonCell);
       Solver::submitJob(fusedTimeStepJob,isSkeletonCell);
+#ifdef StealingUseProfiler
+      exahype::stealing::StealingProfiler::getInstance().notifySpawnedTask();
+#endif
+      logInfo( "fusedTimeStep()",
+          "spawning fusedTimeStepJob "
+      );
       return UpdateResult();
     }
   } else {
@@ -2270,10 +2382,42 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
           uncompressBefore,isSkeletonCell);
     }
     else {
+#ifdef DistributedStealing
+    //skeleton cells are not considered for stealing
+    if (isSkeletonCell) {
+      cellDescription.setHasCompletedTimeStep(false);
+      PredictionJob predictionJob(
+          *this, cellDescriptionsIndex,
+		  element,
+		  cellDescription.getCorrectorTimeStamp(),
+		  cellDescription.getCorrectorTimeStepSize(),
+          false, isSkeletonCell );
+      Solver::submitJob(predictionJob,isSkeletonCell);
+      exahype::stealing::StealingProfiler::getInstance().notifySpawnedTask();
+    }
+    else {
+#ifdef USE_ITAC
+      VT_begin(event_spawn);
+#endif
+      cellDescription.setHasCompletedTimeStep(false);
+      StealablePredictionJob *stealablePredictionJob = new StealablePredictionJob(*this,
+          cellDescriptionsIndex, element,
+          cellDescription.getCorrectorTimeStamp(),
+          cellDescription.getCorrectorTimeStepSize());
+      submitOrSendStealablePredictionJob(stealablePredictionJob);
+
+      //peano::datatraversal::TaskSet spawnedSet( stealablePredictionJob, peano::datatraversal::TaskSet::TaskType::Background );
+      exahype::stealing::StealingProfiler::getInstance().notifySpawnedTask();
+#ifdef USE_ITAC
+      VT_end(event_spawn);
+#endif
+    }
+#else
       cellDescription.setHasCompletedTimeStep(false);
       PredictionJob predictionJob( *this,cellDescriptionsIndex,element,predictorTimeStamp,predictorTimeStepSize,
           uncompressBefore,isSkeletonCell );
       Solver::submitJob(predictionJob,isSkeletonCell);
+#endif
     }
   }
 }
@@ -4412,12 +4556,23 @@ exahype::solvers::ADERDGSolver::PredictionJob::PredictionJob(
   lock.free();
 }
 
-
 bool exahype::solvers::ADERDGSolver::PredictionJob::operator()() {
+#ifdef USE_ITAC
+  VT_begin(event_stp);
+#endif
+
+#if defined(StealingUseProfiler)
+  exahype::stealing::StealingProfiler::getInstance().beginComputation();
+  double time = - MPI_Wtime();
+#endif
   _solver.performPredictionAndVolumeIntegralBody(
       getCellDescription(_cellDescriptionsIndex,_element),
       _predictorTimeStamp,_predictorTimeStepSize,
       _uncompressBefore,_isSkeletonJob); // ignore return value
+#if defined(StealingUseProfiler)
+  time += MPI_Wtime();
+  exahype::stealing::StealingProfiler::getInstance().endComputation(time);
+#endif
 
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
   {
@@ -4426,9 +4581,660 @@ bool exahype::solvers::ADERDGSolver::PredictionJob::operator()() {
     assertion( jobCounter>=0 );
   }
   lock.free();
+
+#ifdef USE_ITAC
+  VT_end(event_stp);
+#endif
+
   return false;
 }
 
+#if defined(DistributedStealing)
+void exahype::solvers::ADERDGSolver::submitOrSendStealablePredictionJob(StealablePredictionJob* job) {
+   //return; 
+
+   int myRank = tarch::parallel::Node::getInstance().getRank();
+   int nRanks = tarch::parallel::Node::getInstance().getNumberOfNodes();
+   int destRank = myRank;
+
+//  static std::atomic<int> sends=0;
+//  //sends++;
+
+   //if(NumberOfEnclaveJobs+NumberOfSkeletonJobs-NumberOfRemoteJobs>tarch::multicore::Core::getInstance().getNumberOfThreads()*2) {
+     exahype::stealing::StealingManager::getInstance().selectVictimRank(destRank);
+   //}
+   //else
+   //  exahype::stealing::StealingProfiler::getInstance().notifyThresholdFail();
+
+   if(myRank!=destRank) {
+//    sends++;
+
+     OffloadEntry entry = {destRank, job->_cellDescriptionsIndex, job->_element, job->_predictorTimeStamp, job->_predictorTimeStepSize};
+     _outstandingOffloads.push( entry );
+
+     tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
+     NumberOfRemoteJobs++;
+     lock.free();
+
+     exahype::stealing::StealingProfiler::getInstance().notifyOffloadedTask(destRank);
+     exahype::stealing::PerformanceMonitor::getInstance().decCurrentLoad();
+
+  }
+  else {
+    peano::datatraversal::TaskSet spawnedSet( job, peano::datatraversal::TaskSet::TaskType::Background );
+  }
+}
+
+void exahype::solvers::ADERDGSolver::progressStealing() {
+
+  // First, we ensure here that only one thread at a time progresses stealing
+  // this attempts to avoid multithreaded MPI problems
+  tarch::multicore::Lock lock(StealingSemaphore, false);
+  bool canRun = lock.try_lock();
+  if(!canRun) {
+#if defined(PerformanceAnalysisStealingDetailed)
+    watch.stopTimer();
+    if(watch.getCalendarTime() >= 0.0) {
+      logInfo(
+          "progressStealing() ",
+          "couldn't run "<<
+          "time=" << std::fixed <<
+          watch.getCalendarTime() <<
+          ", cpu time=" <<
+          watch.getCPUTime()
+      );
+    }
+#endif
+    return;
+  }
+#ifdef USE_ITAC
+  VT_begin(event_progress);
+#endif
+
+  // 1. send away outstanding tasks (decision to offload them has been made)
+  OffloadEntry entry;
+  bool gotOne = _outstandingOffloads.try_pop(entry);
+  while(gotOne) {
+#ifdef USE_ITAC
+    VT_begin(event_offload);
+#endif
+    int destRank = entry.destRank;
+    auto& cellDescription = getCellDescription(entry.cellDescriptionsIndex, entry.element);
+
+    double *luh = DataHeap::getInstance().getData(cellDescription.getSolution()).data();
+    double *lduh = DataHeap::getInstance().getData(cellDescription.getUpdate()).data();
+    double *lQhbnd = DataHeap::getInstance().getData(cellDescription.getExtrapolatedPredictor()).data();
+    double *lFhbnd = DataHeap::getInstance().getData(cellDescription.getFluctuation()).data();
+
+    MPI_Request sendRequests[5];
+    int tag = getStealingTag();
+    double *metadata = new double[2*DIMENSIONS+2];
+    packMetadataToBuffer(entry, metadata);
+    // we need this info when the task comes back...
+    _mapTagToMetaData.insert(std::make_pair(tag, metadata));
+    _mapTagToCellDesc.insert(std::make_pair(tag, &cellDescription));
+    // send away
+    isendStealablePredictionJob(
+        luh,
+		lduh,
+        lQhbnd,
+		lFhbnd,
+		destRank,
+		tag,
+		sendRequests,
+		metadata);
+
+    exahype::stealing::StealingManager::getInstance().submitRequests(
+        sendRequests, 5, tag, destRank,
+        exahype::solvers::ADERDGSolver::StealablePredictionJob::sendHandler,
+		exahype::stealing::RequestType::send, this);
+
+    // post receive back requests
+    MPI_Request recvRequests[4];
+    irecvStealablePredictionJob(
+        luh, lduh, lQhbnd,
+	    lFhbnd, destRank, tag, recvRequests);
+
+    exahype::stealing::StealingManager::getInstance().submitRequests(
+        recvRequests, 4, tag, destRank,
+        exahype::solvers::ADERDGSolver::StealablePredictionJob::receiveBackHandler,
+	    exahype::stealing::RequestType::receiveBack, this);
+
+    gotOne = _outstandingOffloads.try_pop(entry);
+#ifdef USE_ITAC
+    VT_end(event_offload);
+#endif
+  }
+
+  // 2. make progress on any outstanding MPI communication
+  exahype::stealing::StealingManager::getInstance().progressRequests();
+
+  // 3. progress on performance monitor
+  exahype::stealing::PerformanceMonitor::getInstance().run();
+
+  // 4. detect whether local rank should receive stolen sections
+  MPI_Status stat;
+  int receivedTask = 0;
+  int msgLen = -1;
+  int lastTag = -1;
+  int lastSrc = -1;
+  MPI_Comm comm = exahype::stealing::StealingManager::getInstance().getMPICommunicator();
+
+  //static std::atomic<int> postedReceives=0;
+
+  MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, comm, &receivedTask, &stat);
+  while( receivedTask) {
+    if(receivedTask) {
+      int msgLen = -1;
+      MPI_Get_count(&stat, MPI_DOUBLE, &msgLen);
+      // is this message metadata? -> if true, we are about to receive a new STP task
+      if(msgLen==DIMENSIONS*2+2 && !(lastTag==stat.MPI_TAG && lastSrc==stat.MPI_SOURCE)) {
+        lastTag=stat.MPI_TAG;
+        lastSrc=stat.MPI_SOURCE;
+
+        MPI_Request receiveRequests[5];
+        StealablePredictionJobData *data = new StealablePredictionJobData(*this);
+        _mapTagRankToStolenData.insert(std::make_pair(std::make_pair(stat.MPI_SOURCE, stat.MPI_TAG), data));
+        irecvStealablePredictionJob(
+		    data->_luh.data(),
+			data->_lduh.data(),
+		    data->_lQhbnd.data(),
+			data->_lFhbnd.data(),
+		    stat.MPI_SOURCE,
+			stat.MPI_TAG,
+			&receiveRequests[0],
+			&(data->_metadata[0]));
+        exahype::stealing::StealingManager::getInstance().submitRequests(
+            receiveRequests,
+			5,
+			stat.MPI_TAG,
+			stat.MPI_SOURCE,
+		    StealablePredictionJob::receiveHandler,
+			exahype::stealing::RequestType::receive,
+			this,
+			true);
+      }
+    }
+    MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, comm, &receivedTask, &stat);
+  }
+  // now, a different thread can progress the stealing
+  lock.free();
+
+#if defined(PerformanceAnalysisStealing)
+  watch.stopTimer();
+  if(watch.getCalendarTime() >= 0.0) {
+    logInfo(
+        "endStealingManager()",
+        "time=" << std::fixed <<
+        watch.getCalendarTime() <<
+        ", cpu time=" <<
+        watch.getCPUTime()
+    );
+  }
+#endif
+
+#ifdef USE_ITAC
+  VT_end(event_progress);
+#endif
+}
+
+exahype::solvers::ADERDGSolver::StealingManagerJob::StealingManagerJob(ADERDGSolver& solver)
+: _solver(solver), _state(State::Running) {}
+
+exahype::solvers::ADERDGSolver::StealingManagerJob::~StealingManagerJob() {}
+
+bool exahype::solvers::ADERDGSolver::StealingManagerJob::operator()() {
+  return run();
+}
+
+bool exahype::solvers::ADERDGSolver::StealingManagerJob::run() {
+// static bool terminated = false;
+  bool result=true;
+#ifdef USE_ITAC
+  //VT_begin(event_stealingManager);
+#endif
+
+  switch (_state) {
+    case State::Running:
+    {
+      _solver.progressStealing();
+      break;
+    }
+    case State::Terminate:
+    {
+      //if(!terminated) {
+    //	  logInfo("stealingManager", " terminating ");
+   // 	  terminated = true;
+    //  }
+      exahype::stealing::PerformanceMonitor::getInstance().stop();
+      if(!exahype::stealing::PerformanceMonitor::getInstance().isGloballyTerminated() || !_solver._outstandingOffloads.empty()) {
+        _solver.progressStealing();
+        return true;
+      }
+      logInfo("stealingManager", " terminated ");
+      result = false;
+      exahype::stealing::StealingProfiler::getInstance().endPhase();
+      exahype::stealing::StealingProfiler::getInstance().printStatistics();
+      break;
+    }
+  }
+#ifdef USE_ITAC
+  //VT_end(event_stealingManager);
+#endif
+  return result;
+};
+
+tbb::task* exahype::solvers::ADERDGSolver::StealingManagerJob::execute() {
+  while(this->run()) {
+  }
+  return nullptr;
+}
+
+void exahype::solvers::ADERDGSolver::StealingManagerJob::terminate() {
+  _state = State::Terminate;
+};
+
+void exahype::solvers::ADERDGSolver::startStealingManager() {
+  logInfo("startStealingManager", " starting ");
+  static tbb::task_group_context  backgroundTaskContext(tbb::task_group_context::isolated);
+  _stealingManagerJob = new( backgroundTaskContext ) StealingManagerJob(*this);
+  //_stealingManagerJob = new StealingManagerJob(*this);
+  assert(_stealingManagerJob!=nullptr);
+  tbb::task::enqueue(*_stealingManagerJob);
+  //peano::datatraversal::TaskSet spawnedSet(_stealingManagerJob, peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible);
+}
+
+void exahype::solvers::ADERDGSolver::stopStealingManager() {
+  logInfo("stopStealingManager", " stopping ");
+  assertion(_stealingManagerJob != nullptr);
+  _stealingManagerJob->terminate();
+  while(tarch::multicore::jobs::finishToProcessBackgroundJobs()) {};
+}
+
+exahype::solvers::ADERDGSolver::StealablePredictionJobData::StealablePredictionJobData( ADERDGSolver& solver ) :
+  _luh(solver.getDataPerCell()),
+  _lduh(solver.getUpdateSize()),
+  _lQhbnd(solver.getBndTotalSize()),
+  _lFhbnd(solver.getBndFluxTotalSize())
+{};
+
+exahype::solvers::ADERDGSolver::StealablePredictionJobData::~StealablePredictionJobData() {};
+
+void exahype::solvers::ADERDGSolver::packMetadataToBuffer(
+  OffloadEntry& entry,
+  double *buf) const {
+
+  auto& cellDescription = getCellDescription(entry.cellDescriptionsIndex, entry.element);
+
+  tarch::la::Vector<DIMENSIONS, double> center = cellDescription.getOffset()+0.5*cellDescription.getSize();
+  tarch::la::Vector<DIMENSIONS, double> dx = cellDescription.getSize();
+
+  double *center_src, *dx_src;
+  center_src = center.data();
+  dx_src = dx.data();
+
+  int offset=0;
+  memcpy(buf+offset, center_src, sizeof(double)*DIMENSIONS);
+  offset += DIMENSIONS;
+
+  memcpy(buf+offset, dx_src, sizeof(double)*DIMENSIONS);
+  offset += DIMENSIONS;
+
+  memcpy(buf+offset, &entry.predictorTimeStamp, sizeof(double));
+  offset+=1;
+  memcpy(buf+offset, &entry.predictorTimeStepSize, sizeof(double));
+  offset+=1;
+}
+
+exahype::solvers::ADERDGSolver::StealablePredictionJob* exahype::solvers::ADERDGSolver::createFromData(
+  StealablePredictionJobData *data,
+  const int origin,
+  const int tag) {
+  return new StealablePredictionJob(*this,
+      -1,
+      -1,
+      data->_metadata[2*DIMENSIONS],
+      data->_metadata[2*DIMENSIONS+1],
+      data->_luh.data(),
+	  data->_lduh.data(),
+      data->_lQhbnd.data(),
+	  data->_lFhbnd.data(),
+      &(data->_metadata[DIMENSIONS]),
+	  &(data->_metadata[0]),
+      origin,
+      tag);
+}
+
+void exahype::solvers::ADERDGSolver::isendStealablePredictionJob(
+  double *luh,
+  double *lduh,
+  double *lQhbnd,
+  double *lFhbnd,
+  int dest,
+  int tag,
+  MPI_Request *requests,
+  double *metadata) {
+
+  int i = 0;
+  int ierr;
+  MPI_Comm comm = exahype::stealing::StealingManager::getInstance().getMPICommunicator();
+
+  if(metadata != nullptr) {
+    ierr = MPI_Isend(metadata, 2*DIMENSIONS+2, MPI_DOUBLE, dest, tag, comm, &requests[i++]);
+    assertion(ierr==MPI_SUCCESS);
+    assertion(requests[i-1]!=MPI_REQUEST_NULL);
+  }
+
+  assertion(luh!=NULL);
+  ierr = MPI_Isend(luh, getDataPerCell(), MPI_DOUBLE, dest, tag, comm, &requests[i++]);
+  assertion(ierr==MPI_SUCCESS);
+  assertion(requests[i-1]!=MPI_REQUEST_NULL);
+
+  assertion(lduh!=NULL);
+  ierr = MPI_Isend(lduh, getUpdateSize(), MPI_DOUBLE, dest, tag, comm, &requests[i++]);
+  assertion(ierr==MPI_SUCCESS);
+  assertion(requests[i-1]!=MPI_REQUEST_NULL);
+
+  assertion(lQhbnd!=NULL);
+  ierr = MPI_Isend(lQhbnd, getBndTotalSize(), MPI_DOUBLE, dest, tag, comm, &requests[i++]);
+  assertion(ierr==MPI_SUCCESS);
+  assertion(requests[i-1]!=MPI_REQUEST_NULL);
+
+  assertion(lFhbnd!=NULL);
+  ierr = MPI_Isend(lFhbnd, getBndFluxTotalSize(), MPI_DOUBLE, dest, tag, comm, &requests[i++]);
+  assertion(ierr==MPI_SUCCESS);
+  assertion(requests[i-1]!=MPI_REQUEST_NULL);
+
+};
+
+void exahype::solvers::ADERDGSolver::irecvStealablePredictionJob(
+    double *luh,
+	double *lduh,
+	double *lQhbnd,
+	double *lFhbnd,
+    int srcRank,
+	int tag,
+	MPI_Request *requests,
+	double *metadata ) {
+  int ierr;
+  MPI_Comm comm = exahype::stealing::StealingManager::getInstance().getMPICommunicator();
+  int i = 0;
+
+  if(metadata != nullptr) {
+    ierr = MPI_Irecv(metadata, 2*DIMENSIONS+2, MPI_DOUBLE, srcRank, tag, comm, &requests[i++]);
+    assertion(ierr==MPI_SUCCESS);
+    assertion(requests[i-1]!=MPI_REQUEST_NULL);
+  }
+
+  assertion(luh!=NULL);
+  ierr = MPI_Irecv(luh, getDataPerCell(), MPI_DOUBLE, srcRank, tag, comm, &requests[i++]);
+  assertion(ierr==MPI_SUCCESS);
+  assertion(requests[i-1]!=MPI_REQUEST_NULL);
+
+  assertion(lduh!=NULL);
+  ierr = MPI_Irecv(lduh, getUpdateSize(), MPI_DOUBLE, srcRank, tag, comm, &requests[i++]);
+  assertion(ierr==MPI_SUCCESS);
+  assertion(requests[i-1]!=MPI_REQUEST_NULL);
+
+  assertion(lQhbnd!=NULL);
+  ierr = MPI_Irecv(lQhbnd, getBndTotalSize(), MPI_DOUBLE, srcRank, tag, comm, &requests[i++]);
+  assertion(ierr==MPI_SUCCESS);
+  assertion(requests[i-1]!=MPI_REQUEST_NULL);
+
+  assertion(lFhbnd!=NULL);
+  ierr = MPI_Irecv(lFhbnd, getBndFluxTotalSize(), MPI_DOUBLE, srcRank, tag, comm, &requests[i++]);
+  assertion(ierr==MPI_SUCCESS);
+  assertion(requests[i-1]!=MPI_REQUEST_NULL);
+
+};
+
+exahype::solvers::ADERDGSolver::StealablePredictionJob::StealablePredictionJob(
+    ADERDGSolver& solver,
+    const int cellDescriptionsIndex,
+    const int element,
+    const double predictorTimeStamp,
+    const double predictorTimeStepSize) :
+        _solver(solver),
+        _cellDescriptionsIndex(cellDescriptionsIndex),
+        _element(element),
+        _predictorTimeStamp(predictorTimeStamp),
+        _predictorTimeStepSize(predictorTimeStepSize),
+        _originRank(tarch::parallel::Node::getInstance().getRank()),
+        _tag(-1),
+        _luh(nullptr),_lduh(nullptr),_lQhbnd(nullptr), _lFhbnd(nullptr)
+{
+  tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
+  NumberOfEnclaveJobs++;
+  lock.free();
+  exahype::stealing::PerformanceMonitor::getInstance().incCurrentLoad();
+};
+
+exahype::solvers::ADERDGSolver::StealablePredictionJob::StealablePredictionJob(
+    ADERDGSolver& solver,
+    const int cellDescriptionsIndex,
+    const int element,
+    const double predictorTimeStamp,
+    const double predictorTimeStepSize,
+    double *luh,
+	double *lduh,
+    double *lQhbnd,
+	double *lFhbnd,
+    double *dx,
+	double *center,
+    const int originRank,
+    const int tag) :
+        _solver(solver),
+        _cellDescriptionsIndex(cellDescriptionsIndex),
+        _element(element),
+        _predictorTimeStamp(predictorTimeStamp),
+        _predictorTimeStepSize(predictorTimeStepSize),
+        _originRank(originRank),
+        _tag(tag),
+        _luh(luh),_lduh(lduh),_lQhbnd(lQhbnd), _lFhbnd(lFhbnd) {
+
+  for(int i=0; i<DIMENSIONS; i++) {
+    _center[i] = center[i];
+    _dx[i] = dx[i];
+  }
+
+  tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
+  if(_originRank!=tarch::parallel::Node::getInstance().getRank()) {
+    NumberOfStolenJobs++;
+  }
+  else
+  NumberOfEnclaveJobs++;
+  lock.free();
+  exahype::stealing::PerformanceMonitor::getInstance().incCurrentLoad();
+};
+
+exahype::solvers::ADERDGSolver::StealablePredictionJob::~StealablePredictionJob() {};
+
+//Caution: Compression and restriction are not supported yet!
+bool exahype::solvers::ADERDGSolver::StealablePredictionJob::operator()() {
+
+#ifdef USE_ITAC
+      VT_begin(event_stp);
+#endif
+      handleLocalExecution();
+#ifdef USE_ITAC
+      VT_end(event_stp);
+#endif
+  return false;
+}
+
+bool exahype::solvers::ADERDGSolver::StealablePredictionJob::handleLocalExecution() {
+  int myRank = tarch::parallel::Node::getInstance().getRank();
+  bool result = false;
+
+#if defined(PerformanceAnalysisStealing)
+  tarch::timing::Watch watch("exahype::stealing::", "-", false,false);
+  watch.startTimer();
+#endif
+#if defined(StealingUseProfiler)
+  exahype::stealing::StealingProfiler::getInstance().beginComputation();
+  double time = -MPI_Wtime();
+#endif 
+
+  if(_originRank==myRank) {
+    CellDescription& cellDescription = getCellDescription(_cellDescriptionsIndex,_element);
+
+    double* luh = DataHeap::getInstance().getData(cellDescription.getSolution()).data();
+    double* lduh = DataHeap::getInstance().getData(cellDescription.getUpdate()).data();
+    double* lQhbnd = DataHeap::getInstance().getData(cellDescription.getExtrapolatedPredictor()).data();
+    double* lFhbnd = DataHeap::getInstance().getData(cellDescription.getFluctuation()).data();
+
+    _solver.fusedSpaceTimePredictorVolumeIntegral(
+        lduh,lQhbnd,lFhbnd,
+        luh,
+        cellDescription.getOffset()+0.5*cellDescription.getSize(),
+        cellDescription.getSize(),
+        _predictorTimeStamp,
+        _predictorTimeStepSize);
+    cellDescription.setHasCompletedTimeStep(true);
+
+    exahype::stealing::PerformanceMonitor::getInstance().decRemainingLocalLoad();
+  }
+  else {
+    _solver.fusedSpaceTimePredictorVolumeIntegral(
+        _lduh,_lQhbnd,_lFhbnd,
+        _luh,
+        _center,
+        _dx,
+        _predictorTimeStamp,
+        _predictorTimeStepSize);
+  }
+  exahype::stealing::PerformanceMonitor::getInstance().decCurrentLoad();
+#if defined(StealingUseProfiler)
+  time += MPI_Wtime();
+  exahype::stealing::StealingProfiler::getInstance().endComputation(time);
+#endif
+#if defined(PerformanceAnalysisStealing)
+  watch.stopTimer();
+  if(watch.getCalendarTime() >= 0.0) {
+    logInfo(
+        "localCompute()",
+        "remaining "<<NumberOfEnclaveJobs+NumberOfSkeletonJobs-NumberOfRemoteJobs<<" "<<
+        "time=" << std::fixed <<
+        watch.getCalendarTime() <<
+        ", cpu time=" <<
+        watch.getCPUTime()
+    );
+  }
+#endif
+
+  if(_originRank!=myRank) {
+#if defined(PerformanceAnalysisStealing)
+    watch.startTimer();
+#endif
+    MPI_Request sendBackRequests[4];
+    _solver.isendStealablePredictionJob(_luh, _lduh, _lQhbnd, _lFhbnd, _originRank, _tag, sendBackRequests);
+    exahype::stealing::StealingManager::getInstance().submitRequests(sendBackRequests, 4, _tag, _originRank, sendBackHandler, exahype::stealing::RequestType::sendBack, &_solver);
+
+#if defined(PerformanceAnalysisStealing)
+    watch.stopTimer();
+    if(watch.getCalendarTime() >= 0.0) {
+      logInfo(
+          "remoteReturnSend()",
+          "time=" << std::fixed <<
+          watch.getCalendarTime() <<
+          ", cpu time=" <<
+          watch.getCPUTime()
+      );
+    }
+#endif
+  }
+  else {
+#if defined(PerformanceAnalysisStealing)
+    watch.startTimer();
+#endif
+    tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
+    NumberOfEnclaveJobs--;
+    assertion( NumberOfEnclaveJobs>=0 );
+    lock.free();
+  }
+  return result;
+}
+
+void exahype::solvers::ADERDGSolver::StealablePredictionJob::receiveHandler(exahype::solvers::Solver* solver, int tag, int remoteRank) {
+#if defined(PerformanceAnalysisStealingDetailed)
+  logInfo("receiveHandler","successful receive request");
+#endif
+
+  tbb::concurrent_hash_map<std::pair<int, int>, StealablePredictionJobData*>::accessor a_tagRankToData;
+  StealablePredictionJobData *data;
+  static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagRankToStolenData.find(a_tagRankToData, std::make_pair(remoteRank, tag));
+  data = a_tagRankToData->second;
+  a_tagRankToData.release();
+
+  StealablePredictionJob *job= static_cast<exahype::solvers::ADERDGSolver*> (solver)->createFromData(data, remoteRank, tag);
+  peano::datatraversal::TaskSet spawnedSet(job, peano::datatraversal::TaskSet::TaskType::Background);
+
+  exahype::stealing::StealingProfiler::getInstance().notifyReceivedTask(remoteRank);
+}
+
+void exahype::solvers::ADERDGSolver::StealablePredictionJob::receiveBackHandler(exahype::solvers::Solver* solver, int tag, int remoteRank) {
+#if defined(PerformanceAnalysisStealingDetailed)
+  static std::atomic<int> cnt=0;
+  cnt++;
+  logInfo("receiveBackHandler","successful receiveBack request, cnt "<<cnt);
+#endif
+
+  tbb::concurrent_hash_map<int, CellDescription*>::accessor a_tagRankToCellDesc;
+  bool found = static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagToCellDesc.find(a_tagRankToCellDesc, tag);
+  assertion(found);
+  auto cellDescription = a_tagRankToCellDesc->second;
+  static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagToCellDesc.erase(a_tagRankToCellDesc);
+  a_tagRankToCellDesc.release();
+  cellDescription->setHasCompletedTimeStep(true);
+  tarch::multicore::Lock lock2(exahype::BackgroundJobSemaphore);
+  NumberOfEnclaveJobs--;
+  NumberOfRemoteJobs--;
+
+  assertion( NumberOfEnclaveJobs>=0 );
+  assertion( NumberOfRemoteJobs>=0 );
+  lock2.free();
+}
+
+void exahype::solvers::ADERDGSolver::StealablePredictionJob::sendBackHandler(exahype::solvers::Solver* solver, int tag, int remoteRank) {
+#if defined(PerformanceAnalysisStealingDetailed)
+  logInfo("sendBackHandler","successful sendBack request");
+#endif
+  tbb::concurrent_hash_map<std::pair<int, int>, StealablePredictionJobData*>::accessor a_tagRankToData;
+
+  StealablePredictionJobData *data;
+  bool found = static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagRankToStolenData.find(a_tagRankToData, std::make_pair(remoteRank, tag));
+  assertion(found);
+  data = a_tagRankToData->second;
+  a_tagRankToData.release();
+  delete data;
+  static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagRankToStolenData.erase(std::make_pair(remoteRank, tag));
+
+  tarch::multicore::Lock lock2(exahype::BackgroundJobSemaphore);
+  NumberOfStolenJobs--;
+  assertion( NumberOfStolenJobs>=0 );
+  lock2.free();
+}
+
+void exahype::solvers::ADERDGSolver::StealablePredictionJob::sendHandler(exahype::solvers::Solver* solver, int tag, int remoteRank) {
+#if defined(PerformanceAnalysisStealingDetailed)
+  static std::atomic<int> cnt=0;
+  cnt++;
+  logInfo("sendHandler","successful send request, cnt "<<cnt);
+#endif
+  tbb::concurrent_hash_map<int, double*>::accessor a_tagToMeta;
+  double *metaData;
+  static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagToMetaData.find(a_tagToMeta, tag);
+  metaData = a_tagToMeta->second;
+  a_tagToMeta.release();
+  static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagToMetaData.erase(tag);
+  delete[] metaData;
+}
+
+int exahype::solvers::ADERDGSolver::getStealingTag() {
+  static std::atomic<int> counter = 0;
+  return counter.fetch_add(1);
+}
+#endif
 
 exahype::solvers::ADERDGSolver::FusedTimeStepJob::FusedTimeStepJob(
   ADERDGSolver&                                              solver,

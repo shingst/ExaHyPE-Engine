@@ -910,7 +910,9 @@ It must further contain at least one of the following sections:
     compressTable = parseArgument(sys.argv,3)=="--compress"
     
     options = sweep_options.parseOptionsFile(optionsFile)
-    
+        
+    print ("parsed options file") 
+
     general                   = options.general
     jobs                      = options.jobs
     environmentSpace          = options.environmentSpace

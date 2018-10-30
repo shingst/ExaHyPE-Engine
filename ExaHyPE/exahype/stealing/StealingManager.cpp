@@ -1,0 +1,371 @@
+#if  defined(SharedTBB)  && defined(Parallel) && defined(DistributedStealing)
+
+#include "StealingManager.h"
+
+#include <unordered_set>
+#include <vector>
+#include <string>
+
+#include "tarch/multicore/Lock.h"
+
+#include "exahype/stealing/StealingProfiler.h"
+#include "exahype/stealing/StaticDistributor.h"
+#include "exahype/stealing/DynamicDistributor.h"
+#include "exahype/stealing/PerformanceMonitor.h"
+
+#ifdef USE_ITAC
+#include "VT.h"
+
+static int event_handling;
+static int event_progress_send;
+static int event_progress_receive;
+static int event_progress_sendBack;
+static int event_progress_receiveBack;
+#endif
+
+tarch::logging::Log exahype::stealing::StealingManager::_log( "exahype::stealing::stealingManager" );
+
+exahype::stealing::StealingManager::StealingManager() :
+    _nextRequestId(0),
+	_nextGroupId(0),
+	_stealingComm(MPI_COMM_NULL)
+{
+#ifdef USE_ITAC
+  static const char *event_name_handle = "handleRequest";
+  int ierr = VT_funcdef(event_name_handle, VT_NOCLASS, &event_handling); assertion(ierr==0);
+  static const char *event_name_send = "progressSends";
+  ierr = VT_funcdef(event_name_send, VT_NOCLASS, &event_progress_send); assertion(ierr==0);
+  static const char *event_name_receive = "progressReceives";
+  ierr = VT_funcdef(event_name_receive, VT_NOCLASS, &event_progress_receive); assertion(ierr==0);
+  static const char *event_name_sendB = "progressSendBacks";
+  ierr = VT_funcdef(event_name_sendB, VT_NOCLASS, &event_progress_sendBack); assertion(ierr==0);
+  static const char *event_name_receiveB = "progressReceiveBacks";
+  ierr = VT_funcdef(event_name_receiveB, VT_NOCLASS, &event_progress_receiveBack); assertion(ierr==0);
+#endif
+  MPI_Errhandler_set(MPI_COMM_WORLD, MPI_ERRORS_RETURN);
+}
+
+exahype::stealing::StealingManager::~StealingManager()
+{}
+
+void exahype::stealing::StealingManager::createMPICommunicator() {
+  int ierr = MPI_Comm_dup(MPI_COMM_WORLD, &_stealingComm);
+  assertion(ierr==MPI_SUCCESS);
+}
+
+MPI_Comm exahype::stealing::StealingManager::getMPICommunicator() {
+  return _stealingComm;
+}
+
+exahype::stealing::StealingManager& exahype::stealing::StealingManager::getInstance() {
+  static StealingManager stealingManager;
+  return stealingManager;
+}
+
+int exahype::stealing::StealingManager::requestTypeToMap( RequestType requestType ) {
+  return static_cast<int> (requestType);
+}
+
+void exahype::stealing::StealingManager::submitRequests(
+    MPI_Request *requests,
+	int nRequests,
+	int tag,
+	int remoteRank,
+    std::function<void(exahype::solvers::Solver*, int, int)> handler,
+    RequestType type,
+	exahype::solvers::Solver *solver,
+	bool block ) {
+    
+  //static std::atomic<int> submitted[4];
+
+  if(block) {
+    MPI_Waitall(nRequests, requests, MPI_STATUSES_IGNORE);
+    handler(solver, tag, remoteRank);
+    return;
+  }
+
+  int mapId = requestTypeToMap(type);
+  
+  //submitted[mapId]++;
+  //logInfo("stealingManager","submitted["<<mapId<<"]:"<<submitted[mapId]);
+
+  // assign group id for this request group
+  int groupId = _nextGroupId++;
+  // insert metadata into maps
+  std::pair<int, std::function<void(exahype::solvers::Solver*, int, int)>> handlerElem(groupId, handler);
+  std::pair<int, exahype::solvers::Solver*> solverElem(groupId, solver);
+  std::pair<int, int> outstandingElem(groupId, nRequests);
+  std::pair<int, int> remoteRankElem(groupId, remoteRank);
+  std::pair<int, int> remoteTagElem(groupId, tag);
+
+  _handlers[mapId].insert(handlerElem);
+  _solvers[mapId].insert(solverElem);
+  _outstandingReqsForGroup[mapId].insert(outstandingElem);
+  _remoteRanksForGroup[mapId].insert(remoteRankElem);
+  _remoteTagsForGroup[mapId].insert(remoteTagElem);
+
+  // push requests into queue
+  for(int i=0; i<nRequests; i++) {
+    //TODO: avoid overflow!
+    int id=_nextRequestId++;
+
+    std::pair<int, MPI_Request> reqElem(id, requests[i]);
+    std::pair<int, int> reqGroupElem(id, groupId);
+    //logInfo("stealingManager", "inserted groupid "<<groupId<<" for req "<<id);
+
+    _idToRequest[mapId].insert(reqElem);
+    _requestToGroup[mapId].insert(reqGroupElem);
+    _requests[mapId].push(id);
+  }
+}
+
+void exahype::stealing::StealingManager::createRequestArray(
+    RequestType type,
+    std::vector<MPI_Request> &requests,
+    std::unordered_map<int, int> &map) {
+
+  int mapId = requestTypeToMap(type);
+
+  bool gotOne = true;
+  int j = 0;
+
+  while(gotOne) {
+    int req_id;
+    gotOne = _requests[mapId].try_pop(req_id);
+    if(gotOne) {
+      tbb::concurrent_hash_map<int, MPI_Request>::accessor a_requests;
+      bool found = _idToRequest[mapId].find(a_requests, req_id);
+      assertion(found);
+      MPI_Request request = a_requests->second;
+      a_requests.release();
+      requests.push_back(request);
+      map.insert(std::pair<int, int>(j, req_id));
+      j++;
+    }
+  }
+}
+
+void exahype::stealing::StealingManager::progressRequests() {
+
+  if(!_requests[requestTypeToMap(RequestType::send)].empty()) {
+#ifdef USE_ITAC
+    VT_begin(event_progress_send);
+#endif
+    progressRequestsOfType(RequestType::send);
+#ifdef USE_ITAC
+    VT_end(event_progress_send);
+#endif
+  }
+  else if (!_requests[requestTypeToMap(RequestType::receive)].empty()) {
+#ifdef USE_ITAC
+    VT_begin(event_progress_receive);
+#endif
+    progressRequestsOfType(RequestType::receive);
+#ifdef USE_ITAC
+    VT_end(event_progress_receive);
+#endif
+  }
+  else if (!_requests[requestTypeToMap(RequestType::receiveBack)].empty()) {
+#ifdef USE_ITAC
+    VT_begin(event_progress_receiveBack);
+#endif
+    progressRequestsOfType(RequestType::receiveBack);
+#ifdef USE_ITAC
+    VT_end(event_progress_receiveBack);
+#endif
+  }
+  else if (!_requests[requestTypeToMap(RequestType::sendBack)].empty()) {
+#ifdef USE_ITAC
+    VT_begin(event_progress_sendBack);
+#endif
+    progressRequestsOfType(RequestType::sendBack);
+#ifdef USE_ITAC
+    VT_end(event_progress_sendBack);
+#endif
+  }
+}
+
+void exahype::stealing::StealingManager::progressRequestsOfType( RequestType type ) {
+  int mapId = requestTypeToMap(type);
+
+  tbb::concurrent_hash_map<int, std::function<void(exahype::solvers::Solver*, int, int)>>::accessor a_handler;
+  tbb::concurrent_hash_map<int, exahype::solvers::Solver*>::accessor                                a_solver;
+  tbb::concurrent_hash_map<MPI_Request, int>::accessor                                              a_groupId;
+  tbb::concurrent_hash_map<int, int>::accessor                                                      a_outstandingGroup;
+  tbb::concurrent_hash_map<int, int>::accessor                                                      a_remoteRank;
+  tbb::concurrent_hash_map<int, int>::accessor                                                      a_remoteTag;
+
+  std::vector<MPI_Request>     outstandingRequests;
+  std::unordered_map<int, int> vecIdToReqId;
+  createRequestArray( type, outstandingRequests, vecIdToReqId );
+  int nRequests = outstandingRequests.size();
+
+  std::vector<MPI_Status> stats(nRequests);
+  std::vector<int> arrOfIndices(nRequests);
+  int outcount = 0;
+
+  double time = -MPI_Wtime();
+  exahype::stealing::StealingProfiler::getInstance().beginCommunication();
+
+
+// For DEBUGGING
+//static std::atomic<int> finished_cnt[4];
+//  logInfo("stealingManager", "testsome of "<<nRequests<< " of type "<<mapId);
+//  std::vector<MPI_Request> copyRequests(outstandingRequests);
+
+//	for(int i=0;i<nRequests;i++) {
+//	  MPI_Request search = copyRequests[i];
+//	  for(int j=0;j<nRequests;j++) {
+//      if(i!=j && copyRequests[j]==search && search!=MPI_REQUEST_NULL) {
+//        logInfo("stealingManager", "found duplicate request: i "<<i<<" j "<<j<<" request i: "<<copyRequests[i]<<" request j: "<<copyRequests[j]);
+//        assertion(false);
+//  	}
+//	 }
+// }
+
+  int ierr = MPI_Testsome(nRequests,&outstandingRequests[0], &outcount, &arrOfIndices[0], &stats[0]);
+
+  if(ierr != MPI_SUCCESS) {
+    for(int i=0;i<nRequests;i++) {
+      int ierrstatus = stats[i].MPI_ERROR;
+      if(ierrstatus!=MPI_SUCCESS) {
+        logInfo("stealingManager", "error "<<ierrstatus<<" for request "<<vecIdToReqId[i]<< " source "<<stats[i].MPI_SOURCE<<" tag "<<stats[i].MPI_TAG);
+      }
+      char err_buffer[MPI_MAX_ERROR_STRING];
+      int resultlen = 0;
+      if(ierrstatus!=MPI_SUCCESS) {
+        MPI_Error_string(ierrstatus,err_buffer,&resultlen);
+        fprintf(stderr,err_buffer);
+      }
+    }
+    MPI_Abort(MPI_COMM_WORLD, ierr); /* abort*/
+  }
+  time += MPI_Wtime();
+
+  if(outcount>0)
+    exahype::stealing::StealingProfiler::getInstance().endCommunication(true, time);
+  else
+    exahype::stealing::StealingProfiler::getInstance().endCommunication(false, time);
+
+  time = -MPI_Wtime();
+  exahype::stealing::StealingProfiler::getInstance().beginHandling();
+  bool found=false;
+  //handle finished requests
+  for(int i=0; i<outcount; i++) {
+    int reqIdx = arrOfIndices[i];
+    int reqId = vecIdToReqId[reqIdx];
+    assertion(outstandingRequests[reqIdx]==MPI_REQUEST_NULL);
+
+    _idToRequest[mapId].erase(reqId);
+    int groupId;
+    found = _requestToGroup[mapId].find(a_groupId, reqId);
+
+    assertion(found);
+    groupId = a_groupId->second;
+    _requestToGroup[mapId].erase(a_groupId);
+    a_groupId.release();
+
+    found = _outstandingReqsForGroup[mapId].find(a_outstandingGroup, groupId);
+    assertion(found);
+    a_outstandingGroup->second--;
+    bool finished = a_outstandingGroup->second==0;
+    a_outstandingGroup.release();
+
+    if(finished) {
+      std::function<void(exahype::solvers::Solver*, int ,int)> handler;
+      found = _handlers[mapId].find(a_handler, groupId);
+      assertion(found);
+      handler=a_handler->second;
+      a_handler.release();
+      exahype::solvers::Solver *solver;
+      found=_solvers[mapId].find(a_solver, groupId);
+      assertion(found);
+      solver = a_solver->second;
+      a_solver.release();
+      int remoteRank = -1;
+      found= _remoteRanksForGroup[mapId].find(a_remoteRank, groupId);
+      remoteRank = a_remoteRank->second;
+      assertion(found);
+      a_remoteRank.release();
+      int remoteTag = -1;
+      found= _remoteTagsForGroup[mapId].find(a_remoteTag, groupId);
+      remoteTag = a_remoteTag->second;
+      assertion(found);
+      a_remoteTag.release();
+
+      RequestHandlerJob *requestHandlerJob = new RequestHandlerJob(handler, solver, remoteTag, remoteRank);
+      peano::datatraversal::TaskSet spawnedSet( requestHandlerJob, peano::datatraversal::TaskSet::TaskType::Background);
+
+      _handlers[mapId].erase(groupId);
+      _outstandingReqsForGroup[mapId].erase(groupId);
+      _solvers[mapId].erase(groupId);
+      _remoteRanksForGroup[mapId].erase(groupId);
+      _remoteTagsForGroup[mapId].erase(groupId);
+    }
+  }
+
+  // push back all unfinished requests
+  for(int i=0; i<nRequests; i++) {
+    if(outstandingRequests[i]!=MPI_REQUEST_NULL) {
+      _requests[mapId].push(vecIdToReqId[i]);
+    }
+  }
+  time += MPI_Wtime();
+  exahype::stealing::StealingProfiler::getInstance().endHandling(time);
+}
+
+bool exahype::stealing::StealingManager::selectVictimRank(int& victim) {
+#if defined(StealingStrategyStaticHardcoded)
+    return exahype::stealing::StaticDistributor::getInstance().selectVictimRank(victim);
+#else
+  double remainingLoadRatio = static_cast<double> (exahype::stealing::PerformanceMonitor::getInstance().getRemainingLocalLoad())
+		  	  	  	  	  	  /
+							  exahype::stealing::PerformanceMonitor::getInstance().getLocalLoadPerTimestep();
+  // this is currently hardcoded: the goal is to refrain from giving tasks away if there is not enough work left
+  // for overlap of communication and computation
+  if(remainingLoadRatio>0.1) {
+#if defined(StealingStrategyStatic) 
+    return exahype::stealing::StaticDistributor::getInstance().selectVictimRank(victim);
+#elif defined(StealingStrategyDynamic)
+    return exahype::stealing::DynamicDistributor::getInstance().selectVictimRank(victim);
+#elif defined(StealingStrategyHybrid)
+    bool staticDistribution = exahype::stealing::StaticDistributor::getInstance().selectVictimRank(victim);
+    if(staticDistribution) return true;
+    else {
+      return exahype::stealing::DynamicDistributor::getInstance().selectVictimRank(victim);
+    }
+    return false;
+#else
+# error "Wrong stealing strategy specified!"
+#endif
+  }
+  else {
+     logInfo("stealingManager", "could not select victim remaining load ratio "<<remainingLoadRatio);
+    return false;
+  }
+#endif
+}
+
+exahype::stealing::StealingManager::RequestHandlerJob::RequestHandlerJob(
+    std::function<void(exahype::solvers::Solver*, int, int)> handleRequest,
+    exahype::solvers::Solver* solver,
+    int tag,
+    int remoteRank) :
+        _handleRequest(handleRequest),
+		_solver(solver),
+		_tag(tag),
+		_remoteRank(remoteRank)
+{};
+
+bool exahype::stealing::StealingManager::RequestHandlerJob::operator()() {
+#ifdef USE_ITAC
+  VT_begin(event_handling);
+#endif
+    _handleRequest(_solver, _tag, _remoteRank);
+#ifdef USE_ITAC
+  VT_end(event_handling);
+#endif
+  return false;
+}
+
+#endif

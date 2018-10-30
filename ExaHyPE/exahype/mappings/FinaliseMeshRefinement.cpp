@@ -25,6 +25,11 @@
 #include "exahype/mappings/MeshRefinement.h"
 #include "exahype/mappings/RefinementStatusSpreading.h"
 
+#include "exahype/stealing/PerformanceMonitor.h"
+
+int exahype::mappings::FinaliseMeshRefinement::NumberOfEnclaveCells = 0;
+int exahype::mappings::FinaliseMeshRefinement::NumberOfSkeletonCells = 0;
+
 peano::CommunicationSpecification
 exahype::mappings::FinaliseMeshRefinement::communicationSpecification() const {
   return peano::CommunicationSpecification(
@@ -88,6 +93,9 @@ void exahype::mappings::FinaliseMeshRefinement::initialiseLocalVariables(){
     _minTimeStepSizes[solverNumber] = std::numeric_limits<double>::max();
     _maxLevels    [solverNumber]    = -std::numeric_limits<int>::max(); // "-", min
   }
+
+  _numberOfEnclaveCells = 0;
+  _numberOfSkeletonCells = 0;
 }
 
 tarch::logging::Log exahype::mappings::FinaliseMeshRefinement::_log(
@@ -102,6 +110,7 @@ exahype::mappings::FinaliseMeshRefinement::~FinaliseMeshRefinement() {}
 #if defined(SharedMemoryParallelisation)
 exahype::mappings::FinaliseMeshRefinement::FinaliseMeshRefinement(const FinaliseMeshRefinement& masterThread) {
   _backgroundJobsHaveTerminated=masterThread._backgroundJobsHaveTerminated;
+
   initialiseLocalVariables();
 }
 
@@ -114,6 +123,8 @@ void exahype::mappings::FinaliseMeshRefinement::mergeWithWorkerThread(
     _maxLevels[i] =
         std::max(_maxLevels[i], workerThread._maxLevels[i]);
   }
+  _numberOfEnclaveCells += workerThread._numberOfEnclaveCells;
+  _numberOfSkeletonCells += workerThread._numberOfSkeletonCells;
 }
 #endif
 
@@ -193,6 +204,15 @@ void exahype::mappings::FinaliseMeshRefinement::enterCell(
             limitingADERDGSolver->determineMinAndMax(cellDescriptionsIndex,element);
             assertion(limitingADERDGSolver->getMeshUpdateEvent()!=exahype::solvers::Solver::MeshUpdateEvent::IrregularLimiterDomainChange);
           }
+
+          // determine numbers of enclave and skeleton cells
+          if (solver->getType()==exahype::solvers::Solver::Type::ADERDG || solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
+            //auto* ADERDGSolver = static_cast<exahype::solvers::ADERDGSolver*>(solver);
+            if( !exahype::Cell::isAtRemoteBoundary(fineGridVertices,fineGridVerticesEnumerator))
+              _numberOfEnclaveCells += exahype::solvers::ADERDGSolver::computeWeight(cellDescriptionsIndex);
+            else if( exahype::Cell::isAtRemoteBoundary(fineGridVertices,fineGridVerticesEnumerator))
+              _numberOfSkeletonCells += exahype::solvers::ADERDGSolver::computeWeight(cellDescriptionsIndex);
+          }
         }
       }
     }
@@ -237,6 +257,13 @@ void exahype::mappings::FinaliseMeshRefinement::endIteration(
       }
     }
   }
+
+  NumberOfEnclaveCells = _numberOfEnclaveCells;
+  NumberOfSkeletonCells = _numberOfSkeletonCells;
+
+#ifdef DistributedStealing
+  exahype::stealing::PerformanceMonitor::getInstance().setLocalLoadPerTimestep(_numberOfEnclaveCells + _numberOfSkeletonCells);
+#endif
 
   _backgroundJobsHaveTerminated = false;
 }

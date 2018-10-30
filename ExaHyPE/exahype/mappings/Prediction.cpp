@@ -34,6 +34,7 @@
 #include "VT.h"
 #endif
 
+
 peano::MappingSpecification exahype::mappings::Prediction::determineEnterLeaveCellSpecification(int level) {
   return peano::MappingSpecification(
       peano::MappingSpecification::WholeTree,
@@ -116,6 +117,7 @@ void exahype::mappings::Prediction::mergeWithWorkerThread(
 
 void exahype::mappings::Prediction::beginIteration(
     exahype::State& solverState) {
+
   logTraceInWith1Argument("beginIteration(State)", solverState);
 
   _stateCopy = solverState;

@@ -17,11 +17,8 @@
 #include "exahype/Cell.h"
 #include "exahype/State.h"
 
-
- #include "exahype/mappings/FinaliseMeshRefinement.h"
- #include "exahype/mappings/LevelwiseAdjacencyBookkeeping.h"
-
-
+#include "exahype/mappings/FinaliseMeshRefinement.h"
+#include "exahype/mappings/LevelwiseAdjacencyBookkeeping.h"
 
 namespace exahype {
       namespace adapters {

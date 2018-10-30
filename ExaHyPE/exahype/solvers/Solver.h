@@ -50,6 +50,14 @@
 #include <tbb/cache_aligned_allocator.h> // prevents false sharing
 #endif
 
+#if defined(DistributedStealing)
+#include <tbb/concurrent_queue.h>
+//#include "exahype/stealing/StealingManager.h"
+//#include "exahype/stealing/StealingProfiler.h"
+//#include "tarch/multicore/Core.h"
+
+#endif
+
 // Some helpers
 constexpr int power(int basis, int exp) {
   return (exp == 0) ? 1 : basis * power(basis, exp - 1);
@@ -518,6 +526,7 @@ class exahype::solvers::Solver {
    */
   static int NumberOfSkeletonJobs;
 
+  static int NumberOfStolenJobs;
   /**
    * The type of a solver.
    */
@@ -985,6 +994,7 @@ class exahype::solvers::Solver {
 
   static int getNumberOfQueuedJobs(const JobType& jobType);
 
+  static int NumberOfRemoteJobs;
 
   /**
    * Ensure that all background jobs (such as prediction or compression jobs) have terminated before progressing
@@ -996,6 +1006,7 @@ class exahype::solvers::Solver {
    * \param[in] backgroundJobCounter A reference to a background job counter.
    */
   static void ensureAllJobsHaveTerminated(JobType jobType);
+
 
  /**
   * Waits until the \p cellDescription has completed its time step.

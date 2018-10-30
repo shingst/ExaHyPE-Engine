@@ -261,6 +261,9 @@ class Controller:
         context["useIpcm"]   = False # TODO
         context["useLikwid"] = False # TODO
         context["likwidInc"] = ""    # TODO
+        if context["useDistributedMem"]:
+            context["stealing"]  = self.spec["distributed_memory"]["stealing"]
+
         # kernels
         useOptKernel = False
         useFortran   = False

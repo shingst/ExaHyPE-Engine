@@ -34,6 +34,10 @@
 #include <iostream>
 #include <cstdio>
 
+#ifdef StealingUseProfiler
+#include "exahype/stealing/StealingProfiler.h"
+#endif
+
 tarch::logging::Log _log("exahype");
 
 int exahype::main(int argc, char** argv) {
@@ -239,12 +243,17 @@ int exahype::main(int argc, char** argv) {
   } else {
     logInfo("main()", "quit with error code " << programExitCode);
   }
-
-  peano::shutdownParallelEnvironment();
   peano::shutdownSharedMemoryEnvironment();
+#if !defined(DistributedStealing) &&  defined(StealingUseProfiler)
+  exahype::stealing::StealingProfiler::getInstance().endPhase();
+  exahype::stealing::StealingProfiler::getInstance().printStatistics();
+#endif
+  peano::shutdownParallelEnvironment();
+
   peano::releaseCachedData();
 
-  kernels::finalise();
+  kernels::finalise();  
+
 
   return programExitCode;
 }

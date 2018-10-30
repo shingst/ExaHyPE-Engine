@@ -609,6 +609,8 @@ class exahype::parser::Parser {
   };
 
   TBBInvadeStrategy getTBBInvadeStrategy() const;
+
+  std::string getStealingInputFile() const;
 };
 
 #endif

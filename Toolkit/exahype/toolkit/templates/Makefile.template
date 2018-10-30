@@ -43,7 +43,17 @@ endif
 ifeq ($(DISTRIBUTEDMEM),)
     DISTRIBUTEDMEM=MPI
 endif
+{% if stealing=="static" %}
+PROJECT_CFLAGS += -DDistributedStealing -DStealingStrategyStatic
+{% elif stealing=="dynamic" %}
+PROJECT_CFLAGS += -DDistributedStealing -DStealingStrategyDynamic
+{% elif stealing=="hybrid" %}
+PROJECT_CFLAGS += -DDistributedStealing -DStealingStrategyHybrid
+{% elif stealing=="static_hardcoded" %}
+PROJECT_CFLAGS += -DDistributedStealing -DStealingStrategyStaticHardcoded
 {% endif %}
+{% endif %}
+
 {% if useFortran %}
 ifeq ($(MIXEDLANG),)
     MIXEDLANG=Yes

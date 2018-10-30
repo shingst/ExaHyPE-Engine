@@ -29,9 +29,9 @@
 
 
 namespace exahype {
-namespace mappings {
-class FusedTimeStep;
-}
+  namespace mappings {
+    class FusedTimeStep;
+  }
 }
 
 /**
