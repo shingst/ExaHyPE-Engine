@@ -116,7 +116,7 @@ void {{codeNamespace}}::riemannSolver(
         gradQt[direction][n][s] = QR[({{(nDof*nDof3D)-((nDof*nDof3D)%vectSize)}}+s)*{{nDataPad}}+n] - QL[({{(nDof*nDof3D)-((nDof*nDof3D)%vectSize)}}+s)*{{nDataPad}}+n];
       }
       for (int s = {{(nDof*nDof3D)%vectSize}}; s < {{vectSize}};s++) { // fill missing points with valid values
-        Qavgt[n][s] = Qavgt[n][0]
+        Qavgt[n][s] = Qavgt[n][0];
         gradQt[direction][n][s] = gradQt[direction][n][0];
       }
     }
