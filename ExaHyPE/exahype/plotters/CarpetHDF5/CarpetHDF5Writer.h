@@ -86,6 +86,12 @@ namespace exahype {
  * such, the data layout only supports vertex data and not cell-centered data. Maybe the actual
  * CarpetHDF5 format supports also cell-centered representation.
  * 
+ * <h3>A note about time</h3>
+ * Since there is no global timestep counter in ExaHyPE (in contrast to Cactus, where the steps
+ * on the finest level are counted), the timesteps are just counting the plotting invocations
+ * (the "plotting steps", similar as they are counted in the VTK plotters, for instance). That
+ * means the number has no physical meaning (there is no equation time = dt * timestep)
+ * 
  * <h3>How to build the CarpetHDF5 plotters into your release</h3>
  * 
  * By default, the HDF5 plotters are excluded from compiling. If you enable it in your spec file, the code
@@ -182,11 +188,11 @@ public:
    **/
   void plotPatch(
       const dvec& offsetOfPatch, const dvec& sizeOfPatch, const dvec& dx,
-      double* mappedCell, double timeStamp);
+      double* mappedCell, double timeStamp, int limiterStatus);
   
   void plotPatchForSingleUnknown(
       const dvec& offsetOfPatch, const dvec& sizeOfPatch, const dvec& dx,
-      double* mappedCell, double timeStamp,
+      double* mappedCell, double timeStamp, int limiterStatus,
       int writtenUnknown, H5::H5File* target);
 
 }; // class ADERDG2CarpetHDF5Impl

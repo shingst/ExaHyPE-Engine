@@ -218,10 +218,10 @@ void exahype::plotters::CarpetHDF5Writer::finishPlotting() {
  **/
 void exahype::plotters::CarpetHDF5Writer::plotPatch(
       const dvec& offsetOfPatch, const dvec& sizeOfPatch, const dvec& dx,
-      double* mappedCell, double timeStamp) {
+      double* mappedCell, double timeStamp, int limiterStatus) {
 	for(int writtenUnknown=0; writtenUnknown < writtenUnknowns; writtenUnknown++) {
 		H5::H5File* target = files[allUnknownsInOneFile ? 0 : writtenUnknown];
-		plotPatchForSingleUnknown(offsetOfPatch, sizeOfPatch, dx, mappedCell, timeStamp, writtenUnknown, target);
+		plotPatchForSingleUnknown(offsetOfPatch, sizeOfPatch, dx, mappedCell, timeStamp, limiterStatus, writtenUnknown, target);
 	} // for writtenUnknown
 	component++;
 }
@@ -235,7 +235,7 @@ void exahype::plotters::CarpetHDF5Writer::plotPatch(
  **/
 void exahype::plotters::CarpetHDF5Writer::plotPatchForSingleUnknown(
       const dvec& offsetOfPatch, const dvec& sizeOfPatch, const dvec& dx,
-      double* mappedCell, double timeStamp,
+      double* mappedCell, double timeStamp, int limiterStatus_data,
       int writtenUnknown, H5::H5File* target) {
 	assertion(target != nullptr);
 	
@@ -281,9 +281,14 @@ void exahype::plotters::CarpetHDF5Writer::plotPatchForSingleUnknown(
 	Attribute iorigin = table.createAttribute("iorigin", PredType::NATIVE_INT, dtuple);
 	iorigin.write(PredType::NATIVE_INT, iorigin_data.data());
 	
-	int level_data = 0; // TODO: Read out real cell level
+	int level_data = 0; // TODO: Read out real (AMR) cell level (needs to be passed from ADERDG2CarpetHDF5 class, for instance)
 	Attribute level = table.createAttribute("level", PredType::NATIVE_INT, H5S_SCALAR);
 	level.write(PredType::NATIVE_INT, &level_data);
+
+	// This is not a Carpet metadata but something we add from the ExaHyPE side.
+	// It tells about the limiter status and typically reads like 0-O,1..2-DG,3..4-FV,5-T
+	Attribute limiterStatus = table.createAttribute("limiterStatus", PredType::NATIVE_INT, H5S_SCALAR);
+	limiterStatus.write(PredType::NATIVE_INT, &limiterStatus_data);
 	
 	Attribute timestep = table.createAttribute("timestep", PredType::NATIVE_INT, H5S_SCALAR);
 	timestep.write(PredType::NATIVE_INT, &iteration);
