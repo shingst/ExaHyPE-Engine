@@ -111,7 +111,8 @@ else
 	#rm $APPDIR/Makefile
 	#could also delete KernelCalls.cpp, $APPNAME_generated.cpp, etc.
 
-	verbose java -jar Toolkit/dist/ExaHyPE.jar  --not-interactive $SPECFILE || { >&2 echo "Failure when running the toolkit"; exit -1; }
+#	verbose java -jar Toolkit/dist/ExaHyPE.jar  --not-interactive $SPECFILE || { >&2 echo "Failure when running the toolkit"; exit -1; }
+	verbose Toolkit/toolkit.sh $SPECFILE || { >&2 echo "Failure when running the toolkit"; exit -1; }
 fi
 
 cd -

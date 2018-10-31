@@ -188,11 +188,29 @@ namespace exahype {
   double* getDataHeapArray(const int index);
 
   /**
+   * Const variant of its counterpart
+   */
+  const double* const getDataHeapArrayForReadOnlyAccess(const int index);
+
+  /**
+   * Assumes the data heap array can be split into DIMENSIONS_TIMES_TWO equally sized
+   * partitions (4 in 2D, 6 in 3D).
+   *
+   * @param index            heap index of the array.
+   * @param sizePerPartition size of the partitions.
+   * @param partitionIndex   the index of the particular partition we want to have access too.
+   * @return pointer to the first element of the partition.
+   */
+  double* getDataHeapArrayFacePart(const int index,const int sizePerPartition,const int partitionIndex);
+
+  /**
    * @return a data heap array as vector.
    *
    * @param index heap index of the array.
    */
   DataHeap::HeapEntries& getDataHeapEntries(const int index);
+
+  const DataHeap::HeapEntries& getDataHeapEntriesForReadOnlyAccess(const int index);
 
   /**
    * Moves a DataHeap array, i.e. copies the found
@@ -397,6 +415,11 @@ class exahype::solvers::Solver {
   static double PipedCompressedBytes;
   #endif
 
+  /**
+   * The solvers need to do adjust some operations slightly
+   * when those are run multiple times after each other in isolation.
+   */
+  static bool ProfileUpdate;
 
   /**
    * A flag indicating we fuse the algorithmic
@@ -1026,7 +1049,7 @@ class exahype::solvers::Solver {
   * \param[in[ isSkeletonJob the class of this job.
   */
  template <typename Job>
- static void submitPredictionJob(Job& job,const bool isSkeletonJob) {
+ static void submitJob(Job& job,const bool isSkeletonJob) {
    if ( isSkeletonJob ) {
      peano::datatraversal::TaskSet spawnedSet( job, peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible  );
    } else {

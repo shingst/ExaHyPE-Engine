@@ -32,7 +32,9 @@ void GRMHD::GRMHDSolver_ADERDG::init(const std::vector<std::string>& cmdlineargs
 //  feenableexcept(FE_INVALID | FE_OVERFLOW);  // Enable all floating point exceptions but FE_INEXACT
 	
   // Todo: Move this to specfile once we have working constants.
-  std::string id_default = "Fortran";
+  // std::string id_default = "Fortran";
+  // std::string bc_default = "left:exact,right:exact,top:exact,bottom:exact,front:exact,back:exact";
+  std::string id_default = "TOVSolver";
   std::string bc_default = "left:exact,right:exact,top:exact,bottom:exact,front:exact,back:exact";
 
   // alternatives:
@@ -158,7 +160,7 @@ void GRMHD::GRMHDSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(
   observables[1] = Q[4]; // dens
 }
 */
-/*
+
 bool GRMHD::GRMHDSolver_ADERDG::isPhysicallyAdmissible(
       const double* const solution,
       const double* const observablesMin,const double* const observablesMax,
@@ -167,26 +169,21 @@ bool GRMHD::GRMHDSolver_ADERDG::isPhysicallyAdmissible(
       const tarch::la::Vector<DIMENSIONS,double>& dx,
       const double t, const double dt) const {
 
-  // geometric criterion:
-  //  if ((center[0]-0.5)*(center[0]-0.5)+(center[1]-0.5)*(center[1]-0.5)<0.25*dx[0]*dx[0]) return false;
+	double radius = 8.12514;
 
-  // Static criterium for startup: When the density makes a large jump,
-  // ie. at the star crust
-  //if ( QMin[0] != 0.0 && QMax[0]/QMin[0] > 1e3 ) return false;
+	// lower left, upper right radius of cell
+	double l = tarch::la::norm2(center - dx/2.0);
+	double r = tarch::la::norm2(center + dx/2.0);
+	bool isAdmissible = (l > radius) || (r <= radius);
+	//printf("Cell has l=%f,r=%f => isAdmissible=%s\n", l, r, isAdmissible?"true":"false");
+	return isAdmissible;
 
-  if (observablesMin[0] < 0.0) return false;
-  if (observablesMin[1] < 0.0) return false;
 
-  // what about this kind of check?
-  
-  //for (int i=0; i<nVar; ++i) {
-//    if (!std::isfinite(QMin[i])) return false;
-  //  if (!std::isfinite(QMax[i])) return false;
-  //}
-  
-  return true;
 }
-*/
+
+
+
+
 
 void __attribute__((optimize("O0"))) GRMHD::GRMHDSolver_ADERDG::nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) {
   pdencp_(BgradQ, Q, gradQ);

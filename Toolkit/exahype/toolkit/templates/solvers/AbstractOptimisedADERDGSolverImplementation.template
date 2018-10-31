@@ -304,18 +304,17 @@ void {{project}}::{{abstractSolver}}::faceIntegral(double* const lduh,const doub
   const std::chrono::high_resolution_clock::time_point timeStart = std::chrono::high_resolution_clock::now();
 {% endif %}
   if ( levelDelta > 0 ) {
-    constexpr int sizeFlux  = {{optNamespace}}::getBndFluxSize();
 {% if tempVarsOnStack %}
-    double lFhbndCoarse[sizeFlux];
+    double lFhbndCoarse[{{optNamespace}}::getBndFluxSize()] __attribute__((aligned(ALIGNMENT)));
 {% else %}  
-    double* lFhbndCoarse = new double[sizeFlux];
+    double* lFhbndCoarse = allocateArray({{optNamespace}}::getBndFluxSize());
 {% endif %}
     {{optNamespace}}::faceFluxRestriction(lFhbndCoarse,lFhbnd,&subfaceIndex[0],levelDelta);
     
     tarch::la::Vector<DIMENSIONS,double> coarseGridCellSize = tarch::la::aPowI(levelDelta,3) * 1.0 * cellSize;
     {{optNamespace}}::faceIntegral(lduh,lFhbndCoarse,direction,orientation,1./coarseGridCellSize[direction] /*inverseDxDirection*/);
 {% if not tempVarsOnStack %}
-    delete[] lFhbndCoarse;
+    freeArray(lFhbndCoarse);
 {% endif %}    
   } else {
     {{optNamespace}}::faceIntegral(lduh,lFhbnd,direction,orientation,1./cellSize[direction]);
@@ -368,7 +367,7 @@ void {{project}}::{{abstractSolver}}::riemannSolver(double* FL,double* FR,const 
 
 
 
-void {{project}}::{{abstractSolver}}::boundaryConditions(double* const update, double* const fluxIn,const double* const stateIn,const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const int direction,const int orientation) {
+void {{project}}::{{abstractSolver}}::boundaryConditions(double* const fluxIn,const double* const stateIn,const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const int direction,const int orientation) {
 {% if enableProfiler %}
   _profiler->start("boundaryConditions");
 {% endif %}
@@ -409,8 +408,6 @@ void {{project}}::{{abstractSolver}}::boundaryConditions(double* const update, d
   else {
     riemannSolver(fluxIn,fluxOut,stateIn,stateOut,dt,direction,true,faceIndex);
   }
-  
-  {{optNamespace}}::faceIntegral(update,fluxIn,direction,orientation,1./cellSize[direction] /*inverseDxDirection*/);
   
 {% if not tempVarsOnStack %}
   //exahype::DataHeap::getInstance().deleteData(index,true);

@@ -60,6 +60,32 @@ namespace amr {
       const int levelDelta);
 
   /**
+   * Determines if the face \p faceIndex is
+   * a subset of the hull of the parent
+   *
+   * This is the case if
+   *
+   * subcellIndex[direction]==orientation*(tarch::la::aPowI(levelDelta,3)-1),
+   *
+   * i.e. if the cell belonging to this face is at the boundary
+   * of the parent cell and the face aligns with the
+   * parent cell's hull.
+   *
+   * The above equation takes the direction of the face's normal vector (x,y,z -> 0,1,2)
+   * and its orientation (-1,1 -> 0,1).
+   *
+   * @param faceIndex    an index in the range [0,DIMENSIONS_TIMES_TWO-1]
+   * @param subcellIndex a tuple of size DIMENSIONS giving the cell
+   * @param levelDelta   the differene in levels between the coarse grid
+   *                     parent and the child cell.
+   * @return true if the face is on the boundary of the parent.
+   */
+  bool faceIsOnBoundaryOfParent(
+      const int faceIndex,
+      const tarch::la::Vector<DIMENSIONS, int>& subcellIndex,
+      const int levelDelta);
+
+  /**
    * This method deemed to be necessary since I could
    * not trust the Boundary markers.
    *

@@ -34,7 +34,7 @@ class GlobalRollback;
 }
 
 /**
- * TODO(Dominic): Update docu.
+ * TODO(Dominic): This mapping is unused
  *
  * @author Dominic Charrier
  */

@@ -59,7 +59,7 @@ class SpecFile1Reader():
             reads_multiline_comment += 1 if line.strip().startswith("/*") else 0
             if reads_multiline_comment==0 and not reads_singline_comment:
                 m_project = re.match(r"\s*exahype-project\s+(\w+)",line)
-                m_group     = re.match(r"\s*(computational-domain|shared-memory|distributed-memory|(global-)?optimisation)",line)
+                m_group     = re.match(r"\s*(computational-domain|shared-memory|distributed-memory|(global-)?optimisation|profiling)\s*(//.+)?$",line)
                 m_solver    = re.match(r"\s*solver\s+([^\s]+)\s+(\w+)",line)
                 m_plotter = re.match(r"\s*plot\s+([^\s]+)(\s+(\w+))?",line)
                 if m_project:
