@@ -158,7 +158,7 @@ void GRMHD::GRMHDSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(
   observables[1] = Q[4]; // dens
 }
 */
-/*
+
 bool GRMHD::GRMHDSolver_ADERDG::isPhysicallyAdmissible(
       const double* const solution,
       const double* const observablesMin,const double* const observablesMax,
@@ -167,6 +167,16 @@ bool GRMHD::GRMHDSolver_ADERDG::isPhysicallyAdmissible(
       const tarch::la::Vector<DIMENSIONS,double>& dx,
       const double t, const double dt) const {
 
+	double radius = 8.12514;
+
+	// lower left, upper right radius of cell
+	double l = tarch::la::norm2(center - dx/2.0);
+	double r = tarch::la::norm2(center + dx/2.0);
+	bool isAdmissible = (l > radius) || (r <= radius);
+	//printf("Cell has l=%f,r=%f => isAdmissible=%s\n", l, r, isAdmissible?"true":"false");
+	return isAdmissible;
+
+/*
   // geometric criterion:
   //  if ((center[0]-0.5)*(center[0]-0.5)+(center[1]-0.5)*(center[1]-0.5)<0.25*dx[0]*dx[0]) return false;
 
@@ -185,8 +195,9 @@ bool GRMHD::GRMHDSolver_ADERDG::isPhysicallyAdmissible(
   //}
   
   return true;
-}
 */
+}
+
 
 void __attribute__((optimize("O0"))) GRMHD::GRMHDSolver_ADERDG::nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) {
   pdencp_(BgradQ, Q, gradQ);
