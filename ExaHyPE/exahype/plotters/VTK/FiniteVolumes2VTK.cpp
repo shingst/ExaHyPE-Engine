@@ -310,7 +310,7 @@ void exahype::plotters::FiniteVolumes2VTK::plotPatch(const int cellDescriptionsI
     */
 
     if (!slicer || slicer->isPatchActive(offsetOfPatch, sizeOfPatch)) {
-      double* solution = getDataHeapArray(cellDescription.getSolution());
+      double* solution = static_cast<double*>(cellDescription.getSolution());
       std::pair<int,int> vertexAndCellIndex(0,0);
       if (_writtenUnknowns>0) {
         vertexAndCellIndex = _gridWriter->plotPatch(offsetOfPatch, sizeOfPatch, _numberOfCellsPerAxis);

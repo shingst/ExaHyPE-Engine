@@ -315,9 +315,9 @@ class exahype::records::ADERDGCellDescription {
   persistent int solutionAveragesIndex;
   persistent int solutionCompressedIndex;
   // pointers for direct access
-  persistent int solution[2];
-  persistent int solutionAverages[2];
-  persistent int solutionCompressed[2];
+  persistent pointer solution;
+  persistent pointer solutionAverages;
+  persistent pointer solutionCompressed;
    
   /**
    *  Heap index pointing to the DoF of the previous solution associated with this cell
@@ -334,9 +334,9 @@ class exahype::records::ADERDGCellDescription {
   persistent int previousSolutionAveragesIndex;
   persistent int previousSolutionCompressedIndex;
   // pointers for direct access
-  persistent int previousSolution[2];
-  persistent int previousSolutionAverages[2];
-  persistent int previousSolutionCompressed[2];
+  persistent pointer previousSolution;
+  persistent pointer previousSolutionAverages;
+  persistent pointer previousSolutionCompressed;
   
   /**
    * Index pointing to the update DoF belonging to this cell. All volume updates
@@ -347,9 +347,9 @@ class exahype::records::ADERDGCellDescription {
   persistent int updateAveragesIndex;
   persistent int updateCompressedIndex;
   // pointers for direct access
-  persistent int update[2];
-  persistent int updateAverages[2];
-  persistent int updateCompressed[2];
+  persistent pointer update;
+  persistent pointer updateAverages;
+  persistent pointer updateCompressed;
   ///@}
 
   /**
@@ -368,9 +368,9 @@ class exahype::records::ADERDGCellDescription {
   persistent int extrapolatedPredictorAveragesIndex;
   persistent int extrapolatedPredictorCompressedIndex;
   // pointers for direct access
-  persistent int extrapolatedPredictor[2];
-  persistent int extrapolatedPredictorAverages[2];
-  persistent int extrapolatedPredictorCompressed[2];
+  persistent pointer extrapolatedPredictor;
+  persistent pointer extrapolatedPredictorAverages;
+  persistent pointer extrapolatedPredictorCompressed;
 
   /**
    * Index pointing to the normal fluxes computed at the bounding faces of the
@@ -380,9 +380,9 @@ class exahype::records::ADERDGCellDescription {
   persistent int fluctuationAveragesIndex;
   persistent int fluctuationCompressedIndex;
   // pointers for direct access
-  persistent int fluctuation[2];
-  persistent int fluctuationAverages[2];
-  persistent int fluctuationCompressed[2];
+  persistent pointer fluctuation;
+  persistent pointer fluctuationAverages;
+  persistent pointer fluctuationCompressed;
   ///@}
   
   /**
@@ -394,8 +394,8 @@ class exahype::records::ADERDGCellDescription {
   persistent int solutionMinIndex;
   persistent int solutionMaxIndex;
   // pointers for direct access
-  persistent int solutionMin[2];
-  persistent int solutionMax[2];
+  persistent pointer solutionMin;
+  persistent pointer solutionMax;
   
   /**
    * \see augmentationStatus

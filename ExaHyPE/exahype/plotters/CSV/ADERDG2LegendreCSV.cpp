@@ -151,7 +151,7 @@ void exahype::plotters::ADERDG2LegendreCSV::plotPatch(const int cellDescriptions
   auto& aderdgCellDescription = exahype::solvers::ADERDGSolver::getCellDescription(cellDescriptionsIndex,element);
 
   if (aderdgCellDescription.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Cell) {
-    double* solverSolution = getDataHeapArray(aderdgCellDescription.getSolution());
+    double* solverSolution = static_cast<double*>(aderdgCellDescription.getSolution());
 
 	// Old Debugging information by Vasco. We can probably recycle some of them
 	// or obtain them directly from the aderdgCellDescription.

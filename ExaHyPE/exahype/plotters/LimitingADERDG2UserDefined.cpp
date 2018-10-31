@@ -64,14 +64,14 @@ void exahype::plotters::LimitingADERDG2UserDefined::plotPatch(const int cellDesc
       auto& limiterPatch = limitingADERDG->
               getLimiterPatchForSolverPatch(solverPatch,cellDescriptionsIndex);
 
-      double* limiterSolution = getDataHeapArray(limiterPatch.getSolution());
+      double* limiterSolution = static_cast<double*>(limiterPatch.getSolution());
 
       plotFiniteVolumesPatch(
           limiterPatch.getOffset(),
           limiterPatch.getSize(), limiterSolution,
           limiterPatch.getTimeStamp()); // The limiter time stamp might not be valid at the time of the plotting
     } else { // solverPatch.getRefinementStatus()<exahype::solvers::ADERDGSolver::MinimumRefinementStatusForActiveFVPatch
-      double* solverSolution = getDataHeapArray(solverPatch.getSolution());
+      double* solverSolution = static_cast<double*>(solverPatch.getSolution());
 
       plotADERDGPatch(
           solverPatch.getOffset(),

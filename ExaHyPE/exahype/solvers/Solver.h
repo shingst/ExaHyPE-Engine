@@ -181,41 +181,6 @@ namespace exahype {
   #endif
 
   /**
-   * @return pointer to the first element of a raw data heap array.
-   *
-   * @param pointer the single bits of a double pointer represented as contiguous int array of size 2.
-   *
-   * @note DaStGen does not the double* and long int data types. This
-   * makes this clumsy conversion necessary.
-   */
-  double* getDataHeapArray(const tarch::la::Vector<2,int>& pointer);
-
-  /**
-   * Stores the single bits of a double pointer in a contiguous int array of size 2.
-   *
-   * @param ptr the pointer to copy
-   */
-  tarch::la::Vector<2,int> convertPointer(const double* const ptr);
-
-  /**
-   * Stores the single bits of a double pointer in a contiguous int array of size 2.
-   *
-   * @param ptr the pointer to copy
-   */
-  tarch::la::Vector<2,int> convertPointer(const char* const ptr);
-
-  /**
-   * Assumes the data heap array can be split into DIMENSIONS_TIMES_TWO equally sized
-   * partitions (4 in 2D, 6 in 3D).
-   *
-   * @param index            heap index of the array.
-   * @param sizePerPartition size of the partitions.
-   * @param partitionIndex   the index of the particular partition we want to have access too.
-   * @return pointer to the first element of the partition.
-   */
-  double* getDataHeapArrayFacePart(const tarch::la::Vector<2,int>& pointer,const int sizePerPartition,const int partitionIndex);
-
-  /**
    * @return a data heap array as vector.
    *
    * @param index heap index of the array.

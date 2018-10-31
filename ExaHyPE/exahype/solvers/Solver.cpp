@@ -49,29 +49,6 @@ const exahype::DataHeap::HeapEntries& exahype::getDataHeapEntriesForReadOnlyAcce
   return DataHeap::getInstance().getData(index);
 }
 
-double* exahype::getDataHeapArray(const tarch::la::Vector<2,int>& pointer) {
-  double* ptr = nullptr;
-  memcpy(&ptr,&pointer[0],8);
-  return ptr;
-}
-
-tarch::la::Vector<2,int> exahype::convertPointer( const double* const ptr ) {
-  tarch::la::Vector<2,int> pointer;
-  memcpy(&pointer[0],&ptr,8);
-  return pointer;
-}
-
-tarch::la::Vector<2,int> exahype::convertPointer( const char* const ptr ) {
-  tarch::la::Vector<2,int> pointer;
-  memcpy(&pointer[0],&ptr,8);
-  return pointer;
-}
-
-double* exahype::getDataHeapArrayFacePart(const tarch::la::Vector<2,int>& pointer,const int sizePerPartition,const int partition) {
-  assertion2( partition >= 0 && partition < DIMENSIONS_TIMES_TWO, partition, DIMENSIONS_TIMES_TWO );
-  return getDataHeapArray(pointer)+(sizePerPartition*partition);
-}
-
 void exahype::moveDataHeapEntries(
     const int fromIndex,const int toIndex,bool recycleFromArray) {
   std::copy(

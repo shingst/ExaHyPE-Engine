@@ -490,7 +490,7 @@ void exahype::plotters::ADERDG2LegendreVTK::plotPatch(const int cellDescriptions
   auto& aderdgCellDescription = exahype::solvers::ADERDGSolver::getCellDescription(cellDescriptionsIndex,element);
 
   if (aderdgCellDescription.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Cell) {
-    double* solverSolution = getDataHeapArray(aderdgCellDescription.getSolution());
+    double* solverSolution = static_cast<double*>(aderdgCellDescription.getSolution());
 
     plotPatch(
         aderdgCellDescription.getOffset(),

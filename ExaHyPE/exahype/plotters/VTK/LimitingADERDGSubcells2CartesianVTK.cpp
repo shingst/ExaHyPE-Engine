@@ -207,7 +207,7 @@ void exahype::plotters::LimitingADERDGSubcells2CartesianVTK::plotPatch(const int
       auto& limiterPatch = limitingADERDG->
               getLimiterPatchForSolverPatch(solverPatch,cellDescriptionsIndex);
 
-      double* limiterSolution = getDataHeapArray(limiterPatch.getSolution());
+      double* limiterSolution = static_cast<double*>(limiterPatch.getSolution());
       plotFiniteVolumesPatch(
           limiterPatch.getOffset(),
           limiterPatch.getSize(), limiterSolution,

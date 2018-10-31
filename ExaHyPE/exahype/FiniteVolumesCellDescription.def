@@ -64,9 +64,9 @@ class exahype::records::FiniteVolumesCellDescription {
   persistent int solutionAveragesIndex;
   persistent int solutionCompressedIndex;
   // pointers for direct access
-  persistent int solution[2];
-  persistent int solutionAverages[2];
-  persistent int solutionCompressed[2];
+  persistent pointer solution;
+  persistent pointer solutionAverages;
+  persistent pointer solutionCompressed;
   
   /**
    *  Index referring to the old solution DoF associated with this cell
@@ -76,9 +76,9 @@ class exahype::records::FiniteVolumesCellDescription {
   persistent int previousSolutionAveragesIndex;
   persistent int previousSolutionCompressedIndex;
   // pointers for direct access
-  persistent int previousSolution[2];
-  persistent int previousSolutionAverages[2];
-  persistent int previousSolutionCompressed[2];
+  persistent pointer previousSolution;
+  persistent pointer previousSolutionAverages;
+  persistent pointer previousSolutionCompressed;
   
   /**
    * Index pointing to the solution DoF extrapolated to the bounding faces of
@@ -88,9 +88,9 @@ class exahype::records::FiniteVolumesCellDescription {
   persistent int extrapolatedSolutionAveragesIndex;
   persistent int extrapolatedSolutionCompressedIndex;
   // pointers for direct access
-  persistent int extrapolatedSolution[2];
-  persistent int extrapolatedSolutionAverages[2];
-  persistent int extrapolatedSolutionCompressed[2];
+  persistent pointer extrapolatedSolution;
+  persistent pointer extrapolatedSolutionAverages;
+  persistent pointer extrapolatedSolutionCompressed;
   
 
   enum CompressionState {
