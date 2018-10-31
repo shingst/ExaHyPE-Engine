@@ -178,27 +178,11 @@ bool GRMHD::GRMHDSolver_ADERDG::isPhysicallyAdmissible(
 	//printf("Cell has l=%f,r=%f => isAdmissible=%s\n", l, r, isAdmissible?"true":"false");
 	return isAdmissible;
 
-/*
-  // geometric criterion:
-  //  if ((center[0]-0.5)*(center[0]-0.5)+(center[1]-0.5)*(center[1]-0.5)<0.25*dx[0]*dx[0]) return false;
 
-  // Static criterium for startup: When the density makes a large jump,
-  // ie. at the star crust
-  //if ( QMin[0] != 0.0 && QMax[0]/QMin[0] > 1e3 ) return false;
-
-  if (observablesMin[0] < 0.0) return false;
-  if (observablesMin[1] < 0.0) return false;
-
-  // what about this kind of check?
-  
-  //for (int i=0; i<nVar; ++i) {
-//    if (!std::isfinite(QMin[i])) return false;
-  //  if (!std::isfinite(QMax[i])) return false;
-  //}
-  
-  return true;
-*/
 }
+
+
+
 
 
 void __attribute__((optimize("O0"))) GRMHD::GRMHDSolver_ADERDG::nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) {
