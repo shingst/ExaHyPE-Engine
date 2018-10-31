@@ -5,22 +5,22 @@
 // ========================
 //   www.exahype.eu
 // ========================
-#include "TimingStatistics.h"
+#include "TimingStatistics_DG.h"
 
 #include "TimingStatisticsWriter.cpph"
-#include "AbstractGRMHDSolver_FV.h"
+#include "AbstractGRMHDSolver_ADERDG.h"
 
-GRMHD::TimingStatistics::TimingStatistics() : exahype::plotters::FiniteVolumes2UserDefined::FiniteVolumes2UserDefined(){
-  const int basisSize = GRMHD::AbstractGRMHDSolver_FV::PatchSize;
+GRMHD::TimingStatistics_DG::TimingStatistics_DG() : exahype::plotters::ADERDG2UserDefined::ADERDG2UserDefined(){
+  const int basisSize = GRMHD::AbstractGRMHDSolver_ADERDG::Order + 1;
   const int basisSizeD =  basisSize * basisSize * (DIMENSIONS == 3 ? basisSize : 1);
-  const int numberOfVariables = GRMHD::AbstractGRMHDSolver_FV::NumberOfVariables;
+  const int numberOfVariables = GRMHD::AbstractGRMHDSolver_ADERDG::NumberOfVariables;
   const int unknownsPerPatch = basisSizeD * numberOfVariables;
   
   writer = new TimingStatisticsWriter("output/timing-statistics.asc", unknownsPerPatch);
 }
 
 
-void GRMHD::TimingStatistics::plotPatch(
+void GRMHD::TimingStatistics_DG::plotPatch(
     const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
     const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* u,
     double timeStamp) {
@@ -28,13 +28,13 @@ void GRMHD::TimingStatistics::plotPatch(
 }
 
 
-void GRMHD::TimingStatistics::startPlotting( double time) {
+void GRMHD::TimingStatistics_DG::startPlotting( double time) {
   writer->newTimeStep(time);
   writer->numberOfPatches = 0;
 }
 
 
-void GRMHD::TimingStatistics::finishPlotting() {
+void GRMHD::TimingStatistics_DG::finishPlotting() {
   // @TODO Please insert your code here.
 }
 

@@ -5,6 +5,7 @@
 #include "Fortran/PDE.h"
 
 #include <cstring> // memset
+#include <cmath> //min,max
 #include "kernels/KernelUtils.h" // matrix indexing
 #include "kernels/GaussLegendreQuadrature.h"
 
@@ -170,13 +171,18 @@ bool GRMHD::GRMHDSolver_ADERDG::isPhysicallyAdmissible(
       const double t, const double dt) const {
 
 	double radius = 8.12514;
-
 	// lower left, upper right radius of cell
-	double l = tarch::la::norm2(center - dx/2.0);
-	double r = tarch::la::norm2(center + dx/2.0);
-	bool isAdmissible = (l > radius) || (r <= radius);
-	//printf("Cell has l=%f,r=%f => isAdmissible=%s\n", l, r, isAdmissible?"true":"false");
-	return isAdmissible;
+	double cen = tarch::la::norm2(center);
+	double dr = 0.5;
+	bool shouldLimit = (cen > (radius -dr) ) && ( cen  <= (radius+dr) ); 
+//  if(isAdmissible) {
+//    printf("Cell has centre = %f => isAdmissible=%s\n",cen,isAdmissible?"true":"false");
+//  }
+//  printf("Cell has l=%f,r=%f => isAdmissible=%s\n", l, r, isAdmissible?"true":"false");
+  
+
+  // return TRUE if the cell does not need limited
+	return !shouldLimit;
 
 
 }

@@ -29,8 +29,8 @@ exahype-project GRMHD
 
   computational-domain
    dimension const                = 3
-   width                          = 20.0, 20.0, 20.0
-   offset                         = -10., -10., -10.0
+   width                          = 30.0, 30.0, 30.0
+   offset                         = -15., -15., -15.0
    end-time                       = 1.00001 
   end computational-domain
   
@@ -63,7 +63,7 @@ exahype-project GRMHD
   solver Limiting-ADER-DG GRMHDSolver
     variables const                = rho:1,vel:3,E:1,B:3,psi:1,lapse:1,shift:3,gij:6
     order const                    = 3
-    maximum-mesh-size              = 1.111
+    maximum-mesh-size              = 5.0000
     maximum-mesh-depth             = 0
     time-stepping                  = global
     type const = nonlinear
@@ -95,13 +95,14 @@ exahype-project GRMHD
       output    = ./vtk-output/primitive
     end plot 
 
-    plot vtk::Cartesian::vertices::limited::binary ConservedWriter
+    plot vtu::Cartesian::vertices::limited::ascii ConservedWriter
       variables const = 1
       time      = 0.0
       repeat    = 0.10
       output    = ./vtk-output/limited
     end plot 
 
+/*
     plot vtk::patches::gaps::ascii  ConservedWriter
       variables const = 1
       time      = 0.0
@@ -109,6 +110,20 @@ exahype-project GRMHD
       output    = ./vtk-output/gaps
     end plot 
 
+    plot vtk::Cartesian::cells::ascii IntegralsWriter
+       variables const = 0
+       time = 0.0
+       repeat = 0.05
+       output = ./output/global-integrals
+     end plot 
+*/
+
+    plot user::defined TimingStatistics_DG
+      variables const = 0
+      time = 0.0
+      repeat = 0.05
+      output = ./output/timing-benchmarks
+    end plot
   end solver
 
 end exahype-project
