@@ -28,10 +28,10 @@ exahype-project GRMHD
   plotter-subdirectory const = Writers
 
   computational-domain
-    dimension const                = 3
-    width                          = 6.28, 6.28, 6.28
-    offset                         = 0.0, 0.0, 0.0
-    end-time                       = 2.00001
+   dimension const                = 3
+   width                          = 20.0, 20.0, 20.0
+   offset                         = -10., -10., -10.0
+   end-time                       = 1.00001 
   end computational-domain
   
   shared-memory
@@ -63,7 +63,7 @@ exahype-project GRMHD
   solver Limiting-ADER-DG GRMHDSolver
     variables const                = rho:1,vel:3,E:1,B:3,psi:1,lapse:1,shift:3,gij:6
     order const                    = 3
-    maximum-mesh-size              = 0.233
+    maximum-mesh-size              = 1.111
     maximum-mesh-depth             = 0
     time-stepping                  = global
     type const = nonlinear
@@ -79,21 +79,36 @@ exahype-project GRMHD
     dmp-difference-scaling         = 1e-3 
     steps-till-cured               = 0
 
-    //constants  = foo:bar,blo:dez
 
-    plot vtk::Cartesian::vertices::limited::binary ConservedWriter
-      variables const = 19
+    plot vtu::Legendre::vertices::ascii ConservedWriter
+      variables const = 1
       time      = 0.0
-      repeat    = 0.00166667
+      repeat    = 0.10
       output    = ./vtk-output/conserved
+    end plot
+
+
+    plot vtu::Legendre::vertices::ascii ConservedWriter
+      variables const = 1
+      time      = 0.0
+      repeat    = 0.10
+      output    = ./vtk-output/primitive
     end plot 
 
-    plot vtk::Legendre::vertices::ascii IntegralsWriter
-      variables const = 0
-      time = 0.0
-      repeat = 0.00166667
-      output = ./global-integrals
-    end plot
+    plot vtk::Cartesian::vertices::limited::binary ConservedWriter
+      variables const = 1
+      time      = 0.0
+      repeat    = 0.10
+      output    = ./vtk-output/limited
+    end plot 
+
+    plot vtk::patches::gaps::ascii  ConservedWriter
+      variables const = 1
+      time      = 0.0
+      repeat    = 0.10
+      output    = ./vtk-output/gaps
+    end plot 
+
   end solver
 
 end exahype-project
