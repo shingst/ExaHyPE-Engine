@@ -257,6 +257,10 @@ void exahype::parser::Parser::checkValidity() {
   } else {
     getSimulationTimeSteps();
   }
+
+  // TODO: Should call checkSolverConsistency(int solverNumber) for every solver at this point.
+  //       Actually I (Sven) Cannot figure out at the moment where checkSolverConsistency is called at all.
+  //       This just lead to bugs where we called a project compiled for LimitingADERDG with a pure ADERDG specfile.
 }
 
 bool exahype::parser::Parser::isValid() const {
