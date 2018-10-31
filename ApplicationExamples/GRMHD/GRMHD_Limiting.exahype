@@ -118,7 +118,7 @@ exahype-project GRMHD
      end plot 
 */
 
-    plot user::defined TimingStatistics
+    plot user::defined TimingStatistics_DG
       variables const = 0
       time = 0.0
       repeat = 0.05
