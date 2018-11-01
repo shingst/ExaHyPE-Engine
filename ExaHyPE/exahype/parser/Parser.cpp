@@ -378,7 +378,7 @@ double exahype::parser::Parser::getDoubleFromPath(std::string path, double defau
   try {
     return _impl->getFromPath(path, defaultValue, isOptional);
   } catch(std::runtime_error& e) {
-    logError("getIntFromPath()", e.what());
+    logError("getDoubleFromPath()", e.what());
     invalidate();
     return defaultValue; /* I don't like returning something here */
   }

@@ -109,6 +109,11 @@ public:
    * operation.
    */
   std::string getValueAsString(const std::string& key) const;
+  
+  bool getValueAsBoolOrDefault(const std::string& key, bool default_value) const;
+  int getValueAsIntOrDefault(const std::string& key, int default_value) const;
+  double getValueAsDoubleOrDefault(const std::string& key, double default_value) const;
+  std::string getValueAsStringOrDefault(const std::string& key, std::string default_value) const;
 
   /**
    * Returns the contents of this ParserView as a map, i.e. the keys
