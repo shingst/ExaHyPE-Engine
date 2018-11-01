@@ -106,7 +106,7 @@ void exahype::plotters::FiniteVolume2CarpetHDF5::plotPatch(
   auto& cellDescription =  exahype::solvers::FiniteVolumesSolver::getCellDescription(cellDescriptionsIndex,element);
 
   if (cellDescription.getType()==exahype::solvers::FiniteVolumesSolver::CellDescription::Type::Cell) {
-    double* solution = DataHeap::getInstance().getData(cellDescription.getSolution()).data();
+    double* solution = static_cast<double*>(cellDescription.getSolution());
 
     plotPatch(
         cellDescription.getOffset(),

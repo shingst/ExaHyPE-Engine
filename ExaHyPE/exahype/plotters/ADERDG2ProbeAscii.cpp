@@ -118,7 +118,7 @@ void exahype::plotters::ADERDG2ProbeAscii::plotPatch(const int cellDescriptionsI
   auto& aderdgCellDescription = exahype::solvers::ADERDGSolver::getCellDescription(cellDescriptionsIndex,element);
 
   if (aderdgCellDescription.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Cell) {
-    double* solverSolution = DataHeap::getInstance().getData(aderdgCellDescription.getSolution()).data();
+    double* solverSolution = static_cast<double*>(aderdgCellDescription.getSolution());
 
     plotPatch(
         aderdgCellDescription.getOffset(),

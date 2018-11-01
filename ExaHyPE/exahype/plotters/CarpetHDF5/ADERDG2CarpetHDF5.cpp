@@ -115,7 +115,7 @@ void exahype::plotters::ADERDG2CarpetHDF5::plotPatch(
   auto& aderdgCellDescription = exahype::solvers::ADERDGSolver::getCellDescription(cellDescriptionsIndex,element);
 
   if (aderdgCellDescription.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Cell) {
-    double* solverSolution = DataHeap::getInstance().getData(aderdgCellDescription.getSolution()).data();
+    double* solverSolution = static_cast<double*>(aderdgCellDescription.getSolution());
 
     plotPatch(
         aderdgCellDescription.getOffset(),
