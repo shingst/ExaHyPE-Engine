@@ -117,8 +117,8 @@ class Controller:
            raise ValueError("Number of dimensions must be 2 or 3")
         if self.config["nDof"] < 1 or self.config["nDof"] > 10: #nDof = order+1
            raise ValueError("Order has to be between 0 and 9")
-        if (self.config["useSource"] and not self.config["useSourceVect"] and self.config["useNCPVect"]) or (self.config["useNCP"] and not self.config["useNCPVect"] and self.config["useSourceVect"]) :
-            raise ValueError("If using source and NCP, both or neither must be vectorized")
+        #if (self.config["useSource"] and not self.config["useSourceVect"] and self.config["useNCPVect"]) or (self.config["useNCP"] and not self.config["useNCPVect"] and self.config["useSourceVect"]) :
+        #    raise ValueError("If using source and NCP, both or neither must be vectorized")
 
 
     def printConfig(self):
