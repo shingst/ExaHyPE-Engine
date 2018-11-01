@@ -91,7 +91,7 @@ exahype::plotters::ADERDG2FlashHDF5::~ADERDG2FlashHDF5() {
 	if(writer) delete writer;
 }
 
-void exahype::plotters::ADERDG2FlashHDF5::init(const std::string& filename, int basisSize, int solverUnknowns, int writtenUnknowns, exahype::parser::ParserView  plotterParameters) {
+void exahype::plotters::ADERDG2FlashHDF5::init(const std::string& filename, int basisSize, int solverUnknowns, int writtenUnknowns, exahype::parser::ParserView plotterParameters) {
 	bool oneFilePerTimestep = true;
 	bool allUnknownsInOneFile = true;
 
