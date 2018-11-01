@@ -21,7 +21,7 @@ info peano::parallel::SendReceiveBufferAbstractImplementation::releaseSentMessag
 
 info  sharedmemoryoracles        -1  black
 
-info  Z4Solver                                -1  black
+info  GRMHD                                   -1  white
 info  exahype::solvers::Plotter               -1  black
 info  exahype::runner::Runner::runAsWorker    -1  black
 info  exahype::mappings::LoadBalancing        -1  white
