@@ -163,9 +163,9 @@ RegionSlicer* RegionSlicer::fromSelectionQuery(const exahype::parser::ParserView
 }
 
 Slicer* Slicer::bestFromSelectionQuery(const exahype::parser::ParserView& plotterParameters) {
-	logInfo("bestFromSelectionQuery", "Scanning plotting plotter parameters for selection query '"<<plotterParameters.dump("/select")<<"'");
-
 	if ( plotterParameters.hasKey("select")) {
+	  logInfo("bestFromSelectionQuery", "Scanning plotting plotter parameters for selection query '"<<plotterParameters.dump("/select")<<"'");
+	  
 	  // Build up the registry:
 	  Slicer *a = CartesianSlicer::fromSelectionQuery(plotterParameters);
 	  Slicer *b = RegionSlicer::fromSelectionQuery(plotterParameters);
@@ -181,6 +181,7 @@ Slicer* Slicer::bestFromSelectionQuery(const exahype::parser::ParserView& plotte
 	  delete a; delete b;
 	  return new NonSlicer;
 	} else {
+	  logInfo("bestFromSelectionQuery", "No slicing requested for plotter configuration '"<<plotterParameters.toString()<<"'");
 	  return nullptr;
 	}
 }

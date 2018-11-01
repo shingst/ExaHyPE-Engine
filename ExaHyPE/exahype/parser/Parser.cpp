@@ -988,22 +988,24 @@ std::string exahype::parser::Parser::getFilenameForPlotter(int solverNumber,
 
 exahype::parser::ParserView exahype::parser::Parser::getParametersForPlotter(int solverNumber,
                                                    int plotterNumber) const {
-  // New style: We expect the "parameters" path
+  // New style: We expect the "parameters" path, and all user-defined/plotter-defined parameters are
+  //    within this section. Example:
+  //       { 'parameters': {'output_format': 'zipFoo', 'select': {'x':3} } }
   std::string path = sformat("/solvers/%d/plotters/%d/parameters", solverNumber, plotterNumber);
   if ( hasPath(path) ) {
     logInfo("getParametersForPlotter", "Found parameters at " << path);
     return exahype::parser::ParserView(this,path);
   }
 
-  // Old style:
-  path = sformat("/solvers/%d/plotters/%d/select", solverNumber, plotterNumber);
-  if ( hasPath(path) ) {
-    logInfo("getParametersForPlotter", "Found parameters at " << path);
-    return exahype::parser::ParserView(this,path);
+  // Old style: There is only the "select" statement which shall be interpreted as the selection
+  // query. Example:
+  //       { 'select': { 'x':3 } }
+  std::string select_path = sformat("/solvers/%d/plotters/%d/select", solverNumber, plotterNumber);
+  std::string plotter_path = sformat("/solvers/%d/plotters/%d", solverNumber, plotterNumber);
+  if ( hasPath(select_path) ) {
+    logInfo("getParametersForPlotter", "Found parameters at " << select_path);
+    return exahype::parser::ParserView(this,plotter_path);
   }
-
-  // Note that we do not support a bizarre mixing of old and new
-  // style a la "/solvers/%d/plotters/%d/parameters/select"
 
   // No Parameters given for parser.
   return exahype::parser::ParserView();

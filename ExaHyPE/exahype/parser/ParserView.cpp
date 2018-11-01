@@ -38,6 +38,17 @@ std::string exahype::parser::ParserView::getPath(const std::string& key) const {
   return _basePath + "/" + key;
 }
 
+bool exahype::parser::ParserView::isEmpty() const {
+  return _parser!=nullptr;
+  // TODO: Actually this check should check wether the _basePath exists and, if so,
+  //       check wether it holds an empty dictionary, cf. empty() call on
+  //       https://nlohmann.github.io/json/ -- however, such an API has to be exposed
+  //       by the parser itself
+  // 
+  // || ( getParser().hasPath(getPath("")) && getParser()
+  // assertion(getParser().isValid());
+}
+
 bool exahype::parser::ParserView::hasKey(const std::string& key) const {
   if (_parser!=nullptr) {
     assertion(getParser().isValid());
@@ -185,15 +196,16 @@ void exahype::parser::ParserView::toString(std::ostream& out) const {
     out << "basePath:" <<  _basePath;
     out <<  ")";
   } {
-    out << "not available";
+    out << "ParserView(<empty>)";
   }
 }
 
 std::string exahype::parser::ParserView::dump(const std::string path) const {
+   std::string dump_path = _basePath +  ( path.compare("")==0 ? "" : "/"+path );
    if (_parser!=nullptr) {
-     return getParser().dumpPath( _basePath +  ( path.compare("")==0 ? "" : "/"+path ) );
+     return getParser().dumpPath(dump_path);
    } else {
-     return "not available";
+     return std::string("<") + dump_path + "> not available";
    }
 }
 
