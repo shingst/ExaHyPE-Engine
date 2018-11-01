@@ -222,8 +222,8 @@ class SolverController:
         context["useFluxVect"]        = "fluxvect"        in optimizations
         context["useFusedSource"]     = "fusedsource"     in optimizations
         context["useFusedSourceVect"] = "fusedsourcevect" in optimizations
-        context["useSourceVect"]      = "fusedsourcevect" in optimizations
-        context["useNCPVect"]         = "fusedsourcevect" in optimizations
+        context["useSourceVect"]      = "sourcevect"      in optimizations
+        context["useNCPVect"]         = "ncpvect"         in optimizations
         
         return context
         

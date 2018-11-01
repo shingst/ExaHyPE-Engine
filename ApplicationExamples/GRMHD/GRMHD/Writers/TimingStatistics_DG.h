@@ -4,18 +4,18 @@
 // ========================
 //   www.exahype.eu
 // ========================
-#ifndef TimingStatistics_CLASS_HEADER_
-#define TimingStatistics_CLASS_HEADER_
+#ifndef TimingStatistics_DG_CLASS_HEADER_
+#define TimingStatistics_DG_CLASS_HEADER_
 
-#include "exahype/plotters/FiniteVolumes2UserDefined.h"
+#include "exahype/plotters/ADERDG2UserDefined.h"
 
 namespace GRMHD {
-  class TimingStatistics;
+  class TimingStatistics_DG;
 }
 
 class TimingStatisticsWriter; // forward decl
 
-class GRMHD::TimingStatistics : public exahype::plotters::FiniteVolumes2UserDefined {
+class GRMHD::TimingStatistics_DG : public exahype::plotters::ADERDG2UserDefined {
  TimingStatisticsWriter* writer;
 
  public:
@@ -26,7 +26,7 @@ class GRMHD::TimingStatistics : public exahype::plotters::FiniteVolumes2UserDefi
    * you if you use user defined plotting. You have
    * to declare and manage such member variables yourself. 
    */
-  TimingStatistics();
+  TimingStatistics_DG();
 
   /**
    * This method is invoked every time a cell 

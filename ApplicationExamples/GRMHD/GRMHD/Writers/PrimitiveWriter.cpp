@@ -23,12 +23,17 @@ GRMHD::PrimitiveWriter::~PrimitiveWriter() {
 
 
 void GRMHD::PrimitiveWriter::startPlotting(double time) {
-  // @todo Please insert your code here
+  numberOfC2PFailures = 0;
+  allConversions = 0;
 }
 
 
 void GRMHD::PrimitiveWriter::finishPlotting() {
-  // @todo Please insert your code here
+  if(numberOfC2PFailures > 0) {
+    static tarch::logging::Log _log("GRMHD::PrimitiveWriter");
+    logInfo("finishPlotting", "Counted " << numberOfC2PFailures << " Cons2Prim failures during plotting (" << (allConversions/numberOfC2PFailures*100) << "%)");
+  }
+  startPlotting(0);
 }
 
 
@@ -44,8 +49,13 @@ void GRMHD::PrimitiveWriter::mapQuantities(
     int err;
     pdecons2prim_(outputQuantities, Q, &err);
     if(err != 0) {
-	    printf("Cons2Prim Failure in PrimitiveWriter!!!");
+	    //printf("Cons2Prim Failure in PrimitiveWriter!!!");
+	    numberOfC2PFailures++;
+
+	    constexpr int c2pFailureIndicatingMagicNumberForDensity = -1;
+	    Q[0] = c2pFailureIndicatingMagicNumberForDensity;
     }
+    allConversions++;
 }
 
 

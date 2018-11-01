@@ -500,7 +500,7 @@ class SpecFile1Reader():
             for j,plotter in enumerate(solver["plotters"]):
                 plotter["variables"]=self.map_variables(plotter.pop("variables"))
                 if "select" in plotter:
-                    plotter["parameters"]=self.map_constants(plotter.pop("select"))
+                    plotter["select"]=self.map_constants(plotter.pop("select"))
         
         return context
     
