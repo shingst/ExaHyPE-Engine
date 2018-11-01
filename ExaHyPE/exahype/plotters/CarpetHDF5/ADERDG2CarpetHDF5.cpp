@@ -139,7 +139,7 @@ void exahype::plotters::ADERDG2CarpetHDF5::plotPatch(const dvec& offsetOfPatch, 
     if(writer->slicer && writer->slicer->getIdentifier() == "CartesianSlicer") {
 	mappedCell = new double[writer->writtenFieldsSize];
 	
-	interpolateCartesianSlicedPatch(offsetOfPatch, sizeOfPatch, dx, u, mappedCell, timeStamp, limiterStatus
+	interpolateCartesianSlicedPatch(offsetOfPatch, sizeOfPatch, dx, u, mappedCell, timeStamp, limiterStatus,
 		static_cast<exahype::plotters::CartesianSlicer&>(*writer->slicer));
     } else {
 	mappedCell = new double[writer->patchFieldsSize];

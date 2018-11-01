@@ -122,6 +122,7 @@ class exahype::plotters::CarpetHDF5Writer {
   typedef tarch::la::Vector<DIMENSIONS, double> dvec;
   tarch::logging::Log _log;
 
+
 public:
   // information from the device::init() process
   const int           solverUnknowns; ///< The number of unknowns in the Solver (ie. number of PDEs)
@@ -178,6 +179,11 @@ public:
   void startPlotting(double time);
   void finishPlotting();
 
+
+  // Default values for limiterStatus for plotPatch* functions, used for instance from
+  // a pure FV solver which has no limiter status flag.
+  constexpr static int nonLimitingLimiterStatus = -1;
+
   /**
    * This is 2D and 3D, allows several unknowns, named fields and all that.
    * 
@@ -188,7 +194,7 @@ public:
    **/
   void plotPatch(
       const dvec& offsetOfPatch, const dvec& sizeOfPatch, const dvec& dx,
-      double* mappedCell, double timeStamp, int limiterStatus);
+      double* mappedCell, double timeStamp, int limiterStatus=nonLimitingLimiterStatus);
   
   void plotPatchForSingleUnknown(
       const dvec& offsetOfPatch, const dvec& sizeOfPatch, const dvec& dx,
