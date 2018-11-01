@@ -10,7 +10,7 @@
  * Released under the BSD 3 Open Source License.
  * For the full license text, see LICENSE.txt
  *
- * \author Dominic E. Charrier, Tobias Weinzierl, Jean-Matthieu Gallard, Fabian Güra, Leonhard Rannabauer
+ * \author Dominic E. Charrier, Tobias Weinzierl, Jean-Matthieu Gallard, Fabian Gra, Leonhard Rannabauer
  **/
 #include "exahype/solvers/ADERDGSolver.h"
 
@@ -2600,12 +2600,12 @@ void exahype::solvers::ADERDGSolver::updateSolution(
     assertion1(cellDescription.getCorrectorTimeStepSize()<std::numeric_limits<double>::max(),cellDescription.toString());
 
     // gather surface integral
-    const int dofPerFace = getBndFluxSize(); // TODO(Dominic): Reintroduce surfaceIntegral??
+    const int dofsPerFace = getBndFluxSize(); // TODO(Dominic): Reintroduce surfaceIntegral??
     for (int direction=0; direction<DIMENSIONS; direction++) {
       for (int orientation=0; orientation<2; orientation++) {
         const int faceIndex=2*direction+orientation;
         if ( cellDescription.getFacewiseAugmentationStatus(faceIndex)<MaximumAugmentationStatus ) { // ignore Ancestors
-          const double* const lFhbnd = static_cast<double*>(cellDescription.getFluctuation()) + dofPerFace * faceIndex;
+          const double* const lFhbnd = static_cast<double*>(cellDescription.getFluctuation()) + dofsPerFace * faceIndex;
           faceIntegral(update,lFhbnd,direction,orientation,0/*implicit conversion*/,0,cellDescription.getSize());
         }
       }
@@ -2698,14 +2698,14 @@ void exahype::solvers::ADERDGSolver::prolongateFaceDataToDescendant(
       assertion1(DataHeap::getInstance().isValidIndex(parentCellDescription.getExtrapolatedPredictorIndex()),parentCellDescription.toString());
 
       const int dataPerFace = getBndFaceSize();
-      const int dofPerFace  = getBndFluxSize();
+      const int dofsPerFace  = getBndFluxSize();
 
       // fine
       double* lQhbndFine = static_cast<double*>(cellDescription.getExtrapolatedPredictor()) + dataPerFace * faceIndex; // TODO(Dominic ): Pointer should be obtained only once
-      double* lFhbndFine = static_cast<double*>(cellDescription.getFluctuation())           + dofPerFace  * faceIndex ;
+      double* lFhbndFine = static_cast<double*>(cellDescription.getFluctuation())           + dofsPerFace  * faceIndex ;
       // coarse
       const double* lQhbndCoarse = static_cast<double*>(parentCellDescription.getExtrapolatedPredictor()) + dataPerFace * faceIndex;
-      const double* lFhbndCoarse = static_cast<double*>(parentCellDescription.getFluctuation()          ) + dofPerFace  * faceIndex;
+      const double* lFhbndCoarse = static_cast<double*>(parentCellDescription.getFluctuation()          ) + dofsPerFace  * faceIndex;
 
       faceUnknownsProlongation(lQhbndFine,lFhbndFine,lQhbndCoarse,lFhbndCoarse, levelCoarse, levelFine,
                                exahype::amr::getSubfaceIndex(subcellIndex,direction));
@@ -2850,7 +2850,7 @@ void exahype::solvers::ADERDGSolver::restrictToTopMostParent( // TODO must be me
           cellDescription.getOffset(),cellDescription.getSize(),
           parentCellDescription.getOffset()); // TODO(Dominic): Maybe, I get can get rid of some variables again
   // gather contributions
-  const int dofPerFace = getBndFluxSize();
+  const int dofsPerFace = getBndFluxSize();
   for (int faceIndex=0; faceIndex<DIMENSIONS_TIMES_TWO; faceIndex++) {
     const int direction   = faceIndex / 2;
     const int orientation = faceIndex % 2;
@@ -2860,7 +2860,7 @@ void exahype::solvers::ADERDGSolver::restrictToTopMostParent( // TODO must be me
       assertion1(exahype::amr::faceIsOnBoundaryOfParent(faceIndex,subcellIndex,levelDelta),cellDescription.toString());
       assertion1(cellDescription.getNeighbourMergePerformed(faceIndex),cellDescription.toString());// necessary but not sufficient
 
-      const double* const lFhbnd = static_cast<double*>(cellDescription.getFluctuation()) + dofPerFace * faceIndex; // TODO(Dominic ): Obtain array pointer only once
+      const double* const lFhbnd = static_cast<double*>(cellDescription.getFluctuation()) + dofsPerFace * faceIndex; // TODO(Dominic ): Obtain array pointer only once
 
       faceIntegral(updateFine,lFhbnd,direction,orientation,subfaceIndex,levelDelta,cellDescription.getSize());
 
@@ -3178,39 +3178,29 @@ std::string exahype::solvers::ADERDGSolver::riemannDataToString(
     const double* const Q,const double* const F,std::string suffix) const {
   const int numberOfData = _numberOfVariables + _numberOfParameters;
   const int nodesPerFace = getBndFaceSize()/numberOfData;
-  std::vector<double> minQ;
-  std::vector<double> minF;
-  std::vector<double> maxQ;
-  std::vector<double> maxF;
-  minQ.resize(numberOfData);
-  maxQ.resize(numberOfData);
-  minF.resize(_numberOfVariables);
-  maxF.resize(_numberOfVariables);
-  std::fill_n(minQ.begin(),minQ.size(),std::numeric_limits<double>::max());
-  std::fill_n(minF.begin(),minF.size(),std::numeric_limits<double>::max());
-  std::fill_n(maxQ.begin(),maxQ.size(),-std::numeric_limits<double>::max()); // check the sign
-  std::fill_n(maxF.begin(),maxF.size(),-std::numeric_limits<double>::max());
 
   std::ostringstream stream;
   stream << std::endl;
   stream << "riemann states ("<<suffix<<"):" << std::endl;
   for (int i = 0; i<numberOfData; i++) {
+    double minQ = std::numeric_limits<double>::max();
+    double maxQ = -std::numeric_limits<double>::max();
     for(int n=0; n<nodesPerFace; ++n) {
-      minQ[i] = std::min(Q[n*numberOfData+i],minQ[i]);
-      maxQ[i] = std::max(Q[n*numberOfData+i],maxQ[i]);
+      minQ = std::min(Q[n*numberOfData+i],minQ);
+      maxQ = std::max(Q[n*numberOfData+i],maxQ);
     }
-    stream << "i="<<i<<": ";
-    stream << "Q"<<suffix<<"["<<i<<"] in ["<<std::setprecision(2)<<minQ[i]<<","<<std::setprecision(2)<<maxQ[i]<<"], ";
+    stream << "Q"<<suffix<<"["<<i<<"] in ["<<std::setprecision(2)<<minQ<<","<<std::setprecision(2)<<maxQ<<"], ";
     stream << std::endl;
   }
   stream << "riemann fluxes ("<<suffix<<"):" << std::endl;
   for (int i = 0; i<_numberOfVariables; i++) {
+    double minF = std::numeric_limits<double>::max();
+    double maxF = -std::numeric_limits<double>::max();
     for(int n=0; n<nodesPerFace; ++n) {
-      minF[i] = std::min(F[n*_numberOfVariables+i],minF[i]);
-      maxF[i] = std::max(F[n*_numberOfVariables+i],maxF[i]);
+      minF = std::min(F[n*_numberOfVariables+i],minF);
+      maxF = std::max(F[n*_numberOfVariables+i],maxF);
     }
-    stream << "i="<<i<<": ";
-    stream << "F"<<suffix<<"["<<i<<"] in  ["<<std::setprecision(2)<<minF[i]<<","<<std::setprecision(2)<<maxF[i]<<"], ";
+    stream << "F"<<suffix<<"["<<i<<"] in  ["<<std::setprecision(2)<<minF<<","<<std::setprecision(2)<<maxF<<"], ";
     stream << std::endl;
   }
   return stream.str();
@@ -3233,13 +3223,13 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
   assertion1(pRight.getRefinementEvent()==CellDescription::None,pRight.toString());
 
   const int dataPerFace = getBndFaceSize();
-  const int dofPerFace  = getBndFluxSize();
+  const int dofsPerFace  = getBndFluxSize();
 
   double* QL = static_cast<double*>(pLeft.getExtrapolatedPredictor()) +  dataPerFace * face._faceIndexLeft;
-  double* FL = static_cast<double*>(pLeft.getFluctuation()          ) +  dofPerFace  * face._faceIndexLeft;
+  double* FL = static_cast<double*>(pLeft.getFluctuation()          ) +  dofsPerFace  * face._faceIndexLeft;
 
   double* QR = static_cast<double*>(pRight.getExtrapolatedPredictor()) + dataPerFace * face._faceIndexRight;
-  double* FR = static_cast<double*>(pRight.getFluctuation()          ) + dofPerFace  * face._faceIndexRight;
+  double* FR = static_cast<double*>(pRight.getFluctuation()          ) + dofsPerFace  * face._faceIndexRight;
 
   // todo Time step must be interpolated in local time stepping case
   // both time step sizes are the same, so the min has no effect here.
@@ -3264,7 +3254,7 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
     std::string outputInformationL = riemannDataToString(QL,FL,"L");
     std::string outputInformationR = riemannDataToString(QR,FR,"R");
 
-    const int nodesPerFace = dofPerFace/_numberOfVariables;
+    const int nodesPerFace = dofsPerFace/_numberOfVariables;
     for (int i = 0; i<_numberOfVariables; i++) {
       for(int n=0; n<nodesPerFace; ++n) {
         assertion10(tarch::la::equals(pLeft.getCorrectorTimeStepSize(),0.0) || (std::isfinite(FL[i]) && std::isfinite(FR[i])),
@@ -3325,9 +3315,9 @@ void exahype::solvers::ADERDGSolver::applyBoundaryConditions(CellDescription& p,
   #endif
 
   const int dataPerFace = getBndFaceSize();
-  const int dofPerFace  = getBndFluxSize();
+  const int dofsPerFace = getBndFluxSize();
   double* QIn = static_cast<double*>(p.getExtrapolatedPredictor()) +  dataPerFace * face._faceIndex;
-  double* FIn = static_cast<double*>(p.getFluctuation())           +  dofPerFace  * face._faceIndex;
+  double* FIn = static_cast<double*>(p.getFluctuation())           +  dofsPerFace * face._faceIndex;
   const double* luh = static_cast<double*>(p.getSolution());
 
   #ifdef Asserts
@@ -3349,7 +3339,7 @@ void exahype::solvers::ADERDGSolver::applyBoundaryConditions(CellDescription& p,
   assertion4(std::isfinite(p.getCorrectorTimeStepSize()),p.toString(),face._faceIndex,face._direction,p.getCorrectorTimeStepSize());
   assertion4(p.getCorrectorTimeStepSize()>=0.0, p.toString(),face._faceIndex,face._direction,p.getCorrectorTimeStepSize());
   if ( _checkForNaNs ) {
-    for(int i=0; i<dofPerFace; ++i) {
+    for(int i=0; i<dofsPerFace; ++i) {
       assertion6(tarch::la::equals(p.getCorrectorTimeStepSize(),0.0) || std::isfinite(FIn[i]),p.toString(),face._faceIndex,face._direction,i,FIn[i],inputData);
     }
   }
@@ -3994,11 +3984,11 @@ void exahype::solvers::ADERDGSolver::sendDataToNeighbour(
     assertion(DataHeap::getInstance().isValidIndex(cellDescription.getExtrapolatedPredictorIndex()));
     assertion(DataHeap::getInstance().isValidIndex(cellDescription.getFluctuationIndex()));
 
-    const int dofPerFace  = getBndFluxSize();
+    const int dofsPerFace = getBndFluxSize();
     const int dataPerFace = getBndFaceSize();
 
-    const double* lQhbnd = static_cast<double*>( cellDescription.getExtrapolatedPredictor() +  dataPerFace*face._faceIndex );
-    const double* lFhbnd = static_cast<double*>( cellDescription.getFluctuation() +            dofPerFace* face._faceIndex );
+    const double* lQhbnd = static_cast<double*>(cellDescription.getExtrapolatedPredictor()) + dataPerFace * face._faceIndex;
+    const double* lFhbnd = static_cast<double*>(cellDescription.getFluctuation())           + dofsPerFace * face._faceIndex;
 
     waitUntilCompletedTimeStep<CellDescription>(cellDescription,true,true);
 
@@ -4008,7 +3998,7 @@ void exahype::solvers::ADERDGSolver::sendDataToNeighbour(
         lQhbnd, dataPerFace, toRank, x, level,
         peano::heap::MessageType::NeighbourCommunication);
     DataHeap::getInstance().sendData(
-        lFhbnd, dofPerFace, toRank, x, level,
+        lFhbnd, dofsPerFace, toRank, x, level,
         peano::heap::MessageType::NeighbourCommunication);
 
     // TODO(Dominic): If anarchic time stepping send the time step over too.
@@ -4025,13 +4015,13 @@ void exahype::solvers::ADERDGSolver::sendEmptyDataToNeighbour(
   // Receive order: observablesMax,observablesMin,lFhbnd,lQhbnd
   // TODO(WORKAROUND)
   #if defined(UsePeanosSymmetricBoundaryExchanger)
-  const int dofPerFace  = getBndFluxSize();
+  const int dofsPerFace  = getBndFluxSize();
   const int dataPerFace = getBndFaceSize();
   DataHeap::getInstance().sendData(
       _invalidExtrapolatedPredictor.data(), dataPerFace, toRank, x, level,
       peano::heap::MessageType::NeighbourCommunication);
   DataHeap::getInstance().sendData(
-      _invalidFluctuations.data(), dofPerFace, toRank, x, level,
+      _invalidFluctuations.data(), dofsPerFace, toRank, x, level,
       peano::heap::MessageType::NeighbourCommunication);
   #else
   for(int sends=0; sends<DataMessagesPerNeighbourCommunication; ++sends)
@@ -4072,10 +4062,10 @@ void exahype::solvers::ADERDGSolver::mergeWithNeighbourData(
     // Send order: lQhbnd,lFhbnd
     // Receive order: lFhbnd,lQhbnd
     // TODO(Dominic): If anarchic time stepping, receive the time step too.
-    const int dofPerFace  = getBndFluxSize();
+    const int dofsPerFace  = getBndFluxSize();
     const int dataPerFace = getBndFaceSize();
     DataHeap::getInstance().receiveData(
-        const_cast<double*>(_receivedFluctuations.data()),dofPerFace, // TODO const-correct peano
+        const_cast<double*>(_receivedFluctuations.data()),dofsPerFace, // TODO const-correct peano
         fromRank, x, level,peano::heap::MessageType::NeighbourCommunication);
     DataHeap::getInstance().receiveData(                              // TODO const-correct peano
         const_cast<double*>(_receivedExtrapolatedPredictor.data()),dataPerFace,
@@ -4104,12 +4094,12 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
   assertion(DataHeap::getInstance().isValidIndex(cellDescription.getFluctuationIndex()));
 
   const int dataPerFace = getBndFaceSize();
-  const int dofPerFace  = getBndFluxSize();
+  const int dofsPerFace = getBndFluxSize();
   if ( face._orientation==0 ) {
     const double* const QL = lQhbnd;
     double* FL             = const_cast<double*>(lFhbnd); // TODO const-correct kernels
-    const double* const QR = static_cast<double*>( cellDescription.getExtrapolatedPredictor() + dataPerFace*face._faceIndex );
-    double* FR             = static_cast<double*>( cellDescription.getFluctuation() +           dofPerFace* face._faceIndex );
+    const double* const QR = static_cast<double*>( cellDescription.getExtrapolatedPredictor()) + dataPerFace * face._faceIndex;
+    double* FR             = static_cast<double*>( cellDescription.getFluctuation())           + dofsPerFace * face._faceIndex;
     // TODO const-correct kernels
     
     #ifdef Asserts
@@ -4122,7 +4112,7 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
         cellDescription.getCorrectorTimeStepSize(),face._direction,false,face._faceIndex);
     
     #ifdef Asserts
-    for (int ii = 0; ii<dofPerFace; ii++) {
+    for (int ii = 0; ii<dofsPerFace; ii++) {
       assertion8(std::isfinite(FL[ii]), cellDescription.toString(),
           face._faceIndex, ii, QR[ii], QL[ii], FR[ii], FL[ii],fromRank);
       assertion8(std::isfinite(FR[ii]), cellDescription.toString(),
@@ -4131,9 +4121,9 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
     #endif
   } else {
     const double* const QR = lQhbnd;
-    const double* const QL = static_cast<double*>( cellDescription.getExtrapolatedPredictor() + dataPerFace*face._faceIndex );
+    const double* const QL = static_cast<double*>(cellDescription.getExtrapolatedPredictor()) + dataPerFace * face._faceIndex;
     double* FR = const_cast<double*>(lFhbnd); // TODO const-correct kernels
-    double* FL = static_cast<double*>( cellDescription.getFluctuation() + dofPerFace*face._faceIndex ); // TODO const-correct kernels
+    double* FL = static_cast<double*>(cellDescription.getFluctuation()) + dofsPerFace * face._faceIndex; // TODO const-correct kernels
     
     #ifdef Asserts
     std::string inputDataL = riemannDataToString(QL,FL,"L");
@@ -4145,7 +4135,7 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
         cellDescription.getCorrectorTimeStepSize(),face._direction,false,face._faceIndex);
     
     #ifdef Asserts
-    for (int ii = 0; ii<dofPerFace; ii++) {
+    for (int ii = 0; ii<dofsPerFace; ii++) {
       assertion10(std::isfinite(FL[ii]), cellDescription.toString(),
           face._faceIndex, ii, QR[ii], QL[ii], FR[ii], FL[ii],fromRank,inputDataL,inputDataR);
       assertion10(std::isfinite(FR[ii]), cellDescription.toString(),
