@@ -50,22 +50,7 @@ const exahype::DataHeap::HeapEntries& exahype::getDataHeapEntriesForReadOnlyAcce
   return DataHeap::getInstance().getData(index);
 }
 
-double* exahype::getDataHeapArray(const int index) {
-  assertion1(DataHeap::getInstance().isValidIndex(index),index);
-  return getDataHeapEntries(index).data();
-}
-
-const double* const exahype::getDataHeapArrayForReadOnlyAccess(const int index) {
-  return getDataHeapEntries(index).data();
-}
-
-double* exahype::getDataHeapArrayFacePart(const int index,const int sizePerPartition,const int partition) {
-  assertionEquals( getDataHeapEntries(index).size(),static_cast<unsigned int>(DIMENSIONS_TIMES_TWO*sizePerPartition) );
-  assertion2( partition >= 0 && partition < DIMENSIONS_TIMES_TWO, partition, DIMENSIONS_TIMES_TWO );
-  return getDataHeapEntries(index).data()+(sizePerPartition*partition);
-}
-
-void exahype::moveDataHeapArray(
+void exahype::moveDataHeapEntries(
     const int fromIndex,const int toIndex,bool recycleFromArray) {
   std::copy(
       getDataHeapEntries(fromIndex).begin(),

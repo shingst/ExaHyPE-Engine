@@ -27,26 +27,27 @@ exahype-project GRMHD
   output-directory const           = ./ApplicationExamples/GRMHD/GRMHD
   architecture const               = noarch
   log-file                         = whatever.log
+  plotter-subdirectory const = Writers
 
   computational-domain
     dimension const                = 3
-    width                          = 6.28, 6.28, 6.28
-    offset                         = 0.0, 0.0, 0.0
-    end-time                       = 2.00001
+    width                          = 30.0, 30.0, 30.0
+    offset                         = -15., -15., -15. 
+    end-time                       = 100.00001
   end computational-domain
   
   shared-memory
     identifier               = dummy
     configure                = {}
-    cores                    = 1
+    cores                    = 8
     properties-file          = sharedmemory.properties
   end shared-memory  
   
   distributed-memory
     identifier       = static_load_balancing
-    configure        = {hotspot,fair,ranks_per_node:1}
-    buffer-size      = 64
-    timeout          = 60
+    configure        = {hotspot,fair,ranks-per-node:8}
+    buffer-size      = 640000
+    timeout          = 600
   end distributed-memory
 
   global-optimisation
@@ -63,14 +64,18 @@ exahype-project GRMHD
 
   solver Finite-Volumes GRMHDSolver_FV
     variables const                = rho:1,vel:3,E:1,B:3,psi:1,lapse:1,shift:3,gij:6
-    patch-size const               = 3
-    maximum-mesh-size              = 0.233
+    patch-size const               = 5
+    maximum-mesh-size              = 5
     time-stepping                  = global
-    type const         = godunov
+    type const         = musclhancock
+    //type const  = godunov
     terms const        = flux,ncp
     optimisation const = generic
     language const                 = C
 
+
+/*
+/*
     plot vtk::Cartesian::vertices::ascii ConservedWriter
       variables const = 19
       time      = 0.0
@@ -85,26 +90,39 @@ exahype-project GRMHD
       select    = z:0.0
     end plot
 
+*/
+
+   plot vtk::Cartesian::cells::ascii Density
+      variables const = 2
+      time      = 0.0001
+      repeat    = 0.5
+      output    = ./vtk-output/density
+    end plot
+
+/*
     plot vtk::Cartesian::cells::ascii PrimitiveWriter
       variables const = 19
       time      = 0.0
-      repeat    = 0.00590278
+      repeat    = 0.1
       output    = ./vtk-output/primitive
     end plot
-
+*/
     plot vtk::Cartesian::cells::ascii IntegralsWriter
-      variables const = 0
-      time = 0.0
-      repeat = 0.000001
-      output = ./output/global-integrals
-    end plot
+       variables const = 0
+       time = 0.0
+       repeat = 0.05
+       output = ./output/global-integrals
+     end plot
 
-    plot user::defined TimingStatistics
+
+    plot user::defined TimingStatistics_FV
       variables const = 0
       time = 0.0
-      repeat = 0.0000000001
-      output = ./timing-benchmarks
+      repeat = 0.05
+      output = ./output/timing-benchmarks
     end plot
+*/
+
   end solver
 
 

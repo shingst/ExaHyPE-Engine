@@ -364,7 +364,7 @@ void exahype::plotters::Patch2VTK::plotPatch(const int solverNumber,const solver
 			auto& solverPatch  = cellInfo._ADERDGCellDescriptions[element];
 			if(solverPatch.getType()!=exahype::solvers::ADERDGSolver::CellDescription::Type::Cell)
 				return; // plot only cells
-			solution = DataHeap::getInstance().getData(solverPatch.getSolution()).data();
+			solution = static_cast<double*>(solverPatch.getSolution());
 			timeStamp = solverPatch.getCorrectorTimeStamp();
 			offsetOfPatch = solverPatch.getOffset(),
 			sizeOfPatch = solverPatch.getSize();
@@ -391,7 +391,7 @@ void exahype::plotters::Patch2VTK::plotPatch(const int solverNumber,const solver
 			auto& solverPatch  = cellInfo._FiniteVolumesCellDescriptions[element];
 			if(solverPatch.getType()!=exahype::solvers::FiniteVolumesSolver::CellDescription::Type::Cell)
 				return; // plot only cells
-			solution = DataHeap::getInstance().getData(solverPatch.getSolution()).data();
+			solution = static_cast<double*>(solverPatch.getSolution());
 			timeStamp = solverPatch.getTimeStamp();
 			offsetOfPatch = solverPatch.getOffset(),
 			sizeOfPatch = solverPatch.getSize();

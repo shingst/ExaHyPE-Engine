@@ -151,7 +151,7 @@ public:
    *     as structure of arrays is to write each unknown in its own file (ie. one file per physical field).
    *
    **/
-  FlashHDF5Writer(const std::string& _filename, int _basisSize, int _solverUnknowns, int _writtenUnknowns, const std::string& _plotterParameters,
+  FlashHDF5Writer(const std::string& _filename, int _basisSize, int _solverUnknowns, int _writtenUnknowns, exahype::parser::ParserView _plotterParameters,
 		   char** writtenQuantitiesNames, bool oneFilePerTimestep_=false, bool allUnknownsInOneFile_=false);
 
   void setupFile(H5::H5File* file);

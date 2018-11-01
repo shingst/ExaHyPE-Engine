@@ -125,7 +125,7 @@ public:
 	 **/
 	template<typename MapView>
 	bool setFromSpecFile(MapView constants) {
-		tarch::logging::Log _log("BoundaryCondition");
+		tarch::logging::Log _log("GRMHD::BoundaryCondition");
 		BC_FROM_SPECFILE_SIDE(left);
 		BC_FROM_SPECFILE_SIDE(right);
 		BC_FROM_SPECFILE_SIDE(front);

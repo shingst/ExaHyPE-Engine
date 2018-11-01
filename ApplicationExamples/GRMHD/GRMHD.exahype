@@ -24,12 +24,13 @@ exahype-project GRMHD
   output-directory const           = ./ApplicationExamples/GRMHD/GRMHD
   architecture const               = noarch
   log-file                         = whatever.log
+  plotter-subdirectory const = Writers
 
   computational-domain
-    dimension const                = 3
-    width                          = 6.28, 6.28, 6.28
-    offset                         = 0.0, 0.0, 0.0
-    end-time                       = 2.00001
+     dimension const                = 3
+     width                          = 20.0, 20.0, 20.0
+     offset                         = -10., -10., -10.0
+     end-time                       = 1.00001 
   end computational-domain
   
   shared-memory
@@ -41,7 +42,7 @@ exahype-project GRMHD
   
   distributed-memory
     identifier       = static_load_balancing
-    configure        = {hotspot,fair,ranks_per_node:1}
+    configure        = {hotspot,fair,ranks-per-node:1}
     buffer-size      = 64
     timeout          = 60
   end distributed-memory

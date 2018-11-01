@@ -56,7 +56,7 @@ void exahype::plotters::FiniteVolumes2UserDefined::plotPatch(const int solverNum
   auto& finiteVolumesCellDescription  = cellInfo._FiniteVolumesCellDescriptions[element];
 
   if (finiteVolumesCellDescription.getType()==exahype::solvers::FiniteVolumesSolver::CellDescription::Type::Cell) {
-    double* solverSolution = DataHeap::getInstance().getData(finiteVolumesCellDescription.getSolution()).data();
+    double* solverSolution = static_cast<double*>(finiteVolumesCellDescription.getSolution());
 
     plotPatch(
         finiteVolumesCellDescription.getOffset(),

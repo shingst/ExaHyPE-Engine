@@ -115,7 +115,7 @@ void exahype::plotters::ExaHyPE2Tecplot::plotPatch(const int solverNumber,const 
   // a limiting cell or whatever.
   if (aderdgCellDescription.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Cell) {
     // The internal cell structure is (order,order,order,nVar) in C and 3D.
-    double* solverSolution = DataHeap::getInstance().getData(aderdgCellDescription.getSolution()).data();
+    double* solverSolution = static_cast<double*>(aderdgCellDescription.getSolution());
 
     // vectors of length DIMENSIONS:
     double* cellOffset = aderdgCellDescription.getOffset().data();

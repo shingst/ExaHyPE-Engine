@@ -93,11 +93,13 @@ case $CMD in
 	"toolkit") # Run the toolkit for an application, without compiling
 		cdroot; getappname
 		SPECFILE="$(subreq find specfile "$APPNAME")" || abort "Could not find specfile: $SPECFILE"
-		info "Running ExaHyPE.jar on $SPECFILE"
-		exec java -jar Toolkit/dist/ExaHyPE.jar --not-interactive $SPECFILE
+		# info "Running ExaHyPE.jar on $SPECFILE" # new toolkit is silent by default
+		#exec java -jar Toolkit/dist/ExaHyPE.jar --not-interactive $SPECFILE
+		exec Toolkit/toolkit.sh $SPECFILE
 		;;
 	"toolkit-call") # Just call the toolkit, don't do anything beyond
-		exec java -jar $(subreq root)/Toolkit/dist/ExaHyPE.jar --not-interactive $@
+		#exec java -jar $(subreq root)/Toolkit/dist/ExaHyPE.jar --not-interactive $@
+		exec Toolkit/toolkit.sh $@
 		;;
 	"compile") # Invokes the toolkit and compilation of an application
 		cdapp;

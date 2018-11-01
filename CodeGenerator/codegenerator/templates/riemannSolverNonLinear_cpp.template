@@ -93,7 +93,7 @@ void {{codeNamespace}}::riemannSolver(
   for (int xy = 0; xy < {{(nDof*nDof3D)-((nDof*nDof3D)%vectSize)}}; xy+={{vectSize}}) {
     for (int n = 0; n < {{nVar}}; n++) {
       for (int s = 0; s < {{vectSize}}; s++) {
-        Qavgt[n][s] = 0.5 * (QL[(xy+s)*{{nDataPad}}+n] + QR[(xy+s)*{{nDataPad}}+n]);
+        Qavgt_block[n*{{vectSize}}+s] = 0.5 * (QL[(xy+s)*{{nDataPad}}+n] + QR[(xy+s)*{{nDataPad}}+n]);
         gradQt[direction][n][s] = QR[(xy+s)*{{nDataPad}}+n] - QL[(xy+s)*{{nDataPad}}+n];
       }
     }
@@ -102,7 +102,7 @@ void {{codeNamespace}}::riemannSolver(
 #endif
     solver.{{solverName}}::nonConservativeProduct_vect(Qavgt, gradQt, ncpt, {{vectSize}});
     for (int s = 0; s < {{vectSize}}; s++) {
-      for (int n = 0; n < {{nVarPad}}; n++) {
+      for (int n = 0; n < {{nVar}}; n++) {
         FR[(xy+s)*{{nVarPad}}+n] -= 0.5*ncpt[n][s];
         FL[(xy+s)*{{nVarPad}}+n] += 0.5*ncpt[n][s];
       }
@@ -112,11 +112,11 @@ void {{codeNamespace}}::riemannSolver(
   {
     for (int n = 0; n < {{nVar}}; n++) {
       for (int s = 0; s < {{(nDof*nDof3D)%vectSize}}; s++) {
-        Qavgt[n][s] = 0.5 * (QL[({{(nDof*nDof3D)-((nDof*nDof3D)%vectSize)}}+s)*{{nDataPad}}+n] + QR[({{(nDof*nDof3D)-((nDof*nDof3D)%vectSize)}}+s)*{{nDataPad}}+n]);
+        Qavgt_block[n*{{vectSize}}+s] = 0.5 * (QL[({{(nDof*nDof3D)-((nDof*nDof3D)%vectSize)}}+s)*{{nDataPad}}+n] + QR[({{(nDof*nDof3D)-((nDof*nDof3D)%vectSize)}}+s)*{{nDataPad}}+n]);
         gradQt[direction][n][s] = QR[({{(nDof*nDof3D)-((nDof*nDof3D)%vectSize)}}+s)*{{nDataPad}}+n] - QL[({{(nDof*nDof3D)-((nDof*nDof3D)%vectSize)}}+s)*{{nDataPad}}+n];
       }
       for (int s = {{(nDof*nDof3D)%vectSize}}; s < {{vectSize}};s++) { // fill missing points with valid values
-        Qavgt[n][s] = Qavgt[n][0]
+        Qavgt_block[n*{{vectSize}}+s] = Qavgt_block[n*{{vectSize}}];
         gradQt[direction][n][s] = gradQt[direction][n][0];
       }
     }
@@ -125,7 +125,7 @@ void {{codeNamespace}}::riemannSolver(
 #endif
     solver.{{solverName}}::nonConservativeProduct_vect(Qavgt, gradQt, ncpt, {{(nDof*nDof3D)%vectSize}});
     for (int s = 0; s < {{(nDof*nDof3D)%vectSize}}; s++) {
-      for (int n = 0; n < {{nVarPad}}; n++) {
+      for (int n = 0; n < {{nVar}}; n++) {
         FR[({{(nDof*nDof3D)-((nDof*nDof3D)%vectSize)}}+s)*{{nVarPad}}+n] -= 0.5*ncpt[n][s];
         FL[({{(nDof*nDof3D)-((nDof*nDof3D)%vectSize)}}+s)*{{nVarPad}}+n] += 0.5*ncpt[n][s];
       }
