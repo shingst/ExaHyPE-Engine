@@ -63,8 +63,8 @@ exahype-project GRMHD
   solver Limiting-ADER-DG GRMHDSolver
     variables const                = rho:1,vel:3,E:1,B:3,psi:1,lapse:1,shift:3,gij:6
     order const                    = 3
-    maximum-mesh-size              = 5.0000
-    maximum-mesh-depth             = 0
+    maximum-mesh-size              = 15.0000
+    maximum-mesh-depth             = 3
     time-stepping                  = global
     type const = nonlinear
 	terms const = flux,ncp

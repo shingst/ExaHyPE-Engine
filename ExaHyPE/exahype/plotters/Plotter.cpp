@@ -15,6 +15,7 @@
 
 #include "exahype/plotters/VTK/ADERDG2CartesianVTK.h"
 #include "exahype/plotters/VTK/ADERDG2LegendreVTK.h"
+#include "exahype/plotters/VTK/ADERDG2LobattoVTK.h"
 #include "exahype/plotters/CSV/ADERDG2LegendreCSV.h"
 #include "exahype/plotters/VTK/ADERDG2LegendreDivergenceVTK.h"
 #include "exahype/plotters/ADERDG2ProbeAscii.h"
@@ -277,6 +278,9 @@ exahype::plotters::Plotter::Plotter(
       if (equalsIgnoreCase(_type, ADERDG2LegendreVerticesVTKAscii::getIdentifier())) {
         _device = new ADERDG2LegendreVerticesVTKAscii(postProcessing);
       }
+      if (equalsIgnoreCase(_type, ADERDG2LobattoVerticesVTKAscii::getIdentifier())) {
+	_device = new ADERDG2LobattoVerticesVTKAscii(postProcessing);
+      }
       if (equalsIgnoreCase(_type, ADERDG2LegendreVerticesVTKBinary::getIdentifier())) {
         _device = new ADERDG2LegendreVerticesVTKBinary(postProcessing);
       }
@@ -301,6 +305,9 @@ exahype::plotters::Plotter::Plotter(
       }
       if (equalsIgnoreCase(_type, ADERDG2LegendreVerticesVTUAscii::getIdentifier())) {
         _device = new ADERDG2LegendreVerticesVTUAscii(postProcessing);
+      }
+      if (equalsIgnoreCase(_type, ADERDG2LobattoVerticesVTUAscii::getIdentifier())) {
+        _device = new ADERDG2LobattoVerticesVTUAscii(postProcessing);
       }
       if (equalsIgnoreCase(_type, ADERDG2LegendreVerticesVTUBinary::getIdentifier())) {
         _device = new ADERDG2LegendreVerticesVTUBinary(postProcessing);

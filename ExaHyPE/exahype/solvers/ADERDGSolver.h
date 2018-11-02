@@ -1270,8 +1270,6 @@ public:
    *
    * \note Heap data creation assumes default policy
    * DataHeap::Allocation::UseRecycledEntriesIfPossibleCreateNewEntriesIfRequired.
-   *
-   * \param
    */
   void ensureNecessaryMemoryIsAllocated(exahype::records::ADERDGCellDescription& cellDescription) const;
 
@@ -1852,6 +1850,7 @@ public:
       const CellDescription& cellDescription,
       const bool validateTimeStepData,
       const bool afterCompression,
+      const bool beforePrediction,
       const std::string& methodTraceOfCaller) const;
 
   /**

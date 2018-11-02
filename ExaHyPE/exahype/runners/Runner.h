@@ -357,6 +357,20 @@ class exahype::runners::Runner {
    *
    * TODO(Dominic): We might not need a few of the other checks anymore after I
    * have introduced the grid refinement requested flag.
+   *
+   * Background Job Consumer Threads
+   * -------------------------------
+   *
+   * During the mesh refinement iterations, the number of
+   * background job consumer threads is set to zero. At
+   * the end of each iterations, all consumers are
+   * then started up to process the memorised background jobs.
+   * This procedure aims to distribute the allocated data
+   * more fairly among the sockets of a node.
+   *
+   * Note that the TBB Jobs class will always run
+   * a single consumer thread. So, the behaviour
+   * described is only realised approximately.
    */
   bool createMesh(exahype::repositories::Repository& repository);
 
