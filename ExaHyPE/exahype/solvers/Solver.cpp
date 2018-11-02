@@ -149,8 +149,10 @@ void exahype::solvers::Solver::ensureAllJobsHaveTerminated(JobType jobType) {
   while ( !finishedWait ) {
     // do some work myself
     tarch::parallel::Node::getInstance().receiveDanglingMessages();
-    if ( jobType != JobType::SkeletonJob ) { // TODO(Dominic): Use background job queue here as well
-       peano::datatraversal::TaskSet::finishToProcessBackgroundJobs();
+    if ( jobType == JobType::SkeletonJob ) { // TODO(Dominic): Use background job queue here as well
+       tarch::multicore::jobs::processHighPriorityJobs(1);
+    } else {
+      tarch::multicore::jobs::processBackgroundJobs(1);
     }
 
     tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
