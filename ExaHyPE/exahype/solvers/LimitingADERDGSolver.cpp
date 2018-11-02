@@ -360,26 +360,30 @@ double exahype::solvers::LimitingADERDGSolver::updateTimeStepSizesFused(
 }
 
 double exahype::solvers::LimitingADERDGSolver::updateTimeStepSizes(
-      const int cellDescriptionsIndex,
-      const int solverElement) {
-  SolverPatch& solverPatch = ADERDGSolver::getCellDescription(cellDescriptionsIndex,solverElement);
-  if (solverPatch.getType()==SolverPatch::Type::Cell) {
-    const double admissibleTimeStepSize =
-        _solver->updateTimeStepSizes(cellDescriptionsIndex,solverElement);
+      const int solverNumber,
+      CellInfo& cellInfo) {
+  const int element = indexOfCellDescription(cellInfo._ADERDGCellDescriptions,solverNumber);
+  if ( element != Solver::NotFound ) {
+    SolverPatch& solverPatch = cellInfo._ADERDGCellDescriptions[element];
+    if (solverPatch.getType()==SolverPatch::Type::Cell) {
+      const double admissibleTimeStepSize = _solver->updateTimeStepSizes(solverNumber,cellInfo);
+      ensureLimiterPatchTimeStepDataIsConsistent(solverPatch,cellInfo);
 
-    ensureLimiterPatchTimeStepDataIsConsistent(cellDescriptionsIndex,solverElement);
-
-    return admissibleTimeStepSize;
+      return admissibleTimeStepSize;
+    } else {
+      return std::numeric_limits<double>::max();
+    }
   }
-
-  return std::numeric_limits<double>::max();
+  else {
+    return std::numeric_limits<double>::max();
+  }
 }
 
 void exahype::solvers::LimitingADERDGSolver::zeroTimeStepSizes(
     SolverPatch& solverPatch,
-    const int cellDescriptionsIndex) const {
+    const int cellDescriptionsIndex ) const {
   _solver->zeroTimeStepSizes(solverPatch);
-  ensureLimiterPatchTimeStepDataIsConsistent(solverPatch,cellDescriptionsIndex);
+  ensureLimiterPatchTimeStepDataIsConsistent(solverPatch,cellInfo);
 }
 
 void exahype::solvers::LimitingADERDGSolver::rollbackToPreviousTimeStep(

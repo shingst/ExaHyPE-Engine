@@ -798,8 +798,8 @@ public:
       const int element) final override;
 
   double updateTimeStepSizes(
-        const int cellDescriptionsIndex,
-        const int element) final override;
+      const int solverNumber,
+      CellInfo& cellInfo) final override;
 
   void zeroTimeStepSizes(
       SolverPatch& solverPatch,

@@ -2427,7 +2427,7 @@ double exahype::solvers::ADERDGSolver::updateTimeStepSizes(
     CellInfo& cellInfo) {
   const int element = indexOfCellDescription(cellInfo._ADERDGCellDescriptions,solverNumber);
   if ( element != NotFound ) {
-    CellDescription& cellDescription    = cellInfo._ADERDGCellDescription
+    CellDescription& cellDescription    = cellInfo._ADERDGCellDescription[element];
     const double admissibleTimeStepSize = computeTimeStepSize(cellDescription);
 
     cellDescription.setCorrectorTimeStepSize( admissibleTimeStepSize );
