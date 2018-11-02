@@ -730,7 +730,7 @@ void exahype::Vertex::sendToNeighbour(
                 static_cast<solvers::ADERDGSolver*>(solver)->sendDataToNeighbour(toRank,solverNumber,cellInfo,src,dest,x,level);
                 break;
               case solvers::Solver::Type::LimitingADERDG:
-                static_cast<solvers::LimitingADERDGsolver*>(solver)->sendDataToNeighbour(toRank,solverNumber,cellInfo,src,dest,x,level);
+                static_cast<solvers::LimitingADERDGSolver*>(solver)->sendDataToNeighbour(toRank,solverNumber,cellInfo,src,dest,x,level);
                 break;
               case solvers::Solver::Type::FiniteVolumes:
                 static_cast<solvers::FiniteVolumesSolver*>(solver)->sendDataToNeighbour(toRank,solverNumber,cellInfo,src,dest,x,level);
@@ -810,7 +810,7 @@ void exahype::Vertex::receiveNeighbourDataLoopBody(
             if ( mergeWithReceivedData ) {
               static_cast<solvers::LimitingADERDGSolver*>(solver)->mergeWithNeighbourData(fromRank,solverNumber,cellInfo,src,dest,x,level);
               if ( receiveNeighbourMetadata ) {
-                static_cast<solvers::LimitingADERDGSolver*>(solver)->getSolver().
+                static_cast<solvers::LimitingADERDGSolver*>(solver)->getSolver()->
                     mergeWithNeighbourMetadata(solverNumber,cellInfo,metadataPortion,src,dest);
               }
             } else {
