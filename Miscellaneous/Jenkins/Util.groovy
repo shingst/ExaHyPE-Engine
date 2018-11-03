@@ -81,13 +81,13 @@ def getModuleCode() {
     return '''
 source /etc/profile.d/modules.sh
 
-module load intel/17.0 >/dev/null 2>&1
+module load intel/18.0 >/dev/null 2>&1
 module unload mpi.intel >/dev/null 2>&1
-module load mpi.intel/2017 >/dev/null 2>&1
+module load mpi.intel/2018 >/dev/null 2>&1
 module unload gcc >/dev/null 2>&1
 module load gcc/8 >/dev/null 2>&1
 module unload tbb >/dev/null 2>&1
-module load tbb/2017 >/dev/null 2>&1
+module load tbb/2018 >/dev/null 2>&1
 module load cmake >/dev/null 2>&1
 module switch python/3.5_intel >/dev/null 2>&1
 module list
