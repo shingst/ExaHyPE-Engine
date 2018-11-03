@@ -66,7 +66,7 @@ echo "status=$status"
 trap 'kill $(jobs -p)' EXIT
 
 # Delete tmp file
-rm -rf "$tmpfile"
+#rm -rf "$tmpfile"
 
 # Return correct exit code for jenkins.
 if [[ "$status" == "COMPLETED" ]]; then
