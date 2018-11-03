@@ -81,7 +81,7 @@ def getModuleCode() {
     return '''
 source /etc/profile.d/modules.sh
 
-module load intel/18.0 >/dev/null 2>&1
+module switch intel/18.0 >/dev/null 2>&1
 module unload mpi.intel >/dev/null 2>&1
 module load mpi.intel/2018 >/dev/null 2>&1
 module unload gcc >/dev/null 2>&1
