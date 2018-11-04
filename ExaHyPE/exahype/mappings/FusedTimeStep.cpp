@@ -50,11 +50,16 @@ void exahype::mappings::FusedTimeStep::initialiseLocalVariables(){
   _minTimeStepSizes.resize(numberOfSolvers);
   _maxLevels.resize(numberOfSolvers);
   _meshUpdateEvents.resize(numberOfSolvers);
+  _reducedGlobalObservables.resize(numberOfSolvers);
 
   for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
     _minTimeStepSizes[solverNumber] = std::numeric_limits<double>::max();
     _maxLevels[solverNumber]        = -std::numeric_limits<int>::max(); // "-", min
     _meshUpdateEvents[solverNumber] = exahype::solvers::Solver::MeshUpdateEvent::None;
+
+    auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
+
+    _reducedGlobalObservables[solverNumber] = solver->resetGlobalObservables();
   }
 }
 
@@ -204,8 +209,8 @@ void exahype::mappings::FusedTimeStep::endIteration(
           _stateCopy.isFirstIterationOfBatchOrNoBatch() : 
           _stateCopy.isSecondIterationOfBatchOrNoBatch();
 
-    exahype::solvers::Solver::startNewTimeStepForAllSolvers(
-        _minTimeStepSizes,_maxLevels,_meshUpdateEvents,
+   exahype::solvers::Solver::startNewTimeStepForAllSolvers(
+        _minTimeStepSizes,_maxLevels,_reducedGlobalObservables,_meshUpdateEvents,
         isFirstTimeStep,
         _stateCopy.isLastIterationOfBatchOrNoBatch(),
         true);
@@ -253,6 +258,10 @@ void exahype::mappings::FusedTimeStep::mergeWithWorkerThread(
     _meshUpdateEvents[i] = exahype::solvers::Solver::mergeMeshUpdateEvents ( _meshUpdateEvents[i], workerThread._meshUpdateEvents[i] );
     _minTimeStepSizes[i] = std::min(_minTimeStepSizes[i], workerThread._minTimeStepSizes[i]);
     _maxLevels[i]        = std::max(_maxLevels[i], workerThread._maxLevels[i]);
+    auto* solver = exahype::solvers::RegisteredSolvers[i];
+
+    solver->reduceGlobalObservables(_reducedGlobalObservables[i],
+            workerThread._reducedGlobalObservables[i]);
   }
 }
 #endif
@@ -325,10 +334,12 @@ void exahype::mappings::FusedTimeStep::leaveCell(
         fineGridVerticesEnumerator);
 
     const int numberOfSolvers = exahype::solvers::RegisteredSolvers.size();
+
     for (int solverNumber=0; solverNumber<numberOfSolvers; solverNumber++) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
       const int element = solver->tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
       if (element!=exahype::solvers::Solver::NotFound) {
+
         // this operates only on compute cells
         exahype::plotters::plotPatchIfAPlotterIsActive(
             solverNumber,fineGridCell.getCellDescriptionsIndex(),element); // TODO(Dominic) potential for IO overlap?
@@ -350,7 +361,11 @@ void exahype::mappings::FusedTimeStep::leaveCell(
         solver->restriction(fineGridCell.getCellDescriptionsIndex(),element);
 
         _meshUpdateEvents  [solverNumber] = exahype::solvers::Solver::mergeMeshUpdateEvents( _meshUpdateEvents[solverNumber], result._meshUpdateEvent );
+
         _minTimeStepSizes[solverNumber]   = std::min( result._timeStepSize,                 _minTimeStepSizes[solverNumber]);
+
+        solver->reduceGlobalObservables(_reducedGlobalObservables[solverNumber],
+                fineGridCell.getCellDescriptionsIndex(), element);
         _maxLevels       [solverNumber]   = std::min( fineGridVerticesEnumerator.getLevel(),_maxLevels       [solverNumber]);
       }
     }

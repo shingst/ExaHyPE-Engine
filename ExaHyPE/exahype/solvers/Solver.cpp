@@ -161,6 +161,7 @@ exahype::solvers::Solver::Solver(
   exahype::solvers::Solver::Type         type,
   int                                    numberOfVariables,
   int                                    numberOfParameters,
+  int                                    numberOfGlobalObservables,
   int                                    nodesPerCoordinateAxis,
   double                                 maximumMeshSize,
   int                                    maximumAdaptiveMeshDepth,
@@ -170,6 +171,7 @@ exahype::solvers::Solver::Solver(
       _type(type),
       _numberOfVariables(numberOfVariables),
       _numberOfParameters(numberOfParameters),
+      _numberOfGlobalObservables(numberOfGlobalObservables),
       _nodesPerCoordinateAxis(nodesPerCoordinateAxis),
       _domainOffset(std::numeric_limits<double>::max()),
       _domainSize(std::numeric_limits<double>::max()),
@@ -330,6 +332,11 @@ int exahype::solvers::Solver::getNumberOfParameters() const {
   return _numberOfParameters;
 }
 
+int exahype::solvers::Solver::getNumberOfGlobalObservables() const {
+  return _numberOfGlobalObservables;
+}
+
+
 int exahype::solvers::Solver::getNodesPerCoordinateAxis() const {
   return _nodesPerCoordinateAxis;
 }
@@ -356,6 +363,14 @@ int exahype::solvers::Solver::getMaximumAdaptiveMeshLevel() const {
 
  void exahype::solvers::Solver::updateNextMaxLevel(int maxLevel) {
    _nextMaxLevel = std::max( _nextMaxLevel, maxLevel );
+}
+
+void exahype::solvers::Solver::updateNextGlobalObservables(const std::vector<double>& globalObservables) {
+  reduceGlobalObservables(_nextGlobalObservables, globalObservables);
+}
+
+const std::vector<double>& exahype::solvers::Solver::getGlobalObservables() {
+  return _globalObservables;
 }
 
 int exahype::solvers::Solver::getNextMaxLevel() const {
@@ -681,6 +696,7 @@ void exahype::solvers::Solver::reinitialiseTimeStepDataIfLastPredictorTimeStepSi
 void exahype::solvers::Solver::startNewTimeStepForAllSolvers(
       const std::vector<double>& minTimeStepSizes,
       const std::vector<int>& maxLevels,
+      const std::vector<std::vector<double>>& globalObservables,
       const std::vector<exahype::solvers::Solver::MeshUpdateEvent>& meshUpdateEvents,
       const bool isFirstIterationOfBatchOrNoBatch,
       const bool isLastIterationOfBatchOrNoBatch,
@@ -703,6 +719,9 @@ void exahype::solvers::Solver::startNewTimeStepForAllSolvers(
     assertion1(std::isfinite(minTimeStepSizes[solverNumber]),minTimeStepSizes[solverNumber]);
     assertion1(minTimeStepSizes[solverNumber]>0.0,minTimeStepSizes[solverNumber]);
     solver->updateMinNextTimeStepSize(minTimeStepSizes[solverNumber]);
+
+    // global observables
+    solver->updateNextGlobalObservables(globalObservables[solverNumber]);
 
     // time
     // only update the time step size in last iteration; just advance with old time step size otherwise

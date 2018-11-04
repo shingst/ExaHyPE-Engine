@@ -65,7 +65,13 @@ private:
    * The maximum level occupied by cells of a solver.
    */
   std::vector<int> _maxLevels;
-  /**
+
+   /**
+   * A vector of reduced global observables for each solver.
+   */
+    std::vector<std::vector<double>> _reducedGlobalObservables;
+
+    /**
    * Per solver a flag, indicating if has requested
    * a mesh update request or a limiter domain change.
    */

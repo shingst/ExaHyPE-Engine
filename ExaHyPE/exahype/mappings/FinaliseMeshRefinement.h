@@ -69,6 +69,11 @@ class exahype::mappings::FinaliseMeshRefinement {
    */
   std::vector<int> _maxLevels;
 
+   /**
+   * A vector of reduced global observables for each solver.
+   */
+  std::vector<std::vector<double>> _reducedGlobalObservables;
+
   /**
    * Indicates that the background tasks have terminated.
    * No further checks are required in this case.

@@ -33,11 +33,15 @@ void exahype::mappings::UpdateAndReduce::initialiseLocalVariables(){
   _minTimeStepSizes.resize(numberOfSolvers);
   _maxLevels.resize(numberOfSolvers);
   _meshUpdateEvents.resize(numberOfSolvers);
+  _reducedGlobalObservables.resize(numberOfSolvers);
 
   for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
+    auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
+
     _minTimeStepSizes[solverNumber] = std::numeric_limits<double>::max();
     _maxLevels[solverNumber]        = -std::numeric_limits<int>::max(); // "-", min
     _meshUpdateEvents[solverNumber] = exahype::solvers::Solver::MeshUpdateEvent::None;
+    _reducedGlobalObservables[solverNumber] = solver->resetGlobalObservables();
   }
 }
 
@@ -106,6 +110,10 @@ void exahype::mappings::UpdateAndReduce::mergeWithWorkerThread(
     _meshUpdateEvents[i] = exahype::solvers::Solver::mergeMeshUpdateEvents ( _meshUpdateEvents[i], workerThread._meshUpdateEvents[i] );
     _minTimeStepSizes[i] = std::min(_minTimeStepSizes[i], workerThread._minTimeStepSizes[i]);
     _maxLevels[i]        = std::max(_maxLevels[i], workerThread._maxLevels[i]);
+
+    auto* solver = exahype::solvers::RegisteredSolvers[i];
+    solver->reduceGlobalObservables(_reducedGlobalObservables[i],
+            workerThread._reducedGlobalObservables[i]);
   }
 }
 #endif
@@ -144,7 +152,7 @@ void exahype::mappings::UpdateAndReduce::endIteration(
   exahype::plotters::finishedPlotting();
 
   exahype::solvers::Solver::startNewTimeStepForAllSolvers(
-      _minTimeStepSizes,_maxLevels,_meshUpdateEvents,
+      _minTimeStepSizes,_maxLevels,_reducedGlobalObservables, _meshUpdateEvents,
       true,true,false);
 
   logTraceOutWith1Argument("endIteration(State)", state);
@@ -411,6 +419,8 @@ void exahype::mappings::UpdateAndReduce::leaveCell(
 
         _minTimeStepSizes[solverNumber] = std::min( result._timeStepSize,                  _minTimeStepSizes[solverNumber]);
         _maxLevels       [solverNumber] = std::max( fineGridVerticesEnumerator.getLevel(), _maxLevels       [solverNumber]);
+        solver->reduceGlobalObservables(_reducedGlobalObservables[solverNumber],
+                fineGridCell.getCellDescriptionsIndex(), element);
       }
     }
 

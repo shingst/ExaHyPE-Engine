@@ -83,10 +83,15 @@ void exahype::mappings::FinaliseMeshRefinement::initialiseLocalVariables(){
   const unsigned int numberOfSolvers = exahype::solvers::RegisteredSolvers.size();
   _minTimeStepSizes.resize(numberOfSolvers);
   _maxLevels.resize(numberOfSolvers);
+  _reducedGlobalObservables.resize(numberOfSolvers);
 
   for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
     _minTimeStepSizes[solverNumber] = std::numeric_limits<double>::max();
     _maxLevels    [solverNumber]    = -std::numeric_limits<int>::max(); // "-", min
+
+    auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
+
+    _reducedGlobalObservables[solverNumber] = solver->resetGlobalObservables();
   }
 }
 
@@ -113,7 +118,14 @@ void exahype::mappings::FinaliseMeshRefinement::mergeWithWorkerThread(
         std::min(_minTimeStepSizes[i], workerThread._minTimeStepSizes[i]);
     _maxLevels[i] =
         std::max(_maxLevels[i], workerThread._maxLevels[i]);
+
+
+    auto* solver = exahype::solvers::RegisteredSolvers[i];
+
+    solver->reduceGlobalObservables(_reducedGlobalObservables[i],
+            workerThread._reducedGlobalObservables[i]);
   }
+
 }
 #endif
 
@@ -179,6 +191,9 @@ void exahype::mappings::FinaliseMeshRefinement::enterCell(
           _maxLevels[solverNumber] = std::max(
               fineGridVerticesEnumerator.getLevel(),_maxLevels[solverNumber]);
 
+           solver->reduceGlobalObservables(_reducedGlobalObservables[solverNumber],
+               fineGridCell.getCellDescriptionsIndex(), element);
+
           // determine min and max for LimitingADERDGSolver
           if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
             auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
@@ -216,6 +231,8 @@ void exahype::mappings::FinaliseMeshRefinement::endIteration(
         assertion1(std::isfinite(_minTimeStepSizes[solverNumber]),_minTimeStepSizes[solverNumber]);
         assertion1(_minTimeStepSizes[solverNumber]>0.0,_minTimeStepSizes[solverNumber]);
         solver->updateMinNextTimeStepSize(_minTimeStepSizes[solverNumber]);
+
+        solver->updateNextGlobalObservables(_reducedGlobalObservables[solverNumber]);
         if ( exahype::solvers::Solver::FuseADERDGPhases ) {
           #ifdef Parallel
           if (tarch::parallel::Node::getInstance().isGlobalMaster() ) {

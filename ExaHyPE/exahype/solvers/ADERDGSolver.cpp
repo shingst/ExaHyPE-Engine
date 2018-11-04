@@ -489,6 +489,7 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
     const std::string& identifier,
     const int numberOfVariables,
     const int numberOfParameters,
+    const int numberOfGlobalObservables,
     const int basisSize,
     const double maximumMeshSize,
     const int maximumAdaptiveMeshDepth,
@@ -499,7 +500,7 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
     const int DMPObservables,
     std::unique_ptr<profilers::Profiler> profiler)
     : Solver(identifier, Solver::Type::ADERDG, numberOfVariables,
-             numberOfParameters, basisSize,
+             numberOfParameters, numberOfGlobalObservables, basisSize,
              maximumMeshSize, maximumAdaptiveMeshDepth,
              timeStepping, std::move(profiler)),
      _previousMinCorrectorTimeStamp( std::numeric_limits<double>::max() ),
@@ -517,7 +518,8 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
      _minimumRefinementStatusForActiveFVPatch (limiterHelperLayers+_minimumRefinementStatusForPassiveFVPatch),
      _minimumRefinementStatusForTroubledCell  (limiterHelperLayers+_minimumRefinementStatusForActiveFVPatch),
      _meshUpdateEvent(MeshUpdateEvent::None),
-     _nextMeshUpdateEvent(MeshUpdateEvent::None) {
+     _nextMeshUpdateEvent(MeshUpdateEvent::None)
+ {
 
   // register tags with profiler
   for (const char* tag : tags) {
@@ -675,6 +677,10 @@ void exahype::solvers::ADERDGSolver::startNewTimeStep() {
 
   _maxLevel     = _nextMaxLevel;
   _nextMaxLevel = -std::numeric_limits<int>::max(); // "-", min
+
+  _globalObservables = std::move(_nextGlobalObservables);
+  _nextGlobalObservables = resetGlobalObservables();
+
 }
 
 void exahype::solvers::ADERDGSolver::startNewTimeStepFused(
@@ -705,6 +711,9 @@ void exahype::solvers::ADERDGSolver::startNewTimeStepFused(
 
     _maxLevel     = _nextMaxLevel;
     _nextMaxLevel = -std::numeric_limits<int>::max(); // "-", min
+
+    _globalObservables = std::move(_nextGlobalObservables);
+    _nextGlobalObservables = resetGlobalObservables();
   }
 }
 
@@ -730,6 +739,9 @@ void exahype::solvers::ADERDGSolver::updateTimeStepSizesFused() {
 
   _maxLevel     = _nextMaxLevel;
   _nextMaxLevel = -std::numeric_limits<int>::max(); // "-", min
+
+  _globalObservables = std::move(_nextGlobalObservables);
+  _nextGlobalObservables = resetGlobalObservables();
 }
 
 void exahype::solvers::ADERDGSolver::updateTimeStepSizes() {
@@ -752,6 +764,9 @@ void exahype::solvers::ADERDGSolver::updateTimeStepSizes() {
 
   _maxLevel     = _nextMaxLevel;
   _nextMaxLevel = -std::numeric_limits<int>::max(); // "-", min
+
+  _globalObservables = std::move(_nextGlobalObservables);
+  _nextGlobalObservables = resetGlobalObservables();
 }
 
 void exahype::solvers::ADERDGSolver::zeroTimeStepSizes() {
@@ -790,6 +805,9 @@ void exahype::solvers::ADERDGSolver::rollbackToPreviousTimeStep() {
 
   _maxLevel     = _nextMaxLevel;
   _nextMaxLevel = -std::numeric_limits<int>::max(); // "-", min
+
+  _globalObservables = std::move(_nextGlobalObservables);
+  _nextGlobalObservables = resetGlobalObservables();
 }
 
 void exahype::solvers::ADERDGSolver::rollbackToPreviousTimeStepFused() {
@@ -820,6 +838,9 @@ void exahype::solvers::ADERDGSolver::rollbackToPreviousTimeStepFused() {
 
   _maxLevel     = _nextMaxLevel;
   _nextMaxLevel = -std::numeric_limits<int>::max(); // "-", min
+
+  _globalObservables = std::move(_nextGlobalObservables);
+  _nextGlobalObservables = resetGlobalObservables();
 }
 
 void exahype::solvers::ADERDGSolver::updateMinNextPredictorTimeStepSize(
@@ -911,6 +932,9 @@ void exahype::solvers::ADERDGSolver::initSolver(
   _minPredictorTimeStamp         = timeStamp;
 
   overwriteMeshUpdateEvent(MeshUpdateEvent::InitialRefinementRequested);
+
+  _globalObservables = resetGlobalObservables();
+  _nextGlobalObservables = resetGlobalObservables();
 
   init(cmdlineargs,parserView); // call user define initalisiation
 }
@@ -2530,6 +2554,7 @@ void exahype::solvers::ADERDGSolver::adjustSolution(CellDescription& cellDescrip
 void exahype::solvers::ADERDGSolver::updateSolution(
     CellDescription& cellDescription,
     const bool backupPreviousSolution) {
+  //std::cout << "ADERDGSolver::updateSolution" << std::endl; // TODO(Lukas(Remove)
   if (
     cellDescription.getType()==CellDescription::Type::Cell &&
     cellDescription.getRefinementEvent()==CellDescription::None
@@ -4075,10 +4100,18 @@ void exahype::solvers::ADERDGSolver::dropNeighbourData(
 ///////////////////////////////////
 exahype::DataHeap::HeapEntries
 exahype::solvers::ADERDGSolver::compileMessageForMaster(const int capacity) const {
-  DataHeap::HeapEntries messageForMaster(0,std::max(3,capacity));
+  DataHeap::HeapEntries messageForMaster(0,std::max(3+_numberOfGlobalObservables,capacity));
   messageForMaster.push_back(_minPredictorTimeStepSize);
   messageForMaster.push_back(_maxLevel);
   messageForMaster.push_back(convertToDouble(getMeshUpdateEvent()));
+  assertion2(_globalObservables.size() == _numberOfGlobalObservables,
+          _globalObservables.size(),
+          _numberOfGlobalObservables);
+
+  for (const auto observable : _globalObservables) {
+    messageForMaster.push_back(observable);
+  }
+
   return messageForMaster;
 }
 
@@ -4102,7 +4135,7 @@ void exahype::solvers::ADERDGSolver::sendDataToMaster(
     const int                                    level) const {
   DataHeap::HeapEntries messageForMaster = compileMessageForMaster();
 
-  assertion1(messageForMaster.size()==3,messageForMaster.size());
+  assertion1(messageForMaster.size()==3+_numberOfGlobalObservables,messageForMaster.size());
   assertion1(std::isfinite(messageForMaster[0]),messageForMaster[0]);
   if (_timeStepping==TimeStepping::Global) {
     assertionNumericalEquals1(_minNextTimeStepSize,std::numeric_limits<double>::max(),
@@ -4137,6 +4170,13 @@ void exahype::solvers::ADERDGSolver::mergeWithWorkerData(const DataHeap::HeapEnt
   _nextMaxLevel           = std::max( _nextMaxLevel,        static_cast<int>(message[index++]) );
   updateNextMeshUpdateEvent(convertToMeshUpdateEvent(message[index++]));
 
+  auto observablesFromWorker = std::vector<double>(_numberOfGlobalObservables);
+  for (int i = 0; i < _numberOfGlobalObservables; ++i) {
+    observablesFromWorker[i] = message[index++];
+  }
+
+  reduceGlobalObservables(_nextGlobalObservables, observablesFromWorker);
+
   if (tarch::parallel::Node::getInstance().getRank()==
       tarch::parallel::Node::getInstance().getGlobalMasterRank()) {
     logDebug("mergeWithWorkerData(...)","[post] Receiving time step data: " <<
@@ -4161,7 +4201,8 @@ void exahype::solvers::ADERDGSolver::mergeWithWorkerData(
     const int                                    workerRank,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const int                                    level) {
-  DataHeap::HeapEntries messageFromWorker(3);
+  const auto messageSize = 3 + _numberOfGlobalObservables;
+  DataHeap::HeapEntries messageFromWorker(messageSize);
 
   if (tarch::parallel::Node::getInstance().getRank()!=
       tarch::parallel::Node::getInstance().getGlobalMasterRank()) {
@@ -4172,7 +4213,7 @@ void exahype::solvers::ADERDGSolver::mergeWithWorkerData(
       messageFromWorker.data(),messageFromWorker.size(),workerRank, x, level,
       peano::heap::MessageType::MasterWorkerCommunication);
 
-  assertion1(messageFromWorker.size()==3,messageFromWorker.size());
+  assertion1(messageFromWorker.size()==messageSize,messageFromWorker.size());
   mergeWithWorkerData(messageFromWorker);
 }
 
@@ -4181,7 +4222,8 @@ void exahype::solvers::ADERDGSolver::mergeWithWorkerData(
 ///////////////////////////////////
 exahype::DataHeap::HeapEntries
 exahype::solvers::ADERDGSolver::compileMessageForWorker(const int capacity) const {
-  DataHeap::HeapEntries messageForWorker(0,std::max(7,capacity));
+  const auto messageSize = 7 + _numberOfGlobalObservables;
+  DataHeap::HeapEntries messageForWorker(0,std::max(messageSize,capacity));
   messageForWorker.push_back(_minCorrectorTimeStamp);
   messageForWorker.push_back(_minCorrectorTimeStepSize);
   messageForWorker.push_back(_minPredictorTimeStamp);
@@ -4192,12 +4234,20 @@ exahype::solvers::ADERDGSolver::compileMessageForWorker(const int capacity) cons
   messageForWorker.push_back(convertToDouble( getMeshUpdateEvent() ));
 
   messageForWorker.push_back(_stabilityConditionWasViolated ? 1.0 : -1.0);
+  assertion2(_globalObservables.size() == _numberOfGlobalObservables,
+          _globalObservables.size(),
+          _numberOfGlobalObservables);
 
-  assertion1(messageForWorker.size()==7,messageForWorker.size());
+  for (const auto observable : _globalObservables) {
+    messageForWorker.push_back(observable);
+  }
+
+  assertion1(messageForWorker.size()==messageSize,messageForWorker.size());
   assertion1(std::isfinite(messageForWorker[0]),messageForWorker[0]);
   assertion1(std::isfinite(messageForWorker[1]),messageForWorker[1]);
   assertion1(std::isfinite(messageForWorker[2]),messageForWorker[2]);
   assertion1(std::isfinite(messageForWorker[3]),messageForWorker[3]);
+
 
   if (_timeStepping==TimeStepping::Global) {
     assertionEquals1(_minNextTimeStepSize,std::numeric_limits<double>::max(),
@@ -4249,18 +4299,29 @@ void exahype::solvers::ADERDGSolver::mergeWithMasterData(const DataHeap::HeapEnt
       "_meshUpdateEvent="<<Solver::toString(getMeshUpdateEvent()));
   logDebug("mergeWithMasterData(...)",
       "_stabilityConditionWasViolated="<< _stabilityConditionWasViolated);
+
+  for (int i = 0; i < _numberOfGlobalObservables; ++i) {
+    _globalObservables[i] = message[index++];
+  }
+
+  const auto masterRank = tarch::parallel::Node::getInstance().getGlobalMasterRank();
+  const auto isMaster = tarch::parallel::Node::getInstance().getRank() == masterRank;
+  std::cout << tarch::parallel::Node::getInstance().getRank() <<
+  ":, ==Master: " << isMaster << " Merged with master, [0] = " << _globalObservables[0] <<
+  " Received observables[0] = " << message[7] << std::endl;
 }
 
 void exahype::solvers::ADERDGSolver::mergeWithMasterData(
     const int                                    masterRank,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const int                                    level) {
-  DataHeap::HeapEntries messageFromMaster(7);
+  const auto messageSize = 7 + _numberOfGlobalObservables;
+  DataHeap::HeapEntries messageFromMaster(messageSize);
   DataHeap::getInstance().receiveData(
       messageFromMaster.data(),messageFromMaster.size(),masterRank, x, level,
       peano::heap::MessageType::MasterWorkerCommunication);
 
-  assertion1(messageFromMaster.size()==7,messageFromMaster.size());
+  assertion1(messageFromMaster.size()==messageSize,messageFromMaster.size());
   mergeWithMasterData(messageFromMaster);
 
   if (_timeStepping==TimeStepping::Global) {
@@ -5062,4 +5123,20 @@ bool exahype::solvers::ADERDGSolver::AdjustSolutionDuringMeshRefinementJob::oper
   }
   lock.free();
   return false;
+}
+
+void exahype::solvers::ADERDGSolver::reduceGlobalObservables(std::vector<double> &globalObservables,
+                                                             int cellDescriptionsIndex,
+                                                             int element) const {
+  CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
+  if (cellDescription.getType()!=CellDescription::Type::Cell) {
+    return;
+  }
+
+  validateCellDescriptionData(cellDescription,true,false,"exahype::solvers::ADERDGSolver::reduceGlobalObservables [pre]");
+
+  double* luh  = DataHeap::getInstance().getData(cellDescription.getSolution()).data();
+  const auto curGlobalObservables = mapGlobalObservables(luh);
+  reduceGlobalObservables(globalObservables, curGlobalObservables);
+
 }

@@ -825,6 +825,7 @@ class exahype::solvers::Solver {
    * \param[in] meshUpdateEvents     flags for each solver indicating if a mesh or limiter domain update is necessary.
    * \param[in] limiterDomainChanges flags for each solver indicating if the limiter domain has changed.
    * \param[in] minTimeStepSizes     the minimum CFL-stable time step size for all solvers.
+   * \param[in] globalObservables    the reduced global observables
    * \param[in] minCellSizes         the minimum cell size found in the grid for each solver.
    * \param[in] maxCellSizes         the maximum cell size found in the grid for each solver.
    * \param[in] isFirstIterationOfBatchOrNoBatch we run the first iteration of a batch or no batch at all
@@ -834,6 +835,7 @@ class exahype::solvers::Solver {
   static void startNewTimeStepForAllSolvers(
       const std::vector<double>& minTimeStepSizes,
       const std::vector<int>& maxLevels,
+      const std::vector<std::vector<double>>& globalObservables,
       const std::vector<exahype::solvers::Solver::MeshUpdateEvent>& meshUpdateEvents,
       const bool isFirstIterationOfBatchOrNoBatch,
       const bool isLastIterationOfBatchOrNoBatch,
@@ -929,6 +931,11 @@ class exahype::solvers::Solver {
   const int _numberOfParameters;
 
   /**
+   * The number of global observables, e.g. indicators used by AMR.
+   */
+  const int _numberOfGlobalObservables ;
+
+  /**
    * The number of nodal basis functions that are employed in each
    * coordinate direction.
    */
@@ -991,6 +998,12 @@ class exahype::solvers::Solver {
   int _nextMaxLevel;
 
   /**
+   * The reduced global observables over the entire domain.
+   */
+  std::vector<double> _globalObservables;
+  std::vector<double> _nextGlobalObservables;
+
+  /**
    * The time stepping mode of this solver.
    */
   const TimeStepping _timeStepping;
@@ -1003,6 +1016,7 @@ class exahype::solvers::Solver {
  public:
   Solver(const std::string& identifier, exahype::solvers::Solver::Type type,
          int numberOfVariables, int numberOfParameters,
+         int numberOfGlobalObservables,
          int nodesPerCoordinateAxis,
          double maximumMeshSize,
          int maximumAdaptiveMeshDepth,
@@ -1124,6 +1138,11 @@ class exahype::solvers::Solver {
   int getNumberOfParameters() const;
 
   /**
+   * Returns the number of global observables, e.g. indicators for AMR.
+   */
+  int getNumberOfGlobalObservables() const;
+
+  /**
    * If you use a higher order method, then this operation returns the
    * polynomial degree plus one. If you use a Finite Volume method, it
    * returns the number of cells within a patch per coordinate axis.
@@ -1180,6 +1199,11 @@ class exahype::solvers::Solver {
   virtual double getMinTimeStepSize() const = 0;
 
   virtual void updateMinNextTimeStepSize(double value) = 0;
+
+  virtual void updateNextGlobalObservables(const std::vector<double>& globalObservables);
+
+  // TODO(Lukas) Remove this?
+  virtual const std::vector<double>& getGlobalObservables();
 
   /**
    * Initialise the solver's time stamps and time step sizes.
@@ -2005,6 +2029,54 @@ class exahype::solvers::Solver {
    */
   virtual void beginTimeStep(const double minTimeStamp) {}
   /** @} */ // end of userHooks
+
+  // TODO(Lukas) Clean up following section:
+    /**
+   * Maps the solution values Q to
+   * the global observables.
+   *
+   * As we can observe all state variables,
+   * we interpret an 'observable' here as
+   * 'worthy to be observed'.
+   *
+   *\param[inout] globalObservables The mapped observables.
+   *\param[in]    Q           The state variables.
+   */
+   virtual std::vector<double> mapGlobalObservables(const double* const Q) const = 0;
+
+   /**
+   * Resets the vector of global observables to some suitable initial value, e.g.
+   * the smallest possible double if one wants to compute the maximum.
+   *
+   *\param[out] globalObservables The mapped observables.
+   */
+   virtual std::vector<double> resetGlobalObservables() const = 0;
+
+   /**
+   * Function that reduces the global observables.
+   * For example, if one wants to compute the maximum of global variables
+   * one should set
+   * reducedGlobalObservables[0] = std::max(reducucedGlobalObservables[i],
+   * curGlobalObservables[0])
+   *
+   * and so on.
+   *
+   *\param[inout] reducedGlobalObservables The reduced observables.
+   *\param[in]    curGlobalObservables The current vector of global observables.
+   */
+   virtual void reduceGlobalObservables(
+            std::vector<double>& reducedGlobalObservables,
+            const std::vector<double>& curGlobalObservables) const = 0;
+
+   virtual void reduceGlobalObservables(std::vector<double>& globalObservables,
+                                         int cellDescriptionIndex, int element) const = 0;
+
+    /*
+    virtual void reduceGlobalObservables(
+            std::vector<double>& globalObservables,
+            const double* Q) const = 0;
+    */
+
 };
 
 #endif

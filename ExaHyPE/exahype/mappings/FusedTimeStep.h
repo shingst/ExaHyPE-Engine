@@ -87,6 +87,12 @@ private:
    * Per solver a flag, indicating if has requested
    * a mesh update request or a limiter domain change.
    */
+
+   /**
+   * A vector of reduced global observables for each solver.
+   */
+  std::vector<std::vector<double>> _reducedGlobalObservables;
+
   std::vector<exahype::solvers::Solver::MeshUpdateEvent> _meshUpdateEvents;
 
   /**

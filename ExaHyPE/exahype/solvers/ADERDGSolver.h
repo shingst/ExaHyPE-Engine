@@ -971,6 +971,7 @@ public:
       const std::string& identifier,
       const int numberOfVariables,
       const int numberOfParameters,
+      const int numberOfGlobalObservables,
       const int basisSize,
       const double maximumMeshSize,
       const int maximumAdaptiveMeshDepth,
@@ -2376,6 +2377,12 @@ public:
    * \param[in] isSkeletonJob decides to which queue we spawn the job if we spawn any
    */
   void compress( CellDescription& cellDescription, const bool isSkeletonCell ) const;
+
+  using Solver::reduceGlobalObservables;
+  void reduceGlobalObservables(std::vector<double>& globalObservables,
+                                         int cellDescriptionIndex,
+                                         int element) const override;
+
 };
 
 #endif

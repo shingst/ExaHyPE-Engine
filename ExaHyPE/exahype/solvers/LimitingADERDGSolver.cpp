@@ -37,7 +37,8 @@ exahype::solvers::LimitingADERDGSolver::LimitingADERDGSolver(
     const int iterationsToCureTroubledCell)
     :
     exahype::solvers::Solver(identifier, Solver::Type::LimitingADERDG, solver->getNumberOfVariables(),
-        solver->getNumberOfParameters(), solver->getNodesPerCoordinateAxis(), solver->getMaximumMeshSize(),
+        solver->getNumberOfParameters(), solver->getNumberOfGlobalObservables(),
+        solver->getNodesPerCoordinateAxis(), solver->getMaximumMeshSize(),
           solver->getMaximumAdaptiveMeshDepth(),
           solver->getTimeStepping()),
           _solver(std::move(solver)),

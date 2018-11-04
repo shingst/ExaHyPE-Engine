@@ -305,6 +305,7 @@ public:
       const std::string& identifier,
       const int numberOfVariables,
       const int numberOfParameters,
+      const int numberOfGlobalObservables,
       const int basisSize,
       const int ghostLayerWidth,
       const double maximumMeshSize,

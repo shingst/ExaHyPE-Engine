@@ -24,7 +24,7 @@
 }
 
 {{project}}::{{abstractSolver}}::{{abstractSolver}}(const double maximumMeshSize,const exahype::solvers::Solver::TimeStepping timeStepping{% if enableProfiler %}, std::unique_ptr<exahype::profilers::Profiler> profiler{% endif %}):
-  exahype::solvers::FiniteVolumesSolver("{{solver}}",NumberOfVariables,NumberOfParameters,PatchSize,
+exahype::solvers::FiniteVolumesSolver("{{solver}}",NumberOfVariables,NumberOfParameters,NumberOfGlobalObservables, PatchSize,
                                         GhostLayerWidth,maximumMeshSize,timeStepping{% if enableProfiler %}, std::move(profiler){% endif %}) {
 }
 
