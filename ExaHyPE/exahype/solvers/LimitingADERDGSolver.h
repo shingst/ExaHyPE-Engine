@@ -1167,7 +1167,7 @@ public:
   void sendEmptyDataToNeighbour(
       const int                                     toRank,
       const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const final override;
+      const int                                     level) const;
 
   void mergeWithNeighbourData(
       const int                                    fromRank,
@@ -1176,7 +1176,7 @@ public:
       const tarch::la::Vector<DIMENSIONS, int>&    src,
       const tarch::la::Vector<DIMENSIONS, int>&    dest,
       const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) final override;
+      const int                                    level);
 
   /**
    * Merge or drop received neighbour data based
@@ -1207,14 +1207,14 @@ public:
       const tarch::la::Vector<DIMENSIONS, int>&    dest,
       const bool                                   isRecomputation,
       const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) const;
+      const int                                    level);
 
   void dropNeighbourData(
       const int                                     fromRank,
       const tarch::la::Vector<DIMENSIONS, int>&     src,
       const tarch::la::Vector<DIMENSIONS, int>&     dest,
       const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const final override;
+      const int                                     level) const;
 
 
   ///////////////////////////////////////

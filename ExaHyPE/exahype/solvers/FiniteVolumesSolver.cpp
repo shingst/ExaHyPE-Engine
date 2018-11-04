@@ -1376,7 +1376,7 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithNeighbourData(
     DataHeap::getInstance().receiveData(
         luhbnd, dataPerFace, fromRank, x, level,peano::heap::MessageType::NeighbourCommunication);
 
-    double* luh = static_cast<double*>(cellDescription.getSolution()));
+    double* luh = static_cast<double*>(cellDescription.getSolution());
     ghostLayerFillingAtBoundary(luh,luhbnd,src-dest);
   }
 }

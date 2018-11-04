@@ -500,7 +500,7 @@ private:
       const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks);
 
 
-  static void exahype::Vertex::sendOnlyMetadataToNeighbourLoopBody(
+  static void sendOnlyMetadataToNeighbourLoopBody(
       const int                                    toRank,
       const int                                    srcScalar,
       const int                                    destScalar,
@@ -629,7 +629,7 @@ private:
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level) const;
 
-static void exahype::Vertex::receiveNeighbourDataLoopBody(
+static void receiveNeighbourDataLoopBody(
   const int                                    fromRank,
   const int                                    srcScalar,
   const int                                    destScalar,

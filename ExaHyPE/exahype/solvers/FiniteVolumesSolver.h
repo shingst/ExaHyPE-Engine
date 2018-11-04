@@ -908,7 +908,7 @@ public:
   void sendEmptyDataToNeighbour(
       const int                                     toRank,
       const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level);
+      const int                                     level) const;
 
   /**
    * Receive data and merge it if the face data exchange counter
@@ -936,7 +936,7 @@ public:
       const tarch::la::Vector<DIMENSIONS, int>&     src,
       const tarch::la::Vector<DIMENSIONS, int>&     dest,
       const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level);
+      const int                                     level) const;
 
   ///////////////////////
   // MASTER <=> WORKER

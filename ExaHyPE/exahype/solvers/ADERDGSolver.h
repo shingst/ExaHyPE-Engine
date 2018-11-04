@@ -2336,7 +2336,7 @@ public:
       const tarch::la::Vector<DIMENSIONS, int>&    src,
       const tarch::la::Vector<DIMENSIONS, int>&    dest,
       const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level)
+      const int                                    level);
 
   /** \copydoc Solver::dropNeighbourData
    *
@@ -2352,7 +2352,7 @@ public:
       const tarch::la::Vector<DIMENSIONS, int>&    src,
       const tarch::la::Vector<DIMENSIONS, int>&    dest,
       const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) const override;
+      const int                                    level) const;
 
   ///////////////////////////////////
   // MASTER<=>WORKER

@@ -1270,6 +1270,9 @@ void exahype::solvers::LimitingADERDGSolver::mergeWithBoundaryData(
       if (solverPatch.getType()==SolverPatch::Type::Cell) {
         if (solverPatch.getLevel()==getMaximumAdaptiveMeshLevel()) {
           if (solverPatch.getRefinementStatus()<_solver->getMinimumRefinementStatusForActiveFVPatch()) {
+            #ifdef Asserts
+            const int limiterElement = cellInfo.indexOfFiniteVolumesCellDescription(solverNumber);
+            #endif
             assertion(solverPatch.getRefinementStatus()<=_solver->_minimumRefinementStatusForPassiveFVPatch || limiterElement!=Solver::NotFound);
             if (!isRecomputation) {
               _solver->mergeWithBoundaryData(solverNumber,cellInfo,posCell,posBoundary);
@@ -1342,8 +1345,8 @@ void exahype::solvers::LimitingADERDGSolver::sendMinAndMaxToNeighbour(
     const int                                    level) const {
   const int numberOfObservables = _solver->getDMPObservables();
   if ( numberOfObservables>0 ) {
-    if (ADERDGSolver::holdsFaceData(solverPatch)) {
-      Solver::BoundaryFaceInfo& face(src,dest);
+    if (ADERDGSolver::holdsFaceData(solverPatch)) { // TODO(Dominic): Is this function still necessary?
+      Solver::BoundaryFaceInfo face(src,dest);
       
       assertion(DataHeap::getInstance().isValidIndex(solverPatch.getSolutionMinIndex()));
       assertion(DataHeap::getInstance().isValidIndex(solverPatch.getSolutionMaxIndex()));
@@ -1371,7 +1374,6 @@ void exahype::solvers::LimitingADERDGSolver::sendMinAndMaxToNeighbour(
     }
   }
 }
-
 
 void exahype::solvers::LimitingADERDGSolver::sendDataToNeighbourBasedOnLimiterStatus(
         const int                                    toRank,
@@ -1472,7 +1474,7 @@ void exahype::solvers::LimitingADERDGSolver::mergeWithNeighbourDataBasedOnLimite
     const tarch::la::Vector<DIMENSIONS, int>&    dest,
     const bool                                   isRecomputation,
     const tarch::la::Vector<DIMENSIONS, double>& x,
-    const int                                    level) const {
+    const int                                    level) {
   const int solverElement = cellInfo.indexOfADERDGCellDescription(solverNumber);
   if ( level==getMaximumAdaptiveMeshLevel() ) {
     SolverPatch& solverPatch = cellInfo._ADERDGCellDescriptions[solverElement];

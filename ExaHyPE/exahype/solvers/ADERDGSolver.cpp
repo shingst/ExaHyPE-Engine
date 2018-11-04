@@ -4134,9 +4134,7 @@ void exahype::solvers::ADERDGSolver::dropNeighbourData(
     const tarch::la::Vector<DIMENSIONS, int>&     dest,
     const tarch::la::Vector<DIMENSIONS, double>&  x,
     const int                                     level) const {
-  logDebug(
-      "dropNeighbourData(...)", "drop "<<DataMessagesPerNeighbourCommunication<<" arrays from rank " << fromRank <<
-      " at x=" << x << ", level=" << level << ", src=" << src << ", dest=" << dest);
+  logDebug("dropNeighbourData(...)", "drop "<<DataMessagesPerNeighbourCommunication<<" arrays from rank="<<fromRank<<",x="<<x<<",level="<<level<<",src="<<src<<",dest="<< dest);
 
   for(int receives=0; receives<DataMessagesPerNeighbourCommunication; ++receives)
     DataHeap::getInstance().receiveData(

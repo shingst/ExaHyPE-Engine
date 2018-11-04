@@ -464,7 +464,7 @@ bool exahype::Vertex::compareGeometryInformationOfCellDescriptionsAndVertex(
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const tarch::la::Vector<DIMENSIONS, double>& h) {
   if ( exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(srcCellDescriptionsIndex) ) {
-    solvers::Solver::CellInfo cellInfo(srcCellDescriptionsIndex)
+    solvers::Solver::CellInfo cellInfo(srcCellDescriptionsIndex);
 
     if ( !cellInfo.empty() ) {
       solvers::Solver::BoundaryFaceInfo face(src,dest);
@@ -653,7 +653,7 @@ void exahype::Vertex::sendToNeighbour(
         const tarch::la::Vector<DIMENSIONS,int> dest = delineariseIndex2(pos2Scalar[i]);
         assertion(tarch::la::countEqualEntries(src,dest)==(DIMENSIONS-1));
 
-        logDebug("prepareSendToNeighbour(...)","to rank="<<toRank<<",x="<<x.toString()<<",src="<<src.toString()<<",dest="<<dest.toString()));
+        logDebug("prepareSendToNeighbour(...)","to rank="<<toRank<<",x="<<x.toString()<<",src="<<src.toString()<<",dest="<<dest.toString());
 
         const int srcCellDescriptionsIndex = _vertexData.getCellDescriptionsIndex(pos1Scalar[i]);
         bool validIndex = srcCellDescriptionsIndex >= 0;
