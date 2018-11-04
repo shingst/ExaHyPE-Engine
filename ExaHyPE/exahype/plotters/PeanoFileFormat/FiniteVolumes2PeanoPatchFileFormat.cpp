@@ -207,8 +207,8 @@ void exahype::plotters::FiniteVolumes2PeanoPatchFileFormat::plotCellData(
 }
 
 
-void exahype::plotters::FiniteVolumes2PeanoPatchFileFormat::plotPatch(const int solverNumber,const solvers::Solver::CellInfo& cellInfo) {
-  const int element = solvers::Solver::indexOfCellDescription(cellInfo._FiniteVolumesCellDescriptions,solverNumber);
+void exahype::plotters::FiniteVolumes2PeanoPatchFileFormat::plotPatch(const int solverNumber,solvers::Solver::CellInfo& cellInfo) {
+  const int element = cellInfo.indexOfFiniteVolumesCellDescription(solverNumber);
   auto& cellDescription  = cellInfo._FiniteVolumesCellDescriptions[element];
 
   if (cellDescription.getType()==exahype::solvers::FiniteVolumesSolver::CellDescription::Type::Cell) {

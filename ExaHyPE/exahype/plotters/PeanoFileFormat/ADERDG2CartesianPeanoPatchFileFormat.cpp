@@ -318,8 +318,8 @@ void exahype::plotters::ADERDG2CartesianPeanoFileFormat::plotCellData(
   if (value!=nullptr)        delete[] value;
 }
 
-void exahype::plotters::ADERDG2CartesianPeanoFileFormat::plotPatch(const int solverNumber,const solvers::Solver::CellInfo& cellInfo) {
-  const int element = solvers::Solver::indexOfCellDescription(cellInfo._ADERDGCellDescriptions,solverNumber);
+void exahype::plotters::ADERDG2CartesianPeanoFileFormat::plotPatch(const int solverNumber,solvers::Solver::CellInfo& cellInfo) {
+  const int element = cellInfo.indexOfADERDGCellDescription(solverNumber);
   auto& aderdgCellDescription  = cellInfo._ADERDGCellDescriptions[element];
 
   if (aderdgCellDescription.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Cell) {

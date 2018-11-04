@@ -134,30 +134,18 @@ class exahype::mappings::PredictionOrLocalRecomputation {
       const tarch::la::Vector<DIMENSIONS, double>& h);
 
   #ifdef Parallel
-  /**
-   * Drop incoming neighbour data for all solvers performing
-   * a local recomputation.
-   */
-  static void dropNeighbourData(
-      const int                                    fromRank,
-      const tarch::la::Vector<DIMENSIONS, int>&    src,
-      const tarch::la::Vector<DIMENSIONS, int>&    dest,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level,
-      const exahype::MetadataHeap::HeapEntries& receivedMetadata);
 
   /**
-   * Merge incoming neighbour for all solvers performing
+   * Merge incoming neighbour for all LimitingADERDGSolver instances which perform
    * a local recomputation.
    */
   void mergeNeighourData(
       const int                                    fromRank,
-      const tarch::la::Vector<DIMENSIONS,int>&     src,
-      const tarch::la::Vector<DIMENSIONS,int>&     dest,
-      const int                                    destCellDescriptionIndex,
+      const int                                    srcScalar,
+      const int                                    destScalar,
+      const int                                    destCellDescriptionsIndex,
       const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level,
-      const exahype::MetadataHeap::HeapEntries& receivedMetadata);
+      const int                                    level);
   #endif
 
  public:

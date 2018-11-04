@@ -308,6 +308,33 @@ private:
   void uncompress(CellDescription& cellDescription) const;
 
   /**
+   * Set the predictor and corrector time step sizes to
+   * zero.
+   * @param cellDescription a cell description
+   */
+  void zeroTimeStepSizes(CellDescription& cellDescription) const;
+
+  /**
+    * Rollback to the previous time step, i.e,
+    * overwrite the time step size and time stamp
+    * fields of the cell description
+    * by previous values.
+    */
+   void rollbackToPreviousTimeStep(CellDescription& cellDescription) const;
+
+   /**
+    * Same as rollbackToPreviousTimeStep
+    * but for the fused time stepping scheme.
+    *
+    * Corrector time stamp and corrector time step size must
+    * add up to predictor time stamp after rollback.
+    *
+    * Corrector time step size is assumed to be used
+    * predictor time step size in batch.
+    */
+   void rollbackToPreviousTimeStepFused(CellDescription& cellDescription) const;
+
+  /**
    * Simply adjust the solution if necessary. Do not modify the time step
    * data or anything else.
    */
@@ -319,6 +346,15 @@ private:
   void adjustSolutionDuringMeshRefinementBody(
       CellDescription& cellDescription,
       const bool isInitialMeshRefinement);
+
+  /**
+   * Update time step sizes and time stamps for the fused/nonfused time stepping variant.
+   *
+   * @param cellDescription a cell description
+   * @param fused           if fused time stepping is used
+   * @return the new admissible time step size if the cell description is of type Cell. Otherwise, the maximum double value.
+   */
+  double updateTimeStepSizes(CellDescription& cellDescription,const bool fused);
 
   /**
    * Evaluate the refinement criterion and convert the user
@@ -425,7 +461,7 @@ private:
       CellDescription& cellDescription) const;
 
   /**
-   * Starts of finish collective operations from a
+   * Start or finish collective operations from a
    * fine cell description point of view.
    *
    * \return true if a new compute cell
@@ -434,7 +470,7 @@ private:
   void progressCollectiveRefinementOperationsInEnterCell(
       CellDescription& fineGridCellDescription);
 
-  bool progressCollectiveRefinementOperationsInLeaveCell(
+  void progressCollectiveRefinementOperationsInLeaveCell(
       CellDescription& fineGridCellDescription,
       const bool stillInRefiningMode);
 
@@ -1013,14 +1049,14 @@ public:
    * It does not spread.
    */
   static void addNewCellDescription(
-      const int cellDescriptionsIndex,
-      const int                                      solverNumber,
-      const exahype::records::ADERDGCellDescription::Type cellType,
-      const exahype::records::ADERDGCellDescription::RefinementEvent refinementEvent,
-      const int                                     level,
-      const int                                     parentIndex,
-      const tarch::la::Vector<DIMENSIONS, double>&  cellSize,
-      const tarch::la::Vector<DIMENSIONS, double>&  cellOffset);
+      const int                                    solverNumber,
+      CellInfo&                                    cellInfo,
+      const CellDescription::Type                  cellType,
+      const CellDescription::RefinementEvent       refinementEvent,
+      const int                                    level,
+      const int                                    parentIndex,
+      const tarch::la::Vector<DIMENSIONS, double>& cellSize,
+      const tarch::la::Vector<DIMENSIONS, double>& cellOffset);
 
   /**
    * Returns the ADERDGCellDescription heap vector
@@ -1742,15 +1778,7 @@ public:
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
       const int solverNumber) const override;
 
-  void finaliseStateUpdates(
-      exahype::Cell& fineGridCell,
-      exahype::Vertex* const fineGridVertices,
-      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-      exahype::Cell& coarseGridCell,
-      exahype::Vertex* const coarseGridVertices,
-      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-      const int solverNumber) override;
+  void finaliseStateUpdates(const int solverNumber,CellInfo& cellInfo) override;
 
   ///////////////////////////////////
   // CELL-LOCAL
@@ -1819,8 +1847,6 @@ public:
       const bool   isSkeletonCell );
 
   /**
-   *
-   *
    * \note uncompress is not performed in this routine. It must
    * be called before calling this routine if compression is employed.
    *
@@ -1869,6 +1895,9 @@ public:
    * Computes a time step size based on the solution
    * values. Does not advance the cell descriptions
    * time stamps forward.
+   *
+   * \return the newly computed time step size if the cell description is of type Cell or the maximum
+   *         double value.
    */
   double computeTimeStepSize(
       CellDescription& cellDescription);
@@ -1903,41 +1932,11 @@ public:
 
   /** \copydoc Solver::updateTimeStepSizesFused
    *
-   * Advances the predictor time stamp in time.
-   */
-  double updateTimeStepSizesFused(
-      const int solverNumber,CellInfo& cellInfo) override final;
-
-  /** \copydoc Solver::updateTimeStepSizesFused
    *
-   * Does not advance the predictor time stamp in time.
+   * @param fused Advances the predictor time stamp in time.
+   *         Does not advance the predictor time stamp in time.
    */
-  double updateTimeStepSizes(
-      const int solverNumber,CellInfo& cellInfo) override final;
-
-  void zeroTimeStepSizes(CellDescription& cellDescription) const;
-
-  /**
-    * Rollback to the previous time step, i.e,
-    * overwrite the time step size and time stamp
-    * fields of the cell description
-    * by previous values.
-    */
-   void rollbackToPreviousTimeStep(
-       CellDescription& cellDescription) const;
-
-   /*
-    * Same as rollbackToPreviousTimeStep
-    * but for the fused time stepping scheme.
-    *
-    * Corrector time stamp and corrector time step size must
-    * add up to predictor time stamp after rollback.
-    *
-    * Corrector time step size is assumed to be used
-    * predictor time step size in batch.
-    */
-   void rollbackToPreviousTimeStepFused(
-       CellDescription& cellDescription) const;
+  double updateTimeStepSizes(const int solverNumber,CellInfo& cellInfo,const bool fused) override final;
 
   /**
    * Perform a fused time step, i.e. perform the update, update time step data, mark
@@ -1982,8 +1981,7 @@ public:
       const int element,
       const bool isAtRemoteBoundary) const final override;
 
-  void adjustSolutionDuringMeshRefinement(
-      const int cellDescriptionsIndex,const int element) final override;
+  void adjustSolutionDuringMeshRefinement(const int solverNumber,CellInfo& cellInfo) final override;
 
   /**
    * Computes the surface integral contributions to the
@@ -2096,9 +2094,9 @@ public:
    * Allocate necessary new limiter patches.
    */
   void rollbackSolutionGlobally(
-         const int cellDescriptionsIndex,
-         const int element,
-         const bool fusedTimeStepping) const final override;
+      const int solverNumber,
+      CellInfo& cellInfo,
+      const bool fusedTimeStepping) const final override;
 
   ///////////////////////////////////
   // NEIGHBOUR
@@ -2117,8 +2115,8 @@ public:
 
   void mergeNeighboursMetadata(
       const int                                 solverNumber,
-      Solver::CellInfo&                      context1,
-      Solver::CellInfo&                      context2,
+      Solver::CellInfo&                         cellInfo1,
+      Solver::CellInfo&                         cellInfo2,
       const tarch::la::Vector<DIMENSIONS, int>& pos1,
       const tarch::la::Vector<DIMENSIONS, int>& pos2,
       const tarch::la::Vector<DIMENSIONS,       double>& x,
@@ -2127,14 +2125,14 @@ public:
 
   void mergeNeighboursData(
       const int                                 solverNumber,
-      Solver::CellInfo&                      context1,
-      Solver::CellInfo&                      context2,
+      Solver::CellInfo&                         cellInfo1,
+      Solver::CellInfo&                         cellInfo2,
       const tarch::la::Vector<DIMENSIONS, int>& pos1,
       const tarch::la::Vector<DIMENSIONS, int>& pos2);
 
   void mergeWithBoundaryData(
       const int                                 solverNumber,
-      Solver::CellInfo&                      context,
+      Solver::CellInfo&                         cellInfo,
       const tarch::la::Vector<DIMENSIONS, int>& posCell,
       const tarch::la::Vector<DIMENSIONS, int>& posBoundary);
 #ifdef Parallel

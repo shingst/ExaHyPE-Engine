@@ -174,25 +174,9 @@ void exahype::Vertex::mergeOnlyNeighboursMetadata(
   assertion(!isHangingNode());
   assertion(isInside() || isBoundary());
 
-  #if DIMENSIONS==2
-  mergeOnlyNeighboursMetadataLoopBody(0,1,_vertexData.getCellDescriptionsIndex(0),_vertexData.getCellDescriptionsIndex(1),section,x,h,checkThoroughly);
-  mergeOnlyNeighboursMetadataLoopBody(0,2,_vertexData.getCellDescriptionsIndex(0),_vertexData.getCellDescriptionsIndex(2),section,x,h,checkThoroughly);
-  mergeOnlyNeighboursMetadataLoopBody(1,3,_vertexData.getCellDescriptionsIndex(1),_vertexData.getCellDescriptionsIndex(3),section,x,h,checkThoroughly);
-  mergeOnlyNeighboursMetadataLoopBody(2,3,_vertexData.getCellDescriptionsIndex(2),_vertexData.getCellDescriptionsIndex(3),section,x,h,checkThoroughly);
-  #elif DIMENSIONS==3
-  mergeOnlyNeighboursMetadataLoopBody(0,1,_vertexData.getCellDescriptionsIndex(0),_vertexData.getCellDescriptionsIndex(1),section,x,h,checkThoroughly);
-  mergeOnlyNeighboursMetadataLoopBody(0,2,_vertexData.getCellDescriptionsIndex(0),_vertexData.getCellDescriptionsIndex(2),section,x,h,checkThoroughly);
-  mergeOnlyNeighboursMetadataLoopBody(0,4,_vertexData.getCellDescriptionsIndex(0),_vertexData.getCellDescriptionsIndex(4),section,x,h,checkThoroughly);
-  mergeOnlyNeighboursMetadataLoopBody(1,3,_vertexData.getCellDescriptionsIndex(1),_vertexData.getCellDescriptionsIndex(3),section,x,h,checkThoroughly);
-  mergeOnlyNeighboursMetadataLoopBody(1,5,_vertexData.getCellDescriptionsIndex(1),_vertexData.getCellDescriptionsIndex(5),section,x,h,checkThoroughly);
-  mergeOnlyNeighboursMetadataLoopBody(2,3,_vertexData.getCellDescriptionsIndex(2),_vertexData.getCellDescriptionsIndex(3),section,x,h,checkThoroughly);
-  mergeOnlyNeighboursMetadataLoopBody(2,6,_vertexData.getCellDescriptionsIndex(2),_vertexData.getCellDescriptionsIndex(6),section,x,h,checkThoroughly);
-  mergeOnlyNeighboursMetadataLoopBody(3,7,_vertexData.getCellDescriptionsIndex(3),_vertexData.getCellDescriptionsIndex(7),section,x,h,checkThoroughly);
-  mergeOnlyNeighboursMetadataLoopBody(4,5,_vertexData.getCellDescriptionsIndex(4),_vertexData.getCellDescriptionsIndex(5),section,x,h,checkThoroughly);
-  mergeOnlyNeighboursMetadataLoopBody(4,6,_vertexData.getCellDescriptionsIndex(4),_vertexData.getCellDescriptionsIndex(6),section,x,h,checkThoroughly);
-  mergeOnlyNeighboursMetadataLoopBody(5,7,_vertexData.getCellDescriptionsIndex(5),_vertexData.getCellDescriptionsIndex(7),section,x,h,checkThoroughly);
-  mergeOnlyNeighboursMetadataLoopBody(6,7,_vertexData.getCellDescriptionsIndex(6),_vertexData.getCellDescriptionsIndex(7),section,x,h,checkThoroughly);
-  #endif
+  for (int i=0; i<2*(DIMENSIONS-1)*(DIMENSIONS); i++) {
+    mergeOnlyNeighboursMetadataLoopBody(pos1Scalar[i],pos2Scalar[i],_vertexData.getCellDescriptionsIndex(pos1Scalar[i]),_vertexData.getCellDescriptionsIndex(pos2Scalar[i]),section,x,h,checkThoroughly);
+  }
 }
 
 void exahype::Vertex::validateNeighbourhood(
@@ -200,71 +184,38 @@ void exahype::Vertex::validateNeighbourhood(
     const int cellDescriptionsIndex2,
     const tarch::la::Vector<DIMENSIONS,int>& pos1,
     const tarch::la::Vector<DIMENSIONS,int>& pos2) {
-  solvers::Solver::InterfaceInfo face(pos1,pos2);
+  tarch::la::Vector<DIMENSIONS,int> posCell  = pos1;
+  tarch::la::Vector<DIMENSIONS,int> posEmpty = pos2;
+  int cellDescriptionsIndex                  = cellDescriptionsIndex1;
+  if ( cellDescriptionsIndex2 >= 0 ) {
+    posCell  = pos2;
+    posEmpty = pos1;
+    cellDescriptionsIndex = cellDescriptionsIndex2;
+  }
+  solvers::Solver::CellInfo cellInfo(cellDescriptionsIndex);
+  solvers::Solver::BoundaryFaceInfo face(posCell,posEmpty);
 
-  for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
-    auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-
-    switch (solver->getType()) {
-    case exahype::solvers::Solver::Type::LimitingADERDG:
-    case exahype::solvers::Solver::Type::ADERDG: {
-      // Cell 1
-      const int element1 = solver->tryGetElement(cellDescriptionsIndex1,solverNumber);
-      if (element1!=exahype::solvers::Solver::NotFound) {
-        auto& p1 = exahype::solvers::ADERDGSolver::getCellDescription(cellDescriptionsIndex1,element1);
-        if (
-            (p1.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Cell ||
-            p1.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Ancestor)
-            &&
-            cellDescriptionsIndex2==multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex
-        ) {
-          logError("validateNeighbourhood(...)","cell at index="<<cellDescriptionsIndex1<<" is at face="<<face._faceIndex1<<" next to empty cell: cell="<<p1.toString());
-          std::terminate();
-        }
-      }
-      // Cell 2
-      const int element2 = solver->tryGetElement(cellDescriptionsIndex2,solverNumber);
-      if (element2!=exahype::solvers::Solver::NotFound) {
-        auto& p2 = exahype::solvers::ADERDGSolver::getCellDescription(cellDescriptionsIndex2,element2);
-        if (
-            (p2.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Cell ||
-            p2.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Ancestor)
-            &&
-            cellDescriptionsIndex1==multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex
-        ) {
-          logError("validateNeighbourhood(...)","cell at index="<<cellDescriptionsIndex2<<" is at face="<<face._faceIndex2<<" next to empty cell: cell="<<p2.toString());
-          std::terminate();
-        }
-      }
-    } break;
-    case exahype::solvers::Solver::Type::FiniteVolumes: {
-      // Cell 1
-      const int element1 = solver->tryGetElement(cellDescriptionsIndex1,solverNumber);
-      if (element1!=exahype::solvers::Solver::NotFound) {
-        auto& p1 = exahype::solvers::FiniteVolumesSolver::getCellDescription(cellDescriptionsIndex1,element1);
-        if (
-            p1.getType()==exahype::solvers::FiniteVolumesSolver::CellDescription::Type::Cell
-            &&
-            cellDescriptionsIndex2==multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex
-        ) {
-          logError("validateNeighbourhood(...)","cell at index="<<cellDescriptionsIndex1<<" is at face="<<face._faceIndex1<<" next to empty cell: cell="<<p1.toString());
-          std::terminate();
-        }
-      }
-      // Cell 2
-      const int element2 = solver->tryGetElement(cellDescriptionsIndex2,solverNumber);
-      if (element2!=exahype::solvers::Solver::NotFound) {
-        auto& p2 = exahype::solvers::FiniteVolumesSolver::getCellDescription(cellDescriptionsIndex2,element2);
-        if (
-            p2.getType()==exahype::solvers::FiniteVolumesSolver::CellDescription::Type::Cell
-            &&
-            cellDescriptionsIndex1==multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex
-        ) {
-          logError("validateNeighbourhood(...)","cell at index="<<cellDescriptionsIndex2<<" is at face="<<face._faceIndex2<<" next to empty cell: cell="<<p2.toString());
-          std::terminate();
-        }
-      }
-    } break;
+  // ADER-DG
+  for (auto& p : cellInfo._ADERDGCellDescriptions) {
+    if (
+        (p.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Cell ||
+         p.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Ancestor)
+        &&
+        cellDescriptionsIndex2==multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex
+    ) {
+      logError("validateNeighbourhood(...)","cell at index="<<cellDescriptionsIndex1<<" is at face="<<face._faceIndex<<" next to empty cell: cell="<<p.toString());
+      std::terminate();
+    }
+  }
+  // FV
+  for (auto& p : cellInfo._FiniteVolumesCellDescriptions) {
+    if (
+        p.getType()==exahype::solvers::FiniteVolumesSolver::CellDescription::Type::Cell
+        &&
+        cellDescriptionsIndex2==multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex
+    ) {
+      logError("validateNeighbourhood(...)","cell at index="<<cellDescriptionsIndex1<<" is at face="<<face._faceIndex<<" next to empty cell: cell="<<p.toString());
+      std::terminate();
     }
   }
 }
@@ -357,37 +308,25 @@ void exahype::Vertex::mergeNeighboursDataAndMetadata(
 
 tarch::la::Vector<DIMENSIONS,int> exahype::Vertex::delineariseIndex2(int index) {
   #if DIMENSIONS==2
-  switch( index ) {
-    case 0:
-      return tarch::la::Vector<DIMENSIONS,int>(0,0);
-    case 1:
-      return tarch::la::Vector<DIMENSIONS,int>(1,0);
-    case 2:
-      return tarch::la::Vector<DIMENSIONS,int>(0,1);
-    case 3:
-      return tarch::la::Vector<DIMENSIONS,int>(1,1);
+  switch( index ) {                                //x,y
+    case 0: return tarch::la::Vector<DIMENSIONS,int>(0,0);
+    case 1: return tarch::la::Vector<DIMENSIONS,int>(1,0);
+    case 2: return tarch::la::Vector<DIMENSIONS,int>(0,1);
+    case 3: return tarch::la::Vector<DIMENSIONS,int>(1,1);
     default:
       logError("delineariseIndex2(index)","index must be in range [0,3]!");
       return tarch::la::Vector<DIMENSIONS,int>(-1,-1);
   }
   #elif DIMENSIONS==3
-  switch( index ) {
-    case 0:
-      return tarch::la::Vector<DIMENSIONS,int>(0,0,0);
-    case 1:
-      return tarch::la::Vector<DIMENSIONS,int>(1,0,0);
-    case 2:
-      return tarch::la::Vector<DIMENSIONS,int>(0,1,0);
-    case 3:
-      return tarch::la::Vector<DIMENSIONS,int>(1,1,0);
-    case 4:
-      return tarch::la::Vector<DIMENSIONS,int>(0,0,1);
-    case 5:
-      return tarch::la::Vector<DIMENSIONS,int>(1,0,1);
-    case 6:
-      return tarch::la::Vector<DIMENSIONS,int>(0,1,1);
-    case 7:
-      return tarch::la::Vector<DIMENSIONS,int>(1,1,1);
+  switch( index ) {                                //x,y,z
+    case 0: return tarch::la::Vector<DIMENSIONS,int>(0,0,0);
+    case 1: return tarch::la::Vector<DIMENSIONS,int>(1,0,0);
+    case 2: return tarch::la::Vector<DIMENSIONS,int>(0,1,0);
+    case 3: return tarch::la::Vector<DIMENSIONS,int>(1,1,0);
+    case 4: return tarch::la::Vector<DIMENSIONS,int>(0,0,1);
+    case 5: return tarch::la::Vector<DIMENSIONS,int>(1,0,1);
+    case 6: return tarch::la::Vector<DIMENSIONS,int>(0,1,1);
+    case 7: return tarch::la::Vector<DIMENSIONS,int>(1,1,1);
     default:
       logError("delineariseIndex2(index)","index must be in range [0,7]!");
       return tarch::la::Vector<DIMENSIONS,int>(-1,-1,-1);

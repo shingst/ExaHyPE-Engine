@@ -51,8 +51,8 @@ void exahype::plotters::LimitingADERDG2UserDefined::init(
 exahype::plotters::LimitingADERDG2UserDefined::~LimitingADERDG2UserDefined() {
 }
 
-void exahype::plotters::LimitingADERDG2UserDefined::plotPatch(const int solverNumber,const solvers::Solver::CellInfo& cellInfo) {
-  const int element = solvers::Solver::indexOfCellDescription(cellInfo._ADERDGCellDescriptions,solverNumber);
+void exahype::plotters::LimitingADERDG2UserDefined::plotPatch(const int solverNumber,solvers::Solver::CellInfo& cellInfo) {
+  const int element = cellInfo.indexOfADERDGCellDescription(solverNumber);
   auto& solverPatch  = cellInfo._ADERDGCellDescriptions[element];
 
   if (solverPatch.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Cell) {

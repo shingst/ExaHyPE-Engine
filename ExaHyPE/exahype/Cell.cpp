@@ -221,7 +221,7 @@ void exahype::Cell::setCellDescriptionsIndex(int cellDescriptionsIndex) {
   _cellData.setCellDescriptionsIndex(cellDescriptionsIndex);
 }
 
-void exahype::Cell::addNewCellDescription(
+exahype::solvers::Solver::CellInfo exahype::Cell::addNewCellDescription(
     const int solverNumber,
     const exahype::records::FiniteVolumesCellDescription::Type cellType,
     const exahype::records::FiniteVolumesCellDescription::RefinementEvent refinementEvent,
@@ -233,14 +233,16 @@ void exahype::Cell::addNewCellDescription(
     setupMetaData();
   }
 
-  exahype::solvers::FiniteVolumesSolver::addNewCellDescription(
-      _cellData.getCellDescriptionsIndex(),solverNumber,
+  solvers::Solver::CellInfo cellInfo(_cellData.getCellDescriptionsIndex());
+  solvers::FiniteVolumesSolver::addNewCellDescription(
+      solverNumber,cellInfo,
       cellType,refinementEvent,
       level,parentIndex,cellSize,cellOffset);
+  return cellInfo;
 }
 
 
-void exahype::Cell::addNewCellDescription(
+exahype::solvers::Solver::CellInfo exahype::Cell::addNewCellDescription(
     const int                                     solverNumber,
     const exahype::records::ADERDGCellDescription::Type cellType,
     const exahype::records::ADERDGCellDescription::RefinementEvent refinementEvent,
@@ -252,10 +254,12 @@ void exahype::Cell::addNewCellDescription(
     setupMetaData();
   }
 
+  solvers::Solver::CellInfo cellInfo(_cellData.getCellDescriptionsIndex());
   exahype::solvers::ADERDGSolver::addNewCellDescription(
-      _cellData.getCellDescriptionsIndex(),solverNumber,
+      solverNumber,cellInfo,
       cellType,refinementEvent,
       level,parentIndex,cellSize,cellOffset);
+  return cellInfo;
 }
 
 int exahype::Cell::getNumberOfADERDGCellDescriptions() const {

@@ -117,8 +117,8 @@ public:
       const bool                                   checkThoroughly);
 
   /**
-   * Validate that a compute cell is not next to
-   * an invalid cell description index as long as their
+   * Validate that a compute cell associated with index1 is not next to
+   * an invalid cell description index 2 if their
    * interface is an interior face.
    */
   static void validateNeighbourhood(

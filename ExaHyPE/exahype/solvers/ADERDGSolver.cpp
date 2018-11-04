@@ -94,24 +94,19 @@ int exahype::solvers::ADERDGSolver::computeWeight(const int cellDescriptionsInde
 }
 
 void exahype::solvers::ADERDGSolver::addNewCellDescription(
-  const int                                     cellDescriptionsIndex,
-  const int                                     solverNumber,
-  const CellDescription::Type                   cellType,
-  const CellDescription::RefinementEvent        refinementEvent,
-  const int                                     level,
-  const int                                     parentIndex,
-  const tarch::la::Vector<DIMENSIONS, double>&  cellSize,
-  const tarch::la::Vector<DIMENSIONS, double>&  cellOffset) {
-  
-  logDebug("addNewCellDescription(...)","Add cell description: index="<<cellDescriptionsIndex<<", type="<<CellDescription::toString(cellType) <<", level="<<level<<", parentIndex="<<parentIndex
-           << " for solver=" << solverNumber);
+    const int                                    solverNumber,
+    CellInfo&                                    cellInfo,
+    const CellDescription::Type                  cellType,
+    const CellDescription::RefinementEvent       refinementEvent,
+    const int                                    level,
+    const int                                    parentIndex,
+    const tarch::la::Vector<DIMENSIONS, double>& cellSize,
+    const tarch::la::Vector<DIMENSIONS, double>& cellOffset) {
+  assertion2(parentIndex == -1 || parentIndex != cellInfo._cellDescriptionsIndex, parentIndex, cellInfo._cellDescriptionsIndex);
+  assertion2(parentIndex != cellInfo._cellDescriptionsIndex, parentIndex, cellInfo._cellDescriptionsIndex);
+  logDebug("addNewCellDescription(...)","Add cell description: index="<<cellInfo._cellDescriptionsIndex<<",type="<<CellDescription::toString(cellType)<<",level="<<level<<",parentIndex="<<parentIndex << ",solver=" <<solverNumber);
 
-  assertion1(Heap::getInstance().isValidIndex(cellDescriptionsIndex),cellDescriptionsIndex);
-  assertion2(parentIndex == -1 || parentIndex != cellDescriptionsIndex, parentIndex, cellDescriptionsIndex);
-  assertion2(parentIndex != cellDescriptionsIndex, parentIndex, cellDescriptionsIndex);
-
-  assertion2(static_cast<unsigned int>(solverNumber) < solvers::RegisteredSolvers.size(),
-             solverNumber, exahype::solvers::RegisteredSolvers.size());
+  assertion2(static_cast<unsigned int>(solverNumber) < solvers::RegisteredSolvers.size(),solverNumber,exahype::solvers::RegisteredSolvers.size());
 
   CellDescription newCellDescription;
   newCellDescription.setSolverNumber(solverNumber);
@@ -212,7 +207,7 @@ void exahype::solvers::ADERDGSolver::addNewCellDescription(
   #endif
 
   tarch::multicore::Lock lock(exahype::HeapSemaphore);
-  ADERDGSolver::Heap::getInstance().getData(cellDescriptionsIndex).push_back(newCellDescription);
+  cellInfo._ADERDGCellDescriptions.push_back(newCellDescription);
   lock.free();
 }
 
@@ -1299,20 +1294,17 @@ void exahype::solvers::ADERDGSolver::addNewCell(
   logDebug("addNewCell(...)","Add new grid cell with center "<<fineGridVerticesEnumerator.getCellCenter() <<
               " at level "<<fineGridVerticesEnumerator.getLevel());
 
-  fineGridCell.addNewCellDescription(
-              solverNumber,
-              CellDescription::Type::Cell,
-              CellDescription::None,
-              fineGridVerticesEnumerator.getLevel(),
-              coarseGridCellDescriptionsIndex,
-              fineGridVerticesEnumerator.getCellSize(),
-              fineGridVerticesEnumerator.getVertexPosition());
+  CellInfo cellInfo = fineGridCell.addNewCellDescription(
+      solverNumber,
+      CellDescription::Type::Cell,
+      CellDescription::None,
+      fineGridVerticesEnumerator.getLevel(),
+      coarseGridCellDescriptionsIndex,
+      fineGridVerticesEnumerator.getCellSize(),
+      fineGridVerticesEnumerator.getVertexPosition());
 
-  const int fineGridElement =
-      tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
-  CellDescription& fineGridCellDescription =
-      getCellDescription(fineGridCell.getCellDescriptionsIndex(),fineGridElement);
-  
+  const int fineGridElement = cellInfo.indexOfADERDGCellDescription(solverNumber);
+  CellDescription& fineGridCellDescription = cellInfo._ADERDGCellDescriptions[fineGridElement]; //TODO(Dominic): Multi-solvers: Might need to lock this?
   if ( !exahype::solvers::Solver::SpawnAMRBackgroundJobs ) {
     ensureNecessaryMemoryIsAllocated(fineGridCellDescription);
   }
@@ -1768,7 +1760,7 @@ bool exahype::solvers::ADERDGSolver::markPreviousAncestorForRefinement(CellDescr
            cellDescription.getPreviousRefinementStatus()!=_refineOrKeepOnFineGrid;
 }
 
-bool exahype::solvers::ADERDGSolver::progressCollectiveRefinementOperationsInLeaveCell(
+void exahype::solvers::ADERDGSolver::progressCollectiveRefinementOperationsInLeaveCell(
      CellDescription& fineGridCellDescription,
      const bool stillInRefiningMode) {
   switch ( fineGridCellDescription.getRefinementEvent() ) {
@@ -1825,7 +1817,6 @@ bool exahype::solvers::ADERDGSolver::progressCollectiveRefinementOperationsInLea
     prepareVolumeDataRestriction(fineGridCellDescription);
     fineGridCellDescription.setRefinementEvent(CellDescription::RefinementEvent::ErasingChildrenRequested);
   }
-  return false;
 }
 
 void exahype::solvers::ADERDGSolver::eraseCellDescriptionIfNecessary(
@@ -1968,18 +1959,11 @@ void exahype::solvers::ADERDGSolver::ensureFineGridCoarseGridConsistency(
 }
 
 void exahype::solvers::ADERDGSolver::finaliseStateUpdates(
-      exahype::Cell& fineGridCell,
-      exahype::Vertex* const fineGridVertices,
-      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-      exahype::Cell& coarseGridCell,
-      exahype::Vertex* const coarseGridVertices,
-      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-      const int solverNumber) {
-  const int element =
-      tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
+      const int solverNumber,
+      CellInfo& cellInfo) {
+  const int element = cellInfo.indexOfADERDGCellDescription(solverNumber);
   if ( element!=exahype::solvers::Solver::NotFound ) {
-    CellDescription& cellDescription = getCellDescription(fineGridCell.getCellDescriptionsIndex(),element);
+    CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[element];
     cellDescription.setRefinementFlag(false);
     cellDescription.setPreviousAugmentationStatus(cellDescription.getAugmentationStatus());
   }
@@ -2165,7 +2149,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
     const bool isFirstIterationOfBatch,
     const bool isLastIterationOfBatch,
     const bool isAtRemoteBoundary) {
-  const int element                = indexOfCellDescription(cellInfo._ADERDGCellDescriptions,solverNumber);
+  const int element                = cellInfo.indexOfADERDGCellDescription(solverNumber);
   CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[element];
 
   if ( cellDescription.getType()==CellDescription::Type::Cell ) {
@@ -2206,7 +2190,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::updateOrR
       const int  solverNumber,
       CellInfo&  cellInfo,
       const bool isAtRemoteBoundary){
-  const int element = indexOfCellDescription(cellInfo._ADERDGCellDescriptions,solverNumber);
+  const int element = cellInfo.indexOfADERDGCellDescription(solverNumber);
   CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[element];
 
   if (cellDescription.getType()==CellDescription::Type::Cell) {
@@ -2242,7 +2226,7 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
     const int solverNumber,
     CellInfo& cellInfo,
     const bool isAtRemoteBoundary) {
-  const int element = indexOfCellDescription(cellInfo._ADERDGCellDescriptions,solverNumber);
+  const int element = cellInfo.indexOfADERDGCellDescription(solverNumber);
   if ( element != Solver::NotFound ) {
     CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[element];
     if (cellDescription.getType()==CellDescription::Type::Cell) {
@@ -2315,7 +2299,7 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
     const double predictorTimeStepSize,
     const bool   uncompressBefore,
     const bool   isAtRemoteBoundary) {
-  const int element = indexOfCellDescription(cellInfo._ADERDGCellDescriptions,solverNumber);
+  const int element = cellInfo.indexOfADERDGCellDescription(solverNumber);
   CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[element];
 
   if ( cellDescription.getType()==CellDescription::Type::Cell ) {
@@ -2342,8 +2326,8 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
 }
 
 double exahype::solvers::ADERDGSolver::computeTimeStepSize(CellDescription& cellDescription) {
-  if (cellDescription.getType()==CellDescription::Type::Cell) {
-    assertion1(cellDescription.getRefinementEvent()==CellDescription::None,cellDescription.toString());
+  if( cellDescription.getType()==CellDescription::Type::Cell ) {
+    assertion1( cellDescription.getRefinementEvent()==CellDescription::None,cellDescription.toString());
     const double* luh = static_cast<double*>(cellDescription.getSolution());
 
     validateCellDescriptionData(cellDescription,false,false,true,"computeTimeStepSizes(...)");
@@ -2354,9 +2338,9 @@ double exahype::solvers::ADERDGSolver::computeTimeStepSize(CellDescription& cell
     assertion2(!_checkForNaNs || std::isfinite(admissibleTimeStepSize),admissibleTimeStepSize,cellDescription.toString());
 
     return admissibleTimeStepSize;
+  } else {
+    return std::numeric_limits<double>::max();
   }
-
-  return std::numeric_limits<double>::max();
 }
 
 
@@ -2422,42 +2406,25 @@ double exahype::solvers::ADERDGSolver::startNewTimeStep(CellDescription& cellDes
   return std::numeric_limits<double>::max();
 }
 
-double exahype::solvers::ADERDGSolver::updateTimeStepSizes(
-    const int solverNumber,
-    CellInfo& cellInfo) {
-  const int element = indexOfCellDescription(cellInfo._ADERDGCellDescriptions,solverNumber);
-  if ( element != NotFound ) {
-    CellDescription& cellDescription    = cellInfo._ADERDGCellDescription[element];
-    const double admissibleTimeStepSize = computeTimeStepSize(cellDescription);
+double exahype::solvers::ADERDGSolver::updateTimeStepSizes(CellDescription& cellDescription,const bool fused) {
+  const double admissibleTimeStepSize = computeTimeStepSize(cellDescription);
 
-    cellDescription.setCorrectorTimeStepSize( admissibleTimeStepSize );
-    cellDescription.setPredictorTimeStepSize( admissibleTimeStepSize );
-    cellDescription.setPredictorTimeStamp   ( cellDescription.getCorrectorTimeStamp() ); // Potentially not necessary
-
-    return admissibleTimeStepSize;
+  cellDescription.setCorrectorTimeStepSize( admissibleTimeStepSize );
+  cellDescription.setPredictorTimeStepSize( admissibleTimeStepSize );
+  if ( fused ) {
+    cellDescription.setPredictorTimeStamp   ( cellDescription.getCorrectorTimeStamp()+admissibleTimeStepSize );
+  } else {
+    cellDescription.setPredictorTimeStamp   ( cellDescription.getCorrectorTimeStamp() );
   }
-  return std::numeric_limits<double>::max();
+  return admissibleTimeStepSize;
 }
 
-double exahype::solvers::ADERDGSolver::updateTimeStepSizesFused(
-    const int solverNumber,
-    CellInfo& cellInfo) {
-  const int element = indexOfCellDescription(cellInfo._ADERDGCellDescriptions,solverNumber);
+double exahype::solvers::ADERDGSolver::updateTimeStepSizes(
+    const int solverNumber,CellInfo& cellInfo,const bool fused) {
+  const int element = cellInfo.indexOfADERDGCellDescription(solverNumber);
   if ( element != NotFound ) {
-    CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[element];
-    if (cellDescription.getType()==CellDescription::Type::Cell) {
-      const double admissibleTimeStepSize = computeTimeStepSize(cellDescription);
-
-      cellDescription.setCorrectorTimeStepSize( admissibleTimeStepSize );
-      cellDescription.setPredictorTimeStepSize( admissibleTimeStepSize );
-      cellDescription.setPredictorTimeStamp   ( cellDescription.getCorrectorTimeStamp()+admissibleTimeStepSize );
-
-      return admissibleTimeStepSize;
-    } else {
-      return std::numeric_limits<double>::max();
-    }
-  }
-  else {
+    return updateTimeStepSizes(cellInfo._ADERDGCellDescriptions[element],fused);
+  } else {
     return std::numeric_limits<double>::max();
   }
 }
@@ -2766,7 +2733,7 @@ void exahype::solvers::ADERDGSolver::prolongateFaceData(
     const int solverNumber,
     CellInfo& cellInfo,
     const bool isAtRemoteBoundary) {
-  const int element = indexOfCellDescription(cellInfo._ADERDGCellDescriptions,solverNumber);
+  const int element = cellInfo.indexOfADERDGCellDescription(solverNumber);
 
   if ( element != Solver::NotFound ) {
     CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[element];
@@ -3040,48 +3007,48 @@ void exahype::solvers::ADERDGSolver::updateCoarseGridAncestorRefinementStatus(
 
 // TODO(Dominic): Check that we have rolled back in time as well
 void exahype::solvers::ADERDGSolver::rollbackSolutionGlobally(
-    const int cellDescriptionsIndex, const int solverElement,
+    const int solverNumber,CellInfo& cellInfo,
     const bool fusedTimeStepping) const {
-  CellDescription& cellDescription = ADERDGSolver::getCellDescription(cellDescriptionsIndex,solverElement);
+  const int element = cellInfo.indexOfADERDGCellDescription(solverNumber);
+  if ( element != NotFound ) {
+    CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[element];
 
-  // 1. Rollback time step data
-  if ( fusedTimeStepping ) {
-    rollbackToPreviousTimeStepFused(cellDescription);
-  } else {
-    rollbackToPreviousTimeStep(cellDescription);
-  }
-  // 2. Rollback solution to previous one
-  if (cellDescription.getType()==CellDescription::Type::Cell) {
-    swapSolutionAndPreviousSolution(cellDescription);
-  }
+    // 1. Rollback time step data
+    if ( fusedTimeStepping ) {
+      rollbackToPreviousTimeStepFused(cellDescription);
+    } else {
+      rollbackToPreviousTimeStep(cellDescription);
+    }
+    // 2. Rollback solution to previous one
+    if (cellDescription.getType()==CellDescription::Type::Cell) {
+      swapSolutionAndPreviousSolution(cellDescription);
+    }
 
-  // 3. Reset the previous refinement status on the finest mesh level
-  if ( cellDescription.getLevel()==getMaximumAdaptiveMeshLevel() ) {
-    cellDescription.setRefinementStatus(cellDescription.getPreviousRefinementStatus());
-  } else {
-    cellDescription.setRefinementStatus(Pending);
-    cellDescription.setPreviousRefinementStatus(Pending);
+    // 3. Reset the previous refinement status on the finest mesh level
+    if ( cellDescription.getLevel()==getMaximumAdaptiveMeshLevel() ) {
+      cellDescription.setRefinementStatus(cellDescription.getPreviousRefinementStatus());
+    } else {
+      cellDescription.setRefinementStatus(Pending);
+      cellDescription.setPreviousRefinementStatus(Pending);
+    }
   }
 }
 
 void exahype::solvers::ADERDGSolver::mergeNeighboursMetadata(
     const int                                    solverNumber,
-    Solver::CellInfo&                         context1,
-    Solver::CellInfo&                         context2,
+    Solver::CellInfo&                            cellInfo1,
+    Solver::CellInfo&                            cellInfo2,
     const tarch::la::Vector<DIMENSIONS, int>&    pos1,
     const tarch::la::Vector<DIMENSIONS, int>&    pos2,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const tarch::la::Vector<DIMENSIONS, double>& h,
     const bool                                   checkThoroughly) const {
-  assertion2(tarch::la::countEqualEntries(pos1,pos2)==(DIMENSIONS-1),pos1,pos2);
-  Solver::InterfaceInfo face(pos1,pos2);
-
-  const int element1 = indexOfCellDescription(context1._ADERDGCellDescriptions,solverNumber);
-  const int element2 = indexOfCellDescription(context2._ADERDGCellDescriptions,solverNumber);
-
+  const int element1 = cellInfo1.indexOfADERDGCellDescription(solverNumber);
+  const int element2 = cellInfo2.indexOfADERDGCellDescription(solverNumber);
   if ( element1 != Solver::NotFound && element2 != Solver::NotFound ) {
-    CellDescription& cellDescription1 = context1._ADERDGCellDescriptions[element1];
-    CellDescription& cellDescription2 = context2._ADERDGCellDescriptions[element2];
+    Solver::InterfaceInfo face(pos1,pos2);
+    CellDescription& cellDescription1 = cellInfo1._ADERDGCellDescriptions[element1];
+    CellDescription& cellDescription2 = cellInfo2._ADERDGCellDescriptions[element2];
 
     bool mergeMetadata = true;
     if ( checkThoroughly ) {
@@ -3112,19 +3079,16 @@ void exahype::solvers::ADERDGSolver::mergeNeighboursMetadata(
 // merge compute data
 void exahype::solvers::ADERDGSolver::mergeNeighboursData(
     const int                                 solverNumber,
-    Solver::CellInfo&                      context1,
-    Solver::CellInfo&                      context2,
+    Solver::CellInfo&                         cellInfo1,
+    Solver::CellInfo&                         cellInfo2,
     const tarch::la::Vector<DIMENSIONS, int>& pos1,
     const tarch::la::Vector<DIMENSIONS, int>& pos2) {
-  assertion1(tarch::la::countEqualEntries(pos1,pos2)==(DIMENSIONS-1),tarch::la::countEqualEntries(pos1,pos2));
-  const int element1 = indexOfCellDescription(context1._ADERDGCellDescriptions,solverNumber);
-  const int element2 = indexOfCellDescription(context2._ADERDGCellDescriptions,solverNumber);
-
+  const int element1 = cellInfo1.indexOfADERDGCellDescription(solverNumber);
+  const int element2 = cellInfo2.indexOfADERDGCellDescription(solverNumber);
   if ( element1 != Solver::NotFound && element2 != Solver::NotFound ) {
-    CellDescription& cellDescription1 = context1._ADERDGCellDescriptions[element1];
-    CellDescription& cellDescription2 = context2._ADERDGCellDescriptions[element2];
-
     Solver::InterfaceInfo face(pos1,pos2);
+    CellDescription& cellDescription1 = cellInfo1._ADERDGCellDescriptions[element1];
+    CellDescription& cellDescription2 = cellInfo2._ADERDGCellDescriptions[element2];
 
     if ( !cellDescription1.getNeighbourMergePerformed(face._faceIndex1) ) {
       assertion2( !cellDescription2.getNeighbourMergePerformed(face._faceIndex2), cellDescription1.toString(), cellDescription2.toString() );
@@ -3277,15 +3241,15 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
 
 void exahype::solvers::ADERDGSolver::mergeWithBoundaryData(
     const int                                 solverNumber,
-    Solver::CellInfo&                      context,
+    Solver::CellInfo&                         cellInfo,
     const tarch::la::Vector<DIMENSIONS, int>& posCell,
     const tarch::la::Vector<DIMENSIONS, int>& posBoundary) {
   assertion2(tarch::la::countEqualEntries(posCell,posBoundary)==(DIMENSIONS-1),posCell.toString(),posBoundary.toString());
   Solver::BoundaryFaceInfo face(posCell,posBoundary);
 
-  const int element = indexOfCellDescription(context._ADERDGCellDescriptions,solverNumber);
+  const int element = cellInfo.indexOfADERDGCellDescription(solverNumber);
   if ( element != Solver::NotFound ) {
-    CellDescription& cellDescription = context._ADERDGCellDescriptions[element];
+    CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[element];
 
     if ( !cellDescription.getNeighbourMergePerformed(face._faceIndex) ) { // check flag
       synchroniseTimeStepping(cellDescription);
@@ -3958,7 +3922,7 @@ void exahype::solvers::ADERDGSolver::mergeWithNeighbourMetadata(
     const tarch::la::Vector<DIMENSIONS, int>& src,
     const tarch::la::Vector<DIMENSIONS, int>& dest) const {
   assertion(tarch::la::countEqualEntries(src,dest)==DIMENSIONS-1); // only consider faces
-  const int element = indexOfCellDescription(cellInfo._ADERDGCellDescriptions,solverNumber);
+  const int element = cellInfo.indexOfADERDGCellDescription(solverNumber);
   if ( element!=Solver::NotFound ) {
     Solver::BoundaryFaceInfo face(dest,src);
     CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[element];
@@ -3985,7 +3949,7 @@ void exahype::solvers::ADERDGSolver::sendDataToNeighbour(
     const int                                     level) const {
   assertion(tarch::la::countEqualEntries(src,dest)==(DIMENSIONS-1));
 
-  const int element = indexOfCellDescription(cellInfo._ADERDGCellDescriptions,solverNumber);
+  const int element = cellInfo.indexOfADERDGCellDescription(solverNumber);
 
   if ( element != Solver::NotFound ) {
     CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[element];
@@ -4057,7 +4021,7 @@ void exahype::solvers::ADERDGSolver::mergeWithNeighbourData(
     const tarch::la::Vector<DIMENSIONS, int>&    dest,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const int                                    level) {
-  const int element = indexOfCellDescription(cellInfo._ADERDGCellDescriptions,solverNumber);
+  const int element = cellInfo.indexOfADERDGCellDescription(solverNumber);
   if ( element != NotFound ) {
     Solver::BoundaryFaceInfo face(dest,src);
     CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[element];
@@ -4091,11 +4055,7 @@ void exahype::solvers::ADERDGSolver::mergeWithNeighbourData(
            _receivedExtrapolatedPredictor.data(),
            _receivedFluctuations.data(),
            fromRank);
-    } else  {
-      dropNeighbourData(fromRank,src,dest,x,level);
     }
-  } else {
-    dropNeighbourData(fromRank,src,dest,x,level);
   }
 }
 

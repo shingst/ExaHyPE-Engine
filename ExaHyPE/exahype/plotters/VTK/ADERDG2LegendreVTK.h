@@ -10,7 +10,7 @@
  * Released under the BSD 3 Open Source License.
  * For the full license text, see LICENSE.txt
  **/
- 
+
 #ifndef _EXAHYPE_PLOTTERS_ADERDG_2_VTK_H_
 #define _EXAHYPE_PLOTTERS_ADERDG_2_VTK_H_
 
@@ -43,22 +43,24 @@ namespace exahype {
  * Common VTK class. Usually not used directly but through one of the subclasses.
  */
 class exahype::plotters::ADERDG2LegendreVTK: public exahype::plotters::Plotter::Device {
-  protected:
-   enum class PlotterType {
-     BinaryVTK,
-     ASCIIVTK,
-     BinaryVTU,
-     ASCIIVTU
-   };
- private:
-  int           _fileCounter;
-  const PlotterType _plotterType;
-  const bool    _plotCells;
-  std::string   _filename;
-  int           _order;
-  int           _solverUnknowns;
-  int           _writtenUnknowns;
-  exahype::parser::ParserView   _plotterParameters;
+protected:
+  enum class PlotterType {
+    BinaryVTK,
+    ASCIIVTK,
+    BinaryVTU,
+    ASCIIVTU
+  };
+private:
+  const PlotterType            _plotterType;
+  const bool                   _plotCells;
+
+  int                          _fileCounter = 0;
+  std::string                  _filename;
+
+  int                          _order             = 0;
+  int                          _solverUnknowns    = 0;
+  int                          _writtenUnknowns   = 0;
+  exahype::parser::ParserView  _plotterParameters = 0;
 
 
   /**
@@ -69,50 +71,50 @@ class exahype::plotters::ADERDG2LegendreVTK: public exahype::plotters::Plotter::
   /**
    * To memorise the time argument from startPlotter(). We need it when we close the plotter for the time series.
    */
-  double _time;
+  double _time = 0;
 
-  exahype::plotters::Slicer *slicer;
+  exahype::plotters::Slicer *slicer = nullptr;
   static tarch::logging::Log _log;
-  
-  tarch::plotter::griddata::unstructured::UnstructuredGridWriter*                    _gridWriter;
 
-  tarch::plotter::griddata::unstructured::UnstructuredGridWriter::VertexWriter*              _vertexWriter;
-  tarch::plotter::griddata::unstructured::UnstructuredGridWriter::CellWriter*                _cellWriter;
+  tarch::plotter::griddata::unstructured::UnstructuredGridWriter*               _gridWriter = nullptr;
 
-  tarch::plotter::griddata::Writer::VertexDataWriter*  _vertexTimeStampDataWriter;
-  tarch::plotter::griddata::Writer::CellDataWriter*    _cellTimeStampDataWriter;
-  tarch::plotter::griddata::Writer::VertexDataWriter*  _vertexDataWriter;
-  tarch::plotter::griddata::Writer::CellDataWriter*    _cellDataWriter;
+  tarch::plotter::griddata::unstructured::UnstructuredGridWriter::VertexWriter* _vertexWriter = nullptr;
+  tarch::plotter::griddata::unstructured::UnstructuredGridWriter::CellWriter*   _cellWriter   = nullptr;
+
+  tarch::plotter::griddata::Writer::VertexDataWriter*                           _vertexTimeStampDataWriter = nullptr;
+  tarch::plotter::griddata::Writer::CellDataWriter*                             _cellTimeStampDataWriter   = nullptr;
+  tarch::plotter::griddata::Writer::VertexDataWriter*                           _vertexDataWriter          = nullptr;
+  tarch::plotter::griddata::Writer::CellDataWriter*                             _cellDataWriter            = nullptr;
 
   void writeTimeStampDataToPatch( double timeStamp, int vertexIndex, int cellIndex );
 
   void plotVertexData(
-    int firstVertexIndex,
-    const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
-    const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch,
-    double* u, double* gradU,
-    double timeStamp
+      int firstVertexIndex,
+      const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
+      const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch,
+      double* u, double* gradU,
+      double timeStamp
   );
 
   void plotCellData(
-    int firstCellIndex,
-    const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
-    const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch,
-    double* u, double* gradU,
-    double timeStamp
+      int firstCellIndex,
+      const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
+      const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch,
+      double* u, double* gradU,
+      double timeStamp
   );
 
   std::pair<int,int> plotLegendrePatch(
-    const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
-    const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch
+      const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
+      const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch
   );
- public:
+public:
   ADERDG2LegendreVTK(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing, PlotterType isBinary, bool plotCells);
   virtual ~ADERDG2LegendreVTK();
 
   virtual void init(const std::string& filename, int orderPlusOne, int solverUnknowns, int writtenUnknowns, exahype::parser::ParserView plotterParameters);
 
-  void plotPatch(const int solverNumber,const solvers::Solver::CellInfo& cellInfo) override;
+  void plotPatch(const int solverNumber,solvers::Solver::CellInfo& cellInfo) override;
 
   void plotPatch(
       const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
@@ -125,58 +127,58 @@ class exahype::plotters::ADERDG2LegendreVTK: public exahype::plotters::Plotter::
 
 
 class exahype::plotters::ADERDG2LegendreVerticesVTKAscii: public exahype::plotters::ADERDG2LegendreVTK {
-  public:
-    static std::string getIdentifier();
-    ADERDG2LegendreVerticesVTKAscii(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing);
+public:
+  static std::string getIdentifier();
+  ADERDG2LegendreVerticesVTKAscii(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing);
 };
 
 
 class exahype::plotters::ADERDG2LegendreVerticesVTKBinary: public exahype::plotters::ADERDG2LegendreVTK {
-  public:
-    static std::string getIdentifier();
-    ADERDG2LegendreVerticesVTKBinary(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing);
+public:
+  static std::string getIdentifier();
+  ADERDG2LegendreVerticesVTKBinary(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing);
 };
 
 
 class exahype::plotters::ADERDG2LegendreCellsVTKAscii: public exahype::plotters::ADERDG2LegendreVTK {
-  public:
-    static std::string getIdentifier();
-    ADERDG2LegendreCellsVTKAscii(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing);
+public:
+  static std::string getIdentifier();
+  ADERDG2LegendreCellsVTKAscii(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing);
 };
 
 
 class exahype::plotters::ADERDG2LegendreCellsVTKBinary: public exahype::plotters::ADERDG2LegendreVTK {
-  public:
-    static std::string getIdentifier();
-    ADERDG2LegendreCellsVTKBinary(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing);
+public:
+  static std::string getIdentifier();
+  ADERDG2LegendreCellsVTKBinary(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing);
 };
 
 
 class exahype::plotters::ADERDG2LegendreVerticesVTUAscii: public exahype::plotters::ADERDG2LegendreVTK {
-  public:
-    static std::string getIdentifier();
-    ADERDG2LegendreVerticesVTUAscii(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing);
+public:
+  static std::string getIdentifier();
+  ADERDG2LegendreVerticesVTUAscii(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing);
 };
 
 
 class exahype::plotters::ADERDG2LegendreVerticesVTUBinary: public exahype::plotters::ADERDG2LegendreVTK {
-  public:
-    static std::string getIdentifier();
-    ADERDG2LegendreVerticesVTUBinary(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing);
+public:
+  static std::string getIdentifier();
+  ADERDG2LegendreVerticesVTUBinary(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing);
 };
 
 
 class exahype::plotters::ADERDG2LegendreCellsVTUAscii: public exahype::plotters::ADERDG2LegendreVTK {
-  public:
-    static std::string getIdentifier();
-    ADERDG2LegendreCellsVTUAscii(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing);
+public:
+  static std::string getIdentifier();
+  ADERDG2LegendreCellsVTUAscii(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing);
 };
 
 
 class exahype::plotters::ADERDG2LegendreCellsVTUBinary: public exahype::plotters::ADERDG2LegendreVTK {
-  public:
-    static std::string getIdentifier();
-    ADERDG2LegendreCellsVTUBinary(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing);
+public:
+  static std::string getIdentifier();
+  ADERDG2LegendreCellsVTUBinary(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing);
 };
 
 

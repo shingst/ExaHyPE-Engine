@@ -53,7 +53,7 @@ class exahype::plotters::ADERDG2ProbeAscii
 
   static std::string getIdentifier();
 
-  void plotPatch(const int solverNumber,const solvers::Solver::CellInfo& cellInfo) override;
+  void plotPatch(const int solverNumber,solvers::Solver::CellInfo& cellInfo) override;
 
   void plotPatch(
       const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,

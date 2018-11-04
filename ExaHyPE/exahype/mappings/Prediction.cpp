@@ -174,12 +174,11 @@ void exahype::mappings::Prediction::performPredictionOrProlongate(
         switch (solver->getType()) {
           case exahype::solvers::Solver::Type::ADERDG:
             static_cast<exahype::solvers::ADERDGSolver*>(solver)->
-            performPredictionAndVolumeIntegral(
-                solverNumber,cellInfo,isAtRemoteBoundary);
+              performPredictionAndVolumeIntegral(solverNumber,cellInfo,isAtRemoteBoundary);
             break;
           case exahype::solvers::Solver::Type::LimitingADERDG:
-            static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getSolver().
-            performPredictionAndVolumeIntegral(solverNumber,cellInfo,isAtRemoteBoundary);
+            static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getSolver()->
+              performPredictionAndVolumeIntegral(solverNumber,cellInfo,isAtRemoteBoundary);
             break;
           case exahype::solvers::Solver::Type::FiniteVolumes:
             // do nothing
@@ -198,11 +197,11 @@ void exahype::mappings::Prediction::performPredictionOrProlongate(
         switch (solver->getType()) {
           case exahype::solvers::Solver::Type::ADERDG:
             static_cast<exahype::solvers::ADERDGSolver*>(solver)->
-            prolongateFaceData(solverNumber,cellInfo,isAtRemoteBoundary);
+              prolongateFaceData(solverNumber,cellInfo,isAtRemoteBoundary);
             break;
           case exahype::solvers::Solver::Type::LimitingADERDG:
-            static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getSolver().
-            prolongateFaceData(solverNumber,cellInfo,isAtRemoteBoundary);
+            static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getSolver()->
+              prolongateFaceData(solverNumber,cellInfo,isAtRemoteBoundary);
             break;
           case exahype::solvers::Solver::Type::FiniteVolumes:
             // do nothing

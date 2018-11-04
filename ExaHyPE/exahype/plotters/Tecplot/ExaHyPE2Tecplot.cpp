@@ -39,7 +39,7 @@ void exahype::plotters::ExaHyPE2Tecplot::init(const std::string& filename, int o
 	logError("init()","ERROR: Compile with TECPLOT, otherwise you cannot use the Tecplot plotter. There will be no output going to " << filename << " today.");
 	logError("init()", "Will fail gracefully. If you want to stop the program in such a case, please set the environment variable EXAHYPE_STRICT=\"Yes\".");
 }
-void exahype::plotters::ExaHyPE2Tecplot::plotPatch(const int solverNumber,const solvers::Solver::CellInfo& cellInfo) {}
+void exahype::plotters::ExaHyPE2Tecplot::plotPatch(const int solverNumber,solvers::Solver::CellInfo& cellInfo) {}
 void exahype::plotters::ExaHyPE2Tecplot::startPlotting(double time) {
 	logError("startPlotting()", "Skipping HDF5 output due to missing support.");
 }
@@ -104,8 +104,8 @@ void exahype::plotters::ExaHyPE2Tecplot::init(const std::string& filename, int b
 	exahypetecplotwriter_init_(filename_for_Fortran, &flen, &solverType, &basisSize, &writtenUnknowns);
 }
 
-void exahype::plotters::ExaHyPE2Tecplot::plotPatch(const int solverNumber,const solvers::Solver::CellInfo& cellInfo) {
-  const int element = solvers::Solver::indexOfCellDescription(cellInfo._ADERDGCellDescriptions,solverNumber);
+void exahype::plotters::ExaHyPE2Tecplot::plotPatch(const int solverNumber,solvers::Solver::CellInfo& cellInfo) {
+  const int element = cellInfo.indexOfADERDGCellDescription(solverNumber);
   auto& aderdgCellDescription  = cellInfo._ADERDGCellDescriptions[element];
 
   // you can also use _solverType to see whether you have an ordinary ADERDG solver

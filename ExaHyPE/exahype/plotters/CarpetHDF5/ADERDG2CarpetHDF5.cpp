@@ -45,7 +45,7 @@ void exahype::plotters::ADERDG2CarpetHDF5::init(const std::string& filename, int
 	logError("init()", "Will fail gracefully. If you want to stop the program in such a case, please set the environment variable EXAHYPE_STRICT=\"Yes\".");
 }
 
-void exahype::plotters::ADERDG2CarpetHDF5::plotPatch(const int solverNumber,const solvers::Solver::CellInfo& cellInfo) {}
+void exahype::plotters::ADERDG2CarpetHDF5::plotPatch(const int solverNumber,solvers::Solver::CellInfo& cellInfo) {}
 void exahype::plotters::ADERDG2CarpetHDF5::plotPatch(const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* u,double timeStamp,int limiterStatus) {}
 
 void exahype::plotters::ADERDG2CarpetHDF5::startPlotting(double time) {
@@ -111,8 +111,8 @@ void exahype::plotters::ADERDG2CarpetHDF5::init(const std::string& filename, int
 	}
 }
 
-void exahype::plotters::ADERDG2CarpetHDF5::plotPatch(const int solverNumber,const solvers::Solver::CellInfo& cellInfo) {
-  const int element = solvers::Solver::indexOfCellDescription(cellInfo._ADERDGCellDescriptions,solverNumber);
+void exahype::plotters::ADERDG2CarpetHDF5::plotPatch(const int solverNumber,solvers::Solver::CellInfo& cellInfo) {
+  const int element = cellInfo.indexOfADERDGCellDescription(solverNumber);
   auto& aderdgCellDescription  = cellInfo._ADERDGCellDescriptions[element];
 
   if (aderdgCellDescription.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Cell) {

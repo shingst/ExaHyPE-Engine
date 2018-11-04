@@ -60,23 +60,8 @@ private:
   static bool performLocalRecomputation(exahype::solvers::Solver* solver);
 
 #ifdef Parallel
-  /**
-   * We only send empty data for LimitingADERDGSolvers
-   * where we have detected a irregular change of the limiter domain
-   * but no additional mesh refinement was required.
-   * This information should be available on all ranks.
-   * We ignore other solver types.
-   */
-  static void sendEmptyDataToNeighbour(
-      const int                                    toRank,
-      const tarch::la::Vector<DIMENSIONS, int>&    src,
-      const tarch::la::Vector<DIMENSIONS, int>&    dest,
-      const int                                    srcCellDescriptionIndex,
-      const int                                    destCellDescriptionIndex,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level);
 
-  /*
+  /**
    * We only send data for LimitingADERDGSolvers
    * where we have detected a irregular change of the limiter domain
    * but no additional mesh refinement was required.
@@ -85,10 +70,9 @@ private:
    */
   static void sendDataToNeighbour(
       const int                                    toRank,
-      const tarch::la::Vector<DIMENSIONS,int>&     src,
-      const tarch::la::Vector<DIMENSIONS,int>&     dest,
-      const int                                    srcCellDescriptionIndex,
-      const int                                    destCellDescriptionIndex,
+      const int                                    srcScalar,
+      const int                                    destScalar,
+      const int                                    srcCellDescriptionsIndex,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level);
 #endif

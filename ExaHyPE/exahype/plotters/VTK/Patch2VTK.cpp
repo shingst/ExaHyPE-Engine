@@ -351,7 +351,7 @@ void plotInt(tarch::plotter::griddata::Writer::CellDataWriter *writer, int cellI
 	writer->plotCell(cellIndex, static_cast<double>(data));
 }
 
-void exahype::plotters::Patch2VTK::plotPatch(const int solverNumber,const solvers::Solver::CellInfo& cellInfo) {
+void exahype::plotters::Patch2VTK::plotPatch(const int solverNumber,solvers::Solver::CellInfo& cellInfo) {
 	double *solution=nullptr, timeStamp=-1;
 	int RefinementStatus=-1, previousRefinementStatus=-1, level=-1;
 	tarch::la::Vector<DIMENSIONS, double> offsetOfPatch, sizeOfPatch;
@@ -360,7 +360,7 @@ void exahype::plotters::Patch2VTK::plotPatch(const int solverNumber,const solver
 	switch(_solverType) {
 		case exahype::solvers::Solver::Type::LimitingADERDG:
 		case exahype::solvers::Solver::Type::ADERDG: { // scope for variables
-			const int element = solvers::Solver::indexOfCellDescription(cellInfo._ADERDGCellDescriptions,solverNumber);
+			const int element = cellInfo.indexOfADERDGCellDescription(solverNumber);
 			auto& solverPatch  = cellInfo._ADERDGCellDescriptions[element];
 			if(solverPatch.getType()!=exahype::solvers::ADERDGSolver::CellDescription::Type::Cell)
 				return; // plot only cells
@@ -387,7 +387,7 @@ void exahype::plotters::Patch2VTK::plotPatch(const int solverNumber,const solver
 			break;
 		}
 		case exahype::solvers::Solver::Type::FiniteVolumes: {
-			const int element = solvers::Solver::indexOfCellDescription(cellInfo._FiniteVolumesCellDescriptions,solverNumber);
+			const int element = cellInfo.indexOfFiniteVolumesCellDescription(solverNumber);
 			auto& solverPatch  = cellInfo._FiniteVolumesCellDescriptions[element];
 			if(solverPatch.getType()!=exahype::solvers::FiniteVolumesSolver::CellDescription::Type::Cell)
 				return; // plot only cells

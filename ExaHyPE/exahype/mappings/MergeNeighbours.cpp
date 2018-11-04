@@ -128,19 +128,12 @@ void exahype::mappings::MergeNeighbours::enterCell(
     exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
   if ( fineGridCell.isInitialised() ) {
+    solvers::Solver::CellInfo cellInfo(fineGridCell.getCellDescriptionsIndex());
+    const bool isAtRemoteBoundary = exahype::Cell::isAtRemoteBoundary(fineGridVertices,fineGridVerticesEnumerator);
     if (exahype::solvers::Solver::CompressionAccuracy>0.0) {
       for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
         auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-
-        const int cellDescriptionsIndex = fineGridCell.getCellDescriptionsIndex();
-        const int element = solver->tryGetElement(cellDescriptionsIndex,solverNumber);
-        if (element!=exahype::solvers::Solver::NotFound) {
-          solver->compress(
-              cellDescriptionsIndex,element,
-              exahype::Cell::isAtRemoteBoundary(
-                  fineGridVertices,fineGridVerticesEnumerator)
-          );
-        }
+        solver->compress(solverNumber,cellInfo,isAtRemoteBoundary));
       }
     }
   }

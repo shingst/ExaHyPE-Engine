@@ -130,6 +130,27 @@ private:
       CellDescription& cellDescription,
       const bool isInitialMeshRefinement);
 
+  /**
+   * This routine is called from the update(...) and
+   * fusedTimeStep(...) functions.
+   *
+   * @return a struct holding an admissible time step size for the next update
+   *
+   * @param cellDescription         a cell description
+   * @param cellDescriptionsIndex   a cell descriptions index - used for validation and debug output
+   * @param isFirstIterationOfBatch if the current time step is the first time step of a batch of time steps
+   * @param isLastIterationOfBatch  if the current time step is the last time step of a batch of time steps
+   * @param isAtRemoteBoundary      if the cell description is at a remote boundary.
+   * @param uncompressBefore        if the cell description should uncompress data before doing any PDE operations
+   */
+  UpdateResult updateBody(
+      CellDescription& cellDescription,
+      const int cellDescriptionsIndex,
+      const bool isFirstIterationOfBatch,
+      const bool isLastIterationOfBatch,
+      const bool isAtRemoteBoundary,
+      const bool uncompressBefore);
+
 #ifdef Parallel
   /**
    * Data messages per neighbour communication.
@@ -212,14 +233,14 @@ private:
   class FusedTimeStepJob {
   private:
     FiniteVolumesSolver&  _solver;
+    CellDescription&      _cellDescription;
     const int             _cellDescriptionsIndex;
-    const int             _element;
     const bool            _isSkeletonJob;
   public:
     FusedTimeStepJob(
         FiniteVolumesSolver& solver,
+        CellDescription&     cellDescription,
         const int            cellDescriptionsIndex,
-        const int            element,
         const bool           isSkeletonJob
     );
 
@@ -267,15 +288,24 @@ public:
      return Heap::getInstance().getData(cellDescriptionsIndex)[element];
    }
 
+
    /**
     * Push a new cell description to the back
-    * of the heap vector at \p cellDescriptionsIndex.
+    * of the Finite Volumes cell descriptions heap vector referenced
+    * in @p cellInfo.
     *
-    * \param TODO docu
+    * @param solverNumber    identification number of this solver
+    * @param cellInfo        references to the cell descriptions associated with a mesh cell.
+    * @param cellType        the cell type the new cell description should become
+    * @param refinementEvent the initial refinement event the new cell description should get
+    * @param level           the mesh level the new cell description is associated with
+    * @param parentIndex     the cell descriptions index of a parent cell
+    * @param cellSize        the size of the mesh cell the new cell description is associated with
+    * @param cellOffset      the offset of the mesh cell the new cell description is associated with
     */
    static void addNewCellDescription(
-       const int cellDescriptionsIndex,
        const int solverNumber,
+       CellInfo& cellInfo,
        const CellDescription::Type cellType,
        const CellDescription::RefinementEvent refinementEvent,
        const int level,
@@ -649,14 +679,8 @@ public:
       const int solverNumber) const override;
 
   void finaliseStateUpdates(
-      exahype::Cell& fineGridCell,
-      exahype::Vertex* const fineGridVertices,
-      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-      exahype::Cell& coarseGridCell,
-      exahype::Vertex* const coarseGridVertices,
-      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-      const int solverNumber) override;
+      const int solverNumber,
+      CellInfo& cellInfo) final override;
 
   ///////////////////////////////////
   // CELL-LOCAL
@@ -674,12 +698,9 @@ public:
       const bool isLastIterationOfBatch);
 
   double updateTimeStepSizes(
-        const int cellDescriptionsIndex,
-        const int element) override final;
-
-  double updateTimeStepSizesFused(
-          const int cellDescriptionsIndex,
-          const int element) override final;
+      const int solverNumber,
+      CellInfo& cellInfo,
+      const bool fused) override final;
 
   void zeroTimeStepSizes(CellDescription& cellDescription) const;
 
@@ -687,21 +708,21 @@ public:
 
   void rollbackToPreviousTimeStepFused(CellDescription& cellDescription) const;
 
-  /** @copydoc: exahype::solvers::Solver::fusedTimeStep
+  /** @copydoc: exahype::solvers::Solver::fusedTimeStepOrRestriction
    *
    * The "hasCompletedTimeStep" flag must be only be unset when
    * a background job is spawned.
    */
   UpdateResult fusedTimeStepOrRestriction(
-      const int cellDescriptionsIndex,
-      const int element,
+      const int solverNumber,
+      CellInfo& cellInfo,
       const bool isFirstIterationOfBatch,
       const bool isLastIterationOfBatch,
       const bool isAtRemoteBoundary) final override;
 
   UpdateResult update(
-        const int cellDescriptionsIndex,
-        const int element,
+        const int  solverNumber,
+        CellInfo&  cellInfo,
         const bool isAtRemoteBoundary) final override;
 
   void compress(
@@ -745,13 +766,13 @@ public:
    */
   void swapSolutionAndPreviousSolution(CellDescription& cellDescription) const;
 
-  void prolongateFaceData(
-      const int cellDescriptionsIndex,
-      const int element,
-      const bool isAtRemoteBoundary) override;
-
+  /**
+   * Does nothing as a FV solver should never do global rollbacks;
+   * no mesh refinement is performed by this solver type.
+   */
   void rollbackSolutionGlobally(
-      const int cellDescriptionsIndex, const int solverElement,
+      const int solverNumber,
+      CellInfo& cellInfo,
       const bool fusedTimeStepping) const final override;
 
   ///////////////////////////////////

@@ -89,10 +89,7 @@ void exahype::mappings::Plot::enterCell(
     solvers::Solver::CellInfo& cellInfo;
 
     for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
-      auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-      if ( cellInfo.foundCellDescriptionForSolver(solverNumber) ) {
-        exahype::plotters::plotPatchIfAPlotterIsActive(solverNumber,cellInfo);
-      }
+      exahype::plotters::plotPatchIfAPlotterIsActive(solverNumber,cellInfo);
     }
   }
 }

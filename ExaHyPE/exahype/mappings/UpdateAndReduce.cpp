@@ -389,29 +389,35 @@ void exahype::mappings::UpdateAndReduce::leaveCell(
 
   if (fineGridCell.isInitialised()) {
     solvers::Solver::CellInfo cellInfo(fineGridCell.getCellDescriptionsIndex());
+    const bool isAtRemoteBoundary = exahype::Cell::isAtRemoteBoundary(fineGridVertices,fineGridVerticesEnumerator);
 
-    const int numberOfSolvers = exahype::solvers::RegisteredSolvers.size();
-    for (int solverNumber=0; solverNumber<numberOfSolvers; solverNumber++) {
+    for (int solverNumber=0; solverNumber<static_cast<int>(solvers::RegisteredSolvers.size()); solverNumber++) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-      const int element = solver->tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
-      if (element!=exahype::solvers::Solver::NotFound) {
-        exahype::plotters::plotPatchIfAPlotterIsActive(solverNumber,cellInfo);
 
-        // TODO(Dominic): Merge the two functions if possible
-        exahype::solvers::Solver::UpdateResult result =
-            solver->updateOrRestriction(
-                solverNumber,cellInfo,
-                exahype::Cell::isAtRemoteBoundary(
-                    fineGridVertices,fineGridVerticesEnumerator)
-            );
+      // plot if necessary
+      exahype::plotters::plotPatchIfAPlotterIsActive(solverNumber,cellInfo);
 
-        _meshUpdateEvents[solverNumber] =
-            exahype::solvers::Solver::mergeMeshUpdateEvents(
-                _meshUpdateEvents[solverNumber], result._meshUpdateEvent );
-
-        _minTimeStepSizes[solverNumber] = std::min( result._timeStepSize,                  _minTimeStepSizes[solverNumber]);
-        _maxLevels       [solverNumber] = std::max( fineGridVerticesEnumerator.getLevel(), _maxLevels       [solverNumber]);
+      solvers::Solver::UpdateResult result;
+      switch ( solver->getType() ) {
+        case solvers::Solver::Type::ADERDG:
+          static_cast<solvers::ADERDGSolver*>(solver)->updateOrRestriction(solverNumber,cellInfo,isAtRemoteBoundary);
+          break;
+        case solvers::Solver::Type::LimitingADERDG:
+          static_cast<solvers::LimitingADERDGSolver*>(solver)->updateOrRestriction(solverNumber,cellInfo,isAtRemoteBoundary);
+          break;
+        case solvers::Solver::Type::FiniteVolumes:
+          static_cast<solvers::FiniteVolumesSolver*>(solver)->updateOrRestriction(solverNumber,cellInfo,isAtRemoteBoundary);
+          break;
+        default:
+          assertionMsg(false,"Unrecognised solver type: "<<solvers::Solver::toString(solver->getType()));
+          logError("mergeWithBoundaryDataIfNotDoneYet(...)","Unrecognised solver type: "<<solvers::Solver::toString(solver->getType()));
+          std::abort();
+          break;
       }
+
+      _meshUpdateEvents[solverNumber] = exahype::solvers::Solver::mergeMeshUpdateEvents(_meshUpdateEvents[solverNumber], result._meshUpdateEvent );
+      _minTimeStepSizes[solverNumber] = std::min( result._timeStepSize,                  _minTimeStepSizes[solverNumber]);
+      _maxLevels       [solverNumber] = std::max( fineGridVerticesEnumerator.getLevel(), _maxLevels       [solverNumber]);
     }
 
     exahype::Cell::resetNeighbourMergeFlags(cellInfo,fineGridVertices,fineGridVerticesEnumerator);

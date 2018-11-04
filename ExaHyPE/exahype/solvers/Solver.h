@@ -396,24 +396,6 @@ class exahype::solvers::Solver {
   static constexpr int NotFound = -1;
 
   /**
-   * @return the first cell description with the given @p solverNumber.
-   *
-   * @param cellDescriptions an ordered collection of cell descriptions
-   * @param solverNumber     identification number of a solver
-   */
-  template <typename CellDescriptionHeapEntries>
-  static int indexOfCellDescription(CellDescriptionHeapEntries& cellDescriptions,const int solverNumber) {
-    int index = exahype::solvers::Solver::NotFound;
-    for (unsigned int element = 0; element < cellDescriptions.size(); ++element) {
-      if (cellDescriptions[element].getSolverNumber()==solverNumber) {
-        index = element;
-        break;
-      }
-    }
-    return index;
-  }
-
-  /**
    * An extensible structure linking to the data of a cell.
    * It is passed to all solver routines.
    */
@@ -434,6 +416,39 @@ class exahype::solvers::Solver {
      */
     bool empty() const {
        return _ADERDGCellDescriptions.empty() && _FiniteVolumesCellDescriptions.empty();
+    }
+
+    /**
+     * @return the first cell description with the given @p solverNumber.
+     *
+     * @param cellDescriptions an ordered collection of cell descriptions
+     * @param solverNumber     identification number of a solver
+     */
+    template <typename CellDescriptionHeapEntries>
+    static int indexOfCellDescription(CellDescriptionHeapEntries& cellDescriptions,const int solverNumber) {
+      int index = exahype::solvers::Solver::NotFound;
+      for (unsigned int element = 0; element < cellDescriptions.size(); ++element) {
+        if (cellDescriptions[element].getSolverNumber()==solverNumber) {
+          index = element;
+          break;
+        }
+      }
+      return index;
+    }
+
+    /**
+     * @return Index of an ADER-DG cell description or Solver::NotFound (-1).
+     * @param  solverNumber identification number of a solver
+     */
+    static int indexOfADERDGCellDescription(const int solverNumber) {
+      return indexOfCellDescription(_ADERDGCellDescriptions,solverNumber);
+    }
+    /**
+     * @return Index of an Finite Volumes cell description or Solver::NotFound (-1).
+     * @param  solverNumber identification number of a solver
+     */
+    static int indexOfFiniteVolumesCellDescription(const int solverNumber) {
+      return indexOfCellDescription(_FiniteVolumesCellDescriptions,solverNumber);
     }
 
     /**
@@ -1580,19 +1595,13 @@ class exahype::solvers::Solver {
    * the enterCell() and leaveCell().
    *
    * This method is used to finalise some state
-   * updates.
-   *
-   * TODO(Dominic): Docu
+   * updates or prepare some states for
+   * the time stepping or the next
+   * mesh update iterations.
    */
   virtual void finaliseStateUpdates(
-      exahype::Cell& fineGridCell,
-      exahype::Vertex* const fineGridVertices,
-      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-      exahype::Cell& coarseGridCell,
-      exahype::Vertex* const coarseGridVertices,
-      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-      const int solverNumber) = 0;
+      const int solverNumber,
+      CellInfo& cellInfo) = 0;
 
   /////////////////////////////////////
   // CELL-LOCAL
@@ -1612,16 +1621,9 @@ class exahype::solvers::Solver {
    * \note Has no const modifier since kernels are not const functions yet.
    */
     virtual double updateTimeStepSizes(
-          const int cellDescriptionsIndex,
-          const int element) = 0;
-
-  /**
-   * Same as ::updateTimeStepSizes for the fused
-   * time stepping.
-   */
-  virtual double updateTimeStepSizesFused(
-      const int cellDescriptionsIndex,
-      const int element) = 0;
+          const int solverNumber,
+          const CellInfo& cellInfo,
+          const bool fused) = 0;
 
   /**
    * Impose initial conditions and mark for refinement.
@@ -1631,29 +1633,35 @@ class exahype::solvers::Solver {
    *
    * \note Has no const modifier since kernels are not const functions yet.
    */
-  virtual void adjustSolutionDuringMeshRefinement(
-      const int cellDescriptionsIndex,const int element) = 0;
+  virtual void adjustSolutionDuringMeshRefinement(const int solverNumber,CellInfo& cellInfo) = 0;
 
   /**
    * Fuse algorithmic phases of the solvers.
    *
-   * <h2>FiniteVolumesSolver</h2>
+   * FiniteVolumesSolver:
    *
    * This call degenerates to an updateSolution
    * call for the FiniteVolumesSolver.
    *
-   * <h2>ADERDGSolver</h2>
+   * ADERDGSolver:
    *
    * Runs the triad of updateSolution,performPredictionAndVolumeIntegral
    * plus startNewTimeStep.
    *
-   * <h2>LimitingADERDGSolver</h2>
+   * LimitingADERDGSolver:
    *
    * Either runs the ADERDGSolver triad or
    * performs an FV update. Performs some additional
    * tasks.
    *
-   * * <h2> Background Jobs </h2>
+   * Compression
+   * -----------
+   *
+   * Uncompresses the data before performing PDE operations
+   * Compresses the data after performing PDE operations.
+   *
+   * Background Jobs
+   * ---------------
    *
    * The FiniteVolumesSolver, ADERDGSolver and LimitingADERDGSolver implementations
    * show the following behaviour:
@@ -1670,14 +1678,14 @@ class exahype::solvers::Solver {
    *     - This function will not a spawn a FusedTimeStepJob in the first and last iteration of
    *       a batch. ADERDGSolver and LimitingADERDGSolver may still spawn a PredictionJob in this case.
    *
-   * \param[in] isFirstIterationOfBatch Indicates that we currently run no batch or
+   * @param[in] isFirstIterationOfBatch Indicates that we currently run no batch or
    *                                    we are in the first iteration of a batch.
-   * \param[in] isLastIterationOfBatch  Indicates that we currently run no batch or
+   * @param[in] isLastIterationOfBatch  Indicates that we currently run no batch or
    *                                    we are in the last iteration of a batch.
    *                                    (If no batch is run, both flags
    *                                    \p isFirstIterationOfBatch and
    *                                    \p isLastIterationOfBatch are true).
-   * \param[in] isAtRemoteBoundary Flag indicating that the cell hosting the
+   * @param[in] isAtRemoteBoundary Flag indicating that the cell hosting the
    *                                    cell description is adjacent to a remote rank.
    */
   virtual UpdateResult fusedTimeStepOrRestriction(
@@ -1690,16 +1698,16 @@ class exahype::solvers::Solver {
   /**
    * The nonfused update routine.
    *
-   * <h2>FiniteVolumesSolver</h2>
+   * FiniteVolumesSolver:
    *
    * This call degenerates to an updateSolution
-   * call for the FiniteVolumesSolver.
+   * call and a startNewTimeStep call for the FiniteVolumesSolver.
    *
-   * <h2>ADERDGSolver</h2>
+   * ADERDGSolver:
    *
    * Update the solution and evaluate the refinement criterion.
    *
-   * <h2>LimitingADERDGSolver</h2>
+   * LimitingADERDGSolver:
    *
    * Update the ADER-DG and or FV solution and
    * evaluate the limiter and
@@ -1729,8 +1737,8 @@ class exahype::solvers::Solver {
    * Allocate necessary new limiter patches.
    */
   virtual void rollbackSolutionGlobally(
-         const int cellDescriptionsIndex,
-         const int element,
+         const int solverNumber,
+         CellInfo& cellInfo,
          const bool fusedTimeStepping) const = 0;
 
   /**
@@ -1741,8 +1749,8 @@ class exahype::solvers::Solver {
    *                               cell description is adjacent to a remote rank.
    */
   virtual void compress(
-      const int cellDescriptionsIndex,
-      const int element,
+      const int solverNumber,
+      CellInfo& cellInfo,
       const bool isAtRemoteBoundary) const = 0;
 
   ///////////////////////////////////

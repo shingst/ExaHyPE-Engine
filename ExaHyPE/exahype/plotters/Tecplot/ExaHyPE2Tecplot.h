@@ -58,7 +58,7 @@ class exahype::plotters::ExaHyPE2Tecplot : public exahype::plotters::Plotter::De
 
   virtual void init(const std::string& filename, int orderPlusOne, int solverUnknowns, int writtenUnknowns, exahype::parser::ParserView plotterParameters);
 
-  virtual void plotPatch(const int solverNumber,const solvers::Solver::CellInfo& cellInfo);
+  virtual void plotPatch(const int solverNumber,solvers::Solver::CellInfo& cellInfo);
 
   virtual void startPlotting( double time );
   virtual void finishPlotting();

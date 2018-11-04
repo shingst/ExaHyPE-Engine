@@ -81,7 +81,7 @@ class exahype::plotters::FiniteVolumes2PeanoPatchFileFormat: public exahype::plo
 
   virtual void init(const std::string& filename, int orderPlusOne, int solverUnknowns, int writtenUnknowns,exahype::parser::ParserView plotterParameters);
 
-  void plotPatch(const int solverNumber,const solvers::Solver::CellInfo& cellInfo) override;
+  void plotPatch(const int solverNumber,solvers::Solver::CellInfo& cellInfo) override;
 
   virtual void startPlotting( double time );
   virtual void finishPlotting();

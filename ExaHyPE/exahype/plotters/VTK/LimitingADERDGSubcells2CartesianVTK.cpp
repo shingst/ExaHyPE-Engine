@@ -183,16 +183,13 @@ void exahype::plotters::LimitingADERDGSubcells2CartesianVTK::finishPlotting() {
 exahype::plotters::LimitingADERDGSubcells2CartesianVTK::~LimitingADERDGSubcells2CartesianVTK() {
 }
 
-void exahype::plotters::LimitingADERDGSubcells2CartesianVTK::plotPatch(const int solverNumber,const solvers::Solver::CellInfo& cellInfo) {
-  const int element = solvers::Solver::indexOfCellDescription(cellInfo._ADERDGCellDescriptions,solverNumber);
-  auto& solverPatch  = cellInfo._ADERDGCellDescriptions[element];
+void exahype::plotters::LimitingADERDGSubcells2CartesianVTK::plotPatch(const int solverNumber,solvers::Solver::CellInfo& cellInfo) {
+  const int element = cellInfo.indexOfADERDGCellDescription(solverNumber);
+  solvers::LimitingADERDGSolver::SolverPatch& solverPatch  = cellInfo._ADERDGCellDescriptions[element];
 
   if (solverPatch.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Cell) {
-    assertion(exahype::solvers::RegisteredSolvers[solverPatch.getSolverNumber()]->getType()==
-        exahype::solvers::Solver::Type::LimitingADERDG);
-    auto* limitingADERDG =
-        static_cast<exahype::solvers::LimitingADERDGSolver*>(
-            exahype::solvers::RegisteredSolvers[solverPatch.getSolverNumber()]);
+    assertion(exahype::solvers::RegisteredSolvers[solverPatch.getSolverNumber()]->getType()==exahype::solvers::Solver::Type::LimitingADERDG);
+    auto* limitingADERDG = static_cast<exahype::solvers::LimitingADERDGSolver*>(exahype::solvers::RegisteredSolvers[solverPatch.getSolverNumber()]);
 
     // ignore limiter status on coarser mesh levels
     int refinementStatus         = solverPatch.getRefinementStatus();
@@ -205,8 +202,7 @@ void exahype::plotters::LimitingADERDGSubcells2CartesianVTK::plotPatch(const int
     }
 
     if (refinementStatus>=limitingADERDG->getSolver()->getMinimumRefinementStatusForActiveFVPatch()) {
-      auto& limiterPatch = limitingADERDG->
-              getLimiterPatchForSolverPatch(solverPatch,cellDescriptionsIndex);
+      solvers::LimitingADERDGSolver::LimiterPatch& limiterPatch = limitingADERDG->getLimiterPatch(solverPatch,cellInfo);
 
       double* limiterSolution = static_cast<double*>(limiterPatch.getSolution());
       plotFiniteVolumesPatch(
