@@ -618,11 +618,11 @@ void exahype::plotters::Plotter::finishedPlotting() {
 void exahype::plotters::plotPatchIfAPlotterIsActive(
     const int solverNumber,
     solvers::Solver::CellInfo& cellInfo) {
-  if (cellInfo.foundCellDescriptionForSolver(solverNumber)) {
+  if ( cellInfo.foundCellDescriptionForSolver(solverNumber) ) {
     for (auto* plotter : exahype::plotters::RegisteredPlotters) {
       if (plotter->plotDataFromSolver(solverNumber)) {
         tarch::multicore::Lock lock(exahype::plotters::SemaphoreForPlotting);
-        plotter->plotPatch(solverNumber,cellInfo;
+        plotter->plotPatch(solverNumber,cellInfo);
         lock.free();
       }
     }

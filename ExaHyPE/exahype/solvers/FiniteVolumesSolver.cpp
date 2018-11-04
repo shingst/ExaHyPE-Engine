@@ -397,8 +397,8 @@ void exahype::solvers::FiniteVolumesSolver::addNewCell(
 }
 
 void exahype::solvers::FiniteVolumesSolver::addNewCellDescription(
-    CellInfo& cellInfo,
     const int solverNumber,
+    CellInfo& cellInfo,
     const exahype::records::FiniteVolumesCellDescription::Type cellType,
     const exahype::records::FiniteVolumesCellDescription::RefinementEvent refinementEvent,
     const int level,
@@ -752,7 +752,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::FiniteVolumesSolver::up
   return result;
 }
 
-exahype::solvers::Solver::UpdateResult exahype::solvers::FiniteVolumesSolver::fusedTimeStepOrRestriction(
+exahype::solvers::Solver::UpdateResult exahype::solvers::FiniteVolumesSolver::fusedTimeStepOrRestrict(
     const int solverNumber,
     CellInfo& cellInfo,
     const bool isFirstIterationOfBatch,
@@ -781,7 +781,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::FiniteVolumesSolver::fu
   }
 }
 
-exahype::solvers::Solver::UpdateResult exahype::solvers::FiniteVolumesSolver::update(
+exahype::solvers::Solver::UpdateResult exahype::solvers::FiniteVolumesSolver::updateOrRestrict(
       const int  solverNumber,
       CellInfo&  cellInfo,
       const bool isAtRemoteBoundary){
@@ -795,24 +795,30 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::FiniteVolumesSolver::up
 }
 
 void exahype::solvers::FiniteVolumesSolver::compress(
-    const int cellDescriptionsIndex,
-    const int element,
+    const int solverNumber,
+    CellInfo& cellInfo,
     const bool isAtRemoteBoundary) const {
-  CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
-  compress(cellDescription,isAtRemoteBoundary);
+  const int element = cellInfo.indexOfFiniteVolumesCellDescription(solverNumber);
+  if ( element != NotFound ) {
+    CellDescription& cellDescription = cellInfo._FiniteVolumesCellDescriptions[element];
+    compress(cellDescription,isAtRemoteBoundary);
+  }
 }
 
 void exahype::solvers::FiniteVolumesSolver::adjustSolutionDuringMeshRefinement(
-    const int cellDescriptionsIndex,
-    const int element) {
+    const int solverNumber,CellInfo& cellInfo) {
   const bool isInitialMeshRefinement = getMeshUpdateEvent()==MeshUpdateEvent::InitialRefinementRequested;
-  CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
-  if ( exahype::solvers::Solver::SpawnAMRBackgroundJobs ) {
-    AdjustSolutionDuringMeshRefinementJob job(*this,cellDescription,isInitialMeshRefinement);
-    peano::datatraversal::TaskSet spawnedSet( job, peano::datatraversal::TaskSet::TaskType::Background  );
-  } else {
-    adjustSolutionDuringMeshRefinementBody(cellDescription,isInitialMeshRefinement);
+  const int element = cellInfo.indexOfFiniteVolumesCellDescription(solverNumber);
+  if ( element != NotFound ) {
+    CellDescription& cellDescription = cellInfo._FiniteVolumesCellDescriptions[element];
+    if ( exahype::solvers::Solver::SpawnAMRBackgroundJobs ) {
+      AdjustSolutionDuringMeshRefinementJob job(*this,cellDescription,isInitialMeshRefinement);
+      peano::datatraversal::TaskSet spawnedSet( job, peano::datatraversal::TaskSet::TaskType::Background  );
+    } else {
+      adjustSolutionDuringMeshRefinementBody(cellDescription,isInitialMeshRefinement);
+    }
   }
+
 }
 
 void exahype::solvers::FiniteVolumesSolver::updateSolution(

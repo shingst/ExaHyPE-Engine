@@ -403,13 +403,11 @@ class exahype::solvers::Solver {
     const int _cellDescriptionsIndex= NotFound;
     peano::heap::RLEHeap<exahype::records::ADERDGCellDescription>::HeapEntries&        _ADERDGCellDescriptions;
     peano::heap::RLEHeap<exahype::records::FiniteVolumesCellDescription>::HeapEntries& _FiniteVolumesCellDescriptions;
-    CellInfo(const int cellDescriptionsIndex,const int solverNumber) :
-      _cellDescriptionsIndex(cellDescriptionsIndex) {
-      assertion(peano::heap::RLEHeap<exahype::records::ADERDGCellDescription>::getInstance().isValidIndex(cellDescriptionsIndex));
-      assertion(peano::heap::RLEHeap<exahype::records::FiniteVolumesCellDescription>::getInstance().isValidIndex(cellDescriptionsIndex));
-      _ADERDGCellDescriptions        = peano::heap::RLEHeap<exahype::records::ADERDGCellDescription>::getInstance().getData(_cellDescriptionsIndex);
-      _FiniteVolumesCellDescriptions = peano::heap::RLEHeap<exahype::records::FiniteVolumesCellDescription>::getInstance().getData(_cellDescriptionsIndex);
-    }
+    CellInfo(const int cellDescriptionsIndex) :
+      _cellDescriptionsIndex(cellDescriptionsIndex),
+      _ADERDGCellDescriptions       (peano::heap::RLEHeap<exahype::records::ADERDGCellDescription>::getInstance().getData(_cellDescriptionsIndex)),
+      _FiniteVolumesCellDescriptions(peano::heap::RLEHeap<exahype::records::FiniteVolumesCellDescription>::getInstance().getData(_cellDescriptionsIndex))
+    {}
 
     /**
      * @return if no data was found for the cell.
@@ -440,14 +438,14 @@ class exahype::solvers::Solver {
      * @return Index of an ADER-DG cell description or Solver::NotFound (-1).
      * @param  solverNumber identification number of a solver
      */
-    static int indexOfADERDGCellDescription(const int solverNumber) {
+    int indexOfADERDGCellDescription(const int solverNumber) {
       return indexOfCellDescription(_ADERDGCellDescriptions,solverNumber);
     }
     /**
      * @return Index of an Finite Volumes cell description or Solver::NotFound (-1).
      * @param  solverNumber identification number of a solver
      */
-    static int indexOfFiniteVolumesCellDescription(const int solverNumber) {
+    int indexOfFiniteVolumesCellDescription(const int solverNumber) {
       return indexOfCellDescription(_FiniteVolumesCellDescriptions,solverNumber);
     }
 
@@ -1620,10 +1618,7 @@ class exahype::solvers::Solver {
    *
    * \note Has no const modifier since kernels are not const functions yet.
    */
-    virtual double updateTimeStepSizes(
-          const int solverNumber,
-          const CellInfo& cellInfo,
-          const bool fused) = 0;
+    virtual double updateTimeStepSizes(const int solverNumber,CellInfo& cellInfo,const bool fusedTimeStepping) = 0;
 
   /**
    * Impose initial conditions and mark for refinement.
@@ -1688,7 +1683,7 @@ class exahype::solvers::Solver {
    * @param[in] isAtRemoteBoundary Flag indicating that the cell hosting the
    *                                    cell description is adjacent to a remote rank.
    */
-  virtual UpdateResult fusedTimeStepOrRestriction(
+  virtual UpdateResult fusedTimeStepOrRestrict(
       const int  solverNumber,
       CellInfo&  cellInfo,
       const bool isFirstIterationOfBatch,
@@ -1723,7 +1718,7 @@ class exahype::solvers::Solver {
    * @param isAtRemoteBoundary indicates if this cell is adjacent to the domain of another rank
    * @return see UpdateResult
    */
-  virtual UpdateResult updateOrRestriction(
+  virtual UpdateResult updateOrRestrict(
           const int solverNumber,
           CellInfo& cellInfo,
           const bool isAtRemoteBoundary) = 0;

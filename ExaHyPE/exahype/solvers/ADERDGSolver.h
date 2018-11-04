@@ -350,11 +350,11 @@ private:
   /**
    * Update time step sizes and time stamps for the fused/nonfused time stepping variant.
    *
-   * @param cellDescription a cell description
-   * @param fused           if fused time stepping is used
+   * @param cellDescription   a cell description
+   * @param fusedTimeStepping if fused time stepping is used
    * @return the new admissible time step size if the cell description is of type Cell. Otherwise, the maximum double value.
    */
-  double updateTimeStepSizes(CellDescription& cellDescription,const bool fused);
+  double updateTimeStepSizes(CellDescription& cellDescription,const bool fusedTimeStepping);
 
   /**
    * Evaluate the refinement criterion and convert the user
@@ -1930,19 +1930,20 @@ public:
       const bool isFirstIterationOfBatch,
       const bool isLastIterationOfBatch);
 
-  /** \copydoc Solver::updateTimeStepSizesFused
+  /** \copydoc Solver::updateTimeStepSizes
    *
-   *
-   * @param fused Advances the predictor time stamp in time.
-   *         Does not advance the predictor time stamp in time.
+   * @param solverNumber      identification number of this solver
+   * @param cellInfo          refers to a cell's data
+   * @param fusedTimeStepping advances the predictor time stamp in time.
    */
-  double updateTimeStepSizes(const int solverNumber,CellInfo& cellInfo,const bool fused) override final;
+  double updateTimeStepSizes(const int solverNumber,CellInfo& cellInfo,const bool fusedTimeStepping) final override;
 
   /**
    * Perform a fused time step, i.e. perform the update, update time step data, mark
    * for refinement and then compute the new space-time predictor.
    *
-   * <h2> Order of operations</h2>
+   * Order of operations
+   * -------------------
    * Data stored on a patch must be compressed by the last operation touching
    * the patch. If we spawn the prediction as background job, it is very likely
    * that it is executed last. In order to have a deterministic order of
@@ -1953,6 +1954,9 @@ public:
    * the time step update. Fortunately, it is already memorised as it is copied
    * into the correction time step data fields of the patch
    * after the time step data update.
+   *
+   * @param cellDescriptionsIndex cell description heap index
+   * @param element               element in the cell description heap array
    */
   UpdateResult fusedTimeStepBody(
         CellDescription& cellDescription,
@@ -1964,21 +1968,21 @@ public:
         const bool mustBeDoneImmediately,
         const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed);
 
-  UpdateResult fusedTimeStepOrRestriction(
+  UpdateResult fusedTimeStepOrRestrict(
       const int  solverNumber,
       CellInfo&  cellInfo,
       const bool isFirstIterationOfBatch,
       const bool isLastIterationOfBatch,
       const bool isAtRemoteBoundary) final override;
 
-  UpdateResult updateOrRestriction(
+  UpdateResult updateOrRestrict(
       const int  solverNumber,
       CellInfo&  cellInfo,
       const bool isAtRemoteBoundary) final override;
 
   void compress(
-      const int cellDescriptionsIndex,
-      const int element,
+      const int solverNumber,
+      CellInfo& cellInfo,
       const bool isAtRemoteBoundary) const final override;
 
   void adjustSolutionDuringMeshRefinement(const int solverNumber,CellInfo& cellInfo) final override;
@@ -2268,7 +2272,7 @@ public:
    *
    * @param toRank       the adjacent rank we want to send to
    * @param solverNumber identification number for the solver
-   * @param cellInfo     links to a cells data
+   * @param cellInfo     links to a cell's data
    * @param src          position of message source relative to vertex
    * @param dest         position of message destination relative to vertex
    * @param x            vertex' position

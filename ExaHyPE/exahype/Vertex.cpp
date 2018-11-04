@@ -33,8 +33,8 @@
 
 tarch::logging::Log exahype::Vertex::_log( "exahype::Vertex");
 
-constexpr int exahype::Vertex::pos1Scalar[12];
-constexpr int exahype::Vertex::pos2Scalar[12];
+constexpr int exahype::Vertex::pos1Scalar[2*(DIMENSIONS-1)*DIMENSIONS];
+constexpr int exahype::Vertex::pos2Scalar[2*(DIMENSIONS-1)*DIMENSIONS];
 
 exahype::Vertex::Vertex() : Base() {
   _vertexData.setCellDescriptionsIndex(

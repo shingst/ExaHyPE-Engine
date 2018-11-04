@@ -193,22 +193,22 @@ void exahype::mappings::RefinementStatusSpreading::enterCell(
 
     for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-      const int element = cellInfo.foundCellDescriptionForSolver(solverNumber);
+      const int element = cellInfo.indexOfADERDGCellDescription(solverNumber);
       if ( element!=solvers::Solver::NotFound ) {
         switch (solver->getType()) {
-          case exahype::solvers::Solver::Type::ADERDG:
+          case exahype::solvers::Solver::Type::ADERDG: {
             auto& cellDescription = cellInfo._ADERDGCellDescriptions[element];
             static_cast<exahype::solvers::ADERDGSolver*>(solver)->
-                updateRefinementStatus(cellDescription,cellDescription.getNeighbourMergePerformed());
-            break;
-          case exahype::solvers::Solver::Type::LimitingADERDG:
+                updateRefinementStatus(cellInfo._ADERDGCellDescriptions[element],cellDescription.getNeighbourMergePerformed());
+          } break;
+          case exahype::solvers::Solver::Type::LimitingADERDG: {
             auto& cellDescription = cellInfo._ADERDGCellDescriptions[element];
             _meshUpdateEvents[cellDescription.getSolverNumber()] =
                 exahype::solvers::Solver::mergeMeshUpdateEvents(
                     _meshUpdateEvents[cellDescription.getSolverNumber()],
                     static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->
                         updateRefinementStatusDuringRefinementStatusSpreading(cellDescription));
-            break;
+          } break;
           default:
             break;
         }

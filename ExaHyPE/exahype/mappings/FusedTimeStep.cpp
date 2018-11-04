@@ -327,20 +327,20 @@ void exahype::mappings::FusedTimeStep::leaveCell(
       exahype::plotters::plotPatchIfAPlotterIsActive(solverNumber,cellInfo); // TODO(Dominic) potential for IO overlap?
 
       exahype::solvers::Solver::UpdateResult result =
-          solver->fusedTimeStepOrRestriction(
+          solver->fusedTimeStepOrRestrict(
               solverNumber, cellInfo,_stateCopy.isFirstIterationOfBatchOrNoBatch(),isLastTimeStep,isAtRemoteBoundary);
 
       switch ( solver->getType() ) {
         case solvers::Solver::Type::ADERDG:
-          result = static_cast<solvers::ADERDGSolver*>(solver)->fusedTimeStepOrRestriction(
+          result = static_cast<solvers::ADERDGSolver*>(solver)->fusedTimeStepOrRestrict(
               solverNumber,cellInfo,_stateCopy.isFirstIterationOfBatchOrNoBatch(),isLastTimeStep,isAtRemoteBoundary);
           break;
         case solvers::Solver::Type::LimitingADERDG:
-          result = static_cast<solvers::LimitingADERDGSolver*>(solver)->fusedTimeStepOrRestriction(
+          result = static_cast<solvers::LimitingADERDGSolver*>(solver)->fusedTimeStepOrRestrict(
               solverNumber,cellInfo,_stateCopy.isFirstIterationOfBatchOrNoBatch(),isLastTimeStep,isAtRemoteBoundary);
           break;
         case solvers::Solver::Type::FiniteVolumes:
-          result = static_cast<solvers::FiniteVolumesSolver*>(solver)->fusedTimeStepOrRestriction(
+          result = static_cast<solvers::FiniteVolumesSolver*>(solver)->fusedTimeStepOrRestrict(
               solverNumber,cellInfo,_stateCopy.isFirstIterationOfBatchOrNoBatch(),isLastTimeStep,isAtRemoteBoundary);
           break;
         default:

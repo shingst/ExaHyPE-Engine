@@ -266,7 +266,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::enterCell(
     solvers::Solver::CellInfo cellInfo(fineGridCell.getCellDescriptionsIndex());
     const bool isAtRemoteBoundary = exahype::Cell::isAtRemoteBoundary(fineGridVertices,fineGridVerticesEnumerator);
 
-    for (int solverNumber=0; solverNumber<exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
+    for (unsigned int solverNumber=0; solverNumber<exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
       if ( performLocalRecomputation( solver ) && _stateCopy.isFirstIterationOfBatchOrNoBatch() ) {
         auto* limitingADERDG = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
@@ -304,7 +304,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::enterCell(
             static_cast<solvers::ADERDGSolver*>(solver)->prolongateFaceData(solverNumber,cellInfo,isAtRemoteBoundary);
             break;
           case solvers::Solver::Type::LimitingADERDG:
-            static_cast<solvers::LimitingADERDGSolver*>(solver)->getSolver()->->prolongateFaceData(solverNumber,cellInfo,isAtRemoteBoundary);
+            static_cast<solvers::LimitingADERDGSolver*>(solver)->getSolver()->prolongateFaceData(solverNumber,cellInfo,isAtRemoteBoundary);
             break;
           case solvers::Solver::Type::FiniteVolumes:
             // insert code here

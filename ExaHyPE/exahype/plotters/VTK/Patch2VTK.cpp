@@ -356,11 +356,12 @@ void exahype::plotters::Patch2VTK::plotPatch(const int solverNumber,solvers::Sol
 	int RefinementStatus=-1, previousRefinementStatus=-1, level=-1;
 	tarch::la::Vector<DIMENSIONS, double> offsetOfPatch, sizeOfPatch;
 	
+	int element = -1;
 	// we need this code doubling as we have different C++ types. Could probably use templates instead.
 	switch(_solverType) {
 		case exahype::solvers::Solver::Type::LimitingADERDG:
 		case exahype::solvers::Solver::Type::ADERDG: { // scope for variables
-			const int element = cellInfo.indexOfADERDGCellDescription(solverNumber);
+			element = cellInfo.indexOfADERDGCellDescription(solverNumber);
 			auto& solverPatch  = cellInfo._ADERDGCellDescriptions[element];
 			if(solverPatch.getType()!=exahype::solvers::ADERDGSolver::CellDescription::Type::Cell)
 				return; // plot only cells
@@ -387,7 +388,7 @@ void exahype::plotters::Patch2VTK::plotPatch(const int solverNumber,solvers::Sol
 			break;
 		}
 		case exahype::solvers::Solver::Type::FiniteVolumes: {
-			const int element = cellInfo.indexOfFiniteVolumesCellDescription(solverNumber);
+			element = cellInfo.indexOfFiniteVolumesCellDescription(solverNumber);
 			auto& solverPatch  = cellInfo._FiniteVolumesCellDescriptions[element];
 			if(solverPatch.getType()!=exahype::solvers::FiniteVolumesSolver::CellDescription::Type::Cell)
 				return; // plot only cells
@@ -405,7 +406,7 @@ void exahype::plotters::Patch2VTK::plotPatch(const int solverNumber,solvers::Sol
 		const int cellIndex = vertexAndCellIndex.second; // we only need the cellIndex in the following code
 		
 		// plot generic data about cell
-		plotInt(_cellDescriptionIndexWriter, cellIndex, cellDescriptionsIndex);
+		plotInt(_cellDescriptionIndexWriter, cellIndex, cellInfo._cellDescriptionsIndex);
 		plotInt(_cellElementWriter, cellIndex, element);
 		plotInt(_cellLevelWriter, cellIndex, level);
 

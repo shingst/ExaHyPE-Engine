@@ -185,7 +185,7 @@ exahype::plotters::LimitingADERDGSubcells2CartesianVTK::~LimitingADERDGSubcells2
 
 void exahype::plotters::LimitingADERDGSubcells2CartesianVTK::plotPatch(const int solverNumber,solvers::Solver::CellInfo& cellInfo) {
   const int element = cellInfo.indexOfADERDGCellDescription(solverNumber);
-  solvers::LimitingADERDGSolver::SolverPatch& solverPatch  = cellInfo._ADERDGCellDescriptions[element];
+  auto& solverPatch  = cellInfo._ADERDGCellDescriptions[element];
 
   if (solverPatch.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Cell) {
     assertion(exahype::solvers::RegisteredSolvers[solverPatch.getSolverNumber()]->getType()==exahype::solvers::Solver::Type::LimitingADERDG);
@@ -202,7 +202,7 @@ void exahype::plotters::LimitingADERDGSubcells2CartesianVTK::plotPatch(const int
     }
 
     if (refinementStatus>=limitingADERDG->getSolver()->getMinimumRefinementStatusForActiveFVPatch()) {
-      solvers::LimitingADERDGSolver::LimiterPatch& limiterPatch = limitingADERDG->getLimiterPatch(solverPatch,cellInfo);
+      auto& limiterPatch = limitingADERDG->getLimiterPatch(solverPatch,cellInfo);
 
       double* limiterSolution = static_cast<double*>(limiterPatch.getSolution());
       plotFiniteVolumesPatch(

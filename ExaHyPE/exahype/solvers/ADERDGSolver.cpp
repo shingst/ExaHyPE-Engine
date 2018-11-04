@@ -1579,8 +1579,7 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInLeaveCell(
         fineGridCell.getCellDescriptionsIndex(),fineGridElement);
 
     // start or finish collective operations
-    newComputeCell |= progressCollectiveRefinementOperationsInLeaveCell(
-        fineGridCellDescription,stillInRefiningMode);
+    progressCollectiveRefinementOperationsInLeaveCell(fineGridCellDescription,stillInRefiningMode);
 
     // skip remainder if the refinement criterion has not been evaluated yet for a Cell
     // Reading the refinement request might result into data race but this is accepted at this point
@@ -2143,7 +2142,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
   return result;
 }
 
-exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTimeStepOrRestriction(
+exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTimeStepOrRestrict(
     const int  solverNumber,
     CellInfo&  cellInfo,
     const bool isFirstIterationOfBatch,
@@ -2186,7 +2185,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
   }
 }
 
-exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::updateOrRestriction(
+exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::updateOrRestrict(
       const int  solverNumber,
       CellInfo&  cellInfo,
       const bool isAtRemoteBoundary){
@@ -2211,13 +2210,16 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::updateOrR
 }
 
 void exahype::solvers::ADERDGSolver::compress(
-      const int cellDescriptionsIndex,
-      const int element,
+      const int solverNumber,
+      CellInfo& cellInfo,
       const bool isAtRemoteBoundary) const {
-  CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
-  if (cellDescription.getType()==CellDescription::Type::Cell) {
-    const bool isSkeletonCell = belongsToAMRSkeleton(cellDescription,isAtRemoteBoundary);
-    compress(cellDescription,isSkeletonCell);
+  const int element = cellInfo.indexOfADERDGCellDescription(solverNumber);
+  if ( element!=NotFound ) {
+    CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[element];
+    if (cellDescription.getType()==CellDescription::Type::Cell) {
+      const bool isSkeletonCell = belongsToAMRSkeleton(cellDescription,isAtRemoteBoundary);
+      compress(cellDescription,isSkeletonCell);
+    }
   }
 }
 
@@ -2470,15 +2472,18 @@ void exahype::solvers::ADERDGSolver::rollbackToPreviousTimeStepFused(CellDescrip
 }
 
 void exahype::solvers::ADERDGSolver::adjustSolutionDuringMeshRefinement(
-    const int cellDescriptionsIndex,
-    const int element) {
-  const bool isInitialMeshRefinement = getMeshUpdateEvent()==MeshUpdateEvent::InitialRefinementRequested;
-  CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
-  if ( exahype::solvers::Solver::SpawnAMRBackgroundJobs ) {
-    AdjustSolutionDuringMeshRefinementJob job(*this,cellDescription,isInitialMeshRefinement);
-    peano::datatraversal::TaskSet spawnedSet( job, peano::datatraversal::TaskSet::TaskType::Background  );
-  } else {
-    adjustSolutionDuringMeshRefinementBody(cellDescription,isInitialMeshRefinement);
+    const int solverNumber,
+    CellInfo& cellInfo) {
+  const int element = cellInfo.indexOfADERDGCellDescription(solverNumber);
+  if ( element != NotFound ) {
+    CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[element];
+    const bool isInitialMeshRefinement = getMeshUpdateEvent()==MeshUpdateEvent::InitialRefinementRequested;
+    if ( exahype::solvers::Solver::SpawnAMRBackgroundJobs ) {
+      AdjustSolutionDuringMeshRefinementJob job(*this,cellDescription,isInitialMeshRefinement);
+      peano::datatraversal::TaskSet spawnedSet( job, peano::datatraversal::TaskSet::TaskType::Background  );
+    } else {
+      adjustSolutionDuringMeshRefinementBody(cellDescription,isInitialMeshRefinement);
+    }
   }
 }
 

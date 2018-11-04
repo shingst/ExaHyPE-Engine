@@ -60,8 +60,8 @@ private:
   int                          _order             = 0;
   int                          _solverUnknowns    = 0;
   int                          _writtenUnknowns   = 0;
-  exahype::parser::ParserView  _plotterParameters = 0;
 
+  exahype::parser::ParserView  _plotterParameters;
 
   /**
    * Is obviously only used if we use vtu instead of the vtk legacy format.

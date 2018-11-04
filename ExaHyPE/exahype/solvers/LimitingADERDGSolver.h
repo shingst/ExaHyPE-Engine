@@ -779,14 +779,14 @@ public:
       CellInfo& cellInfo,
       const bool fused) final override;
 
-  UpdateResult fusedTimeStepOrRestriction(
+  UpdateResult fusedTimeStepOrRestrict(
       const int  solverNumber,
       CellInfo&  cellInfo,
       const bool isFirstIterationOfBatch,
       const bool isLastIterationOfBatch,
       const bool isAtRemoteBoundary) final override;
 
-  UpdateResult update(
+  UpdateResult updateOrRestrict(
         const int  solverNumber,
         CellInfo&  cellInfo,
         const bool isAtRemoteBoundary) final override;

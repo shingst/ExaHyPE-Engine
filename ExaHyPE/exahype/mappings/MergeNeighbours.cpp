@@ -133,7 +133,7 @@ void exahype::mappings::MergeNeighbours::enterCell(
     if (exahype::solvers::Solver::CompressionAccuracy>0.0) {
       for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
         auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-        solver->compress(solverNumber,cellInfo,isAtRemoteBoundary));
+        solver->compress(solverNumber,cellInfo,isAtRemoteBoundary);
       }
     }
   }

@@ -708,30 +708,29 @@ public:
 
   void rollbackToPreviousTimeStepFused(CellDescription& cellDescription) const;
 
-  /** @copydoc: exahype::solvers::Solver::fusedTimeStepOrRestriction
+  /** @copydoc: exahype::solvers::Solver::fusedTimeStepOrRestrict
    *
    * The "hasCompletedTimeStep" flag must be only be unset when
    * a background job is spawned.
    */
-  UpdateResult fusedTimeStepOrRestriction(
+  UpdateResult fusedTimeStepOrRestrict(
       const int solverNumber,
       CellInfo& cellInfo,
       const bool isFirstIterationOfBatch,
       const bool isLastIterationOfBatch,
       const bool isAtRemoteBoundary) final override;
 
-  UpdateResult update(
+  UpdateResult updateOrRestrict(
         const int  solverNumber,
         CellInfo&  cellInfo,
         const bool isAtRemoteBoundary) final override;
 
   void compress(
-      const int cellDescriptionsIndex,
-      const int element,
+      const int solverNumber,
+      CellInfo& cellInfo,
       const bool isAtRemoteBoundary) const final override;
 
-  void adjustSolutionDuringMeshRefinement(
-      const int cellDescriptionsIndex,const int element) final override;
+  void adjustSolutionDuringMeshRefinement(const int solverNumber,CellInfo& cellInfo) final override;
 
   /**
    * Update the solution of a cell description.

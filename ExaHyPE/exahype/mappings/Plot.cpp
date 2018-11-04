@@ -86,8 +86,7 @@ void exahype::mappings::Plot::enterCell(
     exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
   if ( fineGridCell.isInitialised() ) {
-    solvers::Solver::CellInfo& cellInfo;
-
+    solvers::Solver::CellInfo cellInfo(fineGridCell.getCellDescriptionsIndex());
     for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
       exahype::plotters::plotPatchIfAPlotterIsActive(solverNumber,cellInfo);
     }

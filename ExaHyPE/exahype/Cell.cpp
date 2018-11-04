@@ -263,8 +263,7 @@ exahype::solvers::Solver::CellInfo exahype::Cell::addNewCellDescription(
 }
 
 int exahype::Cell::getNumberOfADERDGCellDescriptions() const {
-  return exahype::solvers::ADERDGSolver::Heap::getInstance().getData(
-      getCellDescriptionsIndex()).size();
+  return exahype::solvers::ADERDGSolver::Heap::getInstance().getData(getCellDescriptionsIndex()).size();
 }
 
 
