@@ -2148,38 +2148,41 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
     const bool isFirstIterationOfBatch,
     const bool isLastIterationOfBatch,
     const bool isAtRemoteBoundary) {
-  const int element                = cellInfo.indexOfADERDGCellDescription(solverNumber);
-  CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[element];
+  const int element = cellInfo.indexOfADERDGCellDescription(solverNumber);
+  if ( element != NotFound ) {
+    CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[element];
+    if ( cellDescription.getType()==CellDescription::Type::Cell ) {
+      const bool isAMRSkeletonCell     = ADERDGSolver::belongsToAMRSkeleton(cellDescription,isAtRemoteBoundary);
+      const bool isSkeletonCell        = isAMRSkeletonCell || isAtRemoteBoundary;
+      const bool mustBeDoneImmediately = isSkeletonCell && PredictionSweeps==1;
 
-  if ( cellDescription.getType()==CellDescription::Type::Cell ) {
-    const bool isAMRSkeletonCell     = ADERDGSolver::belongsToAMRSkeleton(cellDescription,isAtRemoteBoundary);
-    const bool isSkeletonCell        = isAMRSkeletonCell || isAtRemoteBoundary;
-    const bool mustBeDoneImmediately = isSkeletonCell && PredictionSweeps==1;
-
-    if (
-        !SpawnPredictionAsBackgroundJob ||
-        isFirstIterationOfBatch ||
-        isLastIterationOfBatch
+      if (
+          !SpawnPredictionAsBackgroundJob ||
+          isFirstIterationOfBatch ||
+          isLastIterationOfBatch
+      ) {
+        return
+            fusedTimeStepBody(
+                cellDescription,cellInfo._cellDescriptionsIndex,element,
+                isFirstIterationOfBatch,isLastIterationOfBatch,isSkeletonCell, mustBeDoneImmediately,
+                cellDescription.getNeighbourMergePerformed() );
+      } else {
+        cellDescription.setHasCompletedTimeStep(false); // done here in order to skip lookup of cell description in job constructor
+        FusedTimeStepJob fusedTimeStepJob( *this, cellDescription, cellInfo._cellDescriptionsIndex, element,isSkeletonCell);
+        Solver::submitJob(fusedTimeStepJob,isSkeletonCell);
+        return UpdateResult();
+      }
+    } else if (
+        cellDescription.getType()==CellDescription::Type::Descendant &&
+        cellDescription.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication
     ) {
-      return
-          fusedTimeStepBody(
-              cellDescription,cellInfo._cellDescriptionsIndex,element,
-              isFirstIterationOfBatch,isLastIterationOfBatch,isSkeletonCell, mustBeDoneImmediately,
-              cellDescription.getNeighbourMergePerformed() );
+      restrictToTopMostParent(cellDescription);
+
+      // TODO(Dominic): Evaluate ref crit here too // halos
+      return UpdateResult();
     } else {
-      cellDescription.setHasCompletedTimeStep(false); // done here in order to skip lookup of cell description in job constructor
-      FusedTimeStepJob fusedTimeStepJob( *this, cellDescription, cellInfo._cellDescriptionsIndex, element,isSkeletonCell);
-      Solver::submitJob(fusedTimeStepJob,isSkeletonCell);
       return UpdateResult();
     }
-  } else if (
-      cellDescription.getType()==CellDescription::Type::Descendant &&
-      cellDescription.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication
-  ) {
-    restrictToTopMostParent(cellDescription);
-
-    // TODO(Dominic): Evaluate ref crit here too // halos
-    return UpdateResult();
   } else {
     return UpdateResult();
   }
@@ -2190,20 +2193,31 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::updateOrR
       CellInfo&  cellInfo,
       const bool isAtRemoteBoundary){
   const int element = cellInfo.indexOfADERDGCellDescription(solverNumber);
-  CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[element];
+  if ( element != NotFound ) {
+    CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[element];
+    if (cellDescription.getType()==CellDescription::Type::Cell) {
+      uncompress(cellDescription);
 
-  if (cellDescription.getType()==CellDescription::Type::Cell) {
-    uncompress(cellDescription);
+      UpdateResult result;
+      updateSolution(cellDescription,cellDescription.getNeighbourMergePerformed(),true);
+      result._timeStepSize    = startNewTimeStep(cellDescription);
+      result._meshUpdateEvent = evaluateRefinementCriteriaAfterSolutionUpdate(
+          cellDescription,cellDescription.getNeighbourMergePerformed());
 
-    UpdateResult result;
-    updateSolution(cellDescription,cellDescription.getNeighbourMergePerformed(),true);
-    result._timeStepSize    = startNewTimeStep(cellDescription);
-    result._meshUpdateEvent = evaluateRefinementCriteriaAfterSolutionUpdate(
-        cellDescription,cellDescription.getNeighbourMergePerformed());
+      compress(cellDescription,isAtRemoteBoundary);
 
-    compress(cellDescription,isAtRemoteBoundary);
- 
-    return result;
+      return result;
+    } else if (
+        cellDescription.getType()==CellDescription::Type::Descendant &&
+        cellDescription.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication
+    ) {
+      restrictToTopMostParent(cellDescription);
+
+      // TODO(Dominic): Evaluate ref crit here too // halos
+      return UpdateResult();
+    } else {
+      return UpdateResult();
+    }
   } else {
     return UpdateResult();
   }

@@ -422,50 +422,54 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
     const bool isLastIterationOfBatch,
     const bool isAtRemoteBoundary) {
   const int element        = cellInfo.indexOfADERDGCellDescription(solverNumber);
-  SolverPatch& solverPatch = cellInfo._ADERDGCellDescriptions[element];
+  if ( element != NotFound ) {
+    SolverPatch& solverPatch = cellInfo._ADERDGCellDescriptions[element];
 
-  // Write the previous limiter status back onto the patch for all cell description types
-  solverPatch.setPreviousRefinementStatus(solverPatch.getRefinementStatus());
+    // Write the previous limiter status back onto the patch for all cell description types
+    solverPatch.setPreviousRefinementStatus(solverPatch.getRefinementStatus());
 
-  if ( solverPatch.getType()==SolverPatch::Type::Cell ) {
-    const bool isAMRSkeletonCell     = ADERDGSolver::belongsToAMRSkeleton(solverPatch,isAtRemoteBoundary);
-    const bool isSkeletonCell        = isAMRSkeletonCell || isAtRemoteBoundary;
-    const bool mustBeDoneImmediately = isSkeletonCell && PredictionSweeps==1;
+    if ( solverPatch.getType()==SolverPatch::Type::Cell ) {
+      const bool isAMRSkeletonCell     = ADERDGSolver::belongsToAMRSkeleton(solverPatch,isAtRemoteBoundary);
+      const bool isSkeletonCell        = isAMRSkeletonCell || isAtRemoteBoundary;
+      const bool mustBeDoneImmediately = isSkeletonCell && PredictionSweeps==1;
 
-    if (
-        !SpawnPredictionAsBackgroundJob ||
-        isFirstIterationOfBatch ||
-        isLastIterationOfBatch  ||
-        mustBeDoneImmediately
-    ) {
-      return fusedTimeStepBody(
-          solverPatch, cellInfo,
-          isFirstIterationOfBatch,isLastIterationOfBatch,
-          isSkeletonCell,
-          mustBeDoneImmediately,
-          solverPatch.getNeighbourMergePerformed());
-    } else {
-      solverPatch.setHasCompletedTimeStep(false); // done here in order to skip lookup of cell description in job constructor
-      FusedTimeStepJob fusedTimeStepJob( *this, solverPatch, cellInfo, isSkeletonCell );
-      Solver::submitJob(fusedTimeStepJob,isSkeletonCell);
-      return UpdateResult();
+      if (
+          !SpawnPredictionAsBackgroundJob ||
+          isFirstIterationOfBatch ||
+          isLastIterationOfBatch  ||
+          mustBeDoneImmediately
+      ) {
+        return fusedTimeStepBody(
+            solverPatch, cellInfo,
+            isFirstIterationOfBatch,isLastIterationOfBatch,
+            isSkeletonCell,
+            mustBeDoneImmediately,
+            solverPatch.getNeighbourMergePerformed());
+      } else {
+        solverPatch.setHasCompletedTimeStep(false); // done here in order to skip lookup of cell description in job constructor
+        FusedTimeStepJob fusedTimeStepJob( *this, solverPatch, cellInfo, isSkeletonCell );
+        Solver::submitJob(fusedTimeStepJob,isSkeletonCell);
+        return UpdateResult();
+      }
     }
-  }
-  else {
-    UpdateResult result;
+    else {
+      UpdateResult result;
 
-    if (
-        solverPatch.getType()==SolverPatch::Type::Descendant &&
-        solverPatch.getCommunicationStatus()>=ADERDGSolver::MinimumCommunicationStatusForNeighbourCommunication
-    ) {
-      _solver->restrictToTopMostParent(solverPatch);
+      if (
+          solverPatch.getType()==SolverPatch::Type::Descendant &&
+          solverPatch.getCommunicationStatus()>=ADERDGSolver::MinimumCommunicationStatusForNeighbourCommunication
+      ) {
+        _solver->restrictToTopMostParent(solverPatch);
+      }
+
+      _solver->updateRefinementStatus(solverPatch,solverPatch.getNeighbourMergePerformed());
+      result._meshUpdateEvent =
+          _solver->evaluateRefinementCriteriaAfterSolutionUpdate(
+              solverPatch,solverPatch.getNeighbourMergePerformed()); // must be done by all cell types TODO(Dominic): Clean up
+      return result;
     }
-
-    _solver->updateRefinementStatus(solverPatch,solverPatch.getNeighbourMergePerformed());
-    result._meshUpdateEvent =
-        _solver->evaluateRefinementCriteriaAfterSolutionUpdate(
-            solverPatch,solverPatch.getNeighbourMergePerformed()); // must be done by all cell types TODO(Dominic): Clean up
-    return result;
+  } else {
+    return UpdateResult();
   }
 }
 
@@ -500,40 +504,44 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::u
       const int  solverNumber,
       CellInfo&  cellInfo,
       const bool isAtRemoteBoundary){
-  const int element = cellInfo.indexOfADERDGCellDescription(solverNumber);
-  SolverPatch& solverPatch = cellInfo._ADERDGCellDescriptions[element];
-  
-  // Write the previous limiter status back onto the patch for all cell description types
-  solverPatch.setPreviousRefinementStatus(solverPatch.getRefinementStatus());
+  const int solverElement = cellInfo.indexOfADERDGCellDescription(solverNumber);
+  if ( solverElement != NotFound ) {
+    SolverPatch& solverPatch = cellInfo._ADERDGCellDescriptions[solverElement];
 
-  UpdateResult result;
-  switch ( solverPatch.getType() ) {
-  case SolverPatch::Type::Cell:
-    if (CompressionAccuracy>0.0) { uncompress(solverPatch,cellInfo); }
+    // Write the previous limiter status back onto the patch for all cell description types
+    solverPatch.setPreviousRefinementStatus(solverPatch.getRefinementStatus());
 
-    // the actual computations
-    updateSolution(solverPatch,cellInfo,solverPatch.getNeighbourMergePerformed(),true);
-    result._timeStepSize    = startNewTimeStep(solverPatch,cellInfo);
-    result._meshUpdateEvent = updateRefinementStatusAndMinAndMaxAfterSolutionUpdate(
-        solverPatch,cellInfo,solverPatch.getNeighbourMergePerformed());
+    UpdateResult result;
+    switch ( solverPatch.getType() ) {
+      case SolverPatch::Type::Cell:
+        if (CompressionAccuracy>0.0) { uncompress(solverPatch,cellInfo); }
 
-    if (CompressionAccuracy>0.0) { compress(solverPatch,cellInfo,isAtRemoteBoundary); }
-    break;
-  default:
-    if (
-        solverPatch.getType()==SolverPatch::Type::Descendant &&
-        solverPatch.getCommunicationStatus()>=ADERDGSolver::MinimumCommunicationStatusForNeighbourCommunication
-    ) {
-      _solver->restrictToTopMostParent(solverPatch);
+        // the actual computations
+        updateSolution(solverPatch,cellInfo,solverPatch.getNeighbourMergePerformed(),true);
+        result._timeStepSize    = startNewTimeStep(solverPatch,cellInfo);
+        result._meshUpdateEvent = updateRefinementStatusAndMinAndMaxAfterSolutionUpdate(
+            solverPatch,cellInfo,solverPatch.getNeighbourMergePerformed());
+
+        if (CompressionAccuracy>0.0) { compress(solverPatch,cellInfo,isAtRemoteBoundary); }
+        break;
+      default:
+        if (
+            solverPatch.getType()==SolverPatch::Type::Descendant &&
+            solverPatch.getCommunicationStatus()>=ADERDGSolver::MinimumCommunicationStatusForNeighbourCommunication
+        ) {
+          _solver->restrictToTopMostParent(solverPatch);
+        }
+
+        _solver->updateRefinementStatus(solverPatch,solverPatch.getNeighbourMergePerformed());
+        result._meshUpdateEvent =
+            _solver->evaluateRefinementCriteriaAfterSolutionUpdate(
+                solverPatch,solverPatch.getNeighbourMergePerformed()); // must be done by all cell types TODO(Dominic): Clean up
+        break;
     }
-
-    _solver->updateRefinementStatus(solverPatch,solverPatch.getNeighbourMergePerformed());
-    result._meshUpdateEvent =
-        _solver->evaluateRefinementCriteriaAfterSolutionUpdate(
-            solverPatch,solverPatch.getNeighbourMergePerformed()); // must be done by all cell types TODO(Dominic): Clean up
-    break;
+    return result;
+  } else {
+    return UpdateResult();
   }
-  return result;
 }
 
 void exahype::solvers::LimitingADERDGSolver::uncompress(
