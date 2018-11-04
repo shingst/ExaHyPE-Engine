@@ -498,3 +498,7 @@ void NavierStokes::PDE::evaluateFlux(const double* Q, const double* gradQ, doubl
 
 }
 #endif
+
+double NavierStokes::PDE::evaluatePotentialTemperature(double temperature, double pressure) const {
+    return temperature / std::pow((pressure / referencePressure), (gasConstant / c_p));
+}

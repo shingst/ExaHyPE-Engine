@@ -25,6 +25,7 @@ public:
 
   double evaluateEnergy(double rho, double pressure, const tarch::la::Vector<DIMENSIONS,double> &j) const;
   double evaluateTemperature(double rho, double pressure) const;
+  double evaluatePotentialTemperature(double temperature, double pressure) const;
   double evaluateHeatConductionCoeff(double viscosity) const;  
   double evaluatePressure(double E, double rho, const tarch::la::Vector<DIMENSIONS,double> &j) const;
   double evaluateViscosity(double T) const;

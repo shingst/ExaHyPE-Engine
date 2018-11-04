@@ -63,7 +63,7 @@ void NavierStokes::Plotter::mapQuantities(
     const auto pressure = ns.evaluatePressure(vars.E(), vars.rho(), vars.j());
     const auto temperature = ns.evaluateTemperature(vars.rho(), pressure);
 
-    const auto potT = temperature / std::pow((pressure / ns.referencePressure), (ns.gasConstant / ns.c_p));
+    const auto potT = ns.evaluatePotentialTemperature(temperature, pressure);
 
     // Write potential temperature
     outputQuantities[vars.Size] = potT;
