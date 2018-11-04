@@ -1775,6 +1775,8 @@ class exahype::solvers::Solver {
    * every time one of the 2^{d-1}
    * adjacent vertices touches the face.
    *
+   * @note Not thread-safe.
+   *
    * @param cellDescription a cell description
    * @param face            see BoundaryFaceInfo
    */
@@ -1811,6 +1813,8 @@ class exahype::solvers::Solver {
    * every time one of the 2^{d-1}
    * adjacent vertices touches the face.
    *
+   * @note Not thread-safe.
+   *
    * @param cellDescription a cell description
    * @param face            see BoundaryFaceInfo
    * @return if we have to merge with the neighbour data. If not, it needs to be received and dropped.
@@ -1818,9 +1822,12 @@ class exahype::solvers::Solver {
   template <typename CellDescription>
   static bool hasToMergeWithNeighbourData(CellDescription& cellDescription,BoundaryFaceInfo& face) {
     if ( cellDescription.getFaceDataExchangeCounter(face._faceIndex)==0 ) {
-      assertion(cellDescription.getNeighbourMergePerformed(face._faceIndex)==false);
-      cellDescription.setFaceDataExchangeCounter(face._faceIndex,TWO_POWER_D); // TODO maybe do not do that here but in the cell? Can be used to determine which cell belongs to skeleton
-      cellDescription.setNeighbourMergePerformed(face._faceIndex,true);
+      assertion1(!cellDescription.getNeighbourMergePerformed(face._faceIndex),cellDescription.toString());
+      cellDescription.setFaceDataExchangeCounter(face._faceIndex,TWO_POWER_D); // TODO(Dominic): maybe do not do that here but in the cell? Can be used to determine which cell belongs to skeleton
+      cellDescription.setNeighbourMergePerformed(face._faceIndex,(signed char) true);
+      return true;
+    } else {
+      return false;
     }
   }
 
