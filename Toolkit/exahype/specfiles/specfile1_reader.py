@@ -477,18 +477,20 @@ class SpecFile1Reader():
                 solver["fv_kernel"]["terms"]=result
                 if "optimisation" in solver:
                     fv_kernel_opts    = solver.pop("optimisation")
-            
-            # fv type
-            fv_schemes = ["godunov","musclhancock","robustmusclhancock"]
-            for token in fv_kernel_type.split(","):
-                token_s = token.strip() 
-                if token_s in fv_schemes:
-                    solver["fv_kernel"]["scheme"]=token_s
-                else:
-                    raise SpecFile1ParserError("FV type must be one one of: '{}'. It is '{}'.".format(", ".join(fv_schemes),token_s))
-            # fv opts
-            if "fv_kernel" in solver: 
-                solver["fv_kernel"].update(self.map_fv_kernel_opts(fv_kernel_opts))
+           
+            if solver["type"]=="Limiting-ADER-DG" or
+               solver["type"]=="Finite-Volumes":
+                # fv type
+                fv_schemes = ["godunov","musclhancock","robustmusclhancock"]
+                for token in fv_kernel_type.split(","):
+                    token_s = token.strip() 
+                    if token_s in fv_schemes:
+                        solver["fv_kernel"]["scheme"]=token_s
+                    else:
+                        raise SpecFile1ParserError("FV type must be one one of: '{}'. It is '{}'.".format(", ".join(fv_schemes),token_s))
+                # fv opts
+                if "fv_kernel" in solver: 
+                    solver["fv_kernel"].update(self.map_fv_kernel_opts(fv_kernel_opts))
             
             # variables, parameters, and more
             solver["variables"]=self.map_variables(solver.pop("variables"))
