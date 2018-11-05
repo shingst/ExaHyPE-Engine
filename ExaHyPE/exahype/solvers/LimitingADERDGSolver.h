@@ -230,7 +230,7 @@ private:
    *
    * \note Thread-safe.
    */
-  void deallocateLimiterPatch(const SolverPatch& solverPatch,CellInfo& cellinfo) const;
+  void deallocateLimiterPatch(const SolverPatch& solverPatch,CellInfo& cellInfo) const;
 
   /**
    * Allocates a new limiter patch,
@@ -656,6 +656,8 @@ public:
   /**
    * @return  the limiter patch matching the solver patch.
    *
+   * @note Copies the solver patch time step data onto the limiter patch. TODO(Dominic): Only copy when necessary.
+   *
    * @param solverPatch a solver patch
    * @param cellInfo    holds references to the cell descriptions associated with a mesh cell
    *
@@ -663,6 +665,14 @@ public:
    * given solver patch.
    */
   LimiterPatch& getLimiterPatch(const SolverPatch& solverPatch,CellInfo& cellInfo) const;
+
+  /**
+   * Similar to @see getLimiterPatch(const SolverPatch& solverPatch,CellInfo& cellInfo)
+   * but here the limiterElement was already obtained.
+   *
+   * @note Copies the solver patch time step data onto the limiter patch. TODO(Dominic): Only copy when necessary.
+   */
+  LimiterPatch& getLimiterPatch(const SolverPatch& solverPatch,CellInfo& cellInfo,const int limiterElement) const;
 
   ///////////////////////////////////
   // MODIFY CELL DESCRIPTION

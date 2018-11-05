@@ -2384,9 +2384,9 @@ double exahype::solvers::ADERDGSolver::startNewTimeStepFused(
     }
 
     return admissibleTimeStepSize; // still reduce the admissibile time step size over multiple iterations
+  } else {
+    return std::numeric_limits<double>::max();
   }
-
-  return std::numeric_limits<double>::max();
 }
 
 double exahype::solvers::ADERDGSolver::startNewTimeStep(CellDescription& cellDescription) {
@@ -2411,9 +2411,9 @@ double exahype::solvers::ADERDGSolver::startNewTimeStep(CellDescription& cellDes
     cellDescription.setPredictorTimeStepSize(cellDescription.getCorrectorTimeStepSize());
 
     return admissibleTimeStepSize;
+  } else {
+    return std::numeric_limits<double>::max();
   }
-
-  return std::numeric_limits<double>::max();
 }
 
 double exahype::solvers::ADERDGSolver::updateTimeStepSizes(CellDescription& cellDescription,const bool fused) {

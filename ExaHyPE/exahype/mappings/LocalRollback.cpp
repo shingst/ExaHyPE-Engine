@@ -118,18 +118,13 @@ void exahype::mappings::LocalRollback::endIteration(
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
       if (
           performLocalRecomputation(solver) &&
-          exahype::solvers::Solver::FuseADERDGPhases==true
+          exahype::solvers::Solver::FuseADERDGPhases
       ) {
-        logDebug("endIteration(state)","[pre] solver="<<solver->toString());
-        auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
-        limitingADERDGSolver->rollbackToPreviousTimeStepFused();
-        logDebug("endIteration(state)","[post] solver="<<solver->toString());
+        static_cast<solvers::LimitingADERDGSolver*>(solver)->rollbackToPreviousTimeStepFused();
       } else if (
-          performLocalRecomputation(solver) &&
-          exahype::solvers::Solver::FuseADERDGPhases==false
+          performLocalRecomputation(solver)
       ) {
-        auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
-        limitingADERDGSolver->rollbackToPreviousTimeStep();
+        static_cast<solvers::LimitingADERDGSolver*>(solver)->rollbackToPreviousTimeStep();
       }
     }
   }

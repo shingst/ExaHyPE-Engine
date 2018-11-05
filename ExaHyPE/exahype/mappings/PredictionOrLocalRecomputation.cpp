@@ -271,8 +271,8 @@ void exahype::mappings::PredictionOrLocalRecomputation::enterCell(
       if ( performLocalRecomputation( solver ) && _stateCopy.isFirstIterationOfBatchOrNoBatch() ) {
         auto* limitingADERDG = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
         double admissibleTimeStepSize =
-            limitingADERDG->recomputeSolutionLocally(
-                solverNumber,cellInfo,isAtRemoteBoundary,solvers::Solver::FuseADERDGPhases);
+            limitingADERDG->recomputeSolutionLocally(solverNumber,cellInfo,isAtRemoteBoundary,solvers::Solver::FuseADERDGPhases);
+
         _minTimeStepSizes[solverNumber] = std::min(
             admissibleTimeStepSize, _minTimeStepSizes[solverNumber]);
         _maxLevels[solverNumber] = std::max(
