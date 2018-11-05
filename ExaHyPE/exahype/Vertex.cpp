@@ -528,6 +528,7 @@ void exahype::Vertex::sendOnlyMetadataToNeighbour(
   if ( hasToCommunicate(level) ) {
     for (unsigned int i=0; i<2*(DIMENSIONS-1)*(DIMENSIONS); i++) {
       sendOnlyMetadataToNeighbourLoopBody(toRank,pos1Scalar[i],pos2Scalar[i],_vertexData.getCellDescriptionsIndex(pos1Scalar[i]),getAdjacentRanks(),x,h,level,checkThoroughly);
+      sendOnlyMetadataToNeighbourLoopBody(toRank,pos2Scalar[i],pos1Scalar[i],_vertexData.getCellDescriptionsIndex(pos2Scalar[i]),getAdjacentRanks(),x,h,level,checkThoroughly); // swap
     }
   }
 }
@@ -622,7 +623,8 @@ void exahype::Vertex::mergeOnlyWithNeighbourMetadata(
     const bool                                   checkThoroughly) const {
   if ( hasToCommunicate(level) ) {
     for (unsigned int i = 2*(DIMENSIONS-1)*(DIMENSIONS); i-- > 0;) { // dest and src is swapped & order is swapped
-      mergeOnlyWithNeighbourMetadataLoopBody(fromRank,pos2Scalar[i],pos1Scalar[i],_vertexData.getCellDescriptionsIndex(pos2Scalar[i]),getAdjacentRanks(),x,h,level,section,checkThoroughly);
+      mergeOnlyWithNeighbourMetadataLoopBody(fromRank,pos1Scalar[i],pos2Scalar[i],_vertexData.getCellDescriptionsIndex(pos2Scalar[i]),getAdjacentRanks(),x,h,level,section,checkThoroughly);
+      mergeOnlyWithNeighbourMetadataLoopBody(fromRank,pos2Scalar[i],pos1Scalar[i],_vertexData.getCellDescriptionsIndex(pos1Scalar[i]),getAdjacentRanks(),x,h,level,section,checkThoroughly);
     }
   }
 }
