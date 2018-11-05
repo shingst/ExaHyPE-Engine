@@ -80,43 +80,6 @@ public:
   static tarch::la::Vector<DIMENSIONS,int> delineariseIndex2(int index);
 
   /**
-   * Loop body of loop in mergeNeighbours.
-   *
-   * @note All parameters must be copied as the function
-   * might be spawned as task.
-   *
-   * @param pos1Scalar             linearised adjacency index
-   * @param cellDescriptionsIndex1 cell description index corresponding to the adjacency index
-   * @param x position of a vertex
-   * @param h extent of cells adjacent to the vertex
-   */
-  static void mergeNeighboursLoopBody(
-      const int pos1Scalar,
-      const int pos2Scalar,
-      const int cellDescriptionsIndex1,
-      const int cellDescriptionsIndex2,
-      const tarch::la::Vector<DIMENSIONS, double> x,
-      const tarch::la::Vector<DIMENSIONS, double> h);
-
-  /**
-   * Loop body of loop in mergeNeighboursMetadata.
-   *
-   * @param pos1Scalar             linearised adjacency index
-   * @param cellDescriptionsIndex1 cell description index corresponding to the adjacency index
-   * @param x position of this vertex
-   * @param h mesh size
-   */
-  static void mergeOnlyNeighboursMetadataLoopBody(
-      const int pos1Scalar,
-      const int pos2Scalar,
-      const int cellDescriptionsIndex1,
-      const int cellDescriptionsIndex2,
-      const exahype::State::AlgorithmSection& section,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const tarch::la::Vector<DIMENSIONS, double>& h,
-      const bool                                   checkThoroughly);
-
-  /**
    * Validate that a compute cell associated with index1 is not next to
    * an invalid cell description index 2 if their
    * interface is an interior face.
@@ -183,8 +146,96 @@ private:
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const tarch::la::Vector<DIMENSIONS, double>& h);
 
+
+
+  /**
+   * Loop body of loop in mergeNeighbours.
+   *
+   * @note All parameters must be copied as the function
+   * might be spawned as task.
+   *
+   * @param pos1Scalar             linearised adjacency index
+   * @param cellDescriptionsIndex1 cell description index corresponding to the adjacency index
+   * @param x position of a vertex
+   * @param h extent of cells adjacent to the vertex
+   */
+  static void mergeNeighboursLoopBody(
+      const int pos1Scalar,
+      const int pos2Scalar,
+      const int cellDescriptionsIndex1,
+      const int cellDescriptionsIndex2,
+      const tarch::la::Vector<DIMENSIONS, double> x,
+      const tarch::la::Vector<DIMENSIONS, double> h);
+
+  /**
+   * Loop body of loop in mergeNeighboursMetadata.
+   *
+   * @param pos1Scalar             linearised adjacency index
+   * @param cellDescriptionsIndex1 cell description index corresponding to the adjacency index
+   * @param x position of this vertex
+   * @param h mesh size
+   */
+  static void mergeOnlyNeighboursMetadataLoopBody(
+      const int pos1Scalar,
+      const int pos2Scalar,
+      const int cellDescriptionsIndex1,
+      const int cellDescriptionsIndex2,
+      const exahype::State::AlgorithmSection& section,
+      const tarch::la::Vector<DIMENSIONS, double>& x,
+      const tarch::la::Vector<DIMENSIONS, double>& h,
+      const bool                                   checkThoroughly);
+
   #ifdef Parallel
   static constexpr int InvalidMetadataIndex = -1;
+
+  /**
+   * TODO(Dominic): Add docu.
+   * @param toRank
+   * @param srcScalar
+   * @param destScalar
+   * @param srcCellDescriptionIndex
+   * @param adjacentRanks
+   * @param x
+   * @param h
+   * @param level
+   * @param checkThoroughly
+   */
+  static void sendOnlyMetadataToNeighbourLoopBody(
+      const int                                    toRank,
+      const int                                    srcScalar,
+      const int                                    destScalar,
+      const int                                    srcCellDescriptionIndex,
+      const tarch::la::Vector<TWO_POWER_D, int>&   adjacentRanks,
+      const tarch::la::Vector<DIMENSIONS, double>& x,
+      const tarch::la::Vector<DIMENSIONS, double>& h,
+      const int                                    level,
+      const bool                                   checkThoroughly);
+
+
+  /**
+   * Loop body for mergeOnlyWithNeighbourMetadata.
+   *
+   * @param fromRank                  rank we expect to receive a message from
+   * @param srcScalar                 linearised position of message source
+   * @param destScalar                linearised position of message destination
+   * @param destCellDescriptionIndex  cell descriptions index associated with cell at destination
+   * @param adjacentRanks             map holding the ranks adjacent to a vertex.
+   * @param x                         coordinates of vertex
+   * @param h                         mesh size of cells adjacent to vertex
+   * @param level                     mesh level
+   * @param checkThoroughly           compare geometry information on the cell descriptions with the parameters @p x, @p h,@p level.
+   */
+  static void mergeOnlyWithNeighbourMetadataLoopBody(
+      const int                                    fromRank,
+      const int                                    srcScalar,
+      const int                                    destScalar,
+      const int                                    destCellDescriptionIndex,
+      const tarch::la::Vector<TWO_POWER_D, int>&   adjacentRanks,
+      const tarch::la::Vector<DIMENSIONS, double>& x,
+      const tarch::la::Vector<DIMENSIONS, double>& h,
+      const int                                    level,
+      const exahype::State::AlgorithmSection&      section,
+      const bool                                   checkThoroughly);
 
   /*! Helper routine for sendToNeighbour
    *
@@ -209,7 +260,54 @@ private:
       const int                                    destCellDescriptionIndex,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level) const;
-  #endif
+
+  /**
+   * TODO(Dominic): Add docu.
+   *
+   * @param toRank
+   * @param srcScalar
+   * @param destScalar
+   * @param srcCellDescriptionsIndex
+   * @param adjacentRanks
+   * @param isLastIterationOfBatchOrNoBatch
+   * @param x
+   * @param level
+   */
+  static void sendToNeighbourLoopBody(
+      const int                                    toRank,
+      const int                                    srcScalar,
+      const int                                    destScalar,
+      const int                                    srcCellDescriptionsIndex,
+      const tarch::la::Vector<TWO_POWER_D, int>&   adjacentRanks,
+      const bool                                   isLastIterationOfBatchOrNoBatch,
+      const tarch::la::Vector<DIMENSIONS, double>& x,
+      const int                                    level);
+
+  /**
+   * TODO(Dominic): Add docu.
+   *
+   * @param fromRank
+   * @param srcScalar
+   * @param destScalar
+   * @param destCellDescriptionIndex
+   * @param mergeWithReceivedData
+   * @param receiveNeighbourMetadata
+   * @param adjacentRanks
+   * @param x
+   * @param level
+   */
+  static void receiveNeighbourDataLoopBody(
+    const int                                    fromRank,
+    const int                                    srcScalar,
+    const int                                    destScalar,
+    const int                                    destCellDescriptionIndex,
+    const bool                                   mergeWithReceivedData,
+    const bool                                   receiveNeighbourMetadata,
+    const tarch::la::Vector<TWO_POWER_D, int>&   adjacentRanks,
+    const tarch::la::Vector<DIMENSIONS, double>& x,
+    const int                                    level);
+
+#endif
 
  public:
   /**
@@ -499,18 +597,6 @@ private:
       const int                                 destScalar,
       const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks);
 
-
-  static void sendOnlyMetadataToNeighbourLoopBody(
-      const int                                    toRank,
-      const int                                    srcScalar,
-      const int                                    destScalar,
-      const int                                    srcCellDescriptionIndex,
-      const tarch::la::Vector<TWO_POWER_D, int>&   adjacentRanks,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const tarch::la::Vector<DIMENSIONS, double>& h,
-      const int                                    level,
-      const bool                                   checkThoroughly);
-
   /**
    * TODO(Dominic): Add docu
    */
@@ -554,32 +640,6 @@ private:
       const int                                  srcScalar,
       const int                                  destScalar,
       const tarch::la::Vector<TWO_POWER_D, int>& adjacentRanks);
-
-
-  /**
-   * Loop body for mergeOnlyWithNeighbourMetadata.
-   *
-   * @param fromRank                  rank we expect to receive a message from
-   * @param srcScalar                 linearised position of message source
-   * @param destScalar                linearised position of message destination
-   * @param destCellDescriptionIndex  cell descriptions index associated with cell at destination
-   * @param adjacentRanks             map holding the ranks adjacent to a vertex.
-   * @param x                         coordinates of vertex
-   * @param h                         mesh size of cells adjacent to vertex
-   * @param level                     mesh level
-   * @param checkThoroughly           compare geometry information on the cell descriptions with the parameters @p x, @p h,@p level.
-   */
-  static void mergeOnlyWithNeighbourMetadataLoopBody(
-      const int                                    fromRank,
-      const int                                    srcScalar,
-      const int                                    destScalar,
-      const int                                    destCellDescriptionIndex,
-      const tarch::la::Vector<TWO_POWER_D, int>&   adjacentRanks,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const tarch::la::Vector<DIMENSIONS, double>& h,
-      const int                                    level,
-      const exahype::State::AlgorithmSection&      section,
-      const bool                                   checkThoroughly);
 
   /**
    * Receive metadata from neighbouring ranks
@@ -628,17 +688,6 @@ private:
       const bool isLastIterationOfBatchOrNoBatch,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level) const;
-
-static void receiveNeighbourDataLoopBody(
-  const int                                    fromRank,
-  const int                                    srcScalar,
-  const int                                    destScalar,
-  const int                                    destCellDescriptionIndex,
-  const bool                                   mergeWithReceivedData,
-  const bool                                   receiveNeighbourMetadata,
-  const tarch::la::Vector<TWO_POWER_D, int>&   adjacentRanks,
-  const tarch::la::Vector<DIMENSIONS, double>& x,
-  const int                                    level);
 
   /*! Receive data from remote ranks at all remote boundary faces adjacent to this vertex.
    *

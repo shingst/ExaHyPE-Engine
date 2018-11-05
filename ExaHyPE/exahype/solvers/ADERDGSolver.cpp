@@ -3962,18 +3962,21 @@ void exahype::solvers::ADERDGSolver::sendDataToNeighbour(
     const tarch::la::Vector<DIMENSIONS, int>&     dest,
     const tarch::la::Vector<DIMENSIONS, double>&  x,
     const int                                     level) const {
-  assertion(tarch::la::countEqualEntries(src,dest)==(DIMENSIONS-1));
-
   const int element = cellInfo.indexOfADERDGCellDescription(solverNumber);
-
   if ( element != Solver::NotFound ) {
     CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[element];
 
     Solver::BoundaryFaceInfo face(src,dest);
     if (
-        Solver::hasToSendDataToNeighbour(cellDescription,face) &&
-        cellDescription.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication &&
-        cellDescription.getAugmentationStatus() < MaximumAugmentationStatus // excludes Ancestors
+        Solver::hasToSendDataToNeighbour(cellDescription,face)
+        &&
+        ((cellDescription.getCommunicationStatus()                       ==CellCommunicationStatus && // TODO(Dominic): Externalise
+        cellDescription.getFacewiseCommunicationStatus(face._faceIndex) >=MinimumCommunicationStatusForNeighbourCommunication &&
+        cellDescription.getFacewiseAugmentationStatus(face._faceIndex)  < MaximumAugmentationStatus)
+        ||
+        (cellDescription.getFacewiseCommunicationStatus(face._faceIndex)==CellCommunicationStatus &&
+        cellDescription.getCommunicationStatus()                        >=MinimumCommunicationStatusForNeighbourCommunication &&
+        cellDescription.getAugmentationStatus()                         < MaximumAugmentationStatus))
     ) {
       assertion(DataHeap::getInstance().isValidIndex(cellDescription.getExtrapolatedPredictorIndex()));
       assertion(DataHeap::getInstance().isValidIndex(cellDescription.getFluctuationIndex()));
@@ -3995,15 +3998,11 @@ void exahype::solvers::ADERDGSolver::sendDataToNeighbour(
           lFhbnd, dofsPerFace, toRank, x, level,
           peano::heap::MessageType::NeighbourCommunication);
       // TODO(Dominic): If anarchic time stepping send the time step over too.
-    } else {
-      sendEmptyDataToNeighbour(toRank,x,level);
     }
-  } else {
-    sendEmptyDataToNeighbour(toRank,x,level);
   }
 }
 
-void exahype::solvers::ADERDGSolver::sendEmptyDataToNeighbour(
+void exahype::solvers::ADERDGSolver::sendEmptyDataToNeighbour( // TODO(Dominic): Still needed?
     const int                                     toRank,
     const tarch::la::Vector<DIMENSIONS, double>&  x,
     const int                                     level) const {

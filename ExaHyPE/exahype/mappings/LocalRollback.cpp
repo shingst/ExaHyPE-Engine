@@ -186,52 +186,51 @@ void exahype::mappings::LocalRollback::prepareSendToNeighbour(
       vertex.hasToCommunicate(level)
   ) {
     for (int i=0; i<2*(DIMENSIONS-1)*(DIMENSIONS); i++) {
-      const int srcScalar  = Vertex::pos1Scalar[i];
-      const int destScalar = Vertex::pos2Scalar[i];
-
-      if ( vertex.hasToSendMetadata(toRank,srcScalar,destScalar,vertex.getAdjacentRanks()) ) {
-        sendDataToNeighbour(toRank,srcScalar,destScalar,vertex.getCellDescriptionsIndex()[srcScalar],x,level);
-      }
+      sendDataToNeighbourLoopBody(toRank,Vertex::pos1Scalar[i],Vertex::pos2Scalar[i],vertex,x,level);
+      sendDataToNeighbourLoopBody(toRank,Vertex::pos2Scalar[i],Vertex::pos2Scalar[i],vertex,x,level);
     }
   }
 }
 
-void exahype::mappings::LocalRollback::sendDataToNeighbour(
+void exahype::mappings::LocalRollback::sendDataToNeighbourLoopBody(
     const int                                    toRank,
     const int                                    srcScalar,
     const int                                    destScalar,
-    const int                                    srcCellDescriptionsIndex,
+    const exahype::Vertex&                       vertex,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const int                                    level) {
-  bool validIndex = srcCellDescriptionsIndex >= 0;
-  assertion( !validIndex || exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(srcCellDescriptionsIndex));
+  if ( vertex.hasToSendMetadata(toRank,srcScalar,destScalar,vertex.getAdjacentRanks()) ) {
+    const int srcCellDescriptionsIndex = VertexOperations::readCellDescriptionsIndex(vertex,srcScalar);
+    bool validIndex = srcCellDescriptionsIndex >= 0;
+    assertion( !validIndex || exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(srcCellDescriptionsIndex));
 
-  if ( validIndex ) {
-    const tarch::la::Vector<DIMENSIONS,int> src = Vertex::delineariseIndex2(srcScalar);
-    const tarch::la::Vector<DIMENSIONS,int> dest = Vertex::delineariseIndex2(destScalar);
-    solvers::Solver::CellInfo cellInfo(srcCellDescriptionsIndex);
+    if ( validIndex ) {
+      const tarch::la::Vector<DIMENSIONS,int> src = Vertex::delineariseIndex2(srcScalar);
+      const tarch::la::Vector<DIMENSIONS,int> dest = Vertex::delineariseIndex2(destScalar);
+      solvers::Solver::CellInfo cellInfo(srcCellDescriptionsIndex);
 
-    for (int solverNumber=0; solverNumber<static_cast<int>(solvers::RegisteredSolvers.size()); solverNumber++) {
-      auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
+      for (int solverNumber=0; solverNumber<static_cast<int>(solvers::RegisteredSolvers.size()); solverNumber++) {
+        auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
 
-      if ( performLocalRecomputation( solver ) ) {
-        switch ( solver->getType() ) {
-          case solvers::Solver::Type::ADERDG:
-            // do nothing
-            break;
-          case solvers::Solver::Type::LimitingADERDG:
-            static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->
-              sendDataToNeighbourBasedOnLimiterStatus(
-                toRank,solverNumber,cellInfo,src,dest,true, /* isRecomputation */x,level);
-            break;
-          case solvers::Solver::Type::FiniteVolumes:
-            // insert code here
-            break;
-          default:
-            assertionMsg(false,"Unrecognised solver type: "<<solvers::Solver::toString(solver->getType()));
-            logError("mergeWithBoundaryDataIfNotDoneYet(...)","Unrecognised solver type: "<<solvers::Solver::toString(solver->getType()));
-            std::abort();
-            break;
+        if ( performLocalRecomputation( solver ) ) {
+          switch ( solver->getType() ) {
+            case solvers::Solver::Type::ADERDG:
+              // do nothing
+              break;
+            case solvers::Solver::Type::LimitingADERDG:
+              static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->
+                sendDataToNeighbourBasedOnLimiterStatus(
+                  toRank,solverNumber,cellInfo,src,dest,true, /* isRecomputation */x,level);
+              break;
+            case solvers::Solver::Type::FiniteVolumes:
+              // insert code here
+              break;
+            default:
+              assertionMsg(false,"Unrecognised solver type: "<<solvers::Solver::toString(solver->getType()));
+              logError("mergeWithBoundaryDataIfNotDoneYet(...)","Unrecognised solver type: "<<solvers::Solver::toString(solver->getType()));
+              std::abort();
+              break;
+          }
         }
       }
     }

@@ -429,11 +429,8 @@ void exahype::mappings::PredictionOrLocalRecomputation::mergeWithNeighbour(
       vertex.hasToCommunicate(level)
   ) {
     for (unsigned int i = 2*(DIMENSIONS-1)*(DIMENSIONS); i-- > 0;) { // dest and src is swapped & order is swapped
-      const int srcScalar  = Vertex::pos2Scalar[i]; // pos2 is now src
-      const int destScalar = Vertex::pos1Scalar[i];
-
       if ( vertex.hasToReceiveMetadata(fromRank,srcScalar,destScalar,vertex.getAdjacentRanks()) ) {
-          mergeNeighourData(fromRank,srcScalar,destScalar,vertex.getCellDescriptionsIndex()[destScalar],fineGridX,level);
+          receiveNeighourDataLoopBody(fromRank,srcScalar,destScalar,vertex.getCellDescriptionsIndex()[destScalar],fineGridX,level);
         }
       }
     }
@@ -441,27 +438,30 @@ void exahype::mappings::PredictionOrLocalRecomputation::mergeWithNeighbour(
   logTraceOut( "mergeWithNeighbour(...)" );
 }
 
-void exahype::mappings::PredictionOrLocalRecomputation::mergeNeighourData(
+void exahype::mappings::PredictionOrLocalRecomputation::receiveNeighourDataLoopBody(
     const int                                    fromRank,
     const int                                    srcScalar,
     const int                                    destScalar,
-    const int                                    destCellDescriptionsIndex,
+    const exahype::Vertex&                       vertex,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const int                                    level) {
-  bool validIndex = destCellDescriptionsIndex >= 0;
-  assertion( !validIndex || exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(destCellDescriptionsIndex));
+  if ( vertex.hasToReceiveMetadata(fromRank,srcScalar,destScalar,vertex.getAdjacentRanks()) ) {
+    const int destCellDescriptionsIndex =
+    bool validIndex = destCellDescriptionsIndex >= 0;
+    assertion( !validIndex || exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(destCellDescriptionsIndex));
 
-  if ( validIndex ) {
-    const tarch::la::Vector<DIMENSIONS,int> src = Vertex::delineariseIndex2(srcScalar);
-    const tarch::la::Vector<DIMENSIONS,int> dest = Vertex::delineariseIndex2(destScalar);
-    solvers::Solver::CellInfo cellInfo(destCellDescriptionsIndex);
+    if ( validIndex ) {
+      const tarch::la::Vector<DIMENSIONS,int> src = Vertex::delineariseIndex2(srcScalar);
+      const tarch::la::Vector<DIMENSIONS,int> dest = Vertex::delineariseIndex2(destScalar);
+      solvers::Solver::CellInfo cellInfo(destCellDescriptionsIndex);
 
-    for(unsigned int solverNumber = solvers::RegisteredSolvers.size(); solverNumber-- > 0;) {
-      auto* solver = solvers::RegisteredSolvers[solverNumber];
-      if ( performLocalRecomputation( solver ) ) {
-        assertion1( solver->getType()==solvers::Solver::Type::LimitingADERDG, solver->toString() );
-        static_cast<solvers::LimitingADERDGSolver*>(solver)->
-            mergeWithNeighbourDataBasedOnLimiterStatus(fromRank,solverNumber,cellInfo,src,dest,true/*isRecomputation*/,x,level);
+      for(unsigned int solverNumber = solvers::RegisteredSolvers.size(); solverNumber-- > 0;) {
+        auto* solver = solvers::RegisteredSolvers[solverNumber];
+        if ( performLocalRecomputation( solver ) ) {
+          assertion1( solver->getType()==solvers::Solver::Type::LimitingADERDG, solver->toString() );
+          static_cast<solvers::LimitingADERDGSolver*>(solver)->
+              mergeWithNeighbourDataBasedOnLimiterStatus(fromRank,solverNumber,cellInfo,src,dest,true/*isRecomputation*/,x,level);
+        }
       }
     }
   }

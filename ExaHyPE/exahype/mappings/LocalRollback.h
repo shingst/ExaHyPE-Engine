@@ -68,11 +68,11 @@ private:
    * This information should be available on all ranks.
    * We ignore other solver types.
    */
-  static void sendDataToNeighbour(
+  static void sendDataToNeighbourLoopBody(
       const int                                    toRank,
       const int                                    srcScalar,
       const int                                    destScalar,
-      const int                                    srcCellDescriptionsIndex,
+      const exahype::Vertex&                       vertex,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level);
 #endif
