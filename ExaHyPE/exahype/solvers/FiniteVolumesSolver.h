@@ -110,10 +110,8 @@ private:
   MeshUpdateEvent _nextMeshUpdateEvent;
 
   /**
-   * Synchonises the cell description time stamps
-   * and time step sizes with the solver ones
-   * according to the time stepping mode that
-   * is switched on.
+   * Synchronises the cell description's time stepping data with
+   * the solver's time stepping data.
    */
   void synchroniseTimeStepping(CellDescription& cellDescription) const;
 
@@ -571,10 +569,6 @@ public:
 
   bool isPerformingPrediction(const exahype::State::AlgorithmSection& section) const override;
   bool isMergingMetadata(const exahype::State::AlgorithmSection& section) const override;
-
-  void synchroniseTimeStepping(
-          const int cellDescriptionsIndex,
-          const int element) const override;
 
   void startNewTimeStep() override;
 

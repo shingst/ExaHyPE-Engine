@@ -1424,17 +1424,6 @@ class exahype::solvers::Solver {
   virtual bool isMergingMetadata(const exahype::State::AlgorithmSection& section) const = 0;
 
   /**
-   * Copies the time stepping data from the global solver onto the patch's time
-   * meta data.
-   *
-   * \param[in] element Index of the cell description in
-   *                    the array at address \p cellDescriptionsIndex.
-   */
-  virtual void synchroniseTimeStepping(
-      const int cellDescriptionsIndex,
-      const int element) const = 0;
-
-  /**
    * This routine is called if we perform
    * a time step update
    */

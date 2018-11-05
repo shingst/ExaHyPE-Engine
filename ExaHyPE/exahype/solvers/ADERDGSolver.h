@@ -1576,21 +1576,9 @@ public:
 
   /**
    * Copies the time stepping data from the global solver onto the patch's time
-   * meta data.
+   * stepping data.
    */
-  void synchroniseTimeStepping(
-      CellDescription& p) const;
-
-  /**
-   * Copies the time stepping data from the global solver onto the patch's time
-   * meta data.
-   *
-   * \param[in] element Index of the cell description in
-   *                    the array at address \p cellDescriptionsIndex.
-   */
-  void synchroniseTimeStepping(
-      const int cellDescriptionsIndex,
-      const int element) const override;
+  void synchroniseTimeStepping(CellDescription& p) const;
 
   /**
    * \copydoc Solver::startNewTimeStep

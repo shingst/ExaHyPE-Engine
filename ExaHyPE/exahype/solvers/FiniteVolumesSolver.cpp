@@ -195,8 +195,7 @@ bool exahype::solvers::FiniteVolumesSolver::isMergingMetadata(
   return false;
 }
 
-void exahype::solvers::FiniteVolumesSolver::synchroniseTimeStepping(
-    CellDescription& cellDescription) const {
+void exahype::solvers::FiniteVolumesSolver::synchroniseTimeStepping(CellDescription& cellDescription) const {
   switch (_timeStepping) {
     case TimeStepping::Global:
       cellDescription.setPreviousTimeStepSize(_previousMinTimeStamp);
@@ -211,13 +210,6 @@ void exahype::solvers::FiniteVolumesSolver::synchroniseTimeStepping(
       cellDescription.setTimeStepSize(_minTimeStepSize);
       break;
   }
-}
-
-void exahype::solvers::FiniteVolumesSolver::synchroniseTimeStepping(
-    const int cellDescriptionsIndex,
-    const int element) const {
-  CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
-  synchroniseTimeStepping(cellDescription);
 }
 
 void exahype::solvers::FiniteVolumesSolver::startNewTimeStep() {

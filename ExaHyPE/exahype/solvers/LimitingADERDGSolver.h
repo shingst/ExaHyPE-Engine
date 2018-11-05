@@ -593,8 +593,7 @@ public:
    * @param limiterElement element index of the limiter patch allocated for
    *                       the solver patch, or NotFound if none has been allocated.
    */
-  void synchroniseTimeStepping(
-      SolverPatch& solverPatch,Solver::CellInfo& cellInfo) const;
+  void synchroniseTimeStepping(SolverPatch& solverPatch,Solver::CellInfo& cellInfo) const;
 
   /**
    * We always override the limiter time step

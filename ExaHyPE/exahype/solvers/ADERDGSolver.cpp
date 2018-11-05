@@ -683,12 +683,6 @@ void exahype::solvers::ADERDGSolver::synchroniseTimeStepping(
   }
 }
 
-void exahype::solvers::ADERDGSolver::synchroniseTimeStepping(
-      const int cellDescriptionsIndex,
-      const int element) const {
-  synchroniseTimeStepping(Heap::getInstance().getData(cellDescriptionsIndex)[element]);
-}
-
 void exahype::solvers::ADERDGSolver::startNewTimeStep() {
   switch (_timeStepping) {
     case TimeStepping::Global:

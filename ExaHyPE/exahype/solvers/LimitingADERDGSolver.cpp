@@ -481,7 +481,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
     const bool   isSkeletonJob,
     const bool   mustBeDoneImmediately,
     const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed) {
-  // synchroniseTimeStepping(cellDescriptionsIndex,element); // assumes this was done in neighbour merge
+  // synchroniseTimeStepping(cellDescriptionsIndex,cellInfo); // assumes this was done in neighbour merge
   updateSolution(solverPatch,cellInfo,neighbourMergePerformed,isFirstIterationOfBatch);
 
   UpdateResult result;
