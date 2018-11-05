@@ -395,7 +395,7 @@ void exahype::mappings::UpdateAndReduce::leaveCell(
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
 
       // plot if necessary
-      exahype::plotters::plotPatchIfAPlotterIsActive(solverNumber,cellInfo);
+      plotters::plotPatchIfAPlotterIsActive(solverNumber,cellInfo);
 
       solvers::Solver::UpdateResult result;
       switch ( solver->getType() ) {
@@ -420,7 +420,7 @@ void exahype::mappings::UpdateAndReduce::leaveCell(
       _maxLevels       [solverNumber] = std::max( fineGridVerticesEnumerator.getLevel(), _maxLevels       [solverNumber]);
     }
 
-    exahype::Cell::resetNeighbourMergeFlags(cellInfo,fineGridVertices,fineGridVerticesEnumerator);
+    Cell::resetNeighbourMergeFlags(cellInfo,fineGridVertices,fineGridVerticesEnumerator);
   }
   logTraceOutWith1Argument("leaveCell(...)", fineGridCell);
 }

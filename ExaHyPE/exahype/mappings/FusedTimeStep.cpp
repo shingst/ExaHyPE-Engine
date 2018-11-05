@@ -324,12 +324,9 @@ void exahype::mappings::FusedTimeStep::leaveCell(
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
 
       // this operates only on compute cells
-      exahype::plotters::plotPatchIfAPlotterIsActive(solverNumber,cellInfo); // TODO(Dominic) potential for IO overlap?
+      plotters::plotPatchIfAPlotterIsActive(solverNumber,cellInfo); // TODO(Dominic) potential for IO overlap?
 
-      exahype::solvers::Solver::UpdateResult result =
-          solver->fusedTimeStepOrRestrict(
-              solverNumber, cellInfo,_stateCopy.isFirstIterationOfBatchOrNoBatch(),isLastTimeStep,isAtRemoteBoundary);
-
+      solvers::Solver::UpdateResult result;
       switch ( solver->getType() ) {
         case solvers::Solver::Type::ADERDG:
           result = static_cast<solvers::ADERDGSolver*>(solver)->fusedTimeStepOrRestrict(
@@ -355,7 +352,7 @@ void exahype::mappings::FusedTimeStep::leaveCell(
     }
 
     // Must be performed for all cell descriptions
-    exahype::Cell::resetNeighbourMergeFlags(cellInfo,fineGridVertices,fineGridVerticesEnumerator);
+    Cell::resetNeighbourMergeFlags(cellInfo,fineGridVertices,fineGridVerticesEnumerator);
   }
 
   logTraceOutWith1Argument("leaveCell(...)", fineGridCell);
