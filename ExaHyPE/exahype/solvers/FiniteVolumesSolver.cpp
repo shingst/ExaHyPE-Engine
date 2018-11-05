@@ -764,7 +764,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::FiniteVolumesSolver::fu
           isFirstIterationOfBatch,isLastIterationOfBatch,isAtRemoteBoundary,false/*uncompressBefore*/);
     } else {
       cellDescription.setHasCompletedTimeStep(false);
-      FusedTimeStepJob fusedTimeStepJob( *this, cellDescription, cellInfo._cellDescriptionsIndex, isSkeletonCell );
+      peano::datatraversal::TaskSet( new FusedTimeStepJob( *this, cellDescription, cellInfo._cellDescriptionsIndex, isSkeletonCell ) );
       Solver::submitJob(fusedTimeStepJob,isSkeletonCell);
       return UpdateResult();
     }
@@ -804,13 +804,11 @@ void exahype::solvers::FiniteVolumesSolver::adjustSolutionDuringMeshRefinement(
   if ( element != NotFound ) {
     CellDescription& cellDescription = cellInfo._FiniteVolumesCellDescriptions[element];
     if ( exahype::solvers::Solver::SpawnAMRBackgroundJobs ) {
-      AdjustSolutionDuringMeshRefinementJob job(*this,cellDescription,isInitialMeshRefinement);
-      peano::datatraversal::TaskSet spawnedSet( job, peano::datatraversal::TaskSet::TaskType::Background  );
+      peano::datatraversal::TaskSet( new AdjustSolutionDuringMeshRefinementJob(*this,cellDescription,isInitialMeshRefinement) );
     } else {
       adjustSolutionDuringMeshRefinementBody(cellDescription,isInitialMeshRefinement);
     }
   }
-
 }
 
 void exahype::solvers::FiniteVolumesSolver::updateSolution(
@@ -1950,8 +1948,7 @@ void exahype::solvers::FiniteVolumesSolver::compress(CellDescription& cellDescri
       cellDescription.setCompressionState(CellDescription::CurrentlyProcessed);
 
       int& jobCounter = (isSkeletonCell) ? NumberOfSkeletonJobs: NumberOfEnclaveJobs;
-      CompressionJob compressionJob( *this, cellDescription, jobCounter );
-      peano::datatraversal::TaskSet spawnedSet( compressionJob,peano::datatraversal::TaskSet::TaskType::Background );
+      peano::datatraversal::TaskSet spawned( new CompressionJob( *this, cellDescription, jobCounter ));
     }
     else {
       determineUnknownAverages(cellDescription);
@@ -2085,6 +2082,7 @@ exahype::solvers::FiniteVolumesSolver::CompressionJob::CompressionJob(
   CellDescription&           cellDescription,
   const bool                 isSkeletonJob)
   :
+  tarch::multicore::jobs::Job(Solver::getTaskType(isSkeletonJob),0),
   _solver(solver),
   _cellDescription(cellDescription),
   _isSkeletonJob(isSkeletonJob) {
@@ -2097,7 +2095,7 @@ exahype::solvers::FiniteVolumesSolver::CompressionJob::CompressionJob(
 }
 
 
-bool exahype::solvers::FiniteVolumesSolver::CompressionJob::operator()() {
+bool exahype::solvers::FiniteVolumesSolver::CompressionJob::run() {
   _solver.determineUnknownAverages(_cellDescription);
   _solver.computeHierarchicalTransform(_cellDescription,-1.0);
   _solver.putUnknownsIntoByteStream(_cellDescription);
@@ -2120,6 +2118,7 @@ exahype::solvers::FiniteVolumesSolver::FusedTimeStepJob::FusedTimeStepJob(
   CellDescription&         cellDescription,
   const int                cellDescriptionsIndex,
   const bool               isSkeletonJob):
+  tarch::multicore::jobs::Job(Solver::getTaskType(isSkeletonJob),0),
   _solver(solver),
   _cellDescription(cellDescription),
   _cellDescriptionsIndex(cellDescriptionsIndex),
@@ -2132,7 +2131,7 @@ exahype::solvers::FiniteVolumesSolver::FusedTimeStepJob::FusedTimeStepJob(
   lock.free();
 }
 
-bool exahype::solvers::FiniteVolumesSolver::FusedTimeStepJob::operator()() {
+bool exahype::solvers::FiniteVolumesSolver::FusedTimeStepJob::run() {
   _solver.updateBody(_cellDescription,_cellDescriptionsIndex,false,false,_isSkeletonJob,false/*uncompressBefore*/);
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
   {
@@ -2150,6 +2149,7 @@ exahype::solvers::FiniteVolumesSolver::AdjustSolutionDuringMeshRefinementJob::Ad
   FiniteVolumesSolver& solver,
   CellDescription&     cellDescription,
   const bool           isInitialMeshRefinement):
+  tarch::multicore::jobs::Job(Solver::getTaskType(false),0),
   _solver(solver),
   _cellDescription(cellDescription),
   _isInitialMeshRefinement(isInitialMeshRefinement)
@@ -2161,7 +2161,7 @@ exahype::solvers::FiniteVolumesSolver::AdjustSolutionDuringMeshRefinementJob::Ad
   lock.free();
 }
 
-bool exahype::solvers::FiniteVolumesSolver::AdjustSolutionDuringMeshRefinementJob::operator()() {
+bool exahype::solvers::FiniteVolumesSolver::AdjustSolutionDuringMeshRefinementJob::run() {
   _solver.adjustSolutionDuringMeshRefinementBody(_cellDescription,_isInitialMeshRefinement);
 
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);

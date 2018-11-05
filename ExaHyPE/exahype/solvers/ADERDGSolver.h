@@ -915,7 +915,7 @@ private:
    */
   void pullUnknownsFromByteStream(CellDescription& cellDescription) const;
 
-  class CompressionJob {
+  class CompressionJob: public tarch::multicore::jobs::Job {
     private:
       const ADERDGSolver& _solver;
       CellDescription&    _cellDescription;
@@ -926,14 +926,14 @@ private:
         CellDescription&    cellDescription,
         const bool          isSkeletonJob);
 
-      bool operator()();
+      bool run() override;
   };
 
   /**
    * A job which performs the prediction and volume integral operations
    * for a cell description.
    */
-  class PredictionJob {
+  class PredictionJob: public tarch::multicore::jobs::Job {
     private:
       ADERDGSolver&    _solver; // not const because of kernels
       CellDescription& _cellDescription;
@@ -954,14 +954,16 @@ private:
           const bool        uncompressBefore,
           const bool        isAtRemoteBoundary);
 
-      bool operator()();
+      bool run() override;
+
+//      void prefetchData() override;
   };
 
   /**
    * A job which performs prolongation operation
    * for a cell description.
    */
-  class ProlongationJob {
+  class ProlongationJob: public tarch::multicore::jobs::Job {
     private:
       ADERDGSolver&                            _solver; // not const because of kernels
       CellDescription&                         _cellDescription;
@@ -974,7 +976,7 @@ private:
           const CellDescription&                   parentCellDescription,
           const tarch::la::Vector<DIMENSIONS,int>& subcellIndex);
 
-      bool operator()();
+      bool run() override;
   };
 
   /**
@@ -988,7 +990,7 @@ private:
    * TODO(Dominic): Minimise time step sizes and refinement requests per patch
    * (->transpose the typical minimisation order)
    */
-  class FusedTimeStepJob {
+  class FusedTimeStepJob: public tarch::multicore::jobs::Job {
     private:
       ADERDGSolver&                                              _solver; // TODO not const because of kernels
       CellDescription&                                           _cellDescription;
@@ -1004,13 +1006,13 @@ private:
         const int                                                  element,
         const bool                                                 isSkeletonJob);
 
-      bool operator()();
+      bool run() override;
   };
 
   /**
    * A job that calls adjustSolutionDuringMeshRefinementBody(...).
    */
-  class AdjustSolutionDuringMeshRefinementJob {
+  class AdjustSolutionDuringMeshRefinementJob: public tarch::multicore::jobs::Job {
   private:
     ADERDGSolver&    _solver;
     CellDescription& _cellDescription;
@@ -1021,7 +1023,7 @@ private:
         CellDescription& cellDescription,
         const bool       isInitialMeshRefinement);
 
-    bool operator()();
+    bool run() override;
   };
 
 public:

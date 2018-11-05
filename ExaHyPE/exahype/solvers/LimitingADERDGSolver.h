@@ -469,7 +469,7 @@ private:
    * TODO(Dominic): Minimise time step sizes and refinement requests per patch
    * (->transpose the typical minimisation order)
    */
-  class FusedTimeStepJob {
+  class FusedTimeStepJob: public tarch::multicore::jobs::Job {
   private:
     LimitingADERDGSolver&                                     _solver;
     SolverPatch&                                              _solverPatch;
@@ -483,13 +483,13 @@ private:
         CellInfo&             cellInfo,
         const bool            isSkeletonJob);
 
-    bool operator()();
+    bool run() override;
   };
 
   /**
    * A job that calls Solver::adjustSolutionDuringMeshRefinementBody(...).
    */
-  class AdjustSolutionDuringMeshRefinementJob {
+  class AdjustSolutionDuringMeshRefinementJob: public tarch::multicore::jobs::Job {
   private:
     LimitingADERDGSolver& _solver;
     SolverPatch&          _solverPatch;
@@ -502,7 +502,7 @@ private:
         CellInfo&             cellInfo,
         const bool            isInitialMeshRefinement);
 
-    bool operator()();
+    bool run() override;
   };
 
 public:
