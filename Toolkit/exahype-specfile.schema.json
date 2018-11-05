@@ -675,7 +675,7 @@
               "scheme" : {
                 "type" : "string", 
                 "title" : "The underlying FV solver scheme", 
-                "enum" : ["musclhancock","godunov"],
+                "enum" : ["musclhancock","godunov","robustmusclhancock"],
                 "default" : "godunov"
               }
             }
