@@ -1069,7 +1069,7 @@ void exahype::solvers::LimitingADERDGSolver::recomputeSolution(
 
   if (
       fineGridCellWithFVPatch &&
-      solverPatch.getRefinementStatus()>=_solver->getMinimumRefinementStatusForActiveFVPatch
+      solverPatch.getRefinementStatus()>=_solver->getMinimumRefinementStatusForActiveFVPatch()
   ) { // these guys are recomputing with the limiter
     LimiterPatch& limiterPatch = getLimiterPatch(solverPatch,cellInfo);
 
