@@ -2665,6 +2665,26 @@ void exahype::solvers::ADERDGSolver::swapSolutionAndPreviousSolution(CellDescrip
   cellDescription.setSolution(previousSolution);
 }
 
+void exahype::solvers::ADERDGSolver::prolongateObservablesMinAndMax(
+    const CellDescription& cellDescription,
+    const CellDescription& parentCellDescription) const {
+  const int numberOfObservables = getDMPObservables();
+  for (int faceIndex = 0; faceIndex < DIMENSIONS_TIMES_TWO; ++faceIndex) {
+    const int direction = faceIndex/2;
+    if ( cellDescription.getFacewiseCommunicationStatus(faceIndex)==CellCommunicationStatus ) { // TODO(Dominic): If the grid changes dynamically during the time steps,
+      // fine
+      double* minFine = static_cast<double*>(cellDescription.getSolutionMin()) + numberOfObservables * faceIndex;
+      double* maxFine = static_cast<double*>(cellDescription.getSolutionMax()) + numberOfObservables * faceIndex;
+      // coarse
+      const double* minCoarse = static_cast<double*>(parentCellDescription.getSolutionMin()) +  numberOfObservables * faceIndex;
+      const double* maxCoarse = static_cast<double*>(parentCellDescription.getSolutionMax()) +  numberOfObservables * faceIndex;
+
+      std::copy_n( minCoarse,numberOfObservables, minFine );
+      std::copy_n( maxCoarse,numberOfObservables, maxFine );
+    }
+  }
+}
+
 void exahype::solvers::ADERDGSolver::prolongateFaceDataToDescendant(
     CellDescription& cellDescription,
     const CellDescription& parentCellDescription,
@@ -2682,9 +2702,7 @@ void exahype::solvers::ADERDGSolver::prolongateFaceDataToDescendant(
 
   for (int faceIndex = 0; faceIndex < DIMENSIONS_TIMES_TWO; ++faceIndex) {
     const int direction = faceIndex/2;
-    // Check if cell is at "left" or "right" d face of parent
     if ( cellDescription.getFacewiseCommunicationStatus(faceIndex)==CellCommunicationStatus ) { // TODO(Dominic): If the grid changes dynamically during the time steps,
-      // we have to use the sufficient condition in order to be prepared.
       assertion( exahype::amr::faceIsOnBoundaryOfParent(faceIndex,subcellIndex,levelFine-levelCoarse) ); // necessary but not sufficient
 
       logDebug("prolongateFaceDataToDescendant(...)","cell=" << cellDescription.getOffset() <<
@@ -2716,30 +2734,14 @@ void exahype::solvers::ADERDGSolver::prolongateFaceDataToDescendant(
       // time step data TODO(LTS), still need veto
       cellDescription.setPredictorTimeStamp(parentCellDescription.getPredictorTimeStamp());
       cellDescription.setPredictorTimeStepSize(parentCellDescription.getPredictorTimeStepSize());
-
-      prolongateObservablesMinAndMax(cellDescription,parentCellDescription,faceIndex);
     }
   }
 
-  cellDescription.setHasCompletedTimeStep(true);
-}
-
-void exahype::solvers::ADERDGSolver::prolongateObservablesMinAndMax(
-    const CellDescription& cellDescription,
-    const CellDescription& parentCellDescription,
-    const int faceIndex) const {
-  const int numberOfObservables = getDMPObservables();
-  if (numberOfObservables>0) {
-    // fine
-    double* minFine = static_cast<double*>(cellDescription.getSolutionMin()) + numberOfObservables * faceIndex;
-    double* maxFine = static_cast<double*>(cellDescription.getSolutionMax()) + numberOfObservables * faceIndex;
-    // coarse
-    const double* minCoarse = static_cast<double*>(parentCellDescription.getSolutionMin()) +  numberOfObservables * faceIndex;
-    const double* maxCoarse = static_cast<double*>(parentCellDescription.getSolutionMax()) +  numberOfObservables * faceIndex;
-
-    std::copy_n( minCoarse,numberOfObservables, minFine );
-    std::copy_n( maxCoarse,numberOfObservables, maxFine );
+  if ( getDMPObservables()>0 ) {
+    prolongateObservablesMinAndMax(cellDescription,parentCellDescription);
   }
+
+  cellDescription.setHasCompletedTimeStep(true);
 }
 
 void exahype::solvers::ADERDGSolver::prolongateFaceData(
@@ -2801,19 +2803,44 @@ void exahype::solvers::ADERDGSolver::prolongateFaceData(
   }
 }
 
+void exahype::solvers::ADERDGSolver::restrictObservablesMinAndMax(
+    const CellDescription& cellDescription,
+    const CellDescription& parentCellDescription) const {
+  const int numberOfObservables = getDMPObservables();
+  for (int faceIndex=0; faceIndex<DIMENSIONS_TIMES_TWO; faceIndex++) {
+    const int direction   = faceIndex / 2;
+    if ( cellDescription.getFacewiseCommunicationStatus(faceIndex)==CellCommunicationStatus ) {
+      // fine
+      const double* minFine = static_cast<double*>(cellDescription.getSolutionMin()) + numberOfObservables* faceIndex;
+      const double* maxFine = static_cast<double*>(cellDescription.getSolutionMax()) + numberOfObservables* faceIndex;
+      // coarse
+      double* minCoarse = static_cast<double*>(parentCellDescription.getSolutionMin()) + numberOfObservables * faceIndex;
+      double* maxCoarse = static_cast<double*>(parentCellDescription.getSolutionMax()) + numberOfObservables * faceIndex;
+
+      tarch::multicore::Lock lock(RestrictionSemaphore);
+      for (int i=0; i<numberOfObservables; i++) {
+        *(minCoarse+i) = std::min( *(minFine+i), *(minCoarse+i) );
+        *(maxCoarse+i) = std::max( *(maxFine+i), *(maxCoarse+i) );
+      }
+      lock.free();
+    }
+  }
+}
+
 void exahype::solvers::ADERDGSolver::restrictToTopMostParent(const CellDescription& cellDescription) {
+  // validate and obtain parent
   assertion1( cellDescription.getType()==CellDescription::Type::Descendant &&
               cellDescription.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication, cellDescription.toString() );
-
   assertion1( tryGetElement(cellDescription.getParentIndex(),cellDescription.getSolverNumber()) != NotFound, cellDescription.toString());
   exahype::solvers::Solver::SubcellPosition subcellPosition =
       exahype::amr::computeSubcellPositionOfDescendant<CellDescription,Heap,true>(cellDescription);
   assertion1(subcellPosition.parentElement!=exahype::solvers::Solver::NotFound,cellDescription.toString());
+
   CellDescription& parentCellDescription =
       getCellDescription(subcellPosition.parentCellDescriptionsIndex,subcellPosition.parentElement);
+
   assertion(parentCellDescription.getSolverNumber()==cellDescription.getSolverNumber());
-  assertion1(cellDescription.getType()==CellDescription::Type::Descendant &&
-             parentCellDescription.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication,
+  assertion1(cellDescription.getType()==CellDescription::Type::Descendant && parentCellDescription.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication,
              cellDescription.toString());
   #ifdef Parallel
   assertion1(parentCellDescription.getType()==CellDescription::Type::Cell ||
@@ -2825,14 +2852,9 @@ void exahype::solvers::ADERDGSolver::restrictToTopMostParent(const CellDescripti
              parentCellDescription.toString());
   #endif
 
-  double* updateFine   = static_cast<double*>(cellDescription.getUpdate()); // TODO(Dominic): Can be temporary
-  double* updateCoarse = static_cast<double*>(parentCellDescription.getUpdate());
 
-  //
-  // Perform the face integrals
-  //
-  // determine position w.r.t. to parent
-  const int numberOfObservables = getDMPObservables();
+  // Perform the face integrals on fine grid cell
+  double* updateFine   = static_cast<double*>(cellDescription.getUpdate()); // TODO(Dominic): Can be temporary
   const int levelDelta = cellDescription.getLevel() - parentCellDescription.getLevel();
   const tarch::la::Vector<DIMENSIONS,int> subcellIndex =
       exahype::amr::computeSubcellIndex(
@@ -2849,8 +2871,7 @@ void exahype::solvers::ADERDGSolver::restrictToTopMostParent(const CellDescripti
       assertion1(exahype::amr::faceIsOnBoundaryOfParent(faceIndex,subcellIndex,levelDelta),cellDescription.toString());
       assertion1(cellDescription.getNeighbourMergePerformed(faceIndex),cellDescription.toString());// necessary but not sufficient
 
-      const double* const lFhbnd = static_cast<double*>(cellDescription.getFluctuation()) + dofsPerFace * faceIndex; // TODO(Dominic ): Obtain array pointer only once
-
+      const double* const lFhbnd = static_cast<double*>(cellDescription.getFluctuation()) + dofsPerFace * faceIndex;
       faceIntegral(updateFine,lFhbnd,direction,orientation,subfaceIndex,levelDelta,cellDescription.getSize());
 
       logDebug("restrictToTopMostParent(...)","cell=" << cellDescription.getOffset() <<
@@ -2860,44 +2881,25 @@ void exahype::solvers::ADERDGSolver::restrictToTopMostParent(const CellDescripti
              " to " <<
              " parentCell="<<parentCellDescription.getOffset()<<
              " level="<<parentCellDescription.getLevel());
-
-      if ( numberOfObservables>0 ) {
-        restrictObservablesMinAndMax(parentCellDescription,cellDescription,faceIndex);
-      }
     }
   }
 
   // Add child contributions to parent
+  double* updateCoarse = static_cast<double*>(parentCellDescription.getUpdate());
   tarch::multicore::Lock lock(RestrictionSemaphore);
   for (int i = 0; i < getUpdateSize(); ++i) {
       updateCoarse[i] += updateFine[i];
   }
   lock.free();
   std::fill_n(updateFine,getUpdateSize(),0.0);
+
+  if ( getDMPObservables()>0 ) {
+    restrictObservablesMinAndMax(cellDescription,parentCellDescription);
+  }
 }
 
 void exahype::solvers::ADERDGSolver::disableCheckForNaNs() {
   _checkForNaNs = false;
-}
-
-void exahype::solvers::ADERDGSolver::restrictObservablesMinAndMax(
-    const CellDescription& cellDescription,
-    const CellDescription& parentCellDescription,
-    const int faceIndex) const {
-  const int numberOfObservables = getDMPObservables();
-  // fine
-  const double* minFine = static_cast<double*>(cellDescription.getSolutionMin()) + numberOfObservables* faceIndex;
-  const double* maxFine = static_cast<double*>(cellDescription.getSolutionMax()) + numberOfObservables* faceIndex;
-  // coarse
-  double* minCoarse = static_cast<double*>(parentCellDescription.getSolutionMin()) + numberOfObservables * faceIndex;
-  double* maxCoarse = static_cast<double*>(parentCellDescription.getSolutionMax()) + numberOfObservables * faceIndex;
-
-  tarch::multicore::Lock lock(RestrictionSemaphore);
-  for (int i=0; i<numberOfObservables; i++) {
-    *(minCoarse+i) = std::min( *(minFine+i), *(minCoarse+i) );
-    *(maxCoarse+i) = std::max( *(maxFine+i), *(maxCoarse+i) );
-  }
-  lock.free();
 }
 
 ///////////////////////////////////

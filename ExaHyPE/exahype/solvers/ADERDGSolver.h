@@ -685,8 +685,7 @@ private:
    */
   void restrictObservablesMinAndMax(
       const CellDescription& cellDescription,
-      const CellDescription& parentCellDescription,
-      const int faceIndex) const;
+      const CellDescription& parentCellDescription) const;
 
   /**
    * Determine if the cell description of type
@@ -706,8 +705,7 @@ private:
    */
   void prolongateObservablesMinAndMax(
       const CellDescription& cellDescription,
-      const CellDescription& cellDescriptionParent,
-      const int faceIndex) const;
+      const CellDescription& cellDescriptionParent) const;
 
   /**
    * Solve the Riemann problem at the interface between two cells ("left" and

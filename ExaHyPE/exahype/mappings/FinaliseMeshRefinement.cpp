@@ -156,20 +156,23 @@ void exahype::mappings::FinaliseMeshRefinement::enterCell(
       if ( solver->hasRequestedMeshRefinement() ) {
         solver->finaliseStateUpdates(solverNumber,cellInfo);
       }
+
       if ( solver->getMeshUpdateEvent()==exahype::solvers::Solver::MeshUpdateEvent::RefinementRequested ) { // is not the same as the above check
         solver->rollbackSolutionGlobally(solverNumber,cellInfo,exahype::solvers::Solver::FuseADERDGPhases);
       }
-      // compute a new time step size
-      double admissibleTimeStepSize =
-          solver->updateTimeStepSizes(solverNumber,cellInfo,exahype::solvers::Solver::FuseADERDGPhases);
-      _minTimeStepSizes[solverNumber] = std::min(admissibleTimeStepSize, _minTimeStepSizes[solverNumber]);
-      _maxLevels[solverNumber]        = std::max(fineGridVerticesEnumerator.getLevel(),_maxLevels[solverNumber]);
 
-      // determine min and max for LimitingADERDGSolver
-      if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
-        auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
-        limitingADERDGSolver->determineMinAndMax(solverNumber,cellInfo);
-        assertion(limitingADERDGSolver->getMeshUpdateEvent()!=exahype::solvers::Solver::MeshUpdateEvent::IrregularLimiterDomainChange);
+      if ( solver->hasRequestedMeshRefinement() ) {
+        // compute a new time step size
+        double admissibleTimeStepSize = solver->updateTimeStepSizes(solverNumber,cellInfo,exahype::solvers::Solver::FuseADERDGPhases);
+        _minTimeStepSizes[solverNumber] = std::min(admissibleTimeStepSize, _minTimeStepSizes[solverNumber]);
+        _maxLevels[solverNumber]        = std::max(fineGridVerticesEnumerator.getLevel(),_maxLevels[solverNumber]);
+
+        // determine min and max for LimitingADERDGSolver
+        if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
+          auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
+          limitingADERDGSolver->determineMinAndMax(solverNumber,cellInfo);
+          assertion(limitingADERDGSolver->getMeshUpdateEvent()!=exahype::solvers::Solver::MeshUpdateEvent::IrregularLimiterDomainChange);
+        }
       }
     }
 
