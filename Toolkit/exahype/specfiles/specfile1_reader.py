@@ -478,7 +478,7 @@ class SpecFile1Reader():
                 if "optimisation" in solver:
                     fv_kernel_opts    = solver.pop("optimisation")
            
-            if solver["type"]=="Limiting-ADER-DG" or
+            if solver["type"]=="Limiting-ADER-DG" or\
                solver["type"]=="Finite-Volumes":
                 # fv type
                 fv_schemes = ["godunov","musclhancock","robustmusclhancock"]
