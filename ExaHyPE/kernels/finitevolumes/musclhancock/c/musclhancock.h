@@ -51,7 +51,8 @@ namespace c {
    *   and set to zero, or (ii) they are reconstructed based on only
    *   2 out of 3 cells which means they are not limited.
    *
-   *   The implementation follows approach (ii).
+   *   If robustDiagonalLimiting=false, the implementation follows approach (i).
+   *   If robustDiagonalLimiting=false, the implementation follows approach (ii).
    *
    *   Discussion:
    *
@@ -83,7 +84,7 @@ namespace c {
    * @param dt      the used time step size
    * @return the actual admissible time step size obtained from the Riemann solves.
    */
-  template <bool useSource, bool useNCP, bool useFlux, class SolverType>
+  template <bool useSource, bool useNCP, bool useFlux, bool robustDiagonalLimiting, typename SolverType>
   double solutionUpdate(
       SolverType& solver,double* luh_new, const double* luh,
       const tarch::la::Vector<DIMENSIONS, double>& dx,double dt);

@@ -46,7 +46,7 @@ inline double kernels::finitevolumes::musclhancock::c::minmod(double a, double b
  * new solution.
  * Finally add the source terms.
  */
-template <bool useSource, bool useNCP, bool useFlux, typename SolverType>
+template <bool useSource, bool useNCP, bool useFlux, bool robustDiagonalLimiting, typename SolverType>
 double kernels::finitevolumes::musclhancock::c::solutionUpdate(
     SolverType& solver,
     double* luh_new, const double* luh,
@@ -75,10 +75,8 @@ double kernels::finitevolumes::musclhancock::c::solutionUpdate(
 
   // This musclhancock does not yet use 2. ghostlayer.
   // slopex
-//  for(int i = patchBegin; i < patchEnd; i++) { // z // TODO previous
-//    for (int j = patchBegin; j < patchEnd; j++) { // y
   for(int i = patchBegin-1; i < patchEnd+1; i++) { // z
-    for (int j = patchBegin-1; j < patchEnd+1; j++) { // y TODO new
+    for (int j = patchBegin-1; j < patchEnd+1; j++) { // y 
       for (int k = patchBegin-1; k < patchEnd+1; k++) { // x
         for (int l = 0; l < numberOfVariables; l++) {
           slope[idx_slope(i, j, k, 0, l)] =
@@ -89,11 +87,9 @@ double kernels::finitevolumes::musclhancock::c::solutionUpdate(
     }
   }
   // slopey
-//  for(int i = patchBegin; i < patchEnd; i++) { // z // TODO previous
-  for(int i = patchBegin-1; i < patchEnd+1; i++) { // z TODO new
+  for(int i = patchBegin-1; i < patchEnd+1; i++) { // z 
     for (int j = patchBegin-1; j < patchEnd+1; j++) { // y
-//      for (int k = patchBegin; k < patchEnd; k++) { // x / TODO previous
-      for (int k = patchBegin-1; k < patchEnd+1; k++) { // x TODO new
+      for (int k = patchBegin-1; k < patchEnd+1; k++) { // x
         for (int l = 0; l < numberOfVariables; l++) {
           slope[idx_slope(i, j, k, 1, l)] = 
               minmod(luh[idx(i, j + 1, k, l)] - luh[idx(i, j, k, l)],
@@ -106,14 +102,58 @@ double kernels::finitevolumes::musclhancock::c::solutionUpdate(
   for(int i = patchBegin-1; i < patchEnd+1; i++) { // z
     for (int j = patchBegin-1; j < patchEnd+1; j++) { // y x TODO new
       for (int k = patchBegin-1; k < patchEnd+1; k++) { // x TODO new
-//    for (int j = patchBegin; j < patchEnd; j++) { // y TODO previous
-//      for (int k = patchBegin; k < patchEnd; k++) { // x TODO previous
         for (int l = 0; l < numberOfVariables; l++) {
           slope[idx_slope(i, j, k, 2, l)] = 
               minmod(luh[idx(i + 1, j, k, l)] - luh[idx(i, j, k, l)],
                   luh[idx(i, j, k, l)] - luh[idx(i -1, j, k, l)]) * invCellSize[2];
         }
       }
+    }
+  }
+  
+  // TODO(JM): Please optimise
+  if ( robustDiagonalLimiting ) {
+    // Zero the first ghost layer cell slopes where one neighbour datum is missing
+    //
+    // Derivation: Go to the begin or end of a patch in x-direction: x \in \{patchBegin,patchEnd-1\}.
+    // In y-direction, go before the begin or after the end of the patch: y \in \{patchBegin-1,patchEnd\}.
+    // The respective solution datum is given from a face neighbour. However, a datum in x-direction right
+    // beside its position was not obtained from a diagonal neighbour.
+    // At the boundary between face neighbour and diagonal neighbour, the x-slope cannot
+    // be computed. Slope limiting is not possible. The slope is set to zero.
+    for( int i = patchBegin-1; i < patchEnd+1; i++ ) {  
+      // z-slope<-0 (z       y       x          slope var)                              
+      std::fill_n(&slope[idx_slope(patchBegin, patchBegin-1, i, 2, 0)],numberOfVariables,0.0);
+      std::fill_n(&slope[idx_slope(patchBegin, patchEnd    , i, 2, 0)],numberOfVariables,0.0);
+      std::fill_n(&slope[idx_slope(patchEnd-1, patchBegin-1, i, 2, 0)],numberOfVariables,0.0);
+      std::fill_n(&slope[idx_slope(patchEnd-1, patchEnd    , i, 2, 0)],numberOfVariables,0.0);
+    
+      std::fill_n(&slope[idx_slope(patchBegin, i, patchBegin-1, 2, 0)],numberOfVariables,0.0);
+      std::fill_n(&slope[idx_slope(patchBegin, i, patchEnd    , 2, 0)],numberOfVariables,0.0);
+      std::fill_n(&slope[idx_slope(patchEnd-1, i, patchBegin-1, 2, 0)],numberOfVariables,0.0);
+      std::fill_n(&slope[idx_slope(patchEnd-1, i, patchEnd    , 2, 0)],numberOfVariables,0.0);
+      
+      // y-slope<-0  (z       y       x slope var)
+      std::fill_n(&slope[idx_slope(patchBegin-1, patchBegin, i, 1, 0)],numberOfVariables,0.0);
+      std::fill_n(&slope[idx_slope(patchEnd,     patchBegin, i, 1, 0)],numberOfVariables,0.0);
+      std::fill_n(&slope[idx_slope(patchBegin-1, patchEnd-1, i, 1, 0)],numberOfVariables,0.0);
+      std::fill_n(&slope[idx_slope(patchEnd,     patchEnd-1, i, 1, 0)],numberOfVariables,0.0);
+      
+      std::fill_n(&slope[idx_slope(i, patchBegin, patchBegin-1, 1, 0)],numberOfVariables,0.0);
+      std::fill_n(&slope[idx_slope(i, patchBegin, patchEnd,     1, 0)],numberOfVariables,0.0);
+      std::fill_n(&slope[idx_slope(i, patchEnd-1, patchBegin-1, 1, 0)],numberOfVariables,0.0);
+      std::fill_n(&slope[idx_slope(i, patchEnd-1, patchEnd,     1, 0)],numberOfVariables,0.0);
+      
+      // x-slope<-0 (z       y       x slope var)   
+      std::fill_n(&slope[idx_slope(i, patchBegin-1, patchBegin, 0, 0)],numberOfVariables,0.0);
+      std::fill_n(&slope[idx_slope(i, patchEnd    , patchBegin, 0, 0)],numberOfVariables,0.0);
+      std::fill_n(&slope[idx_slope(i, patchBegin-1, patchEnd-1, 0, 0)],numberOfVariables,0.0);
+      std::fill_n(&slope[idx_slope(i, patchEnd    , patchEnd-1, 0, 0)],numberOfVariables,0.0);
+  
+      std::fill_n(&slope[idx_slope(patchBegin-1, i, patchBegin, 0, 0)],numberOfVariables,0.0);
+      std::fill_n(&slope[idx_slope(patchEnd    , i, patchBegin, 0, 0)],numberOfVariables,0.0);
+      std::fill_n(&slope[idx_slope(patchBegin-1, i, patchEnd-1, 0, 0)],numberOfVariables,0.0);
+      std::fill_n(&slope[idx_slope(patchEnd    , i, patchEnd-1, 0, 0)],numberOfVariables,0.0);
     }
   }
 
