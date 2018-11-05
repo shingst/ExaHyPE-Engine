@@ -2799,7 +2799,7 @@ void exahype::solvers::ADERDGSolver::prolongateFaceData(
 
       waitUntilCompletedTimeStep<CellDescription>(parentCellDescription,true,false); // TODO(Dominic): We wait for skeleton jobs here. It might make sense to receiveDanglingMessages here too
       cellDescription.setHasCompletedTimeStep(false); // done here in order to skip lookup of cell description in job constructor
-      ProlongationJob prolongationJob( *this, cellDescription, parentCellDescription, subcellPosition.subcellIndex);
+      peano::datatraversal::TaskSet spawn( new ProlongationJob(*this,cellDescription,parentCellDescription,subcellPosition.subcellIndex) );
     }
   }
   assertion2(
