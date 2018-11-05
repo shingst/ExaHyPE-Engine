@@ -186,7 +186,7 @@ private:
   void putUnknownsIntoByteStream(CellDescription& cellDescription) const;
   void uncompress(CellDescription& cellDescription) const;
 
-  class CompressionJob {
+  class CompressionJob: public tarch::multicore::jobs::Job {
     private:
       const FiniteVolumesSolver& _solver;
       CellDescription&           _cellDescription;
@@ -197,7 +197,7 @@ private:
         CellDescription&           cellDescription,
         const bool                 isSkeletonJob);
 
-      bool operator()();
+      bool run() override;
   };
 
   /**
@@ -209,7 +209,7 @@ private:
    * do not plan to reduce the admissible time step size or refinement requests
    * within a consequent reduction step.
    */
-  class FusedTimeStepJob {
+  class FusedTimeStepJob: public tarch::multicore::jobs::Job {
   private:
     FiniteVolumesSolver&  _solver;
     const int             _cellDescriptionsIndex;
@@ -223,13 +223,13 @@ private:
         const bool           isSkeletonJob
     );
 
-    bool operator()();
+    bool run() override;
   };
 
   /**
    * A job that calls adjustSolutionDuringMeshRefinementBody(...).
    */
-  class AdjustSolutionDuringMeshRefinementJob {
+  class AdjustSolutionDuringMeshRefinementJob: public tarch::multicore::jobs::Job {
   private:
     FiniteVolumesSolver& _solver;
     CellDescription&     _cellDescription;
@@ -240,7 +240,7 @@ private:
         CellDescription&     cellDescription,
         const bool           isInitialMeshRefinement);
 
-    bool operator()();
+    bool run() override;
   };
 
 public:

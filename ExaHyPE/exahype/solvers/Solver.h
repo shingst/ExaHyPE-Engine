@@ -1022,17 +1022,20 @@ class exahype::solvers::Solver {
  /**
   * Submit a Prediction- or FusedTimeStepJob.
   *
-  * \param[in] function the job
-  * \param[in[ isSkeletonJob the class of this job.
+  * \param[in] isSkeletonJob is is a skeleton job?
   */
- template <typename Job>
- static void submitJob(Job& job,const bool isSkeletonJob) {
+ static tarch::multicore::jobs::JobType getTaskType(bool isSkeletonJob) {
+    return isSkeletonJob ? tarch::multicore::jobs::JobType::RunTaskAsSoonAsPossible : tarch::multicore::jobs::JobType::BackgroundTask;
+ }
+/*
+ static void submitJob(tarch::multicore::jobs::Job* job,const bool isSkeletonJob) {
    if ( isSkeletonJob ) {
      peano::datatraversal::TaskSet spawnedSet( job, peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible  );
    } else {
      peano::datatraversal::TaskSet spawnedSet( job, peano::datatraversal::TaskSet::TaskType::Background  );
    }
  }
+*/
 
  protected:
 

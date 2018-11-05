@@ -2150,12 +2150,11 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
     cellDescription.setHasCompletedTimeStep(true);
   } else {
     cellDescription.setHasCompletedTimeStep(false);
-    PredictionJob predictionJob(
+    peano::datatraversal::TaskSet( new PredictionJob(
         *this, cellDescriptionsIndex, element,
         cellDescription.getCorrectorTimeStamp(),  // corrector time step data is correct; see docu
         cellDescription.getCorrectorTimeStepSize(),
-        false/*is uncompressed*/, isSkeletonCell );
-    Solver::submitJob(predictionJob,isSkeletonCell);
+        false/*is uncompressed*/, isSkeletonCell ));
   }
   return result;
 }
@@ -2184,9 +2183,8 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
               cellDescription.getNeighbourMergePerformed() );
     } else {
       cellDescription.setHasCompletedTimeStep(false); // done here in order to skip lookup of cell description in job constructor
-      FusedTimeStepJob fusedTimeStepJob( *this, cellDescriptionsIndex, element,
-          cellDescription.getNeighbourMergePerformed(),isSkeletonCell);
-      Solver::submitJob(fusedTimeStepJob,isSkeletonCell);
+      peano::datatraversal::TaskSet spawn( new FusedTimeStepJob( *this, cellDescriptionsIndex, element,
+          cellDescription.getNeighbourMergePerformed(),isSkeletonCell));
       return UpdateResult();
     }
   } else {
@@ -2338,9 +2336,8 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
     }
     else {
       cellDescription.setHasCompletedTimeStep(false);
-      PredictionJob predictionJob( *this,cellDescriptionsIndex,element,predictorTimeStamp,predictorTimeStepSize,
-          uncompressBefore,isSkeletonCell );
-      Solver::submitJob(predictionJob,isSkeletonCell);
+      peano::datatraversal::TaskSet ( new PredictionJob( *this,cellDescriptionsIndex,element,predictorTimeStamp,predictorTimeStepSize,
+          uncompressBefore,isSkeletonCell ) );
     }
   }
 }
@@ -2504,8 +2501,7 @@ void exahype::solvers::ADERDGSolver::adjustSolutionDuringMeshRefinement(
   const bool isInitialMeshRefinement = getMeshUpdateEvent()==MeshUpdateEvent::InitialRefinementRequested;
   CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
   if ( exahype::solvers::Solver::SpawnAMRBackgroundJobs ) {
-    AdjustSolutionDuringMeshRefinementJob job(*this,cellDescription,isInitialMeshRefinement);
-    peano::datatraversal::TaskSet spawnedSet( job, peano::datatraversal::TaskSet::TaskType::Background  );
+	peano::datatraversal::TaskSet( new AdjustSolutionDuringMeshRefinementJob(*this,cellDescription,isInitialMeshRefinement));
   } else {
     adjustSolutionDuringMeshRefinementBody(cellDescription,isInitialMeshRefinement);
   }
@@ -2804,7 +2800,6 @@ void exahype::solvers::ADERDGSolver::prolongateFaceData(
       waitUntilCompletedTimeStep<CellDescription>(parentCellDescription,true,false); // TODO(Dominic): We wait for skeleton jobs here. It might make sense to receiveDanglingMessages here too
       cellDescription.setHasCompletedTimeStep(false); // done here in order to skip lookup of cell description in job constructor
       ProlongationJob prolongationJob( *this, cellDescription, parentCellDescription, subcellPosition.subcellIndex);
-      Solver::submitJob(prolongationJob,false);
     }
   }
   assertion2(
@@ -4448,6 +4443,7 @@ exahype::solvers::ADERDGSolver::ProlongationJob::ProlongationJob(
   CellDescription& cellDescription,
   const CellDescription& parentCellDescription,
   const tarch::la::Vector<DIMENSIONS,int>& subcellIndex):
+  tarch::multicore::jobs::Job(Solver::getTaskType(true),0),
   _solver(solver),
   _cellDescription(cellDescription),
   _parentCellDescription(parentCellDescription),
@@ -4459,7 +4455,7 @@ exahype::solvers::ADERDGSolver::ProlongationJob::ProlongationJob(
   lock.free();
 }
 
-bool exahype::solvers::ADERDGSolver::ProlongationJob::operator()() {
+bool exahype::solvers::ADERDGSolver::ProlongationJob::run() {
   _solver.prolongateFaceDataToDescendant(
       _cellDescription,_parentCellDescription,_subcellIndex);
 
@@ -4480,6 +4476,7 @@ exahype::solvers::ADERDGSolver::PredictionJob::PredictionJob(
   const double      predictorTimeStepSize,
   const bool        uncompressBefore,
   const bool        isSkeletonJob):
+  tarch::multicore::jobs::Job(Solver::getTaskType(isSkeletonJob),0),
   _solver(solver),
   _cellDescriptionsIndex(cellDescriptionsIndex),
   _element(element),
@@ -4496,12 +4493,11 @@ exahype::solvers::ADERDGSolver::PredictionJob::PredictionJob(
 }
 
 
-bool exahype::solvers::ADERDGSolver::PredictionJob::operator()() {
+bool exahype::solvers::ADERDGSolver::PredictionJob::run() {
   _solver.performPredictionAndVolumeIntegralBody(
       getCellDescription(_cellDescriptionsIndex,_element),
       _predictorTimeStamp,_predictorTimeStepSize,
       _uncompressBefore,_isSkeletonJob); // ignore return value
-
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
   {
     int& jobCounter = (_isSkeletonJob) ? NumberOfSkeletonJobs : NumberOfEnclaveJobs;
@@ -4513,12 +4509,20 @@ bool exahype::solvers::ADERDGSolver::PredictionJob::operator()() {
 }
 
 
+/*
+void exahype::solvers::ADERDGSolver::PredictionJob::prefetchData() {
+  std::cout << "was here (b)" << std::endl;
+}
+*/
+
+
 exahype::solvers::ADERDGSolver::FusedTimeStepJob::FusedTimeStepJob(
   ADERDGSolver&                                              solver,
   const int                                                  cellDescriptionsIndex,
   const int                                                  element,
   const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
   const bool                                                 isSkeletonJob):
+  tarch::multicore::jobs::Job(Solver::getTaskType(isSkeletonJob),0),
   _solver(solver),
   _cellDescriptionsIndex(cellDescriptionsIndex),
   _element(element),
@@ -4532,7 +4536,7 @@ exahype::solvers::ADERDGSolver::FusedTimeStepJob::FusedTimeStepJob(
   lock.free();
 }
 
-bool exahype::solvers::ADERDGSolver::FusedTimeStepJob::operator()() {
+bool exahype::solvers::ADERDGSolver::FusedTimeStepJob::run() {
   _solver.fusedTimeStepBody(
       _cellDescriptionsIndex,_element, false, false, _isSkeletonJob, false, _neighbourMergePerformed );
 
@@ -4551,6 +4555,7 @@ exahype::solvers::ADERDGSolver::CompressionJob::CompressionJob(
   const ADERDGSolver& solver,
   CellDescription&    cellDescription,
   const bool          isSkeletonJob):
+  tarch::multicore::jobs::Job(Solver::getTaskType(isSkeletonJob),0),
   _solver(solver),
   _cellDescription(cellDescription),
   _isSkeletonJob(isSkeletonJob) {
@@ -4563,7 +4568,7 @@ exahype::solvers::ADERDGSolver::CompressionJob::CompressionJob(
 }
 
 
-bool exahype::solvers::ADERDGSolver::CompressionJob::operator()() {
+bool exahype::solvers::ADERDGSolver::CompressionJob::run() {
   _solver.determineUnknownAverages(_cellDescription);
   _solver.computeHierarchicalTransform(_cellDescription,-1.0);
   _solver.putUnknownsIntoByteStream(_cellDescription);
@@ -4586,11 +4591,14 @@ void exahype::solvers::ADERDGSolver::compress( CellDescription& cellDescription,
       int& jobCounter = ( isSkeletonCell ) ? NumberOfSkeletonJobs : NumberOfEnclaveJobs;
       cellDescription.setCompressionState(CellDescription::CurrentlyProcessed);
       CompressionJob compressionJob( *this, cellDescription, jobCounter );
+      assertionMsg( false, "this call is invalid" );
+/*
       if ( isSkeletonCell ) {
         peano::datatraversal::TaskSet spawnedSet( compressionJob, peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible  );
       } else {
         peano::datatraversal::TaskSet spawnedSet( compressionJob, peano::datatraversal::TaskSet::TaskType::Background  );
       }
+*/
     }
     else {
       determineUnknownAverages(cellDescription);
@@ -5216,6 +5224,7 @@ exahype::solvers::ADERDGSolver::AdjustSolutionDuringMeshRefinementJob::AdjustSol
   ADERDGSolver&    solver,
   CellDescription& cellDescription,
   const bool       isInitialMeshRefinement):
+  tarch::multicore::jobs::Job( Solver::getTaskType(false), 0 ),
   _solver(solver),
   _cellDescription(cellDescription),
   _isInitialMeshRefinement(isInitialMeshRefinement)
@@ -5227,7 +5236,7 @@ exahype::solvers::ADERDGSolver::AdjustSolutionDuringMeshRefinementJob::AdjustSol
   lock.free();
 }
 
-bool exahype::solvers::ADERDGSolver::AdjustSolutionDuringMeshRefinementJob::operator()() {
+bool exahype::solvers::ADERDGSolver::AdjustSolutionDuringMeshRefinementJob::run() {
   _solver.ensureNecessaryMemoryIsAllocated(_cellDescription);
   _solver.adjustSolutionDuringMeshRefinementBody(_cellDescription,_isInitialMeshRefinement);
 

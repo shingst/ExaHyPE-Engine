@@ -539,9 +539,8 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
           solverPatch.getNeighbourMergePerformed());
     } else {
       solverPatch.setHasCompletedTimeStep(false); // done here in order to skip lookup of cell description in job constructor
-      FusedTimeStepJob fusedTimeStepJob( *this, cellDescriptionsIndex, element,
-          solverPatch.getNeighbourMergePerformed(), isSkeletonCell );
-      Solver::submitJob(fusedTimeStepJob,isSkeletonCell);
+      peano::datatraversal::TaskSet spawn( new FusedTimeStepJob( *this, cellDescriptionsIndex, element,
+          solverPatch.getNeighbourMergePerformed(), isSkeletonCell ) );
       return UpdateResult();
     }
   }
@@ -663,8 +662,9 @@ void exahype::solvers::LimitingADERDGSolver::adjustSolutionDuringMeshRefinement(
   const bool isInitialMeshRefinement = getMeshUpdateEvent()==MeshUpdateEvent::InitialRefinementRequested;
   SolverPatch& solverPatch = ADERDGSolver::getCellDescription(cellDescriptionsIndex,element);
   if ( exahype::solvers::Solver::SpawnAMRBackgroundJobs ) {
-    AdjustSolutionDuringMeshRefinementJob job(*this,solverPatch,cellDescriptionsIndex,isInitialMeshRefinement);
-    peano::datatraversal::TaskSet spawnedSet( job, peano::datatraversal::TaskSet::TaskType::Background  );
+    peano::datatraversal::TaskSet spawn(
+      new AdjustSolutionDuringMeshRefinementJob(*this,solverPatch,cellDescriptionsIndex,isInitialMeshRefinement)
+    );
   } else {
     adjustSolutionDuringMeshRefinementBody(solverPatch,cellDescriptionsIndex,isInitialMeshRefinement);
   }
@@ -1937,6 +1937,7 @@ exahype::solvers::LimitingADERDGSolver::FusedTimeStepJob::FusedTimeStepJob(
   const int             element,
   const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
   const bool            isSkeletonJob):
+  tarch::multicore::jobs::Job( Solver::getTaskType(isSkeletonJob), 0 ),
   _solver(solver),
   _cellDescriptionsIndex(cellDescriptionsIndex),
   _element(element),
@@ -1951,7 +1952,7 @@ exahype::solvers::LimitingADERDGSolver::FusedTimeStepJob::FusedTimeStepJob(
   lock.free();
 }
 
-bool exahype::solvers::LimitingADERDGSolver::FusedTimeStepJob::operator()() {
+bool exahype::solvers::LimitingADERDGSolver::FusedTimeStepJob::run() {
   _solver.fusedTimeStepBody(
       _cellDescriptionsIndex,_element,
       false,false,_isSkeletonJob,false,_neighbourMergePerformed);
@@ -1971,6 +1972,7 @@ exahype::solvers::LimitingADERDGSolver::AdjustSolutionDuringMeshRefinementJob::A
   SolverPatch&          solverPatch,
   const int             cellDescriptionsIndex,
   const bool            isInitialMeshRefinement):
+  tarch::multicore::jobs::Job( Solver::getTaskType(true), 0 ),
   _solver(solver),
   _solverPatch(solverPatch),
   _cellDescriptionsIndex(cellDescriptionsIndex),
@@ -1983,7 +1985,7 @@ exahype::solvers::LimitingADERDGSolver::AdjustSolutionDuringMeshRefinementJob::A
   lock.free();
 }
 
-bool exahype::solvers::LimitingADERDGSolver::AdjustSolutionDuringMeshRefinementJob::operator()() {
+bool exahype::solvers::LimitingADERDGSolver::AdjustSolutionDuringMeshRefinementJob::run() {
   _solver._solver->ensureNecessaryMemoryIsAllocated(_solverPatch);
   _solver.adjustSolutionDuringMeshRefinementBody(_solverPatch,_cellDescriptionsIndex,_isInitialMeshRefinement);
 
