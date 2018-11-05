@@ -1,4 +1,4 @@
-/**onte
+/**
  * This file is part of the ExaHyPE project.
  * Copyright (c) 2016  http://exahype.eu
  * All rights reserved.
@@ -637,7 +637,7 @@ exahype::solvers::LimitingADERDGSolver::updateRefinementStatusAndMinAndMaxAfterS
     const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed
 ) {
   MeshUpdateEvent meshUpdateEvent = MeshUpdateEvent::None;
-  if ( solverPatch.getType()==SolverPatch::Type::Cell ) {
+  if ( solverPatch.getType()==SolverPatch::Type::Cell ) { // TODO(Dominic): Why are different cells considered Who calls this?
     if (
         solverPatch.getLevel()==getMaximumAdaptiveMeshLevel() &&
         solverPatch.getRefinementStatus()>=_solver->getMinimumRefinementStatusForActiveFVPatch()
@@ -865,12 +865,12 @@ void exahype::solvers::LimitingADERDGSolver::determineLimiterMinAndMax(SolverPat
 
 void exahype::solvers::LimitingADERDGSolver::deallocateLimiterPatch(
     const SolverPatch& solverPatch,CellInfo& cellinfo) const {
-  tarch::multicore::Lock lock(exahype::HeapSemaphore);
   const int limiterElement = cellinfo.indexOfFiniteVolumesCellDescription(solverPatch.getSolverNumber());
   assertion(limiterElement!=Solver::NotFound);
   LimiterPatch& limiterPatch = cellinfo._FiniteVolumesCellDescriptions[limiterElement];
   limiterPatch.setType(LimiterPatch::Type::Erased);
-  _limiter->ensureNoUnnecessaryMemoryIsAllocated(limiterPatch);
+  _limiter->ensureNoUnnecessaryMemoryIsAllocated(limiterPatch); // has its own lock
+  tarch::multicore::Lock lock(exahype::HeapSemaphore);
   cellinfo._FiniteVolumesCellDescriptions.erase(cellinfo._FiniteVolumesCellDescriptions.begin()+limiterElement);
   lock.free();
 }
