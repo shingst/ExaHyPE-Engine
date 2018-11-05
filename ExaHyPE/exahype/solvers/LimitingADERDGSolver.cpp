@@ -1984,6 +1984,7 @@ exahype::solvers::LimitingADERDGSolver::AdjustSolutionDuringMeshRefinementJob::A
 }
 
 bool exahype::solvers::LimitingADERDGSolver::AdjustSolutionDuringMeshRefinementJob::operator()() {
+  _solver._solver->ensureNecessaryMemoryIsAllocated(_solverPatch);
   _solver.adjustSolutionDuringMeshRefinementBody(_solverPatch,_cellDescriptionsIndex,_isInitialMeshRefinement);
 
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
