@@ -366,11 +366,11 @@ void exahype::solvers::LimitingADERDGSolver::zeroTimeStepSizes(
 
 void exahype::solvers::LimitingADERDGSolver::rollbackToPreviousTimeStep(
     SolverPatch& solverPatch,CellInfo& cellInfo,const bool fused) const {
-  synchroniseTimeStepping(solverPatch,cellInfo); // TODO(Dominic): have version with solver patch
+  synchroniseTimeStepping(solverPatch,cellInfo);
   if ( fused ) {
-    _solver->rollbackToPreviousTimeStepFused(solverPatch); // TODO(Dominic): Too many element lookups
+    _solver->rollbackToPreviousTimeStepFused(solverPatch);
   } else {
-    _solver->rollbackToPreviousTimeStep(solverPatch); // TODO(Dominic): Too many element lookups
+    _solver->rollbackToPreviousTimeStep(solverPatch);
   }
   ensureLimiterPatchTimeStepDataIsConsistent(solverPatch,cellInfo);
 }
