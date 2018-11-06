@@ -1268,32 +1268,26 @@ void exahype::solvers::FiniteVolumesSolver::sendDataToNeighbour(
     const int                                     level) {
   const int element = cellInfo.indexOfFiniteVolumesCellDescription(solverNumber);
   if ( element != Solver::NotFound ) {
-    CellDescription& cellDescription = cellInfo._FiniteVolumesCellDescriptions[element];
-
     Solver::BoundaryFaceInfo face(src,dest);
-    if ( Solver::hasToSendDataToNeighbour(cellDescription,face) ) {
-      assertion(DataHeap::getInstance().isValidIndex(cellDescription.getSolutionIndex()));
-      assertion(DataHeap::getInstance().isValidIndex(cellDescription.getPreviousSolutionIndex()));
-    
-      waitUntilCompletedTimeStep<CellDescription>(cellDescription,true,true);
-    
-      const int dataPerFace = getDataPerPatchFace();
-      double* luhbnd    = static_cast<double*>(cellDescription.getExtrapolatedSolution()) + (face._faceIndex * dataPerFace);
-      const double* luh = static_cast<double*>(cellDescription.getSolution());
-      boundaryLayerExtraction(luhbnd,luh,dest-src);
 
-      // Send order: minMax,lQhbnd,lFhbnd
-      // Receive order: lFhbnd,lQhbnd,minMax
-      logDebug("sendDataToNeighbour(...)","send "<<DataMessagesPerNeighbourCommunication<<" arrays to rank=" <<toRank << ",cell="<<cellDescription.getOffset()<<",x="<<x<<",level="<<level);
+    CellDescription& cellDescription = cellInfo._FiniteVolumesCellDescriptions[element];
+    assertion(DataHeap::getInstance().isValidIndex(cellDescription.getSolutionIndex()));
+    assertion(DataHeap::getInstance().isValidIndex(cellDescription.getPreviousSolutionIndex()));
 
-      DataHeap::getInstance().sendData(
-          luhbnd, dataPerFace, toRank, x, level,
-          peano::heap::MessageType::NeighbourCommunication);
-    } else {
-      sendEmptyDataToNeighbour(toRank,x,level);
-    }
-  } else {
-    sendEmptyDataToNeighbour(toRank,x,level);
+    waitUntilCompletedTimeStep<CellDescription>(cellDescription,true,true);
+
+    const int dataPerFace = getDataPerPatchFace();
+    double* luhbnd    = static_cast<double*>(cellDescription.getExtrapolatedSolution()) + (face._faceIndex * dataPerFace);
+    const double* luh = static_cast<double*>(cellDescription.getSolution());
+    boundaryLayerExtraction(luhbnd,luh,dest-src);
+
+    // Send order: minMax,lQhbnd,lFhbnd
+    // Receive order: lFhbnd,lQhbnd,minMax
+    logDebug("sendDataToNeighbour(...)","send "<<DataMessagesPerNeighbourCommunication<<" arrays to rank=" <<toRank << ",cell="<<cellDescription.getOffset()<<",x="<<x<<",level="<<level);
+
+    DataHeap::getInstance().sendData(
+        luhbnd, dataPerFace, toRank, x, level,
+        peano::heap::MessageType::NeighbourCommunication);
   }
 }
 

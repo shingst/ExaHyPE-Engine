@@ -3944,12 +3944,9 @@ void exahype::solvers::ADERDGSolver::sendDataToNeighbour(
   const int element = cellInfo.indexOfADERDGCellDescription(solverNumber);
   if ( element != Solver::NotFound ) {
     CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[element];
-
     Solver::BoundaryFaceInfo face(src,dest);
-    if (
-        Solver::hasToSendDataToNeighbour(cellDescription,face) &&
-        communicateWithNeighbour(cellDescription,face._faceIndex)
-    ) {
+
+    if ( communicateWithNeighbour(cellDescription,face._faceIndex) ) {
       assertion(DataHeap::getInstance().isValidIndex(cellDescription.getExtrapolatedPredictorIndex()));
       assertion(DataHeap::getInstance().isValidIndex(cellDescription.getFluctuationIndex()));
 
@@ -4013,10 +4010,7 @@ void exahype::solvers::ADERDGSolver::mergeWithNeighbourData(
     CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[element];
     synchroniseTimeStepping(cellDescription);
 
-    if(
-      hasToMergeWithNeighbourData(cellDescription,face) &&
-      communicateWithNeighbour(cellDescription,face._faceIndex)
-    ) {
+    if( communicateWithNeighbour(cellDescription,face._faceIndex) ) {
       // Send order: lQhbnd,lFhbnd
       // Receive order: lFhbnd,lQhbnd
       // TODO(Dominic): If anarchic time stepping, receive the time step too.

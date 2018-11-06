@@ -1757,7 +1757,7 @@ class exahype::solvers::Solver {
    * @param face            see BoundaryFaceInfo
    */
   template <typename CellDescription>
-  static bool hasToSendDataToNeighbour(CellDescription& cellDescription,BoundaryFaceInfo& face) {
+  static bool hasToSendToNeighbourNow(CellDescription& cellDescription,BoundaryFaceInfo& face) {
     // decrement counter beforehand
     const int newCounterValue = cellDescription.getFaceDataExchangeCounter(face._faceIndex)-1;
     assertion2(newCounterValue>=0,newCounterValue,cellDescription.toString());
@@ -1796,7 +1796,7 @@ class exahype::solvers::Solver {
    * @return if we have to merge with the neighbour data. If not, it needs to be received and dropped.
    */
   template <typename CellDescription>
-  static bool hasToMergeWithNeighbourData(CellDescription& cellDescription,BoundaryFaceInfo& face) {
+  static bool hasToReceiveFromNeighbourNow(CellDescription& cellDescription,BoundaryFaceInfo& face) {
     if ( cellDescription.getFaceDataExchangeCounter(face._faceIndex)==0 ) {
       assertion1(!cellDescription.getNeighbourMergePerformed(face._faceIndex),cellDescription.toString());
       cellDescription.setFaceDataExchangeCounter(face._faceIndex,TWO_POWER_D); // TODO(Dominic): maybe do not do that here but in the cell? Can be used to determine which cell belongs to skeleton

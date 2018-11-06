@@ -646,6 +646,19 @@ void exahype::Vertex::dropNeighbourMetadata(
   }
 }
 
+bool exahype::Vertex::hasToSendToNeighbourNow(
+    solvers::Solver::CellInfo&         cellInfo,
+    solvers::Solver::BoundaryFaceInfo& face) {
+  bool result = true;
+  for (auto& p : cellInfo._ADERDGCellDescriptions) {
+    result |= solvers::Solver::hasToSendToNeighbourNow(p,face); // side effects
+  }
+  for (auto& p : cellInfo._FiniteVolumesCellDescriptions) {
+    result |= solvers::Solver::hasToSendToNeighbourNow(p,face); // side effects
+  }
+  return result;
+}
+
 void exahype::Vertex::sendToNeighbourLoopBody(
   const int                                    toRank,
   const int                                    srcScalar,
@@ -666,24 +679,27 @@ void exahype::Vertex::sendToNeighbourLoopBody(
 
     if ( validIndex ) {
       solvers::Solver::CellInfo cellInfo(srcCellDescriptionsIndex);
+      solvers::Solver::BoundaryFaceInfo face(src,dest);
 
-      for ( unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber ) {
-        auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-        switch ( solver->getType() ) {
-          case solvers::Solver::Type::ADERDG:
-            static_cast<solvers::ADERDGSolver*>(solver)->sendDataToNeighbour(toRank,solverNumber,cellInfo,src,dest,x,level);
-            break;
-          case solvers::Solver::Type::LimitingADERDG:
-            static_cast<solvers::LimitingADERDGSolver*>(solver)->sendDataToNeighbour(toRank,solverNumber,cellInfo,src,dest,x,level);
-            break;
-          case solvers::Solver::Type::FiniteVolumes:
-            static_cast<solvers::FiniteVolumesSolver*>(solver)->sendDataToNeighbour(toRank,solverNumber,cellInfo,src,dest,x,level);
-            break;
-          default:
-            assertionMsg(false,"Unrecognised solver type: "<<solvers::Solver::toString(solver->getType()));
-            logError("mergeOnlyWithNeighbourMetadataLoopBody(...)","Unrecognised solver type: "<<solvers::Solver::toString(solver->getType()));
-            std::abort();
-            break;
+      if ( hasToSendToNeighbourNow(cellInfo,face) ) {
+        for ( unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber ) {
+          auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
+          switch ( solver->getType() ) {
+            case solvers::Solver::Type::ADERDG:
+              static_cast<solvers::ADERDGSolver*>(solver)->sendDataToNeighbour(toRank,solverNumber,cellInfo,src,dest,x,level);
+              break;
+            case solvers::Solver::Type::LimitingADERDG:
+              static_cast<solvers::LimitingADERDGSolver*>(solver)->sendDataToNeighbour(toRank,solverNumber,cellInfo,src,dest,x,level);
+              break;
+            case solvers::Solver::Type::FiniteVolumes:
+              static_cast<solvers::FiniteVolumesSolver*>(solver)->sendDataToNeighbour(toRank,solverNumber,cellInfo,src,dest,x,level);
+              break;
+            default:
+              assertionMsg(false,"Unrecognised solver type: "<<solvers::Solver::toString(solver->getType()));
+              logError("mergeOnlyWithNeighbourMetadataLoopBody(...)","Unrecognised solver type: "<<solvers::Solver::toString(solver->getType()));
+              std::abort();
+              break;
+          }
         }
       }
     }
@@ -716,6 +732,19 @@ void exahype::Vertex::sendToNeighbour(
   }
 }
 
+bool exahype::Vertex::hasToReceiveFromNeighbourNow(
+    solvers::Solver::CellInfo&         cellInfo,
+    solvers::Solver::BoundaryFaceInfo& face) {
+  bool result = true;
+  for (auto& p : cellInfo._ADERDGCellDescriptions) {
+    result |= solvers::Solver::hasToReceiveFromNeighbourNow(p,face); // side effects
+  }
+  for (auto& p : cellInfo._FiniteVolumesCellDescriptions) {
+    result |= solvers::Solver::hasToReceiveFromNeighbourNow(p,face); // side effects
+  }
+  return result;
+}
+
 void exahype::Vertex::receiveNeighbourDataLoopBody(
     const int                                    fromRank,
     const int                                    srcScalar,
@@ -743,22 +772,24 @@ void exahype::Vertex::receiveNeighbourDataLoopBody(
     assertion( !validIndex || exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(destCellDescriptionIndex));
     if ( validIndex ) {
       solvers::Solver::CellInfo cellInfo(destCellDescriptionIndex);
+      solvers::Solver::BoundaryFaceInfo face(dest,src); // dest and src are swapped
 
-      for(unsigned int solverNumber = solvers::RegisteredSolvers.size(); solverNumber-- > 0;) {
-        auto* solver = solvers::RegisteredSolvers[solverNumber];
+      if ( hasToReceiveFromNeighbourNow(cellInfo,face) ) {
+        for(unsigned int solverNumber = solvers::RegisteredSolvers.size(); solverNumber-- > 0;) {
+          auto* solver = solvers::RegisteredSolvers[solverNumber];
 
-        const int offset = exahype::NeighbourCommunicationMetadataPerSolver*solverNumber;
-        exahype::MetadataHeap::HeapEntries metadataPortion(
-            receivedMetadata.begin()+offset,
-            receivedMetadata.begin()+offset+exahype::NeighbourCommunicationMetadataPerSolver);
+          const int offset = exahype::NeighbourCommunicationMetadataPerSolver*solverNumber;
+          exahype::MetadataHeap::HeapEntries metadataPortion(
+              receivedMetadata.begin()+offset,
+              receivedMetadata.begin()+offset+exahype::NeighbourCommunicationMetadataPerSolver);
 
-        switch ( solver->getType() ) {
+          switch ( solver->getType() ) {
           case solvers::Solver::Type::ADERDG:
             if ( mergeWithReceivedData ) {
-               static_cast<solvers::ADERDGSolver*>(solver)->mergeWithNeighbourData(fromRank,solverNumber,cellInfo,src,dest,x,level);
-               if ( receiveNeighbourMetadata ) {
-                 static_cast<solvers::ADERDGSolver*>(solver)->mergeWithNeighbourMetadata(solverNumber,cellInfo,metadataPortion,src,dest);
-               }
+              static_cast<solvers::ADERDGSolver*>(solver)->mergeWithNeighbourData(fromRank,solverNumber,cellInfo,src,dest,x,level);
+              if ( receiveNeighbourMetadata ) {
+                static_cast<solvers::ADERDGSolver*>(solver)->mergeWithNeighbourMetadata(solverNumber,cellInfo,metadataPortion,src,dest);
+              }
             } else {
               static_cast<solvers::ADERDGSolver*>(solver)->dropNeighbourData(fromRank,x,level);
             }
@@ -786,6 +817,7 @@ void exahype::Vertex::receiveNeighbourDataLoopBody(
             logError("mergeOnlyWithNeighbourMetadataLoopBody(...)","Unrecognised solver type: "<<solvers::Solver::toString(solver->getType()));
             std::abort();
             break;
+          }
         }
       }
     }
