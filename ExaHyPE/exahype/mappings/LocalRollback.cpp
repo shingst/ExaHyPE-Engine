@@ -210,18 +210,20 @@ void exahype::mappings::LocalRollback::sendDataToNeighbourLoopBody(
       const tarch::la::Vector<DIMENSIONS,int> src = Vertex::delineariseIndex2(srcScalar);
       const tarch::la::Vector<DIMENSIONS,int> dest = Vertex::delineariseIndex2(destScalar);
       solvers::Solver::CellInfo cellInfo(srcCellDescriptionsIndex);
+      solvers::Solver::BoundaryFaceInfo& face(src,dest);
 
-      for (int solverNumber=0; solverNumber<static_cast<int>(solvers::RegisteredSolvers.size()); solverNumber++) {
-        auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
+      if ( Vertex::hasToSendToNeighbourNow(cellInfo,face) ) {
+        for (int solverNumber=0; solverNumber<static_cast<int>(solvers::RegisteredSolvers.size()); solverNumber++) {
+          auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
 
-        if ( performLocalRecomputation( solver ) ) {
-          switch ( solver->getType() ) {
+          if ( performLocalRecomputation( solver ) ) {
+            switch ( solver->getType() ) {
             case solvers::Solver::Type::ADERDG:
               // do nothing
               break;
             case solvers::Solver::Type::LimitingADERDG:
               static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->
-                sendDataToNeighbourBasedOnLimiterStatus(
+              sendDataToNeighbourBasedOnLimiterStatus(
                   toRank,solverNumber,cellInfo,src,dest,true, /* isRecomputation */x,level);
               break;
             case solvers::Solver::Type::FiniteVolumes:
@@ -232,6 +234,7 @@ void exahype::mappings::LocalRollback::sendDataToNeighbourLoopBody(
               logError("mergeWithBoundaryDataIfNotDoneYet(...)","Unrecognised solver type: "<<solvers::Solver::toString(solver->getType()));
               std::abort();
               break;
+            }
           }
         }
       }

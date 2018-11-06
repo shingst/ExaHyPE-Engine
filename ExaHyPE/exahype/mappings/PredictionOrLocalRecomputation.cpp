@@ -452,13 +452,16 @@ void exahype::mappings::PredictionOrLocalRecomputation::receiveNeighbourDataLoop
       const tarch::la::Vector<DIMENSIONS,int> src = Vertex::delineariseIndex2(srcScalar);
       const tarch::la::Vector<DIMENSIONS,int> dest = Vertex::delineariseIndex2(destScalar);
       solvers::Solver::CellInfo cellInfo(destCellDescriptionsIndex);
+      solvers::Solver::BoundaryFaceInfo face(dest,src); // dest and src are swapped
 
-      for(unsigned int solverNumber = solvers::RegisteredSolvers.size(); solverNumber-- > 0;) {
-        auto* solver = solvers::RegisteredSolvers[solverNumber];
-        if ( performLocalRecomputation( solver ) ) {
-          assertion1( solver->getType()==solvers::Solver::Type::LimitingADERDG, solver->toString() );
-          static_cast<solvers::LimitingADERDGSolver*>(solver)->
-              mergeWithNeighbourDataBasedOnLimiterStatus(fromRank,solverNumber,cellInfo,src,dest,true/*isRecomputation*/,x,level);
+      if ( Vertex::hasToReceiveFromNeighbourNow(cellInfo,face) ) {
+        for(unsigned int solverNumber = solvers::RegisteredSolvers.size(); solverNumber-- > 0;) {
+          auto* solver = solvers::RegisteredSolvers[solverNumber];
+          if ( performLocalRecomputation( solver ) ) {
+            assertion1( solver->getType()==solvers::Solver::Type::LimitingADERDG, solver->toString() );
+            static_cast<solvers::LimitingADERDGSolver*>(solver)->
+                mergeWithNeighbourDataBasedOnLimiterStatus(fromRank,solverNumber,cellInfo,src,dest,true/*isRecomputation*/,x,level);
+          }
         }
       }
     }
