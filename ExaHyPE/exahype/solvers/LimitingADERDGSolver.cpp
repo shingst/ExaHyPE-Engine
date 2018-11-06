@@ -1388,32 +1388,24 @@ void exahype::solvers::LimitingADERDGSolver::sendDataToNeighbourBasedOnLimiterSt
   if ( solverElement != NotFound ) {
     SolverPatch& solverPatch = cellInfo._ADERDGCellDescriptions[solverElement];
 
+    // solver sends
+    if ( !isRecomputation ) {
+      _solver->sendDataToNeighbour(toRank,solverNumber,cellInfo,src,dest,x,level);
+    }
+
     if ( level==getMaximumAdaptiveMeshLevel() ) {
       logDebug("sendDataToNeighbourBasedOnLimiterStatus(...)", "send data for solver " << _identifier << " to rank="<<toRank<<",x="<<x<<",level="<<level);
 
-      // solver sends
-      if ( !isRecomputation && solverPatch.getRefinementStatus()<_solver->getMinimumRefinementStatusForTroubledCell() ) {
-        _solver->sendDataToNeighbour(toRank,solverNumber,cellInfo,src,dest,x,level);
-      }
-
       // limiter sends (receive order must be inverted)
       if ( solverPatch.getRefinementStatus()>=_solver->_minimumRefinementStatusForPassiveFVPatch ) {
-        const int limiterElement = cellInfo.indexOfFiniteVolumesCellDescription(solverNumber);
-        if ( limiterElement!=NotFound ) {
-          _limiter->sendDataToNeighbour(toRank,solverNumber,cellInfo,src,dest,x,level);
-        } else { // if the limiter status of a cell changes dramatically, a limiter patch might not been allocated
-          // at the time data is sent to neighbouring ranks if fused time stepping is used.
-          assertion1(Solver::FuseADERDGPhases,solverPatch.toString());
-          _limiter->sendEmptyDataToNeighbour(toRank,x,level);
-        }
+        _limiter->sendDataToNeighbour(toRank,solverNumber,cellInfo,src,dest,x,level);
+        // if the limiter status of a cell changes dramatically, a limiter patch might not been allocated
+        // at the time data is sent to neighbouring ranks if fused time stepping is used.
+        assertion1(cellInfo.indexOfFiniteVolumesCellDescription(solverNumber)!=NotFound || Solver::FuseADERDGPhases,solverPatch.toString());
       } else {
         _limiter->sendEmptyDataToNeighbour(toRank,x,level);
       }
 
-    } else {
-      if ( !isRecomputation ) {
-        _solver->sendDataToNeighbour(toRank,solverNumber,cellInfo,src,dest,x,level);
-      }
     }
   }
 }
