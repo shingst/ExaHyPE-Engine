@@ -276,14 +276,6 @@ void exahype::solvers::FiniteVolumesSolver::updateTimeStepSizes() {
   _nextMaxLevel = -std::numeric_limits<int>::max(); // "-", min
 }
 
-/**
- * Zero predictor and corrector time step size.
- */
-void exahype::solvers::FiniteVolumesSolver::zeroTimeStepSizes() {
-  _minTimeStepSize = 0;
-  assertionEquals(_minNextTimeStepSize,std::numeric_limits<double>::max());
-}
-
 void exahype::solvers::FiniteVolumesSolver::rollbackToPreviousTimeStep() {
   switch (_timeStepping) {
     case TimeStepping::Global:
@@ -682,11 +674,6 @@ double exahype::solvers::FiniteVolumesSolver::updateTimeStepSizes(
   }
 }
 
-void exahype::solvers::FiniteVolumesSolver::zeroTimeStepSizes(
-    CellDescription& cellDescription) const {
-  cellDescription.setTimeStepSize(0.0);
-}
-
 void exahype::solvers::FiniteVolumesSolver::rollbackToPreviousTimeStep(CellDescription& cellDescription) const {
   cellDescription.setTimeStamp(cellDescription.getPreviousTimeStamp());
   cellDescription.setTimeStepSize(cellDescription.getPreviousTimeStepSize());
@@ -703,7 +690,6 @@ void exahype::solvers::FiniteVolumesSolver::adjustSolutionDuringMeshRefinementBo
     const bool isInitialMeshRefinement) {
   assertion(cellDescription.getType()==CellDescription::Cell);
 
-  zeroTimeStepSizes(cellDescription); // TODO(Dominic): Still necessary?
   synchroniseTimeStepping(cellDescription);
 
   adjustSolution(cellDescription);

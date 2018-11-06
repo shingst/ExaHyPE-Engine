@@ -792,14 +792,6 @@ void exahype::solvers::ADERDGSolver::updateTimeStepSizes() {
   _nextMaxLevel = -std::numeric_limits<int>::max(); // "-", min
 }
 
-void exahype::solvers::ADERDGSolver::zeroTimeStepSizes() {
-  _previousMinCorrectorTimeStepSize = 0;
-  _minCorrectorTimeStepSize         = 0;
-  _minPredictorTimeStepSize         = 0;
-
-  _minPredictorTimeStamp = _minCorrectorTimeStamp;
-}
-
 void exahype::solvers::ADERDGSolver::rollbackToPreviousTimeStep() {
   switch (_timeStepping) {
     case TimeStepping::Global:
@@ -2438,17 +2430,6 @@ double exahype::solvers::ADERDGSolver::updateTimeStepSizes(
   }
 }
 
-void exahype::solvers::ADERDGSolver::zeroTimeStepSizes(CellDescription& cellDescription) const {
-  if (cellDescription.getType()==CellDescription::Type::Cell) {
-    cellDescription.setPreviousCorrectorTimeStepSize(0.0);
-    cellDescription.setCorrectorTimeStepSize(0.0);
-    cellDescription.setPredictorTimeStepSize(0.0);
-
-    cellDescription.setPredictorTimeStamp(
-        cellDescription.getCorrectorTimeStamp());
-  }
-}
-
 void exahype::solvers::ADERDGSolver::rollbackToPreviousTimeStep(CellDescription& cellDescription) const {
   // n+1
   cellDescription.setPredictorTimeStamp   (cellDescription.getPreviousCorrectorTimeStamp());
@@ -2496,7 +2477,6 @@ void exahype::solvers::ADERDGSolver::adjustSolutionDuringMeshRefinement(
 void exahype::solvers::ADERDGSolver::adjustSolutionDuringMeshRefinementBody(
     CellDescription& cellDescription,
     const bool isInitialMeshRefinement) {
-  zeroTimeStepSizes(cellDescription); // TODO(Dominic): Still necessary?
   synchroniseTimeStepping(cellDescription);
 
   if ( cellDescription.getType()==CellDescription::Type::Cell ) {

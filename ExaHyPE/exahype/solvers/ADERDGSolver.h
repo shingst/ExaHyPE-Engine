@@ -308,13 +308,6 @@ private:
   void uncompress(CellDescription& cellDescription) const;
 
   /**
-   * Set the predictor and corrector time step sizes to
-   * zero.
-   * @param cellDescription a cell description
-   */
-  void zeroTimeStepSizes(CellDescription& cellDescription) const;
-
-  /**
     * Rollback to the previous time step, i.e,
     * overwrite the time step size and time stamp
     * fields of the cell description
@@ -1621,11 +1614,6 @@ public:
    * to false for the ADER-DG solver.
    */
   void updateTimeStepSizesFused() override;
-
-  /**
-   * Zero predictor and corrector time step size.
-   */
-  void zeroTimeStepSizes() override;
 
   void rollbackToPreviousTimeStep() final override;
 

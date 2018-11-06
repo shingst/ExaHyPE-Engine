@@ -580,8 +580,6 @@ public:
 
   void updateTimeStepSizes()      override;
 
-  void zeroTimeStepSizes() override;
-
   /**
    * Roll back the time step data to the
    * ones of the previous time step.
@@ -695,8 +693,6 @@ public:
       const int solverNumber,
       CellInfo& cellInfo,
       const bool fused) override final;
-
-  void zeroTimeStepSizes(CellDescription& cellDescription) const;
 
   void rollbackToPreviousTimeStep(CellDescription& cellDescription) const;
 

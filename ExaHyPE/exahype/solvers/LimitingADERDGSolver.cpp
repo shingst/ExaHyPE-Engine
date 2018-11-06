@@ -182,11 +182,6 @@ void exahype::solvers::LimitingADERDGSolver::updateTimeStepSizes()  {
   ensureLimiterTimeStepDataIsConsistent();
 }
 
-void exahype::solvers::LimitingADERDGSolver::zeroTimeStepSizes() {
-  _solver->zeroTimeStepSizes();
-  ensureLimiterTimeStepDataIsConsistent();
-}
-
 void exahype::solvers::LimitingADERDGSolver::rollbackToPreviousTimeStep() {
   _solver->rollbackToPreviousTimeStep();
   ensureLimiterTimeStepDataIsConsistent();
@@ -358,12 +353,6 @@ double exahype::solvers::LimitingADERDGSolver::updateTimeStepSizes(
   }
 }
 
-void exahype::solvers::LimitingADERDGSolver::zeroTimeStepSizes(
-    SolverPatch& solverPatch, CellInfo& cellInfo) const {
-  _solver->zeroTimeStepSizes(solverPatch);
-  ensureLimiterPatchTimeStepDataIsConsistent(solverPatch,cellInfo);
-}
-
 void exahype::solvers::LimitingADERDGSolver::rollbackToPreviousTimeStep(
     SolverPatch& solverPatch,CellInfo& cellInfo,const bool fused) const {
   synchroniseTimeStepping(solverPatch,cellInfo);
@@ -379,7 +368,6 @@ void exahype::solvers::LimitingADERDGSolver::adjustSolutionDuringMeshRefinementB
     SolverPatch& solverPatch,
     CellInfo& cellInfo,
     const bool isInitialMeshRefinement) {
-  zeroTimeStepSizes(solverPatch,cellInfo);      // TODO(Dominic): Still necessary?
   synchroniseTimeStepping(solverPatch,cellInfo);
 
   if ( solverPatch.getType()==SolverPatch::Type::Cell ) {

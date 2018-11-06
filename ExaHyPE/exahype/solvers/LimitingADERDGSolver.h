@@ -377,10 +377,6 @@ private:
       const bool   mustBeDoneImmediately,
       const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed);
 
-
-
-  void zeroTimeStepSizes(SolverPatch& solverPatch,CellInfo& cellInfo) const;
-
  /**
    * Rollback to the previous time step, i.e,
    * overwrite the time step size and time stamp
@@ -608,8 +604,6 @@ public:
   void updateTimeStepSizes() final override;
 
   void updateTimeStepSizesFused() final override;
-
-  void zeroTimeStepSizes() final override;
 
   /**
    * Roll back the time step data to the

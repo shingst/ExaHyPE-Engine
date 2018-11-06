@@ -157,14 +157,6 @@ void exahype::mappings::MeshRefinement::beginIteration( exahype::State& solverSt
   }
   // reset
   _verticalExchangeOfSolverDataRequired = false;
-  
-  for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
-    auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-    if (solver->hasRequestedMeshRefinement()) {
-      solver->zeroTimeStepSizes();
-    }
-    //assertion2(!solver->getNextMeshUpdateRequest(),solver->toString(),tarch::parallel::Node::getInstance().getRank());
-  }
 
   #ifdef Parallel
   if (! MetadataHeap::getInstance().validateThatIncomingJoinBuffersAreEmpty() ) {
