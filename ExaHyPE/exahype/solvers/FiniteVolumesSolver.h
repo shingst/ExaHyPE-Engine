@@ -923,8 +923,6 @@ public:
 
   void dropNeighbourData(
       const int                                     fromRank,
-      const tarch::la::Vector<DIMENSIONS, int>&     src,
-      const tarch::la::Vector<DIMENSIONS, int>&     dest,
       const tarch::la::Vector<DIMENSIONS, double>&  x,
       const int                                     level) const;
 

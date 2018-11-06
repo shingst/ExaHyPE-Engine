@@ -1068,9 +1068,9 @@ public:
       const int element);
 
   /**
-   * \return true if a ADERDG cell description holds face data.
+   * \return If communicatation with a (remote) neighbour is necessary.
    */
-  static bool holdsFaceData(const CellDescription& cellDescription);
+  static bool communicateWithNeighbour(const CellDescription& cellDescription,const int faceIndex);
 
   /**
    * Erase all cell descriptions registered for solvers
@@ -2326,8 +2326,6 @@ public:
    */
   void dropNeighbourData(
       const int                                    fromRank,
-      const tarch::la::Vector<DIMENSIONS, int>&    src,
-      const tarch::la::Vector<DIMENSIONS, int>&    dest,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level) const;
 

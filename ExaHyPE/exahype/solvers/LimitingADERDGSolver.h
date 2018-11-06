@@ -1167,11 +1167,6 @@ public:
         const tarch::la::Vector<DIMENSIONS, double>& x,
         const int                                    level) const;
 
-  void sendEmptyDataToNeighbour(
-      const int                                     toRank,
-      const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const;
-
   void mergeWithNeighbourData(
       const int                                    fromRank,
       const int                                    solverNumber,
@@ -1212,42 +1207,17 @@ public:
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level);
 
+  /**
+   * @note only used when no recomputation.
+   *
+   * @param fromRank the rank we expect data from
+   * @param x
+   * @param level
+   */
   void dropNeighbourData(
       const int                                     fromRank,
-      const tarch::la::Vector<DIMENSIONS, int>&     src,
-      const tarch::la::Vector<DIMENSIONS, int>&     dest,
       const tarch::la::Vector<DIMENSIONS, double>&  x,
       const int                                     level) const;
-
-
-  ///////////////////////////////////////
-  // NEIGHBOUR - Solution Recomputation
-  ///////////////////////////////////////
-  /**
-   * We do not send the minimum and maximum solution values
-   * during the solution recomputation process.
-   *
-   * We thus have this separate function.
-   */
-  void sendEmptySolverAndLimiterDataToNeighbour(
-      const int                                     toRank,
-      const tarch::la::Vector<DIMENSIONS, int>&     src,
-      const tarch::la::Vector<DIMENSIONS, int>&     dest,
-      const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const;
-
-  /**
-   * We do not send the minimum and maximum solution values
-   * during the solution recomputation process.
-   *
-   * We thus have this separate function.
-   */
-  void dropNeighbourSolverAndLimiterData(
-        const int                                     fromRank,
-        const tarch::la::Vector<DIMENSIONS, int>&     src,
-        const tarch::la::Vector<DIMENSIONS, int>&     dest,
-        const tarch::la::Vector<DIMENSIONS, double>&  x,
-        const int                                     level) const;
 
   /////////////////////////////////////
   // MASTER<=>WORKER

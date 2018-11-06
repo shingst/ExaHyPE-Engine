@@ -236,20 +236,17 @@ exahype::solvers::ADERDGSolver::CellDescription& exahype::solvers::ADERDGSolver:
   return Heap::getInstance().getData(cellDescriptionsIndex)[element];
 }
 
-/**
- * Returns if a ADERDGCellDescription type holds face data.
- */
-bool exahype::solvers::ADERDGSolver::holdsFaceData(const CellDescription& cellDescription) {
+bool exahype::solvers::ADERDGSolver::communicateWithNeighbour(const CellDescription& cellDescription,const int faceIndex) {
   assertion1(cellDescription.getType()!=CellDescription::Type::Cell ||
             cellDescription.getCommunicationStatus()==CellCommunicationStatus,cellDescription.toString());
   return
-      cellDescription.getType()!=CellDescription::Type::Ancestor &&
-      (
-        cellDescription.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication 
-        #ifdef Parallel
-        || cellDescription.getHasToHoldDataForMasterWorkerCommunication() // TODO(Dominic): Not applicable anymore with artificial mesh refinement??
-        #endif
-      );
+      (cellDescription.getCommunicationStatus()                  == CellCommunicationStatus &&
+      cellDescription.getFacewiseCommunicationStatus(faceIndex)  >= MinimumCommunicationStatusForNeighbourCommunication &&
+      cellDescription.getFacewiseAugmentationStatus(faceIndex)   <  MaximumAugmentationStatus)
+      ||
+      (cellDescription.getFacewiseCommunicationStatus(faceIndex) == CellCommunicationStatus &&
+      cellDescription.getCommunicationStatus()                   >= MinimumCommunicationStatusForNeighbourCommunication &&
+      cellDescription.getAugmentationStatus()                    <  MaximumAugmentationStatus);
 }
 
 void exahype::solvers::ADERDGSolver::ensureNoUnnecessaryMemoryIsAllocated(
@@ -297,7 +294,8 @@ void exahype::solvers::ADERDGSolver::ensureNoUnnecessaryMemoryIsAllocated(
 
   // deallocate update and boundary arrays
   if (
-      !holdsFaceData(cellDescription) &&
+      cellDescription.getType() != CellDescription::Type::Ancestor &&
+      cellDescription.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication &&
       DataHeap::getInstance().isValidIndex(cellDescription.getUpdateIndex())
   ) {
     // update
@@ -432,7 +430,8 @@ void exahype::solvers::ADERDGSolver::ensureNecessaryMemoryIsAllocated(
 
   // allocate update and boundary arrays
   if (
-      holdsFaceData(cellDescription) &&
+      cellDescription.getType() != CellDescription::Type::Ancestor &&
+      cellDescription.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication &&
       !DataHeap::getInstance().isValidIndex(cellDescription.getExtrapolatedPredictorIndex())
   ) {
     assertion(!DataHeap::getInstance().isValidIndex(cellDescription.getFluctuationIndex()));
@@ -3944,15 +3943,8 @@ void exahype::solvers::ADERDGSolver::sendDataToNeighbour(
 
     Solver::BoundaryFaceInfo face(src,dest);
     if (
-        Solver::hasToSendDataToNeighbour(cellDescription,face)
-        &&
-        ((cellDescription.getCommunicationStatus()                       ==CellCommunicationStatus && // TODO(Dominic): Externalise
-        cellDescription.getFacewiseCommunicationStatus(face._faceIndex) >=MinimumCommunicationStatusForNeighbourCommunication &&
-        cellDescription.getFacewiseAugmentationStatus(face._faceIndex)  < MaximumAugmentationStatus)
-        ||
-        (cellDescription.getFacewiseCommunicationStatus(face._faceIndex)==CellCommunicationStatus &&
-        cellDescription.getCommunicationStatus()                        >=MinimumCommunicationStatusForNeighbourCommunication &&
-        cellDescription.getAugmentationStatus()                         < MaximumAugmentationStatus))
+        Solver::hasToSendDataToNeighbour(cellDescription,face) &&
+        communicateWithNeighbour(cellDescription,face._faceIndex)
     ) {
       assertion(DataHeap::getInstance().isValidIndex(cellDescription.getExtrapolatedPredictorIndex()));
       assertion(DataHeap::getInstance().isValidIndex(cellDescription.getFluctuationIndex()));
@@ -4018,15 +4010,8 @@ void exahype::solvers::ADERDGSolver::mergeWithNeighbourData(
     synchroniseTimeStepping(cellDescription);
 
     if(
-      hasToMergeWithNeighbourData(cellDescription,face)
-      &&
-      ((cellDescription.getCommunicationStatus()                       ==CellCommunicationStatus &&
-      cellDescription.getFacewiseCommunicationStatus(face._faceIndex) >=MinimumCommunicationStatusForNeighbourCommunication &&
-      cellDescription.getFacewiseAugmentationStatus(face._faceIndex)  < MaximumAugmentationStatus)
-      ||
-      (cellDescription.getFacewiseCommunicationStatus(face._faceIndex)==CellCommunicationStatus &&
-      cellDescription.getCommunicationStatus()                        >=MinimumCommunicationStatusForNeighbourCommunication &&
-      cellDescription.getAugmentationStatus()                         < MaximumAugmentationStatus))
+      hasToMergeWithNeighbourData(cellDescription,face) &&
+      communicateWithNeighbour(cellDescription,face._faceIndex)
     ) {
       // Send order: lQhbnd,lFhbnd
       // Receive order: lFhbnd,lQhbnd
@@ -4115,8 +4100,6 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
 
 void exahype::solvers::ADERDGSolver::dropNeighbourData(
     const int                                     fromRank,
-    const tarch::la::Vector<DIMENSIONS, int>&     src,
-    const tarch::la::Vector<DIMENSIONS, int>&     dest,
     const tarch::la::Vector<DIMENSIONS, double>&  x,
     const int                                     level) const {
   logDebug("dropNeighbourData(...)", "drop "<<DataMessagesPerNeighbourCommunication<<" arrays from rank="<<fromRank<<",x="<<x<<",level="<<level<<",src="<<src<<",dest="<< dest);

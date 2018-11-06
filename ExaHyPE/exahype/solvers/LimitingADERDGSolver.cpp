@@ -1327,9 +1327,7 @@ void exahype::solvers::LimitingADERDGSolver::sendDataToNeighbour(
     sendMinAndMaxToNeighbour(toRank,cellInfo._ADERDGCellDescriptions[element],src,dest,x,level);
 
     sendDataToNeighbourBasedOnLimiterStatus(
-        toRank,solverNumber,cellInfo,src,dest,false,/* isRecomputation */x,level);
-  } else {
-    sendEmptyDataToNeighbour(toRank,x,level);
+        toRank,solverNumber,cellInfo,src,dest,false,/*isRecomputation*/x,level);
   }
 
   // send order:   minAndMax,solver,limiter
@@ -1345,9 +1343,10 @@ void exahype::solvers::LimitingADERDGSolver::sendMinAndMaxToNeighbour(
     const int                                    level) const {
   const int numberOfObservables = _solver->getDMPObservables();
   if ( numberOfObservables>0 ) {
-    if (ADERDGSolver::holdsFaceData(solverPatch)) { // TODO(Dominic): Is this function still necessary?
-      Solver::BoundaryFaceInfo face(src,dest);
-      
+    Solver::BoundaryFaceInfo face(src,dest);
+    if(
+      ADERDGSolver::communicateWithNeighbour(solverPatch,face._faceIndex)
+    ){
       assertion(DataHeap::getInstance().isValidIndex(solverPatch.getSolutionMinIndex()));
       assertion(DataHeap::getInstance().isValidIndex(solverPatch.getSolutionMaxIndex()));
       const double* observablesMin = static_cast<double*>(solverPatch.getSolutionMin()) + (face._faceIndex * numberOfObservables);
@@ -1359,18 +1358,6 @@ void exahype::solvers::LimitingADERDGSolver::sendMinAndMaxToNeighbour(
       DataHeap::getInstance().sendData(
           observablesMax, numberOfObservables, toRank, x, level,
           peano::heap::MessageType::NeighbourCommunication);
-    } else {
-      for(int sends=0; sends<2; ++sends) {
-        #if defined(UsePeanosSymmetricBoundaryExchanger)
-        DataHeap::getInstance().sendData(
-            _invalidObservables.data(), _invalidObservables.size(),toRank, x, level,
-            peano::heap::MessageType::NeighbourCommunication);
-        #else
-        DataHeap::getInstance().sendData(
-            exahype::EmptyDataHeapMessage, toRank, x, level,
-            peano::heap::MessageType::NeighbourCommunication);
-        #endif
-      }
     }
   }
 }
@@ -1399,40 +1386,13 @@ void exahype::solvers::LimitingADERDGSolver::sendDataToNeighbourBasedOnLimiterSt
       // limiter sends (receive order must be inverted)
       if ( solverPatch.getRefinementStatus()>=_solver->_minimumRefinementStatusForPassiveFVPatch ) {
         _limiter->sendDataToNeighbour(toRank,solverNumber,cellInfo,src,dest,x,level);
-        // if the limiter status of a cell changes dramatically, a limiter patch might not been allocated
-        // at the time data is sent to neighbouring ranks if fused time stepping is used.
+        // if the limiter status of a cell changes dramatically, a limiter patch might not been allocated at the time data is sent to neighbouring ranks if fused time stepping is used.
         assertion1(cellInfo.indexOfFiniteVolumesCellDescription(solverNumber)!=NotFound || Solver::FuseADERDGPhases,solverPatch.toString());
       } else {
         _limiter->sendEmptyDataToNeighbour(toRank,x,level);
       }
 
     }
-  }
-}
-
-void exahype::solvers::LimitingADERDGSolver::sendEmptyDataToNeighbour(
-    const int                                     toRank,
-    const tarch::la::Vector<DIMENSIONS, double>&  x,
-    const int                                     level) const {
-  // send an empty minAndMax message
-  const int numberOfObservables = _solver->getDMPObservables();
-  if (numberOfObservables > 0) {
-    for(int sends=0; sends<2; ++sends) {
-      #if defined(UsePeanosSymmetricBoundaryExchanger)
-      DataHeap::getInstance().sendData(
-          _invalidObservables.data(), _invalidObservables.size(), toRank, x, level,
-          peano::heap::MessageType::NeighbourCommunication);
-      #else
-      DataHeap::getInstance().sendData(
-          exahype::EmptyDataHeapMessage, toRank, x, level,
-          peano::heap::MessageType::NeighbourCommunication);
-      #endif
-    }
-  }
-
-  _solver->sendEmptyDataToNeighbour(toRank,x,level);
-  if (level==getMaximumAdaptiveMeshLevel()) {
-    _limiter->sendEmptyDataToNeighbour(toRank,x,level);
   }
 }
 
@@ -1473,19 +1433,18 @@ void exahype::solvers::LimitingADERDGSolver::mergeWithNeighbourDataBasedOnLimite
     assertion1(solverPatch.getRefinementStatus()>=ADERDGSolver::Pending,solverPatch.toString());
 
     if ( solverPatch.getRefinementStatus()<_solver->getMinimumRefinementStatusForActiveFVPatch() ) {
-      _limiter->dropNeighbourData(fromRank,src,dest,x,level); // !!! Receive order must be inverted in neighbour comm.
+      _limiter->dropNeighbourData(fromRank,x,level); // !!! Receive order must be inverted in neighbour comm.
       if ( !isRecomputation ) {
         _solver->mergeWithNeighbourData(fromRank,solverNumber,cellInfo,src,dest,x,level);
       }
     } else { // solverPatch.getRefinementStatus()>=ADERDGSolver::MinimumLimiterStatusForActiveFVPatch) {
-      const int limiterElement = cellInfo.indexOfFiniteVolumesCellDescription(solverNumber);
-      assertion(limiterElement!=Solver::NotFound);
+      assertion1(cellInfo.indexOfFiniteVolumesCellDescription(solverNumber)!=Solver::NotFound,solverPatch.toString());
       _limiter->mergeWithNeighbourData(fromRank,solverNumber,cellInfo,src,dest,x,level);
       if ( !isRecomputation ) {
-        _solver->dropNeighbourData(fromRank,src,dest,x,level);
+        _solver->dropNeighbourData(fromRank,x,level);
       }
     }
-  } else if ( level < getMaximumAdaptiveMeshLevel() && !isRecomputation ) {
+  } else if ( !isRecomputation ) {
     _solver->mergeWithNeighbourData(fromRank,solverNumber,cellInfo,src,dest,x,level);
   }
 }
@@ -1501,13 +1460,7 @@ void exahype::solvers::LimitingADERDGSolver::mergeWithNeighbourMinAndMax(
   if ( numberOfObservables>0 ) {
     Solver::BoundaryFaceInfo face(dest,src);
     if(
-        (solverPatch.getCommunicationStatus()                       == ADERDGSolver::CellCommunicationStatus &&
-        solverPatch.getFacewiseCommunicationStatus(face._faceIndex) >= ADERDGSolver::MinimumCommunicationStatusForNeighbourCommunication &&
-        solverPatch.getFacewiseAugmentationStatus(face._faceIndex)  <  ADERDGSolver::MaximumAugmentationStatus)
-        ||
-        (solverPatch.getFacewiseCommunicationStatus(face._faceIndex) == ADERDGSolver::CellCommunicationStatus &&
-        solverPatch.getCommunicationStatus()                         >= ADERDGSolver::MinimumCommunicationStatusForNeighbourCommunication &&
-        solverPatch.getAugmentationStatus()                          <  ADERDGSolver::MaximumAugmentationStatus)
+        ADERDGSolver::communicateWithNeighbour(solverPatch,face._faceIndex)
     ){
       // Inverted send-receive order: TODO(Dominic): Add to docu
       // Send order:    min,max
@@ -1529,7 +1482,7 @@ void exahype::solvers::LimitingADERDGSolver::mergeSolutionMinMaxOnFace(
   Solver::BoundaryFaceInfo& face,
   const double* const min,
   const double* const max) const {
-  assertion1(ADERDGSolver::holdsFaceData(solverPatch),solverPatch.toString());
+  assertion1(ADERDGSolver::ADERDGSolver::communicateWithNeighbour(solverPatch,face._faceIndex) ,solverPatch.toString());
 
   double* solutionMin = static_cast<double*>(solverPatch.getSolutionMin());
   double* solutionMax = static_cast<double*>(solverPatch.getSolutionMax());
@@ -1543,16 +1496,14 @@ void exahype::solvers::LimitingADERDGSolver::mergeSolutionMinMaxOnFace(
 
 void exahype::solvers::LimitingADERDGSolver::dropNeighbourData(
     const int                                     fromRank,
-    const tarch::la::Vector<DIMENSIONS, int>&     src,
-    const tarch::la::Vector<DIMENSIONS, int>&     dest,
     const tarch::la::Vector<DIMENSIONS, double>&  x,
     const int                                     level) const {
   // send order:   minAndMax,solver,limiter
   // receive order limiter,solver,minAndMax
   if ( level==getMaximumAdaptiveMeshLevel() ) {
-    _limiter->dropNeighbourData(fromRank,src,dest,x,level);
+    _limiter->dropNeighbourData(fromRank,x,level);
   }
-  _solver->dropNeighbourData(fromRank,src,dest,x,level);
+  _solver->dropNeighbourData(fromRank,x,level);
 
   const int numberOfObservables = _solver->getDMPObservables();
   if (numberOfObservables>0) {
@@ -1561,37 +1512,6 @@ void exahype::solvers::LimitingADERDGSolver::dropNeighbourData(
           fromRank, x, level,
           peano::heap::MessageType::NeighbourCommunication);
   }
-}
-
-///////////////////////////////////////////////////////////
-// NEIGHBOUR - Solution recomputation
-///////////////////////////////////////////////////////////
-void exahype::solvers::LimitingADERDGSolver::sendEmptySolverAndLimiterDataToNeighbour(
-    const int                                     toRank,
-    const tarch::la::Vector<DIMENSIONS, int>&     src,
-    const tarch::la::Vector<DIMENSIONS, int>&     dest,
-    const tarch::la::Vector<DIMENSIONS, double>&  x,
-    const int                                     level) const {
-  _solver->sendEmptyDataToNeighbour(toRank,x,level);
-  if ( level==getMaximumAdaptiveMeshLevel() ) {
-    _limiter->sendEmptyDataToNeighbour(toRank,x,level);
-  }
-}
-
-void exahype::solvers::LimitingADERDGSolver::dropNeighbourSolverAndLimiterData(
-    const int                                     fromRank,
-    const tarch::la::Vector<DIMENSIONS, int>&     src,
-    const tarch::la::Vector<DIMENSIONS, int>&     dest,
-    const tarch::la::Vector<DIMENSIONS, double>&  x,
-    const int                                     level) const {
-  logDebug("dropNeighbourSolverAndLimiterData(...)", "drop data for solver " << _identifier << " from rank " <<
-            fromRank << " at vertex x=" << x << ", level=" << level <<
-            ", src=" << src << ", dest=" << dest);
-
-  if ( level==getMaximumAdaptiveMeshLevel() ) {
-    _limiter->dropNeighbourData(fromRank,src,dest,x,level); // !!! Receive order must be inverted in neighbour comm.
-  }
-  _solver->dropNeighbourData(fromRank,src,dest,x,level);
 }
 
 /////////////////////////////////////

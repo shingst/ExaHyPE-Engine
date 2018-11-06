@@ -1358,8 +1358,6 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithNeighbourData(
 
 void exahype::solvers::FiniteVolumesSolver::dropNeighbourData(
     const int                                     fromRank,
-    const tarch::la::Vector<DIMENSIONS, int>&     src,
-    const tarch::la::Vector<DIMENSIONS, int>&     dest,
     const tarch::la::Vector<DIMENSIONS, double>&  x,
     const int                                     level) const {
   for(int receives=0; receives<DataMessagesPerNeighbourCommunication; ++receives)
