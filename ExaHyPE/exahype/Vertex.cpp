@@ -837,7 +837,7 @@ void exahype::Vertex::receiveNeighbourData(
               ||
               (exahype::solvers::Solver::DisableMetaDataExchangeInBatchedTimeSteps
               && !isFirstIterationOfBatchOrNoBatch);
-
+    // todo template these loops
     for (unsigned int i = 2*(DIMENSIONS-1)*(DIMENSIONS); i-- > 0;) { // dest and src is swapped & order is swapped
       receiveNeighbourDataLoopBody(fromRank,pos1Scalar[i],pos2Scalar[i],_vertexData.getCellDescriptionsIndex(pos2Scalar[i]),mergeWithReceivedData,!receiveNoMetadata,getAdjacentRanks(),x,level);
       receiveNeighbourDataLoopBody(fromRank,pos2Scalar[i],pos1Scalar[i],_vertexData.getCellDescriptionsIndex(pos1Scalar[i]),mergeWithReceivedData,!receiveNoMetadata,getAdjacentRanks(),x,level);
