@@ -885,15 +885,6 @@
                   "title" : "Time at which periodic plotting should start, in coordinate time", 
                   "default" : 0
                 },
-                "select" : {
-                  "$comment" : "Spatial dimensional slicing, invented by Tobias for seismic probes. This is always an object, if users set 'dummy', they should remove the statement instead.",
-                  "type" : "object",
-                  "examples" : [
-                    { "x" : 0 },
-                    { "x" : 0, "y" : 1 },
-                    { "x" : 3.14, "y" : 2.7, "z" : 1.4 }
-                  ]
-                },
                 "parameters" : {
                   "title" : "Run-time parameters handed over to the plotter/post-processing tool",
                   "$comment" : "Can be used for spatial dimensional slicing, introduced by Tobias for seismic probes. This is always an object.",
@@ -906,7 +897,8 @@
                   "examples" : [
                     { "x" : 0 },
                     { "x" : 0, "y" : 1 },
-                    { "x" : 3.14, "y" : 2.7, "z" : 1.4 }
+                    { "x" : 3.14, "y" : 2.7, "z" : 1.4 },
+                    { "select" : { "x" : 3.14, "y" : 2.7, "z" : 1.4 } }
                   ]
                 }
               }
