@@ -189,7 +189,7 @@ void exahype::mappings::LocalRollback::prepareSendToNeighbour(
   ) {
     for (int i=0; i<2*(DIMENSIONS-1)*(DIMENSIONS); i++) {
       sendDataToNeighbourLoopBody(toRank,Vertex::pos1Scalar[i],Vertex::pos2Scalar[i],vertex,x,level);
-      sendDataToNeighbourLoopBody(toRank,Vertex::pos2Scalar[i],Vertex::pos2Scalar[i],vertex,x,level);
+      sendDataToNeighbourLoopBody(toRank,Vertex::pos2Scalar[i],Vertex::pos1Scalar[i],vertex,x,level);
     }
   }
 }
