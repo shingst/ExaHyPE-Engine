@@ -236,6 +236,12 @@ exahype::solvers::ADERDGSolver::CellDescription& exahype::solvers::ADERDGSolver:
   return Heap::getInstance().getData(cellDescriptionsIndex)[element];
 }
 
+
+bool exahype::solvers::ADERDGSolver::holdsFaceData(const CellDescription& cellDescription) {
+  return cellDescription.getType() != CellDescription::Type::Ancestor &&
+         cellDescription.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication;
+}
+
 bool exahype::solvers::ADERDGSolver::communicateWithNeighbour(const CellDescription& cellDescription,const int faceIndex) {
   assertion1(cellDescription.getType()!=CellDescription::Type::Cell ||
             cellDescription.getCommunicationStatus()==CellCommunicationStatus,cellDescription.toString());
@@ -294,8 +300,7 @@ void exahype::solvers::ADERDGSolver::ensureNoUnnecessaryMemoryIsAllocated(
 
   // deallocate update and boundary arrays
   if (
-      (cellDescription.getType() == CellDescription::Type::Ancestor ||
-      cellDescription.getCommunicationStatus()<MinimumCommunicationStatusForNeighbourCommunication)) &&
+      !holdsFaceData(cellDescription) &&
       DataHeap::getInstance().isValidIndex(cellDescription.getUpdateIndex())
   ) {
     // update
@@ -430,8 +435,7 @@ void exahype::solvers::ADERDGSolver::ensureNecessaryMemoryIsAllocated(
 
   // allocate update and boundary arrays
   if (
-      cellDescription.getType() != CellDescription::Type::Ancestor &&
-      cellDescription.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication &&
+      holdsFaceData(cellDescription) &&
       !DataHeap::getInstance().isValidIndex(cellDescription.getExtrapolatedPredictorIndex())
   ) {
     assertion(!DataHeap::getInstance().isValidIndex(cellDescription.getFluctuationIndex()));

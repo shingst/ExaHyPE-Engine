@@ -1068,7 +1068,17 @@ public:
       const int element);
 
   /**
-   * \return If communicatation with a (remote) neighbour is necessary.
+   * @return if a cell description (should) hold face data.
+   *
+   * @param cellDescription a cell description.
+   */
+  static bool holdsFaceData(const CellDescription& cellDescription);
+
+  /**
+   * \return if communication with a (remote) neighbour is necessary.
+   *
+   * @param cellDescription a cell description.
+   * @param faceIndex       an index in the range 0 till DIMENSIONS_TIMES_TWO-1.
    */
   static bool communicateWithNeighbour(const CellDescription& cellDescription,const int faceIndex);
 
