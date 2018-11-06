@@ -210,7 +210,7 @@ void exahype::mappings::LocalRollback::sendDataToNeighbourLoopBody(
       const tarch::la::Vector<DIMENSIONS,int> src = Vertex::delineariseIndex2(srcScalar);
       const tarch::la::Vector<DIMENSIONS,int> dest = Vertex::delineariseIndex2(destScalar);
       solvers::Solver::CellInfo cellInfo(srcCellDescriptionsIndex);
-      solvers::Solver::BoundaryFaceInfo& face(src,dest);
+      solvers::Solver::BoundaryFaceInfo face(src,dest);
 
       if ( Vertex::hasToSendToNeighbourNow(cellInfo,face) ) {
         for (int solverNumber=0; solverNumber<static_cast<int>(solvers::RegisteredSolvers.size()); solverNumber++) {

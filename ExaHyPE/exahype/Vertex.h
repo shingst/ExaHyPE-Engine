@@ -262,22 +262,6 @@ private:
       const int                                    level) const;
 
   /**
-   * @return If the cell description flags and counters state that
-   * sending data is required.
-   *
-   * @note this call has side effects. It changes flags and counters on the cell descriptions.
-   *
-   * @note such a collective treatment was required because of the LimitingADERDGSolver
-   * which combines an ADER-DG with a FV scheme.
-   *
-   * @param cellInfo refers to the cell descriptions found for a cell.
-   * @param face     struct holding face index, normal vector direction and orientation, and more.
-   */
-  static bool hasToSendToNeighbourNow(
-      solvers::Solver::CellInfo&         cellInfo,
-      solvers::Solver::BoundaryFaceInfo& face);
-
-  /**
    * TODO(Dominic): Add docu.
    *
    * @param toRank
@@ -298,22 +282,6 @@ private:
       const bool                                   isLastIterationOfBatchOrNoBatch,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level);
-
-  /**
-   * @return If the cell description flags and counters state that
-   * receiving data is required.
-   *
-   * @note this call has side effects. It changes flags and counters on the cell descriptions.
-   *
-   * @note such a collective treatment was required because of the LimitingADERDGSolver
-   * which combines an ADER-DG with a FV scheme.
-   *
-   * @param cellInfo refers to the cell descriptions found for a cell.
-   * @param face     struct holding face index, normal vector direction and orientation, and more.
-   */
-  static bool hasToReceiveFromNeighbourNow(
-      solvers::Solver::CellInfo&         cellInfo,
-      solvers::Solver::BoundaryFaceInfo& face);
 
   /**
    * TODO(Dominic): Add docu.
@@ -701,6 +669,22 @@ private:
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level) const;
 
+  /**
+   * @return If the cell description flags and counters state that
+   * sending data is required.
+   *
+   * @note this call has side effects. It changes flags and counters on the cell descriptions.
+   *
+   * @note such a collective treatment was required because of the LimitingADERDGSolver
+   * which combines an ADER-DG with a FV scheme.
+   *
+   * @param cellInfo refers to the cell descriptions found for a cell.
+   * @param face     struct holding face index, normal vector direction and orientation, and more.
+   */
+  static bool hasToSendToNeighbourNow(
+      solvers::Solver::CellInfo&         cellInfo,
+      solvers::Solver::BoundaryFaceInfo& face);
+
   /*! Send face data to neighbouring remote ranks.
    *
    * Look up facewise neighbours. If we find a remote boundary,
@@ -720,6 +704,22 @@ private:
       const bool isLastIterationOfBatchOrNoBatch,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level) const;
+
+  /**
+   * @return If the cell description flags and counters state that
+   * receiving data is required.
+   *
+   * @note this call has side effects. It changes flags and counters on the cell descriptions.
+   *
+   * @note such a collective treatment was required because of the LimitingADERDGSolver
+   * which combines an ADER-DG with a FV scheme.
+   *
+   * @param cellInfo refers to the cell descriptions found for a cell.
+   * @param face     struct holding face index, normal vector direction and orientation, and more.
+   */
+  static bool hasToReceiveFromNeighbourNow(
+      solvers::Solver::CellInfo&         cellInfo,
+      solvers::Solver::BoundaryFaceInfo& face);
 
   /*! Receive data from remote ranks at all remote boundary faces adjacent to this vertex.
    *
