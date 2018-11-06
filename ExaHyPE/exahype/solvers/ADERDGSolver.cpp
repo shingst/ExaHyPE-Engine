@@ -3245,9 +3245,9 @@ void exahype::solvers::ADERDGSolver::mergeWithBoundaryData(
     if ( !cellDescription.getNeighbourMergePerformed(face._faceIndex) ) { // check flag
       synchroniseTimeStepping(cellDescription);
 
-      waitUntilCompletedTimeStep<CellDescription>(cellDescription,false,false);
-
       if ( cellDescription.getType()==CellDescription::Type::Cell ) {
+        waitUntilCompletedTimeStep<CellDescription>(cellDescription,false,false);
+
         uncompress(cellDescription);
 
         applyBoundaryConditions(cellDescription,face);
