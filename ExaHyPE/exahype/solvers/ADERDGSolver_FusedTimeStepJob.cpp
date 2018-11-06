@@ -1,5 +1,8 @@
 #include "ADERDGSolver.h"
-//#include <immintrin.h>
+
+#if defined(SharedTBB) && !defined(noTBBPrefetchesJobData)
+#include <immintrin.h>
+#endif
 
 
 exahype::solvers::ADERDGSolver::FusedTimeStepJob::FusedTimeStepJob(
@@ -39,5 +42,17 @@ bool exahype::solvers::ADERDGSolver::FusedTimeStepJob::run() {
 
 
 void exahype::solvers::ADERDGSolver::FusedTimeStepJob::prefetchData() {
-//  std::cout << "was here (a)" << std::endl;
+  #if defined(SharedTBB) && !defined(noTBBPrefetchesJobData)
+  const CellDescription& cellDescription = getCellDescription(_cellDescriptionsIndex,_element);
+
+  double* luh  = static_cast<double*>(cellDescription.getSolution());
+  double* lduh = static_cast<double*>(cellDescription.getUpdate());
+  double* lQhbnd = static_cast<double*>(cellDescription.getExtrapolatedPredictor());
+  double* lFhbnd = static_cast<double*>(cellDescription.getFluctuation());
+
+  _mm_prefetch(luh, _MM_HINT_T2); // move at least into L3; _MM_HINT_NTA should be tried as well
+  _mm_prefetch(lduh, _MM_HINT_T2);
+  _mm_prefetch(lQhbnd, _MM_HINT_T2);
+  _mm_prefetch(lFhbnd, _MM_HINT_T2);
+  #endif
 }
