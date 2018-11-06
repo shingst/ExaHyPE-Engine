@@ -688,15 +688,17 @@ void exahype::Vertex::sendToNeighbourLoopBody(
       }
     }
     // metadata is sent and received as block
-    bool sendNoMetadata =
+    bool sendNoMetadata = /* negative */
         (exahype::solvers::Solver::DisablePeanoNeighbourExchangeInTimeSteps &&
             exahype::solvers::Solver::DisableMetaDataExchangeInBatchedTimeSteps)
             ||
             (exahype::solvers::Solver::DisableMetaDataExchangeInBatchedTimeSteps
                 && !isLastIterationOfBatchOrNoBatch);
-    if ( !sendNoMetadata ){
-      exahype::sendNeighbourCommunicationMetadata(
+    if ( !sendNoMetadata && validIndex ){
+      sendNeighbourCommunicationMetadata(
           toRank,srcCellDescriptionsIndex,src,dest,x,level);
+    } else if ( !sendNoMetadata ) {
+      sendNeighbourCommunicationMetadataSequenceWithInvalidEntries(toRank,x,level);
     }
   }
 }
