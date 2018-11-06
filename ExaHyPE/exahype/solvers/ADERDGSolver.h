@@ -920,7 +920,7 @@ private:
 
       bool run() override;
 
-//      void prefetchData() override;
+      void prefetchData() override;
   };
 
   /**
@@ -970,6 +970,7 @@ private:
         const bool                                                 isSkeletonJob);
 
       bool run() override;
+      void prefetchData() override;
   };
 
   /**
