@@ -1284,6 +1284,7 @@ void exahype::runners::Runner::initialiseMesh(exahype::repositories::Repository&
   createMesh(repository);
 
   logInfo("initialiseMesh(...)","finalise mesh refinement and compute first time step size");
+  peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(false);
   repository.switchToFinaliseMeshRefinement();
   repository.iterate();
 }
