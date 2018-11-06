@@ -294,8 +294,8 @@ void exahype::solvers::ADERDGSolver::ensureNoUnnecessaryMemoryIsAllocated(
 
   // deallocate update and boundary arrays
   if (
-      cellDescription.getType() != CellDescription::Type::Ancestor &&
-      cellDescription.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication &&
+      (cellDescription.getType() == CellDescription::Type::Ancestor ||
+      cellDescription.getCommunicationStatus()<MinimumCommunicationStatusForNeighbourCommunication)) &&
       DataHeap::getInstance().isValidIndex(cellDescription.getUpdateIndex())
   ) {
     // update
@@ -4102,7 +4102,7 @@ void exahype::solvers::ADERDGSolver::dropNeighbourData(
     const int                                     fromRank,
     const tarch::la::Vector<DIMENSIONS, double>&  x,
     const int                                     level) const {
-  logDebug("dropNeighbourData(...)", "drop "<<DataMessagesPerNeighbourCommunication<<" arrays from rank="<<fromRank<<",x="<<x<<",level="<<level<<",src="<<src<<",dest="<< dest);
+  logDebug("dropNeighbourData(...)", "drop "<<DataMessagesPerNeighbourCommunication<<" arrays from rank="<<fromRank<<",x="<<x<<",level="<<level);
 
   for(int receives=0; receives<DataMessagesPerNeighbourCommunication; ++receives)
     DataHeap::getInstance().receiveData(
