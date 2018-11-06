@@ -2479,7 +2479,6 @@ void exahype::solvers::ADERDGSolver::rollbackToPreviousTimeStepFused(CellDescrip
 }
 
 void exahype::solvers::ADERDGSolver::adjustSolutionDuringMeshRefinement(
-<<<<<<< HEAD
     const int solverNumber,
     CellInfo& cellInfo) {
   const int element = cellInfo.indexOfADERDGCellDescription(solverNumber);
@@ -2488,7 +2487,6 @@ void exahype::solvers::ADERDGSolver::adjustSolutionDuringMeshRefinement(
     const bool isInitialMeshRefinement = getMeshUpdateEvent()==MeshUpdateEvent::InitialRefinementRequested;
     if ( exahype::solvers::Solver::SpawnAMRBackgroundJobs ) {
       peano::datatraversal::TaskSet( new AdjustSolutionDuringMeshRefinementJob(*this,cellDescription,isInitialMeshRefinement));
-      peano::datatraversal::TaskSet spawnedSet( job, peano::datatraversal::TaskSet::TaskType::Background  );
     } else {
       adjustSolutionDuringMeshRefinementBody(cellDescription,isInitialMeshRefinement);
     }
@@ -2670,7 +2668,6 @@ void exahype::solvers::ADERDGSolver::prolongateObservablesMinAndMax(
     const CellDescription& parentCellDescription) const {
   const int numberOfObservables = getDMPObservables();
   for (int faceIndex = 0; faceIndex < DIMENSIONS_TIMES_TWO; ++faceIndex) {
-    const int direction = faceIndex/2;
     if ( cellDescription.getFacewiseCommunicationStatus(faceIndex)==CellCommunicationStatus ) { // TODO(Dominic): If the grid changes dynamically during the time steps,
       // fine
       double* minFine = static_cast<double*>(cellDescription.getSolutionMin()) + numberOfObservables * faceIndex;
@@ -2808,7 +2805,6 @@ void exahype::solvers::ADERDGSolver::restrictObservablesMinAndMax(
     const CellDescription& parentCellDescription) const {
   const int numberOfObservables = getDMPObservables();
   for (int faceIndex=0; faceIndex<DIMENSIONS_TIMES_TWO; faceIndex++) {
-    const int direction   = faceIndex / 2;
     if ( cellDescription.getFacewiseCommunicationStatus(faceIndex)==CellCommunicationStatus ) {
       // fine
       const double* minFine = static_cast<double*>(cellDescription.getSolutionMin()) + numberOfObservables* faceIndex;

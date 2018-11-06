@@ -42,9 +42,7 @@ bool exahype::solvers::ADERDGSolver::PredictionJob::run() {
   return false;
 }
 
-
-/*
 void exahype::solvers::ADERDGSolver::PredictionJob::prefetchData() {
   std::cout << "was here (b)" << std::endl;
 }
-*/
+

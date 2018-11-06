@@ -765,7 +765,6 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::FiniteVolumesSolver::fu
     } else {
       cellDescription.setHasCompletedTimeStep(false);
       peano::datatraversal::TaskSet( new FusedTimeStepJob( *this, cellDescription, cellInfo._cellDescriptionsIndex, isSkeletonCell ) );
-      Solver::submitJob(fusedTimeStepJob,isSkeletonCell);
       return UpdateResult();
     }
   } else {
