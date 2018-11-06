@@ -680,7 +680,7 @@ bool exahype::parser::Parser::getSpawnAMRBackgroundThreads() const {
 }
 
 bool exahype::parser::Parser::getSpawnNeighbourMergeAsThread() const {
-  return getBoolFromPath("/optimisation/spawn_neighour_merge_as_thread", false, isOptional);
+  return getBoolFromPath("/optimisation/spawn_neighbour_merge_as_thread", false, isOptional);
 }
 
 bool exahype::parser::Parser::getDisableMetadataExchangeInBatchedTimeSteps() const {
