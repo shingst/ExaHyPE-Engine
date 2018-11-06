@@ -22,6 +22,8 @@
 
 #include "peano/utils/Loop.h"
 
+#include "exahype/VertexOperations.h"
+
 #include "exahype/solvers/LimitingADERDGSolver.h"
 
 peano::CommunicationSpecification

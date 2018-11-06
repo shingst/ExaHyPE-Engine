@@ -133,6 +133,24 @@ class exahype::mappings::PredictionOrLocalRecomputation {
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const tarch::la::Vector<DIMENSIONS, double>& h);
 
+  /**
+   * Loop body for mergeWithNeighbour.
+   *
+   * @param fromRank   rank from which we expect a message
+   * @param pos1Scalar linearised relative position of cell to vertex (pos1)
+   * @param pos2Scalar linearised relative position of cell to vertex (pos2)
+   * @param vertex     vertex
+   * @param x          position of the shared vertex
+   * @param level      level of the vertex
+   */
+ static void receiveNeighbourDataLoopBody(
+      const int                                    fromRank,
+      const int                                    srcScalar,
+      const int                                    destScalar,
+      const exahype::Vertex&                       vertex,
+      const tarch::la::Vector<DIMENSIONS, double>& x,
+      const int                                    level);
+
   #ifdef Parallel
 
   /**

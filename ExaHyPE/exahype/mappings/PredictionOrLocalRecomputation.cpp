@@ -429,16 +429,14 @@ void exahype::mappings::PredictionOrLocalRecomputation::mergeWithNeighbour(
       vertex.hasToCommunicate(level)
   ) {
     for (unsigned int i = 2*(DIMENSIONS-1)*(DIMENSIONS); i-- > 0;) { // dest and src is swapped & order is swapped
-      if ( vertex.hasToReceiveMetadata(fromRank,srcScalar,destScalar,vertex.getAdjacentRanks()) ) {
-          receiveNeighourDataLoopBody(fromRank,srcScalar,destScalar,vertex.getCellDescriptionsIndex()[destScalar],fineGridX,level);
-        }
-      }
+      receiveNeighbourDataLoopBody(fromRank,Vertex::pos1Scalar[i],Vertex::pos2Scalar[i],vertex,fineGridX,level);
+      receiveNeighbourDataLoopBody(fromRank,Vertex::pos2Scalar[i],Vertex::pos1Scalar[i],vertex,fineGridX,level);
     }
-
+  }
   logTraceOut( "mergeWithNeighbour(...)" );
 }
 
-void exahype::mappings::PredictionOrLocalRecomputation::receiveNeighourDataLoopBody(
+void exahype::mappings::PredictionOrLocalRecomputation::receiveNeighbourDataLoopBody(
     const int                                    fromRank,
     const int                                    srcScalar,
     const int                                    destScalar,
@@ -446,7 +444,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::receiveNeighourDataLoopB
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const int                                    level) {
   if ( vertex.hasToReceiveMetadata(fromRank,srcScalar,destScalar,vertex.getAdjacentRanks()) ) {
-    const int destCellDescriptionsIndex =
+    const int destCellDescriptionsIndex = VertexOperations::readCellDescriptionsIndex(vertex,destScalar);
     bool validIndex = destCellDescriptionsIndex >= 0;
     assertion( !validIndex || exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(destCellDescriptionsIndex));
 
