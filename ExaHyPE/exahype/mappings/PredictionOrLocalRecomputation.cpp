@@ -278,7 +278,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::enterCell(
         _maxLevels[solverNumber] = std::max(
             fineGridVerticesEnumerator.getLevel(),_maxLevels[solverNumber]);
 
-        limitingADERDG->determineMinAndMax(solverNumber,cellInfo);
+        limitingADERDG->determineMinAndMax(solverNumber,cellInfo); // TODO(Dominic): Optimistation. Do it only in recomputed cells.
       }
       else if ( performPrediction(solver) && _stateCopy.isFirstIterationOfBatchOrNoBatch() ) {
         switch ( solver->getType() ) {
