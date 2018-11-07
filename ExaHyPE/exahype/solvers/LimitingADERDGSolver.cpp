@@ -1264,32 +1264,30 @@ void exahype::solvers::LimitingADERDGSolver::mergeWithBoundaryData(
   if ( solverElement != Solver::NotFound ) {
     SolverPatch& solverPatch = cellInfo._ADERDGCellDescriptions[solverElement];
 
-    if ( !solverPatch.getNeighbourMergePerformed(face._faceIndex) ) { // just check. no reset necessary as it is done by sub solvers
-      synchroniseTimeStepping(solverPatch,cellInfo);
+    synchroniseTimeStepping(solverPatch,cellInfo);
 
-      if (solverPatch.getType()==SolverPatch::Type::Cell) {
-        if (solverPatch.getLevel()==getMaximumAdaptiveMeshLevel()) {
-          if (solverPatch.getRefinementStatus()<_solver->getMinimumRefinementStatusForActiveFVPatch()) {
-            #ifdef Asserts
-            const int limiterElement = cellInfo.indexOfFiniteVolumesCellDescription(solverNumber);
-            #endif
-            assertion(solverPatch.getRefinementStatus()<=_solver->_minimumRefinementStatusForPassiveFVPatch || limiterElement!=Solver::NotFound);
-            if (!isRecomputation) {
-              _solver->mergeWithBoundaryData(solverNumber,cellInfo,posCell,posBoundary);
-            }
-          }
-          else {
-            #ifdef Asserts
-            const int limiterElement = cellInfo.indexOfFiniteVolumesCellDescription(solverNumber);
-            #endif
-            assertion(limiterElement!=Solver::NotFound);
-            _limiter->mergeWithBoundaryData(solverNumber,cellInfo,posCell,posBoundary);
-          }
-        }
-        else { // solverPatch.getLevel()!=getMaximumAdaptiveMeshLevel()
+    if (solverPatch.getType()==SolverPatch::Type::Cell) {
+      if (solverPatch.getLevel()==getMaximumAdaptiveMeshLevel()) {
+        if (solverPatch.getRefinementStatus()<_solver->getMinimumRefinementStatusForActiveFVPatch()) {
+          #ifdef Asserts
+          const int limiterElement = cellInfo.indexOfFiniteVolumesCellDescription(solverNumber);
+          #endif
+          assertion(solverPatch.getRefinementStatus()<=_solver->_minimumRefinementStatusForPassiveFVPatch || limiterElement!=Solver::NotFound);
           if (!isRecomputation) {
             _solver->mergeWithBoundaryData(solverNumber,cellInfo,posCell,posBoundary);
           }
+        }
+        else {
+          #ifdef Asserts
+          const int limiterElement = cellInfo.indexOfFiniteVolumesCellDescription(solverNumber);
+          #endif
+          assertion(limiterElement!=Solver::NotFound);
+          _limiter->mergeWithBoundaryData(solverNumber,cellInfo,posCell,posBoundary);
+        }
+      }
+      else { // solverPatch.getLevel()!=getMaximumAdaptiveMeshLevel()
+        if (!isRecomputation) {
+          _solver->mergeWithBoundaryData(solverNumber,cellInfo,posCell,posBoundary);
         }
       }
     }
