@@ -706,6 +706,14 @@ void exahype::solvers::FiniteVolumesSolver::adjustSolution(CellDescription& cell
       cellDescription.getTimeStamp(),
       cellDescription.getTimeStepSize());
 
+  double* previousSolution = static_cast<double*>(cellDescription.getPreviousSolution());
+  adjustSolution(
+      previousSolution,
+      cellDescription.getOffset()+0.5*cellDescription.getSize(),
+      cellDescription.getSize(),
+      cellDescription.getPreviousTimeStamp(),
+      cellDescription.getPreviousTimeStepSize());
+
   #ifdef Asserts
   for (int i=0; i<getDataPerPatch()+getGhostDataPerPatch(); i++) {
     assertion3(std::isfinite(solution[i]),cellDescription.toString(),"setInitialConditions(...)",i);
