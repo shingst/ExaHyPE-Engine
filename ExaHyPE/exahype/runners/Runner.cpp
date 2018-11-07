@@ -278,7 +278,8 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
   exahype::Vertex::SpawnNeighbourMergeAsThread = _parser.getSpawnNeighbourMergeAsThread();
 
   // background jobs
-  tarch::multicore::jobs::Job::setMaxNumberOfRunningBackgroundThreads(_parser.getNumberOfBackgroundJobConsumerTasks());
+  solvers::Solver::MaxNumberOfRunningBackgroundJobConsumerTasksDuringTraversal = _parser.getNumberOfBackgroundJobConsumerTasks();
+  tarch::multicore::jobs::Job::setMaxNumberOfRunningBackgroundThreads(solvers::Solver::MaxNumberOfRunningBackgroundJobConsumerTasksDuringTraversal);
 
   #if defined(SharedTBB)
   tarch::multicore::jobs::setMinMaxNumberOfJobsToConsumeInOneRush(
@@ -809,7 +810,6 @@ bool exahype::runners::Runner::createMesh(exahype::repositories::Repository& rep
   bool meshUpdate = false;
 
   int meshSetupIterations = 0;
-  tarch::multicore::jobs::Job::setMaxNumberOfRunningBackgroundThreads(0); // during the traversal only have zero/one consumer thread running
   repository.switchToMeshRefinement();
 
   repository.getState().setMeshRefinementHasConverged(false);
@@ -837,8 +837,6 @@ bool exahype::runners::Runner::createMesh(exahype::repositories::Repository& rep
     //  assertion( tarch::parallel::NodePool::getInstance().getNumberOfIdleNodes()==0 );
     //  #endif
   }
-
-  tarch::multicore::jobs::Job::setMaxNumberOfRunningBackgroundThreads(_parser.getNumberOfBackgroundJobConsumerTasks()); // reset the number of running consumer threads
 
   return meshUpdate;
 }

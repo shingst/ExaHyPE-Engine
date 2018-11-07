@@ -606,6 +606,14 @@ class exahype::solvers::Solver {
   static bool SpawnCompressionAsBackgroundJob;
 
   /**
+   * Maximum number of background job consumer tasks
+   * which are allowed to run during the mesh traversal.
+   *
+   * Default is zero.
+   */
+  static int MaxNumberOfRunningBackgroundJobConsumerTasksDuringTraversal;
+
+  /**
    * Set to true if the prediction and/or the fused time step
    * should be launched as background job whenever possible.
    */

@@ -133,6 +133,7 @@ void exahype::mappings::MeshRefinement::mergeWithWorkerThread(
 void exahype::mappings::MeshRefinement::beginIteration( exahype::State& solverState ) {
   _localState = solverState;
 
+  tarch::multicore::jobs::Job::setMaxNumberOfRunningBackgroundThreads(0); // during the traversal only have zero/one consumer thread running
   peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(true);
     
    //logInfo("beginIteration(...)","solverState.getAllSolversAttainedStableStateInPreviousIteration()="<<solverState.getAllSolversAttainedStableStateInPreviousIteration());

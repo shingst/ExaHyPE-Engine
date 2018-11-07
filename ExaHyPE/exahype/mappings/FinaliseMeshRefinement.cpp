@@ -123,6 +123,8 @@ void exahype::mappings::FinaliseMeshRefinement::mergeWithWorkerThread(
 void exahype::mappings::FinaliseMeshRefinement::beginIteration(exahype::State& solverState) {
   logTraceInWith1Argument("beginIteration(State)", solverState);
 
+  tarch::multicore::jobs::Job::setMaxNumberOfRunningBackgroundThreads(
+      solvers::Solver::MaxNumberOfRunningBackgroundJobConsumerTasksDuringTraversal); // reset the number of running consumer threads
   peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(false);
 
   OneSolverRequestedMeshUpdate =

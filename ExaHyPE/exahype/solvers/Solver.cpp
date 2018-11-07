@@ -91,6 +91,8 @@ double exahype::solvers::Solver::WeightForPredictionRerun = 0.99;
 bool exahype::solvers::Solver::DisableMetaDataExchangeInBatchedTimeSteps = false;
 bool exahype::solvers::Solver::DisablePeanoNeighbourExchangeInTimeSteps = false;
 
+int exahype::solvers::Solver::MaxNumberOfRunningBackgroundJobConsumerTasksDuringTraversal = 0;
+
 bool exahype::solvers::Solver::SpawnPredictionAsBackgroundJob = false;
 int exahype::solvers::Solver::PredictionSweeps                = 1;
 
