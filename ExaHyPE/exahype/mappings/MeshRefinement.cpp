@@ -129,6 +129,8 @@ void exahype::mappings::MeshRefinement::mergeWithWorkerThread(
 
 void exahype::mappings::MeshRefinement::beginIteration( exahype::State& solverState ) {
   _localState = solverState;
+
+  peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(true);
     
    //logInfo("beginIteration(...)","solverState.getAllSolversAttainedStableStateInPreviousIteration()="<<solverState.getAllSolversAttainedStableStateInPreviousIteration());
 

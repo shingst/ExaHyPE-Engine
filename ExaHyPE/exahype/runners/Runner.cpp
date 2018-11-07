@@ -813,7 +813,6 @@ bool exahype::runners::Runner::createMesh(exahype::repositories::Repository& rep
   repository.switchToMeshRefinement();
 
   repository.getState().setMeshRefinementHasConverged(false);
-  peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(true);
   while ( repository.getState().continueToConstructGrid() ) {
     repository.iterate(1,true);
     meshSetupIterations++;
@@ -1284,7 +1283,6 @@ void exahype::runners::Runner::initialiseMesh(exahype::repositories::Repository&
   createMesh(repository);
 
   logInfo("initialiseMesh(...)","finalise mesh refinement and compute first time step size");
-  peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(false);
   repository.switchToFinaliseMeshRefinement();
   repository.iterate();
 }
@@ -1292,7 +1290,6 @@ void exahype::runners::Runner::initialiseMesh(exahype::repositories::Repository&
 void exahype::runners::Runner::updateMeshOrLimiterDomain(
     exahype::repositories::Repository& repository, const bool fusedTimeStepping) {
   // 1. All solvers drop their MPI messages and broadcast time step data
-  peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(false);
   repository.switchToBroadcastAndDropNeighbourMessages();
   repository.iterate(1,false);
 
@@ -1300,7 +1297,6 @@ void exahype::runners::Runner::updateMeshOrLimiterDomain(
   if ( exahype::solvers::Solver::oneSolverRequestedRefinementStatusSpreading() ) {
     logInfo("updateMeshAndSubdomains(...)","pre-spreading of limiter status");
     repository.switchToRefinementStatusSpreading();
-    peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(false);
     repository.iterate(
         exahype::solvers::Solver::getMaxRefinementStatus()+1,false);
   }
@@ -1315,7 +1311,6 @@ void exahype::runners::Runner::updateMeshOrLimiterDomain(
   // Further reinitialse solvers that reported an irregular limiter domain change
   logInfo("updateMeshAndSubdomains(...)","finalise mesh refinement (if applicable)");
   logInfo("updateMeshAndSubdomains(...)","reinitialise cells and send data to neigbours (if applicable)");
-  peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(false);
   repository.switchToFinaliseMeshRefinementOrLocalRollback();
   repository.iterate(1,false);
 
@@ -1330,7 +1325,6 @@ void exahype::runners::Runner::updateMeshOrLimiterDomain(
   if (fusedTimeStepping ||
       exahype::solvers::Solver::oneSolverRequestedLocalRecomputation()) {
     logInfo("updateMeshAndSubdomains(...)","recompute solution locally (if applicable) and compute new time step size");
-    peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(false);
     repository.switchToPredictionOrLocalRecomputation(); // do not roll forward here if global recomp.; we want to stay at the old time step
     const int sweeps = (exahype::solvers::Solver::FuseADERDGPhases) ? exahype::solvers::Solver::PredictionSweeps : 1;
     repository.iterate( sweeps ,false ); // local recomputation: has now recomputed predictor in interface cells
@@ -1454,8 +1448,6 @@ void exahype::runners::Runner::runTimeStepsWithFusedAlgorithmicSteps(
 
   bool communicatePeanoVertices =
       !exahype::solvers::Solver::DisablePeanoNeighbourExchangeInTimeSteps;
-
-  peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(false);
   repository.switchToFusedTimeStep();
   if (numberOfStepsToRun==0) {
     repository.iterate( exahype::solvers::Solver::PredictionSweeps,communicatePeanoVertices );
@@ -1477,7 +1469,6 @@ void exahype::runners::Runner::runTimeStepsWithFusedAlgorithmicSteps(
 
   if (exahype::solvers::Solver::oneSolverViolatedStabilityCondition()) {
     logInfo("runTimeStepsWithFusedAlgorithmicSteps(...)", "\t\t recompute space-time predictor");
-    peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(false);
     repository.switchToPredictionRerun();
     repository.iterate( exahype::solvers::Solver::PredictionSweeps, communicatePeanoVertices );
   }
@@ -1491,12 +1482,8 @@ void exahype::runners::Runner::runOneTimeStepWithThreeSeparateAlgorithmicSteps(
   // Only one time step (predictor vs. corrector) is used in this case.
   bool communicatePeanoVertices =
         !exahype::solvers::Solver::DisablePeanoNeighbourExchangeInTimeSteps;
-
-  peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(false);
   repository.switchToMergeNeighbours();  // Riemann -> face2face
   repository.iterate( 1, communicatePeanoVertices );
-
-  peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(false);
   repository.switchToUpdateAndReduce();  // Face to cell + Inside cell
   repository.iterate( 1, communicatePeanoVertices );
 
@@ -1513,8 +1500,6 @@ void exahype::runners::Runner::runOneTimeStepWithThreeSeparateAlgorithmicSteps(
   }
 
   printTimeStepInfo(1,repository);
-
-  peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(false);
   repository.switchToPrediction(); // Cell onto faces
   repository.iterate( exahype::solvers::Solver::PredictionSweeps, communicatePeanoVertices );
 
