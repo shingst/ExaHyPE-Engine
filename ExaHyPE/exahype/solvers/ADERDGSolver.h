@@ -1355,7 +1355,7 @@ public:
           std::unique_ptr<profilers::Profiler>(
               new profilers::simple::NoOpProfiler("")));
 
-  virtual ~ADERDGSolver();
+  virtual ~ADERDGSolver() {}
 
   // Disallow copy and assignment
   ADERDGSolver(const ADERDGSolver& other) = delete;
