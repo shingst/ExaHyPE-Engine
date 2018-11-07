@@ -41,6 +41,12 @@
 
 #include "tarch/multicore/Jobs.h"
 
+#if defined(SharedTBB) && !defined(noTBBPrefetchesJobData)
+#include <immintrin.h>
+#endif
+
+
+
 namespace {
   constexpr const char* tags[]{"solutionUpdate",
                              "volumeIntegral",
