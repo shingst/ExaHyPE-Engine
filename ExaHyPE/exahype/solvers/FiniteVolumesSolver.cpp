@@ -956,33 +956,31 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithBoundaryData(
   const int element = cellInfo.indexOfFiniteVolumesCellDescription(solverNumber);
   if ( element != Solver::NotFound ) {
     CellDescription& cellDescription = cellInfo._FiniteVolumesCellDescriptions[element];
+    assertion1( cellDescription.getType()==CellDescription::Cell, cellDescription.toString() );
 
-    if ( !cellDescription.getNeighbourMergePerformed(face._faceIndex) ) { // check flag
-      assertion1( cellDescription.getType()==CellDescription::Cell, cellDescription.toString() );
-      #if !defined(SharedMemoryParallelisation) && !defined(Parallel) && defined(Asserts)
-      static int counter = 0;
-      static double timeStamp = 0;
-      if ( !tarch::la::equals(timeStamp,_minTimeStamp,1e-9) ) {
-        logInfo("applyBoundaryConditions(...)","#boundaryConditions="<<counter);
-        timeStamp = _minTimeStamp;
-        counter=0;
-      }
-      counter++;
-      #endif
-
-      waitUntilCompletedTimeStep<CellDescription>(cellDescription,false,false);
-
-      uncompress(cellDescription);
-
-      double* luh = static_cast<double*>(cellDescription.getSolution());
-      boundaryConditions(
-          luh,
-          cellDescription.getOffset()+0.5*cellDescription.getSize(),
-          cellDescription.getSize(),
-          cellDescription.getTimeStamp(),
-          cellDescription.getTimeStepSize(),
-          posCell,posBoundary);
+    #if !defined(SharedMemoryParallelisation) && !defined(Parallel) && defined(Asserts)
+    static int counter = 0;
+    static double timeStamp = 0;
+    if ( !tarch::la::equals(timeStamp,_minTimeStamp,1e-9) ) {
+      logInfo("applyBoundaryConditions(...)","#boundaryConditions="<<counter);
+      timeStamp = _minTimeStamp;
+      counter=0;
     }
+    counter++;
+    #endif
+
+    waitUntilCompletedTimeStep<CellDescription>(cellDescription,false,false);
+
+    uncompress(cellDescription);
+
+    double* luh = static_cast<double*>(cellDescription.getSolution());
+    boundaryConditions(
+        luh,
+        cellDescription.getOffset()+0.5*cellDescription.getSize(),
+        cellDescription.getSize(),
+        cellDescription.getTimeStamp(),
+        cellDescription.getTimeStepSize(),
+        posCell,posBoundary);
   }
 }
 
