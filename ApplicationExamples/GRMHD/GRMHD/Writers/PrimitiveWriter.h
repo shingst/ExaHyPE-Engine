@@ -25,6 +25,7 @@ namespace GRMHD{
 
 
 class GRMHD::PrimitiveWriter: public exahype::plotters::Plotter::UserOnTheFlyPostProcessing{
+  int numberOfC2PFailures, allConversions;
   public:
   PrimitiveWriter(GRMHDSolver_FV&  solver);
   PrimitiveWriter(GRMHDSolver_ADERDG&  solver);

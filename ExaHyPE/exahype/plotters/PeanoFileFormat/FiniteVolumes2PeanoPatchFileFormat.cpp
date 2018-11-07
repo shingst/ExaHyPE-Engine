@@ -222,7 +222,7 @@ void exahype::plotters::FiniteVolumes2PeanoPatchFileFormat::plotPatch(const int 
     */
 
     if (!slicer || slicer->isPatchActive(offsetOfPatch, sizeOfPatch)) {
-      double* solution = DataHeap::getInstance().getData(cellDescription.getSolution()).data();
+      double* solution = static_cast<double*>(cellDescription.getSolution());
       std::pair<int,int> vertexAndCellIndex(0,0);
 
       if (_writtenUnknowns>0) {

@@ -32,7 +32,7 @@
  * new solution. 
  * Finally add the source terms.
  */
-template <bool useSource, bool useNCP, bool useFlux, typename SolverType>
+template <bool useSource, bool useNCP, bool useFlux, bool robustDiagonalLimiting, typename SolverType>
 double kernels::finitevolumes::godunov::c::solutionUpdate(
     SolverType& solver,
     double* luh_new, const double* luh,

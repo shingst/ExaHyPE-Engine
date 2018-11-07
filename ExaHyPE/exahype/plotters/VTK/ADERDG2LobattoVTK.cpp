@@ -11,11 +11,13 @@
  * For the full license text, see LICENSE.txt
  **/
  
-#include "ADERDG2LegendreVTK.h"
+#include "ADERDG2LobattoVTK.h"
 #include "tarch/parallel/Node.h"
 
 #include "kernels/DGMatrices.h"
-#include "kernels/GaussLegendreQuadrature.h"
+
+#include "kernels/GaussLobattoQuadrature.h"
+
 #include "kernels/DGBasisFunctions.h"
 
 #include "peano/utils/Loop.h"
@@ -30,93 +32,93 @@
 
 #include "kernels/aderdg/generic/c/computeGradients.cpph" // derivatives
 
-tarch::logging::Log exahype::plotters::ADERDG2LegendreVTK::_log("exahype::plotters::ADERDG2LegendreVTK");
+tarch::logging::Log exahype::plotters::ADERDG2LobattoVTK::_log("exahype::plotters::ADERDG2LobattoVTK");
 
-std::string exahype::plotters::ADERDG2LegendreVerticesVTKAscii::getIdentifier() {
-  return "vtk::Legendre::vertices::ascii";
+std::string exahype::plotters::ADERDG2LobattoVerticesVTKAscii::getIdentifier() {
+  return "vtk::Lobatto::vertices::ascii";
 }
 
 
-exahype::plotters::ADERDG2LegendreVerticesVTKAscii::ADERDG2LegendreVerticesVTKAscii(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing):
-    ADERDG2LegendreVTK(postProcessing,PlotterType::ASCIIVTK,false) {
+exahype::plotters::ADERDG2LobattoVerticesVTKAscii::ADERDG2LobattoVerticesVTKAscii(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing):
+    ADERDG2LobattoVTK(postProcessing,PlotterType::ASCIIVTK,false) {
 }
 
 
-std::string exahype::plotters::ADERDG2LegendreVerticesVTKBinary::getIdentifier() {
-  return "vtk::Legendre::vertices::binary";
+std::string exahype::plotters::ADERDG2LobattoVerticesVTKBinary::getIdentifier() {
+  return "vtk::Lobatto::vertices::binary";
 }
 
 
-exahype::plotters::ADERDG2LegendreVerticesVTKBinary::ADERDG2LegendreVerticesVTKBinary(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing):
-    ADERDG2LegendreVTK(postProcessing,PlotterType::BinaryVTK,false) {
-}
-
-
-
-std::string exahype::plotters::ADERDG2LegendreCellsVTKAscii::getIdentifier() {
-  return "vtk::Legendre::cells::ascii";
-}
-
-
-exahype::plotters::ADERDG2LegendreCellsVTKAscii::ADERDG2LegendreCellsVTKAscii(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing):
-    ADERDG2LegendreVTK(postProcessing,PlotterType::ASCIIVTK,true) {
-}
-
-
-std::string exahype::plotters::ADERDG2LegendreCellsVTKBinary::getIdentifier() {
- return "vtk::Legendre::cells::binary";
-}
-
-
-exahype::plotters::ADERDG2LegendreCellsVTKBinary::ADERDG2LegendreCellsVTKBinary(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing):
-    ADERDG2LegendreVTK(postProcessing,PlotterType::BinaryVTK,true) {
+exahype::plotters::ADERDG2LobattoVerticesVTKBinary::ADERDG2LobattoVerticesVTKBinary(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing):
+    ADERDG2LobattoVTK(postProcessing,PlotterType::BinaryVTK,false) {
 }
 
 
 
-std::string exahype::plotters::ADERDG2LegendreVerticesVTUAscii::getIdentifier() {
-  return "vtu::Legendre::vertices::ascii";
+std::string exahype::plotters::ADERDG2LobattoCellsVTKAscii::getIdentifier() {
+  return "vtk::Lobatto::cells::ascii";
 }
 
 
-exahype::plotters::ADERDG2LegendreVerticesVTUAscii::ADERDG2LegendreVerticesVTUAscii(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing):
-    ADERDG2LegendreVTK(postProcessing,PlotterType::ASCIIVTU,false) {
+exahype::plotters::ADERDG2LobattoCellsVTKAscii::ADERDG2LobattoCellsVTKAscii(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing):
+    ADERDG2LobattoVTK(postProcessing,PlotterType::ASCIIVTK,true) {
 }
 
 
-std::string exahype::plotters::ADERDG2LegendreVerticesVTUBinary::getIdentifier() {
-  return "vtu::Legendre::vertices::binary";
+std::string exahype::plotters::ADERDG2LobattoCellsVTKBinary::getIdentifier() {
+ return "vtk::Lobatto::cells::binary";
 }
 
 
-exahype::plotters::ADERDG2LegendreVerticesVTUBinary::ADERDG2LegendreVerticesVTUBinary(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing):
-    ADERDG2LegendreVTK(postProcessing,PlotterType::BinaryVTU,false) {
-}
-
-
-
-std::string exahype::plotters::ADERDG2LegendreCellsVTUAscii::getIdentifier() {
-  return "vtu::Legendre::cells::ascii";
-}
-
-
-exahype::plotters::ADERDG2LegendreCellsVTUAscii::ADERDG2LegendreCellsVTUAscii(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing):
-    ADERDG2LegendreVTK(postProcessing,PlotterType::ASCIIVTU,true) {
-}
-
-
-std::string exahype::plotters::ADERDG2LegendreCellsVTUBinary::getIdentifier() {
- return "vtu::Legendre::cells::binary";
-}
-
-
-exahype::plotters::ADERDG2LegendreCellsVTUBinary::ADERDG2LegendreCellsVTUBinary(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing):
-    ADERDG2LegendreVTK(postProcessing,PlotterType::BinaryVTU,true) {
+exahype::plotters::ADERDG2LobattoCellsVTKBinary::ADERDG2LobattoCellsVTKBinary(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing):
+    ADERDG2LobattoVTK(postProcessing,PlotterType::BinaryVTK,true) {
 }
 
 
 
-exahype::plotters::ADERDG2LegendreVTK::ADERDG2LegendreVTK(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing, PlotterType plotterType, bool plotCells):
+std::string exahype::plotters::ADERDG2LobattoVerticesVTUAscii::getIdentifier() {
+  return "vtu::Lobatto::vertices::ascii";
+}
+
+
+exahype::plotters::ADERDG2LobattoVerticesVTUAscii::ADERDG2LobattoVerticesVTUAscii(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing):
+    ADERDG2LobattoVTK(postProcessing,PlotterType::ASCIIVTU,false) {
+}
+
+
+std::string exahype::plotters::ADERDG2LobattoVerticesVTUBinary::getIdentifier() {
+  return "vtu::Lobatto::vertices::binary";
+}
+
+
+exahype::plotters::ADERDG2LobattoVerticesVTUBinary::ADERDG2LobattoVerticesVTUBinary(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing):
+    ADERDG2LobattoVTK(postProcessing,PlotterType::BinaryVTU,false) {
+}
+
+
+
+std::string exahype::plotters::ADERDG2LobattoCellsVTUAscii::getIdentifier() {
+  return "vtu::Lobatto::cells::ascii";
+}
+
+
+exahype::plotters::ADERDG2LobattoCellsVTUAscii::ADERDG2LobattoCellsVTUAscii(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing):
+    ADERDG2LobattoVTK(postProcessing,PlotterType::ASCIIVTU,true) {
+}
+
+
+std::string exahype::plotters::ADERDG2LobattoCellsVTUBinary::getIdentifier() {
+ return "vtu::Lobatto::cells::binary";
+}
+
+
+exahype::plotters::ADERDG2LobattoCellsVTUBinary::ADERDG2LobattoCellsVTUBinary(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing):
+    ADERDG2LobattoVTK(postProcessing,PlotterType::BinaryVTU,true) {
+}
+
+
+
+exahype::plotters::ADERDG2LobattoVTK::ADERDG2LobattoVTK(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing, PlotterType plotterType, bool plotCells):
   Device(postProcessing),
   _fileCounter(-1),
   _plotterType(plotterType),
@@ -131,7 +133,7 @@ exahype::plotters::ADERDG2LegendreVTK::ADERDG2LegendreVTK(exahype::plotters::Plo
 }
 
 
-void exahype::plotters::ADERDG2LegendreVTK::init(
+void exahype::plotters::ADERDG2LobattoVTK::init(
   const std::string& filename,
   int                orderPlusOne,
   int                unknowns,
@@ -152,7 +154,7 @@ void exahype::plotters::ADERDG2LegendreVTK::init(
 }
 
 
-void exahype::plotters::ADERDG2LegendreVTK::startPlotting( double time ) {
+void exahype::plotters::ADERDG2LobattoVTK::startPlotting( double time ) {
   _fileCounter++;
 
   if (_writtenUnknowns>0) {
@@ -197,7 +199,7 @@ void exahype::plotters::ADERDG2LegendreVTK::startPlotting( double time ) {
 }
 
 
-void exahype::plotters::ADERDG2LegendreVTK::finishPlotting() {
+void exahype::plotters::ADERDG2LobattoVTK::finishPlotting() {
   _postProcessing->finishPlotting();
 
   if ( _writtenUnknowns>0 ) {
@@ -254,11 +256,11 @@ void exahype::plotters::ADERDG2LegendreVTK::finishPlotting() {
 }
 
 
-exahype::plotters::ADERDG2LegendreVTK::~ADERDG2LegendreVTK() {
+exahype::plotters::ADERDG2LobattoVTK::~ADERDG2LobattoVTK() {
 }
 
 
-void exahype::plotters::ADERDG2LegendreVTK::writeTimeStampDataToPatch( double timeStamp, int vertexIndex, int cellIndex ) {
+void exahype::plotters::ADERDG2LobattoVTK::writeTimeStampDataToPatch( double timeStamp, int vertexIndex, int cellIndex ) {
   if (_writtenUnknowns>0 && _vertexTimeStampDataWriter!=nullptr) {
     dfor(i,_order+1) {
       _vertexTimeStampDataWriter->plotVertex(vertexIndex, timeStamp);
@@ -275,7 +277,7 @@ void exahype::plotters::ADERDG2LegendreVTK::writeTimeStampDataToPatch( double ti
 }
 
 
-std::pair<int,int> exahype::plotters::ADERDG2LegendreVTK::plotLegendrePatch(
+std::pair<int,int> exahype::plotters::ADERDG2LobattoVTK::plotLobattoPatch(
   const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
   const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch
 ) {
@@ -288,10 +290,10 @@ std::pair<int,int> exahype::plotters::ADERDG2LegendreVTK::plotLegendrePatch(
       tarch::la::Vector<DIMENSIONS, double> p;
 
       //p = offsetOfPatch + tarch::la::multiplyComponents( i.convertScalar<double>(), sizeOfPatch) * (1.0/_order);
-
       for (int d=0; d<DIMENSIONS; d++) {
-        p(d) = offsetOfPatch(d) + kernels::gaussLegendreNodes[_order][i(d)] * sizeOfPatch(d);
+        p(d) = offsetOfPatch(d) + kernels::gaussLobattoNodes[_order][_order-i(d)] * sizeOfPatch(d);
       }
+
 
       const int newVertexNumber = _vertexWriter->plotVertex(p);
       firstVertex = firstVertex==-1 ? newVertexNumber : firstVertex;
@@ -327,7 +329,7 @@ std::pair<int,int> exahype::plotters::ADERDG2LegendreVTK::plotLegendrePatch(
 }
 
 
-void exahype::plotters::ADERDG2LegendreVTK::plotVertexData(
+void exahype::plotters::ADERDG2LobattoVTK::plotVertexData(
   int firstVertexIndex,
   const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
   const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch,
@@ -348,9 +350,9 @@ void exahype::plotters::ADERDG2LegendreVTK::plotVertexData(
 
   dfor(i,_order+1) {
     tarch::la::Vector<DIMENSIONS, double> p;
-    for (int d=0; d<DIMENSIONS; d++) {
-      p(d) = offsetOfPatch(d) + kernels::gaussLegendreNodes[_order][i(d)] * sizeOfPatch(d);
-    }
+      for (int d=0; d<DIMENSIONS; d++) {
+        p(d) = offsetOfPatch(d) + kernels::gaussLobattoNodes[_order][_order-i(d)] * sizeOfPatch(d);
+      }
 
     if(_postProcessing->mapWithDerivatives()) {
       _postProcessing->mapQuantities(
@@ -387,7 +389,7 @@ void exahype::plotters::ADERDG2LegendreVTK::plotVertexData(
 }
 
 
-void exahype::plotters::ADERDG2LegendreVTK::plotCellData(
+void exahype::plotters::ADERDG2LobattoVTK::plotCellData(
   int firstCellIndex,
   const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
   const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch,
@@ -400,9 +402,9 @@ void exahype::plotters::ADERDG2LegendreVTK::plotCellData(
   double* value       = _writtenUnknowns==0 ? nullptr : new double[_writtenUnknowns];
   
   /****************************
-   *  Note: The vtk::Legendre::cells::... plotter has not been tested yet
+   *  Note: The vtk::Lobatto::cells::... plotter has not been tested yet
    *        because it tends to fail with the assertion
-   *     ADERDG2LegendreVTK.cpp, line 516 failed: _writtenUnknowns==0 || _vertexTimeStampDataWriter!=nullptr
+   *     ADERDG2LobattoVTK.cpp, line 516 failed: _writtenUnknowns==0 || _vertexTimeStampDataWriter!=nullptr
    * So this has to be fixed, afterwards this very method can be checked
    * for correctness.
    ****************************/
@@ -420,9 +422,11 @@ void exahype::plotters::ADERDG2LegendreVTK::plotCellData(
   dfor(i,_order) {
     // This is inefficient but works. We could look it up directly from the arrays
     tarch::la::Vector<DIMENSIONS, double> p;
+
     for (int d=0; d<DIMENSIONS; d++) {
-      p(d) = offsetOfPatch(d) + (kernels::gaussLegendreNodes[_order][i(d)]+kernels::gaussLegendreNodes[_order][i(d)+1]) * sizeOfPatch(d)/2.0;
+      p(d) = offsetOfPatch(d) + (kernels::gaussLobattoNodes[_order][_order-i(d)]+kernels::gaussLobattoNodes[_order][_order-(i(d)+1)]) * sizeOfPatch(d)/2.0;
     }
+    
     for (int unknown=0; unknown < _solverUnknowns; unknown++) {
       interpoland[unknown] = kernels::interpolate(
         offsetOfPatch.data(),
@@ -486,7 +490,7 @@ void exahype::plotters::ADERDG2LegendreVTK::plotCellData(
   if (value!=nullptr)        delete[] value;
 }
 
-void exahype::plotters::ADERDG2LegendreVTK::plotPatch(const int cellDescriptionsIndex, const int element) {
+void exahype::plotters::ADERDG2LobattoVTK::plotPatch(const int cellDescriptionsIndex, const int element) {
   auto& aderdgCellDescription = exahype::solvers::ADERDGSolver::getCellDescription(cellDescriptionsIndex,element);
 
   if (aderdgCellDescription.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Cell) {
@@ -499,7 +503,7 @@ void exahype::plotters::ADERDG2LegendreVTK::plotPatch(const int cellDescriptions
   }
 }
 
-void exahype::plotters::ADERDG2LegendreVTK::plotPatch(
+void exahype::plotters::ADERDG2LobattoVTK::plotPatch(
     const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
     const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch,
     double* u,
@@ -509,7 +513,7 @@ void exahype::plotters::ADERDG2LegendreVTK::plotPatch(
     assertion( _writtenUnknowns==0 || (_plotCells && _cellTimeStampDataWriter!=nullptr) || (!_plotCells && _vertexTimeStampDataWriter!=nullptr ));
     assertion(sizeOfPatch(0)==sizeOfPatch(1));
 
-    std::pair<int,int> vertexAndCellIndex = plotLegendrePatch(offsetOfPatch, sizeOfPatch);
+    std::pair<int,int> vertexAndCellIndex = plotLobattoPatch(offsetOfPatch, sizeOfPatch);
 
     writeTimeStampDataToPatch( timeStamp, vertexAndCellIndex.first, vertexAndCellIndex.second );
 

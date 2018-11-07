@@ -348,7 +348,7 @@ private:
    */
   int evaluateRefinementCriterion(
       const CellDescription& cellDescription,
-      const int solutionHeapIndex, const double& timeStamp);
+      const double* const solution, const double& timeStamp);
 
   /**
    * Query the user's refinement criterion and
@@ -1098,7 +1098,7 @@ private:
    */
   void pullUnknownsFromByteStream(CellDescription& cellDescription) const;
 
-  class CompressionJob {
+  class CompressionJob: public tarch::multicore::jobs::Job {
     private:
       const ADERDGSolver& _solver;
       CellDescription&    _cellDescription;
@@ -1109,14 +1109,14 @@ private:
         CellDescription&    cellDescription,
         const bool          isSkeletonJob);
 
-      bool operator()();
+      bool run() override;
   };
 
   /**
    * A job which performs the prediction and volume integral operations
    * for a cell description.
    */
-  class PredictionJob {
+  class PredictionJob: public tarch::multicore::jobs::Job {
     private:
       ADERDGSolver&    _solver; // TODO not const because of kernels
       const int        _cellDescriptionsIndex;
@@ -1135,7 +1135,20 @@ private:
           const bool        uncompressBefore,
           const bool        isAtRemoteBoundary);
 
-      bool operator()();
+      bool run() override;
+
+      /**
+       * We prefetch the data that is subject to the prediction/updates.
+       * As we know that prefetchData on the i+1th tasks is ran before the
+       * scheduler does the ith task, we end up with reasonably good
+       * prefetching. In theory, we might assume that loading into the L3
+       * cache is sufficient, while we found that loading into the L2 cache
+       * can destroy the affinity. In practice, it is best to follow Intel's
+       * cache recommendations, i.e. we use _MM_HINT_NTA as cache instruction
+       * rather than _MM_HINT_T2. This is however empirical evidence and
+       * might have to be reevaluated later on.
+       */
+      void prefetchData() override;
   };
 
 
@@ -1144,7 +1157,7 @@ private:
    * A job which performs prolongation operation
    * for a cell description.
    */
-  class ProlongationJob {
+  class ProlongationJob: public tarch::multicore::jobs::Job {
     private:
       ADERDGSolver&                            _solver; // TODO not const because of kernels
       CellDescription&                         _cellDescription;
@@ -1157,7 +1170,7 @@ private:
           const CellDescription&                   parentCellDescription,
           const tarch::la::Vector<DIMENSIONS,int>& subcellIndex);
 
-      bool operator()();
+      bool run() override;
   };
 
   /**
@@ -1171,7 +1184,7 @@ private:
    * TODO(Dominic): Minimise time step sizes and refinement requests per patch
    * (->transpose the typical minimisation order)
    */
-  class FusedTimeStepJob {
+  class FusedTimeStepJob: public tarch::multicore::jobs::Job {
     private:
       ADERDGSolver&                                              _solver; // TODO not const because of kernels
       const int                                                  _cellDescriptionsIndex;
@@ -1186,13 +1199,14 @@ private:
         const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
         const bool                                                 isSkeletonJob);
 
-      bool operator()();
+      bool run() override;
+      void prefetchData() override;
   };
 
   /**
    * A job that calls adjustSolutionDuringMeshRefinementBody(...).
    */
-  class AdjustSolutionDuringMeshRefinementJob {
+  class AdjustSolutionDuringMeshRefinementJob: public tarch::multicore::jobs::Job {
   private:
     ADERDGSolver&    _solver;
     CellDescription& _cellDescription;
@@ -1203,7 +1217,7 @@ private:
         CellDescription& cellDescription,
         const bool       isInitialMeshRefinement);
 
-    bool operator()();
+    bool run() override;
   };
 
 public:
@@ -1485,8 +1499,6 @@ public:
    *
    * \note Heap data creation assumes default policy
    * DataHeap::Allocation::UseRecycledEntriesIfPossibleCreateNewEntriesIfRequired.
-   *
-   * \param
    */
   void ensureNecessaryMemoryIsAllocated(exahype::records::ADERDGCellDescription& cellDescription) const;
 
@@ -2068,6 +2080,7 @@ public:
       const CellDescription& cellDescription,
       const bool validateTimeStepData,
       const bool afterCompression,
+      const bool beforePrediction,
       const std::string& methodTraceOfCaller) const;
 
   /**

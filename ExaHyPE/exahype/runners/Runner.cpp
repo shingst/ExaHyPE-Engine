@@ -824,6 +824,7 @@ bool exahype::runners::Runner::createMesh(exahype::repositories::Repository& rep
   bool meshUpdate = false;
 
   int meshSetupIterations = 0;
+  tarch::multicore::jobs::Job::setMaxNumberOfRunningBackgroundThreads(0); // during the traversal only have zero/one consumer thread running
   repository.switchToMeshRefinement();
 
   repository.getState().setMeshRefinementHasConverged(false);
@@ -852,6 +853,8 @@ bool exahype::runners::Runner::createMesh(exahype::repositories::Repository& rep
     //  assertion( tarch::parallel::NodePool::getInstance().getNumberOfIdleNodes()==0 );
     //  #endif
   }
+
+  tarch::multicore::jobs::Job::setMaxNumberOfRunningBackgroundThreads(_parser.getNumberOfBackgroundJobConsumerTasks()); // reset the number of running consumer threads
 
   return meshUpdate;
 }

@@ -64,18 +64,25 @@ exahype-project EulerADERDG
     spawn-amr-background-threads = on
     /* 0.0 und 0.8 sind schon mal zwei Faktoren */
     disable-vertex-exchange-in-time-steps        = on
-    time-step-batch-factor           = 0.0
+    time-step-batch-factor           = 0.1
     disable-metadata-exchange-in-batched-time-steps = on
     double-compression = 0.0
     spawn-double-compression-as-background-thread = off
   end global-optimisation
 
 
+/*
+ ====================================================
+ Comment in to profile a particular step
+
+ Values are update, predictor, neighbour_merge, whole_code
+ ====================================================
+
   profiling
-    profiling-target = update 
-    /* predictor, neighbour_merge, whole_code */
+    profiling-target = predictor
   end profiling
-  
+  */
+
   solver Limiting-ADER-DG MyEulerSolver
     variables const            = rho:1,j:3,E:1
     order const                = 5

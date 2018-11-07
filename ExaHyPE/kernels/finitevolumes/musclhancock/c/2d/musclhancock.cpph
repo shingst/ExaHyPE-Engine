@@ -42,13 +42,13 @@ double kernels::finitevolumes::musclhancock::c::minmod(double a, double b) {
 
 
 // TODO(Dominic): Work in progress
-/**
- * Solves all the Riemann problems that do only require
+/*
+ * Solves all the RiemapatchBegin-1, patchBeginnn problems that do only require
  * internal data and add the result directly onto the
  * new solution.
  * Finally add the source terms.
  */
-template <bool useSource, bool useNCP, bool useFlux, typename SolverType>
+template <bool useSource, bool useNCP, bool useFlux, bool robustDiagonalLimiting, typename SolverType>
 double kernels::finitevolumes::musclhancock::c::solutionUpdate(
     SolverType& solver,
     double* luh_new, const double* luh,
@@ -96,6 +96,30 @@ double kernels::finitevolumes::musclhancock::c::solutionUpdate(
             minmod(luh[idx(j + 1, k, l)] - luh[idx(j, k, l)],
                 luh[idx(j, k, l)] - luh[idx(j - 1, k, l)]) * invCellSize[1];
       }
+    }
+  }
+   
+  // TODO(JM): Please optimise
+  if ( robustDiagonalLimiting ) {
+    // Zero the first ghost layer cell slopes where one neighbour datum is missing
+    //
+    // Derivation: Go to the begin or end of a patch in x-direction: x \in \{patchBegin,patchEnd-1\}.
+    // In y-direction, go before the begin or after the end of the patch: y \in \{patchBegin-1,patchEnd\}.
+    // The respective solution datum is given from a face neighbour. However, a datum in x-direction right
+    // beside its position was not obtained from a diagonal neighbour.
+    // At the boundary between face neighbour and diagonal neighbour, the x-slope cannot
+    // be computed. Slope limiting is not possible. The slope is set to zero.
+    for (int l = 0; l < numberOfVariables; l++) {
+      // y-slope<-0  (   y            x      slope var)
+      slope[idx_slope(patchBegin, patchBegin-1, 1, l)] = 0.0;
+      slope[idx_slope(patchBegin, patchEnd,     1, l)] = 0.0;
+      slope[idx_slope(patchEnd-1, patchBegin-1, 1, l)] = 0.0;
+      slope[idx_slope(patchEnd-1, patchEnd,     1, l)] = 0.0;
+      // x-slope<-0  (   y            x      slope var)
+      slope[idx_slope(patchBegin-1, patchBegin, 0, l)] = 0.0;
+      slope[idx_slope(patchEnd    , patchBegin, 0, l)] = 0.0;
+      slope[idx_slope(patchBegin-1, patchEnd-1, 0, l)] = 0.0;
+      slope[idx_slope(patchEnd    , patchEnd-1, 0, l)] = 0.0;
     }
   }
 

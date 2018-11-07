@@ -378,8 +378,8 @@ void exahype::mappings::AugmentedAMRTreePlot2d::enterCell(
         if (pFine.getSolverNumber() == solverNumber) {
           _cellTypeWriter->plotCell(              cellIndex, static_cast<int>(pFine.getType()));
           _refinementEventWriter->plotCell(       cellIndex, static_cast<int>(pFine.getRefinementEvent()));
-          _cellDataWriter->plotCell(              cellIndex, 2 * static_cast<int>(pFine.getSolution() > -1) +
-                                                                  static_cast<int>(pFine.getExtrapolatedPredictor() > -1));
+          _cellDataWriter->plotCell(              cellIndex, 2 * static_cast<int>(pFine.getSolutionIndex() > -1) +
+                                                                 static_cast<int>(pFine.getExtrapolatedPredictorIndex() > -1));
           _augmentationStatusWriter->plotCell(    cellIndex, pFine.getAugmentationStatus());
           _communicationStatusWriter->plotCell(          cellIndex, pFine.getCommunicationStatus());
           _refinementStatusWriter->plotCell(         cellIndex, pFine.getRefinementStatus());

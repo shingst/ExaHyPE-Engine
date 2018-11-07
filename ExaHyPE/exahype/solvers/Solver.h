@@ -189,29 +189,6 @@ namespace exahype {
   #endif
 
   /**
-   * @return pointer to the first element of a data heap array.
-   *
-   * @param index heap index of the array.
-   */
-  double* getDataHeapArray(const int index);
-
-  /**
-   * Const variant of its counterpart
-   */
-  const double* const getDataHeapArrayForReadOnlyAccess(const int index);
-
-  /**
-   * Assumes the data heap array can be split into DIMENSIONS_TIMES_TWO equally sized
-   * partitions (4 in 2D, 6 in 3D).
-   *
-   * @param index            heap index of the array.
-   * @param sizePerPartition size of the partitions.
-   * @param partitionIndex   the index of the particular partition we want to have access too.
-   * @return pointer to the first element of the partition.
-   */
-  double* getDataHeapArrayFacePart(const int index,const int sizePerPartition,const int partitionIndex);
-
-  /**
    * @return a data heap array as vector.
    *
    * @param index heap index of the array.
@@ -225,7 +202,7 @@ namespace exahype {
    * data at "fromIndex" to the array at "toIndex" and
    * deletes the "fromIndex" array afterwards.
    */
-  void moveDataHeapArray(const int fromIndex,const int toIndex,bool recycleFromArray);
+  void moveDataHeapEntries(const int fromIndex,const int toIndex,bool recycleFromArray);
 
   /**
    * @see waitUntilAllBackgroundTasksHaveTerminated()
@@ -1056,17 +1033,20 @@ class exahype::solvers::Solver {
  /**
   * Submit a Prediction- or FusedTimeStepJob.
   *
-  * \param[in] function the job
-  * \param[in[ isSkeletonJob the class of this job.
+  * \param[in] isSkeletonJob is is a skeleton job?
   */
- template <typename Job>
- static void submitJob(Job& job,const bool isSkeletonJob) {
+ static tarch::multicore::jobs::JobType getTaskType(bool isSkeletonJob) {
+    return isSkeletonJob ? tarch::multicore::jobs::JobType::RunTaskAsSoonAsPossible : tarch::multicore::jobs::JobType::BackgroundTask;
+ }
+/*
+ static void submitJob(tarch::multicore::jobs::Job* job,const bool isSkeletonJob) {
    if ( isSkeletonJob ) {
      peano::datatraversal::TaskSet spawnedSet( job, peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible  );
    } else {
      peano::datatraversal::TaskSet spawnedSet( job, peano::datatraversal::TaskSet::TaskType::Background  );
    }
  }
+*/
 
  protected:
 

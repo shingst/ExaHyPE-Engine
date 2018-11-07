@@ -91,7 +91,7 @@ exahype::plotters::ADERDG2FlashHDF5::~ADERDG2FlashHDF5() {
 	if(writer) delete writer;
 }
 
-void exahype::plotters::ADERDG2FlashHDF5::init(const std::string& filename, int basisSize, int solverUnknowns, int writtenUnknowns, exahype::parser::ParserView  plotterParameters) {
+void exahype::plotters::ADERDG2FlashHDF5::init(const std::string& filename, int basisSize, int solverUnknowns, int writtenUnknowns, exahype::parser::ParserView plotterParameters) {
 	bool oneFilePerTimestep = true;
 	bool allUnknownsInOneFile = true;
 
@@ -114,7 +114,7 @@ void exahype::plotters::ADERDG2FlashHDF5::plotPatch(
   auto& aderdgCellDescription = exahype::solvers::ADERDGSolver::getCellDescription(cellDescriptionsIndex,element);
 
   if (aderdgCellDescription.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Cell) {
-    double* solverSolution = DataHeap::getInstance().getData(aderdgCellDescription.getSolution()).data();
+    double* solverSolution = static_cast<double*>(aderdgCellDescription.getSolution());
 
     plotPatch(
         aderdgCellDescription.getOffset(),

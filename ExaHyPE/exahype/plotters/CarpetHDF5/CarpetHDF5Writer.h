@@ -86,6 +86,12 @@ namespace exahype {
  * such, the data layout only supports vertex data and not cell-centered data. Maybe the actual
  * CarpetHDF5 format supports also cell-centered representation.
  * 
+ * <h3>A note about time</h3>
+ * Since there is no global timestep counter in ExaHyPE (in contrast to Cactus, where the steps
+ * on the finest level are counted), the timesteps are just counting the plotting invocations
+ * (the "plotting steps", similar as they are counted in the VTK plotters, for instance). That
+ * means the number has no physical meaning (there is no equation time = dt * timestep)
+ * 
  * <h3>How to build the CarpetHDF5 plotters into your release</h3>
  * 
  * By default, the HDF5 plotters are excluded from compiling. If you enable it in your spec file, the code
@@ -116,6 +122,7 @@ class exahype::plotters::CarpetHDF5Writer {
   typedef tarch::la::Vector<DIMENSIONS, double> dvec;
   tarch::logging::Log _log;
 
+
 public:
   // information from the device::init() process
   const int           solverUnknowns; ///< The number of unknowns in the Solver (ie. number of PDEs)
@@ -142,6 +149,7 @@ public:
   int                 component; ///< An internal counter of the components (=patches) written out in one plot cycle
   int                 iteration; ///< An internal counter of the number of plot cycle runned. It is kind of global.
   char**              writtenQuantitiesNames; // not const as we check for good names in constructor
+  std::vector<std::string> qualifiedWrittenQuantitiesNames; // in CarpetHDF5, the field name *must* contain a "::"; ///< The same as writtenQuantitiesNames but with prefix
 
   // HDF5 specific data types
   std::vector<H5::H5File*> files; ///< List of pointers to H5Files. Has length 1 if allUnknownsInOneFile.
@@ -172,6 +180,11 @@ public:
   void startPlotting(double time);
   void finishPlotting();
 
+
+  // Default values for limiterStatus for plotPatch* functions, used for instance from
+  // a pure FV solver which has no limiter status flag.
+  constexpr static int nonLimitingLimiterStatus = -1;
+
   /**
    * This is 2D and 3D, allows several unknowns, named fields and all that.
    * 
@@ -182,11 +195,11 @@ public:
    **/
   void plotPatch(
       const dvec& offsetOfPatch, const dvec& sizeOfPatch, const dvec& dx,
-      double* mappedCell, double timeStamp);
+      double* mappedCell, double timeStamp, int limiterStatus=nonLimitingLimiterStatus);
   
   void plotPatchForSingleUnknown(
       const dvec& offsetOfPatch, const dvec& sizeOfPatch, const dvec& dx,
-      double* mappedCell, double timeStamp,
+      double* mappedCell, double timeStamp, int limiterStatus,
       int writtenUnknown, H5::H5File* target);
 
 }; // class ADERDG2CarpetHDF5Impl

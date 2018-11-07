@@ -427,15 +427,24 @@ void exahype::solvers::FiniteVolumesSolver::addNewCellDescription(
   newCellDescription.setOffset(cellOffset);
 
   // Default data field indices
-  newCellDescription.setSolution(-1);
-  newCellDescription.setSolutionAverages(-1);
-  newCellDescription.setSolutionCompressed(-1);
-  newCellDescription.setPreviousSolution(-1);
-  newCellDescription.setPreviousSolutionAverages(-1);
-  newCellDescription.setPreviousSolutionCompressed(-1);
-  newCellDescription.setExtrapolatedSolution(-1);
-  newCellDescription.setExtrapolatedSolutionAverages(-1);
-  newCellDescription.setExtrapolatedSolutionCompressed(-1);
+  newCellDescription.setSolutionIndex(-1);
+  newCellDescription.setSolution(nullptr);
+  newCellDescription.setSolutionAveragesIndex(-1);
+  newCellDescription.setSolutionAverages(nullptr);
+  newCellDescription.setSolutionCompressedIndex(-1);
+  newCellDescription.setSolutionCompressed(nullptr);
+  newCellDescription.setPreviousSolutionIndex(-1);
+  newCellDescription.setPreviousSolution(nullptr);
+  newCellDescription.setPreviousSolutionAveragesIndex(-1);
+  newCellDescription.setPreviousSolutionAverages(nullptr);
+  newCellDescription.setPreviousSolutionCompressedIndex(-1);
+  newCellDescription.setPreviousSolutionCompressed(nullptr);
+  newCellDescription.setExtrapolatedSolutionIndex(-1);
+  newCellDescription.setExtrapolatedSolution(nullptr);
+  newCellDescription.setExtrapolatedSolutionAveragesIndex(-1);
+  newCellDescription.setExtrapolatedSolutionAverages(nullptr);
+  newCellDescription.setExtrapolatedSolutionCompressedIndex(-1);
+  newCellDescription.setExtrapolatedSolutionCompressed(nullptr);
 
   newCellDescription.setCompressionState(CellDescription::CompressionState::Uncompressed);
 
@@ -447,55 +456,64 @@ void exahype::solvers::FiniteVolumesSolver::addNewCellDescription(
 
 void exahype::solvers::FiniteVolumesSolver::ensureNoUnnecessaryMemoryIsAllocated(
     CellDescription& cellDescription) const {
-  if (DataHeap::getInstance().isValidIndex(cellDescription.getSolution())) {
+  if (DataHeap::getInstance().isValidIndex(cellDescription.getSolutionIndex())) {
     switch (cellDescription.getType()) {
       case CellDescription::Erased: {
         tarch::multicore::Lock lock(exahype::HeapSemaphore);
-          assertion(DataHeap::getInstance().isValidIndex(cellDescription.getSolution()));
-          assertion(DataHeap::getInstance().isValidIndex(cellDescription.getPreviousSolution()));
-          assertion(DataHeap::getInstance().isValidIndex(cellDescription.getExtrapolatedSolution()));
+          assertion(DataHeap::getInstance().isValidIndex(cellDescription.getSolutionIndex()));
+          assertion(DataHeap::getInstance().isValidIndex(cellDescription.getPreviousSolutionIndex()));
+          assertion(DataHeap::getInstance().isValidIndex(cellDescription.getExtrapolatedSolutionIndex()));
 
-          if (cellDescription.getSolution()>=0) {
-            DataHeap::getInstance().deleteData(cellDescription.getSolution());
+          if (cellDescription.getSolutionIndex()>=0) {
+            DataHeap::getInstance().deleteData(cellDescription.getSolutionIndex());
           }
           else {
             assertion(CompressionAccuracy>0.0);
-            assertion(cellDescription.getSolution()==-1);
-            CompressedDataHeap::getInstance().deleteData(cellDescription.getSolutionCompressed());
+            assertion(cellDescription.getSolutionIndex()==-1);
+            CompressedDataHeap::getInstance().deleteData(cellDescription.getSolutionCompressedIndex());
           }
-          DataHeap::getInstance().deleteData(cellDescription.getSolutionAverages());
+          DataHeap::getInstance().deleteData(cellDescription.getSolutionAveragesIndex());
 
-          if (cellDescription.getPreviousSolution()>=0) {
-            DataHeap::getInstance().deleteData(cellDescription.getPreviousSolution());
-          }
-          else {
-            assertion(CompressionAccuracy>0.0);
-            assertion(cellDescription.getPreviousSolution()==-1);
-            CompressedDataHeap::getInstance().deleteData(cellDescription.getPreviousSolutionCompressed());
-          }
-          DataHeap::getInstance().deleteData(cellDescription.getPreviousSolutionAverages());
-
-          if (cellDescription.getExtrapolatedSolution()>=0) {
-            DataHeap::getInstance().deleteData(cellDescription.getExtrapolatedSolution());
+          if (cellDescription.getPreviousSolutionIndex()>=0) {
+            DataHeap::getInstance().deleteData(cellDescription.getPreviousSolutionIndex());
           }
           else {
             assertion(CompressionAccuracy>0.0);
-            assertion(cellDescription.getExtrapolatedSolution()==-1);
-            CompressedDataHeap::getInstance().deleteData(cellDescription.getExtrapolatedSolutionCompressed());
+            assertion(cellDescription.getPreviousSolutionIndex()==-1);
+            CompressedDataHeap::getInstance().deleteData(cellDescription.getPreviousSolutionCompressedIndex());
           }
-          DataHeap::getInstance().deleteData(cellDescription.getExtrapolatedSolutionAverages());
+          DataHeap::getInstance().deleteData(cellDescription.getPreviousSolutionAveragesIndex());
 
-          cellDescription.setSolution(-1);
-          cellDescription.setPreviousSolution(-1);
-          cellDescription.setExtrapolatedSolution(-1);
+          if (cellDescription.getExtrapolatedSolutionIndex()>=0) {
+            DataHeap::getInstance().deleteData(cellDescription.getExtrapolatedSolutionIndex());
+          }
+          else {
+            assertion(CompressionAccuracy>0.0);
+            assertion(cellDescription.getExtrapolatedSolutionIndex()==-1);
+            CompressedDataHeap::getInstance().deleteData(cellDescription.getExtrapolatedSolutionCompressedIndex());
+          }
+          DataHeap::getInstance().deleteData(cellDescription.getExtrapolatedSolutionAveragesIndex());
 
-          cellDescription.setSolutionCompressed(-1);
-          cellDescription.setPreviousSolutionCompressed(-1);
-          cellDescription.setExtrapolatedSolutionCompressed(-1);
+          cellDescription.setSolutionIndex(-1);
+          cellDescription.setSolution(nullptr);
+          cellDescription.setPreviousSolutionIndex(-1);
+          cellDescription.setPreviousSolution(nullptr);
+          cellDescription.setExtrapolatedSolutionIndex(-1);
+          cellDescription.setExtrapolatedSolution(nullptr);
 
-          cellDescription.setSolutionAverages(-1);
-          cellDescription.setPreviousSolutionAverages(-1);
-          cellDescription.setExtrapolatedSolutionAverages(-1);
+          cellDescription.setSolutionCompressedIndex(-1);
+          cellDescription.setSolutionCompressed(nullptr);
+          cellDescription.setPreviousSolutionCompressedIndex(-1);
+          cellDescription.setPreviousSolutionCompressed(nullptr);
+          cellDescription.setExtrapolatedSolutionCompressedIndex(-1);
+          cellDescription.setExtrapolatedSolutionCompressed(nullptr);
+
+          cellDescription.setSolutionAveragesIndex(-1);
+          cellDescription.setSolutionAverages(nullptr);
+          cellDescription.setPreviousSolutionAveragesIndex(-1);
+          cellDescription.setPreviousSolutionAverages(nullptr);
+          cellDescription.setExtrapolatedSolutionAveragesIndex(-1);
+          cellDescription.setExtrapolatedSolutionAverages(nullptr);
         lock.free();
       } break;
       case CellDescription::Cell:
@@ -521,45 +539,55 @@ void exahype::solvers::FiniteVolumesSolver::ensureNecessaryMemoryIsAllocated(
     CellDescription& cellDescription) const {
   switch (cellDescription.getType()) {
     case CellDescription::Cell:
-      if (!DataHeap::getInstance().isValidIndex(cellDescription.getSolution())) {
-        assertion(!DataHeap::getInstance().isValidIndex(cellDescription.getSolution()));
+      if (!DataHeap::getInstance().isValidIndex(cellDescription.getSolutionIndex())) {
+        assertion(!DataHeap::getInstance().isValidIndex(cellDescription.getSolutionIndex()));
         // Allocate volume data
         const int patchSize = getDataPerPatch()+getGhostDataPerPatch();
 
         tarch::multicore::Lock lock(exahype::HeapSemaphore);
-          cellDescription.setSolution(        DataHeap::getInstance().createData( patchSize, patchSize ));
-          cellDescription.setPreviousSolution(DataHeap::getInstance().createData( patchSize, patchSize ));
-          checkDataHeapIndex(cellDescription,cellDescription.getSolution(),"getSolution()");
-          checkDataHeapIndex(cellDescription,cellDescription.getPreviousSolution(),"getPreviousSolution()");
-
-          cellDescription.setSolutionCompressed(-1);
-          cellDescription.setPreviousSolutionCompressed(-1);
-
-          const int dataPerSubcell = getNumberOfVariables()+getNumberOfParameters();
-          cellDescription.setSolutionAverages(
-              DataHeap::getInstance().createData( dataPerSubcell, dataPerSubcell ) );
-          cellDescription.setPreviousSolutionAverages(
-              DataHeap::getInstance().createData( dataPerSubcell, dataPerSubcell ) );
-          checkDataHeapIndex(cellDescription,cellDescription.getSolutionAverages(),"getSolutionAverages()");
-          checkDataHeapIndex(cellDescription,cellDescription.getPreviousSolutionAverages(),"getPreviousSolutionAverages()");
-
+          cellDescription.setSolutionIndex(        DataHeap::getInstance().createData( patchSize, patchSize ));
+          cellDescription.setPreviousSolutionIndex(DataHeap::getInstance().createData( patchSize, patchSize ));
+          checkDataHeapIndex(cellDescription,cellDescription.getSolutionIndex(),"getSolutionIndex()");
+          checkDataHeapIndex(cellDescription,cellDescription.getPreviousSolutionIndex(),"getPreviousSolutionIndex()");
+          cellDescription.setSolution        ( getDataHeapEntries(cellDescription.getSolutionIndex()).data() ) ;
+          cellDescription.setPreviousSolution( getDataHeapEntries(cellDescription.getPreviousSolutionIndex()).data() ) ;
+          // std::fill_n(static_cast<double*>(cellDescription.getPreviousSolution()),patchSize,std::numeric_limits<double>::quiet_NaN());
+          // std::fill_n(static_cast<double*>(cellDescription.getSolution()),patchSize,std::numeric_limits<double>::quiet_NaN());
           // Zero out the solution and previous solution arrays. For our MUSCL-Hancock implementation which
           // does not take the corner neighbours into account e.g., it is important that the values in
           // the corner cells of the first ghost layer are set to zero.
-          std::fill_n( getDataHeapArray(cellDescription.getSolution()),         patchSize, 0.0 );
-          std::fill_n( getDataHeapArray(cellDescription.getPreviousSolution()), patchSize, 0.0 );
+          std::fill_n( static_cast<double*>(cellDescription.getSolution()),         patchSize, 0.0 );
+          std::fill_n( static_cast<double*>(cellDescription.getPreviousSolution()), patchSize, 0.0 );
+
+          cellDescription.setSolutionCompressedIndex(-1);
+          cellDescription.setSolutionCompressed(nullptr);
+          cellDescription.setPreviousSolutionCompressedIndex(-1);
+          cellDescription.setPreviousSolutionCompressed(nullptr);
+
+          const int dataPerSubcell = getNumberOfVariables()+getNumberOfParameters();
+          cellDescription.setSolutionAveragesIndex        (DataHeap::getInstance().createData( dataPerSubcell, dataPerSubcell ) );
+          cellDescription.setPreviousSolutionAveragesIndex(DataHeap::getInstance().createData( dataPerSubcell, dataPerSubcell ) );
+          checkDataHeapIndex(cellDescription,cellDescription.getSolutionAveragesIndex(),"getSolutionAveragesIndex()");
+          checkDataHeapIndex(cellDescription,cellDescription.getPreviousSolutionAveragesIndex(),"getPreviousSolutionAveragesIndex()");
+          cellDescription.setSolutionAverages        ( getDataHeapEntries(cellDescription.getSolutionAveragesIndex()).data() ) ;
+          cellDescription.setPreviousSolutionAverages( getDataHeapEntries(cellDescription.getPreviousSolutionAveragesIndex()).data() ) ;
+          std::fill_n(static_cast<double*>(cellDescription.getPreviousSolutionAverages()),dataPerSubcell,std::numeric_limits<double>::quiet_NaN());
+          std::fill_n(static_cast<double*>(cellDescription.getSolutionAverages()),dataPerSubcell,std::numeric_limits<double>::quiet_NaN());
 
           // Allocate boundary data
           const int patchBoundarySize = getDataPerPatchBoundary();
-          cellDescription.setExtrapolatedSolution(DataHeap::getInstance().createData( patchBoundarySize, patchBoundarySize ));
-          std::fill_n( getDataHeapArray(cellDescription.getExtrapolatedSolution()), patchBoundarySize, 0.0 );
-          checkDataHeapIndex(cellDescription,cellDescription.getExtrapolatedSolution(),"getExtrapolatedSolution()");
+          cellDescription.setExtrapolatedSolutionIndex(DataHeap::getInstance().createData( patchBoundarySize, patchBoundarySize ));
+          checkDataHeapIndex(cellDescription,cellDescription.getExtrapolatedSolutionIndex(),"getExtrapolatedSolutionIndex()");
+          cellDescription.setExtrapolatedSolution( getDataHeapEntries(cellDescription.getExtrapolatedSolutionIndex()).data() ) ;
+          std::fill_n( static_cast<double*>(cellDescription.getExtrapolatedSolution()), patchBoundarySize, 0.0 );
 
-          cellDescription.setExtrapolatedSolutionCompressed(-1);
+          cellDescription.setExtrapolatedSolutionCompressedIndex(-1);
+          cellDescription.setExtrapolatedSolutionCompressed(nullptr);
 
-          cellDescription.setExtrapolatedSolutionAverages( DataHeap::getInstance().createData(
-              dataPerSubcell * 2 * DIMENSIONS, dataPerSubcell * 2 * DIMENSIONS ) );
-          checkDataHeapIndex(cellDescription,cellDescription.getExtrapolatedSolutionAverages(),"getExtrapolatedSolutionAverages()");
+          cellDescription.setExtrapolatedSolutionAveragesIndex( DataHeap::getInstance().createData(dataPerSubcell*2*DIMENSIONS, dataPerSubcell*2*DIMENSIONS ) );
+          checkDataHeapIndex(cellDescription,cellDescription.getExtrapolatedSolutionAveragesIndex(),"getExtrapolatedSolutionAveragesIndex()");
+          cellDescription.setExtrapolatedSolutionAverages( getDataHeapEntries(cellDescription.getExtrapolatedSolutionAveragesIndex()).data() ) ;
+          std::fill_n(static_cast<double*>(cellDescription.getExtrapolatedSolutionAverages()),dataPerSubcell*2*DIMENSIONS,std::numeric_limits<double>::quiet_NaN());
         lock.free();
       }
       break;
@@ -623,7 +651,7 @@ void exahype::solvers::FiniteVolumesSolver::finaliseStateUpdates(
 double exahype::solvers::FiniteVolumesSolver::startNewTimeStep(CellDescription& cellDescription) {
   assertion1(cellDescription.getType()==exahype::records::FiniteVolumesCellDescription::Cell,cellDescription.toString());
   //         assertion1(p.getRefinementEvent()==exahype::records::FiniteVolumesCellDescription::None,p.toString()); // todo
-  double* solution = getDataHeapArray(cellDescription.getSolution());
+  double* solution = static_cast<double*>(cellDescription.getSolution());
 
   double admissibleTimeStepSize = stableTimeStepSize(solution, cellDescription.getSize());
   assertion(!std::isnan(admissibleTimeStepSize));
@@ -645,7 +673,7 @@ double exahype::solvers::FiniteVolumesSolver::startNewTimeStepFused(
     const bool isLastIterationOfBatch) {
   assertion1(cellDescription.getType()==exahype::records::FiniteVolumesCellDescription::Cell,cellDescription.toString());
   //         assertion1(cellDescription.getRefinementEvent()==exahype::records::FiniteVolumesCellDescription::None,cellDescription.toString()); // todo
-  double* solution = getDataHeapArray(cellDescription.getSolution());
+  double* solution = static_cast<double*>(cellDescription.getSolution());
 
   double admissibleTimeStepSize = stableTimeStepSize(solution, cellDescription.getSize());
   assertion(!std::isnan(admissibleTimeStepSize));
@@ -677,7 +705,7 @@ double exahype::solvers::FiniteVolumesSolver::updateTimeStepSizes(
 
   if (p.getType()==exahype::records::FiniteVolumesCellDescription::Cell) {
     //         assertion1(p.getRefinementEvent()==exahype::records::FiniteVolumesCellDescription::None,p.toString()); // todo
-    double* solution = getDataHeapArray(p.getSolution());
+    double* solution = static_cast<double*>(p.getSolution());
 
     double admissibleTimeStepSize = stableTimeStepSize(solution, p.getSize());
 
@@ -718,7 +746,7 @@ void exahype::solvers::FiniteVolumesSolver::adjustSolutionDuringMeshRefinementBo
 }
 
 void exahype::solvers::FiniteVolumesSolver::adjustSolution(CellDescription& cellDescription) {
-  double* solution = getDataHeapArray(cellDescription.getSolution());
+  double* solution = static_cast<double*>(cellDescription.getSolution());
   adjustSolution(
       solution,
       cellDescription.getOffset()+0.5*cellDescription.getSize(),
@@ -755,8 +783,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::FiniteVolumesSolver::fu
     return result;
   } else {
     cellDescription.setHasCompletedTimeStep(false);
-    FusedTimeStepJob fusedTimeStepJob( *this, cellDescriptionsIndex, element, isSkeletonCell );
-    Solver::submitJob(fusedTimeStepJob,isSkeletonCell);
+    peano::datatraversal::TaskSet( new FusedTimeStepJob( *this, cellDescriptionsIndex, element, isSkeletonCell ));
     return UpdateResult();
   }
 }
@@ -793,8 +820,7 @@ void exahype::solvers::FiniteVolumesSolver::adjustSolutionDuringMeshRefinement(
   const bool isInitialMeshRefinement = getMeshUpdateEvent()==MeshUpdateEvent::InitialRefinementRequested;
   CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
   if ( exahype::solvers::Solver::SpawnAMRBackgroundJobs ) {
-    AdjustSolutionDuringMeshRefinementJob job(*this,cellDescription,isInitialMeshRefinement);
-    peano::datatraversal::TaskSet spawnedSet( job, peano::datatraversal::TaskSet::TaskType::Background  );
+	peano::datatraversal::TaskSet( new AdjustSolutionDuringMeshRefinementJob(*this,cellDescription,isInitialMeshRefinement) );
   } else {
     adjustSolutionDuringMeshRefinementBody(cellDescription,isInitialMeshRefinement);
   }
@@ -821,8 +847,8 @@ void exahype::solvers::FiniteVolumesSolver::updateSolution(
     counter++;
   #endif
 
-  double* newSolution = getDataHeapArray(cellDescription.getSolution());
-  double* solution    = getDataHeapArray(cellDescription.getPreviousSolution());
+  double* newSolution = static_cast<double*>(cellDescription.getSolution());
+  double* solution    = static_cast<double*>(cellDescription.getPreviousSolution());
   if (backupPreviousSolution) {
     std::copy(newSolution,newSolution+getDataPerPatch()+getGhostDataPerPatch(),solution); // Copy (current solution) in old solution field.
   }
@@ -865,8 +891,11 @@ void exahype::solvers::FiniteVolumesSolver::updateSolution(
 void exahype::solvers::FiniteVolumesSolver::swapSolutionAndPreviousSolution(
     CellDescription& cellDescription) const {
   // Simply swap the heap indices
-  const int previousSolution = cellDescription.getPreviousSolution();
+  const int previousSolutionIndex = cellDescription.getPreviousSolutionIndex();
+  void* previousSolution          = cellDescription.getPreviousSolution(); // pointer
+  cellDescription.setPreviousSolutionIndex(cellDescription.getSolutionIndex());
   cellDescription.setPreviousSolution(cellDescription.getSolution());
+  cellDescription.setSolutionIndex(previousSolutionIndex);
   cellDescription.setSolution(previousSolution);
 }
 
@@ -957,8 +986,8 @@ void exahype::solvers::FiniteVolumesSolver::mergeNeighboursData(
         );
       }
 
-      double* solution1 = getDataHeapArray(cellDescription1.getSolution());
-      double* solution2 = getDataHeapArray(cellDescription2.getSolution());
+      double* solution1 = static_cast<double*>(cellDescription1.getSolution());
+      double* solution2 = static_cast<double*>(cellDescription2.getSolution());
 
       ghostLayerFilling(solution1,solution2,pos2-pos1);
       ghostLayerFilling(solution2,solution1,pos1-pos2);
@@ -995,7 +1024,7 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithBoundaryData(
 
       uncompress(cellDescription);
 
-      double* luh = getDataHeapArray(cellDescription.getSolution());
+      double* luh = static_cast<double*>(cellDescription.getSolution());
       boundaryConditions(
           luh,
           cellDescription.getOffset()+0.5*cellDescription.getSize(),
@@ -1080,20 +1109,28 @@ void exahype::solvers::FiniteVolumesSolver::resetIndicesAndFlagsOfReceivedCellDe
   cellDescription.setParentIndex(parentIndex);
 
   // Default field data indices
-  cellDescription.setSolution(-1);
-  cellDescription.setPreviousSolution(-1);
-  cellDescription.setExtrapolatedSolution(-1);
+  cellDescription.setSolutionIndex(-1);
+  cellDescription.setSolution(nullptr);
+  cellDescription.setPreviousSolutionIndex(-1);
+  cellDescription.setPreviousSolution(nullptr);
+  cellDescription.setExtrapolatedSolutionIndex(-1);
+  cellDescription.setExtrapolatedSolution(nullptr);
 
   // compression
   cellDescription.setCompressionState(CellDescription::CompressionState::Uncompressed);
 
-  cellDescription.setExtrapolatedSolutionCompressed(-1);
-  cellDescription.setSolutionCompressed(-1);
-  cellDescription.setPreviousSolutionCompressed(-1);
+  cellDescription.setExtrapolatedSolutionCompressedIndex(-1);
+  cellDescription.setExtrapolatedSolutionCompressed(nullptr);
+  cellDescription.setSolutionCompressedIndex(-1);
+  cellDescription.setSolutionCompressed(nullptr);
+  cellDescription.setPreviousSolutionCompressedIndex(-1);
+  cellDescription.setPreviousSolutionCompressed(nullptr);
 
-  cellDescription.setSolutionAverages(-1);
-  cellDescription.setSolutionAverages(-1);
-  cellDescription.setExtrapolatedSolutionAverages(-1);
+  cellDescription.setSolutionAveragesIndex(-1);
+  cellDescription.setSolutionAverages(nullptr);
+  cellDescription.setExtrapolatedSolutionAveragesIndex(-1);
+  cellDescription.setExtrapolatedSolutionAverages(nullptr);
+
   cellDescription.setBytesPerDoFInPreviousSolution(-1);
   cellDescription.setBytesPerDoFInSolution(-1);
   cellDescription.setBytesPerDoFInExtrapolatedSolution(-1);
@@ -1144,15 +1181,15 @@ void exahype::solvers::FiniteVolumesSolver::sendDataToWorkerOrMasterDueToForkOrJ
       ", cell: "<< x << ", level: " << level);
 
   assertion(cellDescription.getType()==CellDescription::Cell);
-  assertion2(DataHeap::getInstance().isValidIndex(cellDescription.getSolution()),
+  assertion2(DataHeap::getInstance().isValidIndex(cellDescription.getSolutionIndex()),
       cellDescriptionsIndex,cellDescription.toString());
-  assertion2(DataHeap::getInstance().isValidIndex(cellDescription.getPreviousSolution()),
+  assertion2(DataHeap::getInstance().isValidIndex(cellDescription.getPreviousSolutionIndex()),
       cellDescriptionsIndex,cellDescription.toString());
   DataHeap::getInstance().sendData(
-      getDataHeapArray(cellDescription.getSolution()),
+      static_cast<double*>(cellDescription.getSolution()),
       getDataPerPatch()+getGhostDataPerPatch(), toRank, x, level, messageType);
   DataHeap::getInstance().sendData(
-      getDataHeapArray(cellDescription.getPreviousSolution()),
+      static_cast<double*>(cellDescription.getPreviousSolution()),
       getDataPerPatch()+getGhostDataPerPatch(), toRank, x, level, messageType);
 }
 
@@ -1178,11 +1215,11 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithWorkerOrMasterDataDueToFork
   ensureNecessaryMemoryIsAllocated(cellDescription);
   ensureNoUnnecessaryMemoryIsAllocated(cellDescription);
 
-  getDataHeapEntries(cellDescription.getSolution()).clear();
-  DataHeap::getInstance().receiveData( cellDescription.getSolution(),
+  getDataHeapEntries(cellDescription.getSolutionIndex()).clear();
+  DataHeap::getInstance().receiveData( cellDescription.getSolutionIndex(),
       fromRank, x, level, messageType);
-  getDataHeapEntries(cellDescription.getPreviousSolution()).clear();
-  DataHeap::getInstance().receiveData( cellDescription.getPreviousSolution(),
+  getDataHeapEntries(cellDescription.getPreviousSolutionIndex()).clear();
+  DataHeap::getInstance().receiveData( cellDescription.getPreviousSolutionIndex(),
       fromRank, x, level, messageType );
 }
 
@@ -1292,15 +1329,15 @@ void exahype::solvers::FiniteVolumesSolver::sendDataToNeighbour(
 
   CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
 
-  assertion(DataHeap::getInstance().isValidIndex(cellDescription.getSolution()));
-  assertion(DataHeap::getInstance().isValidIndex(cellDescription.getPreviousSolution()));
+  assertion(DataHeap::getInstance().isValidIndex(cellDescription.getSolutionIndex()));
+  assertion(DataHeap::getInstance().isValidIndex(cellDescription.getPreviousSolutionIndex()));
 
   waitUntilCompletedTimeStep<CellDescription>(cellDescription,true,true);
 
   const int numberOfFaceDof = getDataPerPatchFace();
-  double* luhbnd = getDataHeapArray(cellDescription.getExtrapolatedSolution())
+  double* luhbnd = static_cast<double*>(cellDescription.getExtrapolatedSolution())
               + (faceIndex * numberOfFaceDof);
-  const double* luh = getDataHeapArray(cellDescription.getSolution());
+  const double* luh = static_cast<double*>(cellDescription.getSolution());
   boundaryLayerExtraction(luhbnd,luh,dest-src);
 
   logDebug(
@@ -1311,7 +1348,7 @@ void exahype::solvers::FiniteVolumesSolver::sendDataToNeighbour(
       << " from vertex x=" << x << ", level=" << level <<
       ", src type=" << multiscalelinkedcell::indexToString(cellDescriptionsIndex) <<
       ", src=" << src << ", dest=" << dest <<
-      ", size="<<getDataHeapEntries(cellDescription.getExtrapolatedSolution()).size()
+      ", size="<<getDataHeapEntries(cellDescription.getExtrapolatedSolutionIndex()).size()
       //        << ", counter=" << cellDescription.getFaceDataExchangeCounter(faceIndex)
   );
 
@@ -1362,8 +1399,8 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithNeighbourData(
 
   assertion3(cellDescription.getNeighbourMergePerformed(faceIndex),
      faceIndex,cellDescriptionsIndex,cellDescription.toString());
-  assertion(DataHeap::getInstance().isValidIndex(cellDescription.getSolution()));
-  assertion(DataHeap::getInstance().isValidIndex(cellDescription.getPreviousSolution()));
+  assertion(DataHeap::getInstance().isValidIndex(cellDescription.getSolutionIndex()));
+  assertion(DataHeap::getInstance().isValidIndex(cellDescription.getPreviousSolutionIndex()));
 
   logDebug(
       "mergeWithNeighbourData(...)", "receive "<<DataMessagesPerNeighbourCommunication<<" arrays from rank " <<
@@ -1383,9 +1420,9 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithNeighbourData(
   // instead of a SOLVE RIEMANN PROBLEM AT BOUNDARY-UPDATE INTERIOR scheme.
   const int numberOfFaceDof      = getDataPerPatchFace();
   //    const int receivedBoundaryLayerIndex = DataHeap::getInstance().createData(0, numberOfFaceDof);
-  double* luhbnd = getDataHeapArray(cellDescription.getExtrapolatedSolution())
+  double* luhbnd = static_cast<double*>(cellDescription.getExtrapolatedSolution())
                       + (faceIndex * numberOfFaceDof);
-  //    double* luhbnd = getDataHeapArray(receivedBoundaryLayerIndex);
+  //    double* luhbnd = static_cast<double*>(receivedBoundaryLayerIndex);
   //    assertion(getDataHeapEntries(receivedBoundaryLayerIndex).empty());
 
 
@@ -1403,7 +1440,7 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithNeighbourData(
       ", counter=" << cellDescription.getFaceDataExchangeCounter(faceIndex)
   );
 
-  double* luh = getDataHeapArray(cellDescription.getSolution());
+  double* luh = static_cast<double*>(cellDescription.getSolution());
   ghostLayerFillingAtBoundary(luh,luhbnd,src-dest);
 
   //    DataHeap::getInstance().deleteData(receivedBoundaryLayerIndex,true);
@@ -1570,7 +1607,7 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithMasterData(
 void exahype::solvers::FiniteVolumesSolver::validateNoNansInFiniteVolumesSolution(
     CellDescription& cellDescription,const int cellDescriptionsIndex,const char* methodTrace)  const {
   #if defined(Asserts)
-  double* solution = getDataHeapArray(cellDescription.getSolution());
+  double* solution = static_cast<double*>(cellDescription.getSolution());
   #endif
 
   dfor(i,_nodesPerCoordinateAxis+_ghostLayerWidth) {
@@ -1592,7 +1629,7 @@ void exahype::solvers::FiniteVolumesSolver::validateNoNansInFiniteVolumesSolutio
 void exahype::solvers::FiniteVolumesSolver::printFiniteVolumesSolution(
     CellDescription& cellDescription)  const {
   #if DIMENSIONS==2
-  double* solution = getDataHeapArray(cellDescription.getSolution());
+  double* solution = static_cast<double*>(cellDescription.getSolution());
 
   for (int unknown=0; unknown < _numberOfVariables; unknown++) {
     std::cout <<  "unknown=" << unknown << std::endl;
@@ -1606,7 +1643,7 @@ void exahype::solvers::FiniteVolumesSolver::printFiniteVolumesSolution(
   }
   std::cout <<  "}" << std::endl;
   #else
-  double* solution = getDataHeapArray(cellDescription.getSolution());
+  double* solution = static_cast<double*>(cellDescription.getSolution());
 
   for (int unknown=0; unknown < _numberOfVariables; unknown++) {
     std::cout <<  "unknown=" << unknown << std::endl;
@@ -1697,35 +1734,35 @@ void exahype::solvers::FiniteVolumesSolver::putUnknownsIntoByteStream(
     CellDescription& cellDescription) const {
   assertion(CompressionAccuracy>0.0);
 
-  assertion( cellDescription.getPreviousSolutionCompressed()==-1 );
-  assertion( cellDescription.getSolutionCompressed()==-1 );
-  assertion( cellDescription.getExtrapolatedSolutionCompressed()==-1 );
+  assertion( cellDescription.getPreviousSolutionCompressedIndex()==-1 );
+  assertion( cellDescription.getSolutionCompressedIndex()==-1 );
+  assertion( cellDescription.getExtrapolatedSolutionCompressedIndex()==-1 );
 
   int compressionOfPreviousSolution;
   int compressionOfSolution;
   int compressionOfExtrapolatedSolution;
 
-  assertion( DataHeap::getInstance().isValidIndex( cellDescription.getSolution() ));
-  assertion( DataHeap::getInstance().isValidIndex( cellDescription.getPreviousSolution() ));
-  assertion( DataHeap::getInstance().isValidIndex( cellDescription.getExtrapolatedSolution() ));
+  assertion( DataHeap::getInstance().isValidIndex( cellDescription.getSolutionIndex() ));
+  assertion( DataHeap::getInstance().isValidIndex( cellDescription.getPreviousSolutionIndex() ));
+  assertion( DataHeap::getInstance().isValidIndex( cellDescription.getExtrapolatedSolutionIndex() ));
 
   peano::datatraversal::TaskSet compressionFactorIdentification(
     [&]() -> bool  { compressionOfPreviousSolution = peano::heap::findMostAgressiveCompression(
-      getDataHeapArray(cellDescription.getPreviousSolution()),
+      static_cast<double*>(cellDescription.getPreviousSolution()),
       getDataPerPatch() + getGhostDataPerPatch(),
       CompressionAccuracy,true
       );
       return false;
       },
     [&] () -> bool  { compressionOfSolution = peano::heap::findMostAgressiveCompression(
-      getDataHeapArray(cellDescription.getSolution()),
+      static_cast<double*>(cellDescription.getSolution()),
       getDataPerPatch() + getGhostDataPerPatch(),
       CompressionAccuracy,true
       );
       return false;
       },
     [&]() -> bool  { compressionOfExtrapolatedSolution = peano::heap::findMostAgressiveCompression(
-      getDataHeapArray(cellDescription.getExtrapolatedSolution()),
+      static_cast<double*>(cellDescription.getExtrapolatedSolution()),
       getDataPerPatchBoundary(),
       CompressionAccuracy,true
       );
@@ -1750,35 +1787,37 @@ void exahype::solvers::FiniteVolumesSolver::putUnknownsIntoByteStream(
       cellDescription.setBytesPerDoFInPreviousSolution(compressionOfPreviousSolution);
       if (compressionOfPreviousSolution<7) {
         tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-        cellDescription.setPreviousSolutionCompressed( CompressedDataHeap::getInstance().createData(0,0) );
+        cellDescription.setPreviousSolutionCompressedIndex( CompressedDataHeap::getInstance().createData(0,0) );
         assertion1(
-          cellDescription.getPreviousSolutionCompressed()>=0,
+          cellDescription.getPreviousSolutionCompressedIndex()>=0,
           cellDescription.toString()
         );
         lock.free();
+        cellDescription.setPreviousSolutionCompressed( static_cast<void*>(CompressedDataHeap::getInstance().getData(cellDescription.getPreviousSolutionCompressedIndex()).data() ) );
 
         const int numberOfEntries = getDataPerPatch() + getGhostDataPerPatch();
-        tearApart(numberOfEntries, cellDescription.getPreviousSolution(), cellDescription.getPreviousSolutionCompressed(), compressionOfPreviousSolution);
+        tearApart(numberOfEntries, cellDescription.getPreviousSolutionIndex(), cellDescription.getPreviousSolutionCompressedIndex(), compressionOfPreviousSolution);
 
         #if defined(TrackGridStatistics)
         lock.lock();
-        PipedUncompressedBytes += getDataHeapEntries(cellDescription.getPreviousSolution()).size() * 8.0;
-        PipedCompressedBytes   += CompressedDataHeap::getInstance().getData( cellDescription.getPreviousSolutionCompressed() ).size();
+        PipedUncompressedBytes += getDataHeapEntries(cellDescription.getPreviousSolutionIndex()).size() * 8.0;
+        PipedCompressedBytes   += CompressedDataHeap::getInstance().getData( cellDescription.getPreviousSolutionCompressedIndex() ).size();
         lock.free();
         #endif
 
         #if !defined(ValidateCompressedVsUncompressedData)
         lock.lock();
-        DataHeap::getInstance().deleteData( cellDescription.getPreviousSolution(), true );
-        cellDescription.setPreviousSolution( -1 );
+        DataHeap::getInstance().deleteData( cellDescription.getPreviousSolutionIndex(), true );
+        cellDescription.setPreviousSolutionIndex(-1);
+        cellDescription.setPreviousSolution(nullptr);
         lock.free();
         #endif
       }
       else {
         #if defined(TrackGridStatistics)
         tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-        PipedUncompressedBytes += getDataHeapEntries(cellDescription.getPreviousSolution()).size() * 8.0;
-        PipedCompressedBytes   += getDataHeapEntries(cellDescription.getPreviousSolution()).size() * 8.0;
+        PipedUncompressedBytes += getDataHeapEntries(cellDescription.getPreviousSolutionIndex()).size() * 8.0;
+        PipedCompressedBytes   += getDataHeapEntries(cellDescription.getPreviousSolutionIndex()).size() * 8.0;
         lock.free();
         #endif
       }
@@ -1788,33 +1827,35 @@ void exahype::solvers::FiniteVolumesSolver::putUnknownsIntoByteStream(
       cellDescription.setBytesPerDoFInSolution(compressionOfSolution);
       if (compressionOfSolution<7) {
         tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-        cellDescription.setSolutionCompressed(CompressedDataHeap::getInstance().createData(0,0));
-        assertion1( cellDescription.getSolutionCompressed()>=0, cellDescription.getSolutionCompressed() );
+        cellDescription.setSolutionCompressedIndex( CompressedDataHeap::getInstance().createData(0,0) );
+        assertion1( cellDescription.getSolutionCompressedIndex()>=0, cellDescription.getSolutionCompressedIndex() );
         lock.free();
+        cellDescription.setSolutionCompressed( static_cast<void*>(CompressedDataHeap::getInstance().getData(cellDescription.getSolutionCompressedIndex()).data() ) );
 
         const int numberOfEntries = getDataPerPatch() + getGhostDataPerPatch();
 
-        tearApart(numberOfEntries, cellDescription.getSolution(), cellDescription.getSolutionCompressed(), compressionOfSolution);
+        tearApart(numberOfEntries, cellDescription.getSolutionIndex(), cellDescription.getSolutionCompressedIndex(), compressionOfSolution);
 
         #if defined(TrackGridStatistics)
         lock.lock();
-        PipedUncompressedBytes += getDataHeapEntries(cellDescription.getSolution()).size() * 8.0;
-        PipedCompressedBytes   += CompressedDataHeap::getInstance().getData( cellDescription.getSolutionCompressed() ).size();
+        PipedUncompressedBytes += getDataHeapEntries(cellDescription.getSolutionIndex()).size() * 8.0;
+        PipedCompressedBytes   += CompressedDataHeap::getInstance().getData( cellDescription.getSolutionCompressedIndex() ).size();
         lock.free();
         #endif
 
         #if !defined(ValidateCompressedVsUncompressedData)
         lock.lock();
-        DataHeap::getInstance().deleteData( cellDescription.getSolution(), true );
-        cellDescription.setSolution( -1 );
+        DataHeap::getInstance().deleteData( cellDescription.getSolutionIndex(), true );
+        cellDescription.setSolutionIndex(-1);
+        cellDescription.setSolution(nullptr);
         lock.free();
         #endif
       }
       else {
         #if defined(TrackGridStatistics)
         tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-        PipedUncompressedBytes += getDataHeapEntries(cellDescription.getSolution()).size() * 8.0;
-        PipedCompressedBytes   += getDataHeapEntries(cellDescription.getSolution()).size() * 8.0;
+        PipedUncompressedBytes += getDataHeapEntries(cellDescription.getSolutionIndex()).size() * 8.0;
+        PipedCompressedBytes   += getDataHeapEntries(cellDescription.getSolutionIndex()).size() * 8.0;
         lock.free();
         #endif
       }
@@ -1824,32 +1865,34 @@ void exahype::solvers::FiniteVolumesSolver::putUnknownsIntoByteStream(
       cellDescription.setBytesPerDoFInExtrapolatedSolution(compressionOfExtrapolatedSolution);
       if (compressionOfExtrapolatedSolution<7) {
         tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-        cellDescription.setExtrapolatedSolutionCompressed( CompressedDataHeap::getInstance().createData(0,0) );
-        assertion( cellDescription.getExtrapolatedSolutionCompressed()>=0 );
+        cellDescription.setExtrapolatedSolutionCompressedIndex( CompressedDataHeap::getInstance().createData(0,0) );
+        assertion( cellDescription.getExtrapolatedSolutionCompressedIndex()>=0 );
         lock.free();
+        cellDescription.setExtrapolatedSolutionCompressed( static_cast<void*>(CompressedDataHeap::getInstance().getData(cellDescription.getExtrapolatedSolutionCompressedIndex()).data() ) );
 
         const int numberOfEntries = getDataPerPatchBoundary();
-        tearApart(numberOfEntries, cellDescription.getExtrapolatedSolution(), cellDescription.getExtrapolatedSolutionCompressed(), compressionOfExtrapolatedSolution);
+        tearApart(numberOfEntries, cellDescription.getExtrapolatedSolutionIndex(), cellDescription.getExtrapolatedSolutionCompressedIndex(), compressionOfExtrapolatedSolution);
 
         #if defined(TrackGridStatistics)
         lock.lock();
-        PipedUncompressedBytes += getDataHeapEntries(cellDescription.getExtrapolatedSolution()).size() * 8.0;
-        PipedCompressedBytes   += CompressedDataHeap::getInstance().getData( cellDescription.getExtrapolatedSolutionCompressed() ).size();
+        PipedUncompressedBytes += getDataHeapEntries(cellDescription.getExtrapolatedSolutionIndex()).size() * 8.0;
+        PipedCompressedBytes   += CompressedDataHeap::getInstance().getData( cellDescription.getExtrapolatedSolutionCompressedIndex() ).size();
         lock.free();
         #endif
 
         #if !defined(ValidateCompressedVsUncompressedData)
         lock.lock();
-        DataHeap::getInstance().deleteData( cellDescription.getExtrapolatedSolution(), true );
-        cellDescription.setExtrapolatedSolution( -1 );
+        DataHeap::getInstance().deleteData( cellDescription.getExtrapolatedSolutionIndex(), true );
+        cellDescription.setExtrapolatedSolutionIndex(-1);
+        cellDescription.setExtrapolatedSolution(nullptr);
         lock.free();
         #endif
       }
       else {
         #if defined(TrackGridStatistics)
         tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-        PipedUncompressedBytes += getDataHeapEntries(cellDescription.getExtrapolatedSolution()).size() * 8.0;
-        PipedCompressedBytes   += getDataHeapEntries(cellDescription.getExtrapolatedSolution()).size() * 8.0;
+        PipedUncompressedBytes += getDataHeapEntries(cellDescription.getExtrapolatedSolutionIndex()).size() * 8.0;
+        PipedCompressedBytes   += getDataHeapEntries(cellDescription.getExtrapolatedSolutionIndex()).size() * 8.0;
         lock.free();
         #endif
       }
@@ -1873,94 +1916,94 @@ void exahype::solvers::FiniteVolumesSolver::pullUnknownsFromByteStream(
 
   {
     tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-    cellDescription.setPreviousSolution( DataHeap::getInstance().createData(
-        dataPerCell,         dataPerCell,
-      DataHeap::Allocation::UseOnlyRecycledEntries) );
-    cellDescription.setSolution( DataHeap::getInstance().createData(
-        dataPerCell,         dataPerCell,
-      DataHeap::Allocation::UseOnlyRecycledEntries) );
-    cellDescription.setExtrapolatedSolution( DataHeap::getInstance().createData(
-        dataPerBoundary, dataPerBoundary,
-        DataHeap::Allocation::UseOnlyRecycledEntries) );
+    cellDescription.setPreviousSolutionIndex( DataHeap::getInstance().createData( dataPerCell,dataPerCell,DataHeap::Allocation::UseOnlyRecycledEntries) );
+    cellDescription.setSolutionIndex( DataHeap::getInstance().createData( dataPerCell,dataPerCell,DataHeap::Allocation::UseOnlyRecycledEntries) );
+    cellDescription.setExtrapolatedSolutionIndex( DataHeap::getInstance().createData( dataPerBoundary,dataPerBoundary,DataHeap::Allocation::UseOnlyRecycledEntries) );
     lock.free();
 
-    if (cellDescription.getPreviousSolution()==-1) {
+    if (cellDescription.getPreviousSolutionIndex()==-1) { // allocate new array if recycling has failed
       ensureAllJobsHaveTerminated(JobType::SkeletonJob);
       ensureAllJobsHaveTerminated(JobType::EnclaveJob);
       lock.lock();
-      cellDescription.setPreviousSolution( DataHeap::getInstance().createData( dataPerCell, dataPerCell ) );
+      cellDescription.setPreviousSolutionIndex( DataHeap::getInstance().createData( dataPerCell, dataPerCell ) );
       lock.free();
     }
-    if (cellDescription.getSolution()==-1) {
+    if (cellDescription.getSolutionIndex()==-1) {
       ensureAllJobsHaveTerminated(JobType::SkeletonJob);
       ensureAllJobsHaveTerminated(JobType::EnclaveJob);
       lock.lock();
-      cellDescription.setSolution( DataHeap::getInstance().createData( dataPerCell, dataPerCell ) );
+      cellDescription.setSolutionIndex( DataHeap::getInstance().createData( dataPerCell, dataPerCell ) );
       lock.free();
     }
-    if (cellDescription.getExtrapolatedSolution()==-1) {
+    if (cellDescription.getExtrapolatedSolutionIndex()==-1) {
       ensureAllJobsHaveTerminated(JobType::SkeletonJob);
       ensureAllJobsHaveTerminated(JobType::EnclaveJob);
       lock.lock();
-      cellDescription.setExtrapolatedSolution( DataHeap::getInstance().createData(dataPerBoundary, dataPerBoundary ) );
+      cellDescription.setExtrapolatedSolutionIndex( DataHeap::getInstance().createData(dataPerBoundary, dataPerBoundary ) );
       lock.free();
     }
+    cellDescription.setPreviousSolution    ( static_cast<void*>(CompressedDataHeap::getInstance().getData(cellDescription.getPreviousSolutionIndex()).data() ) );
+    cellDescription.setSolution            ( static_cast<void*>(CompressedDataHeap::getInstance().getData(cellDescription.getSolutionIndex()).data() ) );
+    cellDescription.setExtrapolatedSolution( static_cast<void*>(CompressedDataHeap::getInstance().getData(cellDescription.getExtrapolatedSolutionIndex()).data() ) );
   }
   #else
-  assertion( DataHeap::getInstance().isValidIndex( cellDescription.getPreviousSolution() ));
-  assertion( DataHeap::getInstance().isValidIndex( cellDescription.getSolution() ));
-  assertion( DataHeap::getInstance().isValidIndex( cellDescription.getExtrapolatedSolution() ));
+  assertion( DataHeap::getInstance().isValidIndex( cellDescription.getPreviousSolutionIndex() ));
+  assertion( DataHeap::getInstance().isValidIndex( cellDescription.getSolutionIndex() ));
+  assertion( DataHeap::getInstance().isValidIndex( cellDescription.getExtrapolatedSolutionIndex() ));
   #endif
 
   assertion1(
-      CompressedDataHeap::getInstance().isValidIndex( cellDescription.getPreviousSolutionCompressed() ),
+      CompressedDataHeap::getInstance().isValidIndex( cellDescription.getPreviousSolutionCompressedIndex() ),
       cellDescription.getPreviousSolutionCompressed()
     );
   assertion1(
-    CompressedDataHeap::getInstance().isValidIndex( cellDescription.getSolutionCompressed() ),
+    CompressedDataHeap::getInstance().isValidIndex( cellDescription.getSolutionCompressedIndex() ),
     cellDescription.getSolutionCompressed()
   );
   assertion1(
-    CompressedDataHeap::getInstance().isValidIndex( cellDescription.getExtrapolatedSolutionCompressed() ),
+    CompressedDataHeap::getInstance().isValidIndex( cellDescription.getExtrapolatedSolutionCompressedIndex() ),
     cellDescription.getExtrapolatedSolutionCompressed()
   );
 
   peano::datatraversal::TaskSet glueTasks(
     [&]() -> bool {
       if (cellDescription.getBytesPerDoFInPreviousSolution()<7) {
-        assertion1( DataHeap::getInstance().isValidIndex( cellDescription.getPreviousSolution() ), cellDescription.getPreviousSolution());
-        assertion( CompressedDataHeap::getInstance().isValidIndex( cellDescription.getPreviousSolutionCompressed() ));
+        assertion1( DataHeap::getInstance().isValidIndex( cellDescription.getPreviousSolutionIndex() ), cellDescription.getPreviousSolutionIndex());
+        assertion( CompressedDataHeap::getInstance().isValidIndex( cellDescription.getPreviousSolutionCompressedIndex() ));
         const int numberOfEntries = getDataPerPatch() + getGhostDataPerPatch();
-        glueTogether(numberOfEntries, cellDescription.getPreviousSolution(), cellDescription.getPreviousSolutionCompressed(), cellDescription.getBytesPerDoFInPreviousSolution());
+        glueTogether(numberOfEntries, cellDescription.getPreviousSolutionIndex(), cellDescription.getPreviousSolutionCompressedIndex(), cellDescription.getBytesPerDoFInPreviousSolution());
         tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-        CompressedDataHeap::getInstance().deleteData( cellDescription.getPreviousSolutionCompressed(), true );
-        cellDescription.setPreviousSolutionCompressed( -1 );
+        CompressedDataHeap::getInstance().deleteData( cellDescription.getPreviousSolutionCompressedIndex(), true );
+        cellDescription.setPreviousSolutionCompressedIndex(-1);
+        cellDescription.setPreviousSolutionCompressed(nullptr);
         lock.free();
       }
       return false;
     },
     [&]() -> bool {
       if (cellDescription.getBytesPerDoFInSolution()<7) {
-        assertion1( DataHeap::getInstance().isValidIndex( cellDescription.getSolution() ), cellDescription.getSolution() );
-        assertion( CompressedDataHeap::getInstance().isValidIndex( cellDescription.getSolutionCompressed() ));
+        assertion1( DataHeap::getInstance().isValidIndex( cellDescription.getSolutionIndex() ), cellDescription.getSolutionIndex() );
+        assertion( CompressedDataHeap::getInstance().isValidIndex( cellDescription.getSolutionCompressedIndex() ));
         const int numberOfEntries = getDataPerPatch() + getGhostDataPerPatch();
-        glueTogether(numberOfEntries, cellDescription.getSolution(), cellDescription.getSolutionCompressed(), cellDescription.getBytesPerDoFInSolution());
+        glueTogether(numberOfEntries, cellDescription.getSolutionIndex(), cellDescription.getSolutionCompressedIndex(), cellDescription.getBytesPerDoFInSolution());
         tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-        CompressedDataHeap::getInstance().deleteData( cellDescription.getSolutionCompressed(), true );
-        cellDescription.setSolutionCompressed( -1 );
+        CompressedDataHeap::getInstance().deleteData( cellDescription.getSolutionCompressedIndex(), true );
+        cellDescription.setSolutionCompressedIndex(-1);
+        cellDescription.setSolutionCompressed(nullptr);
         lock.free();
       }
       return false;
     },
     [&]() -> bool {
       if (cellDescription.getBytesPerDoFInExtrapolatedSolution()<7) {
-        assertion1( DataHeap::getInstance().isValidIndex( cellDescription.getExtrapolatedSolution() ), cellDescription.getExtrapolatedSolution());
-        assertion( CompressedDataHeap::getInstance().isValidIndex( cellDescription.getExtrapolatedSolutionCompressed() ));
+        assertion1( DataHeap::getInstance().isValidIndex( cellDescription.getExtrapolatedSolutionIndex() ), cellDescription.getExtrapolatedSolutionIndex());
+        assertion( CompressedDataHeap::getInstance().isValidIndex( cellDescription.getExtrapolatedSolutionCompressedIndex() ));
         const int numberOfEntries = getDataPerPatchBoundary();
-        glueTogether(numberOfEntries, cellDescription.getExtrapolatedSolution(), cellDescription.getExtrapolatedSolutionCompressed(), cellDescription.getBytesPerDoFInExtrapolatedSolution());
+        glueTogether(numberOfEntries, cellDescription.getExtrapolatedSolutionIndex(), cellDescription.getExtrapolatedSolutionCompressedIndex(), cellDescription.getBytesPerDoFInExtrapolatedSolution());
         tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-        CompressedDataHeap::getInstance().deleteData( cellDescription.getExtrapolatedSolutionCompressed(), true );
-        cellDescription.setExtrapolatedSolutionCompressed( -1 );
+        CompressedDataHeap::getInstance().deleteData( cellDescription.getExtrapolatedSolutionCompressedIndex(), true );
+        cellDescription.setExtrapolatedSolutionCompressedIndex(-1);
+        cellDescription.setExtrapolatedSolutionCompressed(nullptr);
         lock.free();
       }
       return false;
@@ -1980,8 +2023,7 @@ void exahype::solvers::FiniteVolumesSolver::compress(CellDescription& cellDescri
       cellDescription.setCompressionState(CellDescription::CurrentlyProcessed);
 
       int& jobCounter = (isSkeletonCell) ? NumberOfSkeletonJobs: NumberOfEnclaveJobs;
-      CompressionJob compressionJob( *this, cellDescription, jobCounter );
-      peano::datatraversal::TaskSet spawnedSet( compressionJob,peano::datatraversal::TaskSet::TaskType::Background );
+      peano::datatraversal::TaskSet spawned( new CompressionJob( *this, cellDescription, jobCounter ));
     }
     else {
       determineUnknownAverages(cellDescription);
@@ -2030,28 +2072,28 @@ void exahype::solvers::FiniteVolumesSolver::uncompress(CellDescription& cellDesc
 void exahype::solvers::FiniteVolumesSolver::determineUnknownAverages(
   CellDescription& cellDescription) const {
 
-  assertion1( DataHeap::getInstance().isValidIndex(cellDescription.getSolution()), cellDescription.toString() );
-  assertion1( DataHeap::getInstance().isValidIndex(cellDescription.getPreviousSolution()), cellDescription.toString() );
-  assertion1( DataHeap::getInstance().isValidIndex(cellDescription.getExtrapolatedSolution()), cellDescription.toString() );
+  assertion1( DataHeap::getInstance().isValidIndex(cellDescription.getSolutionIndex()), cellDescription.toString() );
+  assertion1( DataHeap::getInstance().isValidIndex(cellDescription.getPreviousSolutionIndex()), cellDescription.toString() );
+  assertion1( DataHeap::getInstance().isValidIndex(cellDescription.getExtrapolatedSolutionIndex()), cellDescription.toString() );
 
-  assertion1( DataHeap::getInstance().isValidIndex(cellDescription.getSolutionAverages()), cellDescription.toString() );
-  assertion1( DataHeap::getInstance().isValidIndex(cellDescription.getPreviousSolutionAverages()), cellDescription.toString() );
-  assertion1( DataHeap::getInstance().isValidIndex(cellDescription.getExtrapolatedSolutionAverages()), cellDescription.toString() );
+  assertion1( DataHeap::getInstance().isValidIndex(cellDescription.getSolutionAveragesIndex()), cellDescription.toString() );
+  assertion1( DataHeap::getInstance().isValidIndex(cellDescription.getPreviousSolutionAveragesIndex()), cellDescription.toString() );
+  assertion1( DataHeap::getInstance().isValidIndex(cellDescription.getExtrapolatedSolutionAveragesIndex()), cellDescription.toString() );
 
   const int dataPerSubcell   = getNumberOfParameters()+getNumberOfVariables();
   const int subcellsPerPatch = (getDataPerPatch()+getGhostDataPerPatch())/ dataPerSubcell;
   const int subcellsPerFace  = (getDataPerPatchFace()) / dataPerSubcell;
 
-  auto& solutionAverages             = getDataHeapEntries(cellDescription.getSolutionAverages());
-  auto& previousSolutionAverage      = getDataHeapEntries(cellDescription.getPreviousSolutionAverages());
-  auto& extrapolatedSolutionAverages = getDataHeapEntries(cellDescription.getExtrapolatedSolutionAverages());
+  auto& solutionAverages             = getDataHeapEntries( cellDescription.getSolutionAveragesIndex() );
+  auto& previousSolutionAverage      = getDataHeapEntries( cellDescription.getPreviousSolutionAveragesIndex() );
+  auto& extrapolatedSolutionAverages = getDataHeapEntries( cellDescription.getExtrapolatedSolutionAveragesIndex() );
 
   // patch data
   kernels::idx2 idx_patchData    (subcellsPerPatch,dataPerSubcell);
   for (int i=0; i<subcellsPerPatch; i++) {
     for (int variableNumber=0; variableNumber<dataPerSubcell; variableNumber++) {
-      solutionAverages[variableNumber]        += getDataHeapEntries(cellDescription.getSolution())        [idx_patchData(i,variableNumber)];
-      previousSolutionAverage[variableNumber] += getDataHeapEntries(cellDescription.getPreviousSolution())[idx_patchData(i,variableNumber)];
+      solutionAverages[variableNumber]        += getDataHeapEntries(cellDescription.getSolutionIndex())        [idx_patchData(i,variableNumber)];
+      previousSolutionAverage[variableNumber] += getDataHeapEntries(cellDescription.getPreviousSolutionIndex())[idx_patchData(i,variableNumber)];
     }
   }
   for (int variableNumber=0; variableNumber<dataPerSubcell; variableNumber++) {
@@ -2066,7 +2108,7 @@ void exahype::solvers::FiniteVolumesSolver::determineUnknownAverages(
     for (int i=0; i<subcellsPerFace; i++) {
       for (int variableNumber=0; variableNumber<dataPerSubcell; variableNumber++) {
         extrapolatedSolutionAverages[idx_faceDataAvg(face,variableNumber)] +=
-            getDataHeapEntries(cellDescription.getExtrapolatedSolution())[idx_faceData(face,i,variableNumber)];
+            getDataHeapEntries(cellDescription.getExtrapolatedSolutionIndex())[idx_faceData(face,i,variableNumber)];
       }
     }
     for (int variableNumber=0; variableNumber<dataPerSubcell; variableNumber++) {
@@ -2087,11 +2129,11 @@ void exahype::solvers::FiniteVolumesSolver::computeHierarchicalTransform(
   kernels::idx2 idx_patchData    (subcellsPerPatch,dataPerSubcell);
   for (int i=0; i<subcellsPerPatch; i++) {
     for (int variableNumber=0; variableNumber<dataPerSubcell; variableNumber++) {
-      getDataHeapEntries(cellDescription.getSolution())
-          [idx_patchData(i,variableNumber)] += sign * getDataHeapEntries(cellDescription.getSolutionAverages())[variableNumber];
+      getDataHeapEntries(cellDescription.getSolutionIndex())
+          [idx_patchData(i,variableNumber)] += sign * getDataHeapEntries(cellDescription.getSolutionAveragesIndex())[variableNumber];
 
-      getDataHeapEntries(cellDescription.getPreviousSolution())
-          [idx_patchData(i,variableNumber)] += sign * getDataHeapEntries(cellDescription.getPreviousSolutionAverages())[variableNumber];
+      getDataHeapEntries(cellDescription.getPreviousSolutionIndex())
+          [idx_patchData(i,variableNumber)] += sign * getDataHeapEntries(cellDescription.getPreviousSolutionAveragesIndex())[variableNumber];
     }
   }
 
@@ -2101,10 +2143,10 @@ void exahype::solvers::FiniteVolumesSolver::computeHierarchicalTransform(
   for (int face=0; face<2*DIMENSIONS; face++) {
     for (int i=0; i<subcellsPerFace; i++) {
       for (int variableNumber=0; variableNumber<dataPerSubcell; variableNumber++) {
-        assertion1( DataHeap::getInstance().isValidIndex( cellDescription.getExtrapolatedSolution() ), cellDescription.toString() );
-        assertion1( DataHeap::getInstance().isValidIndex( cellDescription.getExtrapolatedSolutionAverages() ), cellDescription.toString() );
-        getDataHeapEntries(cellDescription.getExtrapolatedSolution())[idx_faceData(face,i,variableNumber)] +=
-              sign * getDataHeapEntries(cellDescription.getExtrapolatedSolutionAverages())[idx_faceDataAvg(face,variableNumber)];
+        assertion1( DataHeap::getInstance().isValidIndex( cellDescription.getExtrapolatedSolutionIndex() ), cellDescription.toString() );
+        assertion1( DataHeap::getInstance().isValidIndex( cellDescription.getExtrapolatedSolutionAveragesIndex() ), cellDescription.toString() );
+        getDataHeapEntries(cellDescription.getExtrapolatedSolutionIndex())[idx_faceData(face,i,variableNumber)] +=
+              sign * getDataHeapEntries(cellDescription.getExtrapolatedSolutionAveragesIndex())[idx_faceDataAvg(face,variableNumber)];
       }
     }
   }
@@ -2115,6 +2157,7 @@ exahype::solvers::FiniteVolumesSolver::CompressionJob::CompressionJob(
   CellDescription&           cellDescription,
   const bool                 isSkeletonJob)
   :
+  tarch::multicore::jobs::Job(Solver::getTaskType(isSkeletonJob),0),
   _solver(solver),
   _cellDescription(cellDescription),
   _isSkeletonJob(isSkeletonJob) {
@@ -2127,7 +2170,7 @@ exahype::solvers::FiniteVolumesSolver::CompressionJob::CompressionJob(
 }
 
 
-bool exahype::solvers::FiniteVolumesSolver::CompressionJob::operator()() {
+bool exahype::solvers::FiniteVolumesSolver::CompressionJob::run() {
   _solver.determineUnknownAverages(_cellDescription);
   _solver.computeHierarchicalTransform(_cellDescription,-1.0);
   _solver.putUnknownsIntoByteStream(_cellDescription);
@@ -2150,6 +2193,7 @@ exahype::solvers::FiniteVolumesSolver::FusedTimeStepJob::FusedTimeStepJob(
   const int                cellDescriptionsIndex,
   const int                element,
   const bool               isSkeletonJob):
+  tarch::multicore::jobs::Job(Solver::getTaskType(isSkeletonJob),0),
   _solver(solver),
   _cellDescriptionsIndex(cellDescriptionsIndex),
   _element(element),
@@ -2162,7 +2206,8 @@ exahype::solvers::FiniteVolumesSolver::FusedTimeStepJob::FusedTimeStepJob(
   lock.free();
 }
 
-bool exahype::solvers::FiniteVolumesSolver::FusedTimeStepJob::operator()() {
+
+bool exahype::solvers::FiniteVolumesSolver::FusedTimeStepJob::run() {
   _solver.fusedTimeStep(
       _cellDescriptionsIndex,_element,false,false,true);
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
@@ -2181,6 +2226,7 @@ exahype::solvers::FiniteVolumesSolver::AdjustSolutionDuringMeshRefinementJob::Ad
   FiniteVolumesSolver& solver,
   CellDescription&     cellDescription,
   const bool           isInitialMeshRefinement):
+  tarch::multicore::jobs::Job(Solver::getTaskType(false),0),
   _solver(solver),
   _cellDescription(cellDescription),
   _isInitialMeshRefinement(isInitialMeshRefinement)
@@ -2192,7 +2238,7 @@ exahype::solvers::FiniteVolumesSolver::AdjustSolutionDuringMeshRefinementJob::Ad
   lock.free();
 }
 
-bool exahype::solvers::FiniteVolumesSolver::AdjustSolutionDuringMeshRefinementJob::operator()() {
+bool exahype::solvers::FiniteVolumesSolver::AdjustSolutionDuringMeshRefinementJob::run() {
   _solver.adjustSolutionDuringMeshRefinementBody(_cellDescription,_isInitialMeshRefinement);
 
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
