@@ -235,10 +235,10 @@ void exahype::Vertex::mergeWithBoundaryData(
     posBoundary = pos1;
     cellDescriptionsIndex = cellDescriptionsIndex2;
   }
+  solvers::Solver::CellInfo         cellInfo(cellDescriptionsIndex);
+  solvers::Solver::BoundaryFaceInfo face(posCell,posBoundary);
 
-  solvers::Solver::CellInfo cellInfo(cellDescriptionsIndex);
-
-  if ( !cellInfo.empty() ) {
+  if ( !cellInfo.empty() && hasToMergeAtFace(cellInfo,face._faceIndex,true/*prefetchADERDGFace*/) ) {
     for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
 
@@ -265,6 +265,23 @@ void exahype::Vertex::mergeWithBoundaryData(
   }
 }
 
+bool exahype::Vertex::hasToMergeAtFace(
+    solvers::Solver::CellInfo& cellInfo,
+    const int                  faceIndex,
+    const bool                 prefetchADERDGFaceData) {
+  bool merge = false;
+  for (auto& p : cellInfo._ADERDGCellDescriptions) {
+    merge = !p.getNeighbourMergePerformed(faceIndex);
+    p.setNeighbourMergePerformed(faceIndex,static_cast<char>(true));
+    if ( merge && prefetchADERDGFaceData ) { solvers::ADERDGSolver::prefetchFaceData(p); }
+  }
+  for (auto& p : cellInfo._FiniteVolumesCellDescriptions) {
+    merge = !p.getNeighbourMergePerformed(faceIndex);
+    p.setNeighbourMergePerformed(faceIndex,static_cast<char>(true));
+  }
+  return merge;
+}
+
 void exahype::Vertex::mergeNeighboursDataAndMetadata(
     const int cellDescriptionsIndex1,
     const int cellDescriptionsIndex2,
@@ -276,31 +293,37 @@ void exahype::Vertex::mergeNeighboursDataAndMetadata(
   solvers::Solver::CellInfo cellInfo2(cellDescriptionsIndex2);
 
   if ( !cellInfo1.empty() && !cellInfo2.empty() ) {
-    for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
-      auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
+    solvers::Solver::InterfaceInfo face(pos1,pos2);
+    const bool mergeWithCell1 = hasToMergeAtFace(cellInfo1,face._faceIndex1,true/*prefetchADERDGFace*/);
+    const bool mergeWithCell2 = hasToMergeAtFace(cellInfo2,face._faceIndex2,true/*prefetchADERDGFace*/);
+    assertion2(mergeWithCell1==mergeWithCell2,mergeWithCell1,mergeWithCell2);
+    if ( mergeWithCell1 && mergeWithCell2 ) {
+      for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
+        auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
 
-      switch ( solver->getType() ) {
-        case solvers::Solver::Type::ADERDG:
-          static_cast<solvers::ADERDGSolver*>(solver)->
+        switch ( solver->getType() ) {
+          case solvers::Solver::Type::ADERDG:
+            static_cast<solvers::ADERDGSolver*>(solver)->
             mergeNeighboursData(solverNumber,cellInfo1,cellInfo2,pos1,pos2);
-          static_cast<solvers::ADERDGSolver*>(solver)->
-            mergeNeighboursMetadata(solverNumber,cellInfo1,cellInfo2,pos1,pos2,x,h,false);
-          break;
-        case solvers::Solver::Type::LimitingADERDG:
-          static_cast<solvers::LimitingADERDGSolver*>(solver)->
+            static_cast<solvers::ADERDGSolver*>(solver)->
+                mergeNeighboursMetadata(solverNumber,cellInfo1,cellInfo2,pos1,pos2,x,h,false);
+            break;
+          case solvers::Solver::Type::LimitingADERDG:
+            static_cast<solvers::LimitingADERDGSolver*>(solver)->
             mergeNeighboursData(solverNumber,cellInfo1,cellInfo2,pos1,pos2,false);
-          static_cast<solvers::LimitingADERDGSolver*>(solver)->getSolver()->
-              mergeNeighboursMetadata(solverNumber,cellInfo1,cellInfo2,pos1,pos2,x,h,false);
-          break;
-        case solvers::Solver::Type::FiniteVolumes:
-          static_cast<solvers::FiniteVolumesSolver*>(solver)->
+            static_cast<solvers::LimitingADERDGSolver*>(solver)->getSolver()->
+                mergeNeighboursMetadata(solverNumber,cellInfo1,cellInfo2,pos1,pos2,x,h,false);
+            break;
+          case solvers::Solver::Type::FiniteVolumes:
+            static_cast<solvers::FiniteVolumesSolver*>(solver)->
             mergeNeighboursData(solverNumber,cellInfo1,cellInfo2,pos1,pos2);
-          break;
-        default:
-          assertionMsg(false,"Unrecognised solver type: "<<solvers::Solver::toString(solver->getType()));
-          logError("mergeWithBoundaryDataIfNotDoneYet(...)","Unrecognised solver type: "<<solvers::Solver::toString(solver->getType()));
-          std::abort();
-          break;
+            break;
+          default:
+            assertionMsg(false,"Unrecognised solver type: "<<solvers::Solver::toString(solver->getType()));
+            logError("mergeWithBoundaryDataIfNotDoneYet(...)","Unrecognised solver type: "<<solvers::Solver::toString(solver->getType()));
+            std::abort();
+            break;
+        }
       }
     }
   }
@@ -651,10 +674,10 @@ bool exahype::Vertex::hasToSendToNeighbourNow(
     solvers::Solver::BoundaryFaceInfo& face) {
   bool result = true;
   for (auto& p : cellInfo._ADERDGCellDescriptions) {
-    result |= solvers::Solver::hasToSendToNeighbourNow(p,face); // side effects
+    result |= hasToSendToNeighbourNow(p,face); // side effects
   }
   for (auto& p : cellInfo._FiniteVolumesCellDescriptions) {
-    result |= solvers::Solver::hasToSendToNeighbourNow(p,face); // side effects
+    result |= hasToSendToNeighbourNow(p,face); // side effects
   }
   return result;
 }
@@ -734,13 +757,15 @@ void exahype::Vertex::sendToNeighbour(
 
 bool exahype::Vertex::hasToReceiveFromNeighbourNow(
     solvers::Solver::CellInfo&         cellInfo,
-    solvers::Solver::BoundaryFaceInfo& face) {
+    solvers::Solver::BoundaryFaceInfo& face,
+    const bool prefetchADERDGFaceData) {
   bool result = true;
   for (auto& p : cellInfo._ADERDGCellDescriptions) {
-    result |= solvers::Solver::hasToReceiveFromNeighbourNow(p,face); // side effects
+    result |= hasToReceiveFromNeighbourNow(p,face); // side effects
+    if ( prefetchADERDGFaceData ) { solvers::ADERDGSolver::prefetchFaceData(p); }
   }
   for (auto& p : cellInfo._FiniteVolumesCellDescriptions) {
-    result |= solvers::Solver::hasToReceiveFromNeighbourNow(p,face); // side effects
+    result |= hasToReceiveFromNeighbourNow(p,face); // side effects
   }
   return result;
 }
@@ -774,7 +799,7 @@ void exahype::Vertex::receiveNeighbourDataLoopBody(
       solvers::Solver::CellInfo cellInfo(destCellDescriptionIndex);
       solvers::Solver::BoundaryFaceInfo face(dest,src); // dest and src are swapped
 
-      if ( hasToReceiveFromNeighbourNow(cellInfo,face) ) {
+      if ( hasToReceiveFromNeighbourNow(cellInfo,face,true/*prefetchADERDGFaceData*/) ) {
         for(unsigned int solverNumber = solvers::RegisteredSolvers.size(); solverNumber-- > 0;) {
           auto* solver = solvers::RegisteredSolvers[solverNumber];
 

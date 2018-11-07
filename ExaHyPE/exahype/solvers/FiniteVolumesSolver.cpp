@@ -404,6 +404,8 @@ void exahype::solvers::FiniteVolumesSolver::addNewCellDescription(
   newCellDescription.setRefinementEvent(refinementEvent);
   // newCellDescription.setHelperCellNeedsToStoreFaceData(false); // TODO(Dominic): Add to FV cell descr.
 
+  newCellDescription.setNeighbourMergePerformed((signed char) 0/*implicit conversion*/);
+
   // Pass geometry information to the cellDescription description
   newCellDescription.setSize(cellSize);
   newCellDescription.setOffset(cellOffset);
@@ -895,57 +897,51 @@ void exahype::solvers::FiniteVolumesSolver::mergeNeighboursData(
     CellDescription& cellDescription1 = cellInfo1._FiniteVolumesCellDescriptions[element1];
     CellDescription& cellDescription2 = cellInfo2._FiniteVolumesCellDescriptions[element2];
 
-    if ( !cellDescription1.getNeighbourMergePerformed(face._faceIndex1) ) { // check
-      assertion(!cellDescription2.getNeighbourMergePerformed(face._faceIndex2) );
-      cellDescription1.setNeighbourMergePerformed(face._faceIndex1,true); // set
-      cellDescription2.setNeighbourMergePerformed(face._faceIndex2,true);
-
-      #if !defined(SharedMemoryParallelisation) && !defined(Parallel) && defined(Asserts)
-      static int counter = 0;
-      static double timeStamp = 0;
-      if ( !tarch::la::equals(timeStamp,_minTimeStamp,1e-9) ) {
-        logInfo("mergeNeighboursData(...)","#riemanns="<<counter);
-        timeStamp = _minTimeStamp;
-        counter=0;
-      }
-      counter++;
-      #endif
-
-      synchroniseTimeStepping(cellDescription1);
-      synchroniseTimeStepping(cellDescription2);
-
-      waitUntilCompletedTimeStep<CellDescription>(cellDescription1,false,false);
-      waitUntilCompletedTimeStep<CellDescription>(cellDescription2,false,false);
-
-      assertion(cellDescription1.getType()==CellDescription::Cell && cellDescription2.getType()==CellDescription::Cell);
-
-      assertion1(cellDescription1.getTimeStamp()<std::numeric_limits<double>::max(),cellDescription1.toString());
-      assertion1(cellDescription1.getTimeStepSize()<std::numeric_limits<double>::max(),cellDescription1.toString());
-      assertion1(cellDescription2.getTimeStamp()<std::numeric_limits<double>::max(),cellDescription2.toString());
-      assertion1(cellDescription2.getTimeStepSize()<std::numeric_limits<double>::max(),cellDescription2.toString());
-
-      if ( CompressionAccuracy > 0.0 ) {
-        peano::datatraversal::TaskSet uncompression(
-            [&] () -> bool {
-          uncompress(cellDescription1);
-          return false;
-        },
-        [&] () -> bool {
-          uncompress(cellDescription2);
-          return false;
-        },
-        peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
-        peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
-        true
-        );
-      }
-
-      double* solution1 = static_cast<double*>(cellDescription1.getSolution());
-      double* solution2 = static_cast<double*>(cellDescription2.getSolution());
-
-      ghostLayerFilling(solution1,solution2,pos2-pos1);
-      ghostLayerFilling(solution2,solution1,pos1-pos2);
+    #if !defined(SharedMemoryParallelisation) && !defined(Parallel) && defined(Asserts)
+    static int counter = 0;
+    static double timeStamp = 0;
+    if ( !tarch::la::equals(timeStamp,_minTimeStamp,1e-9) ) {
+     logInfo("mergeNeighboursData(...)","#riemanns="<<counter);
+     timeStamp = _minTimeStamp;
+     counter=0;
     }
+    counter++;
+    #endif
+
+    synchroniseTimeStepping(cellDescription1);
+    synchroniseTimeStepping(cellDescription2);
+
+    waitUntilCompletedTimeStep<CellDescription>(cellDescription1,false,false);
+    waitUntilCompletedTimeStep<CellDescription>(cellDescription2,false,false);
+
+    assertion(cellDescription1.getType()==CellDescription::Cell && cellDescription2.getType()==CellDescription::Cell);
+
+    assertion1(cellDescription1.getTimeStamp()<std::numeric_limits<double>::max(),cellDescription1.toString());
+    assertion1(cellDescription1.getTimeStepSize()<std::numeric_limits<double>::max(),cellDescription1.toString());
+    assertion1(cellDescription2.getTimeStamp()<std::numeric_limits<double>::max(),cellDescription2.toString());
+    assertion1(cellDescription2.getTimeStepSize()<std::numeric_limits<double>::max(),cellDescription2.toString());
+
+    if ( CompressionAccuracy > 0.0 ) {
+     peano::datatraversal::TaskSet uncompression(
+         [&] () -> bool {
+       uncompress(cellDescription1);
+       return false;
+     },
+     [&] () -> bool {
+       uncompress(cellDescription2);
+       return false;
+     },
+     peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
+     peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
+     true
+     );
+    }
+
+    double* solution1 = static_cast<double*>(cellDescription1.getSolution());
+    double* solution2 = static_cast<double*>(cellDescription2.getSolution());
+
+    ghostLayerFilling(solution1,solution2,pos2-pos1);
+    ghostLayerFilling(solution2,solution1,pos1-pos2);
   }
 }
 
@@ -986,8 +982,6 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithBoundaryData(
           cellDescription.getTimeStamp(),
           cellDescription.getTimeStepSize(),
           posCell,posBoundary);
-
-      cellDescription.setNeighbourMergePerformed(face._faceIndex,true); // set flag
     }
   }
 }

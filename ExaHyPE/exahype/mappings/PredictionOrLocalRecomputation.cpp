@@ -351,12 +351,18 @@ void exahype::mappings::PredictionOrLocalRecomputation::mergeNeighboursDataDurin
   if ( validIndex1 && validIndex2 ) {
     solvers::Solver::CellInfo cellInfo1(cellDescriptionsIndex1);
     solvers::Solver::CellInfo cellInfo2(cellDescriptionsIndex2);
+    solvers::Solver::InterfaceInfo face(pos1,pos2);
 
-    for (int solverNumber=0; solverNumber<static_cast<int>(solvers::RegisteredSolvers.size()); solverNumber++) {
-      auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-      if ( performLocalRecomputation(solver) ) {
-        static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->
-            mergeNeighboursData(solverNumber,cellInfo1,cellInfo2,pos1,pos2,true/* isRecomputation */);
+    const bool mergeWithCell1 = Vertex::hasToMergeAtFace(cellInfo1,face._faceIndex1,false/*prefetchADERDGFace*/);
+    const bool mergeWithCell2 = Vertex::hasToMergeAtFace(cellInfo2,face._faceIndex2,false/*prefetchADERDGFace*/);
+    assertion2(mergeWithCell1==mergeWithCell2,mergeWithCell1,mergeWithCell2);
+    if ( mergeWithCell1 && mergeWithCell2 ) {
+      for (int solverNumber=0; solverNumber<static_cast<int>(solvers::RegisteredSolvers.size()); solverNumber++) {
+        auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
+        if ( performLocalRecomputation(solver) ) {
+          static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->
+              mergeNeighboursData(solverNumber,cellInfo1,cellInfo2,pos1,pos2,true/* isRecomputation */);
+        }
       }
     }
   } else if (
@@ -374,13 +380,16 @@ void exahype::mappings::PredictionOrLocalRecomputation::mergeNeighboursDataDurin
       posBoundary = pos1;
       cellDescriptionsIndex = cellDescriptionsIndex2;
     }
+    solvers::Solver::CellInfo         cellInfo(cellDescriptionsIndex);
+    solvers::Solver::BoundaryFaceInfo face(posCell,posBoundary);
 
-    solvers::Solver::CellInfo cellInfo(cellDescriptionsIndex);
-    for (int solverNumber=0; solverNumber<static_cast<int>(solvers::RegisteredSolvers.size()); solverNumber++) {
-      auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-      if ( performLocalRecomputation(solver) ) {
-        static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->
-            mergeWithBoundaryData(solverNumber,cellInfo,posCell,posBoundary,true);
+    if ( !cellInfo.empty() && Vertex::hasToMergeAtFace(cellInfo,face._faceIndex,false/*prefetchADERDGFace*/) ) {
+      for (int solverNumber=0; solverNumber<static_cast<int>(solvers::RegisteredSolvers.size()); solverNumber++) {
+        auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
+        if ( performLocalRecomputation(solver) ) {
+          static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->
+              mergeWithBoundaryData(solverNumber,cellInfo,posCell,posBoundary,true);
+        }
       }
     }
   }
@@ -451,10 +460,10 @@ void exahype::mappings::PredictionOrLocalRecomputation::receiveNeighbourDataLoop
     if ( validIndex ) {
       const tarch::la::Vector<DIMENSIONS,int> src = Vertex::delineariseIndex2(srcScalar);
       const tarch::la::Vector<DIMENSIONS,int> dest = Vertex::delineariseIndex2(destScalar);
-      solvers::Solver::CellInfo cellInfo(destCellDescriptionsIndex);
+      solvers::Solver::CellInfo         cellInfo(destCellDescriptionsIndex);
       solvers::Solver::BoundaryFaceInfo face(dest,src); // dest and src are swapped
 
-      if ( Vertex::hasToReceiveFromNeighbourNow(cellInfo,face) ) {
+      if ( Vertex::hasToReceiveFromNeighbourNow(cellInfo,face,false/*prefetchADERDGFaceData*/) ) {
         for(unsigned int solverNumber = solvers::RegisteredSolvers.size(); solverNumber-- > 0;) {
           auto* solver = solvers::RegisteredSolvers[solverNumber];
           if ( performLocalRecomputation( solver ) ) {

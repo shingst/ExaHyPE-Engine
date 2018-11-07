@@ -1083,6 +1083,13 @@ public:
   static bool communicateWithNeighbour(const CellDescription& cellDescription,const int faceIndex);
 
   /**
+   * Prefetches Riemann input and output arrays (lQhbnd,LFbhnd) of an ADER-DG cell description.
+   *
+   * @param cellDescription an ADER-DG cell description
+   */
+  static void prefetchFaceData(CellDescription& cellDescription);
+
+  /**
    * Erase all cell descriptions registered for solvers
    * of type Type::ADERDG.
    */
