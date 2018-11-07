@@ -949,6 +949,17 @@ private:
 
       bool run() override;
 
+      /**
+       * We prefetch the data that is subject to the prediction/updates.
+       * As we know that prefetchData on the i+1th tasks is ran before the
+       * scheduler does the ith task, we end up with reasonably good
+       * prefetching. In theory, we might assume that loading into the L3
+       * cache is sufficient, while we found that loading into the L2 cache
+       * can destroy the affinity. In practice, it is best to follow Intel's
+       * cache recommendations, i.e. we use _MM_HINT_NTA as cache instruction
+       * rather than _MM_HINT_T2. This is however empirical evidence and
+       * might have to be reevaluated later on.
+       */
       void prefetchData() override;
   };
 

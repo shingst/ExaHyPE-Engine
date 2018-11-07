@@ -45,6 +45,9 @@ bool exahype::solvers::ADERDGSolver::PredictionJob::run() {
   return false;
 }
 
+//
+// @see PredictionJob
+//
 void exahype::solvers::ADERDGSolver::PredictionJob::prefetchData() {
   #if defined(SharedTBB) && !defined(noTBBPrefetchesJobData)
   const CellDescription& cellDescription = getCellDescription(_cellDescriptionsIndex,_element);
@@ -54,10 +57,10 @@ void exahype::solvers::ADERDGSolver::PredictionJob::prefetchData() {
   double* lQhbnd = static_cast<double*>(cellDescription.getExtrapolatedPredictor());
   double* lFhbnd = static_cast<double*>(cellDescription.getFluctuation());
 
-  _mm_prefetch(luh, _MM_HINT_T2); // move at least into L3; _MM_HINT_NTA should be tried as well
-  _mm_prefetch(lduh, _MM_HINT_T2);
-  _mm_prefetch(lQhbnd, _MM_HINT_T2);
-  _mm_prefetch(lFhbnd, _MM_HINT_T2);
+  _mm_prefetch(luh, _MM_HINT_NTA);
+  _mm_prefetch(lduh, _MM_HINT_NTA);
+  _mm_prefetch(lQhbnd, _MM_HINT_NTA);
+  _mm_prefetch(lFhbnd, _MM_HINT_NTA);
   #endif
 }
 

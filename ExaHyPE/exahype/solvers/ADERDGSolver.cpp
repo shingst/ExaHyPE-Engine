@@ -260,8 +260,8 @@ void exahype::solvers::ADERDGSolver::prefetchFaceData(CellDescription& cellDescr
   double* lQhbnd = static_cast<double*>(cellDescription.getExtrapolatedPredictor());
   double* lFhbnd = static_cast<double*>(cellDescription.getFluctuation());
 
-  _mm_prefetch(lQhbnd, _MM_HINT_T2);
-  _mm_prefetch(lFhbnd, _MM_HINT_T2);
+  _mm_prefetch(lQhbnd, _MM_HINT_NTA);
+  _mm_prefetch(lFhbnd, _MM_HINT_NTA);
   #endif
 }
 
