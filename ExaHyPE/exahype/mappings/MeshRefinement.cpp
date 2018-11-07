@@ -21,11 +21,14 @@
 
 #include "peano/grid/aspects/VertexStateAnalysis.h"
 
+#include "peano/parallel/loadbalancing/Oracle.h"
+
 #include "tarch/la/VectorScalarOperations.h"
 
 #include "tarch/multicore/Lock.h"
 
 #include "multiscalelinkedcell/HangingVertexBookkeeper.h"
+
 
 #include "exahype/VertexOperations.h"
 

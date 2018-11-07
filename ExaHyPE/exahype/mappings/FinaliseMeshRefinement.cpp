@@ -20,6 +20,8 @@
 #include "peano/datatraversal/autotuning/Oracle.h"
 #include "peano/datatraversal/TaskSet.h"
 
+#include "peano/parallel/loadbalancing/Oracle.h"
+
 #include "exahype/solvers/LimitingADERDGSolver.h"
 
 #include "exahype/mappings/MeshRefinement.h"
