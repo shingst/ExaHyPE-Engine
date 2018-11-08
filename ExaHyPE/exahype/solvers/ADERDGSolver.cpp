@@ -261,10 +261,26 @@ bool exahype::solvers::ADERDGSolver::communicateWithNeighbour(const CellDescript
       cellDescription.getAugmentationStatus()                    <  MaximumAugmentationStatus);
 }
 
-void exahype::solvers::ADERDGSolver::prefetchFaceData(CellDescription& cellDescription) {
+void exahype::solvers::ADERDGSolver::prefetchFaceData(CellDescription& cellDescription,const int faceIndex) {
   #if defined(SharedTBB) && !defined(noTBBPrefetchesJobData)
-  double* lQhbnd = static_cast<double*>(cellDescription.getExtrapolatedPredictor());
-  double* lFhbnd = static_cast<double*>(cellDescription.getFluctuation());
+  auto* solver = solvers::RegisteredSolvers[cellDescription.getSolverNumber()];
+  int dataPerFace = 0;
+  int dofPerFace  = 0;
+  switch (solver->getType()) {
+    case Solver::Type::ADERDG:
+      dataPerFace = static_cast<ADERDGSolver*>(solver)->getBndFaceSize();
+      dofPerFace  = static_cast<ADERDGSolver*>(solver)->getBndFluxSize();
+      break;
+    case Solver::Type::LimitingADERDG:
+      dataPerFace = static_cast<LimitingADERDGSolver*>(solver)->getSolver()->getBndFaceSize();
+      dofPerFace  = static_cast<LimitingADERDGSolver*>(solver)->getSolver()->getBndFluxSize();
+      break;
+    default:
+      break;
+  }
+
+  double* lQhbnd = static_cast<double*>(cellDescription.getExtrapolatedPredictor()) + faceIndex * dataPerFace;
+  double* lFhbnd = static_cast<double*>(cellDescription.getFluctuation())           + faceIndex * dofPerFace;
 
   _mm_prefetch(lQhbnd, _MM_HINT_NTA);
   _mm_prefetch(lFhbnd, _MM_HINT_NTA);

@@ -273,7 +273,7 @@ bool exahype::Vertex::hasToMergeAtFace(
   for (auto& p : cellInfo._ADERDGCellDescriptions) {
     merge = !p.getNeighbourMergePerformed(faceIndex);
     p.setNeighbourMergePerformed(faceIndex,static_cast<char>(true));
-    if ( merge && prefetchADERDGFaceData ) { solvers::ADERDGSolver::prefetchFaceData(p); }
+    if ( merge && prefetchADERDGFaceData ) { solvers::ADERDGSolver::prefetchFaceData(p,faceIndex); }
   }
   for (auto& p : cellInfo._FiniteVolumesCellDescriptions) {
     merge = !p.getNeighbourMergePerformed(faceIndex);
@@ -762,7 +762,7 @@ bool exahype::Vertex::hasToReceiveFromNeighbourNow(
   bool result = true;
   for (auto& p : cellInfo._ADERDGCellDescriptions) {
     result |= hasToReceiveFromNeighbourNow(p,face); // side effects
-    if ( prefetchADERDGFaceData ) { solvers::ADERDGSolver::prefetchFaceData(p); }
+    if ( prefetchADERDGFaceData ) { solvers::ADERDGSolver::prefetchFaceData(p,face._faceIndex); }
   }
   for (auto& p : cellInfo._FiniteVolumesCellDescriptions) {
     result |= hasToReceiveFromNeighbourNow(p,face); // side effects

@@ -1097,8 +1097,10 @@ public:
    * Prefetches Riemann input and output arrays (lQhbnd,LFbhnd) of an ADER-DG cell description.
    *
    * @param cellDescription an ADER-DG cell description
+   * @param faceIndex       index in the range of 0 (inclusive) to 2*DIMENSIONS (exclusive)
+   *                        numbering the faces of a cell.
    */
-  static void prefetchFaceData(CellDescription& cellDescription);
+  static void prefetchFaceData(CellDescription& cellDescription,const int faceIndex);
 
   /**
    * Erase all cell descriptions registered for solvers
