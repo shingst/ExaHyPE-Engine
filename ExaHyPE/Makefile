@@ -20,7 +20,7 @@
 #
 # export variable  |  default-value  |  further values         |  description
 #----------------------------------------------------------------------------------------------
-# ARCHITECTURE        CPU               Phi, KNL, HSW              Hardware-plattfrom
+# ARCHITECTURE        CPU               Phi, KNL, HSW, SKX         Hardware-plattfrom
 # COMPILER            Intel             GNU, Manual                Used compiler (and linker)
 # MODE                Release           Debug,                     Verbosity and Debug level
 #                                       Asserts,PeanoProfile,Profile          
@@ -216,21 +216,25 @@ ifeq ($(call tolower,$(COMPILER)),intel)
 	ifeq ($(call tolower,$(ARCHITECTURE)),phi)
 		COMPILER_CFLAGS += -mmic
 		COMPILER_LFLAGS += -mmic
-	else ifeq ($(call tolower,$(ARCHITECTURE)),sky)
+	else ifeq ($(call tolower,$(ARCHITECTURE)),wsm)
+		COMPILER_CFLAGS  += -xSSE4.2
+		FCOMPILER_CFLAGS += -xSSE4.2
+		COMPILER_LFLAGS  += -xSSE4.2
+	else ifeq ($(call tolower,$(ARCHITECTURE)),snb)
+		COMPILER_CFLAGS  += -xAVX
+		FCOMPILER_CFLAGS += -xAVX
+		COMPILER_LFLAGS  += -xAVX
+	else ifeq ($(call tolower,$(ARCHITECTURE)),hsw)
+		COMPILER_CFLAGS  += -xCORE-AVX2 -fma
+		FCOMPILER_CFLAGS += -xCORE-AVX2 -fma
+		COMPILER_LFLAGS  += -xCORE-AVX2 -fma
+	else ifeq ($(call tolower,$(ARCHITECTURE)),knl)
+		COMPILER_CFLAGS  += -xMIC-AVX512 -fma
+		FCOMPILER_CFLAGS += -xMIC-AVX512 -fma
+		COMPILER_LFLAGS  += -xMIC-AVX512 -fma
+	else ifeq ($(call tolower,$(ARCHITECTURE)),skx)
 		COMPILER_CFLAGS += -xCORE-AVX512 -fma
 		COMPILER_LFLAGS += -xCORE-AVX512 -fma
-	else ifeq ($(call tolower,$(ARCHITECTURE)),knl)
-		COMPILER_CFLAGS += -xMIC-AVX512 -fma
-		FCOMPILER_CFLAGS += -xMIC-AVX512 -fma
-		COMPILER_LFLAGS += -xMIC-AVX512 -fma
-	else ifeq ($(call tolower,$(ARCHITECTURE)),snb)
-		COMPILER_CFLAGS += -xAVX
-		FCOMPILER_CFLAGS += -xAVX
-		COMPILER_LFLAGS += -xAVX
-	else ifeq ($(call tolower,$(ARCHITECTURE)),hsw)
-		COMPILER_CFLAGS += -xCORE-AVX2 -fma
-		FCOMPILER_CFLAGS += -xCORE-AVX2 -fma
-		COMPILER_LFLAGS += -xCORE-AVX2 -fma
 	else ifneq ($(call tolower,$(ARCHITECTURE)),cpu)
         $(error Unknown option for variable [ARCHITECTURE])
 	endif
@@ -293,7 +297,7 @@ else ifeq ($(call tolower,$(COMPILER)),gnu)
 	ifeq ($(call tolower,$(ARCHITECTURE)),knl)
 		COMPILER_CFLAGS  += -march=knl
 		COMPILER_LFLAGS  += -march=knl
-	else ifeq ($(call tolower,$(ARCHITECTURE)),sky)
+	else ifeq ($(call tolower,$(ARCHITECTURE)),skx)
 		COMPILER_CFLAGS  += -march=skylake-avx512
 		COMPILER_LFLAGS  += -march=skylake-avx512
     else ifeq ($(call tolower,$(ARCHITECTURE)),snb)
@@ -302,6 +306,9 @@ else ifeq ($(call tolower,$(COMPILER)),gnu)
 	else ifeq ($(call tolower,$(ARCHITECTURE)),hsw)
 		COMPILER_CFLAGS  += -march=haswell
 		COMPILER_LFLAGS  += -march=haswell
+	else ifeq ($(call tolower,$(ARCHITECTURE)),wsm)
+		COMPILER_CFLAGS  += -march=westmere
+		COMPILER_LFLAGS  += -march=westmere
 	else ifneq ($(call tolower,$(ARCHITECTURE)),cpu)
 		$(error Unknown option for variable [ARCHITECTURE])
 	endif
