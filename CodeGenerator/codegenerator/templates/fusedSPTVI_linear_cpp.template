@@ -102,7 +102,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
 
     double tn;
     double x1[{{nDim}}];
-    const double volume = dx * dx{{' * dx' if nDim==3}};
+    const double ivolume = 1.0/(dx * dx{{' * dx' if nDim==3}});
     double forceVectorSource[{{nVarPad}}] __attribute__((aligned(ALIGNMENT)));
     std::memset(forceVectorSource, 0, {{nVarPad}}*sizeof(double));
 
@@ -132,7 +132,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
 {% if nDim == 3 %}
                                     * kernels::basisFunctions[{{nDof-1}}][z]((x_ps[2] - center[2]) * invDx + 0.5)
 {% endif %}
-                                    / ( weights3[(z*{{nDof3D}}+y)*{{nDof}}+x] * volume );
+                                    * iweights3[(z*{{nDof3D}}+y)*{{nDof}}+x] * ivolume ; //division by weights product and volume
 
               #pragma simd
               for (int n = 0; n < {{nVarPad}}; n++) { //evaluate

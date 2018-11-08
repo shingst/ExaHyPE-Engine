@@ -71,10 +71,12 @@ class QuadratureModel(AbstractModelBaseClass):
             self.context["weights3"] = weightsVector
             self.context["w3Size"] = len(self.context["weights3"])
             self.context["w3_seq"] = range(self.context["w3Size"])
-            
         else:
             print("QuadratureModel: nDim not supported")
-
+        
+        # inverse of weight3
+        self.context["iweights3"] = [1.0/self.context["weights3"][i] for i in self.context["w3_seq"]]
+        
         self.context["QuadratureWeights"], self.context["QuadratureNodes"] = QuadratureWeights, QuadratureNodes
         self.context["quadrature_seq"] = range(self.context["nDof"])
         
