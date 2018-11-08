@@ -257,7 +257,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
     // discrete Picard iteration
     double sq_res = 0.0;
     for (int ijk = 0; ijk < {{nDof**nDim}}; ijk++) {
-      {{ m.matmul('lqi', 'rhs', 's_m_QSlice', 'new_lQi_slice',nVarPad~'*ijk', '0', '0', trueB='iK1_T', trueAlpha='iweight3[ijk]') | indent(6) }}{##}
+      {{ m.matmul('lqi', 'rhs', 's_m_QSlice', 'new_lQi_slice',nVarPad~'*ijk', '0', '0', trueB='iK1_T', trueAlpha='iweights3[ijk]') | indent(6) }}{##}
       for(int l = 0; l < {{nDof}}; l++) {
         for(int n=0; n<{{nVar}}; n++) { //only copy and change the variables, skip parameters
           sq_res += (new_lQi_slice[n+{{nVarPad}}*l] - lQi[n+{{nDataPad}}*(l+{{nDof}}*ijk)]) * (new_lQi_slice[n+{{nVarPad}}*l] - lQi[n+{{nDataPad}}*(l+{{nDof}}*ijk)]);
