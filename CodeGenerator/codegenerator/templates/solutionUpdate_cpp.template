@@ -29,7 +29,7 @@ void {{codeNamespace}}::solutionUpdate(
 
   for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {
     const double coeff = dt*iweights3[xyz];
-    #pragma simd
+    #pragma omp simd aligned(luh,lduh:ALIGNMENT)
     for (int n = 0; n < {{nVar}}; n++) { //update only the variables, lduh contains no parameters
       luh[xyz*{{nData}}+n] += coeff*lduh[xyz*{{nVarPad}}+n]; //simd+fma
     }

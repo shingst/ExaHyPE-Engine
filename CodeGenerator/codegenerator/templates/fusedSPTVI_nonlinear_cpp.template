@@ -93,7 +93,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
   double dudxT_by_dx[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
   
   // 0. precompute 1/dx * dudx_T. Assume dx[0] == dx[1] == dx[2]
-  #pragma simd
+  #pragma omp simd aligned(dudxT_by_dx,dudx_T:ALIGNMENT)
   for(int it=0;it<{{nDof*nDofPad}};it++) {
     dudxT_by_dx[it] = inverseDx * dudx_T[it];
   }
@@ -186,7 +186,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
       // Compute the contribution of the initial condition uh to the right-hand side (rhs)
       for (int jkl = 0; jkl < {{nDof**nDim}}; jkl++) {
         const double weight = weights3[jkl] * FLCoeff[i];
-        #pragma simd
+        #pragma omp simd aligned(rhs,luh:ALIGNMENT)
         for (int n = 0; n < {{nVar}}; n++) {
           rhs[n+{{nVarPad}}*(jkl+{{nDof**nDim}}*i)] = weight * luh[n+{{nData}}*jkl];
         }
@@ -305,27 +305,27 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
         
         // Matrix-Vector Products
         for (int m=0; m<{{nDof}}; m++) {
-          #pragma simd
+          #pragma omp simd aligned(lQhi,lQi:ALIGNMENT)
           for (int n=0; n<{{nDataPad}}; n++) {
             // Fortran: lQhi(:,x,y,z) = lQi(:,:,x,y,z) * wGPN(:)
             lQhi[((z*{{nDof}}+y)*{{nDof}}+x)*{{nDataPad}}+n] += weights1[m] *
                 lQi[(((z*{{nDof3D}}+y)*{{nDof}}+x)*{{nDof}}+m)*{{nDataPad}}+n];
           }
 {% if useFlux %}
-          #pragma simd
+          #pragma omp simd aligned(lFhi,lFi:ALIGNMENT)
           for (int n=0; n<{{nVarPad}}; n++) {
             // Fortran: lFhi_x(:,x,y,z) = lFh(:,1,x,y,z,:) * wGPN(:)
             lFhi[((z*{{nDof}}+y)*{{nDof}}+x)*{{nVarPad}}+n+{{0*nVarPad*(nDof**nDim)}}] += weights1[m] *
                 lFi[(((m*{{nDof3D}}+z)*{{nDof}}+y)*{{nDof}}+x)*{{nVarPad}}+n+{{0*(nDof**nDim)*nDof*nVarPad}}];
           }  
-          #pragma simd
+          #pragma omp simd aligned(lFhi,lFi:ALIGNMENT)
           for (int n=0; n<{{nVarPad}}; n++) {
             // Fortran: lFhi_y(:,y,x,z) = lFh(:,2,:x,y,z,:) * wGPN(:)
             lFhi[((z*{{nDof}}+x)*{{nDof}}+y)*{{nVarPad}}+n+{{1*nVarPad*(nDof**nDim)}}] += weights1[m] *
                 lFi[(((m*{{nDof3D}}+z)*{{nDof}}+y)*{{nDof}}+x)*{{nVarPad}}+n+{{1*(nDof**nDim)*nDof*nVarPad}}];
           }  
 {% if nDim == 3%}
-          #pragma simd
+          #pragma omp simd aligned(lFhi,lFi:ALIGNMENT)
           for (int n=0; n<{{nVarPad}}; n++) {
             // Fortran: lFhi_z(:,z,x,y) = lFh(:,3,x,y,z,:) * wGPN(:)
             lFhi[((y*{{nDof}}+x)*{{nDof}}+z)*{{nVarPad}}+n+{{2*nVarPad*(nDof**nDim)}}] += weights1[m] *
@@ -335,7 +335,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
 {% endif %}{# useFlux #}
             
 {% if useSourceOrNCP %}
-          #pragma simd
+          #pragma omp simd aligned(lShi,lSi:ALIGNMENT)
           for (int n=0; n<{{nVarPad}}; n++) {
             // Fortran: lFhi_S(:,x,y,z) = lSh(:,x,y,z,:) * wGPN(:)
             lShi[((z*{{nDof}}+y)*{{nDof}}+x)*{{nVarPad}}+n] += weights1[m] *
@@ -370,7 +370,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
   for (int yz = 0; yz < {{nDof*nDof3D}}; yz++) {
     // Matrix-Vector Products
     for (int x = 0; x < {{nDof}}; x++) {
-      #pragma simd
+      #pragma omp simd aligned(lQhbnd,lQhi:ALIGNMENT)
       for (int n = 0; n < {{nDataPad}}; n++) {    
         // Fortran: lQhbnd(:,j,i,1) = lQhi(:,:,j,i) * FLCoeff(:)
         lQhbnd[n+{{nDataPad}}*yz+{{0*nDataPad*nDof*nDof3D}}] +=
@@ -382,7 +382,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
 {% if useFlux %}
 {% if nDataPad != nVarPad %}
       }
-      #pragma simd
+      #pragma omp simd aligned(lFhbnd,lFhi:ALIGNMENT)
       for (int n = 0; n < {{nVarPad}}; n++) {
 {% endif %}
         // Fortran: lFhbnd(:,j,i,1) = lFhi_x(:,:,j,i) * FLCoeff(:)
@@ -408,7 +408,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
       const int z = 0;
       const int x = xz;
 {% endif %}
-      #pragma simd
+      #pragma omp simd aligned(lQhbnd,lQhi:ALIGNMENT)
       for (int n = 0; n < {{nDataPad}}; n++) {
         // Fortran: lQhbnd(:,j,i,3) = lQhi(:,j,:,i) * FLCoeff(:)
         lQhbnd[n+{{nDataPad}}*xz+{{2*nDataPad*nDof*nDof3D}}] +=
@@ -420,7 +420,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
 {% if useFlux %}
 {% if nDataPad != nVarPad %}
       }
-      #pragma simd
+      #pragma omp simd aligned(lFhbnd,lFhi:ALIGNMENT)
       for (int n = 0; n < {{nVarPad}}; n++) {  
 {% endif %}
         // Fortran: lFhbnd(:,j,i,3) = lFhi_y(:,:,j,i) * FLCoeff(:)
@@ -441,7 +441,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
   for (int xy = 0; xy < {{nDof*nDof}}; xy++) {
     // Matrix-Vector Products
     for (int z = 0; z < {{nDof}}; z++) {
-      #pragma simd
+      #pragma omp simd aligned(lQhbnd,lQhi:ALIGNMENT)
       for (int n = 0; n < {{nDataPad}}; n++) {
         // Fortran: lQhbnd(:,j,i,5) = lQhi(:,j,i,:) * FLCoeff(:)
         lQhbnd[n+{{nDataPad}}*xy+{{4*nDataPad*nDof*nDof3D}}] +=
@@ -453,7 +453,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
 {% if useFlux %}
 {% if nDataPad != nVarPad %}
       }
-      #pragma simd
+      #pragma omp simd aligned(lFhbnd,lFhi:ALIGNMENT)
       for (int n = 0; n < {{nVarPad}}; n++) {  
 {% endif %}
         // Fortran: lFhbnd(:,j,i,5) = lFhi_z(:,:,j,i) * FLCoeff(:)
@@ -513,7 +513,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
   // source
   for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {
     // Fortran: lduh(:,k,j,i) += w * lShi(:,k,j,i)
-    #pragma simd
+    #pragma omp simd aligned(lduh,lShi:ALIGNMENT)
     for (int n = 0; n < {{nVarPad}}; n++) {
       lduh[xyz*{{nVarPad}}+n] += weights3[xyz] * lShi[xyz*{{nVarPad}}+n];
     }
