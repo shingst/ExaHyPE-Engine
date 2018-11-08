@@ -90,7 +90,7 @@ class exahype::plotters::FiniteVolumes2VTK: public exahype::plotters::Plotter::D
 
   virtual void init(const std::string& filename, int numberOfCellsPerAxis, int unknowns, int writtenUnknowns, exahype::parser::ParserView plotterParameters);
 
-  void plotPatch(const int cellDescriptionsIndex, const int element) override;
+  void plotPatch(const int solverNumber,solvers::Solver::CellInfo& cellInfo) override;
 
   void plotCellData(
       int firstCellIndex,

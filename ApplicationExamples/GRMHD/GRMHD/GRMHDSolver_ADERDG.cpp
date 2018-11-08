@@ -144,10 +144,22 @@ void GRMHD::GRMHDSolver_ADERDG::boundaryValues(const double* const x,const doubl
   }
 }
 
+bool isInRefinementZone(const tarch::la::Vector<DIMENSIONS,double>& center){
+	double radius = 8.12514;
+	// lower left, upper right radius of cell
+	double cen = tarch::la::norm2(center);
+	double dr = 0.5;
+	return  cen  <= (radius+dr) ;
+}
 
-exahype::solvers::Solver::RefinementControl GRMHD::GRMHDSolver_ADERDG::refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
-  // @todo Please implement/augment if required
-  return exahype::solvers::Solver::RefinementControl::Keep;
+
+exahype::solvers::Solver::RefinementControl GRMHD::GRMHDSolver_ADERDG::refinementCriterion(const double* luh,
+        const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
+    // @todo Please implement/augment if required
+
+    if(isInRefinementZone(center))
+        return exahype::solvers::Solver::RefinementControl::Refine;
+    return exahype::solvers::Solver::RefinementControl::Keep;
 }
 
 // only evaluated in Limiting context

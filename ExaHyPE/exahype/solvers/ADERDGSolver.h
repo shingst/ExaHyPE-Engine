@@ -308,6 +308,26 @@ private:
   void uncompress(CellDescription& cellDescription) const;
 
   /**
+    * Rollback to the previous time step, i.e,
+    * overwrite the time step size and time stamp
+    * fields of the cell description
+    * by previous values.
+    */
+   void rollbackToPreviousTimeStep(CellDescription& cellDescription) const;
+
+   /**
+    * Same as rollbackToPreviousTimeStep
+    * but for the fused time stepping scheme.
+    *
+    * Corrector time stamp and corrector time step size must
+    * add up to predictor time stamp after rollback.
+    *
+    * Corrector time step size is assumed to be used
+    * predictor time step size in batch.
+    */
+   void rollbackToPreviousTimeStepFused(CellDescription& cellDescription) const;
+
+  /**
    * Simply adjust the solution if necessary. Do not modify the time step
    * data or anything else.
    */
@@ -321,6 +341,15 @@ private:
       const bool isInitialMeshRefinement);
 
   /**
+   * Update time step sizes and time stamps for the fused/nonfused time stepping variant.
+   *
+   * @param cellDescription   a cell description
+   * @param fusedTimeStepping if fused time stepping is used
+   * @return the new admissible time step size if the cell description is of type Cell. Otherwise, the maximum double value.
+   */
+  double updateTimeStepSizes(CellDescription& cellDescription,const bool fusedTimeStepping);
+
+  /**
    * Evaluate the refinement criterion and convert the user
    * input to an integer representation, the refinement status.
    *
@@ -331,7 +360,7 @@ private:
    */
   int evaluateRefinementCriterion(
       const CellDescription& cellDescription,
-      const int solutionHeapIndex, const double& timeStamp);
+      const double* const solution, const double& timeStamp);
 
   /**
    * Query the user's refinement criterion and
@@ -425,7 +454,7 @@ private:
       CellDescription& cellDescription) const;
 
   /**
-   * Starts of finish collective operations from a
+   * Start or finish collective operations from a
    * fine cell description point of view.
    *
    * \return true if a new compute cell
@@ -434,7 +463,7 @@ private:
   void progressCollectiveRefinementOperationsInEnterCell(
       CellDescription& fineGridCellDescription);
 
-  bool progressCollectiveRefinementOperationsInLeaveCell(
+  void progressCollectiveRefinementOperationsInLeaveCell(
       CellDescription& fineGridCellDescription,
       const bool stillInRefiningMode);
 
@@ -649,8 +678,7 @@ private:
    */
   void restrictObservablesMinAndMax(
       const CellDescription& cellDescription,
-      const CellDescription& parentCellDescription,
-      const int faceIndex) const;
+      const CellDescription& parentCellDescription) const;
 
   /**
    * Determine if the cell description of type
@@ -670,8 +698,7 @@ private:
    */
   void prolongateObservablesMinAndMax(
       const CellDescription& cellDescription,
-      const CellDescription& cellDescriptionParent,
-      const int faceIndex) const;
+      const CellDescription& cellDescriptionParent) const;
 
   /**
    * Solve the Riemann problem at the interface between two cells ("left" and
@@ -881,7 +908,7 @@ private:
    */
   void pullUnknownsFromByteStream(CellDescription& cellDescription) const;
 
-  class CompressionJob {
+  class CompressionJob: public tarch::multicore::jobs::Job {
     private:
       const ADERDGSolver& _solver;
       CellDescription&    _cellDescription;
@@ -892,17 +919,18 @@ private:
         CellDescription&    cellDescription,
         const bool          isSkeletonJob);
 
-      bool operator()();
+      bool run() override;
   };
 
   /**
    * A job which performs the prediction and volume integral operations
    * for a cell description.
    */
-  class PredictionJob {
+  class PredictionJob: public tarch::multicore::jobs::Job {
     private:
-      ADERDGSolver&    _solver; // TODO not const because of kernels
-      const int        _cellDescriptionsIndex;
+      ADERDGSolver&    _solver; // not const because of kernels
+      CellDescription& _cellDescription;
+      const int        _cellDescriptionsIndex; // indices are used for identification of patch
       const int        _element;
       const double     _predictorTimeStamp;
       const double     _predictorTimeStepSize;
@@ -911,6 +939,7 @@ private:
     public:
       PredictionJob(
           ADERDGSolver&     solver,
+          CellDescription&  cellDescription,
           const int         cellDescriptionsIndex,
           const int         element,
           const double      predictorTimeStamp,
@@ -918,16 +947,29 @@ private:
           const bool        uncompressBefore,
           const bool        isAtRemoteBoundary);
 
-      bool operator()();
+      bool run() override;
+
+      /**
+       * We prefetch the data that is subject to the prediction/updates.
+       * As we know that prefetchData on the i+1th tasks is ran before the
+       * scheduler does the ith task, we end up with reasonably good
+       * prefetching. In theory, we might assume that loading into the L3
+       * cache is sufficient, while we found that loading into the L2 cache
+       * can destroy the affinity. In practice, it is best to follow Intel's
+       * cache recommendations, i.e. we use _MM_HINT_NTA as cache instruction
+       * rather than _MM_HINT_T2. This is however empirical evidence and
+       * might have to be reevaluated later on.
+       */
+      void prefetchData() override;
   };
 
   /**
    * A job which performs prolongation operation
    * for a cell description.
    */
-  class ProlongationJob {
+  class ProlongationJob: public tarch::multicore::jobs::Job {
     private:
-      ADERDGSolver&                            _solver; // TODO not const because of kernels
+      ADERDGSolver&                            _solver; // not const because of kernels
       CellDescription&                         _cellDescription;
       const CellDescription&                   _parentCellDescription;
       const tarch::la::Vector<DIMENSIONS,int>  _subcellIndex;
@@ -938,7 +980,7 @@ private:
           const CellDescription&                   parentCellDescription,
           const tarch::la::Vector<DIMENSIONS,int>& subcellIndex);
 
-      bool operator()();
+      bool run() override;
   };
 
   /**
@@ -952,28 +994,30 @@ private:
    * TODO(Dominic): Minimise time step sizes and refinement requests per patch
    * (->transpose the typical minimisation order)
    */
-  class FusedTimeStepJob {
+  class FusedTimeStepJob: public tarch::multicore::jobs::Job {
     private:
       ADERDGSolver&                                              _solver; // TODO not const because of kernels
-      const int                                                  _cellDescriptionsIndex;
+      CellDescription&                                           _cellDescription;
+      const int                                                  _cellDescriptionsIndex; // indices are used for identification of patch
       const int                                                  _element;
       const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>  _neighbourMergePerformed;
       const bool                                                 _isSkeletonJob;
     public:
       FusedTimeStepJob(
         ADERDGSolver&                                              solver,
+        CellDescription&                                           cellDescription,
         const int                                                  cellDescriptionsIndex,
         const int                                                  element,
-        const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
         const bool                                                 isSkeletonJob);
 
-      bool operator()();
+      bool run() override;
+      void prefetchData() override;
   };
 
   /**
    * A job that calls adjustSolutionDuringMeshRefinementBody(...).
    */
-  class AdjustSolutionDuringMeshRefinementJob {
+  class AdjustSolutionDuringMeshRefinementJob: public tarch::multicore::jobs::Job {
   private:
     ADERDGSolver&    _solver;
     CellDescription& _cellDescription;
@@ -984,7 +1028,7 @@ private:
         CellDescription& cellDescription,
         const bool       isInitialMeshRefinement);
 
-    bool operator()();
+    bool run() override;
   };
 
 public:
@@ -1010,14 +1054,14 @@ public:
    * It does not spread.
    */
   static void addNewCellDescription(
-      const int cellDescriptionsIndex,
-      const int                                      solverNumber,
-      const exahype::records::ADERDGCellDescription::Type cellType,
-      const exahype::records::ADERDGCellDescription::RefinementEvent refinementEvent,
-      const int                                     level,
-      const int                                     parentIndex,
-      const tarch::la::Vector<DIMENSIONS, double>&  cellSize,
-      const tarch::la::Vector<DIMENSIONS, double>&  cellOffset);
+      const int                                    solverNumber,
+      CellInfo&                                    cellInfo,
+      const CellDescription::Type                  cellType,
+      const CellDescription::RefinementEvent       refinementEvent,
+      const int                                    level,
+      const int                                    parentIndex,
+      const tarch::la::Vector<DIMENSIONS, double>& cellSize,
+      const tarch::la::Vector<DIMENSIONS, double>& cellOffset);
 
   /**
    * Returns the ADERDGCellDescription heap vector
@@ -1035,9 +1079,28 @@ public:
       const int element);
 
   /**
-   * \return true if a ADERDG cell description holds face data.
+   * @return if a cell description (should) hold face data.
+   *
+   * @param cellDescription a cell description.
    */
   static bool holdsFaceData(const CellDescription& cellDescription);
+
+  /**
+   * \return if communication with a (remote) neighbour is necessary.
+   *
+   * @param cellDescription a cell description.
+   * @param faceIndex       an index in the range 0 till DIMENSIONS_TIMES_TWO-1.
+   */
+  static bool communicateWithNeighbour(const CellDescription& cellDescription,const int faceIndex);
+
+  /**
+   * Prefetches Riemann input and output arrays (lQhbnd,LFbhnd) of an ADER-DG cell description.
+   *
+   * @param cellDescription an ADER-DG cell description
+   * @param faceIndex       index in the range of 0 (inclusive) to 2*DIMENSIONS (exclusive)
+   *                        numbering the faces of a cell.
+   */
+  static void prefetchFaceData(CellDescription& cellDescription,const int faceIndex);
 
   /**
    * Erase all cell descriptions registered for solvers
@@ -1267,8 +1330,6 @@ public:
    *
    * \note Heap data creation assumes default policy
    * DataHeap::Allocation::UseRecycledEntriesIfPossibleCreateNewEntriesIfRequired.
-   *
-   * \param
    */
   void ensureNecessaryMemoryIsAllocated(exahype::records::ADERDGCellDescription& cellDescription) const;
 
@@ -1380,7 +1441,7 @@ public:
       const double* const stateIn,
       const double* const luh,
       const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
-      const tarch::la::Vector<DIMENSIONS,double>& cellSize,
+      const tarch::la::Vector<DIMENSIONS,double>&  cellSize,
       const double t,const double dt,
       const int direction,
       const int orientation) = 0;
@@ -1539,21 +1600,9 @@ public:
 
   /**
    * Copies the time stepping data from the global solver onto the patch's time
-   * meta data.
+   * stepping data.
    */
-  void synchroniseTimeStepping(
-      CellDescription& p) const;
-
-  /**
-   * Copies the time stepping data from the global solver onto the patch's time
-   * meta data.
-   *
-   * \param[in] element Index of the cell description in
-   *                    the array at address \p cellDescriptionsIndex.
-   */
-  void synchroniseTimeStepping(
-      const int cellDescriptionsIndex,
-      const int element) const override;
+  void synchroniseTimeStepping(CellDescription& p) const;
 
   /**
    * \copydoc Solver::startNewTimeStep
@@ -1595,11 +1644,6 @@ public:
    * to false for the ADER-DG solver.
    */
   void updateTimeStepSizesFused() override;
-
-  /**
-   * Zero predictor and corrector time step size.
-   */
-  void zeroTimeStepSizes() override;
 
   void rollbackToPreviousTimeStep() final override;
 
@@ -1741,15 +1785,7 @@ public:
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
       const int solverNumber) const override;
 
-  void finaliseStateUpdates(
-      exahype::Cell& fineGridCell,
-      exahype::Vertex* const fineGridVertices,
-      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-      exahype::Cell& coarseGridCell,
-      exahype::Vertex* const coarseGridVertices,
-      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-      const int solverNumber) override;
+  void finaliseStateUpdates(const int solverNumber,CellInfo& cellInfo) override;
 
   ///////////////////////////////////
   // CELL-LOCAL
@@ -1775,17 +1811,16 @@ public:
       CellDescription& cellDescription,
       const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed);
 
-  /*! Perform prediction and volume integral for an ADERDGSolver or LimitingADERDGSolver.
+  /*! Perform prediction and volume integral.
    *
    * \note Uncompresses the cell description arrays before calling
    * performPredictionAndVolumeIntegral(CellDescription,bool)
    *
    * \see performPredictionAndVolumeIntegral(CellDescription,bool)
    */
-  static void performPredictionAndVolumeIntegral(
-      exahype::solvers::Solver* solver,
-      const int cellDescriptionsIndex,
-      const int element,
+  void performPredictionAndVolumeIntegral(
+      const int  solverNumber,
+      CellInfo&  cellInfo,
       const bool isAtRemoteBoundary);
 
   /**
@@ -1819,8 +1854,6 @@ public:
       const bool   isSkeletonCell );
 
   /**
-   *
-   *
    * \note uncompress is not performed in this routine. It must
    * be called before calling this routine if compression is employed.
    *
@@ -1831,8 +1864,8 @@ public:
    *                               start backgroudn tasks.
    */
   void performPredictionAndVolumeIntegral(
-      const int cellDescriptionsIndex,
-      const int element,
+      const int    solverNumber,
+      CellInfo&    cellInfo,
       const double predictorTimeStamp,
       const double predictorTimeStepSize,
       const bool   uncompress,
@@ -1850,6 +1883,7 @@ public:
       const CellDescription& cellDescription,
       const bool validateTimeStepData,
       const bool afterCompression,
+      const bool beforePrediction,
       const std::string& methodTraceOfCaller) const;
 
   /**
@@ -1868,6 +1902,9 @@ public:
    * Computes a time step size based on the solution
    * values. Does not advance the cell descriptions
    * time stamps forward.
+   *
+   * \return the newly computed time step size if the cell description is of type Cell or the maximum
+   *         double value.
    */
   double computeTimeStepSize(
       CellDescription& cellDescription);
@@ -1900,51 +1937,20 @@ public:
       const bool isFirstIterationOfBatch,
       const bool isLastIterationOfBatch);
 
-  /** \copydoc Solver::updateTimeStepSizesFused
+  /** \copydoc Solver::updateTimeStepSizes
    *
-   * Advances the predictor time stamp in time.
+   * @param solverNumber      identification number of this solver
+   * @param cellInfo          refers to a cell's data
+   * @param fusedTimeStepping advances the predictor time stamp in time.
    */
-  double updateTimeStepSizesFused(
-          const int cellDescriptionsIndex,
-          const int element) override final;
-
-  /** \copydoc Solver::updateTimeStepSizesFused
-   *
-   * Does not advance the predictor time stamp in time.
-   */
-  double updateTimeStepSizes(
-        const int cellDescriptionsIndex,
-        const int element) override final;
-
-  void zeroTimeStepSizes(CellDescription& cellDescription) const;
-
-  /**
-    * Rollback to the previous time step, i.e,
-    * overwrite the time step size and time stamp
-    * fields of the cell description
-    * by previous values.
-    */
-   void rollbackToPreviousTimeStep(
-       CellDescription& cellDescription) const;
-
-   /*
-    * Same as rollbackToPreviousTimeStep
-    * but for the fused time stepping scheme.
-    *
-    * Corrector time stamp and corrector time step size must
-    * add up to predictor time stamp after rollback.
-    *
-    * Corrector time step size is assumed to be used
-    * predictor time step size in batch.
-    */
-   void rollbackToPreviousTimeStepFused(
-       CellDescription& cellDescription) const;
+  double updateTimeStepSizes(const int solverNumber,CellInfo& cellInfo,const bool fusedTimeStepping) final override;
 
   /**
    * Perform a fused time step, i.e. perform the update, update time step data, mark
    * for refinement and then compute the new space-time predictor.
    *
-   * <h2> Order of operations</h2>
+   * Order of operations
+   * -------------------
    * Data stored on a patch must be compressed by the last operation touching
    * the patch. If we spawn the prediction as background job, it is very likely
    * that it is executed last. In order to have a deterministic order of
@@ -1955,8 +1961,12 @@ public:
    * the time step update. Fortunately, it is already memorised as it is copied
    * into the correction time step data fields of the patch
    * after the time step data update.
+   *
+   * @param cellDescriptionsIndex cell description heap index
+   * @param element               element in the cell description heap array
    */
   UpdateResult fusedTimeStepBody(
+        CellDescription& cellDescription,
         const int cellDescriptionsIndex,
         const int element,
         const bool isFirstIterationOfBatch,
@@ -1965,25 +1975,24 @@ public:
         const bool mustBeDoneImmediately,
         const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed);
 
-  UpdateResult fusedTimeStep(
-      const int cellDescriptionsIndex,
-      const int element,
+  UpdateResult fusedTimeStepOrRestrict(
+      const int  solverNumber,
+      CellInfo&  cellInfo,
       const bool isFirstIterationOfBatch,
       const bool isLastIterationOfBatch,
       const bool isAtRemoteBoundary) final override;
 
-  UpdateResult update(
-      const int cellDescriptionsIndex,
-      const int element,
+  UpdateResult updateOrRestrict(
+      const int  solverNumber,
+      CellInfo&  cellInfo,
       const bool isAtRemoteBoundary) final override;
 
   void compress(
-      const int cellDescriptionsIndex,
-      const int element,
+      const int solverNumber,
+      CellInfo& cellInfo,
       const bool isAtRemoteBoundary) const final override;
 
-  void adjustSolutionDuringMeshRefinement(
-      const int cellDescriptionsIndex,const int element) final override;
+  void adjustSolutionDuringMeshRefinement(const int solverNumber,CellInfo& cellInfo) final override;
 
   /**
    * Computes the surface integral contributions to the
@@ -2054,43 +2063,40 @@ public:
    */
   void swapSolutionAndPreviousSolution(CellDescription& cellDescription) const;
 
-  // TODO(LTS): Add docu
-  void prolongateFaceData(
-      const int  cellDescriptionsIndex,
-      const int  element,
-      const bool isAtRemoteBoundary) override;
-
-  /** \copydoc Solver::restrict
+  /**
+   * Prolongates face data from a parent cell description to
+   * the cell description at address (cellDescriptionsIndex,element)
+   * in case the fine grid cell associated with the cell description is adjacent to
+   * the hull of the coarse grid cell associated with the parent cell description.
    *
-   * Restrict certain flags to the next
-   * parent and restrict data to the
-   * top most parent.
+   * Further zero out the face data of ancestors.
+   *
+   * \note This function assumes a top-down traversal of the grid and must thus
+   * be called from the enterCell(...) mapping method.
+   *
+   * \note It is assumed that this operation is applied only to helper cell descriptions
+   * of type Descendant and Ancestor. No cell description of type Cell
+   * must be touched by this operation. Otherwise, we cannot spawn
+   * the prediction and/or the compression as background task.
+   *
+   * \note Has no const modifier since kernels are not const functions yet.
    */
-  void restriction(
-      const int cellDescriptionsIndex,
-      const int element) override;
+  void prolongateFaceData(
+      const int solverNumber,
+      CellInfo& cellInfo,
+      const bool isAtRemoteBoundary);
 
   /**
-   * Restrict face data to the top most parent which has allocated face data arrays (Ancestor)
-   * if and only if the fine grid cell (Cell) has a face which intersects with one of the top most parent
+   * Restrict face data to the top most parent which has allocated face data arrays (Cell)
+   * if and only if the fine grid cell (Descendant) has a face which intersects with one of the top most parent
    * cell's faces.
-   *
-   * \note This function is used to restrict face data to the top most
-   * parent. We skip all intermediate parents if they do not
-   * need to hold data (EmptyAncestor).
-   *
-   * \p This operation is always surrounded by
-   * a lock. No locks are required internally.
    *
    * \note This function assumes a bottom-up traversal of the grid and must thus
    * be called from the leaveCell(...) or ascend(...) mapping methods.
    *
-   * \note Has no const modifier since kernels are not const functions yet.
+   * \note Has no const modifier since kernels are not const functions.
    */
-  void restrictToTopMostParent(
-        const CellDescription& cellDescription,
-        const int parentCellDescriptionsIndex,
-        const int parentElement);
+  void restrictToTopMostParent(const CellDescription& cellDescription);
 
   /**
    * Go back to previous time step with
@@ -2099,9 +2105,9 @@ public:
    * Allocate necessary new limiter patches.
    */
   void rollbackSolutionGlobally(
-         const int cellDescriptionsIndex,
-         const int element,
-         const bool fusedTimeStepping) const final override;
+      const int solverNumber,
+      CellInfo& cellInfo,
+      const bool fusedTimeStepping) const final override;
 
   ///////////////////////////////////
   // NEIGHBOUR
@@ -2119,9 +2125,9 @@ public:
       const int otherAugmentationStatus) const;
 
   void mergeNeighboursMetadata(
-      Heap::HeapEntries&                        cellDescriptions1,
-      Heap::HeapEntries&                        cellDescriptions2,
       const int                                 solverNumber,
+      Solver::CellInfo&                         cellInfo1,
+      Solver::CellInfo&                         cellInfo2,
       const tarch::la::Vector<DIMENSIONS, int>& pos1,
       const tarch::la::Vector<DIMENSIONS, int>& pos2,
       const tarch::la::Vector<DIMENSIONS,       double>& x,
@@ -2129,15 +2135,15 @@ public:
       const bool                                checkThoroughly) const;
 
   void mergeNeighboursData(
-      Heap::HeapEntries&                        cellDescriptions1,
-      Heap::HeapEntries&                        cellDescriptions2,
       const int                                 solverNumber,
+      Solver::CellInfo&                         cellInfo1,
+      Solver::CellInfo&                         cellInfo2,
       const tarch::la::Vector<DIMENSIONS, int>& pos1,
       const tarch::la::Vector<DIMENSIONS, int>& pos2);
 
   void mergeWithBoundaryData(
-      Heap::HeapEntries&                        cellDescriptions,
       const int                                 solverNumber,
+      Solver::CellInfo&                         cellInfo,
       const tarch::la::Vector<DIMENSIONS, int>& posCell,
       const tarch::la::Vector<DIMENSIONS, int>& posBoundary);
 #ifdef Parallel
@@ -2238,20 +2244,22 @@ public:
    * a neighbour. The message contains the neighbours
    * cell type,limiterStatus,augmentationStatus,communicationStatus.
    *
-   * <h2>LiimitingADERDGSolver</h2>
+   * @note That at metadata merge can happen up to 2 (2D) or 4 (3D) times
+   * for the same face as the counter is not used here.
+   *
+   * <h2>LimitingADERDGSolver</h2>
    * This routine also merges the cell's limiter status
    * with the one of the neighour.
    * We do this here in order to reduce code bloat.
    */
   void mergeWithNeighbourMetadata(
+      const int                                 solverNumber,
+      CellInfo&                                 cellInfo,
       const MetadataHeap::HeapEntries&          neighbourMetadata,
       const tarch::la::Vector<DIMENSIONS, int>& src,
-      const tarch::la::Vector<DIMENSIONS, int>& dest,
-      const int                                 cellDescriptionsIndex,
-      const int                                 element) const override;
+      const tarch::la::Vector<DIMENSIONS, int>& dest) const;
 
-  /** \copydoc Solver::sendDataToNeighbour
-   *
+  /**
    * Sends out two messages, one holding degrees of freedom (DOF)
    * of the boundary-extrapolated space-time predictor and one
    * holding DOF of the boundary-extrapolated space-time flux.
@@ -2268,19 +2276,25 @@ public:
    * a ADER-DG neighbour merge has to be performed
    * only for cells with certain limiter status
    * flags.
+   *
+   * @param toRank       the adjacent rank we want to send to
+   * @param solverNumber identification number for the solver
+   * @param cellInfo     links to a cell's data
+   * @param src          position of message source relative to vertex
+   * @param dest         position of message destination relative to vertex
+   * @param x            vertex' position
+   * @param level        vertex' level
    */
   void sendDataToNeighbour(
-      const int                                    toRank,
-      const int                                    cellDescriptionsIndex,
-      const int                                    element,
-      const tarch::la::Vector<DIMENSIONS, int>&    src,
-      const tarch::la::Vector<DIMENSIONS, int>&    dest,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) override;
+      const int                                     toRank,
+      const int                                     solverNumber,
+      Solver::CellInfo&                             cellInfo,
+      const tarch::la::Vector<DIMENSIONS, int>&     src,
+      const tarch::la::Vector<DIMENSIONS, int>&     dest,
+      const tarch::la::Vector<DIMENSIONS, double>&  x,
+      const int                                     level) const;
 
   /**
-   * \copydoc Solver::sendEmptyDataToNeighbour
-   *
    * Sends out two empty messages, one for
    * the boundary-extrapolated space-time predictor and one
    * for the boundary-extrapolated space-time flux.
@@ -2297,11 +2311,15 @@ public:
    * a ADER-DG neighbour merge has to be performed
    * only for cells with certain limiter status
    * flags.
+   *
+   * @param toRank the adjacent rank we want to send to
+   * @param x      vertex' position
+   * @param level  vertex' level
    */
   void sendEmptyDataToNeighbour(
       const int                                    toRank,
       const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) const override;
+      const int                                    level) const;
 
   /** \copydoc Solver::mergeWithNeighbourData
    *
@@ -2320,12 +2338,12 @@ public:
    */
   void mergeWithNeighbourData(
       const int                                    fromRank,
-      const int                                    cellDescriptionsIndex,
-      const int                                    element,
+      const int                                    solverNumber,
+      Solver::CellInfo&                            cellInfo,
       const tarch::la::Vector<DIMENSIONS, int>&    src,
       const tarch::la::Vector<DIMENSIONS, int>&    dest,
       const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) override;
+      const int                                    level);
 
   /** \copydoc Solver::dropNeighbourData
    *
@@ -2338,10 +2356,8 @@ public:
    */
   void dropNeighbourData(
       const int                                    fromRank,
-      const tarch::la::Vector<DIMENSIONS, int>&    src,
-      const tarch::la::Vector<DIMENSIONS, int>&    dest,
       const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) const override;
+      const int                                    level) const;
 
   ///////////////////////////////////
   // MASTER<=>WORKER

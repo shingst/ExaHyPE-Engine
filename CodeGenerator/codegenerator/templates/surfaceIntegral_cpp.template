@@ -34,7 +34,7 @@ void {{codeNamespace}}::surfaceIntegral(
   for (int yz = 0; yz < {{nDof*nDof3D}}; yz++) {
     const double weight = weights2[yz] * inverseDx; //Assume dx[0] == dx[1] == dx[2]
     for (int x = 0; x < {{nDof}}; x++) {
-      #pragma simd
+      #pragma omp simd aligned(lduh,lFhbnd:ALIGNMENT)
       for (int n = 0; n < {{nVarPad}}; n++) {
         lduh[n+{{nVarPad}}*(x+{{nDof}}*yz)] -= weight *
             (lFhbnd[n+{{nVarPad}}*yz+{{bndFaceSize*1}}] * FRCoeff[x] {{'+' if isLinear else '-'}} {# only diff between linear and nonlinear #}
@@ -52,7 +52,7 @@ void {{codeNamespace}}::surfaceIntegral(
     const int xzLuhIndex = xz*{{nVarPad}};
 {% endif %}
     for (int y = 0; y < {{nDof}}; y++) {
-      #pragma simd
+      #pragma omp simd aligned(lduh,lFhbnd:ALIGNMENT)
       for (int n = 0; n < {{nVarPad}}; n++) {
         lduh[n+xzLuhIndex+y*{{nDof*nVarPad}}] -= weight *
             (lFhbnd[n+{{nVarPad}}*xz+{{bndFaceSize*3}}] * FRCoeff[y] {{'+' if isLinear else '-'}}
@@ -66,7 +66,7 @@ void {{codeNamespace}}::surfaceIntegral(
   for (int xy = 0; xy < {{nDof*nDof}}; xy++) {
     const double weight = weights2[xy] * inverseDx; //Assume dx[0] == dx[1] == dx[2]
     for (int z = 0; z < {{nDof}}; z++) {
-      #pragma simd
+      #pragma omp simd aligned(lduh,lFhbnd:ALIGNMENT)
       for (int n = 0; n < {{nVarPad}}; n++) {
         lduh[n+{{nVarPad}}*(xy+{{nDof*nDof}}*z)] -= weight *
             (lFhbnd[n+{{nVarPad}}*xy+{{bndFaceSize*5}}] * FRCoeff[z] {{'+' if isLinear else '-'}}

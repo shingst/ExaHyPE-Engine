@@ -680,7 +680,7 @@ bool exahype::parser::Parser::getSpawnAMRBackgroundThreads() const {
 }
 
 bool exahype::parser::Parser::getSpawnNeighbourMergeAsThread() const {
-  return getBoolFromPath("/optimisation/spawn_neighour_merge_as_thread", false, isOptional);
+  return getBoolFromPath("/optimisation/spawn_neighbour_merge_as_thread", false, isOptional);
 }
 
 bool exahype::parser::Parser::getDisableMetadataExchangeInBatchedTimeSteps() const {
@@ -1173,12 +1173,12 @@ bool exahype::parser::Parser::getSpawnHighPriorityBackgroundJobsAsATask() {
 }
 
 bool exahype::parser::Parser::getRunLowPriorityJobsOnlyIfNoHighPriorityJobIsLeft() {
-  return getStringFromPath("/shared_memory/low_priority_background_job_processing","run_always",isOptional).
+  return getStringFromPath("/shared_memory/low_priority_background_job_processing","run_if_no_high_priority_job_left",isOptional).
       compare("run_if_no_high_priority_job_left")==0;
 }
 
 bool exahype::parser::Parser::getSpawnLowPriorityBackgroundJobsAsATask() {
-  return getStringFromPath("/shared_memory/high_priority_background_job_processing","spawn_as_a_task",isOptional).
+  return getStringFromPath("/shared_memory/high_priority_background_job_processing","all_in_a_rush",isOptional).
       compare("spawn_as_a_task")==0;
 }
 

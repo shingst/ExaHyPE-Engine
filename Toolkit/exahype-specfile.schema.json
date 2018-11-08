@@ -160,9 +160,11 @@
       "old_format" : { "token_after" : "architecture" },
       "enum" : [
         "noarch",
+        "wsm",
         "snb",
         "hsw",
-        "knl"
+        "knl",
+        "skx"
       ]
     }, 
     "computational_domain" : {
@@ -427,7 +429,7 @@
           "default" : false,
           "old_format" : { "token_after" : "spawn-amr-background-threads" }
         }, 
-        "spawn_neighour_merge_as_thread" : {
+        "spawn_neighbour_merge_as_thread" : {
           "type" : "boolean", 
           "title" : "Whether to run the neighbour merges (Riemann solves, copying of boundary layers,...) per face adjacent to a vertex in parallel, too. Concurrency level is 4 in 2D and 12 in 3D multiplied with the number of vertices per regular subgrid.",
           "default" : false
@@ -675,7 +677,7 @@
               "scheme" : {
                 "type" : "string", 
                 "title" : "The underlying FV solver scheme", 
-                "enum" : ["musclhancock","godunov"],
+                "enum" : ["musclhancock","godunov","robustmusclhancock"],
                 "default" : "godunov"
               }
             }

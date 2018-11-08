@@ -37,7 +37,7 @@ exahype-project GRMHD
   shared-memory
     identifier               = dummy
     configure                = {}
-    cores                    = 1
+    cores                    = 20
     properties-file          = sharedmemory.properties
   end shared-memory  
   
@@ -63,8 +63,8 @@ exahype-project GRMHD
   solver Limiting-ADER-DG GRMHDSolver
     variables const                = rho:1,vel:3,E:1,B:3,psi:1,lapse:1,shift:3,gij:6
     order const                    = 3
-    maximum-mesh-size              = 5.0000
-    maximum-mesh-depth             = 0
+    maximum-mesh-size              = 15.0000
+    maximum-mesh-depth             = 3
     time-stepping                  = global
     type const = nonlinear
 	terms const = flux,ncp
@@ -124,6 +124,31 @@ exahype-project GRMHD
       repeat = 0.05
       output = ./output/timing-benchmarks
     end plot
+
+    plot Carpet::Cartesian::Vertices::HDF5 PrimitiveWriter
+      variables const = 19
+      time  = 0.0
+      repeat = 0.10
+      output = ./hdf5/primitives3d
+    end plot
+    
+    plot Carpet::Cartesian::Vertices::HDF5 PrimitiveWriter
+      variables const = 19
+      time  = 0.0
+      repeat = 0.10
+      select = z:0
+      output = ./hdf5/primitives2d
+    end plot
+    
+    plot Carpet::Cartesian::Vertices::HDF5 PrimitiveWriter
+      variables const = 19
+      time  = 0.0
+      repeat = 0.10
+      select = z:0,y:0
+      output = ./hdf5/primitives1d
+    end plot
+
+
   end solver
 
 end exahype-project

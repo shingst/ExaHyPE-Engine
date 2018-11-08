@@ -1183,7 +1183,7 @@ void {{codeNamespace}}::volumeUnknownsRestriction_old(
   }
 
   // Add restricted fine level unknowns to coarse level unknowns.
-  #pragma simd
+  #pragma omp simd aligned(luhCoarse,pointerUh2:ALIGNMENT)
   for (int it = 0; it < {{nDof*nDof*nDof3D*nData}}; it++) {
     luhCoarse[it] += pointerUh2[it];
   }

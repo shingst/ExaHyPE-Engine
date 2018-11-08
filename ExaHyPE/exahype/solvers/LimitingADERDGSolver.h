@@ -230,9 +230,7 @@ private:
    *
    * \note Thread-safe.
    */
-  void deallocateLimiterPatch(
-      const SolverPatch& solverPatch,
-      const int cellDescriptionsIndex) const;
+  void deallocateLimiterPatch(const SolverPatch& solverPatch,CellInfo& cellInfo) const;
 
   /**
    * Allocates a new limiter patch,
@@ -251,9 +249,7 @@ private:
    * TODO(Dominic): A few lines are candidates for
    * being run as background job.
    */
-  void allocateLimiterPatch(
-      const SolverPatch&  solverPatch,
-      const int cellDescriptionsIndex) const;
+  void allocateLimiterPatch(const SolverPatch&  solverPatch,CellInfo& cellInfo) const;
 
   /**
    * Project the DG solution onto the FV
@@ -277,8 +273,7 @@ private:
    * for performing a global rollback.
    */
   void ensureNoUnrequiredLimiterPatchIsAllocatedOnComputeCell(
-      const SolverPatch&  solverPatch,
-      const int cellDescriptionsIndex) const;
+      const SolverPatch&  solverPatch,CellInfo& cellInfo) const;
 
   /**
    * Update the limiter status based on the cell-local solution values.
@@ -322,51 +317,27 @@ private:
   void ensureLimiterTimeStepDataIsConsistent() const;
 
   /**
-   * Returns the index of the limiter patch corresponding to
-   * the solver patch with index \p solverElement.
-   * Both patches link to the same ::LimitingADERDGSolver.
-   * If no limiter patch is found, this function
-   * returns exahype::solvers::Solver::NotFound.
-   */
-  int tryGetLimiterElementFromSolverElement(
-      const int cellDescriptionsIndex,
-      const int solverElement) const {
-    SolverPatch& solverPatch = ADERDGSolver::getCellDescription(cellDescriptionsIndex,solverElement);
-    return _limiter->tryGetElement(cellDescriptionsIndex,solverPatch.getSolverNumber());
-  }
-
-  /**
    * If a limiter patch is allocated for the solver patch,
    * ensure that it's time step data is consistent
    * with the solver patch's time step data.
    */
   void ensureLimiterPatchTimeStepDataIsConsistent(
-        const int cellDescriptionsIndex,
-        const int solverElement) const;
-
-  void ensureLimiterPatchTimeStepDataIsConsistent(
-      const SolverPatch& solverPatch,
-      const int cellDescriptionsIndex) const;
-
-  void ensureLimiterPatchTimeStepDataIsConsistent(
-      const SolverPatch& solverPatch,
-      FiniteVolumesSolver::Heap::HeapEntries& limiterPatches,
-      const int limiterElement) const;
+      const SolverPatch& solverPatch,CellInfo& cellInfo) const;
 
   /**
    * Uncompress solver and limiter degrees of freedom.
    */
   void uncompress(
       SolverPatch& solverPatch,
-      const int cellDescriptionsIndex) const;
+      CellInfo& cellInfo) const;
 
   /**
    * Compress solver and limiter degrees of freedom.
    */
   void compress(
-        SolverPatch& solverPatch,
-        const int cellDescriptionsIndex,
-        const bool isAtRemoteBoundary) const;
+      SolverPatch& solverPatch,
+      CellInfo& cellInfo,
+      const bool isAtRemoteBoundary) const;
 
   /**
    * Copies the time stamp and the time step sizes from the solver patch
@@ -398,20 +369,30 @@ private:
    * after the time step data update.
    */
   UpdateResult fusedTimeStepBody(
-      const int   cellDescriptionsIndex,
-      const int   element,
-      const bool  isFirstIterationOfBatch,
-      const bool  isLastIterationOfBatch,
-      const bool  isSkeletonJob,
-      const bool  mustBeDoneImmediately,
+      SolverPatch& solverPatch,
+      CellInfo&    cellInfo,
+      const bool   isFirstIterationOfBatch,
+      const bool   isLastIterationOfBatch,
+      const bool   isSkeletonJob,
+      const bool   mustBeDoneImmediately,
       const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed);
+
+ /**
+   * Rollback to the previous time step, i.e,
+   * overwrite the time step size and time stamp
+   * fields of the solver and limiter patches
+   * by the values used in the previous iteration.
+   *
+   * TODO(Dominic): Move into solver
+   */
+  void rollbackToPreviousTimeStep(SolverPatch& solverPatch,CellInfo& cellInfo,const bool fused) const;
 
   /**
    * Body of LimitingADERDGSolver::adjustSolutionDuringMeshRefinement(int,int).
    */
   void adjustSolutionDuringMeshRefinementBody(
       SolverPatch& solverPatch,
-      const int cellDescriptionsIndex,
+      CellInfo& cellInfo,
       const bool isInitialMeshRefinement);
 
 #ifdef Parallel
@@ -430,8 +411,7 @@ private:
    */
   void sendMinAndMaxToNeighbour(
       const int                                    toRank,
-      const int                                    cellDescriptionsIndex,
-      const int                                    element,
+      const SolverPatch&                           solverPatch,
       const tarch::la::Vector<DIMENSIONS, int>&    src,
       const tarch::la::Vector<DIMENSIONS, int>&    dest,
       const tarch::la::Vector<DIMENSIONS, double>& x,
@@ -452,8 +432,7 @@ private:
    */
   void mergeWithNeighbourMinAndMax(
       const int                                    fromRank,
-      const int                                    cellDescriptionsIndex,
-      const int                                    element,
+      SolverPatch&                                 solverPatch,
       const tarch::la::Vector<DIMENSIONS, int>&    src,
       const tarch::la::Vector<DIMENSIONS, int>&    dest,
       const tarch::la::Vector<DIMENSIONS, double>& x,
@@ -486,41 +465,40 @@ private:
    * TODO(Dominic): Minimise time step sizes and refinement requests per patch
    * (->transpose the typical minimisation order)
    */
-  class FusedTimeStepJob {
+  class FusedTimeStepJob: public tarch::multicore::jobs::Job {
   private:
     LimitingADERDGSolver&                                     _solver;
-    const int                                                 _cellDescriptionsIndex;
-    const int                                                 _element;
-    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> _neighbourMergePerformed;
+    SolverPatch&                                              _solverPatch;
+    CellInfo                                                  _cellInfo;                // copy
+    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> _neighbourMergePerformed; // we need to copy this as it may be overwritten while the job is not processed yet!
     const bool                                                _isSkeletonJob;
   public:
     FusedTimeStepJob(
-        LimitingADERDGSolver&                    solver,
-        const int                                cellDescriptionsIndex,
-        const int                                element,
-        const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
-        const bool                               isSkeletonJob);
+        LimitingADERDGSolver& solver,
+        SolverPatch&          solverPatch,
+        CellInfo&             cellInfo,
+        const bool            isSkeletonJob);
 
-    bool operator()();
+    bool run() override;
   };
 
   /**
    * A job that calls Solver::adjustSolutionDuringMeshRefinementBody(...).
    */
-  class AdjustSolutionDuringMeshRefinementJob {
+  class AdjustSolutionDuringMeshRefinementJob: public tarch::multicore::jobs::Job {
   private:
     LimitingADERDGSolver& _solver;
     SolverPatch&          _solverPatch;
-    const int             _cellDescriptionsIndex;
+    CellInfo              _cellInfo; // copy
     const bool            _isInitialMeshRefinement;
   public:
     AdjustSolutionDuringMeshRefinementJob(
         LimitingADERDGSolver& solver,
         SolverPatch&          solverPatch,
-        const int             cellDescriptionsIndex,
+        CellInfo&             cellInfo,
         const bool            isInitialMeshRefinement);
 
-    bool operator()();
+    bool run() override;
   };
 
 public:
@@ -601,14 +579,6 @@ public:
   bool isPerformingPrediction(const exahype::State::AlgorithmSection& section) const final override;
   bool isMergingMetadata(const exahype::State::AlgorithmSection& section) const final override;
 
-  void synchroniseTimeStepping(
-          const int cellDescriptionsIndex,
-          const int element) const final override;
-
-  void synchroniseTimeStepping(
-      SolverPatch& solverPatch,
-      const int cellDescriptionsIndex) const;
-
   /**
    * Synchronies the solver patch with the global time step data and
    * further copies this data to the FV patch if one is allocated
@@ -619,10 +589,7 @@ public:
    * @param limiterElement element index of the limiter patch allocated for
    *                       the solver patch, or NotFound if none has been allocated.
    */
-  void synchroniseTimeStepping(
-      SolverPatch& solverPatch,
-      FiniteVolumesSolver::Heap::HeapEntries& limiterPatches,
-      const int limiterElement) const;
+  void synchroniseTimeStepping(SolverPatch& solverPatch,Solver::CellInfo& cellInfo) const;
 
   /**
    * We always override the limiter time step
@@ -637,8 +604,6 @@ public:
   void updateTimeStepSizes() final override;
 
   void updateTimeStepSizesFused() final override;
-
-  void zeroTimeStepSizes() final override;
 
   /**
    * Roll back the time step data to the
@@ -669,36 +634,39 @@ public:
   }
 
   /**
-   * Returns the index of the limiter patch registered for the solver with
-   * index \p solverNumber in exahype::solvers::RegisteredSolvers.
-   * If no patch is registered for the solver, this function
+   * Returns the index of the limiter patch corresponding to
+   * the solver patch with index \p solverElement.
+   * Both patches link to the same ::LimitingADERDGSolver.
+   * If no limiter patch is found, this function
    * returns exahype::solvers::Solver::NotFound.
    */
-  int tryGetLimiterElement(
+  int tryGetLimiterElementFromSolverElement(
       const int cellDescriptionsIndex,
-      const int solverNumber) const {
-    return _limiter->tryGetElement(cellDescriptionsIndex,solverNumber);
+      const int solverElement) const {
+    SolverPatch& solverPatch = ADERDGSolver::getCellDescription(cellDescriptionsIndex,solverElement);
+    return _limiter->tryGetElement(cellDescriptionsIndex,solverPatch.getSolverNumber());
   }
 
   /**
-   * Looks up the limiter patch for the given solver patch.
+   * @return  the limiter patch matching the solver patch.
    *
-   * Further copies the time step sizes from the solver patch
-   * to the limiter patch.
+   * @note Copies the solver patch time step data onto the limiter patch. TODO(Dominic): Only copy when necessary.
    *
-   * Assumes that \p solverPatch has a limiter status > 0 and thus
-   * has a limiter patch assigned.
+   * @param solverPatch a solver patch
+   * @param cellInfo    holds references to the cell descriptions associated with a mesh cell
+   *
+   * @note Only use this function if it sure that there is a limiter patch for the
+   * given solver patch.
    */
-  LimiterPatch& getLimiterPatchForSolverPatch(const SolverPatch& solverPatch,const int cellDescriptionsIndex) const;
+  LimiterPatch& getLimiterPatch(const SolverPatch& solverPatch,CellInfo& cellInfo) const;
 
   /**
-   * Similar to ::getLimiterPatchforSolverPatch but does not lookup the
-   * \p limiterElement by itself.
+   * Similar to @see getLimiterPatch(const SolverPatch& solverPatch,CellInfo& cellInfo)
+   * but here the limiterElement was already obtained.
    *
-   * Assumes that \p limiterElement is valid.
+   * @note Copies the solver patch time step data onto the limiter patch. TODO(Dominic): Only copy when necessary.
    */
-  LimiterPatch& getLimiterPatchForSolverPatch(
-      const SolverPatch& solverPatch, const int cellDescriptionsIndex, const int limiterElement) const;
+  LimiterPatch& getLimiterPatch(const SolverPatch& solverPatch,CellInfo& cellInfo,const int limiterElement) const;
 
   ///////////////////////////////////
   // MODIFY CELL DESCRIPTION
@@ -795,80 +763,43 @@ public:
       const int solverNumber) const final override;
 
   void finaliseStateUpdates(
-      exahype::Cell& fineGridCell,
-      exahype::Vertex* const fineGridVertices,
-      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-      exahype::Cell& coarseGridCell,
-      exahype::Vertex* const coarseGridVertices,
-      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-      const int solverNumber) final override;
+      const int solverNumber,
+      CellInfo& cellInfo) final override;
 
   ///////////////////////////////////
   // CELL-LOCAL
   //////////////////////////////////
 
-  double startNewTimeStep(
-      SolverPatch& solverPatch,
-      const int cellDescriptionsIndex);
+  double startNewTimeStep(SolverPatch& solverPatch,Solver::CellInfo& cellInfo);
 
   double startNewTimeStepFused(
-        SolverPatch& solverPatch,
-        const int cellDescriptionsIndex,
-        const bool isFirstIterationOfBatch,
-        const bool isLastIterationOfBatch);
-
-  double updateTimeStepSizesFused(
-      const int cellDescriptionsIndex,
-      const int element) final override;
+        SolverPatch& solverPatch,CellInfo& cellInfo,
+        const bool   isFirstIterationOfBatch,
+        const bool   isLastIterationOfBatch);
 
   double updateTimeStepSizes(
-        const int cellDescriptionsIndex,
-        const int element) final override;
+      const int solverNumber,
+      CellInfo& cellInfo,
+      const bool fused) final override;
 
-  void zeroTimeStepSizes(
-      SolverPatch& solverPatch,
-      const int cellDescriptionsIndex) const;
-
- /**
-   * Rollback to the previous time step, i.e,
-   * overwrite the time step size and time stamp
-   * fields of the solver and limiter patches
-   * by the values used in the previous iteration.
-   *
-   * TODO(Dominic): Move into solver
-   */
-  void rollbackToPreviousTimeStep(
-      const int cellDescriptionsIndex,
-      const int solverElement) const;
-
-  /*
-   * Same as LimitingADERDGSolver::rollbackToPreviousTimeStep
-   * but for the fused time stepping scheme.
-   */
-  void rollbackToPreviousTimeStepFused(
-      const int cellDescriptionsIndex,
-      const int solverElement) const;
-
-  UpdateResult fusedTimeStep(
-      const int cellDescriptionsIndex,
-      const int element,
+  UpdateResult fusedTimeStepOrRestrict(
+      const int  solverNumber,
+      CellInfo&  cellInfo,
       const bool isFirstIterationOfBatch,
       const bool isLastIterationOfBatch,
       const bool isAtRemoteBoundary) final override;
 
-  UpdateResult update(
-        const int cellDescriptionsIndex,
-        const int element,
+  UpdateResult updateOrRestrict(
+        const int  solverNumber,
+        CellInfo&  cellInfo,
         const bool isAtRemoteBoundary) final override;
 
   void compress(
-      const int cellDescriptionsIndex,
-      const int element,
+      const int  solverNumber,
+      CellInfo&  cellInfo,
       const bool isAtRemoteBoundary) const final override;
 
-  void adjustSolutionDuringMeshRefinement(
-      const int cellDescriptionsIndex,const int element) final override;
+  void adjustSolutionDuringMeshRefinement(const int solverNumber,CellInfo& cellInfo) final override;
 
   /**
    * Update the solution of a solver patch and or
@@ -894,7 +825,7 @@ public:
    */
   void updateSolution(
       SolverPatch& solverPatch,
-      const int cellDescriptionsIndex,
+      CellInfo& cellInfo,
       const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
       const bool backupPreviousSolution);
 
@@ -906,9 +837,7 @@ public:
    * TODO(Dominic): Tobias's integer
    * flagging idea might reduce complexity here
    */
-  void determineMinAndMax(
-      const int cellDescriptionsIndex,
-      const int element);
+  void determineMinAndMax(const int solverNumber,Solver::CellInfo& cellInfo);
 
   /**
    * Evaluates a discrete maximum principle (DMP) and
@@ -930,7 +859,7 @@ public:
   MeshUpdateEvent
   updateRefinementStatusAndMinAndMaxAfterSolutionUpdate(
       SolverPatch& solverPatch,
-      const int cellDescriptionsIndex,
+      CellInfo&    cellInfo,
       const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed);
 
   /**
@@ -956,8 +885,7 @@ public:
    * \note Thread-safe.
    */
    void ensureNoLimiterPatchIsAllocatedOnHelperCell(
-       const SolverPatch& solverPatch,
-       const int cellDescriptionsIndex) const;
+       const SolverPatch& solverPatch,CellInfo& cellInfo) const;
 
    /*
     * Ensures that a limiter patch is allocated
@@ -969,9 +897,9 @@ public:
     * the mesh refinement iterations.
     */
    bool ensureRequiredLimiterPatchIsAllocated(
-           const SolverPatch& solverPatch,
-           const int cellDescriptionsIndex,
-           const int limiterStatus) const;
+       const SolverPatch& solverPatch,
+       CellInfo&          cellInfo,
+       const int          limiterStatus) const;
 
 
    /**
@@ -983,9 +911,9 @@ public:
     * Allocate necessary new limiter patches.
     */
    void rollbackSolutionGlobally(
-          const int cellDescriptionsIndex,
-          const int element,
-          const bool fusedTimeStepping) const final override;
+       const int  solverNumber,
+       CellInfo&  cellInfo,
+       const bool fusedTimeStepping) const final override;
 
   /**
    * Reinitialises cells that have been subject to a limiter status change.
@@ -1028,8 +956,8 @@ public:
    * the mesh refinement iterations.
    */
   void rollbackSolutionLocally(
-      const int cellDescriptionsIndex,
-      const int element,
+      const int  solverNumber,
+      CellInfo&  cellInfo,
       const bool fusedTimeStepping) const;
 
   /**
@@ -1052,34 +980,23 @@ public:
    *
    * Legend: O: Ok (ADER-DG cells), T: Troubled (FV cells), NT: FV->DG cells, NNT: DG->FV cells
    */
-  void recomputeSolution(SolverPatch& solverPatch,const int cellDescriptionsIndex);
+  void recomputeSolution(SolverPatch& solverPatch,CellInfo& cellInfo);
 
   /**
    * Invoke ::recomputeSolution(SolverPatch&)
    * \return a time step size computed with the new solution.
-   */
-  double recomputeSolutionLocally(
-      const int cellDescriptionsIndex,
-      const int element);
-
-  /**
-   * Same as ::recomputeSolutionLocally for fused time stepping. Recomputes a new predictor as well if necessary.
    *
+   * Fused Time Stepping
+   * -------------------
+   *
+   * Recomputes a new predictor as well if necessary.
    * Further see ::fusedTimeBody regarding order of operations.
    */
-  double recomputeSolutionLocallyFused(
-      const int cellDescriptionsIndex,
-      const int element,
-      const bool isAtRemoteBoundary);
-
-  void prolongateFaceData(
-      const int cellDescriptionsIndex,
-      const int element,
-      const bool isAtRemoteBoundary) final override;
-
-  void restriction(
-        const int cellDescriptionsIndex,
-        const int element) final override;
+  double recomputeSolutionLocally(
+      const int solverNumber,
+      Solver::CellInfo& cellInfo,
+      const bool isAtRemoteBoundary,
+      const bool fusedTimeStepping);
 
   ///////////////////////////////////
   // NEIGHBOUR
@@ -1126,21 +1043,17 @@ public:
    * TODO(Dominic): Remove limiterstatus1 and limiterStatus2 argument.
    * They depend on the isRecomputation value
    *
-   * @param solverPatches1
-   * @param solverPatches2
-   * @param limiterPatches1
-   * @param limiterPatches2
    * @param solverNumber
+   * @param cellInfo1
+   * @param cellInfo2
    * @param pos1
    * @param pos2
    * @param isRecomputation
    */
   void mergeNeighboursData(
-      ADERDGSolver::Heap::HeapEntries&           solverPatches1,
-      ADERDGSolver::Heap::HeapEntries&           solverPatches2,
-      FiniteVolumesSolver::Heap::HeapEntries&    limiterPatches1,
-      FiniteVolumesSolver::Heap::HeapEntries&    limiterPatches2,
       const int                                  solverNumber,
+      Solver::CellInfo&                          cellInfo1,
+      Solver::CellInfo&                          cellInfo2,
       const tarch::la::Vector<DIMENSIONS, int>&  pos1,
       const tarch::la::Vector<DIMENSIONS, int>&  pos2,
       const bool                                 isRecomputation) const;
@@ -1181,9 +1094,8 @@ public:
    * @param[in] isRecomputation flag indicating if this merge is part of a solution recomputation phase.
    */
   void mergeWithBoundaryData(
-      ADERDGSolver::Heap::HeapEntries&          solverPatches,
-      FiniteVolumesSolver::Heap::HeapEntries&   limiterPatches,
       const int                                 solverNumber,
+      Solver::CellInfo&                         context,
       const tarch::la::Vector<DIMENSIONS, int>& posCell,
       const tarch::la::Vector<DIMENSIONS, int>& posBoundary,
       const bool                                isRecomputation);
@@ -1199,25 +1111,35 @@ public:
       const int cellDescriptionsIndex,
       const int solverNumber) const final override;
 
-  void mergeWithNeighbourMetadata(
-      const exahype::MetadataHeap::HeapEntries& neighbourMetadata,
-      const tarch::la::Vector<DIMENSIONS, int>& src,
-      const tarch::la::Vector<DIMENSIONS, int>& dest,
-      const int                                 cellDescriptionsIndex,
-      const int                                 element) const final override;
-
+  /**
+   * Send data to a neighbouring rank.
+   *
+   * send order:   minAndMax,solver,limiter
+   * receive order limiter,solver,minAndMax
+   *
+   * @param toRank       the rank we send data to
+   * @param solverNumber identification number of this solver
+   * @param cellInfo     links to the data assocated with the source cell
+   * @param src          relative position of message source to vertex
+   * @param dest         relative position of message destination to vertex
+   * @param x            vertex' coordinates
+   * @param level        vertex' level
+   */
   void sendDataToNeighbour(
       const int                                     toRank,
-      const int                                     cellDescriptionsIndex,
-      const int                                     element,
+      const int                                     solverNumber,
+      Solver::CellInfo&                             cellInfo,
       const tarch::la::Vector<DIMENSIONS, int>&     src,
       const tarch::la::Vector<DIMENSIONS, int>&     dest,
       const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) final override;
+      const int                                     level);
 
   /**
    * Send data or empty data to the neighbour data based
    * on the limiter status.
+   *
+   * Do not send/receive any ADER-DG solver data at all during
+   * a local recomputation.
    *
    * \param[in] isRecomputation Indicates if this called within a local recomputation
    *                            process.
@@ -1237,31 +1159,29 @@ public:
    */
   void sendDataToNeighbourBasedOnLimiterStatus(
         const int                                    toRank,
-        const int                                    cellDescriptionsIndex,
-        const int                                    element,
+        const int                                    solverNumber,
+        Solver::CellInfo&                            cellInfo,
         const tarch::la::Vector<DIMENSIONS, int>&    src,
         const tarch::la::Vector<DIMENSIONS, int>&    dest,
         const bool                                   isRecomputation,
         const tarch::la::Vector<DIMENSIONS, double>& x,
         const int                                    level) const;
 
-  void sendEmptyDataToNeighbour(
-      const int                                     toRank,
-      const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const final override;
-
   void mergeWithNeighbourData(
       const int                                    fromRank,
-      const int                                    cellDescriptionsIndex,
-      const int                                    element,
+      const int                                    solverNumber,
+      Solver::CellInfo&                            cellInfo,
       const tarch::la::Vector<DIMENSIONS, int>&    src,
       const tarch::la::Vector<DIMENSIONS, int>&    dest,
       const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) final override;
+      const int                                    level);
 
   /**
    * Merge or drop received neighbour data based
    * on the limiter status.
+   *
+   * Do not send/receive any ADER-DG solver data at all during
+   * a local recomputation.
    *
    * \param isRecomputation Indicates if this called within a solution recomputation
    *                        process.
@@ -1279,52 +1199,25 @@ public:
    */
   void mergeWithNeighbourDataBasedOnLimiterStatus(
       const int                                    fromRank,
-      const int                                    cellDescriptionsIndex,
-      const int                                    element,
+      const int                                    solverNumber,
+      Solver::CellInfo&                            cellInfo,
       const tarch::la::Vector<DIMENSIONS, int>&    src,
       const tarch::la::Vector<DIMENSIONS, int>&    dest,
       const bool                                   isRecomputation,
       const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) const;
+      const int                                    level);
 
+  /**
+   * @note only used when no recomputation.
+   *
+   * @param fromRank the rank we expect data from
+   * @param x
+   * @param level
+   */
   void dropNeighbourData(
       const int                                     fromRank,
-      const tarch::la::Vector<DIMENSIONS, int>&     src,
-      const tarch::la::Vector<DIMENSIONS, int>&     dest,
-      const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const final override;
-
-
-  ///////////////////////////////////////
-  // NEIGHBOUR - Solution Recomputation
-  ///////////////////////////////////////
-  /**
-   * TODO(Dominic):
-   * Add more docu.
-   *
-   * We do not send the minimum and maximum solution values
-   * during the solution recomputation process.
-   */
-  void sendEmptySolverAndLimiterDataToNeighbour(
-      const int                                     toRank,
-      const tarch::la::Vector<DIMENSIONS, int>&     src,
-      const tarch::la::Vector<DIMENSIONS, int>&     dest,
       const tarch::la::Vector<DIMENSIONS, double>&  x,
       const int                                     level) const;
-
-  /**
-   * TODO(Dominic):
-   * Add more docu.
-   *
-   * We do not send the minimum and maximum solution values
-   * during the solution recomputation process.
-   */
-  void dropNeighbourSolverAndLimiterData(
-        const int                                     fromRank,
-        const tarch::la::Vector<DIMENSIONS, int>&     src,
-        const tarch::la::Vector<DIMENSIONS, int>&     dest,
-        const tarch::la::Vector<DIMENSIONS, double>&  x,
-        const int                                     level) const;
 
   /////////////////////////////////////
   // MASTER<=>WORKER

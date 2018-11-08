@@ -51,7 +51,7 @@ exahype::plotters::FiniteVolume2CarpetHDF5::FiniteVolume2CarpetHDF5(
 // all other methods are stubs
 exahype::plotters::FiniteVolume2CarpetHDF5::~FiniteVolume2CarpetHDF5() {}
 void exahype::plotters::FiniteVolume2CarpetHDF5::init(const std::string& filename, int orderPlusOne, int solverUnknowns, int writtenUnknowns, exahype::parser::ParserView plotterParameters) {}
-void exahype::plotters::FiniteVolume2CarpetHDF5::plotPatch(const int cellDescriptionsIndex, const int element) {}
+void exahype::plotters::FiniteVolume2CarpetHDF5::plotPatch(const int solverNumber,solvers::Solver::CellInfo& cellInfo) {}
 void exahype::plotters::FiniteVolume2CarpetHDF5::plotPatch(const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* u,double timeStamp) {}
 void exahype::plotters::FiniteVolume2CarpetHDF5::startPlotting(double time) {}
 void exahype::plotters::FiniteVolume2CarpetHDF5::finishPlotting() {}
@@ -100,13 +100,12 @@ void exahype::plotters::FiniteVolume2CarpetHDF5::init(const std::string& filenam
 	// another nice to have: allow oneFilePerTimestep as a specfile parameter...
 }
 
-void exahype::plotters::FiniteVolume2CarpetHDF5::plotPatch(
-        const int cellDescriptionsIndex,
-        const int element) {
-  auto& cellDescription =  exahype::solvers::FiniteVolumesSolver::getCellDescription(cellDescriptionsIndex,element);
+void exahype::plotters::FiniteVolume2CarpetHDF5::plotPatch(const int solverNumber,solvers::Solver::CellInfo& cellInfo) {
+  const int element = cellInfo.indexOfFiniteVolumesCellDescription(solverNumber);
+  auto& cellDescription  = cellInfo._FiniteVolumesCellDescriptions[element];
 
   if (cellDescription.getType()==exahype::solvers::FiniteVolumesSolver::CellDescription::Type::Cell) {
-    double* solution = DataHeap::getInstance().getData(cellDescription.getSolution()).data();
+    double* solution = static_cast<double*>(cellDescription.getSolution());
 
     plotPatch(
         cellDescription.getOffset(),

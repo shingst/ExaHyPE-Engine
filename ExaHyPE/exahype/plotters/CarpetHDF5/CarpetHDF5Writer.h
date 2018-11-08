@@ -149,6 +149,7 @@ public:
   int                 component; ///< An internal counter of the components (=patches) written out in one plot cycle
   int                 iteration; ///< An internal counter of the number of plot cycle runned. It is kind of global.
   char**              writtenQuantitiesNames; // not const as we check for good names in constructor
+  std::vector<std::string> qualifiedWrittenQuantitiesNames; // in CarpetHDF5, the field name *must* contain a "::"; ///< The same as writtenQuantitiesNames but with prefix
 
   // HDF5 specific data types
   std::vector<H5::H5File*> files; ///< List of pointers to H5Files. Has length 1 if allUnknownsInOneFile.

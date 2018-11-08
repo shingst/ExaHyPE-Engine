@@ -4,6 +4,7 @@
 
 #include "exahype/plotters/CarpetHDF5/CarpetHDF5Writer.h"
 #include "peano/utils/Loop.h" // dfor
+#include "tarch/parallel/Node.h" // for basic MPI rank determination only
 #include <sstream>
 #include <stdexcept>
 
@@ -28,7 +29,7 @@ exahype::plotters::CarpetHDF5Writer::CarpetHDF5Writer(
 	bool _oneFilePerTimestep,
 	bool _allUnknownsInOneFile)
 	:
-	_log("ADERDG2CarpetHDF5Writer"),
+	_log("exahype::plotters::CarpetHDF5Writer"),
 	solverUnknowns(_solverUnknowns),
 	writtenUnknowns(_writtenUnknowns),
 	basisFilename(_filename),
@@ -113,6 +114,11 @@ exahype::plotters::CarpetHDF5Writer::CarpetHDF5Writer(
 			*replacement_name += toString(u);
 			writtenQuantitiesNames[u] = const_cast<char*>(replacement_name->c_str());
 		}
+		
+		// in CarpetHDF5, the field name *must* contain a "::"
+		std::string qualifiedName = "ExaHyPE::";
+		qualifiedName += writtenQuantitiesNames[u];
+		qualifiedWrittenQuantitiesNames.push_back(qualifiedName);
 	}
 	
 	
@@ -131,22 +137,58 @@ exahype::plotters::CarpetHDF5Writer::CarpetHDF5Writer(
 	if(!oneFilePerTimestep) openH5();
 	
 	// for Debugging:
-	logInfo("CarpetHDF5DebugInfo", "dim=" << dim);
-	logInfo("CarpetHDF5DebugInfo", "writtenCellIdx=" << writtenCellIdx->toString());
-	logInfo("CarpetHDF5DebugInfo", "singleFieldIdx=" << singleFieldIdx->toString());
+	logInfo("CarpetHDF5Writer", "Writing in " << dim << " Dimensions, written cell shape " << writtenCellIdx->toString() << ", single field shape " << singleFieldIdx->toString());
 }
 
 void exahype::plotters::CarpetHDF5Writer::writeBasicGroup(H5::H5File* file) {
 	Group* parameters = new Group(file->createGroup( "/Parameters and Global Attributes" ));
 	
-	int ranks = 1; // TODO: extend for MPI.
-	
+	// nioprocs is required
+	int ranks = tarch::parallel::Node::getInstance().getNumberOfNodes();
 	Attribute nioprocs = parameters->createAttribute("nioprocs", PredType::NATIVE_INT, H5S_SCALAR);
 	nioprocs.write(PredType::NATIVE_INT, &ranks);
 	
+	// authoringCode is just for inforamative purpose
+	std::string authoringCode = "ExaHyPE (CarpetHDF5Writer)";
+	StrType t_str = H5::StrType(H5::PredType::C_S1, authoringCode.size()+1); // probably +1 for \0
+	Attribute authoringCode_attr = parameters->createAttribute("authoringCode", t_str, H5S_SCALAR);
+	authoringCode_attr.write(t_str, authoringCode.c_str());
+	
+	/* other attributes which are typically present, with values:
+	        Cactus version = 4.3.0
+		GH$iteration = 0
+		build id = build-somerville9-supermuc-di25cux3-2017.04.08-12.51.39-16854
+		carpet_delta_time = 0.96
+		carpet_global_time = 0.0
+		carpet_reflevels = 6
+		config id = config-somerville9-supermuc-home-hpc-pr62do-di25cux3-ET-somerville-thc-Cactus
+		main loop index = 0
+		nioprocs = 1
+		run id = run-bns_sfho_em_1-i12r01c07-di25cux3-2017.05.23-19.48.04-21052
+		simulation id = run-bns_sfho_em_1-i12r01c07-di25cux3-2017.05.23-19.48.04-21052
+	
+	  Note that these are not required, except nioprocs. */
+	
 	// Todo: add information how much files are printed (oneFilePerTimestep)
 	
-	// Important todo: List all fields which go into this file.
+	
+	// Dataset to write out
+	// hsize_t *str_dims = new hsize_t[writtenUnknowns];
+	// std::fill_n(str_dims, writtenUnknowns, /* ranks */ 1);
+	// DataSpace datasets_string_space(writtenUnknowns, str_dims);
+
+	// List all fields which go into this file (required by rugutils, not by visit),
+	// goes to "/Parameters and Global Attributes/Datasets" and contains the qualified variable names
+	hsize_t str_dimsf[1] {(hsize_t) writtenUnknowns};
+        DataSpace str_dataspace(1, str_dimsf);
+	StrType str_datatype(H5::PredType::C_S1, H5T_VARIABLE); 
+	DataSet list_of_datasets = parameters->createDataSet("Datasets", str_datatype, str_dataspace);
+	
+	std::vector<const char*> qualifiedWrittenQuantitiesNames_c;
+        for (int ii = 0; ii < writtenUnknowns; ++ii) 
+            qualifiedWrittenQuantitiesNames_c.push_back(qualifiedWrittenQuantitiesNames[ii].c_str());
+	
+	list_of_datasets.write(qualifiedWrittenQuantitiesNames_c.data(), str_datatype);
 }
 
 /**
@@ -239,13 +281,9 @@ void exahype::plotters::CarpetHDF5Writer::plotPatchForSingleUnknown(
       int writtenUnknown, H5::H5File* target) {
 	assertion(target != nullptr);
 	
-	// in CarpetHDF5, the field name *must* contain a "::"
-	std::string name("ExaHyPE::");
-	char* field_name = writtenQuantitiesNames[writtenUnknown];
-	name += field_name ? field_name : "miserable-failure";
-	
-	std::stringstream component_name;
+	const std::string name = qualifiedWrittenQuantitiesNames[writtenUnknown];
 	// Attention: I removed "tl=0 m=0 rl=0" => "tl=0 rl=0" for scidata.
+	std::stringstream component_name;
 	component_name << name << " it=" << iteration << " tl=0 rl=0 c=" << component;
 	
 	// 1) Compose a continous storage which is suitable.
@@ -303,6 +341,10 @@ void exahype::plotters::CarpetHDF5Writer::plotPatchForSingleUnknown(
 	StrType t_str = H5::StrType(H5::PredType::C_S1, name.size()+1); // Todo: not sure about +1 for \0
 	Attribute aname = table.createAttribute("name", t_str, H5S_SCALAR);
 	aname.write(t_str, name.c_str());
+	
+	int cctk_nghostzones_data = 0;  // no ghostzones for ADERDG; we won't save ghostzones for FV solvers.
+	Attribute nghostzones = table.createAttribute("cctk_nghostzones", PredType::NATIVE_INT, H5S_SCALAR);
+	nghostzones.write(PredType::NATIVE_INT, &cctk_nghostzones_data);
 }
 
 

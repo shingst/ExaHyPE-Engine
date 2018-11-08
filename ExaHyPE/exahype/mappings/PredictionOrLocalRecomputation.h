@@ -133,31 +133,37 @@ class exahype::mappings::PredictionOrLocalRecomputation {
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const tarch::la::Vector<DIMENSIONS, double>& h);
 
-  #ifdef Parallel
   /**
-   * Drop incoming neighbour data for all solvers performing
-   * a local recomputation.
+   * Loop body for mergeWithNeighbour.
+   *
+   * @param fromRank   rank from which we expect a message
+   * @param pos1Scalar linearised relative position of cell to vertex (pos1)
+   * @param pos2Scalar linearised relative position of cell to vertex (pos2)
+   * @param vertex     vertex
+   * @param x          position of the shared vertex
+   * @param level      level of the vertex
    */
-  static void dropNeighbourData(
+ static void receiveNeighbourDataLoopBody(
       const int                                    fromRank,
-      const tarch::la::Vector<DIMENSIONS, int>&    src,
-      const tarch::la::Vector<DIMENSIONS, int>&    dest,
+      const int                                    srcScalar,
+      const int                                    destScalar,
+      const exahype::Vertex&                       vertex,
       const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level,
-      const exahype::MetadataHeap::HeapEntries& receivedMetadata);
+      const int                                    level);
+
+  #ifdef Parallel
 
   /**
-   * Merge incoming neighbour for all solvers performing
+   * Merge incoming neighbour for all LimitingADERDGSolver instances which perform
    * a local recomputation.
    */
   void mergeNeighourData(
       const int                                    fromRank,
-      const tarch::la::Vector<DIMENSIONS,int>&     src,
-      const tarch::la::Vector<DIMENSIONS,int>&     dest,
-      const int                                    destCellDescriptionIndex,
+      const int                                    srcScalar,
+      const int                                    destScalar,
+      const int                                    destCellDescriptionsIndex,
       const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level,
-      const exahype::MetadataHeap::HeapEntries& receivedMetadata);
+      const int                                    level);
   #endif
 
  public:
