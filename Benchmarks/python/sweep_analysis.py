@@ -467,7 +467,7 @@ def parseSummedTimes(resultsFolderPath,projectName,timePerTimeStep=False):
             nonlocal fused
         
             fusedAdapters        = ["BroadcastAndDropNeighbourMessages","FusedTimeStep"]
-            firstFusedAdapter    = fusedAdapters[0] # alphabetically
+            firstFusedAdapter    = fusedAdapters[1] # alphabetically
             nonfusedAdapters     = ["BroadcastAndDropNeighbourMessages","MergeNeighbours","Prediction","UpdateAndReduce"]
             firstNonfusedAdapter = nonfusedAdapters[0] # alphabetically 
             
