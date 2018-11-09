@@ -1051,7 +1051,9 @@
             sigma_vec(1)=+(Q(15)+2.0/3.0*Q(16))*(detA)**2*(1-detA)+sigma_vec(1)       ! A
             sigma_vec(2)=+(Q(15)+2.0/3.0*Q(16))*(detA)**2*(1-detA)+sigma_vec(2)
             sigma_vec(3)=+(Q(15)+2.0/3.0*Q(16))*(detA)**2*(1-detA)+sigma_vec(3) 
-            stressnorm  = SQRT( 0.5 * ( (sigma_vec(1)-sigma_vec(2))**2 + (sigma_vec(2)-sigma_vec(3))**2 + (sigma_vec(3)-sigma_vec(1))**2 + 6.*(sigma_vec(4)**2+sigma_vec(6)**2+sigma_vec(5)**2) ) ) 
+            !stressnorm  = SQRT( 0.5 * ( (sigma_vec(1)-sigma_vec(2))**2 + (sigma_vec(2)-sigma_vec(3))**2 + (sigma_vec(3)-sigma_vec(1))**2 + 6.*(sigma_vec(4)**2+sigma_vec(6)**2+sigma_vec(5)**2) ) ) 
+			!stressnorm  = sigma_vec(6)
+			stressnorm  = sigma_vec(4)
         end if
     end subroutine computeGPRLEstress
     
@@ -3853,6 +3855,7 @@
         real :: cs,cs_f
         cs=sqrt(mu/rho)
         cs_f=0.5!sqrt(2.0)
+		cs_f=sqrt(2.0)
         mu2tauFL=mu_f*6.0/rho
         mu2tauFL=6.0/(detA*rho*cs_f**2)*mu_f
         !mu2tauFL=mu2tauFL/2.0

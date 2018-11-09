@@ -19,8 +19,8 @@
 void {{codeNamespace}}::solutionAdjustment(
   {{solverName}}& solver,
   double* luh,
-  const tarch::la::Vector<DIMENSIONS,double>& center,
-  const tarch::la::Vector<DIMENSIONS,double>& dx,
+  const double* const center,
+  const double dx, //Assume dx[0] == dx[1] == dx[2]
   const double t,
   const double dt
 ) {
@@ -29,12 +29,12 @@ void {{codeNamespace}}::solutionAdjustment(
 
 {% if nDim == 3 %}
   for (int z = 0; z < {{nDof}}; z++) {
-    x0[2] = center[2] + dx[2] * (nodes[z] - 0.5);
+    x0[2] = center[2] + dx * (nodes[z] - 0.5);
 {% endif %}
     for (int y = 0; y < {{nDof}}; y++) {
-      x0[1] = center[1] + dx[1] * (nodes[y] - 0.5);
+      x0[1] = center[1] + dx * (nodes[y] - 0.5);
       for (int x = 0; x < {{nDof}}; x++) {
-        x0[0] = center[0] + dx[0] * (nodes[x] - 0.5);
+        x0[0] = center[0] + dx * (nodes[x] - 0.5);
 
         solver.{{solverName}}::adjustPointSolution(x0, t, dt, luh+(pos*{{nData}}));
         pos++;

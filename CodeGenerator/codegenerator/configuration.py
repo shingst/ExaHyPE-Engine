@@ -26,9 +26,15 @@ class Configuration:
                   "snb"    : 4,
                   "hsw"    : 4,
                   "knc"    : 8,
-                  "knl"    : 8 
+                  "knl"    : 8,
+                  "skx"    : 8
                 }
 
+    # set to false to use standard loops instead of libxsmm
+    useLibxsmm = True;
+    
+    # set to true to print models runtime
+    runtimeDebug = False;
 
     @staticmethod
     def checkPythonVersion():

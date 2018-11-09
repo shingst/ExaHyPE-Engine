@@ -58,7 +58,7 @@ class exahype::parser::Parser {
 
   static const std::string   _noTokenFound;
 
-  ParserImpl* _impl;
+  ParserImpl* _impl = nullptr;
 
   /**
    * Takes certain parameters from the parameters and checks their validity.
@@ -207,7 +207,7 @@ class exahype::parser::Parser {
                                            const std::string& key);
 
   Parser();
-  virtual ~Parser() {}
+  virtual ~Parser();
 
   // Disallow copy and assignment
   Parser(const Parser& other) = delete;
@@ -234,6 +234,15 @@ class exahype::parser::Parser {
    * @return How many threads is the code supposed to use?
    */
   int getNumberOfThreads() const;
+
+  /**
+   * @return The thread stack size. Default
+   * is 0 which is tranlated to a library-specific default value.
+   * (TBB default: 2 MB or 4 MB).
+   * (Alexey Kukanov (Intel), Thu, 08/12/2010 - 13:10)
+   * https://software.intel.com/en-us/forums/intel-threading-building-blocks/topic/288253
+   */
+  int getThreadStackSize() const;
 
   tarch::la::Vector<DIMENSIONS, double> getDomainSize() const;
 
@@ -299,10 +308,21 @@ class exahype::parser::Parser {
   bool getSpawnPredictionAsBackgroundThread() const;
 
   /**
+   * @return if the prolongation should be spawned as background
+   * thread whenever this is possible.
+   */
+  bool getSpawnProlongationAsBackgroundThread() const;
+
+  /**
    * @return if the mesh refinement iterations should
    * use background-threads whenever this is possible.
    */
   bool getSpawnAMRBackgroundThreads() const;
+
+  /**
+   * @return If an additional 4 or 12 tasks (2D and 3D) should be spawned per vertex.
+   */
+  bool getSpawnNeighbourMergeAsThread() const;
 
   double getTimestepBatchFactor() const;
   bool getSkipReductionInBatchedTimeSteps() const;
@@ -499,6 +519,21 @@ class exahype::parser::Parser {
   std::string getProfilingOutputFilename() const;
 
   /**
+   * The profiling target.
+   */
+  enum class ProfilingTarget {
+    WholeCode,     //!< The whole code is profiled
+    NeigbhourMerge,//!< The neighbour merge phase is profiled
+    Prediction,    //!< The prediction phase is profiled
+    Update         //!< The update phase is profiled
+  };
+
+  /**
+   * Specify what code part you plan to run/profile.
+   */
+  ProfilingTarget getProfilingTarget() const;
+
+  /**
    * @TODO This function should be renamed to createParserViewForSolver, as we also
    * now also create ParserViews for plotters.
    **/
@@ -520,7 +555,7 @@ class exahype::parser::Parser {
   /**
    * \return Maximum number of running background job consumer tasks.
    */
-  int getNumberOfBackgroundTasks();
+  int getNumberOfBackgroundJobConsumerTasks();
 
   /**
    * @return If multiple high priority background jobs should be consumed in a rush
@@ -533,6 +568,12 @@ class exahype::parser::Parser {
    * as a task.
    */
   bool getSpawnHighPriorityBackgroundJobsAsATask();
+
+  /**
+   * @return Return if every single low priority job should be spawned
+   * as a task.
+   */
+  bool getSpawnLowPriorityBackgroundJobsAsATask();
 
   /**
    * @return If the consumer tasks should process any low priority tasks

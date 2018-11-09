@@ -207,8 +207,9 @@ void exahype::plotters::FiniteVolumes2PeanoPatchFileFormat::plotCellData(
 }
 
 
-void exahype::plotters::FiniteVolumes2PeanoPatchFileFormat::plotPatch(const int cellDescriptionsIndex, const int element) {
-  auto& cellDescription = exahype::solvers::FiniteVolumesSolver::getCellDescription(cellDescriptionsIndex,element);
+void exahype::plotters::FiniteVolumes2PeanoPatchFileFormat::plotPatch(const int solverNumber,solvers::Solver::CellInfo& cellInfo) {
+  const int element = cellInfo.indexOfFiniteVolumesCellDescription(solverNumber);
+  auto& cellDescription  = cellInfo._FiniteVolumesCellDescriptions[element];
 
   if (cellDescription.getType()==exahype::solvers::FiniteVolumesSolver::CellDescription::Type::Cell) {
     const tarch::la::Vector<DIMENSIONS, double> &offsetOfPatch = cellDescription.getOffset(), &sizeOfPatch = cellDescription.getSize();
@@ -222,7 +223,7 @@ void exahype::plotters::FiniteVolumes2PeanoPatchFileFormat::plotPatch(const int 
     */
 
     if (!slicer || slicer->isPatchActive(offsetOfPatch, sizeOfPatch)) {
-      double* solution = DataHeap::getInstance().getData(cellDescription.getSolution()).data();
+      double* solution = static_cast<double*>(cellDescription.getSolution());
       std::pair<int,int> vertexAndCellIndex(0,0);
 
       if (_writtenUnknowns>0) {

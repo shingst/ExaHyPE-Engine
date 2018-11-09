@@ -4,7 +4,8 @@ import jenkins.model.Jenkins
 pipeline {
     agent { label 'Linux-Cluster' }
     triggers {
-     	cron('H H * * *')
+        pollSCM('H H * * *')
+     	//cron('H H * * *')
     }
     stages {
 	stage ('Checkout') {

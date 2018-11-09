@@ -57,14 +57,12 @@ class exahype::plotters::ADERDG2CarpetHDF5 : public exahype::plotters::Plotter::
 
   virtual void init(const std::string& filename, int orderPlusOne, int solverUnknowns, int writtenUnknowns, exahype::parser::ParserView plotterParameters);
 
-  virtual void plotPatch(
-        const int cellDescriptionsIndex,
-        const int element);
+  virtual void plotPatch(const int solverNumber,solvers::Solver::CellInfo& cellInfo);
   
   virtual void plotPatch(
       const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
       const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* u,
-      double timeStamp);
+      double timeStamp, int limiterStatus);
   
   virtual void startPlotting( double time );
   virtual void finishPlotting();
@@ -76,7 +74,8 @@ class exahype::plotters::ADERDG2CarpetHDF5 : public exahype::plotters::Plotter::
     const tarch::la::Vector<DIMENSIONS, double>& dx,
     double *u,
     double *mappedCell,
-    double timeStamp
+    double timeStamp,
+    int limiterStatus
   );
 
   void interpolateCartesianSlicedPatch(
@@ -86,6 +85,7 @@ class exahype::plotters::ADERDG2CarpetHDF5 : public exahype::plotters::Plotter::
     double *u,
     double *mappedCell,
     double timeStamp,
+    int limiterStatus,
     const exahype::plotters::CartesianSlicer& slicer
   );
 };

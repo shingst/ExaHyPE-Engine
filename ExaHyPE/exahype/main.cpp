@@ -206,9 +206,10 @@ int exahype::main(int argc, char** argv) {
   #endif
 
   tarch::logging::CommandLineLogger::getInstance().clearFilterList();
-  if (!tarch::logging::LogFilterFileReader::parsePlainTextFile(
-          "exahype.log-filter")) {
-    tarch::logging::CommandLineLogger::getInstance().clearFilterList();
+  tarch::logging::LogFilterFileReader::parsePlainTextFile( "exahype.log-filter" );
+
+//    tarch::logging::CommandLineLogger::getInstance().clearFilterList();
+/*
     tarch::logging::CommandLineLogger::getInstance().addFilterListEntry(
         ::tarch::logging::CommandLineLogger::FilterListEntry("info", false));
     #if !defined(Asserts)
@@ -221,7 +222,8 @@ int exahype::main(int argc, char** argv) {
     tarch::logging::CommandLineLogger::getInstance().addFilterListEntry(
         ::tarch::logging::CommandLineLogger::FilterListEntry("debug", -1,
                                                              "exahype", false));
-  }
+*/
+
 
   exahype::runners::Runner runner(parser, cmdlineargs);
   int programExitCode = runner.run();
@@ -257,9 +259,10 @@ void exahype::help(const std::string& programname) {
   std::cout << "\n";
   std::cout << "   Other possible parameters:\n";
   std::cout << "\n";
-  std::cout << "    --help    | -h       Show this help message\n";
-  std::cout << "    --version | -v       Show version and other hard coded information\n";
-  std::cout << "    --tests   | -t       Run the unit tests\n";
+  std::cout << "    --help     | -h      Show this help message\n";
+  std::cout << "    --version  | -v      Show version and other hard coded information\n";
+  std::cout << "    --tests    | -t      Run the unit tests\n";
+  std::cout << "    --pingpong | -p      Run only a simple MPI Ping Pong test\n";
   std::cout << "    --show-specfile      Show the specification file the binary was built with\n";
   std::cout << "    --built-in-specfile  Run with the spec. file the binary was built with\n";
   std::cout << "\n";

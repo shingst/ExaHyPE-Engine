@@ -52,14 +52,14 @@ void exahype::plotters::ADERDG2ProbeAscii::init(const std::string& filename, int
   _filename        = filename;
   _time            = 0.0;
 
-  if (!plotterParameters.isValueValidDouble("x") || !plotterParameters.isValueValidDouble("y") || ( DIMENSIONS==3 &&!plotterParameters.isValueValidDouble("z"))) {
+  if (!plotterParameters.isValueValidDouble("select/x") || !plotterParameters.isValueValidDouble("select/y") || ( DIMENSIONS==3 &&!plotterParameters.isValueValidDouble("select/z"))) {
     logError("init()", "Probe location is invalid. Require x,y,z values. Have " << plotterParameters.dump());
   }
   
-  _x(0) = plotterParameters.getValueAsDouble("x");
-  _x(1) = plotterParameters.getValueAsDouble("y");
+  _x(0) = plotterParameters.getValueAsDouble("select/x");
+  _x(1) = plotterParameters.getValueAsDouble("select/y");
   #if DIMENSIONS==3
-  _x(2) = plotterParameters.getValueAsDouble("z");
+  _x(2) = plotterParameters.getValueAsDouble("select/z");
   #endif
 
   logDebug( "init(...)", "probe at location " << _x << "(plotterParameters=\"" << plotterParameters.dump() << "\")");
@@ -114,11 +114,12 @@ std::string exahype::plotters::ADERDG2ProbeAscii::getIdentifier() {
   return "probe::ascii";
 }
 
-void exahype::plotters::ADERDG2ProbeAscii::plotPatch(const int cellDescriptionsIndex, const int element) {
-  auto& aderdgCellDescription = exahype::solvers::ADERDGSolver::getCellDescription(cellDescriptionsIndex,element);
+void exahype::plotters::ADERDG2ProbeAscii::plotPatch(const int solverNumber,solvers::Solver::CellInfo& cellInfo) {
+  const int element = cellInfo.indexOfADERDGCellDescription(solverNumber);
+  auto& aderdgCellDescription  = cellInfo._ADERDGCellDescriptions[element];
 
   if (aderdgCellDescription.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Cell) {
-    double* solverSolution = DataHeap::getInstance().getData(aderdgCellDescription.getSolution()).data();
+    double* solverSolution = static_cast<double*>(aderdgCellDescription.getSolution());
 
     plotPatch(
         aderdgCellDescription.getOffset(),

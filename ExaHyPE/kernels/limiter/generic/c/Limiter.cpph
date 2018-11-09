@@ -1,6 +1,7 @@
 #include "kernels/KernelUtils.h"
 
 /**
+ * Unused
  * Auxilliary function to findMinMax
  * Project to GaussLobatto and modify the min/max if required
  */

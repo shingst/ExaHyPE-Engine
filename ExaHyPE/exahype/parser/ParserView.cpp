@@ -35,7 +35,18 @@ exahype::parser::ParserView::ParserView(const exahype::parser::Parser* parser,
       _basePath(basePath) {}
       
 std::string exahype::parser::ParserView::getPath(const std::string& key) const {
-  return _basePath + "/" + key;
+  return (key.empty() ? _basePath : (_basePath + "/" + key));
+}
+
+bool exahype::parser::ParserView::isEmpty() const {
+  return _parser!=nullptr;
+  // TODO: Actually this check should check wether the _basePath exists and, if so,
+  //       check wether it holds an empty dictionary, cf. empty() call on
+  //       https://nlohmann.github.io/json/ -- however, such an API has to be exposed
+  //       by the parser itself
+  // 
+  // || ( getParser().hasPath(getPath("")) && getParser()
+  // assertion(getParser().isValid());
 }
 
 bool exahype::parser::ParserView::hasKey(const std::string& key) const {
@@ -123,6 +134,23 @@ bool exahype::parser::ParserView::isValueValidBool(
   }
 }
 
+bool exahype::parser::ParserView::getValueAsBoolOrDefault(const std::string& key, bool default_value) const {
+  return isValueValidBool(key) ? getValueAsBool(key) : default_value;
+}
+
+int exahype::parser::ParserView::getValueAsIntOrDefault(const std::string& key, int default_value) const {
+  return isValueValidInt(key) ? getValueAsInt(key) : default_value;
+}
+
+double exahype::parser::ParserView::getValueAsDoubleOrDefault(const std::string& key, double default_value) const {
+  return isValueValidDouble(key) ? getValueAsDouble(key) : default_value;
+}
+
+std::string exahype::parser::ParserView::getValueAsStringOrDefault(const std::string& key, std::string default_value) const {
+  return isValueValidString(key) ? getValueAsString(key) : default_value;
+}
+
+
 std::vector< std::pair<std::string, std::string> > exahype::parser::ParserView::getAllAsOrderedMap() const {
   
   // Expect the data to be in an object, if not then fail.
@@ -185,15 +213,15 @@ void exahype::parser::ParserView::toString(std::ostream& out) const {
     out << "basePath:" <<  _basePath;
     out <<  ")";
   } {
-    out << "not available";
+    out << "ParserView(<empty>)";
   }
 }
 
 std::string exahype::parser::ParserView::dump(const std::string path) const {
    if (_parser!=nullptr) {
-     return getParser().dumpPath( _basePath +  ( path.compare("")==0 ? "" : "/"+path ) );
+     return getParser().dumpPath(getPath(path));
    } else {
-     return "not available";
+     return std::string("<") + getPath(path) + "> not available";
    }
 }
 

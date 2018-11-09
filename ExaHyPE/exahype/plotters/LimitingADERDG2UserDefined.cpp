@@ -51,8 +51,9 @@ void exahype::plotters::LimitingADERDG2UserDefined::init(
 exahype::plotters::LimitingADERDG2UserDefined::~LimitingADERDG2UserDefined() {
 }
 
-void exahype::plotters::LimitingADERDG2UserDefined::plotPatch(const int cellDescriptionsIndex, const int element) {
-  auto& solverPatch = exahype::solvers::ADERDGSolver::getCellDescription(cellDescriptionsIndex,element);
+void exahype::plotters::LimitingADERDG2UserDefined::plotPatch(const int solverNumber,solvers::Solver::CellInfo& cellInfo) {
+  const int element = cellInfo.indexOfADERDGCellDescription(solverNumber);
+  auto& solverPatch  = cellInfo._ADERDGCellDescriptions[element];
 
   if (solverPatch.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Cell) {
     assertion(exahype::solvers::RegisteredSolvers[solverPatch.getSolverNumber()]->getType()==
@@ -61,17 +62,16 @@ void exahype::plotters::LimitingADERDG2UserDefined::plotPatch(const int cellDesc
         static_cast<exahype::solvers::LimitingADERDGSolver*>(exahype::solvers::RegisteredSolvers[solverPatch.getSolverNumber()]);
 
     if (solverPatch.getRefinementStatus()>=limitingADERDG->getSolver()->getMinimumRefinementStatusForActiveFVPatch()) {
-      auto& limiterPatch = limitingADERDG->
-              getLimiterPatchForSolverPatch(solverPatch,cellDescriptionsIndex);
+      auto& limiterPatch = limitingADERDG->getLimiterPatch(solverPatch,cellInfo);
 
-      double* limiterSolution = DataHeap::getInstance().getData(limiterPatch.getSolution()).data();
+      double* limiterSolution = static_cast<double*>(limiterPatch.getSolution());
 
       plotFiniteVolumesPatch(
           limiterPatch.getOffset(),
           limiterPatch.getSize(), limiterSolution,
           limiterPatch.getTimeStamp()); // The limiter time stamp might not be valid at the time of the plotting
     } else { // solverPatch.getRefinementStatus()<exahype::solvers::ADERDGSolver::MinimumRefinementStatusForActiveFVPatch
-      double* solverSolution = DataHeap::getInstance().getData(solverPatch.getSolution()).data();
+      double* solverSolution = static_cast<double*>(solverPatch.getSolution());
 
       plotADERDGPatch(
           solverPatch.getOffset(),

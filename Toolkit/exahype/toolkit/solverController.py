@@ -179,11 +179,13 @@ class SolverController:
     def buildFVKernelContext(self,kernel):
         context = {}
         ghostLayerWidth = { "godunov" : 1, "musclhancock" : 2 }
-        context["ghostLayerWidth"]   = ghostLayerWidth[kernel["scheme"]]
-        context["finiteVolumesType"] = kernel["scheme"]
-        context["implementation"]    = kernel.get("implementation","generic")
-        context["tempVarsOnStack"]   = kernel.get("allocate_temporary_arrays","heap")=="stack" 
-        context["patchwiseAdjust"]   = kernel.get("adjust_solution","pointwise")=="patchwise" 
+        context["finiteVolumesType"]           = kernel["scheme"].replace("robust","")
+        context["ghostLayerWidth"]             = ghostLayerWidth[context["finiteVolumesType"]]
+        context["useRobustDiagonalLimiting_s"] = "true" if "robust" in kernel["scheme"] else "false"
+
+        context["implementation"]  = kernel.get("implementation","generic")
+        context["tempVarsOnStack"] = kernel.get("allocate_temporary_arrays","heap")=="stack" 
+        context["patchwiseAdjust"] = kernel.get("adjust_solution","pointwise")=="patchwise" 
         context.update(self.buildKernelTermsContext(kernel["terms"]))
         return context
 
@@ -229,8 +231,8 @@ class SolverController:
         context["useFluxVect"]        = "fluxvect"        in optimizations
         context["useFusedSource"]     = "fusedsource"     in optimizations
         context["useFusedSourceVect"] = "fusedsourcevect" in optimizations
-        context["useSourceVect"]      = "fusedsourcevect" in optimizations
-        context["useNCPVect"]         = "fusedsourcevect" in optimizations
+        context["useSourceVect"]      = "sourcevect"      in optimizations
+        context["useNCPVect"]         = "ncpvect"         in optimizations
         
         return context
         

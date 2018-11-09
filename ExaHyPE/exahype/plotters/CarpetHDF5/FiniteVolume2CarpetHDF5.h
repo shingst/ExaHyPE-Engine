@@ -59,9 +59,7 @@ class exahype::plotters::FiniteVolume2CarpetHDF5 : public exahype::plotters::Plo
 
   virtual void init(const std::string& filename, int basisSize, int solverUnknowns, int writtenUnknowns, exahype::parser::ParserView  plotterParameters);
 
-  virtual void plotPatch(
-        const int cellDescriptionsIndex,
-        const int element);
+  virtual void plotPatch(const int solverNumber,solvers::Solver::CellInfo& cellInfo);
   
   virtual void plotPatch(
       const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,

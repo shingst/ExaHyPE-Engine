@@ -172,7 +172,7 @@ void exahype::mappings::RefinementStatusSpreading::touchVertexFirstTime(
                            coarseGridCell, fineGridPositionOfVertex);
 
   fineGridVertex.mergeOnlyNeighboursMetadata(
-      exahype::State::AlgorithmSection::RefinementStatusSpreading,fineGridX,fineGridH);
+      exahype::State::AlgorithmSection::RefinementStatusSpreading,fineGridX,fineGridH,false);
 
   logTraceOutWith1Argument("touchVertexFirstTime(...)", fineGridVertex);
 }
@@ -189,30 +189,33 @@ void exahype::mappings::RefinementStatusSpreading::enterCell(
                            coarseGridCell, fineGridPositionOfCell);
 
   if (fineGridCell.isInitialised()) {
-    const int cellDescriptionsIndex = fineGridCell.getCellDescriptionsIndex();
-    auto& aderCellDescriptions = exahype::solvers::ADERDGSolver::Heap::getInstance().getData(cellDescriptionsIndex);
-    for ( auto& cellDescription : aderCellDescriptions ) {
-      auto* solver = exahype::solvers::RegisteredSolvers[cellDescription.getSolverNumber()];
-      switch (solver->getType()) {
-        case exahype::solvers::Solver::Type::ADERDG:
-          static_cast<exahype::solvers::ADERDGSolver*>(solver)->
-            updateRefinementStatus(cellDescription,cellDescription.getNeighbourMergePerformed());
-          break;
-        case exahype::solvers::Solver::Type::LimitingADERDG:
-          _meshUpdateEvents[cellDescription.getSolverNumber()] =
-              exahype::solvers::Solver::mergeMeshUpdateEvents(
-                  _meshUpdateEvents[cellDescription.getSolverNumber()],
-                  static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->
-                  updateRefinementStatusDuringRefinementStatusSpreading(cellDescription));
-          break;
-        default:
-          break;
+    solvers::Solver::CellInfo cellInfo(fineGridCell.getCellDescriptionsIndex());
+
+    for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
+      auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
+      const int element = cellInfo.indexOfADERDGCellDescription(solverNumber);
+      if ( element!=solvers::Solver::NotFound ) {
+        switch (solver->getType()) {
+          case exahype::solvers::Solver::Type::ADERDG: {
+            auto& cellDescription = cellInfo._ADERDGCellDescriptions[element];
+            static_cast<exahype::solvers::ADERDGSolver*>(solver)->
+                updateRefinementStatus(cellInfo._ADERDGCellDescriptions[element],cellDescription.getNeighbourMergePerformed());
+          } break;
+          case exahype::solvers::Solver::Type::LimitingADERDG: {
+            auto& cellDescription = cellInfo._ADERDGCellDescriptions[element];
+            _meshUpdateEvents[cellDescription.getSolverNumber()] =
+                exahype::solvers::Solver::mergeMeshUpdateEvents(
+                    _meshUpdateEvents[cellDescription.getSolverNumber()],
+                    static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->
+                        updateRefinementStatusDuringRefinementStatusSpreading(cellDescription));
+          } break;
+          default:
+            break;
+        }
       }
     }
 
-    exahype::Cell::resetNeighbourMergeFlags(
-        fineGridCell.getCellDescriptionsIndex(),
-        fineGridVertices,fineGridVerticesEnumerator);
+    exahype::Cell::resetNeighbourMergeFlags(cellInfo,fineGridVertices,fineGridVerticesEnumerator);
   }
 
   logTraceOutWith1Argument("enterCell(...)", fineGridCell);
@@ -242,7 +245,7 @@ void exahype::mappings::RefinementStatusSpreading::mergeWithNeighbour(
   if ( !IsFirstIteration ) {
     vertex.mergeOnlyWithNeighbourMetadata(
         fromRank,fineGridX,fineGridH,level,
-        exahype::State::AlgorithmSection::RefinementStatusSpreading);
+        exahype::State::AlgorithmSection::RefinementStatusSpreading,false);
   }
 
   logTraceOut("mergeWithNeighbour(...)");
@@ -255,7 +258,7 @@ void exahype::mappings::RefinementStatusSpreading::prepareSendToNeighbour(
   logTraceInWith5Arguments("prepareSendToNeighbour(...)", vertex,
                            toRank, x, h, level);
 
-  vertex.sendOnlyMetadataToNeighbour(toRank,x,h,level);
+  vertex.sendOnlyMetadataToNeighbour(toRank,x,h,level,false);
 
   logTraceOut("prepareSendToNeighbour(...)");
 }

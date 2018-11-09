@@ -27,10 +27,12 @@
 #include "peano/utils/PeanoOptimisations.h"
 #include "tarch/multicore/MulticoreDefinitions.h"
 #include "tarch/la/Vector.h"
+#include "tarch/la/VectorVectorOperations.h"
 #include "tarch/multicore/BooleanSemaphore.h"
 
 #include "peano/utils/Globals.h"
 #include "peano/grid/VertexEnumerator.h"
+#include "peano/heap/Heap.h"
 #include "peano/heap/DoubleHeap.h"
 #include "peano/heap/CharHeap.h"
 #include "peano/heap/HeapAllocator.h"
@@ -41,6 +43,10 @@
 
 #include "exahype/profilers/Profiler.h"
 #include "exahype/profilers/simple/NoOpProfiler.h"
+
+// cell descriptions
+#include "exahype/records/ADERDGCellDescription.h"
+#include "exahype/records/FiniteVolumesCellDescription.h"
 
 #include <functional>
 
@@ -180,6 +186,22 @@ namespace exahype {
   #endif
 
   /**
+   * @return a data heap array as vector.
+   *
+   * @param index heap index of the array.
+   */
+  DataHeap::HeapEntries& getDataHeapEntries(const int index);
+
+  const DataHeap::HeapEntries& getDataHeapEntriesForReadOnlyAccess(const int index);
+
+  /**
+   * Moves a DataHeap array, i.e. copies the found
+   * data at "fromIndex" to the array at "toIndex" and
+   * deletes the "fromIndex" array afterwards.
+   */
+  void moveDataHeapEntries(const int fromIndex,const int toIndex,bool recycleFromArray);
+
+  /**
    * @see waitUntilAllBackgroundTasksHaveTerminated()
    */
   extern tarch::multicore::BooleanSemaphore BackgroundJobSemaphore;
@@ -267,7 +289,6 @@ namespace exahype {
   static constexpr int MasterWorkerCommunicationMetadataCommunicationStatus = 2;
   static constexpr int MasterWorkerCommunicationMetadataLimiterStatus       = 3;
   static constexpr int MasterWorkerCommunicationMetadataSendReceiveData     = 4;
-
   /**
    * TODO(Dominic): Docu is outdated
    *
@@ -368,6 +389,160 @@ class exahype::solvers::Solver {
  public:
 
   /**
+   * Default return value of function getElement(...)
+   * If we do not find the element in a vector
+   * stored at a heap address.
+   */
+  static constexpr int NotFound = -1;
+
+  /**
+   * An extensible structure linking to the data of a cell.
+   * It is passed to all solver routines.
+   */
+  typedef struct CellInfo {
+    const int _cellDescriptionsIndex= NotFound;
+    peano::heap::RLEHeap<exahype::records::ADERDGCellDescription>::HeapEntries&        _ADERDGCellDescriptions;
+    peano::heap::RLEHeap<exahype::records::FiniteVolumesCellDescription>::HeapEntries& _FiniteVolumesCellDescriptions;
+    CellInfo(const int cellDescriptionsIndex) :
+      _cellDescriptionsIndex(cellDescriptionsIndex),
+      _ADERDGCellDescriptions       (peano::heap::RLEHeap<exahype::records::ADERDGCellDescription>::getInstance().getData(_cellDescriptionsIndex)),
+      _FiniteVolumesCellDescriptions(peano::heap::RLEHeap<exahype::records::FiniteVolumesCellDescription>::getInstance().getData(_cellDescriptionsIndex))
+    {}
+
+    /**
+     * @return if no data was found for the cell.
+     */
+    bool empty() const {
+       return _ADERDGCellDescriptions.empty() && _FiniteVolumesCellDescriptions.empty();
+    }
+
+    /**
+     * @return the first cell description with the given @p solverNumber.
+     *
+     * @param cellDescriptions an ordered collection of cell descriptions
+     * @param solverNumber     identification number of a solver
+     */
+    template <typename CellDescriptionHeapEntries>
+    static int indexOfCellDescription(CellDescriptionHeapEntries& cellDescriptions,const int solverNumber) {
+      int index = exahype::solvers::Solver::NotFound;
+      for (unsigned int element = 0; element < cellDescriptions.size(); ++element) {
+        if (cellDescriptions[element].getSolverNumber()==solverNumber) {
+          index = element;
+          break;
+        }
+      }
+      return index;
+    }
+
+    /**
+     * @return Index of an ADER-DG cell description or Solver::NotFound (-1).
+     * @param  solverNumber identification number of a solver
+     */
+    int indexOfADERDGCellDescription(const int solverNumber) {
+      return indexOfCellDescription(_ADERDGCellDescriptions,solverNumber);
+    }
+    /**
+     * @return Index of an Finite Volumes cell description or Solver::NotFound (-1).
+     * @param  solverNumber identification number of a solver
+     */
+    int indexOfFiniteVolumesCellDescription(const int solverNumber) {
+      return indexOfCellDescription(_FiniteVolumesCellDescriptions,solverNumber);
+    }
+
+    /**
+     * @return If there is any cell description which belogns to
+     * the solver with @p solverNumber.
+     *
+     * @param solverNumber identification number of a solver
+     */
+    bool foundCellDescriptionForSolver(const int solverNumber) const {
+      bool found = false;
+      for (auto& p : _ADERDGCellDescriptions) {
+        found |= p.getSolverNumber()==solverNumber;
+      }
+      for (auto& p : _FiniteVolumesCellDescriptions) {
+        found |= p.getSolverNumber()==solverNumber;
+      }
+      return found;
+    }
+
+  } CellInfo;
+
+  /**
+   * This struct computes and stores some
+   * commonly used indices when merging neighbouring
+   * cells via a common interfaces.
+   *
+   * TODO(Dominic): Move to more appropriate place?
+   */
+  typedef struct InterfaceInfo {
+    int _direction;     /*! coordinate direction the normal vector is aligned with (0->x,1->y,2->z) */
+    int _orientation1;  /*! orientation of the normal vector from pos1's perspective (0/1 -> pointing in/out of element) */
+    int _orientation2;  /*! orientation of the normal vector from pos2's perspective (0/1 -> pointing in/out of element) */
+    int _faceIndex1;    /*! interface index from perspective of pos1 */
+    int _faceIndex2;    /*! interface index from perspective of pos2 */
+    int _faceIndexLeft; /*! interface index from perspective of the "left" cell, i.e. the cell with orientation=1 (normal vector points out) */
+    int _faceIndexRight;/*! interface index from perspective of the "right" cell, i.e. the cell with orientation=0 (normal vector points in) */
+
+    InterfaceInfo(const tarch::la::Vector<DIMENSIONS,int>& pos1,const tarch::la::Vector<DIMENSIONS,int>& pos2)
+    :
+    _direction     (tarch::la::equalsReturnIndex(pos1, pos2)),
+    _orientation1  ((1 + pos2(_direction) - pos1(_direction))/2),
+    _orientation2  (1-_orientation1),
+    _faceIndex1    (2*_direction+_orientation1),
+    _faceIndex2    (2*_direction+_orientation2),
+    _faceIndexLeft (2*_direction+1),
+    _faceIndexRight(2*_direction+0) {
+        assertionEquals(tarch::la::countEqualEntries(pos1,pos2),DIMENSIONS-1);
+    }
+
+    std::string toString() {
+      std::ostringstream stringstream;
+      stringstream << "(";
+      stringstream << "_direction="      << _direction;
+      stringstream << ",_orientation1="   << _orientation1;
+      stringstream << ",_orientation2="   << _orientation2;
+      stringstream << ",_faceIndex1="     << _faceIndex1;
+      stringstream << ",_faceIndex2="     << _faceIndex2;
+      stringstream << ",_faceIndexLeft="  << _faceIndexLeft;
+      stringstream << ",_faceIndexRight=" << _faceIndexRight;
+      stringstream << ")";
+      return stringstream.str();
+    }
+  } InterfaceInfo;
+
+  /**
+   * This struct computes and stores some
+   * commonly used indices when merging a cell
+   * with boundary data at a boundary face.
+   *
+   * TODO(Dominic): Move to more appropriate place?
+   */
+  typedef struct BoundaryFaceInfo {
+    int _direction;    /*! coordinate direction the normal vector is aligned with (0->x,1->y,2->z) */
+    int _orientation;  /*! orientation of the normal vector from posCell's perspective (0/1 -> pointing in/out of element) */
+    int _faceIndex;    /*! interface index from perspective of posCell */
+
+    BoundaryFaceInfo(const tarch::la::Vector<DIMENSIONS,int>& posCell,const tarch::la::Vector<DIMENSIONS,int>& posBoundary)
+    :
+    _direction  (tarch::la::equalsReturnIndex(posCell, posBoundary)),
+    _orientation((1 + posBoundary(_direction) - posCell(_direction))/2),
+    _faceIndex  (2*_direction+_orientation) {
+      assertionEquals(tarch::la::countEqualEntries(posCell,posBoundary),DIMENSIONS-1);
+    }
+
+    std::string toString() {
+      std::ostringstream stringstream;
+      stringstream << "(";
+      stringstream << "_direction="   << _direction;
+      stringstream << ",_orientation=" << _orientation;
+      stringstream << ",_faceIndex1="  << _faceIndex;
+      stringstream << ")";
+      return stringstream.str();
+    }
+  } BoundaryFaceInfo;
+
+  /**
    * TrackGridStatistics is a flag from Peano that I "misuse" here as these
    * data also are grid statistics.
    */
@@ -376,6 +551,11 @@ class exahype::solvers::Solver {
   static double PipedCompressedBytes;
   #endif
 
+  /**
+   * The solvers need to do adjust some operations slightly
+   * when those are run multiple times after each other in isolation.
+   */
+  static bool ProfileUpdate;
 
   /**
    * A flag indicating we fuse the algorithmic
@@ -426,10 +606,26 @@ class exahype::solvers::Solver {
   static bool SpawnCompressionAsBackgroundJob;
 
   /**
+   * Maximum number of background job consumer tasks
+   * which are allowed to run during the mesh traversal.
+   *
+   * Default is zero.
+   */
+  static int MaxNumberOfRunningBackgroundJobConsumerTasksDuringTraversal;
+
+  /**
    * Set to true if the prediction and/or the fused time step
    * should be launched as background job whenever possible.
    */
   static bool SpawnPredictionAsBackgroundJob;
+
+  /**
+   * Set to true if the prolongation
+   * should be launched as background job whenever possible.
+   *
+   * Requires that the prediction is launched as background job too.
+   */
+  static bool SpawnProlongationAsBackgroundJob;
 
   /**
    * The number of Prediction,PredictionRerun,PredictionOrLocalRecomputation<
@@ -492,7 +688,6 @@ class exahype::solvers::Solver {
    * returned by the user functions.
    */
   enum class RefinementControl { Keep = 0, Refine = 1, Erase = 2 };
-
 
   /**
    * The limiter domain change that was detected after a solution
@@ -586,7 +781,7 @@ class exahype::solvers::Solver {
    * for computing the subcell position of the child
    * with respect to this parent.
    *
-   * TODO(Dominic): Move to more appropriate place.
+   * TODO(Dominic): Move to more appropriate place?
    */
   typedef struct SubcellPosition {
     int parentCellDescriptionsIndex;
@@ -649,24 +844,10 @@ class exahype::solvers::Solver {
   };
 
   /**
-   * Default return value of function getElement(...)
-   * If we do not find the element in a vector
-   * stored at a heap address.
-   */
-  static constexpr int NotFound = -1;
-
-  /**
    * Checks if one of the solvers is of a certain
    * type.
    */
   static bool oneSolverIsOfType(const Type& type);
-
-  /**
-   * Moves a DataHeap array, i.e. copies the found
-   * data at "fromIndex" to the array at "toIndex" and
-   * deletes the "fromIndex" array afterwards.
-   */
-  static void moveDataHeapArray(const int fromIndex,const int toIndex,bool recycleFromArray);
 
   /**
    * Run over all solvers and identify the minimal time stamp.
@@ -737,6 +918,7 @@ class exahype::solvers::Solver {
   static double getCoarsestMeshSizeOfAllSolvers();
 
   static const tarch::la::Vector<DIMENSIONS,double>& getDomainSize();
+  static const tarch::la::Vector<DIMENSIONS,double>& getDomainOffset();
 
   /**
    * Run over all solvers and identify the maximum depth of adaptive
@@ -842,11 +1024,17 @@ class exahype::solvers::Solver {
       const bool fusedTimeStepping);
 
   /**
+   * Rolls back those solvers which requested a global rollback
+   * to the previous time step.
+   */
+  static void rollbackSolversToPreviousTimeStepIfApplicable();
+
+  /**
    * Specify if solvers spawn background jobs and
    * configure the number of sweeps run by the adapters FusedTimeStep, Prediction, PredictionRerun,
    * and PredictorOrLocalRecomputation.
    */
-  static void configurePredictionPhase(const bool useBackgroundJobs);
+  static void configurePredictionPhase(const bool usePredictionBackgroundJobs, bool useProlongationBackgroundJobs);
 
 
   static std::string toString(const JobType& jobType);
@@ -883,33 +1071,50 @@ class exahype::solvers::Solver {
   *
   * Tries to receive dangling MPI messages while waiting if this
   * is specified by the user.
+  *
+  * @note Only use receiveDanglingMessages=true if the routine
+  * is called from a serial context.
+  *
+  * @param cellDescription a cell description
+  * @param waitForHighPriorityJob a cell description's task was spawned as high priority job
+  * @param receiveDanglingMessages receive dangling messages while waiting
   */
  template <typename CellDescription>
  static void waitUntilCompletedTimeStep(
-     const CellDescription& cellDescription,const bool receiveDanglingMessages) {
+     const CellDescription& cellDescription,const bool waitForHighPriorityJob,const bool receiveDanglingMessages) {
+   if ( !cellDescription.getHasCompletedTimeStep() ) {
+     peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
+   }
    while ( !cellDescription.getHasCompletedTimeStep() ) {
      // do some work myself
      if ( receiveDanglingMessages ) {
-       tarch::parallel::Node::getInstance().receiveDanglingMessages(); // TODO(Dominic): Thread-safe?
+       tarch::parallel::Node::getInstance().receiveDanglingMessages();
      }
-     peano::datatraversal::TaskSet::finishToProcessBackgroundJobs();
+     if ( waitForHighPriorityJob ) {
+       tarch::multicore::jobs::processHighPriorityJobs(1);
+     } else {
+       tarch::multicore::jobs::processBackgroundJobs(1);
+     }
    }
  }
 
  /**
   * Submit a Prediction- or FusedTimeStepJob.
   *
-  * \param[in] function the job
-  * \param[in[ isSkeletonJob the class of this job.
+  * \param[in] isSkeletonJob is is a skeleton job?
   */
- template <typename Job>
- static void submitPredictionJob(Job& job,const bool isSkeletonJob) {
+ static tarch::multicore::jobs::JobType getTaskType(bool isSkeletonJob) {
+    return isSkeletonJob ? tarch::multicore::jobs::JobType::RunTaskAsSoonAsPossible : tarch::multicore::jobs::JobType::BackgroundTask;
+ }
+/*
+ static void submitJob(tarch::multicore::jobs::Job* job,const bool isSkeletonJob) {
    if ( isSkeletonJob ) {
      peano::datatraversal::TaskSet spawnedSet( job, peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible  );
    } else {
      peano::datatraversal::TaskSet spawnedSet( job, peano::datatraversal::TaskSet::TaskType::Background  );
    }
  }
+*/
 
  protected:
 
@@ -1254,17 +1459,6 @@ class exahype::solvers::Solver {
   virtual bool isMergingMetadata(const exahype::State::AlgorithmSection& section) const = 0;
 
   /**
-   * Copies the time stepping data from the global solver onto the patch's time
-   * meta data.
-   *
-   * \param[in] element Index of the cell description in
-   *                    the array at address \p cellDescriptionsIndex.
-   */
-  virtual void synchroniseTimeStepping(
-      const int cellDescriptionsIndex,
-      const int element) const = 0;
-
-  /**
    * This routine is called if we perform
    * a time step update
    */
@@ -1301,22 +1495,6 @@ class exahype::solvers::Solver {
    * This method is used after a mesh refinement.
    */
   virtual void updateTimeStepSizes() = 0;
-
-  /**
-   * Zeroes all the time step sizes.
-   * This method is used by the adaptive mesh refinement mapping.
-   * After the mesh refinement, we need to recompute
-   * the time step sizes.
-   *
-   * <h1>ADER-DG</h1>
-   * Further resets the predictor time stamp to take
-   * the value of the corrector time stamp.
-   * The fused must be initialised again after
-   * each mesh refinement.
-   *
-   *   // TODO(Dominic): Still neccessary?
-   */
-  virtual void zeroTimeStepSizes() = 0;
 
   /**
    * Rolls the solver time step data back to the
@@ -1381,7 +1559,8 @@ class exahype::solvers::Solver {
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
       exahype::Cell& coarseGridCell,
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-      const int solverNumber) = 0;
+      const int solverNumber,
+      const bool stillInRefiningMode) = 0;
 
   /**
    * \return if the vertices around a cell should be erased, kept,
@@ -1422,19 +1601,13 @@ class exahype::solvers::Solver {
    * the enterCell() and leaveCell().
    *
    * This method is used to finalise some state
-   * updates.
-   *
-   * TODO(Dominic): Docu
+   * updates or prepare some states for
+   * the time stepping or the next
+   * mesh update iterations.
    */
   virtual void finaliseStateUpdates(
-      exahype::Cell& fineGridCell,
-      exahype::Vertex* const fineGridVertices,
-      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-      exahype::Cell& coarseGridCell,
-      exahype::Vertex* const coarseGridVertices,
-      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-      const int solverNumber) = 0;
+      const int solverNumber,
+      CellInfo& cellInfo) = 0;
 
   /////////////////////////////////////
   // CELL-LOCAL
@@ -1453,17 +1626,7 @@ class exahype::solvers::Solver {
    *
    * \note Has no const modifier since kernels are not const functions yet.
    */
-    virtual double updateTimeStepSizes(
-          const int cellDescriptionsIndex,
-          const int element) = 0;
-
-  /**
-   * Same as ::updateTimeStepSizes for the fused
-   * time stepping.
-   */
-  virtual double updateTimeStepSizesFused(
-      const int cellDescriptionsIndex,
-      const int element) = 0;
+    virtual double updateTimeStepSizes(const int solverNumber,CellInfo& cellInfo,const bool fusedTimeStepping) = 0;
 
   /**
    * Impose initial conditions and mark for refinement.
@@ -1473,29 +1636,35 @@ class exahype::solvers::Solver {
    *
    * \note Has no const modifier since kernels are not const functions yet.
    */
-  virtual void adjustSolutionDuringMeshRefinement(
-      const int cellDescriptionsIndex,const int element) = 0;
+  virtual void adjustSolutionDuringMeshRefinement(const int solverNumber,CellInfo& cellInfo) = 0;
 
   /**
    * Fuse algorithmic phases of the solvers.
    *
-   * <h2>FiniteVolumesSolver</h2>
+   * FiniteVolumesSolver:
    *
    * This call degenerates to an updateSolution
    * call for the FiniteVolumesSolver.
    *
-   * <h2>ADERDGSolver</h2>
+   * ADERDGSolver:
    *
    * Runs the triad of updateSolution,performPredictionAndVolumeIntegral
    * plus startNewTimeStep.
    *
-   * <h2>LimitingADERDGSolver</h2>
+   * LimitingADERDGSolver:
    *
    * Either runs the ADERDGSolver triad or
    * performs an FV update. Performs some additional
    * tasks.
    *
-   * * <h2> Background Jobs </h2>
+   * Compression
+   * -----------
+   *
+   * Uncompresses the data before performing PDE operations
+   * Compresses the data after performing PDE operations.
+   *
+   * Background Jobs
+   * ---------------
    *
    * The FiniteVolumesSolver, ADERDGSolver and LimitingADERDGSolver implementations
    * show the following behaviour:
@@ -1512,19 +1681,19 @@ class exahype::solvers::Solver {
    *     - This function will not a spawn a FusedTimeStepJob in the first and last iteration of
    *       a batch. ADERDGSolver and LimitingADERDGSolver may still spawn a PredictionJob in this case.
    *
-   * \param[in] isFirstIterationOfBatch Indicates that we currently run no batch or
+   * @param[in] isFirstIterationOfBatch Indicates that we currently run no batch or
    *                                    we are in the first iteration of a batch.
-   * \param[in] isLastIterationOfBatch  Indicates that we currently run no batch or
+   * @param[in] isLastIterationOfBatch  Indicates that we currently run no batch or
    *                                    we are in the last iteration of a batch.
    *                                    (If no batch is run, both flags
    *                                    \p isFirstIterationOfBatch and
    *                                    \p isLastIterationOfBatch are true).
-   * \param[in] isAtRemoteBoundary Flag indicating that the cell hosting the
+   * @param[in] isAtRemoteBoundary Flag indicating that the cell hosting the
    *                                    cell description is adjacent to a remote rank.
    */
-  virtual UpdateResult fusedTimeStep(
-      const int cellDescriptionsIndex,
-      const int element,
+  virtual UpdateResult fusedTimeStepOrRestrict(
+      const int  solverNumber,
+      CellInfo&  cellInfo,
       const bool isFirstIterationOfBatch,
       const bool isLastIterationOfBatch,
       const bool isAtRemoteBoundary) = 0;
@@ -1532,16 +1701,16 @@ class exahype::solvers::Solver {
   /**
    * The nonfused update routine.
    *
-   * <h2>FiniteVolumesSolver</h2>
+   * FiniteVolumesSolver:
    *
    * This call degenerates to an updateSolution
-   * call for the FiniteVolumesSolver.
+   * call and a startNewTimeStep call for the FiniteVolumesSolver.
    *
-   * <h2>ADERDGSolver</h2>
+   * ADERDGSolver:
    *
    * Update the solution and evaluate the refinement criterion.
    *
-   * <h2>LimitingADERDGSolver</h2>
+   * LimitingADERDGSolver:
    *
    * Update the ADER-DG and or FV solution and
    * evaluate the limiter and
@@ -1551,10 +1720,15 @@ class exahype::solvers::Solver {
    * helper variables in this method call.
    *
    * \note Has no const modifier since kernels are not const functions yet.
+   *
+   * @param cellInfo           links to the data associated with the mesh cell
+   * @param solverNumber       id of a solver
+   * @param isAtRemoteBoundary indicates if this cell is adjacent to the domain of another rank
+   * @return see UpdateResult
    */
-  virtual UpdateResult update(
-          const int cellDescriptionsIndex,
-          const int element,
+  virtual UpdateResult updateOrRestrict(
+          const int solverNumber,
+          CellInfo& cellInfo,
           const bool isAtRemoteBoundary) = 0;
 
   /**
@@ -1566,8 +1740,8 @@ class exahype::solvers::Solver {
    * Allocate necessary new limiter patches.
    */
   virtual void rollbackSolutionGlobally(
-         const int cellDescriptionsIndex,
-         const int element,
+         const int solverNumber,
+         CellInfo& cellInfo,
          const bool fusedTimeStepping) const = 0;
 
   /**
@@ -1578,121 +1752,16 @@ class exahype::solvers::Solver {
    *                               cell description is adjacent to a remote rank.
    */
   virtual void compress(
-      const int cellDescriptionsIndex,
-      const int element,
+      const int solverNumber,
+      CellInfo& cellInfo,
       const bool isAtRemoteBoundary) const = 0;
-
-  /**
-    * Prolongates face data from a parent cell description to
-    * the cell description at address (cellDescriptionsIndex,element)
-    * in case the fine grid cell associated with the cell description is adjacent to
-    * the hull of the coarse grid cell associated with the parent cell description.
-    *
-    * Further zero out the face data of ancestors.
-    *
-    * \note This function assumes a top-down traversal of the grid and must thus
-    * be called from the enterCell(...) mapping method.
-    *
-    * \note It is assumed that this operation is applied only to helper cell descriptions
-    * of type Descendant and Ancestor. No cell description of type Cell
-    * must be touched by this operation. Otherwise, we cannot spawn
-    * the prediction and/or the compression as background task.
-    *
-    * \note Has no const modifier since kernels are not const functions yet.
-    */
-  virtual void prolongateFaceData(
-      const int cellDescriptionsIndex,
-      const int element) = 0;
-
-  /**
-   * Restrict data to a parent on
-   * a coarser level.
-   *
-   * \note Thread-safety must be ensured by the implementation itself.
-   *
-   * \note This function assumes a bottom-up traversal of the grid and must thus
-   * be called from the leaveCell(...) mapping method.
-   *
-   * \note Has no const modifier yet since kernels are not
-   * const yet.
-   */
-  virtual void restriction(
-      const int cellDescriptionsIndex,
-      const int element) = 0;
 
   ///////////////////////////////////
   // NEIGHBOUR
   ///////////////////////////////////
 
-  /**
-   * Merge the metadata of two cell descriptions.
-   *
-   * \param[in] element Index of the cell description
-   *            holding the data to send out in
-   *            the array at address \p cellDescriptionsIndex.
-   *            This is not the solver number.
-   *
-   * \see tryGetElement
-   */
-  virtual void mergeNeighboursMetadata(
-        const int                                 cellDescriptionsIndex1,
-        const int                                 element1,
-        const int                                 cellDescriptionsIndex2,
-        const int                                 element2,
-        const tarch::la::Vector<DIMENSIONS, int>& pos1,
-        const tarch::la::Vector<DIMENSIONS, int>& pos2) const= 0;
-
-  /**
-   * Receive solver data from neighbour rank and write
-   * it on the cell description \p element in
-   * the cell descriptions vector stored at \p
-   * cellDescriptionsIndex.
-   *
-   * \note Peano only copies the calling mapping
-   * for each thread. The solvers in the solver registry are
-   *  not copied once for each thread.
-   *
-   * \param[in] element Index of the cell description
-   *                    holding the data to send out in
-   *                    the array at address \p cellDescriptionsIndex.
-   *                    This is not the solver number.
-   *
-   * \see tryGetElement
-   *
-   * \note Has no const modifier since kernels are not const functions yet.
-   */
-  virtual void mergeNeighbours(
-        const int                                 cellDescriptionsIndex1,
-        const int                                 element1,
-        const int                                 cellDescriptionsIndex2,
-        const int                                 element2,
-        const tarch::la::Vector<DIMENSIONS, int>& pos1,
-        const tarch::la::Vector<DIMENSIONS, int>& pos2) = 0;
-
-  /**
-   * Take the cell descriptions \p element
-   * from array at address \p cellDescriptionsIndex
-   * and merge it with boundary data.
-   *
-   * \note Peano only copies the calling mapping
-   * for each thread. The solvers in the solver registry are
-   *  not copied once for each thread.
-   *
-   * \param[in] element Index of the cell description
-   *                    at address \p cellDescriptionsIndex.
-   *                    This is not the solver number.
-   *
-   * \see tryGetElement
-   *
-   * \note Has no const modifier since kernels are not const functions yet.
-   */
-  virtual void mergeWithBoundaryData(
-        const int                                 cellDescriptionsIndex,
-        const int                                 element,
-        const tarch::la::Vector<DIMENSIONS, int>& posCell,
-        const tarch::la::Vector<DIMENSIONS, int>& posBoundary) = 0;
-
   #ifdef Parallel
+
   /**
    * If a cell description was allocated at heap address \p cellDescriptionsIndex
    * for solver \p solverNumber, encode metadata of the cell description
@@ -1707,98 +1776,6 @@ class exahype::solvers::Solver {
       const tarch::la::Vector<DIMENSIONS,int>& dest,
       const int cellDescriptionsIndex,
       const int solverNumber) const = 0;
-
-  /**
-   * Merge cell description \p element in
-   * the cell descriptions array stored at \p
-   * cellDescriptionsIndex with metadata.
-   *
-   * Currently, the neighbour metadata is only the neighbour
-   * type as int \p neighbourTypeAsInt and
-   * the neighbour's limiter status as int.
-   *
-   * <h2> Number of merges </h2>
-   * Usually metadata is only merged once between neighbouring cells but
-   * at a MPI boundary, it might be merged twice.
-   * It is thus important that the inputs do not change after a merge.
-   *
-   * \param[in] element Index of the cell description
-   *                    holding the data to send out in
-   *                    the array with address \p cellDescriptionsIndex.
-   *                    This is not the solver number.
-   */
-  virtual void mergeWithNeighbourMetadata(
-      const MetadataHeap::HeapEntries&  metadata,
-      const tarch::la::Vector<DIMENSIONS, int>& src,
-      const tarch::la::Vector<DIMENSIONS, int>& dest,
-      const int cellDescriptionsIndex,
-      const int element)  const = 0;
-
-  /**
-   * Send solver data to neighbour rank. Read the data from
-   * the cell description \p element in
-   * the cell descriptions vector stored at \p
-   * cellDescriptionsIndex.
-   *
-   * \param[in] element Index of the ADERDGCellDescription
-   *                    holding the data to send out in
-   *                    the heap vector at \p cellDescriptionsIndex.
-   *                    This is not the solver number.
-   *
-   * \see tryGetElement
-   *
-   * \note Has no const modifier since kernels are not const functions yet.
-   */
-  virtual void sendDataToNeighbour(
-      const int                                    toRank,
-      const int                                    cellDescriptionsIndex,
-      const int                                    element,
-      const tarch::la::Vector<DIMENSIONS, int>&    src,
-      const tarch::la::Vector<DIMENSIONS, int>&    dest,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) = 0;
-
-  /**
-   * Send empty solver data to neighbour rank.
-   */
-  virtual void sendEmptyDataToNeighbour(
-      const int                                    toRank,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) const = 0;
-
-  /**
-   * Receive solver data from neighbour rank and write
-   * it on the cell description \p element in
-   * the cell descriptions array stored at \p
-   * cellDescriptionsIndex.
-   *
-   * \note Peano only copies the calling mapping
-   * for each thread. The solvers in the solver registry are
-   *  not copied once for each thread.
-   *
-   * \param[in] element Index of the cell description
-   *                    holding the data to send out in
-   *                    the array with address \p cellDescriptionsIndex.
-   *                    This is not the solver number.
-   */
-  virtual void mergeWithNeighbourData(
-      const int                                    fromRank,
-      const int                                    cellDescriptionsIndex,
-      const int                                    element,
-      const tarch::la::Vector<DIMENSIONS, int>&    src,
-      const tarch::la::Vector<DIMENSIONS, int>&    dest,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) = 0;
-
-  /**
-   * Drop solver data from neighbour rank.
-   */
-  virtual void dropNeighbourData(
-      const int                                    fromRank,
-      const tarch::la::Vector<DIMENSIONS, int>&    src,
-      const tarch::la::Vector<DIMENSIONS, int>&    dest,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) const = 0;
 
   ///////////////////////////////////
   // WORKER<=>MASTER

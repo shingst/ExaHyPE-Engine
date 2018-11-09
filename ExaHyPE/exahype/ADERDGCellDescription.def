@@ -25,8 +25,12 @@ class exahype::records::ADERDGCellDescription {
   /**
    * These flags indicate on which face a neighbour merge, e.g. a Riemann solve or metadata merge, has already been
    * performed during the current traversal.
+   *
+   * @note we use the data type signed char even though it would be more intuitive
+   * as DaStGen converts bool array specifications into bitsets.
+   * Bitsets cannot be modified by multiple threads simultaneously.
    */
-  persistent packed bool neighbourMergePerformed[DIMENSIONS_TIMES_TWO];
+  persistent packed signed char neighbourMergePerformed[DIMENSIONS_TIMES_TWO];
   ///@}
   
   /**
@@ -77,33 +81,6 @@ class exahype::records::ADERDGCellDescription {
    * this ADERDGCellDescription or "-1" if no parent is specified.
    */
   persistent int parentIndex;
-  
-  /**
-   * This field is used to compute the difference in levels between a Descendant
-   * and its top-most parent of type Cell.
-   * This field is specifically for Descendant cell descriptions and plays
-   * a role in computing face integrals whenever the Cell parent has refined
-   * neighbours.
-   * 
-   * It must be inherited by child Descendants if a Descendant cell is (virtually) refined further.
-   * It is a parallelised field as the information must not get lost if we send a cell
-   * to a new worker.
-   */
-  parallelise persistent int parentCellLevel;
-  
-  /**
-   * This field is used to store the offset of a Descendant's
-   * cell parent.
-   * 
-   * This field is specifically for Descendant cell descriptions and plays
-   * a role in computing face integrals whenever the Cell parent has refined
-   * neighbours.
-   * 
-   * It must be inherited by child Descendants if a Descendant cell is (virtually) refined further.
-   * It is a parallelised field as the information must not get lost if we send a cell
-   * to a new worker.
-   */
-  parallelise persistent double parentOffset[DIMENSIONS];
   
   
   /**
@@ -224,7 +201,7 @@ class exahype::records::ADERDGCellDescription {
     ErasingVirtualChildrenRequested,
     /**
      * After all children of a parent left
-     * the parent's refinement event DeaugmentingChildrenRequested
+     * the parent's refinement event ErasingVirtualChildrenRequested
      * unchanged, the parent changes its state
      * to this event. In the next iteration
      * the parent's children need to restrict their
@@ -241,7 +218,9 @@ class exahype::records::ADERDGCellDescription {
      * Additional events for notifying a deployed child cell about an erasing
      * decision made by the master.
      */
+    ErasingRequested,
     Erasing,
+    ChangeToVirtualCellRequested,
     ChangeToVirtualCell,
     ErasingVirtualCell
   };
@@ -332,9 +311,13 @@ class exahype::records::ADERDGCellDescription {
    * calculations.
    *  Symbol: \f$ u_h \f$.
    */
-  persistent int solution;
-  persistent int solutionAverages;
-  persistent int solutionCompressed;
+  persistent int solutionIndex;
+  persistent int solutionAveragesIndex;
+  persistent int solutionCompressedIndex;
+  // pointers for direct access
+  persistent pointer solution;
+  persistent pointer solutionAverages;
+  persistent pointer solutionCompressed;
    
   /**
    *  Heap index pointing to the DoF of the previous solution associated with this cell
@@ -347,18 +330,26 @@ class exahype::records::ADERDGCellDescription {
    *  DoF. We can then not use the solution Update DoF anymore for
    *  performing a rollback to the previous solution.
    */
-  persistent int previousSolution;
-  persistent int previousSolutionAverages;
-  persistent int previousSolutionCompressed;
-
+  persistent int previousSolutionIndex;
+  persistent int previousSolutionAveragesIndex;
+  persistent int previousSolutionCompressedIndex;
+  // pointers for direct access
+  persistent pointer previousSolution;
+  persistent pointer previousSolutionAverages;
+  persistent pointer previousSolutionCompressed;
+  
   /**
    * Index pointing to the update DoF belonging to this cell. All volume updates
    * and face fluctuations contribute to this Symbol. Symbol:
    * \f$ \Delta u_h \f$.
    */
-  persistent int update;
-  persistent int updateAverages;
-  persistent int updateCompressed;
+  persistent int updateIndex;
+  persistent int updateAveragesIndex;
+  persistent int updateCompressedIndex;
+  // pointers for direct access
+  persistent pointer update;
+  persistent pointer updateAverages;
+  persistent pointer updateCompressed;
   ///@}
 
   /**
@@ -373,9 +364,13 @@ class exahype::records::ADERDGCellDescription {
    * the
    * cell.
    */
-  persistent int extrapolatedPredictor;
-  persistent int extrapolatedPredictorAverages;
-  persistent int extrapolatedPredictorCompressed;
+  persistent int extrapolatedPredictorIndex;
+  persistent int extrapolatedPredictorAveragesIndex;
+  persistent int extrapolatedPredictorCompressedIndex;
+  // pointers for direct access
+  persistent pointer extrapolatedPredictor;
+  persistent pointer extrapolatedPredictorAverages;
+  persistent pointer extrapolatedPredictorCompressed;
 
 
   // TODO(Lukas) Document!
@@ -385,9 +380,13 @@ class exahype::records::ADERDGCellDescription {
    * Index pointing to the normal fluxes computed at the bounding faces of the
    * cell.
    */
-  persistent int fluctuation;
-  persistent int fluctuationAverages;
-  persistent int fluctuationCompressed;
+  persistent int fluctuationIndex;
+  persistent int fluctuationAveragesIndex;
+  persistent int fluctuationCompressedIndex;
+  // pointers for direct access
+  persistent pointer fluctuation;
+  persistent pointer fluctuationAverages;
+  persistent pointer fluctuationCompressed;
   ///@}
   
   /**
@@ -396,8 +395,11 @@ class exahype::records::ADERDGCellDescription {
    * First, all the _numberOfUnknowns entries of the left face are stored, then
    * the _numberOfUnknowns of the right face and so forth.
    */
-  persistent int solutionMin;
-  persistent int solutionMax;
+  persistent int solutionMinIndex;
+  persistent int solutionMaxIndex;
+  // pointers for direct access
+  persistent pointer solutionMin;
+  persistent pointer solutionMax;
   
   /**
    * \see augmentationStatus
@@ -419,7 +421,6 @@ class exahype::records::ADERDGCellDescription {
    * This is used mainly to introduce some inertia into 
    */
   parallelise persistent int previousAugmentationStatus;
-  
   
   /**
    * \see communicationStatus
@@ -448,13 +449,6 @@ class exahype::records::ADERDGCellDescription {
    * \see refinementStatus
    */
   persistent int facewiseRefinementStatus[DIMENSIONS_TIMES_TWO];
-  
-  /**
-   * A flag indicating cells marked by a normal refinement criterion
-   * during the time stepping. This is used as a marker for
-   * halo cell diffusion heat sources.
-   */
-  persistent bool refinementFlag;
   
   /**
    * Status which indicates the refinement decision made
@@ -496,6 +490,19 @@ class exahype::records::ADERDGCellDescription {
    * helper layer width.
    */
   parallelise persistent int previousRefinementStatus;
+ 
+  /**
+   * A flag indicating cells marked by a normal refinement criterion
+   * during the time stepping. This is used as a marker for
+   * halo cell diffusion heat sources.
+   */
+  parallelise persistent bool refinementFlag;
+  
+  /**
+   * A flag for vetoing the erasing of child cells
+   * during the mesh refinement iterations.
+   */
+  parallelise persistent bool vetoErasingChildren;
   
   /**
    * A counter holding the number of iterations to

@@ -36,7 +36,7 @@ peano::MappingSpecification
 exahype::mappings::BroadcastAndDropNeighbourMessages::enterCellSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::WholeTree,
-      peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
+      peano::MappingSpecification::Serial,false); // it's not worth it to run this operation in parallel.
 }
 
 /* All specifications below are nop. */
@@ -97,9 +97,9 @@ void exahype::mappings::BroadcastAndDropNeighbourMessages::enterCell(
     exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
   if ( fineGridCell.isInitialised() ) {
+    solvers::Solver::CellInfo cellInfo(fineGridCell.getCellDescriptionsIndex());
     exahype::Cell::resetNeighbourMergeFlags(
-        fineGridCell.getCellDescriptionsIndex(),
-        fineGridVertices,fineGridVerticesEnumerator);
+        cellInfo,fineGridVertices,fineGridVerticesEnumerator);
   }
 }
 

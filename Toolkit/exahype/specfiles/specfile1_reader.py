@@ -59,7 +59,7 @@ class SpecFile1Reader():
             reads_multiline_comment += 1 if line.strip().startswith("/*") else 0
             if reads_multiline_comment==0 and not reads_singline_comment:
                 m_project = re.match(r"\s*exahype-project\s+(\w+)",line)
-                m_group     = re.match(r"\s*(computational-domain|shared-memory|distributed-memory|(global-)?optimisation)",line)
+                m_group     = re.match(r"\s*(computational-domain|shared-memory|distributed-memory|(global-)?optimisation|profiling)\s*(//.+)?$",line)
                 m_solver    = re.match(r"\s*solver\s+([^\s]+)\s+(\w+)",line)
                 m_plotter = re.match(r"\s*plot\s+([^\s]+)(\s+(\w+))?",line)
                 if m_project:
@@ -111,6 +111,7 @@ class SpecFile1Reader():
             "cores",\
             "order",\
             "patch_size",\
+            "halo_cells",\
             "maximum_mesh_depth",\
             "dmp_observables",\
             "steps_till_cured",\
@@ -290,7 +291,7 @@ class SpecFile1Reader():
             if token_s=="usestack":
                 context["allocate_temporary_arrays"]="stack"
                 found_token=True
-            for term in ["fusedsource","fluxvect","fusedsourcevect"]:
+            for term in ["fusedsource","fluxvect","fusedsourcevect","ncpvect"]:
                 if token_s==term:
                     context[opt].append(term)
                     found_token=True
@@ -392,7 +393,7 @@ class SpecFile1Reader():
     def map_options(self,context):
         # paths, optimisation, distributed_memory, shared_memory
         context["paths"]=collections.OrderedDict()
-        context.move_to_end("paths",last=False)                # put on top
+        context.move_to_end("paths",last=False)        # put on top
         context.move_to_end("project_name",last=False) # put on top
         for option in list(context.keys()):
             if option in ["log_file","peano_kernel_path","peano_toolbox_path","exahype_path","output_directory","plotter_subdirectory"]:
@@ -435,12 +436,13 @@ class SpecFile1Reader():
                         solver["aderdg_kernel"]["nonlinear"]=token_s=="nonlinear"
                     if token_s in ["Legendre","Lobatto"]:
                         solver["aderdg_kernel"]["basis"]=token_s
-                    # terms
-                    result, n_point_sources = self.map_kernel_terms(aderdg_kernel_terms)
-                    solver["aderdg_kernel"]["terms"]=result
-                    solver["point_sources"]=n_point_sources
-                    # opts
-                    solver["aderdg_kernel"].update(self.map_aderdg_kernel_opts(aderdg_kernel_opts))
+                # terms
+                result, n_point_sources = self.map_kernel_terms(aderdg_kernel_terms)
+                solver["aderdg_kernel"]["terms"]=result
+                solver["point_sources"]=n_point_sources
+                # opts
+                solver["aderdg_kernel"].update(self.map_aderdg_kernel_opts(aderdg_kernel_opts))
+
             
             # limiter
             if solver["type"]=="Limiting-ADER-DG":
@@ -475,15 +477,20 @@ class SpecFile1Reader():
                 solver["fv_kernel"]["terms"]=result
                 if "optimisation" in solver:
                     fv_kernel_opts    = solver.pop("optimisation")
-            
-            # fv type
-            for token in fv_kernel_type.split(","):
-                token_s = token.strip() 
-                if token_s in ["godunov","musclhancock"]:
-                    solver["fv_kernel"]["scheme"]=token_s
-            # fv opts
-            if "fv_kernel" in solver: 
-                solver["fv_kernel"].update(self.map_fv_kernel_opts(fv_kernel_opts))
+           
+            if solver["type"]=="Limiting-ADER-DG" or\
+               solver["type"]=="Finite-Volumes":
+                # fv type
+                fv_schemes = ["godunov","musclhancock","robustmusclhancock"]
+                for token in fv_kernel_type.split(","):
+                    token_s = token.strip() 
+                    if token_s in fv_schemes:
+                        solver["fv_kernel"]["scheme"]=token_s
+                    else:
+                        raise SpecFile1ParserError("FV type must be one one of: '{}'. It is '{}'.".format(", ".join(fv_schemes),token_s))
+                # fv opts
+                if "fv_kernel" in solver: 
+                    solver["fv_kernel"].update(self.map_fv_kernel_opts(fv_kernel_opts))
             
             # variables, parameters, and more
             solver["variables"]=self.map_variables(solver.pop("variables"))
@@ -499,7 +506,7 @@ class SpecFile1Reader():
             for j,plotter in enumerate(solver["plotters"]):
                 plotter["variables"]=self.map_variables(plotter.pop("variables"))
                 if "select" in plotter:
-                    plotter["parameters"]=self.map_constants(plotter.pop("select"))
+                    plotter["select"]=self.map_constants(plotter.pop("select"))
         
         return context
     

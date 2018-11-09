@@ -6,7 +6,7 @@
    }
    
    
-   exahype::records::FiniteVolumesCellDescription::PersistentRecords::PersistentRecords(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const double& timeStepSize, const double& timeStamp, const double& previousTimeStepSize, const double& previousTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& extrapolatedSolution, const int& extrapolatedSolutionAverages, const int& extrapolatedSolutionCompressed, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInExtrapolatedSolution, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const bool& oneRemoteBoundaryNeighbourIsOfTypeCell, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const Type& type, const int& parentIndex, const RefinementEvent& refinementEvent):
+   exahype::records::FiniteVolumesCellDescription::PersistentRecords::PersistentRecords(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const double& timeStepSize, const double& timeStamp, const double& previousTimeStepSize, const double& previousTimeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& extrapolatedSolutionIndex, const int& extrapolatedSolutionAveragesIndex, const int& extrapolatedSolutionCompressedIndex, void* extrapolatedSolution, void* extrapolatedSolutionAverages, void* extrapolatedSolutionCompressed, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInExtrapolatedSolution, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const bool& oneRemoteBoundaryNeighbourIsOfTypeCell, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const Type& type, const int& parentIndex, const RefinementEvent& refinementEvent):
    _solverNumber(solverNumber),
    _neighbourMergePerformed(neighbourMergePerformed),
    _hasCompletedTimeStep(hasCompletedTimeStep),
@@ -14,12 +14,21 @@
    _timeStamp(timeStamp),
    _previousTimeStepSize(previousTimeStepSize),
    _previousTimeStamp(previousTimeStamp),
+   _solutionIndex(solutionIndex),
+   _solutionAveragesIndex(solutionAveragesIndex),
+   _solutionCompressedIndex(solutionCompressedIndex),
    _solution(solution),
    _solutionAverages(solutionAverages),
    _solutionCompressed(solutionCompressed),
+   _previousSolutionIndex(previousSolutionIndex),
+   _previousSolutionAveragesIndex(previousSolutionAveragesIndex),
+   _previousSolutionCompressedIndex(previousSolutionCompressedIndex),
    _previousSolution(previousSolution),
    _previousSolutionAverages(previousSolutionAverages),
    _previousSolutionCompressed(previousSolutionCompressed),
+   _extrapolatedSolutionIndex(extrapolatedSolutionIndex),
+   _extrapolatedSolutionAveragesIndex(extrapolatedSolutionAveragesIndex),
+   _extrapolatedSolutionCompressedIndex(extrapolatedSolutionCompressedIndex),
    _extrapolatedSolution(extrapolatedSolution),
    _extrapolatedSolutionAverages(extrapolatedSolutionAverages),
    _extrapolatedSolutionCompressed(extrapolatedSolutionCompressed),
@@ -44,13 +53,13 @@
    
    
    exahype::records::FiniteVolumesCellDescription::FiniteVolumesCellDescription(const PersistentRecords& persistentRecords):
-   _persistentRecords(persistentRecords._solverNumber, persistentRecords._neighbourMergePerformed, persistentRecords._hasCompletedTimeStep, persistentRecords._timeStepSize, persistentRecords._timeStamp, persistentRecords._previousTimeStepSize, persistentRecords._previousTimeStamp, persistentRecords._solution, persistentRecords._solutionAverages, persistentRecords._solutionCompressed, persistentRecords._previousSolution, persistentRecords._previousSolutionAverages, persistentRecords._previousSolutionCompressed, persistentRecords._extrapolatedSolution, persistentRecords._extrapolatedSolutionAverages, persistentRecords._extrapolatedSolutionCompressed, persistentRecords._compressionState, persistentRecords._bytesPerDoFInPreviousSolution, persistentRecords._bytesPerDoFInSolution, persistentRecords._bytesPerDoFInExtrapolatedSolution, persistentRecords._level, persistentRecords._offset, persistentRecords._size, persistentRecords._oneRemoteBoundaryNeighbourIsOfTypeCell, persistentRecords._faceDataExchangeCounter, persistentRecords._type, persistentRecords._parentIndex, persistentRecords._refinementEvent) {
+   _persistentRecords(persistentRecords._solverNumber, persistentRecords._neighbourMergePerformed, persistentRecords._hasCompletedTimeStep, persistentRecords._timeStepSize, persistentRecords._timeStamp, persistentRecords._previousTimeStepSize, persistentRecords._previousTimeStamp, persistentRecords._solutionIndex, persistentRecords._solutionAveragesIndex, persistentRecords._solutionCompressedIndex, persistentRecords._solution, persistentRecords._solutionAverages, persistentRecords._solutionCompressed, persistentRecords._previousSolutionIndex, persistentRecords._previousSolutionAveragesIndex, persistentRecords._previousSolutionCompressedIndex, persistentRecords._previousSolution, persistentRecords._previousSolutionAverages, persistentRecords._previousSolutionCompressed, persistentRecords._extrapolatedSolutionIndex, persistentRecords._extrapolatedSolutionAveragesIndex, persistentRecords._extrapolatedSolutionCompressedIndex, persistentRecords._extrapolatedSolution, persistentRecords._extrapolatedSolutionAverages, persistentRecords._extrapolatedSolutionCompressed, persistentRecords._compressionState, persistentRecords._bytesPerDoFInPreviousSolution, persistentRecords._bytesPerDoFInSolution, persistentRecords._bytesPerDoFInExtrapolatedSolution, persistentRecords._level, persistentRecords._offset, persistentRecords._size, persistentRecords._oneRemoteBoundaryNeighbourIsOfTypeCell, persistentRecords._faceDataExchangeCounter, persistentRecords._type, persistentRecords._parentIndex, persistentRecords._refinementEvent) {
       
    }
    
    
-   exahype::records::FiniteVolumesCellDescription::FiniteVolumesCellDescription(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const double& timeStepSize, const double& timeStamp, const double& previousTimeStepSize, const double& previousTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& extrapolatedSolution, const int& extrapolatedSolutionAverages, const int& extrapolatedSolutionCompressed, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInExtrapolatedSolution, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const bool& oneRemoteBoundaryNeighbourIsOfTypeCell, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const Type& type, const int& parentIndex, const RefinementEvent& refinementEvent):
-   _persistentRecords(solverNumber, neighbourMergePerformed, hasCompletedTimeStep, timeStepSize, timeStamp, previousTimeStepSize, previousTimeStamp, solution, solutionAverages, solutionCompressed, previousSolution, previousSolutionAverages, previousSolutionCompressed, extrapolatedSolution, extrapolatedSolutionAverages, extrapolatedSolutionCompressed, compressionState, bytesPerDoFInPreviousSolution, bytesPerDoFInSolution, bytesPerDoFInExtrapolatedSolution, level, offset, size, oneRemoteBoundaryNeighbourIsOfTypeCell, faceDataExchangeCounter, type, parentIndex, refinementEvent) {
+   exahype::records::FiniteVolumesCellDescription::FiniteVolumesCellDescription(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const double& timeStepSize, const double& timeStamp, const double& previousTimeStepSize, const double& previousTimeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& extrapolatedSolutionIndex, const int& extrapolatedSolutionAveragesIndex, const int& extrapolatedSolutionCompressedIndex, void* extrapolatedSolution, void* extrapolatedSolutionAverages, void* extrapolatedSolutionCompressed, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInExtrapolatedSolution, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const bool& oneRemoteBoundaryNeighbourIsOfTypeCell, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const Type& type, const int& parentIndex, const RefinementEvent& refinementEvent):
+   _persistentRecords(solverNumber, neighbourMergePerformed, hasCompletedTimeStep, timeStepSize, timeStamp, previousTimeStepSize, previousTimeStamp, solutionIndex, solutionAveragesIndex, solutionCompressedIndex, solution, solutionAverages, solutionCompressed, previousSolutionIndex, previousSolutionAveragesIndex, previousSolutionCompressedIndex, previousSolution, previousSolutionAverages, previousSolutionCompressed, extrapolatedSolutionIndex, extrapolatedSolutionAveragesIndex, extrapolatedSolutionCompressedIndex, extrapolatedSolution, extrapolatedSolutionAverages, extrapolatedSolutionCompressed, compressionState, bytesPerDoFInPreviousSolution, bytesPerDoFInSolution, bytesPerDoFInExtrapolatedSolution, level, offset, size, oneRemoteBoundaryNeighbourIsOfTypeCell, faceDataExchangeCounter, type, parentIndex, refinementEvent) {
       
    }
    
@@ -131,17 +140,35 @@
       out << ",";
       out << "previousTimeStamp:" << getPreviousTimeStamp();
       out << ",";
+      out << "solutionIndex:" << getSolutionIndex();
+      out << ",";
+      out << "solutionAveragesIndex:" << getSolutionAveragesIndex();
+      out << ",";
+      out << "solutionCompressedIndex:" << getSolutionCompressedIndex();
+      out << ",";
       out << "solution:" << getSolution();
       out << ",";
       out << "solutionAverages:" << getSolutionAverages();
       out << ",";
       out << "solutionCompressed:" << getSolutionCompressed();
       out << ",";
+      out << "previousSolutionIndex:" << getPreviousSolutionIndex();
+      out << ",";
+      out << "previousSolutionAveragesIndex:" << getPreviousSolutionAveragesIndex();
+      out << ",";
+      out << "previousSolutionCompressedIndex:" << getPreviousSolutionCompressedIndex();
+      out << ",";
       out << "previousSolution:" << getPreviousSolution();
       out << ",";
       out << "previousSolutionAverages:" << getPreviousSolutionAverages();
       out << ",";
       out << "previousSolutionCompressed:" << getPreviousSolutionCompressed();
+      out << ",";
+      out << "extrapolatedSolutionIndex:" << getExtrapolatedSolutionIndex();
+      out << ",";
+      out << "extrapolatedSolutionAveragesIndex:" << getExtrapolatedSolutionAveragesIndex();
+      out << ",";
+      out << "extrapolatedSolutionCompressedIndex:" << getExtrapolatedSolutionCompressedIndex();
       out << ",";
       out << "extrapolatedSolution:" << getExtrapolatedSolution();
       out << ",";
@@ -201,12 +228,21 @@
          getTimeStamp(),
          getPreviousTimeStepSize(),
          getPreviousTimeStamp(),
+         getSolutionIndex(),
+         getSolutionAveragesIndex(),
+         getSolutionCompressedIndex(),
          getSolution(),
          getSolutionAverages(),
          getSolutionCompressed(),
+         getPreviousSolutionIndex(),
+         getPreviousSolutionAveragesIndex(),
+         getPreviousSolutionCompressedIndex(),
          getPreviousSolution(),
          getPreviousSolutionAverages(),
          getPreviousSolutionCompressed(),
+         getExtrapolatedSolutionIndex(),
+         getExtrapolatedSolutionAveragesIndex(),
+         getExtrapolatedSolutionCompressedIndex(),
          getExtrapolatedSolution(),
          getExtrapolatedSolutionAverages(),
          getExtrapolatedSolutionCompressed(),
@@ -237,26 +273,17 @@
             FiniteVolumesCellDescription dummyFiniteVolumesCellDescription[2];
             
             #ifdef MPI2
-            const int Attributes = 27;
+            const int Attributes = 18;
             #else
-            const int Attributes = 28;
+            const int Attributes = 19;
             #endif
             MPI_Datatype subtypes[Attributes] = {
                  MPI_INT		 //solverNumber
-               , MPI_CXX_BOOL		 //neighbourMergePerformed
+               , MPI_BYTE		 //neighbourMergePerformed
                , MPI_DOUBLE		 //timeStepSize
                , MPI_DOUBLE		 //timeStamp
                , MPI_DOUBLE		 //previousTimeStepSize
                , MPI_DOUBLE		 //previousTimeStamp
-               , MPI_INT		 //solution
-               , MPI_INT		 //solutionAverages
-               , MPI_INT		 //solutionCompressed
-               , MPI_INT		 //previousSolution
-               , MPI_INT		 //previousSolutionAverages
-               , MPI_INT		 //previousSolutionCompressed
-               , MPI_INT		 //extrapolatedSolution
-               , MPI_INT		 //extrapolatedSolutionAverages
-               , MPI_INT		 //extrapolatedSolutionCompressed
                , MPI_INT		 //compressionState
                , MPI_INT		 //bytesPerDoFInPreviousSolution
                , MPI_INT		 //bytesPerDoFInSolution
@@ -282,15 +309,6 @@
                , 1		 //timeStamp
                , 1		 //previousTimeStepSize
                , 1		 //previousTimeStamp
-               , 1		 //solution
-               , 1		 //solutionAverages
-               , 1		 //solutionCompressed
-               , 1		 //previousSolution
-               , 1		 //previousSolutionAverages
-               , 1		 //previousSolutionCompressed
-               , 1		 //extrapolatedSolution
-               , 1		 //extrapolatedSolutionAverages
-               , 1		 //extrapolatedSolutionCompressed
                , 1		 //compressionState
                , 1		 //bytesPerDoFInPreviousSolution
                , 1		 //bytesPerDoFInSolution
@@ -322,9 +340,9 @@
             MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._solverNumber))), 		&disp[0] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._neighbourMergePerformed))), 		&disp[1] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._neighbourMergePerformed[0]))), 		&disp[1] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._neighbourMergePerformed))), 		&disp[1] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._neighbourMergePerformed[0]))), 		&disp[1] );
             #endif
             #ifdef MPI2
             MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._timeStepSize))), 		&disp[2] );
@@ -347,109 +365,64 @@
             MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._previousTimeStamp))), 		&disp[5] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._solution))), 		&disp[6] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._compressionState))), 		&disp[6] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._solution))), 		&disp[6] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._compressionState))), 		&disp[6] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._solutionAverages))), 		&disp[7] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._bytesPerDoFInPreviousSolution))), 		&disp[7] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._solutionAverages))), 		&disp[7] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._bytesPerDoFInPreviousSolution))), 		&disp[7] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._solutionCompressed))), 		&disp[8] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._bytesPerDoFInSolution))), 		&disp[8] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._solutionCompressed))), 		&disp[8] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._bytesPerDoFInSolution))), 		&disp[8] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._previousSolution))), 		&disp[9] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._bytesPerDoFInExtrapolatedSolution))), 		&disp[9] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._previousSolution))), 		&disp[9] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._bytesPerDoFInExtrapolatedSolution))), 		&disp[9] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._previousSolutionAverages))), 		&disp[10] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._level))), 		&disp[10] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._previousSolutionAverages))), 		&disp[10] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._level))), 		&disp[10] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._previousSolutionCompressed))), 		&disp[11] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._offset[0]))), 		&disp[11] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._previousSolutionCompressed))), 		&disp[11] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._offset[0]))), 		&disp[11] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._extrapolatedSolution))), 		&disp[12] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._size[0]))), 		&disp[12] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._extrapolatedSolution))), 		&disp[12] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._size[0]))), 		&disp[12] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._extrapolatedSolutionAverages))), 		&disp[13] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._oneRemoteBoundaryNeighbourIsOfTypeCell))), 		&disp[13] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._extrapolatedSolutionAverages))), 		&disp[13] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._oneRemoteBoundaryNeighbourIsOfTypeCell))), 		&disp[13] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._extrapolatedSolutionCompressed))), 		&disp[14] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._faceDataExchangeCounter[0]))), 		&disp[14] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._extrapolatedSolutionCompressed))), 		&disp[14] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._faceDataExchangeCounter[0]))), 		&disp[14] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._compressionState))), 		&disp[15] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._type))), 		&disp[15] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._compressionState))), 		&disp[15] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._type))), 		&disp[15] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._bytesPerDoFInPreviousSolution))), 		&disp[16] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._parentIndex))), 		&disp[16] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._bytesPerDoFInPreviousSolution))), 		&disp[16] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._parentIndex))), 		&disp[16] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._bytesPerDoFInSolution))), 		&disp[17] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._refinementEvent))), 		&disp[17] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._bytesPerDoFInSolution))), 		&disp[17] );
-            #endif
-            #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._bytesPerDoFInExtrapolatedSolution))), 		&disp[18] );
-            #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._bytesPerDoFInExtrapolatedSolution))), 		&disp[18] );
-            #endif
-            #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._level))), 		&disp[19] );
-            #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._level))), 		&disp[19] );
-            #endif
-            #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._offset[0]))), 		&disp[20] );
-            #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._offset[0]))), 		&disp[20] );
-            #endif
-            #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._size[0]))), 		&disp[21] );
-            #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._size[0]))), 		&disp[21] );
-            #endif
-            #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._oneRemoteBoundaryNeighbourIsOfTypeCell))), 		&disp[22] );
-            #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._oneRemoteBoundaryNeighbourIsOfTypeCell))), 		&disp[22] );
-            #endif
-            #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._faceDataExchangeCounter[0]))), 		&disp[23] );
-            #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._faceDataExchangeCounter[0]))), 		&disp[23] );
-            #endif
-            #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._type))), 		&disp[24] );
-            #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._type))), 		&disp[24] );
-            #endif
-            #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._parentIndex))), 		&disp[25] );
-            #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._parentIndex))), 		&disp[25] );
-            #endif
-            #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._refinementEvent))), 		&disp[26] );
-            #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._refinementEvent))), 		&disp[26] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._refinementEvent))), 		&disp[17] );
             #endif
             #ifdef MPI2
             for (int i=1; i<Attributes; i++) {
@@ -467,9 +440,9 @@
                assertion4(disp[i]<static_cast<int>(sizeof(FiniteVolumesCellDescription)), i, disp[i], Attributes, sizeof(FiniteVolumesCellDescription));
             }
             #ifndef MPI2
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[1]))), 		&disp[27] );
-            disp[27] -= base;
-            disp[27] += disp[0];
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[1]))), 		&disp[18] );
+            disp[18] -= base;
+            disp[18] += disp[0];
             #endif
             #ifdef MPI2
             MPI_Datatype tmpType; 
@@ -488,27 +461,36 @@
             FiniteVolumesCellDescription dummyFiniteVolumesCellDescription[2];
             
             #ifdef MPI2
-            const int Attributes = 28;
+            const int Attributes = 37;
             #else
-            const int Attributes = 29;
+            const int Attributes = 38;
             #endif
             MPI_Datatype subtypes[Attributes] = {
                  MPI_INT		 //solverNumber
-               , MPI_CXX_BOOL		 //neighbourMergePerformed
+               , MPI_BYTE		 //neighbourMergePerformed
                , MPI_CXX_BOOL		 //hasCompletedTimeStep
                , MPI_DOUBLE		 //timeStepSize
                , MPI_DOUBLE		 //timeStamp
                , MPI_DOUBLE		 //previousTimeStepSize
                , MPI_DOUBLE		 //previousTimeStamp
-               , MPI_INT		 //solution
-               , MPI_INT		 //solutionAverages
-               , MPI_INT		 //solutionCompressed
-               , MPI_INT		 //previousSolution
-               , MPI_INT		 //previousSolutionAverages
-               , MPI_INT		 //previousSolutionCompressed
-               , MPI_INT		 //extrapolatedSolution
-               , MPI_INT		 //extrapolatedSolutionAverages
-               , MPI_INT		 //extrapolatedSolutionCompressed
+               , MPI_INT		 //solutionIndex
+               , MPI_INT		 //solutionAveragesIndex
+               , MPI_INT		 //solutionCompressedIndex
+               , MPI_UNSIGNED_LONG		 //solution
+               , MPI_UNSIGNED_LONG		 //solutionAverages
+               , MPI_UNSIGNED_LONG		 //solutionCompressed
+               , MPI_INT		 //previousSolutionIndex
+               , MPI_INT		 //previousSolutionAveragesIndex
+               , MPI_INT		 //previousSolutionCompressedIndex
+               , MPI_UNSIGNED_LONG		 //previousSolution
+               , MPI_UNSIGNED_LONG		 //previousSolutionAverages
+               , MPI_UNSIGNED_LONG		 //previousSolutionCompressed
+               , MPI_INT		 //extrapolatedSolutionIndex
+               , MPI_INT		 //extrapolatedSolutionAveragesIndex
+               , MPI_INT		 //extrapolatedSolutionCompressedIndex
+               , MPI_UNSIGNED_LONG		 //extrapolatedSolution
+               , MPI_UNSIGNED_LONG		 //extrapolatedSolutionAverages
+               , MPI_UNSIGNED_LONG		 //extrapolatedSolutionCompressed
                , MPI_INT		 //compressionState
                , MPI_INT		 //bytesPerDoFInPreviousSolution
                , MPI_INT		 //bytesPerDoFInSolution
@@ -535,12 +517,21 @@
                , 1		 //timeStamp
                , 1		 //previousTimeStepSize
                , 1		 //previousTimeStamp
+               , 1		 //solutionIndex
+               , 1		 //solutionAveragesIndex
+               , 1		 //solutionCompressedIndex
                , 1		 //solution
                , 1		 //solutionAverages
                , 1		 //solutionCompressed
+               , 1		 //previousSolutionIndex
+               , 1		 //previousSolutionAveragesIndex
+               , 1		 //previousSolutionCompressedIndex
                , 1		 //previousSolution
                , 1		 //previousSolutionAverages
                , 1		 //previousSolutionCompressed
+               , 1		 //extrapolatedSolutionIndex
+               , 1		 //extrapolatedSolutionAveragesIndex
+               , 1		 //extrapolatedSolutionCompressedIndex
                , 1		 //extrapolatedSolution
                , 1		 //extrapolatedSolutionAverages
                , 1		 //extrapolatedSolutionCompressed
@@ -575,9 +566,9 @@
             MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._solverNumber))), 		&disp[0] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._neighbourMergePerformed))), 		&disp[1] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._neighbourMergePerformed[0]))), 		&disp[1] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._neighbourMergePerformed))), 		&disp[1] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._neighbourMergePerformed[0]))), 		&disp[1] );
             #endif
             #ifdef MPI2
             MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._hasCompletedTimeStep))), 		&disp[2] );
@@ -605,109 +596,154 @@
             MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._previousTimeStamp))), 		&disp[6] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._solution))), 		&disp[7] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._solutionIndex))), 		&disp[7] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._solution))), 		&disp[7] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._solutionIndex))), 		&disp[7] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._solutionAverages))), 		&disp[8] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._solutionAveragesIndex))), 		&disp[8] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._solutionAverages))), 		&disp[8] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._solutionAveragesIndex))), 		&disp[8] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._solutionCompressed))), 		&disp[9] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._solutionCompressedIndex))), 		&disp[9] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._solutionCompressed))), 		&disp[9] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._solutionCompressedIndex))), 		&disp[9] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._previousSolution))), 		&disp[10] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._solution))), 		&disp[10] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._previousSolution))), 		&disp[10] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._solution))), 		&disp[10] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._previousSolutionAverages))), 		&disp[11] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._solutionAverages))), 		&disp[11] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._previousSolutionAverages))), 		&disp[11] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._solutionAverages))), 		&disp[11] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._previousSolutionCompressed))), 		&disp[12] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._solutionCompressed))), 		&disp[12] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._previousSolutionCompressed))), 		&disp[12] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._solutionCompressed))), 		&disp[12] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._extrapolatedSolution))), 		&disp[13] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._previousSolutionIndex))), 		&disp[13] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._extrapolatedSolution))), 		&disp[13] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._previousSolutionIndex))), 		&disp[13] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._extrapolatedSolutionAverages))), 		&disp[14] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._previousSolutionAveragesIndex))), 		&disp[14] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._extrapolatedSolutionAverages))), 		&disp[14] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._previousSolutionAveragesIndex))), 		&disp[14] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._extrapolatedSolutionCompressed))), 		&disp[15] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._previousSolutionCompressedIndex))), 		&disp[15] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._extrapolatedSolutionCompressed))), 		&disp[15] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._previousSolutionCompressedIndex))), 		&disp[15] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._compressionState))), 		&disp[16] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._previousSolution))), 		&disp[16] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._compressionState))), 		&disp[16] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._previousSolution))), 		&disp[16] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._bytesPerDoFInPreviousSolution))), 		&disp[17] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._previousSolutionAverages))), 		&disp[17] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._bytesPerDoFInPreviousSolution))), 		&disp[17] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._previousSolutionAverages))), 		&disp[17] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._bytesPerDoFInSolution))), 		&disp[18] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._previousSolutionCompressed))), 		&disp[18] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._bytesPerDoFInSolution))), 		&disp[18] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._previousSolutionCompressed))), 		&disp[18] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._bytesPerDoFInExtrapolatedSolution))), 		&disp[19] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._extrapolatedSolutionIndex))), 		&disp[19] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._bytesPerDoFInExtrapolatedSolution))), 		&disp[19] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._extrapolatedSolutionIndex))), 		&disp[19] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._level))), 		&disp[20] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._extrapolatedSolutionAveragesIndex))), 		&disp[20] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._level))), 		&disp[20] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._extrapolatedSolutionAveragesIndex))), 		&disp[20] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._offset[0]))), 		&disp[21] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._extrapolatedSolutionCompressedIndex))), 		&disp[21] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._offset[0]))), 		&disp[21] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._extrapolatedSolutionCompressedIndex))), 		&disp[21] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._size[0]))), 		&disp[22] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._extrapolatedSolution))), 		&disp[22] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._size[0]))), 		&disp[22] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._extrapolatedSolution))), 		&disp[22] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._oneRemoteBoundaryNeighbourIsOfTypeCell))), 		&disp[23] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._extrapolatedSolutionAverages))), 		&disp[23] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._oneRemoteBoundaryNeighbourIsOfTypeCell))), 		&disp[23] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._extrapolatedSolutionAverages))), 		&disp[23] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._faceDataExchangeCounter[0]))), 		&disp[24] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._extrapolatedSolutionCompressed))), 		&disp[24] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._faceDataExchangeCounter[0]))), 		&disp[24] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._extrapolatedSolutionCompressed))), 		&disp[24] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._type))), 		&disp[25] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._compressionState))), 		&disp[25] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._type))), 		&disp[25] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._compressionState))), 		&disp[25] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._parentIndex))), 		&disp[26] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._bytesPerDoFInPreviousSolution))), 		&disp[26] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._parentIndex))), 		&disp[26] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._bytesPerDoFInPreviousSolution))), 		&disp[26] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._refinementEvent))), 		&disp[27] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._bytesPerDoFInSolution))), 		&disp[27] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._refinementEvent))), 		&disp[27] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._bytesPerDoFInSolution))), 		&disp[27] );
+            #endif
+            #ifdef MPI2
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._bytesPerDoFInExtrapolatedSolution))), 		&disp[28] );
+            #else
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._bytesPerDoFInExtrapolatedSolution))), 		&disp[28] );
+            #endif
+            #ifdef MPI2
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._level))), 		&disp[29] );
+            #else
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._level))), 		&disp[29] );
+            #endif
+            #ifdef MPI2
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._offset[0]))), 		&disp[30] );
+            #else
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._offset[0]))), 		&disp[30] );
+            #endif
+            #ifdef MPI2
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._size[0]))), 		&disp[31] );
+            #else
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._size[0]))), 		&disp[31] );
+            #endif
+            #ifdef MPI2
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._oneRemoteBoundaryNeighbourIsOfTypeCell))), 		&disp[32] );
+            #else
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._oneRemoteBoundaryNeighbourIsOfTypeCell))), 		&disp[32] );
+            #endif
+            #ifdef MPI2
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._faceDataExchangeCounter[0]))), 		&disp[33] );
+            #else
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._faceDataExchangeCounter[0]))), 		&disp[33] );
+            #endif
+            #ifdef MPI2
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._type))), 		&disp[34] );
+            #else
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._type))), 		&disp[34] );
+            #endif
+            #ifdef MPI2
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._parentIndex))), 		&disp[35] );
+            #else
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._parentIndex))), 		&disp[35] );
+            #endif
+            #ifdef MPI2
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._refinementEvent))), 		&disp[36] );
+            #else
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._refinementEvent))), 		&disp[36] );
             #endif
             #ifdef MPI2
             for (int i=1; i<Attributes; i++) {
@@ -725,9 +761,9 @@
                assertion4(disp[i]<static_cast<int>(sizeof(FiniteVolumesCellDescription)), i, disp[i], Attributes, sizeof(FiniteVolumesCellDescription));
             }
             #ifndef MPI2
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[1]))), 		&disp[28] );
-            disp[28] -= base;
-            disp[28] += disp[0];
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[1]))), 		&disp[37] );
+            disp[37] -= base;
+            disp[37] += disp[0];
             #endif
             #ifdef MPI2
             MPI_Datatype tmpType; 
@@ -1012,19 +1048,28 @@ switch (mode) {
    }
    
    
-   exahype::records::FiniteVolumesCellDescriptionPacked::PersistentRecords::PersistentRecords(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const double& timeStepSize, const double& timeStamp, const double& previousTimeStepSize, const double& previousTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& extrapolatedSolution, const int& extrapolatedSolutionAverages, const int& extrapolatedSolutionCompressed, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInExtrapolatedSolution, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const bool& oneRemoteBoundaryNeighbourIsOfTypeCell, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const Type& type, const int& parentIndex, const RefinementEvent& refinementEvent):
+   exahype::records::FiniteVolumesCellDescriptionPacked::PersistentRecords::PersistentRecords(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const double& timeStepSize, const double& timeStamp, const double& previousTimeStepSize, const double& previousTimeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& extrapolatedSolutionIndex, const int& extrapolatedSolutionAveragesIndex, const int& extrapolatedSolutionCompressedIndex, void* extrapolatedSolution, void* extrapolatedSolutionAverages, void* extrapolatedSolutionCompressed, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInExtrapolatedSolution, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const bool& oneRemoteBoundaryNeighbourIsOfTypeCell, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const Type& type, const int& parentIndex, const RefinementEvent& refinementEvent):
    _solverNumber(solverNumber),
    _neighbourMergePerformed(neighbourMergePerformed),
    _timeStepSize(timeStepSize),
    _timeStamp(timeStamp),
    _previousTimeStepSize(previousTimeStepSize),
    _previousTimeStamp(previousTimeStamp),
+   _solutionIndex(solutionIndex),
+   _solutionAveragesIndex(solutionAveragesIndex),
+   _solutionCompressedIndex(solutionCompressedIndex),
    _solution(solution),
    _solutionAverages(solutionAverages),
    _solutionCompressed(solutionCompressed),
+   _previousSolutionIndex(previousSolutionIndex),
+   _previousSolutionAveragesIndex(previousSolutionAveragesIndex),
+   _previousSolutionCompressedIndex(previousSolutionCompressedIndex),
    _previousSolution(previousSolution),
    _previousSolutionAverages(previousSolutionAverages),
    _previousSolutionCompressed(previousSolutionCompressed),
+   _extrapolatedSolutionIndex(extrapolatedSolutionIndex),
+   _extrapolatedSolutionAveragesIndex(extrapolatedSolutionAveragesIndex),
+   _extrapolatedSolutionCompressedIndex(extrapolatedSolutionCompressedIndex),
    _extrapolatedSolution(extrapolatedSolution),
    _extrapolatedSolutionAverages(extrapolatedSolutionAverages),
    _extrapolatedSolutionCompressed(extrapolatedSolutionCompressed),
@@ -1062,7 +1107,7 @@ switch (mode) {
    
    
    exahype::records::FiniteVolumesCellDescriptionPacked::FiniteVolumesCellDescriptionPacked(const PersistentRecords& persistentRecords):
-   _persistentRecords(persistentRecords._solverNumber, persistentRecords._neighbourMergePerformed, persistentRecords.getHasCompletedTimeStep(), persistentRecords._timeStepSize, persistentRecords._timeStamp, persistentRecords._previousTimeStepSize, persistentRecords._previousTimeStamp, persistentRecords._solution, persistentRecords._solutionAverages, persistentRecords._solutionCompressed, persistentRecords._previousSolution, persistentRecords._previousSolutionAverages, persistentRecords._previousSolutionCompressed, persistentRecords._extrapolatedSolution, persistentRecords._extrapolatedSolutionAverages, persistentRecords._extrapolatedSolutionCompressed, persistentRecords.getCompressionState(), persistentRecords.getBytesPerDoFInPreviousSolution(), persistentRecords.getBytesPerDoFInSolution(), persistentRecords.getBytesPerDoFInExtrapolatedSolution(), persistentRecords._level, persistentRecords._offset, persistentRecords._size, persistentRecords._oneRemoteBoundaryNeighbourIsOfTypeCell, persistentRecords._faceDataExchangeCounter, persistentRecords._type, persistentRecords._parentIndex, persistentRecords._refinementEvent) {
+   _persistentRecords(persistentRecords._solverNumber, persistentRecords._neighbourMergePerformed, persistentRecords.getHasCompletedTimeStep(), persistentRecords._timeStepSize, persistentRecords._timeStamp, persistentRecords._previousTimeStepSize, persistentRecords._previousTimeStamp, persistentRecords._solutionIndex, persistentRecords._solutionAveragesIndex, persistentRecords._solutionCompressedIndex, persistentRecords._solution, persistentRecords._solutionAverages, persistentRecords._solutionCompressed, persistentRecords._previousSolutionIndex, persistentRecords._previousSolutionAveragesIndex, persistentRecords._previousSolutionCompressedIndex, persistentRecords._previousSolution, persistentRecords._previousSolutionAverages, persistentRecords._previousSolutionCompressed, persistentRecords._extrapolatedSolutionIndex, persistentRecords._extrapolatedSolutionAveragesIndex, persistentRecords._extrapolatedSolutionCompressedIndex, persistentRecords._extrapolatedSolution, persistentRecords._extrapolatedSolutionAverages, persistentRecords._extrapolatedSolutionCompressed, persistentRecords.getCompressionState(), persistentRecords.getBytesPerDoFInPreviousSolution(), persistentRecords.getBytesPerDoFInSolution(), persistentRecords.getBytesPerDoFInExtrapolatedSolution(), persistentRecords._level, persistentRecords._offset, persistentRecords._size, persistentRecords._oneRemoteBoundaryNeighbourIsOfTypeCell, persistentRecords._faceDataExchangeCounter, persistentRecords._type, persistentRecords._parentIndex, persistentRecords._refinementEvent) {
       if ((12 >= (8 * sizeof(int)))) {
          std::cerr << "Packed-Type in " << __FILE__ << " too small. Either use bigger data type or append " << std::endl << std::endl;
          std::cerr << "  Packed-Type: int hint-size no-of-bits;  " << std::endl << std::endl;
@@ -1073,8 +1118,8 @@ switch (mode) {
    }
    
    
-   exahype::records::FiniteVolumesCellDescriptionPacked::FiniteVolumesCellDescriptionPacked(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const double& timeStepSize, const double& timeStamp, const double& previousTimeStepSize, const double& previousTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& extrapolatedSolution, const int& extrapolatedSolutionAverages, const int& extrapolatedSolutionCompressed, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInExtrapolatedSolution, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const bool& oneRemoteBoundaryNeighbourIsOfTypeCell, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const Type& type, const int& parentIndex, const RefinementEvent& refinementEvent):
-   _persistentRecords(solverNumber, neighbourMergePerformed, hasCompletedTimeStep, timeStepSize, timeStamp, previousTimeStepSize, previousTimeStamp, solution, solutionAverages, solutionCompressed, previousSolution, previousSolutionAverages, previousSolutionCompressed, extrapolatedSolution, extrapolatedSolutionAverages, extrapolatedSolutionCompressed, compressionState, bytesPerDoFInPreviousSolution, bytesPerDoFInSolution, bytesPerDoFInExtrapolatedSolution, level, offset, size, oneRemoteBoundaryNeighbourIsOfTypeCell, faceDataExchangeCounter, type, parentIndex, refinementEvent) {
+   exahype::records::FiniteVolumesCellDescriptionPacked::FiniteVolumesCellDescriptionPacked(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const double& timeStepSize, const double& timeStamp, const double& previousTimeStepSize, const double& previousTimeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& extrapolatedSolutionIndex, const int& extrapolatedSolutionAveragesIndex, const int& extrapolatedSolutionCompressedIndex, void* extrapolatedSolution, void* extrapolatedSolutionAverages, void* extrapolatedSolutionCompressed, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInExtrapolatedSolution, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const bool& oneRemoteBoundaryNeighbourIsOfTypeCell, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const Type& type, const int& parentIndex, const RefinementEvent& refinementEvent):
+   _persistentRecords(solverNumber, neighbourMergePerformed, hasCompletedTimeStep, timeStepSize, timeStamp, previousTimeStepSize, previousTimeStamp, solutionIndex, solutionAveragesIndex, solutionCompressedIndex, solution, solutionAverages, solutionCompressed, previousSolutionIndex, previousSolutionAveragesIndex, previousSolutionCompressedIndex, previousSolution, previousSolutionAverages, previousSolutionCompressed, extrapolatedSolutionIndex, extrapolatedSolutionAveragesIndex, extrapolatedSolutionCompressedIndex, extrapolatedSolution, extrapolatedSolutionAverages, extrapolatedSolutionCompressed, compressionState, bytesPerDoFInPreviousSolution, bytesPerDoFInSolution, bytesPerDoFInExtrapolatedSolution, level, offset, size, oneRemoteBoundaryNeighbourIsOfTypeCell, faceDataExchangeCounter, type, parentIndex, refinementEvent) {
       if ((12 >= (8 * sizeof(int)))) {
          std::cerr << "Packed-Type in " << __FILE__ << " too small. Either use bigger data type or append " << std::endl << std::endl;
          std::cerr << "  Packed-Type: int hint-size no-of-bits;  " << std::endl << std::endl;
@@ -1139,17 +1184,35 @@ switch (mode) {
       out << ",";
       out << "previousTimeStamp:" << getPreviousTimeStamp();
       out << ",";
+      out << "solutionIndex:" << getSolutionIndex();
+      out << ",";
+      out << "solutionAveragesIndex:" << getSolutionAveragesIndex();
+      out << ",";
+      out << "solutionCompressedIndex:" << getSolutionCompressedIndex();
+      out << ",";
       out << "solution:" << getSolution();
       out << ",";
       out << "solutionAverages:" << getSolutionAverages();
       out << ",";
       out << "solutionCompressed:" << getSolutionCompressed();
       out << ",";
+      out << "previousSolutionIndex:" << getPreviousSolutionIndex();
+      out << ",";
+      out << "previousSolutionAveragesIndex:" << getPreviousSolutionAveragesIndex();
+      out << ",";
+      out << "previousSolutionCompressedIndex:" << getPreviousSolutionCompressedIndex();
+      out << ",";
       out << "previousSolution:" << getPreviousSolution();
       out << ",";
       out << "previousSolutionAverages:" << getPreviousSolutionAverages();
       out << ",";
       out << "previousSolutionCompressed:" << getPreviousSolutionCompressed();
+      out << ",";
+      out << "extrapolatedSolutionIndex:" << getExtrapolatedSolutionIndex();
+      out << ",";
+      out << "extrapolatedSolutionAveragesIndex:" << getExtrapolatedSolutionAveragesIndex();
+      out << ",";
+      out << "extrapolatedSolutionCompressedIndex:" << getExtrapolatedSolutionCompressedIndex();
       out << ",";
       out << "extrapolatedSolution:" << getExtrapolatedSolution();
       out << ",";
@@ -1209,12 +1272,21 @@ switch (mode) {
          getTimeStamp(),
          getPreviousTimeStepSize(),
          getPreviousTimeStamp(),
+         getSolutionIndex(),
+         getSolutionAveragesIndex(),
+         getSolutionCompressedIndex(),
          getSolution(),
          getSolutionAverages(),
          getSolutionCompressed(),
+         getPreviousSolutionIndex(),
+         getPreviousSolutionAveragesIndex(),
+         getPreviousSolutionCompressedIndex(),
          getPreviousSolution(),
          getPreviousSolutionAverages(),
          getPreviousSolutionCompressed(),
+         getExtrapolatedSolutionIndex(),
+         getExtrapolatedSolutionAveragesIndex(),
+         getExtrapolatedSolutionCompressedIndex(),
          getExtrapolatedSolution(),
          getExtrapolatedSolutionAverages(),
          getExtrapolatedSolutionCompressed(),
@@ -1245,26 +1317,17 @@ switch (mode) {
             FiniteVolumesCellDescriptionPacked dummyFiniteVolumesCellDescriptionPacked[2];
             
             #ifdef MPI2
-            const int Attributes = 24;
+            const int Attributes = 15;
             #else
-            const int Attributes = 25;
+            const int Attributes = 16;
             #endif
             MPI_Datatype subtypes[Attributes] = {
                  MPI_INT		 //solverNumber
-               , MPI_CXX_BOOL		 //neighbourMergePerformed
+               , MPI_BYTE		 //neighbourMergePerformed
                , MPI_DOUBLE		 //timeStepSize
                , MPI_DOUBLE		 //timeStamp
                , MPI_DOUBLE		 //previousTimeStepSize
                , MPI_DOUBLE		 //previousTimeStamp
-               , MPI_INT		 //solution
-               , MPI_INT		 //solutionAverages
-               , MPI_INT		 //solutionCompressed
-               , MPI_INT		 //previousSolution
-               , MPI_INT		 //previousSolutionAverages
-               , MPI_INT		 //previousSolutionCompressed
-               , MPI_INT		 //extrapolatedSolution
-               , MPI_INT		 //extrapolatedSolutionAverages
-               , MPI_INT		 //extrapolatedSolutionCompressed
                , MPI_INT		 //level
                , MPI_DOUBLE		 //offset
                , MPI_DOUBLE		 //size
@@ -1287,15 +1350,6 @@ switch (mode) {
                , 1		 //timeStamp
                , 1		 //previousTimeStepSize
                , 1		 //previousTimeStamp
-               , 1		 //solution
-               , 1		 //solutionAverages
-               , 1		 //solutionCompressed
-               , 1		 //previousSolution
-               , 1		 //previousSolutionAverages
-               , 1		 //previousSolutionCompressed
-               , 1		 //extrapolatedSolution
-               , 1		 //extrapolatedSolutionAverages
-               , 1		 //extrapolatedSolutionCompressed
                , 1		 //level
                , DIMENSIONS		 //offset
                , DIMENSIONS		 //size
@@ -1324,9 +1378,9 @@ switch (mode) {
             MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._solverNumber))), 		&disp[0] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._neighbourMergePerformed))), 		&disp[1] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._neighbourMergePerformed[0]))), 		&disp[1] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._neighbourMergePerformed))), 		&disp[1] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._neighbourMergePerformed[0]))), 		&disp[1] );
             #endif
             #ifdef MPI2
             MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._timeStepSize))), 		&disp[2] );
@@ -1349,94 +1403,49 @@ switch (mode) {
             MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._previousTimeStamp))), 		&disp[5] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._solution))), 		&disp[6] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._level))), 		&disp[6] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._solution))), 		&disp[6] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._level))), 		&disp[6] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._solutionAverages))), 		&disp[7] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._offset[0]))), 		&disp[7] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._solutionAverages))), 		&disp[7] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._offset[0]))), 		&disp[7] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._solutionCompressed))), 		&disp[8] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._size[0]))), 		&disp[8] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._solutionCompressed))), 		&disp[8] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._size[0]))), 		&disp[8] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._previousSolution))), 		&disp[9] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._oneRemoteBoundaryNeighbourIsOfTypeCell))), 		&disp[9] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._previousSolution))), 		&disp[9] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._oneRemoteBoundaryNeighbourIsOfTypeCell))), 		&disp[9] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._previousSolutionAverages))), 		&disp[10] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._faceDataExchangeCounter[0]))), 		&disp[10] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._previousSolutionAverages))), 		&disp[10] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._faceDataExchangeCounter[0]))), 		&disp[10] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._previousSolutionCompressed))), 		&disp[11] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._type))), 		&disp[11] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._previousSolutionCompressed))), 		&disp[11] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._type))), 		&disp[11] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._extrapolatedSolution))), 		&disp[12] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._parentIndex))), 		&disp[12] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._extrapolatedSolution))), 		&disp[12] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._parentIndex))), 		&disp[12] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._extrapolatedSolutionAverages))), 		&disp[13] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._refinementEvent))), 		&disp[13] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._extrapolatedSolutionAverages))), 		&disp[13] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._refinementEvent))), 		&disp[13] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._extrapolatedSolutionCompressed))), 		&disp[14] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._packedRecords0))), 		&disp[14] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._extrapolatedSolutionCompressed))), 		&disp[14] );
-            #endif
-            #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._level))), 		&disp[15] );
-            #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._level))), 		&disp[15] );
-            #endif
-            #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._offset[0]))), 		&disp[16] );
-            #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._offset[0]))), 		&disp[16] );
-            #endif
-            #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._size[0]))), 		&disp[17] );
-            #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._size[0]))), 		&disp[17] );
-            #endif
-            #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._oneRemoteBoundaryNeighbourIsOfTypeCell))), 		&disp[18] );
-            #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._oneRemoteBoundaryNeighbourIsOfTypeCell))), 		&disp[18] );
-            #endif
-            #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._faceDataExchangeCounter[0]))), 		&disp[19] );
-            #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._faceDataExchangeCounter[0]))), 		&disp[19] );
-            #endif
-            #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._type))), 		&disp[20] );
-            #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._type))), 		&disp[20] );
-            #endif
-            #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._parentIndex))), 		&disp[21] );
-            #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._parentIndex))), 		&disp[21] );
-            #endif
-            #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._refinementEvent))), 		&disp[22] );
-            #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._refinementEvent))), 		&disp[22] );
-            #endif
-            #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._packedRecords0))), 		&disp[23] );
-            #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._packedRecords0))), 		&disp[23] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._packedRecords0))), 		&disp[14] );
             #endif
             #ifdef MPI2
             for (int i=1; i<Attributes; i++) {
@@ -1454,9 +1463,9 @@ switch (mode) {
                assertion4(disp[i]<static_cast<int>(sizeof(FiniteVolumesCellDescriptionPacked)), i, disp[i], Attributes, sizeof(FiniteVolumesCellDescriptionPacked));
             }
             #ifndef MPI2
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[1]))), 		&disp[24] );
-            disp[24] -= base;
-            disp[24] += disp[0];
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[1]))), 		&disp[15] );
+            disp[15] -= base;
+            disp[15] += disp[0];
             #endif
             #ifdef MPI2
             MPI_Datatype tmpType; 
@@ -1475,26 +1484,35 @@ switch (mode) {
             FiniteVolumesCellDescriptionPacked dummyFiniteVolumesCellDescriptionPacked[2];
             
             #ifdef MPI2
-            const int Attributes = 24;
+            const int Attributes = 33;
             #else
-            const int Attributes = 25;
+            const int Attributes = 34;
             #endif
             MPI_Datatype subtypes[Attributes] = {
                  MPI_INT		 //solverNumber
-               , MPI_CXX_BOOL		 //neighbourMergePerformed
+               , MPI_BYTE		 //neighbourMergePerformed
                , MPI_DOUBLE		 //timeStepSize
                , MPI_DOUBLE		 //timeStamp
                , MPI_DOUBLE		 //previousTimeStepSize
                , MPI_DOUBLE		 //previousTimeStamp
-               , MPI_INT		 //solution
-               , MPI_INT		 //solutionAverages
-               , MPI_INT		 //solutionCompressed
-               , MPI_INT		 //previousSolution
-               , MPI_INT		 //previousSolutionAverages
-               , MPI_INT		 //previousSolutionCompressed
-               , MPI_INT		 //extrapolatedSolution
-               , MPI_INT		 //extrapolatedSolutionAverages
-               , MPI_INT		 //extrapolatedSolutionCompressed
+               , MPI_INT		 //solutionIndex
+               , MPI_INT		 //solutionAveragesIndex
+               , MPI_INT		 //solutionCompressedIndex
+               , MPI_UNSIGNED_LONG		 //solution
+               , MPI_UNSIGNED_LONG		 //solutionAverages
+               , MPI_UNSIGNED_LONG		 //solutionCompressed
+               , MPI_INT		 //previousSolutionIndex
+               , MPI_INT		 //previousSolutionAveragesIndex
+               , MPI_INT		 //previousSolutionCompressedIndex
+               , MPI_UNSIGNED_LONG		 //previousSolution
+               , MPI_UNSIGNED_LONG		 //previousSolutionAverages
+               , MPI_UNSIGNED_LONG		 //previousSolutionCompressed
+               , MPI_INT		 //extrapolatedSolutionIndex
+               , MPI_INT		 //extrapolatedSolutionAveragesIndex
+               , MPI_INT		 //extrapolatedSolutionCompressedIndex
+               , MPI_UNSIGNED_LONG		 //extrapolatedSolution
+               , MPI_UNSIGNED_LONG		 //extrapolatedSolutionAverages
+               , MPI_UNSIGNED_LONG		 //extrapolatedSolutionCompressed
                , MPI_INT		 //level
                , MPI_DOUBLE		 //offset
                , MPI_DOUBLE		 //size
@@ -1517,12 +1535,21 @@ switch (mode) {
                , 1		 //timeStamp
                , 1		 //previousTimeStepSize
                , 1		 //previousTimeStamp
+               , 1		 //solutionIndex
+               , 1		 //solutionAveragesIndex
+               , 1		 //solutionCompressedIndex
                , 1		 //solution
                , 1		 //solutionAverages
                , 1		 //solutionCompressed
+               , 1		 //previousSolutionIndex
+               , 1		 //previousSolutionAveragesIndex
+               , 1		 //previousSolutionCompressedIndex
                , 1		 //previousSolution
                , 1		 //previousSolutionAverages
                , 1		 //previousSolutionCompressed
+               , 1		 //extrapolatedSolutionIndex
+               , 1		 //extrapolatedSolutionAveragesIndex
+               , 1		 //extrapolatedSolutionCompressedIndex
                , 1		 //extrapolatedSolution
                , 1		 //extrapolatedSolutionAverages
                , 1		 //extrapolatedSolutionCompressed
@@ -1554,9 +1581,9 @@ switch (mode) {
             MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._solverNumber))), 		&disp[0] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._neighbourMergePerformed))), 		&disp[1] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._neighbourMergePerformed[0]))), 		&disp[1] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._neighbourMergePerformed))), 		&disp[1] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._neighbourMergePerformed[0]))), 		&disp[1] );
             #endif
             #ifdef MPI2
             MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._timeStepSize))), 		&disp[2] );
@@ -1579,94 +1606,139 @@ switch (mode) {
             MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._previousTimeStamp))), 		&disp[5] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._solution))), 		&disp[6] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._solutionIndex))), 		&disp[6] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._solution))), 		&disp[6] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._solutionIndex))), 		&disp[6] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._solutionAverages))), 		&disp[7] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._solutionAveragesIndex))), 		&disp[7] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._solutionAverages))), 		&disp[7] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._solutionAveragesIndex))), 		&disp[7] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._solutionCompressed))), 		&disp[8] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._solutionCompressedIndex))), 		&disp[8] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._solutionCompressed))), 		&disp[8] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._solutionCompressedIndex))), 		&disp[8] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._previousSolution))), 		&disp[9] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._solution))), 		&disp[9] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._previousSolution))), 		&disp[9] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._solution))), 		&disp[9] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._previousSolutionAverages))), 		&disp[10] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._solutionAverages))), 		&disp[10] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._previousSolutionAverages))), 		&disp[10] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._solutionAverages))), 		&disp[10] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._previousSolutionCompressed))), 		&disp[11] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._solutionCompressed))), 		&disp[11] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._previousSolutionCompressed))), 		&disp[11] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._solutionCompressed))), 		&disp[11] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._extrapolatedSolution))), 		&disp[12] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._previousSolutionIndex))), 		&disp[12] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._extrapolatedSolution))), 		&disp[12] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._previousSolutionIndex))), 		&disp[12] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._extrapolatedSolutionAverages))), 		&disp[13] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._previousSolutionAveragesIndex))), 		&disp[13] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._extrapolatedSolutionAverages))), 		&disp[13] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._previousSolutionAveragesIndex))), 		&disp[13] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._extrapolatedSolutionCompressed))), 		&disp[14] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._previousSolutionCompressedIndex))), 		&disp[14] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._extrapolatedSolutionCompressed))), 		&disp[14] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._previousSolutionCompressedIndex))), 		&disp[14] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._level))), 		&disp[15] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._previousSolution))), 		&disp[15] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._level))), 		&disp[15] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._previousSolution))), 		&disp[15] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._offset[0]))), 		&disp[16] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._previousSolutionAverages))), 		&disp[16] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._offset[0]))), 		&disp[16] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._previousSolutionAverages))), 		&disp[16] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._size[0]))), 		&disp[17] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._previousSolutionCompressed))), 		&disp[17] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._size[0]))), 		&disp[17] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._previousSolutionCompressed))), 		&disp[17] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._oneRemoteBoundaryNeighbourIsOfTypeCell))), 		&disp[18] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._extrapolatedSolutionIndex))), 		&disp[18] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._oneRemoteBoundaryNeighbourIsOfTypeCell))), 		&disp[18] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._extrapolatedSolutionIndex))), 		&disp[18] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._faceDataExchangeCounter[0]))), 		&disp[19] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._extrapolatedSolutionAveragesIndex))), 		&disp[19] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._faceDataExchangeCounter[0]))), 		&disp[19] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._extrapolatedSolutionAveragesIndex))), 		&disp[19] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._type))), 		&disp[20] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._extrapolatedSolutionCompressedIndex))), 		&disp[20] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._type))), 		&disp[20] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._extrapolatedSolutionCompressedIndex))), 		&disp[20] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._parentIndex))), 		&disp[21] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._extrapolatedSolution))), 		&disp[21] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._parentIndex))), 		&disp[21] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._extrapolatedSolution))), 		&disp[21] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._refinementEvent))), 		&disp[22] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._extrapolatedSolutionAverages))), 		&disp[22] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._refinementEvent))), 		&disp[22] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._extrapolatedSolutionAverages))), 		&disp[22] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._packedRecords0))), 		&disp[23] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._extrapolatedSolutionCompressed))), 		&disp[23] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._packedRecords0))), 		&disp[23] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._extrapolatedSolutionCompressed))), 		&disp[23] );
+            #endif
+            #ifdef MPI2
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._level))), 		&disp[24] );
+            #else
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._level))), 		&disp[24] );
+            #endif
+            #ifdef MPI2
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._offset[0]))), 		&disp[25] );
+            #else
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._offset[0]))), 		&disp[25] );
+            #endif
+            #ifdef MPI2
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._size[0]))), 		&disp[26] );
+            #else
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._size[0]))), 		&disp[26] );
+            #endif
+            #ifdef MPI2
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._oneRemoteBoundaryNeighbourIsOfTypeCell))), 		&disp[27] );
+            #else
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._oneRemoteBoundaryNeighbourIsOfTypeCell))), 		&disp[27] );
+            #endif
+            #ifdef MPI2
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._faceDataExchangeCounter[0]))), 		&disp[28] );
+            #else
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._faceDataExchangeCounter[0]))), 		&disp[28] );
+            #endif
+            #ifdef MPI2
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._type))), 		&disp[29] );
+            #else
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._type))), 		&disp[29] );
+            #endif
+            #ifdef MPI2
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._parentIndex))), 		&disp[30] );
+            #else
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._parentIndex))), 		&disp[30] );
+            #endif
+            #ifdef MPI2
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._refinementEvent))), 		&disp[31] );
+            #else
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._refinementEvent))), 		&disp[31] );
+            #endif
+            #ifdef MPI2
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._packedRecords0))), 		&disp[32] );
+            #else
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._packedRecords0))), 		&disp[32] );
             #endif
             #ifdef MPI2
             for (int i=1; i<Attributes; i++) {
@@ -1684,9 +1756,9 @@ switch (mode) {
                assertion4(disp[i]<static_cast<int>(sizeof(FiniteVolumesCellDescriptionPacked)), i, disp[i], Attributes, sizeof(FiniteVolumesCellDescriptionPacked));
             }
             #ifndef MPI2
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[1]))), 		&disp[24] );
-            disp[24] -= base;
-            disp[24] += disp[0];
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[1]))), 		&disp[33] );
+            disp[33] -= base;
+            disp[33] += disp[0];
             #endif
             #ifdef MPI2
             MPI_Datatype tmpType; 
@@ -1966,7 +2038,7 @@ switch (mode) {
       }
       
       
-      exahype::records::FiniteVolumesCellDescription::PersistentRecords::PersistentRecords(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const double& timeStepSize, const double& timeStamp, const double& previousTimeStepSize, const double& previousTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& extrapolatedSolution, const int& extrapolatedSolutionAverages, const int& extrapolatedSolutionCompressed, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInExtrapolatedSolution, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const Type& type, const int& parentIndex, const RefinementEvent& refinementEvent):
+      exahype::records::FiniteVolumesCellDescription::PersistentRecords::PersistentRecords(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const double& timeStepSize, const double& timeStamp, const double& previousTimeStepSize, const double& previousTimeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& extrapolatedSolutionIndex, const int& extrapolatedSolutionAveragesIndex, const int& extrapolatedSolutionCompressedIndex, void* extrapolatedSolution, void* extrapolatedSolutionAverages, void* extrapolatedSolutionCompressed, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInExtrapolatedSolution, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const Type& type, const int& parentIndex, const RefinementEvent& refinementEvent):
       _solverNumber(solverNumber),
       _neighbourMergePerformed(neighbourMergePerformed),
       _hasCompletedTimeStep(hasCompletedTimeStep),
@@ -1974,12 +2046,21 @@ switch (mode) {
       _timeStamp(timeStamp),
       _previousTimeStepSize(previousTimeStepSize),
       _previousTimeStamp(previousTimeStamp),
+      _solutionIndex(solutionIndex),
+      _solutionAveragesIndex(solutionAveragesIndex),
+      _solutionCompressedIndex(solutionCompressedIndex),
       _solution(solution),
       _solutionAverages(solutionAverages),
       _solutionCompressed(solutionCompressed),
+      _previousSolutionIndex(previousSolutionIndex),
+      _previousSolutionAveragesIndex(previousSolutionAveragesIndex),
+      _previousSolutionCompressedIndex(previousSolutionCompressedIndex),
       _previousSolution(previousSolution),
       _previousSolutionAverages(previousSolutionAverages),
       _previousSolutionCompressed(previousSolutionCompressed),
+      _extrapolatedSolutionIndex(extrapolatedSolutionIndex),
+      _extrapolatedSolutionAveragesIndex(extrapolatedSolutionAveragesIndex),
+      _extrapolatedSolutionCompressedIndex(extrapolatedSolutionCompressedIndex),
       _extrapolatedSolution(extrapolatedSolution),
       _extrapolatedSolutionAverages(extrapolatedSolutionAverages),
       _extrapolatedSolutionCompressed(extrapolatedSolutionCompressed),
@@ -2002,13 +2083,13 @@ switch (mode) {
       
       
       exahype::records::FiniteVolumesCellDescription::FiniteVolumesCellDescription(const PersistentRecords& persistentRecords):
-      _persistentRecords(persistentRecords._solverNumber, persistentRecords._neighbourMergePerformed, persistentRecords._hasCompletedTimeStep, persistentRecords._timeStepSize, persistentRecords._timeStamp, persistentRecords._previousTimeStepSize, persistentRecords._previousTimeStamp, persistentRecords._solution, persistentRecords._solutionAverages, persistentRecords._solutionCompressed, persistentRecords._previousSolution, persistentRecords._previousSolutionAverages, persistentRecords._previousSolutionCompressed, persistentRecords._extrapolatedSolution, persistentRecords._extrapolatedSolutionAverages, persistentRecords._extrapolatedSolutionCompressed, persistentRecords._compressionState, persistentRecords._bytesPerDoFInPreviousSolution, persistentRecords._bytesPerDoFInSolution, persistentRecords._bytesPerDoFInExtrapolatedSolution, persistentRecords._level, persistentRecords._offset, persistentRecords._size, persistentRecords._type, persistentRecords._parentIndex, persistentRecords._refinementEvent) {
+      _persistentRecords(persistentRecords._solverNumber, persistentRecords._neighbourMergePerformed, persistentRecords._hasCompletedTimeStep, persistentRecords._timeStepSize, persistentRecords._timeStamp, persistentRecords._previousTimeStepSize, persistentRecords._previousTimeStamp, persistentRecords._solutionIndex, persistentRecords._solutionAveragesIndex, persistentRecords._solutionCompressedIndex, persistentRecords._solution, persistentRecords._solutionAverages, persistentRecords._solutionCompressed, persistentRecords._previousSolutionIndex, persistentRecords._previousSolutionAveragesIndex, persistentRecords._previousSolutionCompressedIndex, persistentRecords._previousSolution, persistentRecords._previousSolutionAverages, persistentRecords._previousSolutionCompressed, persistentRecords._extrapolatedSolutionIndex, persistentRecords._extrapolatedSolutionAveragesIndex, persistentRecords._extrapolatedSolutionCompressedIndex, persistentRecords._extrapolatedSolution, persistentRecords._extrapolatedSolutionAverages, persistentRecords._extrapolatedSolutionCompressed, persistentRecords._compressionState, persistentRecords._bytesPerDoFInPreviousSolution, persistentRecords._bytesPerDoFInSolution, persistentRecords._bytesPerDoFInExtrapolatedSolution, persistentRecords._level, persistentRecords._offset, persistentRecords._size, persistentRecords._type, persistentRecords._parentIndex, persistentRecords._refinementEvent) {
          
       }
       
       
-      exahype::records::FiniteVolumesCellDescription::FiniteVolumesCellDescription(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const double& timeStepSize, const double& timeStamp, const double& previousTimeStepSize, const double& previousTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& extrapolatedSolution, const int& extrapolatedSolutionAverages, const int& extrapolatedSolutionCompressed, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInExtrapolatedSolution, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const Type& type, const int& parentIndex, const RefinementEvent& refinementEvent):
-      _persistentRecords(solverNumber, neighbourMergePerformed, hasCompletedTimeStep, timeStepSize, timeStamp, previousTimeStepSize, previousTimeStamp, solution, solutionAverages, solutionCompressed, previousSolution, previousSolutionAverages, previousSolutionCompressed, extrapolatedSolution, extrapolatedSolutionAverages, extrapolatedSolutionCompressed, compressionState, bytesPerDoFInPreviousSolution, bytesPerDoFInSolution, bytesPerDoFInExtrapolatedSolution, level, offset, size, type, parentIndex, refinementEvent) {
+      exahype::records::FiniteVolumesCellDescription::FiniteVolumesCellDescription(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const double& timeStepSize, const double& timeStamp, const double& previousTimeStepSize, const double& previousTimeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& extrapolatedSolutionIndex, const int& extrapolatedSolutionAveragesIndex, const int& extrapolatedSolutionCompressedIndex, void* extrapolatedSolution, void* extrapolatedSolutionAverages, void* extrapolatedSolutionCompressed, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInExtrapolatedSolution, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const Type& type, const int& parentIndex, const RefinementEvent& refinementEvent):
+      _persistentRecords(solverNumber, neighbourMergePerformed, hasCompletedTimeStep, timeStepSize, timeStamp, previousTimeStepSize, previousTimeStamp, solutionIndex, solutionAveragesIndex, solutionCompressedIndex, solution, solutionAverages, solutionCompressed, previousSolutionIndex, previousSolutionAveragesIndex, previousSolutionCompressedIndex, previousSolution, previousSolutionAverages, previousSolutionCompressed, extrapolatedSolutionIndex, extrapolatedSolutionAveragesIndex, extrapolatedSolutionCompressedIndex, extrapolatedSolution, extrapolatedSolutionAverages, extrapolatedSolutionCompressed, compressionState, bytesPerDoFInPreviousSolution, bytesPerDoFInSolution, bytesPerDoFInExtrapolatedSolution, level, offset, size, type, parentIndex, refinementEvent) {
          
       }
       
@@ -2089,17 +2170,35 @@ switch (mode) {
          out << ",";
          out << "previousTimeStamp:" << getPreviousTimeStamp();
          out << ",";
+         out << "solutionIndex:" << getSolutionIndex();
+         out << ",";
+         out << "solutionAveragesIndex:" << getSolutionAveragesIndex();
+         out << ",";
+         out << "solutionCompressedIndex:" << getSolutionCompressedIndex();
+         out << ",";
          out << "solution:" << getSolution();
          out << ",";
          out << "solutionAverages:" << getSolutionAverages();
          out << ",";
          out << "solutionCompressed:" << getSolutionCompressed();
          out << ",";
+         out << "previousSolutionIndex:" << getPreviousSolutionIndex();
+         out << ",";
+         out << "previousSolutionAveragesIndex:" << getPreviousSolutionAveragesIndex();
+         out << ",";
+         out << "previousSolutionCompressedIndex:" << getPreviousSolutionCompressedIndex();
+         out << ",";
          out << "previousSolution:" << getPreviousSolution();
          out << ",";
          out << "previousSolutionAverages:" << getPreviousSolutionAverages();
          out << ",";
          out << "previousSolutionCompressed:" << getPreviousSolutionCompressed();
+         out << ",";
+         out << "extrapolatedSolutionIndex:" << getExtrapolatedSolutionIndex();
+         out << ",";
+         out << "extrapolatedSolutionAveragesIndex:" << getExtrapolatedSolutionAveragesIndex();
+         out << ",";
+         out << "extrapolatedSolutionCompressedIndex:" << getExtrapolatedSolutionCompressedIndex();
          out << ",";
          out << "extrapolatedSolution:" << getExtrapolatedSolution();
          out << ",";
@@ -2151,12 +2250,21 @@ switch (mode) {
             getTimeStamp(),
             getPreviousTimeStepSize(),
             getPreviousTimeStamp(),
+            getSolutionIndex(),
+            getSolutionAveragesIndex(),
+            getSolutionCompressedIndex(),
             getSolution(),
             getSolutionAverages(),
             getSolutionCompressed(),
+            getPreviousSolutionIndex(),
+            getPreviousSolutionAveragesIndex(),
+            getPreviousSolutionCompressedIndex(),
             getPreviousSolution(),
             getPreviousSolutionAverages(),
             getPreviousSolutionCompressed(),
+            getExtrapolatedSolutionIndex(),
+            getExtrapolatedSolutionAveragesIndex(),
+            getExtrapolatedSolutionCompressedIndex(),
             getExtrapolatedSolution(),
             getExtrapolatedSolutionAverages(),
             getExtrapolatedSolutionCompressed(),
@@ -2185,26 +2293,17 @@ switch (mode) {
                FiniteVolumesCellDescription dummyFiniteVolumesCellDescription[2];
                
                #ifdef MPI2
-               const int Attributes = 25;
+               const int Attributes = 16;
                #else
-               const int Attributes = 26;
+               const int Attributes = 17;
                #endif
                MPI_Datatype subtypes[Attributes] = {
                     MPI_INT		 //solverNumber
-                  , MPI_CXX_BOOL		 //neighbourMergePerformed
+                  , MPI_BYTE		 //neighbourMergePerformed
                   , MPI_DOUBLE		 //timeStepSize
                   , MPI_DOUBLE		 //timeStamp
                   , MPI_DOUBLE		 //previousTimeStepSize
                   , MPI_DOUBLE		 //previousTimeStamp
-                  , MPI_INT		 //solution
-                  , MPI_INT		 //solutionAverages
-                  , MPI_INT		 //solutionCompressed
-                  , MPI_INT		 //previousSolution
-                  , MPI_INT		 //previousSolutionAverages
-                  , MPI_INT		 //previousSolutionCompressed
-                  , MPI_INT		 //extrapolatedSolution
-                  , MPI_INT		 //extrapolatedSolutionAverages
-                  , MPI_INT		 //extrapolatedSolutionCompressed
                   , MPI_INT		 //compressionState
                   , MPI_INT		 //bytesPerDoFInPreviousSolution
                   , MPI_INT		 //bytesPerDoFInSolution
@@ -2228,15 +2327,6 @@ switch (mode) {
                   , 1		 //timeStamp
                   , 1		 //previousTimeStepSize
                   , 1		 //previousTimeStamp
-                  , 1		 //solution
-                  , 1		 //solutionAverages
-                  , 1		 //solutionCompressed
-                  , 1		 //previousSolution
-                  , 1		 //previousSolutionAverages
-                  , 1		 //previousSolutionCompressed
-                  , 1		 //extrapolatedSolution
-                  , 1		 //extrapolatedSolutionAverages
-                  , 1		 //extrapolatedSolutionCompressed
                   , 1		 //compressionState
                   , 1		 //bytesPerDoFInPreviousSolution
                   , 1		 //bytesPerDoFInSolution
@@ -2266,9 +2356,9 @@ switch (mode) {
                MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._solverNumber))), 		&disp[0] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._neighbourMergePerformed))), 		&disp[1] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._neighbourMergePerformed[0]))), 		&disp[1] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._neighbourMergePerformed))), 		&disp[1] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._neighbourMergePerformed[0]))), 		&disp[1] );
                #endif
                #ifdef MPI2
                MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._timeStepSize))), 		&disp[2] );
@@ -2291,99 +2381,54 @@ switch (mode) {
                MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._previousTimeStamp))), 		&disp[5] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._solution))), 		&disp[6] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._compressionState))), 		&disp[6] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._solution))), 		&disp[6] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._compressionState))), 		&disp[6] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._solutionAverages))), 		&disp[7] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._bytesPerDoFInPreviousSolution))), 		&disp[7] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._solutionAverages))), 		&disp[7] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._bytesPerDoFInPreviousSolution))), 		&disp[7] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._solutionCompressed))), 		&disp[8] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._bytesPerDoFInSolution))), 		&disp[8] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._solutionCompressed))), 		&disp[8] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._bytesPerDoFInSolution))), 		&disp[8] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._previousSolution))), 		&disp[9] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._bytesPerDoFInExtrapolatedSolution))), 		&disp[9] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._previousSolution))), 		&disp[9] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._bytesPerDoFInExtrapolatedSolution))), 		&disp[9] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._previousSolutionAverages))), 		&disp[10] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._level))), 		&disp[10] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._previousSolutionAverages))), 		&disp[10] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._level))), 		&disp[10] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._previousSolutionCompressed))), 		&disp[11] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._offset[0]))), 		&disp[11] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._previousSolutionCompressed))), 		&disp[11] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._offset[0]))), 		&disp[11] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._extrapolatedSolution))), 		&disp[12] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._size[0]))), 		&disp[12] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._extrapolatedSolution))), 		&disp[12] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._size[0]))), 		&disp[12] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._extrapolatedSolutionAverages))), 		&disp[13] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._type))), 		&disp[13] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._extrapolatedSolutionAverages))), 		&disp[13] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._type))), 		&disp[13] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._extrapolatedSolutionCompressed))), 		&disp[14] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._parentIndex))), 		&disp[14] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._extrapolatedSolutionCompressed))), 		&disp[14] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._parentIndex))), 		&disp[14] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._compressionState))), 		&disp[15] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._refinementEvent))), 		&disp[15] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._compressionState))), 		&disp[15] );
-               #endif
-               #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._bytesPerDoFInPreviousSolution))), 		&disp[16] );
-               #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._bytesPerDoFInPreviousSolution))), 		&disp[16] );
-               #endif
-               #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._bytesPerDoFInSolution))), 		&disp[17] );
-               #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._bytesPerDoFInSolution))), 		&disp[17] );
-               #endif
-               #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._bytesPerDoFInExtrapolatedSolution))), 		&disp[18] );
-               #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._bytesPerDoFInExtrapolatedSolution))), 		&disp[18] );
-               #endif
-               #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._level))), 		&disp[19] );
-               #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._level))), 		&disp[19] );
-               #endif
-               #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._offset[0]))), 		&disp[20] );
-               #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._offset[0]))), 		&disp[20] );
-               #endif
-               #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._size[0]))), 		&disp[21] );
-               #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._size[0]))), 		&disp[21] );
-               #endif
-               #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._type))), 		&disp[22] );
-               #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._type))), 		&disp[22] );
-               #endif
-               #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._parentIndex))), 		&disp[23] );
-               #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._parentIndex))), 		&disp[23] );
-               #endif
-               #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._refinementEvent))), 		&disp[24] );
-               #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._refinementEvent))), 		&disp[24] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._refinementEvent))), 		&disp[15] );
                #endif
                #ifdef MPI2
                for (int i=1; i<Attributes; i++) {
@@ -2401,9 +2446,9 @@ switch (mode) {
                   assertion4(disp[i]<static_cast<int>(sizeof(FiniteVolumesCellDescription)), i, disp[i], Attributes, sizeof(FiniteVolumesCellDescription));
                }
                #ifndef MPI2
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[1]))), 		&disp[25] );
-               disp[25] -= base;
-               disp[25] += disp[0];
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[1]))), 		&disp[16] );
+               disp[16] -= base;
+               disp[16] += disp[0];
                #endif
                #ifdef MPI2
                MPI_Datatype tmpType; 
@@ -2422,27 +2467,36 @@ switch (mode) {
                FiniteVolumesCellDescription dummyFiniteVolumesCellDescription[2];
                
                #ifdef MPI2
-               const int Attributes = 26;
+               const int Attributes = 35;
                #else
-               const int Attributes = 27;
+               const int Attributes = 36;
                #endif
                MPI_Datatype subtypes[Attributes] = {
                     MPI_INT		 //solverNumber
-                  , MPI_CXX_BOOL		 //neighbourMergePerformed
+                  , MPI_BYTE		 //neighbourMergePerformed
                   , MPI_CXX_BOOL		 //hasCompletedTimeStep
                   , MPI_DOUBLE		 //timeStepSize
                   , MPI_DOUBLE		 //timeStamp
                   , MPI_DOUBLE		 //previousTimeStepSize
                   , MPI_DOUBLE		 //previousTimeStamp
-                  , MPI_INT		 //solution
-                  , MPI_INT		 //solutionAverages
-                  , MPI_INT		 //solutionCompressed
-                  , MPI_INT		 //previousSolution
-                  , MPI_INT		 //previousSolutionAverages
-                  , MPI_INT		 //previousSolutionCompressed
-                  , MPI_INT		 //extrapolatedSolution
-                  , MPI_INT		 //extrapolatedSolutionAverages
-                  , MPI_INT		 //extrapolatedSolutionCompressed
+                  , MPI_INT		 //solutionIndex
+                  , MPI_INT		 //solutionAveragesIndex
+                  , MPI_INT		 //solutionCompressedIndex
+                  , MPI_UNSIGNED_LONG		 //solution
+                  , MPI_UNSIGNED_LONG		 //solutionAverages
+                  , MPI_UNSIGNED_LONG		 //solutionCompressed
+                  , MPI_INT		 //previousSolutionIndex
+                  , MPI_INT		 //previousSolutionAveragesIndex
+                  , MPI_INT		 //previousSolutionCompressedIndex
+                  , MPI_UNSIGNED_LONG		 //previousSolution
+                  , MPI_UNSIGNED_LONG		 //previousSolutionAverages
+                  , MPI_UNSIGNED_LONG		 //previousSolutionCompressed
+                  , MPI_INT		 //extrapolatedSolutionIndex
+                  , MPI_INT		 //extrapolatedSolutionAveragesIndex
+                  , MPI_INT		 //extrapolatedSolutionCompressedIndex
+                  , MPI_UNSIGNED_LONG		 //extrapolatedSolution
+                  , MPI_UNSIGNED_LONG		 //extrapolatedSolutionAverages
+                  , MPI_UNSIGNED_LONG		 //extrapolatedSolutionCompressed
                   , MPI_INT		 //compressionState
                   , MPI_INT		 //bytesPerDoFInPreviousSolution
                   , MPI_INT		 //bytesPerDoFInSolution
@@ -2467,12 +2521,21 @@ switch (mode) {
                   , 1		 //timeStamp
                   , 1		 //previousTimeStepSize
                   , 1		 //previousTimeStamp
+                  , 1		 //solutionIndex
+                  , 1		 //solutionAveragesIndex
+                  , 1		 //solutionCompressedIndex
                   , 1		 //solution
                   , 1		 //solutionAverages
                   , 1		 //solutionCompressed
+                  , 1		 //previousSolutionIndex
+                  , 1		 //previousSolutionAveragesIndex
+                  , 1		 //previousSolutionCompressedIndex
                   , 1		 //previousSolution
                   , 1		 //previousSolutionAverages
                   , 1		 //previousSolutionCompressed
+                  , 1		 //extrapolatedSolutionIndex
+                  , 1		 //extrapolatedSolutionAveragesIndex
+                  , 1		 //extrapolatedSolutionCompressedIndex
                   , 1		 //extrapolatedSolution
                   , 1		 //extrapolatedSolutionAverages
                   , 1		 //extrapolatedSolutionCompressed
@@ -2505,9 +2568,9 @@ switch (mode) {
                MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._solverNumber))), 		&disp[0] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._neighbourMergePerformed))), 		&disp[1] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._neighbourMergePerformed[0]))), 		&disp[1] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._neighbourMergePerformed))), 		&disp[1] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._neighbourMergePerformed[0]))), 		&disp[1] );
                #endif
                #ifdef MPI2
                MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._hasCompletedTimeStep))), 		&disp[2] );
@@ -2535,99 +2598,144 @@ switch (mode) {
                MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._previousTimeStamp))), 		&disp[6] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._solution))), 		&disp[7] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._solutionIndex))), 		&disp[7] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._solution))), 		&disp[7] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._solutionIndex))), 		&disp[7] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._solutionAverages))), 		&disp[8] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._solutionAveragesIndex))), 		&disp[8] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._solutionAverages))), 		&disp[8] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._solutionAveragesIndex))), 		&disp[8] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._solutionCompressed))), 		&disp[9] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._solutionCompressedIndex))), 		&disp[9] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._solutionCompressed))), 		&disp[9] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._solutionCompressedIndex))), 		&disp[9] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._previousSolution))), 		&disp[10] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._solution))), 		&disp[10] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._previousSolution))), 		&disp[10] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._solution))), 		&disp[10] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._previousSolutionAverages))), 		&disp[11] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._solutionAverages))), 		&disp[11] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._previousSolutionAverages))), 		&disp[11] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._solutionAverages))), 		&disp[11] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._previousSolutionCompressed))), 		&disp[12] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._solutionCompressed))), 		&disp[12] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._previousSolutionCompressed))), 		&disp[12] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._solutionCompressed))), 		&disp[12] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._extrapolatedSolution))), 		&disp[13] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._previousSolutionIndex))), 		&disp[13] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._extrapolatedSolution))), 		&disp[13] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._previousSolutionIndex))), 		&disp[13] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._extrapolatedSolutionAverages))), 		&disp[14] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._previousSolutionAveragesIndex))), 		&disp[14] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._extrapolatedSolutionAverages))), 		&disp[14] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._previousSolutionAveragesIndex))), 		&disp[14] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._extrapolatedSolutionCompressed))), 		&disp[15] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._previousSolutionCompressedIndex))), 		&disp[15] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._extrapolatedSolutionCompressed))), 		&disp[15] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._previousSolutionCompressedIndex))), 		&disp[15] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._compressionState))), 		&disp[16] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._previousSolution))), 		&disp[16] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._compressionState))), 		&disp[16] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._previousSolution))), 		&disp[16] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._bytesPerDoFInPreviousSolution))), 		&disp[17] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._previousSolutionAverages))), 		&disp[17] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._bytesPerDoFInPreviousSolution))), 		&disp[17] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._previousSolutionAverages))), 		&disp[17] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._bytesPerDoFInSolution))), 		&disp[18] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._previousSolutionCompressed))), 		&disp[18] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._bytesPerDoFInSolution))), 		&disp[18] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._previousSolutionCompressed))), 		&disp[18] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._bytesPerDoFInExtrapolatedSolution))), 		&disp[19] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._extrapolatedSolutionIndex))), 		&disp[19] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._bytesPerDoFInExtrapolatedSolution))), 		&disp[19] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._extrapolatedSolutionIndex))), 		&disp[19] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._level))), 		&disp[20] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._extrapolatedSolutionAveragesIndex))), 		&disp[20] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._level))), 		&disp[20] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._extrapolatedSolutionAveragesIndex))), 		&disp[20] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._offset[0]))), 		&disp[21] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._extrapolatedSolutionCompressedIndex))), 		&disp[21] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._offset[0]))), 		&disp[21] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._extrapolatedSolutionCompressedIndex))), 		&disp[21] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._size[0]))), 		&disp[22] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._extrapolatedSolution))), 		&disp[22] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._size[0]))), 		&disp[22] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._extrapolatedSolution))), 		&disp[22] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._type))), 		&disp[23] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._extrapolatedSolutionAverages))), 		&disp[23] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._type))), 		&disp[23] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._extrapolatedSolutionAverages))), 		&disp[23] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._parentIndex))), 		&disp[24] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._extrapolatedSolutionCompressed))), 		&disp[24] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._parentIndex))), 		&disp[24] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._extrapolatedSolutionCompressed))), 		&disp[24] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._refinementEvent))), 		&disp[25] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._compressionState))), 		&disp[25] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._refinementEvent))), 		&disp[25] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._compressionState))), 		&disp[25] );
+               #endif
+               #ifdef MPI2
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._bytesPerDoFInPreviousSolution))), 		&disp[26] );
+               #else
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._bytesPerDoFInPreviousSolution))), 		&disp[26] );
+               #endif
+               #ifdef MPI2
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._bytesPerDoFInSolution))), 		&disp[27] );
+               #else
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._bytesPerDoFInSolution))), 		&disp[27] );
+               #endif
+               #ifdef MPI2
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._bytesPerDoFInExtrapolatedSolution))), 		&disp[28] );
+               #else
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._bytesPerDoFInExtrapolatedSolution))), 		&disp[28] );
+               #endif
+               #ifdef MPI2
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._level))), 		&disp[29] );
+               #else
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._level))), 		&disp[29] );
+               #endif
+               #ifdef MPI2
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._offset[0]))), 		&disp[30] );
+               #else
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._offset[0]))), 		&disp[30] );
+               #endif
+               #ifdef MPI2
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._size[0]))), 		&disp[31] );
+               #else
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._size[0]))), 		&disp[31] );
+               #endif
+               #ifdef MPI2
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._type))), 		&disp[32] );
+               #else
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._type))), 		&disp[32] );
+               #endif
+               #ifdef MPI2
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._parentIndex))), 		&disp[33] );
+               #else
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._parentIndex))), 		&disp[33] );
+               #endif
+               #ifdef MPI2
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._refinementEvent))), 		&disp[34] );
+               #else
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[0]._persistentRecords._refinementEvent))), 		&disp[34] );
                #endif
                #ifdef MPI2
                for (int i=1; i<Attributes; i++) {
@@ -2645,9 +2753,9 @@ switch (mode) {
                   assertion4(disp[i]<static_cast<int>(sizeof(FiniteVolumesCellDescription)), i, disp[i], Attributes, sizeof(FiniteVolumesCellDescription));
                }
                #ifndef MPI2
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[1]))), 		&disp[26] );
-               disp[26] -= base;
-               disp[26] += disp[0];
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescription[1]))), 		&disp[35] );
+               disp[35] -= base;
+               disp[35] += disp[0];
                #endif
                #ifdef MPI2
                MPI_Datatype tmpType; 
@@ -2932,19 +3040,28 @@ switch (mode) {
       }
       
       
-      exahype::records::FiniteVolumesCellDescriptionPacked::PersistentRecords::PersistentRecords(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const double& timeStepSize, const double& timeStamp, const double& previousTimeStepSize, const double& previousTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& extrapolatedSolution, const int& extrapolatedSolutionAverages, const int& extrapolatedSolutionCompressed, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInExtrapolatedSolution, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const Type& type, const int& parentIndex, const RefinementEvent& refinementEvent):
+      exahype::records::FiniteVolumesCellDescriptionPacked::PersistentRecords::PersistentRecords(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const double& timeStepSize, const double& timeStamp, const double& previousTimeStepSize, const double& previousTimeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& extrapolatedSolutionIndex, const int& extrapolatedSolutionAveragesIndex, const int& extrapolatedSolutionCompressedIndex, void* extrapolatedSolution, void* extrapolatedSolutionAverages, void* extrapolatedSolutionCompressed, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInExtrapolatedSolution, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const Type& type, const int& parentIndex, const RefinementEvent& refinementEvent):
       _solverNumber(solverNumber),
       _neighbourMergePerformed(neighbourMergePerformed),
       _timeStepSize(timeStepSize),
       _timeStamp(timeStamp),
       _previousTimeStepSize(previousTimeStepSize),
       _previousTimeStamp(previousTimeStamp),
+      _solutionIndex(solutionIndex),
+      _solutionAveragesIndex(solutionAveragesIndex),
+      _solutionCompressedIndex(solutionCompressedIndex),
       _solution(solution),
       _solutionAverages(solutionAverages),
       _solutionCompressed(solutionCompressed),
+      _previousSolutionIndex(previousSolutionIndex),
+      _previousSolutionAveragesIndex(previousSolutionAveragesIndex),
+      _previousSolutionCompressedIndex(previousSolutionCompressedIndex),
       _previousSolution(previousSolution),
       _previousSolutionAverages(previousSolutionAverages),
       _previousSolutionCompressed(previousSolutionCompressed),
+      _extrapolatedSolutionIndex(extrapolatedSolutionIndex),
+      _extrapolatedSolutionAveragesIndex(extrapolatedSolutionAveragesIndex),
+      _extrapolatedSolutionCompressedIndex(extrapolatedSolutionCompressedIndex),
       _extrapolatedSolution(extrapolatedSolution),
       _extrapolatedSolutionAverages(extrapolatedSolutionAverages),
       _extrapolatedSolutionCompressed(extrapolatedSolutionCompressed),
@@ -2980,7 +3097,7 @@ switch (mode) {
       
       
       exahype::records::FiniteVolumesCellDescriptionPacked::FiniteVolumesCellDescriptionPacked(const PersistentRecords& persistentRecords):
-      _persistentRecords(persistentRecords._solverNumber, persistentRecords._neighbourMergePerformed, persistentRecords.getHasCompletedTimeStep(), persistentRecords._timeStepSize, persistentRecords._timeStamp, persistentRecords._previousTimeStepSize, persistentRecords._previousTimeStamp, persistentRecords._solution, persistentRecords._solutionAverages, persistentRecords._solutionCompressed, persistentRecords._previousSolution, persistentRecords._previousSolutionAverages, persistentRecords._previousSolutionCompressed, persistentRecords._extrapolatedSolution, persistentRecords._extrapolatedSolutionAverages, persistentRecords._extrapolatedSolutionCompressed, persistentRecords.getCompressionState(), persistentRecords.getBytesPerDoFInPreviousSolution(), persistentRecords.getBytesPerDoFInSolution(), persistentRecords.getBytesPerDoFInExtrapolatedSolution(), persistentRecords._level, persistentRecords._offset, persistentRecords._size, persistentRecords._type, persistentRecords._parentIndex, persistentRecords._refinementEvent) {
+      _persistentRecords(persistentRecords._solverNumber, persistentRecords._neighbourMergePerformed, persistentRecords.getHasCompletedTimeStep(), persistentRecords._timeStepSize, persistentRecords._timeStamp, persistentRecords._previousTimeStepSize, persistentRecords._previousTimeStamp, persistentRecords._solutionIndex, persistentRecords._solutionAveragesIndex, persistentRecords._solutionCompressedIndex, persistentRecords._solution, persistentRecords._solutionAverages, persistentRecords._solutionCompressed, persistentRecords._previousSolutionIndex, persistentRecords._previousSolutionAveragesIndex, persistentRecords._previousSolutionCompressedIndex, persistentRecords._previousSolution, persistentRecords._previousSolutionAverages, persistentRecords._previousSolutionCompressed, persistentRecords._extrapolatedSolutionIndex, persistentRecords._extrapolatedSolutionAveragesIndex, persistentRecords._extrapolatedSolutionCompressedIndex, persistentRecords._extrapolatedSolution, persistentRecords._extrapolatedSolutionAverages, persistentRecords._extrapolatedSolutionCompressed, persistentRecords.getCompressionState(), persistentRecords.getBytesPerDoFInPreviousSolution(), persistentRecords.getBytesPerDoFInSolution(), persistentRecords.getBytesPerDoFInExtrapolatedSolution(), persistentRecords._level, persistentRecords._offset, persistentRecords._size, persistentRecords._type, persistentRecords._parentIndex, persistentRecords._refinementEvent) {
          if ((12 >= (8 * sizeof(int)))) {
             std::cerr << "Packed-Type in " << __FILE__ << " too small. Either use bigger data type or append " << std::endl << std::endl;
             std::cerr << "  Packed-Type: int hint-size no-of-bits;  " << std::endl << std::endl;
@@ -2991,8 +3108,8 @@ switch (mode) {
       }
       
       
-      exahype::records::FiniteVolumesCellDescriptionPacked::FiniteVolumesCellDescriptionPacked(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const double& timeStepSize, const double& timeStamp, const double& previousTimeStepSize, const double& previousTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& extrapolatedSolution, const int& extrapolatedSolutionAverages, const int& extrapolatedSolutionCompressed, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInExtrapolatedSolution, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const Type& type, const int& parentIndex, const RefinementEvent& refinementEvent):
-      _persistentRecords(solverNumber, neighbourMergePerformed, hasCompletedTimeStep, timeStepSize, timeStamp, previousTimeStepSize, previousTimeStamp, solution, solutionAverages, solutionCompressed, previousSolution, previousSolutionAverages, previousSolutionCompressed, extrapolatedSolution, extrapolatedSolutionAverages, extrapolatedSolutionCompressed, compressionState, bytesPerDoFInPreviousSolution, bytesPerDoFInSolution, bytesPerDoFInExtrapolatedSolution, level, offset, size, type, parentIndex, refinementEvent) {
+      exahype::records::FiniteVolumesCellDescriptionPacked::FiniteVolumesCellDescriptionPacked(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const double& timeStepSize, const double& timeStamp, const double& previousTimeStepSize, const double& previousTimeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& extrapolatedSolutionIndex, const int& extrapolatedSolutionAveragesIndex, const int& extrapolatedSolutionCompressedIndex, void* extrapolatedSolution, void* extrapolatedSolutionAverages, void* extrapolatedSolutionCompressed, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInExtrapolatedSolution, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const Type& type, const int& parentIndex, const RefinementEvent& refinementEvent):
+      _persistentRecords(solverNumber, neighbourMergePerformed, hasCompletedTimeStep, timeStepSize, timeStamp, previousTimeStepSize, previousTimeStamp, solutionIndex, solutionAveragesIndex, solutionCompressedIndex, solution, solutionAverages, solutionCompressed, previousSolutionIndex, previousSolutionAveragesIndex, previousSolutionCompressedIndex, previousSolution, previousSolutionAverages, previousSolutionCompressed, extrapolatedSolutionIndex, extrapolatedSolutionAveragesIndex, extrapolatedSolutionCompressedIndex, extrapolatedSolution, extrapolatedSolutionAverages, extrapolatedSolutionCompressed, compressionState, bytesPerDoFInPreviousSolution, bytesPerDoFInSolution, bytesPerDoFInExtrapolatedSolution, level, offset, size, type, parentIndex, refinementEvent) {
          if ((12 >= (8 * sizeof(int)))) {
             std::cerr << "Packed-Type in " << __FILE__ << " too small. Either use bigger data type or append " << std::endl << std::endl;
             std::cerr << "  Packed-Type: int hint-size no-of-bits;  " << std::endl << std::endl;
@@ -3057,17 +3174,35 @@ switch (mode) {
          out << ",";
          out << "previousTimeStamp:" << getPreviousTimeStamp();
          out << ",";
+         out << "solutionIndex:" << getSolutionIndex();
+         out << ",";
+         out << "solutionAveragesIndex:" << getSolutionAveragesIndex();
+         out << ",";
+         out << "solutionCompressedIndex:" << getSolutionCompressedIndex();
+         out << ",";
          out << "solution:" << getSolution();
          out << ",";
          out << "solutionAverages:" << getSolutionAverages();
          out << ",";
          out << "solutionCompressed:" << getSolutionCompressed();
          out << ",";
+         out << "previousSolutionIndex:" << getPreviousSolutionIndex();
+         out << ",";
+         out << "previousSolutionAveragesIndex:" << getPreviousSolutionAveragesIndex();
+         out << ",";
+         out << "previousSolutionCompressedIndex:" << getPreviousSolutionCompressedIndex();
+         out << ",";
          out << "previousSolution:" << getPreviousSolution();
          out << ",";
          out << "previousSolutionAverages:" << getPreviousSolutionAverages();
          out << ",";
          out << "previousSolutionCompressed:" << getPreviousSolutionCompressed();
+         out << ",";
+         out << "extrapolatedSolutionIndex:" << getExtrapolatedSolutionIndex();
+         out << ",";
+         out << "extrapolatedSolutionAveragesIndex:" << getExtrapolatedSolutionAveragesIndex();
+         out << ",";
+         out << "extrapolatedSolutionCompressedIndex:" << getExtrapolatedSolutionCompressedIndex();
          out << ",";
          out << "extrapolatedSolution:" << getExtrapolatedSolution();
          out << ",";
@@ -3119,12 +3254,21 @@ switch (mode) {
             getTimeStamp(),
             getPreviousTimeStepSize(),
             getPreviousTimeStamp(),
+            getSolutionIndex(),
+            getSolutionAveragesIndex(),
+            getSolutionCompressedIndex(),
             getSolution(),
             getSolutionAverages(),
             getSolutionCompressed(),
+            getPreviousSolutionIndex(),
+            getPreviousSolutionAveragesIndex(),
+            getPreviousSolutionCompressedIndex(),
             getPreviousSolution(),
             getPreviousSolutionAverages(),
             getPreviousSolutionCompressed(),
+            getExtrapolatedSolutionIndex(),
+            getExtrapolatedSolutionAveragesIndex(),
+            getExtrapolatedSolutionCompressedIndex(),
             getExtrapolatedSolution(),
             getExtrapolatedSolutionAverages(),
             getExtrapolatedSolutionCompressed(),
@@ -3153,26 +3297,17 @@ switch (mode) {
                FiniteVolumesCellDescriptionPacked dummyFiniteVolumesCellDescriptionPacked[2];
                
                #ifdef MPI2
-               const int Attributes = 22;
+               const int Attributes = 13;
                #else
-               const int Attributes = 23;
+               const int Attributes = 14;
                #endif
                MPI_Datatype subtypes[Attributes] = {
                     MPI_INT		 //solverNumber
-                  , MPI_CXX_BOOL		 //neighbourMergePerformed
+                  , MPI_BYTE		 //neighbourMergePerformed
                   , MPI_DOUBLE		 //timeStepSize
                   , MPI_DOUBLE		 //timeStamp
                   , MPI_DOUBLE		 //previousTimeStepSize
                   , MPI_DOUBLE		 //previousTimeStamp
-                  , MPI_INT		 //solution
-                  , MPI_INT		 //solutionAverages
-                  , MPI_INT		 //solutionCompressed
-                  , MPI_INT		 //previousSolution
-                  , MPI_INT		 //previousSolutionAverages
-                  , MPI_INT		 //previousSolutionCompressed
-                  , MPI_INT		 //extrapolatedSolution
-                  , MPI_INT		 //extrapolatedSolutionAverages
-                  , MPI_INT		 //extrapolatedSolutionCompressed
                   , MPI_INT		 //level
                   , MPI_DOUBLE		 //offset
                   , MPI_DOUBLE		 //size
@@ -3193,15 +3328,6 @@ switch (mode) {
                   , 1		 //timeStamp
                   , 1		 //previousTimeStepSize
                   , 1		 //previousTimeStamp
-                  , 1		 //solution
-                  , 1		 //solutionAverages
-                  , 1		 //solutionCompressed
-                  , 1		 //previousSolution
-                  , 1		 //previousSolutionAverages
-                  , 1		 //previousSolutionCompressed
-                  , 1		 //extrapolatedSolution
-                  , 1		 //extrapolatedSolutionAverages
-                  , 1		 //extrapolatedSolutionCompressed
                   , 1		 //level
                   , DIMENSIONS		 //offset
                   , DIMENSIONS		 //size
@@ -3228,9 +3354,9 @@ switch (mode) {
                MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._solverNumber))), 		&disp[0] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._neighbourMergePerformed))), 		&disp[1] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._neighbourMergePerformed[0]))), 		&disp[1] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._neighbourMergePerformed))), 		&disp[1] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._neighbourMergePerformed[0]))), 		&disp[1] );
                #endif
                #ifdef MPI2
                MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._timeStepSize))), 		&disp[2] );
@@ -3253,84 +3379,39 @@ switch (mode) {
                MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._previousTimeStamp))), 		&disp[5] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._solution))), 		&disp[6] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._level))), 		&disp[6] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._solution))), 		&disp[6] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._level))), 		&disp[6] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._solutionAverages))), 		&disp[7] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._offset[0]))), 		&disp[7] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._solutionAverages))), 		&disp[7] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._offset[0]))), 		&disp[7] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._solutionCompressed))), 		&disp[8] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._size[0]))), 		&disp[8] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._solutionCompressed))), 		&disp[8] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._size[0]))), 		&disp[8] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._previousSolution))), 		&disp[9] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._type))), 		&disp[9] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._previousSolution))), 		&disp[9] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._type))), 		&disp[9] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._previousSolutionAverages))), 		&disp[10] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._parentIndex))), 		&disp[10] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._previousSolutionAverages))), 		&disp[10] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._parentIndex))), 		&disp[10] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._previousSolutionCompressed))), 		&disp[11] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._refinementEvent))), 		&disp[11] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._previousSolutionCompressed))), 		&disp[11] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._refinementEvent))), 		&disp[11] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._extrapolatedSolution))), 		&disp[12] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._packedRecords0))), 		&disp[12] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._extrapolatedSolution))), 		&disp[12] );
-               #endif
-               #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._extrapolatedSolutionAverages))), 		&disp[13] );
-               #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._extrapolatedSolutionAverages))), 		&disp[13] );
-               #endif
-               #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._extrapolatedSolutionCompressed))), 		&disp[14] );
-               #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._extrapolatedSolutionCompressed))), 		&disp[14] );
-               #endif
-               #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._level))), 		&disp[15] );
-               #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._level))), 		&disp[15] );
-               #endif
-               #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._offset[0]))), 		&disp[16] );
-               #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._offset[0]))), 		&disp[16] );
-               #endif
-               #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._size[0]))), 		&disp[17] );
-               #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._size[0]))), 		&disp[17] );
-               #endif
-               #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._type))), 		&disp[18] );
-               #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._type))), 		&disp[18] );
-               #endif
-               #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._parentIndex))), 		&disp[19] );
-               #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._parentIndex))), 		&disp[19] );
-               #endif
-               #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._refinementEvent))), 		&disp[20] );
-               #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._refinementEvent))), 		&disp[20] );
-               #endif
-               #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._packedRecords0))), 		&disp[21] );
-               #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._packedRecords0))), 		&disp[21] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._packedRecords0))), 		&disp[12] );
                #endif
                #ifdef MPI2
                for (int i=1; i<Attributes; i++) {
@@ -3348,9 +3429,9 @@ switch (mode) {
                   assertion4(disp[i]<static_cast<int>(sizeof(FiniteVolumesCellDescriptionPacked)), i, disp[i], Attributes, sizeof(FiniteVolumesCellDescriptionPacked));
                }
                #ifndef MPI2
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[1]))), 		&disp[22] );
-               disp[22] -= base;
-               disp[22] += disp[0];
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[1]))), 		&disp[13] );
+               disp[13] -= base;
+               disp[13] += disp[0];
                #endif
                #ifdef MPI2
                MPI_Datatype tmpType; 
@@ -3369,26 +3450,35 @@ switch (mode) {
                FiniteVolumesCellDescriptionPacked dummyFiniteVolumesCellDescriptionPacked[2];
                
                #ifdef MPI2
-               const int Attributes = 22;
+               const int Attributes = 31;
                #else
-               const int Attributes = 23;
+               const int Attributes = 32;
                #endif
                MPI_Datatype subtypes[Attributes] = {
                     MPI_INT		 //solverNumber
-                  , MPI_CXX_BOOL		 //neighbourMergePerformed
+                  , MPI_BYTE		 //neighbourMergePerformed
                   , MPI_DOUBLE		 //timeStepSize
                   , MPI_DOUBLE		 //timeStamp
                   , MPI_DOUBLE		 //previousTimeStepSize
                   , MPI_DOUBLE		 //previousTimeStamp
-                  , MPI_INT		 //solution
-                  , MPI_INT		 //solutionAverages
-                  , MPI_INT		 //solutionCompressed
-                  , MPI_INT		 //previousSolution
-                  , MPI_INT		 //previousSolutionAverages
-                  , MPI_INT		 //previousSolutionCompressed
-                  , MPI_INT		 //extrapolatedSolution
-                  , MPI_INT		 //extrapolatedSolutionAverages
-                  , MPI_INT		 //extrapolatedSolutionCompressed
+                  , MPI_INT		 //solutionIndex
+                  , MPI_INT		 //solutionAveragesIndex
+                  , MPI_INT		 //solutionCompressedIndex
+                  , MPI_UNSIGNED_LONG		 //solution
+                  , MPI_UNSIGNED_LONG		 //solutionAverages
+                  , MPI_UNSIGNED_LONG		 //solutionCompressed
+                  , MPI_INT		 //previousSolutionIndex
+                  , MPI_INT		 //previousSolutionAveragesIndex
+                  , MPI_INT		 //previousSolutionCompressedIndex
+                  , MPI_UNSIGNED_LONG		 //previousSolution
+                  , MPI_UNSIGNED_LONG		 //previousSolutionAverages
+                  , MPI_UNSIGNED_LONG		 //previousSolutionCompressed
+                  , MPI_INT		 //extrapolatedSolutionIndex
+                  , MPI_INT		 //extrapolatedSolutionAveragesIndex
+                  , MPI_INT		 //extrapolatedSolutionCompressedIndex
+                  , MPI_UNSIGNED_LONG		 //extrapolatedSolution
+                  , MPI_UNSIGNED_LONG		 //extrapolatedSolutionAverages
+                  , MPI_UNSIGNED_LONG		 //extrapolatedSolutionCompressed
                   , MPI_INT		 //level
                   , MPI_DOUBLE		 //offset
                   , MPI_DOUBLE		 //size
@@ -3409,12 +3499,21 @@ switch (mode) {
                   , 1		 //timeStamp
                   , 1		 //previousTimeStepSize
                   , 1		 //previousTimeStamp
+                  , 1		 //solutionIndex
+                  , 1		 //solutionAveragesIndex
+                  , 1		 //solutionCompressedIndex
                   , 1		 //solution
                   , 1		 //solutionAverages
                   , 1		 //solutionCompressed
+                  , 1		 //previousSolutionIndex
+                  , 1		 //previousSolutionAveragesIndex
+                  , 1		 //previousSolutionCompressedIndex
                   , 1		 //previousSolution
                   , 1		 //previousSolutionAverages
                   , 1		 //previousSolutionCompressed
+                  , 1		 //extrapolatedSolutionIndex
+                  , 1		 //extrapolatedSolutionAveragesIndex
+                  , 1		 //extrapolatedSolutionCompressedIndex
                   , 1		 //extrapolatedSolution
                   , 1		 //extrapolatedSolutionAverages
                   , 1		 //extrapolatedSolutionCompressed
@@ -3444,9 +3543,9 @@ switch (mode) {
                MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._solverNumber))), 		&disp[0] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._neighbourMergePerformed))), 		&disp[1] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._neighbourMergePerformed[0]))), 		&disp[1] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._neighbourMergePerformed))), 		&disp[1] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._neighbourMergePerformed[0]))), 		&disp[1] );
                #endif
                #ifdef MPI2
                MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._timeStepSize))), 		&disp[2] );
@@ -3469,84 +3568,129 @@ switch (mode) {
                MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._previousTimeStamp))), 		&disp[5] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._solution))), 		&disp[6] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._solutionIndex))), 		&disp[6] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._solution))), 		&disp[6] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._solutionIndex))), 		&disp[6] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._solutionAverages))), 		&disp[7] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._solutionAveragesIndex))), 		&disp[7] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._solutionAverages))), 		&disp[7] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._solutionAveragesIndex))), 		&disp[7] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._solutionCompressed))), 		&disp[8] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._solutionCompressedIndex))), 		&disp[8] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._solutionCompressed))), 		&disp[8] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._solutionCompressedIndex))), 		&disp[8] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._previousSolution))), 		&disp[9] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._solution))), 		&disp[9] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._previousSolution))), 		&disp[9] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._solution))), 		&disp[9] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._previousSolutionAverages))), 		&disp[10] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._solutionAverages))), 		&disp[10] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._previousSolutionAverages))), 		&disp[10] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._solutionAverages))), 		&disp[10] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._previousSolutionCompressed))), 		&disp[11] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._solutionCompressed))), 		&disp[11] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._previousSolutionCompressed))), 		&disp[11] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._solutionCompressed))), 		&disp[11] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._extrapolatedSolution))), 		&disp[12] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._previousSolutionIndex))), 		&disp[12] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._extrapolatedSolution))), 		&disp[12] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._previousSolutionIndex))), 		&disp[12] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._extrapolatedSolutionAverages))), 		&disp[13] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._previousSolutionAveragesIndex))), 		&disp[13] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._extrapolatedSolutionAverages))), 		&disp[13] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._previousSolutionAveragesIndex))), 		&disp[13] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._extrapolatedSolutionCompressed))), 		&disp[14] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._previousSolutionCompressedIndex))), 		&disp[14] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._extrapolatedSolutionCompressed))), 		&disp[14] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._previousSolutionCompressedIndex))), 		&disp[14] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._level))), 		&disp[15] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._previousSolution))), 		&disp[15] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._level))), 		&disp[15] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._previousSolution))), 		&disp[15] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._offset[0]))), 		&disp[16] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._previousSolutionAverages))), 		&disp[16] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._offset[0]))), 		&disp[16] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._previousSolutionAverages))), 		&disp[16] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._size[0]))), 		&disp[17] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._previousSolutionCompressed))), 		&disp[17] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._size[0]))), 		&disp[17] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._previousSolutionCompressed))), 		&disp[17] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._type))), 		&disp[18] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._extrapolatedSolutionIndex))), 		&disp[18] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._type))), 		&disp[18] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._extrapolatedSolutionIndex))), 		&disp[18] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._parentIndex))), 		&disp[19] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._extrapolatedSolutionAveragesIndex))), 		&disp[19] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._parentIndex))), 		&disp[19] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._extrapolatedSolutionAveragesIndex))), 		&disp[19] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._refinementEvent))), 		&disp[20] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._extrapolatedSolutionCompressedIndex))), 		&disp[20] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._refinementEvent))), 		&disp[20] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._extrapolatedSolutionCompressedIndex))), 		&disp[20] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._packedRecords0))), 		&disp[21] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._extrapolatedSolution))), 		&disp[21] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._packedRecords0))), 		&disp[21] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._extrapolatedSolution))), 		&disp[21] );
+               #endif
+               #ifdef MPI2
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._extrapolatedSolutionAverages))), 		&disp[22] );
+               #else
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._extrapolatedSolutionAverages))), 		&disp[22] );
+               #endif
+               #ifdef MPI2
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._extrapolatedSolutionCompressed))), 		&disp[23] );
+               #else
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._extrapolatedSolutionCompressed))), 		&disp[23] );
+               #endif
+               #ifdef MPI2
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._level))), 		&disp[24] );
+               #else
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._level))), 		&disp[24] );
+               #endif
+               #ifdef MPI2
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._offset[0]))), 		&disp[25] );
+               #else
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._offset[0]))), 		&disp[25] );
+               #endif
+               #ifdef MPI2
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._size[0]))), 		&disp[26] );
+               #else
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._size[0]))), 		&disp[26] );
+               #endif
+               #ifdef MPI2
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._type))), 		&disp[27] );
+               #else
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._type))), 		&disp[27] );
+               #endif
+               #ifdef MPI2
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._parentIndex))), 		&disp[28] );
+               #else
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._parentIndex))), 		&disp[28] );
+               #endif
+               #ifdef MPI2
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._refinementEvent))), 		&disp[29] );
+               #else
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._refinementEvent))), 		&disp[29] );
+               #endif
+               #ifdef MPI2
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._packedRecords0))), 		&disp[30] );
+               #else
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[0]._persistentRecords._packedRecords0))), 		&disp[30] );
                #endif
                #ifdef MPI2
                for (int i=1; i<Attributes; i++) {
@@ -3564,9 +3708,9 @@ switch (mode) {
                   assertion4(disp[i]<static_cast<int>(sizeof(FiniteVolumesCellDescriptionPacked)), i, disp[i], Attributes, sizeof(FiniteVolumesCellDescriptionPacked));
                }
                #ifndef MPI2
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[1]))), 		&disp[22] );
-               disp[22] -= base;
-               disp[22] += disp[0];
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyFiniteVolumesCellDescriptionPacked[1]))), 		&disp[31] );
+               disp[31] -= base;
+               disp[31] += disp[0];
                #endif
                #ifdef MPI2
                MPI_Datatype tmpType; 

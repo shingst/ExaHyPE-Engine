@@ -11,14 +11,15 @@
  * For the full license text, see LICENSE.txt
  **/ #}
 
-#include "{{pathToOptKernel}}/Quadrature.h"
 #include <mm_malloc.h> //g++
 
+#include "{{pathToOptKernel}}/Quadrature.h"
 
 // Use {{quadratureType}} quadrature
 double* {{codeNamespace}}::weights1;
 double* {{codeNamespace}}::weights2;
 double* {{codeNamespace}}::weights3;
+double* {{codeNamespace}}::iweights3;
 double* {{codeNamespace}}::nodes;
 {% if useLimiter %}
 double* {{codeNamespace}}::uh2lob;
@@ -26,10 +27,11 @@ double* {{codeNamespace}}::dg2fv;
 double* {{codeNamespace}}::fv2dg;
 {% endif %}
 
-void {{codeNamespace}}::freeQuadratureNodesAndWeights(const std::set<int>& orders) {
+void {{codeNamespace}}::freeQuadratureNodesAndWeights() {
   _mm_free(weights1);
   _mm_free(weights2);
   _mm_free(weights3);
+  _mm_free(iweights3);
   _mm_free(nodes);
 {% if useLimiter %}
   _mm_free(uh2lob);
@@ -38,44 +40,49 @@ void {{codeNamespace}}::freeQuadratureNodesAndWeights(const std::set<int>& order
 {% endif %}
 }
 
-void {{codeNamespace}}::initQuadratureNodesAndWeights(const std::set<int>& orders) {
-  weights1 = (double *) _mm_malloc(sizeof(double)*{{w1Size }}, ALIGNMENT); //nDofPad
-  weights2 = (double *) _mm_malloc(sizeof(double)*{{w2Size }}, ALIGNMENT); //2D: nDofPad (==weight1), 3D: (nDof*nDof)Pad (== w1[i]*w1[j])
-  weights3 = (double *) _mm_malloc(sizeof(double)*{{w3Size }}, ALIGNMENT); //2D: (nDof*nDof)Pad (== w1[i]*w1[j]), 3D: (nDof*nDof*nDof)Pad (== w1[i]*w1[j]*w1[k])
-  nodes    = (double *) _mm_malloc(sizeof(double)*{{nDofPad}}, ALIGNMENT);
+void {{codeNamespace}}::initQuadratureNodesAndWeights() {
+  weights1  = (double *) _mm_malloc(sizeof(double)*{{w1Size }}, ALIGNMENT); //nDofPad
+  weights2  = (double *) _mm_malloc(sizeof(double)*{{w2Size }}, ALIGNMENT); //2D: nDofPad (==weight1), 3D: (nDof*nDof)Pad (== w1[i]*w1[j])
+  weights3  = (double *) _mm_malloc(sizeof(double)*{{w3Size }}, ALIGNMENT); //2D: (nDof*nDof)Pad (== w1[i]*w1[j]), 3D: (nDof*nDof*nDof)Pad (== w1[i]*w1[j]*w1[k])
+  iweights3 = (double *) _mm_malloc(sizeof(double)*{{w3Size }}, ALIGNMENT); //2D: (nDof*nDof)Pad (== w1[i]*w1[j]), 3D: (nDof*nDof*nDof)Pad (== w1[i]*w1[j]*w1[k])
+  nodes     = (double *) _mm_malloc(sizeof(double)*{{nDofPad}}, ALIGNMENT);
 {% if useLimiter %}
-  uh2lob   = (double *) _mm_malloc(sizeof(double)*{{uh2lobSize}}, ALIGNMENT); //nDof*nDofPad
-  dg2fv    = (double *) _mm_malloc(sizeof(double)*{{dg2fvSize }}, ALIGNMENT); //nDof*nDofLimPad
-  fv2dg    = (double *) _mm_malloc(sizeof(double)*{{fv2dgSize }}, ALIGNMENT); //nDofLim*nDofPad
+  uh2lob    = (double *) _mm_malloc(sizeof(double)*{{uh2lobSize}}, ALIGNMENT); //nDof*nDofPad
+  dg2fv     = (double *) _mm_malloc(sizeof(double)*{{dg2fvSize }}, ALIGNMENT); //nDof*nDofLimPad
+  fv2dg     = (double *) _mm_malloc(sizeof(double)*{{fv2dgSize }}, ALIGNMENT); //nDofLim*nDofPad
 {% endif %}
   
 {% for i in w1_seq %}
-  weights1[{{i}}] = {{"{:.15e}".format(weights1[i])}};
+  weights1[{{i}}]  = {{"{:.15e}".format(weights1[i])}};
 {% endfor %}
-  
+
 {% for i in w2_seq %}
-  weights2[{{i}}] = {{"{:.15e}".format(weights2[i])}};
+  weights2[{{i}}]  = {{"{:.15e}".format(weights2[i])}};
 {% endfor %}
 
 {% for i in w3_seq %}
-  weights3[{{i}}] = {{"{:.15e}".format(weights3[i])}};
+  weights3[{{i}}]  = {{"{:.15e}".format(weights3[i])}};
 {% endfor %}
-  
+
+{% for i in w3_seq %}
+  iweights3[{{i}}] = {{"{:.15e}".format(iweights3[i])}};
+{% endfor %}
+
 {% for i in quadrature_seq %}
-  nodes[{{i}}]    = {{"{:.15e}".format(QuadratureNodes[i])}};
+  nodes[{{i}}]     = {{"{:.15e}".format(QuadratureNodes[i])}};
 {% endfor %}
 
 {% if useLimiter %}
 {% for i in uh2lob_seq %}
-  uh2lob[{{i}}]   = {{"{:.15e}".format(uh2lob[i])}};
+  uh2lob[{{i}}]    = {{"{:.15e}".format(uh2lob[i])}};
 {% endfor %}
 
 {% for i in dg2fv_seq %}
-  dg2fv[{{i}}]   = {{"{:.15e}".format(dg2fv[i])}};
+  dg2fv[{{i}}]    = {{"{:.15e}".format(dg2fv[i])}};
 {% endfor %}
 
 {% for i in fv2dg_seq %}
-  fv2dg[{{i}}]   = {{"{:.15e}".format(fv2dg[i])}};
+  fv2dg[{{i}}]    = {{"{:.15e}".format(fv2dg[i])}};
 {% endfor %}
 {% endif %}
 

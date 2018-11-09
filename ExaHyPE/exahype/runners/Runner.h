@@ -79,7 +79,6 @@ class exahype::runners::Runner {
    */
   int _meshRefinements;
   int _localRecomputations;
-  int _globalRecomputations;
   int _predictorReruns;
 
   #ifdef TBBInvade
@@ -97,7 +96,12 @@ class exahype::runners::Runner {
    * Parses global optimisations and
    * prints them out. Must be used for all ranks.
    */
-  void parseOptimisations() const;
+  void initOptimisations() const;
+
+  /**
+   *
+   */
+  void initProfiling();
 
   /**
    * Setup the oracles for the shared memory parallelisation. Different
@@ -256,6 +260,16 @@ class exahype::runners::Runner {
   void runOneTimeStepWithThreeSeparateAlgorithmicSteps(
       exahype::repositories::Repository& repository, bool plot);
 
+  /**
+   * Print grid statistics, e.g. number of inner cells, unrefined inner cells (leafs) ... .
+   */
+  void printGridStatistics(repositories::Repository& repository);
+
+  /**
+   * Run the prediction step in isolation.
+   */
+  void runPredictionInIsolation(repositories::Repository& repository);
+
   void validateSolverTimeStepDataForThreeAlgorithmicPhases(const bool fuseADERDGPhases) const;
 
   /**
@@ -343,6 +357,20 @@ class exahype::runners::Runner {
    *
    * TODO(Dominic): We might not need a few of the other checks anymore after I
    * have introduced the grid refinement requested flag.
+   *
+   * Background Job Consumer Threads
+   * -------------------------------
+   *
+   * During the mesh refinement iterations, the number of
+   * background job consumer threads is set to zero. At
+   * the end of each iterations, all consumers are
+   * then started up to process the memorised background jobs.
+   * This procedure aims to distribute the allocated data
+   * more fairly among the sockets of a node.
+   *
+   * Note that the TBB Jobs class will always run
+   * a single consumer thread. So, the behaviour
+   * described is only realised approximately.
    */
   bool createMesh(exahype::repositories::Repository& repository);
 

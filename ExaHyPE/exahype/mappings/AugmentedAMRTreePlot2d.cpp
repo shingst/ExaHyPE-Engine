@@ -378,8 +378,8 @@ void exahype::mappings::AugmentedAMRTreePlot2d::enterCell(
         if (pFine.getSolverNumber() == solverNumber) {
           _cellTypeWriter->plotCell(              cellIndex, static_cast<int>(pFine.getType()));
           _refinementEventWriter->plotCell(       cellIndex, static_cast<int>(pFine.getRefinementEvent()));
-          _cellDataWriter->plotCell(              cellIndex, 2 * static_cast<int>(pFine.getSolution() > -1) +
-                                                                  static_cast<int>(pFine.getExtrapolatedPredictor() > -1));
+          _cellDataWriter->plotCell(              cellIndex, 2 * static_cast<int>(pFine.getSolutionIndex() > -1) +
+                                                                 static_cast<int>(pFine.getExtrapolatedPredictorIndex() > -1));
           _augmentationStatusWriter->plotCell(    cellIndex, pFine.getAugmentationStatus());
           _communicationStatusWriter->plotCell(          cellIndex, pFine.getCommunicationStatus());
           _refinementStatusWriter->plotCell(         cellIndex, pFine.getRefinementStatus());
@@ -442,7 +442,7 @@ void exahype::mappings::AugmentedAMRTreePlot2d::beginIteration(
   _cellDescriptionIndexWriter =
       _vtkWriter->createCellDataWriter("NoPatch=-1,ValidPatch>=0", 1);
   _refinementEventWriter = _vtkWriter->createCellDataWriter(
-      "refinement-event(NoPatch=-1,None=0,ErasChildReq=1,ErasChild=2,ChildToVirtReq=3,ChildToVirt=4,RefReq=5,Ref=6,Prol=7,ErasVirtRequ=8,ErasVirtual=9,VirtRefReq=10,VirtRef=11)",
+      "refinement-event(NoPatch=-1,None=0,ErasChildrenReq=1,ErasChild=2,ChildToVirtReq=3,ChildToVirt=4,RefReq=5,Ref=6,Prol=7,ErasVirtReq=8.ErasVirt=9,VirtRefReq=10,VirtRef=11,ErasReq1=12,Eras1=13,ChildToVirtReq1=14,ChildToVirt1=15,ErasVirt1=16)",
       1);
   _cellDataWriter = _vtkWriter->createCellDataWriter(
       "Data-on-Patch(None=0,OnlyFaceData=1,VolumeAndFaceData=3)", 1);

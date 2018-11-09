@@ -123,7 +123,10 @@ void exahype::plotters::FlashHDF5Writer::ExtendableDataSet::write(const DataType
 	// stride	- IN: Hyperslab stride - default to NULL
 	// block	- IN: Size of block in the hyperslab - default to NULL
 	// C++: (op, count, start, stride, block)
-	filespace->plotterParametersHyperslab(H5S_SELECT_SET, block_count.data(), block_offset.data());
+	
+	// TODO ALERT FIXME This crucial call is non working for my HDF5 version here. Probably different API?
+	///////// filespace->plotterParametersHyperslab(H5S_SELECT_SET, block_count.data(), block_offset.data());
+	std::abort();
 
 	// Define memory space.
 	DataSpace *memspace = new DataSpace(basic_shape.size(), basic_shape.data(), NULL);

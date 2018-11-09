@@ -51,7 +51,7 @@ void {{codeNamespace}}::riemannSolver(
   double QavR[{{nDataPad}}] __attribute__((aligned(ALIGNMENT))) = {0.0};
 
   for (int ij = 0; ij < {{nDof*nDof3D}}; ij++) {
-    #pragma simd
+    #pragma omp simd aligned(QavL,QavR,QL,QR:ALIGNMENT)
     for (int n = 0; n < {{nDataPad}}; n++) {
       QavL[n] += weights2[ij] * QL[ij*{{nDataPad}}+n];
       QavR[n] += weights2[ij] * QR[ij*{{nDataPad}}+n];
@@ -76,7 +76,7 @@ void {{codeNamespace}}::riemannSolver(
   }
 
   double Qavg[{{nDataPad}}] __attribute__((aligned(ALIGNMENT)));
-  #pragma simd
+  #pragma omp simd aligned(Qavg,QavR,QavL:ALIGNMENT)
   for (int n = 0; n < {{nDataPad}}; n++) {
     Qavg[n] = 0.5 *  (QavR[n] + QavL[n]);
   }
@@ -104,7 +104,7 @@ void {{codeNamespace}}::riemannSolver(
 {% endif %}
   
   for (int ij = 0; ij < {{nDof*nDof3D}}; ij++) {
-    #pragma simd
+    #pragma omp simd aligned(Qdiff,QR,QL:ALIGNMENT)
     for (int n = 0 ; n < {{nVar}} ; n++){ 
       Qdiff[n] = 0.5 * (QR[ij*{{nDataPad}}+n] - QL[ij*{{nDataPad}}+n]);
     }
@@ -126,7 +126,7 @@ void {{codeNamespace}}::riemannSolver(
 #endif
     solver.{{solverName}}::multiplyMaterialParameterMatrix(Qavg, ncp);
 {% endif %}{# useMaterialParam #}
-    #pragma simd
+    #pragma omp simd aligned(FL,ncp:ALIGNMENT)
     for (int n = 0; n < {{nVar}}; n++) {
       FL[ij*{{nVarPad}}+n] += ncp[direction*{{nVar}}+n]; 
     }
@@ -144,13 +144,13 @@ void {{codeNamespace}}::riemannSolver(
 #endif
     solver.{{solverName}}::multiplyMaterialParameterMatrix(Qavg, flux_vec);
 {% endif %}{# useMaterialParam #}
-    #pragma simd
+    #pragma omp simd aligned(FL,flux_vec:ALIGNMENT)
     for (int n = 0; n < {{nVar}}; n++) {
       FL[ij*{{nVarPad}}+n] += flux_vec[direction*{{nVar}}+n];
     }
 {% endif %}{# useFlux #}
 
-    #pragma simd
+    #pragma omp simd aligned(FR,FL,Qdiff:ALIGNMENT)
     for (int n = 0; n < {{nVar}}; n++) {
       FR[ij*{{nVarPad}}+n] = FL[ij*{{nVarPad}}+n] + smax*Qdiff[n];
       FL[ij*{{nVarPad}}+n] -= smax*Qdiff[n];

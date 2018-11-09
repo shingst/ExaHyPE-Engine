@@ -33,7 +33,7 @@ namespace exahype {
     *
     * 		   build date: 09-02-2014 14:40
     *
-    * @date   01/09/2018 15:55
+    * @date   31/10/2018 18:11
     */
    class exahype::records::ADERDGCellDescription { 
       
@@ -50,7 +50,7 @@ namespace exahype {
          };
          
          enum RefinementEvent {
-            None = 0, ErasingChildrenRequested = 1, ErasingChildren = 2, ChangeChildrenToVirtualChildrenRequested = 3, ChangeChildrenToVirtualChildren = 4, RefiningRequested = 5, Refining = 6, Prolongating = 7, ErasingVirtualChildrenRequested = 8, ErasingVirtualChildren = 9, VirtualRefiningRequested = 10, VirtualRefining = 11, Erasing = 12, ChangeToVirtualCell = 13, ErasingVirtualCell = 14
+            None = 0, ErasingChildrenRequested = 1, ErasingChildren = 2, ChangeChildrenToVirtualChildrenRequested = 3, ChangeChildrenToVirtualChildren = 4, RefiningRequested = 5, Refining = 6, Prolongating = 7, ErasingVirtualChildrenRequested = 8, ErasingVirtualChildren = 9, VirtualRefiningRequested = 10, VirtualRefining = 11, ErasingRequested = 12, Erasing = 13, ChangeToVirtualCellRequested = 14, ChangeToVirtualCell = 15, ErasingVirtualCell = 16
          };
          
          enum Type {
@@ -60,9 +60,9 @@ namespace exahype {
          struct PersistentRecords {
             int _solverNumber;
             #ifdef UseManualAlignment
-            std::bitset<DIMENSIONS_TIMES_TWO> _neighbourMergePerformed __attribute__((aligned(VectorisationAlignment)));
+            tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> _neighbourMergePerformed __attribute__((aligned(VectorisationAlignment)));
             #else
-            std::bitset<DIMENSIONS_TIMES_TWO> _neighbourMergePerformed;
+            tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> _neighbourMergePerformed;
             #endif
             bool _hasCompletedTimeStep;
             bool _adjacentToRemoteRank;
@@ -73,12 +73,6 @@ namespace exahype {
             tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _faceDataExchangeCounter;
             #endif
             int _parentIndex;
-            int _parentCellLevel;
-            #ifdef UseManualAlignment
-            tarch::la::Vector<DIMENSIONS,double> _parentOffset __attribute__((aligned(VectorisationAlignment)));
-            #else
-            tarch::la::Vector<DIMENSIONS,double> _parentOffset;
-            #endif
             bool _hasVirtualChildren;
             Type _type;
             RefinementEvent _refinementEvent;
@@ -99,23 +93,40 @@ namespace exahype {
             double _correctorTimeStamp;
             double _predictorTimeStepSize;
             double _predictorTimeStamp;
-            int _solution;
-            int _solutionAverages;
-            int _solutionCompressed;
-            int _previousSolution;
-            int _previousSolutionAverages;
-            int _previousSolutionCompressed;
-            int _update;
-            int _updateAverages;
-            int _updateCompressed;
-            int _extrapolatedPredictor;
-            int _extrapolatedPredictorAverages;
-            int _extrapolatedPredictorCompressed;
-            int _fluctuation;
-            int _fluctuationAverages;
-            int _fluctuationCompressed;
-            int _solutionMin;
-            int _solutionMax;
+            int _solutionIndex;
+            int _solutionAveragesIndex;
+            int _solutionCompressedIndex;
+            void* _solution;
+            void* _solutionAverages;
+            void* _solutionCompressed;
+            int _previousSolutionIndex;
+            int _previousSolutionAveragesIndex;
+            int _previousSolutionCompressedIndex;
+            void* _previousSolution;
+            void* _previousSolutionAverages;
+            void* _previousSolutionCompressed;
+            int _updateIndex;
+            int _updateAveragesIndex;
+            int _updateCompressedIndex;
+            void* _update;
+            void* _updateAverages;
+            void* _updateCompressed;
+            int _extrapolatedPredictorIndex;
+            int _extrapolatedPredictorAveragesIndex;
+            int _extrapolatedPredictorCompressedIndex;
+            void* _extrapolatedPredictor;
+            void* _extrapolatedPredictorAverages;
+            void* _extrapolatedPredictorCompressed;
+            int _fluctuationIndex;
+            int _fluctuationAveragesIndex;
+            int _fluctuationCompressedIndex;
+            void* _fluctuation;
+            void* _fluctuationAverages;
+            void* _fluctuationCompressed;
+            int _solutionMinIndex;
+            int _solutionMaxIndex;
+            void* _solutionMin;
+            void* _solutionMax;
             #ifdef UseManualAlignment
             tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _facewiseAugmentationStatus __attribute__((aligned(VectorisationAlignment)));
             #else
@@ -134,9 +145,10 @@ namespace exahype {
             #else
             tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _facewiseRefinementStatus;
             #endif
-            bool _refinementFlag;
             int _refinementStatus;
             int _previousRefinementStatus;
+            bool _refinementFlag;
+            bool _vetoErasingChildren;
             int _iterationsToCureTroubledCell;
             CompressionState _compressionState;
             int _bytesPerDoFInPreviousSolution;
@@ -153,7 +165,7 @@ namespace exahype {
             /**
              * Generated
              */
-            PersistentRecords(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const bool& adjacentToRemoteRank, const bool& hasToHoldDataForMasterWorkerCommunication, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const int& parentIndex, const int& parentCellLevel, const tarch::la::Vector<DIMENSIONS,double>& parentOffset, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const bool& refinementFlag, const int& refinementStatus, const int& previousRefinementStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation, const Creation& creation);
+            PersistentRecords(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const bool& adjacentToRemoteRank, const bool& hasToHoldDataForMasterWorkerCommunication, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& updateIndex, const int& updateAveragesIndex, const int& updateCompressedIndex, void* update, void* updateAverages, void* updateCompressed, const int& extrapolatedPredictorIndex, const int& extrapolatedPredictorAveragesIndex, const int& extrapolatedPredictorCompressedIndex, void* extrapolatedPredictor, void* extrapolatedPredictorAverages, void* extrapolatedPredictorCompressed, const int& fluctuationIndex, const int& fluctuationAveragesIndex, const int& fluctuationCompressedIndex, void* fluctuation, void* fluctuationAverages, void* fluctuationCompressed, const int& solutionMinIndex, const int& solutionMaxIndex, void* solutionMin, void* solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation, const Creation& creation);
             
             
             inline int getSolverNumber() const 
@@ -195,7 +207,7 @@ namespace exahype {
              * 
              * @see convert()
              */
-            inline std::bitset<DIMENSIONS_TIMES_TWO> getNeighbourMergePerformed() const 
+            inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> getNeighbourMergePerformed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -224,7 +236,7 @@ namespace exahype {
              * 
              * @see convert()
              */
-            inline void setNeighbourMergePerformed(const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) 
+            inline void setNeighbourMergePerformed(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -368,84 +380,6 @@ namespace exahype {
  #endif 
  {
                _parentIndex = parentIndex;
-            }
-            
-            
-            
-            inline int getParentCellLevel() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               return _parentCellLevel;
-            }
-            
-            
-            
-            inline void setParentCellLevel(const int& parentCellLevel) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               _parentCellLevel = parentCellLevel;
-            }
-            
-            
-            
-            /**
-             * Generated and optimized
-             * 
-             * If you realise a for loop using exclusively arrays (vectors) and compile 
-             * with -DUseManualAlignment you may add 
-             * \code
-             #pragma vector aligned
-             #pragma simd
-             \endcode to this for loop to enforce your compiler to use SSE/AVX.
-             * 
-             * The alignment is tied to the unpacked records, i.e. for packed class
-             * variants the machine's natural alignment is switched off to recude the  
-             * memory footprint. Do not use any SSE/AVX operations or 
-             * vectorisation on the result for the packed variants, as the data is misaligned. 
-             * If you rely on vectorisation, convert the underlying record 
-             * into the unpacked version first. 
-             * 
-             * @see convert()
-             */
-            inline tarch::la::Vector<DIMENSIONS,double> getParentOffset() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               return _parentOffset;
-            }
-            
-            
-            
-            /**
-             * Generated and optimized
-             * 
-             * If you realise a for loop using exclusively arrays (vectors) and compile 
-             * with -DUseManualAlignment you may add 
-             * \code
-             #pragma vector aligned
-             #pragma simd
-             \endcode to this for loop to enforce your compiler to use SSE/AVX.
-             * 
-             * The alignment is tied to the unpacked records, i.e. for packed class
-             * variants the machine's natural alignment is switched off to recude the  
-             * memory footprint. Do not use any SSE/AVX operations or 
-             * vectorisation on the result for the packed variants, as the data is misaligned. 
-             * If you rely on vectorisation, convert the underlying record 
-             * into the unpacked version first. 
-             * 
-             * @see convert()
-             */
-            inline void setParentOffset(const tarch::la::Vector<DIMENSIONS,double>& parentOffset) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               _parentOffset = (parentOffset);
             }
             
             
@@ -766,7 +700,67 @@ namespace exahype {
             
             
             
-            inline int getSolution() const 
+            inline int getSolutionIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _solutionIndex;
+            }
+            
+            
+            
+            inline void setSolutionIndex(const int& solutionIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _solutionIndex = solutionIndex;
+            }
+            
+            
+            
+            inline int getSolutionAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _solutionAveragesIndex;
+            }
+            
+            
+            
+            inline void setSolutionAveragesIndex(const int& solutionAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _solutionAveragesIndex = solutionAveragesIndex;
+            }
+            
+            
+            
+            inline int getSolutionCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _solutionCompressedIndex;
+            }
+            
+            
+            
+            inline void setSolutionCompressedIndex(const int& solutionCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _solutionCompressedIndex = solutionCompressedIndex;
+            }
+            
+            
+            
+            inline void* getSolution() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -776,7 +770,7 @@ namespace exahype {
             
             
             
-            inline void setSolution(const int& solution) 
+            inline void setSolution(void* solution) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -786,7 +780,7 @@ namespace exahype {
             
             
             
-            inline int getSolutionAverages() const 
+            inline void* getSolutionAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -796,7 +790,7 @@ namespace exahype {
             
             
             
-            inline void setSolutionAverages(const int& solutionAverages) 
+            inline void setSolutionAverages(void* solutionAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -806,7 +800,7 @@ namespace exahype {
             
             
             
-            inline int getSolutionCompressed() const 
+            inline void* getSolutionCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -816,7 +810,7 @@ namespace exahype {
             
             
             
-            inline void setSolutionCompressed(const int& solutionCompressed) 
+            inline void setSolutionCompressed(void* solutionCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -826,7 +820,67 @@ namespace exahype {
             
             
             
-            inline int getPreviousSolution() const 
+            inline int getPreviousSolutionIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _previousSolutionIndex;
+            }
+            
+            
+            
+            inline void setPreviousSolutionIndex(const int& previousSolutionIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _previousSolutionIndex = previousSolutionIndex;
+            }
+            
+            
+            
+            inline int getPreviousSolutionAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _previousSolutionAveragesIndex;
+            }
+            
+            
+            
+            inline void setPreviousSolutionAveragesIndex(const int& previousSolutionAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _previousSolutionAveragesIndex = previousSolutionAveragesIndex;
+            }
+            
+            
+            
+            inline int getPreviousSolutionCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _previousSolutionCompressedIndex;
+            }
+            
+            
+            
+            inline void setPreviousSolutionCompressedIndex(const int& previousSolutionCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _previousSolutionCompressedIndex = previousSolutionCompressedIndex;
+            }
+            
+            
+            
+            inline void* getPreviousSolution() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -836,7 +890,7 @@ namespace exahype {
             
             
             
-            inline void setPreviousSolution(const int& previousSolution) 
+            inline void setPreviousSolution(void* previousSolution) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -846,7 +900,7 @@ namespace exahype {
             
             
             
-            inline int getPreviousSolutionAverages() const 
+            inline void* getPreviousSolutionAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -856,7 +910,7 @@ namespace exahype {
             
             
             
-            inline void setPreviousSolutionAverages(const int& previousSolutionAverages) 
+            inline void setPreviousSolutionAverages(void* previousSolutionAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -866,7 +920,7 @@ namespace exahype {
             
             
             
-            inline int getPreviousSolutionCompressed() const 
+            inline void* getPreviousSolutionCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -876,7 +930,7 @@ namespace exahype {
             
             
             
-            inline void setPreviousSolutionCompressed(const int& previousSolutionCompressed) 
+            inline void setPreviousSolutionCompressed(void* previousSolutionCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -886,7 +940,67 @@ namespace exahype {
             
             
             
-            inline int getUpdate() const 
+            inline int getUpdateIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _updateIndex;
+            }
+            
+            
+            
+            inline void setUpdateIndex(const int& updateIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _updateIndex = updateIndex;
+            }
+            
+            
+            
+            inline int getUpdateAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _updateAveragesIndex;
+            }
+            
+            
+            
+            inline void setUpdateAveragesIndex(const int& updateAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _updateAveragesIndex = updateAveragesIndex;
+            }
+            
+            
+            
+            inline int getUpdateCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _updateCompressedIndex;
+            }
+            
+            
+            
+            inline void setUpdateCompressedIndex(const int& updateCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _updateCompressedIndex = updateCompressedIndex;
+            }
+            
+            
+            
+            inline void* getUpdate() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -896,7 +1010,7 @@ namespace exahype {
             
             
             
-            inline void setUpdate(const int& update) 
+            inline void setUpdate(void* update) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -906,7 +1020,7 @@ namespace exahype {
             
             
             
-            inline int getUpdateAverages() const 
+            inline void* getUpdateAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -916,7 +1030,7 @@ namespace exahype {
             
             
             
-            inline void setUpdateAverages(const int& updateAverages) 
+            inline void setUpdateAverages(void* updateAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -926,7 +1040,7 @@ namespace exahype {
             
             
             
-            inline int getUpdateCompressed() const 
+            inline void* getUpdateCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -936,7 +1050,7 @@ namespace exahype {
             
             
             
-            inline void setUpdateCompressed(const int& updateCompressed) 
+            inline void setUpdateCompressed(void* updateCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -946,7 +1060,67 @@ namespace exahype {
             
             
             
-            inline int getExtrapolatedPredictor() const 
+            inline int getExtrapolatedPredictorIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _extrapolatedPredictorIndex;
+            }
+            
+            
+            
+            inline void setExtrapolatedPredictorIndex(const int& extrapolatedPredictorIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _extrapolatedPredictorIndex = extrapolatedPredictorIndex;
+            }
+            
+            
+            
+            inline int getExtrapolatedPredictorAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _extrapolatedPredictorAveragesIndex;
+            }
+            
+            
+            
+            inline void setExtrapolatedPredictorAveragesIndex(const int& extrapolatedPredictorAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _extrapolatedPredictorAveragesIndex = extrapolatedPredictorAveragesIndex;
+            }
+            
+            
+            
+            inline int getExtrapolatedPredictorCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _extrapolatedPredictorCompressedIndex;
+            }
+            
+            
+            
+            inline void setExtrapolatedPredictorCompressedIndex(const int& extrapolatedPredictorCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _extrapolatedPredictorCompressedIndex = extrapolatedPredictorCompressedIndex;
+            }
+            
+            
+            
+            inline void* getExtrapolatedPredictor() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -956,7 +1130,7 @@ namespace exahype {
             
             
             
-            inline void setExtrapolatedPredictor(const int& extrapolatedPredictor) 
+            inline void setExtrapolatedPredictor(void* extrapolatedPredictor) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -966,7 +1140,7 @@ namespace exahype {
             
             
             
-            inline int getExtrapolatedPredictorAverages() const 
+            inline void* getExtrapolatedPredictorAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -976,7 +1150,7 @@ namespace exahype {
             
             
             
-            inline void setExtrapolatedPredictorAverages(const int& extrapolatedPredictorAverages) 
+            inline void setExtrapolatedPredictorAverages(void* extrapolatedPredictorAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -986,7 +1160,7 @@ namespace exahype {
             
             
             
-            inline int getExtrapolatedPredictorCompressed() const 
+            inline void* getExtrapolatedPredictorCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -996,7 +1170,7 @@ namespace exahype {
             
             
             
-            inline void setExtrapolatedPredictorCompressed(const int& extrapolatedPredictorCompressed) 
+            inline void setExtrapolatedPredictorCompressed(void* extrapolatedPredictorCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -1006,7 +1180,67 @@ namespace exahype {
             
             
             
-            inline int getFluctuation() const 
+            inline int getFluctuationIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _fluctuationIndex;
+            }
+            
+            
+            
+            inline void setFluctuationIndex(const int& fluctuationIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _fluctuationIndex = fluctuationIndex;
+            }
+            
+            
+            
+            inline int getFluctuationAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _fluctuationAveragesIndex;
+            }
+            
+            
+            
+            inline void setFluctuationAveragesIndex(const int& fluctuationAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _fluctuationAveragesIndex = fluctuationAveragesIndex;
+            }
+            
+            
+            
+            inline int getFluctuationCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _fluctuationCompressedIndex;
+            }
+            
+            
+            
+            inline void setFluctuationCompressedIndex(const int& fluctuationCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _fluctuationCompressedIndex = fluctuationCompressedIndex;
+            }
+            
+            
+            
+            inline void* getFluctuation() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -1016,7 +1250,7 @@ namespace exahype {
             
             
             
-            inline void setFluctuation(const int& fluctuation) 
+            inline void setFluctuation(void* fluctuation) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -1026,7 +1260,7 @@ namespace exahype {
             
             
             
-            inline int getFluctuationAverages() const 
+            inline void* getFluctuationAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -1036,7 +1270,7 @@ namespace exahype {
             
             
             
-            inline void setFluctuationAverages(const int& fluctuationAverages) 
+            inline void setFluctuationAverages(void* fluctuationAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -1046,7 +1280,7 @@ namespace exahype {
             
             
             
-            inline int getFluctuationCompressed() const 
+            inline void* getFluctuationCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -1056,7 +1290,7 @@ namespace exahype {
             
             
             
-            inline void setFluctuationCompressed(const int& fluctuationCompressed) 
+            inline void setFluctuationCompressed(void* fluctuationCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -1066,7 +1300,47 @@ namespace exahype {
             
             
             
-            inline int getSolutionMin() const 
+            inline int getSolutionMinIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _solutionMinIndex;
+            }
+            
+            
+            
+            inline void setSolutionMinIndex(const int& solutionMinIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _solutionMinIndex = solutionMinIndex;
+            }
+            
+            
+            
+            inline int getSolutionMaxIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _solutionMaxIndex;
+            }
+            
+            
+            
+            inline void setSolutionMaxIndex(const int& solutionMaxIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _solutionMaxIndex = solutionMaxIndex;
+            }
+            
+            
+            
+            inline void* getSolutionMin() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -1076,7 +1350,7 @@ namespace exahype {
             
             
             
-            inline void setSolutionMin(const int& solutionMin) 
+            inline void setSolutionMin(void* solutionMin) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -1086,7 +1360,7 @@ namespace exahype {
             
             
             
-            inline int getSolutionMax() const 
+            inline void* getSolutionMax() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -1096,7 +1370,7 @@ namespace exahype {
             
             
             
-            inline void setSolutionMax(const int& solutionMax) 
+            inline void setSolutionMax(void* solutionMax) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -1340,26 +1614,6 @@ namespace exahype {
             
             
             
-            inline bool getRefinementFlag() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               return _refinementFlag;
-            }
-            
-            
-            
-            inline void setRefinementFlag(const bool& refinementFlag) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               _refinementFlag = refinementFlag;
-            }
-            
-            
-            
             inline int getRefinementStatus() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
@@ -1396,6 +1650,46 @@ namespace exahype {
  #endif 
  {
                _previousRefinementStatus = previousRefinementStatus;
+            }
+            
+            
+            
+            inline bool getRefinementFlag() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _refinementFlag;
+            }
+            
+            
+            
+            inline void setRefinementFlag(const bool& refinementFlag) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _refinementFlag = refinementFlag;
+            }
+            
+            
+            
+            inline bool getVetoErasingChildren() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _vetoErasingChildren;
+            }
+            
+            
+            
+            inline void setVetoErasingChildren(const bool& vetoErasingChildren) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _vetoErasingChildren = vetoErasingChildren;
             }
             
             
@@ -1578,7 +1872,7 @@ namespace exahype {
             /**
              * Generated
              */
-            ADERDGCellDescription(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const bool& adjacentToRemoteRank, const bool& hasToHoldDataForMasterWorkerCommunication, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const int& parentIndex, const int& parentCellLevel, const tarch::la::Vector<DIMENSIONS,double>& parentOffset, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const bool& refinementFlag, const int& refinementStatus, const int& previousRefinementStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation, const Creation& creation);
+            ADERDGCellDescription(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const bool& adjacentToRemoteRank, const bool& hasToHoldDataForMasterWorkerCommunication, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& updateIndex, const int& updateAveragesIndex, const int& updateCompressedIndex, void* update, void* updateAverages, void* updateCompressed, const int& extrapolatedPredictorIndex, const int& extrapolatedPredictorAveragesIndex, const int& extrapolatedPredictorCompressedIndex, void* extrapolatedPredictor, void* extrapolatedPredictorAverages, void* extrapolatedPredictorCompressed, const int& fluctuationIndex, const int& fluctuationAveragesIndex, const int& fluctuationCompressedIndex, void* fluctuation, void* fluctuationAverages, void* fluctuationCompressed, const int& solutionMinIndex, const int& solutionMaxIndex, void* solutionMin, void* solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation, const Creation& creation);
             
             /**
              * Generated
@@ -1625,7 +1919,7 @@ namespace exahype {
              * 
              * @see convert()
              */
-            inline std::bitset<DIMENSIONS_TIMES_TWO> getNeighbourMergePerformed() const 
+            inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> getNeighbourMergePerformed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -1654,7 +1948,7 @@ namespace exahype {
              * 
              * @see convert()
              */
-            inline void setNeighbourMergePerformed(const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) 
+            inline void setNeighbourMergePerformed(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -1664,7 +1958,7 @@ namespace exahype {
             
             
             
-            inline bool getNeighbourMergePerformed(int elementIndex) const 
+            inline signed char getNeighbourMergePerformed(int elementIndex) const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -1677,7 +1971,7 @@ namespace exahype {
             
             
             
-            inline void setNeighbourMergePerformed(int elementIndex, const bool& neighbourMergePerformed) 
+            inline void setNeighbourMergePerformed(int elementIndex, const signed char& neighbourMergePerformed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -1686,18 +1980,6 @@ namespace exahype {
                assertion(elementIndex<DIMENSIONS_TIMES_TWO);
                _persistentRecords._neighbourMergePerformed[elementIndex]= neighbourMergePerformed;
                
-            }
-            
-            
-            
-            inline void flipNeighbourMergePerformed(int elementIndex) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               assertion(elementIndex>=0);
-               assertion(elementIndex<DIMENSIONS_TIMES_TWO);
-               _persistentRecords._neighbourMergePerformed.flip(elementIndex);
             }
             
             
@@ -1862,110 +2144,6 @@ namespace exahype {
  #endif 
  {
                _persistentRecords._parentIndex = parentIndex;
-            }
-            
-            
-            
-            inline int getParentCellLevel() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               return _persistentRecords._parentCellLevel;
-            }
-            
-            
-            
-            inline void setParentCellLevel(const int& parentCellLevel) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               _persistentRecords._parentCellLevel = parentCellLevel;
-            }
-            
-            
-            
-            /**
-             * Generated and optimized
-             * 
-             * If you realise a for loop using exclusively arrays (vectors) and compile 
-             * with -DUseManualAlignment you may add 
-             * \code
-             #pragma vector aligned
-             #pragma simd
-             \endcode to this for loop to enforce your compiler to use SSE/AVX.
-             * 
-             * The alignment is tied to the unpacked records, i.e. for packed class
-             * variants the machine's natural alignment is switched off to recude the  
-             * memory footprint. Do not use any SSE/AVX operations or 
-             * vectorisation on the result for the packed variants, as the data is misaligned. 
-             * If you rely on vectorisation, convert the underlying record 
-             * into the unpacked version first. 
-             * 
-             * @see convert()
-             */
-            inline tarch::la::Vector<DIMENSIONS,double> getParentOffset() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               return _persistentRecords._parentOffset;
-            }
-            
-            
-            
-            /**
-             * Generated and optimized
-             * 
-             * If you realise a for loop using exclusively arrays (vectors) and compile 
-             * with -DUseManualAlignment you may add 
-             * \code
-             #pragma vector aligned
-             #pragma simd
-             \endcode to this for loop to enforce your compiler to use SSE/AVX.
-             * 
-             * The alignment is tied to the unpacked records, i.e. for packed class
-             * variants the machine's natural alignment is switched off to recude the  
-             * memory footprint. Do not use any SSE/AVX operations or 
-             * vectorisation on the result for the packed variants, as the data is misaligned. 
-             * If you rely on vectorisation, convert the underlying record 
-             * into the unpacked version first. 
-             * 
-             * @see convert()
-             */
-            inline void setParentOffset(const tarch::la::Vector<DIMENSIONS,double>& parentOffset) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               _persistentRecords._parentOffset = (parentOffset);
-            }
-            
-            
-            
-            inline double getParentOffset(int elementIndex) const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               assertion(elementIndex>=0);
-               assertion(elementIndex<DIMENSIONS);
-               return _persistentRecords._parentOffset[elementIndex];
-               
-            }
-            
-            
-            
-            inline void setParentOffset(int elementIndex, const double& parentOffset) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               assertion(elementIndex>=0);
-               assertion(elementIndex<DIMENSIONS);
-               _persistentRecords._parentOffset[elementIndex]= parentOffset;
-               
             }
             
             
@@ -2338,7 +2516,67 @@ namespace exahype {
             
             
             
-            inline int getSolution() const 
+            inline int getSolutionIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _persistentRecords._solutionIndex;
+            }
+            
+            
+            
+            inline void setSolutionIndex(const int& solutionIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _persistentRecords._solutionIndex = solutionIndex;
+            }
+            
+            
+            
+            inline int getSolutionAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _persistentRecords._solutionAveragesIndex;
+            }
+            
+            
+            
+            inline void setSolutionAveragesIndex(const int& solutionAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _persistentRecords._solutionAveragesIndex = solutionAveragesIndex;
+            }
+            
+            
+            
+            inline int getSolutionCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _persistentRecords._solutionCompressedIndex;
+            }
+            
+            
+            
+            inline void setSolutionCompressedIndex(const int& solutionCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _persistentRecords._solutionCompressedIndex = solutionCompressedIndex;
+            }
+            
+            
+            
+            inline void* getSolution() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -2348,7 +2586,7 @@ namespace exahype {
             
             
             
-            inline void setSolution(const int& solution) 
+            inline void setSolution(void* solution) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -2358,7 +2596,7 @@ namespace exahype {
             
             
             
-            inline int getSolutionAverages() const 
+            inline void* getSolutionAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -2368,7 +2606,7 @@ namespace exahype {
             
             
             
-            inline void setSolutionAverages(const int& solutionAverages) 
+            inline void setSolutionAverages(void* solutionAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -2378,7 +2616,7 @@ namespace exahype {
             
             
             
-            inline int getSolutionCompressed() const 
+            inline void* getSolutionCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -2388,7 +2626,7 @@ namespace exahype {
             
             
             
-            inline void setSolutionCompressed(const int& solutionCompressed) 
+            inline void setSolutionCompressed(void* solutionCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -2398,7 +2636,67 @@ namespace exahype {
             
             
             
-            inline int getPreviousSolution() const 
+            inline int getPreviousSolutionIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _persistentRecords._previousSolutionIndex;
+            }
+            
+            
+            
+            inline void setPreviousSolutionIndex(const int& previousSolutionIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _persistentRecords._previousSolutionIndex = previousSolutionIndex;
+            }
+            
+            
+            
+            inline int getPreviousSolutionAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _persistentRecords._previousSolutionAveragesIndex;
+            }
+            
+            
+            
+            inline void setPreviousSolutionAveragesIndex(const int& previousSolutionAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _persistentRecords._previousSolutionAveragesIndex = previousSolutionAveragesIndex;
+            }
+            
+            
+            
+            inline int getPreviousSolutionCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _persistentRecords._previousSolutionCompressedIndex;
+            }
+            
+            
+            
+            inline void setPreviousSolutionCompressedIndex(const int& previousSolutionCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _persistentRecords._previousSolutionCompressedIndex = previousSolutionCompressedIndex;
+            }
+            
+            
+            
+            inline void* getPreviousSolution() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -2408,7 +2706,7 @@ namespace exahype {
             
             
             
-            inline void setPreviousSolution(const int& previousSolution) 
+            inline void setPreviousSolution(void* previousSolution) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -2418,7 +2716,7 @@ namespace exahype {
             
             
             
-            inline int getPreviousSolutionAverages() const 
+            inline void* getPreviousSolutionAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -2428,7 +2726,7 @@ namespace exahype {
             
             
             
-            inline void setPreviousSolutionAverages(const int& previousSolutionAverages) 
+            inline void setPreviousSolutionAverages(void* previousSolutionAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -2438,7 +2736,7 @@ namespace exahype {
             
             
             
-            inline int getPreviousSolutionCompressed() const 
+            inline void* getPreviousSolutionCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -2448,7 +2746,7 @@ namespace exahype {
             
             
             
-            inline void setPreviousSolutionCompressed(const int& previousSolutionCompressed) 
+            inline void setPreviousSolutionCompressed(void* previousSolutionCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -2458,7 +2756,67 @@ namespace exahype {
             
             
             
-            inline int getUpdate() const 
+            inline int getUpdateIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _persistentRecords._updateIndex;
+            }
+            
+            
+            
+            inline void setUpdateIndex(const int& updateIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _persistentRecords._updateIndex = updateIndex;
+            }
+            
+            
+            
+            inline int getUpdateAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _persistentRecords._updateAveragesIndex;
+            }
+            
+            
+            
+            inline void setUpdateAveragesIndex(const int& updateAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _persistentRecords._updateAveragesIndex = updateAveragesIndex;
+            }
+            
+            
+            
+            inline int getUpdateCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _persistentRecords._updateCompressedIndex;
+            }
+            
+            
+            
+            inline void setUpdateCompressedIndex(const int& updateCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _persistentRecords._updateCompressedIndex = updateCompressedIndex;
+            }
+            
+            
+            
+            inline void* getUpdate() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -2468,7 +2826,7 @@ namespace exahype {
             
             
             
-            inline void setUpdate(const int& update) 
+            inline void setUpdate(void* update) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -2478,7 +2836,7 @@ namespace exahype {
             
             
             
-            inline int getUpdateAverages() const 
+            inline void* getUpdateAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -2488,7 +2846,7 @@ namespace exahype {
             
             
             
-            inline void setUpdateAverages(const int& updateAverages) 
+            inline void setUpdateAverages(void* updateAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -2498,7 +2856,7 @@ namespace exahype {
             
             
             
-            inline int getUpdateCompressed() const 
+            inline void* getUpdateCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -2508,7 +2866,7 @@ namespace exahype {
             
             
             
-            inline void setUpdateCompressed(const int& updateCompressed) 
+            inline void setUpdateCompressed(void* updateCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -2518,7 +2876,67 @@ namespace exahype {
             
             
             
-            inline int getExtrapolatedPredictor() const 
+            inline int getExtrapolatedPredictorIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _persistentRecords._extrapolatedPredictorIndex;
+            }
+            
+            
+            
+            inline void setExtrapolatedPredictorIndex(const int& extrapolatedPredictorIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _persistentRecords._extrapolatedPredictorIndex = extrapolatedPredictorIndex;
+            }
+            
+            
+            
+            inline int getExtrapolatedPredictorAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _persistentRecords._extrapolatedPredictorAveragesIndex;
+            }
+            
+            
+            
+            inline void setExtrapolatedPredictorAveragesIndex(const int& extrapolatedPredictorAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _persistentRecords._extrapolatedPredictorAveragesIndex = extrapolatedPredictorAveragesIndex;
+            }
+            
+            
+            
+            inline int getExtrapolatedPredictorCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _persistentRecords._extrapolatedPredictorCompressedIndex;
+            }
+            
+            
+            
+            inline void setExtrapolatedPredictorCompressedIndex(const int& extrapolatedPredictorCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _persistentRecords._extrapolatedPredictorCompressedIndex = extrapolatedPredictorCompressedIndex;
+            }
+            
+            
+            
+            inline void* getExtrapolatedPredictor() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -2528,7 +2946,7 @@ namespace exahype {
             
             
             
-            inline void setExtrapolatedPredictor(const int& extrapolatedPredictor) 
+            inline void setExtrapolatedPredictor(void* extrapolatedPredictor) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -2538,7 +2956,7 @@ namespace exahype {
             
             
             
-            inline int getExtrapolatedPredictorAverages() const 
+            inline void* getExtrapolatedPredictorAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -2548,7 +2966,7 @@ namespace exahype {
             
             
             
-            inline void setExtrapolatedPredictorAverages(const int& extrapolatedPredictorAverages) 
+            inline void setExtrapolatedPredictorAverages(void* extrapolatedPredictorAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -2558,7 +2976,7 @@ namespace exahype {
             
             
             
-            inline int getExtrapolatedPredictorCompressed() const 
+            inline void* getExtrapolatedPredictorCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -2568,7 +2986,7 @@ namespace exahype {
             
             
             
-            inline void setExtrapolatedPredictorCompressed(const int& extrapolatedPredictorCompressed) 
+            inline void setExtrapolatedPredictorCompressed(void* extrapolatedPredictorCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -2578,7 +2996,67 @@ namespace exahype {
             
             
             
-            inline int getFluctuation() const 
+            inline int getFluctuationIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _persistentRecords._fluctuationIndex;
+            }
+            
+            
+            
+            inline void setFluctuationIndex(const int& fluctuationIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _persistentRecords._fluctuationIndex = fluctuationIndex;
+            }
+            
+            
+            
+            inline int getFluctuationAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _persistentRecords._fluctuationAveragesIndex;
+            }
+            
+            
+            
+            inline void setFluctuationAveragesIndex(const int& fluctuationAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _persistentRecords._fluctuationAveragesIndex = fluctuationAveragesIndex;
+            }
+            
+            
+            
+            inline int getFluctuationCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _persistentRecords._fluctuationCompressedIndex;
+            }
+            
+            
+            
+            inline void setFluctuationCompressedIndex(const int& fluctuationCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _persistentRecords._fluctuationCompressedIndex = fluctuationCompressedIndex;
+            }
+            
+            
+            
+            inline void* getFluctuation() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -2588,7 +3066,7 @@ namespace exahype {
             
             
             
-            inline void setFluctuation(const int& fluctuation) 
+            inline void setFluctuation(void* fluctuation) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -2598,7 +3076,7 @@ namespace exahype {
             
             
             
-            inline int getFluctuationAverages() const 
+            inline void* getFluctuationAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -2608,7 +3086,7 @@ namespace exahype {
             
             
             
-            inline void setFluctuationAverages(const int& fluctuationAverages) 
+            inline void setFluctuationAverages(void* fluctuationAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -2618,7 +3096,7 @@ namespace exahype {
             
             
             
-            inline int getFluctuationCompressed() const 
+            inline void* getFluctuationCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -2628,7 +3106,7 @@ namespace exahype {
             
             
             
-            inline void setFluctuationCompressed(const int& fluctuationCompressed) 
+            inline void setFluctuationCompressed(void* fluctuationCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -2638,7 +3116,47 @@ namespace exahype {
             
             
             
-            inline int getSolutionMin() const 
+            inline int getSolutionMinIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _persistentRecords._solutionMinIndex;
+            }
+            
+            
+            
+            inline void setSolutionMinIndex(const int& solutionMinIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _persistentRecords._solutionMinIndex = solutionMinIndex;
+            }
+            
+            
+            
+            inline int getSolutionMaxIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _persistentRecords._solutionMaxIndex;
+            }
+            
+            
+            
+            inline void setSolutionMaxIndex(const int& solutionMaxIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _persistentRecords._solutionMaxIndex = solutionMaxIndex;
+            }
+            
+            
+            
+            inline void* getSolutionMin() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -2648,7 +3166,7 @@ namespace exahype {
             
             
             
-            inline void setSolutionMin(const int& solutionMin) 
+            inline void setSolutionMin(void* solutionMin) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -2658,7 +3176,7 @@ namespace exahype {
             
             
             
-            inline int getSolutionMax() const 
+            inline void* getSolutionMax() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -2668,7 +3186,7 @@ namespace exahype {
             
             
             
-            inline void setSolutionMax(const int& solutionMax) 
+            inline void setSolutionMax(void* solutionMax) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -2990,26 +3508,6 @@ namespace exahype {
             
             
             
-            inline bool getRefinementFlag() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               return _persistentRecords._refinementFlag;
-            }
-            
-            
-            
-            inline void setRefinementFlag(const bool& refinementFlag) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               _persistentRecords._refinementFlag = refinementFlag;
-            }
-            
-            
-            
             inline int getRefinementStatus() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
@@ -3046,6 +3544,46 @@ namespace exahype {
  #endif 
  {
                _persistentRecords._previousRefinementStatus = previousRefinementStatus;
+            }
+            
+            
+            
+            inline bool getRefinementFlag() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _persistentRecords._refinementFlag;
+            }
+            
+            
+            
+            inline void setRefinementFlag(const bool& refinementFlag) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _persistentRecords._refinementFlag = refinementFlag;
+            }
+            
+            
+            
+            inline bool getVetoErasingChildren() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _persistentRecords._vetoErasingChildren;
+            }
+            
+            
+            
+            inline void setVetoErasingChildren(const bool& vetoErasingChildren) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _persistentRecords._vetoErasingChildren = vetoErasingChildren;
             }
             
             
@@ -3319,7 +3857,7 @@ namespace exahype {
     *
     * 		   build date: 09-02-2014 14:40
     *
-    * @date   01/09/2018 15:55
+    * @date   31/10/2018 18:11
     */
    class exahype::records::ADERDGCellDescriptionPacked { 
       
@@ -3335,11 +3873,10 @@ namespace exahype {
          
          struct PersistentRecords {
             int _solverNumber;
+            tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> _neighbourMergePerformed;
             bool _hasToHoldDataForMasterWorkerCommunication;
             tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _faceDataExchangeCounter;
             int _parentIndex;
-            int _parentCellLevel;
-            tarch::la::Vector<DIMENSIONS,double> _parentOffset;
             bool _hasVirtualChildren;
             int _level;
             tarch::la::Vector<DIMENSIONS,double> _offset;
@@ -3350,48 +3887,65 @@ namespace exahype {
             double _correctorTimeStamp;
             double _predictorTimeStepSize;
             double _predictorTimeStamp;
-            int _solution;
-            int _solutionAverages;
-            int _solutionCompressed;
-            int _previousSolution;
-            int _previousSolutionAverages;
-            int _previousSolutionCompressed;
-            int _update;
-            int _updateAverages;
-            int _updateCompressed;
-            int _extrapolatedPredictor;
-            int _extrapolatedPredictorAverages;
-            int _extrapolatedPredictorCompressed;
-            int _fluctuation;
-            int _fluctuationAverages;
-            int _fluctuationCompressed;
-            int _solutionMin;
-            int _solutionMax;
+            int _solutionIndex;
+            int _solutionAveragesIndex;
+            int _solutionCompressedIndex;
+            void* _solution;
+            void* _solutionAverages;
+            void* _solutionCompressed;
+            int _previousSolutionIndex;
+            int _previousSolutionAveragesIndex;
+            int _previousSolutionCompressedIndex;
+            void* _previousSolution;
+            void* _previousSolutionAverages;
+            void* _previousSolutionCompressed;
+            int _updateIndex;
+            int _updateAveragesIndex;
+            int _updateCompressedIndex;
+            void* _update;
+            void* _updateAverages;
+            void* _updateCompressed;
+            int _extrapolatedPredictorIndex;
+            int _extrapolatedPredictorAveragesIndex;
+            int _extrapolatedPredictorCompressedIndex;
+            void* _extrapolatedPredictor;
+            void* _extrapolatedPredictorAverages;
+            void* _extrapolatedPredictorCompressed;
+            int _fluctuationIndex;
+            int _fluctuationAveragesIndex;
+            int _fluctuationCompressedIndex;
+            void* _fluctuation;
+            void* _fluctuationAverages;
+            void* _fluctuationCompressed;
+            int _solutionMinIndex;
+            int _solutionMaxIndex;
+            void* _solutionMin;
+            void* _solutionMax;
             tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _facewiseAugmentationStatus;
             int _augmentationStatus;
             int _previousAugmentationStatus;
             tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _facewiseCommunicationStatus;
             int _communicationStatus;
             tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _facewiseRefinementStatus;
-            bool _refinementFlag;
             int _refinementStatus;
             int _previousRefinementStatus;
+            bool _refinementFlag;
+            bool _vetoErasingChildren;
             int _iterationsToCureTroubledCell;
             Creation _creation;
             
             /** mapping of records:
             || Member 	|| startbit 	|| length
-             |  neighbourMergePerformed	| startbit 0	| #bits DIMENSIONS_TIMES_TWO
-             |  hasCompletedTimeStep	| startbit DIMENSIONS_TIMES_TWO + 0	| #bits 1
-             |  adjacentToRemoteRank	| startbit DIMENSIONS_TIMES_TWO + 1	| #bits 1
-             |  type	| startbit DIMENSIONS_TIMES_TWO + 2	| #bits 2
-             |  refinementEvent	| startbit DIMENSIONS_TIMES_TWO + 4	| #bits 4
-             |  compressionState	| startbit DIMENSIONS_TIMES_TWO + 8	| #bits 2
-             |  bytesPerDoFInPreviousSolution	| startbit DIMENSIONS_TIMES_TWO + 10	| #bits 3
-             |  bytesPerDoFInSolution	| startbit DIMENSIONS_TIMES_TWO + 13	| #bits 3
-             |  bytesPerDoFInUpdate	| startbit DIMENSIONS_TIMES_TWO + 16	| #bits 3
-             |  bytesPerDoFInExtrapolatedPredictor	| startbit DIMENSIONS_TIMES_TWO + 19	| #bits 3
-             |  bytesPerDoFInFluctuation	| startbit DIMENSIONS_TIMES_TWO + 22	| #bits 3
+             |  hasCompletedTimeStep	| startbit 0	| #bits 1
+             |  adjacentToRemoteRank	| startbit 1	| #bits 1
+             |  type	| startbit 2	| #bits 2
+             |  refinementEvent	| startbit 4	| #bits 5
+             |  compressionState	| startbit 9	| #bits 2
+             |  bytesPerDoFInPreviousSolution	| startbit 11	| #bits 3
+             |  bytesPerDoFInSolution	| startbit 14	| #bits 3
+             |  bytesPerDoFInUpdate	| startbit 17	| #bits 3
+             |  bytesPerDoFInExtrapolatedPredictor	| startbit 20	| #bits 3
+             |  bytesPerDoFInFluctuation	| startbit 23	| #bits 3
              */
             int _packedRecords0;
             
@@ -3403,7 +3957,7 @@ namespace exahype {
             /**
              * Generated
              */
-            PersistentRecords(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const bool& adjacentToRemoteRank, const bool& hasToHoldDataForMasterWorkerCommunication, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const int& parentIndex, const int& parentCellLevel, const tarch::la::Vector<DIMENSIONS,double>& parentOffset, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const bool& refinementFlag, const int& refinementStatus, const int& previousRefinementStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation, const Creation& creation);
+            PersistentRecords(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const bool& adjacentToRemoteRank, const bool& hasToHoldDataForMasterWorkerCommunication, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& updateIndex, const int& updateAveragesIndex, const int& updateCompressedIndex, void* update, void* updateAverages, void* updateCompressed, const int& extrapolatedPredictorIndex, const int& extrapolatedPredictorAveragesIndex, const int& extrapolatedPredictorCompressedIndex, void* extrapolatedPredictor, void* extrapolatedPredictorAverages, void* extrapolatedPredictorCompressed, const int& fluctuationIndex, const int& fluctuationAveragesIndex, const int& fluctuationCompressedIndex, void* fluctuation, void* fluctuationAverages, void* fluctuationCompressed, const int& solutionMinIndex, const int& solutionMaxIndex, void* solutionMin, void* solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation, const Creation& creation);
             
             
             inline int getSolverNumber() const 
@@ -3445,17 +3999,12 @@ namespace exahype {
              * 
              * @see convert()
              */
-            inline std::bitset<DIMENSIONS_TIMES_TWO> getNeighbourMergePerformed() const 
+            inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> getNeighbourMergePerformed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               int mask = (int) (1 << (DIMENSIONS_TIMES_TWO)) - 1 ;
-               mask = static_cast<int>(mask << (0));
-               int tmp = static_cast<int>(_packedRecords0 & mask);
-               tmp = static_cast<int>(tmp >> (0));
-               std::bitset<DIMENSIONS_TIMES_TWO> result = tmp;
-               return result;
+               return _neighbourMergePerformed;
             }
             
             
@@ -3479,15 +4028,12 @@ namespace exahype {
              * 
              * @see convert()
              */
-            inline void setNeighbourMergePerformed(const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) 
+            inline void setNeighbourMergePerformed(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               int mask = (int) (1 << (DIMENSIONS_TIMES_TWO)) - 1 ;
-               mask = static_cast<int>(mask << (0));
-               _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-               _packedRecords0 = static_cast<int>(_packedRecords0 | neighbourMergePerformed.to_ulong() << (0));
+               _neighbourMergePerformed = (neighbourMergePerformed);
             }
             
             
@@ -3497,7 +4043,7 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-               int mask = 1 << (DIMENSIONS_TIMES_TWO);
+               int mask = 1 << (0);
    int tmp = static_cast<int>(_packedRecords0 & mask);
    return (tmp != 0);
             }
@@ -3509,7 +4055,7 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-               int mask = 1 << (DIMENSIONS_TIMES_TWO);
+               int mask = 1 << (0);
    _packedRecords0 = static_cast<int>( hasCompletedTimeStep ? (_packedRecords0 | mask) : (_packedRecords0 & ~mask));
             }
             
@@ -3520,7 +4066,7 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-               int mask = 1 << (DIMENSIONS_TIMES_TWO + 1);
+               int mask = 1 << (1);
    int tmp = static_cast<int>(_packedRecords0 & mask);
    return (tmp != 0);
             }
@@ -3532,7 +4078,7 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-               int mask = 1 << (DIMENSIONS_TIMES_TWO + 1);
+               int mask = 1 << (1);
    _packedRecords0 = static_cast<int>( adjacentToRemoteRank ? (_packedRecords0 | mask) : (_packedRecords0 & ~mask));
             }
             
@@ -3636,84 +4182,6 @@ namespace exahype {
             
             
             
-            inline int getParentCellLevel() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               return _parentCellLevel;
-            }
-            
-            
-            
-            inline void setParentCellLevel(const int& parentCellLevel) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               _parentCellLevel = parentCellLevel;
-            }
-            
-            
-            
-            /**
-             * Generated and optimized
-             * 
-             * If you realise a for loop using exclusively arrays (vectors) and compile 
-             * with -DUseManualAlignment you may add 
-             * \code
-             #pragma vector aligned
-             #pragma simd
-             \endcode to this for loop to enforce your compiler to use SSE/AVX.
-             * 
-             * The alignment is tied to the unpacked records, i.e. for packed class
-             * variants the machine's natural alignment is switched off to recude the  
-             * memory footprint. Do not use any SSE/AVX operations or 
-             * vectorisation on the result for the packed variants, as the data is misaligned. 
-             * If you rely on vectorisation, convert the underlying record 
-             * into the unpacked version first. 
-             * 
-             * @see convert()
-             */
-            inline tarch::la::Vector<DIMENSIONS,double> getParentOffset() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               return _parentOffset;
-            }
-            
-            
-            
-            /**
-             * Generated and optimized
-             * 
-             * If you realise a for loop using exclusively arrays (vectors) and compile 
-             * with -DUseManualAlignment you may add 
-             * \code
-             #pragma vector aligned
-             #pragma simd
-             \endcode to this for loop to enforce your compiler to use SSE/AVX.
-             * 
-             * The alignment is tied to the unpacked records, i.e. for packed class
-             * variants the machine's natural alignment is switched off to recude the  
-             * memory footprint. Do not use any SSE/AVX operations or 
-             * vectorisation on the result for the packed variants, as the data is misaligned. 
-             * If you rely on vectorisation, convert the underlying record 
-             * into the unpacked version first. 
-             * 
-             * @see convert()
-             */
-            inline void setParentOffset(const tarch::la::Vector<DIMENSIONS,double>& parentOffset) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               _parentOffset = (parentOffset);
-            }
-            
-            
-            
             inline bool getHasVirtualChildren() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
@@ -3740,9 +4208,9 @@ namespace exahype {
  #endif 
  {
                int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 2));
+   mask = static_cast<int>(mask << (2));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 2));
+   tmp = static_cast<int>(tmp >> (2));
    assertion(( tmp >= 0 &&  tmp <= 3));
    return (Type) tmp;
             }
@@ -3756,9 +4224,9 @@ namespace exahype {
  {
                assertion((type >= 0 && type <= 3));
    int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 2));
+   mask = static_cast<int>(mask << (2));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(type) << (DIMENSIONS_TIMES_TWO + 2));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(type) << (2));
             }
             
             
@@ -3768,11 +4236,11 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-               int mask =  (1 << (4)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 4));
+               int mask =  (1 << (5)) - 1;
+   mask = static_cast<int>(mask << (4));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 4));
-   assertion(( tmp >= 0 &&  tmp <= 14));
+   tmp = static_cast<int>(tmp >> (4));
+   assertion(( tmp >= 0 &&  tmp <= 16));
    return (RefinementEvent) tmp;
             }
             
@@ -3783,11 +4251,11 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-               assertion((refinementEvent >= 0 && refinementEvent <= 14));
-   int mask =  (1 << (4)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 4));
+               assertion((refinementEvent >= 0 && refinementEvent <= 16));
+   int mask =  (1 << (5)) - 1;
+   mask = static_cast<int>(mask << (4));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(refinementEvent) << (DIMENSIONS_TIMES_TWO + 4));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(refinementEvent) << (4));
             }
             
             
@@ -4048,7 +4516,67 @@ namespace exahype {
             
             
             
-            inline int getSolution() const 
+            inline int getSolutionIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _solutionIndex;
+            }
+            
+            
+            
+            inline void setSolutionIndex(const int& solutionIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _solutionIndex = solutionIndex;
+            }
+            
+            
+            
+            inline int getSolutionAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _solutionAveragesIndex;
+            }
+            
+            
+            
+            inline void setSolutionAveragesIndex(const int& solutionAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _solutionAveragesIndex = solutionAveragesIndex;
+            }
+            
+            
+            
+            inline int getSolutionCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _solutionCompressedIndex;
+            }
+            
+            
+            
+            inline void setSolutionCompressedIndex(const int& solutionCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _solutionCompressedIndex = solutionCompressedIndex;
+            }
+            
+            
+            
+            inline void* getSolution() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -4058,7 +4586,7 @@ namespace exahype {
             
             
             
-            inline void setSolution(const int& solution) 
+            inline void setSolution(void* solution) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -4068,7 +4596,7 @@ namespace exahype {
             
             
             
-            inline int getSolutionAverages() const 
+            inline void* getSolutionAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -4078,7 +4606,7 @@ namespace exahype {
             
             
             
-            inline void setSolutionAverages(const int& solutionAverages) 
+            inline void setSolutionAverages(void* solutionAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -4088,7 +4616,7 @@ namespace exahype {
             
             
             
-            inline int getSolutionCompressed() const 
+            inline void* getSolutionCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -4098,7 +4626,7 @@ namespace exahype {
             
             
             
-            inline void setSolutionCompressed(const int& solutionCompressed) 
+            inline void setSolutionCompressed(void* solutionCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -4108,7 +4636,67 @@ namespace exahype {
             
             
             
-            inline int getPreviousSolution() const 
+            inline int getPreviousSolutionIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _previousSolutionIndex;
+            }
+            
+            
+            
+            inline void setPreviousSolutionIndex(const int& previousSolutionIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _previousSolutionIndex = previousSolutionIndex;
+            }
+            
+            
+            
+            inline int getPreviousSolutionAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _previousSolutionAveragesIndex;
+            }
+            
+            
+            
+            inline void setPreviousSolutionAveragesIndex(const int& previousSolutionAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _previousSolutionAveragesIndex = previousSolutionAveragesIndex;
+            }
+            
+            
+            
+            inline int getPreviousSolutionCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _previousSolutionCompressedIndex;
+            }
+            
+            
+            
+            inline void setPreviousSolutionCompressedIndex(const int& previousSolutionCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _previousSolutionCompressedIndex = previousSolutionCompressedIndex;
+            }
+            
+            
+            
+            inline void* getPreviousSolution() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -4118,7 +4706,7 @@ namespace exahype {
             
             
             
-            inline void setPreviousSolution(const int& previousSolution) 
+            inline void setPreviousSolution(void* previousSolution) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -4128,7 +4716,7 @@ namespace exahype {
             
             
             
-            inline int getPreviousSolutionAverages() const 
+            inline void* getPreviousSolutionAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -4138,7 +4726,7 @@ namespace exahype {
             
             
             
-            inline void setPreviousSolutionAverages(const int& previousSolutionAverages) 
+            inline void setPreviousSolutionAverages(void* previousSolutionAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -4148,7 +4736,7 @@ namespace exahype {
             
             
             
-            inline int getPreviousSolutionCompressed() const 
+            inline void* getPreviousSolutionCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -4158,7 +4746,7 @@ namespace exahype {
             
             
             
-            inline void setPreviousSolutionCompressed(const int& previousSolutionCompressed) 
+            inline void setPreviousSolutionCompressed(void* previousSolutionCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -4168,7 +4756,67 @@ namespace exahype {
             
             
             
-            inline int getUpdate() const 
+            inline int getUpdateIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _updateIndex;
+            }
+            
+            
+            
+            inline void setUpdateIndex(const int& updateIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _updateIndex = updateIndex;
+            }
+            
+            
+            
+            inline int getUpdateAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _updateAveragesIndex;
+            }
+            
+            
+            
+            inline void setUpdateAveragesIndex(const int& updateAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _updateAveragesIndex = updateAveragesIndex;
+            }
+            
+            
+            
+            inline int getUpdateCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _updateCompressedIndex;
+            }
+            
+            
+            
+            inline void setUpdateCompressedIndex(const int& updateCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _updateCompressedIndex = updateCompressedIndex;
+            }
+            
+            
+            
+            inline void* getUpdate() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -4178,7 +4826,7 @@ namespace exahype {
             
             
             
-            inline void setUpdate(const int& update) 
+            inline void setUpdate(void* update) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -4188,7 +4836,7 @@ namespace exahype {
             
             
             
-            inline int getUpdateAverages() const 
+            inline void* getUpdateAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -4198,7 +4846,7 @@ namespace exahype {
             
             
             
-            inline void setUpdateAverages(const int& updateAverages) 
+            inline void setUpdateAverages(void* updateAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -4208,7 +4856,7 @@ namespace exahype {
             
             
             
-            inline int getUpdateCompressed() const 
+            inline void* getUpdateCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -4218,7 +4866,7 @@ namespace exahype {
             
             
             
-            inline void setUpdateCompressed(const int& updateCompressed) 
+            inline void setUpdateCompressed(void* updateCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -4228,7 +4876,67 @@ namespace exahype {
             
             
             
-            inline int getExtrapolatedPredictor() const 
+            inline int getExtrapolatedPredictorIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _extrapolatedPredictorIndex;
+            }
+            
+            
+            
+            inline void setExtrapolatedPredictorIndex(const int& extrapolatedPredictorIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _extrapolatedPredictorIndex = extrapolatedPredictorIndex;
+            }
+            
+            
+            
+            inline int getExtrapolatedPredictorAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _extrapolatedPredictorAveragesIndex;
+            }
+            
+            
+            
+            inline void setExtrapolatedPredictorAveragesIndex(const int& extrapolatedPredictorAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _extrapolatedPredictorAveragesIndex = extrapolatedPredictorAveragesIndex;
+            }
+            
+            
+            
+            inline int getExtrapolatedPredictorCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _extrapolatedPredictorCompressedIndex;
+            }
+            
+            
+            
+            inline void setExtrapolatedPredictorCompressedIndex(const int& extrapolatedPredictorCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _extrapolatedPredictorCompressedIndex = extrapolatedPredictorCompressedIndex;
+            }
+            
+            
+            
+            inline void* getExtrapolatedPredictor() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -4238,7 +4946,7 @@ namespace exahype {
             
             
             
-            inline void setExtrapolatedPredictor(const int& extrapolatedPredictor) 
+            inline void setExtrapolatedPredictor(void* extrapolatedPredictor) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -4248,7 +4956,7 @@ namespace exahype {
             
             
             
-            inline int getExtrapolatedPredictorAverages() const 
+            inline void* getExtrapolatedPredictorAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -4258,7 +4966,7 @@ namespace exahype {
             
             
             
-            inline void setExtrapolatedPredictorAverages(const int& extrapolatedPredictorAverages) 
+            inline void setExtrapolatedPredictorAverages(void* extrapolatedPredictorAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -4268,7 +4976,7 @@ namespace exahype {
             
             
             
-            inline int getExtrapolatedPredictorCompressed() const 
+            inline void* getExtrapolatedPredictorCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -4278,7 +4986,7 @@ namespace exahype {
             
             
             
-            inline void setExtrapolatedPredictorCompressed(const int& extrapolatedPredictorCompressed) 
+            inline void setExtrapolatedPredictorCompressed(void* extrapolatedPredictorCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -4288,7 +4996,67 @@ namespace exahype {
             
             
             
-            inline int getFluctuation() const 
+            inline int getFluctuationIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _fluctuationIndex;
+            }
+            
+            
+            
+            inline void setFluctuationIndex(const int& fluctuationIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _fluctuationIndex = fluctuationIndex;
+            }
+            
+            
+            
+            inline int getFluctuationAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _fluctuationAveragesIndex;
+            }
+            
+            
+            
+            inline void setFluctuationAveragesIndex(const int& fluctuationAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _fluctuationAveragesIndex = fluctuationAveragesIndex;
+            }
+            
+            
+            
+            inline int getFluctuationCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _fluctuationCompressedIndex;
+            }
+            
+            
+            
+            inline void setFluctuationCompressedIndex(const int& fluctuationCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _fluctuationCompressedIndex = fluctuationCompressedIndex;
+            }
+            
+            
+            
+            inline void* getFluctuation() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -4298,7 +5066,7 @@ namespace exahype {
             
             
             
-            inline void setFluctuation(const int& fluctuation) 
+            inline void setFluctuation(void* fluctuation) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -4308,7 +5076,7 @@ namespace exahype {
             
             
             
-            inline int getFluctuationAverages() const 
+            inline void* getFluctuationAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -4318,7 +5086,7 @@ namespace exahype {
             
             
             
-            inline void setFluctuationAverages(const int& fluctuationAverages) 
+            inline void setFluctuationAverages(void* fluctuationAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -4328,7 +5096,7 @@ namespace exahype {
             
             
             
-            inline int getFluctuationCompressed() const 
+            inline void* getFluctuationCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -4338,7 +5106,7 @@ namespace exahype {
             
             
             
-            inline void setFluctuationCompressed(const int& fluctuationCompressed) 
+            inline void setFluctuationCompressed(void* fluctuationCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -4348,7 +5116,47 @@ namespace exahype {
             
             
             
-            inline int getSolutionMin() const 
+            inline int getSolutionMinIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _solutionMinIndex;
+            }
+            
+            
+            
+            inline void setSolutionMinIndex(const int& solutionMinIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _solutionMinIndex = solutionMinIndex;
+            }
+            
+            
+            
+            inline int getSolutionMaxIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _solutionMaxIndex;
+            }
+            
+            
+            
+            inline void setSolutionMaxIndex(const int& solutionMaxIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _solutionMaxIndex = solutionMaxIndex;
+            }
+            
+            
+            
+            inline void* getSolutionMin() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -4358,7 +5166,7 @@ namespace exahype {
             
             
             
-            inline void setSolutionMin(const int& solutionMin) 
+            inline void setSolutionMin(void* solutionMin) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -4368,7 +5176,7 @@ namespace exahype {
             
             
             
-            inline int getSolutionMax() const 
+            inline void* getSolutionMax() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -4378,7 +5186,7 @@ namespace exahype {
             
             
             
-            inline void setSolutionMax(const int& solutionMax) 
+            inline void setSolutionMax(void* solutionMax) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -4622,26 +5430,6 @@ namespace exahype {
             
             
             
-            inline bool getRefinementFlag() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               return _refinementFlag;
-            }
-            
-            
-            
-            inline void setRefinementFlag(const bool& refinementFlag) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               _refinementFlag = refinementFlag;
-            }
-            
-            
-            
             inline int getRefinementStatus() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
@@ -4682,6 +5470,46 @@ namespace exahype {
             
             
             
+            inline bool getRefinementFlag() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _refinementFlag;
+            }
+            
+            
+            
+            inline void setRefinementFlag(const bool& refinementFlag) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _refinementFlag = refinementFlag;
+            }
+            
+            
+            
+            inline bool getVetoErasingChildren() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _vetoErasingChildren;
+            }
+            
+            
+            
+            inline void setVetoErasingChildren(const bool& vetoErasingChildren) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _vetoErasingChildren = vetoErasingChildren;
+            }
+            
+            
+            
             inline int getIterationsToCureTroubledCell() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
@@ -4708,9 +5536,9 @@ namespace exahype {
  #endif 
  {
                int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 8));
+   mask = static_cast<int>(mask << (9));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 8));
+   tmp = static_cast<int>(tmp >> (9));
    assertion(( tmp >= 0 &&  tmp <= 2));
    return (CompressionState) tmp;
             }
@@ -4724,9 +5552,9 @@ namespace exahype {
  {
                assertion((compressionState >= 0 && compressionState <= 2));
    int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 8));
+   mask = static_cast<int>(mask << (9));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(compressionState) << (DIMENSIONS_TIMES_TWO + 8));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(compressionState) << (9));
             }
             
             
@@ -4737,9 +5565,9 @@ namespace exahype {
  #endif 
  {
                int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 10));
+   mask = static_cast<int>(mask << (11));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 10));
+   tmp = static_cast<int>(tmp >> (11));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -4754,9 +5582,9 @@ namespace exahype {
  {
                assertion((bytesPerDoFInPreviousSolution >= 1 && bytesPerDoFInPreviousSolution <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 10));
+   mask = static_cast<int>(mask << (11));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInPreviousSolution) - 1) << (DIMENSIONS_TIMES_TWO + 10));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInPreviousSolution) - 1) << (11));
             }
             
             
@@ -4767,9 +5595,9 @@ namespace exahype {
  #endif 
  {
                int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 13));
+   mask = static_cast<int>(mask << (14));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 13));
+   tmp = static_cast<int>(tmp >> (14));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -4784,9 +5612,9 @@ namespace exahype {
  {
                assertion((bytesPerDoFInSolution >= 1 && bytesPerDoFInSolution <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 13));
+   mask = static_cast<int>(mask << (14));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInSolution) - 1) << (DIMENSIONS_TIMES_TWO + 13));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInSolution) - 1) << (14));
             }
             
             
@@ -4797,9 +5625,9 @@ namespace exahype {
  #endif 
  {
                int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 16));
+   mask = static_cast<int>(mask << (17));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 16));
+   tmp = static_cast<int>(tmp >> (17));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -4814,9 +5642,9 @@ namespace exahype {
  {
                assertion((bytesPerDoFInUpdate >= 1 && bytesPerDoFInUpdate <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 16));
+   mask = static_cast<int>(mask << (17));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInUpdate) - 1) << (DIMENSIONS_TIMES_TWO + 16));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInUpdate) - 1) << (17));
             }
             
             
@@ -4827,9 +5655,9 @@ namespace exahype {
  #endif 
  {
                int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 19));
+   mask = static_cast<int>(mask << (20));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 19));
+   tmp = static_cast<int>(tmp >> (20));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -4844,9 +5672,9 @@ namespace exahype {
  {
                assertion((bytesPerDoFInExtrapolatedPredictor >= 1 && bytesPerDoFInExtrapolatedPredictor <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 19));
+   mask = static_cast<int>(mask << (20));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInExtrapolatedPredictor) - 1) << (DIMENSIONS_TIMES_TWO + 19));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInExtrapolatedPredictor) - 1) << (20));
             }
             
             
@@ -4857,9 +5685,9 @@ namespace exahype {
  #endif 
  {
                int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 22));
+   mask = static_cast<int>(mask << (23));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 22));
+   tmp = static_cast<int>(tmp >> (23));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -4874,9 +5702,9 @@ namespace exahype {
  {
                assertion((bytesPerDoFInFluctuation >= 1 && bytesPerDoFInFluctuation <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 22));
+   mask = static_cast<int>(mask << (23));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInFluctuation) - 1) << (DIMENSIONS_TIMES_TWO + 22));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInFluctuation) - 1) << (23));
             }
             
             
@@ -4919,7 +5747,7 @@ namespace exahype {
             /**
              * Generated
              */
-            ADERDGCellDescriptionPacked(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const bool& adjacentToRemoteRank, const bool& hasToHoldDataForMasterWorkerCommunication, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const int& parentIndex, const int& parentCellLevel, const tarch::la::Vector<DIMENSIONS,double>& parentOffset, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const bool& refinementFlag, const int& refinementStatus, const int& previousRefinementStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation, const Creation& creation);
+            ADERDGCellDescriptionPacked(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const bool& adjacentToRemoteRank, const bool& hasToHoldDataForMasterWorkerCommunication, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& updateIndex, const int& updateAveragesIndex, const int& updateCompressedIndex, void* update, void* updateAverages, void* updateCompressed, const int& extrapolatedPredictorIndex, const int& extrapolatedPredictorAveragesIndex, const int& extrapolatedPredictorCompressedIndex, void* extrapolatedPredictor, void* extrapolatedPredictorAverages, void* extrapolatedPredictorCompressed, const int& fluctuationIndex, const int& fluctuationAveragesIndex, const int& fluctuationCompressedIndex, void* fluctuation, void* fluctuationAverages, void* fluctuationCompressed, const int& solutionMinIndex, const int& solutionMaxIndex, void* solutionMin, void* solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation, const Creation& creation);
             
             /**
              * Generated
@@ -4966,17 +5794,12 @@ namespace exahype {
              * 
              * @see convert()
              */
-            inline std::bitset<DIMENSIONS_TIMES_TWO> getNeighbourMergePerformed() const 
+            inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> getNeighbourMergePerformed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               int mask = (int) (1 << (DIMENSIONS_TIMES_TWO)) - 1 ;
-               mask = static_cast<int>(mask << (0));
-               int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-               tmp = static_cast<int>(tmp >> (0));
-               std::bitset<DIMENSIONS_TIMES_TWO> result = tmp;
-               return result;
+               return _persistentRecords._neighbourMergePerformed;
             }
             
             
@@ -5000,60 +5823,38 @@ namespace exahype {
              * 
              * @see convert()
              */
-            inline void setNeighbourMergePerformed(const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) 
+            inline void setNeighbourMergePerformed(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               int mask = (int) (1 << (DIMENSIONS_TIMES_TWO)) - 1 ;
-               mask = static_cast<int>(mask << (0));
-               _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-               _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | neighbourMergePerformed.to_ulong() << (0));
+               _persistentRecords._neighbourMergePerformed = (neighbourMergePerformed);
             }
             
             
             
-            inline bool getNeighbourMergePerformed(int elementIndex) const 
+            inline signed char getNeighbourMergePerformed(int elementIndex) const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
                assertion(elementIndex>=0);
                assertion(elementIndex<DIMENSIONS_TIMES_TWO);
-               int mask = 1 << (0);
-               mask = mask << elementIndex;
-               return (_persistentRecords._packedRecords0& mask);
+               return _persistentRecords._neighbourMergePerformed[elementIndex];
+               
             }
             
             
             
-            inline void setNeighbourMergePerformed(int elementIndex, const bool& neighbourMergePerformed) 
+            inline void setNeighbourMergePerformed(int elementIndex, const signed char& neighbourMergePerformed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
                assertion(elementIndex>=0);
                assertion(elementIndex<DIMENSIONS_TIMES_TWO);
-               assertion(!neighbourMergePerformed || neighbourMergePerformed==1);
-               int shift        = 0 + elementIndex; 
-               int mask         = 1     << (shift);
-               int shiftedValue = neighbourMergePerformed << (shift);
-               _persistentRecords._packedRecords0 = _persistentRecords._packedRecords0 & ~mask;
-               _persistentRecords._packedRecords0 = _persistentRecords._packedRecords0 |  shiftedValue;
-            }
-            
-            
-            
-            inline void flipNeighbourMergePerformed(int elementIndex) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               assertion(elementIndex>=0);
-               assertion(elementIndex<DIMENSIONS_TIMES_TWO);
-               int mask = 1 << (0);
-               mask = mask << elementIndex;
-               _persistentRecords._packedRecords0^= mask;
+               _persistentRecords._neighbourMergePerformed[elementIndex]= neighbourMergePerformed;
+               
             }
             
             
@@ -5063,7 +5864,7 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-               int mask = 1 << (DIMENSIONS_TIMES_TWO);
+               int mask = 1 << (0);
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
    return (tmp != 0);
             }
@@ -5075,7 +5876,7 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-               int mask = 1 << (DIMENSIONS_TIMES_TWO);
+               int mask = 1 << (0);
    _persistentRecords._packedRecords0 = static_cast<int>( hasCompletedTimeStep ? (_persistentRecords._packedRecords0 | mask) : (_persistentRecords._packedRecords0 & ~mask));
             }
             
@@ -5086,7 +5887,7 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-               int mask = 1 << (DIMENSIONS_TIMES_TWO + 1);
+               int mask = 1 << (1);
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
    return (tmp != 0);
             }
@@ -5098,7 +5899,7 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-               int mask = 1 << (DIMENSIONS_TIMES_TWO + 1);
+               int mask = 1 << (1);
    _persistentRecords._packedRecords0 = static_cast<int>( adjacentToRemoteRank ? (_persistentRecords._packedRecords0 | mask) : (_persistentRecords._packedRecords0 & ~mask));
             }
             
@@ -5228,110 +6029,6 @@ namespace exahype {
             
             
             
-            inline int getParentCellLevel() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               return _persistentRecords._parentCellLevel;
-            }
-            
-            
-            
-            inline void setParentCellLevel(const int& parentCellLevel) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               _persistentRecords._parentCellLevel = parentCellLevel;
-            }
-            
-            
-            
-            /**
-             * Generated and optimized
-             * 
-             * If you realise a for loop using exclusively arrays (vectors) and compile 
-             * with -DUseManualAlignment you may add 
-             * \code
-             #pragma vector aligned
-             #pragma simd
-             \endcode to this for loop to enforce your compiler to use SSE/AVX.
-             * 
-             * The alignment is tied to the unpacked records, i.e. for packed class
-             * variants the machine's natural alignment is switched off to recude the  
-             * memory footprint. Do not use any SSE/AVX operations or 
-             * vectorisation on the result for the packed variants, as the data is misaligned. 
-             * If you rely on vectorisation, convert the underlying record 
-             * into the unpacked version first. 
-             * 
-             * @see convert()
-             */
-            inline tarch::la::Vector<DIMENSIONS,double> getParentOffset() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               return _persistentRecords._parentOffset;
-            }
-            
-            
-            
-            /**
-             * Generated and optimized
-             * 
-             * If you realise a for loop using exclusively arrays (vectors) and compile 
-             * with -DUseManualAlignment you may add 
-             * \code
-             #pragma vector aligned
-             #pragma simd
-             \endcode to this for loop to enforce your compiler to use SSE/AVX.
-             * 
-             * The alignment is tied to the unpacked records, i.e. for packed class
-             * variants the machine's natural alignment is switched off to recude the  
-             * memory footprint. Do not use any SSE/AVX operations or 
-             * vectorisation on the result for the packed variants, as the data is misaligned. 
-             * If you rely on vectorisation, convert the underlying record 
-             * into the unpacked version first. 
-             * 
-             * @see convert()
-             */
-            inline void setParentOffset(const tarch::la::Vector<DIMENSIONS,double>& parentOffset) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               _persistentRecords._parentOffset = (parentOffset);
-            }
-            
-            
-            
-            inline double getParentOffset(int elementIndex) const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               assertion(elementIndex>=0);
-               assertion(elementIndex<DIMENSIONS);
-               return _persistentRecords._parentOffset[elementIndex];
-               
-            }
-            
-            
-            
-            inline void setParentOffset(int elementIndex, const double& parentOffset) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               assertion(elementIndex>=0);
-               assertion(elementIndex<DIMENSIONS);
-               _persistentRecords._parentOffset[elementIndex]= parentOffset;
-               
-            }
-            
-            
-            
             inline bool getHasVirtualChildren() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
@@ -5358,9 +6055,9 @@ namespace exahype {
  #endif 
  {
                int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 2));
+   mask = static_cast<int>(mask << (2));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 2));
+   tmp = static_cast<int>(tmp >> (2));
    assertion(( tmp >= 0 &&  tmp <= 3));
    return (Type) tmp;
             }
@@ -5374,9 +6071,9 @@ namespace exahype {
  {
                assertion((type >= 0 && type <= 3));
    int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 2));
+   mask = static_cast<int>(mask << (2));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(type) << (DIMENSIONS_TIMES_TWO + 2));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(type) << (2));
             }
             
             
@@ -5386,11 +6083,11 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-               int mask =  (1 << (4)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 4));
+               int mask =  (1 << (5)) - 1;
+   mask = static_cast<int>(mask << (4));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 4));
-   assertion(( tmp >= 0 &&  tmp <= 14));
+   tmp = static_cast<int>(tmp >> (4));
+   assertion(( tmp >= 0 &&  tmp <= 16));
    return (RefinementEvent) tmp;
             }
             
@@ -5401,11 +6098,11 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-               assertion((refinementEvent >= 0 && refinementEvent <= 14));
-   int mask =  (1 << (4)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 4));
+               assertion((refinementEvent >= 0 && refinementEvent <= 16));
+   int mask =  (1 << (5)) - 1;
+   mask = static_cast<int>(mask << (4));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(refinementEvent) << (DIMENSIONS_TIMES_TWO + 4));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(refinementEvent) << (4));
             }
             
             
@@ -5718,7 +6415,67 @@ namespace exahype {
             
             
             
-            inline int getSolution() const 
+            inline int getSolutionIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _persistentRecords._solutionIndex;
+            }
+            
+            
+            
+            inline void setSolutionIndex(const int& solutionIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _persistentRecords._solutionIndex = solutionIndex;
+            }
+            
+            
+            
+            inline int getSolutionAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _persistentRecords._solutionAveragesIndex;
+            }
+            
+            
+            
+            inline void setSolutionAveragesIndex(const int& solutionAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _persistentRecords._solutionAveragesIndex = solutionAveragesIndex;
+            }
+            
+            
+            
+            inline int getSolutionCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _persistentRecords._solutionCompressedIndex;
+            }
+            
+            
+            
+            inline void setSolutionCompressedIndex(const int& solutionCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _persistentRecords._solutionCompressedIndex = solutionCompressedIndex;
+            }
+            
+            
+            
+            inline void* getSolution() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -5728,7 +6485,7 @@ namespace exahype {
             
             
             
-            inline void setSolution(const int& solution) 
+            inline void setSolution(void* solution) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -5738,7 +6495,7 @@ namespace exahype {
             
             
             
-            inline int getSolutionAverages() const 
+            inline void* getSolutionAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -5748,7 +6505,7 @@ namespace exahype {
             
             
             
-            inline void setSolutionAverages(const int& solutionAverages) 
+            inline void setSolutionAverages(void* solutionAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -5758,7 +6515,7 @@ namespace exahype {
             
             
             
-            inline int getSolutionCompressed() const 
+            inline void* getSolutionCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -5768,7 +6525,7 @@ namespace exahype {
             
             
             
-            inline void setSolutionCompressed(const int& solutionCompressed) 
+            inline void setSolutionCompressed(void* solutionCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -5778,7 +6535,67 @@ namespace exahype {
             
             
             
-            inline int getPreviousSolution() const 
+            inline int getPreviousSolutionIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _persistentRecords._previousSolutionIndex;
+            }
+            
+            
+            
+            inline void setPreviousSolutionIndex(const int& previousSolutionIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _persistentRecords._previousSolutionIndex = previousSolutionIndex;
+            }
+            
+            
+            
+            inline int getPreviousSolutionAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _persistentRecords._previousSolutionAveragesIndex;
+            }
+            
+            
+            
+            inline void setPreviousSolutionAveragesIndex(const int& previousSolutionAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _persistentRecords._previousSolutionAveragesIndex = previousSolutionAveragesIndex;
+            }
+            
+            
+            
+            inline int getPreviousSolutionCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _persistentRecords._previousSolutionCompressedIndex;
+            }
+            
+            
+            
+            inline void setPreviousSolutionCompressedIndex(const int& previousSolutionCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _persistentRecords._previousSolutionCompressedIndex = previousSolutionCompressedIndex;
+            }
+            
+            
+            
+            inline void* getPreviousSolution() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -5788,7 +6605,7 @@ namespace exahype {
             
             
             
-            inline void setPreviousSolution(const int& previousSolution) 
+            inline void setPreviousSolution(void* previousSolution) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -5798,7 +6615,7 @@ namespace exahype {
             
             
             
-            inline int getPreviousSolutionAverages() const 
+            inline void* getPreviousSolutionAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -5808,7 +6625,7 @@ namespace exahype {
             
             
             
-            inline void setPreviousSolutionAverages(const int& previousSolutionAverages) 
+            inline void setPreviousSolutionAverages(void* previousSolutionAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -5818,7 +6635,7 @@ namespace exahype {
             
             
             
-            inline int getPreviousSolutionCompressed() const 
+            inline void* getPreviousSolutionCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -5828,7 +6645,7 @@ namespace exahype {
             
             
             
-            inline void setPreviousSolutionCompressed(const int& previousSolutionCompressed) 
+            inline void setPreviousSolutionCompressed(void* previousSolutionCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -5838,7 +6655,67 @@ namespace exahype {
             
             
             
-            inline int getUpdate() const 
+            inline int getUpdateIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _persistentRecords._updateIndex;
+            }
+            
+            
+            
+            inline void setUpdateIndex(const int& updateIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _persistentRecords._updateIndex = updateIndex;
+            }
+            
+            
+            
+            inline int getUpdateAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _persistentRecords._updateAveragesIndex;
+            }
+            
+            
+            
+            inline void setUpdateAveragesIndex(const int& updateAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _persistentRecords._updateAveragesIndex = updateAveragesIndex;
+            }
+            
+            
+            
+            inline int getUpdateCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _persistentRecords._updateCompressedIndex;
+            }
+            
+            
+            
+            inline void setUpdateCompressedIndex(const int& updateCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _persistentRecords._updateCompressedIndex = updateCompressedIndex;
+            }
+            
+            
+            
+            inline void* getUpdate() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -5848,7 +6725,7 @@ namespace exahype {
             
             
             
-            inline void setUpdate(const int& update) 
+            inline void setUpdate(void* update) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -5858,7 +6735,7 @@ namespace exahype {
             
             
             
-            inline int getUpdateAverages() const 
+            inline void* getUpdateAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -5868,7 +6745,7 @@ namespace exahype {
             
             
             
-            inline void setUpdateAverages(const int& updateAverages) 
+            inline void setUpdateAverages(void* updateAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -5878,7 +6755,7 @@ namespace exahype {
             
             
             
-            inline int getUpdateCompressed() const 
+            inline void* getUpdateCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -5888,7 +6765,7 @@ namespace exahype {
             
             
             
-            inline void setUpdateCompressed(const int& updateCompressed) 
+            inline void setUpdateCompressed(void* updateCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -5898,7 +6775,67 @@ namespace exahype {
             
             
             
-            inline int getExtrapolatedPredictor() const 
+            inline int getExtrapolatedPredictorIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _persistentRecords._extrapolatedPredictorIndex;
+            }
+            
+            
+            
+            inline void setExtrapolatedPredictorIndex(const int& extrapolatedPredictorIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _persistentRecords._extrapolatedPredictorIndex = extrapolatedPredictorIndex;
+            }
+            
+            
+            
+            inline int getExtrapolatedPredictorAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _persistentRecords._extrapolatedPredictorAveragesIndex;
+            }
+            
+            
+            
+            inline void setExtrapolatedPredictorAveragesIndex(const int& extrapolatedPredictorAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _persistentRecords._extrapolatedPredictorAveragesIndex = extrapolatedPredictorAveragesIndex;
+            }
+            
+            
+            
+            inline int getExtrapolatedPredictorCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _persistentRecords._extrapolatedPredictorCompressedIndex;
+            }
+            
+            
+            
+            inline void setExtrapolatedPredictorCompressedIndex(const int& extrapolatedPredictorCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _persistentRecords._extrapolatedPredictorCompressedIndex = extrapolatedPredictorCompressedIndex;
+            }
+            
+            
+            
+            inline void* getExtrapolatedPredictor() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -5908,7 +6845,7 @@ namespace exahype {
             
             
             
-            inline void setExtrapolatedPredictor(const int& extrapolatedPredictor) 
+            inline void setExtrapolatedPredictor(void* extrapolatedPredictor) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -5918,7 +6855,7 @@ namespace exahype {
             
             
             
-            inline int getExtrapolatedPredictorAverages() const 
+            inline void* getExtrapolatedPredictorAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -5928,7 +6865,7 @@ namespace exahype {
             
             
             
-            inline void setExtrapolatedPredictorAverages(const int& extrapolatedPredictorAverages) 
+            inline void setExtrapolatedPredictorAverages(void* extrapolatedPredictorAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -5938,7 +6875,7 @@ namespace exahype {
             
             
             
-            inline int getExtrapolatedPredictorCompressed() const 
+            inline void* getExtrapolatedPredictorCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -5948,7 +6885,7 @@ namespace exahype {
             
             
             
-            inline void setExtrapolatedPredictorCompressed(const int& extrapolatedPredictorCompressed) 
+            inline void setExtrapolatedPredictorCompressed(void* extrapolatedPredictorCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -5958,7 +6895,67 @@ namespace exahype {
             
             
             
-            inline int getFluctuation() const 
+            inline int getFluctuationIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _persistentRecords._fluctuationIndex;
+            }
+            
+            
+            
+            inline void setFluctuationIndex(const int& fluctuationIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _persistentRecords._fluctuationIndex = fluctuationIndex;
+            }
+            
+            
+            
+            inline int getFluctuationAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _persistentRecords._fluctuationAveragesIndex;
+            }
+            
+            
+            
+            inline void setFluctuationAveragesIndex(const int& fluctuationAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _persistentRecords._fluctuationAveragesIndex = fluctuationAveragesIndex;
+            }
+            
+            
+            
+            inline int getFluctuationCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _persistentRecords._fluctuationCompressedIndex;
+            }
+            
+            
+            
+            inline void setFluctuationCompressedIndex(const int& fluctuationCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _persistentRecords._fluctuationCompressedIndex = fluctuationCompressedIndex;
+            }
+            
+            
+            
+            inline void* getFluctuation() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -5968,7 +6965,7 @@ namespace exahype {
             
             
             
-            inline void setFluctuation(const int& fluctuation) 
+            inline void setFluctuation(void* fluctuation) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -5978,7 +6975,7 @@ namespace exahype {
             
             
             
-            inline int getFluctuationAverages() const 
+            inline void* getFluctuationAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -5988,7 +6985,7 @@ namespace exahype {
             
             
             
-            inline void setFluctuationAverages(const int& fluctuationAverages) 
+            inline void setFluctuationAverages(void* fluctuationAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -5998,7 +6995,7 @@ namespace exahype {
             
             
             
-            inline int getFluctuationCompressed() const 
+            inline void* getFluctuationCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -6008,7 +7005,7 @@ namespace exahype {
             
             
             
-            inline void setFluctuationCompressed(const int& fluctuationCompressed) 
+            inline void setFluctuationCompressed(void* fluctuationCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -6018,7 +7015,47 @@ namespace exahype {
             
             
             
-            inline int getSolutionMin() const 
+            inline int getSolutionMinIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _persistentRecords._solutionMinIndex;
+            }
+            
+            
+            
+            inline void setSolutionMinIndex(const int& solutionMinIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _persistentRecords._solutionMinIndex = solutionMinIndex;
+            }
+            
+            
+            
+            inline int getSolutionMaxIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _persistentRecords._solutionMaxIndex;
+            }
+            
+            
+            
+            inline void setSolutionMaxIndex(const int& solutionMaxIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _persistentRecords._solutionMaxIndex = solutionMaxIndex;
+            }
+            
+            
+            
+            inline void* getSolutionMin() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -6028,7 +7065,7 @@ namespace exahype {
             
             
             
-            inline void setSolutionMin(const int& solutionMin) 
+            inline void setSolutionMin(void* solutionMin) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -6038,7 +7075,7 @@ namespace exahype {
             
             
             
-            inline int getSolutionMax() const 
+            inline void* getSolutionMax() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -6048,7 +7085,7 @@ namespace exahype {
             
             
             
-            inline void setSolutionMax(const int& solutionMax) 
+            inline void setSolutionMax(void* solutionMax) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -6370,26 +7407,6 @@ namespace exahype {
             
             
             
-            inline bool getRefinementFlag() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               return _persistentRecords._refinementFlag;
-            }
-            
-            
-            
-            inline void setRefinementFlag(const bool& refinementFlag) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               _persistentRecords._refinementFlag = refinementFlag;
-            }
-            
-            
-            
             inline int getRefinementStatus() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
@@ -6430,6 +7447,46 @@ namespace exahype {
             
             
             
+            inline bool getRefinementFlag() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _persistentRecords._refinementFlag;
+            }
+            
+            
+            
+            inline void setRefinementFlag(const bool& refinementFlag) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _persistentRecords._refinementFlag = refinementFlag;
+            }
+            
+            
+            
+            inline bool getVetoErasingChildren() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _persistentRecords._vetoErasingChildren;
+            }
+            
+            
+            
+            inline void setVetoErasingChildren(const bool& vetoErasingChildren) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _persistentRecords._vetoErasingChildren = vetoErasingChildren;
+            }
+            
+            
+            
             inline int getIterationsToCureTroubledCell() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
@@ -6456,9 +7513,9 @@ namespace exahype {
  #endif 
  {
                int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 8));
+   mask = static_cast<int>(mask << (9));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 8));
+   tmp = static_cast<int>(tmp >> (9));
    assertion(( tmp >= 0 &&  tmp <= 2));
    return (CompressionState) tmp;
             }
@@ -6472,9 +7529,9 @@ namespace exahype {
  {
                assertion((compressionState >= 0 && compressionState <= 2));
    int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 8));
+   mask = static_cast<int>(mask << (9));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(compressionState) << (DIMENSIONS_TIMES_TWO + 8));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(compressionState) << (9));
             }
             
             
@@ -6485,9 +7542,9 @@ namespace exahype {
  #endif 
  {
                int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 10));
+   mask = static_cast<int>(mask << (11));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 10));
+   tmp = static_cast<int>(tmp >> (11));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -6502,9 +7559,9 @@ namespace exahype {
  {
                assertion((bytesPerDoFInPreviousSolution >= 1 && bytesPerDoFInPreviousSolution <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 10));
+   mask = static_cast<int>(mask << (11));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInPreviousSolution) - 1) << (DIMENSIONS_TIMES_TWO + 10));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInPreviousSolution) - 1) << (11));
             }
             
             
@@ -6515,9 +7572,9 @@ namespace exahype {
  #endif 
  {
                int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 13));
+   mask = static_cast<int>(mask << (14));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 13));
+   tmp = static_cast<int>(tmp >> (14));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -6532,9 +7589,9 @@ namespace exahype {
  {
                assertion((bytesPerDoFInSolution >= 1 && bytesPerDoFInSolution <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 13));
+   mask = static_cast<int>(mask << (14));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInSolution) - 1) << (DIMENSIONS_TIMES_TWO + 13));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInSolution) - 1) << (14));
             }
             
             
@@ -6545,9 +7602,9 @@ namespace exahype {
  #endif 
  {
                int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 16));
+   mask = static_cast<int>(mask << (17));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 16));
+   tmp = static_cast<int>(tmp >> (17));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -6562,9 +7619,9 @@ namespace exahype {
  {
                assertion((bytesPerDoFInUpdate >= 1 && bytesPerDoFInUpdate <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 16));
+   mask = static_cast<int>(mask << (17));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInUpdate) - 1) << (DIMENSIONS_TIMES_TWO + 16));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInUpdate) - 1) << (17));
             }
             
             
@@ -6575,9 +7632,9 @@ namespace exahype {
  #endif 
  {
                int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 19));
+   mask = static_cast<int>(mask << (20));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 19));
+   tmp = static_cast<int>(tmp >> (20));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -6592,9 +7649,9 @@ namespace exahype {
  {
                assertion((bytesPerDoFInExtrapolatedPredictor >= 1 && bytesPerDoFInExtrapolatedPredictor <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 19));
+   mask = static_cast<int>(mask << (20));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInExtrapolatedPredictor) - 1) << (DIMENSIONS_TIMES_TWO + 19));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInExtrapolatedPredictor) - 1) << (20));
             }
             
             
@@ -6605,9 +7662,9 @@ namespace exahype {
  #endif 
  {
                int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 22));
+   mask = static_cast<int>(mask << (23));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 22));
+   tmp = static_cast<int>(tmp >> (23));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -6622,9 +7679,9 @@ namespace exahype {
  {
                assertion((bytesPerDoFInFluctuation >= 1 && bytesPerDoFInFluctuation <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 22));
+   mask = static_cast<int>(mask << (23));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInFluctuation) - 1) << (DIMENSIONS_TIMES_TWO + 22));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInFluctuation) - 1) << (23));
             }
             
             
@@ -6754,7 +7811,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   01/09/2018 15:55
+       * @date   31/10/2018 18:11
        */
       class exahype::records::ADERDGCellDescription { 
          
@@ -6767,7 +7824,7 @@ namespace exahype {
             };
             
             enum RefinementEvent {
-               None = 0, ErasingChildrenRequested = 1, ErasingChildren = 2, ChangeChildrenToVirtualChildrenRequested = 3, ChangeChildrenToVirtualChildren = 4, RefiningRequested = 5, Refining = 6, Prolongating = 7, ErasingVirtualChildrenRequested = 8, ErasingVirtualChildren = 9, VirtualRefiningRequested = 10, VirtualRefining = 11, Erasing = 12, ChangeToVirtualCell = 13, ErasingVirtualCell = 14
+               None = 0, ErasingChildrenRequested = 1, ErasingChildren = 2, ChangeChildrenToVirtualChildrenRequested = 3, ChangeChildrenToVirtualChildren = 4, RefiningRequested = 5, Refining = 6, Prolongating = 7, ErasingVirtualChildrenRequested = 8, ErasingVirtualChildren = 9, VirtualRefiningRequested = 10, VirtualRefining = 11, ErasingRequested = 12, Erasing = 13, ChangeToVirtualCellRequested = 14, ChangeToVirtualCell = 15, ErasingVirtualCell = 16
             };
             
             enum Type {
@@ -6777,9 +7834,9 @@ namespace exahype {
             struct PersistentRecords {
                int _solverNumber;
                #ifdef UseManualAlignment
-               std::bitset<DIMENSIONS_TIMES_TWO> _neighbourMergePerformed __attribute__((aligned(VectorisationAlignment)));
+               tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> _neighbourMergePerformed __attribute__((aligned(VectorisationAlignment)));
                #else
-               std::bitset<DIMENSIONS_TIMES_TWO> _neighbourMergePerformed;
+               tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> _neighbourMergePerformed;
                #endif
                bool _hasCompletedTimeStep;
                bool _adjacentToRemoteRank;
@@ -6790,12 +7847,6 @@ namespace exahype {
                tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _faceDataExchangeCounter;
                #endif
                int _parentIndex;
-               int _parentCellLevel;
-               #ifdef UseManualAlignment
-               tarch::la::Vector<DIMENSIONS,double> _parentOffset __attribute__((aligned(VectorisationAlignment)));
-               #else
-               tarch::la::Vector<DIMENSIONS,double> _parentOffset;
-               #endif
                bool _hasVirtualChildren;
                Type _type;
                RefinementEvent _refinementEvent;
@@ -6816,23 +7867,40 @@ namespace exahype {
                double _correctorTimeStamp;
                double _predictorTimeStepSize;
                double _predictorTimeStamp;
-               int _solution;
-               int _solutionAverages;
-               int _solutionCompressed;
-               int _previousSolution;
-               int _previousSolutionAverages;
-               int _previousSolutionCompressed;
-               int _update;
-               int _updateAverages;
-               int _updateCompressed;
-               int _extrapolatedPredictor;
-               int _extrapolatedPredictorAverages;
-               int _extrapolatedPredictorCompressed;
-               int _fluctuation;
-               int _fluctuationAverages;
-               int _fluctuationCompressed;
-               int _solutionMin;
-               int _solutionMax;
+               int _solutionIndex;
+               int _solutionAveragesIndex;
+               int _solutionCompressedIndex;
+               void* _solution;
+               void* _solutionAverages;
+               void* _solutionCompressed;
+               int _previousSolutionIndex;
+               int _previousSolutionAveragesIndex;
+               int _previousSolutionCompressedIndex;
+               void* _previousSolution;
+               void* _previousSolutionAverages;
+               void* _previousSolutionCompressed;
+               int _updateIndex;
+               int _updateAveragesIndex;
+               int _updateCompressedIndex;
+               void* _update;
+               void* _updateAverages;
+               void* _updateCompressed;
+               int _extrapolatedPredictorIndex;
+               int _extrapolatedPredictorAveragesIndex;
+               int _extrapolatedPredictorCompressedIndex;
+               void* _extrapolatedPredictor;
+               void* _extrapolatedPredictorAverages;
+               void* _extrapolatedPredictorCompressed;
+               int _fluctuationIndex;
+               int _fluctuationAveragesIndex;
+               int _fluctuationCompressedIndex;
+               void* _fluctuation;
+               void* _fluctuationAverages;
+               void* _fluctuationCompressed;
+               int _solutionMinIndex;
+               int _solutionMaxIndex;
+               void* _solutionMin;
+               void* _solutionMax;
                #ifdef UseManualAlignment
                tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _facewiseAugmentationStatus __attribute__((aligned(VectorisationAlignment)));
                #else
@@ -6851,9 +7919,10 @@ namespace exahype {
                #else
                tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _facewiseRefinementStatus;
                #endif
-               bool _refinementFlag;
                int _refinementStatus;
                int _previousRefinementStatus;
+               bool _refinementFlag;
+               bool _vetoErasingChildren;
                int _iterationsToCureTroubledCell;
                CompressionState _compressionState;
                int _bytesPerDoFInPreviousSolution;
@@ -6869,7 +7938,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const bool& adjacentToRemoteRank, const bool& hasToHoldDataForMasterWorkerCommunication, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const int& parentIndex, const int& parentCellLevel, const tarch::la::Vector<DIMENSIONS,double>& parentOffset, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const bool& refinementFlag, const int& refinementStatus, const int& previousRefinementStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
+               PersistentRecords(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const bool& adjacentToRemoteRank, const bool& hasToHoldDataForMasterWorkerCommunication, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& updateIndex, const int& updateAveragesIndex, const int& updateCompressedIndex, void* update, void* updateAverages, void* updateCompressed, const int& extrapolatedPredictorIndex, const int& extrapolatedPredictorAveragesIndex, const int& extrapolatedPredictorCompressedIndex, void* extrapolatedPredictor, void* extrapolatedPredictorAverages, void* extrapolatedPredictorCompressed, const int& fluctuationIndex, const int& fluctuationAveragesIndex, const int& fluctuationCompressedIndex, void* fluctuation, void* fluctuationAverages, void* fluctuationCompressed, const int& solutionMinIndex, const int& solutionMaxIndex, void* solutionMin, void* solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
                
                
                inline int getSolverNumber() const 
@@ -6911,7 +7980,7 @@ namespace exahype {
                 * 
                 * @see convert()
                 */
-               inline std::bitset<DIMENSIONS_TIMES_TWO> getNeighbourMergePerformed() const 
+               inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> getNeighbourMergePerformed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -6940,7 +8009,7 @@ namespace exahype {
                 * 
                 * @see convert()
                 */
-               inline void setNeighbourMergePerformed(const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) 
+               inline void setNeighbourMergePerformed(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -7084,84 +8153,6 @@ namespace exahype {
  #endif 
  {
                   _parentIndex = parentIndex;
-               }
-               
-               
-               
-               inline int getParentCellLevel() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _parentCellLevel;
-               }
-               
-               
-               
-               inline void setParentCellLevel(const int& parentCellLevel) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _parentCellLevel = parentCellLevel;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline tarch::la::Vector<DIMENSIONS,double> getParentOffset() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _parentOffset;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline void setParentOffset(const tarch::la::Vector<DIMENSIONS,double>& parentOffset) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _parentOffset = (parentOffset);
                }
                
                
@@ -7482,7 +8473,67 @@ namespace exahype {
                
                
                
-               inline int getSolution() const 
+               inline int getSolutionIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _solutionIndex;
+               }
+               
+               
+               
+               inline void setSolutionIndex(const int& solutionIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _solutionIndex = solutionIndex;
+               }
+               
+               
+               
+               inline int getSolutionAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _solutionAveragesIndex;
+               }
+               
+               
+               
+               inline void setSolutionAveragesIndex(const int& solutionAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _solutionAveragesIndex = solutionAveragesIndex;
+               }
+               
+               
+               
+               inline int getSolutionCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _solutionCompressedIndex;
+               }
+               
+               
+               
+               inline void setSolutionCompressedIndex(const int& solutionCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _solutionCompressedIndex = solutionCompressedIndex;
+               }
+               
+               
+               
+               inline void* getSolution() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -7492,7 +8543,7 @@ namespace exahype {
                
                
                
-               inline void setSolution(const int& solution) 
+               inline void setSolution(void* solution) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -7502,7 +8553,7 @@ namespace exahype {
                
                
                
-               inline int getSolutionAverages() const 
+               inline void* getSolutionAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -7512,7 +8563,7 @@ namespace exahype {
                
                
                
-               inline void setSolutionAverages(const int& solutionAverages) 
+               inline void setSolutionAverages(void* solutionAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -7522,7 +8573,7 @@ namespace exahype {
                
                
                
-               inline int getSolutionCompressed() const 
+               inline void* getSolutionCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -7532,7 +8583,7 @@ namespace exahype {
                
                
                
-               inline void setSolutionCompressed(const int& solutionCompressed) 
+               inline void setSolutionCompressed(void* solutionCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -7542,7 +8593,67 @@ namespace exahype {
                
                
                
-               inline int getPreviousSolution() const 
+               inline int getPreviousSolutionIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _previousSolutionIndex;
+               }
+               
+               
+               
+               inline void setPreviousSolutionIndex(const int& previousSolutionIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _previousSolutionIndex = previousSolutionIndex;
+               }
+               
+               
+               
+               inline int getPreviousSolutionAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _previousSolutionAveragesIndex;
+               }
+               
+               
+               
+               inline void setPreviousSolutionAveragesIndex(const int& previousSolutionAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _previousSolutionAveragesIndex = previousSolutionAveragesIndex;
+               }
+               
+               
+               
+               inline int getPreviousSolutionCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _previousSolutionCompressedIndex;
+               }
+               
+               
+               
+               inline void setPreviousSolutionCompressedIndex(const int& previousSolutionCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _previousSolutionCompressedIndex = previousSolutionCompressedIndex;
+               }
+               
+               
+               
+               inline void* getPreviousSolution() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -7552,7 +8663,7 @@ namespace exahype {
                
                
                
-               inline void setPreviousSolution(const int& previousSolution) 
+               inline void setPreviousSolution(void* previousSolution) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -7562,7 +8673,7 @@ namespace exahype {
                
                
                
-               inline int getPreviousSolutionAverages() const 
+               inline void* getPreviousSolutionAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -7572,7 +8683,7 @@ namespace exahype {
                
                
                
-               inline void setPreviousSolutionAverages(const int& previousSolutionAverages) 
+               inline void setPreviousSolutionAverages(void* previousSolutionAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -7582,7 +8693,7 @@ namespace exahype {
                
                
                
-               inline int getPreviousSolutionCompressed() const 
+               inline void* getPreviousSolutionCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -7592,7 +8703,7 @@ namespace exahype {
                
                
                
-               inline void setPreviousSolutionCompressed(const int& previousSolutionCompressed) 
+               inline void setPreviousSolutionCompressed(void* previousSolutionCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -7602,7 +8713,67 @@ namespace exahype {
                
                
                
-               inline int getUpdate() const 
+               inline int getUpdateIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _updateIndex;
+               }
+               
+               
+               
+               inline void setUpdateIndex(const int& updateIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _updateIndex = updateIndex;
+               }
+               
+               
+               
+               inline int getUpdateAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _updateAveragesIndex;
+               }
+               
+               
+               
+               inline void setUpdateAveragesIndex(const int& updateAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _updateAveragesIndex = updateAveragesIndex;
+               }
+               
+               
+               
+               inline int getUpdateCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _updateCompressedIndex;
+               }
+               
+               
+               
+               inline void setUpdateCompressedIndex(const int& updateCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _updateCompressedIndex = updateCompressedIndex;
+               }
+               
+               
+               
+               inline void* getUpdate() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -7612,7 +8783,7 @@ namespace exahype {
                
                
                
-               inline void setUpdate(const int& update) 
+               inline void setUpdate(void* update) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -7622,7 +8793,7 @@ namespace exahype {
                
                
                
-               inline int getUpdateAverages() const 
+               inline void* getUpdateAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -7632,7 +8803,7 @@ namespace exahype {
                
                
                
-               inline void setUpdateAverages(const int& updateAverages) 
+               inline void setUpdateAverages(void* updateAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -7642,7 +8813,7 @@ namespace exahype {
                
                
                
-               inline int getUpdateCompressed() const 
+               inline void* getUpdateCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -7652,7 +8823,7 @@ namespace exahype {
                
                
                
-               inline void setUpdateCompressed(const int& updateCompressed) 
+               inline void setUpdateCompressed(void* updateCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -7662,7 +8833,67 @@ namespace exahype {
                
                
                
-               inline int getExtrapolatedPredictor() const 
+               inline int getExtrapolatedPredictorIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _extrapolatedPredictorIndex;
+               }
+               
+               
+               
+               inline void setExtrapolatedPredictorIndex(const int& extrapolatedPredictorIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _extrapolatedPredictorIndex = extrapolatedPredictorIndex;
+               }
+               
+               
+               
+               inline int getExtrapolatedPredictorAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _extrapolatedPredictorAveragesIndex;
+               }
+               
+               
+               
+               inline void setExtrapolatedPredictorAveragesIndex(const int& extrapolatedPredictorAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _extrapolatedPredictorAveragesIndex = extrapolatedPredictorAveragesIndex;
+               }
+               
+               
+               
+               inline int getExtrapolatedPredictorCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _extrapolatedPredictorCompressedIndex;
+               }
+               
+               
+               
+               inline void setExtrapolatedPredictorCompressedIndex(const int& extrapolatedPredictorCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _extrapolatedPredictorCompressedIndex = extrapolatedPredictorCompressedIndex;
+               }
+               
+               
+               
+               inline void* getExtrapolatedPredictor() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -7672,7 +8903,7 @@ namespace exahype {
                
                
                
-               inline void setExtrapolatedPredictor(const int& extrapolatedPredictor) 
+               inline void setExtrapolatedPredictor(void* extrapolatedPredictor) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -7682,7 +8913,7 @@ namespace exahype {
                
                
                
-               inline int getExtrapolatedPredictorAverages() const 
+               inline void* getExtrapolatedPredictorAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -7692,7 +8923,7 @@ namespace exahype {
                
                
                
-               inline void setExtrapolatedPredictorAverages(const int& extrapolatedPredictorAverages) 
+               inline void setExtrapolatedPredictorAverages(void* extrapolatedPredictorAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -7702,7 +8933,7 @@ namespace exahype {
                
                
                
-               inline int getExtrapolatedPredictorCompressed() const 
+               inline void* getExtrapolatedPredictorCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -7712,7 +8943,7 @@ namespace exahype {
                
                
                
-               inline void setExtrapolatedPredictorCompressed(const int& extrapolatedPredictorCompressed) 
+               inline void setExtrapolatedPredictorCompressed(void* extrapolatedPredictorCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -7722,7 +8953,67 @@ namespace exahype {
                
                
                
-               inline int getFluctuation() const 
+               inline int getFluctuationIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _fluctuationIndex;
+               }
+               
+               
+               
+               inline void setFluctuationIndex(const int& fluctuationIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _fluctuationIndex = fluctuationIndex;
+               }
+               
+               
+               
+               inline int getFluctuationAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _fluctuationAveragesIndex;
+               }
+               
+               
+               
+               inline void setFluctuationAveragesIndex(const int& fluctuationAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _fluctuationAveragesIndex = fluctuationAveragesIndex;
+               }
+               
+               
+               
+               inline int getFluctuationCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _fluctuationCompressedIndex;
+               }
+               
+               
+               
+               inline void setFluctuationCompressedIndex(const int& fluctuationCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _fluctuationCompressedIndex = fluctuationCompressedIndex;
+               }
+               
+               
+               
+               inline void* getFluctuation() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -7732,7 +9023,7 @@ namespace exahype {
                
                
                
-               inline void setFluctuation(const int& fluctuation) 
+               inline void setFluctuation(void* fluctuation) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -7742,7 +9033,7 @@ namespace exahype {
                
                
                
-               inline int getFluctuationAverages() const 
+               inline void* getFluctuationAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -7752,7 +9043,7 @@ namespace exahype {
                
                
                
-               inline void setFluctuationAverages(const int& fluctuationAverages) 
+               inline void setFluctuationAverages(void* fluctuationAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -7762,7 +9053,7 @@ namespace exahype {
                
                
                
-               inline int getFluctuationCompressed() const 
+               inline void* getFluctuationCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -7772,7 +9063,7 @@ namespace exahype {
                
                
                
-               inline void setFluctuationCompressed(const int& fluctuationCompressed) 
+               inline void setFluctuationCompressed(void* fluctuationCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -7782,7 +9073,47 @@ namespace exahype {
                
                
                
-               inline int getSolutionMin() const 
+               inline int getSolutionMinIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _solutionMinIndex;
+               }
+               
+               
+               
+               inline void setSolutionMinIndex(const int& solutionMinIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _solutionMinIndex = solutionMinIndex;
+               }
+               
+               
+               
+               inline int getSolutionMaxIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _solutionMaxIndex;
+               }
+               
+               
+               
+               inline void setSolutionMaxIndex(const int& solutionMaxIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _solutionMaxIndex = solutionMaxIndex;
+               }
+               
+               
+               
+               inline void* getSolutionMin() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -7792,7 +9123,7 @@ namespace exahype {
                
                
                
-               inline void setSolutionMin(const int& solutionMin) 
+               inline void setSolutionMin(void* solutionMin) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -7802,7 +9133,7 @@ namespace exahype {
                
                
                
-               inline int getSolutionMax() const 
+               inline void* getSolutionMax() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -7812,7 +9143,7 @@ namespace exahype {
                
                
                
-               inline void setSolutionMax(const int& solutionMax) 
+               inline void setSolutionMax(void* solutionMax) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -8056,26 +9387,6 @@ namespace exahype {
                
                
                
-               inline bool getRefinementFlag() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _refinementFlag;
-               }
-               
-               
-               
-               inline void setRefinementFlag(const bool& refinementFlag) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _refinementFlag = refinementFlag;
-               }
-               
-               
-               
                inline int getRefinementStatus() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
@@ -8112,6 +9423,46 @@ namespace exahype {
  #endif 
  {
                   _previousRefinementStatus = previousRefinementStatus;
+               }
+               
+               
+               
+               inline bool getRefinementFlag() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _refinementFlag;
+               }
+               
+               
+               
+               inline void setRefinementFlag(const bool& refinementFlag) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _refinementFlag = refinementFlag;
+               }
+               
+               
+               
+               inline bool getVetoErasingChildren() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _vetoErasingChildren;
+               }
+               
+               
+               
+               inline void setVetoErasingChildren(const bool& vetoErasingChildren) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _vetoErasingChildren = vetoErasingChildren;
                }
                
                
@@ -8274,7 +9625,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               ADERDGCellDescription(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const bool& adjacentToRemoteRank, const bool& hasToHoldDataForMasterWorkerCommunication, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const int& parentIndex, const int& parentCellLevel, const tarch::la::Vector<DIMENSIONS,double>& parentOffset, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const bool& refinementFlag, const int& refinementStatus, const int& previousRefinementStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
+               ADERDGCellDescription(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const bool& adjacentToRemoteRank, const bool& hasToHoldDataForMasterWorkerCommunication, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& updateIndex, const int& updateAveragesIndex, const int& updateCompressedIndex, void* update, void* updateAverages, void* updateCompressed, const int& extrapolatedPredictorIndex, const int& extrapolatedPredictorAveragesIndex, const int& extrapolatedPredictorCompressedIndex, void* extrapolatedPredictor, void* extrapolatedPredictorAverages, void* extrapolatedPredictorCompressed, const int& fluctuationIndex, const int& fluctuationAveragesIndex, const int& fluctuationCompressedIndex, void* fluctuation, void* fluctuationAverages, void* fluctuationCompressed, const int& solutionMinIndex, const int& solutionMaxIndex, void* solutionMin, void* solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
                
                /**
                 * Generated
@@ -8321,7 +9672,7 @@ namespace exahype {
                 * 
                 * @see convert()
                 */
-               inline std::bitset<DIMENSIONS_TIMES_TWO> getNeighbourMergePerformed() const 
+               inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> getNeighbourMergePerformed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -8350,7 +9701,7 @@ namespace exahype {
                 * 
                 * @see convert()
                 */
-               inline void setNeighbourMergePerformed(const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) 
+               inline void setNeighbourMergePerformed(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -8360,7 +9711,7 @@ namespace exahype {
                
                
                
-               inline bool getNeighbourMergePerformed(int elementIndex) const 
+               inline signed char getNeighbourMergePerformed(int elementIndex) const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -8373,7 +9724,7 @@ namespace exahype {
                
                
                
-               inline void setNeighbourMergePerformed(int elementIndex, const bool& neighbourMergePerformed) 
+               inline void setNeighbourMergePerformed(int elementIndex, const signed char& neighbourMergePerformed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -8382,18 +9733,6 @@ namespace exahype {
                   assertion(elementIndex<DIMENSIONS_TIMES_TWO);
                   _persistentRecords._neighbourMergePerformed[elementIndex]= neighbourMergePerformed;
                   
-               }
-               
-               
-               
-               inline void flipNeighbourMergePerformed(int elementIndex) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion(elementIndex>=0);
-                  assertion(elementIndex<DIMENSIONS_TIMES_TWO);
-                  _persistentRecords._neighbourMergePerformed.flip(elementIndex);
                }
                
                
@@ -8562,110 +9901,6 @@ namespace exahype {
                
                
                
-               inline int getParentCellLevel() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._parentCellLevel;
-               }
-               
-               
-               
-               inline void setParentCellLevel(const int& parentCellLevel) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._parentCellLevel = parentCellLevel;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline tarch::la::Vector<DIMENSIONS,double> getParentOffset() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._parentOffset;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline void setParentOffset(const tarch::la::Vector<DIMENSIONS,double>& parentOffset) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._parentOffset = (parentOffset);
-               }
-               
-               
-               
-               inline double getParentOffset(int elementIndex) const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion(elementIndex>=0);
-                  assertion(elementIndex<DIMENSIONS);
-                  return _persistentRecords._parentOffset[elementIndex];
-                  
-               }
-               
-               
-               
-               inline void setParentOffset(int elementIndex, const double& parentOffset) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion(elementIndex>=0);
-                  assertion(elementIndex<DIMENSIONS);
-                  _persistentRecords._parentOffset[elementIndex]= parentOffset;
-                  
-               }
-               
-               
-               
                inline bool getHasVirtualChildren() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
@@ -9034,7 +10269,67 @@ namespace exahype {
                
                
                
-               inline int getSolution() const 
+               inline int getSolutionIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._solutionIndex;
+               }
+               
+               
+               
+               inline void setSolutionIndex(const int& solutionIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._solutionIndex = solutionIndex;
+               }
+               
+               
+               
+               inline int getSolutionAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._solutionAveragesIndex;
+               }
+               
+               
+               
+               inline void setSolutionAveragesIndex(const int& solutionAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._solutionAveragesIndex = solutionAveragesIndex;
+               }
+               
+               
+               
+               inline int getSolutionCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._solutionCompressedIndex;
+               }
+               
+               
+               
+               inline void setSolutionCompressedIndex(const int& solutionCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._solutionCompressedIndex = solutionCompressedIndex;
+               }
+               
+               
+               
+               inline void* getSolution() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -9044,7 +10339,7 @@ namespace exahype {
                
                
                
-               inline void setSolution(const int& solution) 
+               inline void setSolution(void* solution) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -9054,7 +10349,7 @@ namespace exahype {
                
                
                
-               inline int getSolutionAverages() const 
+               inline void* getSolutionAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -9064,7 +10359,7 @@ namespace exahype {
                
                
                
-               inline void setSolutionAverages(const int& solutionAverages) 
+               inline void setSolutionAverages(void* solutionAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -9074,7 +10369,7 @@ namespace exahype {
                
                
                
-               inline int getSolutionCompressed() const 
+               inline void* getSolutionCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -9084,7 +10379,7 @@ namespace exahype {
                
                
                
-               inline void setSolutionCompressed(const int& solutionCompressed) 
+               inline void setSolutionCompressed(void* solutionCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -9094,7 +10389,67 @@ namespace exahype {
                
                
                
-               inline int getPreviousSolution() const 
+               inline int getPreviousSolutionIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._previousSolutionIndex;
+               }
+               
+               
+               
+               inline void setPreviousSolutionIndex(const int& previousSolutionIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._previousSolutionIndex = previousSolutionIndex;
+               }
+               
+               
+               
+               inline int getPreviousSolutionAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._previousSolutionAveragesIndex;
+               }
+               
+               
+               
+               inline void setPreviousSolutionAveragesIndex(const int& previousSolutionAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._previousSolutionAveragesIndex = previousSolutionAveragesIndex;
+               }
+               
+               
+               
+               inline int getPreviousSolutionCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._previousSolutionCompressedIndex;
+               }
+               
+               
+               
+               inline void setPreviousSolutionCompressedIndex(const int& previousSolutionCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._previousSolutionCompressedIndex = previousSolutionCompressedIndex;
+               }
+               
+               
+               
+               inline void* getPreviousSolution() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -9104,7 +10459,7 @@ namespace exahype {
                
                
                
-               inline void setPreviousSolution(const int& previousSolution) 
+               inline void setPreviousSolution(void* previousSolution) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -9114,7 +10469,7 @@ namespace exahype {
                
                
                
-               inline int getPreviousSolutionAverages() const 
+               inline void* getPreviousSolutionAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -9124,7 +10479,7 @@ namespace exahype {
                
                
                
-               inline void setPreviousSolutionAverages(const int& previousSolutionAverages) 
+               inline void setPreviousSolutionAverages(void* previousSolutionAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -9134,7 +10489,7 @@ namespace exahype {
                
                
                
-               inline int getPreviousSolutionCompressed() const 
+               inline void* getPreviousSolutionCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -9144,7 +10499,7 @@ namespace exahype {
                
                
                
-               inline void setPreviousSolutionCompressed(const int& previousSolutionCompressed) 
+               inline void setPreviousSolutionCompressed(void* previousSolutionCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -9154,7 +10509,67 @@ namespace exahype {
                
                
                
-               inline int getUpdate() const 
+               inline int getUpdateIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._updateIndex;
+               }
+               
+               
+               
+               inline void setUpdateIndex(const int& updateIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._updateIndex = updateIndex;
+               }
+               
+               
+               
+               inline int getUpdateAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._updateAveragesIndex;
+               }
+               
+               
+               
+               inline void setUpdateAveragesIndex(const int& updateAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._updateAveragesIndex = updateAveragesIndex;
+               }
+               
+               
+               
+               inline int getUpdateCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._updateCompressedIndex;
+               }
+               
+               
+               
+               inline void setUpdateCompressedIndex(const int& updateCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._updateCompressedIndex = updateCompressedIndex;
+               }
+               
+               
+               
+               inline void* getUpdate() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -9164,7 +10579,7 @@ namespace exahype {
                
                
                
-               inline void setUpdate(const int& update) 
+               inline void setUpdate(void* update) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -9174,7 +10589,7 @@ namespace exahype {
                
                
                
-               inline int getUpdateAverages() const 
+               inline void* getUpdateAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -9184,7 +10599,7 @@ namespace exahype {
                
                
                
-               inline void setUpdateAverages(const int& updateAverages) 
+               inline void setUpdateAverages(void* updateAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -9194,7 +10609,7 @@ namespace exahype {
                
                
                
-               inline int getUpdateCompressed() const 
+               inline void* getUpdateCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -9204,7 +10619,7 @@ namespace exahype {
                
                
                
-               inline void setUpdateCompressed(const int& updateCompressed) 
+               inline void setUpdateCompressed(void* updateCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -9214,7 +10629,67 @@ namespace exahype {
                
                
                
-               inline int getExtrapolatedPredictor() const 
+               inline int getExtrapolatedPredictorIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._extrapolatedPredictorIndex;
+               }
+               
+               
+               
+               inline void setExtrapolatedPredictorIndex(const int& extrapolatedPredictorIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._extrapolatedPredictorIndex = extrapolatedPredictorIndex;
+               }
+               
+               
+               
+               inline int getExtrapolatedPredictorAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._extrapolatedPredictorAveragesIndex;
+               }
+               
+               
+               
+               inline void setExtrapolatedPredictorAveragesIndex(const int& extrapolatedPredictorAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._extrapolatedPredictorAveragesIndex = extrapolatedPredictorAveragesIndex;
+               }
+               
+               
+               
+               inline int getExtrapolatedPredictorCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._extrapolatedPredictorCompressedIndex;
+               }
+               
+               
+               
+               inline void setExtrapolatedPredictorCompressedIndex(const int& extrapolatedPredictorCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._extrapolatedPredictorCompressedIndex = extrapolatedPredictorCompressedIndex;
+               }
+               
+               
+               
+               inline void* getExtrapolatedPredictor() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -9224,7 +10699,7 @@ namespace exahype {
                
                
                
-               inline void setExtrapolatedPredictor(const int& extrapolatedPredictor) 
+               inline void setExtrapolatedPredictor(void* extrapolatedPredictor) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -9234,7 +10709,7 @@ namespace exahype {
                
                
                
-               inline int getExtrapolatedPredictorAverages() const 
+               inline void* getExtrapolatedPredictorAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -9244,7 +10719,7 @@ namespace exahype {
                
                
                
-               inline void setExtrapolatedPredictorAverages(const int& extrapolatedPredictorAverages) 
+               inline void setExtrapolatedPredictorAverages(void* extrapolatedPredictorAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -9254,7 +10729,7 @@ namespace exahype {
                
                
                
-               inline int getExtrapolatedPredictorCompressed() const 
+               inline void* getExtrapolatedPredictorCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -9264,7 +10739,7 @@ namespace exahype {
                
                
                
-               inline void setExtrapolatedPredictorCompressed(const int& extrapolatedPredictorCompressed) 
+               inline void setExtrapolatedPredictorCompressed(void* extrapolatedPredictorCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -9274,7 +10749,67 @@ namespace exahype {
                
                
                
-               inline int getFluctuation() const 
+               inline int getFluctuationIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._fluctuationIndex;
+               }
+               
+               
+               
+               inline void setFluctuationIndex(const int& fluctuationIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._fluctuationIndex = fluctuationIndex;
+               }
+               
+               
+               
+               inline int getFluctuationAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._fluctuationAveragesIndex;
+               }
+               
+               
+               
+               inline void setFluctuationAveragesIndex(const int& fluctuationAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._fluctuationAveragesIndex = fluctuationAveragesIndex;
+               }
+               
+               
+               
+               inline int getFluctuationCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._fluctuationCompressedIndex;
+               }
+               
+               
+               
+               inline void setFluctuationCompressedIndex(const int& fluctuationCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._fluctuationCompressedIndex = fluctuationCompressedIndex;
+               }
+               
+               
+               
+               inline void* getFluctuation() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -9284,7 +10819,7 @@ namespace exahype {
                
                
                
-               inline void setFluctuation(const int& fluctuation) 
+               inline void setFluctuation(void* fluctuation) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -9294,7 +10829,7 @@ namespace exahype {
                
                
                
-               inline int getFluctuationAverages() const 
+               inline void* getFluctuationAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -9304,7 +10839,7 @@ namespace exahype {
                
                
                
-               inline void setFluctuationAverages(const int& fluctuationAverages) 
+               inline void setFluctuationAverages(void* fluctuationAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -9314,7 +10849,7 @@ namespace exahype {
                
                
                
-               inline int getFluctuationCompressed() const 
+               inline void* getFluctuationCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -9324,7 +10859,7 @@ namespace exahype {
                
                
                
-               inline void setFluctuationCompressed(const int& fluctuationCompressed) 
+               inline void setFluctuationCompressed(void* fluctuationCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -9334,7 +10869,47 @@ namespace exahype {
                
                
                
-               inline int getSolutionMin() const 
+               inline int getSolutionMinIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._solutionMinIndex;
+               }
+               
+               
+               
+               inline void setSolutionMinIndex(const int& solutionMinIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._solutionMinIndex = solutionMinIndex;
+               }
+               
+               
+               
+               inline int getSolutionMaxIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._solutionMaxIndex;
+               }
+               
+               
+               
+               inline void setSolutionMaxIndex(const int& solutionMaxIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._solutionMaxIndex = solutionMaxIndex;
+               }
+               
+               
+               
+               inline void* getSolutionMin() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -9344,7 +10919,7 @@ namespace exahype {
                
                
                
-               inline void setSolutionMin(const int& solutionMin) 
+               inline void setSolutionMin(void* solutionMin) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -9354,7 +10929,7 @@ namespace exahype {
                
                
                
-               inline int getSolutionMax() const 
+               inline void* getSolutionMax() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -9364,7 +10939,7 @@ namespace exahype {
                
                
                
-               inline void setSolutionMax(const int& solutionMax) 
+               inline void setSolutionMax(void* solutionMax) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -9686,26 +11261,6 @@ namespace exahype {
                
                
                
-               inline bool getRefinementFlag() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._refinementFlag;
-               }
-               
-               
-               
-               inline void setRefinementFlag(const bool& refinementFlag) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._refinementFlag = refinementFlag;
-               }
-               
-               
-               
                inline int getRefinementStatus() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
@@ -9742,6 +11297,46 @@ namespace exahype {
  #endif 
  {
                   _persistentRecords._previousRefinementStatus = previousRefinementStatus;
+               }
+               
+               
+               
+               inline bool getRefinementFlag() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._refinementFlag;
+               }
+               
+               
+               
+               inline void setRefinementFlag(const bool& refinementFlag) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._refinementFlag = refinementFlag;
+               }
+               
+               
+               
+               inline bool getVetoErasingChildren() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._vetoErasingChildren;
+               }
+               
+               
+               
+               inline void setVetoErasingChildren(const bool& vetoErasingChildren) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._vetoErasingChildren = vetoErasingChildren;
                }
                
                
@@ -9985,7 +11580,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   01/09/2018 15:55
+       * @date   31/10/2018 18:11
        */
       class exahype::records::ADERDGCellDescriptionPacked { 
          
@@ -9999,11 +11594,10 @@ namespace exahype {
             
             struct PersistentRecords {
                int _solverNumber;
+               tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> _neighbourMergePerformed;
                bool _hasToHoldDataForMasterWorkerCommunication;
                tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _faceDataExchangeCounter;
                int _parentIndex;
-               int _parentCellLevel;
-               tarch::la::Vector<DIMENSIONS,double> _parentOffset;
                bool _hasVirtualChildren;
                int _level;
                tarch::la::Vector<DIMENSIONS,double> _offset;
@@ -10014,47 +11608,64 @@ namespace exahype {
                double _correctorTimeStamp;
                double _predictorTimeStepSize;
                double _predictorTimeStamp;
-               int _solution;
-               int _solutionAverages;
-               int _solutionCompressed;
-               int _previousSolution;
-               int _previousSolutionAverages;
-               int _previousSolutionCompressed;
-               int _update;
-               int _updateAverages;
-               int _updateCompressed;
-               int _extrapolatedPredictor;
-               int _extrapolatedPredictorAverages;
-               int _extrapolatedPredictorCompressed;
-               int _fluctuation;
-               int _fluctuationAverages;
-               int _fluctuationCompressed;
-               int _solutionMin;
-               int _solutionMax;
+               int _solutionIndex;
+               int _solutionAveragesIndex;
+               int _solutionCompressedIndex;
+               void* _solution;
+               void* _solutionAverages;
+               void* _solutionCompressed;
+               int _previousSolutionIndex;
+               int _previousSolutionAveragesIndex;
+               int _previousSolutionCompressedIndex;
+               void* _previousSolution;
+               void* _previousSolutionAverages;
+               void* _previousSolutionCompressed;
+               int _updateIndex;
+               int _updateAveragesIndex;
+               int _updateCompressedIndex;
+               void* _update;
+               void* _updateAverages;
+               void* _updateCompressed;
+               int _extrapolatedPredictorIndex;
+               int _extrapolatedPredictorAveragesIndex;
+               int _extrapolatedPredictorCompressedIndex;
+               void* _extrapolatedPredictor;
+               void* _extrapolatedPredictorAverages;
+               void* _extrapolatedPredictorCompressed;
+               int _fluctuationIndex;
+               int _fluctuationAveragesIndex;
+               int _fluctuationCompressedIndex;
+               void* _fluctuation;
+               void* _fluctuationAverages;
+               void* _fluctuationCompressed;
+               int _solutionMinIndex;
+               int _solutionMaxIndex;
+               void* _solutionMin;
+               void* _solutionMax;
                tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _facewiseAugmentationStatus;
                int _augmentationStatus;
                int _previousAugmentationStatus;
                tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _facewiseCommunicationStatus;
                int _communicationStatus;
                tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _facewiseRefinementStatus;
-               bool _refinementFlag;
                int _refinementStatus;
                int _previousRefinementStatus;
+               bool _refinementFlag;
+               bool _vetoErasingChildren;
                int _iterationsToCureTroubledCell;
                
                /** mapping of records:
                || Member 	|| startbit 	|| length
-                |  neighbourMergePerformed	| startbit 0	| #bits DIMENSIONS_TIMES_TWO
-                |  hasCompletedTimeStep	| startbit DIMENSIONS_TIMES_TWO + 0	| #bits 1
-                |  adjacentToRemoteRank	| startbit DIMENSIONS_TIMES_TWO + 1	| #bits 1
-                |  type	| startbit DIMENSIONS_TIMES_TWO + 2	| #bits 2
-                |  refinementEvent	| startbit DIMENSIONS_TIMES_TWO + 4	| #bits 4
-                |  compressionState	| startbit DIMENSIONS_TIMES_TWO + 8	| #bits 2
-                |  bytesPerDoFInPreviousSolution	| startbit DIMENSIONS_TIMES_TWO + 10	| #bits 3
-                |  bytesPerDoFInSolution	| startbit DIMENSIONS_TIMES_TWO + 13	| #bits 3
-                |  bytesPerDoFInUpdate	| startbit DIMENSIONS_TIMES_TWO + 16	| #bits 3
-                |  bytesPerDoFInExtrapolatedPredictor	| startbit DIMENSIONS_TIMES_TWO + 19	| #bits 3
-                |  bytesPerDoFInFluctuation	| startbit DIMENSIONS_TIMES_TWO + 22	| #bits 3
+                |  hasCompletedTimeStep	| startbit 0	| #bits 1
+                |  adjacentToRemoteRank	| startbit 1	| #bits 1
+                |  type	| startbit 2	| #bits 2
+                |  refinementEvent	| startbit 4	| #bits 5
+                |  compressionState	| startbit 9	| #bits 2
+                |  bytesPerDoFInPreviousSolution	| startbit 11	| #bits 3
+                |  bytesPerDoFInSolution	| startbit 14	| #bits 3
+                |  bytesPerDoFInUpdate	| startbit 17	| #bits 3
+                |  bytesPerDoFInExtrapolatedPredictor	| startbit 20	| #bits 3
+                |  bytesPerDoFInFluctuation	| startbit 23	| #bits 3
                 */
                int _packedRecords0;
                
@@ -10066,7 +11677,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const bool& adjacentToRemoteRank, const bool& hasToHoldDataForMasterWorkerCommunication, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const int& parentIndex, const int& parentCellLevel, const tarch::la::Vector<DIMENSIONS,double>& parentOffset, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const bool& refinementFlag, const int& refinementStatus, const int& previousRefinementStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
+               PersistentRecords(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const bool& adjacentToRemoteRank, const bool& hasToHoldDataForMasterWorkerCommunication, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& updateIndex, const int& updateAveragesIndex, const int& updateCompressedIndex, void* update, void* updateAverages, void* updateCompressed, const int& extrapolatedPredictorIndex, const int& extrapolatedPredictorAveragesIndex, const int& extrapolatedPredictorCompressedIndex, void* extrapolatedPredictor, void* extrapolatedPredictorAverages, void* extrapolatedPredictorCompressed, const int& fluctuationIndex, const int& fluctuationAveragesIndex, const int& fluctuationCompressedIndex, void* fluctuation, void* fluctuationAverages, void* fluctuationCompressed, const int& solutionMinIndex, const int& solutionMaxIndex, void* solutionMin, void* solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
                
                
                inline int getSolverNumber() const 
@@ -10108,17 +11719,12 @@ namespace exahype {
                 * 
                 * @see convert()
                 */
-               inline std::bitset<DIMENSIONS_TIMES_TWO> getNeighbourMergePerformed() const 
+               inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> getNeighbourMergePerformed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  int mask = (int) (1 << (DIMENSIONS_TIMES_TWO)) - 1 ;
-                  mask = static_cast<int>(mask << (0));
-                  int tmp = static_cast<int>(_packedRecords0 & mask);
-                  tmp = static_cast<int>(tmp >> (0));
-                  std::bitset<DIMENSIONS_TIMES_TWO> result = tmp;
-                  return result;
+                  return _neighbourMergePerformed;
                }
                
                
@@ -10142,15 +11748,12 @@ namespace exahype {
                 * 
                 * @see convert()
                 */
-               inline void setNeighbourMergePerformed(const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) 
+               inline void setNeighbourMergePerformed(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  int mask = (int) (1 << (DIMENSIONS_TIMES_TWO)) - 1 ;
-                  mask = static_cast<int>(mask << (0));
-                  _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-                  _packedRecords0 = static_cast<int>(_packedRecords0 | neighbourMergePerformed.to_ulong() << (0));
+                  _neighbourMergePerformed = (neighbourMergePerformed);
                }
                
                
@@ -10160,7 +11763,7 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-                  int mask = 1 << (DIMENSIONS_TIMES_TWO);
+                  int mask = 1 << (0);
    int tmp = static_cast<int>(_packedRecords0 & mask);
    return (tmp != 0);
                }
@@ -10172,7 +11775,7 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-                  int mask = 1 << (DIMENSIONS_TIMES_TWO);
+                  int mask = 1 << (0);
    _packedRecords0 = static_cast<int>( hasCompletedTimeStep ? (_packedRecords0 | mask) : (_packedRecords0 & ~mask));
                }
                
@@ -10183,7 +11786,7 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-                  int mask = 1 << (DIMENSIONS_TIMES_TWO + 1);
+                  int mask = 1 << (1);
    int tmp = static_cast<int>(_packedRecords0 & mask);
    return (tmp != 0);
                }
@@ -10195,7 +11798,7 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-                  int mask = 1 << (DIMENSIONS_TIMES_TWO + 1);
+                  int mask = 1 << (1);
    _packedRecords0 = static_cast<int>( adjacentToRemoteRank ? (_packedRecords0 | mask) : (_packedRecords0 & ~mask));
                }
                
@@ -10299,84 +11902,6 @@ namespace exahype {
                
                
                
-               inline int getParentCellLevel() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _parentCellLevel;
-               }
-               
-               
-               
-               inline void setParentCellLevel(const int& parentCellLevel) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _parentCellLevel = parentCellLevel;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline tarch::la::Vector<DIMENSIONS,double> getParentOffset() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _parentOffset;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline void setParentOffset(const tarch::la::Vector<DIMENSIONS,double>& parentOffset) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _parentOffset = (parentOffset);
-               }
-               
-               
-               
                inline bool getHasVirtualChildren() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
@@ -10403,9 +11928,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 2));
+   mask = static_cast<int>(mask << (2));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 2));
+   tmp = static_cast<int>(tmp >> (2));
    assertion(( tmp >= 0 &&  tmp <= 3));
    return (Type) tmp;
                }
@@ -10419,9 +11944,9 @@ namespace exahype {
  {
                   assertion((type >= 0 && type <= 3));
    int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 2));
+   mask = static_cast<int>(mask << (2));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(type) << (DIMENSIONS_TIMES_TWO + 2));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(type) << (2));
                }
                
                
@@ -10431,11 +11956,11 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-                  int mask =  (1 << (4)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 4));
+                  int mask =  (1 << (5)) - 1;
+   mask = static_cast<int>(mask << (4));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 4));
-   assertion(( tmp >= 0 &&  tmp <= 14));
+   tmp = static_cast<int>(tmp >> (4));
+   assertion(( tmp >= 0 &&  tmp <= 16));
    return (RefinementEvent) tmp;
                }
                
@@ -10446,11 +11971,11 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-                  assertion((refinementEvent >= 0 && refinementEvent <= 14));
-   int mask =  (1 << (4)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 4));
+                  assertion((refinementEvent >= 0 && refinementEvent <= 16));
+   int mask =  (1 << (5)) - 1;
+   mask = static_cast<int>(mask << (4));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(refinementEvent) << (DIMENSIONS_TIMES_TWO + 4));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(refinementEvent) << (4));
                }
                
                
@@ -10711,7 +12236,67 @@ namespace exahype {
                
                
                
-               inline int getSolution() const 
+               inline int getSolutionIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _solutionIndex;
+               }
+               
+               
+               
+               inline void setSolutionIndex(const int& solutionIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _solutionIndex = solutionIndex;
+               }
+               
+               
+               
+               inline int getSolutionAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _solutionAveragesIndex;
+               }
+               
+               
+               
+               inline void setSolutionAveragesIndex(const int& solutionAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _solutionAveragesIndex = solutionAveragesIndex;
+               }
+               
+               
+               
+               inline int getSolutionCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _solutionCompressedIndex;
+               }
+               
+               
+               
+               inline void setSolutionCompressedIndex(const int& solutionCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _solutionCompressedIndex = solutionCompressedIndex;
+               }
+               
+               
+               
+               inline void* getSolution() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -10721,7 +12306,7 @@ namespace exahype {
                
                
                
-               inline void setSolution(const int& solution) 
+               inline void setSolution(void* solution) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -10731,7 +12316,7 @@ namespace exahype {
                
                
                
-               inline int getSolutionAverages() const 
+               inline void* getSolutionAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -10741,7 +12326,7 @@ namespace exahype {
                
                
                
-               inline void setSolutionAverages(const int& solutionAverages) 
+               inline void setSolutionAverages(void* solutionAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -10751,7 +12336,7 @@ namespace exahype {
                
                
                
-               inline int getSolutionCompressed() const 
+               inline void* getSolutionCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -10761,7 +12346,7 @@ namespace exahype {
                
                
                
-               inline void setSolutionCompressed(const int& solutionCompressed) 
+               inline void setSolutionCompressed(void* solutionCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -10771,7 +12356,67 @@ namespace exahype {
                
                
                
-               inline int getPreviousSolution() const 
+               inline int getPreviousSolutionIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _previousSolutionIndex;
+               }
+               
+               
+               
+               inline void setPreviousSolutionIndex(const int& previousSolutionIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _previousSolutionIndex = previousSolutionIndex;
+               }
+               
+               
+               
+               inline int getPreviousSolutionAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _previousSolutionAveragesIndex;
+               }
+               
+               
+               
+               inline void setPreviousSolutionAveragesIndex(const int& previousSolutionAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _previousSolutionAveragesIndex = previousSolutionAveragesIndex;
+               }
+               
+               
+               
+               inline int getPreviousSolutionCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _previousSolutionCompressedIndex;
+               }
+               
+               
+               
+               inline void setPreviousSolutionCompressedIndex(const int& previousSolutionCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _previousSolutionCompressedIndex = previousSolutionCompressedIndex;
+               }
+               
+               
+               
+               inline void* getPreviousSolution() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -10781,7 +12426,7 @@ namespace exahype {
                
                
                
-               inline void setPreviousSolution(const int& previousSolution) 
+               inline void setPreviousSolution(void* previousSolution) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -10791,7 +12436,7 @@ namespace exahype {
                
                
                
-               inline int getPreviousSolutionAverages() const 
+               inline void* getPreviousSolutionAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -10801,7 +12446,7 @@ namespace exahype {
                
                
                
-               inline void setPreviousSolutionAverages(const int& previousSolutionAverages) 
+               inline void setPreviousSolutionAverages(void* previousSolutionAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -10811,7 +12456,7 @@ namespace exahype {
                
                
                
-               inline int getPreviousSolutionCompressed() const 
+               inline void* getPreviousSolutionCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -10821,7 +12466,7 @@ namespace exahype {
                
                
                
-               inline void setPreviousSolutionCompressed(const int& previousSolutionCompressed) 
+               inline void setPreviousSolutionCompressed(void* previousSolutionCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -10831,7 +12476,67 @@ namespace exahype {
                
                
                
-               inline int getUpdate() const 
+               inline int getUpdateIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _updateIndex;
+               }
+               
+               
+               
+               inline void setUpdateIndex(const int& updateIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _updateIndex = updateIndex;
+               }
+               
+               
+               
+               inline int getUpdateAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _updateAveragesIndex;
+               }
+               
+               
+               
+               inline void setUpdateAveragesIndex(const int& updateAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _updateAveragesIndex = updateAveragesIndex;
+               }
+               
+               
+               
+               inline int getUpdateCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _updateCompressedIndex;
+               }
+               
+               
+               
+               inline void setUpdateCompressedIndex(const int& updateCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _updateCompressedIndex = updateCompressedIndex;
+               }
+               
+               
+               
+               inline void* getUpdate() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -10841,7 +12546,7 @@ namespace exahype {
                
                
                
-               inline void setUpdate(const int& update) 
+               inline void setUpdate(void* update) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -10851,7 +12556,7 @@ namespace exahype {
                
                
                
-               inline int getUpdateAverages() const 
+               inline void* getUpdateAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -10861,7 +12566,7 @@ namespace exahype {
                
                
                
-               inline void setUpdateAverages(const int& updateAverages) 
+               inline void setUpdateAverages(void* updateAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -10871,7 +12576,7 @@ namespace exahype {
                
                
                
-               inline int getUpdateCompressed() const 
+               inline void* getUpdateCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -10881,7 +12586,7 @@ namespace exahype {
                
                
                
-               inline void setUpdateCompressed(const int& updateCompressed) 
+               inline void setUpdateCompressed(void* updateCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -10891,7 +12596,67 @@ namespace exahype {
                
                
                
-               inline int getExtrapolatedPredictor() const 
+               inline int getExtrapolatedPredictorIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _extrapolatedPredictorIndex;
+               }
+               
+               
+               
+               inline void setExtrapolatedPredictorIndex(const int& extrapolatedPredictorIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _extrapolatedPredictorIndex = extrapolatedPredictorIndex;
+               }
+               
+               
+               
+               inline int getExtrapolatedPredictorAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _extrapolatedPredictorAveragesIndex;
+               }
+               
+               
+               
+               inline void setExtrapolatedPredictorAveragesIndex(const int& extrapolatedPredictorAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _extrapolatedPredictorAveragesIndex = extrapolatedPredictorAveragesIndex;
+               }
+               
+               
+               
+               inline int getExtrapolatedPredictorCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _extrapolatedPredictorCompressedIndex;
+               }
+               
+               
+               
+               inline void setExtrapolatedPredictorCompressedIndex(const int& extrapolatedPredictorCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _extrapolatedPredictorCompressedIndex = extrapolatedPredictorCompressedIndex;
+               }
+               
+               
+               
+               inline void* getExtrapolatedPredictor() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -10901,7 +12666,7 @@ namespace exahype {
                
                
                
-               inline void setExtrapolatedPredictor(const int& extrapolatedPredictor) 
+               inline void setExtrapolatedPredictor(void* extrapolatedPredictor) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -10911,7 +12676,7 @@ namespace exahype {
                
                
                
-               inline int getExtrapolatedPredictorAverages() const 
+               inline void* getExtrapolatedPredictorAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -10921,7 +12686,7 @@ namespace exahype {
                
                
                
-               inline void setExtrapolatedPredictorAverages(const int& extrapolatedPredictorAverages) 
+               inline void setExtrapolatedPredictorAverages(void* extrapolatedPredictorAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -10931,7 +12696,7 @@ namespace exahype {
                
                
                
-               inline int getExtrapolatedPredictorCompressed() const 
+               inline void* getExtrapolatedPredictorCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -10941,7 +12706,7 @@ namespace exahype {
                
                
                
-               inline void setExtrapolatedPredictorCompressed(const int& extrapolatedPredictorCompressed) 
+               inline void setExtrapolatedPredictorCompressed(void* extrapolatedPredictorCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -10951,7 +12716,67 @@ namespace exahype {
                
                
                
-               inline int getFluctuation() const 
+               inline int getFluctuationIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _fluctuationIndex;
+               }
+               
+               
+               
+               inline void setFluctuationIndex(const int& fluctuationIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _fluctuationIndex = fluctuationIndex;
+               }
+               
+               
+               
+               inline int getFluctuationAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _fluctuationAveragesIndex;
+               }
+               
+               
+               
+               inline void setFluctuationAveragesIndex(const int& fluctuationAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _fluctuationAveragesIndex = fluctuationAveragesIndex;
+               }
+               
+               
+               
+               inline int getFluctuationCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _fluctuationCompressedIndex;
+               }
+               
+               
+               
+               inline void setFluctuationCompressedIndex(const int& fluctuationCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _fluctuationCompressedIndex = fluctuationCompressedIndex;
+               }
+               
+               
+               
+               inline void* getFluctuation() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -10961,7 +12786,7 @@ namespace exahype {
                
                
                
-               inline void setFluctuation(const int& fluctuation) 
+               inline void setFluctuation(void* fluctuation) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -10971,7 +12796,7 @@ namespace exahype {
                
                
                
-               inline int getFluctuationAverages() const 
+               inline void* getFluctuationAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -10981,7 +12806,7 @@ namespace exahype {
                
                
                
-               inline void setFluctuationAverages(const int& fluctuationAverages) 
+               inline void setFluctuationAverages(void* fluctuationAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -10991,7 +12816,7 @@ namespace exahype {
                
                
                
-               inline int getFluctuationCompressed() const 
+               inline void* getFluctuationCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -11001,7 +12826,7 @@ namespace exahype {
                
                
                
-               inline void setFluctuationCompressed(const int& fluctuationCompressed) 
+               inline void setFluctuationCompressed(void* fluctuationCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -11011,7 +12836,47 @@ namespace exahype {
                
                
                
-               inline int getSolutionMin() const 
+               inline int getSolutionMinIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _solutionMinIndex;
+               }
+               
+               
+               
+               inline void setSolutionMinIndex(const int& solutionMinIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _solutionMinIndex = solutionMinIndex;
+               }
+               
+               
+               
+               inline int getSolutionMaxIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _solutionMaxIndex;
+               }
+               
+               
+               
+               inline void setSolutionMaxIndex(const int& solutionMaxIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _solutionMaxIndex = solutionMaxIndex;
+               }
+               
+               
+               
+               inline void* getSolutionMin() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -11021,7 +12886,7 @@ namespace exahype {
                
                
                
-               inline void setSolutionMin(const int& solutionMin) 
+               inline void setSolutionMin(void* solutionMin) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -11031,7 +12896,7 @@ namespace exahype {
                
                
                
-               inline int getSolutionMax() const 
+               inline void* getSolutionMax() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -11041,7 +12906,7 @@ namespace exahype {
                
                
                
-               inline void setSolutionMax(const int& solutionMax) 
+               inline void setSolutionMax(void* solutionMax) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -11285,26 +13150,6 @@ namespace exahype {
                
                
                
-               inline bool getRefinementFlag() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _refinementFlag;
-               }
-               
-               
-               
-               inline void setRefinementFlag(const bool& refinementFlag) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _refinementFlag = refinementFlag;
-               }
-               
-               
-               
                inline int getRefinementStatus() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
@@ -11345,6 +13190,46 @@ namespace exahype {
                
                
                
+               inline bool getRefinementFlag() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _refinementFlag;
+               }
+               
+               
+               
+               inline void setRefinementFlag(const bool& refinementFlag) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _refinementFlag = refinementFlag;
+               }
+               
+               
+               
+               inline bool getVetoErasingChildren() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _vetoErasingChildren;
+               }
+               
+               
+               
+               inline void setVetoErasingChildren(const bool& vetoErasingChildren) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _vetoErasingChildren = vetoErasingChildren;
+               }
+               
+               
+               
                inline int getIterationsToCureTroubledCell() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
@@ -11371,9 +13256,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 8));
+   mask = static_cast<int>(mask << (9));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 8));
+   tmp = static_cast<int>(tmp >> (9));
    assertion(( tmp >= 0 &&  tmp <= 2));
    return (CompressionState) tmp;
                }
@@ -11387,9 +13272,9 @@ namespace exahype {
  {
                   assertion((compressionState >= 0 && compressionState <= 2));
    int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 8));
+   mask = static_cast<int>(mask << (9));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(compressionState) << (DIMENSIONS_TIMES_TWO + 8));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(compressionState) << (9));
                }
                
                
@@ -11400,9 +13285,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 10));
+   mask = static_cast<int>(mask << (11));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 10));
+   tmp = static_cast<int>(tmp >> (11));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -11417,9 +13302,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInPreviousSolution >= 1 && bytesPerDoFInPreviousSolution <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 10));
+   mask = static_cast<int>(mask << (11));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInPreviousSolution) - 1) << (DIMENSIONS_TIMES_TWO + 10));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInPreviousSolution) - 1) << (11));
                }
                
                
@@ -11430,9 +13315,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 13));
+   mask = static_cast<int>(mask << (14));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 13));
+   tmp = static_cast<int>(tmp >> (14));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -11447,9 +13332,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInSolution >= 1 && bytesPerDoFInSolution <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 13));
+   mask = static_cast<int>(mask << (14));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInSolution) - 1) << (DIMENSIONS_TIMES_TWO + 13));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInSolution) - 1) << (14));
                }
                
                
@@ -11460,9 +13345,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 16));
+   mask = static_cast<int>(mask << (17));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 16));
+   tmp = static_cast<int>(tmp >> (17));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -11477,9 +13362,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInUpdate >= 1 && bytesPerDoFInUpdate <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 16));
+   mask = static_cast<int>(mask << (17));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInUpdate) - 1) << (DIMENSIONS_TIMES_TWO + 16));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInUpdate) - 1) << (17));
                }
                
                
@@ -11490,9 +13375,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 19));
+   mask = static_cast<int>(mask << (20));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 19));
+   tmp = static_cast<int>(tmp >> (20));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -11507,9 +13392,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInExtrapolatedPredictor >= 1 && bytesPerDoFInExtrapolatedPredictor <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 19));
+   mask = static_cast<int>(mask << (20));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInExtrapolatedPredictor) - 1) << (DIMENSIONS_TIMES_TWO + 19));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInExtrapolatedPredictor) - 1) << (20));
                }
                
                
@@ -11520,9 +13405,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 22));
+   mask = static_cast<int>(mask << (23));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 22));
+   tmp = static_cast<int>(tmp >> (23));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -11537,9 +13422,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInFluctuation >= 1 && bytesPerDoFInFluctuation <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 22));
+   mask = static_cast<int>(mask << (23));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInFluctuation) - 1) << (DIMENSIONS_TIMES_TWO + 22));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInFluctuation) - 1) << (23));
                }
                
                
@@ -11562,7 +13447,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               ADERDGCellDescriptionPacked(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const bool& adjacentToRemoteRank, const bool& hasToHoldDataForMasterWorkerCommunication, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const int& parentIndex, const int& parentCellLevel, const tarch::la::Vector<DIMENSIONS,double>& parentOffset, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const bool& refinementFlag, const int& refinementStatus, const int& previousRefinementStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
+               ADERDGCellDescriptionPacked(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const bool& adjacentToRemoteRank, const bool& hasToHoldDataForMasterWorkerCommunication, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& updateIndex, const int& updateAveragesIndex, const int& updateCompressedIndex, void* update, void* updateAverages, void* updateCompressed, const int& extrapolatedPredictorIndex, const int& extrapolatedPredictorAveragesIndex, const int& extrapolatedPredictorCompressedIndex, void* extrapolatedPredictor, void* extrapolatedPredictorAverages, void* extrapolatedPredictorCompressed, const int& fluctuationIndex, const int& fluctuationAveragesIndex, const int& fluctuationCompressedIndex, void* fluctuation, void* fluctuationAverages, void* fluctuationCompressed, const int& solutionMinIndex, const int& solutionMaxIndex, void* solutionMin, void* solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
                
                /**
                 * Generated
@@ -11609,17 +13494,12 @@ namespace exahype {
                 * 
                 * @see convert()
                 */
-               inline std::bitset<DIMENSIONS_TIMES_TWO> getNeighbourMergePerformed() const 
+               inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> getNeighbourMergePerformed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  int mask = (int) (1 << (DIMENSIONS_TIMES_TWO)) - 1 ;
-                  mask = static_cast<int>(mask << (0));
-                  int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-                  tmp = static_cast<int>(tmp >> (0));
-                  std::bitset<DIMENSIONS_TIMES_TWO> result = tmp;
-                  return result;
+                  return _persistentRecords._neighbourMergePerformed;
                }
                
                
@@ -11643,60 +13523,38 @@ namespace exahype {
                 * 
                 * @see convert()
                 */
-               inline void setNeighbourMergePerformed(const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) 
+               inline void setNeighbourMergePerformed(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  int mask = (int) (1 << (DIMENSIONS_TIMES_TWO)) - 1 ;
-                  mask = static_cast<int>(mask << (0));
-                  _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-                  _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | neighbourMergePerformed.to_ulong() << (0));
+                  _persistentRecords._neighbourMergePerformed = (neighbourMergePerformed);
                }
                
                
                
-               inline bool getNeighbourMergePerformed(int elementIndex) const 
+               inline signed char getNeighbourMergePerformed(int elementIndex) const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
                   assertion(elementIndex>=0);
                   assertion(elementIndex<DIMENSIONS_TIMES_TWO);
-                  int mask = 1 << (0);
-                  mask = mask << elementIndex;
-                  return (_persistentRecords._packedRecords0& mask);
+                  return _persistentRecords._neighbourMergePerformed[elementIndex];
+                  
                }
                
                
                
-               inline void setNeighbourMergePerformed(int elementIndex, const bool& neighbourMergePerformed) 
+               inline void setNeighbourMergePerformed(int elementIndex, const signed char& neighbourMergePerformed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
                   assertion(elementIndex>=0);
                   assertion(elementIndex<DIMENSIONS_TIMES_TWO);
-                  assertion(!neighbourMergePerformed || neighbourMergePerformed==1);
-                  int shift        = 0 + elementIndex; 
-                  int mask         = 1     << (shift);
-                  int shiftedValue = neighbourMergePerformed << (shift);
-                  _persistentRecords._packedRecords0 = _persistentRecords._packedRecords0 & ~mask;
-                  _persistentRecords._packedRecords0 = _persistentRecords._packedRecords0 |  shiftedValue;
-               }
-               
-               
-               
-               inline void flipNeighbourMergePerformed(int elementIndex) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion(elementIndex>=0);
-                  assertion(elementIndex<DIMENSIONS_TIMES_TWO);
-                  int mask = 1 << (0);
-                  mask = mask << elementIndex;
-                  _persistentRecords._packedRecords0^= mask;
+                  _persistentRecords._neighbourMergePerformed[elementIndex]= neighbourMergePerformed;
+                  
                }
                
                
@@ -11706,7 +13564,7 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-                  int mask = 1 << (DIMENSIONS_TIMES_TWO);
+                  int mask = 1 << (0);
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
    return (tmp != 0);
                }
@@ -11718,7 +13576,7 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-                  int mask = 1 << (DIMENSIONS_TIMES_TWO);
+                  int mask = 1 << (0);
    _persistentRecords._packedRecords0 = static_cast<int>( hasCompletedTimeStep ? (_persistentRecords._packedRecords0 | mask) : (_persistentRecords._packedRecords0 & ~mask));
                }
                
@@ -11729,7 +13587,7 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-                  int mask = 1 << (DIMENSIONS_TIMES_TWO + 1);
+                  int mask = 1 << (1);
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
    return (tmp != 0);
                }
@@ -11741,7 +13599,7 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-                  int mask = 1 << (DIMENSIONS_TIMES_TWO + 1);
+                  int mask = 1 << (1);
    _persistentRecords._packedRecords0 = static_cast<int>( adjacentToRemoteRank ? (_persistentRecords._packedRecords0 | mask) : (_persistentRecords._packedRecords0 & ~mask));
                }
                
@@ -11871,110 +13729,6 @@ namespace exahype {
                
                
                
-               inline int getParentCellLevel() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._parentCellLevel;
-               }
-               
-               
-               
-               inline void setParentCellLevel(const int& parentCellLevel) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._parentCellLevel = parentCellLevel;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline tarch::la::Vector<DIMENSIONS,double> getParentOffset() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._parentOffset;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline void setParentOffset(const tarch::la::Vector<DIMENSIONS,double>& parentOffset) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._parentOffset = (parentOffset);
-               }
-               
-               
-               
-               inline double getParentOffset(int elementIndex) const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion(elementIndex>=0);
-                  assertion(elementIndex<DIMENSIONS);
-                  return _persistentRecords._parentOffset[elementIndex];
-                  
-               }
-               
-               
-               
-               inline void setParentOffset(int elementIndex, const double& parentOffset) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion(elementIndex>=0);
-                  assertion(elementIndex<DIMENSIONS);
-                  _persistentRecords._parentOffset[elementIndex]= parentOffset;
-                  
-               }
-               
-               
-               
                inline bool getHasVirtualChildren() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
@@ -12001,9 +13755,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 2));
+   mask = static_cast<int>(mask << (2));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 2));
+   tmp = static_cast<int>(tmp >> (2));
    assertion(( tmp >= 0 &&  tmp <= 3));
    return (Type) tmp;
                }
@@ -12017,9 +13771,9 @@ namespace exahype {
  {
                   assertion((type >= 0 && type <= 3));
    int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 2));
+   mask = static_cast<int>(mask << (2));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(type) << (DIMENSIONS_TIMES_TWO + 2));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(type) << (2));
                }
                
                
@@ -12029,11 +13783,11 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-                  int mask =  (1 << (4)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 4));
+                  int mask =  (1 << (5)) - 1;
+   mask = static_cast<int>(mask << (4));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 4));
-   assertion(( tmp >= 0 &&  tmp <= 14));
+   tmp = static_cast<int>(tmp >> (4));
+   assertion(( tmp >= 0 &&  tmp <= 16));
    return (RefinementEvent) tmp;
                }
                
@@ -12044,11 +13798,11 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-                  assertion((refinementEvent >= 0 && refinementEvent <= 14));
-   int mask =  (1 << (4)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 4));
+                  assertion((refinementEvent >= 0 && refinementEvent <= 16));
+   int mask =  (1 << (5)) - 1;
+   mask = static_cast<int>(mask << (4));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(refinementEvent) << (DIMENSIONS_TIMES_TWO + 4));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(refinementEvent) << (4));
                }
                
                
@@ -12361,7 +14115,67 @@ namespace exahype {
                
                
                
-               inline int getSolution() const 
+               inline int getSolutionIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._solutionIndex;
+               }
+               
+               
+               
+               inline void setSolutionIndex(const int& solutionIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._solutionIndex = solutionIndex;
+               }
+               
+               
+               
+               inline int getSolutionAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._solutionAveragesIndex;
+               }
+               
+               
+               
+               inline void setSolutionAveragesIndex(const int& solutionAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._solutionAveragesIndex = solutionAveragesIndex;
+               }
+               
+               
+               
+               inline int getSolutionCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._solutionCompressedIndex;
+               }
+               
+               
+               
+               inline void setSolutionCompressedIndex(const int& solutionCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._solutionCompressedIndex = solutionCompressedIndex;
+               }
+               
+               
+               
+               inline void* getSolution() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -12371,7 +14185,7 @@ namespace exahype {
                
                
                
-               inline void setSolution(const int& solution) 
+               inline void setSolution(void* solution) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -12381,7 +14195,7 @@ namespace exahype {
                
                
                
-               inline int getSolutionAverages() const 
+               inline void* getSolutionAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -12391,7 +14205,7 @@ namespace exahype {
                
                
                
-               inline void setSolutionAverages(const int& solutionAverages) 
+               inline void setSolutionAverages(void* solutionAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -12401,7 +14215,7 @@ namespace exahype {
                
                
                
-               inline int getSolutionCompressed() const 
+               inline void* getSolutionCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -12411,7 +14225,7 @@ namespace exahype {
                
                
                
-               inline void setSolutionCompressed(const int& solutionCompressed) 
+               inline void setSolutionCompressed(void* solutionCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -12421,7 +14235,67 @@ namespace exahype {
                
                
                
-               inline int getPreviousSolution() const 
+               inline int getPreviousSolutionIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._previousSolutionIndex;
+               }
+               
+               
+               
+               inline void setPreviousSolutionIndex(const int& previousSolutionIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._previousSolutionIndex = previousSolutionIndex;
+               }
+               
+               
+               
+               inline int getPreviousSolutionAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._previousSolutionAveragesIndex;
+               }
+               
+               
+               
+               inline void setPreviousSolutionAveragesIndex(const int& previousSolutionAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._previousSolutionAveragesIndex = previousSolutionAveragesIndex;
+               }
+               
+               
+               
+               inline int getPreviousSolutionCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._previousSolutionCompressedIndex;
+               }
+               
+               
+               
+               inline void setPreviousSolutionCompressedIndex(const int& previousSolutionCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._previousSolutionCompressedIndex = previousSolutionCompressedIndex;
+               }
+               
+               
+               
+               inline void* getPreviousSolution() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -12431,7 +14305,7 @@ namespace exahype {
                
                
                
-               inline void setPreviousSolution(const int& previousSolution) 
+               inline void setPreviousSolution(void* previousSolution) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -12441,7 +14315,7 @@ namespace exahype {
                
                
                
-               inline int getPreviousSolutionAverages() const 
+               inline void* getPreviousSolutionAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -12451,7 +14325,7 @@ namespace exahype {
                
                
                
-               inline void setPreviousSolutionAverages(const int& previousSolutionAverages) 
+               inline void setPreviousSolutionAverages(void* previousSolutionAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -12461,7 +14335,7 @@ namespace exahype {
                
                
                
-               inline int getPreviousSolutionCompressed() const 
+               inline void* getPreviousSolutionCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -12471,7 +14345,7 @@ namespace exahype {
                
                
                
-               inline void setPreviousSolutionCompressed(const int& previousSolutionCompressed) 
+               inline void setPreviousSolutionCompressed(void* previousSolutionCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -12481,7 +14355,67 @@ namespace exahype {
                
                
                
-               inline int getUpdate() const 
+               inline int getUpdateIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._updateIndex;
+               }
+               
+               
+               
+               inline void setUpdateIndex(const int& updateIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._updateIndex = updateIndex;
+               }
+               
+               
+               
+               inline int getUpdateAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._updateAveragesIndex;
+               }
+               
+               
+               
+               inline void setUpdateAveragesIndex(const int& updateAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._updateAveragesIndex = updateAveragesIndex;
+               }
+               
+               
+               
+               inline int getUpdateCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._updateCompressedIndex;
+               }
+               
+               
+               
+               inline void setUpdateCompressedIndex(const int& updateCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._updateCompressedIndex = updateCompressedIndex;
+               }
+               
+               
+               
+               inline void* getUpdate() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -12491,7 +14425,7 @@ namespace exahype {
                
                
                
-               inline void setUpdate(const int& update) 
+               inline void setUpdate(void* update) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -12501,7 +14435,7 @@ namespace exahype {
                
                
                
-               inline int getUpdateAverages() const 
+               inline void* getUpdateAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -12511,7 +14445,7 @@ namespace exahype {
                
                
                
-               inline void setUpdateAverages(const int& updateAverages) 
+               inline void setUpdateAverages(void* updateAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -12521,7 +14455,7 @@ namespace exahype {
                
                
                
-               inline int getUpdateCompressed() const 
+               inline void* getUpdateCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -12531,7 +14465,7 @@ namespace exahype {
                
                
                
-               inline void setUpdateCompressed(const int& updateCompressed) 
+               inline void setUpdateCompressed(void* updateCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -12541,7 +14475,67 @@ namespace exahype {
                
                
                
-               inline int getExtrapolatedPredictor() const 
+               inline int getExtrapolatedPredictorIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._extrapolatedPredictorIndex;
+               }
+               
+               
+               
+               inline void setExtrapolatedPredictorIndex(const int& extrapolatedPredictorIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._extrapolatedPredictorIndex = extrapolatedPredictorIndex;
+               }
+               
+               
+               
+               inline int getExtrapolatedPredictorAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._extrapolatedPredictorAveragesIndex;
+               }
+               
+               
+               
+               inline void setExtrapolatedPredictorAveragesIndex(const int& extrapolatedPredictorAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._extrapolatedPredictorAveragesIndex = extrapolatedPredictorAveragesIndex;
+               }
+               
+               
+               
+               inline int getExtrapolatedPredictorCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._extrapolatedPredictorCompressedIndex;
+               }
+               
+               
+               
+               inline void setExtrapolatedPredictorCompressedIndex(const int& extrapolatedPredictorCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._extrapolatedPredictorCompressedIndex = extrapolatedPredictorCompressedIndex;
+               }
+               
+               
+               
+               inline void* getExtrapolatedPredictor() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -12551,7 +14545,7 @@ namespace exahype {
                
                
                
-               inline void setExtrapolatedPredictor(const int& extrapolatedPredictor) 
+               inline void setExtrapolatedPredictor(void* extrapolatedPredictor) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -12561,7 +14555,7 @@ namespace exahype {
                
                
                
-               inline int getExtrapolatedPredictorAverages() const 
+               inline void* getExtrapolatedPredictorAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -12571,7 +14565,7 @@ namespace exahype {
                
                
                
-               inline void setExtrapolatedPredictorAverages(const int& extrapolatedPredictorAverages) 
+               inline void setExtrapolatedPredictorAverages(void* extrapolatedPredictorAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -12581,7 +14575,7 @@ namespace exahype {
                
                
                
-               inline int getExtrapolatedPredictorCompressed() const 
+               inline void* getExtrapolatedPredictorCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -12591,7 +14585,7 @@ namespace exahype {
                
                
                
-               inline void setExtrapolatedPredictorCompressed(const int& extrapolatedPredictorCompressed) 
+               inline void setExtrapolatedPredictorCompressed(void* extrapolatedPredictorCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -12601,7 +14595,67 @@ namespace exahype {
                
                
                
-               inline int getFluctuation() const 
+               inline int getFluctuationIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._fluctuationIndex;
+               }
+               
+               
+               
+               inline void setFluctuationIndex(const int& fluctuationIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._fluctuationIndex = fluctuationIndex;
+               }
+               
+               
+               
+               inline int getFluctuationAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._fluctuationAveragesIndex;
+               }
+               
+               
+               
+               inline void setFluctuationAveragesIndex(const int& fluctuationAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._fluctuationAveragesIndex = fluctuationAveragesIndex;
+               }
+               
+               
+               
+               inline int getFluctuationCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._fluctuationCompressedIndex;
+               }
+               
+               
+               
+               inline void setFluctuationCompressedIndex(const int& fluctuationCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._fluctuationCompressedIndex = fluctuationCompressedIndex;
+               }
+               
+               
+               
+               inline void* getFluctuation() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -12611,7 +14665,7 @@ namespace exahype {
                
                
                
-               inline void setFluctuation(const int& fluctuation) 
+               inline void setFluctuation(void* fluctuation) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -12621,7 +14675,7 @@ namespace exahype {
                
                
                
-               inline int getFluctuationAverages() const 
+               inline void* getFluctuationAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -12631,7 +14685,7 @@ namespace exahype {
                
                
                
-               inline void setFluctuationAverages(const int& fluctuationAverages) 
+               inline void setFluctuationAverages(void* fluctuationAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -12641,7 +14695,7 @@ namespace exahype {
                
                
                
-               inline int getFluctuationCompressed() const 
+               inline void* getFluctuationCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -12651,7 +14705,7 @@ namespace exahype {
                
                
                
-               inline void setFluctuationCompressed(const int& fluctuationCompressed) 
+               inline void setFluctuationCompressed(void* fluctuationCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -12661,7 +14715,47 @@ namespace exahype {
                
                
                
-               inline int getSolutionMin() const 
+               inline int getSolutionMinIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._solutionMinIndex;
+               }
+               
+               
+               
+               inline void setSolutionMinIndex(const int& solutionMinIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._solutionMinIndex = solutionMinIndex;
+               }
+               
+               
+               
+               inline int getSolutionMaxIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._solutionMaxIndex;
+               }
+               
+               
+               
+               inline void setSolutionMaxIndex(const int& solutionMaxIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._solutionMaxIndex = solutionMaxIndex;
+               }
+               
+               
+               
+               inline void* getSolutionMin() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -12671,7 +14765,7 @@ namespace exahype {
                
                
                
-               inline void setSolutionMin(const int& solutionMin) 
+               inline void setSolutionMin(void* solutionMin) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -12681,7 +14775,7 @@ namespace exahype {
                
                
                
-               inline int getSolutionMax() const 
+               inline void* getSolutionMax() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -12691,7 +14785,7 @@ namespace exahype {
                
                
                
-               inline void setSolutionMax(const int& solutionMax) 
+               inline void setSolutionMax(void* solutionMax) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -13013,26 +15107,6 @@ namespace exahype {
                
                
                
-               inline bool getRefinementFlag() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._refinementFlag;
-               }
-               
-               
-               
-               inline void setRefinementFlag(const bool& refinementFlag) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._refinementFlag = refinementFlag;
-               }
-               
-               
-               
                inline int getRefinementStatus() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
@@ -13073,6 +15147,46 @@ namespace exahype {
                
                
                
+               inline bool getRefinementFlag() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._refinementFlag;
+               }
+               
+               
+               
+               inline void setRefinementFlag(const bool& refinementFlag) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._refinementFlag = refinementFlag;
+               }
+               
+               
+               
+               inline bool getVetoErasingChildren() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._vetoErasingChildren;
+               }
+               
+               
+               
+               inline void setVetoErasingChildren(const bool& vetoErasingChildren) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._vetoErasingChildren = vetoErasingChildren;
+               }
+               
+               
+               
                inline int getIterationsToCureTroubledCell() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
@@ -13099,9 +15213,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 8));
+   mask = static_cast<int>(mask << (9));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 8));
+   tmp = static_cast<int>(tmp >> (9));
    assertion(( tmp >= 0 &&  tmp <= 2));
    return (CompressionState) tmp;
                }
@@ -13115,9 +15229,9 @@ namespace exahype {
  {
                   assertion((compressionState >= 0 && compressionState <= 2));
    int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 8));
+   mask = static_cast<int>(mask << (9));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(compressionState) << (DIMENSIONS_TIMES_TWO + 8));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(compressionState) << (9));
                }
                
                
@@ -13128,9 +15242,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 10));
+   mask = static_cast<int>(mask << (11));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 10));
+   tmp = static_cast<int>(tmp >> (11));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -13145,9 +15259,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInPreviousSolution >= 1 && bytesPerDoFInPreviousSolution <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 10));
+   mask = static_cast<int>(mask << (11));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInPreviousSolution) - 1) << (DIMENSIONS_TIMES_TWO + 10));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInPreviousSolution) - 1) << (11));
                }
                
                
@@ -13158,9 +15272,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 13));
+   mask = static_cast<int>(mask << (14));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 13));
+   tmp = static_cast<int>(tmp >> (14));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -13175,9 +15289,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInSolution >= 1 && bytesPerDoFInSolution <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 13));
+   mask = static_cast<int>(mask << (14));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInSolution) - 1) << (DIMENSIONS_TIMES_TWO + 13));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInSolution) - 1) << (14));
                }
                
                
@@ -13188,9 +15302,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 16));
+   mask = static_cast<int>(mask << (17));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 16));
+   tmp = static_cast<int>(tmp >> (17));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -13205,9 +15319,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInUpdate >= 1 && bytesPerDoFInUpdate <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 16));
+   mask = static_cast<int>(mask << (17));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInUpdate) - 1) << (DIMENSIONS_TIMES_TWO + 16));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInUpdate) - 1) << (17));
                }
                
                
@@ -13218,9 +15332,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 19));
+   mask = static_cast<int>(mask << (20));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 19));
+   tmp = static_cast<int>(tmp >> (20));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -13235,9 +15349,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInExtrapolatedPredictor >= 1 && bytesPerDoFInExtrapolatedPredictor <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 19));
+   mask = static_cast<int>(mask << (20));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInExtrapolatedPredictor) - 1) << (DIMENSIONS_TIMES_TWO + 19));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInExtrapolatedPredictor) - 1) << (20));
                }
                
                
@@ -13248,9 +15362,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 22));
+   mask = static_cast<int>(mask << (23));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 22));
+   tmp = static_cast<int>(tmp >> (23));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -13265,9 +15379,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInFluctuation >= 1 && bytesPerDoFInFluctuation <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 22));
+   mask = static_cast<int>(mask << (23));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInFluctuation) - 1) << (DIMENSIONS_TIMES_TWO + 22));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInFluctuation) - 1) << (23));
                }
                
                
@@ -13368,7 +15482,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   01/09/2018 15:55
+       * @date   31/10/2018 18:11
        */
       class exahype::records::ADERDGCellDescription { 
          
@@ -13385,7 +15499,7 @@ namespace exahype {
             };
             
             enum RefinementEvent {
-               None = 0, ErasingChildrenRequested = 1, ErasingChildren = 2, ChangeChildrenToVirtualChildrenRequested = 3, ChangeChildrenToVirtualChildren = 4, RefiningRequested = 5, Refining = 6, Prolongating = 7, ErasingVirtualChildrenRequested = 8, ErasingVirtualChildren = 9, VirtualRefiningRequested = 10, VirtualRefining = 11, Erasing = 12, ChangeToVirtualCell = 13, ErasingVirtualCell = 14
+               None = 0, ErasingChildrenRequested = 1, ErasingChildren = 2, ChangeChildrenToVirtualChildrenRequested = 3, ChangeChildrenToVirtualChildren = 4, RefiningRequested = 5, Refining = 6, Prolongating = 7, ErasingVirtualChildrenRequested = 8, ErasingVirtualChildren = 9, VirtualRefiningRequested = 10, VirtualRefining = 11, ErasingRequested = 12, Erasing = 13, ChangeToVirtualCellRequested = 14, ChangeToVirtualCell = 15, ErasingVirtualCell = 16
             };
             
             enum Type {
@@ -13395,18 +15509,12 @@ namespace exahype {
             struct PersistentRecords {
                int _solverNumber;
                #ifdef UseManualAlignment
-               std::bitset<DIMENSIONS_TIMES_TWO> _neighbourMergePerformed __attribute__((aligned(VectorisationAlignment)));
+               tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> _neighbourMergePerformed __attribute__((aligned(VectorisationAlignment)));
                #else
-               std::bitset<DIMENSIONS_TIMES_TWO> _neighbourMergePerformed;
+               tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> _neighbourMergePerformed;
                #endif
                bool _hasCompletedTimeStep;
                int _parentIndex;
-               int _parentCellLevel;
-               #ifdef UseManualAlignment
-               tarch::la::Vector<DIMENSIONS,double> _parentOffset __attribute__((aligned(VectorisationAlignment)));
-               #else
-               tarch::la::Vector<DIMENSIONS,double> _parentOffset;
-               #endif
                bool _hasVirtualChildren;
                Type _type;
                RefinementEvent _refinementEvent;
@@ -13427,23 +15535,40 @@ namespace exahype {
                double _correctorTimeStamp;
                double _predictorTimeStepSize;
                double _predictorTimeStamp;
-               int _solution;
-               int _solutionAverages;
-               int _solutionCompressed;
-               int _previousSolution;
-               int _previousSolutionAverages;
-               int _previousSolutionCompressed;
-               int _update;
-               int _updateAverages;
-               int _updateCompressed;
-               int _extrapolatedPredictor;
-               int _extrapolatedPredictorAverages;
-               int _extrapolatedPredictorCompressed;
-               int _fluctuation;
-               int _fluctuationAverages;
-               int _fluctuationCompressed;
-               int _solutionMin;
-               int _solutionMax;
+               int _solutionIndex;
+               int _solutionAveragesIndex;
+               int _solutionCompressedIndex;
+               void* _solution;
+               void* _solutionAverages;
+               void* _solutionCompressed;
+               int _previousSolutionIndex;
+               int _previousSolutionAveragesIndex;
+               int _previousSolutionCompressedIndex;
+               void* _previousSolution;
+               void* _previousSolutionAverages;
+               void* _previousSolutionCompressed;
+               int _updateIndex;
+               int _updateAveragesIndex;
+               int _updateCompressedIndex;
+               void* _update;
+               void* _updateAverages;
+               void* _updateCompressed;
+               int _extrapolatedPredictorIndex;
+               int _extrapolatedPredictorAveragesIndex;
+               int _extrapolatedPredictorCompressedIndex;
+               void* _extrapolatedPredictor;
+               void* _extrapolatedPredictorAverages;
+               void* _extrapolatedPredictorCompressed;
+               int _fluctuationIndex;
+               int _fluctuationAveragesIndex;
+               int _fluctuationCompressedIndex;
+               void* _fluctuation;
+               void* _fluctuationAverages;
+               void* _fluctuationCompressed;
+               int _solutionMinIndex;
+               int _solutionMaxIndex;
+               void* _solutionMin;
+               void* _solutionMax;
                #ifdef UseManualAlignment
                tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _facewiseAugmentationStatus __attribute__((aligned(VectorisationAlignment)));
                #else
@@ -13462,9 +15587,10 @@ namespace exahype {
                #else
                tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _facewiseRefinementStatus;
                #endif
-               bool _refinementFlag;
                int _refinementStatus;
                int _previousRefinementStatus;
+               bool _refinementFlag;
+               bool _vetoErasingChildren;
                int _iterationsToCureTroubledCell;
                CompressionState _compressionState;
                int _bytesPerDoFInPreviousSolution;
@@ -13481,7 +15607,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const int& parentIndex, const int& parentCellLevel, const tarch::la::Vector<DIMENSIONS,double>& parentOffset, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const bool& refinementFlag, const int& refinementStatus, const int& previousRefinementStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation, const Creation& creation);
+               PersistentRecords(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& updateIndex, const int& updateAveragesIndex, const int& updateCompressedIndex, void* update, void* updateAverages, void* updateCompressed, const int& extrapolatedPredictorIndex, const int& extrapolatedPredictorAveragesIndex, const int& extrapolatedPredictorCompressedIndex, void* extrapolatedPredictor, void* extrapolatedPredictorAverages, void* extrapolatedPredictorCompressed, const int& fluctuationIndex, const int& fluctuationAveragesIndex, const int& fluctuationCompressedIndex, void* fluctuation, void* fluctuationAverages, void* fluctuationCompressed, const int& solutionMinIndex, const int& solutionMaxIndex, void* solutionMin, void* solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation, const Creation& creation);
                
                
                inline int getSolverNumber() const 
@@ -13523,7 +15649,7 @@ namespace exahype {
                 * 
                 * @see convert()
                 */
-               inline std::bitset<DIMENSIONS_TIMES_TWO> getNeighbourMergePerformed() const 
+               inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> getNeighbourMergePerformed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -13552,7 +15678,7 @@ namespace exahype {
                 * 
                 * @see convert()
                 */
-               inline void setNeighbourMergePerformed(const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) 
+               inline void setNeighbourMergePerformed(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -13598,84 +15724,6 @@ namespace exahype {
  #endif 
  {
                   _parentIndex = parentIndex;
-               }
-               
-               
-               
-               inline int getParentCellLevel() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _parentCellLevel;
-               }
-               
-               
-               
-               inline void setParentCellLevel(const int& parentCellLevel) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _parentCellLevel = parentCellLevel;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline tarch::la::Vector<DIMENSIONS,double> getParentOffset() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _parentOffset;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline void setParentOffset(const tarch::la::Vector<DIMENSIONS,double>& parentOffset) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _parentOffset = (parentOffset);
                }
                
                
@@ -13996,7 +16044,67 @@ namespace exahype {
                
                
                
-               inline int getSolution() const 
+               inline int getSolutionIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _solutionIndex;
+               }
+               
+               
+               
+               inline void setSolutionIndex(const int& solutionIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _solutionIndex = solutionIndex;
+               }
+               
+               
+               
+               inline int getSolutionAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _solutionAveragesIndex;
+               }
+               
+               
+               
+               inline void setSolutionAveragesIndex(const int& solutionAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _solutionAveragesIndex = solutionAveragesIndex;
+               }
+               
+               
+               
+               inline int getSolutionCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _solutionCompressedIndex;
+               }
+               
+               
+               
+               inline void setSolutionCompressedIndex(const int& solutionCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _solutionCompressedIndex = solutionCompressedIndex;
+               }
+               
+               
+               
+               inline void* getSolution() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -14006,7 +16114,7 @@ namespace exahype {
                
                
                
-               inline void setSolution(const int& solution) 
+               inline void setSolution(void* solution) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -14016,7 +16124,7 @@ namespace exahype {
                
                
                
-               inline int getSolutionAverages() const 
+               inline void* getSolutionAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -14026,7 +16134,7 @@ namespace exahype {
                
                
                
-               inline void setSolutionAverages(const int& solutionAverages) 
+               inline void setSolutionAverages(void* solutionAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -14036,7 +16144,7 @@ namespace exahype {
                
                
                
-               inline int getSolutionCompressed() const 
+               inline void* getSolutionCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -14046,7 +16154,7 @@ namespace exahype {
                
                
                
-               inline void setSolutionCompressed(const int& solutionCompressed) 
+               inline void setSolutionCompressed(void* solutionCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -14056,7 +16164,67 @@ namespace exahype {
                
                
                
-               inline int getPreviousSolution() const 
+               inline int getPreviousSolutionIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _previousSolutionIndex;
+               }
+               
+               
+               
+               inline void setPreviousSolutionIndex(const int& previousSolutionIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _previousSolutionIndex = previousSolutionIndex;
+               }
+               
+               
+               
+               inline int getPreviousSolutionAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _previousSolutionAveragesIndex;
+               }
+               
+               
+               
+               inline void setPreviousSolutionAveragesIndex(const int& previousSolutionAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _previousSolutionAveragesIndex = previousSolutionAveragesIndex;
+               }
+               
+               
+               
+               inline int getPreviousSolutionCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _previousSolutionCompressedIndex;
+               }
+               
+               
+               
+               inline void setPreviousSolutionCompressedIndex(const int& previousSolutionCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _previousSolutionCompressedIndex = previousSolutionCompressedIndex;
+               }
+               
+               
+               
+               inline void* getPreviousSolution() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -14066,7 +16234,7 @@ namespace exahype {
                
                
                
-               inline void setPreviousSolution(const int& previousSolution) 
+               inline void setPreviousSolution(void* previousSolution) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -14076,7 +16244,7 @@ namespace exahype {
                
                
                
-               inline int getPreviousSolutionAverages() const 
+               inline void* getPreviousSolutionAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -14086,7 +16254,7 @@ namespace exahype {
                
                
                
-               inline void setPreviousSolutionAverages(const int& previousSolutionAverages) 
+               inline void setPreviousSolutionAverages(void* previousSolutionAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -14096,7 +16264,7 @@ namespace exahype {
                
                
                
-               inline int getPreviousSolutionCompressed() const 
+               inline void* getPreviousSolutionCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -14106,7 +16274,7 @@ namespace exahype {
                
                
                
-               inline void setPreviousSolutionCompressed(const int& previousSolutionCompressed) 
+               inline void setPreviousSolutionCompressed(void* previousSolutionCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -14116,7 +16284,67 @@ namespace exahype {
                
                
                
-               inline int getUpdate() const 
+               inline int getUpdateIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _updateIndex;
+               }
+               
+               
+               
+               inline void setUpdateIndex(const int& updateIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _updateIndex = updateIndex;
+               }
+               
+               
+               
+               inline int getUpdateAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _updateAveragesIndex;
+               }
+               
+               
+               
+               inline void setUpdateAveragesIndex(const int& updateAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _updateAveragesIndex = updateAveragesIndex;
+               }
+               
+               
+               
+               inline int getUpdateCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _updateCompressedIndex;
+               }
+               
+               
+               
+               inline void setUpdateCompressedIndex(const int& updateCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _updateCompressedIndex = updateCompressedIndex;
+               }
+               
+               
+               
+               inline void* getUpdate() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -14126,7 +16354,7 @@ namespace exahype {
                
                
                
-               inline void setUpdate(const int& update) 
+               inline void setUpdate(void* update) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -14136,7 +16364,7 @@ namespace exahype {
                
                
                
-               inline int getUpdateAverages() const 
+               inline void* getUpdateAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -14146,7 +16374,7 @@ namespace exahype {
                
                
                
-               inline void setUpdateAverages(const int& updateAverages) 
+               inline void setUpdateAverages(void* updateAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -14156,7 +16384,7 @@ namespace exahype {
                
                
                
-               inline int getUpdateCompressed() const 
+               inline void* getUpdateCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -14166,7 +16394,7 @@ namespace exahype {
                
                
                
-               inline void setUpdateCompressed(const int& updateCompressed) 
+               inline void setUpdateCompressed(void* updateCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -14176,7 +16404,67 @@ namespace exahype {
                
                
                
-               inline int getExtrapolatedPredictor() const 
+               inline int getExtrapolatedPredictorIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _extrapolatedPredictorIndex;
+               }
+               
+               
+               
+               inline void setExtrapolatedPredictorIndex(const int& extrapolatedPredictorIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _extrapolatedPredictorIndex = extrapolatedPredictorIndex;
+               }
+               
+               
+               
+               inline int getExtrapolatedPredictorAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _extrapolatedPredictorAveragesIndex;
+               }
+               
+               
+               
+               inline void setExtrapolatedPredictorAveragesIndex(const int& extrapolatedPredictorAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _extrapolatedPredictorAveragesIndex = extrapolatedPredictorAveragesIndex;
+               }
+               
+               
+               
+               inline int getExtrapolatedPredictorCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _extrapolatedPredictorCompressedIndex;
+               }
+               
+               
+               
+               inline void setExtrapolatedPredictorCompressedIndex(const int& extrapolatedPredictorCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _extrapolatedPredictorCompressedIndex = extrapolatedPredictorCompressedIndex;
+               }
+               
+               
+               
+               inline void* getExtrapolatedPredictor() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -14186,7 +16474,7 @@ namespace exahype {
                
                
                
-               inline void setExtrapolatedPredictor(const int& extrapolatedPredictor) 
+               inline void setExtrapolatedPredictor(void* extrapolatedPredictor) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -14196,7 +16484,7 @@ namespace exahype {
                
                
                
-               inline int getExtrapolatedPredictorAverages() const 
+               inline void* getExtrapolatedPredictorAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -14206,7 +16494,7 @@ namespace exahype {
                
                
                
-               inline void setExtrapolatedPredictorAverages(const int& extrapolatedPredictorAverages) 
+               inline void setExtrapolatedPredictorAverages(void* extrapolatedPredictorAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -14216,7 +16504,7 @@ namespace exahype {
                
                
                
-               inline int getExtrapolatedPredictorCompressed() const 
+               inline void* getExtrapolatedPredictorCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -14226,7 +16514,7 @@ namespace exahype {
                
                
                
-               inline void setExtrapolatedPredictorCompressed(const int& extrapolatedPredictorCompressed) 
+               inline void setExtrapolatedPredictorCompressed(void* extrapolatedPredictorCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -14236,7 +16524,67 @@ namespace exahype {
                
                
                
-               inline int getFluctuation() const 
+               inline int getFluctuationIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _fluctuationIndex;
+               }
+               
+               
+               
+               inline void setFluctuationIndex(const int& fluctuationIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _fluctuationIndex = fluctuationIndex;
+               }
+               
+               
+               
+               inline int getFluctuationAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _fluctuationAveragesIndex;
+               }
+               
+               
+               
+               inline void setFluctuationAveragesIndex(const int& fluctuationAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _fluctuationAveragesIndex = fluctuationAveragesIndex;
+               }
+               
+               
+               
+               inline int getFluctuationCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _fluctuationCompressedIndex;
+               }
+               
+               
+               
+               inline void setFluctuationCompressedIndex(const int& fluctuationCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _fluctuationCompressedIndex = fluctuationCompressedIndex;
+               }
+               
+               
+               
+               inline void* getFluctuation() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -14246,7 +16594,7 @@ namespace exahype {
                
                
                
-               inline void setFluctuation(const int& fluctuation) 
+               inline void setFluctuation(void* fluctuation) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -14256,7 +16604,7 @@ namespace exahype {
                
                
                
-               inline int getFluctuationAverages() const 
+               inline void* getFluctuationAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -14266,7 +16614,7 @@ namespace exahype {
                
                
                
-               inline void setFluctuationAverages(const int& fluctuationAverages) 
+               inline void setFluctuationAverages(void* fluctuationAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -14276,7 +16624,7 @@ namespace exahype {
                
                
                
-               inline int getFluctuationCompressed() const 
+               inline void* getFluctuationCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -14286,7 +16634,7 @@ namespace exahype {
                
                
                
-               inline void setFluctuationCompressed(const int& fluctuationCompressed) 
+               inline void setFluctuationCompressed(void* fluctuationCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -14296,7 +16644,47 @@ namespace exahype {
                
                
                
-               inline int getSolutionMin() const 
+               inline int getSolutionMinIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _solutionMinIndex;
+               }
+               
+               
+               
+               inline void setSolutionMinIndex(const int& solutionMinIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _solutionMinIndex = solutionMinIndex;
+               }
+               
+               
+               
+               inline int getSolutionMaxIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _solutionMaxIndex;
+               }
+               
+               
+               
+               inline void setSolutionMaxIndex(const int& solutionMaxIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _solutionMaxIndex = solutionMaxIndex;
+               }
+               
+               
+               
+               inline void* getSolutionMin() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -14306,7 +16694,7 @@ namespace exahype {
                
                
                
-               inline void setSolutionMin(const int& solutionMin) 
+               inline void setSolutionMin(void* solutionMin) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -14316,7 +16704,7 @@ namespace exahype {
                
                
                
-               inline int getSolutionMax() const 
+               inline void* getSolutionMax() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -14326,7 +16714,7 @@ namespace exahype {
                
                
                
-               inline void setSolutionMax(const int& solutionMax) 
+               inline void setSolutionMax(void* solutionMax) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -14570,26 +16958,6 @@ namespace exahype {
                
                
                
-               inline bool getRefinementFlag() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _refinementFlag;
-               }
-               
-               
-               
-               inline void setRefinementFlag(const bool& refinementFlag) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _refinementFlag = refinementFlag;
-               }
-               
-               
-               
                inline int getRefinementStatus() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
@@ -14626,6 +16994,46 @@ namespace exahype {
  #endif 
  {
                   _previousRefinementStatus = previousRefinementStatus;
+               }
+               
+               
+               
+               inline bool getRefinementFlag() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _refinementFlag;
+               }
+               
+               
+               
+               inline void setRefinementFlag(const bool& refinementFlag) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _refinementFlag = refinementFlag;
+               }
+               
+               
+               
+               inline bool getVetoErasingChildren() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _vetoErasingChildren;
+               }
+               
+               
+               
+               inline void setVetoErasingChildren(const bool& vetoErasingChildren) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _vetoErasingChildren = vetoErasingChildren;
                }
                
                
@@ -14808,7 +17216,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               ADERDGCellDescription(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const int& parentIndex, const int& parentCellLevel, const tarch::la::Vector<DIMENSIONS,double>& parentOffset, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const bool& refinementFlag, const int& refinementStatus, const int& previousRefinementStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation, const Creation& creation);
+               ADERDGCellDescription(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& updateIndex, const int& updateAveragesIndex, const int& updateCompressedIndex, void* update, void* updateAverages, void* updateCompressed, const int& extrapolatedPredictorIndex, const int& extrapolatedPredictorAveragesIndex, const int& extrapolatedPredictorCompressedIndex, void* extrapolatedPredictor, void* extrapolatedPredictorAverages, void* extrapolatedPredictorCompressed, const int& fluctuationIndex, const int& fluctuationAveragesIndex, const int& fluctuationCompressedIndex, void* fluctuation, void* fluctuationAverages, void* fluctuationCompressed, const int& solutionMinIndex, const int& solutionMaxIndex, void* solutionMin, void* solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation, const Creation& creation);
                
                /**
                 * Generated
@@ -14855,7 +17263,7 @@ namespace exahype {
                 * 
                 * @see convert()
                 */
-               inline std::bitset<DIMENSIONS_TIMES_TWO> getNeighbourMergePerformed() const 
+               inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> getNeighbourMergePerformed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -14884,7 +17292,7 @@ namespace exahype {
                 * 
                 * @see convert()
                 */
-               inline void setNeighbourMergePerformed(const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) 
+               inline void setNeighbourMergePerformed(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -14894,7 +17302,7 @@ namespace exahype {
                
                
                
-               inline bool getNeighbourMergePerformed(int elementIndex) const 
+               inline signed char getNeighbourMergePerformed(int elementIndex) const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -14907,7 +17315,7 @@ namespace exahype {
                
                
                
-               inline void setNeighbourMergePerformed(int elementIndex, const bool& neighbourMergePerformed) 
+               inline void setNeighbourMergePerformed(int elementIndex, const signed char& neighbourMergePerformed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -14916,18 +17324,6 @@ namespace exahype {
                   assertion(elementIndex<DIMENSIONS_TIMES_TWO);
                   _persistentRecords._neighbourMergePerformed[elementIndex]= neighbourMergePerformed;
                   
-               }
-               
-               
-               
-               inline void flipNeighbourMergePerformed(int elementIndex) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion(elementIndex>=0);
-                  assertion(elementIndex<DIMENSIONS_TIMES_TWO);
-                  _persistentRecords._neighbourMergePerformed.flip(elementIndex);
                }
                
                
@@ -14968,110 +17364,6 @@ namespace exahype {
  #endif 
  {
                   _persistentRecords._parentIndex = parentIndex;
-               }
-               
-               
-               
-               inline int getParentCellLevel() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._parentCellLevel;
-               }
-               
-               
-               
-               inline void setParentCellLevel(const int& parentCellLevel) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._parentCellLevel = parentCellLevel;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline tarch::la::Vector<DIMENSIONS,double> getParentOffset() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._parentOffset;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline void setParentOffset(const tarch::la::Vector<DIMENSIONS,double>& parentOffset) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._parentOffset = (parentOffset);
-               }
-               
-               
-               
-               inline double getParentOffset(int elementIndex) const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion(elementIndex>=0);
-                  assertion(elementIndex<DIMENSIONS);
-                  return _persistentRecords._parentOffset[elementIndex];
-                  
-               }
-               
-               
-               
-               inline void setParentOffset(int elementIndex, const double& parentOffset) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion(elementIndex>=0);
-                  assertion(elementIndex<DIMENSIONS);
-                  _persistentRecords._parentOffset[elementIndex]= parentOffset;
-                  
                }
                
                
@@ -15444,7 +17736,67 @@ namespace exahype {
                
                
                
-               inline int getSolution() const 
+               inline int getSolutionIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._solutionIndex;
+               }
+               
+               
+               
+               inline void setSolutionIndex(const int& solutionIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._solutionIndex = solutionIndex;
+               }
+               
+               
+               
+               inline int getSolutionAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._solutionAveragesIndex;
+               }
+               
+               
+               
+               inline void setSolutionAveragesIndex(const int& solutionAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._solutionAveragesIndex = solutionAveragesIndex;
+               }
+               
+               
+               
+               inline int getSolutionCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._solutionCompressedIndex;
+               }
+               
+               
+               
+               inline void setSolutionCompressedIndex(const int& solutionCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._solutionCompressedIndex = solutionCompressedIndex;
+               }
+               
+               
+               
+               inline void* getSolution() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -15454,7 +17806,7 @@ namespace exahype {
                
                
                
-               inline void setSolution(const int& solution) 
+               inline void setSolution(void* solution) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -15464,7 +17816,7 @@ namespace exahype {
                
                
                
-               inline int getSolutionAverages() const 
+               inline void* getSolutionAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -15474,7 +17826,7 @@ namespace exahype {
                
                
                
-               inline void setSolutionAverages(const int& solutionAverages) 
+               inline void setSolutionAverages(void* solutionAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -15484,7 +17836,7 @@ namespace exahype {
                
                
                
-               inline int getSolutionCompressed() const 
+               inline void* getSolutionCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -15494,7 +17846,7 @@ namespace exahype {
                
                
                
-               inline void setSolutionCompressed(const int& solutionCompressed) 
+               inline void setSolutionCompressed(void* solutionCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -15504,7 +17856,67 @@ namespace exahype {
                
                
                
-               inline int getPreviousSolution() const 
+               inline int getPreviousSolutionIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._previousSolutionIndex;
+               }
+               
+               
+               
+               inline void setPreviousSolutionIndex(const int& previousSolutionIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._previousSolutionIndex = previousSolutionIndex;
+               }
+               
+               
+               
+               inline int getPreviousSolutionAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._previousSolutionAveragesIndex;
+               }
+               
+               
+               
+               inline void setPreviousSolutionAveragesIndex(const int& previousSolutionAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._previousSolutionAveragesIndex = previousSolutionAveragesIndex;
+               }
+               
+               
+               
+               inline int getPreviousSolutionCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._previousSolutionCompressedIndex;
+               }
+               
+               
+               
+               inline void setPreviousSolutionCompressedIndex(const int& previousSolutionCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._previousSolutionCompressedIndex = previousSolutionCompressedIndex;
+               }
+               
+               
+               
+               inline void* getPreviousSolution() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -15514,7 +17926,7 @@ namespace exahype {
                
                
                
-               inline void setPreviousSolution(const int& previousSolution) 
+               inline void setPreviousSolution(void* previousSolution) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -15524,7 +17936,7 @@ namespace exahype {
                
                
                
-               inline int getPreviousSolutionAverages() const 
+               inline void* getPreviousSolutionAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -15534,7 +17946,7 @@ namespace exahype {
                
                
                
-               inline void setPreviousSolutionAverages(const int& previousSolutionAverages) 
+               inline void setPreviousSolutionAverages(void* previousSolutionAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -15544,7 +17956,7 @@ namespace exahype {
                
                
                
-               inline int getPreviousSolutionCompressed() const 
+               inline void* getPreviousSolutionCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -15554,7 +17966,7 @@ namespace exahype {
                
                
                
-               inline void setPreviousSolutionCompressed(const int& previousSolutionCompressed) 
+               inline void setPreviousSolutionCompressed(void* previousSolutionCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -15564,7 +17976,67 @@ namespace exahype {
                
                
                
-               inline int getUpdate() const 
+               inline int getUpdateIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._updateIndex;
+               }
+               
+               
+               
+               inline void setUpdateIndex(const int& updateIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._updateIndex = updateIndex;
+               }
+               
+               
+               
+               inline int getUpdateAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._updateAveragesIndex;
+               }
+               
+               
+               
+               inline void setUpdateAveragesIndex(const int& updateAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._updateAveragesIndex = updateAveragesIndex;
+               }
+               
+               
+               
+               inline int getUpdateCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._updateCompressedIndex;
+               }
+               
+               
+               
+               inline void setUpdateCompressedIndex(const int& updateCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._updateCompressedIndex = updateCompressedIndex;
+               }
+               
+               
+               
+               inline void* getUpdate() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -15574,7 +18046,7 @@ namespace exahype {
                
                
                
-               inline void setUpdate(const int& update) 
+               inline void setUpdate(void* update) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -15584,7 +18056,7 @@ namespace exahype {
                
                
                
-               inline int getUpdateAverages() const 
+               inline void* getUpdateAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -15594,7 +18066,7 @@ namespace exahype {
                
                
                
-               inline void setUpdateAverages(const int& updateAverages) 
+               inline void setUpdateAverages(void* updateAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -15604,7 +18076,7 @@ namespace exahype {
                
                
                
-               inline int getUpdateCompressed() const 
+               inline void* getUpdateCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -15614,7 +18086,7 @@ namespace exahype {
                
                
                
-               inline void setUpdateCompressed(const int& updateCompressed) 
+               inline void setUpdateCompressed(void* updateCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -15624,7 +18096,67 @@ namespace exahype {
                
                
                
-               inline int getExtrapolatedPredictor() const 
+               inline int getExtrapolatedPredictorIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._extrapolatedPredictorIndex;
+               }
+               
+               
+               
+               inline void setExtrapolatedPredictorIndex(const int& extrapolatedPredictorIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._extrapolatedPredictorIndex = extrapolatedPredictorIndex;
+               }
+               
+               
+               
+               inline int getExtrapolatedPredictorAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._extrapolatedPredictorAveragesIndex;
+               }
+               
+               
+               
+               inline void setExtrapolatedPredictorAveragesIndex(const int& extrapolatedPredictorAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._extrapolatedPredictorAveragesIndex = extrapolatedPredictorAveragesIndex;
+               }
+               
+               
+               
+               inline int getExtrapolatedPredictorCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._extrapolatedPredictorCompressedIndex;
+               }
+               
+               
+               
+               inline void setExtrapolatedPredictorCompressedIndex(const int& extrapolatedPredictorCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._extrapolatedPredictorCompressedIndex = extrapolatedPredictorCompressedIndex;
+               }
+               
+               
+               
+               inline void* getExtrapolatedPredictor() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -15634,7 +18166,7 @@ namespace exahype {
                
                
                
-               inline void setExtrapolatedPredictor(const int& extrapolatedPredictor) 
+               inline void setExtrapolatedPredictor(void* extrapolatedPredictor) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -15644,7 +18176,7 @@ namespace exahype {
                
                
                
-               inline int getExtrapolatedPredictorAverages() const 
+               inline void* getExtrapolatedPredictorAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -15654,7 +18186,7 @@ namespace exahype {
                
                
                
-               inline void setExtrapolatedPredictorAverages(const int& extrapolatedPredictorAverages) 
+               inline void setExtrapolatedPredictorAverages(void* extrapolatedPredictorAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -15664,7 +18196,7 @@ namespace exahype {
                
                
                
-               inline int getExtrapolatedPredictorCompressed() const 
+               inline void* getExtrapolatedPredictorCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -15674,7 +18206,7 @@ namespace exahype {
                
                
                
-               inline void setExtrapolatedPredictorCompressed(const int& extrapolatedPredictorCompressed) 
+               inline void setExtrapolatedPredictorCompressed(void* extrapolatedPredictorCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -15684,7 +18216,67 @@ namespace exahype {
                
                
                
-               inline int getFluctuation() const 
+               inline int getFluctuationIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._fluctuationIndex;
+               }
+               
+               
+               
+               inline void setFluctuationIndex(const int& fluctuationIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._fluctuationIndex = fluctuationIndex;
+               }
+               
+               
+               
+               inline int getFluctuationAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._fluctuationAveragesIndex;
+               }
+               
+               
+               
+               inline void setFluctuationAveragesIndex(const int& fluctuationAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._fluctuationAveragesIndex = fluctuationAveragesIndex;
+               }
+               
+               
+               
+               inline int getFluctuationCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._fluctuationCompressedIndex;
+               }
+               
+               
+               
+               inline void setFluctuationCompressedIndex(const int& fluctuationCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._fluctuationCompressedIndex = fluctuationCompressedIndex;
+               }
+               
+               
+               
+               inline void* getFluctuation() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -15694,7 +18286,7 @@ namespace exahype {
                
                
                
-               inline void setFluctuation(const int& fluctuation) 
+               inline void setFluctuation(void* fluctuation) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -15704,7 +18296,7 @@ namespace exahype {
                
                
                
-               inline int getFluctuationAverages() const 
+               inline void* getFluctuationAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -15714,7 +18306,7 @@ namespace exahype {
                
                
                
-               inline void setFluctuationAverages(const int& fluctuationAverages) 
+               inline void setFluctuationAverages(void* fluctuationAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -15724,7 +18316,7 @@ namespace exahype {
                
                
                
-               inline int getFluctuationCompressed() const 
+               inline void* getFluctuationCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -15734,7 +18326,7 @@ namespace exahype {
                
                
                
-               inline void setFluctuationCompressed(const int& fluctuationCompressed) 
+               inline void setFluctuationCompressed(void* fluctuationCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -15744,7 +18336,47 @@ namespace exahype {
                
                
                
-               inline int getSolutionMin() const 
+               inline int getSolutionMinIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._solutionMinIndex;
+               }
+               
+               
+               
+               inline void setSolutionMinIndex(const int& solutionMinIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._solutionMinIndex = solutionMinIndex;
+               }
+               
+               
+               
+               inline int getSolutionMaxIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._solutionMaxIndex;
+               }
+               
+               
+               
+               inline void setSolutionMaxIndex(const int& solutionMaxIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._solutionMaxIndex = solutionMaxIndex;
+               }
+               
+               
+               
+               inline void* getSolutionMin() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -15754,7 +18386,7 @@ namespace exahype {
                
                
                
-               inline void setSolutionMin(const int& solutionMin) 
+               inline void setSolutionMin(void* solutionMin) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -15764,7 +18396,7 @@ namespace exahype {
                
                
                
-               inline int getSolutionMax() const 
+               inline void* getSolutionMax() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -15774,7 +18406,7 @@ namespace exahype {
                
                
                
-               inline void setSolutionMax(const int& solutionMax) 
+               inline void setSolutionMax(void* solutionMax) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -16096,26 +18728,6 @@ namespace exahype {
                
                
                
-               inline bool getRefinementFlag() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._refinementFlag;
-               }
-               
-               
-               
-               inline void setRefinementFlag(const bool& refinementFlag) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._refinementFlag = refinementFlag;
-               }
-               
-               
-               
                inline int getRefinementStatus() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
@@ -16152,6 +18764,46 @@ namespace exahype {
  #endif 
  {
                   _persistentRecords._previousRefinementStatus = previousRefinementStatus;
+               }
+               
+               
+               
+               inline bool getRefinementFlag() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._refinementFlag;
+               }
+               
+               
+               
+               inline void setRefinementFlag(const bool& refinementFlag) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._refinementFlag = refinementFlag;
+               }
+               
+               
+               
+               inline bool getVetoErasingChildren() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._vetoErasingChildren;
+               }
+               
+               
+               
+               inline void setVetoErasingChildren(const bool& vetoErasingChildren) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._vetoErasingChildren = vetoErasingChildren;
                }
                
                
@@ -16425,7 +19077,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   01/09/2018 15:55
+       * @date   31/10/2018 18:11
        */
       class exahype::records::ADERDGCellDescriptionPacked { 
          
@@ -16441,9 +19093,8 @@ namespace exahype {
             
             struct PersistentRecords {
                int _solverNumber;
+               tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> _neighbourMergePerformed;
                int _parentIndex;
-               int _parentCellLevel;
-               tarch::la::Vector<DIMENSIONS,double> _parentOffset;
                bool _hasVirtualChildren;
                int _level;
                tarch::la::Vector<DIMENSIONS,double> _offset;
@@ -16454,47 +19105,64 @@ namespace exahype {
                double _correctorTimeStamp;
                double _predictorTimeStepSize;
                double _predictorTimeStamp;
-               int _solution;
-               int _solutionAverages;
-               int _solutionCompressed;
-               int _previousSolution;
-               int _previousSolutionAverages;
-               int _previousSolutionCompressed;
-               int _update;
-               int _updateAverages;
-               int _updateCompressed;
-               int _extrapolatedPredictor;
-               int _extrapolatedPredictorAverages;
-               int _extrapolatedPredictorCompressed;
-               int _fluctuation;
-               int _fluctuationAverages;
-               int _fluctuationCompressed;
-               int _solutionMin;
-               int _solutionMax;
+               int _solutionIndex;
+               int _solutionAveragesIndex;
+               int _solutionCompressedIndex;
+               void* _solution;
+               void* _solutionAverages;
+               void* _solutionCompressed;
+               int _previousSolutionIndex;
+               int _previousSolutionAveragesIndex;
+               int _previousSolutionCompressedIndex;
+               void* _previousSolution;
+               void* _previousSolutionAverages;
+               void* _previousSolutionCompressed;
+               int _updateIndex;
+               int _updateAveragesIndex;
+               int _updateCompressedIndex;
+               void* _update;
+               void* _updateAverages;
+               void* _updateCompressed;
+               int _extrapolatedPredictorIndex;
+               int _extrapolatedPredictorAveragesIndex;
+               int _extrapolatedPredictorCompressedIndex;
+               void* _extrapolatedPredictor;
+               void* _extrapolatedPredictorAverages;
+               void* _extrapolatedPredictorCompressed;
+               int _fluctuationIndex;
+               int _fluctuationAveragesIndex;
+               int _fluctuationCompressedIndex;
+               void* _fluctuation;
+               void* _fluctuationAverages;
+               void* _fluctuationCompressed;
+               int _solutionMinIndex;
+               int _solutionMaxIndex;
+               void* _solutionMin;
+               void* _solutionMax;
                tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _facewiseAugmentationStatus;
                int _augmentationStatus;
                int _previousAugmentationStatus;
                tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _facewiseCommunicationStatus;
                int _communicationStatus;
                tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _facewiseRefinementStatus;
-               bool _refinementFlag;
                int _refinementStatus;
                int _previousRefinementStatus;
+               bool _refinementFlag;
+               bool _vetoErasingChildren;
                int _iterationsToCureTroubledCell;
                Creation _creation;
                
                /** mapping of records:
                || Member 	|| startbit 	|| length
-                |  neighbourMergePerformed	| startbit 0	| #bits DIMENSIONS_TIMES_TWO
-                |  hasCompletedTimeStep	| startbit DIMENSIONS_TIMES_TWO + 0	| #bits 1
-                |  type	| startbit DIMENSIONS_TIMES_TWO + 1	| #bits 2
-                |  refinementEvent	| startbit DIMENSIONS_TIMES_TWO + 3	| #bits 4
-                |  compressionState	| startbit DIMENSIONS_TIMES_TWO + 7	| #bits 2
-                |  bytesPerDoFInPreviousSolution	| startbit DIMENSIONS_TIMES_TWO + 9	| #bits 3
-                |  bytesPerDoFInSolution	| startbit DIMENSIONS_TIMES_TWO + 12	| #bits 3
-                |  bytesPerDoFInUpdate	| startbit DIMENSIONS_TIMES_TWO + 15	| #bits 3
-                |  bytesPerDoFInExtrapolatedPredictor	| startbit DIMENSIONS_TIMES_TWO + 18	| #bits 3
-                |  bytesPerDoFInFluctuation	| startbit DIMENSIONS_TIMES_TWO + 21	| #bits 3
+                |  hasCompletedTimeStep	| startbit 0	| #bits 1
+                |  type	| startbit 1	| #bits 2
+                |  refinementEvent	| startbit 3	| #bits 5
+                |  compressionState	| startbit 8	| #bits 2
+                |  bytesPerDoFInPreviousSolution	| startbit 10	| #bits 3
+                |  bytesPerDoFInSolution	| startbit 13	| #bits 3
+                |  bytesPerDoFInUpdate	| startbit 16	| #bits 3
+                |  bytesPerDoFInExtrapolatedPredictor	| startbit 19	| #bits 3
+                |  bytesPerDoFInFluctuation	| startbit 22	| #bits 3
                 */
                int _packedRecords0;
                
@@ -16506,7 +19174,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const int& parentIndex, const int& parentCellLevel, const tarch::la::Vector<DIMENSIONS,double>& parentOffset, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const bool& refinementFlag, const int& refinementStatus, const int& previousRefinementStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation, const Creation& creation);
+               PersistentRecords(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& updateIndex, const int& updateAveragesIndex, const int& updateCompressedIndex, void* update, void* updateAverages, void* updateCompressed, const int& extrapolatedPredictorIndex, const int& extrapolatedPredictorAveragesIndex, const int& extrapolatedPredictorCompressedIndex, void* extrapolatedPredictor, void* extrapolatedPredictorAverages, void* extrapolatedPredictorCompressed, const int& fluctuationIndex, const int& fluctuationAveragesIndex, const int& fluctuationCompressedIndex, void* fluctuation, void* fluctuationAverages, void* fluctuationCompressed, const int& solutionMinIndex, const int& solutionMaxIndex, void* solutionMin, void* solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation, const Creation& creation);
                
                
                inline int getSolverNumber() const 
@@ -16548,17 +19216,12 @@ namespace exahype {
                 * 
                 * @see convert()
                 */
-               inline std::bitset<DIMENSIONS_TIMES_TWO> getNeighbourMergePerformed() const 
+               inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> getNeighbourMergePerformed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  int mask = (int) (1 << (DIMENSIONS_TIMES_TWO)) - 1 ;
-                  mask = static_cast<int>(mask << (0));
-                  int tmp = static_cast<int>(_packedRecords0 & mask);
-                  tmp = static_cast<int>(tmp >> (0));
-                  std::bitset<DIMENSIONS_TIMES_TWO> result = tmp;
-                  return result;
+                  return _neighbourMergePerformed;
                }
                
                
@@ -16582,15 +19245,12 @@ namespace exahype {
                 * 
                 * @see convert()
                 */
-               inline void setNeighbourMergePerformed(const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) 
+               inline void setNeighbourMergePerformed(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  int mask = (int) (1 << (DIMENSIONS_TIMES_TWO)) - 1 ;
-                  mask = static_cast<int>(mask << (0));
-                  _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-                  _packedRecords0 = static_cast<int>(_packedRecords0 | neighbourMergePerformed.to_ulong() << (0));
+                  _neighbourMergePerformed = (neighbourMergePerformed);
                }
                
                
@@ -16600,7 +19260,7 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-                  int mask = 1 << (DIMENSIONS_TIMES_TWO);
+                  int mask = 1 << (0);
    int tmp = static_cast<int>(_packedRecords0 & mask);
    return (tmp != 0);
                }
@@ -16612,7 +19272,7 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-                  int mask = 1 << (DIMENSIONS_TIMES_TWO);
+                  int mask = 1 << (0);
    _packedRecords0 = static_cast<int>( hasCompletedTimeStep ? (_packedRecords0 | mask) : (_packedRecords0 & ~mask));
                }
                
@@ -16634,84 +19294,6 @@ namespace exahype {
  #endif 
  {
                   _parentIndex = parentIndex;
-               }
-               
-               
-               
-               inline int getParentCellLevel() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _parentCellLevel;
-               }
-               
-               
-               
-               inline void setParentCellLevel(const int& parentCellLevel) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _parentCellLevel = parentCellLevel;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline tarch::la::Vector<DIMENSIONS,double> getParentOffset() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _parentOffset;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline void setParentOffset(const tarch::la::Vector<DIMENSIONS,double>& parentOffset) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _parentOffset = (parentOffset);
                }
                
                
@@ -16742,9 +19324,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 1));
+   mask = static_cast<int>(mask << (1));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 1));
+   tmp = static_cast<int>(tmp >> (1));
    assertion(( tmp >= 0 &&  tmp <= 3));
    return (Type) tmp;
                }
@@ -16758,9 +19340,9 @@ namespace exahype {
  {
                   assertion((type >= 0 && type <= 3));
    int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 1));
+   mask = static_cast<int>(mask << (1));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(type) << (DIMENSIONS_TIMES_TWO + 1));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(type) << (1));
                }
                
                
@@ -16770,11 +19352,11 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-                  int mask =  (1 << (4)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 3));
+                  int mask =  (1 << (5)) - 1;
+   mask = static_cast<int>(mask << (3));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 3));
-   assertion(( tmp >= 0 &&  tmp <= 14));
+   tmp = static_cast<int>(tmp >> (3));
+   assertion(( tmp >= 0 &&  tmp <= 16));
    return (RefinementEvent) tmp;
                }
                
@@ -16785,11 +19367,11 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-                  assertion((refinementEvent >= 0 && refinementEvent <= 14));
-   int mask =  (1 << (4)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 3));
+                  assertion((refinementEvent >= 0 && refinementEvent <= 16));
+   int mask =  (1 << (5)) - 1;
+   mask = static_cast<int>(mask << (3));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(refinementEvent) << (DIMENSIONS_TIMES_TWO + 3));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(refinementEvent) << (3));
                }
                
                
@@ -17050,7 +19632,67 @@ namespace exahype {
                
                
                
-               inline int getSolution() const 
+               inline int getSolutionIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _solutionIndex;
+               }
+               
+               
+               
+               inline void setSolutionIndex(const int& solutionIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _solutionIndex = solutionIndex;
+               }
+               
+               
+               
+               inline int getSolutionAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _solutionAveragesIndex;
+               }
+               
+               
+               
+               inline void setSolutionAveragesIndex(const int& solutionAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _solutionAveragesIndex = solutionAveragesIndex;
+               }
+               
+               
+               
+               inline int getSolutionCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _solutionCompressedIndex;
+               }
+               
+               
+               
+               inline void setSolutionCompressedIndex(const int& solutionCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _solutionCompressedIndex = solutionCompressedIndex;
+               }
+               
+               
+               
+               inline void* getSolution() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -17060,7 +19702,7 @@ namespace exahype {
                
                
                
-               inline void setSolution(const int& solution) 
+               inline void setSolution(void* solution) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -17070,7 +19712,7 @@ namespace exahype {
                
                
                
-               inline int getSolutionAverages() const 
+               inline void* getSolutionAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -17080,7 +19722,7 @@ namespace exahype {
                
                
                
-               inline void setSolutionAverages(const int& solutionAverages) 
+               inline void setSolutionAverages(void* solutionAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -17090,7 +19732,7 @@ namespace exahype {
                
                
                
-               inline int getSolutionCompressed() const 
+               inline void* getSolutionCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -17100,7 +19742,7 @@ namespace exahype {
                
                
                
-               inline void setSolutionCompressed(const int& solutionCompressed) 
+               inline void setSolutionCompressed(void* solutionCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -17110,7 +19752,67 @@ namespace exahype {
                
                
                
-               inline int getPreviousSolution() const 
+               inline int getPreviousSolutionIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _previousSolutionIndex;
+               }
+               
+               
+               
+               inline void setPreviousSolutionIndex(const int& previousSolutionIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _previousSolutionIndex = previousSolutionIndex;
+               }
+               
+               
+               
+               inline int getPreviousSolutionAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _previousSolutionAveragesIndex;
+               }
+               
+               
+               
+               inline void setPreviousSolutionAveragesIndex(const int& previousSolutionAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _previousSolutionAveragesIndex = previousSolutionAveragesIndex;
+               }
+               
+               
+               
+               inline int getPreviousSolutionCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _previousSolutionCompressedIndex;
+               }
+               
+               
+               
+               inline void setPreviousSolutionCompressedIndex(const int& previousSolutionCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _previousSolutionCompressedIndex = previousSolutionCompressedIndex;
+               }
+               
+               
+               
+               inline void* getPreviousSolution() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -17120,7 +19822,7 @@ namespace exahype {
                
                
                
-               inline void setPreviousSolution(const int& previousSolution) 
+               inline void setPreviousSolution(void* previousSolution) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -17130,7 +19832,7 @@ namespace exahype {
                
                
                
-               inline int getPreviousSolutionAverages() const 
+               inline void* getPreviousSolutionAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -17140,7 +19842,7 @@ namespace exahype {
                
                
                
-               inline void setPreviousSolutionAverages(const int& previousSolutionAverages) 
+               inline void setPreviousSolutionAverages(void* previousSolutionAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -17150,7 +19852,7 @@ namespace exahype {
                
                
                
-               inline int getPreviousSolutionCompressed() const 
+               inline void* getPreviousSolutionCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -17160,7 +19862,7 @@ namespace exahype {
                
                
                
-               inline void setPreviousSolutionCompressed(const int& previousSolutionCompressed) 
+               inline void setPreviousSolutionCompressed(void* previousSolutionCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -17170,7 +19872,67 @@ namespace exahype {
                
                
                
-               inline int getUpdate() const 
+               inline int getUpdateIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _updateIndex;
+               }
+               
+               
+               
+               inline void setUpdateIndex(const int& updateIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _updateIndex = updateIndex;
+               }
+               
+               
+               
+               inline int getUpdateAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _updateAveragesIndex;
+               }
+               
+               
+               
+               inline void setUpdateAveragesIndex(const int& updateAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _updateAveragesIndex = updateAveragesIndex;
+               }
+               
+               
+               
+               inline int getUpdateCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _updateCompressedIndex;
+               }
+               
+               
+               
+               inline void setUpdateCompressedIndex(const int& updateCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _updateCompressedIndex = updateCompressedIndex;
+               }
+               
+               
+               
+               inline void* getUpdate() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -17180,7 +19942,7 @@ namespace exahype {
                
                
                
-               inline void setUpdate(const int& update) 
+               inline void setUpdate(void* update) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -17190,7 +19952,7 @@ namespace exahype {
                
                
                
-               inline int getUpdateAverages() const 
+               inline void* getUpdateAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -17200,7 +19962,7 @@ namespace exahype {
                
                
                
-               inline void setUpdateAverages(const int& updateAverages) 
+               inline void setUpdateAverages(void* updateAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -17210,7 +19972,7 @@ namespace exahype {
                
                
                
-               inline int getUpdateCompressed() const 
+               inline void* getUpdateCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -17220,7 +19982,7 @@ namespace exahype {
                
                
                
-               inline void setUpdateCompressed(const int& updateCompressed) 
+               inline void setUpdateCompressed(void* updateCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -17230,7 +19992,67 @@ namespace exahype {
                
                
                
-               inline int getExtrapolatedPredictor() const 
+               inline int getExtrapolatedPredictorIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _extrapolatedPredictorIndex;
+               }
+               
+               
+               
+               inline void setExtrapolatedPredictorIndex(const int& extrapolatedPredictorIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _extrapolatedPredictorIndex = extrapolatedPredictorIndex;
+               }
+               
+               
+               
+               inline int getExtrapolatedPredictorAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _extrapolatedPredictorAveragesIndex;
+               }
+               
+               
+               
+               inline void setExtrapolatedPredictorAveragesIndex(const int& extrapolatedPredictorAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _extrapolatedPredictorAveragesIndex = extrapolatedPredictorAveragesIndex;
+               }
+               
+               
+               
+               inline int getExtrapolatedPredictorCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _extrapolatedPredictorCompressedIndex;
+               }
+               
+               
+               
+               inline void setExtrapolatedPredictorCompressedIndex(const int& extrapolatedPredictorCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _extrapolatedPredictorCompressedIndex = extrapolatedPredictorCompressedIndex;
+               }
+               
+               
+               
+               inline void* getExtrapolatedPredictor() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -17240,7 +20062,7 @@ namespace exahype {
                
                
                
-               inline void setExtrapolatedPredictor(const int& extrapolatedPredictor) 
+               inline void setExtrapolatedPredictor(void* extrapolatedPredictor) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -17250,7 +20072,7 @@ namespace exahype {
                
                
                
-               inline int getExtrapolatedPredictorAverages() const 
+               inline void* getExtrapolatedPredictorAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -17260,7 +20082,7 @@ namespace exahype {
                
                
                
-               inline void setExtrapolatedPredictorAverages(const int& extrapolatedPredictorAverages) 
+               inline void setExtrapolatedPredictorAverages(void* extrapolatedPredictorAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -17270,7 +20092,7 @@ namespace exahype {
                
                
                
-               inline int getExtrapolatedPredictorCompressed() const 
+               inline void* getExtrapolatedPredictorCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -17280,7 +20102,7 @@ namespace exahype {
                
                
                
-               inline void setExtrapolatedPredictorCompressed(const int& extrapolatedPredictorCompressed) 
+               inline void setExtrapolatedPredictorCompressed(void* extrapolatedPredictorCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -17290,7 +20112,67 @@ namespace exahype {
                
                
                
-               inline int getFluctuation() const 
+               inline int getFluctuationIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _fluctuationIndex;
+               }
+               
+               
+               
+               inline void setFluctuationIndex(const int& fluctuationIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _fluctuationIndex = fluctuationIndex;
+               }
+               
+               
+               
+               inline int getFluctuationAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _fluctuationAveragesIndex;
+               }
+               
+               
+               
+               inline void setFluctuationAveragesIndex(const int& fluctuationAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _fluctuationAveragesIndex = fluctuationAveragesIndex;
+               }
+               
+               
+               
+               inline int getFluctuationCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _fluctuationCompressedIndex;
+               }
+               
+               
+               
+               inline void setFluctuationCompressedIndex(const int& fluctuationCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _fluctuationCompressedIndex = fluctuationCompressedIndex;
+               }
+               
+               
+               
+               inline void* getFluctuation() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -17300,7 +20182,7 @@ namespace exahype {
                
                
                
-               inline void setFluctuation(const int& fluctuation) 
+               inline void setFluctuation(void* fluctuation) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -17310,7 +20192,7 @@ namespace exahype {
                
                
                
-               inline int getFluctuationAverages() const 
+               inline void* getFluctuationAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -17320,7 +20202,7 @@ namespace exahype {
                
                
                
-               inline void setFluctuationAverages(const int& fluctuationAverages) 
+               inline void setFluctuationAverages(void* fluctuationAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -17330,7 +20212,7 @@ namespace exahype {
                
                
                
-               inline int getFluctuationCompressed() const 
+               inline void* getFluctuationCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -17340,7 +20222,7 @@ namespace exahype {
                
                
                
-               inline void setFluctuationCompressed(const int& fluctuationCompressed) 
+               inline void setFluctuationCompressed(void* fluctuationCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -17350,7 +20232,47 @@ namespace exahype {
                
                
                
-               inline int getSolutionMin() const 
+               inline int getSolutionMinIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _solutionMinIndex;
+               }
+               
+               
+               
+               inline void setSolutionMinIndex(const int& solutionMinIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _solutionMinIndex = solutionMinIndex;
+               }
+               
+               
+               
+               inline int getSolutionMaxIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _solutionMaxIndex;
+               }
+               
+               
+               
+               inline void setSolutionMaxIndex(const int& solutionMaxIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _solutionMaxIndex = solutionMaxIndex;
+               }
+               
+               
+               
+               inline void* getSolutionMin() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -17360,7 +20282,7 @@ namespace exahype {
                
                
                
-               inline void setSolutionMin(const int& solutionMin) 
+               inline void setSolutionMin(void* solutionMin) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -17370,7 +20292,7 @@ namespace exahype {
                
                
                
-               inline int getSolutionMax() const 
+               inline void* getSolutionMax() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -17380,7 +20302,7 @@ namespace exahype {
                
                
                
-               inline void setSolutionMax(const int& solutionMax) 
+               inline void setSolutionMax(void* solutionMax) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -17624,26 +20546,6 @@ namespace exahype {
                
                
                
-               inline bool getRefinementFlag() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _refinementFlag;
-               }
-               
-               
-               
-               inline void setRefinementFlag(const bool& refinementFlag) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _refinementFlag = refinementFlag;
-               }
-               
-               
-               
                inline int getRefinementStatus() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
@@ -17684,6 +20586,46 @@ namespace exahype {
                
                
                
+               inline bool getRefinementFlag() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _refinementFlag;
+               }
+               
+               
+               
+               inline void setRefinementFlag(const bool& refinementFlag) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _refinementFlag = refinementFlag;
+               }
+               
+               
+               
+               inline bool getVetoErasingChildren() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _vetoErasingChildren;
+               }
+               
+               
+               
+               inline void setVetoErasingChildren(const bool& vetoErasingChildren) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _vetoErasingChildren = vetoErasingChildren;
+               }
+               
+               
+               
                inline int getIterationsToCureTroubledCell() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
@@ -17710,9 +20652,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 7));
+   mask = static_cast<int>(mask << (8));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 7));
+   tmp = static_cast<int>(tmp >> (8));
    assertion(( tmp >= 0 &&  tmp <= 2));
    return (CompressionState) tmp;
                }
@@ -17726,9 +20668,9 @@ namespace exahype {
  {
                   assertion((compressionState >= 0 && compressionState <= 2));
    int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 7));
+   mask = static_cast<int>(mask << (8));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(compressionState) << (DIMENSIONS_TIMES_TWO + 7));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(compressionState) << (8));
                }
                
                
@@ -17739,9 +20681,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 9));
+   mask = static_cast<int>(mask << (10));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 9));
+   tmp = static_cast<int>(tmp >> (10));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -17756,9 +20698,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInPreviousSolution >= 1 && bytesPerDoFInPreviousSolution <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 9));
+   mask = static_cast<int>(mask << (10));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInPreviousSolution) - 1) << (DIMENSIONS_TIMES_TWO + 9));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInPreviousSolution) - 1) << (10));
                }
                
                
@@ -17769,9 +20711,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 12));
+   mask = static_cast<int>(mask << (13));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 12));
+   tmp = static_cast<int>(tmp >> (13));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -17786,9 +20728,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInSolution >= 1 && bytesPerDoFInSolution <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 12));
+   mask = static_cast<int>(mask << (13));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInSolution) - 1) << (DIMENSIONS_TIMES_TWO + 12));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInSolution) - 1) << (13));
                }
                
                
@@ -17799,9 +20741,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 15));
+   mask = static_cast<int>(mask << (16));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 15));
+   tmp = static_cast<int>(tmp >> (16));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -17816,9 +20758,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInUpdate >= 1 && bytesPerDoFInUpdate <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 15));
+   mask = static_cast<int>(mask << (16));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInUpdate) - 1) << (DIMENSIONS_TIMES_TWO + 15));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInUpdate) - 1) << (16));
                }
                
                
@@ -17829,9 +20771,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 18));
+   mask = static_cast<int>(mask << (19));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 18));
+   tmp = static_cast<int>(tmp >> (19));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -17846,9 +20788,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInExtrapolatedPredictor >= 1 && bytesPerDoFInExtrapolatedPredictor <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 18));
+   mask = static_cast<int>(mask << (19));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInExtrapolatedPredictor) - 1) << (DIMENSIONS_TIMES_TWO + 18));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInExtrapolatedPredictor) - 1) << (19));
                }
                
                
@@ -17859,9 +20801,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 21));
+   mask = static_cast<int>(mask << (22));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 21));
+   tmp = static_cast<int>(tmp >> (22));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -17876,9 +20818,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInFluctuation >= 1 && bytesPerDoFInFluctuation <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 21));
+   mask = static_cast<int>(mask << (22));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInFluctuation) - 1) << (DIMENSIONS_TIMES_TWO + 21));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInFluctuation) - 1) << (22));
                }
                
                
@@ -17921,7 +20863,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               ADERDGCellDescriptionPacked(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const int& parentIndex, const int& parentCellLevel, const tarch::la::Vector<DIMENSIONS,double>& parentOffset, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const bool& refinementFlag, const int& refinementStatus, const int& previousRefinementStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation, const Creation& creation);
+               ADERDGCellDescriptionPacked(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& updateIndex, const int& updateAveragesIndex, const int& updateCompressedIndex, void* update, void* updateAverages, void* updateCompressed, const int& extrapolatedPredictorIndex, const int& extrapolatedPredictorAveragesIndex, const int& extrapolatedPredictorCompressedIndex, void* extrapolatedPredictor, void* extrapolatedPredictorAverages, void* extrapolatedPredictorCompressed, const int& fluctuationIndex, const int& fluctuationAveragesIndex, const int& fluctuationCompressedIndex, void* fluctuation, void* fluctuationAverages, void* fluctuationCompressed, const int& solutionMinIndex, const int& solutionMaxIndex, void* solutionMin, void* solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation, const Creation& creation);
                
                /**
                 * Generated
@@ -17968,17 +20910,12 @@ namespace exahype {
                 * 
                 * @see convert()
                 */
-               inline std::bitset<DIMENSIONS_TIMES_TWO> getNeighbourMergePerformed() const 
+               inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> getNeighbourMergePerformed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  int mask = (int) (1 << (DIMENSIONS_TIMES_TWO)) - 1 ;
-                  mask = static_cast<int>(mask << (0));
-                  int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-                  tmp = static_cast<int>(tmp >> (0));
-                  std::bitset<DIMENSIONS_TIMES_TWO> result = tmp;
-                  return result;
+                  return _persistentRecords._neighbourMergePerformed;
                }
                
                
@@ -18002,60 +20939,38 @@ namespace exahype {
                 * 
                 * @see convert()
                 */
-               inline void setNeighbourMergePerformed(const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) 
+               inline void setNeighbourMergePerformed(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  int mask = (int) (1 << (DIMENSIONS_TIMES_TWO)) - 1 ;
-                  mask = static_cast<int>(mask << (0));
-                  _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-                  _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | neighbourMergePerformed.to_ulong() << (0));
+                  _persistentRecords._neighbourMergePerformed = (neighbourMergePerformed);
                }
                
                
                
-               inline bool getNeighbourMergePerformed(int elementIndex) const 
+               inline signed char getNeighbourMergePerformed(int elementIndex) const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
                   assertion(elementIndex>=0);
                   assertion(elementIndex<DIMENSIONS_TIMES_TWO);
-                  int mask = 1 << (0);
-                  mask = mask << elementIndex;
-                  return (_persistentRecords._packedRecords0& mask);
+                  return _persistentRecords._neighbourMergePerformed[elementIndex];
+                  
                }
                
                
                
-               inline void setNeighbourMergePerformed(int elementIndex, const bool& neighbourMergePerformed) 
+               inline void setNeighbourMergePerformed(int elementIndex, const signed char& neighbourMergePerformed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
                   assertion(elementIndex>=0);
                   assertion(elementIndex<DIMENSIONS_TIMES_TWO);
-                  assertion(!neighbourMergePerformed || neighbourMergePerformed==1);
-                  int shift        = 0 + elementIndex; 
-                  int mask         = 1     << (shift);
-                  int shiftedValue = neighbourMergePerformed << (shift);
-                  _persistentRecords._packedRecords0 = _persistentRecords._packedRecords0 & ~mask;
-                  _persistentRecords._packedRecords0 = _persistentRecords._packedRecords0 |  shiftedValue;
-               }
-               
-               
-               
-               inline void flipNeighbourMergePerformed(int elementIndex) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion(elementIndex>=0);
-                  assertion(elementIndex<DIMENSIONS_TIMES_TWO);
-                  int mask = 1 << (0);
-                  mask = mask << elementIndex;
-                  _persistentRecords._packedRecords0^= mask;
+                  _persistentRecords._neighbourMergePerformed[elementIndex]= neighbourMergePerformed;
+                  
                }
                
                
@@ -18065,7 +20980,7 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-                  int mask = 1 << (DIMENSIONS_TIMES_TWO);
+                  int mask = 1 << (0);
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
    return (tmp != 0);
                }
@@ -18077,7 +20992,7 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-                  int mask = 1 << (DIMENSIONS_TIMES_TWO);
+                  int mask = 1 << (0);
    _persistentRecords._packedRecords0 = static_cast<int>( hasCompletedTimeStep ? (_persistentRecords._packedRecords0 | mask) : (_persistentRecords._packedRecords0 & ~mask));
                }
                
@@ -18099,110 +21014,6 @@ namespace exahype {
  #endif 
  {
                   _persistentRecords._parentIndex = parentIndex;
-               }
-               
-               
-               
-               inline int getParentCellLevel() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._parentCellLevel;
-               }
-               
-               
-               
-               inline void setParentCellLevel(const int& parentCellLevel) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._parentCellLevel = parentCellLevel;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline tarch::la::Vector<DIMENSIONS,double> getParentOffset() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._parentOffset;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline void setParentOffset(const tarch::la::Vector<DIMENSIONS,double>& parentOffset) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._parentOffset = (parentOffset);
-               }
-               
-               
-               
-               inline double getParentOffset(int elementIndex) const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion(elementIndex>=0);
-                  assertion(elementIndex<DIMENSIONS);
-                  return _persistentRecords._parentOffset[elementIndex];
-                  
-               }
-               
-               
-               
-               inline void setParentOffset(int elementIndex, const double& parentOffset) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion(elementIndex>=0);
-                  assertion(elementIndex<DIMENSIONS);
-                  _persistentRecords._parentOffset[elementIndex]= parentOffset;
-                  
                }
                
                
@@ -18233,9 +21044,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 1));
+   mask = static_cast<int>(mask << (1));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 1));
+   tmp = static_cast<int>(tmp >> (1));
    assertion(( tmp >= 0 &&  tmp <= 3));
    return (Type) tmp;
                }
@@ -18249,9 +21060,9 @@ namespace exahype {
  {
                   assertion((type >= 0 && type <= 3));
    int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 1));
+   mask = static_cast<int>(mask << (1));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(type) << (DIMENSIONS_TIMES_TWO + 1));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(type) << (1));
                }
                
                
@@ -18261,11 +21072,11 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-                  int mask =  (1 << (4)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 3));
+                  int mask =  (1 << (5)) - 1;
+   mask = static_cast<int>(mask << (3));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 3));
-   assertion(( tmp >= 0 &&  tmp <= 14));
+   tmp = static_cast<int>(tmp >> (3));
+   assertion(( tmp >= 0 &&  tmp <= 16));
    return (RefinementEvent) tmp;
                }
                
@@ -18276,11 +21087,11 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-                  assertion((refinementEvent >= 0 && refinementEvent <= 14));
-   int mask =  (1 << (4)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 3));
+                  assertion((refinementEvent >= 0 && refinementEvent <= 16));
+   int mask =  (1 << (5)) - 1;
+   mask = static_cast<int>(mask << (3));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(refinementEvent) << (DIMENSIONS_TIMES_TWO + 3));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(refinementEvent) << (3));
                }
                
                
@@ -18593,7 +21404,67 @@ namespace exahype {
                
                
                
-               inline int getSolution() const 
+               inline int getSolutionIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._solutionIndex;
+               }
+               
+               
+               
+               inline void setSolutionIndex(const int& solutionIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._solutionIndex = solutionIndex;
+               }
+               
+               
+               
+               inline int getSolutionAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._solutionAveragesIndex;
+               }
+               
+               
+               
+               inline void setSolutionAveragesIndex(const int& solutionAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._solutionAveragesIndex = solutionAveragesIndex;
+               }
+               
+               
+               
+               inline int getSolutionCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._solutionCompressedIndex;
+               }
+               
+               
+               
+               inline void setSolutionCompressedIndex(const int& solutionCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._solutionCompressedIndex = solutionCompressedIndex;
+               }
+               
+               
+               
+               inline void* getSolution() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -18603,7 +21474,7 @@ namespace exahype {
                
                
                
-               inline void setSolution(const int& solution) 
+               inline void setSolution(void* solution) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -18613,7 +21484,7 @@ namespace exahype {
                
                
                
-               inline int getSolutionAverages() const 
+               inline void* getSolutionAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -18623,7 +21494,7 @@ namespace exahype {
                
                
                
-               inline void setSolutionAverages(const int& solutionAverages) 
+               inline void setSolutionAverages(void* solutionAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -18633,7 +21504,7 @@ namespace exahype {
                
                
                
-               inline int getSolutionCompressed() const 
+               inline void* getSolutionCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -18643,7 +21514,7 @@ namespace exahype {
                
                
                
-               inline void setSolutionCompressed(const int& solutionCompressed) 
+               inline void setSolutionCompressed(void* solutionCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -18653,7 +21524,67 @@ namespace exahype {
                
                
                
-               inline int getPreviousSolution() const 
+               inline int getPreviousSolutionIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._previousSolutionIndex;
+               }
+               
+               
+               
+               inline void setPreviousSolutionIndex(const int& previousSolutionIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._previousSolutionIndex = previousSolutionIndex;
+               }
+               
+               
+               
+               inline int getPreviousSolutionAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._previousSolutionAveragesIndex;
+               }
+               
+               
+               
+               inline void setPreviousSolutionAveragesIndex(const int& previousSolutionAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._previousSolutionAveragesIndex = previousSolutionAveragesIndex;
+               }
+               
+               
+               
+               inline int getPreviousSolutionCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._previousSolutionCompressedIndex;
+               }
+               
+               
+               
+               inline void setPreviousSolutionCompressedIndex(const int& previousSolutionCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._previousSolutionCompressedIndex = previousSolutionCompressedIndex;
+               }
+               
+               
+               
+               inline void* getPreviousSolution() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -18663,7 +21594,7 @@ namespace exahype {
                
                
                
-               inline void setPreviousSolution(const int& previousSolution) 
+               inline void setPreviousSolution(void* previousSolution) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -18673,7 +21604,7 @@ namespace exahype {
                
                
                
-               inline int getPreviousSolutionAverages() const 
+               inline void* getPreviousSolutionAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -18683,7 +21614,7 @@ namespace exahype {
                
                
                
-               inline void setPreviousSolutionAverages(const int& previousSolutionAverages) 
+               inline void setPreviousSolutionAverages(void* previousSolutionAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -18693,7 +21624,7 @@ namespace exahype {
                
                
                
-               inline int getPreviousSolutionCompressed() const 
+               inline void* getPreviousSolutionCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -18703,7 +21634,7 @@ namespace exahype {
                
                
                
-               inline void setPreviousSolutionCompressed(const int& previousSolutionCompressed) 
+               inline void setPreviousSolutionCompressed(void* previousSolutionCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -18713,7 +21644,67 @@ namespace exahype {
                
                
                
-               inline int getUpdate() const 
+               inline int getUpdateIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._updateIndex;
+               }
+               
+               
+               
+               inline void setUpdateIndex(const int& updateIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._updateIndex = updateIndex;
+               }
+               
+               
+               
+               inline int getUpdateAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._updateAveragesIndex;
+               }
+               
+               
+               
+               inline void setUpdateAveragesIndex(const int& updateAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._updateAveragesIndex = updateAveragesIndex;
+               }
+               
+               
+               
+               inline int getUpdateCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._updateCompressedIndex;
+               }
+               
+               
+               
+               inline void setUpdateCompressedIndex(const int& updateCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._updateCompressedIndex = updateCompressedIndex;
+               }
+               
+               
+               
+               inline void* getUpdate() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -18723,7 +21714,7 @@ namespace exahype {
                
                
                
-               inline void setUpdate(const int& update) 
+               inline void setUpdate(void* update) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -18733,7 +21724,7 @@ namespace exahype {
                
                
                
-               inline int getUpdateAverages() const 
+               inline void* getUpdateAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -18743,7 +21734,7 @@ namespace exahype {
                
                
                
-               inline void setUpdateAverages(const int& updateAverages) 
+               inline void setUpdateAverages(void* updateAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -18753,7 +21744,7 @@ namespace exahype {
                
                
                
-               inline int getUpdateCompressed() const 
+               inline void* getUpdateCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -18763,7 +21754,7 @@ namespace exahype {
                
                
                
-               inline void setUpdateCompressed(const int& updateCompressed) 
+               inline void setUpdateCompressed(void* updateCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -18773,7 +21764,67 @@ namespace exahype {
                
                
                
-               inline int getExtrapolatedPredictor() const 
+               inline int getExtrapolatedPredictorIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._extrapolatedPredictorIndex;
+               }
+               
+               
+               
+               inline void setExtrapolatedPredictorIndex(const int& extrapolatedPredictorIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._extrapolatedPredictorIndex = extrapolatedPredictorIndex;
+               }
+               
+               
+               
+               inline int getExtrapolatedPredictorAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._extrapolatedPredictorAveragesIndex;
+               }
+               
+               
+               
+               inline void setExtrapolatedPredictorAveragesIndex(const int& extrapolatedPredictorAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._extrapolatedPredictorAveragesIndex = extrapolatedPredictorAveragesIndex;
+               }
+               
+               
+               
+               inline int getExtrapolatedPredictorCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._extrapolatedPredictorCompressedIndex;
+               }
+               
+               
+               
+               inline void setExtrapolatedPredictorCompressedIndex(const int& extrapolatedPredictorCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._extrapolatedPredictorCompressedIndex = extrapolatedPredictorCompressedIndex;
+               }
+               
+               
+               
+               inline void* getExtrapolatedPredictor() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -18783,7 +21834,7 @@ namespace exahype {
                
                
                
-               inline void setExtrapolatedPredictor(const int& extrapolatedPredictor) 
+               inline void setExtrapolatedPredictor(void* extrapolatedPredictor) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -18793,7 +21844,7 @@ namespace exahype {
                
                
                
-               inline int getExtrapolatedPredictorAverages() const 
+               inline void* getExtrapolatedPredictorAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -18803,7 +21854,7 @@ namespace exahype {
                
                
                
-               inline void setExtrapolatedPredictorAverages(const int& extrapolatedPredictorAverages) 
+               inline void setExtrapolatedPredictorAverages(void* extrapolatedPredictorAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -18813,7 +21864,7 @@ namespace exahype {
                
                
                
-               inline int getExtrapolatedPredictorCompressed() const 
+               inline void* getExtrapolatedPredictorCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -18823,7 +21874,7 @@ namespace exahype {
                
                
                
-               inline void setExtrapolatedPredictorCompressed(const int& extrapolatedPredictorCompressed) 
+               inline void setExtrapolatedPredictorCompressed(void* extrapolatedPredictorCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -18833,7 +21884,67 @@ namespace exahype {
                
                
                
-               inline int getFluctuation() const 
+               inline int getFluctuationIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._fluctuationIndex;
+               }
+               
+               
+               
+               inline void setFluctuationIndex(const int& fluctuationIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._fluctuationIndex = fluctuationIndex;
+               }
+               
+               
+               
+               inline int getFluctuationAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._fluctuationAveragesIndex;
+               }
+               
+               
+               
+               inline void setFluctuationAveragesIndex(const int& fluctuationAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._fluctuationAveragesIndex = fluctuationAveragesIndex;
+               }
+               
+               
+               
+               inline int getFluctuationCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._fluctuationCompressedIndex;
+               }
+               
+               
+               
+               inline void setFluctuationCompressedIndex(const int& fluctuationCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._fluctuationCompressedIndex = fluctuationCompressedIndex;
+               }
+               
+               
+               
+               inline void* getFluctuation() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -18843,7 +21954,7 @@ namespace exahype {
                
                
                
-               inline void setFluctuation(const int& fluctuation) 
+               inline void setFluctuation(void* fluctuation) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -18853,7 +21964,7 @@ namespace exahype {
                
                
                
-               inline int getFluctuationAverages() const 
+               inline void* getFluctuationAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -18863,7 +21974,7 @@ namespace exahype {
                
                
                
-               inline void setFluctuationAverages(const int& fluctuationAverages) 
+               inline void setFluctuationAverages(void* fluctuationAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -18873,7 +21984,7 @@ namespace exahype {
                
                
                
-               inline int getFluctuationCompressed() const 
+               inline void* getFluctuationCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -18883,7 +21994,7 @@ namespace exahype {
                
                
                
-               inline void setFluctuationCompressed(const int& fluctuationCompressed) 
+               inline void setFluctuationCompressed(void* fluctuationCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -18893,7 +22004,47 @@ namespace exahype {
                
                
                
-               inline int getSolutionMin() const 
+               inline int getSolutionMinIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._solutionMinIndex;
+               }
+               
+               
+               
+               inline void setSolutionMinIndex(const int& solutionMinIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._solutionMinIndex = solutionMinIndex;
+               }
+               
+               
+               
+               inline int getSolutionMaxIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._solutionMaxIndex;
+               }
+               
+               
+               
+               inline void setSolutionMaxIndex(const int& solutionMaxIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._solutionMaxIndex = solutionMaxIndex;
+               }
+               
+               
+               
+               inline void* getSolutionMin() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -18903,7 +22054,7 @@ namespace exahype {
                
                
                
-               inline void setSolutionMin(const int& solutionMin) 
+               inline void setSolutionMin(void* solutionMin) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -18913,7 +22064,7 @@ namespace exahype {
                
                
                
-               inline int getSolutionMax() const 
+               inline void* getSolutionMax() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -18923,7 +22074,7 @@ namespace exahype {
                
                
                
-               inline void setSolutionMax(const int& solutionMax) 
+               inline void setSolutionMax(void* solutionMax) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -19245,26 +22396,6 @@ namespace exahype {
                
                
                
-               inline bool getRefinementFlag() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._refinementFlag;
-               }
-               
-               
-               
-               inline void setRefinementFlag(const bool& refinementFlag) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._refinementFlag = refinementFlag;
-               }
-               
-               
-               
                inline int getRefinementStatus() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
@@ -19305,6 +22436,46 @@ namespace exahype {
                
                
                
+               inline bool getRefinementFlag() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._refinementFlag;
+               }
+               
+               
+               
+               inline void setRefinementFlag(const bool& refinementFlag) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._refinementFlag = refinementFlag;
+               }
+               
+               
+               
+               inline bool getVetoErasingChildren() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._vetoErasingChildren;
+               }
+               
+               
+               
+               inline void setVetoErasingChildren(const bool& vetoErasingChildren) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._vetoErasingChildren = vetoErasingChildren;
+               }
+               
+               
+               
                inline int getIterationsToCureTroubledCell() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
@@ -19331,9 +22502,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 7));
+   mask = static_cast<int>(mask << (8));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 7));
+   tmp = static_cast<int>(tmp >> (8));
    assertion(( tmp >= 0 &&  tmp <= 2));
    return (CompressionState) tmp;
                }
@@ -19347,9 +22518,9 @@ namespace exahype {
  {
                   assertion((compressionState >= 0 && compressionState <= 2));
    int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 7));
+   mask = static_cast<int>(mask << (8));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(compressionState) << (DIMENSIONS_TIMES_TWO + 7));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(compressionState) << (8));
                }
                
                
@@ -19360,9 +22531,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 9));
+   mask = static_cast<int>(mask << (10));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 9));
+   tmp = static_cast<int>(tmp >> (10));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -19377,9 +22548,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInPreviousSolution >= 1 && bytesPerDoFInPreviousSolution <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 9));
+   mask = static_cast<int>(mask << (10));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInPreviousSolution) - 1) << (DIMENSIONS_TIMES_TWO + 9));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInPreviousSolution) - 1) << (10));
                }
                
                
@@ -19390,9 +22561,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 12));
+   mask = static_cast<int>(mask << (13));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 12));
+   tmp = static_cast<int>(tmp >> (13));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -19407,9 +22578,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInSolution >= 1 && bytesPerDoFInSolution <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 12));
+   mask = static_cast<int>(mask << (13));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInSolution) - 1) << (DIMENSIONS_TIMES_TWO + 12));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInSolution) - 1) << (13));
                }
                
                
@@ -19420,9 +22591,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 15));
+   mask = static_cast<int>(mask << (16));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 15));
+   tmp = static_cast<int>(tmp >> (16));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -19437,9 +22608,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInUpdate >= 1 && bytesPerDoFInUpdate <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 15));
+   mask = static_cast<int>(mask << (16));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInUpdate) - 1) << (DIMENSIONS_TIMES_TWO + 15));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInUpdate) - 1) << (16));
                }
                
                
@@ -19450,9 +22621,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 18));
+   mask = static_cast<int>(mask << (19));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 18));
+   tmp = static_cast<int>(tmp >> (19));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -19467,9 +22638,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInExtrapolatedPredictor >= 1 && bytesPerDoFInExtrapolatedPredictor <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 18));
+   mask = static_cast<int>(mask << (19));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInExtrapolatedPredictor) - 1) << (DIMENSIONS_TIMES_TWO + 18));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInExtrapolatedPredictor) - 1) << (19));
                }
                
                
@@ -19480,9 +22651,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 21));
+   mask = static_cast<int>(mask << (22));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 21));
+   tmp = static_cast<int>(tmp >> (22));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -19497,9 +22668,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInFluctuation >= 1 && bytesPerDoFInFluctuation <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 21));
+   mask = static_cast<int>(mask << (22));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInFluctuation) - 1) << (DIMENSIONS_TIMES_TWO + 21));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInFluctuation) - 1) << (22));
                }
                
                
@@ -19630,7 +22801,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   01/09/2018 15:55
+       * @date   31/10/2018 18:11
        */
       class exahype::records::ADERDGCellDescription { 
          
@@ -19643,7 +22814,7 @@ namespace exahype {
             };
             
             enum RefinementEvent {
-               None = 0, ErasingChildrenRequested = 1, ErasingChildren = 2, ChangeChildrenToVirtualChildrenRequested = 3, ChangeChildrenToVirtualChildren = 4, RefiningRequested = 5, Refining = 6, Prolongating = 7, ErasingVirtualChildrenRequested = 8, ErasingVirtualChildren = 9, VirtualRefiningRequested = 10, VirtualRefining = 11, Erasing = 12, ChangeToVirtualCell = 13, ErasingVirtualCell = 14
+               None = 0, ErasingChildrenRequested = 1, ErasingChildren = 2, ChangeChildrenToVirtualChildrenRequested = 3, ChangeChildrenToVirtualChildren = 4, RefiningRequested = 5, Refining = 6, Prolongating = 7, ErasingVirtualChildrenRequested = 8, ErasingVirtualChildren = 9, VirtualRefiningRequested = 10, VirtualRefining = 11, ErasingRequested = 12, Erasing = 13, ChangeToVirtualCellRequested = 14, ChangeToVirtualCell = 15, ErasingVirtualCell = 16
             };
             
             enum Type {
@@ -19653,18 +22824,12 @@ namespace exahype {
             struct PersistentRecords {
                int _solverNumber;
                #ifdef UseManualAlignment
-               std::bitset<DIMENSIONS_TIMES_TWO> _neighbourMergePerformed __attribute__((aligned(VectorisationAlignment)));
+               tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> _neighbourMergePerformed __attribute__((aligned(VectorisationAlignment)));
                #else
-               std::bitset<DIMENSIONS_TIMES_TWO> _neighbourMergePerformed;
+               tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> _neighbourMergePerformed;
                #endif
                bool _hasCompletedTimeStep;
                int _parentIndex;
-               int _parentCellLevel;
-               #ifdef UseManualAlignment
-               tarch::la::Vector<DIMENSIONS,double> _parentOffset __attribute__((aligned(VectorisationAlignment)));
-               #else
-               tarch::la::Vector<DIMENSIONS,double> _parentOffset;
-               #endif
                bool _hasVirtualChildren;
                Type _type;
                RefinementEvent _refinementEvent;
@@ -19685,23 +22850,40 @@ namespace exahype {
                double _correctorTimeStamp;
                double _predictorTimeStepSize;
                double _predictorTimeStamp;
-               int _solution;
-               int _solutionAverages;
-               int _solutionCompressed;
-               int _previousSolution;
-               int _previousSolutionAverages;
-               int _previousSolutionCompressed;
-               int _update;
-               int _updateAverages;
-               int _updateCompressed;
-               int _extrapolatedPredictor;
-               int _extrapolatedPredictorAverages;
-               int _extrapolatedPredictorCompressed;
-               int _fluctuation;
-               int _fluctuationAverages;
-               int _fluctuationCompressed;
-               int _solutionMin;
-               int _solutionMax;
+               int _solutionIndex;
+               int _solutionAveragesIndex;
+               int _solutionCompressedIndex;
+               void* _solution;
+               void* _solutionAverages;
+               void* _solutionCompressed;
+               int _previousSolutionIndex;
+               int _previousSolutionAveragesIndex;
+               int _previousSolutionCompressedIndex;
+               void* _previousSolution;
+               void* _previousSolutionAverages;
+               void* _previousSolutionCompressed;
+               int _updateIndex;
+               int _updateAveragesIndex;
+               int _updateCompressedIndex;
+               void* _update;
+               void* _updateAverages;
+               void* _updateCompressed;
+               int _extrapolatedPredictorIndex;
+               int _extrapolatedPredictorAveragesIndex;
+               int _extrapolatedPredictorCompressedIndex;
+               void* _extrapolatedPredictor;
+               void* _extrapolatedPredictorAverages;
+               void* _extrapolatedPredictorCompressed;
+               int _fluctuationIndex;
+               int _fluctuationAveragesIndex;
+               int _fluctuationCompressedIndex;
+               void* _fluctuation;
+               void* _fluctuationAverages;
+               void* _fluctuationCompressed;
+               int _solutionMinIndex;
+               int _solutionMaxIndex;
+               void* _solutionMin;
+               void* _solutionMax;
                #ifdef UseManualAlignment
                tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _facewiseAugmentationStatus __attribute__((aligned(VectorisationAlignment)));
                #else
@@ -19720,9 +22902,10 @@ namespace exahype {
                #else
                tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _facewiseRefinementStatus;
                #endif
-               bool _refinementFlag;
                int _refinementStatus;
                int _previousRefinementStatus;
+               bool _refinementFlag;
+               bool _vetoErasingChildren;
                int _iterationsToCureTroubledCell;
                CompressionState _compressionState;
                int _bytesPerDoFInPreviousSolution;
@@ -19738,7 +22921,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const int& parentIndex, const int& parentCellLevel, const tarch::la::Vector<DIMENSIONS,double>& parentOffset, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const bool& refinementFlag, const int& refinementStatus, const int& previousRefinementStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
+               PersistentRecords(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& updateIndex, const int& updateAveragesIndex, const int& updateCompressedIndex, void* update, void* updateAverages, void* updateCompressed, const int& extrapolatedPredictorIndex, const int& extrapolatedPredictorAveragesIndex, const int& extrapolatedPredictorCompressedIndex, void* extrapolatedPredictor, void* extrapolatedPredictorAverages, void* extrapolatedPredictorCompressed, const int& fluctuationIndex, const int& fluctuationAveragesIndex, const int& fluctuationCompressedIndex, void* fluctuation, void* fluctuationAverages, void* fluctuationCompressed, const int& solutionMinIndex, const int& solutionMaxIndex, void* solutionMin, void* solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
                
                
                inline int getSolverNumber() const 
@@ -19780,7 +22963,7 @@ namespace exahype {
                 * 
                 * @see convert()
                 */
-               inline std::bitset<DIMENSIONS_TIMES_TWO> getNeighbourMergePerformed() const 
+               inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> getNeighbourMergePerformed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -19809,7 +22992,7 @@ namespace exahype {
                 * 
                 * @see convert()
                 */
-               inline void setNeighbourMergePerformed(const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) 
+               inline void setNeighbourMergePerformed(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -19855,84 +23038,6 @@ namespace exahype {
  #endif 
  {
                   _parentIndex = parentIndex;
-               }
-               
-               
-               
-               inline int getParentCellLevel() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _parentCellLevel;
-               }
-               
-               
-               
-               inline void setParentCellLevel(const int& parentCellLevel) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _parentCellLevel = parentCellLevel;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline tarch::la::Vector<DIMENSIONS,double> getParentOffset() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _parentOffset;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline void setParentOffset(const tarch::la::Vector<DIMENSIONS,double>& parentOffset) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _parentOffset = (parentOffset);
                }
                
                
@@ -20253,7 +23358,67 @@ namespace exahype {
                
                
                
-               inline int getSolution() const 
+               inline int getSolutionIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _solutionIndex;
+               }
+               
+               
+               
+               inline void setSolutionIndex(const int& solutionIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _solutionIndex = solutionIndex;
+               }
+               
+               
+               
+               inline int getSolutionAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _solutionAveragesIndex;
+               }
+               
+               
+               
+               inline void setSolutionAveragesIndex(const int& solutionAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _solutionAveragesIndex = solutionAveragesIndex;
+               }
+               
+               
+               
+               inline int getSolutionCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _solutionCompressedIndex;
+               }
+               
+               
+               
+               inline void setSolutionCompressedIndex(const int& solutionCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _solutionCompressedIndex = solutionCompressedIndex;
+               }
+               
+               
+               
+               inline void* getSolution() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -20263,7 +23428,7 @@ namespace exahype {
                
                
                
-               inline void setSolution(const int& solution) 
+               inline void setSolution(void* solution) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -20273,7 +23438,7 @@ namespace exahype {
                
                
                
-               inline int getSolutionAverages() const 
+               inline void* getSolutionAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -20283,7 +23448,7 @@ namespace exahype {
                
                
                
-               inline void setSolutionAverages(const int& solutionAverages) 
+               inline void setSolutionAverages(void* solutionAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -20293,7 +23458,7 @@ namespace exahype {
                
                
                
-               inline int getSolutionCompressed() const 
+               inline void* getSolutionCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -20303,7 +23468,7 @@ namespace exahype {
                
                
                
-               inline void setSolutionCompressed(const int& solutionCompressed) 
+               inline void setSolutionCompressed(void* solutionCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -20313,7 +23478,67 @@ namespace exahype {
                
                
                
-               inline int getPreviousSolution() const 
+               inline int getPreviousSolutionIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _previousSolutionIndex;
+               }
+               
+               
+               
+               inline void setPreviousSolutionIndex(const int& previousSolutionIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _previousSolutionIndex = previousSolutionIndex;
+               }
+               
+               
+               
+               inline int getPreviousSolutionAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _previousSolutionAveragesIndex;
+               }
+               
+               
+               
+               inline void setPreviousSolutionAveragesIndex(const int& previousSolutionAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _previousSolutionAveragesIndex = previousSolutionAveragesIndex;
+               }
+               
+               
+               
+               inline int getPreviousSolutionCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _previousSolutionCompressedIndex;
+               }
+               
+               
+               
+               inline void setPreviousSolutionCompressedIndex(const int& previousSolutionCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _previousSolutionCompressedIndex = previousSolutionCompressedIndex;
+               }
+               
+               
+               
+               inline void* getPreviousSolution() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -20323,7 +23548,7 @@ namespace exahype {
                
                
                
-               inline void setPreviousSolution(const int& previousSolution) 
+               inline void setPreviousSolution(void* previousSolution) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -20333,7 +23558,7 @@ namespace exahype {
                
                
                
-               inline int getPreviousSolutionAverages() const 
+               inline void* getPreviousSolutionAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -20343,7 +23568,7 @@ namespace exahype {
                
                
                
-               inline void setPreviousSolutionAverages(const int& previousSolutionAverages) 
+               inline void setPreviousSolutionAverages(void* previousSolutionAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -20353,7 +23578,7 @@ namespace exahype {
                
                
                
-               inline int getPreviousSolutionCompressed() const 
+               inline void* getPreviousSolutionCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -20363,7 +23588,7 @@ namespace exahype {
                
                
                
-               inline void setPreviousSolutionCompressed(const int& previousSolutionCompressed) 
+               inline void setPreviousSolutionCompressed(void* previousSolutionCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -20373,7 +23598,67 @@ namespace exahype {
                
                
                
-               inline int getUpdate() const 
+               inline int getUpdateIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _updateIndex;
+               }
+               
+               
+               
+               inline void setUpdateIndex(const int& updateIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _updateIndex = updateIndex;
+               }
+               
+               
+               
+               inline int getUpdateAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _updateAveragesIndex;
+               }
+               
+               
+               
+               inline void setUpdateAveragesIndex(const int& updateAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _updateAveragesIndex = updateAveragesIndex;
+               }
+               
+               
+               
+               inline int getUpdateCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _updateCompressedIndex;
+               }
+               
+               
+               
+               inline void setUpdateCompressedIndex(const int& updateCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _updateCompressedIndex = updateCompressedIndex;
+               }
+               
+               
+               
+               inline void* getUpdate() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -20383,7 +23668,7 @@ namespace exahype {
                
                
                
-               inline void setUpdate(const int& update) 
+               inline void setUpdate(void* update) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -20393,7 +23678,7 @@ namespace exahype {
                
                
                
-               inline int getUpdateAverages() const 
+               inline void* getUpdateAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -20403,7 +23688,7 @@ namespace exahype {
                
                
                
-               inline void setUpdateAverages(const int& updateAverages) 
+               inline void setUpdateAverages(void* updateAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -20413,7 +23698,7 @@ namespace exahype {
                
                
                
-               inline int getUpdateCompressed() const 
+               inline void* getUpdateCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -20423,7 +23708,7 @@ namespace exahype {
                
                
                
-               inline void setUpdateCompressed(const int& updateCompressed) 
+               inline void setUpdateCompressed(void* updateCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -20433,7 +23718,67 @@ namespace exahype {
                
                
                
-               inline int getExtrapolatedPredictor() const 
+               inline int getExtrapolatedPredictorIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _extrapolatedPredictorIndex;
+               }
+               
+               
+               
+               inline void setExtrapolatedPredictorIndex(const int& extrapolatedPredictorIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _extrapolatedPredictorIndex = extrapolatedPredictorIndex;
+               }
+               
+               
+               
+               inline int getExtrapolatedPredictorAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _extrapolatedPredictorAveragesIndex;
+               }
+               
+               
+               
+               inline void setExtrapolatedPredictorAveragesIndex(const int& extrapolatedPredictorAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _extrapolatedPredictorAveragesIndex = extrapolatedPredictorAveragesIndex;
+               }
+               
+               
+               
+               inline int getExtrapolatedPredictorCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _extrapolatedPredictorCompressedIndex;
+               }
+               
+               
+               
+               inline void setExtrapolatedPredictorCompressedIndex(const int& extrapolatedPredictorCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _extrapolatedPredictorCompressedIndex = extrapolatedPredictorCompressedIndex;
+               }
+               
+               
+               
+               inline void* getExtrapolatedPredictor() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -20443,7 +23788,7 @@ namespace exahype {
                
                
                
-               inline void setExtrapolatedPredictor(const int& extrapolatedPredictor) 
+               inline void setExtrapolatedPredictor(void* extrapolatedPredictor) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -20453,7 +23798,7 @@ namespace exahype {
                
                
                
-               inline int getExtrapolatedPredictorAverages() const 
+               inline void* getExtrapolatedPredictorAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -20463,7 +23808,7 @@ namespace exahype {
                
                
                
-               inline void setExtrapolatedPredictorAverages(const int& extrapolatedPredictorAverages) 
+               inline void setExtrapolatedPredictorAverages(void* extrapolatedPredictorAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -20473,7 +23818,7 @@ namespace exahype {
                
                
                
-               inline int getExtrapolatedPredictorCompressed() const 
+               inline void* getExtrapolatedPredictorCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -20483,7 +23828,7 @@ namespace exahype {
                
                
                
-               inline void setExtrapolatedPredictorCompressed(const int& extrapolatedPredictorCompressed) 
+               inline void setExtrapolatedPredictorCompressed(void* extrapolatedPredictorCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -20493,7 +23838,67 @@ namespace exahype {
                
                
                
-               inline int getFluctuation() const 
+               inline int getFluctuationIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _fluctuationIndex;
+               }
+               
+               
+               
+               inline void setFluctuationIndex(const int& fluctuationIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _fluctuationIndex = fluctuationIndex;
+               }
+               
+               
+               
+               inline int getFluctuationAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _fluctuationAveragesIndex;
+               }
+               
+               
+               
+               inline void setFluctuationAveragesIndex(const int& fluctuationAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _fluctuationAveragesIndex = fluctuationAveragesIndex;
+               }
+               
+               
+               
+               inline int getFluctuationCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _fluctuationCompressedIndex;
+               }
+               
+               
+               
+               inline void setFluctuationCompressedIndex(const int& fluctuationCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _fluctuationCompressedIndex = fluctuationCompressedIndex;
+               }
+               
+               
+               
+               inline void* getFluctuation() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -20503,7 +23908,7 @@ namespace exahype {
                
                
                
-               inline void setFluctuation(const int& fluctuation) 
+               inline void setFluctuation(void* fluctuation) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -20513,7 +23918,7 @@ namespace exahype {
                
                
                
-               inline int getFluctuationAverages() const 
+               inline void* getFluctuationAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -20523,7 +23928,7 @@ namespace exahype {
                
                
                
-               inline void setFluctuationAverages(const int& fluctuationAverages) 
+               inline void setFluctuationAverages(void* fluctuationAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -20533,7 +23938,7 @@ namespace exahype {
                
                
                
-               inline int getFluctuationCompressed() const 
+               inline void* getFluctuationCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -20543,7 +23948,7 @@ namespace exahype {
                
                
                
-               inline void setFluctuationCompressed(const int& fluctuationCompressed) 
+               inline void setFluctuationCompressed(void* fluctuationCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -20553,7 +23958,47 @@ namespace exahype {
                
                
                
-               inline int getSolutionMin() const 
+               inline int getSolutionMinIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _solutionMinIndex;
+               }
+               
+               
+               
+               inline void setSolutionMinIndex(const int& solutionMinIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _solutionMinIndex = solutionMinIndex;
+               }
+               
+               
+               
+               inline int getSolutionMaxIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _solutionMaxIndex;
+               }
+               
+               
+               
+               inline void setSolutionMaxIndex(const int& solutionMaxIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _solutionMaxIndex = solutionMaxIndex;
+               }
+               
+               
+               
+               inline void* getSolutionMin() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -20563,7 +24008,7 @@ namespace exahype {
                
                
                
-               inline void setSolutionMin(const int& solutionMin) 
+               inline void setSolutionMin(void* solutionMin) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -20573,7 +24018,7 @@ namespace exahype {
                
                
                
-               inline int getSolutionMax() const 
+               inline void* getSolutionMax() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -20583,7 +24028,7 @@ namespace exahype {
                
                
                
-               inline void setSolutionMax(const int& solutionMax) 
+               inline void setSolutionMax(void* solutionMax) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -20827,26 +24272,6 @@ namespace exahype {
                
                
                
-               inline bool getRefinementFlag() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _refinementFlag;
-               }
-               
-               
-               
-               inline void setRefinementFlag(const bool& refinementFlag) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _refinementFlag = refinementFlag;
-               }
-               
-               
-               
                inline int getRefinementStatus() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
@@ -20883,6 +24308,46 @@ namespace exahype {
  #endif 
  {
                   _previousRefinementStatus = previousRefinementStatus;
+               }
+               
+               
+               
+               inline bool getRefinementFlag() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _refinementFlag;
+               }
+               
+               
+               
+               inline void setRefinementFlag(const bool& refinementFlag) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _refinementFlag = refinementFlag;
+               }
+               
+               
+               
+               inline bool getVetoErasingChildren() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _vetoErasingChildren;
+               }
+               
+               
+               
+               inline void setVetoErasingChildren(const bool& vetoErasingChildren) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _vetoErasingChildren = vetoErasingChildren;
                }
                
                
@@ -21045,7 +24510,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               ADERDGCellDescription(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const int& parentIndex, const int& parentCellLevel, const tarch::la::Vector<DIMENSIONS,double>& parentOffset, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const bool& refinementFlag, const int& refinementStatus, const int& previousRefinementStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
+               ADERDGCellDescription(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& updateIndex, const int& updateAveragesIndex, const int& updateCompressedIndex, void* update, void* updateAverages, void* updateCompressed, const int& extrapolatedPredictorIndex, const int& extrapolatedPredictorAveragesIndex, const int& extrapolatedPredictorCompressedIndex, void* extrapolatedPredictor, void* extrapolatedPredictorAverages, void* extrapolatedPredictorCompressed, const int& fluctuationIndex, const int& fluctuationAveragesIndex, const int& fluctuationCompressedIndex, void* fluctuation, void* fluctuationAverages, void* fluctuationCompressed, const int& solutionMinIndex, const int& solutionMaxIndex, void* solutionMin, void* solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
                
                /**
                 * Generated
@@ -21092,7 +24557,7 @@ namespace exahype {
                 * 
                 * @see convert()
                 */
-               inline std::bitset<DIMENSIONS_TIMES_TWO> getNeighbourMergePerformed() const 
+               inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> getNeighbourMergePerformed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -21121,7 +24586,7 @@ namespace exahype {
                 * 
                 * @see convert()
                 */
-               inline void setNeighbourMergePerformed(const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) 
+               inline void setNeighbourMergePerformed(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -21131,7 +24596,7 @@ namespace exahype {
                
                
                
-               inline bool getNeighbourMergePerformed(int elementIndex) const 
+               inline signed char getNeighbourMergePerformed(int elementIndex) const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -21144,7 +24609,7 @@ namespace exahype {
                
                
                
-               inline void setNeighbourMergePerformed(int elementIndex, const bool& neighbourMergePerformed) 
+               inline void setNeighbourMergePerformed(int elementIndex, const signed char& neighbourMergePerformed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -21153,18 +24618,6 @@ namespace exahype {
                   assertion(elementIndex<DIMENSIONS_TIMES_TWO);
                   _persistentRecords._neighbourMergePerformed[elementIndex]= neighbourMergePerformed;
                   
-               }
-               
-               
-               
-               inline void flipNeighbourMergePerformed(int elementIndex) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion(elementIndex>=0);
-                  assertion(elementIndex<DIMENSIONS_TIMES_TWO);
-                  _persistentRecords._neighbourMergePerformed.flip(elementIndex);
                }
                
                
@@ -21205,110 +24658,6 @@ namespace exahype {
  #endif 
  {
                   _persistentRecords._parentIndex = parentIndex;
-               }
-               
-               
-               
-               inline int getParentCellLevel() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._parentCellLevel;
-               }
-               
-               
-               
-               inline void setParentCellLevel(const int& parentCellLevel) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._parentCellLevel = parentCellLevel;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline tarch::la::Vector<DIMENSIONS,double> getParentOffset() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._parentOffset;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline void setParentOffset(const tarch::la::Vector<DIMENSIONS,double>& parentOffset) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._parentOffset = (parentOffset);
-               }
-               
-               
-               
-               inline double getParentOffset(int elementIndex) const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion(elementIndex>=0);
-                  assertion(elementIndex<DIMENSIONS);
-                  return _persistentRecords._parentOffset[elementIndex];
-                  
-               }
-               
-               
-               
-               inline void setParentOffset(int elementIndex, const double& parentOffset) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion(elementIndex>=0);
-                  assertion(elementIndex<DIMENSIONS);
-                  _persistentRecords._parentOffset[elementIndex]= parentOffset;
-                  
                }
                
                
@@ -21681,7 +25030,67 @@ namespace exahype {
                
                
                
-               inline int getSolution() const 
+               inline int getSolutionIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._solutionIndex;
+               }
+               
+               
+               
+               inline void setSolutionIndex(const int& solutionIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._solutionIndex = solutionIndex;
+               }
+               
+               
+               
+               inline int getSolutionAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._solutionAveragesIndex;
+               }
+               
+               
+               
+               inline void setSolutionAveragesIndex(const int& solutionAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._solutionAveragesIndex = solutionAveragesIndex;
+               }
+               
+               
+               
+               inline int getSolutionCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._solutionCompressedIndex;
+               }
+               
+               
+               
+               inline void setSolutionCompressedIndex(const int& solutionCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._solutionCompressedIndex = solutionCompressedIndex;
+               }
+               
+               
+               
+               inline void* getSolution() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -21691,7 +25100,7 @@ namespace exahype {
                
                
                
-               inline void setSolution(const int& solution) 
+               inline void setSolution(void* solution) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -21701,7 +25110,7 @@ namespace exahype {
                
                
                
-               inline int getSolutionAverages() const 
+               inline void* getSolutionAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -21711,7 +25120,7 @@ namespace exahype {
                
                
                
-               inline void setSolutionAverages(const int& solutionAverages) 
+               inline void setSolutionAverages(void* solutionAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -21721,7 +25130,7 @@ namespace exahype {
                
                
                
-               inline int getSolutionCompressed() const 
+               inline void* getSolutionCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -21731,7 +25140,7 @@ namespace exahype {
                
                
                
-               inline void setSolutionCompressed(const int& solutionCompressed) 
+               inline void setSolutionCompressed(void* solutionCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -21741,7 +25150,67 @@ namespace exahype {
                
                
                
-               inline int getPreviousSolution() const 
+               inline int getPreviousSolutionIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._previousSolutionIndex;
+               }
+               
+               
+               
+               inline void setPreviousSolutionIndex(const int& previousSolutionIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._previousSolutionIndex = previousSolutionIndex;
+               }
+               
+               
+               
+               inline int getPreviousSolutionAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._previousSolutionAveragesIndex;
+               }
+               
+               
+               
+               inline void setPreviousSolutionAveragesIndex(const int& previousSolutionAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._previousSolutionAveragesIndex = previousSolutionAveragesIndex;
+               }
+               
+               
+               
+               inline int getPreviousSolutionCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._previousSolutionCompressedIndex;
+               }
+               
+               
+               
+               inline void setPreviousSolutionCompressedIndex(const int& previousSolutionCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._previousSolutionCompressedIndex = previousSolutionCompressedIndex;
+               }
+               
+               
+               
+               inline void* getPreviousSolution() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -21751,7 +25220,7 @@ namespace exahype {
                
                
                
-               inline void setPreviousSolution(const int& previousSolution) 
+               inline void setPreviousSolution(void* previousSolution) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -21761,7 +25230,7 @@ namespace exahype {
                
                
                
-               inline int getPreviousSolutionAverages() const 
+               inline void* getPreviousSolutionAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -21771,7 +25240,7 @@ namespace exahype {
                
                
                
-               inline void setPreviousSolutionAverages(const int& previousSolutionAverages) 
+               inline void setPreviousSolutionAverages(void* previousSolutionAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -21781,7 +25250,7 @@ namespace exahype {
                
                
                
-               inline int getPreviousSolutionCompressed() const 
+               inline void* getPreviousSolutionCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -21791,7 +25260,7 @@ namespace exahype {
                
                
                
-               inline void setPreviousSolutionCompressed(const int& previousSolutionCompressed) 
+               inline void setPreviousSolutionCompressed(void* previousSolutionCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -21801,7 +25270,67 @@ namespace exahype {
                
                
                
-               inline int getUpdate() const 
+               inline int getUpdateIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._updateIndex;
+               }
+               
+               
+               
+               inline void setUpdateIndex(const int& updateIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._updateIndex = updateIndex;
+               }
+               
+               
+               
+               inline int getUpdateAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._updateAveragesIndex;
+               }
+               
+               
+               
+               inline void setUpdateAveragesIndex(const int& updateAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._updateAveragesIndex = updateAveragesIndex;
+               }
+               
+               
+               
+               inline int getUpdateCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._updateCompressedIndex;
+               }
+               
+               
+               
+               inline void setUpdateCompressedIndex(const int& updateCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._updateCompressedIndex = updateCompressedIndex;
+               }
+               
+               
+               
+               inline void* getUpdate() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -21811,7 +25340,7 @@ namespace exahype {
                
                
                
-               inline void setUpdate(const int& update) 
+               inline void setUpdate(void* update) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -21821,7 +25350,7 @@ namespace exahype {
                
                
                
-               inline int getUpdateAverages() const 
+               inline void* getUpdateAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -21831,7 +25360,7 @@ namespace exahype {
                
                
                
-               inline void setUpdateAverages(const int& updateAverages) 
+               inline void setUpdateAverages(void* updateAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -21841,7 +25370,7 @@ namespace exahype {
                
                
                
-               inline int getUpdateCompressed() const 
+               inline void* getUpdateCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -21851,7 +25380,7 @@ namespace exahype {
                
                
                
-               inline void setUpdateCompressed(const int& updateCompressed) 
+               inline void setUpdateCompressed(void* updateCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -21861,7 +25390,67 @@ namespace exahype {
                
                
                
-               inline int getExtrapolatedPredictor() const 
+               inline int getExtrapolatedPredictorIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._extrapolatedPredictorIndex;
+               }
+               
+               
+               
+               inline void setExtrapolatedPredictorIndex(const int& extrapolatedPredictorIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._extrapolatedPredictorIndex = extrapolatedPredictorIndex;
+               }
+               
+               
+               
+               inline int getExtrapolatedPredictorAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._extrapolatedPredictorAveragesIndex;
+               }
+               
+               
+               
+               inline void setExtrapolatedPredictorAveragesIndex(const int& extrapolatedPredictorAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._extrapolatedPredictorAveragesIndex = extrapolatedPredictorAveragesIndex;
+               }
+               
+               
+               
+               inline int getExtrapolatedPredictorCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._extrapolatedPredictorCompressedIndex;
+               }
+               
+               
+               
+               inline void setExtrapolatedPredictorCompressedIndex(const int& extrapolatedPredictorCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._extrapolatedPredictorCompressedIndex = extrapolatedPredictorCompressedIndex;
+               }
+               
+               
+               
+               inline void* getExtrapolatedPredictor() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -21871,7 +25460,7 @@ namespace exahype {
                
                
                
-               inline void setExtrapolatedPredictor(const int& extrapolatedPredictor) 
+               inline void setExtrapolatedPredictor(void* extrapolatedPredictor) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -21881,7 +25470,7 @@ namespace exahype {
                
                
                
-               inline int getExtrapolatedPredictorAverages() const 
+               inline void* getExtrapolatedPredictorAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -21891,7 +25480,7 @@ namespace exahype {
                
                
                
-               inline void setExtrapolatedPredictorAverages(const int& extrapolatedPredictorAverages) 
+               inline void setExtrapolatedPredictorAverages(void* extrapolatedPredictorAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -21901,7 +25490,7 @@ namespace exahype {
                
                
                
-               inline int getExtrapolatedPredictorCompressed() const 
+               inline void* getExtrapolatedPredictorCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -21911,7 +25500,7 @@ namespace exahype {
                
                
                
-               inline void setExtrapolatedPredictorCompressed(const int& extrapolatedPredictorCompressed) 
+               inline void setExtrapolatedPredictorCompressed(void* extrapolatedPredictorCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -21921,7 +25510,67 @@ namespace exahype {
                
                
                
-               inline int getFluctuation() const 
+               inline int getFluctuationIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._fluctuationIndex;
+               }
+               
+               
+               
+               inline void setFluctuationIndex(const int& fluctuationIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._fluctuationIndex = fluctuationIndex;
+               }
+               
+               
+               
+               inline int getFluctuationAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._fluctuationAveragesIndex;
+               }
+               
+               
+               
+               inline void setFluctuationAveragesIndex(const int& fluctuationAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._fluctuationAveragesIndex = fluctuationAveragesIndex;
+               }
+               
+               
+               
+               inline int getFluctuationCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._fluctuationCompressedIndex;
+               }
+               
+               
+               
+               inline void setFluctuationCompressedIndex(const int& fluctuationCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._fluctuationCompressedIndex = fluctuationCompressedIndex;
+               }
+               
+               
+               
+               inline void* getFluctuation() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -21931,7 +25580,7 @@ namespace exahype {
                
                
                
-               inline void setFluctuation(const int& fluctuation) 
+               inline void setFluctuation(void* fluctuation) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -21941,7 +25590,7 @@ namespace exahype {
                
                
                
-               inline int getFluctuationAverages() const 
+               inline void* getFluctuationAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -21951,7 +25600,7 @@ namespace exahype {
                
                
                
-               inline void setFluctuationAverages(const int& fluctuationAverages) 
+               inline void setFluctuationAverages(void* fluctuationAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -21961,7 +25610,7 @@ namespace exahype {
                
                
                
-               inline int getFluctuationCompressed() const 
+               inline void* getFluctuationCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -21971,7 +25620,7 @@ namespace exahype {
                
                
                
-               inline void setFluctuationCompressed(const int& fluctuationCompressed) 
+               inline void setFluctuationCompressed(void* fluctuationCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -21981,7 +25630,47 @@ namespace exahype {
                
                
                
-               inline int getSolutionMin() const 
+               inline int getSolutionMinIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._solutionMinIndex;
+               }
+               
+               
+               
+               inline void setSolutionMinIndex(const int& solutionMinIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._solutionMinIndex = solutionMinIndex;
+               }
+               
+               
+               
+               inline int getSolutionMaxIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._solutionMaxIndex;
+               }
+               
+               
+               
+               inline void setSolutionMaxIndex(const int& solutionMaxIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._solutionMaxIndex = solutionMaxIndex;
+               }
+               
+               
+               
+               inline void* getSolutionMin() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -21991,7 +25680,7 @@ namespace exahype {
                
                
                
-               inline void setSolutionMin(const int& solutionMin) 
+               inline void setSolutionMin(void* solutionMin) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -22001,7 +25690,7 @@ namespace exahype {
                
                
                
-               inline int getSolutionMax() const 
+               inline void* getSolutionMax() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -22011,7 +25700,7 @@ namespace exahype {
                
                
                
-               inline void setSolutionMax(const int& solutionMax) 
+               inline void setSolutionMax(void* solutionMax) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -22333,26 +26022,6 @@ namespace exahype {
                
                
                
-               inline bool getRefinementFlag() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._refinementFlag;
-               }
-               
-               
-               
-               inline void setRefinementFlag(const bool& refinementFlag) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._refinementFlag = refinementFlag;
-               }
-               
-               
-               
                inline int getRefinementStatus() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
@@ -22389,6 +26058,46 @@ namespace exahype {
  #endif 
  {
                   _persistentRecords._previousRefinementStatus = previousRefinementStatus;
+               }
+               
+               
+               
+               inline bool getRefinementFlag() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._refinementFlag;
+               }
+               
+               
+               
+               inline void setRefinementFlag(const bool& refinementFlag) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._refinementFlag = refinementFlag;
+               }
+               
+               
+               
+               inline bool getVetoErasingChildren() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._vetoErasingChildren;
+               }
+               
+               
+               
+               inline void setVetoErasingChildren(const bool& vetoErasingChildren) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._vetoErasingChildren = vetoErasingChildren;
                }
                
                
@@ -22632,7 +26341,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   01/09/2018 15:55
+       * @date   31/10/2018 18:11
        */
       class exahype::records::ADERDGCellDescriptionPacked { 
          
@@ -22646,9 +26355,8 @@ namespace exahype {
             
             struct PersistentRecords {
                int _solverNumber;
+               tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> _neighbourMergePerformed;
                int _parentIndex;
-               int _parentCellLevel;
-               tarch::la::Vector<DIMENSIONS,double> _parentOffset;
                bool _hasVirtualChildren;
                int _level;
                tarch::la::Vector<DIMENSIONS,double> _offset;
@@ -22659,46 +26367,63 @@ namespace exahype {
                double _correctorTimeStamp;
                double _predictorTimeStepSize;
                double _predictorTimeStamp;
-               int _solution;
-               int _solutionAverages;
-               int _solutionCompressed;
-               int _previousSolution;
-               int _previousSolutionAverages;
-               int _previousSolutionCompressed;
-               int _update;
-               int _updateAverages;
-               int _updateCompressed;
-               int _extrapolatedPredictor;
-               int _extrapolatedPredictorAverages;
-               int _extrapolatedPredictorCompressed;
-               int _fluctuation;
-               int _fluctuationAverages;
-               int _fluctuationCompressed;
-               int _solutionMin;
-               int _solutionMax;
+               int _solutionIndex;
+               int _solutionAveragesIndex;
+               int _solutionCompressedIndex;
+               void* _solution;
+               void* _solutionAverages;
+               void* _solutionCompressed;
+               int _previousSolutionIndex;
+               int _previousSolutionAveragesIndex;
+               int _previousSolutionCompressedIndex;
+               void* _previousSolution;
+               void* _previousSolutionAverages;
+               void* _previousSolutionCompressed;
+               int _updateIndex;
+               int _updateAveragesIndex;
+               int _updateCompressedIndex;
+               void* _update;
+               void* _updateAverages;
+               void* _updateCompressed;
+               int _extrapolatedPredictorIndex;
+               int _extrapolatedPredictorAveragesIndex;
+               int _extrapolatedPredictorCompressedIndex;
+               void* _extrapolatedPredictor;
+               void* _extrapolatedPredictorAverages;
+               void* _extrapolatedPredictorCompressed;
+               int _fluctuationIndex;
+               int _fluctuationAveragesIndex;
+               int _fluctuationCompressedIndex;
+               void* _fluctuation;
+               void* _fluctuationAverages;
+               void* _fluctuationCompressed;
+               int _solutionMinIndex;
+               int _solutionMaxIndex;
+               void* _solutionMin;
+               void* _solutionMax;
                tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _facewiseAugmentationStatus;
                int _augmentationStatus;
                int _previousAugmentationStatus;
                tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _facewiseCommunicationStatus;
                int _communicationStatus;
                tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _facewiseRefinementStatus;
-               bool _refinementFlag;
                int _refinementStatus;
                int _previousRefinementStatus;
+               bool _refinementFlag;
+               bool _vetoErasingChildren;
                int _iterationsToCureTroubledCell;
                
                /** mapping of records:
                || Member 	|| startbit 	|| length
-                |  neighbourMergePerformed	| startbit 0	| #bits DIMENSIONS_TIMES_TWO
-                |  hasCompletedTimeStep	| startbit DIMENSIONS_TIMES_TWO + 0	| #bits 1
-                |  type	| startbit DIMENSIONS_TIMES_TWO + 1	| #bits 2
-                |  refinementEvent	| startbit DIMENSIONS_TIMES_TWO + 3	| #bits 4
-                |  compressionState	| startbit DIMENSIONS_TIMES_TWO + 7	| #bits 2
-                |  bytesPerDoFInPreviousSolution	| startbit DIMENSIONS_TIMES_TWO + 9	| #bits 3
-                |  bytesPerDoFInSolution	| startbit DIMENSIONS_TIMES_TWO + 12	| #bits 3
-                |  bytesPerDoFInUpdate	| startbit DIMENSIONS_TIMES_TWO + 15	| #bits 3
-                |  bytesPerDoFInExtrapolatedPredictor	| startbit DIMENSIONS_TIMES_TWO + 18	| #bits 3
-                |  bytesPerDoFInFluctuation	| startbit DIMENSIONS_TIMES_TWO + 21	| #bits 3
+                |  hasCompletedTimeStep	| startbit 0	| #bits 1
+                |  type	| startbit 1	| #bits 2
+                |  refinementEvent	| startbit 3	| #bits 5
+                |  compressionState	| startbit 8	| #bits 2
+                |  bytesPerDoFInPreviousSolution	| startbit 10	| #bits 3
+                |  bytesPerDoFInSolution	| startbit 13	| #bits 3
+                |  bytesPerDoFInUpdate	| startbit 16	| #bits 3
+                |  bytesPerDoFInExtrapolatedPredictor	| startbit 19	| #bits 3
+                |  bytesPerDoFInFluctuation	| startbit 22	| #bits 3
                 */
                int _packedRecords0;
                
@@ -22710,7 +26435,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const int& parentIndex, const int& parentCellLevel, const tarch::la::Vector<DIMENSIONS,double>& parentOffset, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const bool& refinementFlag, const int& refinementStatus, const int& previousRefinementStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
+               PersistentRecords(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& updateIndex, const int& updateAveragesIndex, const int& updateCompressedIndex, void* update, void* updateAverages, void* updateCompressed, const int& extrapolatedPredictorIndex, const int& extrapolatedPredictorAveragesIndex, const int& extrapolatedPredictorCompressedIndex, void* extrapolatedPredictor, void* extrapolatedPredictorAverages, void* extrapolatedPredictorCompressed, const int& fluctuationIndex, const int& fluctuationAveragesIndex, const int& fluctuationCompressedIndex, void* fluctuation, void* fluctuationAverages, void* fluctuationCompressed, const int& solutionMinIndex, const int& solutionMaxIndex, void* solutionMin, void* solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
                
                
                inline int getSolverNumber() const 
@@ -22752,17 +26477,12 @@ namespace exahype {
                 * 
                 * @see convert()
                 */
-               inline std::bitset<DIMENSIONS_TIMES_TWO> getNeighbourMergePerformed() const 
+               inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> getNeighbourMergePerformed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  int mask = (int) (1 << (DIMENSIONS_TIMES_TWO)) - 1 ;
-                  mask = static_cast<int>(mask << (0));
-                  int tmp = static_cast<int>(_packedRecords0 & mask);
-                  tmp = static_cast<int>(tmp >> (0));
-                  std::bitset<DIMENSIONS_TIMES_TWO> result = tmp;
-                  return result;
+                  return _neighbourMergePerformed;
                }
                
                
@@ -22786,15 +26506,12 @@ namespace exahype {
                 * 
                 * @see convert()
                 */
-               inline void setNeighbourMergePerformed(const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) 
+               inline void setNeighbourMergePerformed(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  int mask = (int) (1 << (DIMENSIONS_TIMES_TWO)) - 1 ;
-                  mask = static_cast<int>(mask << (0));
-                  _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-                  _packedRecords0 = static_cast<int>(_packedRecords0 | neighbourMergePerformed.to_ulong() << (0));
+                  _neighbourMergePerformed = (neighbourMergePerformed);
                }
                
                
@@ -22804,7 +26521,7 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-                  int mask = 1 << (DIMENSIONS_TIMES_TWO);
+                  int mask = 1 << (0);
    int tmp = static_cast<int>(_packedRecords0 & mask);
    return (tmp != 0);
                }
@@ -22816,7 +26533,7 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-                  int mask = 1 << (DIMENSIONS_TIMES_TWO);
+                  int mask = 1 << (0);
    _packedRecords0 = static_cast<int>( hasCompletedTimeStep ? (_packedRecords0 | mask) : (_packedRecords0 & ~mask));
                }
                
@@ -22838,84 +26555,6 @@ namespace exahype {
  #endif 
  {
                   _parentIndex = parentIndex;
-               }
-               
-               
-               
-               inline int getParentCellLevel() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _parentCellLevel;
-               }
-               
-               
-               
-               inline void setParentCellLevel(const int& parentCellLevel) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _parentCellLevel = parentCellLevel;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline tarch::la::Vector<DIMENSIONS,double> getParentOffset() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _parentOffset;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline void setParentOffset(const tarch::la::Vector<DIMENSIONS,double>& parentOffset) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _parentOffset = (parentOffset);
                }
                
                
@@ -22946,9 +26585,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 1));
+   mask = static_cast<int>(mask << (1));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 1));
+   tmp = static_cast<int>(tmp >> (1));
    assertion(( tmp >= 0 &&  tmp <= 3));
    return (Type) tmp;
                }
@@ -22962,9 +26601,9 @@ namespace exahype {
  {
                   assertion((type >= 0 && type <= 3));
    int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 1));
+   mask = static_cast<int>(mask << (1));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(type) << (DIMENSIONS_TIMES_TWO + 1));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(type) << (1));
                }
                
                
@@ -22974,11 +26613,11 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-                  int mask =  (1 << (4)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 3));
+                  int mask =  (1 << (5)) - 1;
+   mask = static_cast<int>(mask << (3));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 3));
-   assertion(( tmp >= 0 &&  tmp <= 14));
+   tmp = static_cast<int>(tmp >> (3));
+   assertion(( tmp >= 0 &&  tmp <= 16));
    return (RefinementEvent) tmp;
                }
                
@@ -22989,11 +26628,11 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-                  assertion((refinementEvent >= 0 && refinementEvent <= 14));
-   int mask =  (1 << (4)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 3));
+                  assertion((refinementEvent >= 0 && refinementEvent <= 16));
+   int mask =  (1 << (5)) - 1;
+   mask = static_cast<int>(mask << (3));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(refinementEvent) << (DIMENSIONS_TIMES_TWO + 3));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(refinementEvent) << (3));
                }
                
                
@@ -23254,7 +26893,67 @@ namespace exahype {
                
                
                
-               inline int getSolution() const 
+               inline int getSolutionIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _solutionIndex;
+               }
+               
+               
+               
+               inline void setSolutionIndex(const int& solutionIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _solutionIndex = solutionIndex;
+               }
+               
+               
+               
+               inline int getSolutionAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _solutionAveragesIndex;
+               }
+               
+               
+               
+               inline void setSolutionAveragesIndex(const int& solutionAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _solutionAveragesIndex = solutionAveragesIndex;
+               }
+               
+               
+               
+               inline int getSolutionCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _solutionCompressedIndex;
+               }
+               
+               
+               
+               inline void setSolutionCompressedIndex(const int& solutionCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _solutionCompressedIndex = solutionCompressedIndex;
+               }
+               
+               
+               
+               inline void* getSolution() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -23264,7 +26963,7 @@ namespace exahype {
                
                
                
-               inline void setSolution(const int& solution) 
+               inline void setSolution(void* solution) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -23274,7 +26973,7 @@ namespace exahype {
                
                
                
-               inline int getSolutionAverages() const 
+               inline void* getSolutionAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -23284,7 +26983,7 @@ namespace exahype {
                
                
                
-               inline void setSolutionAverages(const int& solutionAverages) 
+               inline void setSolutionAverages(void* solutionAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -23294,7 +26993,7 @@ namespace exahype {
                
                
                
-               inline int getSolutionCompressed() const 
+               inline void* getSolutionCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -23304,7 +27003,7 @@ namespace exahype {
                
                
                
-               inline void setSolutionCompressed(const int& solutionCompressed) 
+               inline void setSolutionCompressed(void* solutionCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -23314,7 +27013,67 @@ namespace exahype {
                
                
                
-               inline int getPreviousSolution() const 
+               inline int getPreviousSolutionIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _previousSolutionIndex;
+               }
+               
+               
+               
+               inline void setPreviousSolutionIndex(const int& previousSolutionIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _previousSolutionIndex = previousSolutionIndex;
+               }
+               
+               
+               
+               inline int getPreviousSolutionAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _previousSolutionAveragesIndex;
+               }
+               
+               
+               
+               inline void setPreviousSolutionAveragesIndex(const int& previousSolutionAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _previousSolutionAveragesIndex = previousSolutionAveragesIndex;
+               }
+               
+               
+               
+               inline int getPreviousSolutionCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _previousSolutionCompressedIndex;
+               }
+               
+               
+               
+               inline void setPreviousSolutionCompressedIndex(const int& previousSolutionCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _previousSolutionCompressedIndex = previousSolutionCompressedIndex;
+               }
+               
+               
+               
+               inline void* getPreviousSolution() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -23324,7 +27083,7 @@ namespace exahype {
                
                
                
-               inline void setPreviousSolution(const int& previousSolution) 
+               inline void setPreviousSolution(void* previousSolution) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -23334,7 +27093,7 @@ namespace exahype {
                
                
                
-               inline int getPreviousSolutionAverages() const 
+               inline void* getPreviousSolutionAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -23344,7 +27103,7 @@ namespace exahype {
                
                
                
-               inline void setPreviousSolutionAverages(const int& previousSolutionAverages) 
+               inline void setPreviousSolutionAverages(void* previousSolutionAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -23354,7 +27113,7 @@ namespace exahype {
                
                
                
-               inline int getPreviousSolutionCompressed() const 
+               inline void* getPreviousSolutionCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -23364,7 +27123,7 @@ namespace exahype {
                
                
                
-               inline void setPreviousSolutionCompressed(const int& previousSolutionCompressed) 
+               inline void setPreviousSolutionCompressed(void* previousSolutionCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -23374,7 +27133,67 @@ namespace exahype {
                
                
                
-               inline int getUpdate() const 
+               inline int getUpdateIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _updateIndex;
+               }
+               
+               
+               
+               inline void setUpdateIndex(const int& updateIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _updateIndex = updateIndex;
+               }
+               
+               
+               
+               inline int getUpdateAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _updateAveragesIndex;
+               }
+               
+               
+               
+               inline void setUpdateAveragesIndex(const int& updateAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _updateAveragesIndex = updateAveragesIndex;
+               }
+               
+               
+               
+               inline int getUpdateCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _updateCompressedIndex;
+               }
+               
+               
+               
+               inline void setUpdateCompressedIndex(const int& updateCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _updateCompressedIndex = updateCompressedIndex;
+               }
+               
+               
+               
+               inline void* getUpdate() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -23384,7 +27203,7 @@ namespace exahype {
                
                
                
-               inline void setUpdate(const int& update) 
+               inline void setUpdate(void* update) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -23394,7 +27213,7 @@ namespace exahype {
                
                
                
-               inline int getUpdateAverages() const 
+               inline void* getUpdateAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -23404,7 +27223,7 @@ namespace exahype {
                
                
                
-               inline void setUpdateAverages(const int& updateAverages) 
+               inline void setUpdateAverages(void* updateAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -23414,7 +27233,7 @@ namespace exahype {
                
                
                
-               inline int getUpdateCompressed() const 
+               inline void* getUpdateCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -23424,7 +27243,7 @@ namespace exahype {
                
                
                
-               inline void setUpdateCompressed(const int& updateCompressed) 
+               inline void setUpdateCompressed(void* updateCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -23434,7 +27253,67 @@ namespace exahype {
                
                
                
-               inline int getExtrapolatedPredictor() const 
+               inline int getExtrapolatedPredictorIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _extrapolatedPredictorIndex;
+               }
+               
+               
+               
+               inline void setExtrapolatedPredictorIndex(const int& extrapolatedPredictorIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _extrapolatedPredictorIndex = extrapolatedPredictorIndex;
+               }
+               
+               
+               
+               inline int getExtrapolatedPredictorAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _extrapolatedPredictorAveragesIndex;
+               }
+               
+               
+               
+               inline void setExtrapolatedPredictorAveragesIndex(const int& extrapolatedPredictorAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _extrapolatedPredictorAveragesIndex = extrapolatedPredictorAveragesIndex;
+               }
+               
+               
+               
+               inline int getExtrapolatedPredictorCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _extrapolatedPredictorCompressedIndex;
+               }
+               
+               
+               
+               inline void setExtrapolatedPredictorCompressedIndex(const int& extrapolatedPredictorCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _extrapolatedPredictorCompressedIndex = extrapolatedPredictorCompressedIndex;
+               }
+               
+               
+               
+               inline void* getExtrapolatedPredictor() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -23444,7 +27323,7 @@ namespace exahype {
                
                
                
-               inline void setExtrapolatedPredictor(const int& extrapolatedPredictor) 
+               inline void setExtrapolatedPredictor(void* extrapolatedPredictor) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -23454,7 +27333,7 @@ namespace exahype {
                
                
                
-               inline int getExtrapolatedPredictorAverages() const 
+               inline void* getExtrapolatedPredictorAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -23464,7 +27343,7 @@ namespace exahype {
                
                
                
-               inline void setExtrapolatedPredictorAverages(const int& extrapolatedPredictorAverages) 
+               inline void setExtrapolatedPredictorAverages(void* extrapolatedPredictorAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -23474,7 +27353,7 @@ namespace exahype {
                
                
                
-               inline int getExtrapolatedPredictorCompressed() const 
+               inline void* getExtrapolatedPredictorCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -23484,7 +27363,7 @@ namespace exahype {
                
                
                
-               inline void setExtrapolatedPredictorCompressed(const int& extrapolatedPredictorCompressed) 
+               inline void setExtrapolatedPredictorCompressed(void* extrapolatedPredictorCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -23494,7 +27373,67 @@ namespace exahype {
                
                
                
-               inline int getFluctuation() const 
+               inline int getFluctuationIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _fluctuationIndex;
+               }
+               
+               
+               
+               inline void setFluctuationIndex(const int& fluctuationIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _fluctuationIndex = fluctuationIndex;
+               }
+               
+               
+               
+               inline int getFluctuationAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _fluctuationAveragesIndex;
+               }
+               
+               
+               
+               inline void setFluctuationAveragesIndex(const int& fluctuationAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _fluctuationAveragesIndex = fluctuationAveragesIndex;
+               }
+               
+               
+               
+               inline int getFluctuationCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _fluctuationCompressedIndex;
+               }
+               
+               
+               
+               inline void setFluctuationCompressedIndex(const int& fluctuationCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _fluctuationCompressedIndex = fluctuationCompressedIndex;
+               }
+               
+               
+               
+               inline void* getFluctuation() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -23504,7 +27443,7 @@ namespace exahype {
                
                
                
-               inline void setFluctuation(const int& fluctuation) 
+               inline void setFluctuation(void* fluctuation) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -23514,7 +27453,7 @@ namespace exahype {
                
                
                
-               inline int getFluctuationAverages() const 
+               inline void* getFluctuationAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -23524,7 +27463,7 @@ namespace exahype {
                
                
                
-               inline void setFluctuationAverages(const int& fluctuationAverages) 
+               inline void setFluctuationAverages(void* fluctuationAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -23534,7 +27473,7 @@ namespace exahype {
                
                
                
-               inline int getFluctuationCompressed() const 
+               inline void* getFluctuationCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -23544,7 +27483,7 @@ namespace exahype {
                
                
                
-               inline void setFluctuationCompressed(const int& fluctuationCompressed) 
+               inline void setFluctuationCompressed(void* fluctuationCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -23554,7 +27493,47 @@ namespace exahype {
                
                
                
-               inline int getSolutionMin() const 
+               inline int getSolutionMinIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _solutionMinIndex;
+               }
+               
+               
+               
+               inline void setSolutionMinIndex(const int& solutionMinIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _solutionMinIndex = solutionMinIndex;
+               }
+               
+               
+               
+               inline int getSolutionMaxIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _solutionMaxIndex;
+               }
+               
+               
+               
+               inline void setSolutionMaxIndex(const int& solutionMaxIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _solutionMaxIndex = solutionMaxIndex;
+               }
+               
+               
+               
+               inline void* getSolutionMin() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -23564,7 +27543,7 @@ namespace exahype {
                
                
                
-               inline void setSolutionMin(const int& solutionMin) 
+               inline void setSolutionMin(void* solutionMin) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -23574,7 +27553,7 @@ namespace exahype {
                
                
                
-               inline int getSolutionMax() const 
+               inline void* getSolutionMax() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -23584,7 +27563,7 @@ namespace exahype {
                
                
                
-               inline void setSolutionMax(const int& solutionMax) 
+               inline void setSolutionMax(void* solutionMax) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -23828,26 +27807,6 @@ namespace exahype {
                
                
                
-               inline bool getRefinementFlag() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _refinementFlag;
-               }
-               
-               
-               
-               inline void setRefinementFlag(const bool& refinementFlag) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _refinementFlag = refinementFlag;
-               }
-               
-               
-               
                inline int getRefinementStatus() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
@@ -23888,6 +27847,46 @@ namespace exahype {
                
                
                
+               inline bool getRefinementFlag() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _refinementFlag;
+               }
+               
+               
+               
+               inline void setRefinementFlag(const bool& refinementFlag) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _refinementFlag = refinementFlag;
+               }
+               
+               
+               
+               inline bool getVetoErasingChildren() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _vetoErasingChildren;
+               }
+               
+               
+               
+               inline void setVetoErasingChildren(const bool& vetoErasingChildren) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _vetoErasingChildren = vetoErasingChildren;
+               }
+               
+               
+               
                inline int getIterationsToCureTroubledCell() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
@@ -23914,9 +27913,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 7));
+   mask = static_cast<int>(mask << (8));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 7));
+   tmp = static_cast<int>(tmp >> (8));
    assertion(( tmp >= 0 &&  tmp <= 2));
    return (CompressionState) tmp;
                }
@@ -23930,9 +27929,9 @@ namespace exahype {
  {
                   assertion((compressionState >= 0 && compressionState <= 2));
    int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 7));
+   mask = static_cast<int>(mask << (8));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(compressionState) << (DIMENSIONS_TIMES_TWO + 7));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(compressionState) << (8));
                }
                
                
@@ -23943,9 +27942,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 9));
+   mask = static_cast<int>(mask << (10));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 9));
+   tmp = static_cast<int>(tmp >> (10));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -23960,9 +27959,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInPreviousSolution >= 1 && bytesPerDoFInPreviousSolution <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 9));
+   mask = static_cast<int>(mask << (10));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInPreviousSolution) - 1) << (DIMENSIONS_TIMES_TWO + 9));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInPreviousSolution) - 1) << (10));
                }
                
                
@@ -23973,9 +27972,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 12));
+   mask = static_cast<int>(mask << (13));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 12));
+   tmp = static_cast<int>(tmp >> (13));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -23990,9 +27989,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInSolution >= 1 && bytesPerDoFInSolution <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 12));
+   mask = static_cast<int>(mask << (13));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInSolution) - 1) << (DIMENSIONS_TIMES_TWO + 12));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInSolution) - 1) << (13));
                }
                
                
@@ -24003,9 +28002,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 15));
+   mask = static_cast<int>(mask << (16));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 15));
+   tmp = static_cast<int>(tmp >> (16));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -24020,9 +28019,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInUpdate >= 1 && bytesPerDoFInUpdate <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 15));
+   mask = static_cast<int>(mask << (16));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInUpdate) - 1) << (DIMENSIONS_TIMES_TWO + 15));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInUpdate) - 1) << (16));
                }
                
                
@@ -24033,9 +28032,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 18));
+   mask = static_cast<int>(mask << (19));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 18));
+   tmp = static_cast<int>(tmp >> (19));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -24050,9 +28049,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInExtrapolatedPredictor >= 1 && bytesPerDoFInExtrapolatedPredictor <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 18));
+   mask = static_cast<int>(mask << (19));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInExtrapolatedPredictor) - 1) << (DIMENSIONS_TIMES_TWO + 18));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInExtrapolatedPredictor) - 1) << (19));
                }
                
                
@@ -24063,9 +28062,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 21));
+   mask = static_cast<int>(mask << (22));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 21));
+   tmp = static_cast<int>(tmp >> (22));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -24080,9 +28079,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInFluctuation >= 1 && bytesPerDoFInFluctuation <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 21));
+   mask = static_cast<int>(mask << (22));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInFluctuation) - 1) << (DIMENSIONS_TIMES_TWO + 21));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInFluctuation) - 1) << (22));
                }
                
                
@@ -24105,7 +28104,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               ADERDGCellDescriptionPacked(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const int& parentIndex, const int& parentCellLevel, const tarch::la::Vector<DIMENSIONS,double>& parentOffset, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const bool& refinementFlag, const int& refinementStatus, const int& previousRefinementStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
+               ADERDGCellDescriptionPacked(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& updateIndex, const int& updateAveragesIndex, const int& updateCompressedIndex, void* update, void* updateAverages, void* updateCompressed, const int& extrapolatedPredictorIndex, const int& extrapolatedPredictorAveragesIndex, const int& extrapolatedPredictorCompressedIndex, void* extrapolatedPredictor, void* extrapolatedPredictorAverages, void* extrapolatedPredictorCompressed, const int& fluctuationIndex, const int& fluctuationAveragesIndex, const int& fluctuationCompressedIndex, void* fluctuation, void* fluctuationAverages, void* fluctuationCompressed, const int& solutionMinIndex, const int& solutionMaxIndex, void* solutionMin, void* solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
                
                /**
                 * Generated
@@ -24152,17 +28151,12 @@ namespace exahype {
                 * 
                 * @see convert()
                 */
-               inline std::bitset<DIMENSIONS_TIMES_TWO> getNeighbourMergePerformed() const 
+               inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> getNeighbourMergePerformed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  int mask = (int) (1 << (DIMENSIONS_TIMES_TWO)) - 1 ;
-                  mask = static_cast<int>(mask << (0));
-                  int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-                  tmp = static_cast<int>(tmp >> (0));
-                  std::bitset<DIMENSIONS_TIMES_TWO> result = tmp;
-                  return result;
+                  return _persistentRecords._neighbourMergePerformed;
                }
                
                
@@ -24186,60 +28180,38 @@ namespace exahype {
                 * 
                 * @see convert()
                 */
-               inline void setNeighbourMergePerformed(const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) 
+               inline void setNeighbourMergePerformed(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  int mask = (int) (1 << (DIMENSIONS_TIMES_TWO)) - 1 ;
-                  mask = static_cast<int>(mask << (0));
-                  _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-                  _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | neighbourMergePerformed.to_ulong() << (0));
+                  _persistentRecords._neighbourMergePerformed = (neighbourMergePerformed);
                }
                
                
                
-               inline bool getNeighbourMergePerformed(int elementIndex) const 
+               inline signed char getNeighbourMergePerformed(int elementIndex) const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
                   assertion(elementIndex>=0);
                   assertion(elementIndex<DIMENSIONS_TIMES_TWO);
-                  int mask = 1 << (0);
-                  mask = mask << elementIndex;
-                  return (_persistentRecords._packedRecords0& mask);
+                  return _persistentRecords._neighbourMergePerformed[elementIndex];
+                  
                }
                
                
                
-               inline void setNeighbourMergePerformed(int elementIndex, const bool& neighbourMergePerformed) 
+               inline void setNeighbourMergePerformed(int elementIndex, const signed char& neighbourMergePerformed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
                   assertion(elementIndex>=0);
                   assertion(elementIndex<DIMENSIONS_TIMES_TWO);
-                  assertion(!neighbourMergePerformed || neighbourMergePerformed==1);
-                  int shift        = 0 + elementIndex; 
-                  int mask         = 1     << (shift);
-                  int shiftedValue = neighbourMergePerformed << (shift);
-                  _persistentRecords._packedRecords0 = _persistentRecords._packedRecords0 & ~mask;
-                  _persistentRecords._packedRecords0 = _persistentRecords._packedRecords0 |  shiftedValue;
-               }
-               
-               
-               
-               inline void flipNeighbourMergePerformed(int elementIndex) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion(elementIndex>=0);
-                  assertion(elementIndex<DIMENSIONS_TIMES_TWO);
-                  int mask = 1 << (0);
-                  mask = mask << elementIndex;
-                  _persistentRecords._packedRecords0^= mask;
+                  _persistentRecords._neighbourMergePerformed[elementIndex]= neighbourMergePerformed;
+                  
                }
                
                
@@ -24249,7 +28221,7 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-                  int mask = 1 << (DIMENSIONS_TIMES_TWO);
+                  int mask = 1 << (0);
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
    return (tmp != 0);
                }
@@ -24261,7 +28233,7 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-                  int mask = 1 << (DIMENSIONS_TIMES_TWO);
+                  int mask = 1 << (0);
    _persistentRecords._packedRecords0 = static_cast<int>( hasCompletedTimeStep ? (_persistentRecords._packedRecords0 | mask) : (_persistentRecords._packedRecords0 & ~mask));
                }
                
@@ -24283,110 +28255,6 @@ namespace exahype {
  #endif 
  {
                   _persistentRecords._parentIndex = parentIndex;
-               }
-               
-               
-               
-               inline int getParentCellLevel() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._parentCellLevel;
-               }
-               
-               
-               
-               inline void setParentCellLevel(const int& parentCellLevel) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._parentCellLevel = parentCellLevel;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline tarch::la::Vector<DIMENSIONS,double> getParentOffset() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._parentOffset;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline void setParentOffset(const tarch::la::Vector<DIMENSIONS,double>& parentOffset) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._parentOffset = (parentOffset);
-               }
-               
-               
-               
-               inline double getParentOffset(int elementIndex) const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion(elementIndex>=0);
-                  assertion(elementIndex<DIMENSIONS);
-                  return _persistentRecords._parentOffset[elementIndex];
-                  
-               }
-               
-               
-               
-               inline void setParentOffset(int elementIndex, const double& parentOffset) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion(elementIndex>=0);
-                  assertion(elementIndex<DIMENSIONS);
-                  _persistentRecords._parentOffset[elementIndex]= parentOffset;
-                  
                }
                
                
@@ -24417,9 +28285,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 1));
+   mask = static_cast<int>(mask << (1));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 1));
+   tmp = static_cast<int>(tmp >> (1));
    assertion(( tmp >= 0 &&  tmp <= 3));
    return (Type) tmp;
                }
@@ -24433,9 +28301,9 @@ namespace exahype {
  {
                   assertion((type >= 0 && type <= 3));
    int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 1));
+   mask = static_cast<int>(mask << (1));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(type) << (DIMENSIONS_TIMES_TWO + 1));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(type) << (1));
                }
                
                
@@ -24445,11 +28313,11 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-                  int mask =  (1 << (4)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 3));
+                  int mask =  (1 << (5)) - 1;
+   mask = static_cast<int>(mask << (3));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 3));
-   assertion(( tmp >= 0 &&  tmp <= 14));
+   tmp = static_cast<int>(tmp >> (3));
+   assertion(( tmp >= 0 &&  tmp <= 16));
    return (RefinementEvent) tmp;
                }
                
@@ -24460,11 +28328,11 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-                  assertion((refinementEvent >= 0 && refinementEvent <= 14));
-   int mask =  (1 << (4)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 3));
+                  assertion((refinementEvent >= 0 && refinementEvent <= 16));
+   int mask =  (1 << (5)) - 1;
+   mask = static_cast<int>(mask << (3));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(refinementEvent) << (DIMENSIONS_TIMES_TWO + 3));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(refinementEvent) << (3));
                }
                
                
@@ -24777,7 +28645,67 @@ namespace exahype {
                
                
                
-               inline int getSolution() const 
+               inline int getSolutionIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._solutionIndex;
+               }
+               
+               
+               
+               inline void setSolutionIndex(const int& solutionIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._solutionIndex = solutionIndex;
+               }
+               
+               
+               
+               inline int getSolutionAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._solutionAveragesIndex;
+               }
+               
+               
+               
+               inline void setSolutionAveragesIndex(const int& solutionAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._solutionAveragesIndex = solutionAveragesIndex;
+               }
+               
+               
+               
+               inline int getSolutionCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._solutionCompressedIndex;
+               }
+               
+               
+               
+               inline void setSolutionCompressedIndex(const int& solutionCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._solutionCompressedIndex = solutionCompressedIndex;
+               }
+               
+               
+               
+               inline void* getSolution() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -24787,7 +28715,7 @@ namespace exahype {
                
                
                
-               inline void setSolution(const int& solution) 
+               inline void setSolution(void* solution) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -24797,7 +28725,7 @@ namespace exahype {
                
                
                
-               inline int getSolutionAverages() const 
+               inline void* getSolutionAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -24807,7 +28735,7 @@ namespace exahype {
                
                
                
-               inline void setSolutionAverages(const int& solutionAverages) 
+               inline void setSolutionAverages(void* solutionAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -24817,7 +28745,7 @@ namespace exahype {
                
                
                
-               inline int getSolutionCompressed() const 
+               inline void* getSolutionCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -24827,7 +28755,7 @@ namespace exahype {
                
                
                
-               inline void setSolutionCompressed(const int& solutionCompressed) 
+               inline void setSolutionCompressed(void* solutionCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -24837,7 +28765,67 @@ namespace exahype {
                
                
                
-               inline int getPreviousSolution() const 
+               inline int getPreviousSolutionIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._previousSolutionIndex;
+               }
+               
+               
+               
+               inline void setPreviousSolutionIndex(const int& previousSolutionIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._previousSolutionIndex = previousSolutionIndex;
+               }
+               
+               
+               
+               inline int getPreviousSolutionAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._previousSolutionAveragesIndex;
+               }
+               
+               
+               
+               inline void setPreviousSolutionAveragesIndex(const int& previousSolutionAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._previousSolutionAveragesIndex = previousSolutionAveragesIndex;
+               }
+               
+               
+               
+               inline int getPreviousSolutionCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._previousSolutionCompressedIndex;
+               }
+               
+               
+               
+               inline void setPreviousSolutionCompressedIndex(const int& previousSolutionCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._previousSolutionCompressedIndex = previousSolutionCompressedIndex;
+               }
+               
+               
+               
+               inline void* getPreviousSolution() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -24847,7 +28835,7 @@ namespace exahype {
                
                
                
-               inline void setPreviousSolution(const int& previousSolution) 
+               inline void setPreviousSolution(void* previousSolution) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -24857,7 +28845,7 @@ namespace exahype {
                
                
                
-               inline int getPreviousSolutionAverages() const 
+               inline void* getPreviousSolutionAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -24867,7 +28855,7 @@ namespace exahype {
                
                
                
-               inline void setPreviousSolutionAverages(const int& previousSolutionAverages) 
+               inline void setPreviousSolutionAverages(void* previousSolutionAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -24877,7 +28865,7 @@ namespace exahype {
                
                
                
-               inline int getPreviousSolutionCompressed() const 
+               inline void* getPreviousSolutionCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -24887,7 +28875,7 @@ namespace exahype {
                
                
                
-               inline void setPreviousSolutionCompressed(const int& previousSolutionCompressed) 
+               inline void setPreviousSolutionCompressed(void* previousSolutionCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -24897,7 +28885,67 @@ namespace exahype {
                
                
                
-               inline int getUpdate() const 
+               inline int getUpdateIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._updateIndex;
+               }
+               
+               
+               
+               inline void setUpdateIndex(const int& updateIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._updateIndex = updateIndex;
+               }
+               
+               
+               
+               inline int getUpdateAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._updateAveragesIndex;
+               }
+               
+               
+               
+               inline void setUpdateAveragesIndex(const int& updateAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._updateAveragesIndex = updateAveragesIndex;
+               }
+               
+               
+               
+               inline int getUpdateCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._updateCompressedIndex;
+               }
+               
+               
+               
+               inline void setUpdateCompressedIndex(const int& updateCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._updateCompressedIndex = updateCompressedIndex;
+               }
+               
+               
+               
+               inline void* getUpdate() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -24907,7 +28955,7 @@ namespace exahype {
                
                
                
-               inline void setUpdate(const int& update) 
+               inline void setUpdate(void* update) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -24917,7 +28965,7 @@ namespace exahype {
                
                
                
-               inline int getUpdateAverages() const 
+               inline void* getUpdateAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -24927,7 +28975,7 @@ namespace exahype {
                
                
                
-               inline void setUpdateAverages(const int& updateAverages) 
+               inline void setUpdateAverages(void* updateAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -24937,7 +28985,7 @@ namespace exahype {
                
                
                
-               inline int getUpdateCompressed() const 
+               inline void* getUpdateCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -24947,7 +28995,7 @@ namespace exahype {
                
                
                
-               inline void setUpdateCompressed(const int& updateCompressed) 
+               inline void setUpdateCompressed(void* updateCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -24957,7 +29005,67 @@ namespace exahype {
                
                
                
-               inline int getExtrapolatedPredictor() const 
+               inline int getExtrapolatedPredictorIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._extrapolatedPredictorIndex;
+               }
+               
+               
+               
+               inline void setExtrapolatedPredictorIndex(const int& extrapolatedPredictorIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._extrapolatedPredictorIndex = extrapolatedPredictorIndex;
+               }
+               
+               
+               
+               inline int getExtrapolatedPredictorAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._extrapolatedPredictorAveragesIndex;
+               }
+               
+               
+               
+               inline void setExtrapolatedPredictorAveragesIndex(const int& extrapolatedPredictorAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._extrapolatedPredictorAveragesIndex = extrapolatedPredictorAveragesIndex;
+               }
+               
+               
+               
+               inline int getExtrapolatedPredictorCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._extrapolatedPredictorCompressedIndex;
+               }
+               
+               
+               
+               inline void setExtrapolatedPredictorCompressedIndex(const int& extrapolatedPredictorCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._extrapolatedPredictorCompressedIndex = extrapolatedPredictorCompressedIndex;
+               }
+               
+               
+               
+               inline void* getExtrapolatedPredictor() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -24967,7 +29075,7 @@ namespace exahype {
                
                
                
-               inline void setExtrapolatedPredictor(const int& extrapolatedPredictor) 
+               inline void setExtrapolatedPredictor(void* extrapolatedPredictor) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -24977,7 +29085,7 @@ namespace exahype {
                
                
                
-               inline int getExtrapolatedPredictorAverages() const 
+               inline void* getExtrapolatedPredictorAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -24987,7 +29095,7 @@ namespace exahype {
                
                
                
-               inline void setExtrapolatedPredictorAverages(const int& extrapolatedPredictorAverages) 
+               inline void setExtrapolatedPredictorAverages(void* extrapolatedPredictorAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -24997,7 +29105,7 @@ namespace exahype {
                
                
                
-               inline int getExtrapolatedPredictorCompressed() const 
+               inline void* getExtrapolatedPredictorCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -25007,7 +29115,7 @@ namespace exahype {
                
                
                
-               inline void setExtrapolatedPredictorCompressed(const int& extrapolatedPredictorCompressed) 
+               inline void setExtrapolatedPredictorCompressed(void* extrapolatedPredictorCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -25017,7 +29125,67 @@ namespace exahype {
                
                
                
-               inline int getFluctuation() const 
+               inline int getFluctuationIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._fluctuationIndex;
+               }
+               
+               
+               
+               inline void setFluctuationIndex(const int& fluctuationIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._fluctuationIndex = fluctuationIndex;
+               }
+               
+               
+               
+               inline int getFluctuationAveragesIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._fluctuationAveragesIndex;
+               }
+               
+               
+               
+               inline void setFluctuationAveragesIndex(const int& fluctuationAveragesIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._fluctuationAveragesIndex = fluctuationAveragesIndex;
+               }
+               
+               
+               
+               inline int getFluctuationCompressedIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._fluctuationCompressedIndex;
+               }
+               
+               
+               
+               inline void setFluctuationCompressedIndex(const int& fluctuationCompressedIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._fluctuationCompressedIndex = fluctuationCompressedIndex;
+               }
+               
+               
+               
+               inline void* getFluctuation() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -25027,7 +29195,7 @@ namespace exahype {
                
                
                
-               inline void setFluctuation(const int& fluctuation) 
+               inline void setFluctuation(void* fluctuation) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -25037,7 +29205,7 @@ namespace exahype {
                
                
                
-               inline int getFluctuationAverages() const 
+               inline void* getFluctuationAverages() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -25047,7 +29215,7 @@ namespace exahype {
                
                
                
-               inline void setFluctuationAverages(const int& fluctuationAverages) 
+               inline void setFluctuationAverages(void* fluctuationAverages) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -25057,7 +29225,7 @@ namespace exahype {
                
                
                
-               inline int getFluctuationCompressed() const 
+               inline void* getFluctuationCompressed() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -25067,7 +29235,7 @@ namespace exahype {
                
                
                
-               inline void setFluctuationCompressed(const int& fluctuationCompressed) 
+               inline void setFluctuationCompressed(void* fluctuationCompressed) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -25077,7 +29245,47 @@ namespace exahype {
                
                
                
-               inline int getSolutionMin() const 
+               inline int getSolutionMinIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._solutionMinIndex;
+               }
+               
+               
+               
+               inline void setSolutionMinIndex(const int& solutionMinIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._solutionMinIndex = solutionMinIndex;
+               }
+               
+               
+               
+               inline int getSolutionMaxIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._solutionMaxIndex;
+               }
+               
+               
+               
+               inline void setSolutionMaxIndex(const int& solutionMaxIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._solutionMaxIndex = solutionMaxIndex;
+               }
+               
+               
+               
+               inline void* getSolutionMin() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -25087,7 +29295,7 @@ namespace exahype {
                
                
                
-               inline void setSolutionMin(const int& solutionMin) 
+               inline void setSolutionMin(void* solutionMin) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -25097,7 +29305,7 @@ namespace exahype {
                
                
                
-               inline int getSolutionMax() const 
+               inline void* getSolutionMax() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -25107,7 +29315,7 @@ namespace exahype {
                
                
                
-               inline void setSolutionMax(const int& solutionMax) 
+               inline void setSolutionMax(void* solutionMax) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -25429,26 +29637,6 @@ namespace exahype {
                
                
                
-               inline bool getRefinementFlag() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._refinementFlag;
-               }
-               
-               
-               
-               inline void setRefinementFlag(const bool& refinementFlag) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._refinementFlag = refinementFlag;
-               }
-               
-               
-               
                inline int getRefinementStatus() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
@@ -25489,6 +29677,46 @@ namespace exahype {
                
                
                
+               inline bool getRefinementFlag() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._refinementFlag;
+               }
+               
+               
+               
+               inline void setRefinementFlag(const bool& refinementFlag) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._refinementFlag = refinementFlag;
+               }
+               
+               
+               
+               inline bool getVetoErasingChildren() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._vetoErasingChildren;
+               }
+               
+               
+               
+               inline void setVetoErasingChildren(const bool& vetoErasingChildren) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._vetoErasingChildren = vetoErasingChildren;
+               }
+               
+               
+               
                inline int getIterationsToCureTroubledCell() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
@@ -25515,9 +29743,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 7));
+   mask = static_cast<int>(mask << (8));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 7));
+   tmp = static_cast<int>(tmp >> (8));
    assertion(( tmp >= 0 &&  tmp <= 2));
    return (CompressionState) tmp;
                }
@@ -25531,9 +29759,9 @@ namespace exahype {
  {
                   assertion((compressionState >= 0 && compressionState <= 2));
    int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 7));
+   mask = static_cast<int>(mask << (8));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(compressionState) << (DIMENSIONS_TIMES_TWO + 7));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(compressionState) << (8));
                }
                
                
@@ -25544,9 +29772,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 9));
+   mask = static_cast<int>(mask << (10));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 9));
+   tmp = static_cast<int>(tmp >> (10));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -25561,9 +29789,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInPreviousSolution >= 1 && bytesPerDoFInPreviousSolution <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 9));
+   mask = static_cast<int>(mask << (10));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInPreviousSolution) - 1) << (DIMENSIONS_TIMES_TWO + 9));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInPreviousSolution) - 1) << (10));
                }
                
                
@@ -25574,9 +29802,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 12));
+   mask = static_cast<int>(mask << (13));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 12));
+   tmp = static_cast<int>(tmp >> (13));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -25591,9 +29819,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInSolution >= 1 && bytesPerDoFInSolution <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 12));
+   mask = static_cast<int>(mask << (13));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInSolution) - 1) << (DIMENSIONS_TIMES_TWO + 12));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInSolution) - 1) << (13));
                }
                
                
@@ -25604,9 +29832,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 15));
+   mask = static_cast<int>(mask << (16));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 15));
+   tmp = static_cast<int>(tmp >> (16));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -25621,9 +29849,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInUpdate >= 1 && bytesPerDoFInUpdate <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 15));
+   mask = static_cast<int>(mask << (16));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInUpdate) - 1) << (DIMENSIONS_TIMES_TWO + 15));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInUpdate) - 1) << (16));
                }
                
                
@@ -25634,9 +29862,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 18));
+   mask = static_cast<int>(mask << (19));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 18));
+   tmp = static_cast<int>(tmp >> (19));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -25651,9 +29879,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInExtrapolatedPredictor >= 1 && bytesPerDoFInExtrapolatedPredictor <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 18));
+   mask = static_cast<int>(mask << (19));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInExtrapolatedPredictor) - 1) << (DIMENSIONS_TIMES_TWO + 18));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInExtrapolatedPredictor) - 1) << (19));
                }
                
                
@@ -25664,9 +29892,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 21));
+   mask = static_cast<int>(mask << (22));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 21));
+   tmp = static_cast<int>(tmp >> (22));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -25681,9 +29909,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInFluctuation >= 1 && bytesPerDoFInFluctuation <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 21));
+   mask = static_cast<int>(mask << (22));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInFluctuation) - 1) << (DIMENSIONS_TIMES_TWO + 21));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInFluctuation) - 1) << (22));
                }
                
                

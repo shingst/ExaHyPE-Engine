@@ -69,9 +69,15 @@ public:
   // and basePath is a string, so it's not too bad.
   ParserView(const ParserView& b) = default;
   
-  ParserView() : _parser(nullptr), _basePath("undefParserView") {}
+  ParserView() : _parser(nullptr), _basePath("") {}
   
   std::string getPath(const std::string& key) const;
+  
+  /**
+   * An empty ParserView is either one constructed like ParserView() or
+   * refering to a Parser object which holds no subdata at all.
+   **/
+  bool isEmpty() const;
 
   /**
    * You may use keys without a value. This operation allows you to check
@@ -103,6 +109,11 @@ public:
    * operation.
    */
   std::string getValueAsString(const std::string& key) const;
+  
+  bool getValueAsBoolOrDefault(const std::string& key, bool default_value) const;
+  int getValueAsIntOrDefault(const std::string& key, int default_value) const;
+  double getValueAsDoubleOrDefault(const std::string& key, double default_value) const;
+  std::string getValueAsStringOrDefault(const std::string& key, std::string default_value) const;
 
   /**
    * Returns the contents of this ParserView as a map, i.e. the keys

@@ -51,11 +51,12 @@ void exahype::plotters::FiniteVolumes2UserDefined::init(
 exahype::plotters::FiniteVolumes2UserDefined::~FiniteVolumes2UserDefined() {
 }
 
-void exahype::plotters::FiniteVolumes2UserDefined::plotPatch(const int cellDescriptionsIndex, const int element) {
-  auto& finiteVolumesCellDescription = exahype::solvers::FiniteVolumesSolver::getCellDescription(cellDescriptionsIndex,element);
+void exahype::plotters::FiniteVolumes2UserDefined::plotPatch(const int solverNumber,solvers::Solver::CellInfo& cellInfo) {
+  const int element = cellInfo.indexOfFiniteVolumesCellDescription(solverNumber);
+  auto& finiteVolumesCellDescription  = cellInfo._FiniteVolumesCellDescriptions[element];
 
   if (finiteVolumesCellDescription.getType()==exahype::solvers::FiniteVolumesSolver::CellDescription::Type::Cell) {
-    double* solverSolution = DataHeap::getInstance().getData(finiteVolumesCellDescription.getSolution()).data();
+    double* solverSolution = static_cast<double*>(finiteVolumesCellDescription.getSolution());
 
     plotPatch(
         finiteVolumesCellDescription.getOffset(),

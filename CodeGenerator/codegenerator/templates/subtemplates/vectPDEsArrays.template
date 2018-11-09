@@ -1,5 +1,6 @@
 {#
   String array : name of the array
+  int size : base size (e.g. nVar or nData)
   bool blockedDim : transpose a double** with dim splitting first if true, double* otherwise
 #}
 {% with %}
@@ -7,19 +8,19 @@
    **** Subtemplate ****
    *********************/ #}
 {% if blockedDim %}{# e.g. used for F or gradQ #}
-double {{array}}_x_block[{{nVar*vectSize}}] __attribute__((aligned(ALIGNMENT))) = {0.};
-double {{array}}_y_block[{{nVar*vectSize}}] __attribute__((aligned(ALIGNMENT))) = {0.};
+double {{array}}_x_block[{{size*vectSize}}] __attribute__((aligned(ALIGNMENT))) = {0.};
+double {{array}}_y_block[{{size*vectSize}}] __attribute__((aligned(ALIGNMENT))) = {0.};
 {% if nDim==3 %}
-double {{array}}_z_block[{{nVar*vectSize}}] __attribute__((aligned(ALIGNMENT))) = {0.};
+double {{array}}_z_block[{{size*vectSize}}] __attribute__((aligned(ALIGNMENT))) = {0.};
 {% endif %}
-double* {{array}}_x[{{nVar}}] __attribute__((aligned(ALIGNMENT))) = { {% for n in nVarMinusOne_seq %}{{array}}_x_block+{{n*vectSize}}, {% endfor %}{{array}}_x_block+{{(nVar-1)*vectSize}} };
-double* {{array}}_y[{{nVar}}] __attribute__((aligned(ALIGNMENT))) = { {% for n in nVarMinusOne_seq %}{{array}}_y_block+{{n*vectSize}}, {% endfor %}{{array}}_y_block+{{(nVar-1)*vectSize}} };
+double* {{array}}_x[{{size}}] __attribute__((aligned(ALIGNMENT))) = { {% for n in range(size-1) %}{{array}}_x_block+{{n*vectSize}}, {% endfor %}{{array}}_x_block+{{(size-1)*vectSize}} };
+double* {{array}}_y[{{size}}] __attribute__((aligned(ALIGNMENT))) = { {% for n in range(size-1) %}{{array}}_y_block+{{n*vectSize}}, {% endfor %}{{array}}_y_block+{{(size-1)*vectSize}} };
 {% if nDim==3 %}
-double* {{array}}_z[{{nVar}}] __attribute__((aligned(ALIGNMENT))) = { {% for n in nVarMinusOne_seq %}{{array}}_z_block+{{n*vectSize}}, {% endfor %}{{array}}_z_block+{{(nVar-1)*vectSize}} };
+double* {{array}}_z[{{size}}] __attribute__((aligned(ALIGNMENT))) = { {% for n in range(size-1) %}{{array}}_z_block+{{n*vectSize}}, {% endfor %}{{array}}_z_block+{{(size-1)*vectSize}} };
 {% endif %}
 double** {{array}}[{{nDim}}] __attribute__((aligned(ALIGNMENT))) = { {{array}}_x, {{array}}_y{{', '~array~'_z' if nDim==3 else ''}} };
 {% else %}{# blockedDim #}
-double {{array}}_block[{{nData*vectSize}}]   __attribute__((aligned(ALIGNMENT))) = {0.};
-double* {{array}}[{{nData}}]   __attribute__((aligned(ALIGNMENT))) = { {% for n in nDataMinusOne_seq %}{{array}}_block+{{n*vectSize}}, {% endfor %}{{array}}_block+{{(nData-1)*vectSize}} };
+double {{array}}_block[{{size*vectSize}}]   __attribute__((aligned(ALIGNMENT))) = {0.};
+double* {{array}}[{{size}}]   __attribute__((aligned(ALIGNMENT))) = { {% for n in range(size-1) %}{{array}}_block+{{n*vectSize}}, {% endfor %}{{array}}_block+{{(size-1)*vectSize}} };
 {% endif %}
 {% endwith %}

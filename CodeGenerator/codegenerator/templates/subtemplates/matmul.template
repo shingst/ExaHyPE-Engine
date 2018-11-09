@@ -9,8 +9,8 @@
   String B         : name of B
   String C         : name of C
   String A_shift   : shift to the zero of A
-  String B_shift   : shift to the zero of A
-  String C_shift   : shift to the zero of A
+  String B_shift   : shift to the zero of B
+  String C_shift   : shift to the zero of C
   
   optional
   bool overrideUseLibxsmm : force locally useLibxsmm to take this value if set
@@ -25,10 +25,10 @@
    **** Set up helper template values ****
    **************************************/ #}
 {% set conf = matmulConfigs[matmulKey] %}
-{% if overrideUseLibxsmm is not defined %}
+{% if overrideUseLibxsmm is not defined or overrideUseLibxsmm == "BoolNotDefined" %}
   {% set overrideUseLibxsmm = useLibxsmm %}{# if no override then take the current value #}
 {% endif %}
-{% if trueB is not defined %}
+{% if trueB is not defined or trueB == "" %}
   {% set trueB = B %}
   {% set useTrueB = False %}
 {% else %}
@@ -49,7 +49,7 @@
 {% if overrideUseLibxsmm %}
 {% if useTrueB %}{# will set B[it] to be trueAlpha*trueB[it] #}
 double {{B}}[{{conf.LDB*conf.K}}] __attribute__((aligned(ALIGNMENT)));
-#pragma simd
+#pragma omp simd aligned({{B}},{{trueB}}:ALIGNMENT)
 for (int it = 0; it < {{conf.LDB*conf.K}}; it++) {
   {{B}}[it] = {{trueAlpha}} * {{trueB}}[it];
 }
@@ -70,7 +70,7 @@ volatile double doNotOptimizeAway_{{B}} = {{B}}[0]; //used to prevent the compil
 #}
 {% if forceCoeffMatrix %}
 double {{B}}[{{conf.LDB*conf.K}}] __attribute__((aligned(ALIGNMENT)));
-#pragma simd
+#pragma omp simd aligned({{B}},{{trueB}}:ALIGNMENT)
 for (int it = 0; it < {{conf.LDB*conf.K}}; it++) {
   {{B}}[it] = {{trueAlpha}} * {{trueB}}[it];
 }
@@ -78,18 +78,18 @@ for (int it = 0; it < {{conf.LDB*conf.K}}; it++) {
 {% endif %}
 {% if conf.beta == 0 %}
 // reset {{C}}
-for (int it_1 = 0; it_1 < {{conf.K}}; it_1++) {
-  #pragma simd
+for (int it_1 = 0; it_1 < {{conf.N}}; it_1++) {
+  #pragma omp simd aligned({{C}}:ALIGNMENT)
   for (int it_3 = 0; it_3 < {{conf.M}}; it_3++) {
     {{C}}[{{C_shift}}+it_1*{{conf.LDC}}+it_3] = 0.;
   }
 }
 {% endif %}
-for (int it_1 = 0; it_1 < {{conf.K}}; it_1++) {
-  for (int it_2 = 0; it_2 < {{conf.N}}; it_2++) {
-    #pragma simd
+for (int it_1 = 0; it_1 < {{conf.N}}; it_1++) {
+  for (int it_2 = 0; it_2 < {{conf.K}}; it_2++) {
+    #pragma omp simd aligned({{C}},{{A}},{{trueB}}:ALIGNMENT)
     for (int it_3 = 0; it_3 < {{conf.M}}; it_3++) {
-      {{C}}[{{C_shift}}+it_1*{{conf.LDC}}+it_3] {{ '+' if conf.alpha == 1 else '-' }}= {{A}}[{{A_shift}}+it_2*{{conf.LDA}}+it_3] * {% if ((trueAlpha is defined) and not forceCoeffMatrix) %}{{trueAlpha}}* {% endif %}{{trueB}}[{% if B_shift != '0' %}{{B_shift}}+{% endif %}it_1*{{conf.LDB}}+it_2];
+      {{C}}[{{C_shift}}+it_1*{{conf.LDC}}+it_3] {{ '+' if conf.alpha == 1 else '-' }}= {{A}}[{{A_shift}}+it_2*{{conf.LDA}}+it_3] * {% if (useTrueB and not forceCoeffMatrix) %}{{trueAlpha}}* {% endif %}{{trueB}}[{% if B_shift != '0' %}{{B_shift}}+{% endif %}it_1*{{conf.LDB}}+it_2];
     }
   }
 }

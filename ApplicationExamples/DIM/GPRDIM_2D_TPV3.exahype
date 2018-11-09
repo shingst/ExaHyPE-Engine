@@ -1,0 +1,268 @@
+/**
+ * This file is part of the ExaHyPE project.
+ * Copyright (c) 2016  http://exahype.eu
+ * All rights reserved.
+ *
+ * The project has received funding from the European Union's Horizon 
+ * 2020 research and innovation programme under grant agreement
+ * No 671698. For copyrights and licensing, please consult the webpage.
+ *
+ * Released under the BSD 3 Open Source License.
+ * For the full license text, see LICENSE.txt
+ **/
+ 
+/**
+
+ DIM, Diffuse Interface Method
+
+ */
+exahype-project GPRDIM
+
+  peano-kernel-path const          = ./Peano
+  exahype-path const               = ./ExaHyPE
+  output-directory const           = ./ApplicationExamples/DIM/GPRDIM
+  architecture const               = noarch
+  log-file                         = whatever.log
+
+  computational-domain
+    dimension const         = 2
+    width                   = 30000.0, 15000.0
+    offset                  = -15000.0, -7500.0
+    end-time                = 10.0
+  end computational-domain
+
+  
+  shared-memory
+    identifier               = dummy
+    configure                = {background-tasks:1}
+    cores                    = 1
+    properties-file          = sharedmemory.properties
+  end shared-memory  
+  
+  distributed-memory
+    identifier               = static_load_balancing
+    configure                = {hotspot,fair,ranks-per-node:28}
+    buffer-size              = 6400
+    timeout                  = 6000
+  end distributed-memory
+
+  global-optimisation
+    fuse-algorithmic-steps          = on
+    fuse-algorithmic-steps-factor   = 0.99
+    spawn-predictor-as-background-thread = off
+    spawn-amr-background-threads         = on
+    disable-vertex-exchange-in-time-steps = on
+    time-step-batch-factor           = 0.0
+    disable-metadata-exchange-in-batched-time-steps = off
+    double-compression = 0.0
+    spawn-double-compression-as-background-thread = on
+  end global-optimisation
+
+  solver Limiting-ADER-DG DIMSolver
+    /* gamma is actually parts of a matrix... */
+    variables const                = rho:1,vel:3,A:9,alpha:1,lambda:1,mu:1,Y0:1,xi:1,rhoE:1,dDisp:3,Disp:1,muf:1,alphaf:1
+    order const                    = 3
+    maximum-mesh-size              = 500.0
+    maximum-mesh-depth             = 2
+    time-stepping                  = global
+    type const = nonlinear
+	terms const = flux,ncp,source
+	optimisation const = generic
+    language const                 = C
+    limiter-type const         = musclhancock
+    limiter-optimisation const = generic
+    limiter-language const     = C
+    dmp-observables  const         = 2
+    dmp-relaxation-parameter       = 1e+3 
+    dmp-difference-scaling         = 1e+4 
+    steps-till-cured           = 5
+    // helper-layers              = 2
+
+     plot user::defined TecplotWriter
+       variables const = 24
+       time            = 0.0
+       repeat          = 0.1
+       output          = ./output/tecplot
+     end plot
+
+   plot probe::ascii ProbeWriter 
+      variables const = 32 
+      time            = 0.0 
+      repeat          = 0.01 
+      output          = ./output/pp1 
+      select          = x:0.000000,y:0.000000 
+    end plot 
+   plot probe::ascii ProbeWriter 
+      variables const = 32 
+      time            = 0.0 
+      repeat          = 0.01 
+      output          = ./output/pp1u 
+      select          = x:0.000000,y:100.000000 
+    end plot 
+   plot probe::ascii ProbeWriter 
+      variables const = 32 
+      time            = 0.0 
+      repeat          = 0.01 
+      output          = ./output/pp1d 
+      select          = x:0.000000,y:-100.000000 
+    end plot 
+   plot probe::ascii ProbeWriter 
+      variables const = 32 
+      time            = 0.0 
+      repeat          = 0.01 
+      output          = ./output/pp1uu 
+      select          = x:0.000000,y:200.000000 
+    end plot 
+   plot probe::ascii ProbeWriter 
+      variables const = 32 
+      time            = 0.0 
+      repeat          = 0.01 
+      output          = ./output/pp1dd 
+      select          = x:0.000000,y:-200.000000 
+    end plot
+
+   plot probe::ascii ProbeWriter 
+      variables const = 32 
+      time            = 0.0 
+      repeat          = 0.01 
+      output          = ./output/pp2 
+      select          = x:2000.000000,y:0.000000 
+    end plot 
+   plot probe::ascii ProbeWriter 
+      variables const = 32 
+      time            = 0.0 
+      repeat          = 0.01 
+      output          = ./output/pp2u 
+      select          = x:2000.000000,y:100.000000 
+    end plot 
+   plot probe::ascii ProbeWriter 
+      variables const = 32 
+      time            = 0.0 
+      repeat          = 0.01 
+      output          = ./output/pp2d 
+      select          = x:2000.000000,y:-100.000000 
+    end plot 
+   plot probe::ascii ProbeWriter 
+      variables const = 32 
+      time            = 0.0 
+      repeat          = 0.01 
+      output          = ./output/pp2uu 
+      select          = x:2000.000000,y:200.000000 
+    end plot 
+   plot probe::ascii ProbeWriter 
+      variables const = 32 
+      time            = 0.0 
+      repeat          = 0.01 
+      output          = ./output/pp2dd 
+      select          = x:2000.000000,y:-200.000000 
+    end plot
+
+   plot probe::ascii ProbeWriter 
+      variables const = 32 
+      time            = 0.0 
+      repeat          = 0.01 
+      output          = ./output/pp3 
+      select          = x:4000.000000,y:0.000000 
+    end plot 
+   plot probe::ascii ProbeWriter 
+      variables const = 32 
+      time            = 0.0 
+      repeat          = 0.01 
+      output          = ./output/pp3u 
+      select          = x:4000.000000,y:100.000000 
+    end plot 
+   plot probe::ascii ProbeWriter 
+      variables const = 32 
+      time            = 0.0 
+      repeat          = 0.01 
+      output          = ./output/pp3d 
+      select          = x:4000.000000,y:-100.000000 
+    end plot 
+   plot probe::ascii ProbeWriter 
+      variables const = 32 
+      time            = 0.0 
+      repeat          = 0.01 
+      output          = ./output/pp3uu 
+      select          = x:4000.000000,y:200.000000 
+    end plot 
+   plot probe::ascii ProbeWriter 
+      variables const = 32 
+      time            = 0.0 
+      repeat          = 0.01 
+      output          = ./output/pp3dd 
+      select          = x:4000.000000,y:-200.000000 
+    end plot
+
+   plot probe::ascii ProbeWriter 
+      variables const = 32 
+      time            = 0.0 
+      repeat          = 0.01 
+      output          = ./output/pp4 
+      select          = x:6000.000000,y:0.000000 
+    end plot 
+   plot probe::ascii ProbeWriter 
+      variables const = 32 
+      time            = 0.0 
+      repeat          = 0.01 
+      output          = ./output/pp3u 
+      select          = x:6000.000000,y:100.000000 
+    end plot 
+   plot probe::ascii ProbeWriter 
+      variables const = 32 
+      time            = 0.0 
+      repeat          = 0.01 
+      output          = ./output/pp4d 
+      select          = x:6000.000000,y:-100.000000 
+    end plot 
+   plot probe::ascii ProbeWriter 
+      variables const = 32 
+      time            = 0.0 
+      repeat          = 0.01 
+      output          = ./output/pp4uu 
+      select          = x:6000.000000,y:200.000000 
+    end plot 
+   plot probe::ascii ProbeWriter 
+      variables const = 32 
+      time            = 0.0 
+      repeat          = 0.01 
+      output          = ./output/pp4dd 
+      select          = x:6000.000000,y:-200.000000 
+    end plot
+
+   plot probe::ascii ProbeWriter 
+      variables const = 32 
+      time            = 0.0 
+      repeat          = 0.01 
+      output          = ./output/pp5 
+      select          = x:8000.000000,y:0.000000 
+    end plot 
+   plot probe::ascii ProbeWriter 
+      variables const = 32 
+      time            = 0.0 
+      repeat          = 0.01 
+      output          = ./output/pp5u 
+      select          = x:8000.000000,y:100.000000 
+    end plot 
+   plot probe::ascii ProbeWriter 
+      variables const = 32 
+      time            = 0.0 
+      repeat          = 0.01 
+      output          = ./output/pp5d 
+      select          = x:8000.000000,y:-100.000000 
+    end plot 
+   plot probe::ascii ProbeWriter 
+      variables const = 32 
+      time            = 0.0 
+      repeat          = 0.01 
+      output          = ./output/pp5uu 
+      select          = x:8000.000000,y:200.000000 
+    end plot 
+   plot probe::ascii ProbeWriter 
+      variables const = 32 
+      time            = 0.0 
+      repeat          = 0.01 
+      output          = ./output/pp5dd 
+      select          = x:8000.000000,y:-200.000000 
+    end plot
+  end solver
+end exahype-project

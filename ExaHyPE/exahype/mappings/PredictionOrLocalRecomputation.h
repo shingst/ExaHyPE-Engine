@@ -77,17 +77,6 @@ class exahype::mappings::PredictionOrLocalRecomputation {
    */
   exahype::State _stateCopy;
 
-  #ifdef Debug // TODO(Dominic): Exclude shared memory etc.
-  /*
-   *  Counter for the interior face solves for debugging purposes.
-   */
-  int _interiorFaceMerges;
-  /*
-   *  Counter for the boundary face solves for debugging purposes.
-   */
-  int _boundaryFaceMerges;
-  #endif
-
   /**
    * Flag indicating if one solver requested a local recomputation.
    * Is set in beginIteration(...).
@@ -125,31 +114,56 @@ class exahype::mappings::PredictionOrLocalRecomputation {
    */
   static bool performPrediction(exahype::solvers::Solver* solver);
 
-  #ifdef Parallel
-  /**
-   * Drop incoming neighbour data for all solvers performing
-   * a local recomputation.
-   */
-  static void dropNeighbourData(
-      const int                                    fromRank,
-      const tarch::la::Vector<DIMENSIONS, int>&    src,
-      const tarch::la::Vector<DIMENSIONS, int>&    dest,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level,
-      const exahype::MetadataHeap::HeapEntries& receivedMetadata);
 
   /**
-   * Merge incoming neighbour for all solvers performing
+   * Loop body for touchVertexFirstTime
+   *
+   * @param pos1Scalar linearised relative position of cell to vertex (pos1)
+   * @param pos2Scalar linearised relative position of cell to vertex (pos2)
+   * @param cellDescriptionsIndex1 cell descriptions index of cell at pos1
+   * @param cellDescriptionsIndex2 cell descriptions index of cell at pos2
+   * @param x position of the shared vertex
+   * @param h extent of the cells
+   */
+  static void mergeNeighboursDataDuringLocalRecomputationLoopBody(
+      const int pos1Scalar,
+      const int pos2Scalar,
+      const int cellDescriptionsIndex1,
+      const int cellDescriptionsIndex2,
+      const tarch::la::Vector<DIMENSIONS, double>& x,
+      const tarch::la::Vector<DIMENSIONS, double>& h);
+
+  /**
+   * Loop body for mergeWithNeighbour.
+   *
+   * @param fromRank   rank from which we expect a message
+   * @param pos1Scalar linearised relative position of cell to vertex (pos1)
+   * @param pos2Scalar linearised relative position of cell to vertex (pos2)
+   * @param vertex     vertex
+   * @param x          position of the shared vertex
+   * @param level      level of the vertex
+   */
+ static void receiveNeighbourDataLoopBody(
+      const int                                    fromRank,
+      const int                                    srcScalar,
+      const int                                    destScalar,
+      const exahype::Vertex&                       vertex,
+      const tarch::la::Vector<DIMENSIONS, double>& x,
+      const int                                    level);
+
+  #ifdef Parallel
+
+  /**
+   * Merge incoming neighbour for all LimitingADERDGSolver instances which perform
    * a local recomputation.
    */
   void mergeNeighourData(
       const int                                    fromRank,
-      const tarch::la::Vector<DIMENSIONS,int>&     src,
-      const tarch::la::Vector<DIMENSIONS,int>&     dest,
-      const int                                    destCellDescriptionIndex,
+      const int                                    srcScalar,
+      const int                                    destScalar,
+      const int                                    destCellDescriptionsIndex,
       const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level,
-      const exahype::MetadataHeap::HeapEntries& receivedMetadata);
+      const int                                    level);
   #endif
 
  public:

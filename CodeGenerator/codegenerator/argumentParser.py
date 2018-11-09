@@ -67,6 +67,7 @@ class ArgumentParser:
         ("useGaussLobatto",    ArgType.OptionalBool,    "use Gauss Lobatto Quadrature instead of Gauss Legendre"),
         ("useLimiter",         ArgType.OptionalInt,     "enable limiter with the given number of observable", -1, "numberOfObservable"),
         ("ghostLayerWidth",    ArgType.OptionalInt,     "use limiter with the given ghostLayerWidth, requires useLimiter option, default = 0", 0, "width"),
+        ("tempVarsOnStack",    ArgType.OptionalBool,    "put the big scratch arrays on the stack instead of the heap (you can use ulimit -s to increase the stack size)"),
     ]
     
     @staticmethod

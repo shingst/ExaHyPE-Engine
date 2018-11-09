@@ -28,6 +28,7 @@
 
 #include "exahype/solvers/ADERDGSolver.h"
 #include "exahype/solvers/FiniteVolumesSolver.h"
+#include "exahype/solvers/LimitingADERDGSolver.h"
 
 
 tarch::logging::Log exahype::Cell::_log("exahype::Cell");
@@ -60,51 +61,12 @@ exahype::Cell::Cell(const Base::PersistentCell& argument) : Base(argument) {
   // Do not use it. This would overwrite persistent data.
 }
 
-void exahype::Cell::validateThatAllNeighbourMergesHaveBeenPerformed(
-    const int cellDescriptionsIndex,
-    const peano::grid::VertexEnumerator& fineGridVerticesEnumerator) {
-  // ADER-DG
-  for (auto& p : exahype::solvers::ADERDGSolver::Heap::getInstance().getData(cellDescriptionsIndex)) {
-    bool allNeighbourMergesHaveBeenPerformed =
-        ( p.getType()!=exahype::solvers::ADERDGSolver::CellDescription::Type::Cell ||
-          p.getNeighbourMergePerformed().all() )
-        &&
-        ( p.getType()!=exahype::solvers::ADERDGSolver::CellDescription::Type::Ancestor ||
-          p.getNeighbourMergePerformed().all() );
-
-    assertion1( allNeighbourMergesHaveBeenPerformed, p.toString() );
-    if ( !allNeighbourMergesHaveBeenPerformed ) {
-      logError("validateThatAllNeighbourMergesHaveBeenPerformed(...)",
-               "Failed for cellDescriptionsIndex="<<cellDescriptionsIndex<<". "<<
-               "Not all neighbour merges have been performed for ADERDGCellDescription="<<
-               p.toString());
-      std::terminate();
-    }
-  }
-
-  // Finite-Volumes
-  for (auto& p : exahype::solvers::FiniteVolumesSolver::Heap::getInstance().getData(cellDescriptionsIndex)) {
-    bool allNeighbourMergesHaveBeenPerformed = p.getNeighbourMergePerformed().all();
-
-    assertion1( allNeighbourMergesHaveBeenPerformed, p.toString() );
-    if ( !allNeighbourMergesHaveBeenPerformed ) {
-      logError("validateThatAllNeighbourMergesHaveBeenPerformed(...)",
-               "Failed for cellDescriptionsIndex="<<cellDescriptionsIndex<<". "<<
-               "Not all neighbour merges have been performed for FiniteVolumesCellDescription="<<
-               p.toString());
-      std::terminate();
-    }
-  }
-}
-
 void exahype::Cell::resetNeighbourMergeFlags(
-    const int cellDescriptionsIndex,
+    const solvers::Solver::CellInfo& cellInfo,
     exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator) {
-  assertion(exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(cellDescriptionsIndex));
-
   // ADER-DG
-  for (auto& p : exahype::solvers::ADERDGSolver::Heap::getInstance().getData(cellDescriptionsIndex)) {
+  for (auto& p : cellInfo._ADERDGCellDescriptions) {
     for (int faceIndex=0; faceIndex<DIMENSIONS_TIMES_TWO; faceIndex++) {
       p.setNeighbourMergePerformed(faceIndex,false);
 
@@ -122,7 +84,7 @@ void exahype::Cell::resetNeighbourMergeFlags(
   }
 
   // Finite-Volumes (loop body can be copied from ADER-DG loop)
-  for (auto& p : exahype::solvers::FiniteVolumesSolver::Heap::getInstance().getData(cellDescriptionsIndex)) {
+  for (auto& p : cellInfo._FiniteVolumesCellDescriptions) {
     for (int faceIndex=0; faceIndex<DIMENSIONS_TIMES_TWO; faceIndex++) {
       p.setNeighbourMergePerformed(faceIndex,false);
 
@@ -259,7 +221,7 @@ void exahype::Cell::setCellDescriptionsIndex(int cellDescriptionsIndex) {
   _cellData.setCellDescriptionsIndex(cellDescriptionsIndex);
 }
 
-void exahype::Cell::addNewCellDescription(
+exahype::solvers::Solver::CellInfo exahype::Cell::addNewCellDescription(
     const int solverNumber,
     const exahype::records::FiniteVolumesCellDescription::Type cellType,
     const exahype::records::FiniteVolumesCellDescription::RefinementEvent refinementEvent,
@@ -271,14 +233,16 @@ void exahype::Cell::addNewCellDescription(
     setupMetaData();
   }
 
-  exahype::solvers::FiniteVolumesSolver::addNewCellDescription(
-      _cellData.getCellDescriptionsIndex(),solverNumber,
+  solvers::Solver::CellInfo cellInfo(_cellData.getCellDescriptionsIndex());
+  solvers::FiniteVolumesSolver::addNewCellDescription(
+      solverNumber,cellInfo,
       cellType,refinementEvent,
       level,parentIndex,cellSize,cellOffset);
+  return cellInfo;
 }
 
 
-void exahype::Cell::addNewCellDescription(
+exahype::solvers::Solver::CellInfo exahype::Cell::addNewCellDescription(
     const int                                     solverNumber,
     const exahype::records::ADERDGCellDescription::Type cellType,
     const exahype::records::ADERDGCellDescription::RefinementEvent refinementEvent,
@@ -290,15 +254,16 @@ void exahype::Cell::addNewCellDescription(
     setupMetaData();
   }
 
+  solvers::Solver::CellInfo cellInfo(_cellData.getCellDescriptionsIndex());
   exahype::solvers::ADERDGSolver::addNewCellDescription(
-      _cellData.getCellDescriptionsIndex(),solverNumber,
+      solverNumber,cellInfo,
       cellType,refinementEvent,
       level,parentIndex,cellSize,cellOffset);
+  return cellInfo;
 }
 
 int exahype::Cell::getNumberOfADERDGCellDescriptions() const {
-  return exahype::solvers::ADERDGSolver::Heap::getInstance().getData(
-      getCellDescriptionsIndex()).size();
+  return exahype::solvers::ADERDGSolver::Heap::getInstance().getData(getCellDescriptionsIndex()).size();
 }
 
 

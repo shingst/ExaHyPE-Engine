@@ -183,13 +183,12 @@ int aderPicardLoopNonlinear(SolverType& solver,
             for (int n = 0; n < basisSize; n++) { // n == matmul x
               if (useFlux) {
                 rhs[idx_rhs(i, k, l, m)] -= updateSize * lFi[idx_lFi(i, k, n, 0, m)] *
-                                            kernels::Kxi[order][n][l]; 
+                                            kernels::Kxi[order][n][l];
               }
             }
           }
         }
       }
-      
 
       // y direction (independent from the x derivatives)
       for(int k=0; k<basisSize; k++) {
@@ -209,7 +208,7 @@ int aderPicardLoopNonlinear(SolverType& solver,
           }
         }
       }
-      
+
       if(useSource || useNCP) {
         // source
         for (int k=0; k<basisSize; k++) {

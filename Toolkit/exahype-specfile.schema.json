@@ -52,6 +52,8 @@
   ],
   "additionalProperties" : false,
   "properties" : {
+    "_shared_memory" : {},
+    "_distributed_memory" : {},
     "project_name" : {
       "type" : "string",
       "title" : "The name of the application or PDE, will get a C++ namespace",
@@ -102,7 +104,7 @@
         "log_file" : {
           "type" : "string", 
           "title" : "The path or name of the ExaHyPE runtime logfile", 
-          "default" : "output.log", 
+          "default" : "", 
           "old_format" : { "token_after" : "log-file" },
           "examples" : [
             "whatever.log",
@@ -139,7 +141,14 @@
         "likwid_inc" : { "type" : "string" },
         "likwid_lib" : { "type" : "string" },
         "ipcm_inc" : { "type" : "string" },
-        "ipcm_lib" : { "type" : "string" }
+        "ipcm_lib" : { "type" : "string" },
+        "profiling_target" : {
+          "type" : "string", 
+          "title" : "The algorithmic phase we want to profile.", 
+          "scope" : "run-time",
+          "default": "whole_code",
+          "enum" : [ "whole_code", "neighbour_merge", "predictor", "update" ]
+        }
       }
     },
     "architecture" : {
@@ -151,9 +160,11 @@
       "old_format" : { "token_after" : "architecture" },
       "enum" : [
         "noarch",
+        "wsm",
         "snb",
         "hsw",
-        "knl"
+        "knl",
+        "skx"
       ]
     }, 
     "computational_domain" : {
@@ -243,7 +254,7 @@
        	"low_priority_background_job_processing" : {
           "type" : "string", 
           "title" : "How to process low priority background jobs",
-          "enum" : [ "run_if_no_high_priority_job_left", "run_always" ],
+          "enum" : [ "run_if_no_high_priority_job_left", "run_always", "spawn_as_a_task" ],
           "default" : "run_always" 
         },
         "high_priority_background_job_processing" : {
@@ -287,8 +298,15 @@
         },
         "manual_pinning" : {
           "type" : "boolean",
+          "title" : "Tell ExaHyPE to pin each thread to specific CPU core.",
           "default" : false,
           "old_format" : { "set_if_token_exists" : "manual-pinning" }
+        },
+        "thread_stack_size" : {
+          "type": "integer",
+          "title" : "Specify the stack size of each thread (in bytes) [default: 0]. If you specify 0, the default is chosen. (Changing the stack size with ulimit does not apply to TBB worker threads. This makes this parameter necessary.)",
+          "minimum" : 0,
+          "exclusiveMinimum" : false
         }
       }
     }, 
@@ -400,12 +418,22 @@
           "default" : false,
           "old_format" : { "token_after" : "spawn-predictor-as-background-thread" }
         },
+        "spawn_prolongation_as_background_thread" : {
+          "type" : "boolean", 
+          "title" : "Wether to spawn the face data prolongation as a background thread, or so.",
+          "default" : false
+        },
         "spawn_amr_background_threads" : {
           "type" : "boolean", 
           "title" : "Wether to spawn the predictor as a background thread, or so.",
           "default" : false,
           "old_format" : { "token_after" : "spawn-amr-background-threads" }
         }, 
+        "spawn_neighbour_merge_as_thread" : {
+          "type" : "boolean", 
+          "title" : "Whether to run the neighbour merges (Riemann solves, copying of boundary layers,...) per face adjacent to a vertex in parallel, too. Concurrency level is 4 in 2D and 12 in 3D multiplied with the number of vertices per regular subgrid.",
+          "default" : false
+        },
         "disable_vertex_exchange_in_time_steps" : {
           "type" : "boolean", 
           "title" : "Turn off the Peano vertex exchange during time stepping iterations",
@@ -585,7 +613,7 @@
                 "title" : "Only optimised kernels: For which PDE terms should be code generated",
                 "items" : {
                   "type" : "string",
-                  "enum" : ["fusedsource", "fluxvect", "fusedsourcevect"]
+                  "enum" : ["fusedsource", "fluxvect", "fusedsourcevect", "ncpvect"]
                 }
               },
               "language" : {
@@ -649,7 +677,7 @@
               "scheme" : {
                 "type" : "string", 
                 "title" : "The underlying FV solver scheme", 
-                "enum" : ["musclhancock","godunov"],
+                "enum" : ["musclhancock","godunov","robustmusclhancock"],
                 "default" : "godunov"
               }
             }
