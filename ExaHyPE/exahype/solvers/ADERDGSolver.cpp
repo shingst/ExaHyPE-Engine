@@ -4701,6 +4701,8 @@ void exahype::solvers::ADERDGSolver::progressStealing() {
     // we need this info when the task comes back...
     _mapTagToMetaData.insert(std::make_pair(tag, metadata));
     _mapTagToCellDesc.insert(std::make_pair(tag, &cellDescription));
+
+    _mapTagToOffloadTime.insert(std::make_pair(tag, -MPI_Wtime()));
     // send away
     isendStealablePredictionJob(
         luh,
@@ -5207,16 +5209,24 @@ void exahype::solvers::ADERDGSolver::StealablePredictionJob::receiveBackHandler(
   logInfo("receiveBackHandler","successful receiveBack request, cnt "<<cnt);
 #endif
 
-  tbb::concurrent_hash_map<int, CellDescription*>::accessor a_tagRankToCellDesc;
-  bool found = static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagToCellDesc.find(a_tagRankToCellDesc, tag);
+  tbb::concurrent_hash_map<int, CellDescription*>::accessor a_tagToCellDesc;
+  bool found = static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagToCellDesc.find(a_tagToCellDesc, tag);
   assertion(found);
-  auto cellDescription = a_tagRankToCellDesc->second;
-  static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagToCellDesc.erase(a_tagRankToCellDesc);
-  a_tagRankToCellDesc.release();
+  auto cellDescription = a_tagToCellDesc->second;
+  static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagToCellDesc.erase(a_tagToCellDesc);
+  a_tagToCellDesc.release();
   cellDescription->setHasCompletedTimeStep(true);
   tarch::multicore::Lock lock2(exahype::BackgroundJobSemaphore);
   NumberOfEnclaveJobs--;
   NumberOfRemoteJobs--;
+
+  tbb::concurrent_hash_map<int, double>::accessor a_tagToOffloadTime;
+  found = static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagToOffloadTime.find(a_tagToOffloadTime, tag);
+  double elapsed = MPI_Wtime() + a_tagToOffloadTime->second;
+  assertion(found);
+  static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagToOffloadTime.erase(a_tagToOffloadTime);
+  a_tagToOffloadTime.release();
+  logInfo("receiveBackHandler", "remote execution took "<<elapsed<<" s ");
 
   assertion( NumberOfEnclaveJobs>=0 );
   assertion( NumberOfRemoteJobs>=0 );

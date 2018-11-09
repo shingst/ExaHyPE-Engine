@@ -894,6 +894,8 @@ private:
   tbb::concurrent_hash_map<std::pair<int,int>, StealablePredictionJobData*> _mapTagRankToStolenData;
   tbb::concurrent_hash_map<int, CellDescription*> _mapTagToCellDesc;
   tbb::concurrent_hash_map<int, double*> _mapTagToMetaData;
+  // Used in order to time offloaded tasks.
+  tbb::concurrent_hash_map<int, double> _mapTagToOffloadTime;
 
   /**
    * A StealablePredictionJob represent a PredictionJob that can be
