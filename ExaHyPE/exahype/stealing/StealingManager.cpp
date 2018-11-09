@@ -293,8 +293,9 @@ void exahype::stealing::StealingManager::progressRequestsOfType( RequestType typ
       assertion(found);
       a_remoteTag.release();
 
-      RequestHandlerJob *requestHandlerJob = new RequestHandlerJob(handler, solver, remoteTag, remoteRank);
-      peano::datatraversal::TaskSet spawnedSet( requestHandlerJob, peano::datatraversal::TaskSet::TaskType::Background);
+      handler(solver, remoteTag, remoteRank);
+      //RequestHandlerJob *requestHandlerJob = new RequestHandlerJob(handler, solver, remoteTag, remoteRank);
+      //peano::datatraversal::TaskSet spawnedSet( requestHandlerJob, peano::datatraversal::TaskSet::TaskType::Background);
 
       _handlers[mapId].erase(groupId);
       _outstandingReqsForGroup[mapId].erase(groupId);
