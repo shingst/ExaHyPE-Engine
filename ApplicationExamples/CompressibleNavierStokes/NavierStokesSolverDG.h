@@ -34,8 +34,8 @@ class NavierStokes::NavierStokesSolverDG : public NavierStokes::AbstractNavierSt
      * Log device
      */
     static tarch::logging::Log _log;
-    std::unique_ptr<Scenario> scenario;
   public:
+    std::unique_ptr<Scenario> scenario;
     std::string scenarioName;
     NavierStokesSolverDG(
         const double maximumMeshSize,
@@ -142,6 +142,13 @@ class NavierStokes::NavierStokesSolverDG : public NavierStokes::AbstractNavierSt
 
 /* multiplyMaterialParameterMatrix() not included, as requested in the specification file */
     PDE ns;
+
+    std::vector<double> mapGlobalObservables(const double* const Q) const override;
+
+    std::vector<double> resetGlobalObservables() const override;
+    void reduceGlobalObservables(
+            std::vector<double>& reducedGlobalObservables,
+            const std::vector<double>& curGlobalObservables) const override;
 };
 
 #endif // __NavierStokesSolverDG_CLASS_HEADER__

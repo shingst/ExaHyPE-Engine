@@ -68,5 +68,16 @@ void NavierStokes::Plotter::mapQuantities(
     // Write potential temperature
     outputQuantities[vars.Size] = potT;
   }
+  auto& globalObservables = solver->getGlobalObservables();
+  if (timeStamp > 0.0) {
+    outputQuantities[vars.Size+1] = globalObservables[0];
+    outputQuantities[vars.Size+2] = globalObservables[1];
+  } else {
+    outputQuantities[vars.Size+1] = 0.0;
+    outputQuantities[vars.Size+2] = 0.0;
+  }
+
+
+
 
 }

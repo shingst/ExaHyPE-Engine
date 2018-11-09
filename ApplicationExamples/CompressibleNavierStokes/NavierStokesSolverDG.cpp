@@ -147,6 +147,39 @@ exahype::solvers::Solver::RefinementControl NavierStokes::NavierStokesSolverDG::
     const double t,
     const int level) {
 
+  //std::cout << "Refinement:" << _globalObservables.size() << std::endl;
+  //return exahype::solvers::Solver::RefinementControl::Keep;
+  if (_globalObservables.size() < NumberOfGlobalObservables) {
+    return exahype::solvers::Solver::RefinementControl::Keep;
+  }
+
+  if (scenarioName != "two-bubbles" || DIMENSIONS != 2) {
+    return exahype::solvers::Solver::RefinementControl::Keep;
+  }
+
+  kernels::idx3 idxLuh(Order+1,Order+1,NumberOfVariables + NumberOfParameters);
+  dfor(i,Order+1) {
+    ReadOnlyVariables vars{luh + idxLuh(i(1),i(0),0)};
+
+    const auto pressure = ns.evaluatePressure(vars.E(), vars.rho(), vars.j());
+    const auto temperature = ns.evaluateTemperature(vars.rho(), pressure);
+    const auto potT = ns.evaluatePotentialTemperature(temperature, pressure);
+    const auto curDiff = std::abs(potT - 300);
+    const auto maxDiff = std::abs(_globalObservables[0] - 300);
+    const auto minDiff = std::abs(_globalObservables[1] - 300);
+    //std::cout << maxDiff << "\n" << minDiff << std::endl;
+    //std::abort();
+    if (curDiff > maxDiff/10.) {
+      //std::cout << curDiff << " significant vs. " << maxDiff << std::endl;
+      return exahype::solvers::Solver::RefinementControl::Refine;
+    }
+    //std::cout << curDiff << " not significant vs. " << maxDiff << std::endl;
+    if (curDiff < minDiff/10) {
+      //return exahype::solvers::Solver::RefinementControl::Erase;
+      // TODO(Lukas) Evaluate coarsening!
+    }
+  }
+
   return exahype::solvers::Solver::RefinementControl::Keep;
 }
 
@@ -183,7 +216,7 @@ void NavierStokes::NavierStokesSolverDG::riemannSolver(double* FL,double* FR,con
 }
 
 void NavierStokes::NavierStokesSolverDG::boundaryConditions(double* const update, double* const fluxIn,const double* const stateIn, const double* const gradStateIn, const double* const luh, const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const int direction,const int orientation) {
-  constexpr int basisSize     = (Order+1)*(Order+1);
+  constexpr int basisSize     = (Order+1);
   constexpr int sizeStateOut = (NumberOfVariables+NumberOfParameters)*basisSize;
   constexpr int sizeFluxOut  = NumberOfVariables*basisSize;
 
@@ -216,10 +249,45 @@ void NavierStokes::NavierStokesSolverDG::boundaryConditions(double* const update
     kernels::idx2 idx_F(Order + 1, NumberOfVariables);
     for (int i = 0; i < (Order + 1); ++i) {
       // Set energy flux to zero!
-      fluxIn[idx_F(i, 3)] = 0.0;
+      fluxIn[idx_F(i, NavierStokesSolverDG_Variables::shortcuts::E)] = 0.0; // TODO(Lukas) Is fluxIn later reused?
     }
   }
 
   kernels::aderdg::generic::c::faceIntegralNonlinear<NumberOfVariables, Order+1>(update,fluxIn,direction,orientation,cellSize);
+
   delete[] block;
+}
+
+std::vector<double> NavierStokes::NavierStokesSolverDG::mapGlobalObservables(const double *const Q) const {
+ auto vars = ReadOnlyVariables{Q};
+ const auto pressure = ns.evaluatePressure(vars.E(), vars.rho(), vars.j());
+ const auto temperature = ns.evaluateTemperature(vars.rho(), pressure);
+ const auto potT = ns.evaluatePotentialTemperature(temperature, pressure);
+ return {potT, potT};
+}
+
+std::vector<double> NavierStokes::NavierStokesSolverDG::resetGlobalObservables() const {
+  return {std::numeric_limits<double>::min(), std::numeric_limits<double>::max()};
+}
+
+void NavierStokes::NavierStokesSolverDG::reduceGlobalObservables(
+        std::vector<double> &reducedGlobalObservables,
+        const std::vector<double> &curGlobalObservables) const {
+  assertion2(reducedGlobalObservables.size() == curGlobalObservables.size(),
+          reducedGlobalObservables.size(),
+          curGlobalObservables.size());
+  //std::cout << "O: " << reducedGlobalObservables[0] << ", " << reducedGlobalObservables[1] << std::endl;
+  reducedGlobalObservables[0] = std::max(reducedGlobalObservables[0],
+  std::abs(curGlobalObservables[0]));
+  reducedGlobalObservables[1] = std::min(reducedGlobalObservables[1],
+                                          std::abs(curGlobalObservables[1]));
+  //std::cout << "N: " << reducedGlobalObservables[0] << ", " << reducedGlobalObservables[1] << std::endl;
+  /*
+  for (std::size_t i = 0; i < reducedGlobalObservables.size(); ++i) {
+    //std::cout << "Old global[" << i << "]: " << reducedGlobalObservables[i];
+    reducedGlobalObservables[i] = std::max(reducedGlobalObservables[i],
+            std::abs(curGlobalObservables[i]));
+    //std::cout << "\nNew global[" << i << "]: " << reducedGlobalObservables[i] << std::endl;
+  }
+  */
 }
