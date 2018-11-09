@@ -84,9 +84,10 @@ double stableDiffusiveTimeStepSize(
 #endif
     } // j
    } // i
+  //dt = (cflFactor * minDx * PNPM[order]) / DIMENSIONS * 1./ (
+  //			maxHyperbolicEigenvalue + maxDiffusiveEigenvalue * 2 * (2 * order + 1) / minDx);
   dt = (cflFactor * minDx * PNPM[order]) / DIMENSIONS * 1./ (
-			maxHyperbolicEigenvalue + maxDiffusiveEigenvalue * 2 * (2 * order + 1) / minDx);
-
+			maxHyperbolicEigenvalue + maxDiffusiveEigenvalue * 2 * (1/PNPM[order]) / minDx);
 
   return dt;
 }

@@ -150,7 +150,9 @@ int aderPicardLoopNonlinear(SolverType& solver,
             if(useViscousFlux){
                 solver.viscousFlux(Q,gradQCur+idx_gradQ(k,l,0,0),F);
             }
-            else solver.flux(Q,F);
+            else {
+                solver.flux(Q,F);
+            }
             // everything related to source now moved down to the NCP
           }
         }
@@ -219,7 +221,7 @@ int aderPicardLoopNonlinear(SolverType& solver,
             double* S = lFi + idx_lFi(i, k, l, 2, 0);
 
             // by intention, gradQ is undefined if useNCP is wrong. This is because
-	          // algebraicSource is only a function of Q and S.
+	        // algebraicSource is only a function of Q and S.
             // Old code (for reference): solver.fusedSource(&lQi[idx_lQi(k, l, i, 0)], &gradQ[idx_gradQ(k, l, i, 0, 0)], S);
             if(useSource) {
               const double ti = t + kernels::gaussLegendreNodes[order][i] * dt;
