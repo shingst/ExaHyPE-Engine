@@ -1510,15 +1510,13 @@ void exahype::solvers::FiniteVolumesSolver::validateNoNansInFiniteVolumesSolutio
     CellDescription& cellDescription,const int cellDescriptionsIndex,const char* methodTrace)  const {
   #if defined(Asserts)
   double* solution = static_cast<double*>(cellDescription.getSolution());
-  #endif
 
   dfor(i,_nodesPerCoordinateAxis+_ghostLayerWidth) {
     if (tarch::la::allSmaller(i,_nodesPerCoordinateAxis+_ghostLayerWidth)
     && tarch::la::allGreater(i,_ghostLayerWidth-1)) {
       for (int unknown=0; unknown < _numberOfVariables; unknown++) {
-        #if defined(Asserts)
         int iScalar = peano::utils::dLinearisedWithoutLookup(i,_nodesPerCoordinateAxis+2*_ghostLayerWidth)*_numberOfVariables+unknown;
-        #endif // cellDescription.getTimeStepSize()==0.0 is an initial condition
+        // cellDescription.getTimeStepSize()==0.0 is an initial condition
         assertion7(tarch::la::equals(cellDescription.getTimeStepSize(),0.0)  || std::isfinite(solution[iScalar]),
                    cellDescription.toString(),cellDescriptionsIndex,solution[iScalar],i.toString(),
                    _nodesPerCoordinateAxis,_ghostLayerWidth,
@@ -1526,6 +1524,7 @@ void exahype::solvers::FiniteVolumesSolver::validateNoNansInFiniteVolumesSolutio
       }
     }
   } // Dead code elimination should get rid of this loop if Asserts is not set.
+  #endif
 }
 
 void exahype::solvers::FiniteVolumesSolver::printFiniteVolumesSolution(
