@@ -4563,7 +4563,7 @@ void exahype::solvers::ADERDGSolver::submitOrSendStealablePredictionJob(Stealabl
 //  //sends++;
 
    //if(NumberOfEnclaveJobs+NumberOfSkeletonJobs-NumberOfRemoteJobs>tarch::multicore::Core::getInstance().getNumberOfThreads()*2) {
-     exahype::stealing::StealingManager::getInstance().selectVictimRank(destRank);
+   exahype::stealing::StealingManager::getInstance().selectVictimRank(destRank);
    //}
    //else
    //  exahype::stealing::StealingProfiler::getInstance().notifyThresholdFail();
@@ -4572,7 +4572,49 @@ void exahype::solvers::ADERDGSolver::submitOrSendStealablePredictionJob(Stealabl
 //    sends++;
 
      OffloadEntry entry = {destRank, job->_cellDescriptionsIndex, job->_element, job->_predictorTimeStamp, job->_predictorTimeStepSize};
-     _outstandingOffloads.push( entry );
+     //_outstandingOffloads.push( entry );
+     auto& cellDescription = getCellDescription(job->_cellDescriptionsIndex, job->_element);
+
+     double *luh    = static_cast<double*>(cellDescription.getSolution());
+     double *lduh   = static_cast<double*>(cellDescription.getUpdate());
+     double *lQhbnd = static_cast<double*>(cellDescription.getExtrapolatedPredictor());
+     double *lFhbnd = static_cast<double*>(cellDescription.getFluctuation());
+
+     MPI_Request sendRequests[5];
+     int tag = getStealingTag();
+     double *metadata = new double[2*DIMENSIONS+2];
+     packMetadataToBuffer(entry, metadata);
+     // we need this info when the task comes back...
+     _mapTagToMetaData.insert(std::make_pair(tag, metadata));
+     _mapTagToCellDesc.insert(std::make_pair(tag, &cellDescription));
+
+     _mapTagToOffloadTime.insert(std::make_pair(tag, -MPI_Wtime()));
+     // send away
+     isendStealablePredictionJob(
+         luh,
+         lduh,
+         lQhbnd,
+	  lFhbnd,
+         destRank,
+	  tag,
+	  sendRequests,
+	  metadata);
+
+     exahype::stealing::StealingManager::getInstance().submitRequests(
+        sendRequests, 5, tag, destRank,
+        exahype::solvers::ADERDGSolver::StealablePredictionJob::sendHandler,
+		exahype::stealing::RequestType::send, this);
+
+     // post receive back requests
+     MPI_Request recvRequests[4];
+     irecvStealablePredictionJob(
+        luh, lduh, lQhbnd,
+	    lFhbnd, destRank, tag, recvRequests);
+
+     exahype::stealing::StealingManager::getInstance().submitRequests(
+         recvRequests, 4, tag, destRank,
+         exahype::solvers::ADERDGSolver::StealablePredictionJob::receiveBackHandler,
+	    exahype::stealing::RequestType::receiveBack, this);
 
      tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
      NumberOfRemoteJobs++;
@@ -4614,61 +4656,61 @@ void exahype::solvers::ADERDGSolver::progressStealing() {
 #endif
 
   // 1. send away outstanding tasks (decision to offload them has been made)
-  OffloadEntry entry;
-  bool gotOne = _outstandingOffloads.try_pop(entry);
-  while(gotOne) {
-#ifdef USE_ITAC
-    VT_begin(event_offload);
-#endif
-    int destRank = entry.destRank;
-    auto& cellDescription = getCellDescription(entry.cellDescriptionsIndex, entry.element);
+//  OffloadEntry entry;
+//  bool gotOne = _outstandingOffloads.try_pop(entry);
+//  while(gotOne) {
+//#ifdef USE_ITAC
+//    VT_begin(event_offload);
+//#endif
+//    int destRank = entry.destRank;
+//    auto& cellDescription = getCellDescription(entry.cellDescriptionsIndex, entry.element);
 
-    double *luh    = static_cast<double*>(cellDescription.getSolution());
-    double *lduh   = static_cast<double*>(cellDescription.getUpdate());
-    double *lQhbnd = static_cast<double*>(cellDescription.getExtrapolatedPredictor());
-    double *lFhbnd = static_cast<double*>(cellDescription.getFluctuation());
+//    double *luh    = static_cast<double*>(cellDescription.getSolution());
+//    double *lduh   = static_cast<double*>(cellDescription.getUpdate());
+//    double *lQhbnd = static_cast<double*>(cellDescription.getExtrapolatedPredictor());
+//    double *lFhbnd = static_cast<double*>(cellDescription.getFluctuation());
 
-    MPI_Request sendRequests[5];
-    int tag = getStealingTag();
-    double *metadata = new double[2*DIMENSIONS+2];
-    packMetadataToBuffer(entry, metadata);
-    // we need this info when the task comes back...
-    _mapTagToMetaData.insert(std::make_pair(tag, metadata));
-    _mapTagToCellDesc.insert(std::make_pair(tag, &cellDescription));
+//    MPI_Request sendRequests[5];
+//    int tag = getStealingTag();
+//    double *metadata = new double[2*DIMENSIONS+2];
+//    packMetadataToBuffer(entry, metadata);
+//    // we need this info when the task comes back...
+//    _mapTagToMetaData.insert(std::make_pair(tag, metadata));
+//    _mapTagToCellDesc.insert(std::make_pair(tag, &cellDescription));
 
-    _mapTagToOffloadTime.insert(std::make_pair(tag, -MPI_Wtime()));
-    // send away
-    isendStealablePredictionJob(
-        luh,
-		lduh,
-        lQhbnd,
-		lFhbnd,
-		destRank,
-		tag,
-		sendRequests,
-		metadata);
+//    _mapTagToOffloadTime.insert(std::make_pair(tag, -MPI_Wtime()));
+//    // send away
+//    isendStealablePredictionJob(
+//        luh,
+//        lduh,
+//        lQhbnd,
+//	 lFhbnd,
+//		destRank,
+//		tag,
+//		sendRequests,
+//		metadata);
 
-    exahype::stealing::StealingManager::getInstance().submitRequests(
-        sendRequests, 5, tag, destRank,
-        exahype::solvers::ADERDGSolver::StealablePredictionJob::sendHandler,
-		exahype::stealing::RequestType::send, this);
+//    exahype::stealing::StealingManager::getInstance().submitRequests(
+//        sendRequests, 5, tag, destRank,
+//        exahype::solvers::ADERDGSolver::StealablePredictionJob::sendHandler,
+//		exahype::stealing::RequestType::send, this);
 
-    // post receive back requests
-    MPI_Request recvRequests[4];
-    irecvStealablePredictionJob(
-        luh, lduh, lQhbnd,
-	    lFhbnd, destRank, tag, recvRequests);
+//    // post receive back requests
+//    MPI_Request recvRequests[4];
+//    irecvStealablePredictionJob(
+//        luh, lduh, lQhbnd,
+//	    lFhbnd, destRank, tag, recvRequests);
 
-    exahype::stealing::StealingManager::getInstance().submitRequests(
-        recvRequests, 4, tag, destRank,
-        exahype::solvers::ADERDGSolver::StealablePredictionJob::receiveBackHandler,
-	    exahype::stealing::RequestType::receiveBack, this);
+//    exahype::stealing::StealingManager::getInstance().submitRequests(
+//        recvRequests, 4, tag, destRank,
+//        exahype::solvers::ADERDGSolver::StealablePredictionJob::receiveBackHandler,
+//	    exahype::stealing::RequestType::receiveBack, this);
 
-    gotOne = _outstandingOffloads.try_pop(entry);
-#ifdef USE_ITAC
-    VT_end(event_offload);
-#endif
-  }
+//    gotOne = _outstandingOffloads.try_pop(entry);
+//#ifdef USE_ITAC
+//    VT_end(event_offload);
+//#endif
+//  }
 
   // 2. make progress on any outstanding MPI communication
   exahype::stealing::StealingManager::getInstance().progressRequests();
@@ -4772,7 +4814,7 @@ bool exahype::solvers::ADERDGSolver::StealingManagerJob::run() {
    // 	  terminated = true;
     //  }
       exahype::stealing::PerformanceMonitor::getInstance().stop();
-      if(!exahype::stealing::PerformanceMonitor::getInstance().isGloballyTerminated() || !_solver._outstandingOffloads.empty()) {
+      if(!exahype::stealing::PerformanceMonitor::getInstance().isGloballyTerminated()) { // || !_solver._outstandingOffloads.empty()) {
         _solver.progressStealing();
         return true;
       }

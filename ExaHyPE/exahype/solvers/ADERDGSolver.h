@@ -1012,7 +1012,7 @@ private:
   };
 
   // queue for outstanding offloads
-  tbb::concurrent_queue<OffloadEntry> _outstandingOffloads;
+  //tbb::concurrent_queue<OffloadEntry> _outstandingOffloads;
 
   /*
    * Packs metadata into a contiguous buffer.
