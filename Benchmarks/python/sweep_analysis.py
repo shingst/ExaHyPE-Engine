@@ -466,9 +466,9 @@ def parseSummedTimes(resultsFolderPath,projectName,timePerTimeStep=False):
         def sumUpTimes(line):
             nonlocal fused
         
-            fusedAdapters        = ["BroadcastAndDropNeighbourMessages","FusedTimeStep"]
-            firstFusedAdapter    = fusedAdapters[1] # alphabetically
-            nonfusedAdapters     = ["BroadcastAndDropNeighbourMessages","MergeNeighbours","Prediction","UpdateAndReduce"]
+            fusedAdapters        = ["FusedTimeStep"]
+            firstFusedAdapter    = fusedAdapters[0] # alphabetically
+            nonfusedAdapters     = ["MergeNeighbours","Prediction","UpdateAndReduce"]
             firstNonfusedAdapter = nonfusedAdapters[0] # alphabetically 
             
             adapter = line[adapterColumn]
