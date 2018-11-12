@@ -100,8 +100,18 @@ class NavierStokes::NavierStokesSolverDG : public NavierStokes::AbstractNavierSt
      *                         and time-averaged (over [t,t+dt]) as C array (already allocated).
      */
   void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double * const fluxIn,const double* const stateIn, const double* const gradStateIn,double *fluxOut,double* stateOut) final override;
-    void boundaryConditions(double* const update, double* const fluxIn, const double* const stateIn, const double* const gradStateIn, const double* const luh, const tarch::la::Vector<DIMENSIONS, double>& cellCentre, const tarch::la::Vector<DIMENSIONS,double>& cellSize, const double t,const double dt, const int direction, const int orientation) final override;
-  
+
+  void boundaryConditions(
+          double* const fluxIn,
+          const double* const stateIn,
+          const double* const gradStateIn,
+          const double* const luh,
+          const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
+          const tarch::la::Vector<DIMENSIONS,double>&  cellSize,
+          const double t,const double dt,
+          const int direction,
+          const int orientation);
+
     /**
      * Evaluate the refinement criterion within a cell.
      *

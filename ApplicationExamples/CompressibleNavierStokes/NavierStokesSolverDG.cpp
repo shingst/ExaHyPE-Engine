@@ -215,7 +215,8 @@ void NavierStokes::NavierStokesSolverDG::riemannSolver(double* FL,double* FR,con
 
 }
 
-void NavierStokes::NavierStokesSolverDG::boundaryConditions(double* const update, double* const fluxIn,const double* const stateIn, const double* const gradStateIn, const double* const luh, const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const int direction,const int orientation) {
+void NavierStokes::NavierStokesSolverDG::boundaryConditions( double* const fluxIn, const double* const stateIn, const double* const gradStateIn, const double* const luh, const tarch::la::Vector<DIMENSIONS, double>& cellCentre, const tarch::la::Vector<DIMENSIONS,double>&  cellSize, const double t,const double dt, const int direction, const int orientation) {
+  // TODO(Check if identical to abstract generated code!
   constexpr int basisSize     = (Order+1);
   constexpr int sizeStateOut = (NumberOfVariables+NumberOfParameters)*basisSize;
   constexpr int sizeFluxOut  = NumberOfVariables*basisSize;
@@ -250,10 +251,11 @@ void NavierStokes::NavierStokesSolverDG::boundaryConditions(double* const update
     for (int i = 0; i < (Order + 1); ++i) {
       // Set energy flux to zero!
       fluxIn[idx_F(i, NavierStokesSolverDG_Variables::shortcuts::E)] = 0.0; // TODO(Lukas) Is fluxIn later reused?
+      // TODO(Lukas) Fix for adiabatic wall boundary conditions.
     }
   }
 
-  kernels::aderdg::generic::c::faceIntegralNonlinear<NumberOfVariables, Order+1>(update,fluxIn,direction,orientation,cellSize);
+  //kernels::aderdg::generic::c::faceIntegralNonlinear<NumberOfVariables, Order+1>(update,fluxIn,direction,orientation,cellSize);
 
   delete[] block;
 }
