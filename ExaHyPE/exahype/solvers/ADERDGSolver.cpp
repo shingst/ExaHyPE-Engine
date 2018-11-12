@@ -4784,6 +4784,7 @@ void exahype::solvers::ADERDGSolver::progressStealing() {
 			this,
 			true);
       }
+      exahype::stealing::StealingManager::getInstance().progressRequests();
     }
     MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, comm, &receivedTask, &stat);
   }
