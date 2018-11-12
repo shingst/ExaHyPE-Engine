@@ -650,21 +650,6 @@ private:
       CellDescription& coarseGridCellDescription);
 
   /**
-   * Checks if a cell description is next to an 
-   * adaptivity boundary.
-   *
-   * This is the case if the following conditions hold:
-   *
-   * - A cell description is not augmented. Otherwise it
-   *   needs to prolongate face data such that its
-   *   children can perform their prolongation.
-   *
-   * - A cell description is not at the boundary
-   *   of a parent Ancestor.
-   */
-  static bool belongsToAMRSkeleton(const CellDescription& cellDescription, const bool isAtRemoteBoundary);
-
-  /**
    * Turns checking for NaNs off.
    * If this solver is the main solver
    * of a LimitingADERDGSolver,
@@ -1813,10 +1798,10 @@ public:
 
   /*! Perform prediction and volume integral.
    *
-   * \note Uncompresses the cell description arrays before calling
-   * performPredictionAndVolumeIntegral(CellDescription,bool)
+   * \note Different to the overloaded method, this method
+   * waits for completion of a cell's last operation.
    *
-   * \see performPredictionAndVolumeIntegral(CellDescription,bool)
+   * \note Requests to uncompress the cell description arrays before computing the predictor
    */
   void performPredictionAndVolumeIntegral(
       const int  solverNumber,
