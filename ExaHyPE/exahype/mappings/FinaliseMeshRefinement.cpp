@@ -182,6 +182,7 @@ void exahype::mappings::FinaliseMeshRefinement::enterCell(
         _minTimeStepSizes[solverNumber] = std::min(admissibleTimeStepSize, _minTimeStepSizes[solverNumber]);
         _maxLevels[solverNumber]        = std::max(fineGridVerticesEnumerator.getLevel(),_maxLevels[solverNumber]);
 
+        const int element = solver->tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
         solver->reduceGlobalObservables(_reducedGlobalObservables[solverNumber],
                fineGridCell.getCellDescriptionsIndex(), element);
 

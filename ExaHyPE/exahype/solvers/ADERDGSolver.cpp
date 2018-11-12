@@ -381,10 +381,11 @@ void exahype::solvers::ADERDGSolver::ensureNoUnnecessaryMemoryIsAllocated(
 
     // gradient of extrapolated predictor
     if ( cellDescription.getExtrapolatedPredictorGradient() <= 0) {
-      assertion(DataHeap::getInstance().isValidIndex(cellDescription.getExtrapolatedPredictorGradient()));
-      assertion(cellDescription.getExtrapolatedPredictorGradient()==-1);
-      CompressedDataHeap::getInstance().deleteData(cellDescription.getExtrapolatedPredictorGradient());
-      cellDescription.setExtrapolatedPredictorGradient(-1);
+      assertion(DataHeap::getInstance().isValidIndex(cellDescription.getExtrapolatedPredictorGradientIndex()));
+
+      DataHeap::getInstance().deleteData(cellDescription.getExtrapolatedPredictorGradientIndex());
+      cellDescription.setExtrapolatedPredictorGradientIndex(-1);
+      cellDescription.setExtrapolatedPredictorGradient(nullptr);
     }
 
     // fluctuations
@@ -513,7 +514,10 @@ void exahype::solvers::ADERDGSolver::ensureNecessaryMemoryIsAllocated(
 
     // gradients of extrapolated predictor
     const int gradientSizePerBnd = _numberOfVariables * power(_nodesPerCoordinateAxis, DIMENSIONS - 1) * DIMENSIONS_TIMES_TWO * DIMENSIONS;
-    cellDescription.setExtrapolatedPredictorGradient( DataHeap::getInstance().createData(gradientSizePerBnd, gradientSizePerBnd) );
+    cellDescription.setExtrapolatedPredictorGradientIndex( DataHeap::getInstance().createData(gradientSizePerBnd, gradientSizePerBnd) );
+    cellDescription.setExtrapolatedPredictorGradient( getDataHeapEntries(cellDescription.getExtrapolatedPredictorGradientIndex()).data() ) ;
+       // touch the memory
+    std::fill_n(static_cast<double*>(cellDescription.getExtrapolatedPredictorGradient()),gradientSizePerBnd,std::numeric_limits<double>::quiet_NaN());
 
     //
     // fluctuations
@@ -5205,9 +5209,7 @@ void exahype::solvers::ADERDGSolver::reduceGlobalObservables(std::vector<double>
     return;
   }
 
-  validateCellDescriptionData(cellDescription,true,false,"exahype::solvers::ADERDGSolver::reduceGlobalObservables [pre]");
-
-  double* luh  = DataHeap::getInstance().getData(cellDescription.getSolution()).data();
+  double* luh  = static_cast<double*>(cellDescription.getSolution());
   const auto curGlobalObservables = mapGlobalObservables(luh);
   reduceGlobalObservables(globalObservables, curGlobalObservables);
 
