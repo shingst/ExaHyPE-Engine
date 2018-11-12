@@ -81,6 +81,8 @@ public:
   /**
    * Reset the neighbour merge flags
    * and MPI neighbour exchange counters.
+   *
+   * Wait for the completion of spawned background jobs.
    */
   void enterCell(
       exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,

@@ -78,12 +78,6 @@ void exahype::mappings::BroadcastAndDropNeighbourMessages::beginIteration(
     exahype::State& solverState) {
   logTraceInWith1Argument("beginIteration(State)", solverState);
 
-  if ( exahype::solvers::Solver::SpawnPredictionAsBackgroundJob ) {
-    // background threads
-    exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::SkeletonJob);
-    exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::EnclaveJob);
-  }
-
   exahype::mappings::RefinementStatusSpreading::IsFirstIteration = true;
 
   logTraceOutWith1Argument("beginIteration(State)", solverState);
@@ -98,8 +92,23 @@ void exahype::mappings::BroadcastAndDropNeighbourMessages::enterCell(
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
   if ( fineGridCell.isInitialised() ) {
     solvers::Solver::CellInfo cellInfo(fineGridCell.getCellDescriptionsIndex());
-    exahype::Cell::resetNeighbourMergeFlags(
-        cellInfo,fineGridVertices,fineGridVerticesEnumerator);
+
+    // wait for completion of jobs
+    if ( exahype::solvers::Solver::SpawnPredictionAsBackgroundJob ) {
+      const bool isAtRemoteBoundary = Cell::isAtRemoteBoundary(fineGridVertices,fineGridVerticesEnumerator);
+      // ADER-DG
+      for (auto& p : cellInfo._ADERDGCellDescriptions) {
+        const bool waitForHighPriorityJob = isAtRemoteBoundary || p.getHasVirtualChildren();
+        solvers::Solver::waitUntilCompletedTimeStep(p,waitForHighPriorityJob,false);
+      }
+      // // FV - fused time step jobs are only spawned within batches
+      // for (auto& p : cellInfo._FiniteVolumesCellDescriptions) {
+      //   const bool waitForHighPriorityJob = isAtRemoteBoundary;
+      //   solvers::Solver::waitUntilCompletedTimeStep(p,waitForHighPriorityJob,false);
+      // }
+    }
+
+    Cell::resetNeighbourMergeFlags(cellInfo,fineGridVertices,fineGridVerticesEnumerator);
   }
 }
 
