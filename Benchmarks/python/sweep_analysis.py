@@ -469,7 +469,7 @@ def parseSummedTimes(resultsFolderPath,projectName,timePerTimeStep=False):
             fusedAdapters        = ["FusedTimeStep"]
             firstFusedAdapter    = fusedAdapters[0] # alphabetically
             nonfusedAdapters     = ["MergeNeighbours","Prediction","UpdateAndReduce"]
-            firstNonfusedAdapter = nonfusedAdapters[1] # alphabetically 
+            firstNonfusedAdapter = nonfusedAdapters[0] # alphabetically 
             
             adapter = line[adapterColumn]
             if adapter==firstFusedAdapter:
