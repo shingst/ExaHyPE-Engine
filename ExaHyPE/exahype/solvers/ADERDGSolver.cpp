@@ -2214,7 +2214,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
     if (isSkeletonCell) {
       cellDescription.setHasCompletedTimeStep(false);
       peano::datatraversal::TaskSet( new PredictionJob(
-        *this, cellDescriptionsIndex, element,
+        *this, cellDescription, cellDescriptionsIndex, element,
         cellDescription.getCorrectorTimeStamp(),  // corrector time step data is correct; see docu
         cellDescription.getCorrectorTimeStepSize(),
         false/*is uncompressed*/, isSkeletonCell ));
@@ -2467,7 +2467,7 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
 #endif
       cellDescription.setHasCompletedTimeStep(false);
       StealablePredictionJob *stealablePredictionJob = new StealablePredictionJob(*this,
-          cellDescriptionsIndex, element,
+          cellInfo._cellDescriptionsIndex, element,
           cellDescription.getCorrectorTimeStamp(),
           cellDescription.getCorrectorTimeStepSize());
       submitOrSendStealablePredictionJob(stealablePredictionJob);
