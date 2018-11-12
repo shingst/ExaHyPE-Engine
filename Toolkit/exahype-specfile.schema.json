@@ -160,9 +160,11 @@
       "old_format" : { "token_after" : "architecture" },
       "enum" : [
         "noarch",
+        "wsm",
         "snb",
         "hsw",
-        "knl"
+        "knl",
+        "skx"
       ]
     }, 
     "computational_domain" : {

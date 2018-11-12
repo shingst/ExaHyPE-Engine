@@ -211,7 +211,8 @@ void exahype::mappings::LoadBalancing::endIteration(
 //   NOP
 // =======
 //
-exahype::mappings::LoadBalancing::LoadBalancing() {
+exahype::mappings::LoadBalancing::LoadBalancing()
+  : _numberOfLocalCells(0) {
   // do nothing
 }
 

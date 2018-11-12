@@ -26,6 +26,8 @@
 #include "tarch/la/Vector.h"
 #include "tarch/logging/Log.h"
 
+#include "exahype/solvers/Solver.h"
+
 namespace exahype {
   namespace plotters {
     class Plotter;
@@ -36,8 +38,7 @@ namespace exahype {
 
     /*! Plots a patch if a plotter is active for the corresponding solver.
      */
-    void plotPatchIfAPlotterIsActive(const int solverNumber,const int cellDescriptionsIndex,const int element);
-
+    void plotPatchIfAPlotterIsActive(const int solverNumber,solvers::Solver::CellInfo& cellInfo);
 
     bool checkWhetherPlotterBecomesActive(double currentTimeStamp);
     bool startPlottingIfAPlotterIsActive(double currentTimeStamp);
@@ -222,9 +223,7 @@ class exahype::plotters::Plotter {
     /**
      * Hand a patch over to the plotter device.
      */
-    virtual void plotPatch(
-        const int cellDescriptionsIndex,
-        const int element) = 0;
+    virtual void plotPatch(const int solverNumber,solvers::Solver::CellInfo& cellInfo) = 0;
 
     virtual void startPlotting( double time ) = 0;
     virtual void finishPlotting() = 0;
@@ -315,8 +314,7 @@ class exahype::plotters::Plotter {
    */
   void finishedPlotting();
 
-  void plotPatch(
-      const int cellDescriptionsIndex,const int element);
+  void plotPatch(const int solverNumber,solvers::Solver::CellInfo& cellInfo);
 
   std::string getFileName() const;
 

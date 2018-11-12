@@ -117,7 +117,7 @@ class exahype::Cell : public peano::grid::Cell<exahype::records::Cell> {
    * send at time of 2^{d-2}-th touch of face.
    */
   static void resetNeighbourMergeFlags(
-      const int cellDescriptionsIndex,
+      const solvers::Solver::CellInfo& cellInfo,
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator);
 
@@ -237,14 +237,14 @@ class exahype::Cell : public peano::grid::Cell<exahype::records::Cell> {
   bool isEmpty() const;
 
   /**
-   * Add a new ADER-DG cell description to the heap array maintained
-   * by this cell.
+   * Add a new ADER-DG cell description to the heap array associated with this cell.
    *
-   * \note setupMetaData() is called if cell hasn't been properly initialised before.
+   * @note setupMetaData() is called if cell hasn't been properly initialised before.
    *
-   * \note Operation is thread-safe.
+   * @note Operation is thread-safe.
+   * @return a solvers::Solver::CellInfo object
    */
-  void addNewCellDescription(
+  exahype::solvers::Solver::CellInfo addNewCellDescription(
       const int solverNumber,
       const exahype::records::ADERDGCellDescription::Type cellType,
       const exahype::records::ADERDGCellDescription::RefinementEvent refinementEvent,
@@ -254,11 +254,14 @@ class exahype::Cell : public peano::grid::Cell<exahype::records::Cell> {
       const tarch::la::Vector<DIMENSIONS, double>& cellOffset);
 
   /**
-    * TODO(Dominic): Docu.
+    * Add a new Finite Volumes cell description to the heap array associated with this cell.
     *
-    *  \note Operation is thread-safe.
+    * @note setupMetaData() is called if cell hasn't been properly initialised before.
+    *
+    * @note Operation is thread-safe.
+    * @return a solvers::Solver::CellInfo object
     */
-  void addNewCellDescription(
+  exahype::solvers::Solver::CellInfo addNewCellDescription(
       const int solverNumber,
       const exahype::records::FiniteVolumesCellDescription::Type cellType,
       const exahype::records::FiniteVolumesCellDescription::RefinementEvent refinementEvent,

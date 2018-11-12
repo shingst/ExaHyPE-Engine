@@ -50,6 +50,7 @@ tarch::multicore::BooleanSemaphore exahype::BackgroundJobSemaphore;
 tarch::multicore::BooleanSemaphore exahype::HeapSemaphore;
 
 exahype::DataHeap::HeapEntries& exahype::getDataHeapEntries(const int index) {
+  assertion1(DataHeap::getInstance().isValidIndex(index),index);
   return DataHeap::getInstance().getData(index);
 }
 
@@ -97,6 +98,8 @@ double exahype::solvers::Solver::WeightForPredictionRerun = 0.99;
 
 bool exahype::solvers::Solver::DisableMetaDataExchangeInBatchedTimeSteps = false;
 bool exahype::solvers::Solver::DisablePeanoNeighbourExchangeInTimeSteps = false;
+
+int exahype::solvers::Solver::MaxNumberOfRunningBackgroundJobConsumerTasksDuringTraversal = 0;
 
 bool exahype::solvers::Solver::SpawnPredictionAsBackgroundJob = false;
 int exahype::solvers::Solver::PredictionSweeps                = 1;
@@ -897,7 +900,7 @@ void exahype::solvers::Solver::toString(std::ostream& out) const {
 // Neighbours TODO(Dominic): Move in exahype::Vertex
 
 exahype::MetadataHeap::HeapEntries exahype::gatherNeighbourCommunicationMetadata(
-    int cellDescriptionsIndex,
+    const int cellDescriptionsIndex,
     const tarch::la::Vector<DIMENSIONS,int>& src,
     const tarch::la::Vector<DIMENSIONS,int>& dest) {
   assertion1(exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(cellDescriptionsIndex),cellDescriptionsIndex);

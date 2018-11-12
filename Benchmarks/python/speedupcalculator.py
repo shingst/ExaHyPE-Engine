@@ -83,27 +83,28 @@ if __name__ == "__main__":
                result[0].append(firstRow[-1])
            result[0].append("speedup")
  
-    
-    reference = float(tableData[0][-1])
-    n = 0
-    for row in tableData:
-        resultRow = []
-        if keepKeys:
-            resultRow += row[:-1]
-        if multiplyKeys:
-            product = 1
-            for key in row[:-1]:
-                try:
-                    product *= int(key) 
-                except:
-                    print("ERROR: Cannot multiply key column entries as '{}' is not an integer".format(key), file=sys.sterr)
-            resultRow.append(str(product))
-        if keepData:
-            resultRow.append(row[-1])
-        
-        resultRow.append("%1.2f" % ( reference/float(row[-1])) ) # compute speedup
-        result.append(resultRow)
-        n += 1
+   
+    if len(tableData) and len(tableData[0]):
+        reference = float(tableData[0][-1])
+        n = 0
+        for row in tableData:
+            resultRow = []
+            if keepKeys:
+                resultRow += row[:-1]
+            if multiplyKeys:
+                product = 1
+                for key in row[:-1]:
+                    try:
+                        product *= int(key) 
+                    except:
+                        print("ERROR: Cannot multiply key column entries as '{}' is not an integer".format(key), file=sys.sterr)
+                resultRow.append(str(product))
+            if keepData:
+                resultRow.append(row[-1])
+            
+            resultRow.append("%1.2f" % ( reference/float(row[-1])) ) # compute speedup
+            result.append(resultRow)
+            n += 1
     
     csvwriter = csv.writer(output)
     csvwriter.writerows(result)

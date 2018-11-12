@@ -97,9 +97,9 @@ void exahype::mappings::BroadcastAndDropNeighbourMessages::enterCell(
     exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
   if ( fineGridCell.isInitialised() ) {
+    solvers::Solver::CellInfo cellInfo(fineGridCell.getCellDescriptionsIndex());
     exahype::Cell::resetNeighbourMergeFlags(
-        fineGridCell.getCellDescriptionsIndex(),
-        fineGridVertices,fineGridVerticesEnumerator);
+        cellInfo,fineGridVertices,fineGridVerticesEnumerator);
   }
 }
 

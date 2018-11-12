@@ -279,7 +279,7 @@ exahype::plotters::Plotter::Plotter(
         _device = new ADERDG2LegendreVerticesVTKAscii(postProcessing);
       }
       if (equalsIgnoreCase(_type, ADERDG2LobattoVerticesVTKAscii::getIdentifier())) {
-	_device = new ADERDG2LobattoVerticesVTKAscii(postProcessing);
+        _device = new ADERDG2LobattoVerticesVTKAscii(postProcessing);
       }
       if (equalsIgnoreCase(_type, ADERDG2LegendreVerticesVTKBinary::getIdentifier())) {
         _device = new ADERDG2LegendreVerticesVTKBinary(postProcessing);
@@ -592,11 +592,11 @@ bool exahype::plotters::Plotter::plotDataFromSolver(int solver) const {
 
 
 void exahype::plotters::Plotter::plotPatch(
-  const int cellDescriptionsIndex,
-  const int element) {
+  const int solverNumber,
+  solvers::Solver::CellInfo& cellInfo) {
   assertion(_device != nullptr);
   if (_device!=nullptr) {
-    _device->plotPatch(cellDescriptionsIndex,element);
+    _device->plotPatch(solverNumber,cellInfo);
   }
 }
 
@@ -617,13 +617,14 @@ void exahype::plotters::Plotter::finishedPlotting() {
 
 void exahype::plotters::plotPatchIfAPlotterIsActive(
     const int solverNumber,
-    const int cellDescriptionsIndex,
-    const int element) {
-  for (auto* plotter : exahype::plotters::RegisteredPlotters) {
-    if (plotter->plotDataFromSolver(solverNumber)) {
-      tarch::multicore::Lock lock(exahype::plotters::SemaphoreForPlotting);
-      plotter->plotPatch(cellDescriptionsIndex,element);
-      lock.free();
+    solvers::Solver::CellInfo& cellInfo) {
+  if ( cellInfo.foundCellDescriptionForSolver(solverNumber) ) {
+    for (auto* plotter : exahype::plotters::RegisteredPlotters) {
+      if (plotter->plotDataFromSolver(solverNumber)) {
+        tarch::multicore::Lock lock(exahype::plotters::SemaphoreForPlotting);
+        plotter->plotPatch(solverNumber,cellInfo);
+        lock.free();
+      }
     }
   }
 }
