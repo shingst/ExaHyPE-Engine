@@ -2264,7 +2264,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
   if ( element != NotFound ) {
     CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[element];
     if ( cellDescription.getType()==CellDescription::Type::Cell ) {
-      const bool isAMRSkeletonCell     = ADERDGSolver::belongsToAMRSkeleton(cellDescription,isAtRemoteBoundary);
+      const bool isAMRSkeletonCell     = cellDescription.getHasVirtualChildren();
       const bool isSkeletonCell        = isAMRSkeletonCell || isAtRemoteBoundary;
       const bool mustBeDoneImmediately = isSkeletonCell && PredictionSweeps==1;
 
@@ -2350,7 +2350,7 @@ void exahype::solvers::ADERDGSolver::compress(
   if ( element!=NotFound ) {
     CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[element];
     if (cellDescription.getType()==CellDescription::Type::Cell) {
-      const bool isSkeletonCell = belongsToAMRSkeleton(cellDescription,isAtRemoteBoundary);
+      const bool isSkeletonCell = cellDescription.getHasVirtualChildren();
       compress(cellDescription,isSkeletonCell);
     }
   }
@@ -2364,18 +2364,20 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
   const int element = cellInfo.indexOfADERDGCellDescription(solverNumber);
   if ( element != Solver::NotFound ) {
     CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[element];
-    if (cellDescription.getType()==CellDescription::Type::Cell) {
+    if ( cellDescription.getType()==CellDescription::Type::Cell ) {
       synchroniseTimeStepping(cellDescription);
+
+      const bool isAMRSkeletonCell = cellDescription.getHasVirtualChildren();
+      const bool isSkeletonCell    = isAMRSkeletonCell || isAtRemoteBoundary;
+
+      waitUntilCompletedTimeStep(cellDescription,isSkeletonCell,false);
+
       performPredictionAndVolumeIntegral(solverNumber,cellInfo,
           cellDescription.getPredictorTimeStamp(),
           cellDescription.getPredictorTimeStepSize(),
           true,isAtRemoteBoundary);
     }
   }
-}
-
-bool exahype::solvers::ADERDGSolver::belongsToAMRSkeleton(const CellDescription& cellDescription, const bool isAtRemoteBoundary) {
-  return cellDescription.getHasVirtualChildren();
 }
 
 void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegralBody(
@@ -2438,7 +2440,7 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
   CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[element];
 
   if ( cellDescription.getType()==CellDescription::Type::Cell ) {
-    const bool isAMRSkeletonCell     = ADERDGSolver::belongsToAMRSkeleton(cellDescription,isAtRemoteBoundary);
+    const bool isAMRSkeletonCell     = cellDescription.getHasVirtualChildren();
     const bool isSkeletonCell        = isAMRSkeletonCell || isAtRemoteBoundary;
     const bool mustBeDoneImmediately = isSkeletonCell && PredictionSweeps==1;
 

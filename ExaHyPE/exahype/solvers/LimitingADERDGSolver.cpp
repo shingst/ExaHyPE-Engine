@@ -427,7 +427,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
     solverPatch.setPreviousRefinementStatus(solverPatch.getRefinementStatus());
 
     if ( solverPatch.getType()==SolverPatch::Type::Cell ) {
-      const bool isAMRSkeletonCell     = ADERDGSolver::belongsToAMRSkeleton(solverPatch,isAtRemoteBoundary);
+      const bool isAMRSkeletonCell     = solverPatch.getHasVirtualChildren();
       const bool isSkeletonCell        = isAMRSkeletonCell || isAtRemoteBoundary;
       const bool mustBeDoneImmediately = isSkeletonCell && PredictionSweeps==1;
 
