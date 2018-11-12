@@ -54,6 +54,8 @@ public:
    * Receive the State from the master before the first vertex first
    * time.
    *
+   * We perform a reduction to ensure that the adapter timings are correct.
+   *
    * TODO(Dominic): Can potentially be relaxed since we
    * do not need to wait for the broadcast.
    */
