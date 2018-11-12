@@ -183,9 +183,12 @@ exahype::stealing::StaticDistributor& exahype::stealing::StaticDistributor::getI
 void exahype::stealing::StaticDistributor::resetRemainingTasksToOffload() {
 
   logInfo("resetRemainingTasksToOffload()", "resetting remaining tasks to offload");
+
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
   for(int i=0; i<nnodes; i++) {
     _remainingTasksToOffload[i] = _tasksToOffload[i];
+    logInfo("resetRemainingTasksToOffload()", "to rank "<<i<<" ntasks "<<_tasksToOffload[i]);
+    
   }
 }
 
@@ -211,7 +214,9 @@ bool exahype::stealing::StaticDistributor::selectVictimRank(int& victim) {
   }
   rank_cnt=l_rank;
 
-  //logInfo("performance monitor", "chose victim "<<victim);
+  if(victim!=myRank)
+   logInfo("selectVictimRank", "chose victim "<<victim<<" _remainingTasksToOffload "<<_remainingTasksToOffload[victim]);
+  
   return victim != myRank;
 }
 #endif

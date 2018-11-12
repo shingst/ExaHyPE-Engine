@@ -32,7 +32,7 @@
   },
   "distributed_memory": {
     "stealing": "static_hardcoded",
-    "stealing_input_file" : "stealing_inputs_2_ranks/test_3.txt",
+    "stealing_input_file" : "stealing_inputs_2_ranks/test_2.txt",
     "timeout": 6000,
     "load_balancing_type": "static",
     "buffer_size": 1600,
