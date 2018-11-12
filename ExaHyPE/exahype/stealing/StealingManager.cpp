@@ -223,23 +223,25 @@ void exahype::stealing::StealingManager::progressRequestsOfType( RequestType typ
 //	 }
 // }
 
-  int ierr = MPI_Testsome(nRequests,&outstandingRequests[0], &outcount, &arrOfIndices[0], &stats[0]);
 
-  if(ierr != MPI_SUCCESS) {
-    for(int i=0;i<nRequests;i++) {
-      int ierrstatus = stats[i].MPI_ERROR;
-      if(ierrstatus!=MPI_SUCCESS) {
-        logInfo("stealingManager", "error "<<ierrstatus<<" for request "<<vecIdToReqId[i]<< " source "<<stats[i].MPI_SOURCE<<" tag "<<stats[i].MPI_TAG);
-      }
-      char err_buffer[MPI_MAX_ERROR_STRING];
-      int resultlen = 0;
-      if(ierrstatus!=MPI_SUCCESS) {
-        MPI_Error_string(ierrstatus,err_buffer,&resultlen);
-        fprintf(stderr,err_buffer);
-      }
-    }
-    MPI_Abort(MPI_COMM_WORLD, ierr); /* abort*/
-  }
+  //TODO: keine Statusse
+  int ierr = MPI_Testsome(nRequests,&outstandingRequests[0], &outcount, &arrOfIndices[0], MPI_STATUSES_IGNORE);
+
+//  if(ierr != MPI_SUCCESS) {
+//    for(int i=0;i<nRequests;i++) {
+//      int ierrstatus = stats[i].MPI_ERROR;
+//      if(ierrstatus!=MPI_SUCCESS) {
+//        logInfo("stealingManager", "error "<<ierrstatus<<" for request "<<vecIdToReqId[i]<< " source "<<stats[i].MPI_SOURCE<<" tag "<<stats[i].MPI_TAG);
+//      }
+//      char err_buffer[MPI_MAX_ERROR_STRING];
+//      int resultlen = 0;
+//      if(ierrstatus!=MPI_SUCCESS) {
+//        MPI_Error_string(ierrstatus,err_buffer,&resultlen);
+//        fprintf(stderr,err_buffer);
+//      }
+//    }
+//    MPI_Abort(MPI_COMM_WORLD, ierr); /* abort*/
+//  }
   time += MPI_Wtime();
 
   if(outcount>0)

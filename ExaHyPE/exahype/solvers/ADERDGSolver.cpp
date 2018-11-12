@@ -4845,12 +4845,12 @@ void exahype::solvers::ADERDGSolver::StealingManagerJob::terminate() {
 
 void exahype::solvers::ADERDGSolver::startStealingManager() {
   logInfo("startStealingManager", " starting ");
-  static tbb::task_group_context  backgroundTaskContext(tbb::task_group_context::isolated);
-  _stealingManagerJob = new( backgroundTaskContext ) StealingManagerJob(*this);
-  //_stealingManagerJob = new StealingManagerJob(*this);
-  assert(_stealingManagerJob!=nullptr);
-  tbb::task::enqueue(*_stealingManagerJob);
-  //peano::datatraversal::TaskSet spawnedSet(_stealingManagerJob, peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible);
+  //static tbb::task_group_context  backgroundTaskContext(tbb::task_group_context::isolated);
+  //_stealingManagerJob = new( backgroundTaskContext ) StealingManagerJob(*this);
+  _stealingManagerJob = new StealingManagerJob(*this);
+  assertion(_stealingManagerJob!=nullptr);
+  //tbb::task::enqueue(*_stealingManagerJob);
+  peano::datatraversal::TaskSet spawnedSet(_stealingManagerJob, peano::datatraversal::TaskSet::TaskType::Background);
 }
 
 void exahype::solvers::ADERDGSolver::stopStealingManager() {
