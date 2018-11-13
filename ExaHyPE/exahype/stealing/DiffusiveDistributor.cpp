@@ -46,10 +46,10 @@ void exahype::stealing::DiffusiveDistributor::updateLoadDistribution(int current
   logInfo("updateLoadDistribution()", "current load"<<currentLoad);
 
   //determine who is fastest
-  int fastestRank = std::distance(&loadSnapshot[0], std::max_element(&loadSnapshot[0], &loadSnapshot[myRank]));
+  int fastestRank = std::distance(&loadSnapshot[0], std::min_element(&loadSnapshot[0], &loadSnapshot[nnodes]));
 
   //determine who is slowest
-  int slowestRank = std::distance(&loadSnapshot[0], std::min_element(&loadSnapshot[0], &loadSnapshot[myRank]));
+  int slowestRank = std::distance(&loadSnapshot[0], std::max_element(&loadSnapshot[0], &loadSnapshot[nnodes]));
   
   logInfo("updateLoadDistribution()", "fastest: "<<fastestRank<<" slowest:"<<slowestRank);
 
@@ -61,6 +61,9 @@ void exahype::stealing::DiffusiveDistributor::updateLoadDistribution(int current
     _tasksToOffload[slowestRank]--;
     logInfo("updateLoadDistribution()", "decrement, send "<<_tasksToOffload[slowestRank]<<" to rank "<<slowestRank );
   }
+
+  for(int i=0; i<nnodes; i++) 
+    _remainingTasksToOffload[i] = _tasksToOffload[i];
 
   delete[] loadSnapshot;
 

@@ -61,7 +61,6 @@ exahype::stealing::PerformanceMonitor& exahype::stealing::PerformanceMonitor::ge
 }
 
 void exahype::stealing::PerformanceMonitor::stop() {
-  //assertion(_isStarted);
     _isStarted=false;
 }
 
@@ -164,10 +163,10 @@ void exahype::stealing::PerformanceMonitor::progressGather() {
     std::copy(&_currentLoadBuffer[0], &_currentLoadBuffer[nnodes], &_currentLoadSnapshot[0]);
 #if defined(PerformanceAnalysisStealing)
     std::string str="received new update, current load "+std::to_string(_currentLoadLocal.load());
-    if(timeSinceLastGather>0.001) {
-      str=str+ " took too long: "+std::to_string(timeSinceLastGather);
-      stealing::StealingProfiler::getInstance().notifyLatePerformanceUpdate();
-    }
+//    if(timeSinceLastGather>0.001) {
+//      str=str+ " took too long: "+std::to_string(timeSinceLastGather);
+//      stealing::StealingProfiler::getInstance().notifyLatePerformanceUpdate();
+//    }
     for(int i=0;i<nnodes;i++) str=str+" , "+std::to_string(_currentLoadBuffer[i]);
     str+="\n";
     logInfo("performance monitor", str);
