@@ -5,7 +5,7 @@
     "exahype_path": "./ExaHyPE",
     "output_directory": "./ApplicationExamples/Linear/ElasticWave3D"
   },
-  "architecture": "hsw",
+  "architecture": "snb",
   "computational_domain": {
     "dimension": 3,
     "time_steps": 1,
@@ -32,7 +32,7 @@
   },
   "distributed_memory": {
     "stealing": "static_hardcoded",
-    "stealing_input_file" : "stealing_inputs_2_ranks/test_2.txt",
+    "stealing_input_file" : "stealing_inputs_2_ranks/test_0.txt",
     "timeout": 6000,
     "load_balancing_type": "static",
     "buffer_size": 1600,

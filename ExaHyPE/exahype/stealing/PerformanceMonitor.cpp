@@ -39,6 +39,7 @@ exahype::stealing::PerformanceMonitor::~PerformanceMonitor() {
 }
 
 void exahype::stealing::PerformanceMonitor::setLocalLoadPerTimestep(int load) {
+   logInfo("setLocalLoadPerTimestep", "setting local load per timestep to "<<load);
   _localLoadPerTimestep = load;
   _remainingLoadLocal   = _localLoadPerTimestep;
 }
@@ -57,7 +58,8 @@ exahype::stealing::PerformanceMonitor& exahype::stealing::PerformanceMonitor::ge
 }
 
 void exahype::stealing::PerformanceMonitor::stop() {
-  assertion(_isStarted);
+  //logInfo("stop()", "stopping");
+  //assertion(_isStarted);
     _isStarted=false;
 }
 
