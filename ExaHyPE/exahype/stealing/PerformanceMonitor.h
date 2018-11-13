@@ -62,7 +62,7 @@ class exahype::stealing::PerformanceMonitor {
     // signals that a rank has finished computing any local work
     void stop();
 
-   // void setCurrentLoad(int load);
+    void setCurrentLoad(int load);
     // increases the current load, to be called when a new task
     // is created
     void incCurrentLoad();

@@ -61,26 +61,31 @@ void exahype::stealing::PerformanceMonitor::stop() {
     _isStarted=false;
 }
 
-//void exahype::stealing::PerformanceMonitor::setCurrentLoad(int num) {
-//  logInfo("performance monitor", "setting current load to "<<num);
-//  int myRank = tarch::parallel::Node::getInstance().getRank();
-//  tarch::multicore::Lock lock(_semaphore);
-//  _currentLoadSnapshot[myRank]=num;
-//  _currentLoadLocal=num;
-//  lock.free();
-//}
+void exahype::stealing::PerformanceMonitor::setCurrentLoad(int num) {
+  logInfo("performance monitor", "setting current load to "<<num);
+  int myRank = tarch::parallel::Node::getInstance().getRank();
+  tarch::multicore::Lock lock(_semaphore);
+  _currentLoadSnapshot[myRank]=num;
+  _currentLoadLocal=num;
+  lock.free();
+}
 
 void exahype::stealing::PerformanceMonitor::incCurrentLoad() {
+#ifndef StealingStrategyDiffusive
   assertion(_currentLoadLocal>=0);
   _currentLoadLocal++;
+#endif
 }
 
 void exahype::stealing::PerformanceMonitor::decCurrentLoad() {
+#ifndef StealingStrategyDiffusive
   _currentLoadLocal--;
   assertion(_currentLoadLocal>=0);
+#endif
 }
 
 void exahype::stealing::PerformanceMonitor::decRemainingLocalLoad() {
+#ifndef StealingStrategyDiffusive
   tarch::multicore::Lock lock(_semaphore);
   _remainingLoadLocal--;
   if(_remainingLoadLocal==0) {
@@ -88,6 +93,7 @@ void exahype::stealing::PerformanceMonitor::decRemainingLocalLoad() {
   }
   lock.free();
   assertion(_remainingLoadLocal>=0);
+#endif
 }
 
 void exahype::stealing::PerformanceMonitor::run() {

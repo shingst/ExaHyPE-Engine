@@ -175,6 +175,21 @@ void exahype::mappings::FusedTimeStep::beginIteration(
   }
 
 #ifdef DistributedStealing
+
+#ifdef StealingStrategyDiffusive
+  if(issuePredictionJobsInThisIteration()) {
+	  if(_stateCopy.isFirstIterationOfBatchOrNoBatch()) {
+		  _iterationWatch.startTimer();
+	  }
+	  else {
+		  _iterationWatch.stopTimer();
+		  int elapsed = static_cast<int> (_iterationWatch.getCalendarTime()*1e06);
+		  exahype::stealing::PerformanceMonitor::getInstance().setCurrentLoad(elapsed);
+	  }
+
+  }
+#endif
+
   // enable stealing manager job right at the beginning of the very first time step
   if(isFirst) {
     for (auto* solver : exahype::solvers::RegisteredSolvers) {

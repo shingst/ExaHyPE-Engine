@@ -388,10 +388,10 @@
         "stealing" : {
           "type" : "string", 
           "title" : "Stealing strategy (TODO)",  
-          "enum"  : ["none", "static", "dynamic", "hybrid", "static_hardcoded"],
+          "enum"  : ["none", "static", "dynamic", "hybrid", "static_hardcoded", "dynamic_diffusive"],
           "default" : "none",
           "old_format" : { "token_after" : "stealing" }
-	},
+	    },
         "stealing_input_file" : {
           "type" : "string",
           "title" : "Path to file that specifies stealing rules",

@@ -17,6 +17,10 @@
 #include "tarch/la/Vector.h"
 #include "tarch/logging/Log.h"
 
+#if defined(DistributedStealing) && defined(StealingStrategyDiffusive)
+#include "tarch/timing/Watch.h"
+#endif
+
 #include "peano/CommunicationSpecification.h"
 #include "peano/MappingSpecification.h"
 #include "peano/grid/VertexEnumerator.h"
@@ -88,6 +92,10 @@ private:
    * a mesh update request or a limiter domain change.
    */
   std::vector<exahype::solvers::Solver::MeshUpdateEvent> _meshUpdateEvents;
+
+#if defined(DistributedStealing) && defined(StealingStrategyDiffusive)
+  tarch::timing::Watch _iterationWatch;
+#endif
 
   /**
    * Prepare the vectors _minTimeStepSizes, _maxLevels,

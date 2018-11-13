@@ -47,6 +47,8 @@ endif
 PROJECT_CFLAGS += -DDistributedStealing -DStealingStrategyStatic
 {% elif stealing=="dynamic" %}
 PROJECT_CFLAGS += -DDistributedStealing -DStealingStrategyDynamic
+{% elif stealing=="dynamic_diffusive" %}
+PROJECT_CFLAGS += -DDistributedStealing -DStealingStrategyDiffusive
 {% elif stealing=="hybrid" %}
 PROJECT_CFLAGS += -DDistributedStealing -DStealingStrategyHybrid
 {% elif stealing=="static_hardcoded" %}
