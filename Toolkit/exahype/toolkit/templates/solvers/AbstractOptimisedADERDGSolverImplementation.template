@@ -246,7 +246,7 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
 
 
 
-void {{project}}::{{abstractSolver}}::solutionUpdate(double* luh,const double* const lduh,const double dt) {
+void {{project}}::{{abstractSolver}}::solutionUpdate(double* luh,const double* const luhOld,const double* const lduh,const double dt) {
 {% if enableProfiler %}
   _profiler->start("solutionUpdate");
 {% endif %}

@@ -162,11 +162,11 @@ if(useGeneric) {
 
 
 
-void {{project}}::{{abstractSolver}}::solutionUpdate(double* luh,const double* const lduh,const double dt) {
+void {{project}}::{{abstractSolver}}::solutionUpdate(double* luh,const double* const luhOld,const double* const lduh,const double dt) {
 {%- if enableProfiler %}
   _profiler->start("solutionUpdate");
 {%- endif %}
-  {{optNamespace}}::solutionUpdate( luh, lduh, dt );
+  {{optNamespace}}::solutionUpdate( luh, luhOld, lduh, dt );
 {%- if enableProfiler %}
   _profiler->stop("solutionUpdate");
 {%- endif %}

@@ -27,7 +27,12 @@ namespace c {
 #if DIMENSIONS == 3
 
 template <typename SolverType>
-void solutionUpdate(SolverType& solver, double* luh, const double* const lduh, const double dt) {
+void solutionUpdate(
+    SolverType& solver,
+    double* luh,
+    const double* const luhOld,
+    const double* const lduh,
+    const double dt) {
   constexpr int numberOfVariables  = SolverType::NumberOfVariables;
   constexpr int numberOfParameters = SolverType::NumberOfParameters;
   constexpr int numberOfData       = numberOfVariables+numberOfParameters;
@@ -52,7 +57,7 @@ void solutionUpdate(SolverType& solver, double* luh, const double* const lduh, c
         const double updateSize = dt / weight;
 
         for (int l = 0; l < numberOfVariables; l++) {
-          luh[idx_luh(i, j, k, l)] += lduh[idx_lduh(i, j, k, l)] * updateSize;
+          luh[idx_luh(i, j, k, l)] = luh[idx_luh(i, j, k, l)] + lduh[idx_lduh(i, j, k, l)] * updateSize;
         }
       }
     }

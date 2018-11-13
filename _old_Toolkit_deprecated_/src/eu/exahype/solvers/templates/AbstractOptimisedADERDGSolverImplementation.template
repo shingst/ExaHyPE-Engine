@@ -246,14 +246,14 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
 
 
 
-void {{project}}::{{abstractSolver}}::solutionUpdate(double* luh,const double* const lduh,const double dt) {
+void {{project}}::{{abstractSolver}}::solutionUpdate(double* luh,const double* const luhOld,const double* const lduh,const double dt) {
 {%- if enableProfiler %}
   _profiler->start("solutionUpdate");
 {%- endif %}
 {%- if countFlops  %}
   const std::chrono::high_resolution_clock::time_point timeStart = std::chrono::high_resolution_clock::now();
 {%- endif %}
-  {{optNamespace}}::solutionUpdate( luh, lduh, dt );
+  {{optNamespace}}::solutionUpdate( luh, luhOld, lduh, dt );
 {%- if countFlops  %}
   double time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-timeStart).count();
   const unsigned long time_ul = (unsigned long) time;

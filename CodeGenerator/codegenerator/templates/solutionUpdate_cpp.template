@@ -17,7 +17,8 @@
 #include "{{pathToOptKernel}}/Quadrature.h"
 
 void {{codeNamespace}}::solutionUpdate( 
-  double* restrict luh, 
+  double* restrict luh,
+  const double* restrict const luhOld,
   const double* restrict const lduh, 
   const double dt
 ) {
@@ -31,7 +32,7 @@ void {{codeNamespace}}::solutionUpdate(
     const double coeff = dt*iweights3[xyz];
     #pragma omp simd aligned(luh,lduh:ALIGNMENT)
     for (int n = 0; n < {{nVar}}; n++) { //update only the variables, lduh contains no parameters
-      luh[xyz*{{nData}}+n] += coeff*lduh[xyz*{{nVarPad}}+n]; //simd+fma
+      luh[xyz*{{nData}}+n] = luhOld[xyz*{{nData}}+n] + coeff*lduh[xyz*{{nVarPad}}+n]; //simd+fma
     }
   }
  

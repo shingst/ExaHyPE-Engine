@@ -1349,11 +1349,12 @@ public:
   /**
    * @brief Adds the solution update to the solution.
    *
-   * \param[inout] luh  Cell-local solution DoF.
-   * \param[in]    lduh Cell-local update DoF.
-   * \param[dt]    dt   Time step size.
+   * \param[inout] luh    cell-local solution DoF.
+   * \param[in]    luhOld the old solution a
+   * \param[in]    lduh   cell-local update DoF.
+   * \param[dt]    dt     time step size.
    */
-  virtual void solutionUpdate(double* luh, const double* const lduh,const double dt) = 0;
+  virtual void solutionUpdate(double* luh, const double* const luhOld, const double* const lduh, const double dt) = 0;
 
 
   /**

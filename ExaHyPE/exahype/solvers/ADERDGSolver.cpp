@@ -2576,12 +2576,22 @@ void exahype::solvers::ADERDGSolver::updateSolution(
     cellDescription.getType()==CellDescription::Type::Cell &&
     cellDescription.getRefinementEvent()==CellDescription::None
   ) {
-    assertion1( tarch::la::equals(cellDescription.getNeighbourMergePerformed(),(signed char) true) || ProfileUpdate,cellDescription.toString());
     if ( !tarch::la::equals(neighbourMergePerformed,(signed char) true) && !ProfileUpdate ) {
       logError("updateSolution(...)","Riemann solve was not performed on all faces of cell= "<<cellDescription.toString());
       std::terminate();
     }
-    #if !defined(SharedMemoryParallelisation) && !defined(Parallel) && defined(Asserts)
+    double* update = static_cast<double*>(cellDescription.getUpdate());
+
+    #ifdef Asserts
+    assertion1( tarch::la::equals(cellDescription.getNeighbourMergePerformed(),(signed char) true) || ProfileUpdate,cellDescription.toString());
+    if ( _checkForNaNs ) {
+      for (int i=0; i<getUnknownsPerCell(); i++) { // update does not store parameters
+        assertion3(tarch::la::equals(cellDescription.getCorrectorTimeStepSize(),0.0)  || std::isfinite(update[i]),cellDescription.toString(),"updateSolution",i);
+      }
+    }
+    assertion1(cellDescription.getCorrectorTimeStamp()<std::numeric_limits<double>::max(),cellDescription.toString());
+    assertion1(cellDescription.getCorrectorTimeStepSize()<std::numeric_limits<double>::max(),cellDescription.toString());
+    #if !defined(SharedMemoryParallelisation) && !defined(Parallel)
     static int counter = 0;
     static double timeStamp = 0;
     if ( !tarch::la::equals(timeStamp,_minCorrectorTimeStamp,1e-9) ) {
@@ -2591,31 +2601,7 @@ void exahype::solvers::ADERDGSolver::updateSolution(
     }
     counter++;
     #endif
-
-    double* newSolution = static_cast<double*>(cellDescription.getSolution());
-    if ( backupPreviousSolution ) {
-      //const double* const solution  = getDataHeapArrayForReadOnlyAccess(cellDescription.getPreviousSolution());
-      double* solution  = static_cast<double*>(cellDescription.getPreviousSolution());
-      std::copy(newSolution,newSolution+getDataPerCell(),solution); // Copy (current solution) in old solution field.
-
-      #ifdef Asserts
-      for (int i=0; i<getDataPerCell(); i++) { // cellDescription.getCorrectorTimeStepSize()==0.0 is an initial condition
-        assertion3(tarch::la::equals(cellDescription.getCorrectorTimeStepSize(),0.0)  || std::isfinite(solution[i]),cellDescription.toString(),"updateSolution(...)",i);
-      } 
-      #endif
-    }
-
-    double* update  = static_cast<double*>(cellDescription.getUpdate());
-    #ifdef Asserts
-    if ( _checkForNaNs ) {
-      for (int i=0; i<getUnknownsPerCell(); i++) { // update does not store parameters
-        assertion3(tarch::la::equals(cellDescription.getCorrectorTimeStepSize(),0.0)  || std::isfinite(update[i]),cellDescription.toString(),"updateSolution",i);
-      }
-    }
     #endif
-
-    assertion1(cellDescription.getCorrectorTimeStamp()<std::numeric_limits<double>::max(),cellDescription.toString());
-    assertion1(cellDescription.getCorrectorTimeStepSize()<std::numeric_limits<double>::max(),cellDescription.toString());
 
     // gather surface integral
     const int dofsPerFace = getBndFluxSize(); // TODO(Dominic): Reintroduce surfaceIntegral??
@@ -2629,8 +2615,16 @@ void exahype::solvers::ADERDGSolver::updateSolution(
       }
     }
 
-    // perform the update
-    solutionUpdate(newSolution,update,cellDescription.getCorrectorTimeStepSize());
+    double* newSolution = static_cast<double*>(cellDescription.getSolution());
+    if ( backupPreviousSolution ) {
+      double* solution  = static_cast<double*>(cellDescription.getPreviousSolution());
+      // perform the update
+      swapSolutionAndPreviousSolution(cellDescription); // newSolution is overwritten with the current solution plus the update,
+                                                        // while update is remebered as the current solution.
+      solutionUpdate(newSolution,solution,update,cellDescription.getCorrectorTimeStepSize());
+    } else {
+      solutionUpdate(newSolution,newSolution,update,cellDescription.getCorrectorTimeStepSize());
+    }
 
     adjustSolution(
         newSolution,
