@@ -51,13 +51,17 @@ int exahype::stealing::PerformanceMonitor::getRemainingLocalLoad() {
   return _remainingLoadLocal;
 }
 
+const int* exahype::stealing::PerformanceMonitor::getCurrentLoadSnapshot() {
+  return _currentLoadSnapshot;
+}
+
 exahype::stealing::PerformanceMonitor& exahype::stealing::PerformanceMonitor::getInstance() {
   static PerformanceMonitor perfMon;
   return perfMon;
 }
 
 void exahype::stealing::PerformanceMonitor::stop() {
-  assertion(_isStarted);
+  //assertion(_isStarted);
     _isStarted=false;
 }
 

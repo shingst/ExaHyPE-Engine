@@ -76,6 +76,8 @@ class exahype::stealing::PerformanceMonitor {
     int getRemainingLocalLoad();
     // getter for local load per time step
     int getLocalLoadPerTimestep();
+    // getter for current load snapshot
+    const int *getCurrentLoadSnapshot();
 
     // decreases remaining load for current time step
     void decRemainingLocalLoad();

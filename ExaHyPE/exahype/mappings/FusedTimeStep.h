@@ -93,10 +93,6 @@ private:
    */
   std::vector<exahype::solvers::Solver::MeshUpdateEvent> _meshUpdateEvents;
 
-#if defined(DistributedStealing) && defined(StealingStrategyDiffusive)
-  tarch::timing::Watch _iterationWatch;
-#endif
-
   /**
    * Prepare the vectors _minTimeStepSizes, _maxLevels,
    * _meshUpdateRequests, _limiterDomainChanges.

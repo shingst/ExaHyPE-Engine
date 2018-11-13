@@ -11,6 +11,7 @@
 #include "exahype/stealing/StealingProfiler.h"
 #include "exahype/stealing/StaticDistributor.h"
 #include "exahype/stealing/DynamicDistributor.h"
+#include "exahype/stealing/DiffusiveDistributor.h"
 #include "exahype/stealing/PerformanceMonitor.h"
 
 #ifdef USE_ITAC
@@ -320,6 +321,8 @@ void exahype::stealing::StealingManager::progressRequestsOfType( RequestType typ
 bool exahype::stealing::StealingManager::selectVictimRank(int& victim) {
 #if defined(StealingStrategyStaticHardcoded)
     return exahype::stealing::StaticDistributor::getInstance().selectVictimRank(victim);
+#elif defined(StealingStrategyDiffusive)
+    return exahype::stealing::DiffusiveDistributor::getInstance().selectVictimRank(victim);
 #else
   double remainingLoadRatio = static_cast<double> (exahype::stealing::PerformanceMonitor::getInstance().getRemainingLocalLoad())
 		  	  	  	  	  	  /

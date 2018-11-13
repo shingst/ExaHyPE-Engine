@@ -50,6 +50,7 @@
 #if defined(DistributedStealing)
 #include "exahype/stealing/PerformanceMonitor.h"
 #include "exahype/stealing/StaticDistributor.h"
+#include "exahype/stealing/DiffusiveDistributor.h"
 #include "exahype/stealing/StealingManager.h"
 #endif
 #include "exahype/stealing/StealingProfiler.h"
@@ -4732,6 +4733,9 @@ void exahype::solvers::ADERDGSolver::progressStealing() {
 
   MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, comm, &receivedTask, &stat);
   while( receivedTask) {
+#if defined(StealingStrategyDiffusive)
+    exahype::stealing::DiffusiveDistributor::getInstance().triggerVictimFlag();
+#endif
     if(receivedTask) {
       int msgLen = -1;
       MPI_Get_count(&stat, MPI_DOUBLE, &msgLen);

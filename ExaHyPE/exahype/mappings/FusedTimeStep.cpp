@@ -31,6 +31,7 @@
 #ifdef DistributedStealing
 #include "exahype/stealing/PerformanceMonitor.h"
 #include "exahype/stealing/StaticDistributor.h"
+#include "exahype/stealing/DiffusiveDistributor.h"
 #endif
 
 tarch::logging::Log exahype::mappings::FusedTimeStep::_log(
@@ -134,8 +135,7 @@ exahype::mappings::FusedTimeStep::descendSpecification(int level) const {
       peano::MappingSpecification::AvoidCoarseGridRaces,false);
 }
 
-exahype::mappings::FusedTimeStep::FusedTimeStep() {
-}
+exahype::mappings::FusedTimeStep::FusedTimeStep() {}
 
 void exahype::mappings::FusedTimeStep::updateBatchIterationCounter(bool initialiseBatchIterationCounter) {
   if (!_batchIterationCounterUpdated) {
@@ -178,15 +178,17 @@ void exahype::mappings::FusedTimeStep::beginIteration(
 
 #ifdef StealingStrategyDiffusive
   if(issuePredictionJobsInThisIteration()) {
-	  if(_stateCopy.isFirstIterationOfBatchOrNoBatch()) {
-		  _iterationWatch.startTimer();
-	  }
-	  else {
-		  _iterationWatch.stopTimer();
-		  int elapsed = static_cast<int> (_iterationWatch.getCalendarTime()*1e06);
-		  exahype::stealing::PerformanceMonitor::getInstance().setCurrentLoad(elapsed);
-	  }
-
+    if(_stateCopy.isFirstIterationOfBatchOrNoBatch()) {
+      exahype::stealing::DiffusiveDistributor::getInstance()._iterationTimer.startTimer(); 
+    }
+    else {
+      exahype::stealing::DiffusiveDistributor::getInstance()._iterationTimer.stopTimer();
+      int elapsed = static_cast<int> (exahype::stealing::DiffusiveDistributor::getInstance()._iterationTimer.getCalendarTime()*1e06);
+      exahype::stealing::PerformanceMonitor::getInstance().setCurrentLoad(elapsed);
+      exahype::stealing::DiffusiveDistributor::getInstance().updateLoadDistribution(elapsed);
+      exahype::stealing::DiffusiveDistributor::getInstance().resetVictimFlag();
+      exahype::stealing::DiffusiveDistributor::getInstance()._iterationTimer.startTimer();
+    }
   }
 #endif
 
@@ -263,7 +265,8 @@ exahype::mappings::FusedTimeStep::FusedTimeStep(
     const FusedTimeStep& masterThread) :
   _stateCopy(masterThread._stateCopy), 
   _batchIterationCounterUpdated(masterThread._batchIterationCounterUpdated),
-  _batchIteration(masterThread._batchIteration) {
+  _batchIteration(masterThread._batchIteration)
+{
   initialiseLocalVariables();
 }
 // Merge over threads
