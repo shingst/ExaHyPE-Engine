@@ -2615,19 +2615,21 @@ void exahype::solvers::ADERDGSolver::updateSolution(
       }
     }
 
-    double* newSolution = static_cast<double*>(cellDescription.getSolution());
     if ( backupPreviousSolution ) {
-      double* solution  = static_cast<double*>(cellDescription.getPreviousSolution());
       // perform the update
-      swapSolutionAndPreviousSolution(cellDescription); // newSolution is overwritten with the current solution plus the update,
+      swapSolutionAndPreviousSolution(cellDescription); // solution is overwritten with the current solution plus the update,
                                                         // while update is remebered as the current solution.
-      solutionUpdate(newSolution,solution,update,cellDescription.getCorrectorTimeStepSize());
+      double* solution = static_cast<double*>(cellDescription.getSolution());
+      double* previousSolution    = static_cast<double*>(cellDescription.getPreviousSolution());
+      solutionUpdate(solution,previousSolution,update,cellDescription.getCorrectorTimeStepSize());
     } else {
-      solutionUpdate(newSolution,newSolution,update,cellDescription.getCorrectorTimeStepSize());
+      double* solution = static_cast<double*>(cellDescription.getSolution());
+      solutionUpdate(solution,solution,update,cellDescription.getCorrectorTimeStepSize());
     }
 
+    double* solution = static_cast<double*>(cellDescription.getSolution());
     adjustSolution(
-        newSolution,
+        solution,
         cellDescription.getOffset()+0.5*cellDescription.getSize(),
         cellDescription.getSize(),
         cellDescription.getCorrectorTimeStamp()+cellDescription.getCorrectorTimeStepSize(),
@@ -2639,7 +2641,7 @@ void exahype::solvers::ADERDGSolver::updateSolution(
     #ifdef Asserts
     if ( _checkForNaNs ) {
       for (int i=0; i<getUnknownsPerCell(); i++) { // update does not store parameters
-        assertion3(std::isfinite(newSolution[i]),cellDescription.toString(),"updateSolution(...)",i);
+        assertion3(std::isfinite(solution[i]),cellDescription.toString(),"updateSolution(...)",i);
       }
     }
     #endif
