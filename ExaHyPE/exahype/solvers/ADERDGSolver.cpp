@@ -5205,7 +5205,7 @@ void exahype::solvers::ADERDGSolver::StealablePredictionJob::receiveBackHandler(
   assertion(found);
   static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagToOffloadTime.erase(a_tagToOffloadTime);
   a_tagToOffloadTime.release();
-  logInfo("receiveBackHandler", "remote execution took "<<elapsed<<" s ");
+ //logInfo("receiveBackHandler", "remote execution took "<<elapsed<<" s ");
 
   assertion( NumberOfEnclaveJobs>=0 );
   assertion( NumberOfRemoteJobs>=0 );
