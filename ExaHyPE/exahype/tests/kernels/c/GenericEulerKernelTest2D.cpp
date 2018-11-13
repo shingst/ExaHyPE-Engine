@@ -173,7 +173,7 @@ void GenericEulerKernelTest::testSolutionUpdate() {
   // ::exahype::tests::testdata::generic_euler::GenericEulerKernelTest::lduh[80]
 
   kernels::aderdg::generic::c::solutionUpdate<GenericEulerKernelTest>(*this,
-      luh, ::exahype::tests::testdata::generic_euler::testSolutionUpdate::lduh,
+      luh, luh, ::exahype::tests::testdata::generic_euler::testSolutionUpdate::lduh,
       dt
       );
 

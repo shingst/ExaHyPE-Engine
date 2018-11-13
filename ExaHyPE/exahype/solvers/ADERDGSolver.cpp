@@ -2619,8 +2619,8 @@ void exahype::solvers::ADERDGSolver::updateSolution(
       // perform the update
       swapSolutionAndPreviousSolution(cellDescription); // solution is overwritten with the current solution plus the update,
                                                         // while update is remebered as the current solution.
-      double* solution = static_cast<double*>(cellDescription.getSolution());
-      double* previousSolution    = static_cast<double*>(cellDescription.getPreviousSolution());
+      double* solution         = static_cast<double*>(cellDescription.getSolution());
+      double* previousSolution = static_cast<double*>(cellDescription.getPreviousSolution());
       solutionUpdate(solution,previousSolution,update,cellDescription.getCorrectorTimeStepSize());
     } else {
       double* solution = static_cast<double*>(cellDescription.getSolution());
