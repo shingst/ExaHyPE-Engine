@@ -70,7 +70,7 @@ def createFilterKeysToColumnIndexMapping(filterSet,columnNames):
 def tableFilter(row):
     match = True
     for key,index in filterColumnsToIndices.items():
-        match = match and row[index].startswith(rowFilter[key])
+        match = match and row[index]==rowFilter[key]
     return match
 
 def minMaxFilter(row):

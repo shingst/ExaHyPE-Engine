@@ -26,6 +26,8 @@ def parseArgs():
     
     parser.add_argument("--output-delim", dest="outputDelim", nargs="?", default=",",
         help="Specify the delimiter for the output table.")
+
+    parser.add_argument("--reference",nargs="?",default="-1", help="Specify a reference value > 0.")
     
     parser.add_argument("-t", "--tikz", dest="forTikz", action="store_true",help="Has the effect of --keys --no-headers --no-data'. Overwrites these options.")
     parser.set_defaults(forTikz=False)
@@ -94,7 +96,10 @@ if __name__ == "__main__":
  
    
     if len(tableData) and len(tableData[0]):
-        reference = float(tableData[0][-1])
+        reference = float(args.reference);
+        if reference < 0:  # if no reference specified, use first value found
+            reference = float(tableData[0][-1])
+   
         n = 0
         for row in tableData:
             resultRow = []
