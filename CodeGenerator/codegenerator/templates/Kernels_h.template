@@ -104,7 +104,8 @@ namespace {{namespaceName}} {
 {% endif %}
 
   void solutionUpdate( 
-    double* restrict luh, 
+    double* restrict luh,
+    const double* restrict const luhOld, 
     const double* restrict const lduh, 
     const double dt
   );
