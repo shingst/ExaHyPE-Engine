@@ -742,10 +742,22 @@ int exahype::runners::Runner::run() {
       #endif
     }
 
-    if ( _parser.isValid() )
-      shutdownSharedMemoryConfiguration();
+#if defined(DistributedStealing)
+  for (auto* solver : exahype::solvers::RegisteredSolvers) {
+    if (solver->getType()==exahype::solvers::Solver::Type::ADERDG) {
+      static_cast<exahype::solvers::ADERDGSolver*>(solver)->stopStealingManager();
+    }
+    if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
+      static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->stopStealingManager();
+    }
+  }
+#endif
+
     if ( _parser.isValid() )
       shutdownDistributedMemoryConfiguration();
+      
+    if ( _parser.isValid() )
+      shutdownSharedMemoryConfiguration();
 
     shutdownHeaps();
 
