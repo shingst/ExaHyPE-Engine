@@ -227,19 +227,19 @@ void {{project}}::{{abstractSolver}}::faceIntegral(double* const lduh,const doub
 {% endif %}
 }
 
-void {{project}}::{{abstractSolver}}::riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double dt,const int direction,bool isBoundaryFace, int faceIndex) {
+void {{project}}::{{abstractSolver}}::riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double t,const double dt,const int direction,bool isBoundaryFace, int faceIndex) {
   assertion2(direction>=0,dt,direction);
   assertion2(direction<DIMENSIONS,dt,direction);
 {% if enableProfiler %}
   _profiler->start("riemannSolver");
 {% endif %}
 {% if isFortran %}
-  kernels::aderdg::generic::fortran::riemannSolver{{linearOrNonlinear}}<{{solver}}>(*static_cast<{{solver}}*>(this),FL,FR,QL,QR,dt,direction);
+  kernels::aderdg::generic::fortran::riemannSolver{{linearOrNonlinear}}<{{solver}}>(*static_cast<{{solver}}*>(this),FL,FR,QL,QR,t,dt,direction);
 {% else %}
   {% if isLinear %}
-    kernels::aderdg::generic::c::riemannSolverLinear<{{useFlux_s}},{{useNCP_s}},{{useMaterialParameters_s}},{{solver}}>(*static_cast<{{solver}}*>(this),FL,FR,QL,QR,dt,direction);
+    kernels::aderdg::generic::c::riemannSolverLinear<{{useFlux_s}},{{useNCP_s}},{{useMaterialParameters_s}},{{solver}}>(*static_cast<{{solver}}*>(this),FL,FR,QL,QR,t,dt,direction);
   {% else %}
-    kernels::aderdg::generic::c::riemannSolverNonlinear<{{useNCP_s}},{{solver}}>(*static_cast<{{solver}}*>(this),FL,FR,QL,QR,dt,direction);
+    kernels::aderdg::generic::c::riemannSolverNonlinear<{{useNCP_s}},{{solver}}>(*static_cast<{{solver}}*>(this),FL,FR,QL,QR,t,dt,direction);
   {% endif %}
 {% endif %}
 {% if enableProfiler %}
