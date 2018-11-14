@@ -1,27 +1,21 @@
 #include "totalVariation.h"
 
-#include <vector>
-
-#include "kernels/aderdg/generic/Kernels.h"
-#include "kernels/KernelUtils.h"
-#include "kernels/GaussLegendreQuadrature.h"
-
-double totalVariation(const double* Q, int order, int numberOfVariables, int numberOfParameters) {
+double totalVariation(const double* Q, int order, int numberOfVariables, int numberOfParameters,
+        const tarch::la::Vector<DIMENSIONS,double>& dx, bool correctForVolume) {
   const auto basisSize = order + 1;
   const auto numberOfData = numberOfVariables + numberOfParameters;
-  const auto sizeGradient = basisSize * basisSize * basisSize * numberOfVariables;
+  const auto sizeGradient = basisSize * basisSize * DIMENSIONS * numberOfVariables;
 
-  auto idxGradQ = kernels::idx4(basisSize, basisSize, DIMENSIONS, numberOfVariables);
-  auto idx_lQi = kernels::idx3(basisSize, basisSize, numberOfData); // idx_lQi(y,x,t,nVar+nPar)
+  const auto idxGradQ = kernels::idx4(basisSize, basisSize, DIMENSIONS, numberOfVariables);
+  const auto idx_lQi = kernels::idx3(basisSize, basisSize, numberOfData); // idx_lQi(y,x,t,nVar+nPar)
 
-  // TODO(Lukas) Use cell size here!
-  auto dx = std::array<double, 2>{1.0, 1.0};
-  auto invDx = std::array<double, 2>{1.0, 1.0};
+  const auto invDx = tarch::la::invertEntries(dx);
 
   // First compute gradient.
   // Note that we could avoid this calculation but it's simpler this way.
   // TODO(Lukas): Compute integral of TV directly!
   auto gradQ = std::vector<double>(sizeGradient);
+
   // x direction (independent from the y derivatives)
   for (int k = 0; k < basisSize; k++) { // k == y
     // Matrix operation
@@ -52,12 +46,12 @@ double totalVariation(const double* Q, int order, int numberOfVariables, int num
 
   // Compute integral of absolute gradient for all dimensions and variables.
   auto tv = 0.0;
-  // x:
+
   const auto& quadratureWeights = kernels::gaussLegendreWeights[order];
 
   for (int k = 0; k < basisSize; k++) {
     for (int l = 0; l < basisSize; l++) {
-      auto w = quadratureWeights[k] * quadratureWeights[l];
+      const auto w = quadratureWeights[k] * quadratureWeights[l];
         for (int m = 0; m < DIMENSIONS; m++) {
           for (int n = 0; n < numberOfVariables; n++) {
             tv += w * std::abs(gradQ[idxGradQ(k,l,m,n)]);
@@ -66,7 +60,12 @@ double totalVariation(const double* Q, int order, int numberOfVariables, int num
     }
   }
 
-  // TODO(Lukas) Use correct volume!
-  const auto volume = dx[0] * dx[1];
-  return volume * tv;
+  if (correctForVolume) {
+    const auto volume = dx[0] * dx[1];
+    return volume * tv;
+  }
+
+  return tv;
 }
+
+

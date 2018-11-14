@@ -8,9 +8,10 @@
 
 #include <cmath>
 #include <map>
+#include "NavierStokesSolverDG.h"
 #include "NavierStokesSolverDG_Variables.h"
 
-#include "NavierStokesSolverDG.h"
+#include "totalVariation.h"
 #include "stableDiffusiveTimeStepSize.h"
 #if DIMENSIONS == 2
 #include "diffusiveRiemannSolver2d.h"
@@ -167,38 +168,30 @@ exahype::solvers::Solver::RefinementControl NavierStokes::NavierStokesSolverDG::
     const tarch::la::Vector<DIMENSIONS, double>& dx,
     const double t,
     const int level) {
-
-  //std::cout << "Refinement:" << _globalObservables.size() << std::endl;
-  //return exahype::solvers::Solver::RefinementControl::Keep;
-  if (_globalObservables.size() < NumberOfGlobalObservables) {
+  const bool isAmrScenario =
+          scenarioName == "two-bubbles" ||
+          scenarioName == "density-current";
+  if (!isAmrScenario || DIMENSIONS != 2) {
     return exahype::solvers::Solver::RefinementControl::Keep;
   }
 
-  if (scenarioName != "two-bubbles" || DIMENSIONS != 2) {
+  if (t == 0) {
+    // Global observables are reduced after first timestep!
     return exahype::solvers::Solver::RefinementControl::Keep;
   }
 
-  kernels::idx3 idxLuh(Order+1,Order+1,NumberOfVariables + NumberOfParameters);
-  dfor(i,Order+1) {
-    ReadOnlyVariables vars{luh + idxLuh(i(1),i(0),0)};
+  const auto maxGlobal = _globalObservables[0];
+  const auto minGlobal = _globalObservables[1];
+  const auto maxGlobalDiff = maxGlobal - minGlobal;
 
-    const auto pressure = ns.evaluatePressure(vars.E(), vars.rho(), vars.j());
-    const auto temperature = ns.evaluateTemperature(vars.rho(), pressure);
-    const auto potT = ns.evaluatePotentialTemperature(temperature, pressure);
-    const auto curDiff = std::abs(potT - 300);
-    const auto maxDiff = std::abs(_globalObservables[0] - 300);
-    const auto minDiff = std::abs(_globalObservables[1] - 300);
-    //std::cout << maxDiff << "\n" << minDiff << std::endl;
-    //std::abort();
-    if (curDiff > maxDiff/10.) {
-      //std::cout << curDiff << " significant vs. " << maxDiff << std::endl;
-      return exahype::solvers::Solver::RefinementControl::Refine;
-    }
-    //std::cout << curDiff << " not significant vs. " << maxDiff << std::endl;
-    if (curDiff < minDiff/10) {
-      //return exahype::solvers::Solver::RefinementControl::Erase;
-      // TODO(Lukas) Evaluate coarsening!
-    }
+  const auto curObservables = mapGlobalObservables(luh, dx);
+  const auto maxDiff = curObservables[0] - minGlobal;
+
+  if (maxDiff > maxGlobalDiff/10) {
+    return exahype::solvers::Solver::RefinementControl::Refine;
+  }
+  if (maxDiff < maxGlobalDiff/15.) {
+    return exahype::solvers::Solver::RefinementControl::Erase;
   }
 
   return exahype::solvers::Solver::RefinementControl::Keep;
@@ -223,7 +216,7 @@ void NavierStokes::NavierStokesSolverDG::viscousFlux(const double *const Q, cons
   ns.evaluateFlux(Q, gradQ, F, true);
 }
 
-double NavierStokes::NavierStokesSolverDG::stableTimeStepSize(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& dx) {
+double NavierStokes::NavierStokesSolverDG::stableTimeStepSize(const double* const luh, const tarch::la::Vector<DIMENSIONS,double>& dx) {
   return (0.7/0.9) * stableDiffusiveTimeStepSize<NavierStokesSolverDG>(*static_cast<NavierStokesSolverDG*>(this),luh,dx);
   //return kernels::aderdg::generic::c::stableTimeStepSize<NavierStokesSolverDG, true>(*static_cast<NavierStokesSolverDG*>(this),luh,dx);
 }
@@ -237,13 +230,13 @@ void NavierStokes::NavierStokesSolverDG::riemannSolver(double* FL,double* FR,con
 }
 
 void NavierStokes::NavierStokesSolverDG::boundaryConditions( double* const fluxIn, const double* const stateIn, const double* const gradStateIn, const double* const luh, const tarch::la::Vector<DIMENSIONS, double>& cellCentre, const tarch::la::Vector<DIMENSIONS,double>&  cellSize, const double t,const double dt, const int direction, const int orientation) {
-  // TODO(Check if identical to abstract generated code!
   constexpr int basisSize     = (Order+1);
   constexpr int sizeStateOut = (NumberOfVariables+NumberOfParameters)*basisSize;
   constexpr int sizeFluxOut  = NumberOfVariables*basisSize;
 
   constexpr int totalSize = sizeStateOut + sizeFluxOut;
   double* block = new double[totalSize];
+
   double* memory = block;
 
   double* stateOut = memory; memory+=sizeStateOut;
@@ -253,7 +246,7 @@ void NavierStokes::NavierStokesSolverDG::boundaryConditions( double* const fluxI
 
   kernels::aderdg::generic::c::boundaryConditions<true, NavierStokesSolverDG>(*static_cast<NavierStokesSolverDG*>(this),fluxOut,stateOut,fluxIn,stateIn,gradStateIn, cellCentre,cellSize,t,dt,faceIndex,direction);
 
-  if (orientation==0 ) {
+  if (orientation==0) {
     double* FL = fluxOut; const double* const QL = stateOut;
     double* FR =  fluxIn;  const double* const QR = stateIn;
 
@@ -317,18 +310,9 @@ void NavierStokes::NavierStokesSolverDG::reduceGlobalObservables(
   assertion2(reducedGlobalObservables.size() == curGlobalObservables.size(),
           reducedGlobalObservables.size(),
           curGlobalObservables.size());
-  //std::cout << "O: " << reducedGlobalObservables[0] << ", " << reducedGlobalObservables[1] << std::endl;
   reducedGlobalObservables[0] = std::max(reducedGlobalObservables[0],
-  std::abs(curGlobalObservables[0]));
+                                         std::abs(curGlobalObservables[0]));
+
   reducedGlobalObservables[1] = std::min(reducedGlobalObservables[1],
-                                          std::abs(curGlobalObservables[1]));
-  //std::cout << "N: " << reducedGlobalObservables[0] << ", " << reducedGlobalObservables[1] << std::endl;
-  /*
-  for (std::size_t i = 0; i < reducedGlobalObservables.size(); ++i) {
-    //std::cout << "Old global[" << i << "]: " << reducedGlobalObservables[i];
-    reducedGlobalObservables[i] = std::max(reducedGlobalObservables[i],
-            std::abs(curGlobalObservables[i]));
-    //std::cout << "\nNew global[" << i << "]: " << reducedGlobalObservables[i] << std::endl;
-  }
-  */
+                                         std::abs(curGlobalObservables[1]));
 }

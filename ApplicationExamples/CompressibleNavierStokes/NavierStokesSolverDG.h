@@ -153,7 +153,7 @@ class NavierStokes::NavierStokesSolverDG : public NavierStokes::AbstractNavierSt
 /* multiplyMaterialParameterMatrix() not included, as requested in the specification file */
     PDE ns;
 
-    std::vector<double> mapGlobalObservables(const double* const Q) const override;
+    std::vector<double> mapGlobalObservables(const double* const Q, const tarch::la::Vector<DIMENSIONS,double>& dx) const override;
 
     std::vector<double> resetGlobalObservables() const override;
     void reduceGlobalObservables(
