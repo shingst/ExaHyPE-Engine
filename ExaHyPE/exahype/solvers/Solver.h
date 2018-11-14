@@ -2019,7 +2019,8 @@ class exahype::solvers::Solver {
    *\param[inout] globalObservables The mapped observables.
    *\param[in]    Q           The state variables.
    */
-   virtual std::vector<double> mapGlobalObservables(const double* const Q) const = 0;
+   virtual std::vector<double> mapGlobalObservables(const double* const Q,
+           const tarch::la::Vector<DIMENSIONS,double>& dx) const = 0;
 
    /**
    * Resets the vector of global observables to some suitable initial value, e.g.

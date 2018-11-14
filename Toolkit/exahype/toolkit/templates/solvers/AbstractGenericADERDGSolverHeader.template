@@ -150,7 +150,7 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, pu
      *
      * See superclass for function's semantics.
     */
-    std::vector<double> mapGlobalObservables(const double* const Q) const override;
+std::vector<double> mapGlobalObservables(const double* const Q, const tarch::la::Vector<DIMENSIONS, double> &dx) const override;
     std::vector<double> resetGlobalObservables() const override;
     void reduceGlobalObservables(
             std::vector<double>& reducedGlobalObservables,

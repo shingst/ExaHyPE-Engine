@@ -5210,7 +5210,8 @@ void exahype::solvers::ADERDGSolver::reduceGlobalObservables(std::vector<double>
   }
 
   double* luh  = static_cast<double*>(cellDescription.getSolution());
-  const auto curGlobalObservables = mapGlobalObservables(luh);
+  auto dx = cellDescription.getSize();
+  const auto curGlobalObservables = mapGlobalObservables(luh, dx);
   reduceGlobalObservables(globalObservables, curGlobalObservables);
 
 }

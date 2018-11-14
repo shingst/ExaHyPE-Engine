@@ -368,7 +368,7 @@ void {{project}}::{{abstractSolver}}::pointSource(const double* const Q,const do
       abortWithMsg("pointSource: If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
 }
 
-std::vector<double> {{project}}::{{abstractSolver}}::mapGlobalObservables(const double* const Q) const {
+std::vector<double> {{project}}::{{abstractSolver}}::mapGlobalObservables(const double* const Q, const tarch::la::Vector<DIMENSIONS, double> &dx) const {
   return {};
 }
 
