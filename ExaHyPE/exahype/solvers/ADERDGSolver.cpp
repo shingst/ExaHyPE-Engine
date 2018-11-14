@@ -4106,7 +4106,7 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
 
     riemannSolver(
         FL, FR, QL, QR,
-        cellDescription.CorrectorTimeStamp()
+        cellDescription.getCorrectorTimeStamp(),
         cellDescription.getCorrectorTimeStepSize(),face._direction,false,face._faceIndex);
     
     #ifdef Asserts

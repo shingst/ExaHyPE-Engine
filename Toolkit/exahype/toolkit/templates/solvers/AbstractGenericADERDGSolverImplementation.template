@@ -277,13 +277,13 @@ void {{project}}::{{abstractSolver}}::boundaryConditions(double* const fluxIn,co
     double* FL = fluxOut; const double* const QL = stateOut;
     double* FR = fluxIn;  const double* const QR = stateIn;
   
-    riemannSolver(FL,FR,QL,QR,dt,direction,true,faceIndex);
+    riemannSolver(FL,FR,QL,QR,t,dt,direction,true,faceIndex);
   }
   else {
     double* FL = fluxIn;  const double* const QL = stateIn;
     double* FR = fluxOut; const double* const QR = stateOut;
 
-    riemannSolver(FL,FR,QL,QR,dt,direction,true,faceIndex);
+    riemannSolver(FL,FR,QL,QR,t,dt,direction,true,faceIndex);
   }
 {%if tempVarsOnStack==False %}
   delete[] block;
