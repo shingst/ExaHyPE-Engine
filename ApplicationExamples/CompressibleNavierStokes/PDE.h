@@ -31,7 +31,8 @@ public:
   double evaluateViscosity(double T) const;
   void evaluateEigenvalues(const double* const Q, const int d, double* lambda) const;
   void evaluateDiffusiveEigenvalues(const double* const Q, const int d, double* lambda) const;
-  void evaluateFlux(const double* Q, const double* gradQ, double** F, bool temperatureDiff=true) const;
+  void evaluateFlux(const double* Q, const double* gradQ, double** F, bool useViscosity=true,
+        bool reconstructGradT=false, double reconstructedGradT=0.0) const;
 
 
   double referenceViscosity; // [Pa s] = [kg/(ms)] Reference dynamic viscosity

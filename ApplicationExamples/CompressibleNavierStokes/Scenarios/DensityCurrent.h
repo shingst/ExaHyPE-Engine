@@ -35,6 +35,8 @@ class DensityCurrent : public Scenario {
   const double getGasConstant() const override;
 
   const double getReferencePressure() const override;
+  BoundaryType getBoundaryType(int faceId) override;
+
 };
 
 }  // namespace NavierStokes

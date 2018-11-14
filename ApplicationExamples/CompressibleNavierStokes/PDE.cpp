@@ -87,7 +87,8 @@ void NavierStokes::PDE::evaluateDiffusiveEigenvalues(const double* const Q, cons
 }
 
 #if DIMENSIONS == 2
-void NavierStokes::PDE::evaluateFlux(const double* Q, const double* gradQ, double** F, bool temperatureDiffusion) const {
+void NavierStokes::PDE::evaluateFlux(const double* Q, const double* gradQ, double** F, bool useViscosity,
+        bool reconstructGradT, double reconstructedGradT) const {
   ReadOnlyVariables vars(Q);
   //Fluxes f(F);
 
@@ -238,41 +239,56 @@ void NavierStokes::PDE::evaluateFlux(const double* Q, const double* gradQ, doubl
   const auto dTdW4 = -1 * Q[j+2] * invRho2;
 #endif
 
-  /*
-  Tx = icv*( dTdW1*gradQ(1,1) + dTdW2*gradQ(2,1) + dTdW3*gradQ(3,1) + dTdW4*gradQ(4,1) + iRho*gradQ(5,1) )
-  Ty = icv*( dTdW1*gradQ(1,2) + dTdW2*gradQ(2,2) + dTdW3*gradQ(3,2) + dTdW4*gradQ(4,2) + iRho*gradQ(5,2) )
-  Tz = icv*( dTdW1*gradQ(1,3) + dTdW2*gradQ(2,3) + dTdW3*gradQ(3,3) + dTdW4*gradQ(4,3) + iRho*gradQ(5,3) )
-  */
-# if DIMENSIONS == 2
-  const auto Tx = invCv * (dTdW1 * gradQ[idxGradQ(0, rho)] +
+   auto Tx = 0.0;
+   auto Ty = 0.0;
+   auto Tz = 0.0;
+
+   if (reconstructGradT) {
+     // Compute derivative from hydrostatic equilibrium.
+#if DIMENSIONS == 2
+     Ty = reconstructedGradT;
+#else
+     Tz = reconstructedGradT;
+#endif
+   } else {
+     // Compute derivative from conserved variables.
+
+     /*
+     Tx = icv*( dTdW1*gradQ(1,1) + dTdW2*gradQ(2,1) + dTdW3*gradQ(3,1) + dTdW4*gradQ(4,1) + iRho*gradQ(5,1) )
+     Ty = icv*( dTdW1*gradQ(1,2) + dTdW2*gradQ(2,2) + dTdW3*gradQ(3,2) + dTdW4*gradQ(4,2) + iRho*gradQ(5,2) )
+     Tz = icv*( dTdW1*gradQ(1,3) + dTdW2*gradQ(2,3) + dTdW3*gradQ(3,3) + dTdW4*gradQ(4,3) + iRho*gradQ(5,3) )
+     */
+#if DIMENSIONS == 2
+     Tx = invCv * (dTdW1 * gradQ[idxGradQ(0, rho)] +
           dTdW2 * gradQ[idxGradQ(0, j)] +
           dTdW3 * gradQ[idxGradQ(0, j+1)] +
           invRho * gradQ[idxGradQ(0,E)]);
 
-  const auto Ty = invCv * (dTdW1 * gradQ[idxGradQ(1, rho)] +
+     Ty = invCv * (dTdW1 * gradQ[idxGradQ(1, rho)] +
           dTdW2 * gradQ[idxGradQ(1, j)] +
           dTdW3 * gradQ[idxGradQ(1, j+1)] +
           invRho * gradQ[idxGradQ(1,E)]);
 #else
-  // TODO(Lukas): Untested for 3D!
-   const auto Tx = invCv * (dTdW1 * gradQ[idxGradQ(0, rho)] +
+    // TODO(Lukas): Untested for 3D!
+     Tx = invCv * (dTdW1 * gradQ[idxGradQ(0, rho)] +
           dTdW2 * gradQ[idxGradQ(0, j)] +
           dTdW3 * gradQ[idxGradQ(0, j+1)] +
           dTdW4 * gradQ[idxGradQ(0, j+2)] +
           invRho * gradQ[idxGradQ(0,E)]);
 
-  const auto Ty = invCv * (dTdW1 * gradQ[idxGradQ(1, rho)] +
+     Ty = invCv * (dTdW1 * gradQ[idxGradQ(1, rho)] +
           dTdW2 * gradQ[idxGradQ(1, j)] +
           dTdW3 * gradQ[idxGradQ(1, j+1)] +
           dTdW4 * gradQ[idxGradQ(1, j+2)] +
           invRho * gradQ[idxGradQ(1,E)]);
 
-  const auto Tz = invCv * (dTdW1 * gradQ[idxGradQ(2, rho)] +
+     Tz = invCv * (dTdW1 * gradQ[idxGradQ(2, rho)] +
           dTdW2 * gradQ[idxGradQ(2, j)] +
           dTdW3 * gradQ[idxGradQ(2, j+1)] +
           dTdW4 * gradQ[idxGradQ(2, j+2)] +
           invRho * gradQ[idxGradQ(2,E)]);
 #endif
+   }
   /*
   divV23  = 2./3.*(uux + vvy + wwz)
   */
@@ -282,6 +298,8 @@ void NavierStokes::PDE::evaluateFlux(const double* Q, const double* gradQ, doubl
   const auto divV23 = 2./3. * (uux + vvy + wwz);
 #endif
 
+  // Arrays of viscous fluxes.
+  // These do NOT contain temperature diffusion terms!
   double Fv[vars.Size] = {0.0};
   double Gv[vars.Size] = {0.0};
   double Hv[vars.Size] = {0.0};
@@ -296,10 +314,10 @@ void NavierStokes::PDE::evaluateFlux(const double* Q, const double* gradQ, doubl
   Fv[j+0] = mu * (2 * uux - divV23);
   Fv[j+1] = mu * (uuy + vvx);
 #if DIMENSIONS == 2
-  Fv[E] = Fv[j] * uu + Fv[j+1] * vv + kappa * Tx;
+  Fv[E] = Fv[j] * uu + Fv[j+1] * vv;
 #else
   Fv[j+2] = mu * (uuz + wwx);
-  Fv[E] = Fv[j] * uu + Fv[j+1] * vv + Fv[j+2] * ww + kappa * Tx;
+  Fv[E] = Fv[j] * uu + Fv[j+1] * vv + Fv[j+2] * ww;
 #endif
 
   /*
@@ -313,10 +331,10 @@ void NavierStokes::PDE::evaluateFlux(const double* Q, const double* gradQ, doubl
   Gv[j+0] = Fv[j+1];
   Gv[j+1] = mu * (2 * vvy - divV23);
 #if DIMENSIONS == 2
-  Gv[E] = Gv[j] * uu + Gv[j+1] * vv + kappa * Ty;
+  Gv[E] = Gv[j] * uu + Gv[j+1] * vv;
 #else
   Gv[j+2] = mu * (vvz + wwy);
-  Gv[E] = Gv[j] * uu + Gv[j+1] * vv + Gv[j+2] * ww + kappa * Ty;
+  Gv[E] = Gv[j] * uu + Gv[j+1] * vv + Gv[j+2] * ww;
 #endif
 
   // TODO(Lukas) Viscous flux for 3D!
@@ -333,13 +351,21 @@ void NavierStokes::PDE::evaluateFlux(const double* Q, const double* gradQ, doubl
   g = g - Gv
   h = h - Hv
   */
-  for (int i = 0; i < vars.Size; ++i) {
-    f[i] -= Fv[i];
-    g[i] -= Gv[i];
+  if (useViscosity) {
+    for (int i = 0; i < vars.Size; ++i) {
+      f[i] -= Fv[i];
+      g[i] -= Gv[i];
 #if DIMENSIONS == 3
-    h[i] -= Hv[i];
+      h[i] -= Hv[i];
 #endif
+    }
   }
+
+  f[E] -= kappa * Tx;
+  g[E] -= kappa * Ty;
+# if DIMENSIONS == 3
+  h[E] -= kappa * Tz;
+#endif
 }
 
 #else

@@ -6,11 +6,12 @@
 #include <array>
 
 namespace NavierStokes {
-enum class BoundaryType { analytical, wall };
+enum class BoundaryType {analytical, wall, hydrostaticWall };
 
 class Scenario {
  public:
   Scenario();
+  // TODO(Lukas) Mark these all as const!
   virtual void initialValues(const double* const x, const PDE& ns,
                              Variables& vars);
   virtual void analyticalSolution(const double* const x, double t,

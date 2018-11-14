@@ -105,3 +105,21 @@ const double NavierStokes::TwoBubbles::getGasConstant() const {
 const double NavierStokes::TwoBubbles::getReferencePressure() const {
   return referencePressure;
 }
+
+NavierStokes::BoundaryType NavierStokes::TwoBubbles::getBoundaryType(int faceId) {
+  // For boundaries in Z direction, we need to reconstruct
+  // the temperature flux coming from the boundary.
+#if DIMENSIONS == 2
+  const bool isZFace = faceId == 2 || faceId == 3;
+#else
+  const bool isZFace = faceId == 4 || faceId == 5;
+#endif
+  if (isZFace) {
+    return BoundaryType::hydrostaticWall;
+  }
+  return BoundaryType::hydrostaticWall;
+  // TODO(Lukas) Reconsider!
+  return BoundaryType::wall;
+
+}
+

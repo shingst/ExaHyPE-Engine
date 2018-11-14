@@ -22,6 +22,8 @@
 #include "kernels/KernelUtils.h"
 
 #include "Scenarios/ScenarioFactory.h"
+#include "Scenarios/Atmosphere.h"
+
 
 tarch::logging::Log NavierStokes::NavierStokesSolverDG::_log( "NavierStokes::NavierStokesSolverDG" );
 
@@ -110,7 +112,8 @@ void NavierStokes::NavierStokesSolverDG::boundaryValues(const double* const x,co
     return;
   }
 
-  assert(scenario->getBoundaryType(faceIndex) == NavierStokes::BoundaryType::wall);
+  assertion(scenario->getBoundaryType(faceIndex) == BoundaryType::wall ||
+                 scenario->getBoundaryType(faceIndex) == BoundaryType::hydrostaticWall);
 
   // Set no slip wall boundary conditions.
   ReadOnlyVariables varsIn(stateIn);
@@ -128,14 +131,32 @@ void NavierStokes::NavierStokesSolverDG::boundaryValues(const double* const x,co
   // Extrapolate gradient.
   std::copy_n(gradStateIn, gradSize, gradStateOut.data());
 
-  // We deal with heat construction by computing the flux at the boundary without heat conduction,
+  // We deal with heat conduction by computing the flux at the boundary without heat conduction,
   // To do this, we reconstruct the incoming flux using the extrapolated/time-averaged state/gradient.
   // Note that this incurs an error.
   // The incoming flux is reconstructed in boundaryConditions.
 
- // Then compute the outgoing flux.
-  //ns.evaluateFlux(stateOut, gradStateOut.data(), F, false);
-  ns.evaluateFlux(stateOut, gradStateOut.data(), F, true);
+  // Then compute the outgoing flux.
+  if (scenario->getBoundaryType(faceIndex) == BoundaryType::hydrostaticWall) {
+    // We need to reconstruct the temperature gradient here.
+    // TODO(Lukas) Put those constants into the scenario.
+    const auto g = 9.81;
+    const auto backgroundPotTemperature = 300;
+#if DIMENSIONS == 2
+    const auto posZ = x[1];
+#else
+    const auto posZ = x[2];
+#endif
+
+    const double equilibriumTemperatureGradient = computeHydrostaticTemperatureGradient(ns, g, posZ,
+            backgroundPotTemperature);
+
+    // Use no viscous effects and use equilibrium temperature gradient.
+    ns.evaluateFlux(stateOut, gradStateOut.data(), F, false, true, equilibriumTemperatureGradient);
+  } else {
+    ns.evaluateFlux(stateOut, gradStateOut.data(), F);
+  }
+
   std::copy_n(F[normalNonZero], NumberOfVariables, fluxOut);
 
 }
@@ -251,21 +272,39 @@ void NavierStokes::NavierStokesSolverDG::boundaryConditions( double* const fluxI
     for (int i = 0; i < (Order + 1); ++i) {
       // Set energy flux to zero!
       fluxIn[idx_F(i, NavierStokesSolverDG_Variables::shortcuts::E)] = 0.0; // TODO(Lukas) Is fluxIn later reused?
-      // TODO(Lukas) Fix for adiabatic wall boundary conditions.
     }
   }
-
-  //kernels::aderdg::generic::c::faceIntegralNonlinear<NumberOfVariables, Order+1>(update,fluxIn,direction,orientation,cellSize);
 
   delete[] block;
 }
 
-std::vector<double> NavierStokes::NavierStokesSolverDG::mapGlobalObservables(const double *const Q) const {
- auto vars = ReadOnlyVariables{Q};
- const auto pressure = ns.evaluatePressure(vars.E(), vars.rho(), vars.j());
- const auto temperature = ns.evaluateTemperature(vars.rho(), pressure);
- const auto potT = ns.evaluatePotentialTemperature(temperature, pressure);
- return {potT, potT};
+std::vector<double> NavierStokes::NavierStokesSolverDG::mapGlobalObservables(const double *const Q,
+        const tarch::la::Vector<DIMENSIONS,double>& dx) const {
+ auto observables = resetGlobalObservables();
+ // TODO(Lukas) Implement global observables for 3D!
+ const auto idxQ = kernels::idx3(Order+1,Order+1,NumberOfVariables + NumberOfParameters);
+
+ auto computePotT = [this](const double *const Q) {
+   const auto vars = ReadOnlyVariables{Q};
+   const auto pressure = ns.evaluatePressure(vars.E(), vars.rho(), vars.j());
+   const auto temperature = ns.evaluateTemperature(vars.rho(), pressure);
+   return ns.evaluatePotentialTemperature(temperature, pressure);
+ };
+
+ const auto tv = totalVariation(Q, Order, NumberOfVariables, NumberOfParameters, dx, true, computePotT);
+
+ /*
+ dfor(i,Order+1) {
+   const auto vars = ReadOnlyVariables{Q + idxQ(i(1), i(0), 0)};
+   const auto pressure = ns.evaluatePressure(vars.E(), vars.rho(), vars.j());
+   const auto temperature = ns.evaluateTemperature(vars.rho(), pressure);
+   const auto potT = ns.evaluatePotentialTemperature(temperature, pressure);
+   reduceGlobalObservables(observables, std::vector<double>{potT, potT});
+ }
+  */
+ observables = {tv, tv};
+
+ return observables;
 }
 
 std::vector<double> NavierStokes::NavierStokesSolverDG::resetGlobalObservables() const {
