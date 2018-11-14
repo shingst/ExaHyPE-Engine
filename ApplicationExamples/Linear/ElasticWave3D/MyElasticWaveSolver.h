@@ -21,6 +21,8 @@
 #include "tarch/logging/Log.h"
 #include "tarch/la/Vector.h"
 
+#define pow2(a) (a) * (a)
+
 namespace Elastic{
   class MyElasticWaveSolver;
 }

@@ -81,7 +81,9 @@ public:
   peano::CommunicationSpecification communicationSpecification() const;
 
   /**
-   * Run through whole tree. Run concurrently on fine grid cells.
+   * If compression is turned on, run through whole tree and
+   * run concurrently over fine grid cells.
+   * Otherwise, this specification returns nop.
    */
   peano::MappingSpecification enterCellSpecification(int level) const;
 

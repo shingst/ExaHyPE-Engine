@@ -33,9 +33,15 @@ exahype::mappings::MergeNeighbours::communicationSpecification() const {
 
 peano::MappingSpecification
 exahype::mappings::MergeNeighbours::enterCellSpecification(int level) const {
-  return peano::MappingSpecification(
-      peano::MappingSpecification::WholeTree,
-      peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
+  if ( solvers::Solver::SpawnCompressionAsBackgroundJob ) {
+    return peano::MappingSpecification(
+          peano::MappingSpecification::WholeTree,
+          peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
+  } else {
+    return peano::MappingSpecification(
+        peano::MappingSpecification::Nop,
+        peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
+  }
 }
 
 peano::MappingSpecification
