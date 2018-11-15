@@ -245,6 +245,17 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
     }
 
 #if defined(DistributedStealing) 
+    // Create a new MPI communicator for stealing related MPI communication
+    exahype::stealing::StealingManager::getInstance().createMPICommunicator(); 
+
+//    for (auto* solver : exahype::solvers::RegisteredSolvers) {
+//      if (solver->getType()==exahype::solvers::Solver::Type::ADERDG) {
+//        static_cast<exahype::solvers::ADERDGSolver*>(solver)->startStealingManager();
+//      }
+//      if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
+//        static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->startStealingManager();
+//      }
+//    } 
 
     peano::performanceanalysis::Analysis::getInstance().setDevice(new exahype::stealing::StealingAnalyser());
 
@@ -274,8 +285,16 @@ void exahype::runners::Runner::shutdownDistributedMemoryConfiguration() {
     }
   }
 
+     logInfo("run()","stopped stealing manager");
+
   exahype::stealing::StealingProfiler::getInstance().endPhase();
+
+       logInfo("run()","ended profiling phase");
+
   exahype::stealing::StealingProfiler::getInstance().printStatistics();
+  
+      logInfo("run()","printed stats");
+
 #endif
 
   exahype::repositories::RepositoryFactory::getInstance().shutdownAllParallelDatatypes();
@@ -748,8 +767,24 @@ int exahype::runners::Runner::run() {
 
     if ( _parser.isValid() )
       initDistributedMemoryConfiguration();
+
     if ( _parser.isValid() )
       initSharedMemoryConfiguration();
+
+    #if defined(DistributedStealing) 
+//    MPI_Barrier(MPI_COMM_WORLD);
+//    MPI_Barrier(exahype::stealing::StealingManager::getInstance().getMPICommunicator());
+ 
+    for (auto* solver : exahype::solvers::RegisteredSolvers) {
+      if (solver->getType()==exahype::solvers::Solver::Type::ADERDG) {
+        static_cast<exahype::solvers::ADERDGSolver*>(solver)->startStealingManager();
+      }
+      if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
+        static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->startStealingManager();
+      }
+    } 
+    #endif
+
     if ( _parser.isValid() )
       initDataCompression();
     if ( _parser.isValid() )
@@ -768,9 +803,14 @@ int exahype::runners::Runner::run() {
 
     if ( _parser.isValid() )
       shutdownDistributedMemoryConfiguration();
+
+   logInfo("run()","shutdownDistributedMemoryConfiguration");
       
     if ( _parser.isValid() )
       shutdownSharedMemoryConfiguration();
+
+   logInfo("run()","shutdownSharedMemoryConfiguration");
+      
 
     shutdownHeaps();
 

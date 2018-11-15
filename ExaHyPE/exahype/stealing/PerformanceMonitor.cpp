@@ -11,6 +11,8 @@
 #include "exahype/stealing/StealingProfiler.h"
 #include "exahype/stealing/DynamicDistributor.h"
 #include "exahype/stealing/StaticDistributor.h"
+#include "exahype/stealing/StealingManager.h"
+
 
 #define TERMINATE_SIGNAL -1
 
@@ -218,7 +220,7 @@ void exahype::stealing::PerformanceMonitor::postGather() {
 
   _currentLoadLocalBuffer = _isStarted ? _currentLoadLocal.load() : TERMINATE_SIGNAL;
 
-  MPI_Iallgather(&_currentLoadLocalBuffer, 1, MPI_INTEGER, _currentLoadBuffer, 1, MPI_INTEGER, MPI_COMM_WORLD, &_gather_request);
+  MPI_Iallgather(&_currentLoadLocalBuffer, 1, MPI_INTEGER, _currentLoadBuffer, 1, MPI_INTEGER, exahype::stealing::StealingManager::getInstance().getMPICommunicator(), &_gather_request);
 }
 
 bool exahype::stealing::PerformanceMonitor::isGloballyTerminated() {

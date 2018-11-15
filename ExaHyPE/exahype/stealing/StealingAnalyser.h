@@ -7,7 +7,7 @@
 
 #include "tarch/logging/Log.h"
 #include "tarch/timing/Watch.h"
-#include "tarch/timing/Measurement.h"
+#include "tarch/timing/GlidingAverageMeasurement.h"
 
 #include "tarch/parallel/NodePool.h"
 #include "tarch/parallel/Node.h"
@@ -33,8 +33,8 @@ class exahype::stealing::StealingAnalyser: public peano::performanceanalysis::An
     tarch::timing::Watch           _waitForWorkerDataWatch;
     tarch::timing::Watch           _waitForMasterDataWatch;
 
-    tarch::timing::Measurement     _traversalMeasurement;
-    std::vector<tarch::timing::Measurement>    _waitForOtherRank;
+    tarch::timing::GlidingAverageMeasurement     _traversalMeasurement;
+    std::vector<tarch::timing::GlidingAverageMeasurement>    _waitForOtherRank;
 
     double _currentMaxWaitTime;
 

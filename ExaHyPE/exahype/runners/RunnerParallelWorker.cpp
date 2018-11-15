@@ -135,8 +135,7 @@ void exahype::runners::Runner::runGlobalStep() {
       exahype::mappings::FinaliseMeshRefinement::NumberOfEnclaveCells,
 	  exahype::mappings::FinaliseMeshRefinement::NumberOfSkeletonCells);
 #endif
-  // In any case, create a new MPI communicator for stealing related MPI communication
-  exahype::stealing::StealingManager::getInstance().createMPICommunicator();
+
 #endif
 
 }

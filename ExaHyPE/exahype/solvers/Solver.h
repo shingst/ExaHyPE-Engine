@@ -1103,6 +1103,10 @@ class exahype::solvers::Solver {
        tarch::multicore::jobs::processHighPriorityJobs(1);
      } else {
        tarch::multicore::jobs::processBackgroundJobs(1);
+ 
+       if( !cellDescription.getHasCompletedTimeStep() ){
+         logInfo("waitUntilCompletedTimeStep()","EMERGENCY"); //TODO: my rank can  no longer be a critical rank and I should give away one less per victim
+       }
      }
    }
  }

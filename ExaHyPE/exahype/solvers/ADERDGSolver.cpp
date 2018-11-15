@@ -2269,17 +2269,13 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
       const bool isSkeletonCell        = isAMRSkeletonCell || isAtRemoteBoundary;
       const bool mustBeDoneImmediately = isSkeletonCell && PredictionSweeps==1;
 
-#if defined(DistributedStealing)
-      return
-          fusedTimeStepBody(
-              cellDescription,cellInfo._cellDescriptionsIndex,element,
-              isFirstIterationOfBatch,isLastIterationOfBatch,isSkeletonCell, mustBeDoneImmediately,
-              cellDescription.getNeighbourMergePerformed() );
-#endif
       if (
           !SpawnPredictionAsBackgroundJob ||
           isFirstIterationOfBatch ||
           isLastIterationOfBatch
+#if defined(DistributedStealing)
+          || true
+#endif
       ) {
         return
             fusedTimeStepBody(
@@ -4861,7 +4857,7 @@ void exahype::solvers::ADERDGSolver::stopStealingManager() {
   logInfo("stopStealingManager", " stopping ");
   assertion(_stealingManagerJob != nullptr);
   _stealingManagerJob->terminate();
-  while(tarch::multicore::jobs::finishToProcessBackgroundJobs()) {};
+  while(tarch::multicore::jobs::finishToProcessBackgroundJobs()) {  logInfo("stopStealingManager()","processing outstanding job"); };
 }
 
 exahype::solvers::ADERDGSolver::StealablePredictionJobData::StealablePredictionJobData( ADERDGSolver& solver ) :

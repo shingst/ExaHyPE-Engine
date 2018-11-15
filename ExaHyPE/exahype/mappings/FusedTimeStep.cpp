@@ -193,19 +193,20 @@ void exahype::mappings::FusedTimeStep::beginIteration(
 #endif
 
   // enable stealing manager job right at the beginning of the very first time step
-  if(isFirst) {
-    for (auto* solver : exahype::solvers::RegisteredSolvers) {
-      // currently only for ADERDG solver supported
-      if (solver->getType()==exahype::solvers::Solver::Type::ADERDG) {
-        static_cast<exahype::solvers::ADERDGSolver*>(solver)->startStealingManager();
-        isFirst=false;
-      }
-      if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
-        static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->startStealingManager();
-        isFirst=false;
-      }
-    }
-  }
+//  if(isFirst) {
+//    for (auto* solver : exahype::solvers::RegisteredSolvers) {
+//      // currently only for ADERDG solver supported
+//      if (solver->getType()==exahype::solvers::Solver::Type::ADERDG) {
+//        static_cast<exahype::solvers::ADERDGSolver*>(solver)->startStealingManager();
+//        isFirst=false;
+//      }
+//      if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
+//        static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->startStealingManager();
+//        isFirst=false;
+//      }
+//    }
+//  }
+    isFirst = false;
 
 #if defined(StealingStrategyStatic) || defined(StealingStrategyStaticHardcoded)
   if(issuePredictionJobsInThisIteration()) {
