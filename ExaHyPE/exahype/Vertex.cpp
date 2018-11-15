@@ -428,16 +428,6 @@ void exahype::Vertex::mergeNeighbours(
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const tarch::la::Vector<DIMENSIONS, double>& h) const {
   if ( tarch::la::allSmallerEquals(h,exahype::solvers::Solver::getCoarsestMaximumMeshSizeOfAllSolvers()) ) {
-    // collect the cell descriptions once per vertex instead of once per face;
-    // 8 instead of 12x2 lookups in 3D, 4 lookups instead of 8 in 2D.
-    solvers::Solver::CellInfo* cellInfos[TWO_POWER_D] = { nullptr };
-    for ( unsigned int i=0; i<TWO_POWER_D; i++ ) {
-      if ( _vertexData.getCellDescriptionsIndex(i)>=0 ) {
-        cellInfos[i] = new solvers::Solver::CellInfo(
-            _vertexData.getCellDescriptionsIndex(i),_vertexData.getADERDGCellDescriptions(i),_vertexData.getFiniteVolumesCellDescriptions(i));
-      }
-    }
-
     if ( SpawnNeighbourMergeAsThread ) {
       #if DIMENSIONS==2
       peano::datatraversal::TaskSet runParallelTasks(
@@ -481,14 +471,6 @@ void exahype::Vertex::mergeNeighbours(
     } else {
       for (int i=0; i<2*(DIMENSIONS-1)*(DIMENSIONS); i++) {
         mergeNeighboursLoopBody(pos1Scalar[i],pos2Scalar[i],*this,x,h);
-      }
-    }
-
-    // free the helper objects
-    for ( unsigned int i=0; i<TWO_POWER_D; i++ ) {
-      if ( cellInfos[i]!=nullptr ) {
-        delete cellInfos[i];
-        cellInfos[i]=nullptr;
       }
     }
   }
