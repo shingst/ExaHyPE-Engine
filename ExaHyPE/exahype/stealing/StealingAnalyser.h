@@ -29,15 +29,14 @@ class exahype::stealing::StealingAnalyser: public peano::performanceanalysis::An
 
     bool _isSwitchedOn;
 
-    /**
-     * This one runs between beginIteration() and endIteration(). Cmp to _totalWatch.
-     */
-    tarch::timing::Watch           _traversalWatch;
+
     tarch::timing::Watch           _waitForWorkerDataWatch;
     tarch::timing::Watch           _waitForMasterDataWatch;
 
     tarch::timing::Measurement     _traversalMeasurement;
     std::vector<tarch::timing::Measurement>    _waitForOtherRank;
+
+    double _currentMaxWaitTime;
 
   public:
     StealingAnalyser();

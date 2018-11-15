@@ -9,16 +9,18 @@
 
 #include <thread>
 
+#include "exahype/stealing/PerformanceMonitor.h"
+#include "exahype/stealing/DiffusiveDistributor.h"
 
 tarch::logging::Log  exahype::stealing::StealingAnalyser::_log( "exahype::stealing::StealingAnalyser" );
 
 
 exahype::stealing::StealingAnalyser::StealingAnalyser():
   _isSwitchedOn(true),
-  _traversalWatch("exahype::stealing::StealingAnalyser", "-", false,false),
   _waitForWorkerDataWatch("exahype::stealing::StealingAnalyser", "-", false,false),
   _waitForMasterDataWatch("exahype::stealing::StealingAnalyser", "-", false,false),
-  _waitForOtherRank(tarch::parallel::Node::getInstance().getNumberOfNodes())
+  _waitForOtherRank(tarch::parallel::Node::getInstance().getNumberOfNodes()),
+  _currentMaxWaitTime(0)
 {
   enable(true);
 }
@@ -34,20 +36,19 @@ void exahype::stealing::StealingAnalyser::enable(bool value) {
 
 
 void exahype::stealing::StealingAnalyser::beginIteration() {
-  if (_isSwitchedOn) {
-    logInfo( "beginIteration()", "start traversal" );
-    _traversalWatch.startTimer();
-  }
+  _currentMaxWaitTime = 0;
+  exahype::stealing::DiffusiveDistributor::getInstance().resetVictimFlag(); //TODO: correct position here?
 }
 
 
 void exahype::stealing::StealingAnalyser::endIteration(double numberOfInnerLeafCells, double numberOfOuterLeafCells, double numberOfInnerCells, double numberOfOuterCells, double numberOfLocalCells, double numberOfLocalVertices) {
-  if (_isSwitchedOn) {
-    _traversalWatch.stopTimer();
+
+  for(int i=0; i<_waitForOtherRank.size(); i++) {
+    if(i != tarch::parallel::Node::getInstance().getRank())
+      logInfo("endIteration()", "wait for rank "<<i<<_waitForOtherRank[i].toString());
   }
 
-  for(auto p:_waitForOtherRank)
-    logInfo("endIteration()",p.toString());
+  exahype::stealing::PerformanceMonitor::getInstance().setCurrentLoad(static_cast<int>(_currentMaxWaitTime*1e06));
 }
 
 
@@ -65,14 +66,22 @@ void exahype::stealing::StealingAnalyser::endToReceiveDataFromWorker( int fromRa
 
     _waitForOtherRank[fromRank].setValue(elapsedTime);
 
+    double currentAvg = _waitForOtherRank[fromRank].getValue();
+
+    if(_currentMaxWaitTime < currentAvg) {
+      _currentMaxWaitTime = currentAvg;
+      exahype::stealing::DiffusiveDistributor::getInstance().updateLoadDistribution(static_cast<int>(_currentMaxWaitTime*1e06));
+    }
+    
     if (tarch::la::greater(elapsedTime,0.0)) {
       logInfo(
         "endToReceiveDataFromWorker()",
-        "rank had to wait for worker " << fromRank <<
-        " for " << elapsedTime <<
-        "s"
+        "rank had to wait for worker " << fromRank << " for "<< elapsedTime<<
+        " currentAvg "<< currentAvg << "s"<<
+        " currentMaxWaitTime "<<_currentMaxWaitTime<<"s"
       );
     }
+
     _waitForWorkerDataWatch.startTimer();
   }
 }
@@ -89,16 +98,24 @@ void exahype::stealing::StealingAnalyser::endToReceiveDataFromMaster() {
   if (_isSwitchedOn && _waitForMasterDataWatch.isOn()) {
     _waitForMasterDataWatch.stopTimer();
     const double elapsedTime = _waitForMasterDataWatch.getCalendarTime();
+    int myMaster = tarch::parallel::NodePool::getInstance().getMasterRank();
     
-    _waitForOtherRank[tarch::parallel::NodePool::getInstance().getMasterRank()].setValue(elapsedTime);
+    _waitForOtherRank[myMaster].setValue(elapsedTime);
+
+    double currentAvg = _waitForOtherRank[myMaster].getValue();
 
     if (tarch::la::greater(elapsedTime,0.0)) {
       logInfo(
         "endToReceiveDataFromMaster()",
-        "rank had to wait for master " << tarch::parallel::NodePool::getInstance().getMasterRank() <<
-        " for " << elapsedTime <<
-        "s"
+        "rank had to wait for master " << myMaster << " for "<< elapsedTime <<
+        " currentAvg "<< currentAvg << "s"<<
+        " currentMaxWaitTime "<<_currentMaxWaitTime<<"s"
       );
+    }
+
+    if(_currentMaxWaitTime< currentAvg) {
+      _currentMaxWaitTime = currentAvg;
+      exahype::stealing::DiffusiveDistributor::getInstance().updateLoadDistribution(static_cast<int>(_currentMaxWaitTime*1e06));
     }
   }
 }

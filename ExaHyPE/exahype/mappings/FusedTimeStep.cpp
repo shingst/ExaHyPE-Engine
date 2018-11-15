@@ -177,19 +177,19 @@ void exahype::mappings::FusedTimeStep::beginIteration(
 #ifdef DistributedStealing
 
 #ifdef StealingStrategyDiffusive
-  if(issuePredictionJobsInThisIteration()) {
-    if(isFirst) {
-      exahype::stealing::DiffusiveDistributor::getInstance()._iterationTimer.startTimer(); 
-    }
-    else {
-      exahype::stealing::DiffusiveDistributor::getInstance()._iterationTimer.stopTimer();
-      int elapsed = static_cast<int> (exahype::stealing::DiffusiveDistributor::getInstance()._iterationTimer.getCalendarTime()*1e06);
-      exahype::stealing::PerformanceMonitor::getInstance().setCurrentLoad(elapsed);
-      exahype::stealing::DiffusiveDistributor::getInstance().updateLoadDistribution(elapsed);
-      exahype::stealing::DiffusiveDistributor::getInstance().resetVictimFlag();
-      exahype::stealing::DiffusiveDistributor::getInstance()._iterationTimer.startTimer();
-    }
-  }
+  //if(issuePredictionJobsInThisIteration()) {
+  //  if(isFirst) {
+  //    exahype::stealing::DiffusiveDistributor::getInstance()._iterationTimer.startTimer(); 
+  //  }
+  //  else {
+  //    exahype::stealing::DiffusiveDistributor::getInstance()._iterationTimer.stopTimer();
+  //    int elapsed = static_cast<int> (exahype::stealing::DiffusiveDistributor::getInstance()._iterationTimer.getCalendarTime()*1e06);
+  //    exahype::stealing::PerformanceMonitor::getInstance().setCurrentLoad(elapsed);
+  //    exahype::stealing::DiffusiveDistributor::getInstance().updateLoadDistribution(elapsed);
+  //    exahype::stealing::DiffusiveDistributor::getInstance().resetVictimFlag();
+  //    exahype::stealing::DiffusiveDistributor::getInstance()._iterationTimer.startTimer();
+  //  }
+  //}
 #endif
 
   // enable stealing manager job right at the beginning of the very first time step
@@ -207,9 +207,12 @@ void exahype::mappings::FusedTimeStep::beginIteration(
     }
   }
 
+#if defined(StealingStrategyStatic) || defined(StealingStrategyStaticHardcoded)
   if(issuePredictionJobsInThisIteration()) {
     exahype::stealing::StaticDistributor::getInstance().resetRemainingTasksToOffload();
   }
+#endif
+
 #endif
   logTraceOutWith1Argument("beginIteration(State)", solverState);
 }

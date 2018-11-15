@@ -43,13 +43,13 @@ void exahype::stealing::DiffusiveDistributor::updateLoadDistribution(int current
 
   loadSnapshot[myRank] = currentLoad;
 
-  logInfo("updateLoadDistribution()", "current load"<<currentLoad);
+  logInfo("updateLoadDistribution()", "current wait time "<<currentLoad);
 
   //determine who is fastest
-  int fastestRank = std::distance(&loadSnapshot[0], std::min_element(&loadSnapshot[0], &loadSnapshot[nnodes]));
+  int fastestRank = std::distance(&loadSnapshot[0], std::max_element(&loadSnapshot[0], &loadSnapshot[nnodes]));
 
   //determine who is slowest
-  int slowestRank = std::distance(&loadSnapshot[0], std::max_element(&loadSnapshot[0], &loadSnapshot[nnodes]));
+  int slowestRank = std::distance(&loadSnapshot[0], std::min_element(&loadSnapshot[0], &loadSnapshot[nnodes]));
   
   logInfo("updateLoadDistribution()", "fastest: "<<fastestRank<<" slowest:"<<slowestRank);
 
@@ -104,8 +104,8 @@ bool exahype::stealing::DiffusiveDistributor::selectVictimRank(int& victim) {
   }
   rank_cnt=l_rank;
 
-  if(victim!=myRank)
-   logInfo("selectVictimRank", "chose victim "<<victim<<" _remainingTasksToOffload "<<_remainingTasksToOffload[victim]);
+  //if(victim!=myRank)
+  // logInfo("selectVictimRank", "chose victim "<<victim<<" _remainingTasksToOffload "<<_remainingTasksToOffload[victim]);
   
   return victim != myRank;
 }
