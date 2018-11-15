@@ -165,7 +165,7 @@ void exahype::mappings::Prediction::performPredictionOrProlongate(
     const exahype::State::AlgorithmSection& algorithmSection,
     const bool performPrediction) {
   if ( fineGridCell.isInitialised() ) {
-    solvers::Solver::CellInfo cellInfo(fineGridCell.getCellDescriptionsIndex());
+    solvers::Solver::CellInfo cellInfo = fineGridCell.createCellInfo();
 
     Cell::resetNeighbourMergeFlags(cellInfo,fineGridVertices,fineGridVerticesEnumerator);
     const bool isAtRemoteBoundary = exahype::Cell::isAtRemoteBoundary(fineGridVertices,fineGridVerticesEnumerator);

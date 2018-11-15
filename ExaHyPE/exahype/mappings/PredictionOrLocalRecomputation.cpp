@@ -1,4 +1,4 @@
-/**
+/**os
  * This file is part of the ExaHyPE project.
  * Copyright (c) 2016  http://exahype.eu
  * All rights reserved.
@@ -260,7 +260,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::enterCell(
                            coarseGridCell, fineGridPositionOfCell);
 
   if ( fineGridCell.isInitialised() ) {
-    solvers::Solver::CellInfo cellInfo(fineGridCell.getCellDescriptionsIndex());
+    solvers::Solver::CellInfo cellInfo = fineGridCell.createCellInfo();
     const bool isAtRemoteBoundary = exahype::Cell::isAtRemoteBoundary(fineGridVertices,fineGridVerticesEnumerator);
 
     for (unsigned int solverNumber=0; solverNumber<exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
@@ -333,21 +333,23 @@ void exahype::mappings::PredictionOrLocalRecomputation::leaveCell(
 }
 
 void exahype::mappings::PredictionOrLocalRecomputation::mergeNeighboursDataDuringLocalRecomputationLoopBody(
-    const int pos1Scalar,
-    const int pos2Scalar,
-    const int cellDescriptionsIndex1,
-    const int cellDescriptionsIndex2,
+    const int                                    pos1Scalar,
+    const int                                    pos2Scalar,
+    const exahype::Vertex&                       vertex,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const tarch::la::Vector<DIMENSIONS, double>& h) {
   tarch::la::Vector<DIMENSIONS,int> pos1 = Vertex::delineariseIndex2(pos1Scalar);
   tarch::la::Vector<DIMENSIONS,int> pos2 = Vertex::delineariseIndex2(pos2Scalar);
   assertion(tarch::la::countEqualEntries(pos1,pos2)==(DIMENSIONS-1));
 
+  const bool cellDescriptionsIndex1 = VertexOperations::readCellDescriptionsIndex(vertex,pos1Scalar);
+  const bool cellDescriptionsIndex2 = VertexOperations::readCellDescriptionsIndex(vertex,pos2Scalar);
   const bool validIndex1 = cellDescriptionsIndex1 >= 0;
   const bool validIndex2 = cellDescriptionsIndex2 >= 0;
+
   if ( validIndex1 && validIndex2 ) {
-    solvers::Solver::CellInfo cellInfo1(cellDescriptionsIndex1);
-    solvers::Solver::CellInfo cellInfo2(cellDescriptionsIndex2);
+    solvers::Solver::CellInfo cellInfo1 = vertex.createCellInfo(pos1Scalar);
+    solvers::Solver::CellInfo cellInfo2 = vertex.createCellInfo(pos2Scalar);
     solvers::Solver::InterfaceInfo face(pos1,pos2);
 
     const bool mergeWithCell1 = Vertex::hasToMergeAtFace(cellInfo1,face._faceIndex1,false/*prefetchADERDGFace*/);
@@ -369,15 +371,17 @@ void exahype::mappings::PredictionOrLocalRecomputation::mergeNeighboursDataDurin
         (!validIndex1 && validIndex2 &&
         cellDescriptionsIndex1==multiscalelinkedcell::HangingVertexBookkeeper::DomainBoundaryAdjacencyIndex))
   ) {
-    tarch::la::Vector<DIMENSIONS,int> posCell     = pos1;
-    tarch::la::Vector<DIMENSIONS,int> posBoundary = pos2;
-    int cellDescriptionsIndex                      = cellDescriptionsIndex1;
+    int                               posCellScalar = pos1Scalar;
+    tarch::la::Vector<DIMENSIONS,int> posCell       = pos1;
+    tarch::la::Vector<DIMENSIONS,int> posBoundary   = pos2;
+    int cellDescriptionsIndex                       = cellDescriptionsIndex1;
     if ( cellDescriptionsIndex2 >= 0 ) {
-      posCell     = pos2;
-      posBoundary = pos1;
+      int     posCellScalar = pos1Scalar;
+      posCell               = pos2;
+      posBoundary           = pos1;
       cellDescriptionsIndex = cellDescriptionsIndex2;
     }
-    solvers::Solver::CellInfo         cellInfo(cellDescriptionsIndex);
+    solvers::Solver::CellInfo         cellInfo = vertex.createCellInfo(posCellScalar);
     solvers::Solver::BoundaryFaceInfo face(posCell,posBoundary);
 
     if ( !cellInfo.empty() && Vertex::hasToMergeAtFace(cellInfo,face._faceIndex,false/*prefetchADERDGFace*/) ) {
@@ -408,10 +412,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::touchVertexFirstTime(
       OneSolverRequestedLocalRecomputation
   ) {
     for (int i=0; i<2*(DIMENSIONS-1)*(DIMENSIONS); i++) {
-      mergeNeighboursDataDuringLocalRecomputationLoopBody(
-          Vertex::pos1Scalar[i],Vertex::pos2Scalar[i],
-          VertexOperations::readCellDescriptionsIndex(vertex,Vertex::pos1Scalar[i]),
-          VertexOperations::readCellDescriptionsIndex(vertex,Vertex::pos2Scalar[i]),x,h);
+      mergeNeighboursDataDuringLocalRecomputationLoopBody(Vertex::pos1Scalar[i],Vertex::pos2Scalar[i],vertex,x,h);
     }
   }
 
@@ -457,7 +458,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::receiveNeighbourDataLoop
     if ( validIndex ) {
       const tarch::la::Vector<DIMENSIONS,int> src = Vertex::delineariseIndex2(srcScalar);
       const tarch::la::Vector<DIMENSIONS,int> dest = Vertex::delineariseIndex2(destScalar);
-      solvers::Solver::CellInfo         cellInfo(destCellDescriptionsIndex);
+      solvers::Solver::CellInfo         cellInfo = vertex.createCellInfo(destScalar);
       solvers::Solver::BoundaryFaceInfo face(dest,src); // dest and src are swapped
 
       if ( Vertex::hasToReceiveFromNeighbourNow(cellInfo,face,false/*prefetchADERDGFaceData*/) ) {

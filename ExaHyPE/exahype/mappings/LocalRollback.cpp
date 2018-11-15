@@ -152,7 +152,7 @@ void exahype::mappings::LocalRollback::enterCell(
       OneSolverRequestedLocalRecomputation &&
       fineGridCell.isInitialised()
   ) {
-    solvers::Solver::CellInfo cellInfo(fineGridCell.getCellDescriptionsIndex());
+    solvers::Solver::CellInfo cellInfo = fineGridCell.createCellInfo();
     for (int solverNumber=0; solverNumber<static_cast<int>(solvers::RegisteredSolvers.size()); solverNumber++) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
       if( performLocalRecomputation( solver ) ) {
@@ -214,7 +214,10 @@ void exahype::mappings::LocalRollback::sendDataToNeighbourLoopBody(
     if ( validIndex ) {
       const tarch::la::Vector<DIMENSIONS,int> src = Vertex::delineariseIndex2(srcScalar);
       const tarch::la::Vector<DIMENSIONS,int> dest = Vertex::delineariseIndex2(destScalar);
-      solvers::Solver::CellInfo cellInfo(srcCellDescriptionsIndex);
+      solvers::Solver::CellInfo cellInfo(
+          srcCellDescriptionsIndex,
+          VertexOperations::readCellDescriptionsIndex(vertex,srcScalar),
+          VertexOperations::readCellDescriptionsIndex(vertex,srcScalar));
       solvers::Solver::BoundaryFaceInfo face(src,dest);
 
       if ( Vertex::hasToSendToNeighbourNow(cellInfo,face) ) {

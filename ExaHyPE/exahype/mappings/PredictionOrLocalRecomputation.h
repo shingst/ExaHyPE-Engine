@@ -120,16 +120,14 @@ class exahype::mappings::PredictionOrLocalRecomputation {
    *
    * @param pos1Scalar linearised relative position of cell to vertex (pos1)
    * @param pos2Scalar linearised relative position of cell to vertex (pos2)
-   * @param cellDescriptionsIndex1 cell descriptions index of cell at pos1
-   * @param cellDescriptionsIndex2 cell descriptions index of cell at pos2
-   * @param x position of the shared vertex
-   * @param h extent of the cells
+   * @param vertex     the shared vertex
+   * @param x          position of the shared vertex
+   * @param h          extent of the cells
    */
   static void mergeNeighboursDataDuringLocalRecomputationLoopBody(
-      const int pos1Scalar,
-      const int pos2Scalar,
-      const int cellDescriptionsIndex1,
-      const int cellDescriptionsIndex2,
+      const int                                    pos1Scalar,
+      const int                                    pos2Scalar,
+      const exahype::Vertex&                       vertex,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const tarch::la::Vector<DIMENSIONS, double>& h);
 

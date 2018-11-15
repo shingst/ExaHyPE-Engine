@@ -400,9 +400,16 @@ class exahype::solvers::Solver {
    * It is passed to all solver routines.
    */
   typedef struct CellInfo {
-    const int _cellDescriptionsIndex= NotFound;
+    const int _cellDescriptionsIndex= -1;
     peano::heap::RLEHeap<exahype::records::ADERDGCellDescription>::HeapEntries&        _ADERDGCellDescriptions;
     peano::heap::RLEHeap<exahype::records::FiniteVolumesCellDescription>::HeapEntries& _FiniteVolumesCellDescriptions;
+
+    CellInfo(const int cellDescriptionsIndex,void* ADERDGCellDescriptions,void* FiniteVolumesCellDescriptions) :
+      _cellDescriptionsIndex(cellDescriptionsIndex),
+      _ADERDGCellDescriptions       (*static_cast<peano::heap::RLEHeap<exahype::records::ADERDGCellDescription>::HeapEntries*>(ADERDGCellDescriptions)),
+      _FiniteVolumesCellDescriptions(*static_cast<peano::heap::RLEHeap<exahype::records::FiniteVolumesCellDescription>::HeapEntries*>(FiniteVolumesCellDescriptions))
+    {}
+
     CellInfo(const int cellDescriptionsIndex) :
       _cellDescriptionsIndex(cellDescriptionsIndex),
       _ADERDGCellDescriptions       (peano::heap::RLEHeap<exahype::records::ADERDGCellDescription>::getInstance().getData(_cellDescriptionsIndex)),
@@ -894,6 +901,10 @@ class exahype::solvers::Solver {
    * \note It is very important that initSolvers
    * has been called on all solvers before this
    * method is used.
+   *
+   * \note That we start counting the mesh level
+   * at 1. In a uniform mesh with level l, there
+   * are thus 3^{DIMENSIONS*(l-1)} cells.
    */
   static int getCoarsestMeshLevelOfAllSolvers();
 

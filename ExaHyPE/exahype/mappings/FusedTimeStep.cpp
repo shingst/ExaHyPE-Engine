@@ -278,7 +278,7 @@ void exahype::mappings::FusedTimeStep::enterCell(
       fineGridCell.isInitialised() &&
       sendOutRiemannDataInThisIteration()
    ) {
-     solvers::Solver::CellInfo cellInfo(fineGridCell.getCellDescriptionsIndex());
+     solvers::Solver::CellInfo cellInfo = fineGridCell.createCellInfo();
      const bool isAtRemoteBoundary = exahype::Cell::isAtRemoteBoundary(fineGridVertices,fineGridVerticesEnumerator);
 
      for (int solverNumber=0; solverNumber<static_cast<int>(solvers::RegisteredSolvers.size()); solverNumber++) {
@@ -320,7 +320,7 @@ void exahype::mappings::FusedTimeStep::leaveCell(
       issuePredictionJobsInThisIteration() &&
       fineGridCell.isInitialised()
   ) {
-    solvers::Solver::CellInfo cellInfo(fineGridCell.getCellDescriptionsIndex());
+    solvers::Solver::CellInfo cellInfo = fineGridCell.createCellInfo();
     const bool isAtRemoteBoundary = exahype::Cell::isAtRemoteBoundary(fineGridVertices,fineGridVerticesEnumerator);
     const int isLastTimeStep =
         ( exahype::solvers::Solver::PredictionSweeps==1 ) ?

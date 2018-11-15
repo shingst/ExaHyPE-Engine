@@ -98,7 +98,7 @@ void exahype::mappings::BroadcastAndDropNeighbourMessages::enterCell(
     exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
   if ( fineGridCell.isInitialised() ) {
-    solvers::Solver::CellInfo cellInfo(fineGridCell.getCellDescriptionsIndex());
+    solvers::Solver::CellInfo cellInfo = fineGridCell.createCellInfo();
 
     // wait for completion of jobs
     if ( exahype::solvers::Solver::SpawnPredictionAsBackgroundJob ) {

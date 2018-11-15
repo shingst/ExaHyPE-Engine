@@ -484,14 +484,14 @@ void exahype::mappings::MeshRefinement::enterCell(
           (firstMeshRefinementIteration && fineGridCell.isInitialised()) ||
           newComputeCell
       ) {
-        solvers::Solver::CellInfo cellInfo(fineGridCell.getCellDescriptionsIndex());
+        solvers::Solver::CellInfo cellInfo = fineGridCell.createCellInfo();
         solver->adjustSolutionDuringMeshRefinement(solverNumber,cellInfo); // TODO(Dominic): Consider to merge this into the last loop
       }
     }
   }
 
   if ( fineGridCell.isInitialised() ) {
-    solvers::Solver::CellInfo cellInfo(fineGridCell.getCellDescriptionsIndex());
+    solvers::Solver::CellInfo cellInfo = fineGridCell.createCellInfo();
     exahype::Cell::resetNeighbourMergeFlags(cellInfo,fineGridVertices,fineGridVerticesEnumerator);
     // shutdown metadata for empty cells (no cell descriptions)
     if ( fineGridCell.isEmpty() ) {
@@ -704,7 +704,7 @@ void exahype::mappings::MeshRefinement::mergeWithWorker(
                   receivedCellDescriptionsIndex,receivedElement);
 
           if ( newComputeCell ) {
-            solvers::Solver::CellInfo cellInfo(localCell.getCellDescriptionsIndex());
+            solvers::Solver::CellInfo cellInfo = fineGridCell.createCellInfo();
             solver->adjustSolutionDuringMeshRefinement(solverNumber,cellInfo);
           }
         }

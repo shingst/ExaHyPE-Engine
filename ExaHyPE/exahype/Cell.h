@@ -190,6 +190,21 @@ class exahype::Cell : public peano::grid::Cell<exahype::records::Cell> {
   int getCellDescriptionsIndex() const;
 
   /**
+   * @return pointer to vector of ADERDGSolverCellDescription instanes (or nullptr).
+   */
+  peano::heap::RLEHeap<exahype::records::ADERDGCellDescription>::HeapEntries* getADERDGCellDescriptions() const;
+
+  /**
+   * @return pointer to vector of ADERDGSolverCellDescriptions instances (or nullptr).
+   */
+  peano::heap::RLEHeap<exahype::records::FiniteVolumesCellDescription>::HeapEntries* getFiniteVolumesCellDescriptions() const;
+
+  /**
+   * @return a cell info object linking to cell descriptions associated with the cell.
+   */
+  exahype::solvers::Solver::CellInfo createCellInfo() const;
+
+  /**
    * TODO(Dominic): Add docu.
    */
   void setCellDescriptionsIndex(int cellDescriptionsIndex);
