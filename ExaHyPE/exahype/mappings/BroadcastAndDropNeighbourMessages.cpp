@@ -257,7 +257,7 @@ exahype::mappings::BroadcastAndDropNeighbourMessages::BroadcastAndDropNeighbourM
 void exahype::mappings::BroadcastAndDropNeighbourMessages::endIteration(
     exahype::State& solverState) {
 
-#if defined(DistributedStealing)
+/*#if defined(DistributedStealing)
   for (auto* solver : exahype::solvers::RegisteredSolvers) {
     if (solver->getType()==exahype::solvers::Solver::Type::ADERDG) {
       static_cast<exahype::solvers::ADERDGSolver*>(solver)->stopStealingManager();
@@ -266,7 +266,7 @@ void exahype::mappings::BroadcastAndDropNeighbourMessages::endIteration(
       static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->stopStealingManager();
     }
   }
-#endif
+#endif*/
 }
 
 void exahype::mappings::BroadcastAndDropNeighbourMessages::touchVertexFirstTime(

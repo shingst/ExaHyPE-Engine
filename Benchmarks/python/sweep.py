@@ -260,6 +260,12 @@ def build(buildOnlyMissing=False, skipMakeClean=False):
                 for compileTimeParameterDict in dictProduct(compileTimeParameterSpace):
                     executable = getExecutableName(environmentDictHash,architecture,dimension,compileTimeParameterDict)
                     
+                    command = "make clean"
+                    print(command)
+                    process = subprocess.Popen([command], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+                    (output, err) = process.communicate()
+                    process.wait()
+                    
                     if not os.path.exists(executable) or not buildOnlyMissing:
                         buildParameterDict["architecture"] = architecture
                         buildParameterDict["dimension"]    = dimension

@@ -178,7 +178,7 @@ void exahype::mappings::FusedTimeStep::beginIteration(
 
 #ifdef StealingStrategyDiffusive
   if(issuePredictionJobsInThisIteration()) {
-    if(_stateCopy.isFirstIterationOfBatchOrNoBatch()) {
+    if(isFirst) {
       exahype::stealing::DiffusiveDistributor::getInstance()._iterationTimer.startTimer(); 
     }
     else {

@@ -187,6 +187,16 @@ void exahype::mappings::FinaliseMeshRefinement::enterCell(
           limitingADERDGSolver->determineMinAndMax(solverNumber,cellInfo);
           assertion(limitingADERDGSolver->getMeshUpdateEvent()!=exahype::solvers::Solver::MeshUpdateEvent::IrregularLimiterDomainChange);
         }
+        
+        // determine numbers of enclave and skeleton cells
+        if (solver->getType()==exahype::solvers::Solver::Type::ADERDG || solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
+          //auto* ADERDGSolver = static_cast<exahype::solvers::ADERDGSolver*>(solver);
+          if( !exahype::Cell::isAtRemoteBoundary(fineGridVertices,fineGridVerticesEnumerator))
+            _numberOfEnclaveCells += exahype::solvers::ADERDGSolver::computeWeight(cellInfo._cellDescriptionsIndex);
+          else if( exahype::Cell::isAtRemoteBoundary(fineGridVertices,fineGridVerticesEnumerator))
+            _numberOfSkeletonCells += exahype::solvers::ADERDGSolver::computeWeight(cellInfo._cellDescriptionsIndex);
+        }
+        
       }
     }
 
