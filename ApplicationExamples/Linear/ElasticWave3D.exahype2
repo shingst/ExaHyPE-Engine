@@ -9,7 +9,7 @@
   "architecture": "hsw",
   "computational_domain": {
     "dimension": 3,
-    "time_steps": 1000,
+    "time_steps": 10,
     "offset": [
       -12.0,
       0.0,
@@ -50,7 +50,7 @@
     "time_step_batch_factor": 1.0,
     "disable_metadata_exchange_in_batched_time_steps": true,
     "double_compression": 0.0,
-    "spawn_double_compression_as_background_thread": false
+    "spawn_double_compression_as_background_thread": true
   },
   "solvers": [
     {

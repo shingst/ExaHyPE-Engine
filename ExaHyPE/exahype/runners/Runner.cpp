@@ -87,6 +87,7 @@
 #if defined(StealingStrategyStaticHardcoded)
 #include "exahype/stealing/StaticDistributor.h"
 #endif
+#include "exahype/stealing/StealingProfiler.h"
 #endif
 
 tarch::logging::Log exahype::runners::Runner::_log("exahype::runners::Runner");
@@ -262,6 +263,21 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
 void exahype::runners::Runner::shutdownDistributedMemoryConfiguration() {
 #ifdef Parallel
   tarch::parallel::NodePool::getInstance().terminate();
+
+#if defined(DistributedStealing)
+  for (auto* solver : exahype::solvers::RegisteredSolvers) {
+    if (solver->getType()==exahype::solvers::Solver::Type::ADERDG) {
+      static_cast<exahype::solvers::ADERDGSolver*>(solver)->stopStealingManager();
+    }
+    if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
+      static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->stopStealingManager();
+    }
+  }
+
+  exahype::stealing::StealingProfiler::getInstance().endPhase();
+  exahype::stealing::StealingProfiler::getInstance().printStatistics();
+#endif
+
   exahype::repositories::RepositoryFactory::getInstance().shutdownAllParallelDatatypes();
 #endif
 }
@@ -749,17 +765,6 @@ int exahype::runners::Runner::run() {
       }
       #endif
     }
-
-#if defined(DistributedStealing)
-  for (auto* solver : exahype::solvers::RegisteredSolvers) {
-    if (solver->getType()==exahype::solvers::Solver::Type::ADERDG) {
-      static_cast<exahype::solvers::ADERDGSolver*>(solver)->stopStealingManager();
-    }
-    if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
-      static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->stopStealingManager();
-    }
-  }
-#endif
 
     if ( _parser.isValid() )
       shutdownDistributedMemoryConfiguration();
