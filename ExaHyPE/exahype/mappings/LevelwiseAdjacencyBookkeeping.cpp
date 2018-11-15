@@ -139,8 +139,8 @@ void exahype::mappings::LevelwiseAdjacencyBookkeeping::leaveCell(
           fineGridVertices[fineGridVerticesEnumerator(k)], index, fineGridCell.getCellDescriptionsIndex());
       VertexOperations::writeADERDGCellDescriptions(
           fineGridVertices[fineGridVerticesEnumerator(k)], index, fineGridCell.getADERDGCellDescriptions());
-      VertexOperations::writeADERDGCellDescriptions(
-          fineGridVertices[fineGridVerticesEnumerator(k)], index, fineGridCell.getADERDGCellDescriptions());
+      VertexOperations::writeFiniteVolumesCellDescriptions(
+          fineGridVertices[fineGridVerticesEnumerator(k)], index, fineGridCell.getFiniteVolumesCellDescriptions());
     }
   enddforx
 
