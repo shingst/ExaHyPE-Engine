@@ -52,10 +52,9 @@ exahype::mappings::RefinementStatusSpreading::communicationSpecification() const
 // Switched on.
 peano::MappingSpecification
 exahype::mappings::RefinementStatusSpreading::touchVertexFirstTimeSpecification(int level) const {
-  return peano::MappingSpecification(
-      peano::MappingSpecification::OnlyLeaves,
-      peano::MappingSpecification::AvoidFineGridRaces,true); // TODO(Dominic): false should work in theory
+  return Vertex::getNeighbourMergeSpecification(level);
 }
+
 peano::MappingSpecification
 exahype::mappings::RefinementStatusSpreading::enterCellSpecification(int level) const {
   return peano::MappingSpecification(

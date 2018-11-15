@@ -34,9 +34,16 @@ peano::CommunicationSpecification exahype::mappings::BroadcastAndDropNeighbourMe
 
 peano::MappingSpecification
 exahype::mappings::BroadcastAndDropNeighbourMessages::enterCellSpecification(int level) const {
-  return peano::MappingSpecification(
-      peano::MappingSpecification::WholeTree,
-      peano::MappingSpecification::Serial,false); // it's not worth it to run this operation in parallel.
+  const int coarsestSolverLevel = solvers::Solver::getCoarsestMeshLevelOfAllSolvers();
+  if ( std::abs(level)>=coarsestSolverLevel ) {
+    return peano::MappingSpecification(
+          peano::MappingSpecification::WholeTree,
+          peano::MappingSpecification::Serial,true); // performs reduction
+  } else {
+    return peano::MappingSpecification(
+          peano::MappingSpecification::Nop,
+          peano::MappingSpecification::Serial,false);
+  }
 }
 
 /* All specifications below are nop. */

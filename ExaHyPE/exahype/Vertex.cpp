@@ -54,6 +54,19 @@ exahype::Vertex::Vertex(const Base::PersistentVertex& argument)
 
 bool exahype::Vertex::SpawnNeighbourMergeAsThread = false;
 
+peano::MappingSpecification exahype::Vertex::getNeighbourMergeSpecification(const int level) {
+  const int coarsestSolverLevel = solvers::Solver::getCoarsestMeshLevelOfAllSolvers();
+  if ( std::abs(level)>=coarsestSolverLevel ) {
+    return peano::MappingSpecification(
+           peano::MappingSpecification::WholeTree,
+           peano::MappingSpecification::AvoidFineGridRaces,false);
+  } else {
+    return peano::MappingSpecification(
+          peano::MappingSpecification::Nop,
+          peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
+  }
+}
+
 bool exahype::Vertex::equalUpToRelativeTolerance(
     const tarch::la::Vector<DIMENSIONS,double>& lhs,
     const tarch::la::Vector<DIMENSIONS,double>& rhs) {
@@ -187,11 +200,9 @@ void exahype::Vertex::validateNeighbourhood(
     const tarch::la::Vector<DIMENSIONS,int>& pos2) {
   tarch::la::Vector<DIMENSIONS,int> posCell  = pos1;
   tarch::la::Vector<DIMENSIONS,int> posEmpty = pos2;
-  int cellDescriptionsIndex                  = cellDescriptionsIndex1;
   if ( cellDescriptionsIndex2 >= 0 ) {
     posCell  = pos2;
     posEmpty = pos1;
-    cellDescriptionsIndex = cellDescriptionsIndex2;
   }
   const int posCellScalar = peano::utils::dLinearised(posCell,2);
   solvers::Solver::CellInfo& cellInfo = *cellInfos[posCellScalar];

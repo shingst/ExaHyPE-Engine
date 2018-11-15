@@ -15,12 +15,16 @@
 #define _EXAHYPE_VERTEX_H_
 
 #include "exahype/records/Vertex.h"
+
+#include "peano/MappingSpecification.h"
 #include "peano/grid/Vertex.h"
 #include "peano/grid/VertexEnumerator.h"
 #include "peano/utils/Globals.h"
 
 #include "exahype/solvers/ADERDGSolver.h"
 #include "exahype/solvers/FiniteVolumesSolver.h"
+
+#include "peano/MappingSpecification.h"
 
 namespace exahype {
   class Vertex;
@@ -59,6 +63,11 @@ public:
   static constexpr int pos1Scalar[12] = {0,0,0,1,1,2,2,3,4,4,5,6};
   static constexpr int pos2Scalar[12] = {1,2,4,3,5,3,6,7,5,6,7,7};
   #endif
+
+  /**
+   * @return a mapping specification which applies to all neighbour merges.
+   */ 
+  static peano::MappingSpecification getNeighbourMergeSpecification(const int level);
 
   /**
    * Compare if two vectors are equal up to a relative

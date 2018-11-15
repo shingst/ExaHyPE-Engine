@@ -69,24 +69,21 @@ exahype::mappings::PredictionOrLocalRecomputation::communicationSpecification() 
   return peano::CommunicationSpecification(exchangeMasterWorkerData,exchangeWorkerMasterData,true);
 }
 
-peano::MappingSpecification
-exahype::mappings::PredictionOrLocalRecomputation::enterCellSpecification(int level) const {
-  if (
-      exahype::solvers::Solver::FuseADERDGPhases &&
-      exahype::solvers::Solver::oneSolverRequestedMeshRefinement()
-  ) {
-    return exahype::mappings::Prediction::determineEnterLeaveCellSpecification(level);
+peano::MappingSpecification exahype::mappings::PredictionOrLocalRecomputation::enterCellSpecification(int level) const {
+  const int coarsestSolverLevel = solvers::Solver::getCoarsestMeshLevelOfAllSolvers();
+  if ( std::abs(level)>=coarsestSolverLevel ) {
+    return peano::MappingSpecification(
+           peano::MappingSpecification::WholeTree,
+           peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);  // performs reduction
   } else {
     return peano::MappingSpecification(
-        peano::MappingSpecification::WholeTree,
-        peano::MappingSpecification::AvoidFineGridRaces,true); // TODO(Dominic): false should work in theory
+          peano::MappingSpecification::Nop,
+          peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
   }
 }
 peano::MappingSpecification
 exahype::mappings::PredictionOrLocalRecomputation::touchVertexFirstTimeSpecification(int level) const {
-  return peano::MappingSpecification(
-      peano::MappingSpecification::WholeTree,
-      peano::MappingSpecification::AvoidFineGridRaces,true); // TODO(Dominic): false should work in theory
+  return Vertex::getNeighbourMergeSpecification(level);
 }
 
 // Below specs are all nop

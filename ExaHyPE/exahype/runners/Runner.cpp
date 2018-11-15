@@ -317,6 +317,12 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
   }
   #endif
 
+  // TODO(Dominic): Turned off for now. Turned off for a while
+  // // requires repository creation first 
+  // const int coarsestUniformLevel      = solvers::Solver::getCoarsestMeshLevelOfAllSolvers() - 1; // -1 as root cell is on level 1
+  // const int touchVertexFirstGrainSize = tarch::la::aPowI(DIMENSIONS,(tarch::la::aPowI(3,coarsestUniformLevel)+1)/2)/numberOfThreads; // (N+1)^dim vertices for N^dim cells; /2: takes 2-colouring into account, /2 for a little more fine grained work distribution
+  // const int enterLeaveCellGrainSize   = tarch::la::aPowI(DIMENSIONS,(tarch::la::aPowI(3,coarsestUniformLevel)))/numberOfThreads/8; // no colouring, /8 for a little more fine grained work distribution
+
   switch (_parser.getMulticoreOracleType()) {
   case exahype::parser::Parser::MulticoreOracleType::Dummy:
     logInfo("initSharedMemoryConfiguration()",
@@ -331,9 +337,9 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
          27, //   int  smallestProblemSizeForAscendDescend  = tarch::la::aPowI(DIMENSIONS,3*3*3*3/2),
          3, //   int  grainSizeForAscendDescend          = 3,
          1, //   int  smallestProblemSizeForEnterLeaveCell = tarch::la::aPowI(DIMENSIONS,9/2),
-         1, //   int  grainSizeForEnterLeaveCell         = 2,
+         1,//enterLeaveCellGrainSize,   //   int  grainSizeForEnterLeaveCell         = 2,
          1, //   int  smallestProblemSizeForTouchFirstLast = tarch::la::aPowI(DIMENSIONS,3*3*3*3+1),
-         1, //   int  grainSizeForTouchFirstLast         = 64,
+         1,//touchVertexFirstGrainSize, //   int  grainSizeForTouchFirstLast         = 64,
          1, //   int  smallestProblemSizeForSplitLoadStore = tarch::la::aPowI(DIMENSIONS,3*3*3),
          1  //   int  grainSizeForSplitLoadStore         = 8,
       )
@@ -876,7 +882,7 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
     int timeStep = 0;
     while (
         tarch::la::greater(solvers::Solver::getMinTimeStepSizeOfAllSolvers(), 0.0) &&
-        solvers::Solver::getMinTimeStampOfAllSolvers() < simulationEndTime &&
+        solvers::Solver::getMinTimeStampOfAllSolvers() < simulationEndTime         &&
         timeStep < simulationTimeSteps
     ) {
       bool plot = exahype::plotters::checkWhetherPlotterBecomesActive(

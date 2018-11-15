@@ -69,9 +69,7 @@ exahype::mappings::MeshRefinement::touchVertexFirstTimeSpecification(int level) 
 
 peano::MappingSpecification
 exahype::mappings::MeshRefinement::touchVertexLastTimeSpecification(int level) const {
-  return peano::MappingSpecification(
-      peano::MappingSpecification::WholeTree,
-      peano::MappingSpecification::AvoidFineGridRaces,true);
+  return Vertex::getNeighbourMergeSpecification(level);
 }
 
 peano::MappingSpecification
