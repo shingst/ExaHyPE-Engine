@@ -601,10 +601,10 @@ void Elastic::MyElasticWaveSolver::localBasis(double* n, double * m, double* l, 
       m[1] = 1.;
       m[2] = 0.;
       
-      diff_norm1 =  std::sqrt(pow(n[0]-m[0],2) + pow(n[1]-m[1], 2) + pow(n[2]-m[2], 2));
-      diff_norm2 =  std::sqrt(pow(n[0]+m[0],2) + pow(n[1]+m[1], 2) + pow(n[2]+m[2], 2));
+      diff_norm1 = pow2(n[0]-m[0]) + pow2(n[1]-m[1]) + pow2(n[2]-m[2]);
+      diff_norm2 = pow2(n[0]+m[0]) + pow2(n[1]+m[1]) + pow2(n[2]+m[2]);
       
-      if (diff_norm1 >= tol && diff_norm2 >= tol){
+      if (diff_norm1 >= pow2(tol) && diff_norm2 >= pow2(tol)){
       	Gram_Schmidt(n, m);
       }else{
       	  m[0] = 0.;

@@ -87,6 +87,7 @@ public:
   static void validateNeighbourhood(
       const int cellDescriptionsIndex1,
       const int cellDescriptionsIndex2,
+      solvers::Solver::CellInfo* (&cellInfos)[TWO_POWER_D],
       const tarch::la::Vector<DIMENSIONS,int>& pos1,
       const tarch::la::Vector<DIMENSIONS,int>& pos2);
 
@@ -123,8 +124,8 @@ private:
    * two heap array indices and tries to merge matching
    * pairs adjacent to the common face.
    *
-   * @param cellDescriptionsIndex1 index corresponding to pos1
-   * @param cellDescriptionsIndex2 index corresponding to pos2
+   * @param cellInfo1 cell descriptions found for pos1
+   * @param cellInfo2 cell descriptions found for pos2
    * @param pos1 position of first cell
    * @param pos2 position of second cell
    * @param x the position of the vertex
@@ -134,8 +135,8 @@ private:
    * but only added and the adjacency information is updated.
    */
   static void mergeNeighboursDataAndMetadata(
-      const int cellDescriptionsIndex1,
-      const int cellDescriptionsIndex2,
+      solvers::Solver::CellInfo& cellInfo1,
+      solvers::Solver::CellInfo& cellInfo2,
       const tarch::la::Vector<DIMENSIONS,int>& pos1,
       const tarch::la::Vector<DIMENSIONS,int>& pos2,
       const tarch::la::Vector<DIMENSIONS, double>& x,
@@ -157,10 +158,9 @@ private:
    * but only added and the adjacency information is updated.
    */
   static void mergeWithBoundaryData(
-      const int cellDescriptionsIndex1,
-      const int cellDescriptionsIndex2,
-      const tarch::la::Vector<DIMENSIONS,int>& pos1,
-      const tarch::la::Vector<DIMENSIONS,int>& pos2,
+      solvers::Solver::CellInfo& cellInfo,
+      const tarch::la::Vector<DIMENSIONS,int>& posCell,
+      const tarch::la::Vector<DIMENSIONS,int>& posBoundary,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const tarch::la::Vector<DIMENSIONS, double>& h);
 
@@ -182,6 +182,7 @@ private:
       const int pos2Scalar,
       const int cellDescriptionsIndex1,
       const int cellDescriptionsIndex2,
+      solvers::Solver::CellInfo* (&cellInfos)[TWO_POWER_D],
       const tarch::la::Vector<DIMENSIONS, double> x,
       const tarch::la::Vector<DIMENSIONS, double> h);
 

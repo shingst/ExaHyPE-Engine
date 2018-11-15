@@ -33,9 +33,15 @@ exahype::mappings::MergeNeighbours::communicationSpecification() const {
 
 peano::MappingSpecification
 exahype::mappings::MergeNeighbours::enterCellSpecification(int level) const {
-  return peano::MappingSpecification(
-      peano::MappingSpecification::WholeTree,
-      peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
+  if ( solvers::Solver::CompressionAccuracy > 0.0 ) {
+    return peano::MappingSpecification(
+          peano::MappingSpecification::WholeTree,
+          peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
+  } else {
+    return peano::MappingSpecification(
+        peano::MappingSpecification::Nop,
+        peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
+  }
 }
 
 peano::MappingSpecification
@@ -127,14 +133,12 @@ void exahype::mappings::MergeNeighbours::enterCell(
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
     exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
-  if ( fineGridCell.isInitialised() ) {
+  if ( exahype::solvers::Solver::CompressionAccuracy>0.0 && fineGridCell.isInitialised() ) {
     solvers::Solver::CellInfo cellInfo(fineGridCell.getCellDescriptionsIndex());
     const bool isAtRemoteBoundary = exahype::Cell::isAtRemoteBoundary(fineGridVertices,fineGridVerticesEnumerator);
-    if (exahype::solvers::Solver::CompressionAccuracy>0.0) {
-      for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
-        auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-        solver->compress(solverNumber,cellInfo,isAtRemoteBoundary);
-      }
+    for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
+      auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
+      solver->compress(solverNumber,cellInfo,isAtRemoteBoundary);
     }
   }
 }

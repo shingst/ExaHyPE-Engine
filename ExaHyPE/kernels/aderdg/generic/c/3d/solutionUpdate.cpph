@@ -57,7 +57,7 @@ void solutionUpdate(
         const double updateSize = dt / weight;
 
         for (int l = 0; l < numberOfVariables; l++) {
-          luh[idx_luh(i, j, k, l)] = luh[idx_luh(i, j, k, l)] + lduh[idx_lduh(i, j, k, l)] * updateSize;
+          luh[idx_luh(i, j, k, l)] = luhOld[idx_luh(i, j, k, l)] + lduh[idx_lduh(i, j, k, l)] * updateSize;
         }
       }
     }
