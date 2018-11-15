@@ -4625,6 +4625,7 @@ void exahype::solvers::ADERDGSolver::submitOrSendStealablePredictionJob(Stealabl
      exahype::stealing::StealingProfiler::getInstance().notifyOffloadedTask(destRank);
      exahype::stealing::PerformanceMonitor::getInstance().decCurrentLoad();
 
+     delete job;
   }
   else {
     peano::datatraversal::TaskSet spawnedSet( job, peano::datatraversal::TaskSet::TaskType::Background );
@@ -4822,8 +4823,7 @@ bool exahype::solvers::ADERDGSolver::StealingManagerJob::run() {
       }
       logInfo("stealingManager", " terminated ");
       result = false;
-      exahype::stealing::StealingProfiler::getInstance().endPhase();
-      exahype::stealing::StealingProfiler::getInstance().printStatistics();
+
       break;
     }
   }
