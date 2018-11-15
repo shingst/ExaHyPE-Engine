@@ -82,6 +82,8 @@
 
 #if defined(DistributedStealing) 
 #include "exahype/stealing/PerformanceMonitor.h"
+#include "exahype/stealing/StealingAnalyser.h"
+
 #if defined(StealingStrategyStaticHardcoded)
 #include "exahype/stealing/StaticDistributor.h"
 #endif
@@ -241,8 +243,14 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
       logWarning("initDistributedMemoryConfiguration()", "ranks are not allowed to skip any reduction (might harm performance). Use optimisation section to switch feature on" );
     }
 
-#if defined(DistributedStealing) && defined(StealingStrategyStaticHardcoded)
+#if defined(DistributedStealing) 
+
+    peano::performanceanalysis::Analysis::getInstance().setDevice(new exahype::stealing::StealingAnalyser());
+
+#if defined(StealingStrategyStaticHardcoded)
     exahype::stealing::StaticDistributor::getInstance().loadDistributionFromFile(_parser.getStealingInputFile());
+#endif
+
 #endif
 
     tarch::parallel::NodePool::getInstance().waitForAllNodesToBecomeIdle();
