@@ -60,7 +60,7 @@ void exahype::stealing::DiffusiveDistributor::updateLoadDistribution(int current
   logInfo("updateLoadDistribution()", "fastest: "<<fastestRank<<" slowest:"<<slowestRank);
 
   if(myRank == slowestRank) {
-    if(!_isVictim && !_emergencyTriggered && std::min_element(&loadSnapshot[0], &loadSnapshot[nnodes])<std::min_element(&loadSnapshot[0], &loadSnapshot[nnodes])) {
+    if(!_isVictim && !_emergencyTriggered && std::min_element(&loadSnapshot[0], &loadSnapshot[nnodes])<_zeroThreshold) {
       _tasksToOffload[fastestRank]++;
       logInfo("updateLoadDistribution()", "increment, send "<<_tasksToOffload[fastestRank]<<" to rank "<<fastestRank );
     }
