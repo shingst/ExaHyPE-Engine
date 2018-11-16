@@ -23,10 +23,10 @@ class exahype::stealing::DiffusiveDistributor {
     int *_tasksToOffload;
     // stores how many tasks still need to be offloaded in the current time step
     std::atomic<int> *_remainingTasksToOffload;
-    
     std::atomic<bool> _isVictim;
-  
     std::atomic<bool> _emergencyTriggered;
+
+    int               _zeroThreshold;
 
   public:
     tarch::timing::Watch _iterationTimer;
@@ -35,6 +35,8 @@ class exahype::stealing::DiffusiveDistributor {
     virtual ~DiffusiveDistributor();
 
     void updateLoadDistribution(int load);
+
+    void updateZeroThreshold(int threshold);
 
     // return next victim rank
     bool selectVictimRank(int& victim);
