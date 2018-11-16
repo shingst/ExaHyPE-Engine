@@ -57,7 +57,7 @@
 
 #if defined(DistributedStealing)
 #include <tbb/concurrent_queue.h>
-//#include "exahype/stealing/StealingManager.h"
+#include "exahype/stealing/DiffusiveDistributor.h"
 //#include "exahype/stealing/StealingProfiler.h"
 //#include "tarch/multicore/Core.h"
 
@@ -1104,9 +1104,12 @@ class exahype::solvers::Solver {
      } else {
        tarch::multicore::jobs::processBackgroundJobs(1);
  
-       if( !cellDescription.getHasCompletedTimeStep() ){
+#if defined(DistributedStealing) && defined(StealingStrategyDiffusive)
+       if( !cellDescription.getHasCompletedTimeStep() && tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs()==1){
          logInfo("waitUntilCompletedTimeStep()","EMERGENCY"); //TODO: my rank can  no longer be a critical rank and I should give away one less per victim
+         exahype::stealing::DiffusiveDistributor::getInstance().triggerEmergency();
        }
+#endif
      }
    }
  }

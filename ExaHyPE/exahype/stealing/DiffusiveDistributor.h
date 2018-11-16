@@ -25,6 +25,8 @@ class exahype::stealing::DiffusiveDistributor {
     std::atomic<int> *_remainingTasksToOffload;
     
     std::atomic<bool> _isVictim;
+  
+    std::atomic<bool> _emergencyTriggered;
 
   public:
     tarch::timing::Watch _iterationTimer;
@@ -39,6 +41,9 @@ class exahype::stealing::DiffusiveDistributor {
 
     void triggerVictimFlag();
     void resetVictimFlag();
+
+    void triggerEmergency();
+    void resetEmergency();
 
 };
 

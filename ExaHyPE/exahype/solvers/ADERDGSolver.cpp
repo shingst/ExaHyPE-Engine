@@ -4803,6 +4803,7 @@ bool exahype::solvers::ADERDGSolver::StealingManagerJob::run() {
 #ifdef USE_ITAC
   //VT_begin(event_stealingManager);
 #endif
+   //logInfo("stealingManager", " running... ");
 
   switch (_state) {
     case State::Running:

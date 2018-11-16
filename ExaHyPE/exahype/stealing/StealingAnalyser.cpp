@@ -1,3 +1,4 @@
+#if  defined(SharedTBB)  && defined(Parallel) && defined(DistributedStealing)
 #include "exahype/stealing/StealingAnalyser.h"
 
 #include "tarch/parallel/Node.h"
@@ -193,4 +194,5 @@ void exahype::stealing::StealingAnalyser::removeWorker(
   int                                 level
 ) {
 }
+#endif
 

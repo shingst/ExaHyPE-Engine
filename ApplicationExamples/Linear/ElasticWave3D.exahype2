@@ -33,7 +33,7 @@
   },
   "distributed_memory": {
     "stealing": "dynamic_diffusive",
-    "stealing_input_file" : "stealing_inputs_2_ranks/test_7.txt",
+    "stealing_input_file" : "stealing_inputs_2_ranks/test_0.txt",
     "timeout": 6000,
     "load_balancing_type": "static",
     "buffer_size": 1600,

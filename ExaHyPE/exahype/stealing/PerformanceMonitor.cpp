@@ -1,4 +1,4 @@
-#if  defined(SharedTBB)  && defined(Parallel)
+#if  defined(SharedTBB)  && defined(Parallel) && defined(DistributedStealing)
 #include "PerformanceMonitor.h"
 
 #include <algorithm>

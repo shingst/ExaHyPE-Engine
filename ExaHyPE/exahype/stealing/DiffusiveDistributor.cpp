@@ -1,4 +1,4 @@
-#if  defined(SharedTBB)  && defined(Parallel)
+#if  defined(SharedTBB)  && defined(Parallel) && defined(DistributedStealing)
 #include "DiffusiveDistributor.h"
 
 #include <algorithm>
@@ -16,7 +16,8 @@ tarch::logging::Log exahype::stealing::DiffusiveDistributor::_log( "exahype::ste
 
 exahype::stealing::DiffusiveDistributor::DiffusiveDistributor() :
   _iterationTimer("DiffusiveDistributor","IterationTimer",false),
-  _isVictim(false)  
+  _isVictim(false),
+  _emergencyTriggered(false) 
 {
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
 
@@ -81,6 +82,15 @@ void exahype::stealing::DiffusiveDistributor::triggerVictimFlag() {
 void exahype::stealing::DiffusiveDistributor::resetVictimFlag() {
   _isVictim = false;
 }
+
+void exahype::stealing::DiffusiveDistributor::triggerEmergency() {
+  _emergencyTriggered = true;
+}
+
+void exahype::stealing::DiffusiveDistributor::resetEmergency() {
+  _emergencyTriggered = false;
+}
+
 
 bool exahype::stealing::DiffusiveDistributor::selectVictimRank(int& victim) {
 
