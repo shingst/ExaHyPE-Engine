@@ -550,7 +550,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::u
     else if (
         solverPatch.getType()==SolverPatch::Type::Cell
     ) {
-      return updateBody(solverPatch,cellInfo,isAtRemoteBoundary);
+      return updateBody(solverPatch,cellInfo,solverPatch.getNeighbourMergePerformed(),isAtRemoteBoundary);
     }
     else {
       UpdateResult result;
