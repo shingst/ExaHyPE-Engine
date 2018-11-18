@@ -491,10 +491,10 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
     solverPatch.setHasCompletedTimeStep(false);
     const int element = cellInfo.indexOfADERDGCellDescription(solverPatch.getSolverNumber());
     peano::datatraversal::TaskSet( new ADERDGSolver::PredictionJob(
-        *this, solverPatch, cellInfo._cellDescriptionsIndex,element,
+        *_solver.get(),solverPatch/*the reductions are delegated to _solver anyway*/,
+        cellInfo._cellDescriptionsIndex,element,
         solverPatch.getCorrectorTimeStamp(),  // corrector time step data is correct; see docu
-        solverPatch.getCorrectorTimeStepSize(),
-        false/*is uncompressed*/, isSkeletonJob ));
+        solverPatch.getCorrectorTimeStepSize(),false/*is uncompressed*/,isSkeletonJob ));
   }
   else if ( solverPatch.getRefinementStatus()<_solver->getMinimumRefinementStatusForTroubledCell() ){
     _solver->performPredictionAndVolumeIntegralBody(
