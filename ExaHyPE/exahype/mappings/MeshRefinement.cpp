@@ -704,7 +704,7 @@ void exahype::mappings::MeshRefinement::mergeWithWorker(
                   receivedCellDescriptionsIndex,receivedElement);
 
           if ( newComputeCell ) {
-            solvers::Solver::CellInfo cellInfo = fineGridCell.createCellInfo();
+            solvers::Solver::CellInfo cellInfo = localCell.createCellInfo();
             solver->adjustSolutionDuringMeshRefinement(solverNumber,cellInfo);
           }
         }

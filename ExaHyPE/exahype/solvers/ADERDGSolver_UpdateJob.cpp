@@ -1,0 +1,60 @@
+#include "ADERDGSolver.h"
+
+#if defined(SharedTBB) && !defined(noTBBPrefetchesJobData)
+#include <immintrin.h>
+#endif
+
+
+exahype::solvers::ADERDGSolver::UpdateJob::UpdateJob(
+  ADERDGSolver&    solver,
+  CellDescription& cellDescription,
+  CellInfo&        cellInfo,
+  const bool       isAtRemoteBoundary):
+  tarch::multicore::jobs::Job(tarch::multicore::jobs::JobType::RunTaskAsSoonAsPossible,0), // !! always high priority
+  _solver(solver),
+  _cellDescription(cellDescription),
+  _cellInfo(cellInfo),
+  _neighbourMergePerformed(cellDescription.getNeighbourMergePerformed()),
+  _isAtRemoteBoundary(isAtRemoteBoundary) {
+  tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
+  {
+    NumberOfReductionJobs++;
+  }
+  lock.free();
+}
+
+bool exahype::solvers::ADERDGSolver::UpdateJob::run() {
+  UpdateResult result =
+      _solver.updateBody(_cellDescription,_isAtRemoteBoundary);
+
+  tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
+  {
+    _solver.updateNextMeshUpdateEvent(result._meshUpdateEvent);
+    _solver.updateMinNextTimeStepSize(result._timeStepSize);
+
+    NumberOfReductionJobs--;
+    assertion( NumberOfReductionJobs>=0 );
+  }
+  lock.free();
+  return false;
+}
+
+
+//
+// @see UpdateJob
+//
+void exahype::solvers::ADERDGSolver::UpdateJob::prefetchData() {
+  #if defined(SharedTBB) && !defined(noTBBPrefetchesJobData)
+  double* luh    = static_cast<double*>(_cellDescription.getSolution());
+  double* luhOld = static_cast<double*>(_cellDescription.getPreviousSolution());
+  double* lduh   = static_cast<double*>(_cellDescription.getUpdate());
+  double* lQhbnd = static_cast<double*>(_cellDescription.getExtrapolatedPredictor());
+  double* lFhbnd = static_cast<double*>(_cellDescription.getFluctuation());
+
+  _mm_prefetch(luh,    _MM_HINT_NTA);
+  _mm_prefetch(luhOld, _MM_HINT_NTA);
+  _mm_prefetch(lduh,   _MM_HINT_NTA);
+  _mm_prefetch(lQhbnd, _MM_HINT_NTA);
+  _mm_prefetch(lFhbnd, _MM_HINT_NTA);
+  #endif
+}

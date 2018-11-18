@@ -404,6 +404,12 @@ class exahype::solvers::Solver {
     peano::heap::RLEHeap<exahype::records::ADERDGCellDescription>::HeapEntries&        _ADERDGCellDescriptions;
     peano::heap::RLEHeap<exahype::records::FiniteVolumesCellDescription>::HeapEntries& _FiniteVolumesCellDescriptions;
 
+    CellInfo(const CellInfo& cellInfo) :
+      _cellDescriptionsIndex        (cellInfo._cellDescriptionsIndex        ),
+      _ADERDGCellDescriptions       (cellInfo._ADERDGCellDescriptions       ),
+      _FiniteVolumesCellDescriptions(cellInfo._FiniteVolumesCellDescriptions)
+    {}
+
     CellInfo(const int cellDescriptionsIndex,void* ADERDGCellDescriptions,void* FiniteVolumesCellDescriptions) :
       _cellDescriptionsIndex(cellDescriptionsIndex),
       _ADERDGCellDescriptions       (*static_cast<peano::heap::RLEHeap<exahype::records::ADERDGCellDescription>::HeapEntries*>(ADERDGCellDescriptions)),
@@ -621,10 +627,10 @@ class exahype::solvers::Solver {
   static int MaxNumberOfRunningBackgroundJobConsumerTasksDuringTraversal;
 
   /**
-   * Set to true if the prediction and/or the fused time step
-   * should be launched as background job whenever possible.
+   * Set to true if the prediction, the update and/or the fused time step
+   * should be launched as background job.
    */
-  static bool SpawnPredictionAsBackgroundJob;
+  static bool SpawnBackgroundJobs;
 
   /**
    * Set to true if the prolongation
@@ -647,12 +653,21 @@ class exahype::solvers::Solver {
   static bool SpawnAMRBackgroundJobs;
 
 
-  enum class JobType { AMRJob, EnclaveJob, SkeletonJob };
+  enum class JobType { AMRJob, ReductionJob, EnclaveJob, SkeletonJob };
 
   /**
    * \see ensureAllBackgroundJobsHaveTerminated
    */
   static int NumberOfAMRBackgroundJobs;
+
+  /**
+   * Number of jobs spawned which perform a reduction.
+   *
+   * Reduction Jobs are spawned as high priority.
+   * They might be enclave or skeleton jobs.
+   */
+  static int NumberOfReductionJobs;
+
   /**
    * Number of background jobs spawned
    * from enclave cells.
