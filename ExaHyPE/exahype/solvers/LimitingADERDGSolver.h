@@ -387,9 +387,10 @@ private:
    * @return an admissible time step size and a mesh update event for the solver patch
    */
   UpdateResult updateBody(
-      SolverPatch& solverPatch,
-      CellInfo&    cellInfo,
-      const bool   isAtRemoteBoundary);
+      SolverPatch&                                               solverPatch,
+      CellInfo&                                                  cellInfo,
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
+      const bool                                                 isAtRemoteBoundary);
 
  /**
    * Rollback to the previous time step, i.e,

@@ -555,6 +555,24 @@ class exahype::solvers::Solver {
     }
   } BoundaryFaceInfo;
 
+  template <typename CellDescription>
+  static bool resetNeighbourMergeFlags(CellDescription& p) {
+    for (int faceIndex=0; faceIndex<DIMENSIONS_TIMES_TWO; faceIndex++) {
+      p.setNeighbourMergePerformed(faceIndex,false);
+
+      #ifdef Parallel
+      int listingsOfRemoteRank =
+          countListingsOfRemoteRankAtInsideFace(
+              faceIndex,fineGridVertices,fineGridVerticesEnumerator);
+      if (listingsOfRemoteRank==0) {
+        listingsOfRemoteRank = TWO_POWER_D;
+      }
+      p.setFaceDataExchangeCounter(faceIndex,listingsOfRemoteRank);
+      assertion(p.getFaceDataExchangeCounter(faceIndex)>0);
+      #endif
+    }
+  }
+
   /**
    * TrackGridStatistics is a flag from Peano that I "misuse" here as these
    * data also are grid statistics.

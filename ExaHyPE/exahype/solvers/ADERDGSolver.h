@@ -2025,6 +2025,7 @@ public:
    */
   UpdateResult updateBody(
       CellDescription& cellDescription,
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
       const bool isAtRemoteBoundary);
 
   UpdateResult fusedTimeStepOrRestrict(
@@ -2075,22 +2076,6 @@ public:
       CellDescription& cellDescription,
       const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
       const bool backupPreviousSolution=true);
-
-  /**
-   * Update the solution of a cell description.
-   *
-   * \note Make sure to reset neighbour merge
-   * helper variables in this method call.
-   *
-   * \note Has no const modifier since kernels are not const functions yet.
-   *
-   * \param[in] backupPreviousSolution Set to true if the solution should be backed up before
-   *                                   we overwrite it by the updated solution.
-   */
-  void updateSolution(
-      const int cellDescriptionsIndex,
-      const int element,
-      const bool backupPreviousSolution);
 
   /**
    * TODO(Dominic): Update docu.

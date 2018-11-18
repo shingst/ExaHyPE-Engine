@@ -508,19 +508,22 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
 }
 
 exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::updateBody(
-    SolverPatch& solverPatch,
-    CellInfo&    cellInfo,
-    const bool   isAtRemoteBoundary){
+    SolverPatch&                                               solverPatch,
+    CellInfo&                                                  cellInfo,
+    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
+    const bool                                                 isAtRemoteBoundary){
   if (CompressionAccuracy>0.0) { uncompress(solverPatch,cellInfo); }
 
   // the actual computations
   UpdateResult result;
-  updateSolution(solverPatch,cellInfo,solverPatch.getNeighbourMergePerformed(),true);
+  updateSolution(solverPatch,cellInfo,neighbourMergePerformed,true);
   result._timeStepSize    = startNewTimeStep(solverPatch,cellInfo);
   result._meshUpdateEvent = updateRefinementStatusAndMinAndMaxAfterSolutionUpdate(
       solverPatch,cellInfo,solverPatch.getNeighbourMergePerformed());
 
   if (CompressionAccuracy>0.0) { compress(solverPatch,cellInfo,isAtRemoteBoundary); }
+
+  solverPatch.setHasCompletedTimeStep(true);
   return result;
 }
 
@@ -539,6 +542,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::u
         solverPatch.getType()==SolverPatch::Type::Cell &&
         SpawnBackgroundJobs
     ) {
+      solverPatch.setHasCompletedTimeStep(false);
       peano::datatraversal::TaskSet (
           new UpdateJob( *this, solverPatch, cellInfo, isAtRemoteBoundary ) );
       return UpdateResult();

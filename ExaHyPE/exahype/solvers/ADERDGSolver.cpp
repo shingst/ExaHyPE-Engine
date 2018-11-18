@@ -2140,6 +2140,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
   UpdateResult result;
   result._timeStepSize    = startNewTimeStepFused(cellDescription,isFirstTimeStepOfBatch,isLastTimeStepOfBatch);
   result._meshUpdateEvent = evaluateRefinementCriteriaAfterSolutionUpdate(cellDescription,neighbourMergePerformed);
+
   if (
       SpawnBackgroundJobs &&
       !mustBeDoneImmediately &&
@@ -2152,7 +2153,6 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
         cellDescription.getCorrectorTimeStamp(),  // corrector time step data is correct; see docu
         cellDescription.getCorrectorTimeStepSize(),
         false/*is uncompressed*/, isSkeletonCell ));
-
   } else {
     performPredictionAndVolumeIntegralBody(
           cellDescription,
@@ -2210,18 +2210,21 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
 }
 
 exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::updateBody(
-    CellDescription& cellDescription,const bool isAtRemoteBoundary) {
+    CellDescription& cellDescription,
+    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
+    const bool isAtRemoteBoundary) {
   assertion1(cellDescription.getType()==CellDescription::Type::Cell,cellDescription.toString());
   uncompress(cellDescription);
 
   UpdateResult result;
-  updateSolution(cellDescription,cellDescription.getNeighbourMergePerformed(),true);
+  updateSolution(cellDescription,neighbourMergePerformed,true);
   result._timeStepSize    = startNewTimeStep(cellDescription);
   result._meshUpdateEvent = evaluateRefinementCriteriaAfterSolutionUpdate(
       cellDescription,cellDescription.getNeighbourMergePerformed());
 
   compress(cellDescription,isAtRemoteBoundary);
 
+  cellDescription.setHasCompletedTimeStep(true);
   return result;
 }
 
@@ -2236,6 +2239,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::updateOrR
         cellDescription.getType()==CellDescription::Type::Cell &&
         SpawnBackgroundJobs
     ) {
+      cellDescription.setHasCompletedTimeStep(false);
       peano::datatraversal::TaskSet (
           new UpdateJob( *this, cellDescription, cellInfo, isAtRemoteBoundary ) );
       return UpdateResult();
@@ -2243,7 +2247,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::updateOrR
     else if (
         cellDescription.getType()==CellDescription::Type::Cell
     ) {
-      return updateBody(cellDescription,isAtRemoteBoundary);
+      return updateBody(cellDescription,cellDescription.getNeighbourMergePerformed(),isAtRemoteBoundary);
     }
     else if (
         cellDescription.getType()==CellDescription::Type::Descendant &&
@@ -2667,15 +2671,6 @@ void exahype::solvers::ADERDGSolver::updateSolution(
   updateCommunicationStatus(cellDescription);
   // marking for augmentation
   updateAugmentationStatus(cellDescription);
-}
-
-void exahype::solvers::ADERDGSolver::updateSolution(
-    const int cellDescriptionsIndex,
-    const int element,
-    const bool backupPreviousSolution) {
-  // reset helper variables
-  CellDescription& cellDescription  = getCellDescription(cellDescriptionsIndex,element);
-  updateSolution(cellDescription,cellDescription.getNeighbourMergePerformed(),backupPreviousSolution);
 }
 
 void exahype::solvers::ADERDGSolver::swapSolutionAndPreviousSolution(CellDescription& cellDescription) const {
