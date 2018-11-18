@@ -1,12 +1,12 @@
 #include "exahype/solvers/FiniteVolumesSolver.h"
 
 exahype::solvers::FiniteVolumesSolver::FusedTimeStepJob::FusedTimeStepJob(
-  FiniteVolumesSolver&     solver,
-  CellDescription&         cellDescription,
-  CellInfo&                cellInfo,
-  const bool               isFirstTimeStepOfBatch,
-  const bool               isLastTimeStepOfBatch,
-  const bool               isSkeletonJob)
+  FiniteVolumesSolver& solver,
+  CellDescription&     cellDescription,
+  CellInfo&            cellInfo,
+  const bool           isFirstTimeStepOfBatch,
+  const bool           isLastTimeStepOfBatch,
+  const bool           isSkeletonJob)
   :
   tarch::multicore::jobs::Job(
       isLastTimeStepOfBatch ?
@@ -16,6 +16,7 @@ exahype::solvers::FiniteVolumesSolver::FusedTimeStepJob::FusedTimeStepJob(
   _solver(solver),
   _cellDescription(cellDescription),
   _cellInfo(cellInfo),
+  _neighbourMergePerformed(cellDescription.getNeighbourMergePerformed()),
   _isFirstTimeStepOfBatch(isFirstTimeStepOfBatch),
   _isLastTimeStepOfBatch(isLastTimeStepOfBatch),
   _isSkeletonJob(isSkeletonJob) {
@@ -31,7 +32,10 @@ exahype::solvers::FiniteVolumesSolver::FusedTimeStepJob::FusedTimeStepJob(
 
 bool exahype::solvers::FiniteVolumesSolver::FusedTimeStepJob::run() {
   UpdateResult result =
-      _solver.updateBody(_cellDescription,_cellInfo,_isFirstTimeStepOfBatch,_isLastTimeStepOfBatch,_isSkeletonJob,false/*uncompressBefore*/);
+      _solver.updateBody(
+          _cellDescription,_cellInfo,_neighbourMergePerformed,_isFirstTimeStepOfBatch,_isLastTimeStepOfBatch,
+          _isSkeletonJob,false/*uncompressBefore*/);
+
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
   {
     if (_isLastTimeStepOfBatch) {

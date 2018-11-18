@@ -724,6 +724,7 @@ void exahype::solvers::FiniteVolumesSolver::adjustSolution(CellDescription& cell
 exahype::solvers::Solver::UpdateResult exahype::solvers::FiniteVolumesSolver::updateBody(
     CellDescription& cellDescription,
     CellInfo&  cellInfo,
+    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
     const bool isFirstTimeStepOfBatch,
     const bool isLastTimeStepOfBatch,
     const bool isAtRemoteBoundary,
@@ -753,12 +754,14 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::FiniteVolumesSolver::fu
     if ( SpawnBackgroundJobs ) {
       cellDescription.setHasCompletedTimeStep(false);
       peano::datatraversal::TaskSet( new FusedTimeStepJob(
-          *this, cellDescription, cellInfo, isFirstTimeStepOfBatch, isLastTimeStepOfBatch,
+          *this, cellDescription, cellInfo,
+          isFirstTimeStepOfBatch, isLastTimeStepOfBatch,
           isSkeletonCell ) );
       return UpdateResult();
     } else {
       return updateBody(
           cellDescription,cellInfo,
+          cellDescription.getNeighbourMergePerformed(),
           isFirstTimeStepOfBatch,isLastTimeStepOfBatch,isAtRemoteBoundary,false/*uncompressBefore*/);
     }
   } else {
@@ -779,7 +782,9 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::FiniteVolumesSolver::up
   }
   else if ( element!=NotFound ) {
     CellDescription& cellDescription = cellInfo._FiniteVolumesCellDescriptions[element];
-    return updateBody(cellDescription,cellInfo,true,true,isAtRemoteBoundary,true/*uncompressBefore*/);
+    return updateBody(
+        cellDescription,cellInfo,cellDescription.getNeighbourMergePerformed(),
+        true,true,isAtRemoteBoundary,true/*uncompressBefore*/);
   } else {
     return UpdateResult();
   }

@@ -134,20 +134,22 @@ private:
    *
    * @return a struct holding an admissible time step size for the next update
    *
-   * @param cellDescription        a cell description
-   * @param cellInfo               links to all the cell descriptions associated with a cell
-   * @param isFirstTimeStepOfBatch if the current time step is the first time step of a batch of time steps
-   * @param isLastTimeStepOfBatch  if the current time step is the last time step of a batch of time steps
-   * @param isAtRemoteBoundary     if the cell description is at a remote boundary.
-   * @param uncompressBefore       if the cell description should uncompress data before doing any PDE operations
+   * @param cellDescription         a cell description
+   * @param cellInfo                links to all the cell descriptions associated with a cell
+   * @param neighbourMergePerformed per face a flag indicating if a neighbour merge has been performed
+   * @param isFirstTimeStepOfBatch  if the current time step is the first time step of a batch of time steps
+   * @param isLastTimeStepOfBatch   if the current time step is the last time step of a batch of time steps
+   * @param isAtRemoteBoundary      if the cell description is at a remote boundary.
+   * @param uncompressBefore        if the cell description should uncompress data before doing any PDE operations
    */
   UpdateResult updateBody(
-      CellDescription& cellDescription,
-      CellInfo&        cellInfo,
-      const bool       isFirstTimeStepOfBatch,
-      const bool       isLastTimeStepOfBatch,
-      const bool       isAtRemoteBoundary,
-      const bool       uncompressBefore);
+      CellDescription&                                           cellDescription,
+      CellInfo&                                                  cellInfo,
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
+      const bool                                                 isFirstTimeStepOfBatch,
+      const bool                                                 isLastTimeStepOfBatch,
+      const bool                                                 isAtRemoteBoundary,
+      const bool                                                 uncompressBefore);
 
 #ifdef Parallel
   /**
@@ -230,12 +232,13 @@ private:
    */
   class FusedTimeStepJob: public tarch::multicore::jobs::Job {
   private:
-    FiniteVolumesSolver&  _solver;
-    CellDescription&      _cellDescription;
-    CellInfo              _cellInfo; // copy
-    const bool            _isFirstTimeStepOfBatch;
-    const bool            _isLastTimeStepOfBatch;
-    const bool            _isSkeletonJob;
+    FiniteVolumesSolver&                                      _solver;
+    CellDescription&                                          _cellDescription;
+    CellInfo                                                  _cellInfo; // copy
+    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> _neighbourMergePerformed;
+    const bool                                                _isFirstTimeStepOfBatch;
+    const bool                                                _isLastTimeStepOfBatch;
+    const bool                                                _isSkeletonJob;
   public:
     /**
      * Construct a FusedTimeStepJob.
@@ -271,11 +274,11 @@ private:
    */
   class UpdateJob: public tarch::multicore::jobs::Job {
   private:
-    FiniteVolumesSolver&                                       _solver; // TODO not const because of kernels
-    CellDescription&                                           _cellDescription;
-    CellInfo                                                   _cellInfo;
-    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>  _neighbourMergePerformed;
-    const bool                                                 _isAtRemoteBoundary;
+    FiniteVolumesSolver&                                      _solver; // TODO not const because of kernels
+    CellDescription&                                          _cellDescription;
+    CellInfo                                                  _cellInfo;
+    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> _neighbourMergePerformed;
+    const bool                                                _isAtRemoteBoundary;
   public:
     /**
      * Construct a UpdateJob.

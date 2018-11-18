@@ -25,7 +25,9 @@ exahype::solvers::FiniteVolumesSolver::UpdateJob::UpdateJob(
 
 bool exahype::solvers::FiniteVolumesSolver::UpdateJob::run() {
   UpdateResult result =
-      _solver.updateBody(_cellDescription,_cellInfo,true,true,_isAtRemoteBoundary,true);
+      _solver.updateBody(
+          _cellDescription,_cellInfo,_neighbourMergePerformed,
+          true,true,_isAtRemoteBoundary,true);
 
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
   {
