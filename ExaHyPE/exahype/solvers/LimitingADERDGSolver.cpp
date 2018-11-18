@@ -437,7 +437,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
       ) {
         solverPatch.setHasCompletedTimeStep(false); // done here in order to skip lookup of cell description in job constructor
         peano::datatraversal::TaskSet spawn( new FusedTimeStepJob(
-            *this, solverPatch, cellInfo, isSkeletonCell ) );
+            *this,solverPatch,cellInfo,isFirstTimeStepOfBatch,isLastTimeStepOfBatch,isSkeletonCell) );
         return UpdateResult();
       } else {
         return fusedTimeStepBody(
