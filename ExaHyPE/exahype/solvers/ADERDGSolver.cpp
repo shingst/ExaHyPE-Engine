@@ -4755,7 +4755,7 @@ void exahype::solvers::ADERDGSolver::progressStealing() {
 			data->_lFhbnd.data(),
 		    stat.MPI_SOURCE,
 			stat.MPI_TAG,
-			exahype::stealing::StealingManager::getInstance().getMPICommunicatorMapped(),
+			exahype::stealing::StealingManager::getInstance().getMPICommunicator(),
 			&receiveRequests[0],
 			&(data->_metadata[0]));
         exahype::stealing::StealingManager::getInstance().submitRequests(
