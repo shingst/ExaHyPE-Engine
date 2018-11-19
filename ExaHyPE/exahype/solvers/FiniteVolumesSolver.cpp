@@ -752,6 +752,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::FiniteVolumesSolver::fu
   if ( element != NotFound ) {
     bool isSkeletonCell = isAtRemoteBoundary;
     CellDescription& cellDescription = cellInfo._FiniteVolumesCellDescriptions[element];
+    cellDescription.setHasCompletedTimeStep(true);
     if ( SpawnBackgroundJobs ) {
       cellDescription.setHasCompletedTimeStep(false);
       peano::datatraversal::TaskSet( new FusedTimeStepJob(
@@ -783,6 +784,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::FiniteVolumesSolver::up
   }
   else if ( element!=NotFound ) {
     CellDescription& cellDescription = cellInfo._FiniteVolumesCellDescriptions[element];
+    cellDescription.setHasCompletedTimeStep(false);
     return updateBody(
         cellDescription,cellInfo,
         true,true,isAtRemoteBoundary,true/*uncompressBefore*/);

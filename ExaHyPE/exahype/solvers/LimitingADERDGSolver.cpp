@@ -422,6 +422,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
   const int element        = cellInfo.indexOfADERDGCellDescription(solverNumber);
   if ( element != NotFound ) {
     SolverPatch& solverPatch = cellInfo._ADERDGCellDescriptions[element];
+    solverPatch.setHasCompletedTimeStep(false);
 
     // Write the previous limiter status back onto the patch for all cell description types
     solverPatch.setPreviousRefinementStatus(solverPatch.getRefinementStatus());
@@ -435,7 +436,6 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
           SpawnBackgroundJobs &&
           !mustBeDoneImmediately
       ) {
-        solverPatch.setHasCompletedTimeStep(false); // done here in order to skip lookup of cell description in job constructor
         peano::datatraversal::TaskSet spawn( new FusedTimeStepJob(
             *this,solverPatch,cellInfo,isFirstTimeStepOfBatch,isLastTimeStepOfBatch,isSkeletonCell) );
         return UpdateResult();
@@ -549,6 +549,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::u
   const int solverElement = cellInfo.indexOfADERDGCellDescription(solverNumber);
   if ( solverElement != NotFound ) {
     SolverPatch& solverPatch = cellInfo._ADERDGCellDescriptions[solverElement];
+    solverPatch.setHasCompletedTimeStep(false);
 
     // Write the previous limiter status back onto the patch for all cell description types
     solverPatch.setPreviousRefinementStatus(solverPatch.getRefinementStatus());
@@ -557,7 +558,6 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::u
         solverPatch.getType()==SolverPatch::Type::Cell &&
         SpawnBackgroundJobs
     ) {
-      solverPatch.setHasCompletedTimeStep(false);
       peano::datatraversal::TaskSet (
           new UpdateJob( *this, solverPatch, cellInfo, isAtRemoteBoundary ) );
       return UpdateResult();

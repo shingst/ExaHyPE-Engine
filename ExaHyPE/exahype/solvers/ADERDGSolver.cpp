@@ -2177,6 +2177,8 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
   const int element = cellInfo.indexOfADERDGCellDescription(solverNumber);
   if ( element != NotFound ) {
     CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[element];
+    cellDescription.setHasCompletedTimeStep(false);
+
     if ( cellDescription.getType()==CellDescription::Type::Cell ) {
       const bool isAMRSkeletonCell     = cellDescription.getHasVirtualChildren();
       const bool isSkeletonCell        = isAMRSkeletonCell || isAtRemoteBoundary;
@@ -2186,7 +2188,6 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
           SpawnBackgroundJobs &&
           !mustBeDoneImmediately
       ) {
-        cellDescription.setHasCompletedTimeStep(false); // done here in order to skip lookup of cell description in job constructor
         peano::datatraversal::TaskSet spawn( new FusedTimeStepJob(
             *this, cellDescription, cellInfo, isFirstTimeStepOfBatch, isLastTimeStepOfBatch, isSkeletonCell) );
         return UpdateResult();
@@ -2203,10 +2204,12 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
     ) {
       restrictToTopMostParent(cellDescription);
       resetNeighbourMergePerformedFlags(cellDescription);
+      cellDescription.setHasCompletedTimeStep(true);
       // TODO(Dominic): Evaluate ref crit here too // halos
       return UpdateResult();
     } else {
       resetNeighbourMergePerformedFlags(cellDescription);
+      cellDescription.setHasCompletedTimeStep(true);
       return UpdateResult();
     }
   } else {
@@ -2231,7 +2234,6 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::updateBod
   compress(cellDescription,isAtRemoteBoundary);
 
   resetNeighbourMergePerformedFlags(cellDescription);
-
   cellDescription.setHasCompletedTimeStep(true);
   return result;
 }
@@ -2243,11 +2245,12 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::updateOrR
   const int element = cellInfo.indexOfADERDGCellDescription(solverNumber);
   if ( element != NotFound ) {
     CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[element];
+    cellDescription.setHasCompletedTimeStep(false);
+
     if (
         cellDescription.getType()==CellDescription::Type::Cell &&
         SpawnBackgroundJobs
     ) {
-      cellDescription.setHasCompletedTimeStep(false);
       peano::datatraversal::TaskSet (
           new UpdateJob( *this, cellDescription, cellInfo, isAtRemoteBoundary ) );
       return UpdateResult();
@@ -2263,11 +2266,13 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::updateOrR
     ) {
       restrictToTopMostParent(cellDescription);
       resetNeighbourMergePerformedFlags(cellDescription);
+      cellDescription.setHasCompletedTimeStep(true);
       // TODO(Dominic): Evaluate ref crit here too // halos
       return UpdateResult();
     }
     else {
       resetNeighbourMergePerformedFlags(cellDescription);
+      cellDescription.setHasCompletedTimeStep(true);
       return UpdateResult();
     }
   }
