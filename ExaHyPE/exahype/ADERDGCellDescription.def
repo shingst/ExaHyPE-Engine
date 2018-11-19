@@ -374,7 +374,8 @@ class exahype::records::ADERDGCellDescription {
 
 
   // TODO(Lukas) Document!
-  persistent int extrapolatedPredictorGradient;
+  persistent int extrapolatedPredictorGradientIndex;
+  persistent pointer extrapolatedPredictorGradient;
 
   /**
    * Index pointing to the normal fluxes computed at the bounding faces of the
