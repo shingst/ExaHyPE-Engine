@@ -89,7 +89,7 @@ exahype::Vertex::getCellDescriptionsIndex() const {
 
 exahype::solvers::Solver::CellInfo exahype::Vertex::createCellInfo(int index) const {
   if ( _vertexData.getCellDescriptionsIndex(index)<0 ) {
-    logError("createCellInfo()","No heap data allocated for cell.")
+    logError("createCellInfo()","No heap data allocated for cell. Cell descriptions heap index="<<_vertexData.getCellDescriptionsIndex(index))
     std::abort();
   }
   assertion1( exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(_vertexData.getCellDescriptionsIndex(index)),_vertexData.getCellDescriptionsIndex());
