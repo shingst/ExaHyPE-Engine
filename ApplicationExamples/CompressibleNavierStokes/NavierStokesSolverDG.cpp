@@ -8,10 +8,14 @@
 
 #include <cmath>
 #include <map>
+#include <tuple>
+
 #include "NavierStokesSolverDG.h"
 #include "NavierStokesSolverDG_Variables.h"
 
 #include "totalVariation.h"
+#include "VarianceHelper.h"
+
 #include "stableDiffusiveTimeStepSize.h"
 #if DIMENSIONS == 2
 #include "diffusiveRiemannSolver2d.h"
@@ -186,17 +190,29 @@ exahype::solvers::Solver::RefinementControl NavierStokes::NavierStokesSolverDG::
     return exahype::solvers::Solver::RefinementControl::Keep;
   }
 
-  const auto maxGlobal = _globalObservables[0];
-  const auto minGlobal = _globalObservables[1];
-  const auto maxGlobalDiff = maxGlobal - minGlobal;
-
   const auto curObservables = mapGlobalObservables(luh, dx);
-  const auto maxDiff = curObservables[0] - minGlobal;
+  const auto curTv = curObservables[0];
 
-  if (maxDiff > maxGlobalDiff/10) {
+  const auto countGlobal = _globalObservables[2];
+  const auto meanGlobal = _globalObservables[0];
+
+  // Computed variance applies Bessel's correction.
+  // As we use the complete population to compute the statistics
+  // this is unnecessary.
+  const auto varianceGlobal = (countGlobal - 1)/countGlobal * _globalObservables[1];
+  const auto stdGlobal = std::sqrt(varianceGlobal);
+
+  const auto factorRefine = 2.0;
+  const auto factorCoarse = 2.0;
+
+  const auto hi = meanGlobal + factorRefine * stdGlobal;
+  const auto lo = meanGlobal - factorCoarse * stdGlobal;
+
+  if (curTv > hi) {
     return exahype::solvers::Solver::RefinementControl::Refine;
   }
-  if (maxDiff < maxGlobalDiff/15.) {
+
+  if (curTv < lo) {
     return exahype::solvers::Solver::RefinementControl::Erase;
   }
 
@@ -292,22 +308,11 @@ std::vector<double> NavierStokes::NavierStokesSolverDG::mapGlobalObservables(con
 
  const auto tv = totalVariation(Q, Order, NumberOfVariables, NumberOfParameters, dx, false, computePotT);
 
- /*
- dfor(i,Order+1) {
-   const auto vars = ReadOnlyVariables{Q + idxQ(i(1), i(0), 0)};
-   const auto pressure = ns.evaluatePressure(vars.E(), vars.rho(), vars.j());
-   const auto temperature = ns.evaluateTemperature(vars.rho(), pressure);
-   const auto potT = ns.evaluatePotentialTemperature(temperature, pressure);
-   reduceGlobalObservables(observables, std::vector<double>{potT, potT});
- }
-  */
- observables = {tv, tv};
-
- return observables;
+ return {tv, 0, 1};
 }
 
 std::vector<double> NavierStokes::NavierStokesSolverDG::resetGlobalObservables() const {
-  return {std::numeric_limits<double>::min(), std::numeric_limits<double>::max()};
+  return {-1.0, -1.0, 0};
 }
 
 void NavierStokes::NavierStokesSolverDG::reduceGlobalObservables(
@@ -316,9 +321,20 @@ void NavierStokes::NavierStokesSolverDG::reduceGlobalObservables(
   assertion2(reducedGlobalObservables.size() == curGlobalObservables.size(),
           reducedGlobalObservables.size(),
           curGlobalObservables.size());
-  reducedGlobalObservables[0] = std::max(reducedGlobalObservables[0],
-                                         std::abs(curGlobalObservables[0]));
 
-  reducedGlobalObservables[1] = std::min(reducedGlobalObservables[1],
-                                         std::abs(curGlobalObservables[1]));
+  const auto mean0 = reducedGlobalObservables[0];
+  const auto mean1 = curGlobalObservables[0];
+  const auto var0 = reducedGlobalObservables[1];
+  const auto var1 = curGlobalObservables[1];
+  const auto count0 = static_cast<int>(reducedGlobalObservables[2]);
+  const auto count1 = static_cast<int>(curGlobalObservables[2]);
+
+  auto mergedMean = 0.0;
+  auto mergedVariance = 0.0;
+
+  std::tie(mergedMean, mergedVariance) = mergeVariance(mean0, mean1, var0, var1, count0,
+          count1);
+  reducedGlobalObservables[0] = mergedMean;
+  reducedGlobalObservables[1] = mergedVariance;
+  reducedGlobalObservables[2] = count0 + count1;
 }
