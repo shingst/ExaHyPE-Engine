@@ -374,8 +374,7 @@ private:
       const bool   isFirstTimeStepOfBatch,
       const bool   isLastTimeStepOfBatch,
       const bool   isSkeletonCell,
-      const bool   mustBeDoneImmediately,
-      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed);
+      const bool   mustBeDoneImmediately);
 
   /**
    * Body of LimitingADERDGSolver::updateOrRestrict(...).
@@ -387,10 +386,9 @@ private:
    * @return an admissible time step size and a mesh update event for the solver patch
    */
   UpdateResult updateBody(
-      SolverPatch&                                               solverPatch,
-      CellInfo&                                                  cellInfo,
-      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
-      const bool                                                 isAtRemoteBoundary);
+      SolverPatch& solverPatch,
+      CellInfo&    cellInfo,
+      const bool   isAtRemoteBoundary);
 
  /**
    * Rollback to the previous time step, i.e,
@@ -487,7 +485,6 @@ private:
     CellInfo                                                  _cellInfo;                // copy
     const bool                                                _isFirstTimeStepOfBatch;
     const bool                                                _isLastTimeStepOfBatch;
-    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> _neighbourMergePerformed; // we need to copy this as it may be overwritten while the job is not processed yet!
     const bool                                                _isSkeletonJob;
   public:
     FusedTimeStepJob(
@@ -514,7 +511,6 @@ private:
       LimitingADERDGSolver&                                     _solver; // TODO not const because of kernels
       SolverPatch&                                              _solverPatch;
       CellInfo                                                  _cellInfo;
-      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> _neighbourMergePerformed;
       const bool                                                _isAtRemoteBoundary;
     public:
       /**

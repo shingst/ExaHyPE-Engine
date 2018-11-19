@@ -145,7 +145,6 @@ private:
   UpdateResult updateBody(
       CellDescription&                                           cellDescription,
       CellInfo&                                                  cellInfo,
-      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
       const bool                                                 isFirstTimeStepOfBatch,
       const bool                                                 isLastTimeStepOfBatch,
       const bool                                                 isAtRemoteBoundary,
@@ -235,7 +234,6 @@ private:
     FiniteVolumesSolver&                                      _solver;
     CellDescription&                                          _cellDescription;
     CellInfo                                                  _cellInfo; // copy
-    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> _neighbourMergePerformed;
     const bool                                                _isFirstTimeStepOfBatch;
     const bool                                                _isLastTimeStepOfBatch;
     const bool                                                _isSkeletonJob;
@@ -277,7 +275,6 @@ private:
     FiniteVolumesSolver&                                      _solver; // TODO not const because of kernels
     CellDescription&                                          _cellDescription;
     CellInfo                                                  _cellInfo;
-    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> _neighbourMergePerformed;
     const bool                                                _isAtRemoteBoundary;
   public:
     /**

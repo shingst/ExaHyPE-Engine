@@ -444,8 +444,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
             solverPatch, cellInfo,
             isFirstTimeStepOfBatch,isLastTimeStepOfBatch,
             isSkeletonCell,
-            mustBeDoneImmediately,
-            solverPatch.getNeighbourMergePerformed());
+            mustBeDoneImmediately);
       }
     }
     else {
@@ -459,6 +458,8 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
       _solver->updateRefinementStatus(solverPatch,solverPatch.getNeighbourMergePerformed());
       result._meshUpdateEvent = _solver->evaluateRefinementCriteriaAfterSolutionUpdate(
           solverPatch,solverPatch.getNeighbourMergePerformed()); // must be done by all cell types TODO(Dominic): Clean up
+
+      resetNeighbourMergePerformedFlags(solverPatch);
       return result;
     }
   } else {
@@ -472,15 +473,19 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
     const bool   isFirstTimeStepOfBatch,
     const bool   isLastTimeStepOfBatch,
     const bool   isSkeletonCell,
-    const bool   mustBeDoneImmediately,
-    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed) {
+    const bool   mustBeDoneImmediately) {
+  const auto neighbourMergePerformed = solverPatch.getNeighbourMergePerformed(); // copy
+
   // synchroniseTimeStepping(cellDescriptionsIndex,cellInfo); // assumes this was done in neighbour merge
   updateSolution(solverPatch,cellInfo,neighbourMergePerformed,isFirstTimeStepOfBatch);
 
   UpdateResult result;
-  result._timeStepSize = startNewTimeStepFused(solverPatch,cellInfo,isFirstTimeStepOfBatch,isLastTimeStepOfBatch);
-  result._meshUpdateEvent =
-      updateRefinementStatusAndMinAndMaxAfterSolutionUpdate(solverPatch,cellInfo,neighbourMergePerformed);
+  result._timeStepSize    = startNewTimeStepFused(solverPatch,cellInfo,isFirstTimeStepOfBatch,isLastTimeStepOfBatch);
+  result._meshUpdateEvent = updateRefinementStatusAndMinAndMaxAfterSolutionUpdate(solverPatch,cellInfo,neighbourMergePerformed);
+
+  resetNeighbourMergePerformedFlags(solverPatch);
+  const int limiterElement = cellInfo.indexOfFiniteVolumesCellDescription(solverPatch.getSolverNumber());
+  if ( limiterElement != NotFound ) { resetNeighbourMergePerformedFlags(cellInfo._FiniteVolumesCellDescriptions[limiterElement]); }
 
   if (
       solverPatch.getRefinementStatus()<_solver->getMinimumRefinementStatusForTroubledCell() &&
@@ -509,10 +514,11 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
 }
 
 exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::updateBody(
-    SolverPatch&                                               solverPatch,
-    CellInfo&                                                  cellInfo,
-    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
-    const bool                                                 isAtRemoteBoundary){
+    SolverPatch& solverPatch,
+    CellInfo&    cellInfo,
+    const bool   isAtRemoteBoundary){
+  const auto neighbourMergePerformed = solverPatch.getNeighbourMergePerformed(); // copy
+
   if (CompressionAccuracy>0.0) { uncompress(solverPatch,cellInfo); }
 
   // the actual computations
@@ -523,6 +529,10 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::u
       solverPatch,cellInfo,solverPatch.getNeighbourMergePerformed());
 
   if (CompressionAccuracy>0.0) { compress(solverPatch,cellInfo,isAtRemoteBoundary); }
+
+  resetNeighbourMergePerformedFlags(solverPatch);
+  const int limiterElement = cellInfo.indexOfFiniteVolumesCellDescription(solverPatch.getSolverNumber());
+  if ( limiterElement != NotFound ) { resetNeighbourMergePerformedFlags(cellInfo._FiniteVolumesCellDescriptions[limiterElement]); }
 
   solverPatch.setHasCompletedTimeStep(true);
   return result;
@@ -551,7 +561,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::u
     else if (
         solverPatch.getType()==SolverPatch::Type::Cell
     ) {
-      return updateBody(solverPatch,cellInfo,solverPatch.getNeighbourMergePerformed(),isAtRemoteBoundary);
+      return updateBody(solverPatch,cellInfo,isAtRemoteBoundary);
     }
     else {
       UpdateResult result;

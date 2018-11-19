@@ -21,7 +21,6 @@ exahype::solvers::LimitingADERDGSolver::FusedTimeStepJob::FusedTimeStepJob(
   _cellInfo(cellInfo),
   _isFirstTimeStepOfBatch(isFirstTimeStepOfBatch),
   _isLastTimeStepOfBatch(isLastTimeStepOfBatch),
-  _neighbourMergePerformed(solverPatch.getNeighbourMergePerformed()),
   _isSkeletonJob(isSkeletonJob) {
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
   {
@@ -37,7 +36,7 @@ bool exahype::solvers::LimitingADERDGSolver::FusedTimeStepJob::run() {
   UpdateResult result =
       _solver.fusedTimeStepBody(
           _solverPatch,_cellInfo,_isFirstTimeStepOfBatch,_isLastTimeStepOfBatch,
-          _isSkeletonJob,false/*mustBeDoneImmedetially*/,_neighbourMergePerformed);
+          _isSkeletonJob,false/*mustBeDoneImmedetially*/);
 
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
   {

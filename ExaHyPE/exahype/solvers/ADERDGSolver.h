@@ -986,7 +986,6 @@ private:
       CellInfo                                                  _cellInfo; // copy
       const bool                                                _isFirstTimeStepOfBatch;
       const bool                                                _isLastTimeStepOfBatch;
-      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> _neighbourMergePerformed;
       const bool                                                _isSkeletonJob;
     public:
       /**
@@ -1029,7 +1028,6 @@ private:
       ADERDGSolver&                                              _solver; // TODO not const because of kernels
       CellDescription&                                           _cellDescription;
       CellInfo                                                   _cellInfo;
-      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>  _neighbourMergePerformed;
       const bool                                                 _isAtRemoteBoundary;
     public:
       /**
@@ -2010,8 +2008,7 @@ public:
         const bool       isFirstTimeStepOfBatch,
         const bool       isLastTimeStepOfBatch,
         const bool       isSkeletonCell,
-        const bool       mustBeDoneImmediately,
-        const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed);
+        const bool       mustBeDoneImmediately);
 
   /**
    * If the cell description is of type Cell, update the solution, evaluate the refinement criterion,
@@ -2025,7 +2022,6 @@ public:
    */
   UpdateResult updateBody(
       CellDescription& cellDescription,
-      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
       const bool isAtRemoteBoundary);
 
   UpdateResult fusedTimeStepOrRestrict(

@@ -14,7 +14,6 @@ exahype::solvers::ADERDGSolver::UpdateJob::UpdateJob(
   _solver(solver),
   _cellDescription(cellDescription),
   _cellInfo(cellInfo),
-  _neighbourMergePerformed(cellDescription.getNeighbourMergePerformed()),
   _isAtRemoteBoundary(isAtRemoteBoundary) {
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
   {
@@ -25,7 +24,7 @@ exahype::solvers::ADERDGSolver::UpdateJob::UpdateJob(
 
 bool exahype::solvers::ADERDGSolver::UpdateJob::run() {
   UpdateResult result =
-      _solver.updateBody(_cellDescription,_neighbourMergePerformed,_isAtRemoteBoundary);
+      _solver.updateBody(_cellDescription,_isAtRemoteBoundary);
 
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
   {
