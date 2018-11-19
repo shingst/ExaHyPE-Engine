@@ -261,6 +261,14 @@ void exahype::mappings::LevelwiseAdjacencyBookkeeping::mergeWithRemoteDataDueToF
             localVertex,
             cScalar,
             multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
+        exahype::VertexOperations::writeADERDGCellDescriptions(
+            localVertex,
+            cScalar,
+            nullptr);
+        exahype::VertexOperations::writeFiniteVolumesCellDescriptions(
+            localVertex,
+            cScalar,
+            nullptr);
       }
     enddforx
   }
@@ -385,6 +393,10 @@ void exahype::mappings::LevelwiseAdjacencyBookkeeping::destroyCell(
       VertexOperations::writeCellDescriptionsIndex(
           fineGridVertices[fineGridVerticesEnumerator(k)], TWO_POWER_D-kScalar-1,
               multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
+      VertexOperations::writeADERDGCellDescriptions(
+          fineGridVertices[fineGridVerticesEnumerator(k)], TWO_POWER_D-kScalar-1,nullptr);
+      VertexOperations::writeFiniteVolumesCellDescriptions(
+          fineGridVertices[fineGridVerticesEnumerator(k)], TWO_POWER_D-kScalar-1,nullptr);
     }
   enddforx
 }

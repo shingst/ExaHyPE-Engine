@@ -122,6 +122,7 @@ private:
   typedef class peano::grid::Vertex<exahype::records::Vertex> Base;
 
   friend class VertexOperations;
+  friend class PredictionOrLocalRecomputation;
 
   /**
    * The log device of this class.
@@ -364,9 +365,14 @@ private:
   Vertex(const Base::PersistentVertex& argument);
 
   /**
-   * Return the cell descriptions indices of the adjacent cells.
+   * @return the cell descriptions indices of the adjacent cells.
    */
   tarch::la::Vector<TWO_POWER_D, int> getCellDescriptionsIndex() const;
+ 
+  /**
+   * @return the cell descriptions indices of an adjcacent cell.
+   */
+  int getCellDescriptionsIndex(const int adjacencyIndex) const;
 
   /**
    * @return a cell info object linking to cell descriptions associated with the cell

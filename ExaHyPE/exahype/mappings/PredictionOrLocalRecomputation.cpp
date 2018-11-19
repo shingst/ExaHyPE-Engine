@@ -25,8 +25,6 @@
 
 #include "multiscalelinkedcell/HangingVertexBookkeeper.h"
 
-#include "exahype/VertexOperations.h"
-
 #include "exahype/solvers/LimitingADERDGSolver.h"
 
 #include "exahype/mappings/Prediction.h"
@@ -342,8 +340,8 @@ void exahype::mappings::PredictionOrLocalRecomputation::mergeNeighboursDataDurin
   tarch::la::Vector<DIMENSIONS,int> pos2 = Vertex::delineariseIndex2(pos2Scalar);
   assertion(tarch::la::countEqualEntries(pos1,pos2)==(DIMENSIONS-1));
 
-  const bool cellDescriptionsIndex1 = VertexOperations::readCellDescriptionsIndex(vertex,pos1Scalar);
-  const bool cellDescriptionsIndex2 = VertexOperations::readCellDescriptionsIndex(vertex,pos2Scalar);
+  const int  cellDescriptionsIndex1 = vertex.getCellDescriptionsIndex(pos1Scalar);
+  const int  cellDescriptionsIndex2 = vertex.getCellDescriptionsIndex(pos2Scalar);
   const bool validIndex1 = cellDescriptionsIndex1 >= 0;
   const bool validIndex2 = cellDescriptionsIndex2 >= 0;
 
@@ -451,7 +449,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::receiveNeighbourDataLoop
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const int                                    level) {
   if ( vertex.hasToReceiveMetadata(fromRank,srcScalar,destScalar,vertex.getAdjacentRanks()) ) {
-    const int destCellDescriptionsIndex = VertexOperations::readCellDescriptionsIndex(vertex,destScalar);
+    const int destCellDescriptionsIndex = vertex.getCellDescriptionsIndex(destScalar);
     bool validIndex = destCellDescriptionsIndex >= 0;
     assertion( !validIndex || exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(destCellDescriptionsIndex));
 

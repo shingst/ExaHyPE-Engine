@@ -82,9 +82,12 @@ bool exahype::Vertex::equalUpToRelativeTolerance(
   return tarch::la::equals( lhs, rhs, tolerance );
 }
 
-tarch::la::Vector<TWO_POWER_D, int>
-exahype::Vertex::getCellDescriptionsIndex() const {
+tarch::la::Vector<TWO_POWER_D, int> exahype::Vertex::getCellDescriptionsIndex() const {
   return _vertexData.getCellDescriptionsIndex();
+}
+
+int exahype::Vertex::getCellDescriptionsIndex(const int adjacencyIndex) const {
+  return _vertexData.getCellDescriptionsIndex(adjacencyIndex);
 }
 
 exahype::solvers::Solver::CellInfo exahype::Vertex::createCellInfo(int index) const {

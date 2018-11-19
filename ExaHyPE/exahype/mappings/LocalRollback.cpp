@@ -22,8 +22,6 @@
 
 #include "peano/utils/Loop.h"
 
-#include "exahype/VertexOperations.h"
-
 #include "exahype/solvers/LimitingADERDGSolver.h"
 
 peano::CommunicationSpecification
@@ -207,17 +205,14 @@ void exahype::mappings::LocalRollback::sendDataToNeighbourLoopBody(
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const int                                    level) {
   if ( vertex.hasToSendMetadata(toRank,srcScalar,destScalar,vertex.getAdjacentRanks()) ) {
-    const int srcCellDescriptionsIndex = VertexOperations::readCellDescriptionsIndex(vertex,srcScalar);
+    const int srcCellDescriptionsIndex = vertex.getCellDescriptionsIndex(srcScalar);
     bool validIndex = srcCellDescriptionsIndex >= 0;
     assertion( !validIndex || exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(srcCellDescriptionsIndex));
 
     if ( validIndex ) {
       const tarch::la::Vector<DIMENSIONS,int> src = Vertex::delineariseIndex2(srcScalar);
       const tarch::la::Vector<DIMENSIONS,int> dest = Vertex::delineariseIndex2(destScalar);
-      solvers::Solver::CellInfo cellInfo(
-          srcCellDescriptionsIndex,
-          VertexOperations::readCellDescriptionsIndex(vertex,srcScalar),
-          VertexOperations::readCellDescriptionsIndex(vertex,srcScalar));
+      solvers::Solver::CellInfo cellInfo = vertex.createCellInfo(srcScalar);
       solvers::Solver::BoundaryFaceInfo face(src,dest);
 
       if ( Vertex::hasToSendToNeighbourNow(cellInfo,face) ) {
