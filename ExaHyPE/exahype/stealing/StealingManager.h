@@ -30,6 +30,12 @@ namespace exahype {
   }
 }
 
+namespace exahype {
+  namespace solvers {
+    class Solver;
+  }
+}
+
 /*
 * This stealing manager manages the asynchronous MPI requests
 * created e.g., when a task is stolen. In addition, the stealing
@@ -82,6 +88,7 @@ class exahype::stealing::StealingManager {
 
     // for all stealing-related communication, a separate MPI communicator is used (needs to be created in runGlobalStep())
     MPI_Comm _stealingComm;
+    MPI_Comm _stealingCommMapped;
 
     /*
      * The request handler job aims to distribute the work that is to be done
@@ -124,6 +131,7 @@ class exahype::stealing::StealingManager {
 
     void createMPICommunicator();
     MPI_Comm getMPICommunicator();
+    MPI_Comm getMPICommunicatorMapped();
 
     /*
      * Given the current load situation and global knowledge of the load

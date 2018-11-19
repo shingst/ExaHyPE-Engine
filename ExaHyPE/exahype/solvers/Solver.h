@@ -58,10 +58,14 @@
 #if defined(DistributedStealing)
 #include <tbb/concurrent_queue.h>
 #include "exahype/stealing/DiffusiveDistributor.h"
-//#include "exahype/stealing/StealingProfiler.h"
+#include "exahype/stealing/StealingManager.h"
 //#include "tarch/multicore/Core.h"
-
 #endif
+
+#ifdef USE_ITAC
+#include "VT.h"
+#endif
+
 
 // Some helpers
 constexpr int power(int basis, int exp) {
@@ -1091,8 +1095,24 @@ class exahype::solvers::Solver {
  template <typename CellDescription>
  static void waitUntilCompletedTimeStep(
      const CellDescription& cellDescription,const bool waitForHighPriorityJob,const bool receiveDanglingMessages) {
+
+#ifdef USE_ITAC
+  static int event_wait = -1;
+  static const char *event_name_wait = "wait_cell";
+  int ierr=VT_funcdef(event_name_wait, VT_NOCLASS, &event_wait ); assert(ierr==0);
+  static int event_emergency = -1;
+  static const char *event_name_emergency = "trigger_emergency";
+  ierr=VT_funcdef(event_name_emergency, VT_NOCLASS, &event_emergency ); assert(ierr==0);
+#endif
+
    if ( !cellDescription.getHasCompletedTimeStep() ) {
+#ifdef USE_ITAC
+	 VT_begin(event_wait);
+#endif
      peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
+#if defined(DistributedStealing)
+     exahype::stealing::StealingManager::getInstance().progressRequests();
+#endif
    }
    while ( !cellDescription.getHasCompletedTimeStep() ) {
      // do some work myself
@@ -1105,13 +1125,23 @@ class exahype::solvers::Solver {
        tarch::multicore::jobs::processBackgroundJobs(1);
  
 #if defined(DistributedStealing) && defined(StealingStrategyDiffusive)
+       exahype::stealing::StealingManager::getInstance().progressRequests();
        if( !cellDescription.getHasCompletedTimeStep() && tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs()==1){
+#ifdef USE_ITAC
+	 VT_begin(event_emergency);
+#endif
          logInfo("waitUntilCompletedTimeStep()","EMERGENCY"); //TODO: my rank can  no longer be a critical rank and I should give away one less per victim
          exahype::stealing::DiffusiveDistributor::getInstance().triggerEmergency();
+#ifdef USE_ITAC
+	 VT_end(event_emergency);
+#endif
        }
 #endif
      }
    }
+#ifdef USE_ITAC
+	 VT_end(event_wait);
+#endif
  }
 
  /**

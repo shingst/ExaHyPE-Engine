@@ -35,10 +35,6 @@
 
 #include "exahype/stealing/StealingProfiler.h"
 
-#ifdef USE_ITAC
-#include "VT.h"
-#endif
-
 std::vector<exahype::solvers::Solver*> exahype::solvers::RegisteredSolvers;
 
 #ifdef Parallel

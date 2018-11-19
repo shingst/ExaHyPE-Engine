@@ -29,7 +29,8 @@ tarch::logging::Log exahype::stealing::StealingManager::_log( "exahype::stealing
 exahype::stealing::StealingManager::StealingManager() :
     _nextRequestId(0),
 	_nextGroupId(0),
-	_stealingComm(MPI_COMM_NULL)
+	_stealingComm(MPI_COMM_NULL),
+	_stealingCommMapped(MPI_COMM_NULL)
 {
 #ifdef USE_ITAC
   static const char *event_name_handle = "handleRequest";
@@ -52,10 +53,16 @@ exahype::stealing::StealingManager::~StealingManager()
 void exahype::stealing::StealingManager::createMPICommunicator() {
   int ierr = MPI_Comm_dup(MPI_COMM_WORLD, &_stealingComm);
   assertion(ierr==MPI_SUCCESS);
+  ierr = MPI_Comm_dup(MPI_COMM_WORLD, &_stealingCommMapped);
+  assertion(ierr==MPI_SUCCESS);
 }
 
 MPI_Comm exahype::stealing::StealingManager::getMPICommunicator() {
   return _stealingComm;
+}
+
+MPI_Comm exahype::stealing::StealingManager::getMPICommunicatorMapped() {
+  return _stealingCommMapped;
 }
 
 exahype::stealing::StealingManager& exahype::stealing::StealingManager::getInstance() {

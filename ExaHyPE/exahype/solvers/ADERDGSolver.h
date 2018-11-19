@@ -1023,6 +1023,7 @@ private:
 	  double *lFhbnd,
 	  int dest,
 	  int tag,
+	  MPI_Comm comm,
 	  MPI_Request *requests,
 	  double *metadata =nullptr);
   /*
@@ -1035,6 +1036,7 @@ private:
 	  double *lFhbnd,
       int srcRank,
 	  int tag,
+	  MPI_Comm comm,
 	  MPI_Request *requests,
 	  double *metadata =nullptr);
 
