@@ -23,7 +23,7 @@ double totalVariation(const double* Q, int order, int numberOfVariables, int num
       for (int m = 0; m < numberOfVariables; m++) {
         for (int n = 0; n < basisSize; n++) { // n == matmul x
           const auto idx = idxGradQ(k,l, /*x*/0,m);
-          const auto t = 1.0 * invDx[0] * Q[idx_lQi(k,n,m)] * kernels::dudx[order][l][n];
+          const auto t = Q[idx_lQi(k,n,m)] * kernels::dudx[order][l][n];
           gradQ[idx] += t;
         }
       }
@@ -37,7 +37,7 @@ double totalVariation(const double* Q, int order, int numberOfVariables, int num
       for (int m = 0; m < numberOfVariables; m++) {
         for (int n = 0; n < basisSize; n++) { // n = matmul y
           const auto idx = idxGradQ(l, k, /*y*/1, m);
-          const auto t = 1.0 * invDx[1] * Q[idx_lQi(n, k, m)] * kernels::dudx[order][l][n]; /* l,n: transpose */
+          const auto t = Q[idx_lQi(n, k, m)] * kernels::dudx[order][l][n]; /* l,n: transpose */
           gradQ[idx] += t;
         }
       }
@@ -46,7 +46,6 @@ double totalVariation(const double* Q, int order, int numberOfVariables, int num
 
   // Compute integral of absolute gradient for all dimensions and variables.
   auto tv = 0.0;
-
   const auto& quadratureWeights = kernels::gaussLegendreWeights[order];
 
   for (int k = 0; k < basisSize; k++) {

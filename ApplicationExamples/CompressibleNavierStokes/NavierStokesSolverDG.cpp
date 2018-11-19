@@ -284,7 +284,7 @@ std::vector<double> NavierStokes::NavierStokesSolverDG::mapGlobalObservables(con
    return ns.evaluatePotentialTemperature(temperature, pressure);
  };
 
- const auto tv = totalVariation(Q, Order, NumberOfVariables, NumberOfParameters, dx, true, computePotT);
+ const auto tv = totalVariation(Q, Order, NumberOfVariables, NumberOfParameters, dx, false, computePotT);
 
  /*
  dfor(i,Order+1) {
