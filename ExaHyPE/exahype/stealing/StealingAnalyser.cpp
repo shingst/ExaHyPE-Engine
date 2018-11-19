@@ -45,10 +45,13 @@ void exahype::stealing::StealingAnalyser::beginIteration() {
 void exahype::stealing::StealingAnalyser::endIteration(double numberOfInnerLeafCells, double numberOfOuterLeafCells, double numberOfInnerCells, double numberOfOuterCells, double numberOfLocalCells, double numberOfLocalVertices) {
 
   for(int i=0; i<_waitForOtherRank.size(); i++) {
-    if(i != tarch::parallel::Node::getInstance().getRank())
+    if(i != tarch::parallel::Node::getInstance().getRank()) {
       logInfo("endIteration()", "wait for rank "<<i<<_waitForOtherRank[i].toString());
+      if(_waitForOtherRank[i].getValue()>_currentMaxWaitTime) _currentMaxWaitTime = _waitForOtherRank[i].getValue();
+    }     
   }
-
+  logInfo("endIteration()","submitting new wait time "<<_currentMaxWaitTime<<" to performance monitor and updating current load distribution");
+  exahype::stealing::DiffusiveDistributor::getInstance().updateLoadDistribution(static_cast<int>(_currentMaxWaitTime*1e06));
   exahype::stealing::PerformanceMonitor::getInstance().setCurrentLoad(static_cast<int>(_currentMaxWaitTime*1e06));
 }
 
@@ -68,11 +71,6 @@ void exahype::stealing::StealingAnalyser::endToReceiveDataFromWorker( int fromRa
     _waitForOtherRank[fromRank].setValue(elapsedTime);
 
     double currentAvg = _waitForOtherRank[fromRank].getValue();
-
-    if(_currentMaxWaitTime < currentAvg) {
-      _currentMaxWaitTime = currentAvg;
-      exahype::stealing::DiffusiveDistributor::getInstance().updateLoadDistribution(static_cast<int>(_currentMaxWaitTime*1e06));
-    }
     
     if (tarch::la::greater(elapsedTime,0.0)) {
       logInfo(
@@ -112,11 +110,6 @@ void exahype::stealing::StealingAnalyser::endToReceiveDataFromMaster() {
         " currentAvg "<< currentAvg << "s"<<
         " currentMaxWaitTime "<<_currentMaxWaitTime<<"s"
       );
-    }
-
-    if(_currentMaxWaitTime< currentAvg) {
-      _currentMaxWaitTime = currentAvg;
-      exahype::stealing::DiffusiveDistributor::getInstance().updateLoadDistribution(static_cast<int>(_currentMaxWaitTime*1e06));
     }
   }
 }

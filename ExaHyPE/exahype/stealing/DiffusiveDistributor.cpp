@@ -49,7 +49,8 @@ void exahype::stealing::DiffusiveDistributor::updateLoadDistribution(int current
 
   loadSnapshot[myRank] = currentLoad;
 
-  logInfo("updateLoadDistribution()", "current wait time "<<currentLoad);
+  logInfo("updateLoadDistribution()", "current maximum wait time "<<currentLoad
+                                      <<" isVictim: "<<_isVictim<<" emergency event: "<<_emergencyTriggered);
 
   //determine who is fastest
   int fastestRank = std::distance(&loadSnapshot[0], std::max_element(&loadSnapshot[0], &loadSnapshot[nnodes]));
@@ -60,11 +61,12 @@ void exahype::stealing::DiffusiveDistributor::updateLoadDistribution(int current
   logInfo("updateLoadDistribution()", "fastest: "<<fastestRank<<" slowest:"<<slowestRank);
 
   if(myRank == slowestRank) {
-    if(!_isVictim && !_emergencyTriggered && std::min_element(&loadSnapshot[0], &loadSnapshot[nnodes])<std::min_element(&loadSnapshot[0], &loadSnapshot[nnodes])) {
+    if(!_isVictim && !_emergencyTriggered && *std::min_element(&loadSnapshot[0], &loadSnapshot[nnodes])<_zeroThreshold) {
       _tasksToOffload[fastestRank]++;
-      logInfo("updateLoadDistribution()", "increment, send "<<_tasksToOffload[fastestRank]<<" to rank "<<fastestRank );
+      logInfo("updateLoadDistribution()", "I am a critical rank, increment, send "<<_tasksToOffload[fastestRank]<<" to rank "<<fastestRank );
     }
     else if(_emergencyTriggered){
+      logInfo("updateLoadDistribution()", "I was a critical rank, but emergency event happened.");
       for(int i=0; i<nnodes; i++) {
         if(i!=myRank && _tasksToOffload[i]>0) {
           _tasksToOffload[i]--;
@@ -99,10 +101,13 @@ void exahype::stealing::DiffusiveDistributor::resetVictimFlag() {
 }
 
 void exahype::stealing::DiffusiveDistributor::triggerEmergency() {
+  if(!_emergencyTriggered)
+    logInfo("triggerEmergency()","emergency event triggered");
   _emergencyTriggered = true;
 }
 
 void exahype::stealing::DiffusiveDistributor::resetEmergency() {
+  logInfo("resetEmergency()","emergency flag reset");
   _emergencyTriggered = false;
 }
 
