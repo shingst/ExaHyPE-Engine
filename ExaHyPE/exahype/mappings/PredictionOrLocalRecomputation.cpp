@@ -376,7 +376,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::mergeNeighboursDataDurin
     tarch::la::Vector<DIMENSIONS,int> posBoundary   = pos2;
     int cellDescriptionsIndex                       = cellDescriptionsIndex1;
     if ( cellDescriptionsIndex2 >= 0 ) {
-      int     posCellScalar = pos1Scalar;
+      posCellScalar         = pos2Scalar;
       posCell               = pos2;
       posBoundary           = pos1;
       cellDescriptionsIndex = cellDescriptionsIndex2;
