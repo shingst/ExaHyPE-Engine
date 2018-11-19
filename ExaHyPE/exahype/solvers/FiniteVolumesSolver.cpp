@@ -232,16 +232,16 @@ void exahype::solvers::FiniteVolumesSolver::startNewTimeStep() {
 }
 
 void exahype::solvers::FiniteVolumesSolver::startNewTimeStepFused(
-    const bool isFirstIterationOfBatch,
-    const bool isLastIterationOfBatch) {
+    const bool isFirstTimeStepOfBatch,
+    const bool isLastTimeStepOfBatch) {
   // n-1
-   if ( isFirstIterationOfBatch ) {
+   if ( isFirstTimeStepOfBatch ) {
      _previousMinTimeStepSize  = _minTimeStepSize;
      _previousMinTimeStamp     = _minTimeStamp;
    }
    // n
    _minTimeStamp            += _minTimeStepSize;
-   if ( isLastIterationOfBatch ) {
+   if ( isLastTimeStepOfBatch ) {
      switch (_timeStepping) {
        case TimeStepping::Global:
          _minTimeStepSize        = _minNextTimeStepSize;
@@ -632,8 +632,8 @@ double exahype::solvers::FiniteVolumesSolver::startNewTimeStep(CellDescription& 
 
 double exahype::solvers::FiniteVolumesSolver::startNewTimeStepFused(
     CellDescription& cellDescription,
-    const bool isFirstIterationOfBatch, // TODOD(Dominic): same code
-    const bool isLastIterationOfBatch) {
+    const bool isFirstTimeStepOfBatch, // TODOD(Dominic): same code
+    const bool isLastTimeStepOfBatch) {
   assertion1(cellDescription.getType()==exahype::records::FiniteVolumesCellDescription::Cell,cellDescription.toString());
   double* solution = static_cast<double*>(cellDescription.getSolution());
 
@@ -641,13 +641,13 @@ double exahype::solvers::FiniteVolumesSolver::startNewTimeStepFused(
   assertion(!std::isnan(admissibleTimeStepSize));
 
   // n-1
-  if (isFirstIterationOfBatch) {
+  if (isFirstTimeStepOfBatch) {
     cellDescription.setPreviousTimeStamp(cellDescription.getTimeStamp());
     cellDescription.setPreviousTimeStepSize(cellDescription.getTimeStepSize());
   }
   // n
   cellDescription.setTimeStamp(cellDescription.getTimeStamp()+cellDescription.getTimeStepSize());
-  if (isLastIterationOfBatch) {
+  if (isLastTimeStepOfBatch) {
     cellDescription.setTimeStepSize(admissibleTimeStepSize);
   }
 
@@ -723,16 +723,17 @@ void exahype::solvers::FiniteVolumesSolver::adjustSolution(CellDescription& cell
 
 exahype::solvers::Solver::UpdateResult exahype::solvers::FiniteVolumesSolver::updateBody(
     CellDescription& cellDescription,
-    const int cellDescriptionsIndex,
-    const bool isFirstIterationOfBatch,
-    const bool isLastIterationOfBatch,
+    CellInfo&  cellInfo,
+    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
+    const bool isFirstTimeStepOfBatch,
+    const bool isLastTimeStepOfBatch,
     const bool isAtRemoteBoundary,
     const bool uncompressBefore) {
   if ( uncompressBefore ) { uncompress(cellDescription); }
 
-  updateSolution(cellDescription,cellDescriptionsIndex,isFirstIterationOfBatch);
+  updateSolution(cellDescription,cellInfo._cellDescriptionsIndex,isFirstTimeStepOfBatch);
   UpdateResult result;
-  result._timeStepSize = startNewTimeStepFused(cellDescription,isFirstIterationOfBatch,isLastIterationOfBatch);
+  result._timeStepSize = startNewTimeStepFused(cellDescription,isFirstTimeStepOfBatch,isLastTimeStepOfBatch);
 
   cellDescription.setHasCompletedTimeStep(true); // last step of the FV update
 
@@ -743,25 +744,25 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::FiniteVolumesSolver::up
 exahype::solvers::Solver::UpdateResult exahype::solvers::FiniteVolumesSolver::fusedTimeStepOrRestrict(
     const int solverNumber,
     CellInfo& cellInfo,
-    const bool isFirstIterationOfBatch,
-    const bool isLastIterationOfBatch,
+    const bool isFirstTimeStepOfBatch,
+    const bool isLastTimeStepOfBatch,
     const bool isAtRemoteBoundary) {
   const int element = cellInfo.indexOfFiniteVolumesCellDescription(solverNumber);
   if ( element != NotFound ) {
     bool isSkeletonCell = isAtRemoteBoundary;
     CellDescription& cellDescription = cellInfo._FiniteVolumesCellDescriptions[element];
-    if (
-        !SpawnPredictionAsBackgroundJob ||
-        isFirstIterationOfBatch ||
-        isLastIterationOfBatch
-    ) {
-      return updateBody(
-          cellDescription,cellInfo._cellDescriptionsIndex,
-          isFirstIterationOfBatch,isLastIterationOfBatch,isAtRemoteBoundary,false/*uncompressBefore*/);
-    } else {
+    if ( SpawnBackgroundJobs ) {
       cellDescription.setHasCompletedTimeStep(false);
-      peano::datatraversal::TaskSet( new FusedTimeStepJob( *this, cellDescription, cellInfo._cellDescriptionsIndex, isSkeletonCell ) );
+      peano::datatraversal::TaskSet( new FusedTimeStepJob(
+          *this, cellDescription, cellInfo,
+          isFirstTimeStepOfBatch, isLastTimeStepOfBatch,
+          isSkeletonCell ) );
       return UpdateResult();
+    } else {
+      return updateBody(
+          cellDescription,cellInfo,
+          cellDescription.getNeighbourMergePerformed(),
+          isFirstTimeStepOfBatch,isLastTimeStepOfBatch,isAtRemoteBoundary,false/*uncompressBefore*/);
     }
   } else {
     return UpdateResult();
@@ -773,9 +774,17 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::FiniteVolumesSolver::up
       CellInfo&  cellInfo,
       const bool isAtRemoteBoundary){
   const int element = cellInfo.indexOfFiniteVolumesCellDescription(solverNumber);
-  if ( element!=NotFound ) {
+  if ( element!=NotFound && SpawnBackgroundJobs) {
     CellDescription& cellDescription = cellInfo._FiniteVolumesCellDescriptions[element];
-    return updateBody(cellDescription,cellInfo._cellDescriptionsIndex,true,true,isAtRemoteBoundary,true/*uncompressBefore*/);
+    peano::datatraversal::TaskSet(
+        new UpdateJob(*this,cellDescription,cellInfo,isAtRemoteBoundary) );
+    return UpdateResult();
+  }
+  else if ( element!=NotFound ) {
+    CellDescription& cellDescription = cellInfo._FiniteVolumesCellDescriptions[element];
+    return updateBody(
+        cellDescription,cellInfo,cellDescription.getNeighbourMergePerformed(),
+        true,true,isAtRemoteBoundary,true/*uncompressBefore*/);
   } else {
     return UpdateResult();
   }
@@ -2083,67 +2092,6 @@ bool exahype::solvers::FiniteVolumesSolver::CompressionJob::run() {
     int& jobCounter = (_isSkeletonJob) ? NumberOfSkeletonJobs : NumberOfEnclaveJobs;
     jobCounter--;
     assertion( jobCounter>=0 );
-  }
-  lock.free();
-  return false;
-}
-
-
-exahype::solvers::FiniteVolumesSolver::FusedTimeStepJob::FusedTimeStepJob(
-  FiniteVolumesSolver&     solver,
-  CellDescription&         cellDescription,
-  const int                cellDescriptionsIndex,
-  const bool               isSkeletonJob):
-  tarch::multicore::jobs::Job(Solver::getTaskType(isSkeletonJob),0),
-  _solver(solver),
-  _cellDescription(cellDescription),
-  _cellDescriptionsIndex(cellDescriptionsIndex),
-  _isSkeletonJob(isSkeletonJob) {
-  tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  {
-    int& jobCounter = (_isSkeletonJob) ? NumberOfSkeletonJobs : NumberOfEnclaveJobs;
-    jobCounter++;
-  }
-  lock.free();
-}
-
-bool exahype::solvers::FiniteVolumesSolver::FusedTimeStepJob::run() {
-  _solver.updateBody(_cellDescription,_cellDescriptionsIndex,false,false,_isSkeletonJob,false/*uncompressBefore*/);
-  tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  {
-    int& jobCounter = (_isSkeletonJob) ? NumberOfSkeletonJobs : NumberOfEnclaveJobs;
-    jobCounter--;
-    assertion( jobCounter>=0 );
-  }
-  lock.free();
-  return false;
-}
-
-
-
-exahype::solvers::FiniteVolumesSolver::AdjustSolutionDuringMeshRefinementJob::AdjustSolutionDuringMeshRefinementJob(
-  FiniteVolumesSolver& solver,
-  CellDescription&     cellDescription,
-  const bool           isInitialMeshRefinement):
-  tarch::multicore::jobs::Job(Solver::getTaskType(false),0),
-  _solver(solver),
-  _cellDescription(cellDescription),
-  _isInitialMeshRefinement(isInitialMeshRefinement)
-{
-  tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  {
-    NumberOfAMRBackgroundJobs++;
-  }
-  lock.free();
-}
-
-bool exahype::solvers::FiniteVolumesSolver::AdjustSolutionDuringMeshRefinementJob::run() {
-  _solver.adjustSolutionDuringMeshRefinementBody(_cellDescription,_isInitialMeshRefinement);
-
-  tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  {
-    NumberOfAMRBackgroundJobs--;
-    assertion( NumberOfAMRBackgroundJobs>=0 );
   }
   lock.free();
   return false;

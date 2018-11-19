@@ -751,10 +751,10 @@ void exahype::solvers::ADERDGSolver::startNewTimeStep() {
 }
 
 void exahype::solvers::ADERDGSolver::startNewTimeStepFused(
-    const bool isFirstIterationOfBatch,
-    const bool isLastIterationOfBatch) {
+    const bool isFirstTimeStepOfBatch,
+    const bool isLastTimeStepOfBatch) {
   // n-1
-  if ( isFirstIterationOfBatch ) {
+  if ( isFirstTimeStepOfBatch ) {
     _previousMinCorrectorTimeStamp    = _minCorrectorTimeStamp;
     _previousMinCorrectorTimeStepSize = _minCorrectorTimeStepSize;
   }
@@ -763,7 +763,7 @@ void exahype::solvers::ADERDGSolver::startNewTimeStepFused(
   _minCorrectorTimeStepSize = _minPredictorTimeStepSize;
   // n+1
   _minPredictorTimeStamp    = _minPredictorTimeStamp + _minPredictorTimeStepSize;
-  if ( isLastIterationOfBatch ) {
+  if ( isLastTimeStepOfBatch ) {
     // TODO(Dominic): Add to docu. We minimise the time step size over all batch iterations
     // Otherwise, we freeze (do not overwrite) the minPredictorTimeStepSize
     switch (_timeStepping) {
@@ -2128,36 +2128,39 @@ exahype::solvers::ADERDGSolver::evaluateRefinementCriteriaAfterSolutionUpdate(
 
 exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTimeStepBody(
     CellDescription& cellDescription,
-    const int cellDescriptionsIndex,
-    const int element,
-    const bool isFirstIterationOfBatch,
-    const bool isLastIterationOfBatch,
+    CellInfo&  cellInfo,
+    const bool isFirstTimeStepOfBatch,
+    const bool isLastTimeStepOfBatch,
     const bool isSkeletonCell,
     const bool mustBeDoneImmediately,
     const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed ) {
   // solver->synchroniseTimeStepping(cellDescription); // assumes this was done in neighbour merge
-  updateSolution(cellDescription,neighbourMergePerformed,isFirstIterationOfBatch);
+  updateSolution(cellDescription,neighbourMergePerformed,isFirstTimeStepOfBatch);
 
   UpdateResult result;
-  result._timeStepSize    = startNewTimeStepFused(cellDescription,isFirstIterationOfBatch,isLastIterationOfBatch);
+  result._timeStepSize    = startNewTimeStepFused(cellDescription,isFirstTimeStepOfBatch,isLastTimeStepOfBatch);
   result._meshUpdateEvent = evaluateRefinementCriteriaAfterSolutionUpdate(cellDescription,neighbourMergePerformed);
+
   if (
-      !SpawnPredictionAsBackgroundJob ||
-      mustBeDoneImmediately
+      SpawnBackgroundJobs    &&
+      !mustBeDoneImmediately &&
+      !isSkeletonCell        &&
+      isLastTimeStepOfBatch
   ) {
+    cellDescription.setHasCompletedTimeStep(false);
+    const int element = cellInfo.indexOfADERDGCellDescription(cellDescription.getSolverNumber());
+    peano::datatraversal::TaskSet( new PredictionJob(
+        *this, cellDescription, cellInfo._cellDescriptionsIndex,element,
+        cellDescription.getCorrectorTimeStamp(),  // corrector time step data is correct; see docu
+        cellDescription.getCorrectorTimeStepSize(),
+        false/*is uncompressed*/, isSkeletonCell ));
+  } else {
     performPredictionAndVolumeIntegralBody(
           cellDescription,
           cellDescription.getCorrectorTimeStamp(),  // corrector time step data is correct; see docu
           cellDescription.getCorrectorTimeStepSize(),
           false, isSkeletonCell );
     cellDescription.setHasCompletedTimeStep(true);
-  } else {
-    cellDescription.setHasCompletedTimeStep(false);
-    peano::datatraversal::TaskSet( new PredictionJob( 
-        *this, cellDescription, cellDescriptionsIndex, element,
-        cellDescription.getCorrectorTimeStamp(),  // corrector time step data is correct; see docu
-        cellDescription.getCorrectorTimeStepSize(),
-        false/*is uncompressed*/, isSkeletonCell ));
   }
   return result;
 }
@@ -2165,8 +2168,8 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
 exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTimeStepOrRestrict(
     const int  solverNumber,
     CellInfo&  cellInfo,
-    const bool isFirstIterationOfBatch,
-    const bool isLastIterationOfBatch,
+    const bool isFirstTimeStepOfBatch,
+    const bool isLastTimeStepOfBatch,
     const bool isAtRemoteBoundary) {
   const int element = cellInfo.indexOfADERDGCellDescription(solverNumber);
   if ( element != NotFound ) {
@@ -2177,27 +2180,26 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
       const bool mustBeDoneImmediately = isSkeletonCell && PredictionSweeps==1;
 
       if (
-          !SpawnPredictionAsBackgroundJob ||
-          isFirstIterationOfBatch ||
-          isLastIterationOfBatch
+          SpawnBackgroundJobs &&
+          !mustBeDoneImmediately
       ) {
+        cellDescription.setHasCompletedTimeStep(false); // done here in order to skip lookup of cell description in job constructor
+        peano::datatraversal::TaskSet spawn( new FusedTimeStepJob(
+            *this, cellDescription, cellInfo, isFirstTimeStepOfBatch, isLastTimeStepOfBatch, isSkeletonCell) );
+        return UpdateResult();
+      } else {
         return
             fusedTimeStepBody(
-                cellDescription,cellInfo._cellDescriptionsIndex,element,
-                isFirstIterationOfBatch,isLastIterationOfBatch,isSkeletonCell, mustBeDoneImmediately,
+                cellDescription,cellInfo,
+                isFirstTimeStepOfBatch,isLastTimeStepOfBatch,
+                isSkeletonCell,mustBeDoneImmediately,
                 cellDescription.getNeighbourMergePerformed() );
-      } else {
-        cellDescription.setHasCompletedTimeStep(false); // done here in order to skip lookup of cell description in job constructor
-        peano::datatraversal::TaskSet spawn( new FusedTimeStepJob(*this, 
-          cellDescription, cellInfo._cellDescriptionsIndex, element,isSkeletonCell) );
-        return UpdateResult();
       }
     } else if (
         cellDescription.getType()==CellDescription::Type::Descendant &&
         cellDescription.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication
     ) {
       restrictToTopMostParent(cellDescription);
-
       // TODO(Dominic): Evaluate ref crit here too // halos
       return UpdateResult();
     } else {
@@ -2208,6 +2210,25 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
   }
 }
 
+exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::updateBody(
+    CellDescription& cellDescription,
+    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
+    const bool isAtRemoteBoundary) {
+  assertion1(cellDescription.getType()==CellDescription::Type::Cell,cellDescription.toString());
+  uncompress(cellDescription);
+
+  UpdateResult result;
+  updateSolution(cellDescription,neighbourMergePerformed,true);
+  result._timeStepSize    = startNewTimeStep(cellDescription);
+  result._meshUpdateEvent = evaluateRefinementCriteriaAfterSolutionUpdate(
+      cellDescription,cellDescription.getNeighbourMergePerformed());
+
+  compress(cellDescription,isAtRemoteBoundary);
+
+  cellDescription.setHasCompletedTimeStep(true);
+  return result;
+}
+
 exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::updateOrRestrict(
       const int  solverNumber,
       CellInfo&  cellInfo,
@@ -2215,24 +2236,25 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::updateOrR
   const int element = cellInfo.indexOfADERDGCellDescription(solverNumber);
   if ( element != NotFound ) {
     CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[element];
-    if (cellDescription.getType()==CellDescription::Type::Cell) {
-      uncompress(cellDescription);
-
-      UpdateResult result;
-      updateSolution(cellDescription,cellDescription.getNeighbourMergePerformed(),true);
-      result._timeStepSize    = startNewTimeStep(cellDescription);
-      result._meshUpdateEvent = evaluateRefinementCriteriaAfterSolutionUpdate(
-          cellDescription,cellDescription.getNeighbourMergePerformed());
-
-      compress(cellDescription,isAtRemoteBoundary);
-
-      return result;
-    } else if (
+    if (
+        cellDescription.getType()==CellDescription::Type::Cell &&
+        SpawnBackgroundJobs
+    ) {
+      cellDescription.setHasCompletedTimeStep(false);
+      peano::datatraversal::TaskSet (
+          new UpdateJob( *this, cellDescription, cellInfo, isAtRemoteBoundary ) );
+      return UpdateResult();
+    }
+    else if (
+        cellDescription.getType()==CellDescription::Type::Cell
+    ) {
+      return updateBody(cellDescription,cellDescription.getNeighbourMergePerformed(),isAtRemoteBoundary);
+    }
+    else if (
         cellDescription.getType()==CellDescription::Type::Descendant &&
         cellDescription.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication
     ) {
       restrictToTopMostParent(cellDescription);
-
       // TODO(Dominic): Evaluate ref crit here too // halos
       return UpdateResult();
     } else {
@@ -2287,9 +2309,7 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegralBody(
     const double predictorTimeStepSize,
     const bool   uncompressBefore,
     const bool   isSkeletonCell ) {
-  if (uncompressBefore) {
-    uncompress(cellDescription);
-  }
+  if (uncompressBefore) { uncompress(cellDescription); }
 
   validateCellDescriptionData(cellDescription,true,false,true,"exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegralBody [pre]");
 
@@ -2346,7 +2366,7 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
     const bool mustBeDoneImmediately = isSkeletonCell && PredictionSweeps==1;
 
     if (
-        !SpawnPredictionAsBackgroundJob ||
+        !SpawnBackgroundJobs ||
         mustBeDoneImmediately
     ) {
       performPredictionAndVolumeIntegralBody(
@@ -2652,15 +2672,6 @@ void exahype::solvers::ADERDGSolver::updateSolution(
   updateCommunicationStatus(cellDescription);
   // marking for augmentation
   updateAugmentationStatus(cellDescription);
-}
-
-void exahype::solvers::ADERDGSolver::updateSolution(
-    const int cellDescriptionsIndex,
-    const int element,
-    const bool backupPreviousSolution) {
-  // reset helper variables
-  CellDescription& cellDescription  = getCellDescription(cellDescriptionsIndex,element);
-  updateSolution(cellDescription,cellDescription.getNeighbourMergePerformed(),backupPreviousSolution);
 }
 
 void exahype::solvers::ADERDGSolver::swapSolutionAndPreviousSolution(CellDescription& cellDescription) const {
@@ -5087,33 +5098,4 @@ void exahype::solvers::ADERDGSolver::pullUnknownsFromByteStream(
     peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
     true
   );
-}
-
-exahype::solvers::ADERDGSolver::AdjustSolutionDuringMeshRefinementJob::AdjustSolutionDuringMeshRefinementJob(
-  ADERDGSolver&    solver,
-  CellDescription& cellDescription,
-  const bool       isInitialMeshRefinement):
-  tarch::multicore::jobs::Job( Solver::getTaskType(false), 0 ),
-  _solver(solver),
-  _cellDescription(cellDescription),
-  _isInitialMeshRefinement(isInitialMeshRefinement)
-{
-  tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  {
-    NumberOfAMRBackgroundJobs++;
-  }
-  lock.free();
-}
-
-bool exahype::solvers::ADERDGSolver::AdjustSolutionDuringMeshRefinementJob::run() {
-  _solver.ensureNecessaryMemoryIsAllocated(_cellDescription);
-  _solver.adjustSolutionDuringMeshRefinementBody(_cellDescription,_isInitialMeshRefinement);
-
-  tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  {
-    NumberOfAMRBackgroundJobs--;
-    assertion( NumberOfAMRBackgroundJobs>=0 );
-  }
-  lock.free();
-  return false;
 }

@@ -404,6 +404,12 @@ class exahype::solvers::Solver {
     peano::heap::RLEHeap<exahype::records::ADERDGCellDescription>::HeapEntries&        _ADERDGCellDescriptions;
     peano::heap::RLEHeap<exahype::records::FiniteVolumesCellDescription>::HeapEntries& _FiniteVolumesCellDescriptions;
 
+    CellInfo(const CellInfo& cellInfo) :
+      _cellDescriptionsIndex        (cellInfo._cellDescriptionsIndex        ),
+      _ADERDGCellDescriptions       (cellInfo._ADERDGCellDescriptions       ),
+      _FiniteVolumesCellDescriptions(cellInfo._FiniteVolumesCellDescriptions)
+    {}
+
     CellInfo(const int cellDescriptionsIndex,void* ADERDGCellDescriptions,void* FiniteVolumesCellDescriptions) :
       _cellDescriptionsIndex(cellDescriptionsIndex),
       _ADERDGCellDescriptions       (*static_cast<peano::heap::RLEHeap<exahype::records::ADERDGCellDescription>::HeapEntries*>(ADERDGCellDescriptions)),
@@ -549,6 +555,24 @@ class exahype::solvers::Solver {
     }
   } BoundaryFaceInfo;
 
+  template <typename CellDescription>
+  static bool resetNeighbourMergeFlags(CellDescription& p) {
+    for (int faceIndex=0; faceIndex<DIMENSIONS_TIMES_TWO; faceIndex++) {
+      p.setNeighbourMergePerformed(faceIndex,false);
+
+      #ifdef Parallel
+      int listingsOfRemoteRank =
+          countListingsOfRemoteRankAtInsideFace(
+              faceIndex,fineGridVertices,fineGridVerticesEnumerator);
+      if (listingsOfRemoteRank==0) {
+        listingsOfRemoteRank = TWO_POWER_D;
+      }
+      p.setFaceDataExchangeCounter(faceIndex,listingsOfRemoteRank);
+      assertion(p.getFaceDataExchangeCounter(faceIndex)>0);
+      #endif
+    }
+  }
+
   /**
    * TrackGridStatistics is a flag from Peano that I "misuse" here as these
    * data also are grid statistics.
@@ -621,10 +645,10 @@ class exahype::solvers::Solver {
   static int MaxNumberOfRunningBackgroundJobConsumerTasksDuringTraversal;
 
   /**
-   * Set to true if the prediction and/or the fused time step
-   * should be launched as background job whenever possible.
+   * Set to true if the prediction, the update and/or the fused time step
+   * should be launched as background job.
    */
-  static bool SpawnPredictionAsBackgroundJob;
+  static bool SpawnBackgroundJobs;
 
   /**
    * Set to true if the prolongation
@@ -647,12 +671,21 @@ class exahype::solvers::Solver {
   static bool SpawnAMRBackgroundJobs;
 
 
-  enum class JobType { AMRJob, EnclaveJob, SkeletonJob };
+  enum class JobType { AMRJob, ReductionJob, EnclaveJob, SkeletonJob };
 
   /**
    * \see ensureAllBackgroundJobsHaveTerminated
    */
   static int NumberOfAMRBackgroundJobs;
+
+  /**
+   * Number of jobs spawned which perform a reduction.
+   *
+   * Reduction Jobs are spawned as high priority.
+   * They might be enclave or skeleton jobs.
+   */
+  static int NumberOfReductionJobs;
+
   /**
    * Number of background jobs spawned
    * from enclave cells.

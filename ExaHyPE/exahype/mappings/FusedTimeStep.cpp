@@ -150,7 +150,7 @@ void exahype::mappings::FusedTimeStep::updateBatchIterationCounter(bool initiali
         solver->beginTimeStep(solver->getMinTimeStamp());
       }
     }
-    if ( exahype::solvers::Solver::SpawnPredictionAsBackgroundJob && sendOutRiemannDataInThisIteration() ) {
+    if ( exahype::solvers::Solver::SpawnBackgroundJobs && sendOutRiemannDataInThisIteration() ) {
       peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
     }
   }
@@ -189,6 +189,11 @@ void exahype::mappings::FusedTimeStep::endIteration(
           ( exahype::solvers::Solver::PredictionSweeps==1 ) ? 
           _stateCopy.isFirstIterationOfBatchOrNoBatch() : 
           _stateCopy.isSecondIterationOfBatchOrNoBatch();
+
+    if ( _stateCopy.isLastIterationOfBatchOrNoBatch() ) {
+      // background threads
+        exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::ReductionJob);
+    }
 
     exahype::solvers::Solver::startNewTimeStepForAllSolvers(
         _minTimeStepSizes,_maxLevels,_meshUpdateEvents,
@@ -325,7 +330,7 @@ void exahype::mappings::FusedTimeStep::leaveCell(
     const int isLastTimeStep =
         ( exahype::solvers::Solver::PredictionSweeps==1 ) ?
             _stateCopy.isLastIterationOfBatchOrNoBatch() :
-            _stateCopy.isSecondToLastIterationOfBatchOrNoBatch();
+            _stateCopy.isSecondToLastIterationOfBatchOrNoBatch(); // PredictionSweeps==2
 
     for (int solverNumber=0; solverNumber<static_cast<int>(solvers::RegisteredSolvers.size()); solverNumber++) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];

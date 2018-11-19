@@ -148,6 +148,9 @@ void exahype::mappings::UpdateAndReduce::endIteration(
     exahype::State& state) {
   logTraceInWith1Argument("endIteration(State)", state);
 
+  // background threads
+  exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::ReductionJob);
+
   exahype::plotters::finishedPlotting();
 
   exahype::solvers::Solver::startNewTimeStepForAllSolvers(

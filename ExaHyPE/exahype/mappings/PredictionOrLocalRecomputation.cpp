@@ -165,7 +165,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::beginIteration(
   }
 
   if (
-      exahype::solvers::Solver::SpawnPredictionAsBackgroundJob &&
+      exahype::solvers::Solver::SpawnBackgroundJobs &&
       _stateCopy.isLastIterationOfBatchOrNoBatch()
   ) {
     peano::datatraversal::TaskSet::startToProcessBackgroundJobs();

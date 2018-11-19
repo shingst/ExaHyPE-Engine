@@ -354,7 +354,7 @@ private:
       const SolverPatch& solverPatch, LimiterPatch& limiterPatch);
 
   /**
-   * Body of LimitingADERDGSolver::fusedTimeStep(...).
+   * Body of LimitingADERDGSolver::fusedTimeStepOrRestrict(...).
    *
    * <h2> Order of operations</h2>
    * Data stored on a patch must be compressed by the last operation touching
@@ -371,11 +371,26 @@ private:
   UpdateResult fusedTimeStepBody(
       SolverPatch& solverPatch,
       CellInfo&    cellInfo,
-      const bool   isFirstIterationOfBatch,
-      const bool   isLastIterationOfBatch,
-      const bool   isSkeletonJob,
+      const bool   isFirstTimeStepOfBatch,
+      const bool   isLastTimeStepOfBatch,
+      const bool   isSkeletonCell,
       const bool   mustBeDoneImmediately,
       const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed);
+
+  /**
+   * Body of LimitingADERDGSolver::updateOrRestrict(...).
+   *
+   * @param solverPatch        a solver patch which may or may not have an associated limiter patchs
+   * @param cellInfo           links to all solver and limiter patches registered for a cell
+   * @param isAtRemoteBoundary checks if the cell is at an remote boundary (information required for compression)
+   *
+   * @return an admissible time step size and a mesh update event for the solver patch
+   */
+  UpdateResult updateBody(
+      SolverPatch&                                               solverPatch,
+      CellInfo&                                                  cellInfo,
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
+      const bool                                                 isAtRemoteBoundary);
 
  /**
    * Rollback to the previous time step, i.e,
@@ -470,6 +485,8 @@ private:
     LimitingADERDGSolver&                                     _solver;
     SolverPatch&                                              _solverPatch;
     CellInfo                                                  _cellInfo;                // copy
+    const bool                                                _isFirstTimeStepOfBatch;
+    const bool                                                _isLastTimeStepOfBatch;
     const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> _neighbourMergePerformed; // we need to copy this as it may be overwritten while the job is not processed yet!
     const bool                                                _isSkeletonJob;
   public:
@@ -477,9 +494,47 @@ private:
         LimitingADERDGSolver& solver,
         SolverPatch&          solverPatch,
         CellInfo&             cellInfo,
+        const bool            isFirstTimeStepOfBatch,
+        const bool            isLastTimeStepOfBatch,
         const bool            isSkeletonJob);
 
     bool run() override;
+  };
+
+  /**
+   * A job which performs the solution update and computes a new time step size.
+   *
+   * \note Spawning these operations as background job makes only sense if you
+   * wait in endIteration(...) on the completion of the job.
+   * It further important to flag this job as high priority job to
+   * ensure completion before the next reduction.
+   */
+  class UpdateJob: public tarch::multicore::jobs::Job {
+    private:
+      LimitingADERDGSolver&                                     _solver; // TODO not const because of kernels
+      SolverPatch&                                              _solverPatch;
+      CellInfo                                                  _cellInfo;
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> _neighbourMergePerformed;
+      const bool                                                _isAtRemoteBoundary;
+    public:
+      /**
+       * Construct a UpdateJob.
+       *
+       * @note Job is always spawned as high priority job.
+       *
+       * @param solver                 the spawning solver
+       * @param solverPatch        a cell description
+       * @param cellInfo               links to all cell descriptions associated with the cell
+       * @param isSkeletonJob          if the cell is a skeleton cell
+       */
+      UpdateJob(
+        LimitingADERDGSolver& solver,
+        SolverPatch&          solverPatch,
+        CellInfo&             cellInfo,
+        const bool            isAtRemoteBoundary);
+
+      bool run() override;
+      void prefetchData() override;
   };
 
   /**
@@ -598,8 +653,8 @@ public:
   void startNewTimeStep() final override;
 
   void startNewTimeStepFused(
-      const bool isFirstIterationOfBatch,
-      const bool isLastIterationOfBatch) final override;
+      const bool isFirstTimeStepOfBatch,
+      const bool isLastTimeStepOfBatch) final override;
 
   void updateTimeStepSizes() final override;
 
@@ -774,8 +829,8 @@ public:
 
   double startNewTimeStepFused(
         SolverPatch& solverPatch,CellInfo& cellInfo,
-        const bool   isFirstIterationOfBatch,
-        const bool   isLastIterationOfBatch);
+        const bool isFirstTimeStepOfBatch,
+        const bool isLastTimeStepOfBatch);
 
   double updateTimeStepSizes(
       const int solverNumber,
@@ -785,8 +840,8 @@ public:
   UpdateResult fusedTimeStepOrRestrict(
       const int  solverNumber,
       CellInfo&  cellInfo,
-      const bool isFirstIterationOfBatch,
-      const bool isLastIterationOfBatch,
+      const bool isFirstTimeStepOfBatch,
+      const bool isLastTimeStepOfBatch,
       const bool isAtRemoteBoundary) final override;
 
   UpdateResult updateOrRestrict(
