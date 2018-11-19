@@ -373,7 +373,7 @@ private:
       CellInfo&    cellInfo,
       const bool   isFirstTimeStepOfBatch,
       const bool   isLastTimeStepOfBatch,
-      const bool   isSkeletonJob,
+      const bool   isSkeletonCell,
       const bool   mustBeDoneImmediately,
       const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed);
 

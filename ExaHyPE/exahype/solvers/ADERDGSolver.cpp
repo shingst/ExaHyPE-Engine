@@ -2142,8 +2142,9 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
   result._meshUpdateEvent = evaluateRefinementCriteriaAfterSolutionUpdate(cellDescription,neighbourMergePerformed);
 
   if (
-      SpawnBackgroundJobs &&
+      SpawnBackgroundJobs    &&
       !mustBeDoneImmediately &&
+      !isSkeletonCell        &&
       isLastTimeStepOfBatch
   ) {
     cellDescription.setHasCompletedTimeStep(false);

@@ -471,7 +471,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
     CellInfo&    cellInfo,
     const bool   isFirstTimeStepOfBatch,
     const bool   isLastTimeStepOfBatch,
-    const bool   isSkeletonJob,
+    const bool   isSkeletonCell,
     const bool   mustBeDoneImmediately,
     const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed) {
   // synchroniseTimeStepping(cellDescriptionsIndex,cellInfo); // assumes this was done in neighbour merge
@@ -484,8 +484,9 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
 
   if (
       solverPatch.getRefinementStatus()<_solver->getMinimumRefinementStatusForTroubledCell() &&
-      SpawnBackgroundJobs &&
+      SpawnBackgroundJobs    &&
       !mustBeDoneImmediately &&
+      !isSkeletonCell         &&
       isLastTimeStepOfBatch
   ) {
     solverPatch.setHasCompletedTimeStep(false);
@@ -494,14 +495,14 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
         *_solver.get(),solverPatch/*the reductions are delegated to _solver anyway*/,
         cellInfo._cellDescriptionsIndex,element,
         solverPatch.getCorrectorTimeStamp(),  // corrector time step data is correct; see docu
-        solverPatch.getCorrectorTimeStepSize(),false/*is uncompressed*/,isSkeletonJob ));
+        solverPatch.getCorrectorTimeStepSize(),false/*is uncompressed*/,isSkeletonCell ));
   }
   else if ( solverPatch.getRefinementStatus()<_solver->getMinimumRefinementStatusForTroubledCell() ){
     _solver->performPredictionAndVolumeIntegralBody(
         solverPatch,
         solverPatch.getCorrectorTimeStamp(),  // corrector time step data is correct; see docu
         solverPatch.getCorrectorTimeStepSize(),
-        false, isSkeletonJob );
+        false, isSkeletonCell );
     solverPatch.setHasCompletedTimeStep(true);
   }
   return result;
