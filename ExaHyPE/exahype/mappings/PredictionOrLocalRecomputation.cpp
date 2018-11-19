@@ -313,7 +313,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::enterCell(
       }
     }
     if ( _stateCopy.isFirstIterationOfBatchOrNoBatch() ) {
-      exahype::Cell::resetNeighbourMergeFlags(cellInfo,fineGridVertices,fineGridVerticesEnumerator);
+      exahype::Cell::resetFaceDataExchangeCounters(cellInfo,fineGridVertices,fineGridVerticesEnumerator);
     }
   }
   logTraceOutWith1Argument("enterCell(...)", fineGridCell);

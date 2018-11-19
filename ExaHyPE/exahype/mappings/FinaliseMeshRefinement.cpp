@@ -187,7 +187,7 @@ void exahype::mappings::FinaliseMeshRefinement::enterCell(
       }
     }
 
-    exahype::Cell::resetNeighbourMergeFlags(cellInfo,fineGridVertices,fineGridVerticesEnumerator);
+    exahype::Cell::resetFaceDataExchangeCounters(cellInfo,fineGridVertices,fineGridVerticesEnumerator);
   }
 }
 

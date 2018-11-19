@@ -65,16 +65,14 @@ exahype::Cell::Cell(const Base::PersistentCell& argument) : Base(argument) {
   // Do not use it. This would overwrite persistent data.
 }
 
-void exahype::Cell::resetNeighbourMergeFlags(
+void exahype::Cell::resetFaceDataExchangeCounters(
     const solvers::Solver::CellInfo& cellInfo,
     exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator) {
   // ADER-DG
+  #ifdef Parallel
   for (auto& p : cellInfo._ADERDGCellDescriptions) {
     for (int faceIndex=0; faceIndex<DIMENSIONS_TIMES_TWO; faceIndex++) {
-      p.setNeighbourMergePerformed(faceIndex,false);
-
-      #ifdef Parallel
       int listingsOfRemoteRank =
           countListingsOfRemoteRankAtInsideFace(
               faceIndex,fineGridVertices,fineGridVerticesEnumerator);
@@ -83,16 +81,12 @@ void exahype::Cell::resetNeighbourMergeFlags(
       }
       p.setFaceDataExchangeCounter(faceIndex,listingsOfRemoteRank);
       assertion(p.getFaceDataExchangeCounter(faceIndex)>0);
-      #endif
     }
   }
 
   // Finite-Volumes (loop body can be copied from ADER-DG loop)
   for (auto& p : cellInfo._FiniteVolumesCellDescriptions) {
     for (int faceIndex=0; faceIndex<DIMENSIONS_TIMES_TWO; faceIndex++) {
-      p.setNeighbourMergePerformed(faceIndex,false);
-
-      #ifdef Parallel
       int listingsOfRemoteRank =
           countListingsOfRemoteRankAtInsideFace(
               faceIndex,fineGridVertices,fineGridVerticesEnumerator);
@@ -101,9 +95,9 @@ void exahype::Cell::resetNeighbourMergeFlags(
       }
       p.setFaceDataExchangeCounter(faceIndex,listingsOfRemoteRank);
       assertion(p.getFaceDataExchangeCounter(faceIndex)>0); // TODO Info can be used to determine who is at boundary from vertex view
-      #endif
     }
   }
+  #endif
 }
 
 std::bitset<DIMENSIONS_TIMES_TWO> exahype::Cell::determineInsideAndOutsideFaces(

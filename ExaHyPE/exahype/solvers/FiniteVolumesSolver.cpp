@@ -735,9 +735,11 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::FiniteVolumesSolver::up
   UpdateResult result;
   result._timeStepSize = startNewTimeStepFused(cellDescription,isFirstTimeStepOfBatch,isLastTimeStepOfBatch);
 
-  cellDescription.setHasCompletedTimeStep(true); // last step of the FV update
-
   compress(cellDescription,isAtRemoteBoundary);
+
+  resetNeighbourMergePerformedFlags(cellDescription);
+
+  cellDescription.setHasCompletedTimeStep(true); // last step of the FV update
   return result;
 }
 

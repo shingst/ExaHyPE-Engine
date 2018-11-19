@@ -492,7 +492,7 @@ void exahype::mappings::MeshRefinement::enterCell(
 
   if ( fineGridCell.isInitialised() ) {
     solvers::Solver::CellInfo cellInfo = fineGridCell.createCellInfo();
-    exahype::Cell::resetNeighbourMergeFlags(cellInfo,fineGridVertices,fineGridVerticesEnumerator);
+    exahype::Cell::resetFaceDataExchangeCounters(cellInfo,fineGridVertices,fineGridVerticesEnumerator);
     // shutdown metadata for empty cells (no cell descriptions)
     if ( fineGridCell.isEmpty() ) {
       fineGridCell.shutdownMetaDataAndResetCellDescriptionsIndex();

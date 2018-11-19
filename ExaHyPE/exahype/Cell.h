@@ -93,19 +93,11 @@ class exahype::Cell : public peano::grid::Cell<exahype::records::Cell> {
 
   /**
    * Here we reset helper variables that play a role in
-   * the neighbour merge methods.
+   * the MPI neighbour exchange.
    * These are the cell description attributes
-   * neighbourMergePerformed[DIMENSIONS_TIMES_TWO], and
    * faceDataExchangeCounter[DIMENSIONS_TIMES_TWO].
    *
-   * <h2>Shared Memory</h2>
-   * The flag neighbourMergePerformed
-   * indicates for every thread that touches a
-   * face of a cell description if a Riemann Solve
-   * was already performed for this face.
-   *
-   * <h2>MPI</h2>
-   * This method resets face data exchange counters:
+   * This method resets the face data exchange counters:
    * To this end, we count the listings of a remote rank on each
    * of the faces surrounding a cell description.
    *
@@ -116,7 +108,7 @@ class exahype::Cell : public peano::grid::Cell<exahype::records::Cell> {
    * 4^{d-2} - full face connection where cell is inside and face vertices are all inside:
    * send at time of 2^{d-2}-th touch of face.
    */
-  static void resetNeighbourMergeFlags(
+  static void resetFaceDataExchangeCounters(
       const solvers::Solver::CellInfo& cellInfo,
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator);

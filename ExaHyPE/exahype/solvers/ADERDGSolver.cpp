@@ -2141,6 +2141,8 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
   result._timeStepSize    = startNewTimeStepFused(cellDescription,isFirstTimeStepOfBatch,isLastTimeStepOfBatch);
   result._meshUpdateEvent = evaluateRefinementCriteriaAfterSolutionUpdate(cellDescription,neighbourMergePerformed);
 
+  resetNeighbourMergePerformedFlags(cellDescription);
+
   if (
       SpawnBackgroundJobs    &&
       !mustBeDoneImmediately &&
@@ -2200,9 +2202,11 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
         cellDescription.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication
     ) {
       restrictToTopMostParent(cellDescription);
+      resetNeighbourMergePerformedFlags(cellDescription);
       // TODO(Dominic): Evaluate ref crit here too // halos
       return UpdateResult();
     } else {
+      resetNeighbourMergePerformedFlags(cellDescription);
       return UpdateResult();
     }
   } else {
@@ -2224,6 +2228,8 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::updateBod
       cellDescription,cellDescription.getNeighbourMergePerformed());
 
   compress(cellDescription,isAtRemoteBoundary);
+
+  resetNeighbourMergePerformedFlags(cellDescription);
 
   cellDescription.setHasCompletedTimeStep(true);
   return result;
@@ -2255,9 +2261,11 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::updateOrR
         cellDescription.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication
     ) {
       restrictToTopMostParent(cellDescription);
+      resetNeighbourMergePerformedFlags(cellDescription);
       // TODO(Dominic): Evaluate ref crit here too // halos
       return UpdateResult();
     } else {
+      resetNeighbourMergePerformedFlags(cellDescription);
       return UpdateResult();
     }
   } else {
