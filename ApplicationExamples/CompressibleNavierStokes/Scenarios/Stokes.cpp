@@ -28,7 +28,7 @@ void NavierStokes::Stokes::analyticalSolution(const double* const x,
   vars.E() = ns.evaluateEnergy(vars.rho(), pressure, vars.j());
 
   // Assuming rho is constant.
-  constexpr double pi = std::acos(-1);
+  const double pi = std::acos(-1); // acos not constexpr for intel compiler
 
   gradState[idxGradQ(1, 1)] =
       std::sqrt(2) *
