@@ -122,7 +122,6 @@ private:
   typedef class peano::grid::Vertex<exahype::records::Vertex> Base;
 
   friend class VertexOperations;
-  friend class PredictionOrLocalRecomputation;
 
   /**
    * The log device of this class.
