@@ -488,8 +488,6 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
   const int limiterElement = cellInfo.indexOfFiniteVolumesCellDescription(solverPatch.getSolverNumber());
   if ( limiterElement != NotFound ) { resetNeighbourMergePerformedFlags(cellInfo._FiniteVolumesCellDescriptions[limiterElement]); }
 
-  solverPatch.setHasCompletedTimeStep(true);
-
   if (
       solverPatch.getRefinementStatus()<_solver->getMinimumRefinementStatusForTroubledCell() &&
       SpawnBackgroundJobs    &&
@@ -511,7 +509,11 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
         solverPatch.getCorrectorTimeStamp(),  // corrector time step data is correct; see docu
         solverPatch.getCorrectorTimeStepSize(),
         false, isSkeletonCell );
+    solverPatch.setHasCompletedTimeStep(true);
+  } else {
+    solverPatch.setHasCompletedTimeStep(true);
   }
+
   return result;
 }
 
