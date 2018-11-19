@@ -46,7 +46,11 @@ double totalVariation(const double* Q, int order, int numberOfVariables, int num
 
   // Compute integral of absolute gradient for all dimensions and variables.
   auto tv = 0.0;
+#if defined(_GLL)
+  const auto& quadratureWeights = kernels::gaussLobattoWeights[order];
+#else
   const auto& quadratureWeights = kernels::gaussLegendreWeights[order];
+#endif
 
   for (int k = 0; k < basisSize; k++) {
     for (int l = 0; l < basisSize; l++) {

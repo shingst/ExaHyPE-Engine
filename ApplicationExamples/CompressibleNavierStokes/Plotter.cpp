@@ -48,7 +48,11 @@ void NavierStokes::Plotter::mapQuantities(
           solver->scenarioName == "entropy-wave") {
     // Plot quadrature weights.
     // This is needed to approximate the integral of error norms.
+#if defined(_GLL)
+    const auto& weights = kernels::gaussLobattoWeights[order];
+#else
     const auto& weights = kernels::gaussLegendreWeights[order];
+#endif
 
     double weight = 1.0;
     for (int i = 0; i < DIMENSIONS; ++i) {

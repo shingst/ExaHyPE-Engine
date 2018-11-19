@@ -41,6 +41,13 @@ void NavierStokes::ErrorWriter::plotPatch(
   constexpr int basisSize = order + 1;
   constexpr int gradSize = DIMENSIONS * numberOfVariables;
 
+#if defined(_GLL)
+  const auto& quadratureNodes = kernels::gaussLobattoNodes[order];
+  const auto& quadratureWeights = kernels::gaussLobattoWeights[order];
+#else
+  const auto& quadratureNodes = kernels::gaussLegendreNodes[order];
+  const auto& quadratureWeights = kernels::gaussLegendreWeights[order];
+#endif
   static_assert(DIMENSIONS == 2, "ErrorWriter only supports 2D");
   double x[2] = {0.0, 0.0};
 
@@ -54,8 +61,8 @@ void NavierStokes::ErrorWriter::plotPatch(
     double w_dV = 1.0;
     for (int d = 0; d < DIMENSIONS; d++) {
       x[d] = offsetOfPatch[d] +
-             sizeOfPatch[d] * kernels::gaussLegendreNodes[order][i(d)];
-      w_dV *= sizeOfPatch[d] * kernels::gaussLegendreWeights[order][i(d)];
+             sizeOfPatch[d] * quadratureNodes[i(d)];
+      w_dV *= sizeOfPatch[d] * quadratureWeights[i(d)];
       hmin =
           std::min(hmin, sizeOfPatch[d]);  // TODO(Lukas) Is this what we want?
     }

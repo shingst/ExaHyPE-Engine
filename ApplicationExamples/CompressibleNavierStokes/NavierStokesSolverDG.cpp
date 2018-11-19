@@ -95,7 +95,13 @@ void NavierStokes::NavierStokesSolverDG::boundaryValues(const double* const x,co
       std::fill(curStateOut.begin(), curStateOut.end(), 0.0);
       std::fill(gradStateOut.begin(), gradStateOut.end(), 0.0);
 
+      // TODO(Lukas) Do I actually need to change this to Lobatto nodes for time?
+#if defined(_GLL)
+      //const double weight = kernels::gaussLobattoWeights[Order][i];
       const double weight = kernels::gaussLegendreWeights[Order][i];
+#else
+      const double weight = kernels::gaussLegendreWeights[Order][i];
+#endif
       const double xi = kernels::gaussLegendreNodes[Order][i];
       const double ti = t + xi * dt;
 
