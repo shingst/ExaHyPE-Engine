@@ -460,6 +460,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
           solverPatch,solverPatch.getNeighbourMergePerformed()); // must be done by all cell types TODO(Dominic): Clean up
 
       resetNeighbourMergePerformedFlags(solverPatch);
+      solverPatch.setHasCompletedTimeStep(true);
       return result;
     }
   } else {
@@ -576,6 +577,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::u
       result._meshUpdateEvent =
           _solver->evaluateRefinementCriteriaAfterSolutionUpdate(
               solverPatch,solverPatch.getNeighbourMergePerformed()); // must be done by all cell types TODO(Dominic): Clean up
+      solverPatch.setHasCompletedTimeStep(true);
       return result;
     }
   } else {

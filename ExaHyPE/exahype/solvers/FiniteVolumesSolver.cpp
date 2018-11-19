@@ -776,6 +776,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::FiniteVolumesSolver::up
   const int element = cellInfo.indexOfFiniteVolumesCellDescription(solverNumber);
   if ( element!=NotFound && SpawnBackgroundJobs) {
     CellDescription& cellDescription = cellInfo._FiniteVolumesCellDescriptions[element];
+    cellDescription.setHasCompletedTimeStep(false);
     peano::datatraversal::TaskSet(
         new UpdateJob(*this,cellDescription,cellInfo,isAtRemoteBoundary) );
     return UpdateResult();
