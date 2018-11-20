@@ -29,6 +29,7 @@ tarch::logging::Log exahype::stealing::StealingManager::_log( "exahype::stealing
 exahype::stealing::StealingManager::StealingManager() :
     _nextRequestId(0),
 	_nextGroupId(0),
+	_runningAndReceivingBack(false),
 	_stealingComm(MPI_COMM_NULL),
 	_stealingCommMapped(MPI_COMM_NULL)
 {
@@ -49,6 +50,18 @@ exahype::stealing::StealingManager::StealingManager() :
 
 exahype::stealing::StealingManager::~StealingManager()
 {}
+
+bool exahype::stealing::StealingManager::getRunningAndReceivingBack() {
+	return _runningAndReceivingBack;
+}
+
+void exahype::stealing::StealingManager::setRunningAndReceivingBack() {
+	_runningAndReceivingBack = true;
+}
+
+void exahype::stealing::StealingManager::resetRunningAndReceivingBack() {
+	_runningAndReceivingBack = false;
+}
 
 void exahype::stealing::StealingManager::createMPICommunicator() {
   int ierr = MPI_Comm_dup(MPI_COMM_WORLD, &_stealingComm);

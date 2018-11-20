@@ -1126,7 +1126,9 @@ class exahype::solvers::Solver {
  
 #if defined(DistributedStealing) && defined(StealingStrategyDiffusive)
        exahype::stealing::StealingManager::getInstance().progressRequests();
-       if( !cellDescription.getHasCompletedTimeStep() && tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs()==1){
+       if( !cellDescription.getHasCompletedTimeStep()
+         && tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs()==1
+		 && !exahype::stealing::StealingManager::getInstance().getRunningAndReceivingBack()){
 #ifdef USE_ITAC
 	 VT_begin(event_emergency);
 #endif

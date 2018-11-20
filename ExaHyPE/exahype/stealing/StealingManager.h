@@ -56,6 +56,8 @@ class exahype::stealing::StealingManager {
      */
     std::atomic<int> _nextGroupId;
 
+    std::atomic<bool> _runningAndReceivingBack;
+
     // queues for each message type
     tbb::concurrent_queue<MPI_Request> _requests[4];
 
@@ -132,6 +134,10 @@ class exahype::stealing::StealingManager {
     void createMPICommunicator();
     MPI_Comm getMPICommunicator();
     MPI_Comm getMPICommunicatorMapped();
+
+    bool getRunningAndReceivingBack();
+    void setRunningAndReceivingBack();
+    void resetRunningAndReceivingBack();
 
     /*
      * Given the current load situation and global knowledge of the load

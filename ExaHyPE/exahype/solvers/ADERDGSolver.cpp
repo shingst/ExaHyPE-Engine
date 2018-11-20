@@ -4770,6 +4770,7 @@ void exahype::solvers::ADERDGSolver::progressStealing() {
       }
     }
     if(receivedTaskBack) {
+  	  exahype::stealing::StealingManager::getInstance().setRunningAndReceivingBack();
       tbb::concurrent_hash_map<int, CellDescription*>::accessor a_tagToCellDesc;
       bool found = _mapTagToCellDesc.find(a_tagToCellDesc, statMapped.MPI_TAG);
       assertion(found);
@@ -4791,10 +4792,14 @@ void exahype::solvers::ADERDGSolver::progressStealing() {
     	exahype::solvers::ADERDGSolver::StealablePredictionJob::receiveBackHandler,
     	exahype::stealing::RequestType::receiveBack, this, true);
     }
+    else {
+    	  exahype::stealing::StealingManager::getInstance().resetRunningAndReceivingBack();
+    }
     exahype::stealing::StealingManager::getInstance().progressRequests();
     MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, comm, &receivedTask, &stat);
     MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, commMapped, &receivedTaskBack, &statMapped);
   }
+
   // now, a different thread can progress the stealing
   lock.free();
 
