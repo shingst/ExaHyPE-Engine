@@ -4734,10 +4734,10 @@ void exahype::solvers::ADERDGSolver::progressStealing() {
   MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, comm, &receivedTask, &stat);
   MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, commMapped, &receivedTaskBack, &statMapped);
   while( receivedTask || receivedTaskBack) {
+    if(receivedTask) {
 #if defined(StealingStrategyDiffusive)
     exahype::stealing::DiffusiveDistributor::getInstance().triggerVictimFlag();
 #endif
-    if(receivedTask) {
       int msgLen = -1;
       MPI_Get_count(&stat, MPI_DOUBLE, &msgLen);
       // is this message metadata? -> if true, we are about to receive a new STP task
@@ -4799,6 +4799,7 @@ void exahype::solvers::ADERDGSolver::progressStealing() {
     MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, comm, &receivedTask, &stat);
     MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, commMapped, &receivedTaskBack, &statMapped);
   }
+  exahype::stealing::StealingManager::getInstance().resetRunningAndReceivingBack();
 
   // now, a different thread can progress the stealing
   lock.free();

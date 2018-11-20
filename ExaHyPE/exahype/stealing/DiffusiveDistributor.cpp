@@ -70,6 +70,7 @@ void exahype::stealing::DiffusiveDistributor::updateLoadDistribution(int current
       for(int i=0; i<nnodes; i++) {
         if(i!=myRank && _tasksToOffload[i]>0) {
           _tasksToOffload[i]--;
+          logInfo("updateLoadDistribution()", "decrement, send "<<_tasksToOffload[i]<<" to rank "<<i );
         }
       }
       resetEmergency();
