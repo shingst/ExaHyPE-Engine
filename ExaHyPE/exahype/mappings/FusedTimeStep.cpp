@@ -364,7 +364,7 @@ void exahype::mappings::FusedTimeStep::leaveCell(
     }
 
     // Must be performed for all cell descriptions
-    Cell::resetFaceDataExchangeCounters(cellInfo,fineGridVertices,fineGridVerticesEnumerator);
+    Cell::resetNeighbourMergeFlagsAndCounters(cellInfo,fineGridVertices,fineGridVerticesEnumerator,false/*neighbourMergePerformed is reset internally*/);
   }
 
   logTraceOutWith1Argument("leaveCell(...)", fineGridCell);

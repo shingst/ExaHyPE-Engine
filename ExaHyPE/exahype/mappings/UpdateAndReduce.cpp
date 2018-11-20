@@ -430,7 +430,7 @@ void exahype::mappings::UpdateAndReduce::leaveCell(
       _maxLevels       [solverNumber] = std::max( fineGridVerticesEnumerator.getLevel(), _maxLevels       [solverNumber]);
     }
 
-    Cell::resetFaceDataExchangeCounters(cellInfo,fineGridVertices,fineGridVerticesEnumerator);
+    Cell::resetNeighbourMergeFlagsAndCounters(cellInfo,fineGridVertices,fineGridVerticesEnumerator,false/*neighbourMergePerformed is reset internally*/);
   }
   logTraceOutWith1Argument("leaveCell(...)", fineGridCell);
 }

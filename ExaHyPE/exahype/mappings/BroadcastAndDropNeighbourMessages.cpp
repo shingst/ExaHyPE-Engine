@@ -115,7 +115,7 @@ void exahype::mappings::BroadcastAndDropNeighbourMessages::enterCell(
       // }
     }
 
-    Cell::resetFaceDataExchangeCounters(cellInfo,fineGridVertices,fineGridVerticesEnumerator);
+    Cell::resetNeighbourMergeFlagsAndCounters(cellInfo,fineGridVertices,fineGridVerticesEnumerator,true);
   }
 }
 

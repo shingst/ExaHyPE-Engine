@@ -25,7 +25,6 @@ exahype::solvers::LimitingADERDGSolver::UpdateJob::UpdateJob(
 bool exahype::solvers::LimitingADERDGSolver::UpdateJob::run() {
   UpdateResult result =
       _solver.updateBody(_solverPatch,_cellInfo,_isAtRemoteBoundary);
-
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
   {
     _solver.updateNextMeshUpdateEvent(result._meshUpdateEvent);

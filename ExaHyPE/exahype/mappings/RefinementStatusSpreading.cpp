@@ -198,7 +198,7 @@ void exahype::mappings::RefinementStatusSpreading::enterCell(
           case exahype::solvers::Solver::Type::ADERDG: {
             auto& cellDescription = cellInfo._ADERDGCellDescriptions[element];
             static_cast<exahype::solvers::ADERDGSolver*>(solver)->
-                updateRefinementStatus(cellInfo._ADERDGCellDescriptions[element],cellDescription.getNeighbourMergePerformed());
+                updateRefinementStatus(cellDescription);
           } break;
           case exahype::solvers::Solver::Type::LimitingADERDG: {
             auto& cellDescription = cellInfo._ADERDGCellDescriptions[element];
@@ -214,7 +214,7 @@ void exahype::mappings::RefinementStatusSpreading::enterCell(
       }
     }
 
-    exahype::Cell::resetFaceDataExchangeCounters(cellInfo,fineGridVertices,fineGridVerticesEnumerator);
+    Cell::resetNeighbourMergeFlagsAndCounters(cellInfo,fineGridVertices,fineGridVerticesEnumerator,true);
   }
 
   logTraceOutWith1Argument("enterCell(...)", fineGridCell);

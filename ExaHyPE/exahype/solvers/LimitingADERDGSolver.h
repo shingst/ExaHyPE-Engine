@@ -294,9 +294,7 @@ private:
    * to Troubled or from Troubled to NeighbourOfTroubled3, NeighbourOfTroubled4, this
    * methods returns false.
    */
-  MeshUpdateEvent determineRefinementStatusAfterSolutionUpdate(
-      SolverPatch& solverPatch,
-      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed);
+  MeshUpdateEvent determineRefinementStatusAfterSolutionUpdate(SolverPatch& solverPatch);
 
   /**
    * Takes the FV solution from the limiter patch and projects it on the
@@ -470,10 +468,6 @@ private:
    * \note Spawning these operations as background job makes only sense if you
    * do not plan to reduce the admissible time step size, refinement requests,
    * or limiter requests within a consequent reduction step.
-   *
-   * \note We have to copy the neighbourMergePerformed flags of a cell description
-   * as they are requrired when determining a new limiter status.
-   * We exclude here faces where no merge has been performed, boundary faces e.g.
    *
    * TODO(Dominic): Minimise time step sizes and refinement requests per patch
    * (->transpose the typical minimisation order)
@@ -865,9 +859,6 @@ public:
    *
    * \see determineLimiterStatusAfterRefinementStatusSpreading(...)
    *
-   * \note Make sure to reset neighbour merge
-   * helper variables in this method call.
-   *
    * \note Has no const modifier since kernels are not const functions yet.
    *
    * \param[in] backupPreviousSolution Set to true if the solution should be backed up before
@@ -877,7 +868,6 @@ public:
   void updateSolution(
       SolverPatch& solverPatch,
       CellInfo& cellInfo,
-      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
       const bool backupPreviousSolution);
 
   /**
@@ -908,25 +898,9 @@ public:
    * \note Must be called after starting a new time step for the patch.
    */
   MeshUpdateEvent
-  updateRefinementStatusAndMinAndMaxAfterSolutionUpdate(
-      SolverPatch& solverPatch,
-      CellInfo&    cellInfo,
-      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed);
+  updateRefinementStatusAndMinAndMaxAfterSolutionUpdate(SolverPatch& solverPatch,CellInfo&  cellInfo);
 
   /**
-   * Similar to ::determineLimiterStatusAfterSolutionUpdate(const int,const int)
-   * Does only evaluate the physical admissibility detection (PAD) but not the
-   * discrete maximum principle (DMP).
-   *
-   * \note We overwrite the facewise limiter status values with the new value
-   * in order to reuse the determineLimiterStatusAfterSolutionUpdate function
-   * which calls determineLimiterStatus(...) again.
-   */
-  void updateLimiterStatusAndMinAndMaxAfterAdjustSolution(
-      const int cellDescriptionsIndex,
-      const int element);
-
-  /*
    * Deallocate the limiter patch on all AMR related
    * helper cells.
    *
@@ -938,7 +912,7 @@ public:
    void ensureNoLimiterPatchIsAllocatedOnHelperCell(
        const SolverPatch& solverPatch,CellInfo& cellInfo) const;
 
-   /*
+   /**
     * Ensures that a limiter patch is allocated
     * on all compute cells (Cell) on the finest mesh
     * level that are flagged

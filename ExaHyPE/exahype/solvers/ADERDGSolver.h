@@ -1187,9 +1187,7 @@ public:
    * and any refinement criterion has been evaluated before
    * calling this function.
    */
-  void updateRefinementStatus(
-      CellDescription& cellDescription,
-      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed) const;
+  void updateRefinementStatus(CellDescription& cellDescription) const;
 
   /**
    * Construct an ADERDGSolver.
@@ -1844,9 +1842,7 @@ public:
    *
    * \note Has no const modifier since kernels are not const functions yet.
    */
-  MeshUpdateEvent evaluateRefinementCriteriaAfterSolutionUpdate(
-      CellDescription& cellDescription,
-      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed);
+  MeshUpdateEvent evaluateRefinementCriteriaAfterSolutionUpdate(CellDescription& cellDescription);
 
   /*! Perform prediction and volume integral.
    *
@@ -2062,15 +2058,12 @@ public:
    * a solution adjustment and adding of source term contributions here.
    *
    * @param[in] cellDescription         a cell description
-   * @param[in] neighbourMergePerformed an array of bools (modelled as byte) indicating if a merge (Riemann solve) was
-   *                                    performed for all DIMENSIONS_TIMES_TWO face adjacent to a cell
    * @param[in] backupPreviousSolution  Set to true if the solution should be backed up before
    *                                    we overwrite it by the updated solution.
    *
    */
   void updateSolution(
       CellDescription& cellDescription,
-      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
       const bool backupPreviousSolution=true);
 
   /**
