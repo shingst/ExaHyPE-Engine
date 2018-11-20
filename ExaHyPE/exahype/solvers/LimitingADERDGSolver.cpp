@@ -1469,7 +1469,7 @@ void exahype::solvers::LimitingADERDGSolver::mergeWithNeighbourDataBasedOnLimite
       assertion1(cellInfo.indexOfFiniteVolumesCellDescription(solverNumber)!=Solver::NotFound,solverPatch.toString());
       _limiter->mergeWithNeighbourData(fromRank,solverNumber,cellInfo,src,dest,x,level);
       if ( !isRecomputation ) {
-        _solver->dropNeighbourData(fromRank,x,level);
+        _solver->dropNeighbourData(fromRank,solverNumber,cellInfo,src,dest,x,level);
       }
     }
   } else if ( !isRecomputation ) {
@@ -1521,15 +1521,19 @@ void exahype::solvers::LimitingADERDGSolver::mergeSolutionMinMaxOnFace(
 }
 
 void exahype::solvers::LimitingADERDGSolver::dropNeighbourData(
-    const int                                     fromRank,
-    const tarch::la::Vector<DIMENSIONS, double>&  x,
-    const int                                     level) const {
+    const int                                    fromRank,
+    const int                                    solverNumber,
+    Solver::CellInfo&                            cellInfo,
+    const tarch::la::Vector<DIMENSIONS, int>&    src,
+    const tarch::la::Vector<DIMENSIONS, int>&    dest,
+    const tarch::la::Vector<DIMENSIONS, double>& x,
+    const int                                    level) const {
   // send order:   minAndMax,solver,limiter
   // receive order limiter,solver,minAndMax
   if ( level==getMaximumAdaptiveMeshLevel() ) {
     _limiter->dropNeighbourData(fromRank,x,level);
   }
-  _solver->dropNeighbourData(fromRank,x,level);
+  _solver->dropNeighbourData(fromRank,solverNumber,cellInfo,src,dest,x,level);
 
   const int numberOfObservables = _solver->getDMPObservables();
   if (numberOfObservables>0) {

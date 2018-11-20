@@ -4130,15 +4130,26 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
 }
 
 void exahype::solvers::ADERDGSolver::dropNeighbourData(
-    const int                                     fromRank,
-    const tarch::la::Vector<DIMENSIONS, double>&  x,
-    const int                                     level) const {
-  logDebug("dropNeighbourData(...)", "drop "<<DataMessagesPerNeighbourCommunication<<" arrays from rank="<<fromRank<<",x="<<x<<",level="<<level);
+    const int                                    fromRank,
+    const int                                    solverNumber,
+    Solver::CellInfo&                            cellInfo,
+    const tarch::la::Vector<DIMENSIONS, int>&    src,
+    const tarch::la::Vector<DIMENSIONS, int>&    dest,
+    const tarch::la::Vector<DIMENSIONS, double>& x,
+    const int                                    level) const {
+  const int element = cellInfo.indexOfADERDGCellDescription(solverNumber);
+  if ( element != NotFound ) {
+    Solver::BoundaryFaceInfo face(dest,src);
+    CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[element];
+    synchroniseTimeStepping(cellDescription);
 
-  for(int receives=0; receives<DataMessagesPerNeighbourCommunication; ++receives)
-    DataHeap::getInstance().receiveData(
-        fromRank, x, level,
-        peano::heap::MessageType::NeighbourCommunication);
+    if( communicateWithNeighbour(cellDescription,face._faceIndex) ) {
+      for(int receives=0; receives<DataMessagesPerNeighbourCommunication; ++receives)
+        DataHeap::getInstance().receiveData(
+            fromRank, x, level,
+            peano::heap::MessageType::NeighbourCommunication);
+    }
+  }
 }
 
 ///////////////////////////////////
