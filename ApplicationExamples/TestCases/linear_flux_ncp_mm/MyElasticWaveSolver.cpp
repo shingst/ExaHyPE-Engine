@@ -222,7 +222,7 @@ void  Elastic::MyElasticWaveSolver::nonConservativeProduct(const double* const Q
   BgradQ[2][5]=- w_z;
   BgradQ[2][6]=-0; //sigma_xy
   BgradQ[2][7]=-u_z; //sigma_xz
-  BgradQ[2][8]=-v_z; //sigma_yz    
+  BgradQ[2][8]=-v_z; //sigma_yz
 }
 
 
