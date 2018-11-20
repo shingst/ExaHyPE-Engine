@@ -2477,6 +2477,7 @@ double exahype::solvers::ADERDGSolver::updateTimeStepSizes(CellDescription& cell
   } else {
     cellDescription.setPredictorTimeStamp   ( cellDescription.getCorrectorTimeStamp() );
   }
+  cellDescription.setHasCompletedTimeStep(true);
   return admissibleTimeStepSize;
 }
 
