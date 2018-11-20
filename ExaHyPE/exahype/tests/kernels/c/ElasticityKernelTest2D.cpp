@@ -99,7 +99,7 @@ void ElasticityKernelTest::algebraicSource(const double *Q, double *S) {
 }
 
 
-void ElasticityKernelTest::multiplyMaterialParameterMatrix(const double *Q, double *rhs) {
+void ElasticityKernelTest::multiplyMaterialParameterMatrix(const double *Q, double **rhs) {
   return;
 }
 

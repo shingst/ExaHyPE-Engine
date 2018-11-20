@@ -114,9 +114,10 @@ public:
    * \param[inout]  The vector BgradQ (extends nVar), already allocated. 
    *
    **/
-  virtual void nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) = 0;
+  virtual void nonConservativeProduct(const double* const Q,const double* const * const gradQ,double** BgradQ) = 0; //linear
+  virtual void nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) = 0;  //nonlinear //TODO JMG change gradQ
 
-  virtual void multiplyMaterialParameterMatrix(const double* const Q, double* rhs) = 0;
+  virtual void multiplyMaterialParameterMatrix(const double* const Q, double** rhs) = 0;
   
   /**
    * Compute the conserved flux.

@@ -55,12 +55,12 @@ void riemannSolverLinear(SolverType& solver, double* FL, double* FR,
     idx3 idx_QLR(basisSize,basisSize, numberOfData);
     for (int i = 0; i < basisSize; i++) {
       for (int j = 0; j < basisSize; j++) {
-	const double weight = kernels::gaussLegendreWeights[order][i]*
-	                      kernels::gaussLegendreWeights[order][j];
-	for (int k = 0; k < numberOfData; k++) {
-	  QavL[k] += weight * QL[idx_QLR(i ,j, k)];
-	  QavR[k] += weight * QR[idx_QLR(i ,j, k)];
-	}
+        const double weight = kernels::gaussLegendreWeights[order][i]*
+                              kernels::gaussLegendreWeights[order][j];
+        for (int k = 0; k < numberOfData; k++) {
+          QavL[k] += weight * QL[idx_QLR(i ,j, k)];
+          QavR[k] += weight * QR[idx_QLR(i ,j, k)];
+        }
       }
     }
   }
@@ -78,18 +78,31 @@ void riemannSolverLinear(SolverType& solver, double* FL, double* FR,
 
   double Qdiff[numberOfData] = {0.0};
   double Qavg[numberOfData] = {0.0};
-  double gradQ[numberOfVariables*DIMENSIONS] = {0.0};
 
   idx2 idx_2d(DIMENSIONS, numberOfVariables);
   
-  double ncp[numberOfVariables*DIMENSIONS] = {0.0};
-
   double flux_vec[numberOfVariables*DIMENSIONS] = {0.0};
   double* flux[DIMENSIONS];
   
   flux[0] = &flux_vec[idx_2d(0,0)];
   flux[1] = &flux_vec[idx_2d(1,0)];
   flux[2] = &flux_vec[idx_2d(2,0)];
+  
+  double ncp_vec[numberOfVariables*DIMENSIONS] = {0.0};
+  double* ncp[DIMENSIONS];
+  
+  ncp[0] = &ncp_vec[idx_2d(0,0)];
+  ncp[1] = &ncp_vec[idx_2d(1,0)];
+  ncp[2] = &ncp_vec[idx_2d(2,0)];
+  
+  double gradQ_vec[numberOfVariables*DIMENSIONS] = {0.0};
+  double* gradQ[DIMENSIONS];
+  
+  gradQ[0] = &gradQ_vec[idx_2d(0,0)];
+  gradQ[1] = &gradQ_vec[idx_2d(1,0)];
+  gradQ[2] = &gradQ_vec[idx_2d(2,0)];
+
+
   
   for(int l = 0; l < numberOfData; l++) {
     Qavg[l] = 0.5 *  (QavR[l] + QavL[l]);
@@ -109,46 +122,46 @@ void riemannSolverLinear(SolverType& solver, double* FL, double* FR,
     std::fill_n (FR, basisSize2 * numberOfVariables, 0.0);
     for (int i = 0; i < basisSize; i++) {
       for (int j = 0; j < basisSize; j++) {
-	for(int l = 0 ; l< numberOfVariables ; l++){ 
-	  Qdiff[l] = 0.5 * (QR[idx_QLR(i, j, l)] - QL[idx_QLR(i ,j, l)]);
-	}
+        for(int l = 0 ; l< numberOfVariables ; l++){ 
+          Qdiff[l] = 0.5 * (QR[idx_QLR(i, j, l)] - QL[idx_QLR(i ,j, l)]);
+        }
 
-	std::copy_n(&Qdiff[0],numberOfVariables,&gradQ[idx_2d(0,0)]);
-	std::copy_n(&Qdiff[0],numberOfVariables,&gradQ[idx_2d(1,0)]);
-	std::copy_n(&Qdiff[0],numberOfVariables,&gradQ[idx_2d(2,0)]);            
-      
-    
-	if(useNCP) {
-	  solver.nonConservativeProduct(Qavg, gradQ, ncp);
-	
-	  if(useMM){
-	    solver.multiplyMaterialParameterMatrix(Qavg, ncp);
-	  }
-	
-	  for(int l=0; l < numberOfVariables; l++) {
-	    FL[idx_FLR(i, j, l)] += ncp[idx_2d(direction,l)]; 
-	    FR[idx_FLR(i, j, l)] += ncp[idx_2d(direction,l)]; 
-	  }
-	}
-     
-      
-	if(useFlux){
-	  solver.flux(Qdiff, flux);
+        std::copy_n(Qdiff,numberOfVariables,gradQ[0]);
+        std::copy_n(Qdiff,numberOfVariables,gradQ[1]);
+        std::copy_n(Qdiff,numberOfVariables,gradQ[2]);            
+          
+        if(useNCP) {
+          solver.nonConservativeProduct(Qavg, gradQ, ncp);
+        
+          if(useMM){
+            solver.multiplyMaterialParameterMatrix(Qavg, ncp);
+          }
+        
+          for(int l=0; l < numberOfVariables; l++) {
+            FL[idx_FLR(i, j, l)] += ncp[direction][l]; 
+            FR[idx_FLR(i, j, l)] += ncp[direction][l]; 
+          }
+        }
+           
+            
+        if(useFlux){
 
-	  if(useMM){
-	    solver.multiplyMaterialParameterMatrix(Qavg, flux_vec);
-	  }
-	
-	  for(int l=0; l < numberOfVariables; l++) {
-	    FL[idx_FLR(i, j, l)] +=  flux[direction][l];
-	    FR[idx_FLR(i, j, l)] +=  flux[direction][l];
-	  }
-	}
+          solver.flux(Qdiff, flux);
 
-	for(int l=0; l < numberOfVariables; l++) {
-	  FL[idx_FLR(i, j, l)] -= smax*Qdiff[l];
-	  FR[idx_FLR(i, j, l)] += smax*Qdiff[l];
-	}
+          if(useMM){
+            solver.multiplyMaterialParameterMatrix(Qavg, flux);
+          }
+        
+          for(int l=0; l < numberOfVariables; l++) {
+            FL[idx_FLR(i, j, l)] +=  flux[direction][l];
+            FR[idx_FLR(i, j, l)] +=  flux[direction][l];
+          }
+        }
+
+        for(int l=0; l < numberOfVariables; l++) {
+          FL[idx_FLR(i, j, l)] -= smax*Qdiff[l];
+          FR[idx_FLR(i, j, l)] += smax*Qdiff[l];
+        }
       }
     }
   }

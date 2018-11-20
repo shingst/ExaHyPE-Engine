@@ -212,7 +212,11 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, pu
      *
      * See superclass for function's semantics.
      */
+{% if isLinear %}
+    void nonConservativeProduct(const double* const Q,const double* const * const gradQ,double** BgradQ) override;
+{% else %}
     void nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) override;
+{% endif %}
         
     /**
      * Default implementation. Has to be be overwritten by user's solver if you 
@@ -289,10 +293,15 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, pu
     
     //not used PDE
     {% if not useMaterialParameters %}
-    void multiplyMaterialParameterMatrix(const double* const Q, double* rhs) final {}
+    void multiplyMaterialParameterMatrix(const double* const Q, double** rhs) final {}
     {% endif %}
     {% if patchwiseAdjust %}
     void adjustPointSolution(const double* const x,const double t,const double dt,double* Q) final {};
+    {% endif %}
+    {% if isLinear %}
+    void nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) final {}; //unused nonlinear version
+    {% else %}
+    void nonConservativeProduct(const double* const Q,const double* const * const gradQ,double** BgradQ) final {}; //unused linear version
     {% endif %}
     
     //helper function
