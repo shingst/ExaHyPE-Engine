@@ -96,7 +96,12 @@ if __name__ == "__main__":
  
    
     if len(tableData) and len(tableData[0]):
-        reference = float(args.reference);
+        try:
+            reference = float(args.reference);
+        except:
+            print("ERROR: Argument 'reference' is not a float, is: '{}'".format(args.reference),file=sys.stderr);
+            sys.exit()
+
         if reference < 0:  # if no reference specified, use first value found
             reference = float(tableData[0][-1])
    

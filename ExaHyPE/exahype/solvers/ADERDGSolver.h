@@ -981,19 +981,70 @@ private:
    */
   class FusedTimeStepJob: public tarch::multicore::jobs::Job {
     private:
+      ADERDGSolver&                                             _solver; // TODO not const because of kernels
+      CellDescription&                                          _cellDescription;
+      CellInfo                                                  _cellInfo; // copy
+      const bool                                                _isFirstTimeStepOfBatch;
+      const bool                                                _isLastTimeStepOfBatch;
+      const bool                                                _isSkeletonJob;
+    public:
+      /**
+       * Construct a FusedTimeStepJob.
+       *
+       * @note Job is spawned as high priority job if spawned in the last time step.
+       * It further spawns a prediction job in this case in order
+       * to overlap work with the reduction of time step size
+       * and mesh update events.
+       *
+       * @param solver                 the spawning solver
+       * @param cellDescription        a cell description
+       * @param cellInfo               links to all cell descriptions associated with the cell
+       * @param isFirstTimeStepOfBatch if we currently run the first time step of a batch
+       * @param isLastTimeStepOfBatch  if we currently run the last time step of a batch
+       * @param isSkeletonJob          if the cell is a skeleton cell
+       */
+      FusedTimeStepJob(
+        ADERDGSolver&    solver,
+        CellDescription& cellDescription,
+        CellInfo&        cellInfo,
+        const bool       isFirstTimeStepOfBatch,
+        const bool       isLastTimeStepOfBatch,
+        const bool       isSkeletonJob);
+
+      bool run() override;
+      void prefetchData() override;
+  };
+
+  /**
+   * A job which performs the solution update and computes a new time step size.
+   *
+   * \note Spawning these operations as background job makes only sense if you
+   * wait in endIteration(...) on the completion of the job.
+   * It further important to flag this job as high priority job to
+   * ensure completion before the next reduction.
+   */
+  class UpdateJob: public tarch::multicore::jobs::Job {
+    private:
       ADERDGSolver&                                              _solver; // TODO not const because of kernels
       CellDescription&                                           _cellDescription;
-      const int                                                  _cellDescriptionsIndex; // indices are used for identification of patch
-      const int                                                  _element;
-      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>  _neighbourMergePerformed;
-      const bool                                                 _isSkeletonJob;
+      CellInfo                                                   _cellInfo;
+      const bool                                                 _isAtRemoteBoundary;
     public:
-      FusedTimeStepJob(
+      /**
+       * Construct a UpdateJob.
+       *
+       * @note Job is always spawned as high priority job.
+       *
+       * @param solver                 the spawning solver
+       * @param cellDescription        a cell description
+       * @param cellInfo               links to all cell descriptions associated with the cell
+       * @param isSkeletonJob          if the cell is a skeleton cell
+       */
+      UpdateJob(
         ADERDGSolver&                                              solver,
         CellDescription&                                           cellDescription,
-        const int                                                  cellDescriptionsIndex,
-        const int                                                  element,
-        const bool                                                 isSkeletonJob);
+        CellInfo&                                                  cellInfo,
+        const bool                                                 isAtRemoteBoundary);
 
       bool run() override;
       void prefetchData() override;
@@ -1136,9 +1187,7 @@ public:
    * and any refinement criterion has been evaluated before
    * calling this function.
    */
-  void updateRefinementStatus(
-      CellDescription& cellDescription,
-      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed) const;
+  void updateRefinementStatus(CellDescription& cellDescription) const;
 
   /**
    * Construct an ADERDGSolver.
@@ -1613,8 +1662,8 @@ public:
   void startNewTimeStep() override;
 
   void startNewTimeStepFused(
-      const bool isFirstIterationOfBatch,
-      const bool isLastIterationOfBatch) final override;
+      const bool isFirstTimeStepOfBatch,
+      const bool isLastTimeStepOfBatch) final override;
 
   /**
    * \copydoc Solver::updateTimeStepSizes
@@ -1794,9 +1843,7 @@ public:
    *
    * \note Has no const modifier since kernels are not const functions yet.
    */
-  MeshUpdateEvent evaluateRefinementCriteriaAfterSolutionUpdate(
-      CellDescription& cellDescription,
-      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed);
+  MeshUpdateEvent evaluateRefinementCriteriaAfterSolutionUpdate(CellDescription& cellDescription);
 
   /*! Perform prediction and volume integral.
    *
@@ -1909,11 +1956,11 @@ public:
   /**
    * Same as \p startNewTimeStep for the fused time stepping scheme.
    *
-   * \param[in] isFirstIterationOfBatch indicates that we are in the first iteration
+   * \param[in] isFirstTimeStepOfBatch indicates that we are in the first iteration
    *                                    of a batch or not. Note that this must be also set to true
    *                                    in case we run a batch of size 1, i.e. no batch at all.
    *
-   * \param[in] isLastIterationOfBatch indicates that we are in the last iteration
+   * \param[in] isLastTimeStepOfBatch indicates that we are in the last iteration
    *                                    of a batch or not. Note that this must be also set to true
    *                                    in case we run a batch of size 1, i.e. no batch at all.
    *
@@ -1921,8 +1968,8 @@ public:
    */
   double startNewTimeStepFused(
       CellDescription& cellDescription,
-      const bool isFirstIterationOfBatch,
-      const bool isLastIterationOfBatch);
+      const bool isFirstTimeStepOfBatch,
+      const bool isLastTimeStepOfBatch);
 
   /** \copydoc Solver::updateTimeStepSizes
    *
@@ -1954,19 +2001,31 @@ public:
    */
   UpdateResult fusedTimeStepBody(
         CellDescription& cellDescription,
-        const int cellDescriptionsIndex,
-        const int element,
-        const bool isFirstIterationOfBatch,
-        const bool isLastIterationOfBatch,
-        const bool isSkeletonCell,
-        const bool mustBeDoneImmediately,
-        const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed);
+        CellInfo&        cellInfo,
+        const bool       isFirstTimeStepOfBatch,
+        const bool       isLastTimeStepOfBatch,
+        const bool       isSkeletonCell,
+        const bool       mustBeDoneImmediately);
+
+  /**
+   * If the cell description is of type Cell, update the solution, evaluate the refinement criterion,
+   * and compute an admissible time step size.
+   *
+   * @note Not const as kernels are not const.
+   *
+   * @param cellDescription a cell description
+   * @return a struct containing a mesh update event triggered by this cell,
+   * and a new time step size.
+   */
+  UpdateResult updateBody(
+      CellDescription& cellDescription,
+      const bool isAtRemoteBoundary);
 
   UpdateResult fusedTimeStepOrRestrict(
       const int  solverNumber,
       CellInfo&  cellInfo,
-      const bool isFirstIterationOfBatch,
-      const bool isLastIterationOfBatch,
+      const bool isFirstTimeStepOfBatch,
+      const bool isLastTimeStepOfBatch,
       const bool isAtRemoteBoundary) final override;
 
   UpdateResult updateOrRestrict(
@@ -2000,32 +2059,13 @@ public:
    * a solution adjustment and adding of source term contributions here.
    *
    * @param[in] cellDescription         a cell description
-   * @param[in] neighbourMergePerformed an array of bools (modelled as byte) indicating if a merge (Riemann solve) was
-   *                                    performed for all DIMENSIONS_TIMES_TWO face adjacent to a cell
    * @param[in] backupPreviousSolution  Set to true if the solution should be backed up before
    *                                    we overwrite it by the updated solution.
    *
    */
   void updateSolution(
       CellDescription& cellDescription,
-      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
       const bool backupPreviousSolution=true);
-
-  /**
-   * Update the solution of a cell description.
-   *
-   * \note Make sure to reset neighbour merge
-   * helper variables in this method call.
-   *
-   * \note Has no const modifier since kernels are not const functions yet.
-   *
-   * \param[in] backupPreviousSolution Set to true if the solution should be backed up before
-   *                                   we overwrite it by the updated solution.
-   */
-  void updateSolution(
-      const int cellDescriptionsIndex,
-      const int element,
-      const bool backupPreviousSolution);
 
   /**
    * TODO(Dominic): Update docu.

@@ -15,12 +15,16 @@
 #define _EXAHYPE_VERTEX_H_
 
 #include "exahype/records/Vertex.h"
+
+#include "peano/MappingSpecification.h"
 #include "peano/grid/Vertex.h"
 #include "peano/grid/VertexEnumerator.h"
 #include "peano/utils/Globals.h"
 
 #include "exahype/solvers/ADERDGSolver.h"
 #include "exahype/solvers/FiniteVolumesSolver.h"
+
+#include "peano/MappingSpecification.h"
 
 namespace exahype {
   class Vertex;
@@ -61,6 +65,11 @@ public:
   #endif
 
   /**
+   * @return a mapping specification which applies to all neighbour merges.
+   */ 
+  static peano::MappingSpecification getNeighbourMergeSpecification(const int level);
+
+  /**
    * Compare if two vectors are equal up to a relative
    * tolerance.
    *
@@ -85,9 +94,9 @@ public:
    * interface is an interior face.
    */
   static void validateNeighbourhood(
-      const int cellDescriptionsIndex1,
-      const int cellDescriptionsIndex2,
-      solvers::Solver::CellInfo* (&cellInfos)[TWO_POWER_D],
+      const int                                cellDescriptionsIndex1,
+      const int                                cellDescriptionsIndex2,
+      const exahype::Vertex&                   vertex,
       const tarch::la::Vector<DIMENSIONS,int>& pos1,
       const tarch::la::Vector<DIMENSIONS,int>& pos2);
 
@@ -178,11 +187,9 @@ private:
    * @param h extent of cells adjacent to the vertex
    */
   static void mergeNeighboursLoopBody(
-      const int pos1Scalar,
-      const int pos2Scalar,
-      const int cellDescriptionsIndex1,
-      const int cellDescriptionsIndex2,
-      solvers::Solver::CellInfo* (&cellInfos)[TWO_POWER_D],
+      const int                                   spos1Scalar,
+      const int                                   spos2Scalar,
+      const exahype::Vertex&                      vertex,
       const tarch::la::Vector<DIMENSIONS, double> x,
       const tarch::la::Vector<DIMENSIONS, double> h);
 
@@ -357,9 +364,20 @@ private:
   Vertex(const Base::PersistentVertex& argument);
 
   /**
-   * Return the cell descriptions indices of the adjacent cells.
+   * @return the cell descriptions indices of the adjacent cells.
    */
   tarch::la::Vector<TWO_POWER_D, int> getCellDescriptionsIndex() const;
+ 
+  /**
+   * @return the cell descriptions indices of an adjcacent cell.
+   */
+  int getCellDescriptionsIndex(const int adjacencyIndex) const;
+
+  /**
+   * @return a cell info object linking to cell descriptions associated with the cell
+   * with index @p index in the adjacency map of the vertex.
+   */
+  exahype::solvers::Solver::CellInfo createCellInfo(int index) const;
 
   /**
    * Compute the face barycentre from a vertex perspective where

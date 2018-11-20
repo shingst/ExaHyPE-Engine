@@ -400,9 +400,22 @@ class exahype::solvers::Solver {
    * It is passed to all solver routines.
    */
   typedef struct CellInfo {
-    const int _cellDescriptionsIndex= NotFound;
+    const int _cellDescriptionsIndex= -1;
     peano::heap::RLEHeap<exahype::records::ADERDGCellDescription>::HeapEntries&        _ADERDGCellDescriptions;
     peano::heap::RLEHeap<exahype::records::FiniteVolumesCellDescription>::HeapEntries& _FiniteVolumesCellDescriptions;
+
+    CellInfo(const CellInfo& cellInfo) :
+      _cellDescriptionsIndex        (cellInfo._cellDescriptionsIndex        ),
+      _ADERDGCellDescriptions       (cellInfo._ADERDGCellDescriptions       ),
+      _FiniteVolumesCellDescriptions(cellInfo._FiniteVolumesCellDescriptions)
+    {}
+
+    CellInfo(const int cellDescriptionsIndex,void* ADERDGCellDescriptions,void* FiniteVolumesCellDescriptions) :
+      _cellDescriptionsIndex(cellDescriptionsIndex),
+      _ADERDGCellDescriptions       (*static_cast<peano::heap::RLEHeap<exahype::records::ADERDGCellDescription>::HeapEntries*>(ADERDGCellDescriptions)),
+      _FiniteVolumesCellDescriptions(*static_cast<peano::heap::RLEHeap<exahype::records::FiniteVolumesCellDescription>::HeapEntries*>(FiniteVolumesCellDescriptions))
+    {}
+
     CellInfo(const int cellDescriptionsIndex) :
       _cellDescriptionsIndex(cellDescriptionsIndex),
       _ADERDGCellDescriptions       (peano::heap::RLEHeap<exahype::records::ADERDGCellDescription>::getInstance().getData(_cellDescriptionsIndex)),
@@ -542,6 +555,13 @@ class exahype::solvers::Solver {
     }
   } BoundaryFaceInfo;
 
+  template <typename CellDescription>
+  static void resetNeighbourMergePerformedFlags(CellDescription& p) {
+    for (int faceIndex=0; faceIndex<DIMENSIONS_TIMES_TWO; faceIndex++) {
+      p.setNeighbourMergePerformed(faceIndex,false);
+    }
+  }
+
   /**
    * TrackGridStatistics is a flag from Peano that I "misuse" here as these
    * data also are grid statistics.
@@ -614,10 +634,10 @@ class exahype::solvers::Solver {
   static int MaxNumberOfRunningBackgroundJobConsumerTasksDuringTraversal;
 
   /**
-   * Set to true if the prediction and/or the fused time step
-   * should be launched as background job whenever possible.
+   * Set to true if the prediction, the update and/or the fused time step
+   * should be launched as background job.
    */
-  static bool SpawnPredictionAsBackgroundJob;
+  static bool SpawnBackgroundJobs;
 
   /**
    * Set to true if the prolongation
@@ -640,12 +660,21 @@ class exahype::solvers::Solver {
   static bool SpawnAMRBackgroundJobs;
 
 
-  enum class JobType { AMRJob, EnclaveJob, SkeletonJob };
+  enum class JobType { AMRJob, ReductionJob, EnclaveJob, SkeletonJob };
 
   /**
    * \see ensureAllBackgroundJobsHaveTerminated
    */
   static int NumberOfAMRBackgroundJobs;
+
+  /**
+   * Number of jobs spawned which perform a reduction.
+   *
+   * Reduction Jobs are spawned as high priority.
+   * They might be enclave or skeleton jobs.
+   */
+  static int NumberOfReductionJobs;
+
   /**
    * Number of background jobs spawned
    * from enclave cells.
@@ -894,6 +923,10 @@ class exahype::solvers::Solver {
    * \note It is very important that initSolvers
    * has been called on all solvers before this
    * method is used.
+   *
+   * \note That we start counting the mesh level
+   * at 1. In a uniform mesh with level l, there
+   * are thus 3^{DIMENSIONS*(l-1)} cells.
    */
   static int getCoarsestMeshLevelOfAllSolvers();
 

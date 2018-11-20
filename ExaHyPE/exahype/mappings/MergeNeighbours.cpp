@@ -33,7 +33,8 @@ exahype::mappings::MergeNeighbours::communicationSpecification() const {
 
 peano::MappingSpecification
 exahype::mappings::MergeNeighbours::enterCellSpecification(int level) const {
-  if ( solvers::Solver::CompressionAccuracy > 0.0 ) {
+  const int coarsestSolverLevel = solvers::Solver::getCoarsestMeshLevelOfAllSolvers();
+  if ( std::abs(level)>=coarsestSolverLevel && solvers::Solver::CompressionAccuracy > 0.0 ) {
     return peano::MappingSpecification(
           peano::MappingSpecification::WholeTree,
           peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
@@ -46,9 +47,7 @@ exahype::mappings::MergeNeighbours::enterCellSpecification(int level) const {
 
 peano::MappingSpecification
 exahype::mappings::MergeNeighbours::touchVertexFirstTimeSpecification(int level) const {
-  return peano::MappingSpecification(
-        peano::MappingSpecification::WholeTree,
-        peano::MappingSpecification::AvoidFineGridRaces,true); // TODO(Dominic): false should work in theory
+  return Vertex::getNeighbourMergeSpecification(level);
 }
 
 /* Specifications below are all nop. */
@@ -134,7 +133,7 @@ void exahype::mappings::MergeNeighbours::enterCell(
     exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
   if ( exahype::solvers::Solver::CompressionAccuracy>0.0 && fineGridCell.isInitialised() ) {
-    solvers::Solver::CellInfo cellInfo(fineGridCell.getCellDescriptionsIndex());
+    solvers::Solver::CellInfo cellInfo = fineGridCell.createCellInfo();
     const bool isAtRemoteBoundary = exahype::Cell::isAtRemoteBoundary(fineGridVertices,fineGridVerticesEnumerator);
     for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
