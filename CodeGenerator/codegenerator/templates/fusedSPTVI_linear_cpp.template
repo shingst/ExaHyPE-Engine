@@ -223,39 +223,16 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
 
     //dflux1 dx
     for (int yz = 0; yz < {{nDof3D*nDof}}; yz++) {
-{% if useLibxsmm %}
-      {{gemm_flux_x}}(lFi+(i*{{nDof3D*nDof}}+yz)*{{nDof*nVarPad}}, dudxT_by_dx, tmpArray); //overwrite tmpArray, no need to reset it
-{% else %}
-      std::memset(tmpArray, 0, {{nDof*nVarPad}}*sizeof(double));
-      for (int l = 0; l < {{nDof}}; l++) {
-        for (int x = 0; x < {{nDof}}; x++) {
-          #pragma omp simd aligned(tmpArray,lFi:ALIGNMENT)
-          for (int n = 0; n < {{nVarPad}}; n++) {
-            tmpArray[l*{{nVarPad}}+n] += lFi[((i*{{nDof3D*nDof}}+yz)*{{nDof}}+x)*{{nVarPad}}+n] * dudxT_by_dx[l*{{nDofPad}}+x];
-          }
-        }
-      }
-{% endif %}
+      //overwrite tmpArray, no need to reset it
+      {{ m.matmul('flux_x', 'lFi', 'dudxT_by_dx', 'tmpArray', '(i*'~nDof3D*nDof~'+yz)*'~nDof*nVarPad, '0', '0') | indent(6) }}{##}
       std::copy_n(tmpArray, {{nDof*nVarPad}}, lFi+(i*{{nDof3D*nDof}}+yz)*{{nDof*nVarPad}});
     }
 
     //dflux2 dy
     for (int z = 0; z < {{nDof3D}}; z++) {
       for (int x = 0; x < {{nDof}}; x++) {
-{% if useLibxsmm %}
-        {{gemm_flux_y}}(lFi+((i*{{nDof3D}}+z)*{{nDof*nDof}}+x)*{{nVarPad}}+{{1*(nDof**nDim)*nDof*nVarPad}}, dudxT_by_dx, tmpArray); //overwrite tmpArray, no need to reset it
-{% else %}
-        std::memset(tmpArray, 0, {{nDof*nVarPad}}*sizeof(double));
-        for (int l = 0; l < {{nDof}}; l++) {
-          for (int y = 0; y < {{nDof}}; y++) {
-            #pragma omp simd aligned(tmpArray,lFi:ALIGNMENT)
-            for (int n = 0; n < {{nVarPad}}; n++) {
-              tmpArray[l*{{nVarPad}}+n] += lFi[(((i*{{nDof3D}}+z)*{{nDof}}+y)*{{nDof}}+x)*{{nVarPad}}+n +{{1*(nDof**nDim)*nDof*nVarPad}}] * dudxT_by_dx[l*{{nDofPad}}+y];
-
-            }
-          }
-        }
-{% endif %}
+        //overwrite tmpArray, no need to reset it
+        {{ m.matmul('flux_y', 'lFi', 'dudxT_by_dx', 'tmpArray', '((i*'~nDof3D~'+z)*'~nDof*nDof~'+x)*'~nVarPad~'+'~(nDof**nDim)*nDof*nVarPad, '0', '0') | indent(8) }}{##}
         for (int l = 0; l < {{nDof}}; l++) {
           #pragma omp simd aligned(lFi,tmpArray:ALIGNMENT)
           for (int n = 0; n < {{nVarPad}}; n++) {
@@ -268,19 +245,8 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
 
     //dflux3 dz
     for (int xy = 0; xy < {{nDof*nDof}}; xy++) {
-{% if useLibxsmm %}
-      {{gemm_flux_z}}(lFi+(i*{{nDof**3}}+xy)*{{nVarPad}}+{{2*(nDof**nDim)*nDof*nVarPad}}, dudxT_by_dx, tmpArray); //overwrite tmpArray, no need to reset it
-{% else %}
-      std::memset(tmpArray, 0, {{nDof*nVarPad}}*sizeof(double));
-      for (int l = 0; l < {{nDof}}; l++) {
-        for (int z = 0; z < {{nDof}}; z++) {
-          #pragma omp simd aligned(tmpArray,lFi:ALIGNMENT)
-          for (int n = 0; n < {{nVarPad}}; n++) {
-            tmpArray[l*{{nVarPad}}+n] += lFi[((i*{{nDof3D}}+z)*{{nDof*nDof}}+xy)*{{nVarPad}}+n +{{2*(nDof**nDim)*nDof*nVarPad}}] * dudxT_by_dx[l*{{nDofPad}}+z];
-          }
-        }
-      }
-{% endif %}
+      //overwrite tmpArray, no need to reset it
+      {{ m.matmul('flux_z', 'lFi', 'dudxT_by_dx', 'tmpArray', '(i*'~nDof**nDim~'+xy)*'~nVarPad~'+'~2*(nDof**nDim)*nDof*nVarPad, '0', '0') | indent(6) }}{##}
       for (int l = 0; l < {{nDof}}; l++) {
         #pragma omp simd aligned(lFi,tmpArray:ALIGNMENT)
         for (int n = 0; n < {{nVarPad}}; n++) {
@@ -296,53 +262,20 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
     //NCP
     // Compute the derivatives in x direction (independent from the y and z derivatives)
     for (int yz = 0; yz < {{nDof*nDof3D}}; yz++) {
-{% if useLibxsmm %}
-      {{gemm_gradQ_x}}(lQi+(i*{{nDof*nDof3D}}+yz)*{{nDof*nDataPad}}, dudxT_by_dx, gradQ+yz*{{nDof*nVarPad}});
-{% else %}
-      for (int x = 0; x < {{nDof}}; x++) {
-        for (int l = 0; l < {{nDof}}; l++) {
-          #pragma omp simd aligned(gradQ,lQi:ALIGNMENT)
-          for (int n = 0; n < {{nVar}}; n++) { // Skip parameters
-            gradQ[(yz*{{nDof}}+x)*{{nVarPad}}+n] += lQi[((i*{{nDof*nDof3D}}+yz)*{{nDof}}+l)*{{nDataPad}}+n] * dudxT_by_dx[x*{{nDofPad}}+l];
-          }
-        }
-      }
-{% endif %}
+      {{ m.matmul('gradQ_x', 'lQi', 'dudxT_by_dx', 'gradQ', '(i*'~nDof3D*nDof~'+yz)*'~nDof*nDataPad, '0', 'yz*'~nDof*nVarPad) | indent(6) }}{##}
     }
 
     // y direction (independent from the x and z derivatives)
     for (int z = 0; z < {{nDof3D}}; z++) {
       for (int x = 0; x < {{nDof}}; x++) {
-{% if useLibxsmm %}
-        {{gemm_gradQ_y}}(lQi+((i*{{nDof3D}}+z)*{{nDof*nDof}}+x)*{{nDataPad}}, dudxT_by_dx, gradQ+(z*{{nDof*nDof}}+x)*{{nVarPad}}+{{1*(nDof**nDim)*nVarPad}});
-{% else %}
-        for (int y = 0; y < {{nDof}}; y++) {
-          for (int l = 0; l < {{nDof}}; l++) {
-            #pragma omp simd aligned(gradQ,lQi:ALIGNMENT)
-            for (int n = 0; n < {{nVar}}; n++) { // Skip parameters
-              gradQ[((z*{{nDof}}+y)*{{nDof}}+x)*{{nVarPad}}+n +{{1*(nDof**nDim)*nVarPad}}] += lQi[(((i*{{nDof3D}}+z)*{{nDof}}+l)*{{nDof}}+x)*{{nDataPad}}+n] * dudxT_by_dx[y*{{nDofPad}}+l];
-            }
-          }
-        }
-{% endif %}
+        {{ m.matmul('gradQ_y', 'lQi', 'dudxT_by_dx', 'gradQ', '((i*'~nDof3D~'+z)*'~nDof*nDof~'+x)*'~nDataPad, '0', '(z*'~nDof*nDof~'+x)*'~nVarPad~'+'~(nDof**nDim)*nVarPad) | indent(8) }}{##}
       }
     }
 {% if nDim ==3 %}
 
     // z direction (independent from the x and y derivatives)
     for (int xy = 0; xy < {{nDof*nDof}}; xy++) {
-{% if useLibxsmm %}
-      {{gemm_gradQ_z}}(lQi+(i*{{nDof3D*nDof*nDof}}+xy)*{{nDataPad}}, dudxT_by_dx, gradQ+xy*{{nVarPad}}+{{2*(nDof**nDim)*nVarPad}});
-{% else %}
-      for (int z = 0; z < {{nDof}}; z++) {
-        for (int l = 0; l < {{nDof}}; l++) {
-          #pragma omp simd aligned(gradQ,lQi:ALIGNMENT)
-          for (int n = 0; n < {{nVar}}; n++) {// Skip parameters
-            gradQ[(z*{{nDof*nDof}}+xy)*{{nVarPad}}+n +{{2*(nDof**nDim)*nVarPad}}] += lQi[((i*{{nDof3D}}+l)*{{nDof*nDof}}+xy)*{{nDataPad}}+n] * dudxT_by_dx[z*{{nDofPad}}+l];
-          }
-        }
-      }
-{% endif %}
+      {{ m.matmul('gradQ_z', 'lQi', 'dudxT_by_dx', 'gradQ', '(i*'~nDof**nDim~'+xy)*'~nDataPad, '0', 'xy*'~nVarPad~'+'~2*(nDof**nDim)*nVarPad) | indent(6) }}{##}
     }
 {% endif %}
     {
