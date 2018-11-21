@@ -1004,17 +1004,8 @@ bool exahype::solvers::ADERDGSolver::isPerformingPrediction(
 
 bool exahype::solvers::ADERDGSolver::isMergingMetadata(
     const exahype::State::AlgorithmSection& section) const {
-  bool isMergingMetadata = false;
-
-  switch (section) {
-    case exahype::State::AlgorithmSection::MeshRefinement:
-      isMergingMetadata = hasRequestedMeshRefinement();
-      break;
-    default:
-      break;
-  }
-
-  return isMergingMetadata;
+  return ( exahype::State::AlgorithmSection::MeshRefinement==section ) &&
+         hasRequestedMeshRefinement();
 }
 
 void exahype::solvers::ADERDGSolver::setStabilityConditionWasViolated(bool state) {
@@ -1102,7 +1093,7 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInEnterCell(
 
     updateAugmentationStatus(fineGridCellDescription);
 
-    updateRefinementStatus(fineGridCellDescription);
+    updateRefinementStatus(fineGridCellDescription,fineGridCellDescription.getNeighbourMergePerformed());
     if ( coarseGridElement != exahype::solvers::Solver::NotFound ) {
       CellDescription& coarseGridCellDescription = getCellDescription(
           coarseGridCell.getCellDescriptionsIndex(),coarseGridElement);
@@ -2064,7 +2055,10 @@ void exahype::solvers::ADERDGSolver::validateCellDescriptionData(
 }
 
 exahype::solvers::Solver::MeshUpdateEvent
-exahype::solvers::ADERDGSolver::evaluateRefinementCriteriaAfterSolutionUpdate(CellDescription& cellDescription) {
+exahype::solvers::ADERDGSolver::evaluateRefinementCriteriaAfterSolutionUpdate(
+    CellDescription&                                           cellDescription,
+    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed
+) {
   cellDescription.setPreviousRefinementStatus(cellDescription.getRefinementStatus());
 
   cellDescription.setRefinementFlag(false);
@@ -2097,7 +2091,7 @@ exahype::solvers::ADERDGSolver::evaluateRefinementCriteriaAfterSolutionUpdate(Ce
     }
 
     // update refinement status after prescribing refinement values
-    updateRefinementStatus(cellDescription);
+    updateRefinementStatus(cellDescription,neighbourMergePerformed);
 
     return
         (cellDescription.getLevel() < getMaximumAdaptiveMeshLevel() &&
@@ -2107,7 +2101,7 @@ exahype::solvers::ADERDGSolver::evaluateRefinementCriteriaAfterSolutionUpdate(Ce
     // bottom up refinement criterion TODO(Dominic): Add to docu
     // We allow the halo region to diffuse into the virtual subcells
     // up to some point.
-    updateRefinementStatus(cellDescription);
+    updateRefinementStatus(cellDescription,neighbourMergePerformed);
     if (
         cellDescription.getRefinementStatus() > _refineOrKeepOnFineGrid-1 &&
         cellDescription.getLevel()==getMaximumAdaptiveMeshLevel()
@@ -2124,19 +2118,18 @@ exahype::solvers::ADERDGSolver::evaluateRefinementCriteriaAfterSolutionUpdate(Ce
 }
 
 exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTimeStepBody(
-    CellDescription& cellDescription,
-    CellInfo&  cellInfo,
-    const bool isFirstTimeStepOfBatch,
-    const bool isLastTimeStepOfBatch,
-    const bool isSkeletonCell,
-    const bool mustBeDoneImmediately) {
-  updateSolution(cellDescription,isFirstTimeStepOfBatch);
+    CellDescription&                                           cellDescription,
+    CellInfo&                                                  cellInfo,
+    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
+    const bool                                                 isFirstTimeStepOfBatch,
+    const bool                                                 isLastTimeStepOfBatch,
+    const bool                                                 isSkeletonCell,
+    const bool                                                 mustBeDoneImmediately) {
+  updateSolution(cellDescription,neighbourMergePerformed,isFirstTimeStepOfBatch);
 
   UpdateResult result;
   result._timeStepSize    = startNewTimeStepFused(cellDescription,isFirstTimeStepOfBatch,isLastTimeStepOfBatch);
-  result._meshUpdateEvent = evaluateRefinementCriteriaAfterSolutionUpdate(cellDescription);
-
-  resetNeighbourMergePerformedFlags(cellDescription);
+  result._meshUpdateEvent = evaluateRefinementCriteriaAfterSolutionUpdate(cellDescription,neighbourMergePerformed);
 
   if (
       SpawnBackgroundJobs    &&
@@ -2186,7 +2179,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
       } else {
         return
             fusedTimeStepBody(
-                cellDescription,cellInfo,
+                cellDescription,cellInfo,cellDescription.getNeighbourMergePerformed(),
                 isFirstTimeStepOfBatch,isLastTimeStepOfBatch,
                 isSkeletonCell,mustBeDoneImmediately );
       }
@@ -2195,12 +2188,10 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
         cellDescription.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication
     ) {
       restrictToTopMostParent(cellDescription);
-      resetNeighbourMergePerformedFlags(cellDescription);
       cellDescription.setHasCompletedTimeStep(true);
       // TODO(Dominic): Evaluate ref crit here too // halos
       return UpdateResult();
     } else {
-      resetNeighbourMergePerformedFlags(cellDescription);
       cellDescription.setHasCompletedTimeStep(true);
       return UpdateResult();
     }
@@ -2210,19 +2201,20 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
 }
 
 exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::updateBody(
-    CellDescription& cellDescription,
-    const bool       isAtRemoteBoundary) {
+    CellDescription&                                           cellDescription,
+    CellInfo&                                                  cellInfo,
+    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
+    const bool                                                 isAtRemoteBoundary) {
   assertion1(cellDescription.getType()==CellDescription::Type::Cell,cellDescription.toString());
   uncompress(cellDescription);
 
   UpdateResult result;
-  updateSolution(cellDescription,true);
+  updateSolution(cellDescription,neighbourMergePerformed,true);
   result._timeStepSize    = startNewTimeStep(cellDescription);
-  result._meshUpdateEvent = evaluateRefinementCriteriaAfterSolutionUpdate(cellDescription);
+  result._meshUpdateEvent = evaluateRefinementCriteriaAfterSolutionUpdate(cellDescription,neighbourMergePerformed);
 
   compress(cellDescription,isAtRemoteBoundary);
 
-  resetNeighbourMergePerformedFlags(cellDescription);
   cellDescription.setHasCompletedTimeStep(true); // required as prediction checks the flag too. Field should be renamed "setHasCompletedLastOperation(...)".
   return result;
 }
@@ -2247,20 +2239,18 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::updateOrR
     else if (
         cellDescription.getType()==CellDescription::Type::Cell
     ) {
-      return updateBody(cellDescription,isAtRemoteBoundary);
+      return updateBody(cellDescription,cellInfo,cellDescription.getNeighbourMergePerformed(),isAtRemoteBoundary);
     }
     else if (
         cellDescription.getType()==CellDescription::Type::Descendant &&
         cellDescription.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication
     ) {
       restrictToTopMostParent(cellDescription);
-      resetNeighbourMergePerformedFlags(cellDescription);
       cellDescription.setHasCompletedTimeStep(true);
       // TODO(Dominic): Evaluate ref crit here too // halos
       return UpdateResult();
     }
     else {
-      resetNeighbourMergePerformedFlags(cellDescription);
       cellDescription.setHasCompletedTimeStep(true);
       return UpdateResult();
     }
@@ -2593,20 +2583,21 @@ void exahype::solvers::ADERDGSolver::adjustSolution(CellDescription& cellDescrip
 }
 
 void exahype::solvers::ADERDGSolver::updateSolution(
-    CellDescription& cellDescription,
-    const bool backupPreviousSolution) {
+    CellDescription&                                           cellDescription,
+    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
+    const bool                                                 backupPreviousSolution) {
   if (
     cellDescription.getType()==CellDescription::Type::Cell &&
     cellDescription.getRefinementEvent()==CellDescription::None
   ) {
-    if ( !tarch::la::equals(cellDescription.getNeighbourMergePerformed(),(signed char) true) && !ProfileUpdate ) {
+    if ( !tarch::la::equals(neighbourMergePerformed,static_cast<signed char>(true)) && !ProfileUpdate ) {
       logError("updateSolution(...)","Riemann solve was not performed on all faces of cell= "<<cellDescription.toString());
       std::terminate();
     }
     double* update = static_cast<double*>(cellDescription.getUpdate());
 
     #ifdef Asserts
-    assertion1( tarch::la::equals(cellDescription.getNeighbourMergePerformed(),(signed char) true) || ProfileUpdate,cellDescription.toString());
+    assertion1( tarch::la::equals(neighbourMergePerformed,static_cast<signed char>(true)) || ProfileUpdate,cellDescription.toString());
     if ( _checkForNaNs ) {
       for (int i=0; i<getUnknownsPerCell(); i++) { // update does not store parameters
         assertion3(tarch::la::equals(cellDescription.getCorrectorTimeStepSize(),0.0)  || std::isfinite(update[i]),cellDescription.toString(),"updateSolution",i);
@@ -2892,7 +2883,7 @@ void exahype::solvers::ADERDGSolver::restrictToTopMostParent(const CellDescripti
       exahype::amr::getSubfaceIndex(subcellIndex,direction);
     if ( cellDescription.getFacewiseCommunicationStatus(faceIndex)==CellCommunicationStatus ) {
       assertion1(exahype::amr::faceIsOnBoundaryOfParent(faceIndex,subcellIndex,levelDelta),cellDescription.toString());
-      assertion1(cellDescription.getNeighbourMergePerformed(faceIndex),cellDescription.toString());// necessary but not sufficient
+      assertion1(SpawnProlongationAsBackgroundJob || cellDescription.getNeighbourMergePerformed(faceIndex),cellDescription.toString());// necessary but not sufficient
 
       const double* const lFhbnd = static_cast<double*>(cellDescription.getFluctuation()) + dofsPerFace * faceIndex;
       faceIntegral(updateFine,lFhbnd,direction,orientation,subfaceIndex,levelDelta,cellDescription.getSize());
@@ -3008,14 +2999,16 @@ void exahype::solvers::ADERDGSolver::mergeWithAugmentationStatus(
   cellDescription.setFacewiseAugmentationStatus( faceIndex, otherAugmentationStatus );
 }
 
-void exahype::solvers::ADERDGSolver::updateRefinementStatus(CellDescription& cellDescription) const {
+void exahype::solvers::ADERDGSolver::updateRefinementStatus(
+    CellDescription&                                           cellDescription,
+    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed) const {
   if (
     cellDescription.getRefinementStatus()<_minimumRefinementStatusForTroubledCell &&
     cellDescription.getLevel()==getMaximumAdaptiveMeshLevel()
   ) {
     int max = ( cellDescription.getRefinementFlag() ) ? _refineOrKeepOnFineGrid : Erase;
     for (unsigned int i=0; i<DIMENSIONS_TIMES_TWO; i++) {
-      if ( cellDescription.getNeighbourMergePerformed(i) ) {
+      if ( neighbourMergePerformed[i] ) {
         max = std::max( max, cellDescription.getFacewiseRefinementStatus(i)-1 );
       }
     }
@@ -3928,8 +3921,7 @@ exahype::solvers::ADERDGSolver::appendNeighbourCommunicationMetadata(
   const int element = tryGetElement(cellDescriptionsIndex,solverNumber);
 
   if (element!=exahype::solvers::Solver::NotFound)  {
-    CellDescription& cellDescription =
-        getCellDescription(cellDescriptionsIndex,element);
+    CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
 
     metadata.push_back(static_cast<int>(cellDescription.getType()));
     metadata.push_back(cellDescription.getAugmentationStatus()); // TODO(Dominic): Add to docu: Might be merged multiple times!

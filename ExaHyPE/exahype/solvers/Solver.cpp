@@ -847,10 +847,7 @@ exahype::MetadataHeap::HeapEntries exahype::gatherNeighbourCommunicationMetadata
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
 
     solver->appendNeighbourCommunicationMetadata(
-        encodedMetaData,
-        src,dest,
-        cellDescriptionsIndex,
-        solverNumber);
+        encodedMetaData,src,dest,cellDescriptionsIndex,solverNumber);
   }
   assertion2(static_cast<int>(encodedMetaData.size())==length,encodedMetaData.size(),length);
   return encodedMetaData;
@@ -896,8 +893,7 @@ exahype::receiveNeighbourCommunicationMetadata(
     const int                                   fromRank,
     const tarch::la::Vector<DIMENSIONS,double>& x,
     const int                                   level) {
-  const unsigned int length =
-      exahype::NeighbourCommunicationMetadataPerSolver*exahype::solvers::RegisteredSolvers.size();
+  const size_t length = NeighbourCommunicationMetadataPerSolver*solvers::RegisteredSolvers.size();
   buffer.reserve(length);
   buffer.clear();
   assertion(buffer.size()==0);
@@ -907,6 +903,7 @@ exahype::receiveNeighbourCommunicationMetadata(
       MetadataHeap::getInstance().receiveData(
           fromRank, x, level,peano::heap::MessageType::NeighbourCommunication);
   assertion(receivedMessage.size()==0 || receivedMessage.size()==length);
+
   buffer.insert(buffer.begin(),receivedMessage.begin(),receivedMessage.end());
   if ( buffer.size()==0 ) {
     buffer.assign(length,InvalidMetadataEntry);

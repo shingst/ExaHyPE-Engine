@@ -145,6 +145,7 @@ private:
   UpdateResult updateBody(
       CellDescription&                                           cellDescription,
       CellInfo&                                                  cellInfo,
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
       const bool                                                 isFirstTimeStepOfBatch,
       const bool                                                 isLastTimeStepOfBatch,
       const bool                                                 isAtRemoteBoundary,
@@ -224,24 +225,32 @@ private:
    * A job which performs the Finite Volumes solution update
    * and further updates the local time stamp associated with
    * the FV cell description.
-   *
-   * \note Spawning these operations as background job makes only sense if you
-   * do not plan to reduce the admissible time step size or refinement requests
-   * within a consequent reduction step.
    */
   class FusedTimeStepJob: public tarch::multicore::jobs::Job {
   private:
     FiniteVolumesSolver&                                      _solver;
     CellDescription&                                          _cellDescription;
     CellInfo                                                  _cellInfo; // copy
+    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> _neighbourMergePerformed; // copy
     const bool                                                _isFirstTimeStepOfBatch;
     const bool                                                _isLastTimeStepOfBatch;
     const bool                                                _isSkeletonJob;
   public:
-    /**
-     * Construct a FusedTimeStepJob.
-     *
-     * @note Job is spawned as high priority job if spawned in the last time step.
+  /**
+   * Construct a FusedTimeStepJob.
+   *
+   * @note Job is spawned as high priority job if spawned in the last time step.
+   * It further spawns a prediction job in this case in order
+   * to overlap work with the reduction of time step size
+   * and mesh update events.
+   *
+   * @note The state of the neighbourMergePerformed flags is used internally by
+   * some of the kernels, e.g. in order to determine where to perform a face integral.
+   * However, they have to be reset before the next iteration as they indicate on
+   * which face a Riemann solve has already been performed or not (their original usage).
+   * The flags are thus reset directly after spawning a FusedTimeStepJob.
+   * Therefore, we need to copy the neighbourMergePerformed flags when spawning
+   * a FusedTimeStep job.
      *
      * @param solver                 the spawning solver
      * @param cellDescription        a cell description
@@ -275,6 +284,7 @@ private:
     FiniteVolumesSolver&                                      _solver; // TODO not const because of kernels
     CellDescription&                                          _cellDescription;
     CellInfo                                                  _cellInfo;
+    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> _neighbourMergePerformed; // copy
     const bool                                                _isAtRemoteBoundary;
   public:
     /**
@@ -786,9 +796,10 @@ public:
    *                                   we overwrite it by the updated solution.
    */
   void updateSolution(
-      CellDescription& cellDescription,
-      const int cellDescriptionsIndex,
-      const bool backupPreviousSolution);
+      CellDescription&                                           cellDescription,
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
+      const int                                                  cellDescriptionsIndex,
+      const bool                                                 backupPreviousSolution);
 
   /**
    * TODO(Dominic): Update docu.

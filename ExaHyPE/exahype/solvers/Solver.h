@@ -264,7 +264,7 @@ namespace exahype {
   /**
    * Defines an invalid metadata entry.
    */
-  static constexpr int InvalidMetadataEntry = -1;
+  static constexpr int InvalidMetadataEntry = -10;
 
   /**
    * Defines the length of the metadata
@@ -554,13 +554,6 @@ class exahype::solvers::Solver {
       return stringstream.str();
     }
   } BoundaryFaceInfo;
-
-  template <typename CellDescription>
-  static void resetNeighbourMergePerformedFlags(CellDescription& p) {
-    for (int faceIndex=0; faceIndex<DIMENSIONS_TIMES_TWO; faceIndex++) {
-      p.setNeighbourMergePerformed(faceIndex,false);
-    }
-  }
 
   /**
    * TrackGridStatistics is a flag from Peano that I "misuse" here as these
@@ -1111,8 +1104,8 @@ class exahype::solvers::Solver {
   * @param receiveDanglingMessages receive dangling messages while waiting
   */
  template <typename CellDescription>
- static void waitUntilCompletedTimeStep(
-     const CellDescription& cellDescription,const bool waitForHighPriorityJob,const bool receiveDanglingMessages) {
+ void waitUntilCompletedTimeStep(
+     const CellDescription& cellDescription,const bool waitForHighPriorityJob,const bool receiveDanglingMessages) const {
    if ( !cellDescription.getHasCompletedTimeStep() ) {
      peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
    }

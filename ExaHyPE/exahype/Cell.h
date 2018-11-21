@@ -126,8 +126,7 @@ class exahype::Cell : public peano::grid::Cell<exahype::records::Cell> {
   static void resetNeighbourMergeFlagsAndCounters(
       const solvers::Solver::CellInfo& cellInfo,
       exahype::Vertex* const fineGridVertices,
-      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-      const bool resetNeighbourMergePerformedFlags);
+      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator);
 
   /**
    * Determine inside and outside faces of a cell.

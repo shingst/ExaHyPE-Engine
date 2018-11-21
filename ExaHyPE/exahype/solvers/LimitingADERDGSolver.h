@@ -294,7 +294,9 @@ private:
    * to Troubled or from Troubled to NeighbourOfTroubled3, NeighbourOfTroubled4, this
    * methods returns false.
    */
-  MeshUpdateEvent determineRefinementStatusAfterSolutionUpdate(SolverPatch& solverPatch);
+  MeshUpdateEvent determineRefinementStatusAfterSolutionUpdate(
+      SolverPatch& solverPatch,
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed);
 
   /**
    * Takes the FV solution from the limiter patch and projects it on the
@@ -367,12 +369,13 @@ private:
    * after the time step data update.
    */
   UpdateResult fusedTimeStepBody(
-      SolverPatch& solverPatch,
-      CellInfo&    cellInfo,
-      const bool   isFirstTimeStepOfBatch,
-      const bool   isLastTimeStepOfBatch,
-      const bool   isSkeletonCell,
-      const bool   mustBeDoneImmediately);
+      SolverPatch&                                               solverPatch,
+      CellInfo&                                                  cellInfo,
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
+      const bool                                                 isFirstTimeStepOfBatch,
+      const bool                                                 isLastTimeStepOfBatch,
+      const bool                                                 isSkeletonCell,
+      const bool                                                 mustBeDoneImmediately);
 
   /**
    * Body of LimitingADERDGSolver::updateOrRestrict(...).
@@ -384,9 +387,10 @@ private:
    * @return an admissible time step size and a mesh update event for the solver patch
    */
   UpdateResult updateBody(
-      SolverPatch& solverPatch,
-      CellInfo&    cellInfo,
-      const bool   isAtRemoteBoundary);
+      SolverPatch&                                               solverPatch,
+      CellInfo&                                                  cellInfo,
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
+      const bool                                                 isAtRemoteBoundary);
 
  /**
    * Rollback to the previous time step, i.e,
@@ -465,10 +469,6 @@ private:
    * updates the local time stamp, performs the space-time predictor commputation,
    * and finally evaluates the a-posteriori limiting criterion.
    *
-   * \note Spawning these operations as background job makes only sense if you
-   * do not plan to reduce the admissible time step size, refinement requests,
-   * or limiter requests within a consequent reduction step.
-   *
    * TODO(Dominic): Minimise time step sizes and refinement requests per patch
    * (->transpose the typical minimisation order)
    */
@@ -477,10 +477,33 @@ private:
     LimitingADERDGSolver&                                     _solver;
     SolverPatch&                                              _solverPatch;
     CellInfo                                                  _cellInfo;                // copy
+    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> _neighbourMergePerformed; // copy
     const bool                                                _isFirstTimeStepOfBatch;
     const bool                                                _isLastTimeStepOfBatch;
     const bool                                                _isSkeletonJob;
   public:
+
+  /**
+   * @note Job is spawned as high priority job if spawned in the last time step.
+   * It further spawns a prediction job in this case in order
+   * to overlap work with the reduction of time step size
+   * and mesh update events.
+   *
+   * @note The state of the neighbourMergePerformed flags is used internally by
+   * some of the kernels, e.g. in order to determine where to perform a face integral.
+   * However, they have to be reset before the next iteration as they indicate on
+   * which face a Riemann solve has already been performed or not (their original usage).
+   * The flags are thus reset directly after spawning a FusedTimeStepJob.
+   * Therefore, we need to copy the neighbourMergePerformed flags when spawning
+   * a FusedTimeStep job.
+   *
+   * @param solver                 the solver the patch is associated with
+   * @param solverPatch            solver patch linking to the data
+   * @param cellInfo               refers to all cell descriptions/patches found in the cell holding the solver patch
+   * @param isFirstTimeStepOfBatch if this is the first time step in a batch
+   * @param isLastTimeStepOfBatch  if this is the last time step in a batch
+   * @param isSkeletonJob          if this job was spawned in a cell belonging to the MPI or AMR skeleton
+     */
     FusedTimeStepJob(
         LimitingADERDGSolver& solver,
         SolverPatch&          solverPatch,
@@ -505,6 +528,7 @@ private:
       LimitingADERDGSolver&                                     _solver; // TODO not const because of kernels
       SolverPatch&                                              _solverPatch;
       CellInfo                                                  _cellInfo;
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> _neighbourMergePerformed; // copy
       const bool                                                _isAtRemoteBoundary;
     public:
       /**
@@ -866,9 +890,10 @@ public:
    *
    */
   void updateSolution(
-      SolverPatch& solverPatch,
-      CellInfo& cellInfo,
-      const bool backupPreviousSolution);
+      SolverPatch&                                               solverPatch,
+      CellInfo&                                                  cellInfo,
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
+      const bool                                                 backupPreviousSolution);
 
   /**
    * Determine the new cell-local min max values.
@@ -898,7 +923,10 @@ public:
    * \note Must be called after starting a new time step for the patch.
    */
   MeshUpdateEvent
-  updateRefinementStatusAndMinAndMaxAfterSolutionUpdate(SolverPatch& solverPatch,CellInfo&  cellInfo);
+  updateRefinementStatusAndMinAndMaxAfterSolutionUpdate(
+      SolverPatch&                                               solverPatch,
+      CellInfo&                                                  cellInfo,
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed);
 
   /**
    * Deallocate the limiter patch on all AMR related

@@ -106,7 +106,7 @@ void exahype::mappings::BroadcastAndDropNeighbourMessages::enterCell(
       // ADER-DG
       for (auto& p : cellInfo._ADERDGCellDescriptions) {
         const bool waitForHighPriorityJob = isAtRemoteBoundary || p.getHasVirtualChildren();
-        solvers::Solver::waitUntilCompletedTimeStep(p,waitForHighPriorityJob,false);
+        solvers::RegisteredSolvers[p.getSolverNumber()]->waitUntilCompletedTimeStep(p,waitForHighPriorityJob,false);
       }
       // // FV - fused time step jobs are only spawned within batches
       // for (auto& p : cellInfo._FiniteVolumesCellDescriptions) {
@@ -115,7 +115,7 @@ void exahype::mappings::BroadcastAndDropNeighbourMessages::enterCell(
       // }
     }
 
-    Cell::resetNeighbourMergeFlagsAndCounters(cellInfo,fineGridVertices,fineGridVerticesEnumerator,true);
+    Cell::resetNeighbourMergeFlagsAndCounters(cellInfo,fineGridVertices,fineGridVerticesEnumerator);
   }
 }
 
