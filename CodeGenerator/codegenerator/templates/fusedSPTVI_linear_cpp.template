@@ -70,7 +70,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
 {% if usePointSources %}
   double* tmp_PSderivatives = lFi; // it's actually lFi used here as a temp array //TODO do something cleaner?
 {% endif %}
-  double tmpArray[{{tmpArraySize}}] __attribute__((aligned(ALIGNMENT))); //used by flux (nDof*nVarPad), materialParam (nVar*nDim) and ncp (2x nVar*nDim)
+  double tmpArray[{{tmpArraySize}}] __attribute__((aligned(ALIGNMENT))); //used by flux (nDof*nVarPad) and ncp (nVarPad*nDim)
   double dudxT_by_dx[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
 {% if useLibxsmm %}
 #if defined(USE_IPO) && ! defined(UNSAFE_IPO)
@@ -292,9 +292,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
 {% endif %}{# useFlux #}
 
 {% if useNCP %}
-{% if useNCP %}
     std::memset(gradQ, 0, {{nDim*(nDof**nDim)*nVarPad}}*sizeof(double));
-{% endif %}
     //NCP
     // Compute the derivatives in x direction (independent from the y and z derivatives)
     for (int yz = 0; yz < {{nDof*nDof3D}}; yz++) {
@@ -347,45 +345,45 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
 {% endif %}
     }
 {% endif %}
-
-    for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {
-      // use tmpArray for input output since the PDE requires a 1D format with all dimensions after each other without padding
-      std::memset(tmpArray+{{ncpOutputShift}}, 0, {{nDim*nVar}}*sizeof(double)); // zero out ncpResult
-      std::copy_n(gradQ+xyz*{{nVarPad}}, {{nVar}}, tmpArray); //x
-      std::copy_n(gradQ+xyz*{{nVarPad}}+{{1*(nDof**nDim)*nVarPad}}, {{nVar}}, tmpArray+{{1*nVar}}); //y
+    {
+      double* G[{{nDim}}];
+      double* tmpArray_ncpResult[{{nDim}}] = { tmpArray, tmpArray+{{nVarPad}}{{', tmpArray+'~2*nVarPad if nDim==3 else ''}} };
+      for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {
+        G[0] = gradQ+xyz*{{nVarPad}}; //x
+        G[1] = gradQ+xyz*{{nVarPad}}+{{1*(nDof**nDim)*nVarPad}}; //y
 {% if nDim==3 %}
-      std::copy_n(gradQ+xyz*{{nVarPad}}+{{2*(nDof**nDim)*nVarPad}}, {{nVar}}, tmpArray+{{2*nVar}}); //z
+        G[2] = gradQ+xyz*{{nVarPad}}+{{2*(nDof**nDim)*nVarPad}}; //z
 {% endif %}
+        std::memset(tmpArray, 0, {{nDim*nVarPad}}*sizeof(double)); // zero out ncpResult (stored in tmpArray)
 #ifdef USE_IPO
-      #pragma forceinline recursive
+        #pragma forceinline recursive
 #endif
-      solver.{{solverName}}::nonConservativeProduct(lQi+(i*{{nDof**nDim}}+xyz)*{{nDataPad}}, tmpArray, tmpArray+{{ncpOutputShift}});
-      for(int d = 0; d < {{nDim}}; d++) {
-        #pragma omp simd aligned(lFi,tmpArray:ALIGNMENT)
-        for (int n = 0; n < {{nVar}}; n++) {
-          lFi[((d*{{nDof}}+i)*{{nDof**nDim}}+xyz)*{{nVarPad}}+n] += tmpArray[d*{{nVar}}+n+{{ncpOutputShift}}];
+        solver.{{solverName}}::nonConservativeProduct(lQi+(i*{{nDof**nDim}}+xyz)*{{nDataPad}}, G, tmpArray_ncpResult);
+        for(int d = 0; d < {{nDim}}; d++) {
+          #pragma omp simd aligned(lFi,tmpArray:ALIGNMENT)
+          for (int n = 0; n < {{nVarPad}}; n++) {
+            lFi[((d*{{nDof}}+i)*{{nDof**nDim}}+xyz)*{{nVarPad}}+n] += tmpArray[d*{{nVarPad}}+n];
+          }
         }
       }
     }
 {% endif %}{# useNCP #}
 
 {% if useMaterialParam %}
-    //materialParam
-    for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {  //TODO JMG need to copy back and forth using tmpArray, change to same paradigm as flux
-      std::copy_n(lFi+(i*{{nDof**nDim}}+xyz)*{{nVarPad}}, {{nVar}}, tmpArray); //x
-      std::copy_n(lFi+(i*{{nDof**nDim}}+xyz)*{{nVarPad}}+{{1*(nDof**nDim)*nDof*nVarPad}}, {{nVar}}, tmpArray+{{1*nVar}}); //y
+    {
+      //materialParam
+      double* F[{{nDim}}];
+      for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {  //TODO JMG need to copy back and forth using tmpArray, change to same paradigm as flux
+        F[0]      = lFi+(i*{{nDof**nDim}}+xyz)*{{nVarPad}}; //x
+        F[1]      = lFi+(i*{{nDof**nDim}}+xyz)*{{nVarPad}}+{{1*(nDof**nDim)*nDof*nVarPad}}; //y
 {% if nDim == 3 %}
-      std::copy_n(lFi+(i*{{nDof**nDim}}+xyz)*{{nVarPad}}+{{2*(nDof**nDim)*nDof*nVarPad}}, {{nVar}}, tmpArray+{{2*nVar}}); //z
+        F[2]      = lFi+(i*{{nDof**nDim}}+xyz)*{{nVarPad}}+{{2*(nDof**nDim)*nDof*nVarPad}}; //z
 {% endif %}
 #ifdef USE_IPO
-      #pragma forceinline recursive
+        #pragma forceinline recursive
 #endif
-      solver.{{solverName}}::multiplyMaterialParameterMatrix(lQi+(i*{{nDof**nDim}}+xyz)*{{nDataPad}}, tmpArray);
-      std::copy_n(tmpArray, {{nVar}}, lFi+(i*{{nDof**nDim}}+xyz)*{{nVarPad}}); //x
-      std::copy_n(tmpArray+{{1*nVar}}, {{nVar}}, lFi+(i*{{nDof**nDim}}+xyz)*{{nVarPad}}+{{1*(nDof**nDim)*nDof*nVarPad}}); //y
-{% if nDim == 3 %}
-      std::copy_n(tmpArray+{{2*nVar}}, {{nVar}}, lFi+(i*{{nDof**nDim}}+xyz)*{{nVarPad}}+{{2*(nDof**nDim)*nDof*nVarPad}}); //z
-{% endif %}
+        solver.{{solverName}}::multiplyMaterialParameterMatrix(lQi+(i*{{nDof**nDim}}+xyz)*{{nDataPad}}, F);
+      }
     }
 {% endif %}{# useMaterialParam #}
 
