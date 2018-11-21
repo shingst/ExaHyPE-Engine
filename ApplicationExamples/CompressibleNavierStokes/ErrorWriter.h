@@ -20,6 +20,7 @@ class NavierStokes::ErrorWriter : public exahype::plotters::ADERDG2UserDefined {
   double timeStamp;
   std::string filename;
   bool isMpi;
+  NavierStokesSolverDG* solver;
 
   using Array_t = std::array<double, NavierStokesSolverDG::NumberOfVariables>;
   double hmin;
@@ -38,7 +39,7 @@ class NavierStokes::ErrorWriter : public exahype::plotters::ADERDG2UserDefined {
    * you if you use user defined plotting. You have
    * to declare and manage such member variables yourself.
    */
-  ErrorWriter();
+  ErrorWriter(NavierStokesSolverDG& solver);
 
   /**
    * This method is invoked every time a cell

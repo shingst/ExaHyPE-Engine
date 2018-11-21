@@ -21,13 +21,11 @@
 #include <iomanip>
 #include <sstream>
 
-// TODO(Lukas) Do not hardcore this, change to proper conv. scenario!
 #include "PDE.h"
-#include "Scenarios/ConvergenceTest/ConvergenceTest.h"
-#include "Scenarios/EntropyWave.h"
 
-NavierStokes::ErrorWriter::ErrorWriter()
-    : exahype::plotters::ADERDG2UserDefined::ADERDG2UserDefined(),
+NavierStokes::ErrorWriter::ErrorWriter(NavierStokesSolverDG& solver)
+    : solver(&solver),
+    exahype::plotters::ADERDG2UserDefined::ADERDG2UserDefined(),
       hmin(std::numeric_limits<double>::max()) {}
 
 void NavierStokes::ErrorWriter::plotPatch(
@@ -51,11 +49,6 @@ void NavierStokes::ErrorWriter::plotPatch(
   static_assert(DIMENSIONS == 2, "ErrorWriter only supports 2D");
   double x[2] = {0.0, 0.0};
 
-  auto scenario = ConvergenceTest();
-  // TODO(Lukas): Change to viscosity that is actually used(?).
-  const auto viscosity = 0.1;
-  const auto ns = PDE(viscosity, scenario);
-
   kernels::idx4 idx(basisSize, basisSize, basisSize, numberOfData);
   dfor(i, basisSize) {
     double w_dV = 1.0;
@@ -71,7 +64,7 @@ void NavierStokes::ErrorWriter::plotPatch(
     auto uAna = std::array<double, numberOfVariables>{};
     auto uAnaGrad = std::array<double, gradSize>{};
     auto vars = Variables(uAna.data());
-    scenario.analyticalSolution(x, timeStamp, ns, vars, uAnaGrad.data());
+    solver->scenario->analyticalSolution(x, timeStamp, solver->ns, vars, uAnaGrad.data());
 
     const double* uNum;
     if (DIMENSIONS == 3) {
