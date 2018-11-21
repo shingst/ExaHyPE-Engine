@@ -668,6 +668,9 @@ void exahype::runners::Runner::initOptimisations() const {
       _parser.getSpawnPredictionAsBackgroundThread(),
       _parser.getSpawnProlongationAsBackgroundThread());
 
+  exahype::solvers::Solver::SpawnUpdateAsBackgroundJob =
+      _parser.getSpawnUpdateAsBackgroundThread();
+
   exahype::solvers::Solver::SpawnAMRBackgroundJobs =
       _parser.getSpawnAMRBackgroundThreads();
 
@@ -680,7 +683,7 @@ void exahype::runners::Runner::initOptimisations() const {
     logInfo("parseOptimisations()","use the following global optimisations:");
       logInfo("parseOptimisations()","\tfuse-algorithmic-steps="        << (exahype::solvers::Solver::FuseADERDGPhases ? "on" : "off"));
       logInfo("parseOptimisations()","\tfuse-algorithmic-steps-factor=" << exahype::solvers::Solver::WeightForPredictionRerun);
-      logInfo("parseOptimisations()","\tspawn-predictor-as-background-thread="<< (exahype::solvers::Solver::SpawnBackgroundJobs ? "on" : "off"));
+      logInfo("parseOptimisations()","\tspawn-predictor-as-background-thread="<< (exahype::solvers::Solver::SpawnPredictionAsBackgroundJob ? "on" : "off"));
       logInfo("parseOptimisations()","\tspawn-amr-background-threads="  << (exahype::solvers::Solver::SpawnAMRBackgroundJobs ? "on" : "off"));
       logInfo("parseOptimisations()","\tdisable-vertex-exchange-in-time-steps="     << (exahype::solvers::Solver::DisablePeanoNeighbourExchangeInTimeSteps ? "on" : "off"));
       logInfo("parseOptimisations()","\tbatching enabled="<<

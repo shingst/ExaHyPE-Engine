@@ -40,7 +40,7 @@ bool exahype::solvers::ADERDGSolver::FusedTimeStepJob::run() {
       _solver.fusedTimeStepBody(
           _cellDescription, _cellInfo, _neighbourMergePerformed,
           _isFirstTimeStepOfBatch,_isLastTimeStepOfBatch,
-          _isSkeletonJob,false/*mustBeDoneImmedetially*/);
+          _isSkeletonJob,false/*mustBeDoneImmediately*/);
 
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
   {

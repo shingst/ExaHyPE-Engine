@@ -93,7 +93,9 @@ bool exahype::solvers::Solver::DisablePeanoNeighbourExchangeInTimeSteps = false;
 
 int exahype::solvers::Solver::MaxNumberOfRunningBackgroundJobConsumerTasksDuringTraversal = 0;
 
-bool exahype::solvers::Solver::SpawnBackgroundJobs = false;
+bool exahype::solvers::Solver::SpawnPredictionAsBackgroundJob = false;
+
+bool exahype::solvers::Solver::SpawnUpdateAsBackgroundJob = false;
 
 int exahype::solvers::Solver::PredictionSweeps     = 1;
 
@@ -171,7 +173,7 @@ void exahype::solvers::Solver::ensureAllJobsHaveTerminated(JobType jobType) {
 }
 
 void exahype::solvers::Solver::configurePredictionPhase(const bool usePredictionBackgroundJobs, bool useProlongationBackgroundJobs) {
-  exahype::solvers::Solver::SpawnBackgroundJobs   = usePredictionBackgroundJobs;
+  exahype::solvers::Solver::SpawnPredictionAsBackgroundJob              = usePredictionBackgroundJobs;
   exahype::solvers::Solver::SpawnProlongationAsBackgroundJob = useProlongationBackgroundJobs;
 
   #ifdef PredictionSweeps

@@ -2132,10 +2132,10 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
   result._meshUpdateEvent = evaluateRefinementCriteriaAfterSolutionUpdate(cellDescription,neighbourMergePerformed);
 
   if (
-      SpawnBackgroundJobs    &&
+      SpawnPredictionAsBackgroundJob &&
       !mustBeDoneImmediately &&
       !isSkeletonCell        &&
-      isLastTimeStepOfBatch
+      isLastTimeStepOfBatch // only spawned in last iteration if a FusedTimeStepJob was spawned before
   ) {
     const int element = cellInfo.indexOfADERDGCellDescription(cellDescription.getSolverNumber());
     peano::datatraversal::TaskSet( new PredictionJob(
@@ -2170,7 +2170,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
       const bool mustBeDoneImmediately = isSkeletonCell && PredictionSweeps==1;
 
       if (
-          SpawnBackgroundJobs &&
+          (SpawnUpdateAsBackgroundJob || (SpawnPredictionAsBackgroundJob && !isLastTimeStepOfBatch)) &&
           !mustBeDoneImmediately
       ) {
         peano::datatraversal::TaskSet( new FusedTimeStepJob(
@@ -2230,7 +2230,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::updateOrR
 
     if (
         cellDescription.getType()==CellDescription::Type::Cell &&
-        SpawnBackgroundJobs
+        SpawnUpdateAsBackgroundJob
     ) {
       peano::datatraversal::TaskSet (
           new UpdateJob( *this, cellDescription, cellInfo, isAtRemoteBoundary ) );
@@ -2338,7 +2338,7 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
     const bool isSkeletonCell        = isAMRSkeletonCell || isAtRemoteBoundary;
     const bool mustBeDoneImmediately = isSkeletonCell && PredictionSweeps==1;
 
-    if ( SpawnBackgroundJobs && !mustBeDoneImmediately ) {
+    if ( SpawnPredictionAsBackgroundJob && !mustBeDoneImmediately ) {
       peano::datatraversal::TaskSet( new PredictionJob(
               *this, cellDescription, cellInfo._cellDescriptionsIndex, element,
               predictorTimeStamp,predictorTimeStepSize,

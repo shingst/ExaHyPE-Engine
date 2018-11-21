@@ -748,7 +748,10 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::FiniteVolumesSolver::fu
     const bool isLastTimeStepOfBatch,
     const bool isAtRemoteBoundary) {
   const int element = cellInfo.indexOfFiniteVolumesCellDescription(solverNumber);
-  if ( (element != NotFound) && SpawnBackgroundJobs ) {
+  if (
+      (element != NotFound) &&
+      (SpawnUpdateAsBackgroundJob || (SpawnPredictionAsBackgroundJob && !isLastTimeStepOfBatch))
+  ) {
     CellDescription& cellDescription = cellInfo._FiniteVolumesCellDescriptions[element];
     cellDescription.setHasCompletedTimeStep(false);
 
@@ -777,7 +780,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::FiniteVolumesSolver::up
       CellInfo&  cellInfo,
       const bool isAtRemoteBoundary){
   const int element = cellInfo.indexOfFiniteVolumesCellDescription(solverNumber);
-  if ( (element!=NotFound) && SpawnBackgroundJobs) {
+  if ( (element!=NotFound) && SpawnUpdateAsBackgroundJob) {
     CellDescription& cellDescription = cellInfo._FiniteVolumesCellDescriptions[element];
     cellDescription.setHasCompletedTimeStep(false);
     peano::datatraversal::TaskSet(

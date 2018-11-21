@@ -433,7 +433,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
       const bool mustBeDoneImmediately = isSkeletonCell && PredictionSweeps==1;
 
       if (
-          SpawnBackgroundJobs &&
+          (SpawnUpdateAsBackgroundJob || (SpawnPredictionAsBackgroundJob && !isLastTimeStepOfBatch)) &&
           !mustBeDoneImmediately
       ) {
         peano::datatraversal::TaskSet( new FusedTimeStepJob(
@@ -483,7 +483,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
 
   if (
       solverPatch.getRefinementStatus()<_solver->getMinimumRefinementStatusForTroubledCell() &&
-      SpawnBackgroundJobs    &&
+      SpawnPredictionAsBackgroundJob    &&
       !mustBeDoneImmediately &&
       !isSkeletonCell         &&
       isLastTimeStepOfBatch
@@ -539,7 +539,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::u
     // Write the previous limiter status back onto the patch for all cell description types
     solverPatch.setPreviousRefinementStatus(solverPatch.getRefinementStatus());
 
-    if ( solverPatch.getType()==SolverPatch::Type::Cell && SpawnBackgroundJobs ) {
+    if ( solverPatch.getType()==SolverPatch::Type::Cell && SpawnUpdateAsBackgroundJob ) {
       peano::datatraversal::TaskSet( new UpdateJob(
           *this, solverPatch,cellInfo,isAtRemoteBoundary ) );
       return UpdateResult();

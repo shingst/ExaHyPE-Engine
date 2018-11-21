@@ -101,7 +101,7 @@ void exahype::mappings::BroadcastAndDropNeighbourMessages::enterCell(
     solvers::Solver::CellInfo cellInfo = fineGridCell.createCellInfo();
 
     // wait for completion of jobs
-    if ( exahype::solvers::Solver::SpawnBackgroundJobs ) {
+    if ( exahype::solvers::Solver::SpawnPredictionAsBackgroundJob ) {
       const bool isAtRemoteBoundary = Cell::isAtRemoteBoundary(fineGridVertices,fineGridVerticesEnumerator);
       // ADER-DG
       for (auto& p : cellInfo._ADERDGCellDescriptions) {
