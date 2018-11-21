@@ -813,7 +813,7 @@ bool exahype::runners::Runner::createMesh(exahype::repositories::Repository& rep
   bool meshUpdate = false;
 
   int meshSetupIterations = 0;
-  repository.switchToMeshRefinement();
+  repository.switchToMeshRefinementAndPlotTree();
 
   repository.getState().setMeshRefinementHasConverged(false);
   while ( repository.getState().continueToConstructGrid() ) {

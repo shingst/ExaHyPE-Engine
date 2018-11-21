@@ -313,7 +313,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::enterCell(
       }
     }
     if ( _stateCopy.isFirstIterationOfBatchOrNoBatch() ) {
-      exahype::Cell::resetFaceDataExchangeCounters(cellInfo,fineGridVertices,fineGridVerticesEnumerator);
+      Cell::resetNeighbourMergeFlagsAndCounters(cellInfo,fineGridVertices,fineGridVerticesEnumerator);
     }
   }
   logTraceOutWith1Argument("enterCell(...)", fineGridCell);
@@ -372,12 +372,10 @@ void exahype::mappings::PredictionOrLocalRecomputation::mergeNeighboursDataDurin
     int                               posCellScalar = pos1Scalar;
     tarch::la::Vector<DIMENSIONS,int> posCell       = pos1;
     tarch::la::Vector<DIMENSIONS,int> posBoundary   = pos2;
-    int cellDescriptionsIndex                       = cellDescriptionsIndex1;
     if ( cellDescriptionsIndex2 >= 0 ) {
       posCellScalar         = pos2Scalar;
       posCell               = pos2;
       posBoundary           = pos1;
-      cellDescriptionsIndex = cellDescriptionsIndex2;
     }
     solvers::Solver::CellInfo         cellInfo = vertex.createCellInfo(posCellScalar);
     solvers::Solver::BoundaryFaceInfo face(posCell,posBoundary);
