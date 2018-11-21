@@ -1047,10 +1047,10 @@ private:
        * @param isSkeletonJob          if the cell is a skeleton cell
        */
       UpdateJob(
-        ADERDGSolver&                                              solver,
-        CellDescription&                                           cellDescription,
-        CellInfo&                                                  cellInfo,
-        const bool                                                 isAtRemoteBoundary);
+        ADERDGSolver&    solver,
+        CellDescription& cellDescription,
+        CellInfo&        cellInfo,
+        const bool       isAtRemoteBoundary);
 
       bool run() override;
       void prefetchData() override;

@@ -586,6 +586,8 @@ exahype::repositories::Repository* exahype::runners::Runner::createRepository() 
   tarch::la::Vector<DIMENSIONS,double> scaledDomainSize =
       determineScaledDomainSize(_domainSize,coarsestMeshSize);
 
+  std::cout << "coarsestUserMeshSize="<<coarsestUserMeshSize << std::endl; // TODO remove
+
   if ( tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getGlobalMasterRank() ) {
     if (!tarch::la::equals(_domainSize,scaledDomainSize)) {
       logInfo("createRepository(...)",
@@ -813,7 +815,7 @@ bool exahype::runners::Runner::createMesh(exahype::repositories::Repository& rep
   bool meshUpdate = false;
 
   int meshSetupIterations = 0;
-  repository.switchToMeshRefinementAndPlotTree();
+  repository.switchToMeshRefinement();
 
   repository.getState().setMeshRefinementHasConverged(false);
   while ( repository.getState().continueToConstructGrid() ) {
