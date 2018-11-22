@@ -1111,7 +1111,7 @@ class exahype::solvers::Solver {
   */
  template <typename CellDescription>
  void waitUntilCompletedTimeStep(
-     const CellDescription& cellDescription,const bool waitForHighPriorityJob,const bool receiveDanglingMessages) const {
+     const CellDescription& cellDescription,const bool waitForHighPriorityJob,const bool receiveDanglingMessages) {
    if ( !cellDescription.getHasCompletedTimeStep() ) {
      peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
    }

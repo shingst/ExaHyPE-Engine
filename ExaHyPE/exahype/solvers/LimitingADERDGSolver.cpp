@@ -1158,7 +1158,7 @@ void exahype::solvers::LimitingADERDGSolver::mergeNeighboursData(
     Solver::CellInfo&                          cellInfo2,
     const tarch::la::Vector<DIMENSIONS, int>&  pos1,
     const tarch::la::Vector<DIMENSIONS, int>&  pos2,
-    const bool                                 isRecomputation) const {
+    const bool                                 isRecomputation) {
   const int solverElement1 = cellInfo1.indexOfADERDGCellDescription(solverNumber);
   const int solverElement2 = cellInfo2.indexOfADERDGCellDescription(solverNumber);
 
@@ -1400,7 +1400,7 @@ void exahype::solvers::LimitingADERDGSolver::sendDataToNeighbourBasedOnLimiterSt
         const tarch::la::Vector<DIMENSIONS, int>&    dest,
         const bool                                   isRecomputation,
         const tarch::la::Vector<DIMENSIONS, double>& x,
-        const int                                    level) const {
+        const int                                    level) {
   const int solverElement = cellInfo.indexOfADERDGCellDescription(solverNumber);
   BoundaryFaceInfo face(src,dest);
   if (
