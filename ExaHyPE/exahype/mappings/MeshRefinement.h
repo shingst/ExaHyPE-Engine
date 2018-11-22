@@ -124,6 +124,14 @@ private:
 public:
 
   /**
+   * If this flag is set, load balancing is performed in all
+   * mesh refinement iterations not just in the initial ones.
+   *
+   * @note Is set in exahype::runners::Runner;
+   */
+   static bool DynamicLoadBalancing;
+
+  /**
    * Indicates that we perform the initial
    * mesh refinement.
    *

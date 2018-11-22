@@ -161,6 +161,21 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
     }
   }
 
+  // load balancing type
+  switch (_parser.getMPILoadBalancingType()) {
+    case parser::Parser::MPILoadBalancingType::Static:
+      mappings::MeshRefinement::DynamicLoadBalancing = false;
+      break;
+    case parser::Parser::MPILoadBalancingType::Dynamic:
+      mappings::MeshRefinement::DynamicLoadBalancing = true;
+      break;
+    default:
+      logError("initDistributedMemoryConfiguration()", "no valid load balancing type specified");
+      _parser.invalidate();
+      break;
+  }
+
+  // load balancing strategy
   // basically a switch-case
   if ( _parser.compareMPILoadBalancingStrategy( "greedy-naive" )) {
     exahype::mappings::LoadBalancing::setLoadBalancingAnalysis( exahype::mappings::LoadBalancing::LoadBalancingAnalysis::Greedy );
@@ -1201,7 +1216,7 @@ void exahype::runners::Runner::postProcessTimeStepInSharedMemoryEnvironment() {
 
 void exahype::runners::Runner::updateStatistics() {
   _localRecomputations  +=  (exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalRecomputation()) ? 1 : 0;
-  _meshRefinements +=  (exahype::solvers::LimitingADERDGSolver::oneSolverRequestedGlobalRecomputation()) ? 1 : 0;
+  _meshRefinements      +=  (exahype::solvers::LimitingADERDGSolver::oneSolverRequestedGlobalRecomputation()) ? 1 : 0;
   _predictorReruns      +=  (exahype::solvers::Solver::oneSolverViolatedStabilityCondition()) ? 1 : 0;
 }
 
