@@ -1051,6 +1051,9 @@ private:
 
   // stealing manager job associated to the solver
   StealingManagerJob *_stealingManagerJob;
+
+  // limit the maximum number of iprobes in progressStealing()
+  static std::atomic<int> MaxIprobesInStealingProgress;
 #endif
 
 #endif
@@ -2794,6 +2797,8 @@ public:
    * Makes progress on all stealing-related MPI communication.
    */
   static void progressStealing(exahype::solvers::ADERDGSolver* solver);
+
+  static void setMaxNumberOfIprobesInProgressStealing(int maxNumIprobes);
 
   static bool tryToReceiveTaskBack(exahype::solvers::ADERDGSolver* solver);
   /*

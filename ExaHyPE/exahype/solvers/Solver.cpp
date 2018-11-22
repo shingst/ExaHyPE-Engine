@@ -155,10 +155,7 @@ void exahype::solvers::Solver::ensureAllJobsHaveTerminated(JobType jobType) {
   VT_begin(event_wait);
 #endif
 
-#if defined(PerformanceAnalysis)
-  tarch::timing::Watch watch("exahype::stealing::", "-", false,false);
-  watch.startTimer();
-#endif
+
   //  logInfo("waitUntilAllBackgroundTasksHaveTerminated()",
   //          "there are still " << NumberOfRemoteJobs << " remote background job(s) to complete!");
 #if defined (StealingUseProfiler)
@@ -205,7 +202,6 @@ void exahype::solvers::Solver::ensureAllJobsHaveTerminated(JobType jobType) {
           "there are still " << NumberOfRemoteJobs << " remote background job(s) to complete!");
 
     }
-
     finishedWait = queuedJobs == 0;
   }
 
@@ -218,17 +214,6 @@ void exahype::solvers::Solver::ensureAllJobsHaveTerminated(JobType jobType) {
 #if defined (StealingUseProfiler)
   time_background += MPI_Wtime();
   exahype::stealing::StealingProfiler::getInstance().endWaitForBackgroundTasks(jobType, time_background);
-#endif
-
-#if defined(PerformanceAnalysis)
-  watch.stopTimer();
-  logInfo(
-      "finishBackgroundJobs()",
-      "time=" << std::fixed <<
-      watch.getCalendarTime() <<
-      ", cpu time=" <<
-      watch.getCPUTime()
-  );
 #endif
 
 #ifdef USE_ITAC

@@ -1146,6 +1146,8 @@ class exahype::solvers::Solver {
 
 #if defined(DistributedStealing)
   bool hasTriggeredEmergency = false;
+  exahype::solvers::ADERDGSolver* solver = static_cast<exahype::solvers::ADERDGSolver*>(const_cast<exahype::solvers::Solver*>(this));
+  exahype::solvers::ADERDGSolver::setMaxNumberOfIprobesInProgressStealing(1);
 #endif
 
    if ( !cellDescription.getHasCompletedTimeStep() ) {
@@ -1155,14 +1157,14 @@ class exahype::solvers::Solver {
      peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
 #if defined(DistributedStealing)
      if (this->getType()==exahype::solvers::Solver::Type::ADERDG) {
-       exahype::solvers::ADERDGSolver::tryToReceiveTaskBack(static_cast<exahype::solvers::ADERDGSolver*>(const_cast<exahype::solvers::Solver*>(this)));
+       while(!exahype::solvers::ADERDGSolver::tryToReceiveTaskBack(solver)) {};
      }
 #endif
    }
    while ( !cellDescription.getHasCompletedTimeStep() ) {
 #if defined(DistributedStealing)
      if (this->getType()==exahype::solvers::Solver::Type::ADERDG) {
-       exahype::solvers::ADERDGSolver::tryToReceiveTaskBack(static_cast<exahype::solvers::ADERDGSolver*>(const_cast<exahype::solvers::Solver*>(this)));
+       exahype::solvers::ADERDGSolver::tryToReceiveTaskBack(solver);
      }
 #endif
      // do some work myself
@@ -1177,8 +1179,7 @@ class exahype::solvers::Solver {
 #if defined(DistributedStealing) && defined(StealingStrategyDiffusive)
        if( !cellDescription.getHasCompletedTimeStep()
          && tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs()==1
-         && !hasTriggeredEmergency
-		 && !exahype::stealing::StealingManager::getInstance().getRunningAndReceivingBack()){
+         && !hasTriggeredEmergency){
 #ifdef USE_ITAC
 	 VT_begin(event_emergency);
 #endif
@@ -1192,6 +1193,9 @@ class exahype::solvers::Solver {
 #endif
      }
    }
+#if defined(DistributedStealing)
+   exahype::solvers::ADERDGSolver::setMaxNumberOfIprobesInProgressStealing( std::numeric_limits<int>::max() );
+#endif
 #ifdef USE_ITAC
 	 VT_end(event_wait);
 #endif

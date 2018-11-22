@@ -9,7 +9,7 @@
   "architecture": "hsw",
   "computational_domain": {
     "dimension": 3,
-    "time_steps": 200,
+    "time_steps": 300,
     "offset": [
       -12.0,
       0.0,
@@ -46,6 +46,7 @@
     "fuse_algorithmic_steps_factor": 0.99,
     "spawn_predictor_as_background_thread": true,
     "spawn_amr_background_threads": true,
+    "spawn_update_as_background_thread": false,
     "disable_vertex_exchange_in_time_steps": true,
     "time_step_batch_factor": 1.0,
     "disable_metadata_exchange_in_batched_time_steps": true,
