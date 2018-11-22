@@ -2735,7 +2735,9 @@ public:
   /*
    * Makes progress on all stealing-related MPI communication.
    */
-  void progressStealing();
+  static void progressStealing(exahype::solvers::ADERDGSolver* solver);
+
+  static bool tryToReceiveTaskBack(exahype::solvers::ADERDGSolver* solver);
   /*
    * Spawns a stealing manager job and submits it as a TBB task.
    */

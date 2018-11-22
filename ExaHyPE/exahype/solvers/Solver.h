@@ -59,6 +59,13 @@
 #include <tbb/concurrent_queue.h>
 #include "exahype/stealing/DiffusiveDistributor.h"
 #include "exahype/stealing/StealingManager.h"
+
+namespace exahype {
+  namespace solvers{
+    class ADERDGSolver;
+  }
+}
+
 //#include "tarch/multicore/Core.h"
 #endif
 
@@ -1105,16 +1112,31 @@ class exahype::solvers::Solver {
   ierr=VT_funcdef(event_name_emergency, VT_NOCLASS, &event_emergency ); assert(ierr==0);
 #endif
 
+#if defined(DistributedStealing)
+  bool hasTriggeredEmergency = false;
+#endif
+
    if ( !cellDescription.getHasCompletedTimeStep() ) {
 #ifdef USE_ITAC
 	 VT_begin(event_wait);
 #endif
      peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
 #if defined(DistributedStealing)
-     exahype::stealing::StealingManager::getInstance().progressRequests();
+     for (auto* solver : RegisteredSolvers) {
+       if (solver->getType()==exahype::solvers::Solver::Type::ADERDG) {
+         while(!exahype::solvers::ADERDGSolver::tryToReceiveTaskBack(static_cast<exahype::solvers::ADERDGSolver*>(solver))) {};
+       }
+      }
 #endif
    }
    while ( !cellDescription.getHasCompletedTimeStep() ) {
+#if defined(DistributedStealing)
+     for (auto* solver : RegisteredSolvers) {
+       if (solver->getType()==exahype::solvers::Solver::Type::ADERDG) {
+         exahype::solvers::ADERDGSolver::tryToReceiveTaskBack(static_cast<exahype::solvers::ADERDGSolver*>(solver));
+       }
+      }
+#endif
      // do some work myself
      if ( receiveDanglingMessages ) {
        tarch::parallel::Node::getInstance().receiveDanglingMessages();
@@ -1125,13 +1147,14 @@ class exahype::solvers::Solver {
        tarch::multicore::jobs::processBackgroundJobs(1);
  
 #if defined(DistributedStealing) && defined(StealingStrategyDiffusive)
-       exahype::stealing::StealingManager::getInstance().progressRequests();
        if( !cellDescription.getHasCompletedTimeStep()
          && tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs()==1
+         && !hasTriggeredEmergency
 		 && !exahype::stealing::StealingManager::getInstance().getRunningAndReceivingBack()){
 #ifdef USE_ITAC
 	 VT_begin(event_emergency);
 #endif
+         hasTriggeredEmergency = true;
          logInfo("waitUntilCompletedTimeStep()","EMERGENCY"); //TODO: my rank can  no longer be a critical rank and I should give away one less per victim
          exahype::stealing::DiffusiveDistributor::getInstance().triggerEmergency();
 #ifdef USE_ITAC
