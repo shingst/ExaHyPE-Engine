@@ -629,11 +629,10 @@ void exahype::Vertex::mergeOnlyWithNeighbourMetadataLoopBody(
 
       for(unsigned int solverNumber = solvers::RegisteredSolvers.size(); solverNumber-- > 0;) {
         auto* solver = solvers::RegisteredSolvers[solverNumber];
-        exahype::MetadataHeap::HeapEntries metadataPortion(receivedMetadata.begin()+begin,receivedMetadata.begin()+end);
-
         if ( solver->isMergingMetadata(section) ) {
           const int begin = exahype::NeighbourCommunicationMetadataPerSolver*solverNumber;
           const int end   = begin+exahype::NeighbourCommunicationMetadataPerSolver;
+          exahype::MetadataHeap::HeapEntries metadataPortion(receivedMetadata.begin()+begin,receivedMetadata.begin()+end);
 
           switch ( solver->getType() ) {
             case solvers::Solver::Type::ADERDG:
