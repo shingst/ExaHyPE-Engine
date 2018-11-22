@@ -22,9 +22,14 @@ from .models import *
 class Controller:
     def header(self):
         info = {
-            "gittag": subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD']).strip().decode('ascii'),
+            "gittag": "N/A",
             "year": str(datetime.datetime.now().year)
         }
+        try:
+           info["gittag"] = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD']).strip().decode('ascii')
+        except:
+           info["gittag"]="N/A"
+
         return """
     ______           __  __      ____  ______    
    / ____/  ______ _/ / / /_  __/ __ \/ ____/    *************************
