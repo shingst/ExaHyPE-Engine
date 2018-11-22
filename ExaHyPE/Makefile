@@ -573,7 +573,7 @@ header:
 	@echo mode nevertheless.
 	@echo
 	@echo The compiler variant does set various compiler and linker flags. 
-	@echo You cann supplement you own by setting the variables 
+	@echo You can supplement you own by setting the variables 
 	@echo COMPILER_CFLAGS, COMPILER_LFLAGS, FCOMPILER_CFLAGS and FCOMPILER_LFLAGS prior 
 	@echo running make.
 	@echo

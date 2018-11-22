@@ -48,12 +48,16 @@ exahype::Cell::Cell() : Base() {
   // with default ("do-nothing") values.
   _cellData.setCellDescriptionsIndex(
       multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
+  _cellData.setADERDGCellDescriptions(nullptr);
+  _cellData.setFiniteVolumesCellDescriptions(nullptr);
 }
 
 exahype::Cell::Cell(const Base::DoNotCallStandardConstructor& value)
 : Base(value) {
   _cellData.setCellDescriptionsIndex(
       multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
+  _cellData.setADERDGCellDescriptions(nullptr);
+  _cellData.setFiniteVolumesCellDescriptions(nullptr);
 }
 
 exahype::Cell::Cell(const Base::PersistentCell& argument) : Base(argument) {
@@ -61,15 +65,16 @@ exahype::Cell::Cell(const Base::PersistentCell& argument) : Base(argument) {
   // Do not use it. This would overwrite persistent data.
 }
 
-void exahype::Cell::resetNeighbourMergeFlags(
+void exahype::Cell::resetNeighbourMergeFlagsAndCounters(
     const solvers::Solver::CellInfo& cellInfo,
     exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator) {
   // ADER-DG
   for (auto& p : cellInfo._ADERDGCellDescriptions) {
     for (int faceIndex=0; faceIndex<DIMENSIONS_TIMES_TWO; faceIndex++) {
-      p.setNeighbourMergePerformed(faceIndex,false);
-
+      p.setNeighbourMergePerformed(faceIndex,static_cast<char>(false));
+    }
+    for (int faceIndex=0; faceIndex<DIMENSIONS_TIMES_TWO; faceIndex++) {
       #ifdef Parallel
       int listingsOfRemoteRank =
           countListingsOfRemoteRankAtInsideFace(
@@ -86,8 +91,9 @@ void exahype::Cell::resetNeighbourMergeFlags(
   // Finite-Volumes (loop body can be copied from ADER-DG loop)
   for (auto& p : cellInfo._FiniteVolumesCellDescriptions) {
     for (int faceIndex=0; faceIndex<DIMENSIONS_TIMES_TWO; faceIndex++) {
-      p.setNeighbourMergePerformed(faceIndex,false);
-
+      for (int faceIndex=0; faceIndex<DIMENSIONS_TIMES_TWO; faceIndex++) {
+        p.setNeighbourMergePerformed(faceIndex,static_cast<char>(false));
+      }
       #ifdef Parallel
       int listingsOfRemoteRank =
           countListingsOfRemoteRankAtInsideFace(
@@ -168,12 +174,16 @@ void exahype::Cell::setupMetaData() {
     assertion2(!exahype::solvers::FiniteVolumesSolver::Heap::getInstance().isValidIndex(cellDescriptionIndex),cellDescriptionIndex,toString());
     exahype::solvers::FiniteVolumesSolver::Heap::getInstance().createDataForIndex(cellDescriptionIndex,0,0);
     _cellData.setCellDescriptionsIndex(cellDescriptionIndex);
+    _cellData.setADERDGCellDescriptions(&solvers::ADERDGSolver::Heap::getInstance().getData(cellDescriptionIndex));
+    _cellData.setFiniteVolumesCellDescriptions(&solvers::FiniteVolumesSolver::Heap::getInstance().getData(cellDescriptionIndex));
   lock.free();
 }
 
 void exahype::Cell::shutdownMetaDataAndResetCellDescriptionsIndex() {
   shutdownMetaData();
   _cellData.setCellDescriptionsIndex(multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
+  _cellData.setADERDGCellDescriptions(nullptr);
+  _cellData.setFiniteVolumesCellDescriptions(nullptr);
 }
 
 void exahype::Cell::shutdownMetaData() const {
@@ -219,6 +229,26 @@ int exahype::Cell::getCellDescriptionsIndex() const {
 
 void exahype::Cell::setCellDescriptionsIndex(int cellDescriptionsIndex) {
   _cellData.setCellDescriptionsIndex(cellDescriptionsIndex);
+}
+
+peano::heap::RLEHeap<exahype::records::ADERDGCellDescription>::HeapEntries* exahype::Cell::getADERDGCellDescriptions() const {
+  return static_cast<exahype::solvers::ADERDGSolver::Heap::HeapEntries*>(_cellData.getADERDGCellDescriptions());
+}
+
+peano::heap::RLEHeap<exahype::records::FiniteVolumesCellDescription>::HeapEntries* exahype::Cell::getFiniteVolumesCellDescriptions() const {
+  return static_cast<exahype::solvers::FiniteVolumesSolver::Heap::HeapEntries*>(_cellData.getFiniteVolumesCellDescriptions());
+}
+
+exahype::solvers::Solver::CellInfo exahype::Cell::createCellInfo() const {
+  if ( _cellData.getCellDescriptionsIndex()<0 ) {
+    logError("createCellInfo()","No heap data allocated for cell.")
+    std::abort();
+  }
+  assertion1( exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(_cellData.getCellDescriptionsIndex()),
+              _cellData.getCellDescriptionsIndex());
+
+  return solvers::Solver::CellInfo(
+      _cellData.getCellDescriptionsIndex(),_cellData.getADERDGCellDescriptions(),_cellData.getFiniteVolumesCellDescriptions());
 }
 
 exahype::solvers::Solver::CellInfo exahype::Cell::addNewCellDescription(

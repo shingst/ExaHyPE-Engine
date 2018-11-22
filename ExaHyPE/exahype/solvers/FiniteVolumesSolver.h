@@ -135,19 +135,21 @@ private:
    * @return a struct holding an admissible time step size for the next update
    *
    * @param cellDescription         a cell description
-   * @param cellDescriptionsIndex   a cell descriptions index - used for validation and debug output
-   * @param isFirstIterationOfBatch if the current time step is the first time step of a batch of time steps
-   * @param isLastIterationOfBatch  if the current time step is the last time step of a batch of time steps
+   * @param cellInfo                links to all the cell descriptions associated with a cell
+   * @param neighbourMergePerformed per face a flag indicating if a neighbour merge has been performed
+   * @param isFirstTimeStepOfBatch  if the current time step is the first time step of a batch of time steps
+   * @param isLastTimeStepOfBatch   if the current time step is the last time step of a batch of time steps
    * @param isAtRemoteBoundary      if the cell description is at a remote boundary.
    * @param uncompressBefore        if the cell description should uncompress data before doing any PDE operations
    */
   UpdateResult updateBody(
-      CellDescription& cellDescription,
-      const int cellDescriptionsIndex,
-      const bool isFirstIterationOfBatch,
-      const bool isLastIterationOfBatch,
-      const bool isAtRemoteBoundary,
-      const bool uncompressBefore);
+      CellDescription&                                           cellDescription,
+      CellInfo&                                                  cellInfo,
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
+      const bool                                                 isFirstTimeStepOfBatch,
+      const bool                                                 isLastTimeStepOfBatch,
+      const bool                                                 isAtRemoteBoundary,
+      const bool                                                 uncompressBefore);
 
 #ifdef Parallel
   /**
@@ -223,26 +225,86 @@ private:
    * A job which performs the Finite Volumes solution update
    * and further updates the local time stamp associated with
    * the FV cell description.
-   *
-   * \note Spawning these operations as background job makes only sense if you
-   * do not plan to reduce the admissible time step size or refinement requests
-   * within a consequent reduction step.
    */
   class FusedTimeStepJob: public tarch::multicore::jobs::Job {
   private:
-    FiniteVolumesSolver&  _solver;
-    CellDescription&      _cellDescription;
-    const int             _cellDescriptionsIndex;
-    const bool            _isSkeletonJob;
+    FiniteVolumesSolver&                                      _solver;
+    CellDescription&                                          _cellDescription;
+    CellInfo                                                  _cellInfo; // copy
+    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> _neighbourMergePerformed; // copy
+    const bool                                                _isFirstTimeStepOfBatch;
+    const bool                                                _isLastTimeStepOfBatch;
+    const bool                                                _isSkeletonJob;
   public:
+  /**
+   * Construct a FusedTimeStepJob.
+   *
+   * @note Job is spawned as high priority job if spawned in the last time step.
+   * It further spawns a prediction job in this case in order
+   * to overlap work with the reduction of time step size
+   * and mesh update events.
+   *
+   * @note The state of the neighbourMergePerformed flags is used internally by
+   * some of the kernels, e.g. in order to determine where to perform a face integral.
+   * However, they have to be reset before the next iteration as they indicate on
+   * which face a Riemann solve has already been performed or not (their original usage).
+   * The flags are thus reset directly after spawning a FusedTimeStepJob.
+   * Therefore, we need to copy the neighbourMergePerformed flags when spawning
+   * a FusedTimeStep job.
+     *
+     * @param solver                 the spawning solver
+     * @param cellDescription        a cell description
+     * @param cellInfo               links to all cell descriptions associated with the cell
+     * @param isFirstTimeStepOfBatch if we currently run the first time step of a batch
+     * @param isLastTimeStepOfBatch  if we currently run the last time step of a batch
+     * @param isSkeletonJob          if the cell is a skeleton cell
+     */
     FusedTimeStepJob(
         FiniteVolumesSolver& solver,
         CellDescription&     cellDescription,
-        const int            cellDescriptionsIndex,
+        CellInfo&            cellInfo,
+        const bool           isFirstTimeStepOfBatch,
+        const bool           isLastTimeStepOfBatch,
         const bool           isSkeletonJob
     );
 
     bool run() override;
+  };
+
+  /**
+   * A job which performs the solution update and computes a new time step size.
+   *
+   * \note Spawning these operations as background job makes only sense if you
+   * wait in endIteration(...) on the completion of the job.
+   * It further important to flag this job as high priority job to
+   * ensure completion before the next reduction.
+   */
+  class UpdateJob: public tarch::multicore::jobs::Job {
+  private:
+    FiniteVolumesSolver&                                      _solver; // TODO not const because of kernels
+    CellDescription&                                          _cellDescription;
+    CellInfo                                                  _cellInfo;
+    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> _neighbourMergePerformed; // copy
+    const bool                                                _isAtRemoteBoundary;
+  public:
+    /**
+     * Construct a UpdateJob.
+     *
+     * @note Job is always spawned as high priority job.
+     *
+     * @param solver                 the spawning solver
+     * @param cellDescription        a cell description
+     * @param cellInfo               links to all cell descriptions associated with the cell
+     * @param isSkeletonJob          if the cell is a skeleton cell
+     */
+    UpdateJob(
+        FiniteVolumesSolver&                                       solver,
+        CellDescription&                                           cellDescription,
+        CellInfo&                                                  cellInfo,
+        const bool                                                 isAtRemoteBoundary);
+
+    bool run() override;
+    void prefetchData() override;
   };
 
   /**
@@ -573,8 +635,8 @@ public:
   void startNewTimeStep() override;
 
   void startNewTimeStepFused(
-      const bool isFirstIterationOfBatch,
-      const bool isLastIterationOfBatch) final override;
+      const bool isFirstTimeStepOfBatch,
+      const bool isLastTimeStepOfBatch) final override;
 
   void updateTimeStepSizesFused() override;
 
@@ -686,8 +748,8 @@ public:
    */
   double startNewTimeStepFused(
       CellDescription& cellDescription,
-      const bool isFirstIterationOfBatch,
-      const bool isLastIterationOfBatch);
+      const bool isFirstTimeStepOfBatch,
+      const bool isLastTimeStepOfBatch);
 
   double updateTimeStepSizes(
       const int solverNumber,
@@ -706,8 +768,8 @@ public:
   UpdateResult fusedTimeStepOrRestrict(
       const int solverNumber,
       CellInfo& cellInfo,
-      const bool isFirstIterationOfBatch,
-      const bool isLastIterationOfBatch,
+      const bool isFirstTimeStepOfBatch,
+      const bool isLastTimeStepOfBatch,
       const bool isAtRemoteBoundary) final override;
 
   UpdateResult updateOrRestrict(
@@ -734,9 +796,10 @@ public:
    *                                   we overwrite it by the updated solution.
    */
   void updateSolution(
-      CellDescription& cellDescription,
-      const int cellDescriptionsIndex,
-      const bool backupPreviousSolution);
+      CellDescription&                                           cellDescription,
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
+      const int                                                  cellDescriptionsIndex,
+      const bool                                                 backupPreviousSolution);
 
   /**
    * TODO(Dominic): Update docu.

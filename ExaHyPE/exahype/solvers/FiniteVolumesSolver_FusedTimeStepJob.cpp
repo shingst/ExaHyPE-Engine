@@ -1,17 +1,12 @@
-#include "ADERDGSolver.h"
+#include "exahype/solvers/FiniteVolumesSolver.h"
 
-#if defined(SharedTBB) && !defined(noTBBPrefetchesJobData)
-#include <immintrin.h>
-#endif
-
-
-exahype::solvers::ADERDGSolver::FusedTimeStepJob::FusedTimeStepJob(
-  ADERDGSolver&    solver,
-  CellDescription& cellDescription,
-  CellInfo&        cellInfo,
-  const bool       isFirstTimeStepOfBatch,
-  const bool       isLastTimeStepOfBatch,
-  const bool       isSkeletonJob)
+exahype::solvers::FiniteVolumesSolver::FusedTimeStepJob::FusedTimeStepJob(
+  FiniteVolumesSolver& solver,
+  CellDescription&     cellDescription,
+  CellInfo&            cellInfo,
+  const bool           isFirstTimeStepOfBatch,
+  const bool           isLastTimeStepOfBatch,
+  const bool           isSkeletonJob)
   :
   tarch::multicore::jobs::Job(
       isLastTimeStepOfBatch ?
@@ -35,12 +30,12 @@ exahype::solvers::ADERDGSolver::FusedTimeStepJob::FusedTimeStepJob(
   lock.free();
 }
 
-bool exahype::solvers::ADERDGSolver::FusedTimeStepJob::run() {
+bool exahype::solvers::FiniteVolumesSolver::FusedTimeStepJob::run() {
   UpdateResult result =
-      _solver.fusedTimeStepBody(
-          _cellDescription, _cellInfo, _neighbourMergePerformed,
+      _solver.updateBody(
+          _cellDescription,_cellInfo,_neighbourMergePerformed,
           _isFirstTimeStepOfBatch,_isLastTimeStepOfBatch,
-          _isSkeletonJob,false/*mustBeDoneImmediately*/);
+          _isSkeletonJob,false/*uncompressBefore*/);
 
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
   {
@@ -48,6 +43,7 @@ bool exahype::solvers::ADERDGSolver::FusedTimeStepJob::run() {
       _solver.updateNextMeshUpdateEvent(result._meshUpdateEvent);
       _solver.updateMinNextTimeStepSize(result._timeStepSize);
     }
+
     NumberOfReductionJobs--;
     assertion( NumberOfReductionJobs>=0 );
 
@@ -57,22 +53,4 @@ bool exahype::solvers::ADERDGSolver::FusedTimeStepJob::run() {
   }
   lock.free();
   return false;
-}
-
-
-//
-// @see PredictionJob
-//
-void exahype::solvers::ADERDGSolver::FusedTimeStepJob::prefetchData() {
-  #if defined(SharedTBB) && !defined(noTBBPrefetchesJobData)
-  double* luh  = static_cast<double*>(_cellDescription.getSolution());
-  double* lduh = static_cast<double*>(_cellDescription.getUpdate());
-  double* lQhbnd = static_cast<double*>(_cellDescription.getExtrapolatedPredictor());
-  double* lFhbnd = static_cast<double*>(_cellDescription.getFluctuation());
-
-  _mm_prefetch(luh, _MM_HINT_NTA);
-  _mm_prefetch(lduh, _MM_HINT_NTA);
-  _mm_prefetch(lQhbnd, _MM_HINT_NTA);
-  _mm_prefetch(lFhbnd, _MM_HINT_NTA);
-  #endif
 }

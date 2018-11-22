@@ -22,25 +22,28 @@
 
 #include "peano/utils/Loop.h"
 
-#include "exahype/VertexOperations.h"
-
 #include "exahype/solvers/LimitingADERDGSolver.h"
 
 peano::CommunicationSpecification
 exahype::mappings::LocalRollback::communicationSpecification() const {
   return peano::CommunicationSpecification(
-      peano::CommunicationSpecification::ExchangeMasterWorkerData::
-      SendDataAndStateBeforeFirstTouchVertexFirstTime,
-      peano::CommunicationSpecification::ExchangeWorkerMasterData::
-      MaskOutWorkerMasterDataAndStateExchange,
+      peano::CommunicationSpecification::ExchangeMasterWorkerData::SendDataAndStateBeforeFirstTouchVertexFirstTime,
+      peano::CommunicationSpecification::ExchangeWorkerMasterData::MaskOutWorkerMasterDataAndStateExchange,
       true);
 }
 
 peano::MappingSpecification
 exahype::mappings::LocalRollback::enterCellSpecification(int level) const {
-  return peano::MappingSpecification(
-      peano::MappingSpecification::WholeTree,
-      peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
+  const int coarsestSolverLevel = solvers::Solver::getCoarsestMeshLevelOfAllSolvers();
+  if ( std::abs(level)>=coarsestSolverLevel ) {
+    return peano::MappingSpecification(
+          peano::MappingSpecification::WholeTree,
+          peano::MappingSpecification::RunConcurrentlyOnFineGrid,true); // performs reduction
+  } else {
+    return peano::MappingSpecification(
+          peano::MappingSpecification::Nop,
+          peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
+  }
 }
 
 /*
@@ -147,7 +150,7 @@ void exahype::mappings::LocalRollback::enterCell(
       OneSolverRequestedLocalRecomputation &&
       fineGridCell.isInitialised()
   ) {
-    solvers::Solver::CellInfo cellInfo(fineGridCell.getCellDescriptionsIndex());
+    solvers::Solver::CellInfo cellInfo = fineGridCell.createCellInfo();
     for (int solverNumber=0; solverNumber<static_cast<int>(solvers::RegisteredSolvers.size()); solverNumber++) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
       if( performLocalRecomputation( solver ) ) {
@@ -173,7 +176,7 @@ void exahype::mappings::LocalRollback::enterCell(
 
     // !!! The following has to be done after LocalRollback since we might add new finite volumes patches here.
     // !!! Has to be done for all solvers (cf. touchVertexFirstTime etc.) // TODO(Dominic): Reassess
-    exahype::Cell::resetNeighbourMergeFlags(cellInfo,fineGridVertices,fineGridVerticesEnumerator);
+    Cell::resetNeighbourMergeFlagsAndCounters(cellInfo,fineGridVertices,fineGridVerticesEnumerator);
   }
   logTraceOutWith1Argument("enterCell(...)", fineGridCell);
 }
@@ -202,14 +205,14 @@ void exahype::mappings::LocalRollback::sendDataToNeighbourLoopBody(
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const int                                    level) {
   if ( vertex.hasToSendMetadata(toRank,srcScalar,destScalar,vertex.getAdjacentRanks()) ) {
-    const int srcCellDescriptionsIndex = VertexOperations::readCellDescriptionsIndex(vertex,srcScalar);
+    const int srcCellDescriptionsIndex = vertex.getCellDescriptionsIndex(srcScalar);
     bool validIndex = srcCellDescriptionsIndex >= 0;
     assertion( !validIndex || exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(srcCellDescriptionsIndex));
 
     if ( validIndex ) {
       const tarch::la::Vector<DIMENSIONS,int> src = Vertex::delineariseIndex2(srcScalar);
       const tarch::la::Vector<DIMENSIONS,int> dest = Vertex::delineariseIndex2(destScalar);
-      solvers::Solver::CellInfo cellInfo(srcCellDescriptionsIndex);
+      solvers::Solver::CellInfo cellInfo = vertex.createCellInfo(srcScalar);
       solvers::Solver::BoundaryFaceInfo face(src,dest);
 
       if ( Vertex::hasToSendToNeighbourNow(cellInfo,face) ) {

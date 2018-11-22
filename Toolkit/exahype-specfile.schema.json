@@ -426,9 +426,14 @@
         },
         "spawn_predictor_as_background_thread" : {
           "type" : "boolean", 
-          "title" : "Wether to spawn the predictor as a background thread, or so.",
+          "title" : "Wether to spawn the predictor or the first and intermediate fused time steps as background jobs.",
           "default" : false,
           "old_format" : { "token_after" : "spawn-predictor-as-background-thread" }
+        },
+        "spawn_update_as_background_thread" : {
+          "type" : "boolean", 
+          "title" : "Wether to spawn the update or the last fused time step in a batch as a background job",
+          "default" : false
         },
         "spawn_prolongation_as_background_thread" : {
           "type" : "boolean", 

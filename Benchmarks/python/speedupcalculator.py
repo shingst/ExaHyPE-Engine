@@ -21,6 +21,14 @@ def parseArgs():
     parser.add_argument("--no-data", dest="keepData", action="store_false",help="Remove the original data column from the output file.")
     parser.set_defaults(keepData=True)
     
+    parser.add_argument("--input-delim", dest="inputDelim", nargs="?", default=",",
+        help="Specify the delimiter used in the input table.")
+    
+    parser.add_argument("--output-delim", dest="outputDelim", nargs="?", default=",",
+        help="Specify the delimiter for the output table.")
+
+    parser.add_argument("--reference",nargs="?",default="-1", help="Specify a reference value > 0.")
+    
     parser.add_argument("-t", "--tikz", dest="forTikz", action="store_true",help="Has the effect of --keys --no-headers --no-data'. Overwrites these options.")
     parser.set_defaults(forTikz=False)
     
@@ -53,10 +61,13 @@ if __name__ == "__main__":
     keepData     = args.keepData
     table        = args.table
     output       = args.output
+
+    outputDelim  = args.outputDelim.replace("\\t","\t")
     
     forTikz      = args.forTikz
 
     if forTikz:
+       outputDelim  = "\t"
        keepKeys     = False
        multiplyKeys = True
        header       = False
@@ -65,7 +76,7 @@ if __name__ == "__main__":
     # read table
     firstRow  = next(args.table)
     firstRow  = firstRow.strip().split(",")
-    tableData = list(csv.reader(args.table,delimiter=","))
+    tableData = list(csv.reader(args.table,delimiter=args.inputDelim))
     args.table.close()
 
     # check if has header; include header into output if requested 
@@ -85,7 +96,15 @@ if __name__ == "__main__":
  
    
     if len(tableData) and len(tableData[0]):
-        reference = float(tableData[0][-1])
+        try:
+            reference = float(args.reference);
+        except:
+            print("ERROR: Argument 'reference' is not a float, is: '{}'".format(args.reference),file=sys.stderr);
+            sys.exit()
+
+        if reference < 0:  # if no reference specified, use first value found
+            reference = float(tableData[0][-1])
+   
         n = 0
         for row in tableData:
             resultRow = []
@@ -106,5 +125,5 @@ if __name__ == "__main__":
             result.append(resultRow)
             n += 1
     
-    csvwriter = csv.writer(output)
+    csvwriter = csv.writer(output,delimiter=outputDelim)
     csvwriter.writerows(result)

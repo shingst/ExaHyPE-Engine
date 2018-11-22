@@ -671,6 +671,10 @@ bool exahype::parser::Parser::getSpawnPredictionAsBackgroundThread() const {
   return getBoolFromPath("/optimisation/spawn_predictor_as_background_thread", false, isOptional);
 }
 
+bool exahype::parser::Parser::getSpawnUpdateAsBackgroundThread() const {
+  return getBoolFromPath("/optimisation/spawn_update_as_background_thread", false, isOptional);
+}
+
 bool exahype::parser::Parser::getSpawnProlongationAsBackgroundThread() const {
   return getBoolFromPath("/optimisation/spawn_prolongation_as_background_thread", false, isOptional);
 }
@@ -1163,12 +1167,12 @@ int exahype::parser::Parser::getNumberOfBackgroundJobConsumerTasks() {
 }
 
 bool exahype::parser::Parser::getProcessHighPriorityBackgroundJobsInAnRush() {
-  return getStringFromPath("/shared_memory/high_priority_background_job_processing","all_in_a_rush",isOptional).
+  return getStringFromPath("/shared_memory/high_priority_background_job_processing","one_at_a_time",isOptional).
       compare("all_in_a_rush")==0;
 }
 
 bool exahype::parser::Parser::getSpawnHighPriorityBackgroundJobsAsATask() {
-  return getStringFromPath("/shared_memory/high_priority_background_job_processing","all_in_a_rush",isOptional).
+  return getStringFromPath("/shared_memory/high_priority_background_job_processing","one_at_a_time",isOptional).
       compare("spawn_as_a_task")==0;
 }
 
@@ -1178,7 +1182,7 @@ bool exahype::parser::Parser::getRunLowPriorityJobsOnlyIfNoHighPriorityJobIsLeft
 }
 
 bool exahype::parser::Parser::getSpawnLowPriorityBackgroundJobsAsATask() {
-  return getStringFromPath("/shared_memory/high_priority_background_job_processing","all_in_a_rush",isOptional).
+  return getStringFromPath("/shared_memory/low_priority_background_job_processing","one_at_a_time",isOptional).
       compare("spawn_as_a_task")==0;
 }
 

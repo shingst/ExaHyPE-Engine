@@ -36,9 +36,15 @@ update_Peano() {
 		cd "$scriptDir" #move back
 	else
 		echo "Update Peano submodule"
-		cd Peano
-		git pull origin master
-		cd ..
+		if [ "$toNewest" = true ]; then
+			cd Peano
+			git pull origin master
+			cd ..
+		else
+			cd "$pathToTopLevel" # move to the top level (required for git version below 1.8.4)
+			git submodule update Submodules/Peano
+			cd "$scriptDir" #move back
+		fi
 	fi
 }
 
@@ -54,9 +60,15 @@ update_others() {
 		cd "$scriptDir" #move back
 	else
 		echo "Update jinja submodule"
-		cd jinja
-		git pull origin master
-		cd ..
+		if [ "$toNewest" = true ]; then
+			cd jinja
+			git pull origin master
+			cd ..
+		else
+			cd "$pathToTopLevel" # move to the top level (required for git version below 1.8.4)
+			git submodule update Submodules/jinja
+			cd "$scriptDir" #move back
+		fi
 	fi
 	#Markupsafe
 	if [ ! -d markupsafe ]; then
@@ -70,9 +82,15 @@ update_others() {
 		cd "$scriptDir" #move back
 	else
 		echo "Update markupsafe submodule"
-		cd markupsafe
-		git pull origin master
-		cd ..
+		if [ "$toNewest" = true ]; then
+			cd markupsafe
+			git pull origin master
+			cd ..
+		else
+			cd "$pathToTopLevel" # move to the top level (required for git version below 1.8.4)
+			git submodule update Submodules/markupsafe
+			cd "$scriptDir" #move back
+		fi
 	fi
 	#attrs
 	if [ ! -d attrs ]; then
@@ -85,9 +103,15 @@ update_others() {
 		cd "$scriptDir" #move back
 	else
 		echo "Update attrs submodule"
-		cd attrs
-		git pull origin master
-		cd ..
+		if [ "$toNewest" = true ]; then
+			cd attrs
+			git pull origin master
+			cd ..
+		else
+			cd "$pathToTopLevel" # move to the top level (required for git version below 1.8.4)
+			git submodule update Submodules/attrs
+			cd "$scriptDir" #move back
+		fi
 	fi
 	#pyrsistent
 	if [ ! -d pyrsistent ]; then
@@ -100,9 +124,15 @@ update_others() {
 		cd "$scriptDir" #move back
 	else
 		echo "Update pyrsistent submodule"
-		cd pyrsistent
-		git pull origin master
-		cd ..
+		if [ "$toNewest" = true ]; then
+			cd pyrsistent
+			git pull origin master
+			cd ..
+		else
+			cd "$pathToTopLevel" # move to the top level (required for git version below 1.8.4)
+			git submodule update Submodules/pyrsistent
+			cd "$scriptDir" #move back
+		fi
 	fi
 	#jsonschema
 	if [ ! -d jsonschema ]; then
@@ -115,10 +145,18 @@ update_others() {
 		cd "$scriptDir" #move back
 	else
 		echo "Update jsonschema submodule"
-		cd jsonschema
-		git checkout -- * #undo modifications
-		git pull origin master
-		cd ..
+		if [ "$toNewest" = true ]; then
+			cd jsonschema
+			git checkout -- * #undo modifications
+			git pull origin master
+			cd ..
+		else
+			cd jsonschema
+			git checkout -- * #undo modifications
+			cd "$pathToTopLevel" # move to the top level (required for git version below 1.8.4)
+			git submodule update Submodules/jsonschema
+			cd "$scriptDir" #move back
+		fi
 	fi
 	# comment last two lines of module init file (hot fix)
 	cd jsonschema
@@ -136,9 +174,15 @@ update_others() {
 		cd "$scriptDir" #move back
 	else
 		echo "Update six submodule"
-		cd six
-		git pull origin master
-		cd ..
+		if [ "$toNewest" = true ]; then
+			cd six
+			git pull origin master
+			cd ..
+		else
+			cd "$pathToTopLevel" # move to the top level (required for git version below 1.8.4)
+			git submodule update Submodules/six
+			cd "$scriptDir" #move back
+		fi
 	fi
 	#Libxsmm
 	if [ ! -d libxsmm ]; then
@@ -185,11 +229,14 @@ update_others() {
 	fi
 }
 
+toNewest=false #Only do submodule update not git pull
+schedulePeano=false
+scheduleOthers=false
 if [ $# -eq 0 ]; then
-	update_Peano
-	update_others
+	schedulePeano=true
+	scheduleOthers=true
 else
-	while getopts htswpo opt; do
+	while getopts hntswpo opt; do
 	case $opt in
 		h)  echo "-h prints this message"
 			echo "-s set submodules url to ssh"
@@ -198,9 +245,13 @@ else
 			echo "-p only update the Peano submodule"
 			echo "-o only update submodules other than Peano"
 			exit -1;;
+		n)  echo "Will update to newest version instead of submodule version"
+			toNewest=true
+			schedulePeano=true
+			scheduleOthers=true;;
 		t)  git config submodule.Submodules/Peano.url    git://localhost:12345/gi26det/Peano.git
 			git config submodule.Submodules/jinja.url       git://localhost:12345/pallets/jinja.git
-                        git config submodule.Submodules/markupsafe.url  git://localhost:12345/pallets/markupsafe.git
+			git config submodule.Submodules/markupsafe.url  git://localhost:12345/pallets/markupsafe.git
 			git config submodule.Submodules/attrs.url       git://localhost:12345/python-attrs/attrs.git
 			git config submodule.Submodules/pyrsistent.url  git://localhost:12345/tobgu/pyrsistent.git
 			git config submodule.Submodules/jsonschema.url  git://localhost:12345/Julian/jsonschema.git
@@ -223,11 +274,19 @@ else
 			git config submodule.Submodules/six.url         https://github.com/benjaminp/six.git
 			git config submodule.Submodules/libxsmm.url     https://github.com/hfp/libxsmm.git ;;
 		p)  echo "only update Peano"
-			update_Peano ;;
+			schedulePeano=true
+			scheduleOthers=false ;;
 		o)  echo "only update submodules other than Peano"
-			update_others ;;
+			schedulePeano=false
+			scheduleOthers=true ;;
 	esac
 	done
+fi
+if [ "$schedulePeano" = true ] ; then
+	update_Peano
+fi
+if [ "$scheduleOthers" = true ] ; then
+	update_others
 fi
 
 # move back to where the script was called

@@ -9,12 +9,25 @@
 # COMPILER            Intel             GNU                          Used compiler (and linker)
 # MODE                Release           Debug,                       Verbosity and Debug level
 #                                       Asserts,PeanoProfile,Profile          
+{% if useSharedMem %}
+# SHAREDMEM           TBB               OMP, None                    Shared-memory parallelisation
+{% else %}
 # SHAREDMEM           None              OMP, TBB                     Shared-memory parallelisation
+{% endif %}
+{% if useDistributedMem %}
+# DISTRIBUTEDMEM      MPI               None                         Distributed-memory parallelisation
+{% else %}
 # DISTRIBUTEDMEM      None              MPI                          Distributed-memory parallelisation
+{% endif %}
 # BOUNDARYCONDITIONS  None              Periodic                     Type of boundary conditions
 # USE_IPO             Off               On, Unsafe                   IPO during compilation (intel only)
 # ******************************************************************************************************
 
+# Helper
+SHELL = bash
+tolower = $(shell echo $(1) | tr '[:upper:]' '[:lower:]')
+
+# Default Paths and name
 PEANO_KERNEL_PEANO_PATH={{peanoToolboxPath}}/peano
 PEANO_KERNEL_TARCH_PATH={{peanoToolboxPath}}/tarch
 PEANO_TOOLBOX_MULTISCALELINKEDCELL_PATH={{peanoToolboxPath}}/multiscalelinkedcell
@@ -24,8 +37,8 @@ EXAHYPE_PATH={{exahypePath}}
 PROJECT_PATH={{outputPath}}
 EXECUTABLE=ExaHyPE-{{project}}
 
+# Default flags from specification file constants
 PROJECT_CFLAGS+= -DDim{{dimensions}}
-
 {% if architecture != "noarch" %}
 ARCHITECTURE={{architecture}}
 PROJECT_CFLAGS+= -DALIGNMENT={{alignment}}
@@ -33,15 +46,20 @@ PROJECT_CFLAGS+= -DALIGNMENT={{alignment}}
 ARCHITECTURE=CPU
 {% endif %}
 
-# Default options required by the specification file
-{% if useSharedMem %}
+# Default sharedmem/distributedmem required by the specification file
 ifeq ($(SHAREDMEM),)
+{% if useSharedMem %}
     SHAREDMEM=TBB
-endif
+{% else %}
+    SHAREDMEM=None
 {% endif %}
-{% if useDistributedMem %}
+endif
 ifeq ($(DISTRIBUTEDMEM),)
+{% if useDistributedMem %}
     DISTRIBUTEDMEM=MPI
+{% else %}
+    DISTRIBUTEDMEM=None
+{% endif %}
 endif
 {% if stealing=="static" %}
 PROJECT_CFLAGS += -DDistributedStealing -DStealingStrategyStatic
@@ -54,8 +72,16 @@ PROJECT_CFLAGS += -DDistributedStealing -DStealingStrategyHybrid
 {% elif stealing=="static_hardcoded" %}
 PROJECT_CFLAGS += -DDistributedStealing -DStealingStrategyStaticHardcoded
 {% endif %}
-{% endif %}
 
+
+# If using TBB only, link pthread (comment this if you want to link a specific pthread)
+ifeq ($(call tolower,$(SHAREDMEM)),tbb)
+    ifeq ($(call tolower,$(DISTRIBUTEDMEM)),none)
+        PROJECT_LFLAGS+= -pthread
+    endif
+endif
+
+# Default options required by the specification file
 {% if useFortran %}
 ifeq ($(MIXEDLANG),)
     MIXEDLANG=Yes

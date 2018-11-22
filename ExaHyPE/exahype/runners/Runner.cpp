@@ -370,6 +370,9 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
   }
   #endif
 
+  // NOTE: Adjusting the grain size might hurt the intermixing of compute-heavy background jobs, e.g. the PredictionJobs,
+  // with bandwith-bound ones, e.g. Riemann solves.
+
   switch (_parser.getMulticoreOracleType()) {
   case exahype::parser::Parser::MulticoreOracleType::Dummy:
     logInfo("initSharedMemoryConfiguration()",
@@ -721,6 +724,9 @@ void exahype::runners::Runner::initOptimisations() const {
       _parser.getSpawnPredictionAsBackgroundThread(),
       _parser.getSpawnProlongationAsBackgroundThread());
 
+  exahype::solvers::Solver::SpawnUpdateAsBackgroundJob =
+      _parser.getSpawnUpdateAsBackgroundThread();
+
   exahype::solvers::Solver::SpawnAMRBackgroundJobs =
       _parser.getSpawnAMRBackgroundThreads();
 
@@ -954,7 +960,7 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
     int timeStep = 0;
     while (
         tarch::la::greater(solvers::Solver::getMinTimeStepSizeOfAllSolvers(), 0.0) &&
-        solvers::Solver::getMinTimeStampOfAllSolvers() < simulationEndTime &&
+        solvers::Solver::getMinTimeStampOfAllSolvers() < simulationEndTime         &&
         timeStep < simulationTimeSteps
     ) {
       bool plot = exahype::plotters::checkWhetherPlotterBecomesActive(

@@ -185,11 +185,11 @@ const int picardIterations = 1;
   return picardIterations;
 }
 
-void {{project}}::{{abstractSolver}}::solutionUpdate(double* luh,const double* const lduh,const double dt) {
+void {{project}}::{{abstractSolver}}::solutionUpdate(double* luh,const double* const luhOld,const double* const lduh,const double dt) {
 {% if enableProfiler %}
   _profiler->start("solutionUpdate");
 {% endif %}
-  kernels::aderdg::generic::{{language}}::solutionUpdate<{{solver}}>(*static_cast<{{solver}}*>(this),luh,lduh,dt);
+  kernels::aderdg::generic::{{language}}::solutionUpdate<{{solver}}>(*static_cast<{{solver}}*>(this),luh,luhOld,lduh,dt);
 {% if enableProfiler %}
   _profiler->stop("solutionUpdate");
 {% endif %}

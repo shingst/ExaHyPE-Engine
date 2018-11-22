@@ -98,7 +98,10 @@ bool exahype::solvers::Solver::DisablePeanoNeighbourExchangeInTimeSteps = false;
 int exahype::solvers::Solver::MaxNumberOfRunningBackgroundJobConsumerTasksDuringTraversal = 0;
 
 bool exahype::solvers::Solver::SpawnPredictionAsBackgroundJob = false;
-int exahype::solvers::Solver::PredictionSweeps                = 1;
+
+bool exahype::solvers::Solver::SpawnUpdateAsBackgroundJob = false;
+
+int exahype::solvers::Solver::PredictionSweeps     = 1;
 
 bool exahype::solvers::Solver::SpawnProlongationAsBackgroundJob = false;
 
@@ -108,6 +111,7 @@ double exahype::solvers::Solver::CompressionAccuracy = 0.0;
 bool exahype::solvers::Solver::SpawnCompressionAsBackgroundJob = false;
 
 int exahype::solvers::Solver::NumberOfAMRBackgroundJobs = 0;
+int exahype::solvers::Solver::NumberOfReductionJobs = 0;
 int exahype::solvers::Solver::NumberOfEnclaveJobs = 0;
 int exahype::solvers::Solver::NumberOfSkeletonJobs = 0;
 int exahype::solvers::Solver::NumberOfRemoteJobs = 0;
@@ -119,9 +123,10 @@ int event_wait = -1;
 
 std::string exahype::solvers::Solver::toString(const JobType& jobType) {
   switch (jobType) {
-    case JobType::AMRJob:      return "AMRJob";
-    case JobType::EnclaveJob:  return "EnclaveJob";
-    case JobType::SkeletonJob: return "SkeletonJob";
+    case JobType::AMRJob:       return "AMRJob";
+    case JobType::ReductionJob: return "ReductionJob";
+    case JobType::EnclaveJob:   return "EnclaveJob";
+    case JobType::SkeletonJob:  return "SkeletonJob";
     default:
       logError("toString(const JobType&)","Job type not supported.");
       std::abort();
@@ -131,9 +136,10 @@ std::string exahype::solvers::Solver::toString(const JobType& jobType) {
 
 int exahype::solvers::Solver::getNumberOfQueuedJobs(const JobType& jobType) {
   switch (jobType) {
-    case JobType::AMRJob:     return NumberOfAMRBackgroundJobs;
-    case JobType::EnclaveJob: return NumberOfEnclaveJobs;
-    case JobType::SkeletonJob:return NumberOfSkeletonJobs;
+    case JobType::AMRJob:       return NumberOfAMRBackgroundJobs;
+    case JobType::ReductionJob: return NumberOfReductionJobs;
+    case JobType::EnclaveJob:   return NumberOfEnclaveJobs;
+    case JobType::SkeletonJob:  return NumberOfSkeletonJobs;
     default:
       logError("getNumberOfQueuedJobs(const JobType&)","Job type not supported.");
       std::abort();
@@ -170,15 +176,16 @@ void exahype::solvers::Solver::ensureAllJobsHaveTerminated(JobType jobType) {
     logInfo("waitUntilAllBackgroundTasksHaveTerminated()",
       "waiting for " << queuedJobs << " background job(s) to complete (type=" << toString(jobType) << ").");
     #endif
-    if ( jobType != JobType::SkeletonJob ) {
-      peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
-    }
+    peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
   }
 
   while ( !finishedWait ) {
     // do some work myself
     tarch::parallel::Node::getInstance().receiveDanglingMessages();
-    if ( jobType == JobType::SkeletonJob ) { // TODO(Dominic): Use background job queue here as well
+    if (
+        jobType == JobType::SkeletonJob ||
+        jobType == JobType::ReductionJob
+    ) { // TODO(Dominic): Use background job queue here as well
        tarch::multicore::jobs::processHighPriorityJobs(1);
     } else {
       tarch::multicore::jobs::processBackgroundJobs(1);
@@ -230,7 +237,7 @@ void exahype::solvers::Solver::ensureAllJobsHaveTerminated(JobType jobType) {
 }
 
 void exahype::solvers::Solver::configurePredictionPhase(const bool usePredictionBackgroundJobs, bool useProlongationBackgroundJobs) {
-  exahype::solvers::Solver::SpawnPredictionAsBackgroundJob   = usePredictionBackgroundJobs;
+  exahype::solvers::Solver::SpawnPredictionAsBackgroundJob              = usePredictionBackgroundJobs;
   exahype::solvers::Solver::SpawnProlongationAsBackgroundJob = useProlongationBackgroundJobs;
 
   #ifdef PredictionSweeps
@@ -910,10 +917,7 @@ exahype::MetadataHeap::HeapEntries exahype::gatherNeighbourCommunicationMetadata
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
 
     solver->appendNeighbourCommunicationMetadata(
-        encodedMetaData,
-        src,dest,
-        cellDescriptionsIndex,
-        solverNumber);
+        encodedMetaData,src,dest,cellDescriptionsIndex,solverNumber);
   }
   assertion2(static_cast<int>(encodedMetaData.size())==length,encodedMetaData.size(),length);
   return encodedMetaData;
@@ -959,8 +963,7 @@ exahype::receiveNeighbourCommunicationMetadata(
     const int                                   fromRank,
     const tarch::la::Vector<DIMENSIONS,double>& x,
     const int                                   level) {
-  const unsigned int length =
-      exahype::NeighbourCommunicationMetadataPerSolver*exahype::solvers::RegisteredSolvers.size();
+  const size_t length = NeighbourCommunicationMetadataPerSolver*solvers::RegisteredSolvers.size();
   buffer.reserve(length);
   buffer.clear();
   assertion(buffer.size()==0);
@@ -970,6 +973,7 @@ exahype::receiveNeighbourCommunicationMetadata(
       MetadataHeap::getInstance().receiveData(
           fromRank, x, level,peano::heap::MessageType::NeighbourCommunication);
   assertion(receivedMessage.size()==0 || receivedMessage.size()==length);
+
   buffer.insert(buffer.begin(),receivedMessage.begin(),receivedMessage.end());
   if ( buffer.size()==0 ) {
     buffer.assign(length,InvalidMetadataEntry);
