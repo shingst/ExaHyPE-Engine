@@ -248,15 +248,6 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
     // Create a new MPI communicator for stealing related MPI communication
     exahype::stealing::StealingManager::getInstance().createMPICommunicator(); 
 
-//    for (auto* solver : exahype::solvers::RegisteredSolvers) {
-//      if (solver->getType()==exahype::solvers::Solver::Type::ADERDG) {
-//        static_cast<exahype::solvers::ADERDGSolver*>(solver)->startStealingManager();
-//      }
-//      if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
-//        static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->startStealingManager();
-//      }
-//    } 
-
     peano::performanceanalysis::Analysis::getInstance().setDevice(new exahype::stealing::StealingAnalyser());
 
 #if defined(StealingStrategyStaticHardcoded)
@@ -273,34 +264,26 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
 
 void exahype::runners::Runner::shutdownDistributedMemoryConfiguration() {
 #ifdef Parallel
-
+  tarch::parallel::NodePool::getInstance().terminate();
 #if defined(DistributedStealing)
   for (auto* solver : exahype::solvers::RegisteredSolvers) {
     if (solver->getType()==exahype::solvers::Solver::Type::ADERDG) {
-      //static_cast<exahype::solvers::ADERDGSolver*>(solver)->stopStealingManager();
+      static_cast<exahype::solvers::ADERDGSolver*>(solver)->stopStealingManager();
     }
     if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
-      //static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->stopStealingManager();
+      static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->stopStealingManager();
     }
   }
 
-     logInfo("shutdownDistributedMemoryConfiguration()","stopped stealing manager");
-
+  logInfo("shutdownDistributedMemoryConfiguration()","stopped stealing manager");
   exahype::stealing::StealingManager::getInstance().destroyMPICommunicator(); 
-  
-     logInfo("shutdownDistributedMemoryConfiguration()","destroyed MPI communicators");
-
-  
+  logInfo("shutdownDistributedMemoryConfiguration()","destroyed MPI communicators");
   exahype::stealing::StealingProfiler::getInstance().endPhase();
-
-       logInfo("shutdownDistributedMemoryConfiguration()","ended profiling phase");
-
+  logInfo("shutdownDistributedMemoryConfiguration()","ended profiling phase");
   exahype::stealing::StealingProfiler::getInstance().printStatistics();
-      logInfo("shutdownDistributedMemoryConfiguration()","printed stats");
+  logInfo("shutdownDistributedMemoryConfiguration()","printed stats");
 
 #endif
-  tarch::parallel::NodePool::getInstance().terminate();
-
   exahype::repositories::RepositoryFactory::getInstance().shutdownAllParallelDatatypes();
 #endif
 }
@@ -782,15 +765,12 @@ int exahype::runners::Runner::run() {
       initSharedMemoryConfiguration();
 
     #if defined(DistributedStealing) 
-//    MPI_Barrier(MPI_COMM_WORLD);
-//    MPI_Barrier(exahype::stealing::StealingManager::getInstance().getMPICommunicator());
- 
     for (auto* solver : exahype::solvers::RegisteredSolvers) {
       if (solver->getType()==exahype::solvers::Solver::Type::ADERDG) {
-        //static_cast<exahype::solvers::ADERDGSolver*>(solver)->startStealingManager();
+        static_cast<exahype::solvers::ADERDGSolver*>(solver)->startStealingManager();
       }
       if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
-        //static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->startStealingManager();
+        static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->startStealingManager();
       }
     } 
     #endif
