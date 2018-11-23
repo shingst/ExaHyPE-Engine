@@ -1176,7 +1176,7 @@ class exahype::solvers::Solver {
      } else {
        tarch::multicore::jobs::processBackgroundJobs(1);
  
-#if defined(DistributedStealing) && defined(StealingStrategyDiffusive)
+#if defined(DistributedStealing) 
        if( !cellDescription.getHasCompletedTimeStep()
          && tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs()==1
          && !hasTriggeredEmergency){
@@ -1185,7 +1185,7 @@ class exahype::solvers::Solver {
 #endif
          hasTriggeredEmergency = true;
          logInfo("waitUntilCompletedTimeStep()","EMERGENCY"); //TODO: my rank can  no longer be a critical rank and I should give away one less per victim
-         exahype::stealing::DiffusiveDistributor::getInstance().triggerEmergency();
+         exahype::stealing::StealingManager::getInstance().triggerEmergency();
 #ifdef USE_ITAC
 	 VT_end(event_emergency);
 #endif

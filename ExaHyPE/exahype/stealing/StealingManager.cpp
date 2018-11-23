@@ -31,7 +31,8 @@ exahype::stealing::StealingManager::StealingManager() :
 	_nextGroupId(0),
 	_runningAndReceivingBack(false),
 	_stealingComm(MPI_COMM_NULL),
-	_stealingCommMapped(MPI_COMM_NULL)
+	_stealingCommMapped(MPI_COMM_NULL),
+    _emergencyTriggered(false)
 {
 #ifdef USE_ITAC
   static const char *event_name_handle = "handleRequest";
@@ -345,6 +346,34 @@ void exahype::stealing::StealingManager::progressRequestsOfType( RequestType typ
   time += MPI_Wtime();
   exahype::stealing::StealingProfiler::getInstance().endHandling(time);
 }
+
+void exahype::stealing::StealingManager::triggerVictimFlag() {
+  _isVictim = true;
+}
+
+void exahype::stealing::StealingManager::resetVictimFlag() {
+  _isVictim = false;
+}
+
+bool exahype::stealing::StealingManager::isVictim() {
+  return _isVictim;
+}
+
+void exahype::stealing::StealingManager::triggerEmergency() {
+  if(!_emergencyTriggered)
+    logInfo("triggerEmergency()","emergency event triggered");
+  _emergencyTriggered = true;
+}
+
+bool exahype::stealing::StealingManager::isEmergencyTriggered() {
+  return _emergencyTriggered;
+}
+
+void exahype::stealing::StealingManager::resetEmergency() {
+  logInfo("resetEmergency()","emergency flag reset");
+  _emergencyTriggered = false;
+}
+
 
 bool exahype::stealing::StealingManager::selectVictimRank(int& victim) {
 #if defined(StealingStrategyStaticHardcoded)

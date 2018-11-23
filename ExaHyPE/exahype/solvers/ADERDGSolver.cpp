@@ -4770,9 +4770,7 @@ void exahype::solvers::ADERDGSolver::progressStealing(exahype::solvers::ADERDGSo
      }
      MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, commMapped, &receivedTaskBack, &statMapped);
      if(receivedTask) {
-#if defined(StealingStrategyDiffusive)
-       exahype::stealing::DiffusiveDistributor::getInstance().triggerVictimFlag();
-#endif
+       exahype::stealing::StealingManager::getInstance().triggerVictimFlag();
        int msgLen = -1;
        MPI_Get_count(&stat, MPI_DOUBLE, &msgLen);
        // is this message metadata? -> if true, we are about to receive a new STP task

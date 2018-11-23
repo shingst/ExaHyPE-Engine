@@ -16,9 +16,7 @@ tarch::logging::Log exahype::stealing::DiffusiveDistributor::_log( "exahype::ste
 
 exahype::stealing::DiffusiveDistributor::DiffusiveDistributor() :
   _iterationTimer("DiffusiveDistributor","IterationTimer",false),
-  _isVictim(false),
-  _emergencyTriggered(false),
-  _zeroThreshold(2000)
+  _zeroThreshold(10*2000)
 {
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
 
@@ -49,8 +47,11 @@ void exahype::stealing::DiffusiveDistributor::updateLoadDistribution(int current
 
   loadSnapshot[myRank] = currentLoad;
 
+  bool isVictim = exahype::stealing::StealingManager::getInstance().isVictim();
+  bool emergencyTriggered = exahype::stealing::StealingManager::getInstance().isEmergencyTriggered();
+
   logInfo("updateLoadDistribution()", "current maximum wait time "<<currentLoad
-                                      <<" isVictim: "<<_isVictim<<" emergency event: "<<_emergencyTriggered);
+                                      <<" isVictim: "<<isVictim<<" emergency event: "<<emergencyTriggered);
 
   //determine who is fastest
   int fastestRank = std::distance(&loadSnapshot[0], std::max_element(&loadSnapshot[0], &loadSnapshot[nnodes]));
@@ -61,11 +62,11 @@ void exahype::stealing::DiffusiveDistributor::updateLoadDistribution(int current
   logInfo("updateLoadDistribution()", "fastest: "<<fastestRank<<" slowest:"<<slowestRank);
 
   if(myRank == slowestRank) {
-    if(!_isVictim && !_emergencyTriggered && *std::min_element(&loadSnapshot[0], &loadSnapshot[nnodes])<_zeroThreshold) {
+    if(!isVictim && !emergencyTriggered && *std::min_element(&loadSnapshot[0], &loadSnapshot[nnodes])<_zeroThreshold) {
       _tasksToOffload[fastestRank]++;
       logInfo("updateLoadDistribution()", "I am a critical rank, increment, send "<<_tasksToOffload[fastestRank]<<" to rank "<<fastestRank );
     }
-    else if(_emergencyTriggered){
+    else if(emergencyTriggered){
       logInfo("updateLoadDistribution()", "I was a critical rank, but emergency event happened.");
       for(int i=0; i<nnodes; i++) {
         if(i!=myRank && _tasksToOffload[i]>0) {
@@ -73,7 +74,7 @@ void exahype::stealing::DiffusiveDistributor::updateLoadDistribution(int current
           logInfo("updateLoadDistribution()", "decrement, send "<<_tasksToOffload[i]<<" to rank "<<i );
         }
       }
-      resetEmergency();
+      exahype::stealing::StealingManager::getInstance().resetEmergency();
     }   
   }
   else if(_tasksToOffload[slowestRank]>0) {
@@ -92,26 +93,6 @@ exahype::stealing::DiffusiveDistributor& exahype::stealing::DiffusiveDistributor
   static DiffusiveDistributor diffusiveDist;
   return diffusiveDist;
 }
-
-void exahype::stealing::DiffusiveDistributor::triggerVictimFlag() {
-  _isVictim = true;
-}
-
-void exahype::stealing::DiffusiveDistributor::resetVictimFlag() {
-  _isVictim = false;
-}
-
-void exahype::stealing::DiffusiveDistributor::triggerEmergency() {
-  if(!_emergencyTriggered)
-    logInfo("triggerEmergency()","emergency event triggered");
-  _emergencyTriggered = true;
-}
-
-void exahype::stealing::DiffusiveDistributor::resetEmergency() {
-  logInfo("resetEmergency()","emergency flag reset");
-  _emergencyTriggered = false;
-}
-
 
 bool exahype::stealing::DiffusiveDistributor::selectVictimRank(int& victim) {
 

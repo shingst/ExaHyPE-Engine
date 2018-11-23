@@ -24,7 +24,7 @@ exahype::stealing::StaticDistributor::StaticDistributor() {
   _consumersPerRank        = new int[nnodes];
   _consumersPerRank[0]     = tarch::multicore::jobs::Job::getMaxNumberOfRunningBackgroundThreads()-1;
   for(int i=1; i<nnodes;i++) {
-    _consumersPerRank[i] = tarch::multicore::jobs::Job::getMaxNumberOfRunningBackgroundThreads();
+    _consumersPerRank[i] = tarch::multicore::jobs::Job::getMaxNumberOfRunningBackgroundThreads()-1;
     logInfo("StaticDistributor()","weight "<<_consumersPerRank[i]<<" for rank "<<i);
   }
 

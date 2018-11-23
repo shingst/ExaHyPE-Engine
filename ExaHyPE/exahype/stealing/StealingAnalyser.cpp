@@ -12,6 +12,7 @@
 
 #include "exahype/stealing/PerformanceMonitor.h"
 #include "exahype/stealing/DiffusiveDistributor.h"
+#include "exahype/stealing/StealingManager.h"
 
 tarch::logging::Log  exahype::stealing::StealingAnalyser::_log( "exahype::stealing::StealingAnalyser" );
 
@@ -38,7 +39,7 @@ void exahype::stealing::StealingAnalyser::enable(bool value) {
 
 void exahype::stealing::StealingAnalyser::beginIteration() {
   _currentMaxWaitTime = 0;
-  exahype::stealing::DiffusiveDistributor::getInstance().resetVictimFlag(); //TODO: correct position here?
+  exahype::stealing::StealingManager::getInstance().resetVictimFlag(); //TODO: correct position here?
 }
 
 

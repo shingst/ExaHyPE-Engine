@@ -70,6 +70,11 @@ class exahype::stealing::StealingManager {
     tbb::concurrent_hash_map<int, exahype::solvers::Solver*> _solvers[4];
     tarch::multicore::BooleanSemaphore _semaphore;
 
+    int _zeroThreshold;
+
+    std::atomic<bool> _isVictim;
+    std::atomic<bool> _emergencyTriggered;
+
     StealingManager();
     /*
      * This method makes progress on all current requests of the given request type.
@@ -147,6 +152,14 @@ class exahype::stealing::StealingManager {
      * improve the load balance.
      */
     bool selectVictimRank(int& victim);
+
+    void triggerVictimFlag();
+    void resetVictimFlag();
+    bool isVictim();
+
+    bool isEmergencyTriggered();
+    void triggerEmergency();
+    void resetEmergency();
 
     static StealingManager& getInstance();
     virtual ~StealingManager();
