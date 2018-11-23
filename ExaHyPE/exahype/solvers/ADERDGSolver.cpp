@@ -4906,7 +4906,7 @@ bool exahype::solvers::ADERDGSolver::StealingManagerJob::run() {
   switch (_state) {
     case State::Running:
     {
-      exahype::solvers::ADERDGSolver::progressStealing(&_solver);
+      //exahype::solvers::ADERDGSolver::progressStealing(&_solver);
       break;
     }
     case State::Terminate:
@@ -4915,11 +4915,11 @@ bool exahype::solvers::ADERDGSolver::StealingManagerJob::run() {
     //	  logInfo("stealingManager", " terminating ");
    // 	  terminated = true;
     //  }
-      exahype::stealing::PerformanceMonitor::getInstance().stop();
-      if(!exahype::stealing::PerformanceMonitor::getInstance().isGloballyTerminated()) { // || !_solver._outstandingOffloads.empty()) {
-        exahype::solvers::ADERDGSolver::progressStealing(&_solver);
-        return true;
-      }
+      //exahype::stealing::PerformanceMonitor::getInstance().stop();
+      //if(!exahype::stealing::PerformanceMonitor::getInstance().isGloballyTerminated()) { // || !_solver._outstandingOffloads.empty()) {
+      //  exahype::solvers::ADERDGSolver::progressStealing(&_solver);
+      //  return true;
+      //}
       logInfo("stealingManager", " terminated ");
       result = false;
 
@@ -4947,16 +4947,18 @@ void exahype::solvers::ADERDGSolver::startStealingManager() {
   //static tbb::task_group_context  backgroundTaskContext(tbb::task_group_context::isolated);
   //_stealingManagerJob = new( backgroundTaskContext ) StealingManagerJob(*this);
   _stealingManagerJob = new StealingManagerJob(*this);
-  assertion(_stealingManagerJob!=nullptr);
+  //assertion(_stealingManagerJob!=nullptr);
   //tbb::task::enqueue(*_stealingManagerJob);
-  peano::datatraversal::TaskSet spawnedSet(_stealingManagerJob, peano::datatraversal::TaskSet::TaskType::Background);
+  //peano::datatraversal::TaskSet spawnedSet(_stealingManagerJob, peano::datatraversal::TaskSet::TaskType::Background);
 }
 
 void exahype::solvers::ADERDGSolver::stopStealingManager() {
   logInfo("stopStealingManager", " stopping ");
-  assertion(_stealingManagerJob != nullptr);
-  _stealingManagerJob->terminate();
-  while(tarch::multicore::jobs::finishToProcessBackgroundJobs()) {  logInfo("stopStealingManager()","processing outstanding job"); };
+  //assert(_stealingManagerJob != nullptr);
+  //_stealingManagerJob->terminate();
+  //while(tarch::multicore::jobs::finishToProcessBackgroundJobs()) {  logInfo("stopStealingManager()","processing outstanding job"); };
+  //assert(_stealingManagerJob != nullptr);
+  //delete _stealingManagerJob;
 }
 
 exahype::solvers::ADERDGSolver::StealablePredictionJobData::StealablePredictionJobData( ADERDGSolver& solver ) :

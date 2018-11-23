@@ -114,6 +114,7 @@ void exahype::stealing::DiffusiveDistributor::resetEmergency() {
 
 
 bool exahype::stealing::DiffusiveDistributor::selectVictimRank(int& victim) {
+  return false;
 
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
   int myRank = tarch::parallel::Node::getInstance().getRank();

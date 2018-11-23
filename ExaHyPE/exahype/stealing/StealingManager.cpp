@@ -70,6 +70,14 @@ void exahype::stealing::StealingManager::createMPICommunicator() {
   assertion(ierr==MPI_SUCCESS);
 }
 
+void exahype::stealing::StealingManager::destroyMPICommunicator() {
+  int ierr = MPI_Comm_free( &_stealingComm);
+  assertion(ierr==MPI_SUCCESS);
+  ierr = MPI_Comm_free(&_stealingCommMapped);
+  assertion(ierr==MPI_SUCCESS);
+}
+
+
 MPI_Comm exahype::stealing::StealingManager::getMPICommunicator() {
   return _stealingComm;
 }

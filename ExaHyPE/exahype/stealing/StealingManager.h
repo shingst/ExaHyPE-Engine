@@ -132,6 +132,7 @@ class exahype::stealing::StealingManager {
     void progressRequests();
 
     void createMPICommunicator();
+    void destroyMPICommunicator();
     MPI_Comm getMPICommunicator();
     MPI_Comm getMPICommunicatorMapped();
 

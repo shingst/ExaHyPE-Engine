@@ -273,29 +273,33 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
 
 void exahype::runners::Runner::shutdownDistributedMemoryConfiguration() {
 #ifdef Parallel
-  tarch::parallel::NodePool::getInstance().terminate();
 
 #if defined(DistributedStealing)
   for (auto* solver : exahype::solvers::RegisteredSolvers) {
     if (solver->getType()==exahype::solvers::Solver::Type::ADERDG) {
-      static_cast<exahype::solvers::ADERDGSolver*>(solver)->stopStealingManager();
+      //static_cast<exahype::solvers::ADERDGSolver*>(solver)->stopStealingManager();
     }
     if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
-      static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->stopStealingManager();
+      //static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->stopStealingManager();
     }
   }
 
-     logInfo("run()","stopped stealing manager");
+     logInfo("shutdownDistributedMemoryConfiguration()","stopped stealing manager");
 
+  exahype::stealing::StealingManager::getInstance().destroyMPICommunicator(); 
+  
+     logInfo("shutdownDistributedMemoryConfiguration()","destroyed MPI communicators");
+
+  
   exahype::stealing::StealingProfiler::getInstance().endPhase();
 
-       logInfo("run()","ended profiling phase");
+       logInfo("shutdownDistributedMemoryConfiguration()","ended profiling phase");
 
   exahype::stealing::StealingProfiler::getInstance().printStatistics();
-  
-      logInfo("run()","printed stats");
+      logInfo("shutdownDistributedMemoryConfiguration()","printed stats");
 
 #endif
+  tarch::parallel::NodePool::getInstance().terminate();
 
   exahype::repositories::RepositoryFactory::getInstance().shutdownAllParallelDatatypes();
 #endif
@@ -498,9 +502,9 @@ void exahype::runners::Runner::shutdownSharedMemoryConfiguration() {
   #ifdef SharedMemoryParallelisation
 
 #ifdef DistributedStealing
-  while(!exahype::stealing::PerformanceMonitor::getInstance().isGloballyTerminated()) {
-    tarch::multicore::jobs::finishToProcessBackgroundJobs();
-  }
+ // while(!exahype::stealing::PerformanceMonitor::getInstance().isGloballyTerminated()) {
+ //   tarch::multicore::jobs::finishToProcessBackgroundJobs();
+ // }
 #endif
 
   tarch::multicore::jobs::plotStatistics();
@@ -783,10 +787,10 @@ int exahype::runners::Runner::run() {
  
     for (auto* solver : exahype::solvers::RegisteredSolvers) {
       if (solver->getType()==exahype::solvers::Solver::Type::ADERDG) {
-        static_cast<exahype::solvers::ADERDGSolver*>(solver)->startStealingManager();
+        //static_cast<exahype::solvers::ADERDGSolver*>(solver)->startStealingManager();
       }
       if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
-        static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->startStealingManager();
+        //static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->startStealingManager();
       }
     } 
     #endif
