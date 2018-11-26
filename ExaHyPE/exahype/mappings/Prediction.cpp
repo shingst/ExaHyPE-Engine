@@ -167,7 +167,7 @@ void exahype::mappings::Prediction::performPredictionOrProlongate(
   if ( fineGridCell.isInitialised() ) {
     solvers::Solver::CellInfo cellInfo = fineGridCell.createCellInfo();
 
-    exahype::Cell::resetNeighbourMergeFlagsAndCounters(cellInfo,fineGridVertices,fineGridVerticesEnumerator,true);
+    exahype::Cell::resetNeighbourMergeFlagsAndCounters(cellInfo,fineGridVertices,fineGridVerticesEnumerator);
     const bool isAtRemoteBoundary = exahype::Cell::isAtRemoteBoundary(fineGridVertices,fineGridVerticesEnumerator);
     for (unsigned int solverNumber=0; solverNumber<solvers::RegisteredSolvers.size(); solverNumber++) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];

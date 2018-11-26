@@ -150,7 +150,7 @@ void exahype::mappings::FusedTimeStep::updateBatchIterationCounter(bool initiali
         solver->beginTimeStep(solver->getMinTimeStamp());
       }
     }
-    if ( exahype::solvers::Solver::SpawnBackgroundJobs && sendOutRiemannDataInThisIteration() ) {
+    if ( exahype::solvers::Solver::SpawnPredictionAsBackgroundJob && sendOutRiemannDataInThisIteration() ) {
       peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
     }
   }
@@ -364,7 +364,7 @@ void exahype::mappings::FusedTimeStep::leaveCell(
     }
 
     // Must be performed for all cell descriptions
-    Cell::resetNeighbourMergeFlagsAndCounters(cellInfo,fineGridVertices,fineGridVerticesEnumerator,false/*neighbourMergePerformed is reset internally*/);
+    Cell::resetNeighbourMergeFlagsAndCounters(cellInfo,fineGridVertices,fineGridVerticesEnumerator);
   }
 
   logTraceOutWith1Argument("leaveCell(...)", fineGridCell);
