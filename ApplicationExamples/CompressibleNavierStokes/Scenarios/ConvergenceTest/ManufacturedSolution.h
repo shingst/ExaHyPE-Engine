@@ -1,11 +1,3 @@
-/******************************************************************************
- *                       Code generated with sympy 1.2                        *
- *                                                                            *
- *              See http://www.sympy.org/ for more information.               *
- *                                                                            *
- *          This file is part of 'NavierStokes_ManufacturedSolution'          *
- ******************************************************************************/
-
 #ifndef NAVIERSTOKES_MANUFACTUREDSOLUTION__SOURCE__H
 #define NAVIERSTOKES_MANUFACTUREDSOLUTION__SOURCE__H
 
