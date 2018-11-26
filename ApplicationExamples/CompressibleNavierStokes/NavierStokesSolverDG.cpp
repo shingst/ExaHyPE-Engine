@@ -47,8 +47,19 @@ void NavierStokes::NavierStokesSolverDG::init(const std::vector<std::string>& cm
   scenarioName = constants.getValueAsString("scenario");
   scenario = ScenarioFactory::createScenario(scenarioName);
 
-  std::cout << referenceViscosity << " " << scenario->getGasConstant() << std::endl;
+  const auto molecularDiffusionCoeff = scenario->getMolecularDiffusionCoeff();
+  const bool useAdvection = scenario->getQ0() > 0;
+  auto numberOfNecessaryVariables =
+          1 + DIMENSIONS + 1;
+  if (useAdvection) {
+    ++numberOfNecessaryVariables;
+  }
+  if (NumberOfVariables != numberOfNecessaryVariables) {
+    throw -1;
+  }
+
   ns = PDE(referenceViscosity, *scenario);
+
 }
 
 void NavierStokes::NavierStokesSolverDG::adjustPointSolution(const double* const x,const double t,const double dt,double* Q) {
@@ -57,7 +68,6 @@ void NavierStokes::NavierStokesSolverDG::adjustPointSolution(const double* const
     scenario->initialValues(x, ns, vars);
     for (int i = 0; i < vars.variables(); ++i) {
       assertion2(std::isfinite(Q[i]), i, Q[i]);
-
     }
   }
 }
@@ -99,20 +109,13 @@ void NavierStokes::NavierStokesSolverDG::boundaryValues(const double* const x,co
       std::fill(curStateOut.begin(), curStateOut.end(), 0.0);
       std::fill(gradStateOut.begin(), gradStateOut.end(), 0.0);
 
-      // TODO(Lukas) Do I actually need to change this to Lobatto nodes for time?
-#if defined(_GLL)
-      //const double weight = kernels::gaussLobattoWeights[Order][i];
       const double weight = kernels::gaussLegendreWeights[Order][i];
-#else
-      const double weight = kernels::gaussLegendreWeights[Order][i];
-#endif
       const double xi = kernels::gaussLegendreNodes[Order][i];
       const double ti = t + xi * dt;
 
       scenario->analyticalSolution(x, ti, ns, curVarsOut, gradStateOut.data());
 
-      //flux(curStateOut.data(), gradStateOut.data(), F);
-      ns.evaluateFlux(curStateOut.data(), gradStateOut.data(), F, true);
+      ns.evaluateFlux(curStateOut.data(), gradStateOut.data(), F);
 
       for (int j = 0; j < NumberOfVariables; ++j) {
         stateOut[j] += weight * curStateOut[j];
@@ -138,6 +141,10 @@ void NavierStokes::NavierStokesSolverDG::boundaryValues(const double* const x,co
 #if DIMENSIONS == 3
   varsOut.j(2) = -varsIn.j(2);
 #endif
+  // TODO(Lukas) Refactor these checks.
+  if (scenario->getQ0() > 0) {
+    varsOut[NumberOfVariables-1] = varsIn[NumberOfVariables-1];
+  }
 
   // Extrapolate gradient.
   std::copy_n(gradStateIn, gradSize, gradStateOut.data());
@@ -159,8 +166,20 @@ void NavierStokes::NavierStokesSolverDG::boundaryValues(const double* const x,co
     const auto posZ = x[2];
 #endif
 
+    // In case of flow over a background state that is in hydrostatic equilibrium
+    // it becomes necessary to reconstruct the temperature diffusion flux and
+    // the energy. Otherwise a small temperature boundary layer forms.
     const double equilibriumTemperatureGradient = computeHydrostaticTemperatureGradient(ns, g, posZ,
             backgroundPotTemperature);
+
+    // TODO(Lukas) Also reconstruct energy?
+    const auto pressure = computeHydrostaticPressure(ns, g, posZ, backgroundPotTemperature);
+    const auto T = potentialTToT(ns, pressure, backgroundPotTemperature);
+    const auto rho = pressure / (ns.gasConstant * T);
+    // TODO(Lukas) Is this also an accurate reconstruction for advection-scenarios?
+    const auto E = ns.evaluateEnergy(rho, pressure, varsOut.j(), ns.getZ(stateIn));
+    varsOut.E() = E;
+    varsOut.rho() = rho;
 
     // Use no viscous effects and use equilibrium temperature gradient.
     ns.evaluateFlux(stateOut, gradStateOut.data(), F, false, true, equilibriumTemperatureGradient);
@@ -180,7 +199,9 @@ exahype::solvers::Solver::RefinementControl NavierStokes::NavierStokesSolverDG::
     const int level) {
   const bool isAmrScenario =
           scenarioName == "two-bubbles" ||
-          scenarioName == "density-current";
+          scenarioName == "density-current" ||
+          scenarioName == "taylor-green" ||
+          scenarioName == "coupling-test";
   if (!isAmrScenario || DIMENSIONS != 2) {
     return exahype::solvers::Solver::RefinementControl::Keep;
   }
@@ -202,11 +223,11 @@ exahype::solvers::Solver::RefinementControl NavierStokes::NavierStokesSolverDG::
   const auto varianceGlobal = (countGlobal - 1)/countGlobal * _globalObservables[1];
   const auto stdGlobal = std::sqrt(varianceGlobal);
 
-  const auto factorRefine = 2.0;
-  const auto factorCoarse = 2.0;
+  const auto factorRefine = 1.0;
+  const auto factorCoarse = 0.5;
 
   const auto hi = meanGlobal + factorRefine * stdGlobal;
-  const auto lo = meanGlobal - factorCoarse * stdGlobal;
+  const auto lo = meanGlobal + factorCoarse * stdGlobal;
 
   if (curTv > hi) {
     return exahype::solvers::Solver::RefinementControl::Refine;
@@ -239,14 +260,14 @@ void NavierStokes::NavierStokesSolverDG::viscousFlux(const double *const Q, cons
 }
 
 double NavierStokes::NavierStokesSolverDG::stableTimeStepSize(const double* const luh, const tarch::la::Vector<DIMENSIONS,double>& dx) {
+  // TODO(Lukas) Integrate diffusive time step size into standard timestep size!
   return (0.7/0.9) * stableDiffusiveTimeStepSize<NavierStokesSolverDG>(*static_cast<NavierStokesSolverDG*>(this),luh,dx);
-  //return kernels::aderdg::generic::c::stableTimeStepSize<NavierStokesSolverDG, true>(*static_cast<NavierStokesSolverDG*>(this),luh,dx);
 }
 
 void NavierStokes::NavierStokesSolverDG::riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double dt,const tarch::la::Vector<DIMENSIONS, double>& lengthScale, const int direction, bool isBoundaryFace, int faceIndex) {
   assertion2(direction>=0,dt,direction);
   assertion2(direction<DIMENSIONS,dt,direction);
-  //kernels::aderdg::generic::c::riemannSolverNonlinear<false, NavierStokesSolverDG>(*static_cast<NavierStokesSolverDG*>(this),FL,FR,QL,QR,dt,direction);
+  // TODO(Lukas) Integrate Riemann solver changes into standard solver.
   riemannSolverNonlinear<false,NavierStokesSolverDG>(*static_cast<NavierStokesSolverDG*>(this),FL,FR,QL,QR,lengthScale, dt,direction);
 
 }
@@ -286,7 +307,7 @@ void NavierStokes::NavierStokesSolverDG::boundaryConditions( double* const fluxI
     kernels::idx2 idx_F(Order + 1, NumberOfVariables);
     for (int i = 0; i < (Order + 1); ++i) {
       // Set energy flux to zero!
-      fluxIn[idx_F(i, NavierStokesSolverDG_Variables::shortcuts::E)] = 0.0; // TODO(Lukas) Is fluxIn later reused?
+      fluxIn[idx_F(i, NavierStokesSolverDG_Variables::shortcuts::E)] = 0.0;
     }
   }
 
@@ -295,29 +316,47 @@ void NavierStokes::NavierStokesSolverDG::boundaryConditions( double* const fluxI
 
 std::vector<double> NavierStokes::NavierStokesSolverDG::mapGlobalObservables(const double *const Q,
         const tarch::la::Vector<DIMENSIONS,double>& dx) const {
+ if (NumberOfGlobalObservables == 0) return {};
+
  auto observables = resetGlobalObservables();
  // TODO(Lukas) Implement global observables for 3D!
  const auto idxQ = kernels::idx3(Order+1,Order+1,NumberOfVariables + NumberOfParameters);
 
- auto computePotT = [this](const double *const Q) {
-   const auto vars = ReadOnlyVariables{Q};
-   const auto pressure = ns.evaluatePressure(vars.E(), vars.rho(), vars.j());
-   const auto temperature = ns.evaluateTemperature(vars.rho(), pressure);
-   return ns.evaluatePotentialTemperature(temperature, pressure);
- };
 
- const auto tv = totalVariation(Q, Order, NumberOfVariables, NumberOfParameters, dx, false, computePotT);
+ auto tv = 0.0;
+ if (scenarioName == "two-bubbles" ||
+     scenarioName == "density-current" ||
+     scenarioName == "coupling-test") {
+   auto computePotT = [this](const double *const Q) {
+     const auto vars = ReadOnlyVariables{Q};
+     const auto pressure = ns.evaluatePressure(vars.E(), vars.rho(), vars.j(), ns.getZ(Q));
+     const auto temperature = ns.evaluateTemperature(vars.rho(), pressure);
+     return ns.evaluatePotentialTemperature(temperature, pressure);
+   };
+
+   tv = totalVariation(Q, Order, NumberOfVariables, NumberOfParameters, dx, false, computePotT);
+ } else {
+   auto computeIndicator = [this](const double *const Q) {
+     const auto vars = ReadOnlyVariables{Q};
+     const auto pressure = ns.evaluatePressure(vars.E(), vars.rho(), vars.j(), ns.getZ(Q));
+     return pressure;
+   };
+   tv = totalVariation(Q, Order, NumberOfVariables, NumberOfParameters, dx, false, computeIndicator);
+ }
 
  return {tv, 0, 1};
 }
 
 std::vector<double> NavierStokes::NavierStokesSolverDG::resetGlobalObservables() const {
+  if (NumberOfGlobalObservables == 0) return {};
   return {-1.0, -1.0, 0};
 }
 
 void NavierStokes::NavierStokesSolverDG::reduceGlobalObservables(
         std::vector<double> &reducedGlobalObservables,
         const std::vector<double> &curGlobalObservables) const {
+  if (NumberOfGlobalObservables == 0) return;
+
   assertion2(reducedGlobalObservables.size() == curGlobalObservables.size(),
           reducedGlobalObservables.size(),
           curGlobalObservables.size());
