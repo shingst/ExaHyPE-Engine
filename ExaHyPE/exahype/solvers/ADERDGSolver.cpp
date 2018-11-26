@@ -2356,13 +2356,19 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegralBody(
   counter++;
   #endif
 
+  // TODO(Lukas) Change back, or refactor.
+  const auto correctorTimeStamp = cellDescription.getCorrectorTimeStamp();
+  const auto correctorTimeStepSize = cellDescription.getCorrectorTimeStepSize();
+
   fusedSpaceTimePredictorVolumeIntegral(
       lduh,lQhbnd,lGradQhbnd,lFhbnd,
       luh,
       cellDescription.getOffset()+0.5*cellDescription.getSize(),
       cellDescription.getSize(),
-      predictorTimeStamp,
-      predictorTimeStepSize);
+      //predictorTimeStamp,
+      correctorTimeStamp,
+      correctorTimeStepSize);
+      //predictorTimeStepSize);
 
   compress(cellDescription,isSkeletonCell);
 
@@ -4329,7 +4335,6 @@ exahype::solvers::ADERDGSolver::compileMessageForWorker(const int capacity) cons
   assertion1(std::isfinite(messageForWorker[2]),messageForWorker[2]);
   assertion1(std::isfinite(messageForWorker[3]),messageForWorker[3]);
 
-
   if (_timeStepping==TimeStepping::Global) {
     assertionEquals1(_minNextTimeStepSize,std::numeric_limits<double>::max(),
                      tarch::parallel::Node::getInstance().getRank());
@@ -4384,12 +4389,6 @@ void exahype::solvers::ADERDGSolver::mergeWithMasterData(const DataHeap::HeapEnt
   for (int i = 0; i < _numberOfGlobalObservables; ++i) {
     _globalObservables[i] = message[index++];
   }
-
-  const auto masterRank = tarch::parallel::Node::getInstance().getGlobalMasterRank();
-  const auto isMaster = tarch::parallel::Node::getInstance().getRank() == masterRank;
-  std::cout << tarch::parallel::Node::getInstance().getRank() <<
-  ":, ==Master: " << isMaster << " Merged with master, [0] = " << _globalObservables[0] <<
-  " Received observables[0] = " << message[7] << std::endl;
 }
 
 void exahype::solvers::ADERDGSolver::mergeWithMasterData(
