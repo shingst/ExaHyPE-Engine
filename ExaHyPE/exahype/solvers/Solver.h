@@ -264,7 +264,7 @@ namespace exahype {
   /**
    * Defines an invalid metadata entry.
    */
-  static constexpr int InvalidMetadataEntry = -1;
+  static constexpr int InvalidMetadataEntry = -10;
 
   /**
    * Defines the length of the metadata
@@ -555,13 +555,6 @@ class exahype::solvers::Solver {
     }
   } BoundaryFaceInfo;
 
-  template <typename CellDescription>
-  static void resetNeighbourMergePerformedFlags(CellDescription& p) {
-    for (int faceIndex=0; faceIndex<DIMENSIONS_TIMES_TWO; faceIndex++) {
-      p.setNeighbourMergePerformed(faceIndex,false);
-    }
-  }
-
   /**
    * TrackGridStatistics is a flag from Peano that I "misuse" here as these
    * data also are grid statistics.
@@ -634,10 +627,16 @@ class exahype::solvers::Solver {
   static int MaxNumberOfRunningBackgroundJobConsumerTasksDuringTraversal;
 
   /**
-   * Set to true if the prediction, the update and/or the fused time step
+   * Set to true if the prediction, and the first and intermediate fused time steps in
+   * a batch should be launched as background job.
+   */
+  static bool SpawnPredictionAsBackgroundJob;
+
+  /**
+   * Set to true if the update and last fused time step in a batch
    * should be launched as background job.
    */
-  static bool SpawnBackgroundJobs;
+  static bool SpawnUpdateAsBackgroundJob;
 
   /**
    * Set to true if the prolongation
@@ -1111,7 +1110,7 @@ class exahype::solvers::Solver {
   * @param receiveDanglingMessages receive dangling messages while waiting
   */
  template <typename CellDescription>
- static void waitUntilCompletedTimeStep(
+ void waitUntilCompletedTimeStep(
      const CellDescription& cellDescription,const bool waitForHighPriorityJob,const bool receiveDanglingMessages) {
    if ( !cellDescription.getHasCompletedTimeStep() ) {
      peano::datatraversal::TaskSet::startToProcessBackgroundJobs();

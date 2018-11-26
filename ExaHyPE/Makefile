@@ -233,8 +233,9 @@ ifeq ($(call tolower,$(COMPILER)),intel)
 		FCOMPILER_CFLAGS += -xMIC-AVX512 -fma
 		COMPILER_LFLAGS  += -xMIC-AVX512 -fma
 	else ifeq ($(call tolower,$(ARCHITECTURE)),skx)
-		COMPILER_CFLAGS += -xCORE-AVX512 -fma
-		COMPILER_LFLAGS += -xCORE-AVX512 -fma
+		COMPILER_CFLAGS  += -xCORE-AVX512 -fma
+		FCOMPILER_CFLAGS += -xCORE-AVX512 -fma
+		COMPILER_LFLAGS  += -xCORE-AVX512 -fma
 	else ifneq ($(call tolower,$(ARCHITECTURE)),cpu)
         $(error Unknown option for variable [ARCHITECTURE])
 	endif
@@ -573,7 +574,7 @@ header:
 	@echo mode nevertheless.
 	@echo
 	@echo The compiler variant does set various compiler and linker flags. 
-	@echo You cann supplement you own by setting the variables 
+	@echo You can supplement you own by setting the variables 
 	@echo COMPILER_CFLAGS, COMPILER_LFLAGS, FCOMPILER_CFLAGS and FCOMPILER_LFLAGS prior 
 	@echo running make.
 	@echo

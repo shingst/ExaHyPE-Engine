@@ -124,6 +124,14 @@ private:
 public:
 
   /**
+   * If this flag is set, load balancing is performed in all
+   * mesh refinement iterations not just in the initial ones.
+   *
+   * @note Is set in exahype::runners::Runner;
+   */
+   static bool DynamicLoadBalancing;
+
+  /**
    * Indicates that we perform the initial
    * mesh refinement.
    *
@@ -346,7 +354,14 @@ public:
 
 #ifdef Parallel
   /**
-   * TODO(Dominic): Add docu.
+   * Receive metadata from a neighbouring rank.
+   *
+   * This is not performed in the first iteration of 
+   * the initial mesh refinement.
+   *
+   * It has to be performed in the first iteration 
+   * of later mesh refinements as their is
+   * some refinement status spreading a-priori.
    */
   void mergeWithNeighbour(exahype::Vertex& vertex,
       const exahype::Vertex& neighbour, int fromRank,

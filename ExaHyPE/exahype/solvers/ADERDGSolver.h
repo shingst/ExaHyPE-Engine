@@ -972,10 +972,6 @@ private:
    * A job which performs a fused ADER-DG time step, i.e., it performs the solution update,
    * updates the local time stamp, and finally performs the space-time predictor commputation.
    *
-   * \note Spawning these operations as background job makes only sense if you
-   * do not plan to reduce the admissible time step size or refinement requests
-   * within a consequent reduction step.
-   *
    * TODO(Dominic): Minimise time step sizes and refinement requests per patch
    * (->transpose the typical minimisation order)
    */
@@ -984,6 +980,7 @@ private:
       ADERDGSolver&                                             _solver; // TODO not const because of kernels
       CellDescription&                                          _cellDescription;
       CellInfo                                                  _cellInfo; // copy
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> _neighbourMergePerformed; // copy
       const bool                                                _isFirstTimeStepOfBatch;
       const bool                                                _isLastTimeStepOfBatch;
       const bool                                                _isSkeletonJob;
@@ -995,6 +992,14 @@ private:
        * It further spawns a prediction job in this case in order
        * to overlap work with the reduction of time step size
        * and mesh update events.
+       *
+       * @note The state of the neighbourMergePerformed flags is used internally by
+       * some of the kernels, e.g. in order to determine where to perform a face integral.
+       * However, they have to be reset before the next iteration as they indicate on
+       * which face a Riemann solve has already been performed or not (their original usage).
+       * The flags are thus reset directly after spawning a FusedTimeStepJob.
+       * Therefore, we need to copy the neighbourMergePerformed flags when spawning
+       * a FusedTimeStep job.
        *
        * @param solver                 the spawning solver
        * @param cellDescription        a cell description
@@ -1025,10 +1030,11 @@ private:
    */
   class UpdateJob: public tarch::multicore::jobs::Job {
     private:
-      ADERDGSolver&                                              _solver; // TODO not const because of kernels
-      CellDescription&                                           _cellDescription;
-      CellInfo                                                   _cellInfo;
-      const bool                                                 _isAtRemoteBoundary;
+      ADERDGSolver&                                             _solver; // TODO not const because of kernels
+      CellDescription&                                          _cellDescription;
+      CellInfo                                                  _cellInfo;
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> _neighbourMergePerformed; // copy
+      const bool                                                _isAtRemoteBoundary;
     public:
       /**
        * Construct a UpdateJob.
@@ -1041,10 +1047,10 @@ private:
        * @param isSkeletonJob          if the cell is a skeleton cell
        */
       UpdateJob(
-        ADERDGSolver&                                              solver,
-        CellDescription&                                           cellDescription,
-        CellInfo&                                                  cellInfo,
-        const bool                                                 isAtRemoteBoundary);
+        ADERDGSolver&    solver,
+        CellDescription& cellDescription,
+        CellInfo&        cellInfo,
+        const bool       isAtRemoteBoundary);
 
       bool run() override;
       void prefetchData() override;
@@ -1187,7 +1193,9 @@ public:
    * and any refinement criterion has been evaluated before
    * calling this function.
    */
-  void updateRefinementStatus(CellDescription& cellDescription) const;
+  void updateRefinementStatus(
+      CellDescription&                                           cellDescription,
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed) const;
 
   /**
    * Construct an ADERDGSolver.
@@ -1843,7 +1851,9 @@ public:
    *
    * \note Has no const modifier since kernels are not const functions yet.
    */
-  MeshUpdateEvent evaluateRefinementCriteriaAfterSolutionUpdate(CellDescription& cellDescription);
+  MeshUpdateEvent evaluateRefinementCriteriaAfterSolutionUpdate(
+      CellDescription&                                           cellDescription,
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed);
 
   /*! Perform prediction and volume integral.
    *
@@ -2000,12 +2010,13 @@ public:
    * @param element               element in the cell description heap array
    */
   UpdateResult fusedTimeStepBody(
-        CellDescription& cellDescription,
-        CellInfo&        cellInfo,
-        const bool       isFirstTimeStepOfBatch,
-        const bool       isLastTimeStepOfBatch,
-        const bool       isSkeletonCell,
-        const bool       mustBeDoneImmediately);
+        CellDescription&                                           cellDescription,
+        CellInfo&                                                  cellInfo,
+        const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
+        const bool                                                 isFirstTimeStepOfBatch,
+        const bool                                                 isLastTimeStepOfBatch,
+        const bool                                                 isSkeletonCell,
+        const bool                                                 mustBeDoneImmediately);
 
   /**
    * If the cell description is of type Cell, update the solution, evaluate the refinement criterion,
@@ -2018,8 +2029,10 @@ public:
    * and a new time step size.
    */
   UpdateResult updateBody(
-      CellDescription& cellDescription,
-      const bool isAtRemoteBoundary);
+      CellDescription&                                           cellDescription,
+      CellInfo&                                                  cellInfo,
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
+      const bool                                                 isAtRemoteBoundary);
 
   UpdateResult fusedTimeStepOrRestrict(
       const int  solverNumber,
@@ -2061,11 +2074,11 @@ public:
    * @param[in] cellDescription         a cell description
    * @param[in] backupPreviousSolution  Set to true if the solution should be backed up before
    *                                    we overwrite it by the updated solution.
-   *
    */
   void updateSolution(
-      CellDescription& cellDescription,
-      const bool backupPreviousSolution=true);
+      CellDescription&                                           cellDescription,
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
+      const bool                                                 backupPreviousSolution);
 
   /**
    * TODO(Dominic): Update docu.
@@ -2319,7 +2332,7 @@ public:
       const tarch::la::Vector<DIMENSIONS, int>&     src,
       const tarch::la::Vector<DIMENSIONS, int>&     dest,
       const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const;
+      const int                                     level);
 
   /**
    * Sends out two empty messages, one for
@@ -2383,6 +2396,10 @@ public:
    */
   void dropNeighbourData(
       const int                                    fromRank,
+      const int                                    solverNumber,
+      Solver::CellInfo&                            cellInfo,
+      const tarch::la::Vector<DIMENSIONS, int>&    src,
+      const tarch::la::Vector<DIMENSIONS, int>&    dest,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level) const;
 
