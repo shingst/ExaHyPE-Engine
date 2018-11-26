@@ -627,10 +627,16 @@ class exahype::solvers::Solver {
   static int MaxNumberOfRunningBackgroundJobConsumerTasksDuringTraversal;
 
   /**
-   * Set to true if the prediction, the update and/or the fused time step
+   * Set to true if the prediction, and the first and intermediate fused time steps in
+   * a batch should be launched as background job.
+   */
+  static bool SpawnPredictionAsBackgroundJob;
+
+  /**
+   * Set to true if the update and last fused time step in a batch
    * should be launched as background job.
    */
-  static bool SpawnBackgroundJobs;
+  static bool SpawnUpdateAsBackgroundJob;
 
   /**
    * Set to true if the prolongation
@@ -1105,7 +1111,7 @@ class exahype::solvers::Solver {
   */
  template <typename CellDescription>
  void waitUntilCompletedTimeStep(
-     const CellDescription& cellDescription,const bool waitForHighPriorityJob,const bool receiveDanglingMessages) const {
+     const CellDescription& cellDescription,const bool waitForHighPriorityJob,const bool receiveDanglingMessages) {
    if ( !cellDescription.getHasCompletedTimeStep() ) {
      peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
    }

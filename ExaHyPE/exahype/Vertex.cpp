@@ -632,15 +632,14 @@ void exahype::Vertex::mergeOnlyWithNeighbourMetadataLoopBody(
         if ( solver->isMergingMetadata(section) ) {
           const int begin = exahype::NeighbourCommunicationMetadataPerSolver*solverNumber;
           const int end   = begin+exahype::NeighbourCommunicationMetadataPerSolver;
+          exahype::MetadataHeap::HeapEntries metadataPortion(receivedMetadata.begin()+begin,receivedMetadata.begin()+end);
 
           switch ( solver->getType() ) {
             case solvers::Solver::Type::ADERDG:
-              exahype::MetadataHeap::HeapEntries metadataPortion(receivedMetadata.begin()+begin,receivedMetadata.begin()+end);
               static_cast<solvers::ADERDGSolver*>(solver)->
                 mergeWithNeighbourMetadata(solverNumber,cellInfo,metadataPortion,src,dest);
               break;
             case solvers::Solver::Type::LimitingADERDG:
-              exahype::MetadataHeap::HeapEntries metadataPortion(receivedMetadata.begin()+begin,receivedMetadata.begin()+end);
               static_cast<solvers::LimitingADERDGSolver*>(solver)->getSolver()->
                 mergeWithNeighbourMetadata(solverNumber,cellInfo,metadataPortion,src,dest);
               break;

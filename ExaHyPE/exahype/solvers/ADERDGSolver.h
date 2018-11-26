@@ -1047,10 +1047,10 @@ private:
        * @param isSkeletonJob          if the cell is a skeleton cell
        */
       UpdateJob(
-        ADERDGSolver&                                              solver,
-        CellDescription&                                           cellDescription,
-        CellInfo&                                                  cellInfo,
-        const bool                                                 isAtRemoteBoundary);
+        ADERDGSolver&    solver,
+        CellDescription& cellDescription,
+        CellInfo&        cellInfo,
+        const bool       isAtRemoteBoundary);
 
       bool run() override;
       void prefetchData() override;
@@ -2331,7 +2331,7 @@ public:
       const tarch::la::Vector<DIMENSIONS, int>&     src,
       const tarch::la::Vector<DIMENSIONS, int>&     dest,
       const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const;
+      const int                                     level);
 
   /**
    * Sends out two empty messages, one for

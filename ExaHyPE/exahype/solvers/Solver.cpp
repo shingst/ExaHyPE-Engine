@@ -93,7 +93,9 @@ bool exahype::solvers::Solver::DisablePeanoNeighbourExchangeInTimeSteps = false;
 
 int exahype::solvers::Solver::MaxNumberOfRunningBackgroundJobConsumerTasksDuringTraversal = 0;
 
-bool exahype::solvers::Solver::SpawnBackgroundJobs = false;
+bool exahype::solvers::Solver::SpawnPredictionAsBackgroundJob = false;
+
+bool exahype::solvers::Solver::SpawnUpdateAsBackgroundJob = false;
 
 int exahype::solvers::Solver::PredictionSweeps     = 1;
 
@@ -171,7 +173,7 @@ void exahype::solvers::Solver::ensureAllJobsHaveTerminated(JobType jobType) {
 }
 
 void exahype::solvers::Solver::configurePredictionPhase(const bool usePredictionBackgroundJobs, bool useProlongationBackgroundJobs) {
-  exahype::solvers::Solver::SpawnBackgroundJobs   = usePredictionBackgroundJobs;
+  exahype::solvers::Solver::SpawnPredictionAsBackgroundJob              = usePredictionBackgroundJobs;
   exahype::solvers::Solver::SpawnProlongationAsBackgroundJob = useProlongationBackgroundJobs;
 
   #ifdef PredictionSweeps
@@ -836,15 +838,12 @@ exahype::MetadataHeap::HeapEntries exahype::gatherNeighbourCommunicationMetadata
     const int cellDescriptionsIndex,
     const tarch::la::Vector<DIMENSIONS,int>& src,
     const tarch::la::Vector<DIMENSIONS,int>& dest) {
-  assertion1(exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(cellDescriptionsIndex),cellDescriptionsIndex);
-
-  const int length =
-      exahype::solvers::RegisteredSolvers.size()*exahype::NeighbourCommunicationMetadataPerSolver;
-  exahype::MetadataHeap::HeapEntries encodedMetaData;
+  const int length = solvers::RegisteredSolvers.size()*exahype::NeighbourCommunicationMetadataPerSolver;
+  MetadataHeap::HeapEntries encodedMetaData;
   encodedMetaData.reserve(length);
 
-  for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
-    auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
+  for (unsigned int solverNumber = 0; solverNumber < solvers::RegisteredSolvers.size(); ++solverNumber) {
+    auto* solver = solvers::RegisteredSolvers[solverNumber];
 
     solver->appendNeighbourCommunicationMetadata(
         encodedMetaData,src,dest,cellDescriptionsIndex,solverNumber);

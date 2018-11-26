@@ -233,8 +233,9 @@ ifeq ($(call tolower,$(COMPILER)),intel)
 		FCOMPILER_CFLAGS += -xMIC-AVX512 -fma
 		COMPILER_LFLAGS  += -xMIC-AVX512 -fma
 	else ifeq ($(call tolower,$(ARCHITECTURE)),skx)
-		COMPILER_CFLAGS += -xCORE-AVX512 -fma
-		COMPILER_LFLAGS += -xCORE-AVX512 -fma
+		COMPILER_CFLAGS  += -xCORE-AVX512 -fma
+		FCOMPILER_CFLAGS += -xCORE-AVX512 -fma
+		COMPILER_LFLAGS  += -xCORE-AVX512 -fma
 	else ifneq ($(call tolower,$(ARCHITECTURE)),cpu)
         $(error Unknown option for variable [ARCHITECTURE])
 	endif
