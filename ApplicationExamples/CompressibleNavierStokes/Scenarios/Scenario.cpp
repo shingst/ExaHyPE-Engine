@@ -52,3 +52,10 @@ const double NavierStokes::Scenario::getGasConstant() const {
 const double NavierStokes::Scenario::getReferencePressure() const {
   return referencePressure;
 }
+
+double NavierStokes::Scenario::getMolecularDiffusionCoeff() const {
+  return 0.0; // TODO(Lukas)
+}
+double NavierStokes::Scenario::getQ0() const {
+  return 0.0; // TODO(Lukas)
+}

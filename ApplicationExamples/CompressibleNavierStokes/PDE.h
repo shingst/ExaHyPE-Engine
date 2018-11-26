@@ -23,17 +23,19 @@ public:
           double c_p, double gasConstant);
   PDE(double referenceViscosity, Scenario& scenario);
 
-  double evaluateEnergy(double rho, double pressure, const tarch::la::Vector<DIMENSIONS,double> &j) const;
+  double getZ(double const *Q) const;
+  void setZ(double *Q, double value) const;
+
+  double evaluateEnergy(double rho, double pressure, const tarch::la::Vector<DIMENSIONS,double> &j, double Z=0.0) const;
   double evaluateTemperature(double rho, double pressure) const;
   double evaluatePotentialTemperature(double temperature, double pressure) const;
   double evaluateHeatConductionCoeff(double viscosity) const;  
-  double evaluatePressure(double E, double rho, const tarch::la::Vector<DIMENSIONS,double> &j) const;
+  double evaluatePressure(double E, double rho, const tarch::la::Vector<DIMENSIONS,double> &j, double Z=0.0) const;
   double evaluateViscosity(double T) const;
   void evaluateEigenvalues(const double* const Q, const int d, double* lambda) const;
   void evaluateDiffusiveEigenvalues(const double* const Q, const int d, double* lambda) const;
   void evaluateFlux(const double* Q, const double* gradQ, double** F, bool useViscosity=true,
         bool reconstructGradT=false, double reconstructedGradT=0.0) const;
-
 
   double referenceViscosity; // [Pa s] = [kg/(ms)] Reference dynamic viscosity
   double referencePressure; // [Pa], reference pressure used by some scenarios.
@@ -41,11 +43,14 @@ public:
   double gamma; // [1] Ratio of specific heats, c_p/c_v
   double Pr; // [1] Prandtl number
 
-
   // [m^2/(s^2 K)] = [J/(kg K)]
   double c_v; // [J/(kg K)] Specific heat capacity at constant volume
   double c_p; // [J/(kg K)] Specific heat capacity at constant pressure
   double gasConstant; // [J/(kg K)] Specific gas constant
+
+  // Advection-Diffusion Part
+  double q0; // ???
+  double molecularDiffusionCoeff; // ???
 
   // Unused:
   double referenceT;

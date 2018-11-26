@@ -20,8 +20,11 @@ class TwoBubbles : public Scenario {
   };
 
  public:
+  // TODO(Lukas) Refactor?
   void initialValues(const double* const x, const PDE& ns,
                      Variables& vars) override;
+  void initialValues(const double* const x, const PDE& ns,
+                     Variables& vars, double initialZ);
 
   void source(const tarch::la::Vector<DIMENSIONS, double>& x, double t,
               const PDE& ns, const double* const Q, double* S) override;

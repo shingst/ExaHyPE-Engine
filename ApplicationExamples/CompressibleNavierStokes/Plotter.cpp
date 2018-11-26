@@ -10,6 +10,7 @@
 #include "NavierStokesSolverDG.h"
 #include "NavierStokesSolverDG_Variables.h"
 #include "PDE.h"
+#include "totalVariation.h"
 
 NavierStokes::Plotter::Plotter(NavierStokes::NavierStokesSolverDG& solver) :
         order(solver.Order), solver(&solver) {
@@ -64,7 +65,8 @@ void NavierStokes::Plotter::mapQuantities(
 
     const auto& ns = solver->ns;
 
-    const auto pressure = ns.evaluatePressure(vars.E(), vars.rho(), vars.j());
+    const auto pressure = ns.evaluatePressure(vars.E(), vars.rho(), vars.j(),
+            ns.getZ(Q));
     const auto temperature = ns.evaluateTemperature(vars.rho(), pressure);
 
     const auto potT = ns.evaluatePotentialTemperature(temperature, pressure);
@@ -73,7 +75,7 @@ void NavierStokes::Plotter::mapQuantities(
     outputQuantities[vars.Size] = potT;
   }
   auto& globalObservables = solver->getGlobalObservables();
-  if (timeStamp > 0.0) {
+  if (timeStamp > 0.0 && globalObservables.size() >= 2) {
     outputQuantities[vars.Size+1] = globalObservables[0];
     outputQuantities[vars.Size+2] = globalObservables[1];
   } else {

@@ -15,7 +15,14 @@ NavierStokes::TwoBubbles::Bubble::Bubble(const double tempDifference,
       centerZ(centerZ) {}
 
 void NavierStokes::TwoBubbles::initialValues(const double* const x,
-                                             const PDE& ns, Variables& vars) {
+                                             const PDE& ns,
+                                             Variables& vars) {
+  initialValues(x, ns, vars, 0.0);
+}
+
+void NavierStokes::TwoBubbles::initialValues(const double* const x,
+                                             const PDE& ns, Variables& vars,
+                                             double initialZ) {
   // For details see:
   // Robert (1993),
   // https://doi.org/10.1175/1520-0469(1993)050<1865:BCEWAS>2.0.CO;2
@@ -49,6 +56,8 @@ void NavierStokes::TwoBubbles::initialValues(const double* const x,
 
   double potentialT = backgroundT;
 
+  double Z = 0.0; // TODO(Lukas) Only used for coupling test!
+
   for (const auto& bubble : bubbles) {
     // Check if we are in range of the bubble.
     const auto distX = posX - bubble.centerX;
@@ -57,13 +66,15 @@ void NavierStokes::TwoBubbles::initialValues(const double* const x,
     // Inside the center of the bubble apply tempDifference without decay,
     if (distanceToCenter <= bubble.size) {
       potentialT += bubble.tempDifference;
+      Z = initialZ;
     } else {
       // Exponentially decay temperature outside of size.
       const auto d = distanceToCenter - bubble.size;
       potentialT += bubble.tempDifference *
                     std::exp(-(d * d) / (bubble.decay * bubble.decay));
+      Z = initialZ * std::exp(-(d * d) / (bubble.decay * bubble.decay));
     }
-    break;  // Only 1 bubble for now.
+    break; // TODO(Lukas) Add second bubble.
   }
 
   const double g = 9.81;  // [m/s^2]
@@ -78,7 +89,13 @@ void NavierStokes::TwoBubbles::initialValues(const double* const x,
   const auto pressure = computeHydrostaticPressure(ns, g, posZ, backgroundT);
   const auto temperature = potentialTToT(ns, pressure, potentialT);
   vars.rho() = pressure / (ns.gasConstant * temperature);
-  vars.E() = ns.evaluateEnergy(vars.rho(), pressure, vars.j());
+  vars.E() = ns.evaluateEnergy(vars.rho(), pressure, vars.j(), Z);
+  assertion4(std::isfinite(vars.rho()), vars.rho(), vars.E(), temperature, pressure);
+  assertion4(std::isfinite(vars.E()), vars.rho(), vars.E(), temperature, pressure);
+
+  if (ns.q0 > 0.0) {
+    vars[vars.size() - 1] = Z;
+  }
 }
 
 void NavierStokes::TwoBubbles::source(

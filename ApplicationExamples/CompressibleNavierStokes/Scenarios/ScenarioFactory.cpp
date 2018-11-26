@@ -9,6 +9,7 @@
 #include "Scenarios/Stokes.h"
 #include "Scenarios/TaylorGreen.h"
 #include "Scenarios/TwoBubbles.h"
+#include "Scenarios/CouplingTest.h"
 
 #include <stdexcept>
 
@@ -32,6 +33,8 @@ NavierStokes::ScenarioFactory::createScenario(const std::string& scenarioName) {
     return std::move(ScenarioPtr(new DensityCurrent()));
   } else if (scenarioName == "convergence") {
     return std::move(ScenarioPtr(new ConvergenceTest()));
+  } else if (scenarioName == "coupling-test") {
+    return std::move(ScenarioPtr(new CouplingTest()));
   }
 
   throw std::invalid_argument(scenarioName + " is not a valid scenario!");

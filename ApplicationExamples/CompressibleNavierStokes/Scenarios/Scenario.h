@@ -28,6 +28,9 @@ class Scenario {
   virtual const double getGasConstant() const;
   virtual const double getReferencePressure() const;
 
+  virtual double getMolecularDiffusionCoeff() const;
+  virtual double getQ0() const;
+
   const double gamma = 1.4;
   const double Pr = 0.7;
   const double c_v = 1;
