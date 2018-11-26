@@ -2367,8 +2367,8 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegralBody(
       cellDescription.getSize(),
       //predictorTimeStamp,
       correctorTimeStamp,
-      correctorTimeStepSize);
-      //predictorTimeStepSize);
+      //correctorTimeStepSize);
+      predictorTimeStepSize);
 
   compress(cellDescription,isSkeletonCell);
 
