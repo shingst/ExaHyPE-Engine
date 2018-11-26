@@ -161,6 +161,10 @@ class Elastic::MyElasticWaveSolver : public Elastic::AbstractMyElasticWaveSolver
     void extract_tractions_and_particle_velocity(double* n, const double* Q, double& Tx,double& Ty,double& Tz,double& vx,double& vy,double& vz );
 
 
+    // Vect PDE
+    void flux_vect(const double* const * const restrict Q, double* const * const * const restrict F, const int size);
+    void nonConservativeProduct_vect(const double* const * const Q,const double* const * const * const gradQ, double* const * const * const BgradQ, const int size);
+    void multiplyMaterialParameterMatrix_vect(const double* const * const Q, double* const * const * const rhs, const int size);
 };
 
 #endif // __MyElasticWaveSolver_CLASS_HEADER__
