@@ -162,10 +162,10 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
   }
 
   // basically a switch-case
-  if ( _parser.compareMPILoadBalancingStrategy( "greedy-naive" )) {
+  if ( _parser.compareMPILoadBalancingStrategy( "greedy_naive" )) {
     exahype::mappings::LoadBalancing::setLoadBalancingAnalysis( exahype::mappings::LoadBalancing::LoadBalancingAnalysis::Greedy );
   }
-  else if ( _parser.compareMPILoadBalancingStrategy( "greedy-regular" )) {
+  else if ( _parser.compareMPILoadBalancingStrategy( "greedy_regular" )) {
     exahype::mappings::LoadBalancing::setLoadBalancingAnalysis( exahype::mappings::LoadBalancing::LoadBalancingAnalysis::GreedyWithRegularityAnalysis );
   }
   else if ( _parser.compareMPILoadBalancingStrategy( "hotspot" )) {
