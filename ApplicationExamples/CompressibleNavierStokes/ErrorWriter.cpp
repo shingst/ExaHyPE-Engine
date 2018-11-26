@@ -6,10 +6,12 @@
 // ========================
 //   www.exahype.eu
 // ========================
+
 #include "ErrorWriter.h"
 #include "NavierStokesSolverDG_Variables.h"
 #include "kernels/GaussLegendreQuadrature.h"
 #include "kernels/KernelUtils.h"
+#include "kernels/DGBasisFunctions.h"
 
 #include "peano/utils/Loop.h"
 
@@ -37,20 +39,18 @@ void NavierStokes::ErrorWriter::plotPatch(
   constexpr int numberOfData = numberOfVariables + numberOfParameters;
   constexpr int order = NavierStokesSolverDG::Order;
   constexpr int basisSize = order + 1;
+  constexpr int quadOrder = 9;
+  constexpr int numberOfQuadPoints = quadOrder + 1;//basisSize;
   constexpr int gradSize = DIMENSIONS * numberOfVariables;
 
-#if defined(_GLL)
-  const auto& quadratureNodes = kernels::gaussLobattoNodes[order];
-  const auto& quadratureWeights = kernels::gaussLobattoWeights[order];
-#else
-  const auto& quadratureNodes = kernels::gaussLegendreNodes[order];
-  const auto& quadratureWeights = kernels::gaussLegendreWeights[order];
-#endif
+  const auto& quadratureNodes = kernels::gaussLegendreNodes[quadOrder];
+  const auto& quadratureWeights = kernels::gaussLegendreWeights[quadOrder];
+
   static_assert(DIMENSIONS == 2, "ErrorWriter only supports 2D");
   double x[2] = {0.0, 0.0};
 
   kernels::idx4 idx(basisSize, basisSize, basisSize, numberOfData);
-  dfor(i, basisSize) {
+  dfor(i, numberOfQuadPoints) {
     double w_dV = 1.0;
     for (int d = 0; d < DIMENSIONS; d++) {
       x[d] = offsetOfPatch[d] +
@@ -67,14 +67,20 @@ void NavierStokes::ErrorWriter::plotPatch(
     solver->scenario->analyticalSolution(x, timeStamp, solver->ns, vars, uAnaGrad.data());
 
     const double* uNum;
-    if (DIMENSIONS == 3) {
-      uNum = u + idx(i(2), i(1), i(0), 0);
-    } else {
       uNum = u + idx(0, i(1), i(0), 0);
-    }
 
     for (int v = 0; v < numberOfVariables; v++) {
-      const double uDiff = std::abs(uNum[v] - uAna[v]);
+      const auto curAna = uAna[v];
+      // TODO(Lukas) Correct interpolation?
+      const auto curNum = kernels::interpolate(offsetOfPatch.data(),
+              sizeOfPatch.data(),
+              x,
+              numberOfData,
+              v,
+              order,
+              u);
+
+      const double uDiff = std::abs(curNum - curAna);
       errorL2[v] += uDiff * uDiff * w_dV;
       errorL1[v] += uDiff * w_dV;
       errorLInf[v] = std::max(errorLInf[v], uDiff);
@@ -116,7 +122,7 @@ void NavierStokes::ErrorWriter::finishPlotting() {
   assert(file.is_open());
 
   // TODO(Lukas) Is this enough precision?
-  const auto precision = std::numeric_limits<double>::max_digits10 + 2;
+  const auto precision = std::numeric_limits<double>::max_digits10 + 5;
 
   // Write csv header in case of new file.
   if (!isExisting) {
@@ -163,7 +169,7 @@ void NavierStokes::ErrorWriter::finishPlotting() {
               << " at time " << timeStamp << ":" << std::endl;
 
     for (int i = 0; i < numberOfVariables; ++i) {
-      std::cout << std::setprecision(3) << std::scientific << arr[i] << "\t";
+      std::cout << std::setprecision(5) << std::scientific << arr[i] << "\t";
     }
     std::cout << std::endl;
   };
