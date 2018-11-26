@@ -20,7 +20,7 @@ double* {{array}}_z[{{size}}] __attribute__((aligned(ALIGNMENT))) = { {% for n i
 {% endif %}
 double** {{array}}[{{nDim}}] __attribute__((aligned(ALIGNMENT))) = { {{array}}_x, {{array}}_y{{', '~array~'_z' if nDim==3 else ''}} };
 {% else %}{# blockedDim #}
-double {{array}}_block[{{size*vectSize}}]   __attribute__((aligned(ALIGNMENT))) = {0.};
-double* {{array}}[{{size}}]   __attribute__((aligned(ALIGNMENT))) = { {% for n in range(size-1) %}{{array}}_block+{{n*vectSize}}, {% endfor %}{{array}}_block+{{(size-1)*vectSize}} };
+double {{array}}_block[{{size*vectSize}}] __attribute__((aligned(ALIGNMENT))) = {0.};
+double* {{array}}[{{size}}] __attribute__((aligned(ALIGNMENT))) = { {% for n in range(size-1) %}{{array}}_block+{{n*vectSize}}, {% endfor %}{{array}}_block+{{(size-1)*vectSize}} };
 {% endif %}
 {% endwith %}

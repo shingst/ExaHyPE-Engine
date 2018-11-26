@@ -77,13 +77,16 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
   double doNotOptimizeAway = dudxT_by_dx[0]; // used to prevent the compiler from optimizing dudxT_by_dx away
 #endif
 {% endif %}
-{% if useFluxVect %}
-  // transposed F slice for flux_vect
+{% if useFluxVect or useNCPVect or useMaterialParamVect%}
+  // transposed F slice for flux_vect, or used by ncp_vect as gradQt
   {{m.vectPDEsArrays('Ft', nVar, True) | indent(2)}}{##}
 {% endif %}
-{% if useFluxVect %}
+{% if useFluxVect or useNCP or useMaterialParamVect%}
   // transposed Q slice for flux_vect
   {{m.vectPDEsArrays('Qt', nData, False) | indent(2)}}{##}
+{% endif %}
+{% if useNCPVect %}
+  {{m.vectPDEsArrays('ncpResult', nVar, True) | indent(2)}}{##}
 {% endif %}
 
   // 0. precompute 1/dx * dudx_T. Assume dx[0] == dx[1] == dx[2]
@@ -278,6 +281,88 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
       {{ m.matmul('gradQ_z', 'lQi', 'dudxT_by_dx', 'gradQ', '(i*'~nDof**nDim~'+xy)*'~nDataPad, '0', 'xy*'~nVarPad~'+'~2*(nDof**nDim)*nVarPad) | indent(6) }}{##}
     }
 {% endif %}
+{#
+/**
+* NCP block
+*/
+#}
+{% if useNCPVect %}
+{% set restSize = ((nDof**nDim)%vectSize) %}
+    // NCP vect
+    // use Ft as gradQt
+    {
+      for (int xyz = 0; xyz < {{nDof**nDim-restSize}}; xyz+={{vectSize}}) {
+        AoS2SoA<{{nData}}, {{nDataPad}}>(lQi+(i*{{nDof**nDim}}+xyz)*{{nDataPad}}, Qt_block);
+        AoS2SoA<{{nVar }}, {{nVarPad }}>(gradQ+xyz*{{nVarPad}},Ft_x_block);
+        AoS2SoA<{{nVar }}, {{nVarPad }}>(gradQ+xyz*{{nVarPad}}+{{1*(nDof**nDim)*nVarPad}},Ft_y_block);
+{% if nDim == 3 %}
+        AoS2SoA<{{nVar }}, {{nVarPad }}>(gradQ+xyz*{{nVarPad}}+{{2*(nDof**nDim)*nVarPad}}, Ft_z_block);
+{% endif %}
+        std::memset(ncpResult_x_block, 0, {{nVar*vectSize}}*sizeof(double)); // zero out ncpResult
+        std::memset(ncpResult_y_block, 0, {{nVar*vectSize}}*sizeof(double)); // zero out ncpResult
+{% if nDim == 3 %}
+        std::memset(ncpResult_z_block, 0, {{nVar*vectSize}}*sizeof(double)); // zero out ncpResult
+{% endif %}
+#ifdef USE_IPO
+        #pragma forceinline recursive
+#endif
+        solver.{{solverName}}::nonConservativeProduct_vect(Qt, Ft, ncpResult, {{vectSize}});
+        for(int vect_it=0; vect_it<{{vectSize}}; vect_it++){
+          #pragma omp simd aligned(lFi,ncpResult_x_block:ALIGNMENT)
+          for (int n = 0; n < {{nVarPad}}; n++) {
+            lFi[(i*{{nDof**nDim}}+(xyz+vect_it))*{{nVarPad}}+n] += ncpResult_x_block[n*{{vectSize}}+vect_it];
+          }
+          #pragma omp simd aligned(lFi,ncpResult_y_block:ALIGNMENT)
+          for (int n = 0; n < {{nVarPad}}; n++) {
+            lFi[(i*{{nDof**nDim}}+(xyz+vect_it))*{{nVarPad}}+n+{{1*(nDof**nDim)*nDof*nVarPad}}] += ncpResult_y_block[n*{{vectSize}}+vect_it];
+          }
+{% if nDim == 3 %}
+          #pragma omp simd aligned(lFi,ncpResult_z_block:ALIGNMENT)
+          for (int n = 0; n < {{nVarPad}}; n++) {
+            lFi[(i*{{nDof**nDim}}+(xyz+vect_it))*{{nVarPad}}+n+{{2*(nDof**nDim)*nDof*nVarPad}}] += ncpResult_z_block[n*{{vectSize}}+vect_it];
+          }
+{% endif %}
+        }
+      }
+{% if restSize != 0%}
+      // Rest
+      {
+        constexpr int xyz = {{nDof**nDim-restSize}};
+        AoS2SoA_rest<{{nData}}, {{nDataPad}}, {{restSize}}>(lQi+(i*{{nDof**nDim}}+xyz)*{{nDataPad}}, Qt_block);
+        AoS2SoA_rest<{{nVar }}, {{nVarPad }}, {{restSize}}>(gradQ+xyz*{{nVarPad}}, Ft_x_block);
+        AoS2SoA_rest<{{nVar }}, {{nVarPad }}, {{restSize}}>(gradQ+xyz*{{nVarPad}}+{{1*(nDof**nDim)*nVarPad}}, Ft_y_block);
+{% if nDim == 3 %}
+        AoS2SoA_rest<{{nVar }}, {{nVarPad }}, {{restSize}}>(gradQ+xyz*{{nVarPad}}+{{2*(nDof**nDim)*nVarPad}}, Ft_z_block);
+{% endif %}
+        std::memset(ncpResult_x_block, 0, {{nVar*vectSize}}*sizeof(double)); // zero out ncpResult
+        std::memset(ncpResult_y_block, 0, {{nVar*vectSize}}*sizeof(double)); // zero out ncpResult
+{% if nDim == 3 %}
+        std::memset(ncpResult_z_block, 0, {{nVar*vectSize}}*sizeof(double)); // zero out ncpResult
+{% endif %}
+#ifdef USE_IPO
+        #pragma forceinline recursive
+#endif
+        solver.{{solverName}}::nonConservativeProduct_vect(Qt, Ft, ncpResult, {{restSize}});
+        for(int vect_it=0; vect_it<{{restSize}}; vect_it++){
+          #pragma omp simd aligned(lFi,ncpResult_x_block:ALIGNMENT)
+          for (int n = 0; n < {{nVarPad}}; n++) {
+            lFi[(i*{{nDof**nDim}}+(xyz+vect_it))*{{nVarPad}}+n] += ncpResult_x_block[n*{{vectSize}}+vect_it];
+          }
+          #pragma omp simd aligned(lFi,ncpResult_y_block:ALIGNMENT)
+          for (int n = 0; n < {{nVarPad}}; n++) {
+            lFi[(i*{{nDof**nDim}}+(xyz+vect_it))*{{nVarPad}}+n+{{1*(nDof**nDim)*nDof*nVarPad}}] += ncpResult_y_block[n*{{vectSize}}+vect_it];
+          }
+{% if nDim == 3 %}
+          #pragma omp simd aligned(lFi,ncpResult_z_block:ALIGNMENT)
+          for (int n = 0; n < {{nVarPad}}; n++) {
+            lFi[(i*{{nDof**nDim}}+(xyz+vect_it))*{{nVarPad}}+n+{{2*(nDof**nDim)*nDof*nVarPad}}] += ncpResult_z_block[n*{{vectSize}}+vect_it];
+          }
+{% endif %}
+        }
+      }
+{% endif %}{# restSize !=0 #}
+    }
+{% else %}
     {
       double* G[{{nDim}}];
       double* tmpArray_ncpResult[{{nDim}}] = { tmpArray, tmpArray+{{nVarPad}}{{', tmpArray+'~2*nVarPad if nDim==3 else ''}} };
@@ -300,13 +385,58 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
         }
       }
     }
+{% endif %}{# useNCPVect #}
 {% endif %}{# useNCP #}
 
 {% if useMaterialParam %}
+{% if useMaterialParamVect %}
+{% set restSize = ((nDof**nDim)%vectSize) %}
+    //materialParam
     {
-      //materialParam
+      for (int xyz = 0; xyz < {{nDof**nDim-restSize}}; xyz+={{vectSize}}) {
+        AoS2SoA<{{nData}}, {{nDataPad}}>(lQi+(i*{{nDof**nDim}}+xyz)*{{nDataPad}}, Qt_block);
+        AoS2SoA<{{nVar }}, {{nVarPad }}>(lFi+(i*{{nDof**nDim}}+xyz)*{{nVarPad}},Ft_x_block);
+        AoS2SoA<{{nVar }}, {{nVarPad }}>(lFi+(i*{{nDof**nDim}}+xyz)*{{nVarPad}}+{{1*(nDof**nDim)*nDof*nVarPad}},Ft_y_block);
+{% if nDim == 3 %}
+        AoS2SoA<{{nVar }}, {{nVarPad }}>(lFi+(i*{{nDof**nDim}}+xyz)*{{nVarPad}}+{{2*(nDof**nDim)*nDof*nVarPad}}, Ft_z_block);
+{% endif %}
+#ifdef USE_IPO
+        #pragma forceinline recursive
+#endif
+        solver.{{solverName}}::multiplyMaterialParameterMatrix_vect(Qt, Ft, {{vectSize}});
+        SoA2AoS<{{nVar }}, {{nVarPad }}>(Ft_x_block,lFi+(i*{{nDof**nDim}}+xyz)*{{nVarPad}});
+        SoA2AoS<{{nVar }}, {{nVarPad }}>(Ft_y_block,lFi+(i*{{nDof**nDim}}+xyz)*{{nVarPad}}+{{1*(nDof**nDim)*nDof*nVarPad}});
+{% if nDim == 3 %}
+        SoA2AoS<{{nVar }}, {{nVarPad }}>(Ft_z_block,lFi+(i*{{nDof**nDim}}+xyz)*{{nVarPad}}+{{2*(nDof**nDim)*nDof*nVarPad}});
+{% endif %}
+      }
+{% if restSize != 0%}
+      // Rest
+      {
+        constexpr int xyz = {{nDof**nDim-restSize}};
+        AoS2SoA_rest<{{nDataPad}}, {{nData}}, {{restSize}}>(lQi+(i*{{nDof**nDim}}+xyz)*{{nDataPad}}, Qt_block);
+        AoS2SoA_rest<{{nVarPad }}, {{nVar }}, {{restSize}}>(lFi+(i*{{nDof**nDim}}+xyz)*{{nVarPad}},Ft_x_block);
+        AoS2SoA_rest<{{nVarPad }}, {{nVar }}, {{restSize}}>(lFi+(i*{{nDof**nDim}}+xyz)*{{nVarPad}}+{{1*(nDof**nDim)*nDof*nVarPad}},Ft_y_block);
+{% if nDim == 3 %}
+        AoS2SoA_rest<{{nVarPad }}, {{nVar }}, {{restSize}}>(lFi+(i*{{nDof**nDim}}+xyz)*{{nVarPad}}+{{2*(nDof**nDim)*nDof*nVarPad}}, Ft_z_block);
+{% endif %}
+#ifdef USE_IPO
+        #pragma forceinline recursive
+#endif
+        solver.{{solverName}}::multiplyMaterialParameterMatrix_vect(Qt, Ft, {{vectSize}});
+        SoA2AoS_rest<{{nVar }}, {{nVarPad }}, {{restSize}}>(Ft_x_block,lFi+(i*{{nDof**nDim}}+xyz)*{{nVarPad}});
+        SoA2AoS_rest<{{nVar }}, {{nVarPad }}, {{restSize}}>(Ft_y_block,lFi+(i*{{nDof**nDim}}+xyz)*{{nVarPad}}+{{1*(nDof**nDim)*nDof*nVarPad}});
+{% if nDim == 3 %}
+        SoA2AoS_rest<{{nVar }}, {{nVarPad }}, {{restSize}}>(Ft_z_block,lFi+(i*{{nDof**nDim}}+xyz)*{{nVarPad}}+{{2*(nDof**nDim)*nDof*nVarPad}});
+{% endif %}
+      }
+{% endif %}{# rest #}
+    }
+{% else %}
+    //materialParam
+    {
       double* F[{{nDim}}];
-      for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {  //TODO JMG need to copy back and forth using tmpArray, change to same paradigm as flux
+      for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {
         F[0]      = lFi+(i*{{nDof**nDim}}+xyz)*{{nVarPad}}; //x
         F[1]      = lFi+(i*{{nDof**nDim}}+xyz)*{{nVarPad}}+{{1*(nDof**nDim)*nDof*nVarPad}}; //y
 {% if nDim == 3 %}
@@ -318,6 +448,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
         solver.{{solverName}}::multiplyMaterialParameterMatrix(lQi+(i*{{nDof**nDim}}+xyz)*{{nDataPad}}, F);
       }
     }
+{% endif %}{# useMaterialParamVect #}
 {% endif %}{# useMaterialParam #}
 
 {% if useSource %}
