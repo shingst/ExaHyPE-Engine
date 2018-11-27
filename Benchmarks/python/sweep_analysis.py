@@ -26,9 +26,16 @@ lastKeyColumn=-1
 
 knownParameters  = ["architecture", "dimension"]
 
+# |      DP MFLOP/s STAT      |   9041.3374 |   68.6500 |  415.9467 |  251.1483 |
+# |    AVX DP MFLOP/s STAT    |   8052.8481 |   61.4873 |  377.0757 |  223.6902 |
+# |   AVX512 DP MFLOP/s STAT  |   5974.9405 |   45.5262 |  279.9348 |  165.9706 |
+
 metrics =  [
         ["  MFLOP/s",                   "Sum"],  # Two whitespaces are required to not find the AVX MFLOP/s by accident
         ["AVX MFLOP/s",                 "Sum"],
+        ["  DP MFLOP/s",                "Sum"],  # Two whitespaces are required to not find the AVX MFLOP/s by accident
+        ["AVX DP MFLOP/s",              "Sum"],
+        ["AVX512 DP MFLOP/s",           "Sum"],
         ["Memory bandwidth [MBytes/s]", "Sum"],
         ["Memory data volume [GBytes]", "Sum"],
         ["Local bandwidth [MByte/s]",   "Avg"],
