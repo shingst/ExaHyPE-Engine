@@ -68,6 +68,12 @@ class {{project}}::{{abstractSolver}} : public exahype::solvers::FiniteVolumesSo
     void boundaryLayerExtraction(double* luhbnd,const double* luh,const tarch::la::Vector<DIMENSIONS,int>& boundaryPosition) override;
     void boundaryConditions(double* luh,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const tarch::la::Vector<DIMENSIONS, int>& posCell,const tarch::la::Vector<DIMENSIONS, int>& posBoundary) override;
 
+    std::vector<double> mapGlobalObservables(const double* const Q, const tarch::la::Vector<DIMENSIONS, double> &dx) const override;
+    std::vector<double> resetGlobalObservables() const override;
+    void reduceGlobalObservables(
+            std::vector<double>& reducedGlobalObservables,
+            const std::vector<double>& curGlobalObservables) const override;
+    
     /// Apr 18, Coding Week: Riemann Solvers in FV. Hopefully inlined as evaluated point wise.
     double riemannSolver(double* fL, double *fR, const double* qL, const double* qR, const double* gradQL, const double* gradQR, const double* cellSize, int normalNonZero) override;
     static void constantsToString(std::ostream& os);

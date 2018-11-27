@@ -113,6 +113,20 @@ double {{project}}::{{abstractSolver}}::riemannSolver(double* fL, double *fR, co
 }
 
 
+std::vector<double> {{project}}::{{abstractSolver}}::mapGlobalObservables(const double* const Q, const tarch::la::Vector<DIMENSIONS, double> &dx) const {
+  return {};
+}
+
+std::vector<double> {{project}}::{{abstractSolver}}::resetGlobalObservables() const {
+  return {};
+}
+
+void {{project}}::{{abstractSolver}}::reduceGlobalObservables(
+	std::vector<double>& reducedGlobalObservables,
+	const std::vector<double>& curGlobalObservables) const {
+  // NOP
+}
+
 /**
  * Fallback implementations of joined functions. Users can either safely ignore this
  * or overwrite with their own implementations.

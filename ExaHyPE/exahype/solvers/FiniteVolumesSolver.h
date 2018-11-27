@@ -1060,6 +1060,11 @@ public:
   std::string toString() const override;
 
   void toString (std::ostream& out) const override;
+
+  using Solver::reduceGlobalObservables;
+  void reduceGlobalObservables(std::vector<double>& globalObservables,
+                                         int cellDescriptionIndex,
+                                         int element) const override;
 };
 
 #endif
