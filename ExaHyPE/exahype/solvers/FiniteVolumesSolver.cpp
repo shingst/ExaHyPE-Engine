@@ -2108,67 +2108,6 @@ bool exahype::solvers::FiniteVolumesSolver::CompressionJob::run() {
   return false;
 }
 
-
-exahype::solvers::FiniteVolumesSolver::FusedTimeStepJob::FusedTimeStepJob(
-  FiniteVolumesSolver&     solver,
-  CellDescription&         cellDescription,
-  const int                cellDescriptionsIndex,
-  const bool               isSkeletonJob):
-  tarch::multicore::jobs::Job(Solver::getTaskType(isSkeletonJob),0),
-  _solver(solver),
-  _cellDescription(cellDescription),
-  _cellDescriptionsIndex(cellDescriptionsIndex),
-  _isSkeletonJob(isSkeletonJob) {
-  tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  {
-    int& jobCounter = (_isSkeletonJob) ? NumberOfSkeletonJobs : NumberOfEnclaveJobs;
-    jobCounter++;
-  }
-  lock.free();
-}
-
-bool exahype::solvers::FiniteVolumesSolver::FusedTimeStepJob::run() {
-  _solver.updateBody(_cellDescription,_cellDescriptionsIndex,false,false,_isSkeletonJob,false/*uncompressBefore*/);
-  tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  {
-    int& jobCounter = (_isSkeletonJob) ? NumberOfSkeletonJobs : NumberOfEnclaveJobs;
-    jobCounter--;
-    assertion( jobCounter>=0 );
-  }
-  lock.free();
-  return false;
-}
-
-
-
-exahype::solvers::FiniteVolumesSolver::AdjustSolutionDuringMeshRefinementJob::AdjustSolutionDuringMeshRefinementJob(
-  FiniteVolumesSolver& solver,
-  CellDescription&     cellDescription,
-  const bool           isInitialMeshRefinement):
-  tarch::multicore::jobs::Job(Solver::getTaskType(false),0),
-  _solver(solver),
-  _cellDescription(cellDescription),
-  _isInitialMeshRefinement(isInitialMeshRefinement)
-{
-  tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  {
-    NumberOfAMRBackgroundJobs++;
-  }
-  lock.free();
-}
-
-bool exahype::solvers::FiniteVolumesSolver::AdjustSolutionDuringMeshRefinementJob::run() {
-  _solver.adjustSolutionDuringMeshRefinementBody(_cellDescription,_isInitialMeshRefinement);
-
-  tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  {
-    NumberOfAMRBackgroundJobs--;
-    assertion( NumberOfAMRBackgroundJobs>=0 );
-  }
-  lock.free();
-  return false;
-}
-
 void exahype::solvers::FiniteVolumesSolver::reduceGlobalObservables(std::vector<double> &globalObservables,
                                                              int cellDescriptionsIndex,
                                                              int element) const {
