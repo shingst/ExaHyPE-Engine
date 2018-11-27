@@ -1,7 +1,3 @@
-//
-// Created by lukas on 27/08/18.
-//
-
 #ifndef NAVIERSTOKES_SMOOTHWAVE_H
 #define NAVIERSTOKES_SMOOTHWAVE_H
 
@@ -9,6 +5,7 @@
 
 namespace NavierStokes {
 class SmoothWave : public Scenario {
+public:
   void initialValues(const double *const x, const PDE &ns,
                      Variables &vars) final override;
 };
