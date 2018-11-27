@@ -482,7 +482,7 @@ void GenericEulerKernelTest::testSolutionUpdate() {
     lduh[i] = i;
   }
 
-  kernels::aderdg::generic::c::solutionUpdate<GenericEulerKernelTest>(*this,luh, lduh, dt);
+  kernels::aderdg::generic::c::solutionUpdate<GenericEulerKernelTest>(*this,luh, luh, lduh, dt);
 
   for (int i = 0; i < basisSize2; i++) {
     for (int m = 0; m < nVar; m++) {

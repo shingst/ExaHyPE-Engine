@@ -70,7 +70,7 @@ def createFilterKeysToColumnIndexMapping(filterSet,columnNames):
 def tableFilter(row):
     match = True
     for key,index in filterColumnsToIndices.items():
-        match = match and row[index].startswith(rowFilter[key])
+        match = match and row[index]==rowFilter[key]
     return match
 
 def minMaxFilter(row):
@@ -113,6 +113,12 @@ def parseArgs():
     parser.add_argument("-s", "--sort", nargs="+", default=[],
         help="Specify a list of sorting key columns. Order is important. Example: ./tableslicer.py ... ... --cols fused cores --sort cores fused ")
     
+    parser.add_argument("--input-delim", dest="inputDelim", nargs="?", default=",",
+        help="Specify the delimiter used in the input table.")
+    
+    parser.add_argument("--output-delim", dest="outputDelim", nargs="?", default=",",
+        help="Specify the delimiter for the output table.")
+    
     parser.add_argument("table",
         type=argparse.FileType("r"),nargs="?",
         help="The CSV table to work with.",
@@ -141,7 +147,7 @@ if __name__ == "__main__":
     columnNames = next(args.table)
     columnNames = columnNames.strip()
     columnNames = columnNames.split(",")
-    tableData   = list(csv.reader(args.table,delimiter=","))
+    tableData   = list(csv.reader(args.table,delimiter=args.inputDelim))
     args.table.close()
    
     ##
@@ -230,7 +236,7 @@ if __name__ == "__main__":
     if args.compress:
         result,header,invariantColumns = removeInvariantColumns(result,header)
 
-    csvwriter = csv.writer(args.output)
+    csvwriter = csv.writer(args.output,delimiter=args.outputDelim.replace("\\t","\t"))
     if args.header:
         csvwriter.writerow(header)
     csvwriter.writerows(result)

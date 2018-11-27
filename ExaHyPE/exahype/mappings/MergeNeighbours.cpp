@@ -33,16 +33,21 @@ exahype::mappings::MergeNeighbours::communicationSpecification() const {
 
 peano::MappingSpecification
 exahype::mappings::MergeNeighbours::enterCellSpecification(int level) const {
-  return peano::MappingSpecification(
-      peano::MappingSpecification::WholeTree,
-      peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
+  const int coarsestSolverLevel = solvers::Solver::getCoarsestMeshLevelOfAllSolvers();
+  if ( std::abs(level)>=coarsestSolverLevel && solvers::Solver::CompressionAccuracy > 0.0 ) {
+    return peano::MappingSpecification(
+          peano::MappingSpecification::WholeTree,
+          peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
+  } else {
+    return peano::MappingSpecification(
+        peano::MappingSpecification::Nop,
+        peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
+  }
 }
 
 peano::MappingSpecification
 exahype::mappings::MergeNeighbours::touchVertexFirstTimeSpecification(int level) const {
-  return peano::MappingSpecification(
-        peano::MappingSpecification::WholeTree,
-        peano::MappingSpecification::AvoidFineGridRaces,true); // TODO(Dominic): false should work in theory
+  return Vertex::getNeighbourMergeSpecification(level);
 }
 
 /* Specifications below are all nop. */
@@ -127,14 +132,12 @@ void exahype::mappings::MergeNeighbours::enterCell(
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
     exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
-  if ( fineGridCell.isInitialised() ) {
-    solvers::Solver::CellInfo cellInfo(fineGridCell.getCellDescriptionsIndex());
+  if ( exahype::solvers::Solver::CompressionAccuracy>0.0 && fineGridCell.isInitialised() ) {
+    solvers::Solver::CellInfo cellInfo = fineGridCell.createCellInfo();
     const bool isAtRemoteBoundary = exahype::Cell::isAtRemoteBoundary(fineGridVertices,fineGridVerticesEnumerator);
-    if (exahype::solvers::Solver::CompressionAccuracy>0.0) {
-      for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
-        auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-        solver->compress(solverNumber,cellInfo,isAtRemoteBoundary);
-      }
+    for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
+      auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
+      solver->compress(solverNumber,cellInfo,isAtRemoteBoundary);
     }
   }
 }

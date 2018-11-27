@@ -55,9 +55,16 @@ exahype::mappings::UpdateAndReduce::communicationSpecification() const {
 
 peano::MappingSpecification
 exahype::mappings::UpdateAndReduce::leaveCellSpecification(int level) const {
-  return peano::MappingSpecification(
-        peano::MappingSpecification::WholeTree,
-        peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
+  const int coarsestSolverLevel = solvers::Solver::getCoarsestMeshLevelOfAllSolvers();
+  if ( std::abs(level)>=coarsestSolverLevel ) {
+    return peano::MappingSpecification(
+          peano::MappingSpecification::WholeTree,
+          peano::MappingSpecification::RunConcurrentlyOnFineGrid,true); // performs reduction
+  } else {
+    return peano::MappingSpecification(
+          peano::MappingSpecification::Nop,
+          peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
+  }
 }
 
 /**
@@ -148,6 +155,9 @@ void exahype::mappings::UpdateAndReduce::beginIteration(
 void exahype::mappings::UpdateAndReduce::endIteration(
     exahype::State& state) {
   logTraceInWith1Argument("endIteration(State)", state);
+
+  // background threads
+  exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::ReductionJob);
 
   exahype::plotters::finishedPlotting();
 
@@ -396,7 +406,7 @@ void exahype::mappings::UpdateAndReduce::leaveCell(
   logTraceInWith4Arguments("leaveCell(...)", fineGridCell,fineGridVerticesEnumerator.toString(),coarseGridCell, fineGridPositionOfCell);
 
   if (fineGridCell.isInitialised()) {
-    solvers::Solver::CellInfo cellInfo(fineGridCell.getCellDescriptionsIndex());
+    solvers::Solver::CellInfo cellInfo = fineGridCell.createCellInfo();
     const bool isAtRemoteBoundary = exahype::Cell::isAtRemoteBoundary(fineGridVertices,fineGridVerticesEnumerator);
 
     for (int solverNumber=0; solverNumber<static_cast<int>(solvers::RegisteredSolvers.size()); solverNumber++) {
@@ -432,7 +442,7 @@ void exahype::mappings::UpdateAndReduce::leaveCell(
 
     }
 
-    Cell::resetNeighbourMergeFlags(cellInfo,fineGridVertices,fineGridVerticesEnumerator);
+    Cell::resetNeighbourMergeFlagsAndCounters(cellInfo,fineGridVertices,fineGridVerticesEnumerator);
   }
   logTraceOutWith1Argument("leaveCell(...)", fineGridCell);
 }

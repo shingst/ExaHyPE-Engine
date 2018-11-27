@@ -234,16 +234,16 @@ void exahype::solvers::FiniteVolumesSolver::startNewTimeStep() {
 }
 
 void exahype::solvers::FiniteVolumesSolver::startNewTimeStepFused(
-    const bool isFirstIterationOfBatch,
-    const bool isLastIterationOfBatch) {
+    const bool isFirstTimeStepOfBatch,
+    const bool isLastTimeStepOfBatch) {
   // n-1
-   if ( isFirstIterationOfBatch ) {
+   if ( isFirstTimeStepOfBatch ) {
      _previousMinTimeStepSize  = _minTimeStepSize;
      _previousMinTimeStamp     = _minTimeStamp;
    }
    // n
    _minTimeStamp            += _minTimeStepSize;
-   if ( isLastIterationOfBatch ) {
+   if ( isLastTimeStepOfBatch ) {
      switch (_timeStepping) {
        case TimeStepping::Global:
          _minTimeStepSize        = _minNextTimeStepSize;
@@ -634,8 +634,8 @@ double exahype::solvers::FiniteVolumesSolver::startNewTimeStep(CellDescription& 
 
 double exahype::solvers::FiniteVolumesSolver::startNewTimeStepFused(
     CellDescription& cellDescription,
-    const bool isFirstIterationOfBatch, // TODOD(Dominic): same code
-    const bool isLastIterationOfBatch) {
+    const bool isFirstTimeStepOfBatch, // TODOD(Dominic): same code
+    const bool isLastTimeStepOfBatch) {
   assertion1(cellDescription.getType()==exahype::records::FiniteVolumesCellDescription::Cell,cellDescription.toString());
   double* solution = static_cast<double*>(cellDescription.getSolution());
 
@@ -643,13 +643,13 @@ double exahype::solvers::FiniteVolumesSolver::startNewTimeStepFused(
   assertion(!std::isnan(admissibleTimeStepSize));
 
   // n-1
-  if (isFirstIterationOfBatch) {
+  if (isFirstTimeStepOfBatch) {
     cellDescription.setPreviousTimeStamp(cellDescription.getTimeStamp());
     cellDescription.setPreviousTimeStepSize(cellDescription.getTimeStepSize());
   }
   // n
   cellDescription.setTimeStamp(cellDescription.getTimeStamp()+cellDescription.getTimeStepSize());
-  if (isLastIterationOfBatch) {
+  if (isLastTimeStepOfBatch) {
     cellDescription.setTimeStepSize(admissibleTimeStepSize);
   }
 
@@ -724,48 +724,55 @@ void exahype::solvers::FiniteVolumesSolver::adjustSolution(CellDescription& cell
 }
 
 exahype::solvers::Solver::UpdateResult exahype::solvers::FiniteVolumesSolver::updateBody(
-    CellDescription& cellDescription,
-    const int cellDescriptionsIndex,
-    const bool isFirstIterationOfBatch,
-    const bool isLastIterationOfBatch,
-    const bool isAtRemoteBoundary,
-    const bool uncompressBefore) {
+    CellDescription&                                           cellDescription,
+    CellInfo&                                                  cellInfo,
+    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
+    const bool                                                 isFirstTimeStepOfBatch,
+    const bool                                                 isLastTimeStepOfBatch,
+    const bool                                                 isAtRemoteBoundary,
+    const bool                                                 uncompressBefore) {
   if ( uncompressBefore ) { uncompress(cellDescription); }
 
-  updateSolution(cellDescription,cellDescriptionsIndex,isFirstIterationOfBatch);
+  updateSolution(cellDescription,neighbourMergePerformed,cellInfo._cellDescriptionsIndex,isFirstTimeStepOfBatch);
   UpdateResult result;
-  result._timeStepSize = startNewTimeStepFused(cellDescription,isFirstIterationOfBatch,isLastIterationOfBatch);
-
-  cellDescription.setHasCompletedTimeStep(true); // last step of the FV update
+  result._timeStepSize = startNewTimeStepFused(cellDescription,isFirstTimeStepOfBatch,isLastTimeStepOfBatch);
 
   compress(cellDescription,isAtRemoteBoundary);
+
+  cellDescription.setHasCompletedTimeStep(true); // last step of the FV update
   return result;
 }
 
 exahype::solvers::Solver::UpdateResult exahype::solvers::FiniteVolumesSolver::fusedTimeStepOrRestrict(
     const int solverNumber,
     CellInfo& cellInfo,
-    const bool isFirstIterationOfBatch,
-    const bool isLastIterationOfBatch,
+    const bool isFirstTimeStepOfBatch,
+    const bool isLastTimeStepOfBatch,
     const bool isAtRemoteBoundary) {
   const int element = cellInfo.indexOfFiniteVolumesCellDescription(solverNumber);
-  if ( element != NotFound ) {
-    bool isSkeletonCell = isAtRemoteBoundary;
+  if (
+      (element != NotFound) &&
+      (SpawnUpdateAsBackgroundJob || (SpawnPredictionAsBackgroundJob && !isLastTimeStepOfBatch))
+  ) {
     CellDescription& cellDescription = cellInfo._FiniteVolumesCellDescriptions[element];
-    if (
-        !SpawnPredictionAsBackgroundJob ||
-        isFirstIterationOfBatch ||
-        isLastIterationOfBatch
-    ) {
-      return updateBody(
-          cellDescription,cellInfo._cellDescriptionsIndex,
-          isFirstIterationOfBatch,isLastIterationOfBatch,isAtRemoteBoundary,false/*uncompressBefore*/);
-    } else {
-      cellDescription.setHasCompletedTimeStep(false);
-      peano::datatraversal::TaskSet( new FusedTimeStepJob( *this, cellDescription, cellInfo._cellDescriptionsIndex, isSkeletonCell ) );
-      return UpdateResult();
-    }
-  } else {
+    cellDescription.setHasCompletedTimeStep(false);
+
+    bool isSkeletonCell = isAtRemoteBoundary;
+    peano::datatraversal::TaskSet( new FusedTimeStepJob(
+        *this, cellDescription, cellInfo,
+        isFirstTimeStepOfBatch, isLastTimeStepOfBatch,
+        isSkeletonCell ) );
+    return UpdateResult();
+  }
+  else if ( element != NotFound ) {
+    CellDescription& cellDescription = cellInfo._FiniteVolumesCellDescriptions[element];
+    cellDescription.setHasCompletedTimeStep(false);
+    return updateBody(
+        cellDescription,cellInfo,cellDescription.getNeighbourMergePerformed(),
+        isFirstTimeStepOfBatch,isLastTimeStepOfBatch,isAtRemoteBoundary,false/*uncompressBefore*/);
+
+  }
+  else {
     return UpdateResult();
   }
 }
@@ -775,9 +782,19 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::FiniteVolumesSolver::up
       CellInfo&  cellInfo,
       const bool isAtRemoteBoundary){
   const int element = cellInfo.indexOfFiniteVolumesCellDescription(solverNumber);
-  if ( element!=NotFound ) {
+  if ( (element!=NotFound) && SpawnUpdateAsBackgroundJob) {
     CellDescription& cellDescription = cellInfo._FiniteVolumesCellDescriptions[element];
-    return updateBody(cellDescription,cellInfo._cellDescriptionsIndex,true,true,isAtRemoteBoundary,true/*uncompressBefore*/);
+    cellDescription.setHasCompletedTimeStep(false);
+    peano::datatraversal::TaskSet(
+        new UpdateJob(*this,cellDescription,cellInfo,isAtRemoteBoundary) );
+    return UpdateResult();
+  }
+  else if ( element!=NotFound ) {
+    CellDescription& cellDescription = cellInfo._FiniteVolumesCellDescriptions[element];
+    cellDescription.setHasCompletedTimeStep(false);
+    return updateBody(
+        cellDescription,cellInfo,cellDescription.getNeighbourMergePerformed(),
+        true,true,isAtRemoteBoundary,true/*uncompressBefore*/);
   } else {
     return UpdateResult();
   }
@@ -809,11 +826,12 @@ void exahype::solvers::FiniteVolumesSolver::adjustSolutionDuringMeshRefinement(
 }
 
 void exahype::solvers::FiniteVolumesSolver::updateSolution(
-    CellDescription& cellDescription,
-    const int cellDescriptionsIndex,
-    const bool backupPreviousSolution) {
-  assertion1( tarch::la::equals(cellDescription.getNeighbourMergePerformed(),(signed char) true) || ProfileUpdate,cellDescription.toString());
-  if ( !tarch::la::equals(cellDescription.getNeighbourMergePerformed(),(signed char) true) && !ProfileUpdate ) {
+    CellDescription&                                           cellDescription,
+    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
+    const int                                                  cellDescriptionsIndex,
+    const bool                                                 backupPreviousSolution) {
+  assertion1( tarch::la::equals(neighbourMergePerformed,static_cast<signed char>(true)) || ProfileUpdate,cellDescription.toString());
+  if ( !tarch::la::equals(neighbourMergePerformed,static_cast<signed char>(true)) && !ProfileUpdate ) {
     logError("updateSolution(...)","Not all ghost layers were copied to cell="<<cellDescription.toString());
     std::terminate();
   }
@@ -979,7 +997,7 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithBoundaryData(
     counter++;
     #endif
 
-    waitUntilCompletedTimeStep<CellDescription>(cellDescription,false,false);
+    waitUntilCompletedTimeStep<CellDescription>(cellDescription,false,false); // must be done before any other operation on the patch
 
     uncompress(cellDescription);
 
@@ -1512,15 +1530,13 @@ void exahype::solvers::FiniteVolumesSolver::validateNoNansInFiniteVolumesSolutio
     CellDescription& cellDescription,const int cellDescriptionsIndex,const char* methodTrace)  const {
   #if defined(Asserts)
   double* solution = static_cast<double*>(cellDescription.getSolution());
-  #endif
 
   dfor(i,_nodesPerCoordinateAxis+_ghostLayerWidth) {
     if (tarch::la::allSmaller(i,_nodesPerCoordinateAxis+_ghostLayerWidth)
     && tarch::la::allGreater(i,_ghostLayerWidth-1)) {
       for (int unknown=0; unknown < _numberOfVariables; unknown++) {
-        #if defined(Asserts)
         int iScalar = peano::utils::dLinearisedWithoutLookup(i,_nodesPerCoordinateAxis+2*_ghostLayerWidth)*_numberOfVariables+unknown;
-        #endif // cellDescription.getTimeStepSize()==0.0 is an initial condition
+        // cellDescription.getTimeStepSize()==0.0 is an initial condition
         assertion7(tarch::la::equals(cellDescription.getTimeStepSize(),0.0)  || std::isfinite(solution[iScalar]),
                    cellDescription.toString(),cellDescriptionsIndex,solution[iScalar],i.toString(),
                    _nodesPerCoordinateAxis,_ghostLayerWidth,
@@ -1528,6 +1544,7 @@ void exahype::solvers::FiniteVolumesSolver::validateNoNansInFiniteVolumesSolutio
       }
     }
   } // Dead code elimination should get rid of this loop if Asserts is not set.
+  #endif
 }
 
 void exahype::solvers::FiniteVolumesSolver::printFiniteVolumesSolution(
@@ -1927,7 +1944,7 @@ void exahype::solvers::FiniteVolumesSolver::compress(CellDescription& cellDescri
       cellDescription.setCompressionState(CellDescription::CurrentlyProcessed);
 
       int& jobCounter = (isSkeletonCell) ? NumberOfSkeletonJobs: NumberOfEnclaveJobs;
-      peano::datatraversal::TaskSet spawned( new CompressionJob( *this, cellDescription, jobCounter ));
+      peano::datatraversal::TaskSet ( new CompressionJob( *this, cellDescription, jobCounter ));
     }
     else {
       determineUnknownAverages(cellDescription);

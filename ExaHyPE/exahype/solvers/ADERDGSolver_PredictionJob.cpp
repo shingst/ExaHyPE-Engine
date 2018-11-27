@@ -50,12 +50,10 @@ bool exahype::solvers::ADERDGSolver::PredictionJob::run() {
 //
 void exahype::solvers::ADERDGSolver::PredictionJob::prefetchData() {
   #if defined(SharedTBB) && !defined(noTBBPrefetchesJobData)
-  const CellDescription& cellDescription = getCellDescription(_cellDescriptionsIndex,_element);
-
-  double* luh  = static_cast<double*>(cellDescription.getSolution());
-  double* lduh = static_cast<double*>(cellDescription.getUpdate());
-  double* lQhbnd = static_cast<double*>(cellDescription.getExtrapolatedPredictor());
-  double* lFhbnd = static_cast<double*>(cellDescription.getFluctuation());
+  double* luh  = static_cast<double*>(_cellDescription.getSolution());
+  double* lduh = static_cast<double*>(_cellDescription.getUpdate());
+  double* lQhbnd = static_cast<double*>(_cellDescription.getExtrapolatedPredictor());
+  double* lFhbnd = static_cast<double*>(_cellDescription.getFluctuation());
 
   _mm_prefetch(luh, _MM_HINT_NTA);
   _mm_prefetch(lduh, _MM_HINT_NTA);

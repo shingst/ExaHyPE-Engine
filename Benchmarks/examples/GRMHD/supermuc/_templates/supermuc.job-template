@@ -1,0 +1,35 @@
+#!/bin/bash
+# Mandatory parameters are:
+# time, ranks, nodes,
+# job_name, output_file, error_file, 
+# body
+# 
+# Optional parameters are:
+# tasks, coresPerRank, mail
+
+#@ job_type     = parallel
+#@ class        = {{class}}
+#@ total_tasks  = {{ranks}}
+#@ node         = {{nodes}}
+#@ island_count = {{islands}}
+#@ network.MPI = sn_all,not_shared,us 
+#@ energy_policy_tag = ExaHyPE_Euler_energy_tag
+#@ minimize_time_to_solution = yes
+#@ wall_clock_limit = {{time}}
+#@ job_name = {{job_name}}
+#@ error  =  {{error_file}}
+#@ output =  {{output_file}}
+#@ notification=complete
+#@ notify_user={{mail}}
+#@ queue
+. /etc/profile
+. /etc/profile.d/modules.sh
+module switch intel/18.0
+module switch tbb/2018
+module switch gcc/5
+
+export OMP_NUM_THREADS={{coresPerRank}}
+export MP_TASK_AFFINITY=core:{{coresPerRank}}
+
+{{body}}
+

@@ -506,8 +506,8 @@ void OptimisedKernelTest::testSolutionUpdate() {
   std::memcpy(luh_optimised, luh_generic, kernels::aderdg::optimised::converter::getLuhArraySize()*sizeof(double));
   std::memcpy(lduh_optimised, lduh_generic, kernels::aderdg::optimised::converter::getLuhArraySize()*sizeof(double));
 
-  kernels::aderdg::generic::c::solutionUpdate( luh_generic, lduh_generic, dt, _numberOfVariables, 0, _basisSize );
-  kernels::aderdg::optimised::solutionUpdate( luh_optimised, lduh_optimised, dt );
+  kernels::aderdg::generic::c::solutionUpdate( luh_generic, luh_generic, lduh_generic, dt, _numberOfVariables, 0, _basisSize );
+  kernels::aderdg::optimised::solutionUpdate( luh_optimised, luh_optimised, lduh_optimised, dt );
   
   for(int i=0; i<kernels::aderdg::optimised::converter::getLuhArraySize(); i++) {
     validateNumericalEqualsWithEps(luh_optimised[i], luh_generic[i], eps2);
