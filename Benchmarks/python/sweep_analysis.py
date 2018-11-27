@@ -12,13 +12,15 @@
 """
 import csv
 import json
-import os
+import sys,os
 import re
 import codecs
 import math
 
 import collections
 import statistics
+
+import argparse
 
 lastKeyColumn=-1
 
@@ -669,7 +671,7 @@ def parseLikwidMetrics(filePath,metrics,counters,singlecore=False):
                     segments = line.split('|')
 
                     #    |     Runtime (RDTSC) [s]    |    6.5219    |
-                    value  = float(segments[2].strip());
+                    value  = convertToFloat(segments[3].strip());
                     values = {}
                     values["Sum"] = value
                     values["Min"] = value
@@ -996,3 +998,30 @@ def parseJobStatisticsFromResultsFile(resultsFile):
                         bucket = int(math.log(num_tasks, base)) + 1
                         statsRunningConsumers[bucket] += occurences
     return environmentDict,parameterDict,statsNoOfBackgroundTasks,statsGrabbedBackgroundTasks,statsRunningConsumers
+
+
+def parseArgs():
+    parser = argparse.ArgumentParser(
+        description="A collection of parsers for analysing ExaHyPE application output.",
+            epilog="End of help message.",
+    )
+    parser.add_argument("--compress", dest="compress", action="store_true",help="Remove columns where the same value is found in every row.")
+    parser.set_defaults(compress=False)
+
+    parser.add_argument("--prefix",nargs="?",default=None, help="Specify the prefix of the sweep/ExaHyPE output files.")
+    parser.set_defaults(prefix=None)
+    
+    # subprograms
+    parser.add_argument("--parseAllMetrics", dest="parseAllMetrics", action="store_true",help="Parse all output files in the specified directory with the specified prefix.")
+    parser.set_defaults(parseAllMetrics=False)
+    
+    parser.add_argument("file",
+        type=str,help="The directory or CSV file to work with.")
+    
+    return parser.parse_args()
+
+if __name__ == "__main__":
+    args = parseArgs();
+
+    if args.parseAllMetrics and args.prefix!=None and os.path.isdir(args.file):
+        parseMetrics(args.file,args.prefix,args.compress)
