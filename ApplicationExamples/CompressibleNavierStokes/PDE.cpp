@@ -14,8 +14,9 @@ NavierStokes::PDE::PDE(double referenceViscosity, NavierStokes::Scenario &scenar
   c_p(scenario.getC_p()),
   gasConstant(scenario.getGasConstant()),
   q0(scenario.getQ0()),
-  molecularDiffusionCoeff(scenario.getMolecularDiffusionCoeff()){
-
+  molecularDiffusionCoeff(scenario.getMolecularDiffusionCoeff()),
+  useAdvection(scenario.getUseAdvection()) {
+    assertion3(q0 == 0.0 || useAdvection, q0, molecularDiffusionCoeff, useAdvection);
 }
 
 NavierStokes::PDE::PDE(double referenceViscosity, double referencePressure, double gamma, double Pr,
@@ -29,10 +30,11 @@ NavierStokes::PDE::PDE(double referenceViscosity, double referencePressure, doub
   gasConstant(gasConstant) {
     q0 = 0.0;
     molecularDiffusionCoeff = 0.0;
+    useAdvection = false;
 }
 
 double NavierStokes::PDE::getZ(double const *Q) const {
-  if (q0 > 0.0) {
+  if (useAdvection) {
     // Coupling is activated!
     const auto Z = NavierStokesSolverDG_Variables::shortcuts::E + 1;
     return Q[Z];
@@ -43,7 +45,7 @@ double NavierStokes::PDE::getZ(double const *Q) const {
 }
 
 void NavierStokes::PDE::setZ(double *Q, double value) const {
-  if (q0 > 0.0) {
+  if (useAdvection) {
     // Coupling is activated!
     const auto Z = NavierStokesSolverDG_Variables::shortcuts::E + 1;
     Q[Z] = value;
@@ -194,7 +196,7 @@ void NavierStokes::PDE::evaluateFlux(const double* Q, const double* gradQ, doubl
 
 
   // Advection-Diffusion
-  if (q0 > 0) {
+  if (useAdvection) {
     f[Z] = Q[j+0] * Q[Z] / Q[rho];
     g[Z] = Q[j+1] * Q[Z] / Q[rho];
 #if DIMENSIONS == 3

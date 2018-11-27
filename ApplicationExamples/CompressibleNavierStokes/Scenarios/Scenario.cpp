@@ -59,3 +59,8 @@ double NavierStokes::Scenario::getMolecularDiffusionCoeff() const {
 double NavierStokes::Scenario::getQ0() const {
   return 0.0; // TODO(Lukas)
 }
+
+bool NavierStokes::Scenario::getUseAdvection() const {
+  return false;
+}
+

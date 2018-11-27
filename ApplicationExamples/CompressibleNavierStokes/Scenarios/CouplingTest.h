@@ -9,8 +9,9 @@ class CouplingTest : public TwoBubbles {
 public:
   void initialValues(const double *const x, const PDE &ns,
                      Variables &vars) final override;
-  double getMolecularDiffusionCoeff() const;
-  double getQ0() const;
+  double getMolecularDiffusionCoeff() const override;
+  double getQ0() const override;
+  bool getUseAdvection() const override;
   void source(const tarch::la::Vector<DIMENSIONS, double>& x, double t,
               const PDE& ns, const double* const Q, double* S) override;
 };

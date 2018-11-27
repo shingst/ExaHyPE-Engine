@@ -93,9 +93,7 @@ void NavierStokes::TwoBubbles::initialValues(const double* const x,
   assertion4(std::isfinite(vars.rho()), vars.rho(), vars.E(), temperature, pressure);
   assertion4(std::isfinite(vars.E()), vars.rho(), vars.E(), temperature, pressure);
 
-  if (ns.q0 > 0.0) {
-    vars[vars.size() - 1] = Z;
-  }
+  ns.setZ(vars.data(), Z);
 }
 
 void NavierStokes::TwoBubbles::source(

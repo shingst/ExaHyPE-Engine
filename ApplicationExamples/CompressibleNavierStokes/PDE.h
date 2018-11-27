@@ -51,6 +51,7 @@ public:
   // Advection-Diffusion Part
   double q0; // ???
   double molecularDiffusionCoeff; // ???
+  bool useAdvection;
 
   // Unused:
   double referenceT;
