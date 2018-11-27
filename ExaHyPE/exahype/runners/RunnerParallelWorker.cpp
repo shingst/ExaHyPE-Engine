@@ -29,6 +29,7 @@
 
 #if defined(DistributedStealing)
 #include "exahype/stealing/StaticDistributor.h"
+#include "exahype/stealing/AggressiveDistributor.h"
 #include "exahype/stealing/StealingManager.h"
 #endif
 
@@ -134,7 +135,14 @@ void exahype::runners::Runner::runGlobalStep() {
   exahype::stealing::StaticDistributor::getInstance().computeNewLoadDistribution(
       exahype::mappings::FinaliseMeshRefinement::NumberOfEnclaveCells,
 	  exahype::mappings::FinaliseMeshRefinement::NumberOfSkeletonCells);
-#endif
+#elif defined(StealingStrategyAggressive)
+  logInfo("runner(...)",
+          "running global step "<<exahype::mappings::FinaliseMeshRefinement::NumberOfEnclaveCells<<
+		  ", "<<exahype::mappings::FinaliseMeshRefinement::NumberOfSkeletonCells );
+  exahype::stealing::AggressiveDistributor::getInstance().computeIdealLoadDistribution(
+      exahype::mappings::FinaliseMeshRefinement::NumberOfEnclaveCells,
+	  exahype::mappings::FinaliseMeshRefinement::NumberOfSkeletonCells);
+#endif 
 
 #endif
 

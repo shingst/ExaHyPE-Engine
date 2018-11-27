@@ -12,6 +12,7 @@
 
 #include "exahype/stealing/PerformanceMonitor.h"
 #include "exahype/stealing/DiffusiveDistributor.h"
+#include "exahype/stealing/AggressiveDistributor.h"
 #include "exahype/stealing/StealingManager.h"
 
 tarch::logging::Log  exahype::stealing::StealingAnalyser::_log( "exahype::stealing::StealingAnalyser" );
@@ -22,7 +23,8 @@ exahype::stealing::StealingAnalyser::StealingAnalyser():
   _waitForWorkerDataWatch("exahype::stealing::StealingAnalyser", "-", false,false),
   _waitForMasterDataWatch("exahype::stealing::StealingAnalyser", "-", false,false),
   _waitForOtherRank(tarch::parallel::Node::getInstance().getNumberOfNodes()),
-  _currentMaxWaitTime(0)
+  _currentMaxWaitTime(0),
+  _iterationCounter(0)
 {
   enable(true);
 }
@@ -38,12 +40,19 @@ void exahype::stealing::StealingAnalyser::enable(bool value) {
 
 
 void exahype::stealing::StealingAnalyser::beginIteration() {
+  if(_iterationCounter%2 !=0) return;
+
   _currentMaxWaitTime = 0;
   exahype::stealing::StealingManager::getInstance().resetVictimFlag(); //TODO: correct position here?
+  exahype::stealing::StealingManager::getInstance().decreaseHeat();
 }
 
 
 void exahype::stealing::StealingAnalyser::endIteration(double numberOfInnerLeafCells, double numberOfOuterLeafCells, double numberOfInnerCells, double numberOfOuterCells, double numberOfLocalCells, double numberOfLocalVertices) {
+  if(_iterationCounter%2 !=0) {
+     _iterationCounter++; 
+     return;
+  }
 
   for(int i=0; i<_waitForOtherRank.size(); i++) {
     if(i != tarch::parallel::Node::getInstance().getRank()) {
@@ -52,8 +61,15 @@ void exahype::stealing::StealingAnalyser::endIteration(double numberOfInnerLeafC
     }     
   }
   logInfo("endIteration()","submitting new wait time "<<_currentMaxWaitTime<<" to performance monitor and updating current load distribution");
+
+#if defined(StealingStrategyDiffusive)
   exahype::stealing::DiffusiveDistributor::getInstance().updateLoadDistribution(static_cast<int>(_currentMaxWaitTime*1e06));
+#elif defined(StealingStrategyAggressive)
+  exahype::stealing::AggressiveDistributor::getInstance().updateLoadDistribution(static_cast<int>(_currentMaxWaitTime*1e06));
+#endif
   exahype::stealing::PerformanceMonitor::getInstance().setCurrentLoad(static_cast<int>(_currentMaxWaitTime*1e06));
+
+  _iterationCounter++;
 }
 
 

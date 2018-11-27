@@ -904,6 +904,7 @@ private:
    */
   tbb::concurrent_hash_map<std::pair<int,int>, StealablePredictionJobData*> _mapTagRankToStolenData;
   tbb::concurrent_hash_map<int, CellDescription*> _mapTagToCellDesc;
+  tbb::concurrent_hash_map<const CellDescription*, std::pair<int,int>> _mapCellDescToTagRank;
   tbb::concurrent_hash_map<int, double*> _mapTagToMetaData;
   // Used in order to time offloaded tasks.
   tbb::concurrent_hash_map<int, double> _mapTagToOffloadTime;
@@ -2799,7 +2800,7 @@ public:
 
   static void setMaxNumberOfIprobesInProgressStealing(int maxNumIprobes);
 
-  static bool tryToReceiveTaskBack(exahype::solvers::ADERDGSolver* solver);
+  static bool tryToReceiveTaskBack(exahype::solvers::ADERDGSolver* solver, const void* cellDescription = nullptr);
   /*
    * Spawns a stealing manager job and submits it as a TBB task.
    */
@@ -2808,6 +2809,10 @@ public:
    * Tells the stealing manager job that it's time for termination.
    */
   void stopStealingManager();
+
+  int getResponsibleRankForCellDescription(const void* cellDescription);
+
+  void getResponsibleRankTagForCellDescription(const void* cellDescription, int& rank, int& tag); 
 #endif
 
 #endif

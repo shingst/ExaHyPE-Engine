@@ -1148,6 +1148,8 @@ class exahype::solvers::Solver {
   bool hasTriggeredEmergency = false;
   exahype::solvers::ADERDGSolver* solver = static_cast<exahype::solvers::ADERDGSolver*>(const_cast<exahype::solvers::Solver*>(this));
   exahype::solvers::ADERDGSolver::setMaxNumberOfIprobesInProgressStealing(1);
+  int responsibleRank = solver->getResponsibleRankForCellDescription((const void*) &cellDescription);
+  int myRank = tarch::parallel::Node::getInstance().getRank();
 #endif
 
    if ( !cellDescription.getHasCompletedTimeStep() ) {
@@ -1157,14 +1159,14 @@ class exahype::solvers::Solver {
      peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
 #if defined(DistributedStealing)
      if (this->getType()==exahype::solvers::Solver::Type::ADERDG) {
-       while(!exahype::solvers::ADERDGSolver::tryToReceiveTaskBack(solver)) {};
+       while(!exahype::solvers::ADERDGSolver::tryToReceiveTaskBack(solver, (const void*) &cellDescription) && !cellDescription.getHasCompletedTimeStep() ) {};
      }
 #endif
    }
    while ( !cellDescription.getHasCompletedTimeStep() ) {
 #if defined(DistributedStealing)
      if (this->getType()==exahype::solvers::Solver::Type::ADERDG) {
-       exahype::solvers::ADERDGSolver::tryToReceiveTaskBack(solver);
+       exahype::solvers::ADERDGSolver::tryToReceiveTaskBack(solver, (const void*) &cellDescription);
      }
 #endif
      // do some work myself
@@ -1177,15 +1179,22 @@ class exahype::solvers::Solver {
        tarch::multicore::jobs::processBackgroundJobs(1);
  
 #if defined(DistributedStealing) 
+  /*    if( !cellDescription.getHasCompletedTimeStep()
+         && tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs()<=1
+         && !hasTriggeredEmergency) {
+        logInfo("waitUntilCompletedTimeStep()","EMERGENCY?: missing from rank "<<responsibleRank);
+      }*/
+ 
        if( !cellDescription.getHasCompletedTimeStep()
-         && tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs()==1
-         && !hasTriggeredEmergency){
+         && tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs()<=1
+         && !hasTriggeredEmergency
+         && myRank!=responsibleRank){
 #ifdef USE_ITAC
 	 VT_begin(event_emergency);
 #endif
          hasTriggeredEmergency = true;
-         logInfo("waitUntilCompletedTimeStep()","EMERGENCY"); //TODO: my rank can  no longer be a critical rank and I should give away one less per victim
-         exahype::stealing::StealingManager::getInstance().triggerEmergency();
+         logInfo("waitUntilCompletedTimeStep()","EMERGENCY: missing from rank "<<responsibleRank); //TODO: my rank can  no longer be a critical rank and I should give away one less per victim
+         exahype::stealing::StealingManager::getInstance().triggerEmergencyForRank(responsibleRank);
 #ifdef USE_ITAC
 	 VT_end(event_emergency);
 #endif

@@ -4588,6 +4588,8 @@ void exahype::solvers::ADERDGSolver::submitOrSendStealablePredictionJob(Stealabl
      // we need this info when the task comes back...
      _mapTagToMetaData.insert(std::make_pair(tag, metadata));
      _mapTagToCellDesc.insert(std::make_pair(tag, &cellDescription));
+    
+     _mapCellDescToTagRank.insert(std::make_pair(&cellDescription, std::make_pair(tag, destRank)));
 
      _mapTagToOffloadTime.insert(std::make_pair(tag, -MPI_Wtime()));
      // send away
@@ -4606,6 +4608,8 @@ void exahype::solvers::ADERDGSolver::submitOrSendStealablePredictionJob(Stealabl
         sendRequests, 5, tag, destRank,
         exahype::solvers::ADERDGSolver::StealablePredictionJob::sendHandler,
 		exahype::stealing::RequestType::send, this);
+
+     //logInfo("submitOrSendStealablePredictionJob()","send away with tag "<<tag);
 
      // post receive back requests
 //     MPI_Request recvRequests[4];
@@ -4826,7 +4830,7 @@ void exahype::solvers::ADERDGSolver::progressStealing(exahype::solvers::ADERDGSo
 #endif
 }
 
-bool exahype::solvers::ADERDGSolver::tryToReceiveTaskBack(exahype::solvers::ADERDGSolver* solver) {
+bool exahype::solvers::ADERDGSolver::tryToReceiveTaskBack(exahype::solvers::ADERDGSolver* solver, const void* cellDescription) {
 
   // First, we ensure here that only one thread at a time progresses stealing
   // this attempts to avoid multithreaded MPI problems
@@ -4849,10 +4853,26 @@ bool exahype::solvers::ADERDGSolver::tryToReceiveTaskBack(exahype::solvers::ADER
     return false;
   }
 
+  int tag, srcRank, myRank;
+  myRank = tarch::parallel::Node::getInstance().getRank();
+  if(cellDescription==nullptr) {
+    tag = MPI_ANY_TAG;
+    srcRank = MPI_ANY_SOURCE; 
+  }
+  else {
+    solver->getResponsibleRankTagForCellDescription(cellDescription, srcRank, tag);
+    if(srcRank==myRank) {
+      lock.free();
+      return true;
+    }
+    //logInfo("tryToReceiveTaskBack()","probing for tag "<<tag<<" from rank "<<srcRank);
+  }
+  
+  
   int receivedTaskBack = 0;
   MPI_Status statMapped;
   MPI_Comm commMapped = exahype::stealing::StealingManager::getInstance().getMPICommunicatorMapped();
-  MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, commMapped, &receivedTaskBack, &statMapped);
+  MPI_Iprobe(srcRank, tag, commMapped, &receivedTaskBack, &statMapped);
   if(receivedTaskBack) {
       exahype::stealing::StealingManager::getInstance().setRunningAndReceivingBack();
       tbb::concurrent_hash_map<int, CellDescription*>::accessor a_tagToCellDesc;
@@ -4948,6 +4968,36 @@ void exahype::solvers::ADERDGSolver::stopStealingManager() {
 
   //assert(_stealingManagerJob != nullptr);
   //delete _stealingManagerJob;
+}
+
+int exahype::solvers::ADERDGSolver::getResponsibleRankForCellDescription(const void* cellDescription) {
+  int resultRank = -1;
+
+  tbb::concurrent_hash_map<const CellDescription*, std::pair<int, int>>::accessor a_cellDescToTagRank;
+  bool found =  _mapCellDescToTagRank.find(a_cellDescToTagRank, static_cast<const CellDescription*>(cellDescription));
+  if(found)
+    resultRank = a_cellDescToTagRank->second.second;
+  a_cellDescToTagRank.release();
+
+  if(!found) return tarch::parallel::Node::getInstance().getRank();
+
+  return resultRank;
+}
+
+void exahype::solvers::ADERDGSolver::getResponsibleRankTagForCellDescription(const void* cellDescription, int& rank, int& tag) {
+
+  tbb::concurrent_hash_map<const CellDescription*, std::pair<int, int>>::accessor a_cellDescToTagRank;
+  bool found =  _mapCellDescToTagRank.find(a_cellDescToTagRank, static_cast<const CellDescription*>(cellDescription));
+  if(found) {
+    rank = a_cellDescToTagRank->second.second;
+    tag = a_cellDescToTagRank->second.first;
+  }
+  else {
+    rank = tarch::parallel::Node::getInstance().getRank();
+    tag = -1;
+  }
+  a_cellDescToTagRank.release();
+
 }
 
 exahype::solvers::ADERDGSolver::StealablePredictionJobData::StealablePredictionJobData( ADERDGSolver& solver ) :
@@ -5294,6 +5344,13 @@ void exahype::solvers::ADERDGSolver::StealablePredictionJob::receiveBackHandler(
   static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagToCellDesc.erase(a_tagToCellDesc);
   a_tagToCellDesc.release();
   cellDescription->setHasCompletedTimeStep(true);
+  
+  tbb::concurrent_hash_map<const CellDescription*, std::pair<int,int>>::accessor a_cellDescToTagRank;
+  found =  static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapCellDescToTagRank.find(a_cellDescToTagRank, cellDescription);
+  assertion(found);
+  static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapCellDescToTagRank.erase(a_cellDescToTagRank);
+  a_cellDescToTagRank.release();
+
   tarch::multicore::Lock lock2(exahype::BackgroundJobSemaphore);
   NumberOfEnclaveJobs--;
   NumberOfRemoteJobs--;

@@ -15,7 +15,6 @@
 tarch::logging::Log exahype::stealing::DiffusiveDistributor::_log( "exahype::stealing::DiffusiveDistributor" );
 
 exahype::stealing::DiffusiveDistributor::DiffusiveDistributor() :
-  _iterationTimer("DiffusiveDistributor","IterationTimer",false),
   _zeroThreshold(10*2000)
 {
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
@@ -67,14 +66,14 @@ void exahype::stealing::DiffusiveDistributor::updateLoadDistribution(int current
       logInfo("updateLoadDistribution()", "I am a critical rank, increment, send "<<_tasksToOffload[fastestRank]<<" to rank "<<fastestRank );
     }
     else if(emergencyTriggered){
-      logInfo("updateLoadDistribution()", "I was a critical rank, but emergency event happened.");
+      logInfo("updateLoadDistribution()", "I was a critical rank, but emergency event happened."); //TODO: emergency handling in separate method
       for(int i=0; i<nnodes; i++) {
         if(i!=myRank && _tasksToOffload[i]>0) {
           _tasksToOffload[i]--;
           logInfo("updateLoadDistribution()", "decrement, send "<<_tasksToOffload[i]<<" to rank "<<i );
         }
       }
-      exahype::stealing::StealingManager::getInstance().resetEmergency();
+      //exahype::stealing::StealingManager::getInstance().resetEmergency();
     }   
   }
   else if(_tasksToOffload[slowestRank]>0) {

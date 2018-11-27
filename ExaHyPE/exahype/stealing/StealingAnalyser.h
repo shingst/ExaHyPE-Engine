@@ -37,6 +37,7 @@ class exahype::stealing::StealingAnalyser: public peano::performanceanalysis::An
     std::vector<tarch::timing::GlidingAverageMeasurement>    _waitForOtherRank;
 
     double _currentMaxWaitTime;
+    int _iterationCounter;
 
   public:
     StealingAnalyser();

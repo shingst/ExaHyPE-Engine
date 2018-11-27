@@ -5,13 +5,16 @@
 #include <unordered_set>
 #include <vector>
 #include <string>
+#include <algorithm>
 
 #include "tarch/multicore/Lock.h"
+#include "tarch/parallel/Node.h"
 
 #include "exahype/stealing/StealingProfiler.h"
 #include "exahype/stealing/StaticDistributor.h"
 #include "exahype/stealing/DynamicDistributor.h"
 #include "exahype/stealing/DiffusiveDistributor.h"
+#include "exahype/stealing/AggressiveDistributor.h"
 #include "exahype/stealing/PerformanceMonitor.h"
 
 #ifdef USE_ITAC
@@ -47,10 +50,16 @@ exahype::stealing::StealingManager::StealingManager() :
   ierr = VT_funcdef(event_name_receiveB, VT_NOCLASS, &event_progress_receiveBack); assertion(ierr==0);
 #endif
   MPI_Errhandler_set(MPI_COMM_WORLD, MPI_ERRORS_RETURN);
+
+  int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
+  _emergencyHeatMap = new double[nnodes];
+  std::fill(&_emergencyHeatMap[0], &_emergencyHeatMap[nnodes], 0);
 }
 
 exahype::stealing::StealingManager::~StealingManager()
-{}
+{
+  delete[] _emergencyHeatMap;
+}
 
 bool exahype::stealing::StealingManager::getRunningAndReceivingBack() {
 	return _runningAndReceivingBack;
@@ -359,20 +368,33 @@ bool exahype::stealing::StealingManager::isVictim() {
   return _isVictim;
 }
 
-void exahype::stealing::StealingManager::triggerEmergency() {
-  if(!_emergencyTriggered)
-    logInfo("triggerEmergency()","emergency event triggered");
-  _emergencyTriggered = true;
+void exahype::stealing::StealingManager::triggerEmergencyForRank(int rank) {
+//  if(!_emergencyTriggered) {
+//    logInfo("triggerEmergency()","emergency event triggered");
+//    _emergencyTriggered = true;
+//  }
+#ifdef StealingStrategyAggressive
+  exahype::stealing::AggressiveDistributor::getInstance().handleEmergencyOnRank(rank);
+#endif
+  _emergencyHeatMap[rank]++;
 }
+
+void exahype::stealing::StealingManager::decreaseHeat() {
+  logInfo("decreaseHeat()","decrease heat of emergency heat map");
+  int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
+  for(int i=0; i<nnodes;i++)
+    _emergencyHeatMap[i]*= 0.9;
+} 
 
 bool exahype::stealing::StealingManager::isEmergencyTriggered() {
-  return _emergencyTriggered;
+  int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
+  return !std::all_of(&_emergencyHeatMap[0], &_emergencyHeatMap[nnodes], [](double d){return d<0.5;});
 }
 
-void exahype::stealing::StealingManager::resetEmergency() {
-  logInfo("resetEmergency()","emergency flag reset");
-  _emergencyTriggered = false;
-}
+//void exahype::stealing::StealingManager::resetEmergency() {
+//  logInfo("resetEmergency()","emergency flag reset");
+//  _emergencyTriggered = false;
+//}
 
 
 bool exahype::stealing::StealingManager::selectVictimRank(int& victim) {
@@ -380,6 +402,8 @@ bool exahype::stealing::StealingManager::selectVictimRank(int& victim) {
     return exahype::stealing::StaticDistributor::getInstance().selectVictimRank(victim);
 #elif defined(StealingStrategyDiffusive)
     return exahype::stealing::DiffusiveDistributor::getInstance().selectVictimRank(victim);
+#elif defined(StealingStrategyAggressive)
+    return exahype::stealing::AggressiveDistributor::getInstance().selectVictimRank(victim);
 #else
   double remainingLoadRatio = static_cast<double> (exahype::stealing::PerformanceMonitor::getInstance().getRemainingLocalLoad())
 		  	  	  	  	  	  /

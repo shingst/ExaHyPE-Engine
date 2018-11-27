@@ -74,6 +74,7 @@ class exahype::stealing::StealingManager {
 
     std::atomic<bool> _isVictim;
     std::atomic<bool> _emergencyTriggered;
+    double  *_emergencyHeatMap;
 
     StealingManager();
     /*
@@ -158,8 +159,10 @@ class exahype::stealing::StealingManager {
     bool isVictim();
 
     bool isEmergencyTriggered();
-    void triggerEmergency();
-    void resetEmergency();
+    void triggerEmergencyForRank(int rank);
+    //void resetEmergency();
+
+    void decreaseHeat();
 
     static StealingManager& getInstance();
     virtual ~StealingManager();

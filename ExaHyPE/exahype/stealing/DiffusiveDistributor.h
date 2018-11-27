@@ -27,8 +27,6 @@ class exahype::stealing::DiffusiveDistributor {
     int _zeroThreshold;
 
   public:
-    tarch::timing::Watch _iterationTimer;
-
     static DiffusiveDistributor& getInstance();
     virtual ~DiffusiveDistributor();
 
