@@ -48,10 +48,9 @@ void NavierStokes::NavierStokesSolverDG::init(const std::vector<std::string>& cm
   scenario = ScenarioFactory::createScenario(scenarioName);
 
   const auto molecularDiffusionCoeff = scenario->getMolecularDiffusionCoeff();
-  const bool useAdvection = scenario->getQ0() > 0;
   auto numberOfNecessaryVariables =
           1 + DIMENSIONS + 1;
-  if (useAdvection) {
+  if (scenario->getUseAdvection()) {
     ++numberOfNecessaryVariables;
   }
   if (NumberOfVariables != numberOfNecessaryVariables) {
