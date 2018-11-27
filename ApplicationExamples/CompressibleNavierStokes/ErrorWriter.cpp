@@ -66,9 +66,6 @@ void NavierStokes::ErrorWriter::plotPatch(
     auto vars = Variables(uAna.data());
     solver->scenario->analyticalSolution(x, timeStamp, solver->ns, vars, uAnaGrad.data());
 
-    const double* uNum;
-      uNum = u + idx(0, i(1), i(0), 0);
-
     for (int v = 0; v < numberOfVariables; v++) {
       const auto curAna = uAna[v];
       // TODO(Lukas) Correct interpolation?
