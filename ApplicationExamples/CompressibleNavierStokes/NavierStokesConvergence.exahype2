@@ -7,15 +7,22 @@
   },
   "computational_domain": {
     "dimension": 2,
-    "end_time": 0.6,
+    "end_time": 0.15,
     "offset": [
       0.0,
       0.0
     ],
     "width": [
-      10.0,
-      10.0
+10.0, 10.0
     ]
+  },
+ "distributed_memory": {
+      "ranks_per_node": 1,
+      "load_balancing_strategy": "greedy_naive",
+      "load_balancing_type": "dynamic",
+      "node_pool_strategy": "fair",
+      "timeout": 6000,
+      "buffer_size": 1600
   },
   "shared_memory": {
     "cores": 16,
@@ -37,9 +44,9 @@
     {
       "type": "ADER-DG",
       "name": "NavierStokesSolverDG",
-      "order": 1,
+      "order": 2,
       "maximum_mesh_size": 1.1,
-      "maximum_mesh_depth": 10,
+      "maximum_mesh_depth": 0,
       "time_stepping": "global",
       "aderdg_kernel": {
         "language": "C",
@@ -75,12 +82,12 @@
       },
       "plotters": [
         {
-          "type": "vtu::Legendre::vertices::ascii",
-          "name": "Plotter",
-          "time": 0.0,
-          "repeat": 0.1,
+          "type": "user::defined ErrorWriter",
+          "name": "ErrorWriter",
+          "time": 0.1,
+          "repeat": 0.5,
           "output": "./results/solution",
-          "variables": 5
+          "variables": 4
         }
       ]
     }

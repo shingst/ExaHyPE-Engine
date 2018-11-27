@@ -17,15 +17,27 @@
       1.0
     ]
   },
+ "distributed_memory": {
+      "ranks_per_node": 1,
+      "load_balancing_strategy": "greedy_naive",
+      "load_balancing_type": "dynamic",
+      "node_pool_strategy": "fair",
+      "timeout": 6000,
+      "buffer_size": 1600
+  },
   "shared_memory": {
-    "cores": 16,
+    "cores": 1,
     "properties_file": "sharedmemory.properties",
     "autotuning_strategy": "dummy"
+  },
+  "optimisation": {
+    "fuse_algorithmic_steps": true,
+    "fuse_algorithmic_steps_factor": 0.99
   },
   "solvers": [
     {
       "type": "Finite-Volumes",
-      "patch_size": 1,
+      "patch_size": 10,
       "name": "NavierStokesSolverFV",
       "maximum_mesh_size": 0.11,
       "maximum_mesh_depth": 5,
