@@ -1150,6 +1150,7 @@ class exahype::solvers::Solver {
   exahype::solvers::ADERDGSolver::setMaxNumberOfIprobesInProgressStealing(1);
   int responsibleRank = solver->getResponsibleRankForCellDescription((const void*) &cellDescription);
   int myRank = tarch::parallel::Node::getInstance().getRank();
+  bool progress = false;
 #endif
 
    if ( !cellDescription.getHasCompletedTimeStep() ) {
@@ -1158,15 +1159,15 @@ class exahype::solvers::Solver {
 #endif
      peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
 #if defined(DistributedStealing)
-     if (this->getType()==exahype::solvers::Solver::Type::ADERDG) {
-       while(!exahype::solvers::ADERDGSolver::tryToReceiveTaskBack(solver, (const void*) &cellDescription) && !cellDescription.getHasCompletedTimeStep() ) {};
+     if (this->getType()==exahype::solvers::Solver::Type::ADERDG && responsibleRank!=myRank) {
+       exahype::solvers::ADERDGSolver::tryToReceiveTaskBack(solver) ;
      }
 #endif
    }
    while ( !cellDescription.getHasCompletedTimeStep() ) {
 #if defined(DistributedStealing)
-     if (this->getType()==exahype::solvers::Solver::Type::ADERDG) {
-       exahype::solvers::ADERDGSolver::tryToReceiveTaskBack(solver, (const void*) &cellDescription);
+     if (this->getType()==exahype::solvers::Solver::Type::ADERDG && responsibleRank!=myRank) {
+       progress= exahype::solvers::ADERDGSolver::tryToReceiveTaskBack(solver);
      }
 #endif
      // do some work myself
@@ -1186,9 +1187,11 @@ class exahype::solvers::Solver {
       }*/
  
        if( !cellDescription.getHasCompletedTimeStep()
-         && tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs()<=1
+         && tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs()==1
          && !hasTriggeredEmergency
-         && myRank!=responsibleRank){
+         && myRank!=responsibleRank
+         && !progress
+         && !exahype::stealing::StealingManager::getInstance().getRunningAndReceivingBack()){
 #ifdef USE_ITAC
 	 VT_begin(event_emergency);
 #endif

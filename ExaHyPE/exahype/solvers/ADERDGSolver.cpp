@@ -4666,6 +4666,7 @@ void exahype::solvers::ADERDGSolver::progressStealing(exahype::solvers::ADERDGSo
   VT_begin(event_progress);
 #endif
 
+  exahype::stealing::StealingManager::getInstance().setRunningAndReceivingBack();
   // 1. send away outstanding tasks (decision to offload them has been made)
 //  OffloadEntry entry;
 //  bool gotOne = _outstandingOffloads.try_pop(entry);
@@ -4748,7 +4749,7 @@ void exahype::solvers::ADERDGSolver::progressStealing(exahype::solvers::ADERDGSo
   while( (receivedTask || receivedTaskBack) && iprobesCounter<MaxIprobesInStealingProgress ) {
     iprobesCounter++;
     if(receivedTaskBack) {
-          exahype::stealing::StealingManager::getInstance().setRunningAndReceivingBack();
+
           tbb::concurrent_hash_map<int, CellDescription*>::accessor a_tagToCellDesc;
           bool found = solver->_mapTagToCellDesc.find(a_tagToCellDesc, statMapped.MPI_TAG);
           assertion(found);
@@ -4770,7 +4771,7 @@ void exahype::solvers::ADERDGSolver::progressStealing(exahype::solvers::ADERDGSo
           exahype::stealing::RequestType::receiveBack, solver, true);
      }
      else {
-        exahype::stealing::StealingManager::getInstance().resetRunningAndReceivingBack();
+       // exahype::stealing::StealingManager::getInstance().resetRunningAndReceivingBack();
      }
      MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, commMapped, &receivedTaskBack, &statMapped);
      if(receivedTask) {
@@ -4810,6 +4811,7 @@ void exahype::solvers::ADERDGSolver::progressStealing(exahype::solvers::ADERDGSo
     }
   }
   // now, a different thread can progress the stealing
+  exahype::stealing::StealingManager::getInstance().resetRunningAndReceivingBack();
   lock.free();
 
 #if defined(PerformanceAnalysisStealing)
@@ -4850,7 +4852,7 @@ bool exahype::solvers::ADERDGSolver::tryToReceiveTaskBack(exahype::solvers::ADER
       );
     }
 #endif
-    return false;
+    return true;
   }
 
   int tag, srcRank, myRank;
@@ -4863,7 +4865,7 @@ bool exahype::solvers::ADERDGSolver::tryToReceiveTaskBack(exahype::solvers::ADER
     solver->getResponsibleRankTagForCellDescription(cellDescription, srcRank, tag);
     if(srcRank==myRank) {
       lock.free();
-      return true;
+      return false;
     }
     //logInfo("tryToReceiveTaskBack()","probing for tag "<<tag<<" from rank "<<srcRank);
   }
@@ -4895,11 +4897,12 @@ bool exahype::solvers::ADERDGSolver::tryToReceiveTaskBack(exahype::solvers::ADER
         recvRequests, 4, statMapped.MPI_TAG, statMapped.MPI_SOURCE,
       exahype::solvers::ADERDGSolver::StealablePredictionJob::receiveBackHandler,
       exahype::stealing::RequestType::receiveBack, solver, true);
+      return true;
   }
 
   // now, a different thread can progress the stealing
   lock.free();
-  return true;
+  return false;
 }
 
 
