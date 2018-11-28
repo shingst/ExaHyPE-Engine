@@ -276,13 +276,14 @@ double kernels::finitevolumes::musclhancock::c::solutionUpdate(
 
   // 5. Evolve, evaluate source, update cells
   if(useNCP || useSource) {
-    double ws[numberOfVariables]  = {0.0};
+    double ws [numberOfData]      = {0.0};
     double src[numberOfVariables] = {0.0};
 
     for (int j = patchBegin; j < patchEnd; j++) {
       for (int k = patchBegin; k < patchEnd; k++) {
+        std::copy_n(luhOld + idx(j,k,0),numberOfData,ws); // copy the material parameters over
         for (int l = 0; l < numberOfVariables; l++) {
-          ws[l] = luhOld[idx(j,k,l)] + 0.5 * dt * slopet[idx_w(j,k,l)]; // idx_w ~ idx_slopet
+          ws[l] += 0.5 * dt * slopet[idx_w(j,k,l)]; // idx_w ~ idx_slopet
         }
 
         double* gradQ = slope + idx_slope(j, k, 0, 0); // const in time
