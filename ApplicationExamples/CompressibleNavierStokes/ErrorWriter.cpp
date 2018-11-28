@@ -8,7 +8,6 @@
 // ========================
 
 #include "ErrorWriter.h"
-#include "NavierStokesSolverDG_Variables.h"
 #include "kernels/GaussLegendreQuadrature.h"
 #include "kernels/KernelUtils.h"
 #include "kernels/DGBasisFunctions.h"
@@ -25,7 +24,7 @@
 
 #include "PDE.h"
 
-NavierStokes::ErrorWriter::ErrorWriter(NavierStokesSolverDG& solver)
+NavierStokes::ErrorWriter::ErrorWriter(NavierStokesSolver_ADERDG& solver)
     : solver(&solver),
     exahype::plotters::ADERDG2UserDefined::ADERDG2UserDefined(),
       hmin(std::numeric_limits<double>::max()) {}
@@ -34,10 +33,10 @@ void NavierStokes::ErrorWriter::plotPatch(
     const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
     const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* u,
     double timeStamp) {
-  constexpr int numberOfVariables = NavierStokesSolverDG::NumberOfVariables;
-  constexpr int numberOfParameters = NavierStokesSolverDG::NumberOfParameters;
+  constexpr int numberOfVariables = NavierStokesSolver_ADERDG::NumberOfVariables;
+  constexpr int numberOfParameters = NavierStokesSolver_ADERDG::NumberOfParameters;
   constexpr int numberOfData = numberOfVariables + numberOfParameters;
-  constexpr int order = NavierStokesSolverDG::Order;
+  constexpr int order = NavierStokesSolver_ADERDG::Order;
   constexpr int basisSize = order + 1;
   constexpr int quadOrder = 9;
   constexpr int numberOfQuadPoints = quadOrder + 1;//basisSize;
@@ -103,7 +102,7 @@ void NavierStokes::ErrorWriter::startPlotting(double time) {
 
 void NavierStokes::ErrorWriter::finishPlotting() {
   constexpr int numberOfVariables =
-      AbstractNavierStokesSolverDG::NumberOfVariables;
+      AbstractNavierStokesSolver_ADERDG::NumberOfVariables;
 
   // Check whether our file exists already.
   const bool isExisting = [&]() -> bool {
@@ -133,7 +132,7 @@ void NavierStokes::ErrorWriter::finishPlotting() {
 
   auto plotRow = [&](const std::string& normType, const Array_t arr) {
     file << std::setprecision(precision) << std::fixed << normType << ","
-         << AbstractNavierStokesSolverDG::Order << "," << hmin << ",";
+         << AbstractNavierStokesSolver_ADERDG::Order << "," << hmin << ",";
 
     for (int i = 0; i < numberOfVariables; ++i) {
       file << std::setprecision(precision) << std::fixed << arr[i] << ",";
@@ -162,7 +161,7 @@ void NavierStokes::ErrorWriter::finishPlotting() {
   // Now pretty print for console:
   auto prettyPrintRow = [&](const std::string& normType, const Array_t arr) {
     std::cout << normType << "-Error for order "
-              << AbstractNavierStokesSolverDG::Order << " and hmin of " << hmin
+              << AbstractNavierStokesSolver_ADERDG::Order << " and hmin of " << hmin
               << " at time " << timeStamp << ":" << std::endl;
 
     for (int i = 0; i < numberOfVariables; ++i) {

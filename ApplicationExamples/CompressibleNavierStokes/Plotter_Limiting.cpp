@@ -5,31 +5,34 @@
 // ========================
 //   www.exahype.eu
 // ========================
-#include "Plotter.h"
+#include "Plotter_Limiting.h"
 #include <kernels/GaussLegendreQuadrature.h>
-#include "NavierStokesSolver_ADERDG.h"
+#include "NavierStokesSolver.h"
 #include "NavierStokesSolver_ADERDG_Variables.h"
 #include "PDE.h"
 #include "totalVariation.h"
 
-NavierStokes::Plotter::Plotter(NavierStokes::NavierStokesSolver_ADERDG& solver) :
-        order(solver.Order), solver(&solver) {
-
+NavierStokes::Plotter_Limiting::Plotter_Limiting(NavierStokes::NavierStokesSolver& solver) :
+        // TODO(Lukas) Remove order!
+        order(0),
+        // TODO(Lukas) This ain't nice.
+        solver(const_cast<NavierStokesSolver_ADERDG*>(
+               static_cast<const NavierStokesSolver_ADERDG*>(&*solver.getSolver()))) {
 }
 
-NavierStokes::Plotter::~Plotter() {
+NavierStokes::Plotter_Limiting::~Plotter_Limiting() {
 }
 
-void NavierStokes::Plotter::startPlotting( double time) {
+void NavierStokes::Plotter_Limiting::startPlotting( double time) {
   // @TODO Please insert your code here.
 }
 
 
-void NavierStokes::Plotter::finishPlotting() {
+void NavierStokes::Plotter_Limiting::finishPlotting() {
   // @TODO Please insert your code here.
 }
 
-void NavierStokes::Plotter::mapQuantities(
+void NavierStokes::Plotter_Limiting::mapQuantities(
     const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
     const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch,
     const tarch::la::Vector<DIMENSIONS, double>& x,
@@ -74,16 +77,4 @@ void NavierStokes::Plotter::mapQuantities(
     // Write potential temperature
     outputQuantities[vars.Size] = potT;
   }
-  auto& globalObservables = solver->getGlobalObservables();
-  if (timeStamp > 0.0 && globalObservables.size() >= 2) {
-    outputQuantities[vars.Size+1] = globalObservables[0];
-    outputQuantities[vars.Size+2] = globalObservables[1];
-  } else {
-    outputQuantities[vars.Size+1] = 0.0;
-    outputQuantities[vars.Size+2] = 0.0;
-  }
-
-
-
-
 }

@@ -11,7 +11,7 @@
 // ========================
 
 #include <ostream>
-#include "AbstractNavierStokesSolverDG.h"
+#include "AbstractNavierStokesSolver_ADERDG.h"
 #include <string>
 #include "Scenarios/Scenario.h"
 
@@ -25,10 +25,10 @@
 #include "PDE.h"
 
 namespace NavierStokes{
-  class NavierStokesSolverDG;
+  class NavierStokesSolver_ADERDG;
 }
 
-class NavierStokes::NavierStokesSolverDG : public NavierStokes::AbstractNavierStokesSolverDG {
+class NavierStokes::NavierStokesSolver_ADERDG : public NavierStokes::AbstractNavierStokesSolver_ADERDG {
   private:
     /**
      * Log device
@@ -37,7 +37,7 @@ class NavierStokes::NavierStokesSolverDG : public NavierStokes::AbstractNavierSt
   public:
     std::unique_ptr<Scenario> scenario;
     std::string scenarioName;
-    NavierStokesSolverDG(
+    NavierStokesSolver_ADERDG(
         const double maximumMeshSize,
         const int maximumMeshDepth,
         const int haloCells,
@@ -111,6 +111,16 @@ class NavierStokes::NavierStokesSolverDG : public NavierStokes::AbstractNavierSt
           const double t,const double dt,
           const int direction,
           const int orientation);
+
+  void mapDiscreteMaximumPrincipleObservables(double* observables,const int numberOfObservables,const double* const Q) const override;
+
+  bool isPhysicallyAdmissible(
+     const double* const solution,
+     const double* const observablesMin,const double* const observablesMax,
+     const bool wasTroubledInPreviousTimeStep,
+     const tarch::la::Vector<DIMENSIONS,double>& center,
+     const tarch::la::Vector<DIMENSIONS,double>& dx,
+     const double t, const double dt) const override;
 
     /**
      * Evaluate the refinement criterion within a cell.

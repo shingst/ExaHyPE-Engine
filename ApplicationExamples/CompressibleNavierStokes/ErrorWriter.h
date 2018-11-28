@@ -7,7 +7,7 @@
 #ifndef ErrorWriter_CLASS_HEADER_
 #define ErrorWriter_CLASS_HEADER_
 
-#include "NavierStokesSolverDG.h"
+#include "NavierStokesSolver_ADERDG.h"
 #include "exahype/plotters/ADERDG2UserDefined.h"
 #include <array>
 
@@ -20,9 +20,9 @@ class NavierStokes::ErrorWriter : public exahype::plotters::ADERDG2UserDefined {
   double timeStamp;
   std::string filename;
   bool isMpi;
-  NavierStokesSolverDG* solver;
+  NavierStokesSolver_ADERDG* solver;
 
-  using Array_t = std::array<double, NavierStokesSolverDG::NumberOfVariables>;
+  using Array_t = std::array<double, NavierStokesSolver_ADERDG::NumberOfVariables>;
   double hmin;
   Array_t errorL1, errorL2, errorLInf;
   Array_t normL1Ana, normL2Ana, normLInfAna;
@@ -39,7 +39,7 @@ class NavierStokes::ErrorWriter : public exahype::plotters::ADERDG2UserDefined {
    * you if you use user defined plotting. You have
    * to declare and manage such member variables yourself.
    */
-  ErrorWriter(NavierStokesSolverDG& solver);
+  ErrorWriter(NavierStokesSolver_ADERDG& solver);
 
   /**
    * This method is invoked every time a cell

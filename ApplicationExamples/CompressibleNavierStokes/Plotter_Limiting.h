@@ -4,20 +4,21 @@
 // ========================
 //   www.exahype.eu
 // ========================
-#ifndef POSTPROCESSING_Plotter_CLASS_HEADER_
-#define POSTPROCESSING_Plotter_CLASS_HEADER_
+#ifndef POSTPROCESSING_PlotterLimiting_CLASS_HEADER_
+#define POSTPROCESSING_PlotterLimiting_CLASS_HEADER_
 
 #include "exahype/plotters/Plotter.h"
 
 namespace NavierStokes {
+  class NavierStokesSolver;
   class NavierStokesSolver_ADERDG;
-  class Plotter;
+  class Plotter_Limiting;
 }
 
-class NavierStokes::Plotter : public exahype::plotters::Plotter::UserOnTheFlyPostProcessing {
+class NavierStokes::Plotter_Limiting : public exahype::plotters::Plotter::UserOnTheFlyPostProcessing {
 public:
-  Plotter(NavierStokes::NavierStokesSolver_ADERDG& solver);
-  virtual ~Plotter();
+  Plotter_Limiting(NavierStokes::NavierStokesSolver& solver);
+  virtual ~Plotter_Limiting();
 
   void startPlotting(double time) override;
   void finishPlotting() override;
@@ -30,8 +31,8 @@ public:
     double* outputQuantities,
     double timeStamp) override;
 private:
-    int order;
     NavierStokesSolver_ADERDG* solver;
+    int order;
 };
 
-#endif /* POSTPROCESSING_Plotter_CLASS_HEADER_ */
+#endif /* POSTPROCESSING_PlotterLimiting_CLASS_HEADER_ */

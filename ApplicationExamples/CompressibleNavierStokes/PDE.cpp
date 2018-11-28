@@ -36,7 +36,7 @@ NavierStokes::PDE::PDE(double referenceViscosity, double referencePressure, doub
 double NavierStokes::PDE::getZ(double const *Q) const {
   if (useAdvection) {
     // Coupling is activated!
-    const auto Z = NavierStokesSolverDG_Variables::shortcuts::E + 1;
+    const auto Z = NavierStokesSolver_ADERDG_Variables::shortcuts::E + 1;
     return Q[Z];
   }
 
@@ -47,7 +47,7 @@ double NavierStokes::PDE::getZ(double const *Q) const {
 void NavierStokes::PDE::setZ(double *Q, double value) const {
   if (useAdvection) {
     // Coupling is activated!
-    const auto Z = NavierStokesSolverDG_Variables::shortcuts::E + 1;
+    const auto Z = NavierStokesSolver_ADERDG_Variables::shortcuts::E + 1;
     Q[Z] = value;
   }
   // Otherwise, nothing happens
@@ -122,9 +122,9 @@ void NavierStokes::PDE::evaluateDiffusiveEigenvalues(const double* const Q, cons
 void NavierStokes::PDE::evaluateFlux(const double* Q, const double* gradQ, double** F, bool useViscosity,
         bool reconstructGradT, double reconstructedGradT) const {
   // Variable shortcuts
-  const auto rho = NavierStokesSolverDG_Variables::shortcuts::rho;
-  const auto j = NavierStokesSolverDG_Variables::shortcuts::j;
-  const auto E = NavierStokesSolverDG_Variables::shortcuts::E;
+  const auto rho = NavierStokesSolver_ADERDG_Variables::shortcuts::rho;
+  const auto j = NavierStokesSolver_ADERDG_Variables::shortcuts::j;
+  const auto E = NavierStokesSolver_ADERDG_Variables::shortcuts::E;
   const auto Z = E + 1; // Only defined if coupling is used!
 
   ReadOnlyVariables vars(Q);

@@ -5,16 +5,16 @@
 #include <memory>
 #include "tarch/la/Vector.h"
 #include "kernels/KernelUtils.h"
-#include "NavierStokesSolverDG_Variables.h"
+#include "NavierStokesSolver_ADERDG_Variables.h"
 
 namespace NavierStokes {
   class PDE;
   class Scenario;
 }
 
-using Variables = NavierStokes::AbstractNavierStokesSolverDG::Variables;
-using ReadOnlyVariables = NavierStokes::AbstractNavierStokesSolverDG::ReadOnlyVariables;
-using Fluxes = NavierStokes::AbstractNavierStokesSolverDG::Fluxes;
+using Variables = NavierStokes::AbstractNavierStokesSolver_ADERDG::Variables;
+using ReadOnlyVariables = NavierStokes::AbstractNavierStokesSolver_ADERDG::ReadOnlyVariables;
+using Fluxes = NavierStokes::AbstractNavierStokesSolver_ADERDG::Fluxes;
 
 class NavierStokes::PDE {
 public:
