@@ -12,9 +12,9 @@ tarch::logging::Log exahype::plotters::FiniteVolumes2ProbeAscii::_log( "exahype:
 
 exahype::plotters::FiniteVolumes2ProbeAscii::FiniteVolumes2ProbeAscii(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing, const int ghostLayerWidth):
   Device(postProcessing),
-  _ghostLayerWidth(ghostLayerWidth),
-  _out(nullptr) {
-}
+  _out(nullptr),
+  _ghostLayerWidth(ghostLayerWidth
+) {}
 
 
 exahype::plotters::FiniteVolumes2ProbeAscii::~FiniteVolumes2ProbeAscii() {
@@ -122,8 +122,6 @@ void exahype::plotters::FiniteVolumes2ProbeAscii::plotPatch(const int solverNumb
   auto& cellDescription = cellInfo._FiniteVolumesCellDescriptions[element];
 
   if (cellDescription.getType()==exahype::solvers::FiniteVolumesSolver::CellDescription::Type::Cell) {
-    const tarch::la::Vector<DIMENSIONS, double> &offsetOfPatch = cellDescription.getOffset(), &sizeOfPatch = cellDescription.getSize();
-    
     double* solution = static_cast<double*>(cellDescription.getSolution());
 
     plotPatch(
