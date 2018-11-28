@@ -86,7 +86,7 @@ void NavierStokes::PDE::evaluateEigenvalues(const double* const Q, const int d, 
 
   const auto p = evaluatePressure(vars.E(), vars.rho(), vars.j(), getZ(Q));
   //const auto p = evaluatePressure(vars.E(), vars.rho(), vars.j());
-  assertion5(std::isfinite(p), p, vars.E(), vars.rho(), vars.j(), getZ(Q));
+  //assertion5(std::isfinite(p), p, vars.E(), vars.rho(), vars.j(), getZ(Q));
 
   const double u_n = vars.j(d)/vars.rho();
   const double temperature = evaluateTemperature(vars.rho(), p);
@@ -94,9 +94,9 @@ void NavierStokes::PDE::evaluateEigenvalues(const double* const Q, const int d, 
   // TODO(Lukas) Speed of sound is changed, should be included in pressure.
   const double c = std::sqrt(gamma * (p/vars.rho()));
 
-  assertion3(std::isfinite(u_n), u_n, vars.j(d), vars.rho());
-  assertion6(std::isfinite(temperature) && temperature >= 0.0, temperature, vars.rho(), vars.E(), vars.j() * vars.j(), p, u_n);
-  assertion3(std::isfinite(c), c, u_n, temperature);
+  //assertion3(std::isfinite(u_n), u_n, vars.j(d), vars.rho());
+  //assertion6(std::isfinite(temperature) && temperature >= 0.0, temperature, vars.rho(), vars.E(), vars.j() * vars.j(), p, u_n);
+  //assertion3(std::isfinite(c), c, u_n, temperature);
 
   std::fill_n(lambda, vars.variables(), u_n);
   lambda[0] -= c;

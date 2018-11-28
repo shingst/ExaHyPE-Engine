@@ -33,6 +33,7 @@
 tarch::logging::Log NavierStokes::NavierStokesSolver_ADERDG::_log( "NavierStokes::NavierStokesSolver_ADERDG" );
 
 void NavierStokes::NavierStokesSolver_ADERDG::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
+  // TODO(Lukas) Refactor init!
   assert(constants.isValueValidString("scenario"));
 
   double referenceViscosity;
@@ -58,7 +59,6 @@ void NavierStokes::NavierStokesSolver_ADERDG::init(const std::vector<std::string
   }
 
   ns = PDE(referenceViscosity, *scenario);
-
 }
 
 void NavierStokes::NavierStokesSolver_ADERDG::adjustPointSolution(const double* const x,const double t,const double dt,double* Q) {
@@ -197,7 +197,8 @@ bool NavierStokes::NavierStokesSolver_ADERDG::isPhysicallyAdmissible(
       const tarch::la::Vector<DIMENSIONS,double>& center,
       const tarch::la::Vector<DIMENSIONS,double>& dx,
       const double t, const double dt) const {
-  return true; // TODO
+    // TODO(Lukas) What about advection-reaction-diffusion?
+    return observablesMin[0] > 0.0 && observablesMin[DIMENSIONS + 2] > 0.0;
 }
 
 void NavierStokes::NavierStokesSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(double* observables,const int numberOfObservables,const double* const Q) const {

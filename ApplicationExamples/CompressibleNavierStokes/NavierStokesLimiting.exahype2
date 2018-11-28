@@ -3,18 +3,17 @@
     "paths": {
 	"peano_kernel_path": "./Peano/",
 	"exahype_path": "./ExaHyPE",
-	"output_directory": "./ApplicationExamples/CompressibleNavierStokes"
-    },
+	"output_directory": "./ApplicationExamples/CompressibleNavierStokes" },
     "computational_domain": {
 	"dimension": 2,
-	"end_time": 10.0,
+	"end_time": 2.0,
 	"offset": [
 	    0.0,
 	    0.0
 	],
 	"width": [
-	    6.28,
-	    6.28
+	    2.0,
+	    2.0
 	]
     },
     "distributed_memory": {
@@ -46,8 +45,8 @@
 	    "type": "Limiting-ADER-DG",
 	    "name": "NavierStokesSolver",
 	    "order": 3,
-	    "maximum_mesh_size": 1.0,
-	    "maximum_mesh_depth": 2,
+	    "maximum_mesh_size": 0.1,
+	    "maximum_mesh_depth": 0,
 	    "time_stepping": "global",
 	    "aderdg_kernel": {
 		"language": "C",
@@ -73,10 +72,10 @@
 		"implementation": "generic"
 	    },
 	    "limiter": {
-		"dmp_observables": 2,
+		"dmp_observables": 4,
 		"dmp_relaxation_parameter": 1e-3,
 		"dmp_difference_scaling": 1e-4,
-		"helper_layers": 1
+		"helper_layers": 0
 	    },
 	    "point_sources": 0,
 	    "variables": [
@@ -94,15 +93,15 @@
 		}
 	    ],
 	    "parameters": {
-		"viscosity": 0.01,
-		"scenario": "taylor-green"
+		"viscosity": 0.00,
+		"scenario": "sod-shock-tube"
 	    },
 	    "plotters": [
 		{
-		    "type": "vtu::Legendre::vertices::ascii",
+		    "type": "vtu::Cartesian::vertices::limited::ascii",
 		    "name": "Plotter_Limiting",
 		    "time": 0.0001,
-		    "repeat": 0.2,
+		    "repeat": 0.05,
 		    "output": "./results/solution",
 		    "variables": 5
 		}

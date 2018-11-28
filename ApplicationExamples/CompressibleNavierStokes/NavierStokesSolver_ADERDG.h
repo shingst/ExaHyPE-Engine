@@ -37,6 +37,8 @@ class NavierStokes::NavierStokesSolver_ADERDG : public NavierStokes::AbstractNav
   public:
     std::unique_ptr<Scenario> scenario;
     std::string scenarioName;
+    PDE ns;
+
     NavierStokesSolver_ADERDG(
         const double maximumMeshSize,
         const int maximumMeshDepth,
@@ -161,7 +163,6 @@ class NavierStokes::NavierStokesSolver_ADERDG : public NavierStokes::AbstractNav
 /* pointSource() function not included, as requested in the specification file */
 
 /* multiplyMaterialParameterMatrix() not included, as requested in the specification file */
-    PDE ns;
 
     std::vector<double> mapGlobalObservables(const double* const Q, const tarch::la::Vector<DIMENSIONS,double>& dx) const override;
 
