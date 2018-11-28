@@ -32,7 +32,7 @@
     "autotuning_strategy": "dummy"
   },
   "distributed_memory": {
-    "stealing": "none",
+    "stealing": "aggressive_diffusive",
     "stealing_input_file" : "stealing_inputs_2_ranks/test_5.txt",
     "timeout": 6000,
     "load_balancing_type": "static",
