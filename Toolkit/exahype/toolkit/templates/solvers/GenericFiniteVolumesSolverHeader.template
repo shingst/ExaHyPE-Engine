@@ -119,7 +119,7 @@ class {{project}}::{{solver}} : public {{project}}::{{abstractSolver}} {
      * \param[in]   Q      the conserved variables associated with a quadrature node as C array (already allocated).
      * \param[out]  S      the source term vector (already allocated, same shape as Q).
      **/
-    void algebraicSource(const double* const Q,double* S) override;
+    void algebraicSource(const tarch::la::Vector<DIMENSIONS, double>& x, double t, const double *const Q, double *S) override;
     {% else %}
     /* algebraicSource() function not included, as requested by the specification file */
     {% endif %}
