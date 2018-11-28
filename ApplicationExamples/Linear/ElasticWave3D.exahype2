@@ -9,7 +9,7 @@
   "architecture": "hsw",
   "computational_domain": {
     "dimension": 3,
-    "time_steps": 10,
+    "time_steps": 5,
     "offset": [
       -12.0,
       0.0,

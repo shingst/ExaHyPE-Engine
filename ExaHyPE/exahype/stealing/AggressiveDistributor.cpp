@@ -175,12 +175,13 @@ void exahype::stealing::AggressiveDistributor::updateLoadDistribution(int curren
                                       <<" isVictim: "<<isVictim<<" emergency event: "<<emergencyTriggered);
 
   //determine who is fastest
-  int fastestRank = std::distance(&loadSnapshot[0], std::max_element(&loadSnapshot[0], &loadSnapshot[nnodes]));
+  //int fastestRank = std::distance(&loadSnapshot[0], std::max_element(&loadSnapshot[0], &loadSnapshot[nnodes]));
 
   //determine who is slowest
-  int slowestRank = std::distance(&loadSnapshot[0], std::min_element(&loadSnapshot[0], &loadSnapshot[nnodes]));
+  //int slowestRank = std::distance(&loadSnapshot[0], std::min_element(&loadSnapshot[0], &loadSnapshot[nnodes]));
   
-  logInfo("updateLoadDistribution()", "fastest: "<<fastestRank<<" slowest:"<<slowestRank);
+  //logInfo("updateLoadDistribution()", "fastest: "<<fastestRank<<" slowest:"<<slowestRank);
+  int slowestRank = std::distance(&_initialLoadPerRank[0], std::max_element(&_initialLoadPerRank[0], &_initialLoadPerRank[nnodes]));
 
   if(myRank == slowestRank) {
     if(!isVictim && !emergencyTriggered && *std::min_element(&loadSnapshot[0], &loadSnapshot[nnodes])<_zeroThreshold) {
