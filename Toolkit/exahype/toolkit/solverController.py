@@ -128,7 +128,7 @@ class SolverController:
         self.addCodegeneratorPathAndNamespace(context)
         
         context["order"]                  = solver["order"]
-        context["numberOfDMPObservables"] = -1 # overwrite if called from LimitingADERDGSolver creation
+        context["numberOfDMPObservables"] = 0 # overwrite if called from LimitingADERDGSolver creation
         
         return context
 
