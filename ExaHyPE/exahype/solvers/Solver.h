@@ -69,6 +69,10 @@ namespace exahype {
 //#include "tarch/multicore/Core.h"
 #endif
 
+#ifdef StealingUseProfiler
+#include "exahype/stealing/StealingProfiler.h"
+#endif
+
 #ifdef USE_ITAC
 #include "VT.h"
 #endif
@@ -1144,6 +1148,11 @@ class exahype::solvers::Solver {
   ierr=VT_funcdef(event_name_emergency, VT_NOCLASS, &event_emergency ); assert(ierr==0);
 #endif
 
+#ifdef StealingUseProfiler
+  exahype::stealing::StealingProfiler::getInstance().beginWaitForTasks();
+  double time_background = -MPI_Wtime();
+#endif
+
 #if defined(DistributedStealing)
   bool hasTriggeredEmergency = false;
   exahype::solvers::ADERDGSolver* solver = static_cast<exahype::solvers::ADERDGSolver*>(const_cast<exahype::solvers::Solver*>(this));
@@ -1208,6 +1217,13 @@ class exahype::solvers::Solver {
 #if defined(DistributedStealing)
    exahype::solvers::ADERDGSolver::setMaxNumberOfIprobesInProgressStealing( std::numeric_limits<int>::max() );
 #endif
+
+#ifdef StealingUseProfiler
+  time_background += MPI_Wtime();
+  exahype::stealing::StealingProfiler::getInstance().endWaitForTasks(time_background);
+#endif
+
+
 #ifdef USE_ITAC
 	 VT_end(event_wait);
 #endif

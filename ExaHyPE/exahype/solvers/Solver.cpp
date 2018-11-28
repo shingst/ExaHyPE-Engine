@@ -159,9 +159,8 @@ void exahype::solvers::Solver::ensureAllJobsHaveTerminated(JobType jobType) {
   //  logInfo("waitUntilAllBackgroundTasksHaveTerminated()",
   //          "there are still " << NumberOfRemoteJobs << " remote background job(s) to complete!");
 #if defined (StealingUseProfiler)
-  exahype::stealing::StealingProfiler::getInstance().beginWaitForBackgroundTasks(jobType);
+  exahype::stealing::StealingProfiler::getInstance().beginWaitForTasks();
   double time_background = -MPI_Wtime();
-  double time_remote = 0;
 #endif
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
   const int queuedJobs = getNumberOfQueuedJobs(jobType);
@@ -194,10 +193,6 @@ void exahype::solvers::Solver::ensureAllJobsHaveTerminated(JobType jobType) {
     if (NumberOfRemoteJobs > 0 && NumberOfRemoteJobs == NumberOfEnclaveJobs
         && !waitingForRemoteJobs && jobType == JobType::EnclaveJob) {
       waitingForRemoteJobs = true;
-#if defined (DistributedStealing) && defined (StealingUseProfiler)
-      exahype::stealing::StealingProfiler::getInstance().beginWaitForRemoteTasks();
-      time_remote = -MPI_Wtime();
-#endif
       logInfo("waitUntilAllBackgroundTasksHaveTerminated()",
           "there are still " << NumberOfRemoteJobs << " remote background job(s) to complete!");
 
@@ -205,15 +200,9 @@ void exahype::solvers::Solver::ensureAllJobsHaveTerminated(JobType jobType) {
     finishedWait = queuedJobs == 0;
   }
 
-#if defined (DistributedStealing) && defined (StealingUseProfiler)
-  if(waitingForRemoteJobs) {
-	  time_remote += MPI_Wtime();
-	  exahype::stealing::StealingProfiler::getInstance().endWaitForRemoteTasks(time_remote);
-  }
-#endif
 #if defined (StealingUseProfiler)
   time_background += MPI_Wtime();
-  exahype::stealing::StealingProfiler::getInstance().endWaitForBackgroundTasks(jobType, time_background);
+  exahype::stealing::StealingProfiler::getInstance().endWaitForTasks(time_background);
 #endif
 
 #ifdef USE_ITAC

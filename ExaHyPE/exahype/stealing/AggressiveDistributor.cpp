@@ -27,12 +27,14 @@ exahype::stealing::AggressiveDistributor::AggressiveDistributor() :
   _remainingTasksToOffload = new std::atomic<int>[nnodes];
 
   _consumersPerRank        = new int[nnodes];
-  _consumersPerRank[0]     = tarch::multicore::Core::getInstance().getNumberOfThreads()-1;
+ 
   for(int i=1; i<nnodes;i++) {
     _consumersPerRank[i] = tarch::multicore::Core::getInstance().getNumberOfThreads()-1;
     logInfo("AggressiveDistributor()","weight "<<_consumersPerRank[i]<<" for rank "<<i);
   }
-
+  _consumersPerRank[myRank] = tarch::multicore::Core::getInstance().getNumberOfThreads();
+  _consumersPerRank[0]     = tarch::multicore::Core::getInstance().getNumberOfThreads()-1;
+ 
   std::fill( &_remainingTasksToOffload[0], &_remainingTasksToOffload[nnodes], 0);
   std::fill( &_tasksToOffload[0], &_tasksToOffload[nnodes], 0);
   std::fill( &_idealTasksToOffload[0], &_idealTasksToOffload[nnodes], 0);
@@ -120,10 +122,10 @@ void exahype::stealing::AggressiveDistributor::computeIdealLoadDistribution(int 
 
   std::string str="ideal load distribution ";
   for(int i=0;i<nnodes;i++) str=str+" , "+std::to_string(newLoadDist[i]);
-  logInfo("static distributor", str);
+  logInfo("aggressive distributor", str);
   str="tasks to offload ";
   for(int i=0;i<nnodes;i++) str=str+" , "+std::to_string(_idealTasksToOffload[i]);
-  logInfo("static distributor", str);
+  logInfo("aggressive distributor", str);
 
   delete[] newLoadDist;
 }

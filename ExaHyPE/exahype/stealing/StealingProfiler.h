@@ -51,9 +51,7 @@ class exahype::stealing::StealingProfiler {
     std::atomic<int> _stealingDecisions;
 
     //times per phase
-    std::atomic<unsigned long long> _accWaitRemoteTasksPhaseTime;
-    std::atomic<unsigned long long> _accWaitEnclaveTasksPhaseTime;
-    std::atomic<unsigned long long> _accWaitSkeletonTasksPhaseTime;
+    std::atomic<unsigned long long> _accWaitTasksPhaseTime;
     std::atomic<unsigned long long> _accUsefulCommunicationPhaseTime;
     std::atomic<unsigned long long> _accIdleCommunicationPhaseTime;
     std::atomic<unsigned long long> _accComputationPhaseTime;
@@ -61,9 +59,7 @@ class exahype::stealing::StealingProfiler {
     std::atomic<unsigned long long> _accOffloadPhaseTime;
 
     //accumulated total (i.e. over all phases) times
-    std::atomic<unsigned long long> _accWaitRemoteTasksTime;
-    std::atomic<unsigned long long> _accWaitEnclaveTasksTime;
-    std::atomic<unsigned long long> _accWaitSkeletonTasksTime;
+    std::atomic<unsigned long long> _accWaitTasksTime;
     std::atomic<unsigned long long> _accUsefulCommunicationTime;
     std::atomic<unsigned long long> _accIdleCommunicationTime;
     std::atomic<unsigned long long> _accComputationTime;
@@ -92,11 +88,8 @@ class exahype::stealing::StealingProfiler {
 	  void beginHandling();
 	  void endHandling(double elapsed);
 
-	  void beginWaitForBackgroundTasks(exahype::solvers::Solver::JobType t);
-	  void endWaitForBackgroundTasks(exahype::solvers::Solver::JobType t, double elapsed);
-
-	  void beginWaitForRemoteTasks();
-	  void endWaitForRemoteTasks(double elapsed);
+	  void beginWaitForTasks();
+	  void endWaitForTasks(double elapsed);
 
 	  void beginOffload();
 	  void endOffload(double elapsed);

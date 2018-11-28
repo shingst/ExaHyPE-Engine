@@ -10,16 +10,12 @@ tarch::logging::Log exahype::stealing::StealingProfiler::_log( "exahype::stealin
 exahype::stealing::StealingProfiler::StealingProfiler() :
     _executedTasksPhase(0),
     _executedTasks(0),
-    _accWaitEnclaveTasksPhaseTime(0),
     _accUsefulCommunicationPhaseTime(0),
     _accIdleCommunicationPhaseTime(0),
     _accComputationPhaseTime(0),
-    _accWaitRemoteTasksPhaseTime(0),
-    _accWaitRemoteTasksTime(0),
-    _accWaitEnclaveTasksTime(0),
+    _accWaitTasksTime(0),
+    _accWaitTasksPhaseTime(0),
     _accUsefulCommunicationTime(0),
-    _accWaitSkeletonTasksPhaseTime(0),
-    _accWaitSkeletonTasksTime(0),
     _accIdleCommunicationTime(0),
     _accComputationTime(0),
     _accOffloadPhaseTime(0),
@@ -81,9 +77,7 @@ void exahype::stealing::StealingProfiler::beginPhase() {
   _performanceUpdatesPhase=0;
   _latePerformanceUpdatesPhase=0;
   _stealingDecisionsPhase=0;
-  _accWaitEnclaveTasksPhaseTime=0;
-  _accWaitSkeletonTasksPhaseTime=0;
-  _accWaitRemoteTasksPhaseTime=0;
+  _accWaitTasksPhaseTime=0;
   _accUsefulCommunicationPhaseTime=0;
   _accIdleCommunicationPhaseTime=0;
   _accComputationPhaseTime=0;
@@ -106,9 +100,7 @@ void exahype::stealing::StealingProfiler::endPhase() {
   _performanceUpdates+=_performanceUpdatesPhase;
   _latePerformanceUpdates+=_latePerformanceUpdatesPhase;
   _stealingDecisions+=_stealingDecisionsPhase;
-  _accWaitEnclaveTasksTime+=_accWaitEnclaveTasksPhaseTime;
-  _accWaitSkeletonTasksTime+=_accWaitSkeletonTasksPhaseTime;
-  _accWaitRemoteTasksTime+=_accWaitRemoteTasksPhaseTime;
+  _accWaitTasksTime+=_accWaitTasksPhaseTime;
   _accUsefulCommunicationTime+=_accUsefulCommunicationPhaseTime;
   _accIdleCommunicationTime+=_accIdleCommunicationPhaseTime;
   _accComputationTime+=_accComputationPhaseTime;
@@ -203,35 +195,35 @@ void exahype::stealing::StealingProfiler::endHandling(double elapsed) {
 #endif
 }
 
-void exahype::stealing::StealingProfiler::beginWaitForBackgroundTasks(exahype::solvers::Solver::JobType type) {
+//void exahype::stealing::StealingProfiler::beginWaitForBackgroundTasks(exahype::solvers::Solver::JobType type) {
+//#if defined(StealingUseProfiler)
+//#endif
+//}
+
+//void exahype::stealing::StealingProfiler::endWaitForBackgroundTasks(exahype::solvers::Solver::JobType type, double elapsed) {
+//#if defined(StealingUseProfiler)
+//  unsigned long long elapsedTime;
+//  if(type==exahype::solvers::Solver::JobType::EnclaveJob) {
+//    elapsedTime = elapsed*1E6;
+//    _accWaitEnclaveTasksPhaseTime+=elapsedTime;
+//  }
+//  else if(type==exahype::solvers::Solver::JobType::SkeletonJob) {
+//    elapsedTime = elapsed*1E6;
+//    _accWaitSkeletonTasksPhaseTime+=elapsedTime;
+//  }
+
+//#endif
+//}
+
+void exahype::stealing::StealingProfiler::beginWaitForTasks() {
 #if defined(StealingUseProfiler)
 #endif
 }
 
-void exahype::stealing::StealingProfiler::endWaitForBackgroundTasks(exahype::solvers::Solver::JobType type, double elapsed) {
-#if defined(StealingUseProfiler)
-  unsigned long long elapsedTime;
-  if(type==exahype::solvers::Solver::JobType::EnclaveJob) {
-    elapsedTime = elapsed*1E6;
-    _accWaitEnclaveTasksPhaseTime+=elapsedTime;
-  }
-  else if(type==exahype::solvers::Solver::JobType::SkeletonJob) {
-    elapsedTime = elapsed*1E6;
-    _accWaitSkeletonTasksPhaseTime+=elapsedTime;
-  }
-
-#endif
-}
-
-void exahype::stealing::StealingProfiler::beginWaitForRemoteTasks() {
-#if defined(StealingUseProfiler)
-#endif
-}
-
-void exahype::stealing::StealingProfiler::endWaitForRemoteTasks(double elapsed) {
+void exahype::stealing::StealingProfiler::endWaitForTasks(double elapsed) {
 #if defined(StealingUseProfiler)
   const unsigned long long elapsedTime = elapsed*1E6;
-  _accWaitRemoteTasksPhaseTime+=elapsedTime;
+  _accWaitTasksPhaseTime+=elapsedTime;
 #endif
 }
 
@@ -302,12 +294,9 @@ void exahype::stealing::StealingProfiler::printStatistics() {
   logInfo("exahype::stealing::StealingProfiler", str);
   str="  total idle communication time: "+std::to_string(static_cast<double>(_accIdleCommunicationTime/1E06))+"\n";
   logInfo("exahype::stealing::StealingProfiler", str);
-  str="  total wait time for enclave tasks: "+std::to_string(static_cast<double>(_accWaitEnclaveTasksTime/1E06))+"\n";
+  str="  total wait time for tasks: "+std::to_string(static_cast<double>(_accWaitTasksTime/1E06))+"\n";
   logInfo("exahype::stealing::StealingProfiler", str);
-  str="  total wait time for skeleton tasks: "+std::to_string(static_cast<double>(_accWaitSkeletonTasksTime/1E06))+"\n";
-  logInfo("exahype::stealing::StealingProfiler", str);
-  str="  total wait time for remote tasks: "+std::to_string(static_cast<double>(_accWaitRemoteTasksTime/1E06))+"\n";
-  logInfo("exahype::stealing::StealingProfiler", str);
+
 #endif
 }
 
