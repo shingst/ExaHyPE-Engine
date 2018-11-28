@@ -44,7 +44,7 @@
   "solvers": [
     {
       "type": "ADER-DG",
-      "name": "NavierStokesSolverDG",
+      "name": "NavierStokesSolver_ADERDG",
       "order": 3,
       "maximum_mesh_size": 1.0,
       "maximum_mesh_depth": 2,
