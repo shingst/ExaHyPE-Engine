@@ -1416,6 +1416,11 @@ public:
   getSolver () const {
     return _solver;
   }
+
+  using Solver::reduceGlobalObservables;
+  void reduceGlobalObservables(std::vector<double>& globalObservables,
+                                         int cellDescriptionIndex,
+                                         int element) const override;
 };
 
 

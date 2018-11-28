@@ -1721,3 +1721,20 @@ void exahype::solvers::LimitingADERDGSolver::toString (std::ostream& out) const 
   out << getIdentifier() << "{_FV: ";
   out << _limiter->toString() << "}";
 }
+
+void exahype::solvers::LimitingADERDGSolver::reduceGlobalObservables(std::vector<double> &globalObservables,
+                                                             int cellDescriptionsIndex,
+                                                             int element) const {
+  // TODO
+    /*
+  CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
+  if (cellDescription.getType()!=CellDescription::Type::Cell) {
+    return;
+  }
+
+  double* luh  = static_cast<double*>(cellDescription.getSolution());
+  auto dx = cellDescription.getSize();
+  const auto curGlobalObservables = mapGlobalObservables(luh, dx);
+  reduceGlobalObservables(globalObservables, curGlobalObservables);
+*/
+}
