@@ -1454,6 +1454,7 @@ public:
    */
   virtual void riemannSolver(double* FL, double* FR,
                              const double* const QL,const double* const QR,
+                             const double t,
                              const double dt,
                              const int normalNonZero,
                              bool isBoundaryFace,
