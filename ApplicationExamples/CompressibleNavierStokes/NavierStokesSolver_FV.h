@@ -14,6 +14,7 @@
 
 #include "AbstractNavierStokesSolver_FV.h"
 #include "exahype/parser/ParserView.h"
+#include "Scenarios/Scenario.h"
 
 /**
  * We use Peano's logging
@@ -32,6 +33,10 @@ class NavierStokes::NavierStokesSolver_FV : public NavierStokes::AbstractNavierS
      */
     static tarch::logging::Log _log;
   public:
+    std::unique_ptr<Scenario> scenario;
+    std::string scenarioName;
+    PDE ns;
+
     NavierStokesSolver_FV(
       const double maximumMeshSize,
       const exahype::solvers::Solver::TimeStepping timeStepping
