@@ -253,11 +253,11 @@ double kernels::finitevolumes::musclhancock::c::solutionUpdate(
             }
             if(useNCP) {
               double ncp[numberOfVariables];
-              std::cout << i<<" ," << j<<" ," << k<<": " << std::endl;
-              for (int l = 0; l < numberOfData; l++) {
-                std::cout<< luh[idx(i, j, k, l)] << std::endl;
-              }
-              std::cout << std::endl; //TODO Remove
+//              std::cout << i<<" ," << j<<" ," << k<<": " << std::endl;
+//              for (int l = 0; l < numberOfData; l++) {
+//                std::cout<< luh[idx(i, j, k, l)] << std::endl;
+//              }
+//              std::cout << std::endl; //TODO Remove
               solver.nonConservativeProduct(luhOld + idx(i, j, k, 0), gradQ, ncp);
               for(int l=0; l<numberOfVariables; l++) {
                 Qt[l] -= ncp[l];
