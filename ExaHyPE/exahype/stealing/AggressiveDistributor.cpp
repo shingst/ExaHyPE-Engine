@@ -223,8 +223,8 @@ bool exahype::stealing::AggressiveDistributor::selectVictimRank(int& victim) {
   }
   rank_cnt=l_rank;
 
-  if(victim!=myRank)
-   logInfo("selectVictimRank", "chose victim "<<victim<<" _remainingTasksToOffload "<<_remainingTasksToOffload[victim]);
+  //if(victim!=myRank)
+  // logInfo("selectVictimRank", "chose victim "<<victim<<" _remainingTasksToOffload "<<_remainingTasksToOffload[victim]);
   
   return victim != myRank;
 }
