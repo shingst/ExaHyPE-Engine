@@ -384,6 +384,7 @@ void GenericEulerKernelTest::testRiemannSolverLinear() {
         FL, FR,
         QL,
         QR,
+        0.0,
         dt,
         direction);
 
@@ -433,6 +434,7 @@ void GenericEulerKernelTest::testRiemannSolverLinear() {
         FL, FR,
         QL,
         QR,
+        0.0, 
         dt,
         direction
     );
