@@ -147,7 +147,7 @@ void NavierStokes::NavierStokesSolver_ADERDG::boundaryValues(const double* const
   }
 
   // TODO(Lukas) Refactor these checks.
-  if (scenario->getQ0() > 0) {
+  if (scenario->getUseAdvection()) {
     varsOut[NumberOfVariables-1] = varsIn[NumberOfVariables-1];
   }
 

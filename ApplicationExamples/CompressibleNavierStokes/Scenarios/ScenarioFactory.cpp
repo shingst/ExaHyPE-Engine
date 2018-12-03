@@ -1,7 +1,10 @@
 #include "ScenarioFactory.h"
 
+// Convergence
 #include "Scenarios/ConvergenceTest/ConvergenceTest.h"
-#include "Scenarios/DensityCurrent.h"
+
+// CFD: NS/Euler
+// TODO(Lukas) Organize
 #include "Scenarios/DoubleShockTube.h"
 #include "Scenarios/EntropyWave.h"
 #include "Scenarios/SmoothWave.h"
@@ -9,8 +12,14 @@
 #include "Scenarios/Stokes.h"
 #include "Scenarios/TaylorGreen.h"
 #include "Scenarios/LidDrivenCavity.h"
+
+// Atmospheric Flows
 #include "Scenarios/TwoBubbles.h"
+#include "Scenarios/DensityCurrent.h"
+
+// Coupled Scenarios
 #include "Scenarios/CouplingTest.h"
+#include "Scenarios/Detonation.h"
 
 #include <stdexcept>
 
@@ -38,6 +47,8 @@ NavierStokes::ScenarioFactory::createScenario(const std::string& scenarioName) {
     return std::move(ScenarioPtr(new ConvergenceTest()));
   } else if (scenarioName == "coupling-test") {
     return std::move(ScenarioPtr(new CouplingTest()));
+  } else if (scenarioName == "detonation") {
+    return std::move(ScenarioPtr(new Detonation()));
   }
 
   throw std::invalid_argument(scenarioName + " is not a valid scenario!");

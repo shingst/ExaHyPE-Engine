@@ -13,10 +13,6 @@ void NavierStokes::Scenario::initialValues(const double* const x, const PDE& ns,
     std::cout << "Q[3] = " << vars[3] << " x = (" << x[0] << ", " << x[1]
               << std::endl;
   }
-  return;
-  std::cout << "\n";
-  for (int i = 0; i < 4; ++i)
-    std::cout << "Q[" << i << "] = " << vars[i] << std::endl;
 }
 
 void NavierStokes::Scenario::analyticalSolution(const double* const x,
