@@ -67,6 +67,11 @@ void NavierStokes::NavierStokesSolver_FV::boundaryValues(
   stateOutside[1] = -stateInside[1];
   stateOutside[2] = -stateInside[2];
   stateOutside[3] = stateInside[3];
+
+  if (scenario->getBoundaryType(faceIndex) == BoundaryType::movingWall) {
+    const auto wallSpeed = 1.0;
+    stateOutside[1] = 2 * wallSpeed - stateInside[1];
+  }
 #else
   stateOutside[0] = stateInside[0];
   stateOutside[1] = -stateInside[1];

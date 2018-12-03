@@ -140,6 +140,12 @@ void NavierStokes::NavierStokesSolver_ADERDG::boundaryValues(const double* const
 #if DIMENSIONS == 3
   varsOut.j(2) = -varsIn.j(2);
 #endif
+
+  if (scenario->getBoundaryType(faceIndex) == BoundaryType::movingWall) {
+    const auto wallSpeed = 1.0;
+    varsOut.j(0) = 2 * wallSpeed -varsIn.j(0);
+  }
+
   // TODO(Lukas) Refactor these checks.
   if (scenario->getQ0() > 0) {
     varsOut[NumberOfVariables-1] = varsIn[NumberOfVariables-1];

@@ -6,7 +6,7 @@
 #include <array>
 
 namespace NavierStokes {
-enum class BoundaryType {analytical, wall, hydrostaticWall };
+enum class BoundaryType {analytical, wall, hydrostaticWall, movingWall };
 
 class Scenario {
  public:
