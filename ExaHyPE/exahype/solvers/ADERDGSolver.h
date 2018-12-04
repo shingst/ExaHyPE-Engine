@@ -1037,8 +1037,21 @@ private:
       int srcRank,
 	  int tag,
 	  MPI_Comm comm,
-	  MPI_Request *requests,
+          MPI_Request *requests,
 	  double *metadata =nullptr);
+
+  /*
+   * Receives data of a StealablePredictionJob from a destination rank.
+   */
+  void recvStealablePredictionJob(
+    double *luh,
+    double *lduh,
+    double *lQhbnd,
+    double *lFhbnd,
+      int srcRank,
+    int tag,
+    MPI_Comm comm,
+    double *metadata =nullptr);
 
   // returns a unique (locally) tag that is  used when sending away tasks
   int getStealingTag();

@@ -206,6 +206,7 @@ void exahype::stealing::AggressiveDistributor::updateLoadDistribution(int curren
 
 bool exahype::stealing::AggressiveDistributor::selectVictimRank(int& victim) {
 
+
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
   int myRank = tarch::parallel::Node::getInstance().getRank();
   victim = myRank;
@@ -225,6 +226,7 @@ bool exahype::stealing::AggressiveDistributor::selectVictimRank(int& victim) {
     l_rank = (l_rank + 1)%nnodes;
   }
   rank_cnt=l_rank;
+
 
   //if(victim!=myRank)
   // logInfo("selectVictimRank", "chose victim "<<victim<<" _remainingTasksToOffload "<<_remainingTasksToOffload[victim]);

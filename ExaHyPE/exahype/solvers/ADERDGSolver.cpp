@@ -4604,6 +4604,8 @@ void exahype::solvers::ADERDGSolver::submitOrSendStealablePredictionJob(Stealabl
 	     sendRequests,
 	     metadata);
 
+     //logInfo("submitOrSendStealablePredictionJob"," there is "<<tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs()<<" background job ");
+
      exahype::stealing::StealingManager::getInstance().submitRequests(
         sendRequests, 5, tag, destRank,
         exahype::solvers::ADERDGSolver::StealablePredictionJob::sendHandler,
@@ -4786,27 +4788,42 @@ void exahype::solvers::ADERDGSolver::progressStealing(exahype::solvers::ADERDGSo
          MPI_Request receiveRequests[5];
          StealablePredictionJobData *data = new StealablePredictionJobData(*solver);
          solver->_mapTagRankToStolenData.insert(std::make_pair(std::make_pair(stat.MPI_SOURCE, stat.MPI_TAG), data));
-         solver->irecvStealablePredictionJob(
-		         data->_luh.data(),
- 		 	       data->_lduh.data(),
-	 	         data->_lQhbnd.data(),
-			       data->_lFhbnd.data(),
-		         stat.MPI_SOURCE,
-			       stat.MPI_TAG,
-			       exahype::stealing::StealingManager::getInstance().getMPICommunicator(),
-			       &receiveRequests[0],
-			       &(data->_metadata[0]));
-         exahype::stealing::StealingManager::getInstance().submitRequests(
-             receiveRequests,
-			       5,
-			       stat.MPI_TAG,
-			       stat.MPI_SOURCE,
-		         StealablePredictionJob::receiveHandler,
-			       exahype::stealing::RequestType::receive,
-			       solver,
-			       true);
+//         solver->irecvStealablePredictionJob(
+//		         data->_luh.data(),
+// 		 	       data->_lduh.data(),
+//	 	         data->_lQhbnd.data(),
+//			       data->_lFhbnd.data(),
+//		         stat.MPI_SOURCE,
+//			       stat.MPI_TAG,
+//			       exahype::stealing::StealingManager::getInstance().getMPICommunicator(),
+//			       &receiveRequests[0],
+//			       &(data->_metadata[0]));
+         double wtime = -MPI_Wtime();
+         solver->recvStealablePredictionJob(
+             data->_luh.data(),
+             data->_lduh.data(),
+             data->_lQhbnd.data(),
+             data->_lFhbnd.data(),
+             stat.MPI_SOURCE,
+             stat.MPI_TAG,
+             exahype::stealing::StealingManager::getInstance().getMPICommunicator(),
+             &(data->_metadata[0]));
+         StealablePredictionJob::receiveHandler(solver, stat.MPI_TAG, stat.MPI_SOURCE);
+//         exahype::stealing::StealingManager::getInstance().submitRequests(
+//             receiveRequests,
+//			       5,
+//			       stat.MPI_TAG,
+//			       stat.MPI_SOURCE,
+//		         StealablePredictionJob::receiveHandler,
+//			       exahype::stealing::RequestType::receive,
+//			       solver,
+//			       true);
+         wtime += MPI_Wtime();
+         if(wtime>0.1) {
+            logInfo("progressStealing", " receiving (MPI_Waitall) took too long: "<<wtime);
+         }
       }
-      exahype::stealing::StealingManager::getInstance().progressRequests();
+   //   exahype::stealing::StealingManager::getInstance().progressRequests();
       MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, comm, &receivedTask, &stat);
     }
   }
@@ -4927,6 +4944,7 @@ bool exahype::solvers::ADERDGSolver::StealingManagerJob::run() {
   switch (_state) {
     case State::Running:
     {
+     // tarch::parallel::Node::getInstance().receiveDanglingMessages();
       exahype::solvers::ADERDGSolver::progressStealing(&_solver);
       break;
     }
@@ -5139,6 +5157,41 @@ void exahype::solvers::ADERDGSolver::irecvStealablePredictionJob(
   ierr = MPI_Irecv(lFhbnd, getBndFluxTotalSize(), MPI_DOUBLE, srcRank, tag, comm, &requests[i++]);
   assertion(ierr==MPI_SUCCESS);
   assertion(requests[i-1]!=MPI_REQUEST_NULL);
+
+};
+
+void exahype::solvers::ADERDGSolver::recvStealablePredictionJob(
+    double *luh,
+  double *lduh,
+  double *lQhbnd,
+  double *lFhbnd,
+    int srcRank,
+  int tag,
+  MPI_Comm comm,
+  double *metadata ) {
+  int ierr;
+  //MPI_Comm comm = exahype::stealing::StealingManager::getInstance().getMPICommunicator();
+
+  if(metadata != nullptr) {
+    ierr = MPI_Recv(metadata, 2*DIMENSIONS+2, MPI_DOUBLE, srcRank, tag, comm, MPI_STATUS_IGNORE);
+    assertion(ierr==MPI_SUCCESS);
+  }
+
+  assertion(luh!=NULL);
+  ierr = MPI_Recv(luh, getDataPerCell(), MPI_DOUBLE, srcRank, tag, comm, MPI_STATUS_IGNORE);
+  assertion(ierr==MPI_SUCCESS);
+
+  assertion(lduh!=NULL);
+  ierr = MPI_Recv(lduh, getUpdateSize(), MPI_DOUBLE, srcRank, tag, comm, MPI_STATUS_IGNORE);
+  assertion(ierr==MPI_SUCCESS);
+
+  assertion(lQhbnd!=NULL);
+  ierr = MPI_Recv(lQhbnd, getBndTotalSize(), MPI_DOUBLE, srcRank, tag, comm, MPI_STATUS_IGNORE);
+  assertion(ierr==MPI_SUCCESS);
+
+  assertion(lFhbnd!=NULL);
+  ierr = MPI_Recv(lFhbnd, getBndFluxTotalSize(), MPI_DOUBLE, srcRank, tag, comm, MPI_STATUS_IGNORE);
+  assertion(ierr==MPI_SUCCESS);
 
 };
 
