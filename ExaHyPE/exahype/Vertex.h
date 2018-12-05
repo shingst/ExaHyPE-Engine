@@ -493,6 +493,17 @@ private:
    * We let every vertex do the Riemann solves around the cell at position 0 in the vertex' local adjacency map.
    * The cell's neigbour merge partners are at positions 1,2, (2D and 3D) and 4 (only 3D).
    *
+   * Background Jobs and neighbourMergePerformed flags
+   * --------------------------------------------------
+   * The Riemann solves wait if a background job has not completed
+   * in one of the cells adjacent to a face.
+   * We rely here on information if a face has already been
+   * processed or not. Otherwise, we may wait
+   * on a neighbour which has already advanced in time
+   * and submitted the next background job.
+   * This would introduce numerical errors.
+   *
+   *
    * Old implemtation (still used for MPI routine)
    * ---------------------------------------------
    *
