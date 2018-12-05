@@ -46,6 +46,7 @@ class exahype::stealing::StealingManager {
   private:
     static tarch::logging::Log _log;
 
+    tarch::multicore::BooleanSemaphore _progressSemaphore;
     /*
      *  MPI_Request are mapped to an internal id.
      */
@@ -83,7 +84,7 @@ class exahype::stealing::StealingManager {
     /*
      * This method makes progress on all current requests of the given request type.
      */
-    void progressRequestsOfType(RequestType type);
+    bool progressRequestsOfType(RequestType type);
     /*
      * Maps a request type to an integer that defines message queue.
      */
@@ -120,6 +121,13 @@ class exahype::stealing::StealingManager {
             exahype::solvers::Solver* solver,
             int tag,
             int remoteRank);
+        bool operator()();
+    };
+
+    class ProgressSendJob
+    {
+      public:
+        ProgressSendJob();
         bool operator()();
     };
 

@@ -4824,7 +4824,7 @@ void exahype::solvers::ADERDGSolver::progressStealing(exahype::solvers::ADERDGSo
 		         StealablePredictionJob::receiveHandler,
 			     exahype::stealing::RequestType::receive,
 			     solver,
-			     false);
+			     true);
              wtime+= MPI_Wtime();
              if(wtime>0.01)
                logInfo("progressStealing()","blocking for stolen task took too long:"<<wtime<<"s"); 

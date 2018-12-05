@@ -156,6 +156,11 @@ void exahype::stealing::StealingManager::submitRequests(
     _requestToGroup[mapId].insert(reqGroupElem);
     _requests[mapId].push(id);
   }
+
+  if(type==RequestType::send) {
+    ProgressSendJob *job = new ProgressSendJob();
+    peano::datatraversal::TaskSet spawnedSet( job, peano::datatraversal::TaskSet::TaskType::Background);
+  }
 }
 
 void exahype::stealing::StealingManager::createRequestArray(
@@ -228,7 +233,29 @@ void exahype::stealing::StealingManager::progressRequests() {
   }
 }
 
-void exahype::stealing::StealingManager::progressRequestsOfType( RequestType type ) {
+bool exahype::stealing::StealingManager::progressRequestsOfType( RequestType type ) {
+
+  // First, we ensure here that only one thread at a time progresses stealing
+  // this attempts to avoid multithreaded MPI problems
+  tarch::multicore::Lock lock(_progressSemaphore, false);
+  bool canRun = lock.try_lock();
+  if(!canRun) {
+#if defined(PerformanceAnalysisStealingDetailed)
+    watch.stopTimer();
+    if(watch.getCalendarTime() >= 0.0) {
+      logInfo(
+          "progressStealing() ",
+          "couldn't run "<<
+          "time=" << std::fixed <<
+          watch.getCalendarTime() <<
+          ", cpu time=" <<
+          watch.getCPUTime()
+      );
+    }
+#endif
+    return false;
+  }
+
   int mapId = requestTypeToMap(type);
 
   tbb::concurrent_hash_map<int, std::function<void(exahype::solvers::Solver*, int, int)>>::accessor a_handler;
@@ -373,6 +400,10 @@ void exahype::stealing::StealingManager::progressRequestsOfType( RequestType typ
 
   time += MPI_Wtime();
   exahype::stealing::StealingProfiler::getInstance().endHandling(time);
+
+  lock.free();  
+
+  return true;
 }
 
 void exahype::stealing::StealingManager::triggerVictimFlag() {
@@ -473,5 +504,11 @@ bool exahype::stealing::StealingManager::RequestHandlerJob::operator()() {
 #endif
   return false;
 }
+
+exahype::stealing::StealingManager::ProgressSendJob::ProgressSendJob() {}
+
+bool exahype::stealing::StealingManager::ProgressSendJob::operator()() {
+   return !getInstance().progressRequestsOfType(RequestType::send);
+};
 
 #endif
