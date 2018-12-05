@@ -184,9 +184,13 @@ void exahype::stealing::StealingManager::createRequestArray(
   }
 }
 
+bool exahype::stealing::StealingManager::hasOutstandingRequestOfType(RequestType requestType) {
+  return (!_requests[requestTypeToMap(requestType)].empty() || !_currentOutstandingRequests[requestTypeToMap(requestType)].size()==0);
+}
+
 void exahype::stealing::StealingManager::progressRequests() {
 
-  if(!_requests[requestTypeToMap(RequestType::send)].empty()) {
+  if(hasOutstandingRequestOfType(RequestType::send)) {
 #ifdef USE_ITAC
     VT_begin(event_progress_send);
 #endif
@@ -195,7 +199,7 @@ void exahype::stealing::StealingManager::progressRequests() {
     VT_end(event_progress_send);
 #endif
   }
-  else if (!_requests[requestTypeToMap(RequestType::receive)].empty()) {
+  else if (hasOutstandingRequestOfType(RequestType::receive)) {
 #ifdef USE_ITAC
     VT_begin(event_progress_receive);
 #endif
@@ -204,7 +208,7 @@ void exahype::stealing::StealingManager::progressRequests() {
     VT_end(event_progress_receive);
 #endif
   }
-  else if (!_requests[requestTypeToMap(RequestType::receiveBack)].empty()) {
+  else if (hasOutstandingRequestOfType(RequestType::receiveBack)) {
 #ifdef USE_ITAC
     VT_begin(event_progress_receiveBack);
 #endif
@@ -213,7 +217,7 @@ void exahype::stealing::StealingManager::progressRequests() {
     VT_end(event_progress_receiveBack);
 #endif
   }
-  else if (!_requests[requestTypeToMap(RequestType::sendBack)].empty()) {
+  else if (hasOutstandingRequestOfType(RequestType::sendBack)) {
 #ifdef USE_ITAC
     VT_begin(event_progress_sendBack);
 #endif
@@ -234,10 +238,14 @@ void exahype::stealing::StealingManager::progressRequestsOfType( RequestType typ
   tbb::concurrent_hash_map<int, int>::accessor                                                      a_remoteRank;
   tbb::concurrent_hash_map<int, int>::accessor                                                      a_remoteTag;
 
-  std::vector<MPI_Request>     outstandingRequests;
-  std::unordered_map<int, int> vecIdToReqId;
-  createRequestArray( type, outstandingRequests, vecIdToReqId );
-  int nRequests = outstandingRequests.size();
+  //std::vector<MPI_Request>     outstandingRequests;
+  //std::unordered_map<int, int> vecIdToReqId;
+
+  int nRequests = _currentOutstandingRequests[mapId].size();
+  if(nRequests==0) {
+    createRequestArray( type, _currentOutstandingRequests[mapId], _currentOutstandingVecIdxToReqid[mapId] );
+    nRequests = _currentOutstandingRequests[mapId].size();
+  }
 
   std::vector<MPI_Status> stats(nRequests);
   std::vector<int> arrOfIndices(nRequests);
@@ -261,10 +269,9 @@ void exahype::stealing::StealingManager::progressRequestsOfType( RequestType typ
 //  	}
 //	 }
 // }
-
-
+  
   //TODO: keine Statusse
-  int ierr = MPI_Testsome(nRequests,&outstandingRequests[0], &outcount, &arrOfIndices[0], MPI_STATUSES_IGNORE);
+  int ierr = MPI_Testsome(nRequests,&_currentOutstandingRequests[mapId][0], &outcount, &arrOfIndices[0], MPI_STATUSES_IGNORE);
 
 //  if(ierr != MPI_SUCCESS) {
 //    for(int i=0;i<nRequests;i++) {
@@ -294,8 +301,8 @@ void exahype::stealing::StealingManager::progressRequestsOfType( RequestType typ
   //handle finished requests
   for(int i=0; i<outcount; i++) {
     int reqIdx = arrOfIndices[i];
-    int reqId = vecIdToReqId[reqIdx];
-    assertion(outstandingRequests[reqIdx]==MPI_REQUEST_NULL);
+    int reqId = _currentOutstandingVecIdxToReqid[mapId][reqIdx];
+    assertion(_currentOutstandingRequests[mapId][reqIdx]==MPI_REQUEST_NULL);
 
     _idToRequest[mapId].erase(reqId);
     int groupId;
@@ -347,11 +354,23 @@ void exahype::stealing::StealingManager::progressRequestsOfType( RequestType typ
   }
 
   // push back all unfinished requests
-  for(int i=0; i<nRequests; i++) {
-    if(outstandingRequests[i]!=MPI_REQUEST_NULL) {
-      _requests[mapId].push(vecIdToReqId[i]);
-    }
+  //for(int i=0; i<nRequests; i++) {
+  //  if(outstandingRequests[i]!=MPI_REQUEST_NULL) {
+  //    _requests[mapId].push(vecIdToReqId[i]);
+  //  }
+  //}
+  bool allFinished = true;
+  for(int i=0; i<nRequests; i++) { 
+     if(_currentOutstandingRequests[mapId][i]!=MPI_REQUEST_NULL)  {
+       allFinished = false;
+       break;
+     }
   }
+  if(allFinished) {
+    _currentOutstandingRequests[mapId].clear();
+    _currentOutstandingVecIdxToReqid[mapId].clear();
+  }
+
   time += MPI_Wtime();
   exahype::stealing::StealingProfiler::getInstance().endHandling(time);
 }

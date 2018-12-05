@@ -70,6 +70,9 @@ class exahype::stealing::StealingManager {
     tbb::concurrent_hash_map<int, exahype::solvers::Solver*> _solvers[4];
     tarch::multicore::BooleanSemaphore _semaphore;
 
+    std::vector<MPI_Request> _currentOutstandingRequests[4];
+    std::unordered_map<int, int> _currentOutstandingVecIdxToReqid[4];
+
     int _zeroThreshold;
 
     std::atomic<bool> _isVictim;
@@ -85,6 +88,8 @@ class exahype::stealing::StealingManager {
      * Maps a request type to an integer that defines message queue.
      */
     int requestTypeToMap(RequestType requestType);
+
+    bool hasOutstandingRequestOfType(RequestType requestType);
     /*
      * This method pop's all current requests of a given type from the request queue and
      * inserts them into an array on which MPI can make progress.

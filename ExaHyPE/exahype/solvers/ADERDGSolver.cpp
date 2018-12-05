@@ -4788,40 +4788,59 @@ void exahype::solvers::ADERDGSolver::progressStealing(exahype::solvers::ADERDGSo
          MPI_Request receiveRequests[5];
          StealablePredictionJobData *data = new StealablePredictionJobData(*solver);
          solver->_mapTagRankToStolenData.insert(std::make_pair(std::make_pair(stat.MPI_SOURCE, stat.MPI_TAG), data));
-//         solver->irecvStealablePredictionJob(
-//		         data->_luh.data(),
-// 		 	       data->_lduh.data(),
-//	 	         data->_lQhbnd.data(),
-//			       data->_lFhbnd.data(),
-//		         stat.MPI_SOURCE,
-//			       stat.MPI_TAG,
-//			       exahype::stealing::StealingManager::getInstance().getMPICommunicator(),
-//			       &receiveRequests[0],
-//			       &(data->_metadata[0]));
-         double wtime = -MPI_Wtime();
-         solver->recvStealablePredictionJob(
-             data->_luh.data(),
-             data->_lduh.data(),
-             data->_lQhbnd.data(),
-             data->_lFhbnd.data(),
-             stat.MPI_SOURCE,
-             stat.MPI_TAG,
-             exahype::stealing::StealingManager::getInstance().getMPICommunicator(),
-             &(data->_metadata[0]));
-         StealablePredictionJob::receiveHandler(solver, stat.MPI_TAG, stat.MPI_SOURCE);
-//         exahype::stealing::StealingManager::getInstance().submitRequests(
-//             receiveRequests,
-//			       5,
-//			       stat.MPI_TAG,
-//			       stat.MPI_SOURCE,
-//		         StealablePredictionJob::receiveHandler,
-//			       exahype::stealing::RequestType::receive,
-//			       solver,
-//			       true);
-         wtime += MPI_Wtime();
-         if(wtime>0.1) {
-            logInfo("progressStealing", " receiving (MPI_Waitall) took too long: "<<wtime);
-         }
+         solver->irecvStealablePredictionJob(
+		         data->_luh.data(),
+   	 	         data->_lduh.data(),
+	 	         data->_lQhbnd.data(),
+			     data->_lFhbnd.data(),
+		         stat.MPI_SOURCE,
+			       stat.MPI_TAG,
+			       exahype::stealing::StealingManager::getInstance().getMPICommunicator(),
+			       &receiveRequests[0],
+			       &(data->_metadata[0]));
+         //double wtime = -MPI_Wtime();
+         int canComplete = 0;
+         MPI_Testall(5, &receiveRequests[0], &canComplete, MPI_STATUSES_IGNORE);
+//         solver->recvStealablePredictionJob(
+//             data->_luh.data(),
+//             data->_lduh.data(),
+//             data->_lQhbnd.data(),
+//             data->_lFhbnd.data(),
+//             stat.MPI_SOURCE,
+//             stat.MPI_TAG,
+//             exahype::stealing::StealingManager::getInstance().getMPICommunicator(),
+//             &(data->_metadata[0]));
+         if(canComplete)
+           StealablePredictionJob::receiveHandler(solver, stat.MPI_TAG, stat.MPI_SOURCE);
+         else {
+           if(tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs()<=1) {
+             logInfo("progressStealing()","running out of tasks and could not receive stolen task so we just block!");
+             double wtime = -MPI_Wtime();
+             exahype::stealing::StealingManager::getInstance().submitRequests(
+             receiveRequests,
+			     5,
+			     stat.MPI_TAG,
+			     stat.MPI_SOURCE,
+		         StealablePredictionJob::receiveHandler,
+			     exahype::stealing::RequestType::receive,
+			     solver,
+			     false);
+             wtime+= MPI_Wtime();
+             if(wtime>0.01)
+               logInfo("progressStealing()","blocking for stolen task took too long:"<<wtime<<"s"); 
+           }
+           else {
+             exahype::stealing::StealingManager::getInstance().submitRequests(
+               receiveRequests,
+			       5,
+			       stat.MPI_TAG,
+			       stat.MPI_SOURCE,
+		         StealablePredictionJob::receiveHandler,
+			       exahype::stealing::RequestType::receive,
+			       solver,
+			       false);
+           }
+        }
       }
    //   exahype::stealing::StealingManager::getInstance().progressRequests();
       MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, comm, &receivedTask, &stat);
@@ -4979,6 +4998,7 @@ void exahype::solvers::ADERDGSolver::startStealingManager() {
   //assertion(_stealingManagerJob!=nullptr);
   //tbb::task::enqueue(*_stealingManagerJob);
   peano::datatraversal::TaskSet spawnedSet(_stealingManagerJob, peano::datatraversal::TaskSet::TaskType::Background);
+  //peano::datatraversal::TaskSet spawnedSet(_stealingManagerJob, peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible);
 }
 
 void exahype::solvers::ADERDGSolver::stopStealingManager() {
