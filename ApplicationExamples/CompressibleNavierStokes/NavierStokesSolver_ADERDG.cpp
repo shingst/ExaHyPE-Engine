@@ -204,7 +204,8 @@ bool NavierStokes::NavierStokesSolver_ADERDG::isPhysicallyAdmissible(
       const tarch::la::Vector<DIMENSIONS,double>& dx,
       const double t, const double dt) const {
     // TODO(Lukas) What about advection-reaction-diffusion?
-    return observablesMin[0] > 0.0 && observablesMin[DIMENSIONS + 2] > 0.0;
+    auto vars = ReadOnlyVariables{observablesMin};
+    return vars.rho() > 0.0 && vars.E() > 0.0;
 }
 
 void NavierStokes::NavierStokesSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(double* observables,const int numberOfObservables,const double* const Q) const {
