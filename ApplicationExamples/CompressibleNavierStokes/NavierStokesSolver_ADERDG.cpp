@@ -125,7 +125,8 @@ void NavierStokes::NavierStokesSolver_ADERDG::boundaryValues(const double* const
   }
 
   assertion(scenario->getBoundaryType(faceIndex) == BoundaryType::wall ||
-                 scenario->getBoundaryType(faceIndex) == BoundaryType::hydrostaticWall);
+                 scenario->getBoundaryType(faceIndex) == BoundaryType::hydrostaticWall ||
+                 scenario->getBoundaryType(faceIndex) == BoundaryType::movingWall);
 
   // Set no slip wall boundary conditions.
   ReadOnlyVariables varsIn(stateIn);
