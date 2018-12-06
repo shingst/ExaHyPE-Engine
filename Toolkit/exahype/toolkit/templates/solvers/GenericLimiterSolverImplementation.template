@@ -52,17 +52,3 @@ void {{project}}::{{solver}}::findCellLocalMinAndMax(const double* const luh, do
 void {{project}}::{{solver}}::findCellLocalLimiterMinAndMax(const double* const lim, double* const localMinPerObservable, double* const localMaxPerObservable) {
   kernels::limiter::generic::c::findCellLocalLimiterMinAndMax<{{ADERDGAbstractSolver}}, NumberOfDMPObservables, GhostLayerWidth>(lim, *static_cast<{{ADERDGAbstractSolver}}*>(_solver.get()), localMinPerObservable,localMaxPerObservable);
 }
-
-// TODO:
-std::vector<double> {{project}}::{{solver}}::mapGlobalObservables(const double* const Q, const tarch::la::Vector<DIMENSIONS, double> &dx) const {
-  return {};
-}
-
-std::vector<double> {{project}}::{{solver}}::resetGlobalObservables() const {
-  return {};
-}
-
-void {{project}}::{{solver}}::reduceGlobalObservables(
-            std::vector<double>& reducedGlobalObservables,
-            const std::vector<double>& curGlobalObservables) const { }
-

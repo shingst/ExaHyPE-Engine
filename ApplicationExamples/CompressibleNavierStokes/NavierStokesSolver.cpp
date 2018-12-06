@@ -12,8 +12,6 @@
 
 #include "kernels/limiter/generic/Limiter.h"
 
-#include "AMR/Criterion.h"
-
 NavierStokes::NavierStokesSolver::NavierStokesSolver(
         const double maximumMeshSize,
         const int maximumMeshDepth,
@@ -54,16 +52,3 @@ void NavierStokes::NavierStokesSolver::findCellLocalMinAndMax(const double* cons
 void NavierStokes::NavierStokesSolver::findCellLocalLimiterMinAndMax(const double* const lim, double* const localMinPerObservable, double* const localMaxPerObservable) {
   kernels::limiter::generic::c::findCellLocalLimiterMinAndMax<AbstractNavierStokesSolver_ADERDG, NumberOfDMPObservables, GhostLayerWidth>(lim, *static_cast<AbstractNavierStokesSolver_ADERDG*>(_solver.get()), localMinPerObservable,localMaxPerObservable);
 }
-
-// TODO:
-std::vector<double> NavierStokes::NavierStokesSolver::mapGlobalObservables(const double* const Q, const tarch::la::Vector<DIMENSIONS, double> &dx) const {
-  return {};
-}
-
-std::vector<double> NavierStokes::NavierStokesSolver::resetGlobalObservables() const {
-  return {};
-}
-
-void NavierStokes::NavierStokesSolver::reduceGlobalObservables(
-            std::vector<double>& reducedGlobalObservables,
-            const std::vector<double>& curGlobalObservables) const { }

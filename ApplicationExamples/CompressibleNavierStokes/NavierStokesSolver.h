@@ -21,11 +21,12 @@ namespace NavierStokes{
 
 class NavierStokes::NavierStokesSolver: public exahype::solvers::LimitingADERDGSolver {  
   public:
-    static constexpr int NumberOfVariables      = NavierStokes::AbstractNavierStokesSolver_ADERDG::NumberOfVariables;
-    static constexpr int NumberOfParameters     = NavierStokes::AbstractNavierStokesSolver_ADERDG::NumberOfParameters;
-    static constexpr int Order                  = NavierStokes::AbstractNavierStokesSolver_ADERDG::Order;
-    static constexpr int NumberOfDMPObservables = NavierStokes::AbstractNavierStokesSolver_ADERDG::NumberOfDMPObservables;
-    static constexpr int GhostLayerWidth        = NavierStokes::AbstractNavierStokesSolver_FV::GhostLayerWidth;
+    static constexpr int NumberOfVariables         = NavierStokes::AbstractNavierStokesSolver_ADERDG::NumberOfVariables;
+    static constexpr int NumberOfParameters        = NavierStokes::AbstractNavierStokesSolver_ADERDG::NumberOfParameters;
+    static constexpr int Order                     = NavierStokes::AbstractNavierStokesSolver_ADERDG::Order;
+    static constexpr int NumberOfGlobalObservables = NavierStokes::AbstractNavierStokesSolver_ADERDG::NumberOfGlobalObservables;
+    static constexpr int NumberOfDMPObservables    = NavierStokes::AbstractNavierStokesSolver_ADERDG::NumberOfDMPObservables;
+    static constexpr int GhostLayerWidth           = NavierStokes::AbstractNavierStokesSolver_FV::GhostLayerWidth;
       
     NavierStokesSolver(
         const double maximumMeshSize,
@@ -45,13 +46,6 @@ class NavierStokes::NavierStokesSolver: public exahype::solvers::LimitingADERDGS
     bool discreteMaximumPrincipleAndMinAndMaxSearch(const double* const luh, double* boundaryMinPerVariables, double* boundaryMaxPerVariables) override;
     void findCellLocalMinAndMax(const double* const luh, double* const localMinPerVariables, double* const localMaxPerVariable) override;
     void findCellLocalLimiterMinAndMax(const double* const lim, double* const localMinPerObservable, double* const localMaxPerObservable) override;
-
-    std::vector<double> mapGlobalObservables(const double* const Q, const tarch::la::Vector<DIMENSIONS, double> &dx) const override;
-    std::vector<double> resetGlobalObservables() const override;
-    void reduceGlobalObservables(
-            std::vector<double>& reducedGlobalObservables,
-            const std::vector<double>& curGlobalObservables) const override;
-
 };
 
 #endif // __NavierStokesSolver_CLASS_HEADER__
