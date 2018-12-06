@@ -297,7 +297,11 @@ void NavierStokes::NavierStokesSolver_ADERDG::riemannSolver(double* FL,double* F
 }
 
 void NavierStokes::NavierStokesSolver_ADERDG::boundaryConditions( double* const fluxIn, const double* const stateIn, const double* const gradStateIn, const double* const luh, const tarch::la::Vector<DIMENSIONS, double>& cellCentre, const tarch::la::Vector<DIMENSIONS,double>&  cellSize, const double t,const double dt, const int direction, const int orientation) {
+#if DIMENSIONS == 2
   constexpr int basisSize     = (Order+1);
+#else
+  constexpr int basisSize     = (Order+1) * (Order+1);
+#endif
   constexpr int sizeStateOut = (NumberOfVariables+NumberOfParameters)*basisSize;
   constexpr int sizeFluxOut  = NumberOfVariables*basisSize;
 
@@ -327,12 +331,24 @@ void NavierStokes::NavierStokesSolver_ADERDG::boundaryConditions( double* const 
   }
 
   if (scenario->getBoundaryType(faceIndex) == NavierStokes::BoundaryType::wall) {
-    static_assert(DIMENSIONS == 2, "BC only implemented for 2D!"); // TODO(Lukas) Implement for 3D
+#if DIMENSIONS == 2
     kernels::idx2 idx_F(Order + 1, NumberOfVariables);
     for (int i = 0; i < (Order + 1); ++i) {
       // Set energy flux to zero!
       fluxIn[idx_F(i, NavierStokesSolver_ADERDG_Variables::shortcuts::E)] = 0.0;
     }
+#else
+   // TODO(Lukas) Is this correct for 3D? Untested!
+   /*
+    kernels::idx3 idx_F(Order + 1, Order + 1, NumberOfVariables);
+    for (int i = 0; i < (Order + 1); ++i) {
+      for (int j = 0; j < (Order + 1); ++j) {
+        // Set energy flux to zero!
+        fluxIn[idx_F(i, j, NavierStokesSolver_ADERDG_Variables::shortcuts::E)] = 0.0;
+      }
+    }
+    */
+#endif
   }
 
   delete[] block;

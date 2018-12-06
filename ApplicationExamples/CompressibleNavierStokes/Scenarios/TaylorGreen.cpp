@@ -1,13 +1,12 @@
 #include "TaylorGreen.h"
+#include "tarch/Assertions.h"
 
 void NavierStokes::TaylorGreen::analyticalSolution(const double* const x,
                                                    const double t,
                                                    const PDE& ns,
                                                    Variables& vars,
                                                    double* gradState) {
-#if DIMENSIONS != 2
-  assertion2(false, "Taylor-Green is only supported for 2D!");
-#endif
+  assertionEqualsMsg(DIMENSIONS, 2, "Taylor-Green is only supported for 2D!");
 
   kernels::idx2 idxGradQ(DIMENSIONS, vars.SizeVariables);
 

@@ -1,11 +1,8 @@
-//
-// Created by lukas on 01/12/18.
-//
-
 #include "Detonation.h"
 
 void NavierStokes::Detonation::initialValues(const double* const x,
                                              const PDE& ns, Variables& vars) {
+
   // B: Burned, U: Unburned
   const auto rhoB = 1.4;
   const auto rhoU = 0.887565;
@@ -34,12 +31,20 @@ void NavierStokes::Detonation::initialValues(const double* const x,
   if (isBurned) {
      vars.rho() = rhoB;
      pressure = pB;
+#if DIMENSIONS == 2
      vars.j(uB * rhoB, vB * rhoB);
+#else
+    vars.j(uB * rhoB, vB * rhoB, 0.0);
+#endif
      ns.setZ(vars.data(), ZB);
   } else {
      vars.rho() = rhoU;
      pressure = pU;
+#if DIMENSIONS == 2
      vars.j(uU * rhoU, vU * rhoU);
+#else
+     vars.j(uU * rhoU, vU * rhoU, 0.0);
+#endif
      ns.setZ(vars.data(), ZU);
   }
 

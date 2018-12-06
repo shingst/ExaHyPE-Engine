@@ -132,12 +132,10 @@ void NavierStokes::PDE::evaluateFlux(const double* Q, const double* gradQ, doubl
   auto idxF = kernels::idx2(vars.SizeVariables, DIMENSIONS);
   auto idxGradQ = kernels::idx2(DIMENSIONS, vars.SizeVariables);
 
-  // Euler:
   const auto invRho = 1/vars.rho(); // Q(1)/(Q(1)*Q(1)+epsilon)
 
-  const auto p = evaluatePressure(vars.E(), vars.rho(), vars.j(), getZ(Q));
-  //const auto p = evaluatePressure(vars.E(), vars.rho(), vars.j());
   //p = (EQN%gamma-1)*( Q(5) - 0.5*SUM(Q(2:4)**2)*irho )
+  const auto p = evaluatePressure(vars.E(), vars.rho(), vars.j(), getZ(Q));
 
   double* f = F[0];
   double* g = F[1];
@@ -221,7 +219,7 @@ void NavierStokes::PDE::evaluateFlux(const double* Q, const double* gradQ, doubl
   mu    = EQN%mu
   kappa = EQN%kappa
   */
-  // TODO(Lukas) Support different visc. models
+  // TODO(Lukas) Support different visc. models?
   const auto mu = referenceViscosity;
   const auto kappa = evaluateHeatConductionCoeff(mu);
 
@@ -247,13 +245,13 @@ void NavierStokes::PDE::evaluateFlux(const double* Q, const double* gradQ, doubl
   const auto uuy  = invRho * (gradQ[idxGradQ(1,j+0)] - uu * gradQ[idxGradQ(1, rho)]);
   const auto vvy  = invRho * (gradQ[idxGradQ(1,j+1)] - vv * gradQ[idxGradQ(1, rho)]);
 #if DIMENSIONS == 3
-  const auto wwy  = invRho * (gradQ[idxGradQ(1,j+2)] - ww * gradQ[idxGradQ(1, rho]));
+  const auto wwy  = invRho * (gradQ[idxGradQ(1,j+2)] - ww * gradQ[idxGradQ(1, rho)]);
 #endif
 
-# if DIMENSIONS == 3
-  const auto uuz  = invRho * (gradQ[idxGradQ(2,j+0)] - uu * gradQ[(idxGradQ(2, rho)]);
-  const auto vvz  = invRho * (gradQ[idxGradQ(2,j+1)] - vv * gradQ[(idxGradQ(2, rho)]);
-  const auto wwz  = invRho * (gradQ[idxGradQ(2,j+2)] - ww * gradQ[(idxGradQ(2, rho)]);
+#if DIMENSIONS == 3
+  const auto uuz  = invRho * (gradQ[idxGradQ(2,j+0)] - uu * gradQ[idxGradQ(2, rho)]);
+  const auto vvz  = invRho * (gradQ[idxGradQ(2,j+1)] - vv * gradQ[idxGradQ(2, rho)]);
+  const auto wwz  = invRho * (gradQ[idxGradQ(2,j+2)] - ww * gradQ[idxGradQ(2, rho)]);
 #endif
 
   /*
@@ -382,7 +380,7 @@ void NavierStokes::PDE::evaluateFlux(const double* Q, const double* gradQ, doubl
   Gv[E] = Gv[j] * uu + Gv[j+1] * vv + Gv[j+2] * ww;
 #endif
 
-  // TODO(Lukas) Viscous flux for 3D!
+  // TODO(Lukas) Test viscous flux for 3D!
   /*
   Hv(1) = 0.
   Hv(2) = Fv(4)
@@ -390,6 +388,13 @@ void NavierStokes::PDE::evaluateFlux(const double* Q, const double* gradQ, doubl
   Hv(4) = mu*( 2*wwz - divV23 )
   Hv(5) = Hv(2)*uu + Hv(3)*vv + Hv(4)*ww + kappa*Tz
   */
+#if DIMENSIONS == 3
+  Hv[rho] = 0.0;
+  Hv[j+0] = Fv[j+2];
+  Hv[j+1] = Gv[j+2];
+  Hv[j+2] = mu * (2 * wwz - divV23);
+  Hv[E] = Hv[j] * uu + Hv[j+1] * vv + Hv[j+2] * ww;
+#endif
 
   /*
   f = f - Fv
@@ -406,13 +411,14 @@ void NavierStokes::PDE::evaluateFlux(const double* Q, const double* gradQ, doubl
     }
   }
 
+  // Heat flux
   f[E] -= kappa * Tx;
   g[E] -= kappa * Ty;
 # if DIMENSIONS == 3
   h[E] -= kappa * Tz;
 #endif
 
-  // Advection-Diffusion
+  // Molecular diffusion for Advection-Reaction-Diffusion part.
   if (molecularDiffusionCoeff > 0) {
     f[rho] -= molecularDiffusionCoeff * gradQ[idxGradQ(0, rho)];
     g[rho] -= molecularDiffusionCoeff * gradQ[idxGradQ(1, rho)];

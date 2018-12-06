@@ -29,7 +29,7 @@ namespace c {
  */
 template <bool useNCP, bool useFlux, bool useViscousFlux, typename SolverType>
 double rusanov(SolverType& solver, double* fL, double *fR, const double* qL, const double* qR,
-               int normalNonZero);
+             const double* gradQL, const double* gradQR,  int normalNonZero);
 } // namespace c
 } // namespace riemansolvers
 } // namespace finitevolumes

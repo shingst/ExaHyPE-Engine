@@ -56,7 +56,7 @@ void riemannSolverNonlinear(
   for (int i = 0; i < basisSize; i++) {
     for (int j = 0; j < basisSize; j++) {
       // do not need to store material parameters
-      double LL[numberOfVariables] = { 0.0};
+      double LL[numberOfVariables] = {0.0};
       double LR[numberOfVariables] = {0.0};
       solver.eigenvalues(&QL[idx_QLR(i, j, 0)], direction, LL);
       solver.eigenvalues(&QR[idx_QLR(i, j, 0)], direction, LR);
@@ -67,7 +67,7 @@ void riemannSolverNonlinear(
       std::transform(LR, LR + numberOfVariables, LR, std::abs<double>);
       const double smax_L = *std::max_element(LL, LL + numberOfVariables);
       const double smax_R = *std::max_element(LR, LR + numberOfVariables);
-      const double maxHyperbolicEigenvalue =
+      maxHyperbolicEigenvalue =
           std::max(maxHyperbolicEigenvalue, std::max(smax_L, smax_R));
 
       // diffusive eigenvalues
@@ -79,7 +79,7 @@ void riemannSolverNonlinear(
           *std::max_element(LL, LL + numberOfVariables);
       const double smaxDiffusive_R =
           *std::max_element(LR, LR + numberOfVariables);
-      const double maxDiffusiveEigenvalue = std::max(
+      maxDiffusiveEigenvalue = std::max(
           maxDiffusiveEigenvalue, std::max(smaxDiffusive_L, smaxDiffusive_R));
     }
   }

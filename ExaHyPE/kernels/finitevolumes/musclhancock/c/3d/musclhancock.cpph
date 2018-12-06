@@ -247,7 +247,10 @@ double kernels::finitevolumes::musclhancock::c::solutionUpdate(
           if(useSource || useNCP) {
             // Old code (for reference): solver.fusedSource(luh + idx(i, j, k, 0), gradQ, Qt);
             if(useSource) {
-              solver.algebraicSource(luhOld + idx(i, j, k, 0), Qt);
+              // TODO(Lukas) Fix for sources that depend on x/t
+              const tarch::la::Vector<DIMENSIONS, double> x = {0.0, 0.0, 0.0};
+              const double t = 0.0;
+              solver.algebraicSource(x, t, luhOld + idx(i, j, k, 0), Qt);
             } else {
               std::fill_n(Qt, numberOfVariables, 0.0);
             }
@@ -322,6 +325,9 @@ double kernels::finitevolumes::musclhancock::c::solutionUpdate(
                 fL, fR,
                 wRx + idx_w(i, j, k, 0),
                 wLx + idx_w(i, j, k+1, 0),
+                slope + idx_slope(i,j,k,0,0),
+                slope + idx_slope(i,j,k+1,0,0),
+                cellSize,
                 0
             );
         dt_max_allowed = std::min(
@@ -343,6 +349,9 @@ double kernels::finitevolumes::musclhancock::c::solutionUpdate(
             fL, fR,
             wRy + idx_w(i, j, k, 0),
             wLy + idx_w(i, j+1, k, 0),
+            slope + idx_slope(i,j,k,0,0),
+            slope + idx_slope(i,j+1,k,0,0),
+            cellSize,
             1
         );
         dt_max_allowed = std::min(
@@ -364,6 +373,9 @@ double kernels::finitevolumes::musclhancock::c::solutionUpdate(
             fL, fR,
             wRz + idx_w(i, j, k, 0),
             wLz + idx_w(i+1, j, k, 0),
+            slope + idx_slope(i,j,k,0,0),
+            slope + idx_slope(i+1,j,k,0,0),
+            cellSize,
             2
         );
         dt_max_allowed = std::min(
@@ -395,7 +407,9 @@ double kernels::finitevolumes::musclhancock::c::solutionUpdate(
           double* gradQ = slope + idx_slope(i, j, k, 0, 0); // const in time
           // Old code (for reference): solver.fusedSource(ws, gradQ, src);
           if(useSource) {
-            solver.algebraicSource(ws, src);
+            const tarch::la::Vector<DIMENSIONS, double> x = {0.0, 0.0, 0.0};
+            const double t = 0.0;
+            solver.algebraicSource(x, t, ws, src);
           } else {
             std::fill_n(src, numberOfVariables, 0.0);
           }
