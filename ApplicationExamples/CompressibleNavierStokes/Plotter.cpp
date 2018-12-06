@@ -10,7 +10,7 @@
 #include "NavierStokesSolver_ADERDG.h"
 #include "NavierStokesSolver_ADERDG_Variables.h"
 #include "PDE.h"
-#include "totalVariation.h"
+#include "AMR/totalVariation.h"
 
 NavierStokes::Plotter::Plotter(NavierStokes::NavierStokesSolver_ADERDG& solver) :
         order(solver.Order), solver(&solver) {

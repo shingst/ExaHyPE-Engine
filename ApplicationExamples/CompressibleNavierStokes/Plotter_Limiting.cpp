@@ -10,7 +10,7 @@
 #include "NavierStokesSolver.h"
 #include "NavierStokesSolver_ADERDG_Variables.h"
 #include "PDE.h"
-#include "totalVariation.h"
+#include "AMR/totalVariation.h"
 
 NavierStokes::Plotter_Limiting::Plotter_Limiting(NavierStokes::NavierStokesSolver& solver) :
         // TODO(Lukas) Remove order!

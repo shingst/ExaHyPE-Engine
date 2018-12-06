@@ -10,7 +10,7 @@
 #include "NavierStokesSolver_FV.h"
 #include "NavierStokesSolver_FV_Variables.h"
 #include "PDE.h"
-#include "totalVariation.h"
+#include "AMR/totalVariation.h"
 
 NavierStokes::Plotter_FV::Plotter_FV(NavierStokes::NavierStokesSolver_FV& solver) :
         solver(&solver) {

@@ -12,6 +12,8 @@
 
 #include "kernels/limiter/generic/Limiter.h"
 
+#include "AMR/Criterion.h"
+
 NavierStokes::NavierStokesSolver::NavierStokesSolver(
         const double maximumMeshSize,
         const int maximumMeshDepth,
