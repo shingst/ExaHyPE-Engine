@@ -2596,9 +2596,8 @@ public:
 
   using Solver::reduceGlobalObservables;
   void reduceGlobalObservables(std::vector<double>& globalObservables,
-                                         int cellDescriptionIndex,
-                                         int element) const override;
-
+                               CellInfo cellInfo,
+                               int solverNumber) const override;
 };
 
 #endif

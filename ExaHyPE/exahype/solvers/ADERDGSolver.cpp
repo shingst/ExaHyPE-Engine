@@ -4137,7 +4137,7 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
     riemannSolver(
         FL, FR, QL, QR,
         cellDescription.getCorrectorTimeStepSize(),cellDescription.getSize(),face._direction,false,face._faceIndex);
-    
+
     #ifdef Asserts
     for (int ii = 0; ii<dofsPerFace; ii++) {
       assertion8(std::isfinite(FL[ii]), cellDescription.toString(),
@@ -5183,18 +5183,20 @@ void exahype::solvers::ADERDGSolver::pullUnknownsFromByteStream(
     true
   );
 }
-
-void exahype::solvers::ADERDGSolver::reduceGlobalObservables(std::vector<double> &globalObservables,
-                                                             int cellDescriptionsIndex,
-                                                             int element) const {
-  CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
-  if (cellDescription.getType()!=CellDescription::Type::Cell) {
-    return;
+void exahype::solvers::ADERDGSolver::reduceGlobalObservables(
+        std::vector<double>& globalObservables,
+        CellInfo cellInfo, int solverNumber) const {
+  // TODO(Lukas) Implement!
+  const auto element = cellInfo.indexOfADERDGCellDescription(solverNumber);
+  if (element != NotFound ) {
+    CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[element];
+    if (cellDescription.getType() != CellDescription::Type::Cell) {
+      return;
+    }
+    assert(cellDescription.getType()==CellDescription::Type::Cell);
+    double* luh  = static_cast<double*>(cellDescription.getSolution());
+    const auto& dx = cellDescription.getSize();
+    const auto curGlobalObservables = mapGlobalObservables(luh, dx);
+    reduceGlobalObservables(globalObservables, curGlobalObservables);
   }
-
-  double* luh  = static_cast<double*>(cellDescription.getSolution());
-  auto dx = cellDescription.getSize();
-  const auto curGlobalObservables = mapGlobalObservables(luh, dx);
-  reduceGlobalObservables(globalObservables, curGlobalObservables);
-
 }

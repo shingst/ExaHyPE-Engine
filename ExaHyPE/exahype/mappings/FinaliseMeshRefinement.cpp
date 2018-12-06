@@ -189,9 +189,8 @@ void exahype::mappings::FinaliseMeshRefinement::enterCell(
         _minTimeStepSizes[solverNumber] = std::min(admissibleTimeStepSize, _minTimeStepSizes[solverNumber]);
         _maxLevels[solverNumber]        = std::max(fineGridVerticesEnumerator.getLevel(),_maxLevels[solverNumber]);
 
-        const int element = solver->tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
         solver->reduceGlobalObservables(_reducedGlobalObservables[solverNumber],
-               fineGridCell.getCellDescriptionsIndex(), element);
+               cellInfo, solverNumber);
 
         // determine min and max for LimitingADERDGSolver
         if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
@@ -228,6 +227,7 @@ void exahype::mappings::FinaliseMeshRefinement::endIteration(
         assertion1(_minTimeStepSizes[solverNumber]>0.0,_minTimeStepSizes[solverNumber]);
         solver->updateMinNextTimeStepSize(_minTimeStepSizes[solverNumber]);
 
+        // TODO(Lukas) Does this also work for LimitingADERDG?
         solver->updateNextGlobalObservables(_reducedGlobalObservables[solverNumber]);
         if ( exahype::solvers::Solver::FuseADERDGPhases ) {
           #ifdef Parallel

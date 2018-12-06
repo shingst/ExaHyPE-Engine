@@ -2079,14 +2079,8 @@ class exahype::solvers::Solver {
             const std::vector<double>& curGlobalObservables) const = 0;
 
    virtual void reduceGlobalObservables(std::vector<double>& globalObservables,
-                                         int cellDescriptionIndex, int element) const = 0;
-
-    /*
-    virtual void reduceGlobalObservables(
-            std::vector<double>& globalObservables,
-            const double* Q) const = 0;
-    */
-
+                                        CellInfo cellInfo,
+                                        int solverNumber) const = 0;
 };
 
 #endif

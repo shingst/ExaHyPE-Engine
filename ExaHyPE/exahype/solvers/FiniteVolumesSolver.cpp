@@ -2108,9 +2108,11 @@ bool exahype::solvers::FiniteVolumesSolver::CompressionJob::run() {
   return false;
 }
 
-void exahype::solvers::FiniteVolumesSolver::reduceGlobalObservables(std::vector<double> &globalObservables,
-                                                             int cellDescriptionsIndex,
-                                                             int element) const {
+ void exahype::solvers::FiniteVolumesSolver::reduceGlobalObservables(
+             std::vector<double> &globalObservables,
+    Solver::CellInfo cellInfo, int solverNumber) const {
+  // TODO(Lukas) Implement this!
+    /*
   CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
   if (cellDescription.getType()!=CellDescription::Type::Cell) {
     return;
@@ -2120,5 +2122,6 @@ void exahype::solvers::FiniteVolumesSolver::reduceGlobalObservables(std::vector<
   auto dx = cellDescription.getSize();
   const auto curGlobalObservables = mapGlobalObservables(luh, dx);
   reduceGlobalObservables(globalObservables, curGlobalObservables);
+     */
 
 }

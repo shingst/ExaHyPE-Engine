@@ -113,6 +113,9 @@ void exahype::solvers::LimitingADERDGSolver::initSolver(
   updateNextMeshUpdateEvent(MeshUpdateEvent::InitialRefinementRequested);
   setNextMeshUpdateEvent();
 
+  _globalObservables = resetGlobalObservables();
+  _nextGlobalObservables = resetGlobalObservables();
+
   _solver->initSolver(timeStamp, domainOffset, domainSize, boundingBoxSize, cmdlineargs, parserView);
   _limiter->initSolver(timeStamp, domainOffset, domainSize, boundingBoxSize, cmdlineargs, parserView);
 }
@@ -152,6 +155,7 @@ void exahype::solvers::LimitingADERDGSolver::startNewTimeStep() {
   _solver->startNewTimeStep();
   ensureLimiterTimeStepDataIsConsistent();
 
+  // TODO(Lukas) Implement update global observables as in fused timestep
   logDebug("startNewTimeStep()","getMeshUpdateEvent()="<<Solver::toString(getMeshUpdateEvent())<<
            ",getNextMeshUpdateEvent()="<<Solver::toString(getNextMeshUpdateEvent()));
 }
@@ -162,6 +166,17 @@ void exahype::solvers::LimitingADERDGSolver::startNewTimeStepFused(
   _solver->startNewTimeStepFused(isFirstTimeStepOfBatch,isLastTimeStepOfBatch);
   ensureLimiterTimeStepDataIsConsistent();
 
+  // The ADER-DG Solver is responsible for the reductions.
+  // TODO(Lukas) Is this the correct order?
+  _globalObservables = std::move(_nextGlobalObservables);
+  _nextGlobalObservables = resetGlobalObservables();
+  _solver->_nextGlobalObservables = _nextGlobalObservables;
+  _solver->_globalObservables = _globalObservables;
+  _limiter->_nextGlobalObservables = _nextGlobalObservables;
+  _limiter->_globalObservables = _globalObservables;
+
+  //std::cout << "nextGlobal[0] = " << _nextGlobalObservables[0] << std::endl;
+  //std::cout << "globalObservables[0] = " << _globalObservables[0] << std::endl;
   logDebug("startNewTimeStep()","getMeshUpdateEvent()="<<Solver::toString(getMeshUpdateEvent())<<
            ",getNextMeshUpdateEvent()="<<Solver::toString(getNextMeshUpdateEvent()));
 }
@@ -203,6 +218,14 @@ int exahype::solvers::LimitingADERDGSolver::getNextMaxLevel() const {
 
 int exahype::solvers::LimitingADERDGSolver::getMaxLevel() const {
   return _solver->getMaxLevel();
+}
+
+void exahype::solvers::LimitingADERDGSolver::updateNextGlobalObservables(
+      const std::vector<double>& globalObservables) {
+  Solver::updateNextGlobalObservables(globalObservables);
+  _solver->updateNextGlobalObservables(globalObservables);
+  // TODO(Lukas) Update for Limiter necessary?
+  _limiter->updateNextGlobalObservables(globalObservables);
 }
 
 exahype::solvers::LimitingADERDGSolver::LimiterPatch& exahype::solvers::LimitingADERDGSolver::getLimiterPatch(
@@ -1721,20 +1744,56 @@ void exahype::solvers::LimitingADERDGSolver::toString (std::ostream& out) const 
   out << getIdentifier() << "{_FV: ";
   out << _limiter->toString() << "}";
 }
+std::vector<double> exahype::solvers::LimitingADERDGSolver::mapGlobalObservables(
+        const double* const Q,
+        const tarch::la::Vector<DIMENSIONS, double> &dx) const {
+  assertion1(false, "LimitingADERDGSolver::mapGlobalObservables should never be called!");
+  return _solver->mapGlobalObservables(Q, dx); // unreachable
+}
 
-void exahype::solvers::LimitingADERDGSolver::reduceGlobalObservables(std::vector<double> &globalObservables,
-                                                             int cellDescriptionsIndex,
-                                                             int element) const {
-  // TODO
-    /*
-  CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
-  if (cellDescription.getType()!=CellDescription::Type::Cell) {
+std::vector<double> exahype::solvers::LimitingADERDGSolver::resetGlobalObservables() const {
+  return _solver->resetGlobalObservables();
+}
+
+void exahype::solvers::LimitingADERDGSolver::reduceGlobalObservables(
+            std::vector<double>& reducedGlobalObservables,
+            const std::vector<double>& curGlobalObservables) const {
+  _solver->reduceGlobalObservables(reducedGlobalObservables, curGlobalObservables);
+}
+
+void exahype::solvers::LimitingADERDGSolver::reduceGlobalObservables(
+    std::vector<double> &globalObservables,
+    Solver::CellInfo cellInfo, int solverNumber) const {
+  const int solverElement = cellInfo.indexOfADERDGCellDescription(solverNumber);
+  if (solverElement != NotFound ) {
+    SolverPatch& solverPatch = cellInfo._ADERDGCellDescriptions[solverElement];
+
+    // TODO(Lukas) Maybe use previous refinement status? Depends on update time.
+    bool isUnlimited = solverPatch.getRefinementStatus() < _solver->_minimumRefinementStatusForActiveFVPatch;
+    //bool isUnlimited = solverPatch.getPreviousRefinementStatus() < _solver->_minimumRefinementStatusForActiveFVPatch;
+    if (isUnlimited) {
+      // Solution is saved in DG-Space.
+      // TODO(Lukas) Maybe pass solverPatch directly?
+      _solver->reduceGlobalObservables(globalObservables, cellInfo, solverNumber);
+      //std::cout << "Reduce global[0] = " << globalObservables[0] << std::endl;
+      // TODO(Lukas) This is weird...
+    } else {
+      const int limiterElement = cellInfo.indexOfFiniteVolumesCellDescription(solverNumber);
+      if (limiterElement != NotFound) {
+        LimiterPatch& limiterPatch = cellInfo._FiniteVolumesCellDescriptions[limiterElement];
+        //std::cout << "ReduceGlobalObservables: FV-Patch!" << std::endl;
+      } else {
+        //assert(false);
+        //std::cout << "ReduceGlobalObservables: FV-Patch not found!" << std::endl;
+      }
+
+      //LimiterPatch& limiterPatch = getLimiterPatch(solverPatch, cellInfo);
+      // TODO(Lukas) Implement FV-Routines
+      //_limiter->reduceGlobalObservables(globalObservables, cellInfo, solverNumber);
+
+    }
     return;
   }
 
-  double* luh  = static_cast<double*>(cellDescription.getSolution());
-  auto dx = cellDescription.getSize();
-  const auto curGlobalObservables = mapGlobalObservables(luh, dx);
-  reduceGlobalObservables(globalObservables, curGlobalObservables);
-*/
+  //assert(false); // Should be an element?!
 }

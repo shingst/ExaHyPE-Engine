@@ -690,6 +690,9 @@ public:
   int getNextMaxLevel() const final override;
   int getMaxLevel() const final override;
 
+  void updateNextGlobalObservables(
+          const std::vector<double>& globalObservables) override;
+
   /**
    * Returns the index of the solver patch registered for the solver with
    * index \p solverNumber in exahype::solvers::RegisteredSolvers.
@@ -1417,10 +1420,16 @@ public:
     return _solver;
   }
 
+ std::vector<double> mapGlobalObservables(const double* const Q, const tarch::la::Vector<DIMENSIONS, double> &dx) const override;
+ std::vector<double> resetGlobalObservables() const override;
+ void reduceGlobalObservables(
+                           std::vector<double>& reducedGlobalObservables,
+                           const std::vector<double>& curGlobalObservables) const override;
+
   using Solver::reduceGlobalObservables;
   void reduceGlobalObservables(std::vector<double>& globalObservables,
-                                         int cellDescriptionIndex,
-                                         int element) const override;
+                           Solver::CellInfo cellInfo,
+                           int solverNumber) const override;
 };
 
 

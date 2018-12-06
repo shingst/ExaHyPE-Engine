@@ -372,9 +372,8 @@ void exahype::mappings::FusedTimeStep::leaveCell(
       _maxLevels       [solverNumber] = std::min( fineGridVerticesEnumerator.getLevel(),_maxLevels       [solverNumber]);
 
 
-      const int element = solver->tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
       solver->reduceGlobalObservables(_reducedGlobalObservables[solverNumber],
-              fineGridCell.getCellDescriptionsIndex(), element);
+              cellInfo, solverNumber);
 
     }
 
