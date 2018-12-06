@@ -29,6 +29,7 @@
 #include "exahype/plotters/VTK/LimitingADERDG2CartesianVTK.h"
 #include "exahype/plotters/VTK/LimitingADERDGSubcells2CartesianVTK.h"
 #include "exahype/plotters/VTK/Patch2VTK.h"
+#include "exahype/plotters/FiniteVolumes2ProbeAscii.h"
 
 #include "exahype/plotters/PeanoFileFormat/ADERDG2CartesianPeanoPatchFileFormat.h"
 #include "exahype/plotters/PeanoFileFormat/ADERDG2LegendrePeanoPatchFileFormat.h"
@@ -465,6 +466,12 @@ exahype::plotters::Plotter::Plotter(
 	     static_cast<exahype::solvers::FiniteVolumesSolver*>(
                 solvers::RegisteredSolvers[_solver])->getGhostLayerWidth());
       }
+      if (equalsIgnoreCase(_type, FiniteVolumes2ProbeAscii::getIdentifier())) {
+        _device = new FiniteVolumes2ProbeAscii(postProcessing,
+             static_cast<exahype::solvers::FiniteVolumesSolver*>(
+                solvers::RegisteredSolvers[_solver])->getGhostLayerWidth());
+      }
+
 
     break;
   }

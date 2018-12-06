@@ -466,7 +466,46 @@ private:
    * touchVertexFirstTimeSpecification()
    * to peano::MappingSpecification::AvoidFineGridRaces.
    *
-   * <h2>Shared Memory</h2>
+   * Shared Memory
+   * =============
+   * 
+   * All vertices can be processed race-free in parallel if each vertex only
+   * performs Riemann solves/neighbour merges around a single adjacent cell.
+   * This ensures a unique mapping between the vertices and the faces of the mesh
+   * and prevents that two threads access the same face data simulutaneously.
+   * 
+   * In the sketch below, Vertex a only merges neighbours adjacent to cell 0.
+   * The interfaces are annotated with A. Analgously, vertices b and c
+   * only perform merges at faces annotated with B and C, respectively.
+   *
+   * --C--c
+   *      |
+   *   2  C  3   
+   *      |    
+   * --A--a--B--b
+   *      |     |
+   *   0  A  1  B
+   *      |     |
+   * 
+   * This works as all cells are sounded by vertices. At the boundary, some vertices
+   * will have less work associated with them as some of their adjacent faces are outside of the domain.
+   * 
+   * We let every vertex do the Riemann solves around the cell at position 0 in the vertex' local adjacency map.
+   * The cell's neigbour merge partners are at positions 1,2, (2D and 3D) and 4 (only 3D).
+   *
+   * Background Jobs and neighbourMergePerformed flags
+   * --------------------------------------------------
+   * The Riemann solves wait if a background job has not completed
+   * in one of the cells adjacent to a face.
+   * We rely here on information if a face has already been
+   * processed or not. Otherwise, we may wait
+   * on a neighbour which has already advanced in time
+   * and submitted the next background job.
+   * This would introduce numerical errors.
+   *
+   *
+   * Old implemtation (still used for MPI routine)
+   * ---------------------------------------------
    *
    * The AvoidFineGridRaces multithreading touchVertexFirstTime
    * specification prevents that more than one threads write data for
@@ -488,12 +527,6 @@ private:
    * ----X----O-----
    *     |    |
    *     |    |
-   *
-   * TODO(Dominic): It might be useful to introduce a multithreading specification
-   * "AvoidFineGridRacesOnlyRed" that processes only the red
-   * vertices and not the black ones. In fact, the second sweep over the black vertices only
-   * finds the riemannSolvePerfomed flags set and does nothing in
-   * our current implementation.
    *
    * Further parallelisation over the adjacent faces
    * -----------------------------------------------
@@ -569,7 +602,9 @@ private:
    *     print(value)
    * @endcode
    *
-   * <h2>Limiter identification</h2>
+   * Limiter identification
+   * ======================
+   * 
    * Each ADER-DG solver analyses the local min and max values within a cell.
    * This information however is not stored in the cell but on the 2d faces
    * of a cell.

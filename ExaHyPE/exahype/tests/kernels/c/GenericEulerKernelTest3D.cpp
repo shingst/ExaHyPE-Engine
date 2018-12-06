@@ -346,6 +346,7 @@ void GenericEulerKernelTest::testRiemannSolverLinear() {
   // nVar * nDOF * nDOF]
   // exahype::tests::testdata::generic_euler::testRiemannSolver::QR[80 =
   // nVar * nDOF * nDOF]
+  const double t = 0.0;
   const double dt = 1.40831757919882352703e-03;
   const int normalNonZero=1; // /*normalNonZero (only changes result of eigenvalues, matrixb) */
 
@@ -367,6 +368,7 @@ void GenericEulerKernelTest::testRiemannSolverLinear() {
   kernels::aderdg::generic::c::riemannSolverLinear<false,false,false,GenericEulerKernelTest>(
       *this,
       FL, FR, QL, QR,
+      t,
       dt,
       normalNonZero
   );
@@ -415,6 +417,7 @@ void GenericEulerKernelTest::testRiemannSolverNonlinear() {
   // nVar * nVar * nDOF]
   // exahype::tests::testdata::generic_euler::testRiemannSolver::QR[80 =
   // nVar * nVar * nDOF]
+  const double t  = 0.0;
   const double dt = 1.40831757919882352703e-03;
 
   double QL[nData*basisSize2] = {0.0};  // nData * nDOF(2)
@@ -434,6 +437,7 @@ void GenericEulerKernelTest::testRiemannSolverNonlinear() {
       *this,
       FL, FR, QL, QR,
       dt,
+      t,
       1  // normalNonZero
   );
 

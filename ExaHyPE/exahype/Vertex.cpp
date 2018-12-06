@@ -436,10 +436,6 @@ void exahype::Vertex::mergeNeighbours(
       peano::datatraversal::TaskSet runParallelTasks(
       [&]() -> bool { mergeNeighboursLoopBody(0,1,*this,x,h); return false; },
       [&]() -> bool { mergeNeighboursLoopBody(0,2,*this,x,h); return false; },
-      [&]() -> bool { mergeNeighboursLoopBody(1,3,*this,x,h); return false; },
-      [&]() -> bool { mergeNeighboursLoopBody(2,3,*this,x,h); return false; },
-      peano::datatraversal::TaskSet::TaskType::IsTaskAndRunImmediately,
-      peano::datatraversal::TaskSet::TaskType::IsTaskAndRunImmediately,
       peano::datatraversal::TaskSet::TaskType::IsTaskAndRunImmediately,
       peano::datatraversal::TaskSet::TaskType::IsTaskAndRunImmediately,
       true);
@@ -448,33 +444,17 @@ void exahype::Vertex::mergeNeighbours(
       [&]() -> bool { mergeNeighboursLoopBody(0,1,*this,x,h); return false; },
       [&]() -> bool { mergeNeighboursLoopBody(0,2,*this,x,h); return false; },
       [&]() -> bool { mergeNeighboursLoopBody(0,4,*this,x,h); return false; },
-      [&]() -> bool { mergeNeighboursLoopBody(1,3,*this,x,h); return false; },
-      [&]() -> bool { mergeNeighboursLoopBody(1,5,*this,x,h); return false; },
-      [&]() -> bool { mergeNeighboursLoopBody(2,3,*this,x,h); return false; },
-      [&]() -> bool { mergeNeighboursLoopBody(2,6,*this,x,h); return false; },
-      [&]() -> bool { mergeNeighboursLoopBody(3,7,*this,x,h); return false; },
-      [&]() -> bool { mergeNeighboursLoopBody(4,5,*this,x,h); return false; },
-      [&]() -> bool { mergeNeighboursLoopBody(4,6,*this,x,h); return false; },
-      [&]() -> bool { mergeNeighboursLoopBody(5,7,*this,x,h); return false; },
-      [&]() -> bool { mergeNeighboursLoopBody(6,7,*this,x,h); return false; },
-      peano::datatraversal::TaskSet::TaskType::IsTaskAndRunImmediately,
-      peano::datatraversal::TaskSet::TaskType::IsTaskAndRunImmediately,
-      peano::datatraversal::TaskSet::TaskType::IsTaskAndRunImmediately,
-      peano::datatraversal::TaskSet::TaskType::IsTaskAndRunImmediately,
-      peano::datatraversal::TaskSet::TaskType::IsTaskAndRunImmediately,
-      peano::datatraversal::TaskSet::TaskType::IsTaskAndRunImmediately,
-      peano::datatraversal::TaskSet::TaskType::IsTaskAndRunImmediately,
-      peano::datatraversal::TaskSet::TaskType::IsTaskAndRunImmediately,
-      peano::datatraversal::TaskSet::TaskType::IsTaskAndRunImmediately,
       peano::datatraversal::TaskSet::TaskType::IsTaskAndRunImmediately,
       peano::datatraversal::TaskSet::TaskType::IsTaskAndRunImmediately,
       peano::datatraversal::TaskSet::TaskType::IsTaskAndRunImmediately,
       true);
       #endif
     } else {
-      for (int i=0; i<2*(DIMENSIONS-1)*(DIMENSIONS); i++) {
-        mergeNeighboursLoopBody(pos1Scalar[i],pos2Scalar[i],*this,x,h);
-      }
+     mergeNeighboursLoopBody(0,1,*this,x,h);
+     mergeNeighboursLoopBody(0,2,*this,x,h);
+     #if DIMENSIONS==3
+     mergeNeighboursLoopBody(0,4,*this,x,h);
+     #endif
     }
   }
 }

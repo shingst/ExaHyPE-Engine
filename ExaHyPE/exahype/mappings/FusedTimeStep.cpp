@@ -89,16 +89,11 @@ exahype::mappings::FusedTimeStep::communicationSpecification() const {
 }
 
 peano::MappingSpecification
-exahype::mappings::FusedTimeStep::enterCellSpecification(int level) const {
-  return peano::MappingSpecification(
-      peano::MappingSpecification::WholeTree,
-      peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
-}
-
-peano::MappingSpecification
-exahype::mappings::FusedTimeStep::leaveCellSpecification(int level) const {
+exahype::mappings::FusedTimeStep::enterCellSpecification(int level) {
+  updateBatchIterationCounter(false); // comes after beginIteration in first iteration -> never init counter
+  
   const int coarsestSolverLevel = solvers::Solver::getCoarsestMeshLevelOfAllSolvers();
-  if ( std::abs(level)>=coarsestSolverLevel ) {
+  if ( std::abs(level)>=coarsestSolverLevel && sendOutRiemannDataInThisIteration() ) {
     return peano::MappingSpecification(
           peano::MappingSpecification::WholeTree,
           peano::MappingSpecification::RunConcurrentlyOnFineGrid,true); // performs reductions
@@ -110,8 +105,35 @@ exahype::mappings::FusedTimeStep::leaveCellSpecification(int level) const {
 }
 
 peano::MappingSpecification
-exahype::mappings::FusedTimeStep::touchVertexFirstTimeSpecification(int level) const {
-  return Vertex::getNeighbourMergeSpecification(level);
+exahype::mappings::FusedTimeStep::leaveCellSpecification(int level) {
+  updateBatchIterationCounter(false); // comes after beginIteration in first iteration -> never init counter
+  
+  const int coarsestSolverLevel = solvers::Solver::getCoarsestMeshLevelOfAllSolvers();
+  if ( std::abs(level)>=coarsestSolverLevel && issuePredictionJobsInThisIteration() ) {
+    return peano::MappingSpecification(
+          peano::MappingSpecification::WholeTree,
+          peano::MappingSpecification::RunConcurrentlyOnFineGrid,true); // performs reductions
+  } else {
+    return peano::MappingSpecification(
+          peano::MappingSpecification::Nop,
+          peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
+  }
+}
+
+peano::MappingSpecification
+exahype::mappings::FusedTimeStep::touchVertexFirstTimeSpecification(int level) {
+  updateBatchIterationCounter(false); // comes after beginIteration in first iteration -> never init counter
+
+  const int coarsestSolverLevel = solvers::Solver::getCoarsestMeshLevelOfAllSolvers();
+  if ( std::abs(level)>=coarsestSolverLevel && issuePredictionJobsInThisIteration() ) {
+    return peano::MappingSpecification(
+          peano::MappingSpecification::WholeTree,
+          peano::MappingSpecification::RunConcurrentlyOnFineGrid,true); // performs reductions
+  } else {
+    return peano::MappingSpecification(
+          peano::MappingSpecification::Nop,
+          peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
+  }
 }
 
 /**

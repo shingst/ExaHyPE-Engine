@@ -143,6 +143,7 @@ void riemannSolverNonlinear(
     SolverType& solver,
     double* FL, double* FR, const double* const QL,
     const double* const QR,
+    const double t,
     const double dt,
     const int direction);
 
@@ -372,6 +373,7 @@ void riemannSolverNonlinear(
     SolverType& solver,
     double* FL, double* FR, const double* const QL,
     const double* const QR,
+    const double t,
     const double dt,
     const int direction);
 
@@ -380,6 +382,7 @@ void riemannSolverLinear(
     SolverType& solver,
     double* FL, double* FR,
     const double* const QL, const double* const QR,
+    const double t,
     const double dt,
     const int direction);
 

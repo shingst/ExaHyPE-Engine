@@ -25,6 +25,7 @@ void {{codeNamespace}}::riemannSolver(
                           {{solverName}}& solver,
                           double* restrict FL, double* restrict FR,
                           const double* const restrict QL, const double* const restrict QR,
+                          const double t,
                           const double dt,
                           const int direction
 ) {
