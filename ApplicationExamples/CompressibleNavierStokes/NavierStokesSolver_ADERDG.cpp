@@ -288,7 +288,7 @@ double NavierStokes::NavierStokesSolver_ADERDG::stableTimeStepSize(const double*
   return (0.7/0.9) * stableDiffusiveTimeStepSize<NavierStokesSolver_ADERDG>(*static_cast<NavierStokesSolver_ADERDG*>(this),luh,dx);
 }
 
-void NavierStokes::NavierStokesSolver_ADERDG::riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double dt,const tarch::la::Vector<DIMENSIONS, double>& lengthScale, const int direction, bool isBoundaryFace, int faceIndex) {
+void NavierStokes::NavierStokesSolver_ADERDG::riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double t, const double dt,const tarch::la::Vector<DIMENSIONS, double>& lengthScale, const int direction, bool isBoundaryFace, int faceIndex) {
   assertion2(direction>=0,dt,direction);
   assertion2(direction<DIMENSIONS,dt,direction);
   // TODO(Lukas) Integrate Riemann solver changes into standard solver.

@@ -526,10 +526,16 @@ public:
           const double* cellSize,
           int normalNonZero) = 0;
 
-  virtual void solutionUpdate(
-      double* luhNew,const double* luh,
-      const tarch::la::Vector<DIMENSIONS, double>& dx,
-      const double dt, double& maxAdmissibleDt) = 0;
+  /**
+   * Update the solution of all volumes on a patch.
+   *
+   * @param[inout] luh             the current (and then new) solution
+   * @param[in]    dx              the extends of the cell holding the FV patch
+   * @param[in]    dt              time step size the FV patch is marching with
+   * @param[inout] maxAdmissibleDt admissible time step size obtained from the Riemann solves
+   */
+  virtual void solutionUpdate(double* luh,const tarch::la::Vector<DIMENSIONS, double>& dx,
+                              const double dt, double& maxAdmissibleDt) = 0;
 
   /**
    * Adjust the conserved variables and parameters (together: Q) at a given time t at the (quadrature) point x.

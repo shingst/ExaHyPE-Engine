@@ -161,18 +161,18 @@ private:
    * is the case if we perform the last iteration of a batch
    * or no batch iteration at all.
    */
-  peano::MappingSpecification enterCellSpecification(int level) const;
+  peano::MappingSpecification enterCellSpecification(int level);
   /**
    * Run through the whole tree. Run concurrently on the fine grid.
    */
-  peano::MappingSpecification leaveCellSpecification(int level) const;
+  peano::MappingSpecification leaveCellSpecification(int level);
   /**
-   * Run through the whole tree. Avoid fine grid races.
+   * Run concurrently through the whole tree.
    *
    * Alters the state as we have a counter which checks
    * if we have waited for the background jobs to complete.
    */
-  peano::MappingSpecification touchVertexFirstTimeSpecification(int level) const;
+  peano::MappingSpecification touchVertexFirstTimeSpecification(int level);
 
   /**
    * Nop.

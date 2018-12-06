@@ -3291,6 +3291,7 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
 
   riemannSolver(
       FL,FR,QL,QR,
+      std::min( pLeft.getCorrectorTimeStamp(),pRight.getCorrectorTimeStamp() ),
       std::min( pLeft.getCorrectorTimeStepSize(),pRight.getCorrectorTimeStepSize() ),
       pLeft.getSize(), face._direction, false, -1); // TODO(Dominic): Merge Riemann solver directly with the face integral and push the result on update
                                    // does not make sense to overwrite the flux when performing local time stepping; coarse grid flux must be constant, or not?
@@ -4136,8 +4137,8 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
 
     riemannSolver(
         FL, FR, QL, QR,
-        cellDescription.getCorrectorTimeStepSize(),cellDescription.getSize(),face._direction,false,face._faceIndex);
-
+        cellDescription.getCorrectorTimeStamp(), cellDescription.getCorrectorTimeStepSize(),
+	cellDescription.getSize(), face._direction, false, face._faceIndex);
     #ifdef Asserts
     for (int ii = 0; ii<dofsPerFace; ii++) {
       assertion8(std::isfinite(FL[ii]), cellDescription.toString(),
@@ -4159,7 +4160,8 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
 
     riemannSolver(
         FL, FR, QL, QR,
-        cellDescription.getCorrectorTimeStepSize(),cellDescription.getSize(),face._direction,false,face._faceIndex);
+        cellDescription.getCorrectorTimeStamp(), cellDescription.getCorrectorTimeStepSize(),
+	cellDescription.getSize(), face._direction, false, face._faceIndex);
     
     #ifdef Asserts
     for (int ii = 0; ii<dofsPerFace; ii++) {
