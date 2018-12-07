@@ -1021,6 +1021,10 @@ def parseArgs():
     # subprograms
     parser.add_argument("--parseAllMetrics", dest="parseAllMetrics", action="store_true",help="Parse all output files in the specified directory with the specified prefix.")
     parser.set_defaults(parseAllMetrics=False)
+    parser.add_argument("--parseAllAdapters", dest="parseAllAdapters", action="store_true",help="Parse all output files in the specified directory with the specified prefix.")
+    parser.set_defaults(parseAllAdapters=False)
+    parser.add_argument("--parseAllTimeStepTimes", dest="parseAllTimeStepTimes", action="store_true",help="Parse all output files in the specified directory with the specified prefix.")
+    parser.set_defaults(parseAllTimeStepTimes=False)
     
     parser.add_argument("file",
         type=str,help="The directory or CSV file to work with.")
@@ -1032,3 +1036,7 @@ if __name__ == "__main__":
 
     if args.parseAllMetrics and args.prefix!=None and os.path.isdir(args.file):
         parseMetrics(args.file,args.prefix,args.compress)
+    if args.parseAllAdapters and args.prefix!=None and os.path.isdir(args.file):
+        parseAdapterTimes(args.file,args.prefix,args.compress)
+    if args.parseAllTimeStepTimes and args.prefix!=None and os.path.isdir(args.file):
+        parseSummedTimes(args.file,args.prefix,True)
