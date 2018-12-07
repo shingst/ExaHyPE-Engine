@@ -187,8 +187,8 @@ void NavierStokes::PDE::evaluateFlux(const double* Q, const double* gradQ, doubl
   // TODO
   h[rho] = Q[j+2];
   h[j] = invRho * Q[j+2] * Q[j];
-  h[j+1] = invRho * Q[j+2] * Q[j+1] + p;
-  h[j+2] = invRho * Q[j+2] * Q[j+2];
+  h[j+1] = invRho * Q[j+2] * Q[j+1];
+  h[j+2] = invRho * Q[j+2] * Q[j+2] + p;
   h[E] = invRho * Q[j+2] * (Q[E]+p);
 #endif
 
