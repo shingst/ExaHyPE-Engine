@@ -411,6 +411,24 @@ void NavierStokes::PDE::evaluateFlux(const double* Q, const double* gradQ, doubl
     }
   }
 
+  // Heat flux changes for reactive NS-Equation due to change in
+  // definition of pressure.
+  // TODO(Lukas) Maybe fix for reconstructed heat flux!
+  if (useAdvection) {
+    const double factor = invCv * q0 * invRho2;
+    Tx -= factor *
+            (Q[rho] * gradQ[idxGradQ(0,Z)] -
+             Q[Z] * gradQ[idxGradQ(0, rho)]);
+    Ty -= factor *
+            (Q[rho] * gradQ[idxGradQ(1,Z)] -
+                    Q[Z] * gradQ[idxGradQ(1, rho)]);
+#if DIMENSIONS == 3
+    Tz -= factor * q0 *
+             (Q[rho] * gradQ[idxGradQ(2,Z)] -
+                     Q[Z] * gradQ[idxGradQ(2, rho)]);
+#endif
+  }
+
   // Heat flux
   f[E] -= kappa * Tx;
   g[E] -= kappa * Ty;
