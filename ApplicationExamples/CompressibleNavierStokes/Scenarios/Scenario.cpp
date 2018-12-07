@@ -9,10 +9,7 @@ void NavierStokes::Scenario::initialValues(const double* const x, const PDE& ns,
   auto gradState = std::array<double, DIMENSIONS * vars.SizeVariables>();
   analyticalSolution(x, 0.0, ns, vars, gradState.data());
 
-  if (vars[3] < 0.0) {
-    std::cout << "Q[3] = " << vars[3] << " x = (" << x[0] << ", " << x[1]
-              << std::endl;
-  }
+  assertion2(vars.E() > 0.0, vars.E(), x)
 }
 
 void NavierStokes::Scenario::analyticalSolution(const double* const x,

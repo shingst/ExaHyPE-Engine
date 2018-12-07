@@ -45,7 +45,7 @@ void NavierStokes::ErrorWriter::plotPatch(
   const auto& quadratureNodes = kernels::gaussLegendreNodes[quadOrder];
   const auto& quadratureWeights = kernels::gaussLegendreWeights[quadOrder];
 
-  static_assert(DIMENSIONS == 2, "ErrorWriter only supports 2D");
+  assertionEqualsMsg(DIMENSIONS, 2, "ErrorWriter is only supported for 2D!");
   double x[2] = {0.0, 0.0};
 
   kernels::idx4 idx(basisSize, basisSize, basisSize, numberOfData);
