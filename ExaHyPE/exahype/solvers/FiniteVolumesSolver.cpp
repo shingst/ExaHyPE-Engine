@@ -845,10 +845,10 @@ void exahype::solvers::FiniteVolumesSolver::updateSolution(
     counter++;
   #endif
 
-  double* newSolution = static_cast<double*>(cellDescription.getSolution());
-  double* solution    = static_cast<double*>(cellDescription.getPreviousSolution());
+  double* solution       = static_cast<double*>(cellDescription.getSolution());
+  double* solutionBackup = static_cast<double*>(cellDescription.getPreviousSolution());
   if (backupPreviousSolution) {
-    std::copy(newSolution,newSolution+getDataPerPatch()+getGhostDataPerPatch(),solution); // Copy (current solution) in old solution field.
+    std::copy(solution,solution+getDataPerPatch()+getGhostDataPerPatch(),solutionBackup); // Copy (current solution) in old solution field.
   }
 
   validateNoNansInFiniteVolumesSolution(cellDescription,cellDescriptionsIndex,"updateSolution[pre]");
@@ -857,9 +857,7 @@ void exahype::solvers::FiniteVolumesSolver::updateSolution(
   assertion1(cellDescription.getTimeStepSize()<std::numeric_limits<double>::max(),cellDescription.toString());
   double admissibleTimeStepSize=0;
   if (cellDescription.getTimeStepSize()>0) {
-    solutionUpdate(
-        newSolution,solution,
-        cellDescription.getSize(),cellDescription.getTimeStepSize(),admissibleTimeStepSize);
+    solutionUpdate(solution,cellDescription.getSize(),cellDescription.getTimeStepSize(),admissibleTimeStepSize);
   }
 
   // cellDescription.getTimeStepSize() = 0 is an initial condition
@@ -874,7 +872,7 @@ void exahype::solvers::FiniteVolumesSolver::updateSolution(
   }
 
   adjustSolution(
-      newSolution,
+      solution,
       cellDescription.getOffset()+0.5*cellDescription.getSize(),
       cellDescription.getSize(),
       cellDescription.getTimeStamp()+cellDescription.getTimeStepSize(),

@@ -221,7 +221,7 @@ class exahype::parser::Parser {
     GrainSizeSampling
   };
 
-  enum class MPILoadBalancingType { Static };
+  enum class MPILoadBalancingType { Static, Dynamic };
 
 
   void readFile(const std::string& filename);

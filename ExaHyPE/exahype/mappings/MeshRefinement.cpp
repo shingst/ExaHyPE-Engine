@@ -38,6 +38,8 @@
 
 #include <sstream>
 
+bool exahype::mappings::MeshRefinement::DynamicLoadBalancing    = false;
+
 bool exahype::mappings::MeshRefinement::IsFirstIteration        = true;
 bool exahype::mappings::MeshRefinement::IsInitialMeshRefinement = true;
 
@@ -132,7 +134,10 @@ void exahype::mappings::MeshRefinement::beginIteration( exahype::State& solverSt
   _localState = solverState;
 
   tarch::multicore::jobs::Job::setMaxNumberOfRunningBackgroundThreads(0); // during the traversal only have zero/one consumer thread running
-  peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(true);
+
+  if ( IsInitialMeshRefinement || DynamicLoadBalancing ) {
+    peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(true);
+  }
     
    //logInfo("beginIteration(...)","solverState.getAllSolversAttainedStableStateInPreviousIteration()="<<solverState.getAllSolversAttainedStableStateInPreviousIteration());
 
@@ -560,7 +565,7 @@ void exahype::mappings::MeshRefinement::mergeWithNeighbour(
   logTraceInWith6Arguments("mergeWithNeighbour(...)", vertex, neighbour,
                            fromRank, fineGridX, fineGridH, level);
 
-  if ( !exahype::mappings::MeshRefinement::IsFirstIteration ) {
+  if ( !IsInitialMeshRefinement || !IsFirstIteration ) {
     vertex.mergeOnlyWithNeighbourMetadata(fromRank,fineGridX,fineGridH,level,exahype::State::AlgorithmSection::MeshRefinement,true);
   }
 

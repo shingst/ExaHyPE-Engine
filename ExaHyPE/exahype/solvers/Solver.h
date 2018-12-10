@@ -1108,7 +1108,6 @@ class exahype::solvers::Solver {
    */
   static void ensureAllJobsHaveTerminated(JobType jobType);
 
-
  /**
   * Waits until the \p cellDescription has completed its time step.
   *
@@ -1137,7 +1136,7 @@ class exahype::solvers::Solver {
   */
  template <typename CellDescription>
  void waitUntilCompletedTimeStep(
-     const CellDescription& cellDescription,const bool waitForHighPriorityJob,const bool receiveDanglingMessages) const {
+     const CellDescription& cellDescription,const bool waitForHighPriorityJob,const bool receiveDanglingMessages) {
 
 #ifdef USE_ITAC
   static int event_wait = -1;

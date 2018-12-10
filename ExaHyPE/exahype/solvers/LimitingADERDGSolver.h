@@ -1109,7 +1109,7 @@ public:
       Solver::CellInfo&                          cellInfo2,
       const tarch::la::Vector<DIMENSIONS, int>&  pos1,
       const tarch::la::Vector<DIMENSIONS, int>&  pos2,
-      const bool                                 isRecomputation) const;
+      const bool                                 isRecomputation);
 
   /**
    * Merge solver boundary data (and other values) of a
@@ -1218,7 +1218,7 @@ public:
         const tarch::la::Vector<DIMENSIONS, int>&    dest,
         const bool                                   isRecomputation,
         const tarch::la::Vector<DIMENSIONS, double>& x,
-        const int                                    level) const;
+        const int                                    level);
 
   void mergeWithNeighbourData(
       const int                                    fromRank,

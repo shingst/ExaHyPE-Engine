@@ -524,6 +524,8 @@ exahype::parser::Parser::MPILoadBalancingType exahype::parser::Parser::getMPILoa
   exahype::parser::Parser::MPILoadBalancingType result = MPILoadBalancingType::Static;
   if (token.compare("static") == 0) {
     result = MPILoadBalancingType::Static;
+  } else if (token.compare("dynamic") == 0) {
+    result = MPILoadBalancingType::Dynamic;
   } else {
     logError("getMPILoadBalancingType()",
              "Invalid distributed memory identifier " << token);

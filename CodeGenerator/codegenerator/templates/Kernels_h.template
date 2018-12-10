@@ -139,6 +139,7 @@ namespace {{namespaceName}} {
     double* restrict FR,
     const double* restrict const QL,
     const double* restrict const QR,
+    const double t,
     const double dt,
     const int direction
   );
