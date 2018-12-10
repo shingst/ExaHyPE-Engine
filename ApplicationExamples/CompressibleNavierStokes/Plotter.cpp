@@ -38,52 +38,47 @@ void NavierStokes::Plotter::mapQuantities(
     double* outputQuantities,
     double timeStamp
 ) {
-  auto vars = Variables(Q);
-  constexpr auto writtenUnknowns = vars.Size;
+  const auto vars = ReadOnlyVariables{Q};
 
-  for (int i = 0; i < writtenUnknowns; ++i){
-    outputQuantities[i] = Q[i];
+  const auto rho = NavierStokesSolver_ADERDG_Variables::shortcuts::rho;
+  const auto j = NavierStokesSolver_ADERDG_Variables::shortcuts::j;
+  const auto E = NavierStokesSolver_ADERDG_Variables::shortcuts::E;
+  const auto Z = E + 1; // Only defined if coupling is used!
+
+  // TODO(Lukas) Refactor plotting!
+  const bool writePrimitive = true;
+  const bool writePotT = false;
+
+  const auto& ns = solver->ns;
+  const auto pressure = ns.evaluatePressure(vars.E(), vars.rho(), vars.j(),
+                                            ns.getZ(Q));
+  if (writePrimitive) {
+    // Primitive variables are density, velocities and pressure.
+    outputQuantities[rho] = Q[rho];
+    outputQuantities[j+0] = Q[j+0]/Q[rho];
+    outputQuantities[j+1] = Q[j+1]/Q[rho];
+#if DIMENSIONS == 3
+    outputQuantities[j+2] = Q[j+2]/Q[rho];
+#endif
+    outputQuantities[E] = pressure;
+    if (ns.useAdvection) {
+      outputQuantities[Z] = Q[Z] / Q[rho];
+    }
+  } else {
+    // Otherwise just plot all conservative variables.
+    // (no conversion needed)
+    for (int i = 0; i < vars.size(); ++i){
+      outputQuantities[i] = Q[i];
+    }
   }
 
-  if (solver->scenarioName == "convergence" ||
-          solver->scenarioName == "entropy-wave") {
-    // Plot quadrature weights.
-    // This is needed to approximate the integral of error norms.
-#if defined(_GLL)
-    const auto& weights = kernels::gaussLobattoWeights[order];
-#else
-    const auto& weights = kernels::gaussLegendreWeights[order];
-#endif
-
-    double weight = 1.0;
-    for (int i = 0; i < DIMENSIONS; ++i) {
-      weight *= weights[pos[i]];
-    }
-    outputQuantities[vars.Size] = weight;
-  } else {
-    // For other scenarios, plot the potential temperature.
-
-    const auto& ns = solver->ns;
-
-    const auto pressure = ns.evaluatePressure(vars.E(), vars.rho(), vars.j(),
-            ns.getZ(Q));
+  if (writePotT) {
     const auto temperature = ns.evaluateTemperature(vars.rho(), pressure);
-
     const auto potT = ns.evaluatePotentialTemperature(temperature, pressure);
 
     // Write potential temperature
     outputQuantities[vars.Size] = potT;
-  }
-  auto& globalObservables = solver->getGlobalObservables();
-  if (timeStamp > 0.0 && globalObservables.size() >= 2) {
-    outputQuantities[vars.Size+1] = globalObservables[0];
-    outputQuantities[vars.Size+2] = globalObservables[1];
   } else {
-    outputQuantities[vars.Size+1] = 0.0;
-    outputQuantities[vars.Size+2] = 0.0;
+    outputQuantities[vars.Size] = 0.0;
   }
-
-
-
-
 }

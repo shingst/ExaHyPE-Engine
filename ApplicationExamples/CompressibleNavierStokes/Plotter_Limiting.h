@@ -8,6 +8,7 @@
 #define POSTPROCESSING_PlotterLimiting_CLASS_HEADER_
 
 #include "exahype/plotters/Plotter.h"
+#include "Plotter.h"
 
 namespace NavierStokes {
   class NavierStokesSolver;
@@ -15,24 +16,9 @@ namespace NavierStokes {
   class Plotter_Limiting;
 }
 
-class NavierStokes::Plotter_Limiting : public exahype::plotters::Plotter::UserOnTheFlyPostProcessing {
+class NavierStokes::Plotter_Limiting : public NavierStokes::Plotter {
 public:
   Plotter_Limiting(NavierStokes::NavierStokesSolver& solver);
-  virtual ~Plotter_Limiting();
-
-  void startPlotting(double time) override;
-  void finishPlotting() override;
-  void mapQuantities(
-    const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
-    const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch,
-    const tarch::la::Vector<DIMENSIONS, double>& x,
-    const tarch::la::Vector<DIMENSIONS, int>&    pos,
-    double* Q,
-    double* outputQuantities,
-    double timeStamp) override;
-private:
-    NavierStokesSolver_ADERDG* solver;
-    int order;
 };
 
 #endif /* POSTPROCESSING_PlotterLimiting_CLASS_HEADER_ */

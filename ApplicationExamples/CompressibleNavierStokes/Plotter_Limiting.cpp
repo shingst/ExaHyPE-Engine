@@ -6,75 +6,9 @@
 //   www.exahype.eu
 // ========================
 #include "Plotter_Limiting.h"
-#include <kernels/GaussLegendreQuadrature.h>
 #include "NavierStokesSolver.h"
-#include "NavierStokesSolver_ADERDG_Variables.h"
-#include "PDE.h"
-#include "AMR/totalVariation.h"
 
 NavierStokes::Plotter_Limiting::Plotter_Limiting(NavierStokes::NavierStokesSolver& solver) :
-        // TODO(Lukas) Remove order!
-        order(0),
-        // TODO(Lukas) This ain't nice.
-        solver(const_cast<NavierStokesSolver_ADERDG*>(
-               static_cast<const NavierStokesSolver_ADERDG*>(&*solver.getSolver()))) {
-}
-
-NavierStokes::Plotter_Limiting::~Plotter_Limiting() {
-}
-
-void NavierStokes::Plotter_Limiting::startPlotting( double time) {
-  // @TODO Please insert your code here.
-}
-
-
-void NavierStokes::Plotter_Limiting::finishPlotting() {
-  // @TODO Please insert your code here.
-}
-
-void NavierStokes::Plotter_Limiting::mapQuantities(
-    const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
-    const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch,
-    const tarch::la::Vector<DIMENSIONS, double>& x,
-    const tarch::la::Vector<DIMENSIONS, int>&    pos,
-    double* Q,
-    double* outputQuantities,
-    double timeStamp
-) {
-  auto vars = Variables(Q);
-  constexpr auto writtenUnknowns = vars.Size;
-
-  for (int i = 0; i < writtenUnknowns; ++i){
-    outputQuantities[i] = Q[i];
-  }
-
-  if (solver->scenarioName == "convergence" ||
-          solver->scenarioName == "entropy-wave") {
-    // Plot quadrature weights.
-    // This is needed to approximate the integral of error norms.
-#if defined(_GLL)
-    const auto& weights = kernels::gaussLobattoWeights[order];
-#else
-    const auto& weights = kernels::gaussLegendreWeights[order];
-#endif
-
-    double weight = 1.0;
-    for (int i = 0; i < DIMENSIONS; ++i) {
-      weight *= weights[pos[i]];
-    }
-    outputQuantities[vars.Size] = weight;
-  } else {
-    // For other scenarios, plot the potential temperature.
-
-    const auto& ns = solver->ns;
-
-    const auto pressure = ns.evaluatePressure(vars.E(), vars.rho(), vars.j(),
-            ns.getZ(Q));
-    const auto temperature = ns.evaluateTemperature(vars.rho(), pressure);
-
-    const auto potT = ns.evaluatePotentialTemperature(temperature, pressure);
-
-    // Write potential temperature
-    outputQuantities[vars.Size] = potT;
-  }
+        Plotter(const_cast<NavierStokesSolver_ADERDG&>(
+               static_cast<const NavierStokesSolver_ADERDG&>(*solver.getSolver()))) {
 }
