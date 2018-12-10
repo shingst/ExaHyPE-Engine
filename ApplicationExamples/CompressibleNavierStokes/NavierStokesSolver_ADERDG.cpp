@@ -183,7 +183,39 @@ bool NavierStokes::NavierStokesSolver_ADERDG::isPhysicallyAdmissible(
       const double t, const double dt) const {
     // TODO(Lukas) What about advection-reaction-diffusion?
     auto vars = ReadOnlyVariables{observablesMin};
-    return vars.rho() > 0.0 && vars.E() > 0.0;
+
+    // Positive energy is not enough, as it does not guarantee positive pressure!
+    const auto pressure = ns.evaluatePressure(vars.E(), vars.rho(), vars.j(), ns.getZ(vars.data()));
+    // Pressure > 0 -> E > 0
+
+    bool isAdvectionTroubled = ns.useAdvection && (ns.getZ(vars.data()) < 0);
+    if (vars.rho() < 0.0 || vars.E() < 0.0 || isAdvectionTroubled) {
+      return false;
+    }
+
+    // After quick sanity check, do pointwise check for pressure
+    // TODO(Lukas) Is necessary? If yes, there has to be a faster way...
+    // TODO(Lukas) At least refactor this.
+#if DIMENSIONS == 2
+    constexpr auto basisSize = Order + 1;
+    kernels::idx3 idx(basisSize,basisSize,NumberOfVariables);
+    for (int i = 0; i < basisSize; ++i) {
+      for (int j = 0; j < basisSize; ++j) {
+        auto pointVars = ReadOnlyVariables{solution + idx(i,j,0)};
+        const auto curPressure = ns.evaluatePressure(pointVars.E(),
+                pointVars.rho(),
+                pointVars.j(),
+                ns.getZ(pointVars.data()));
+        bool isCurAdvectionTroubled = ns.useAdvection && ((ns.getZ(pointVars.data()) < 0) ||
+                (ns.getZ(pointVars.data()) > 1.0));
+        if (pointVars.rho() < 0.0 || curPressure < 0.0 || isCurAdvectionTroubled) {
+          return false;
+        }
+      }
+    }
+    // TODO(Lukas) 3D!
+#endif
+  return true;
 }
 
 void NavierStokes::NavierStokesSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(double* observables,const int numberOfObservables,const double* const Q) const {
