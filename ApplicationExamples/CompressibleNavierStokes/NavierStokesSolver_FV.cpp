@@ -4,38 +4,15 @@
 #include "NavierStokesSolver_ADERDG_Variables.h"
 #include "PDE.h"
 
-#include "Scenarios/ScenarioFactory.h"
-
+#include "SetupHelper.h"
 
 tarch::logging::Log NavierStokes::NavierStokesSolver_FV::_log( "NavierStokes::NavierStokesSolver_FV" );
 
 void NavierStokes::NavierStokesSolver_FV::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
-  // TODO(Lukas) Refactor init!
-   assert(constants.isValueValidString("scenario"));
-
-  double referenceViscosity;
-  if (constants.isValueValidString("viscosity") &&
-      constants.getValueAsString("viscosity") == "default") {
-   throw -1;
-  } else {
-    assert(constants.isValueValidDouble("viscosity"));
-    referenceViscosity = constants.getValueAsDouble("viscosity");
-  }
-
-  scenarioName = constants.getValueAsString("scenario");
-  scenario = ScenarioFactory::createScenario(scenarioName);
-
-  const auto molecularDiffusionCoeff = scenario->getMolecularDiffusionCoeff();
-  auto numberOfNecessaryVariables =
-          1 + DIMENSIONS + 1;
-  if (scenario->getUseAdvection()) {
-    ++numberOfNecessaryVariables;
-  }
-  if (NumberOfVariables != numberOfNecessaryVariables) {
-    throw -1;
-  }
-
-  ns = PDE(referenceViscosity, *scenario);
+  auto parsedConfig = parseConfig(cmdlineargs, constants);
+  ns = std::move(parsedConfig.ns);
+  scenarioName = std::move(parsedConfig.scenarioName);
+  scenario = std::move(parsedConfig.scenario);
 }
 
 void NavierStokes::NavierStokesSolver_FV::adjustSolution(const double* const x,const double t,const double dt, double* Q) {
