@@ -739,6 +739,7 @@ private:
   void dropNeighbourMetadata(
       const int                                    fromRank,
       const tarch::la::Vector<DIMENSIONS, double>& x,
+      const tarch::la::Vector<DIMENSIONS, double>& h,
       const int                                    level) const;
 
   /**
