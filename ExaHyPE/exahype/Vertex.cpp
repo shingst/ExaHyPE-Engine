@@ -585,20 +585,20 @@ void exahype::Vertex::mergeOnlyWithNeighbourMetadataLoopBody(
     const int                                    destScalar,
     const int                                    destCellDescriptionIndex,
     const tarch::la::Vector<TWO_POWER_D, int>&   adjacentRanks,
-    const tarch::la::Vector<DIMENSIONS, double>& baryCentre,
+    const tarch::la::Vector<DIMENSIONS, double>& x,
     const tarch::la::Vector<DIMENSIONS, double>& h,
     const int                                    level,
     const exahype::State::AlgorithmSection&      section,
     const bool                                   checkThoroughly) {
   if ( hasToReceiveMetadata(fromRank,srcScalar,destScalar,adjacentRanks) ) {
-    logDebug("mergeOnlyWithNeighbourMetadata(...)","from rank="<<fromRank<<",baryCentre="<<baryCentre.toString()<<",level="<<level<<",adjacentRanks="<<adjacentRanks);
+    logDebug("mergeOnlyWithNeighbourMetadata(...)","from rank="<<fromRank<<",x="<<x.toString()<<",level="<<level<<",adjacentRanks="<<adjacentRanks);
     const tarch::la::Vector<DIMENSIONS,int> src  = delineariseIndex2(srcScalar);
     const tarch::la::Vector<DIMENSIONS,int> dest = delineariseIndex2(destScalar);
     assertion(tarch::la::countEqualEntries(dest, src) == (DIMENSIONS-1));
 
     exahype::MetadataHeap::HeapEntries receivedMetadata;
     receivedMetadata.clear();
-    exahype::receiveNeighbourCommunicationMetadata(receivedMetadata,fromRank,baryCentre,level);
+    exahype::receiveNeighbourCommunicationMetadata(receivedMetadata,fromRank,x,level);
     assertionEquals(receivedMetadata.size(),exahype::NeighbourCommunicationMetadataPerSolver*solvers::RegisteredSolvers.size());
 
     bool validIndex = destCellDescriptionIndex >= 0;
@@ -677,12 +677,12 @@ bool exahype::Vertex::hasToSendToNeighbourNow(
     solvers::Solver::CellInfo&         cellInfo,
     solvers::Solver::BoundaryFaceInfo& face) {
   bool result = true;
-  for (auto& p : cellInfo._ADERDGCellDescriptions) {
-    result |= hasToSendToNeighbourNow(p,face); // side effects
-  }
-  for (auto& p : cellInfo._FiniteVolumesCellDescriptions) {
-    result |= hasToSendToNeighbourNow(p,face); // side effects
-  }
+//  for (auto& p : cellInfo._ADERDGCellDescriptions) {
+//    result |= hasToSendToNeighbourNow(p,face); // side effects
+//  }
+//  for (auto& p : cellInfo._FiniteVolumesCellDescriptions) {
+//    result |= hasToSendToNeighbourNow(p,face); // side effects
+//  }
   return result;
 }
 
@@ -770,10 +770,10 @@ bool exahype::Vertex::hasToReceiveFromNeighbourNow(
   bool result = true;
   for (auto& p : cellInfo._ADERDGCellDescriptions) {
     result |= hasToReceiveFromNeighbourNow(p,face); // side effects
-    if ( prefetchADERDGFaceData ) { solvers::ADERDGSolver::prefetchFaceData(p,face._faceIndex); }
+    //if ( prefetchADERDGFaceData ) { solvers::ADERDGSolver::prefetchFaceData(p,face._faceIndex); }
   }
   for (auto& p : cellInfo._FiniteVolumesCellDescriptions) {
-    result |= hasToReceiveFromNeighbourNow(p,face); // side effects
+    //result |= hasToReceiveFromNeighbourNow(p,face); // side effects
   }
   return result;
 }
