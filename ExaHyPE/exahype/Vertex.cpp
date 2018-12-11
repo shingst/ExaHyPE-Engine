@@ -775,8 +775,9 @@ bool exahype::Vertex::hasToReceiveFromNeighbourNow(
     const bool prefetchADERDGFaceData) {
   bool result = true;
   for (auto& p : cellInfo._ADERDGCellDescriptions) {
-    result |= hasToReceiveFromNeighbourNow(p,face); // side effects
-    //if ( prefetchADERDGFaceData ) { solvers::ADERDGSolver::prefetchFaceData(p,face._faceIndex); }
+    p.setNeighbourMergePerformed(face._faceIndex,(signed char) true);
+    // result |= hasToReceiveFromNeighbourNow(p,face); // side effects
+    if ( prefetchADERDGFaceData ) { solvers::ADERDGSolver::prefetchFaceData(p,face._faceIndex); }
   }
   for (auto& p : cellInfo._FiniteVolumesCellDescriptions) {
     //result |= hasToReceiveFromNeighbourNow(p,face); // side effects
