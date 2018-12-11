@@ -91,9 +91,7 @@ void exahype::Cell::resetNeighbourMergeFlagsAndCounters(
   // Finite-Volumes (loop body can be copied from ADER-DG loop)
   for (auto& p : cellInfo._FiniteVolumesCellDescriptions) {
     for (int faceIndex=0; faceIndex<DIMENSIONS_TIMES_TWO; faceIndex++) {
-      for (int faceIndex=0; faceIndex<DIMENSIONS_TIMES_TWO; faceIndex++) {
-        p.setNeighbourMergePerformed(faceIndex,static_cast<char>(false));
-      }
+      p.setNeighbourMergePerformed(faceIndex,static_cast<char>(false));
       #ifdef Parallel
       int listingsOfRemoteRank =
           countListingsOfRemoteRankAtInsideFace(

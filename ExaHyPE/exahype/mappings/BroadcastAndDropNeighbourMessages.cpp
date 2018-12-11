@@ -130,7 +130,7 @@ void exahype::mappings::BroadcastAndDropNeighbourMessages::mergeWithNeighbour(
   if ( exahype::solvers::Solver::FuseADERDGPhases ) {
   vertex.receiveNeighbourData(
       fromRank,false /*no merge*/,true /*no batch*/,
-      fineGridX,level);
+      fineGridX,fineGridH,level);
   }
 }
 
