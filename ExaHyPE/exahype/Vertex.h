@@ -221,7 +221,7 @@ private:
    * @param destScalar
    * @param srcCellDescriptionIndex
    * @param adjacentRanks
-   * @param x
+   * @param baryCentre of a face
    * @param h
    * @param level
    * @param checkThoroughly
@@ -232,7 +232,7 @@ private:
       const int                                    destScalar,
       const int                                    srcCellDescriptionIndex,
       const tarch::la::Vector<TWO_POWER_D, int>&   adjacentRanks,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
+      const tarch::la::Vector<DIMENSIONS, double>& baryCentre,
       const tarch::la::Vector<DIMENSIONS, double>& h,
       const int                                    level,
       const bool                                   checkThoroughly);
@@ -319,7 +319,7 @@ private:
    * @param mergeWithReceivedData
    * @param receiveNeighbourMetadata
    * @param adjacentRanks
-   * @param x
+   * @param baryCentre bary centre of the face
    * @param level
    */
   static void receiveNeighbourDataLoopBody(
@@ -330,7 +330,7 @@ private:
     const bool                                   mergeWithReceivedData,
     const bool                                   receiveNeighbourMetadata,
     const tarch::la::Vector<TWO_POWER_D, int>&   adjacentRanks,
-    const tarch::la::Vector<DIMENSIONS, double>& x,
+    const tarch::la::Vector<DIMENSIONS, double>& baryCentre,
     const int                                    level);
 
 #endif
@@ -633,7 +633,7 @@ private:
       const tarch::la::Vector<DIMENSIONS,int>&     src,
       const tarch::la::Vector<DIMENSIONS,int>&     dest,
       const int                                    srcCellDescriptionsIndex,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
+      const tarch::la::Vector<DIMENSIONS, double>& baryCentre,
       const tarch::la::Vector<DIMENSIONS, double>& h);
 
   /**
@@ -811,6 +811,7 @@ private:
       int toRank,
       const bool isLastIterationOfBatchOrNoBatch,
       const tarch::la::Vector<DIMENSIONS, double>& x,
+      const tarch::la::Vector<DIMENSIONS, double>& h,
       const int                                    level) const;
 
   /**
@@ -882,6 +883,7 @@ private:
       const bool                                   mergeWithReceivedData,
       const bool                                   isFirstIterationOfBatchOrNoBatch,
       const tarch::la::Vector<DIMENSIONS, double>& x,
+      const tarch::la::Vector<DIMENSIONS, double>& h,
       const int                                    level) const;
   #endif
 };

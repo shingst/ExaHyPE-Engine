@@ -842,7 +842,7 @@ void exahype::mappings::MeshRefinement::prepareCopyToRemoteNode(
   if ( 
       localCell.hasToCommunicate(level) &&
       localCell.getRankOfRemoteNode()==toRank 
-  ) { // isAsignedToRemoteRank does not work, remeber the halo sends
+  ) { // isAsignedToRemoteRank does not work, remember the halo sends
     const int cellDescriptionsIndex = localCell.getCellDescriptionsIndex();
     exahype::solvers::ADERDGSolver::sendCellDescriptions(toRank,cellDescriptionsIndex,
         exahype::State::isJoiningWithMaster()/* send out data from worker side */,
