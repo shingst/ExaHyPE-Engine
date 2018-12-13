@@ -84,7 +84,7 @@ namespace c {
    * @param dt      the used time step size
    * @return the actual admissible time step size obtained from the Riemann solves.
    */
-  template <bool useSource, bool useNCP, bool useFlux, bool robustDiagonalLimiting, typename SolverType>
+  template <bool useSource, bool useNCP, bool useFlux, bool useViscousFlux, bool robustDiagonalLimiting, typename SolverType>
   double solutionUpdate(
       SolverType& solver,double* luh,
       const tarch::la::Vector<DIMENSIONS, double>& dx,double dt);

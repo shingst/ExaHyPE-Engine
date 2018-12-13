@@ -85,25 +85,12 @@ double kernels::finitevolumes::riemannsolvers::c::rusanov(
   double FR2[DIMENSIONS][numberOfVariables] = {0.0};
   double* FL[DIMENSIONS]={FL2[0], FL2[1]};
   double* FR[DIMENSIONS]={FR2[0], FR2[1]};
-  if (useFlux && !useViscousFlux) {
-    solver.flux(qL, FL);
-    solver.flux(qR, FR);
-  }
-
-  idx2 idxGradQ(DIMENSIONS, numberOfData);
   if (useViscousFlux) {
-      //std::cout << numberOfData << std::endl;
-      double gradQ_[DIMENSIONS*numberOfVariables] = {0.0};
-      for(int i=0; i < DIMENSIONS; i++){
-        // Skip parameters
-          for(int j=0; j < numberOfVariables; j++){
-              gradQ_[idxGradQ(i, j)] = gradQ[i][j];
-          }
-      }
-
-    // TODO (Lukas) Compute complete gradient over both dimensions!
     solver.viscousFlux(qL,gradQL, FL);
     solver.viscousFlux(qR,gradQR, FR);
+  } else if (useFlux) {
+    solver.flux(qL, FL);
+    solver.flux(qR, FR);
   }
 
   for (int i = 0; i < numberOfVariables; i++) {
@@ -176,23 +163,13 @@ double kernels::finitevolumes::riemannsolvers::c::rusanov(
   double FR3[DIMENSIONS][numberOfVariables] = {0.0};
   double* FL[DIMENSIONS]={FL3[0], FL3[1], FL3[2]};
   double* FR[DIMENSIONS]={FR3[0], FR3[1], FR3[2]};
-  if (useFlux && !useViscousFlux) {
+  if (useViscousFlux) {
+    solver.viscousFlux(qL,gradQL, FL);
+    solver.viscousFlux(qR,gradQR, FR);
+  } else if (useFlux) {
     solver.flux(qL, FL);
     solver.flux(qR, FR);
   }
-    if (useViscousFlux) {
-      //std::cout << numberOfData << std::endl;
-      double gradQ_[DIMENSIONS*numberOfData] = {0.0};
-      for(int i=0; i < DIMENSIONS; i++){
-          for(int j=0; j < numberOfData; j++){
-              gradQ_[i*numberOfData + j] = gradQ[i][j];
-          }
-      }
-    solver.viscousFlux(qL,gradQ_, FL);
-    solver.viscousFlux(qR,gradQ_, FR);
-  }
-
-
 
   for (int i = 0; i < numberOfVariables; i++) {
     fnL[i] = 0.5 * s_max * (qL[i] - qR[i]);
