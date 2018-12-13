@@ -6,31 +6,28 @@ double totalVariation(const double* Q, int order, int numberOfVariables,
                       bool correctForVolume) {
   const auto basisSize = order + 1;
   const auto numberOfData = numberOfVariables + numberOfParameters;
-  const auto sizeGradient =
-      basisSize * basisSize * DIMENSIONS * numberOfVariables;
+#if DIMENSIONS == 2
+  const auto idx_lQi = kernels::idx3(basisSize, basisSize, numberOfData);
+#else
+  const auto idx_lQi =
+      kernels::idx3(basisSize, basisSize, basisSize, numberOfData);
+#endif
 
-  const auto idxGradQ =
-      kernels::idx4(basisSize, basisSize, DIMENSIONS, numberOfVariables);
-  const auto idx_lQi = kernels::idx3(basisSize, basisSize,
-                                     numberOfData);  // idx_lQi(y,x,t,nVar+nPar)
-
-  const auto invDx = tarch::la::invertEntries(dx);
-
-  // First compute gradient.
-  // Note that we could avoid this calculation but it's simpler this way.
-  // TODO(Lukas): Compute integral of TV directly!
-  auto gradQ = std::vector<double>(sizeGradient);
-
+  const auto& quadratureWeights = kernels::gaussLegendreWeights[order];
+  double tv = 0.0;
+#if DIMENSIONS == 2
   // x direction (independent from the y derivatives)
   for (int k = 0; k < basisSize; k++) {  // k == y
     // Matrix operation
     for (int l = 0; l < basisSize; l++) {  // l == x
+      const auto w = quadratureWeights[k] * quadratureWeights[l];
       for (int m = 0; m < numberOfVariables; m++) {
+        double curGrad = 0.0;
         for (int n = 0; n < basisSize; n++) {  // n == matmul x
-          const auto idx = idxGradQ(k, l, /*x*/ 0, m);
           const auto t = Q[idx_lQi(k, n, m)] * kernels::dudx[order][l][n];
-          gradQ[idx] += t;
+          curGrad += t;
         }
+        tv += w * std::abs(curGrad);
       }
     }
   }
@@ -39,35 +36,80 @@ double totalVariation(const double* Q, int order, int numberOfVariables,
   for (int k = 0; k < basisSize; k++) {
     // Matrix operation
     for (int l = 0; l < basisSize; l++) {  // l == y
+      const auto w = quadratureWeights[k] * quadratureWeights[l];
       for (int m = 0; m < numberOfVariables; m++) {
+        double curGrad = 0.0;
         for (int n = 0; n < basisSize; n++) {  // n = matmul y
-          const auto idx = idxGradQ(l, k, /*y*/ 1, m);
           const auto t = Q[idx_lQi(n, k, m)] *
                          kernels::dudx[order][l][n]; /* l,n: transpose */
-          gradQ[idx] += t;
+          curGrad += t;
         }
+        tv += w * std::abs(curGrad);
       }
     }
   }
-
-  // Compute integral of absolute gradient for all dimensions and variables.
-  auto tv = 0.0;
-#if defined(_GLL)
-  const auto& quadratureWeights = kernels::gaussLobattoWeights[order];
 #else
-  const auto& quadratureWeights = kernels::gaussLegendreWeights[order];
-#endif
-
-  for (int k = 0; k < basisSize; k++) {
-    for (int l = 0; l < basisSize; l++) {
-      const auto w = quadratureWeights[k] * quadratureWeights[l];
-      for (int m = 0; m < DIMENSIONS; m++) {
-        for (int n = 0; n < numberOfVariables; n++) {
-          tv += w * std::abs(gradQ[idxGradQ(k, l, m, n)]);
+  // x direction (independent from the y and z derivatives)
+  for (int j = 0; j < basisSize; j++) {    // z
+    for (int k = 0; k < basisSize; k++) {  // y
+      // Matrix operation
+      for (int l = 0; l < basisSize; l++) {  // x
+        const auto w =
+            quadratureWeights[j] * quadratureWeights[k] * quadratureWeights[l];
+        for (int m = 0; m < numberOfVariables; m++) {
+          double curGrad = 0.0;
+          for (int n = 0; n < basisSize; n++) {
+            const auto t = 1.0 * invDx[0] * lQi[idx_lQi(j, k, n, i, m)] *
+                           kernels::dudx[order][l][n];
+            curGrad += t;
+          }
+          tv += w * std::abs(curGrad);
         }
       }
     }
   }
+
+  // y direction (independent from the x and z derivatives)
+  for (int j = 0; j < basisSize; j++) {    // z
+    for (int k = 0; k < basisSize; k++) {  // x
+      // Matrix operation
+      for (int l = 0; l < basisSize; l++) {  // y
+        const auto w =
+            quadratureWeights[j] * quadratureWeights[k] * quadratureWeights[l];
+        for (int m = 0; m < numberOfVariables; m++) {
+          double curGrad = 0.0;
+          for (int n = 0; n < basisSize; n++) {
+            const auto t = 1.0 * invDx[1] * lQi[idx_lQi(j, n, k, i, m)] *
+                           kernels::dudx[order][l][n];
+            curGrad += t;
+          }
+          tv += w * std::abs(curGrad);
+        }
+      }
+    }
+  }
+
+  // z direction (independent from the x and y derivatives)
+  for (int j = 0; j < basisSize; j++) {    // y
+    for (int k = 0; k < basisSize; k++) {  // x
+      // Matrix operation
+      for (int l = 0; l < basisSize; l++) {  // z
+        const auto w =
+            quadratureWeights[j] * quadratureWeights[k] * quadratureWeights[l];
+        for (int m = 0; m < numberOfVariables; m++) {
+          double curGrad = 0.0;
+          for (int n = 0; n < basisSize; n++) {
+            const auto t = 1.0 * invDx[2] * lQi[idx_lQi(n, j, k, i, m)] *
+                           kernels::dudx[order][l][n];
+            curGrad += t;
+          }
+          tv += w * std::abs(curGrad);
+        }
+      }
+    }
+  }
+}
+#endif
 
   if (correctForVolume) {
     const auto volume = dx[0] * dx[1];
