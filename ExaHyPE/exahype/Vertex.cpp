@@ -463,9 +463,7 @@ void exahype::Vertex::mergeNeighbours(
 
 #if Parallel
 bool exahype::Vertex::hasToCommunicate( const int level) const {
-  return
-     isInside() &&
-     level >= exahype::solvers::Solver::getCoarsestMeshLevelOfAllSolvers();
+  return (level >= exahype::solvers::Solver::getCoarsestMeshLevelOfAllSolvers());
 }
 
 bool exahype::Vertex::hasToSendMetadata(
@@ -677,19 +675,6 @@ void exahype::Vertex::dropNeighbourMetadata(
   }
 }
 
-bool exahype::Vertex::hasToSendToNeighbourNow(
-    solvers::Solver::CellInfo&         cellInfo,
-    solvers::Solver::BoundaryFaceInfo& face) {
-  bool result = true;
-//  for (auto& p : cellInfo._ADERDGCellDescriptions) {
-//    result |= hasToSendToNeighbourNow(p,face); // side effects
-//  }
-//  for (auto& p : cellInfo._FiniteVolumesCellDescriptions) {
-//    result |= hasToSendToNeighbourNow(p,face); // side effects
-//  }
-  return result;
-}
-
 void exahype::Vertex::sendToNeighbourLoopBody(
   const int                                    toRank,
   const int                                    srcScalar,
@@ -769,22 +754,6 @@ void exahype::Vertex::sendToNeighbour(
   }
 }
 
-bool exahype::Vertex::hasToReceiveFromNeighbourNow(
-    solvers::Solver::CellInfo&         cellInfo,
-    solvers::Solver::BoundaryFaceInfo& face,
-    const bool prefetchADERDGFaceData) {
-  bool result = true;
-  for (auto& p : cellInfo._ADERDGCellDescriptions) {
-    p.setNeighbourMergePerformed(face._faceIndex,(signed char) true);
-    // result |= hasToReceiveFromNeighbourNow(p,face); // side effects
-    if ( prefetchADERDGFaceData ) { solvers::ADERDGSolver::prefetchFaceData(p,face._faceIndex); }
-  }
-  for (auto& p : cellInfo._FiniteVolumesCellDescriptions) {
-    //result |= hasToReceiveFromNeighbourNow(p,face); // side effects
-  }
-  return result;
-}
-
 void exahype::Vertex::receiveNeighbourDataLoopBody(
     const int                                    fromRank,
     const int                                    srcScalar,
@@ -814,7 +783,7 @@ void exahype::Vertex::receiveNeighbourDataLoopBody(
       solvers::Solver::CellInfo cellInfo(destCellDescriptionIndex);
       solvers::Solver::BoundaryFaceInfo face(dest,src); // dest and src are swapped
 
-      if ( hasToReceiveFromNeighbourNow(cellInfo,face,true/*prefetchADERDGFaceData*/) ) {
+      if ( hasToMergeAtFace(cellInfo,face._faceIndex,true/*prefetchADERDGFaceData*/) ) {
         for(unsigned int solverNumber = solvers::RegisteredSolvers.size(); solverNumber-- > 0;) {
           auto* solver = solvers::RegisteredSolvers[solverNumber];
           const int begin = exahype::NeighbourCommunicationMetadataPerSolver*solverNumber;

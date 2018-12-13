@@ -176,7 +176,7 @@ void exahype::mappings::LocalRollback::enterCell(
 
     // !!! The following has to be done after LocalRollback since we might add new finite volumes patches here.
     // !!! Has to be done for all solvers (cf. touchVertexFirstTime etc.) // TODO(Dominic): Reassess
-    Cell::resetNeighbourMergeFlagsAndCounters(cellInfo,fineGridVertices,fineGridVerticesEnumerator);
+    Cell::resetNeighbourMergePerformedFlags(cellInfo,fineGridVertices,fineGridVerticesEnumerator);
   }
   logTraceOutWith1Argument("enterCell(...)", fineGridCell);
 }
