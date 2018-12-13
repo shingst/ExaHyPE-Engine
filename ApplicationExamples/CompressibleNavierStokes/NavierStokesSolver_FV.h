@@ -109,6 +109,12 @@ class NavierStokes::NavierStokesSolver_FV : public NavierStokes::AbstractNavierS
     /* nonConservativeProduct() function is not included, as requested in the specification file */
     
     /* pointSource() function not included, as requested in the specification file */
+    std::vector<double> mapGlobalObservables(const double* const Q, const tarch::la::Vector<DIMENSIONS,double>& dx) const override;
+
+    std::vector<double> resetGlobalObservables() const override;
+    void reduceGlobalObservables(
+            std::vector<double>& reducedGlobalObservables,
+            const std::vector<double>& curGlobalObservables) const override;
 };
 
 
