@@ -38,21 +38,47 @@ void NavierStokes::Plotter_FV::mapQuantities(
     double* outputQuantities,
     double timeStamp
 ) {
-  auto vars = Variables(Q);
-  constexpr auto writtenUnknowns = vars.Size;
+   const auto vars = ReadOnlyVariables{Q};
 
-  for (int i = 0; i < writtenUnknowns; ++i){
-    outputQuantities[i] = Q[i];
-  }
+  const auto rho = NavierStokesSolver_ADERDG_Variables::shortcuts::rho;
+  const auto j = NavierStokesSolver_ADERDG_Variables::shortcuts::j;
+  const auto E = NavierStokesSolver_ADERDG_Variables::shortcuts::E;
+  const auto Z = E + 1; // Only defined if coupling is used!
+
+  // TODO(Lukas) Refactor plotting!
+  const bool writePrimitive = true;
 
   const auto& ns = solver->ns;
-
+  const bool writePotT = !ns.useAdvection; // TODO(Lukas) Fix pott for coupled eq.
   const auto pressure = ns.evaluatePressure(vars.E(), vars.rho(), vars.j(),
-                                            ns.getZ(Q));
-  const auto temperature = ns.evaluateTemperature(vars.rho(), pressure);
+                                            ns.getZ(Q), ns.getHeight(Q));
+  if (writePrimitive) {
+    // Primitive variables are density, velocities and pressure.
+    outputQuantities[rho] = Q[rho];
+    outputQuantities[j+0] = Q[j+0]/Q[rho];
+    outputQuantities[j+1] = Q[j+1]/Q[rho];
+#if DIMENSIONS == 3
+    outputQuantities[j+2] = Q[j+2]/Q[rho];
+#endif
+    outputQuantities[E] = pressure;
+    if (ns.useAdvection) {
+      outputQuantities[Z] = Q[Z] / Q[rho];
+    }
+  } else {
+    // Otherwise just plot all conservative variables.
+    // (no conversion needed)
+    for (int i = 0; i < vars.size(); ++i){
+      outputQuantities[i] = Q[i];
+    }
+  }
 
-  const auto potT = ns.evaluatePotentialTemperature(temperature, pressure);
+  if (writePotT) {
+    const auto temperature = ns.evaluateTemperature(vars.rho(), pressure);
+    const auto potT = ns.evaluatePotentialTemperature(temperature, pressure);
 
-  // Write potential temperature
-  outputQuantities[writtenUnknowns] = potT;
+    // Write potential temperature
+    outputQuantities[vars.SizeVariables] = potT;
+  } else {
+    outputQuantities[vars.SizeVariables] = 0.0;
+  }
 }

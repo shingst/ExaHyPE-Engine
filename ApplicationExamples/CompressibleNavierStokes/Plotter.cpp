@@ -47,11 +47,11 @@ void NavierStokes::Plotter::mapQuantities(
 
   // TODO(Lukas) Refactor plotting!
   const bool writePrimitive = true;
-  const bool writePotT = false;
 
   const auto& ns = solver->ns;
+  const bool writePotT = !ns.useAdvection; // TODO(Lukas) Fix pott for coupled eq.
   const auto pressure = ns.evaluatePressure(vars.E(), vars.rho(), vars.j(),
-                                            ns.getZ(Q));
+                                            ns.getZ(Q), ns.getHeight(Q));
   if (writePrimitive) {
     // Primitive variables are density, velocities and pressure.
     outputQuantities[rho] = Q[rho];
@@ -77,8 +77,8 @@ void NavierStokes::Plotter::mapQuantities(
     const auto potT = ns.evaluatePotentialTemperature(temperature, pressure);
 
     // Write potential temperature
-    outputQuantities[vars.Size] = potT;
+    outputQuantities[vars.SizeVariables] = potT;
   } else {
-    outputQuantities[vars.Size] = 0.0;
+    outputQuantities[vars.SizeVariables] = 0.0;
   }
 }
