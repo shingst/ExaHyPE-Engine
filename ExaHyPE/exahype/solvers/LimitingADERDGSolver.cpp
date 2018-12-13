@@ -225,7 +225,7 @@ void exahype::solvers::LimitingADERDGSolver::updateNextGlobalObservables(
   Solver::updateNextGlobalObservables(globalObservables);
   _solver->updateNextGlobalObservables(globalObservables);
   // TODO(Lukas) Update for Limiter necessary?
-  _limiter->updateNextGlobalObservables(globalObservables);
+  //_limiter->updateNextGlobalObservables(globalObservables);
 }
 
 exahype::solvers::LimitingADERDGSolver::LimiterPatch& exahype::solvers::LimitingADERDGSolver::getLimiterPatch(
@@ -1775,25 +1775,13 @@ void exahype::solvers::LimitingADERDGSolver::reduceGlobalObservables(
       // Solution is saved in DG-Space.
       // TODO(Lukas) Maybe pass solverPatch directly?
       _solver->reduceGlobalObservables(globalObservables, cellInfo, solverNumber);
-      //std::cout << "Reduce global[0] = " << globalObservables[0] << std::endl;
-      // TODO(Lukas) This is weird...
     } else {
       const int limiterElement = cellInfo.indexOfFiniteVolumesCellDescription(solverNumber);
+      assertion1(limiterElement != NotFound, "Limiter element not found!");
       if (limiterElement != NotFound) {
         LimiterPatch& limiterPatch = cellInfo._FiniteVolumesCellDescriptions[limiterElement];
-        //std::cout << "ReduceGlobalObservables: FV-Patch!" << std::endl;
-      } else {
-        //assert(false);
-        //std::cout << "ReduceGlobalObservables: FV-Patch not found!" << std::endl;
+        _limiter->reduceGlobalObservables(globalObservables, cellInfo, solverNumber);
       }
-
-      //LimiterPatch& limiterPatch = getLimiterPatch(solverPatch, cellInfo);
-      // TODO(Lukas) Implement FV-Routines
-      //_limiter->reduceGlobalObservables(globalObservables, cellInfo, solverNumber);
-
     }
-    return;
   }
-
-  //assert(false); // Should be an element?!
 }

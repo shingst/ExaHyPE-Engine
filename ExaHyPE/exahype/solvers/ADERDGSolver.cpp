@@ -5188,7 +5188,6 @@ void exahype::solvers::ADERDGSolver::pullUnknownsFromByteStream(
 void exahype::solvers::ADERDGSolver::reduceGlobalObservables(
         std::vector<double>& globalObservables,
         CellInfo cellInfo, int solverNumber) const {
-  // TODO(Lukas) Implement!
   const auto element = cellInfo.indexOfADERDGCellDescription(solverNumber);
   if (element != NotFound ) {
     CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[element];
