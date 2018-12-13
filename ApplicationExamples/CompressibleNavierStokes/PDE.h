@@ -21,16 +21,23 @@ public:
   PDE();
   PDE(double referenceViscosity, double referencePressure, double gamma, double Pr, double c_v,
           double c_p, double gasConstant);
-  PDE(double referenceViscosity, Scenario& scenario);
+  PDE(double referenceViscosity, Scenario& scenario, bool useGravity, bool useBackgroundState);
 
+  // Getter/Setters for optional variables/parameters.
   double getZ(double const *Q) const;
   void setZ(double *Q, double value) const;
+  double getHeight(double const *Q) const;
+  void setHeight(double *Q, double value) const;
+  void setBackgroundState(double *Q, double backgroundRho, double backgroundPressure) const;
+  std::pair<double, double> getBackgroundState(double const *Q) const;
 
-  double evaluateEnergy(double rho, double pressure, const tarch::la::Vector<DIMENSIONS,double> &j, double Z=0.0) const;
+  double evaluateEnergy(double rho, double pressure, const tarch::la::Vector<DIMENSIONS,double> &j,
+          double Z=0.0, double height=0.0) const;
+  double evaluatePressure(double E, double rho, const tarch::la::Vector<DIMENSIONS,double> &j,
+          double Z=0.0, double height=0.0) const;
   double evaluateTemperature(double rho, double pressure) const;
   double evaluatePotentialTemperature(double temperature, double pressure) const;
   double evaluateHeatConductionCoeff(double viscosity) const;  
-  double evaluatePressure(double E, double rho, const tarch::la::Vector<DIMENSIONS,double> &j, double Z=0.0) const;
   double evaluateViscosity(double T) const;
   void evaluateEigenvalues(const double* const Q, const int d, double* lambda) const;
   void evaluateDiffusiveEigenvalues(const double* const Q, const int d, double* lambda) const;
@@ -52,6 +59,10 @@ public:
   double q0; // ???
   double molecularDiffusionCoeff; // ???
   bool useAdvection;
+
+  // Settings for scenarios with gravity source term
+  bool useGravity;
+  bool useBackgroundState;
 
   // Unused:
   double referenceT;

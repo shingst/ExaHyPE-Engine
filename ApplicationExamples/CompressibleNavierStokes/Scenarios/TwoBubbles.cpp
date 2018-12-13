@@ -32,7 +32,7 @@ void NavierStokes::TwoBubbles::initialValues(const double* const x,
   const double backgroundPressure =
       ns.referencePressure;  // [Pa], background pressure of atmosphere at sea
                              // level
-  const double backgroundT = 300;  // [K], background potential temperature
+  const double backgroundPotentialT = 300;  // [K], background potential temperature
 
   // Parameters for bubbles.
   // Large, hot bubble
@@ -54,7 +54,7 @@ void NavierStokes::TwoBubbles::initialValues(const double* const x,
       Bubble(A_2, a_2, S_2, x_2, z_2),
   };
 
-  double potentialT = backgroundT;
+  double potentialT = backgroundPotentialT;
 
   double Z = 0.0; // TODO(Lukas) Only used for coupling test!
 
@@ -86,23 +86,45 @@ void NavierStokes::TwoBubbles::initialValues(const double* const x,
   vars.j(0, 0, 0);
 #endif
 
-  const auto pressure = computeHydrostaticPressure(ns, g, posZ, backgroundT);
+  // First compute overall state
+  const auto pressure = computeHydrostaticPressure(ns, g, posZ, backgroundPotentialT);
   const auto temperature = potentialTToT(ns, pressure, potentialT);
   vars.rho() = pressure / (ns.gasConstant * temperature);
-  vars.E() = ns.evaluateEnergy(vars.rho(), pressure, vars.j(), Z);
+  vars.E() = ns.evaluateEnergy(vars.rho(), pressure, vars.j(), Z, ns.getHeight(vars.data()));
   assertion4(std::isfinite(vars.rho()), vars.rho(), vars.E(), temperature, pressure);
   assertion4(std::isfinite(vars.E()), vars.rho(), vars.E(), temperature, pressure);
-
   ns.setZ(vars.data(), Z);
+
+  if (ns.useBackgroundState) {
+    // TODO(Lukas) Refactor?
+    // Then compute background state (without pot.T. pertubation
+    const auto backgroundTemperature = potentialTToT(ns, pressure, potentialT);
+    const auto backgroundRho = pressure / (ns.gasConstant * backgroundPotentialT);
+    ns.setBackgroundState(vars.data(), backgroundRho, pressure);
+  }
 }
 
 void NavierStokes::TwoBubbles::source(
     const tarch::la::Vector<DIMENSIONS, double>& x, double t, const PDE& ns,
     const double* const Q, double* S) {
   Scenario::source(x, t, ns, Q, S);
+
+  double rhoPertubation = Q[0];
+  if (ns.useBackgroundState) {
+    auto backgroundRho = 0.0;
+    auto backgroundPressure = 0.0;
+    std::tie(backgroundRho, backgroundPressure) = ns.getBackgroundState(Q);
+
+    rhoPertubation -= backgroundRho;
+  }
   const double g = -9.81;
-  S[DIMENSIONS] = Q[0] * g;
-  S[DIMENSIONS + 1] = Q[2] * g;
+  S[DIMENSIONS] = rhoPertubation * g;
+
+  // Only use this source term if the gravitational force is not already
+  // included in the pressure.
+  if (!ns.useGravity) {
+    S[DIMENSIONS + 1] = Q[2] * g;
+  }
 }
 
 const double NavierStokes::TwoBubbles::getGamma() const { return gamma; }

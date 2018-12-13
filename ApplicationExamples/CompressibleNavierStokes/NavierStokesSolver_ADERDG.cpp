@@ -40,6 +40,11 @@ void NavierStokes::NavierStokesSolver_ADERDG::init(const std::vector<std::string
 
 void NavierStokes::NavierStokesSolver_ADERDG::adjustPointSolution(const double* const x,const double t,const double dt,double* Q) {
   if (tarch::la::equals(t, 0.0)) {
+    // TODO(Lukas) What happens during refinement?
+    Q[NumberOfVariables + NumberOfParameters - 1] = 0.0; // TODO(Lukas) Remove!
+    ns.setHeight(Q, x[DIMENSIONS-1]);
+    ns.setBackgroundState(Q, 0.0, 0.0);
+
     Variables vars(Q);
     scenario->initialValues(x, ns, vars);
     for (int i = 0; i < vars.variables(); ++i) {
@@ -57,12 +62,18 @@ void NavierStokes::NavierStokesSolver_ADERDG::boundaryValues(const double* const
   double *fluxOut,double* stateOut) {
   constexpr auto basisSize = Order + 1;
   constexpr auto gradSize = NumberOfVariables * DIMENSIONS;
+  constexpr auto NumberOfData = NumberOfVariables + NumberOfParameters;
 
   auto gradStateOut = std::array<double, gradSize>{{0.0}};
   kernels::idx2 idxGradQ(DIMENSIONS,NumberOfVariables);
 
   std::fill_n(fluxOut, NumberOfVariables, 0.0);
-  std::fill_n(stateOut, NumberOfVariables, 0.0);
+  std::fill_n(stateOut, NumberOfData, 0.0);
+
+  // Set parameters:
+  ns.setHeight(stateOut, x[DIMENSIONS-1]); // TODO(Lukas) Check/refactor?
+  ns.setBackgroundState(stateOut, 0.0, 0.0); // TODO(Lukas) Or extrapolate? Shouldn't matter, right?
+
 
   double _F[DIMENSIONS][NumberOfVariables]={0.0};
 #if DIMENSIONS == 2
@@ -124,8 +135,9 @@ void NavierStokes::NavierStokesSolver_ADERDG::boundaryValues(const double* const
     varsOut.j(0) = 2 * wallSpeed -varsIn.j(0);
   }
 
-  // TODO(Lukas) Refactor these checks.
+  // TODO(Lukas) Is this correct? Maybe just extrapolate?
   if (scenario->getUseAdvection()) {
+    //varsOut[NumberOfVariables-1] = -varsIn[NumberOfVariables-1];
     varsOut[NumberOfVariables-1] = varsIn[NumberOfVariables-1];
   }
 
@@ -157,10 +169,20 @@ void NavierStokes::NavierStokesSolver_ADERDG::boundaryValues(const double* const
 
     // TODO(Lukas) Also reconstruct energy?
     const auto pressure = computeHydrostaticPressure(ns, g, posZ, backgroundPotTemperature);
+    // TODO(Lukas) Maybe choose T = 2WallT - Tin or sth like that
+    // Then T at boundary should be 2WallT
     const auto T = potentialTToT(ns, pressure, backgroundPotTemperature);
     const auto rho = pressure / (ns.gasConstant * T);
     // TODO(Lukas) Is this also an accurate reconstruction for advection-scenarios?
-    const auto E = ns.evaluateEnergy(rho, pressure, varsOut.j(), ns.getZ(stateIn));
+
+    ns.setBackgroundState(stateOut, rho, pressure); // TODO(Lukas) Is this correct?
+    // TODO(Lukas) Is this correct?
+    auto E = -1;
+    if (ns.useGravity) {
+      E = ns.evaluateEnergy(rho, pressure, varsOut.j(), ns.getZ(stateIn), x[DIMENSIONS-1]);
+    } else {
+      E = ns.evaluateEnergy(rho, pressure, varsOut.j(), ns.getZ(stateIn));
+    }
     varsOut.E() = E;
     varsOut.rho() = rho;
 
@@ -185,7 +207,8 @@ bool NavierStokes::NavierStokesSolver_ADERDG::isPhysicallyAdmissible(
     auto vars = ReadOnlyVariables{observablesMin};
 
     // Positive energy is not enough, as it does not guarantee positive pressure!
-    const auto pressure = ns.evaluatePressure(vars.E(), vars.rho(), vars.j(), ns.getZ(vars.data()));
+    const auto pressure = ns.evaluatePressure(vars.E(), vars.rho(), vars.j(), ns.getZ(observablesMin),
+            ns.getHeight(observablesMin));
     // Pressure > 0 -> E > 0
 
     bool isAdvectionTroubled = ns.useAdvection && (ns.getZ(vars.data()) < 0);
@@ -205,7 +228,9 @@ bool NavierStokes::NavierStokesSolver_ADERDG::isPhysicallyAdmissible(
         const auto curPressure = ns.evaluatePressure(pointVars.E(),
                 pointVars.rho(),
                 pointVars.j(),
-                ns.getZ(pointVars.data()));
+                ns.getZ(pointVars.data()),
+                ns.getHeight(pointVars.data())
+                );
         bool isCurAdvectionTroubled = ns.useAdvection && ((ns.getZ(pointVars.data()) < 0) ||
                 (ns.getZ(pointVars.data()) > 1.0));
         if (pointVars.rho() < 0.0 || curPressure < 0.0 || isCurAdvectionTroubled) {
@@ -232,11 +257,12 @@ exahype::solvers::Solver::RefinementControl NavierStokes::NavierStokesSolver_ADE
     const double t,
     const int level) {
   const bool isAmrScenario =
+          true ||
           scenarioName == "two-bubbles" ||
           scenarioName == "density-current" ||
           scenarioName == "taylor-green" ||
           scenarioName == "coupling-test";
-  if (!isAmrScenario || DIMENSIONS != 2 || _globalObservables.size() < 2) {
+  if (!isAmrScenario || _globalObservables.size() < 2) {
     return exahype::solvers::Solver::RefinementControl::Keep;
   }
 

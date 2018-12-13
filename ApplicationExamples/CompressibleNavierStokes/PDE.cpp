@@ -5,7 +5,8 @@ NavierStokes::PDE::PDE() :
   PDE(0.1, 10000, 1.4, 0.7, 1, 1.4, 0.4) {
 }
 
-NavierStokes::PDE::PDE(double referenceViscosity, NavierStokes::Scenario &scenario) :
+NavierStokes::PDE::PDE(double referenceViscosity, NavierStokes::Scenario &scenario, bool useGravity,
+        bool useBackgroundState) :
   referenceViscosity(referenceViscosity),
   referencePressure(scenario.getReferencePressure()),
   gamma(scenario.getGamma()),
@@ -15,6 +16,8 @@ NavierStokes::PDE::PDE(double referenceViscosity, NavierStokes::Scenario &scenar
   gasConstant(scenario.getGasConstant()),
   q0(scenario.getQ0()),
   molecularDiffusionCoeff(scenario.getMolecularDiffusionCoeff()),
+  useGravity(useGravity),
+  useBackgroundState(useBackgroundState),
   useAdvection(scenario.getUseAdvection()) {
     assertion3(q0 == 0.0 || useAdvection, q0, molecularDiffusionCoeff, useAdvection);
 }
@@ -31,6 +34,8 @@ NavierStokes::PDE::PDE(double referenceViscosity, double referencePressure, doub
     q0 = 0.0;
     molecularDiffusionCoeff = 0.0;
     useAdvection = false;
+    useGravity = false;
+    useBackgroundState = false;
 }
 
 double NavierStokes::PDE::getZ(double const *Q) const {
@@ -53,12 +58,69 @@ void NavierStokes::PDE::setZ(double *Q, double value) const {
   // Otherwise, nothing happens
 }
 
+double NavierStokes::PDE::getHeight(double const *Q) const {
+  if (useGravity) {
+    // Gravity is included in pressure!
+    const auto heightIdx = AbstractNavierStokesSolver_ADERDG::VariableMetrics::SizeVariables;
+    return Q[heightIdx];
+  }
 
-double NavierStokes::PDE::evaluateEnergy(double rho, double pressure, const tarch::la::Vector<DIMENSIONS,double> &j, double Z) const {
-  // TODO(Lukas) Adapt for advection-diff
+  // Otherwise, height is zero (-> zero gravitational potential).
+  return 0.0;
+}
+
+void NavierStokes::PDE::setHeight(double *Q, double value) const {
+  if (useGravity) {
+    // Gravity is included in pressure!
+    const auto heightIdx = AbstractNavierStokesSolver_ADERDG::VariableMetrics::SizeVariables;
+    Q[heightIdx] = value;
+  }
+  // Otherwise, nothing happens
+}
+
+void NavierStokes::PDE::setBackgroundState(double *Q, double backgroundRho, double backgroundPressure) const {
+  if (useBackgroundState) {
+    const auto backgroundStateIdx = AbstractNavierStokesSolver_ADERDG::VariableMetrics::SizeVariables + 1;
+      Q[backgroundStateIdx] = backgroundRho;
+      Q[backgroundStateIdx+1] = backgroundPressure;
+  }
+}
+
+std::pair<double, double> NavierStokes::PDE::getBackgroundState(double const *Q) const {
+ if (useBackgroundState) {
+    const auto backgroundStateIdx = AbstractNavierStokesSolver_ADERDG::VariableMetrics::SizeVariables + 1;
+    return {Q[backgroundStateIdx], Q[backgroundStateIdx+1]};
+  }
+ return {0.0, 0.0};
+}
+
+double NavierStokes::PDE::evaluateEnergy(double rho, double pressure, const tarch::la::Vector<DIMENSIONS,double> &j,
+        double Z, double height) const {
   const auto invRho = 1./rho;
   const auto chemicalEnergy = q0 * Z;
-  return pressure/(gamma - 1) + 0.5 * (invRho * j * j) + chemicalEnergy;
+
+  // TODO(Lukas) Refactor gravity!
+  auto gravityPotential = 0.0;
+  const auto g = 9.81;
+  if (useGravity) {
+    gravityPotential = rho * g * height;
+  }
+
+  return pressure/(gamma - 1) + 0.5 * (invRho * j * j) + chemicalEnergy + gravityPotential;
+}
+
+double NavierStokes::PDE::evaluatePressure(double E, double rho, const tarch::la::Vector<DIMENSIONS,double> &j,
+        double Z, double height) const {
+  const auto chemicalEnergy = q0 * Z;
+
+  // TODO(Lukas) Refactor gravity!
+  auto gravityPotential = 0.0;
+  const auto g = 9.81;
+  if (useGravity) {
+    gravityPotential = rho * g * height;
+  }
+
+  return (gamma-1) * (E - 0.5 * (1.0/rho) * j * j - chemicalEnergy - gravityPotential);
 }
 
 double NavierStokes::PDE::evaluateTemperature(double rho, double pressure) const {
@@ -69,29 +131,21 @@ double NavierStokes::PDE::evaluateHeatConductionCoeff(double viscosity) const {
   return 1./Pr * viscosity * gamma * c_v;
 }
 
-double NavierStokes::PDE::evaluatePressure(double E, double rho, const tarch::la::Vector<DIMENSIONS,double> &j, double Z) const {
-  // TODO(Lukas) Adapt for advection-diff
-  const auto chemicalEnergy = q0 * Z;
-  return (gamma-1) * (E - 0.5 * (1.0/rho) * j * j - chemicalEnergy);
-}
 
 double NavierStokes::PDE::evaluateViscosity(double T) const {
   return referenceViscosity;
 }
 
 void NavierStokes::PDE::evaluateEigenvalues(const double* const Q, const int d, double* lambda) const {
-  // TODO(Lukas) Adapt for advection-diff
   ReadOnlyVariables vars(Q);
   Variables eigs(lambda);
 
-  const auto p = evaluatePressure(vars.E(), vars.rho(), vars.j(), getZ(Q));
-  //const auto p = evaluatePressure(vars.E(), vars.rho(), vars.j());
+  const auto p = evaluatePressure(vars.E(), vars.rho(), vars.j(), getZ(Q), getHeight(Q));
   //assertion5(std::isfinite(p), p, vars.E(), vars.rho(), vars.j(), getZ(Q));
 
   const double u_n = vars.j(d)/vars.rho();
   const double temperature = evaluateTemperature(vars.rho(), p);
   //const double c = std::sqrt(gamma * gasConstant * temperature);
-  // TODO(Lukas) Speed of sound is changed, should be included in pressure.
   const double c = std::sqrt(gamma * (p/vars.rho()));
 
   //assertion3(std::isfinite(u_n), u_n, vars.j(d), vars.rho());
@@ -106,7 +160,7 @@ void NavierStokes::PDE::evaluateEigenvalues(const double* const Q, const int d, 
 void NavierStokes::PDE::evaluateDiffusiveEigenvalues(const double* const Q, const int d, double* lambda) const {
   ReadOnlyVariables vars(Q);
 
-  const auto pressure = evaluatePressure(vars.E(), vars.rho(), vars.j(), getZ(Q));
+  const auto pressure = evaluatePressure(vars.E(), vars.rho(), vars.j(), getZ(Q), getHeight(Q));
   //const double pressure = evaluatePressure(vars.E(), vars.rho(), vars.j());
 
   const double T = evaluateTemperature(vars.rho(), pressure);
@@ -135,7 +189,12 @@ void NavierStokes::PDE::evaluateFlux(const double* Q, const double* gradQ, doubl
   const auto invRho = 1/vars.rho(); // Q(1)/(Q(1)*Q(1)+epsilon)
 
   //p = (EQN%gamma-1)*( Q(5) - 0.5*SUM(Q(2:4)**2)*irho )
-  const auto p = evaluatePressure(vars.E(), vars.rho(), vars.j(), getZ(Q));
+  const auto p = evaluatePressure(vars.E(), vars.rho(), vars.j(), getZ(Q), getHeight(Q));
+  assertion5(std::isfinite(p), p, vars.E(), vars.rho(), vars.j(), getHeight(Q));
+
+  auto backgroundRho = 0.0;
+  auto backgroundPressure = 0.0;
+  std::tie(backgroundRho, backgroundPressure) = getBackgroundState(Q);
 
   double* f = F[0];
   double* g = F[1];
@@ -152,7 +211,7 @@ void NavierStokes::PDE::evaluateFlux(const double* Q, const double* gradQ, doubl
    */
 
   f[rho] = Q[j];
-  f[j] = invRho * Q[j] * Q[j] + p;
+  f[j] = invRho * Q[j] * Q[j] + (p - backgroundPressure);
   f[j+1] = invRho * Q[j] * Q[j+1];
 #if DIMENSIONS == 3
   f[j+2] = invRho * Q[j] * Q[j+2];
@@ -169,7 +228,7 @@ void NavierStokes::PDE::evaluateFlux(const double* Q, const double* gradQ, doubl
 
   g[rho] = Q[j+1];
   g[j] = invRho * Q[j+1] * Q[j];
-  g[j+1] = invRho * Q[j+1] * Q[j+1] + p;
+  g[j+1] = invRho * Q[j+1] * Q[j+1] + (p - backgroundPressure);
 #if DIMENSIONS == 3
   g[j+2] = invRho * Q[j+1] * Q[j+2];
 #endif
@@ -188,7 +247,7 @@ void NavierStokes::PDE::evaluateFlux(const double* Q, const double* gradQ, doubl
   h[rho] = Q[j+2];
   h[j] = invRho * Q[j+2] * Q[j];
   h[j+1] = invRho * Q[j+2] * Q[j+1];
-  h[j+2] = invRho * Q[j+2] * Q[j+2] + p;
+  h[j+2] = invRho * Q[j+2] * Q[j+2] + (p - backgroundPressure);
   h[E] = invRho * Q[j+2] * (Q[E]+p);
 #endif
 
@@ -426,6 +485,19 @@ void NavierStokes::PDE::evaluateFlux(const double* Q, const double* gradQ, doubl
     Tz -= factor * q0 *
              (Q[rho] * gradQ[idxGradQ(2,Z)] -
                      Q[Z] * gradQ[idxGradQ(2, rho)]);
+#endif
+  }
+
+  // Including the gravitational potential in the pressure
+  // of course implies that we need to change the derivative of the temperature as well,
+  // but only in z direction
+  if (useGravity) {
+    const double g = 9.81; // TODO(Lukas) Refactor g
+    // Gravity happens in y direction in 2D and in z direction in 3D
+#if DIMENSIONS == 2
+    Ty -= (g * (gamma - 1)) / gasConstant;
+#else
+    Tz -= (g * (gamma - 1)) / gasConstant;
 #endif
   }
 
