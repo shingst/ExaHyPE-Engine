@@ -52,6 +52,7 @@ void NavierStokes::NavierStokesSolver_ADERDG::adjustPointSolution(const double* 
       assertion2(std::isfinite(Q[i]), i, Q[i]);
     }
   }
+
 }
 
 void NavierStokes::NavierStokesSolver_ADERDG::algebraicSource(const tarch::la::Vector<DIMENSIONS, double>& x, double t, const double *const Q, double *S) {
@@ -205,8 +206,8 @@ bool NavierStokes::NavierStokesSolver_ADERDG::isPhysicallyAdmissible(
             ns.getHeight(observablesMin));
     // Pressure > 0 -> E > 0
 
-    bool isAdvectionTroubled = ns.useAdvection && (ns.getZ(vars.data()) < 0);
-    if (vars.rho() < 0.0 || vars.E() < 0.0 || isAdvectionTroubled) {
+    bool isAdvectionTroubled = ns.useAdvection && (ns.getZ(vars.data()) < 0) && (ns.getZ(vars.data()) > 1);
+    if (vars.rho() <= 0.0 || vars.E() < 0.0 || isAdvectionTroubled) {
       return false;
     }
 
@@ -227,7 +228,7 @@ bool NavierStokes::NavierStokesSolver_ADERDG::isPhysicallyAdmissible(
                 );
         bool isCurAdvectionTroubled = ns.useAdvection && ((ns.getZ(pointVars.data()) < 0) ||
                 (ns.getZ(pointVars.data()) > 1.0));
-        if (pointVars.rho() < 0.0 || curPressure < 0.0 || isCurAdvectionTroubled) {
+        if (pointVars.rho() <= 0.0 || curPressure < 0.0 || isCurAdvectionTroubled) {
           return false;
         }
 
