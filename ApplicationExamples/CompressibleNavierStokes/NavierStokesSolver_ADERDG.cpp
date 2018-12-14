@@ -133,7 +133,7 @@ void NavierStokes::NavierStokesSolver_ADERDG::boundaryValues(const double* const
 
   if (scenario->getBoundaryType(faceIndex) == BoundaryType::movingWall) {
     const auto wallSpeed = 1.0;
-    varsOut.j(0) = 2 * wallSpeed -varsIn.j(0);
+    varsOut.j(0) = 2 * wallSpeed - varsIn.j(0);
   }
 
   // TODO(Lukas) Is this correct? Maybe just extrapolate?
@@ -153,31 +153,24 @@ void NavierStokes::NavierStokesSolver_ADERDG::boundaryValues(const double* const
   // Then compute the outgoing flux.
   if (scenario->getBoundaryType(faceIndex) == BoundaryType::hydrostaticWall) {
     // We need to reconstruct the temperature gradient here.
-    // TODO(Lukas) Put those constants into the scenario.
-    const auto g = 9.81;
-    const auto backgroundPotTemperature = 300;
-#if DIMENSIONS == 2
-    const auto posZ = x[1];
-#else
-    const auto posZ = x[2];
-#endif
+    const auto posZ = x[DIMENSIONS-1];
 
     // In case of flow over a background state that is in hydrostatic equilibrium
     // it becomes necessary to reconstruct the temperature diffusion flux and
     // the energy. Otherwise a small temperature boundary layer forms.
-    const double equilibriumTemperatureGradient = computeHydrostaticTemperatureGradient(ns, g, posZ,
-            backgroundPotTemperature);
+    const double equilibriumTemperatureGradient = computeHydrostaticTemperatureGradient(ns, scenario->getGravity(),
+            posZ, scenario->getBackgroundPotentialTemperature());
 
-    // TODO(Lukas) Also reconstruct energy?
-    const auto pressure = computeHydrostaticPressure(ns, g, posZ, backgroundPotTemperature);
-    // TODO(Lukas) Maybe choose T = 2WallT - Tin or sth like that
-    // Then T at boundary should be 2WallT
-    const auto T = potentialTToT(ns, pressure, backgroundPotTemperature);
+    // We also need to reconstruct the temperature at the border.
+    // This corresponds to a heated wall.
+    const auto pressure = computeHydrostaticPressure(ns, scenario->getGravity(),
+            posZ, scenario->getBackgroundPotentialTemperature());
+    const auto T = potentialTToT(ns, pressure, scenario->getBackgroundPotentialTemperature());
     const auto rho = pressure / (ns.gasConstant * T);
-    // TODO(Lukas) Is this also an accurate reconstruction for advection-scenarios?
+    // TODO(Lukas) What should we do in case of an advection-scenarios?
 
-    ns.setBackgroundState(stateOut, rho, pressure); // TODO(Lukas) Is this correct?
-    // TODO(Lukas) Is this correct?
+    // TODO(Lukas) Is background state necessary here?
+    ns.setBackgroundState(stateOut, rho, pressure);
     auto E = -1;
     if (ns.useGravity) {
       E = ns.evaluateEnergy(rho, pressure, varsOut.j(), ns.getZ(stateIn), x[DIMENSIONS-1]);

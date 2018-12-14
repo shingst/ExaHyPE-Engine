@@ -45,64 +45,58 @@ void NavierStokes::NavierStokesSolver_FV::boundaryValues(
     const double t,const double dt,
     const int faceIndex,
     const int d,
-    const double* const stateInside,
-    double* stateOutside) {
+    const double* const stateIn,
+    double* stateOut) {
   // No slip, 2D
-  ReadOnlyVariables varsIn(stateInside);
-  Variables varsOut(stateOutside);
+  ReadOnlyVariables varsIn(stateIn);
+  Variables varsOut(stateOut);
 
-  // TODO(Lukas) Use gradient for analytical bcs?
-  // TODO(Lukas) Support coupling!
-  ns.setHeight(stateOutside, x[DIMENSIONS-1]); // TODO(Lukas) Check/refactor
+  // Not supported!
+  assertion(scenario->getBoundaryType(faceIndex) != BoundaryType::analytical);
 
-#if DIMENSIONS == 2
-  stateOutside[0] = stateInside[0];
-  stateOutside[1] = -stateInside[1];
-  stateOutside[2] = -stateInside[2];
-  stateOutside[3] = stateInside[3];
-  if (ns.useAdvection) {
-      stateOutside[4] = stateInside[4];
-  }
+  // All bcs here are walls!
+  assertion(scenario->getBoundaryType(faceIndex) == BoundaryType::wall ||
+                 scenario->getBoundaryType(faceIndex) == BoundaryType::hydrostaticWall ||
+                 scenario->getBoundaryType(faceIndex) == BoundaryType::movingWall);
+
+  // Rho/E extrapolated, velocity mirrored.
+  // Leads to zero velocity after Riemann solver.
+  std::copy_n(stateIn, NumberOfVariables, stateOut);
+  varsOut.j(0) = -varsIn.j(0);
+  varsOut.j(1) = -varsIn.j(1);
+#if DIMENSIONS == 3
+  varsOut.j(2) = -varsIn.j(2);
+#endif
 
   if (scenario->getBoundaryType(faceIndex) == BoundaryType::movingWall) {
     const auto wallSpeed = 1.0;
-    stateOutside[1] = 2 * wallSpeed - stateInside[1];
-  }
-#else
-  stateOutside[0] = stateInside[0];
-  stateOutside[1] = -stateInside[1];
-  stateOutside[2] = -stateInside[2];
-  stateOutside[3] = -stateInside[3];
-  stateOutside[4] = stateInside[4];
-  if (ns.useAdvection) {
-      stateOutside[5] = stateInside[5];
-  }
-#endif
-  if (scenarioName != "two-bubbles") {
-    return;
+    varsOut.j(0) = 2 * wallSpeed - varsIn.j(0);
   }
 
-  // TODO(Lukas) Don't do this for every scenario!
-  const auto g = 9.81; // TODO(Lukas) Refactor?
-  const auto backgroundPotTemperature = 300;
-  // TODO(Lukas) Remove
-  const auto pressure = computeHydrostaticPressure(ns, g, x[DIMENSIONS-1], backgroundPotTemperature);
-  // TODO(Lukas) Maybe choose T = 2WallT - Tin or sth like that
-  // Then T at boundary should be 2WallT
-  const auto T = potentialTToT(ns, pressure, backgroundPotTemperature);
-  const auto rho = pressure / (ns.gasConstant * T);
-  // TODO(Lukas) Is this also an accurate reconstruction for advection-scenarios?
+  if (scenario->getBoundaryType(faceIndex) == BoundaryType::hydrostaticWall) {
+    // Note: This boundary condition is incorrect for the viscous case, as we do not
+    // reconstruct the temperature diffusion coming from the wall!
+    const auto posZ = x[DIMENSIONS-1];
 
-  ns.setBackgroundState(stateOutside, rho, pressure); // TODO(Lukas) Is this correct?
-  // TODO(Lukas) Is this correct?
-  auto E = -1;
-  if (ns.useGravity) {
-    E = ns.evaluateEnergy(rho, pressure, varsOut.j(), ns.getZ(stateInside), x[DIMENSIONS-1]);
-  } else {
-    E = ns.evaluateEnergy(rho, pressure, varsOut.j(), ns.getZ(stateInside));
+    // We also need to reconstruct the temperature at the border.
+    // This corresponds to a heated wall.
+    const auto pressure = computeHydrostaticPressure(ns, scenario->getGravity(),
+                                                     posZ, scenario->getBackgroundPotentialTemperature());
+    const auto T = potentialTToT(ns, pressure, scenario->getBackgroundPotentialTemperature());
+    const auto rho = pressure / (ns.gasConstant * T);
+    // TODO(Lukas) What should we do in case of an advection-scenarios?
+
+    // TODO(Lukas) Is background state necessary here?
+    ns.setBackgroundState(stateOut, rho, pressure);
+    auto E = -1;
+    if (ns.useGravity) {
+      E = ns.evaluateEnergy(rho, pressure, varsOut.j(), ns.getZ(stateIn), x[DIMENSIONS - 1]);
+    } else {
+      E = ns.evaluateEnergy(rho, pressure, varsOut.j(), ns.getZ(stateIn));
+    }
+    varsOut.E() = E;
+    varsOut.rho() = rho;
   }
-  varsOut.E() = E;
-  varsOut.rho() = rho;
 }
 
 void NavierStokes::NavierStokesSolver_FV::viscousFlux(const double* const Q,const double* const gradQ, double** F) {
