@@ -697,25 +697,23 @@ void exahype::Vertex::sendToNeighbourLoopBody(
       solvers::Solver::CellInfo cellInfo(srcCellDescriptionsIndex);
       solvers::Solver::BoundaryFaceInfo face(src,dest);
 
-      if ( hasToSendToNeighbourNow(cellInfo,face) ) {
-        for ( unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber ) {
-          auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-          switch ( solver->getType() ) {
-            case solvers::Solver::Type::ADERDG:
-              static_cast<solvers::ADERDGSolver*>(solver)->sendDataToNeighbour(toRank,solverNumber,cellInfo,src,dest,x,level);
-              break;
-            case solvers::Solver::Type::LimitingADERDG:
-              static_cast<solvers::LimitingADERDGSolver*>(solver)->sendDataToNeighbour(toRank,solverNumber,cellInfo,src,dest,x,level);
-              break;
-            case solvers::Solver::Type::FiniteVolumes:
-              static_cast<solvers::FiniteVolumesSolver*>(solver)->sendDataToNeighbour(toRank,solverNumber,cellInfo,src,dest,x,level);
-              break;
-            default:
-              assertionMsg(false,"Unrecognised solver type: "<<solvers::Solver::toString(solver->getType()));
-              logError("mergeOnlyWithNeighbourMetadataLoopBody(...)","Unrecognised solver type: "<<solvers::Solver::toString(solver->getType()));
-              std::abort();
-              break;
-          }
+      for ( unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber ) {
+        auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
+        switch ( solver->getType() ) {
+          case solvers::Solver::Type::ADERDG:
+            static_cast<solvers::ADERDGSolver*>(solver)->sendDataToNeighbour(toRank,solverNumber,cellInfo,src,dest,x,level);
+            break;
+          case solvers::Solver::Type::LimitingADERDG:
+            static_cast<solvers::LimitingADERDGSolver*>(solver)->sendDataToNeighbour(toRank,solverNumber,cellInfo,src,dest,x,level);
+            break;
+          case solvers::Solver::Type::FiniteVolumes:
+            static_cast<solvers::FiniteVolumesSolver*>(solver)->sendDataToNeighbour(toRank,solverNumber,cellInfo,src,dest,x,level);
+            break;
+          default:
+            assertionMsg(false,"Unrecognised solver type: "<<solvers::Solver::toString(solver->getType()));
+            logError("mergeOnlyWithNeighbourMetadataLoopBody(...)","Unrecognised solver type: "<<solvers::Solver::toString(solver->getType()));
+            std::abort();
+            break;
         }
       }
     }

@@ -431,10 +431,15 @@ void exahype::mappings::PredictionOrLocalRecomputation::mergeWithNeighbour(
       OneSolverRequestedLocalRecomputation &&
       vertex.hasToCommunicate(level)
   ) {
-    for (unsigned int i = 2*(DIMENSIONS-1)*(DIMENSIONS); i-- > 0;) { // dest and src is swapped & order is swapped
-      receiveNeighbourDataLoopBody(fromRank,Vertex::pos1Scalar[i],Vertex::pos2Scalar[i],vertex,fineGridX,level);
-      receiveNeighbourDataLoopBody(fromRank,Vertex::pos2Scalar[i],Vertex::pos1Scalar[i],vertex,fineGridX,level);
-    }
+    const tarch::la::Vector<DIMENSIONS,int> lowerLeft(0);
+    #if DIMENSIONS==3
+    receiveNeighbourDataLoopBody(fromRank,4,0,vertex,fineGridX,level);
+    receiveNeighbourDataLoopBody(fromRank,0,4,vertex,fineGridX,level);
+    #endif
+    receiveNeighbourDataLoopBody(fromRank,2,0,vertex,fineGridX,level);
+    receiveNeighbourDataLoopBody(fromRank,0,2,vertex,fineGridX,level);
+    receiveNeighbourDataLoopBody(fromRank,1,0,vertex,fineGridX,level);
+    receiveNeighbourDataLoopBody(fromRank,0,1,vertex,fineGridX,level);
   }
   logTraceOut( "mergeWithNeighbour(...)" );
 }
@@ -457,14 +462,12 @@ void exahype::mappings::PredictionOrLocalRecomputation::receiveNeighbourDataLoop
       solvers::Solver::CellInfo         cellInfo = vertex.createCellInfo(destScalar);
       solvers::Solver::BoundaryFaceInfo face(dest,src); // dest and src are swapped
 
-      if ( Vertex::hasToReceiveFromNeighbourNow(cellInfo,face,false/*prefetchADERDGFaceData*/) ) {
-        for(unsigned int solverNumber = solvers::RegisteredSolvers.size(); solverNumber-- > 0;) {
-          auto* solver = solvers::RegisteredSolvers[solverNumber];
-          if ( performLocalRecomputation( solver ) ) {
-            assertion1( solver->getType()==solvers::Solver::Type::LimitingADERDG, solver->toString() );
-            static_cast<solvers::LimitingADERDGSolver*>(solver)->
-                mergeWithNeighbourDataBasedOnLimiterStatus(fromRank,solverNumber,cellInfo,src,dest,true/*isRecomputation*/,x,level);
-          }
+      for(unsigned int solverNumber = solvers::RegisteredSolvers.size(); solverNumber-- > 0;) {
+        auto* solver = solvers::RegisteredSolvers[solverNumber];
+        if ( performLocalRecomputation( solver ) ) {
+          assertion1( solver->getType()==solvers::Solver::Type::LimitingADERDG, solver->toString() );
+          static_cast<solvers::LimitingADERDGSolver*>(solver)->
+              mergeWithNeighbourDataBasedOnLimiterStatus(fromRank,solverNumber,cellInfo,src,dest,true/*isRecomputation*/,x,level);
         }
       }
     }
