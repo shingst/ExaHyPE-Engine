@@ -60,13 +60,6 @@ class exahype::records::ADERDGCellDescription {
    * it is updated only after a fork or join event.
    */
   parallelise persistent bool hasToHoldDataForMasterWorkerCommunication;
-  /**
-   * Face data exchange in ExaHyPE is realised in vertices: each vertex checks
-   * whether one of its adjacent faces should go to another rank. As a result, 
-   * a face might be exchanged up to 2^{d-1} times. We use this flag to avoid 
-   * this. See prepareSendToNeighbour() in mapping Sending.
-   */
-  persistent int faceDataExchangeCounter[DIMENSIONS_TIMES_TWO];
   #endif
 
   /**

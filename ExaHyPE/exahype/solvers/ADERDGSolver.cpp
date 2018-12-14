@@ -149,10 +149,7 @@ void exahype::solvers::ADERDGSolver::addNewCellDescription(
 
   // Initialise MPI helper variables
   #ifdef Parallel
-  newCellDescription.setHasToHoldDataForMasterWorkerCommunication(false);
-  for (int faceIndex = 0; faceIndex < DIMENSIONS_TIMES_TWO; faceIndex++) {
-    newCellDescription.setFaceDataExchangeCounter(faceIndex,TWO_POWER_D);
-  }
+  newCellDescription.setHasToHoldDataForMasterWorkerCommunication(false); // TODO(Dominic): Still necessary?
   #endif
 
   // Default field data indices
@@ -3468,7 +3465,6 @@ void exahype::solvers::ADERDGSolver::resetIndicesAndFlagsOfReceivedCellDescripti
   cellDescription.setParentIndex(parentIndex);
 
   cellDescription.setAdjacentToRemoteRank(false);
-  cellDescription.setFaceDataExchangeCounter(0);
 
   // Default field data indices
   cellDescription.setSolutionIndex(-1);
