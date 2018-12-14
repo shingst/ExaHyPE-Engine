@@ -355,13 +355,14 @@ void NavierStokes::NavierStokesSolver_ADERDG::boundaryConditions( double* const 
     double* FL = fluxOut; const double* const QL = stateOut;
     double* FR =  fluxIn;  const double* const QR = stateIn;
 
-    riemannSolverNonlinear<false,NavierStokesSolver_ADERDG>(*static_cast<NavierStokesSolver_ADERDG*>(this),FL,FR,QL,QR,cellSize, dt,direction);
+    riemannSolver(FL,FR,QL,QR,t,dt,cellSize,direction,true,faceIndex);
   }
   else {
     double* FL =  fluxIn;  const double* const QL = stateIn;
     double* FR = fluxOut; const double* const QR = stateOut;
 
-    riemannSolverNonlinear<false,NavierStokesSolver_ADERDG>(*static_cast<NavierStokesSolver_ADERDG*>(this),FL,FR,QL,QR,cellSize, dt,direction);
+    riemannSolver(FL,FR,QL,QR,t,dt,cellSize,direction,true,faceIndex);
+
   }
 
   if (scenario->getBoundaryType(faceIndex) == NavierStokes::BoundaryType::wall) {
