@@ -46,10 +46,18 @@ double NavierStokes::Scenario::getReferencePressure() const {
 }
 
 double NavierStokes::Scenario::getMolecularDiffusionCoeff() const {
-  return 0.0; // TODO(Lukas)
+  return 0.0;
 }
 double NavierStokes::Scenario::getQ0() const {
-  return 0.0; // TODO(Lukas)
+  return 0.0;
+}
+
+double NavierStokes::Scenario::getGravity() const {
+  return 0.0;
+}
+
+double NavierStokes::Scenario::getBackgroundPotentialTemperature() const {
+  throw -1;
 }
 
 bool NavierStokes::Scenario::getUseAdvection() const {

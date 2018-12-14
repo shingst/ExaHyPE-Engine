@@ -27,6 +27,8 @@ class Scenario {
   virtual double getC_p() const;
   virtual double getGasConstant() const;
   virtual double getReferencePressure() const;
+  virtual double getGravity() const;
+  virtual double getBackgroundPotentialTemperature() const;
   virtual bool getUseAdvection() const;
 
   virtual double getMolecularDiffusionCoeff() const;

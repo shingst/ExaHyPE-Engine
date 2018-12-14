@@ -87,7 +87,7 @@ void NavierStokes::TwoBubbles::initialValues(const double* const x,
 #endif
 
   // First compute overall state
-  const auto pressure = computeHydrostaticPressure(ns, g, posZ, backgroundPotentialT);
+  const auto pressure = computeHydrostaticPressure(ns, getGravity(), posZ, backgroundPotentialT);
   const auto temperature = potentialTToT(ns, pressure, potentialT);
   vars.rho() = pressure / (ns.gasConstant * temperature);
   vars.E() = ns.evaluateEnergy(vars.rho(), pressure, vars.j(), Z, ns.getHeight(vars.data()));
@@ -117,13 +117,12 @@ void NavierStokes::TwoBubbles::source(
 
     rhoPertubation -= backgroundRho;
   }
-  const double g = -9.81;
-  S[DIMENSIONS] = rhoPertubation * g;
+  S[DIMENSIONS] = -1 * rhoPertubation * getGravity();
 
   // Only use this source term if the gravitational force is not already
   // included in the pressure.
   if (!ns.useGravity) {
-    S[DIMENSIONS + 1] = Q[2] * g;
+    S[DIMENSIONS + 1] = -1 * Q[2] * getGravity();
   }
 }
 
@@ -141,6 +140,10 @@ double NavierStokes::TwoBubbles::getGasConstant() const {
 
 double NavierStokes::TwoBubbles::getReferencePressure() const {
   return referencePressure;
+}
+
+double NavierStokes::TwoBubbles::getGravity() const {
+  return 9.81;
 }
 
 NavierStokes::BoundaryType NavierStokes::TwoBubbles::getBoundaryType(int faceId) {

@@ -18,6 +18,7 @@ NavierStokes::PDE::PDE(double referenceViscosity, NavierStokes::Scenario &scenar
   molecularDiffusionCoeff(scenario.getMolecularDiffusionCoeff()),
   useGravity(useGravity),
   useBackgroundState(useBackgroundState),
+  gravitation(scenario.getGravity()),
   useAdvection(scenario.getUseAdvection()) {
     assertion3(q0 == 0.0 || useAdvection, q0, molecularDiffusionCoeff, useAdvection);
 }
@@ -36,6 +37,7 @@ NavierStokes::PDE::PDE(double referenceViscosity, double referencePressure, doub
     useAdvection = false;
     useGravity = false;
     useBackgroundState = false;
+    gravitation = 0.0;
 }
 
 double NavierStokes::PDE::getZ(double const *Q) const {
@@ -101,9 +103,8 @@ double NavierStokes::PDE::evaluateEnergy(double rho, double pressure, const tarc
 
   // TODO(Lukas) Refactor gravity!
   auto gravityPotential = 0.0;
-  const auto g = 9.81;
   if (useGravity) {
-    gravityPotential = rho * g * height;
+    gravityPotential = rho * gravitation * height;
   }
 
   return pressure/(gamma - 1) + 0.5 * (invRho * j * j) + chemicalEnergy + gravityPotential;
@@ -115,9 +116,8 @@ double NavierStokes::PDE::evaluatePressure(double E, double rho, const tarch::la
 
   // TODO(Lukas) Refactor gravity!
   auto gravityPotential = 0.0;
-  const auto g = 9.81;
   if (useGravity) {
-    gravityPotential = rho * g * height;
+    gravityPotential = rho * gravitation * height;
   }
 
   return (gamma-1) * (E - 0.5 * (1.0/rho) * j * j - chemicalEnergy - gravityPotential);
@@ -492,12 +492,11 @@ void NavierStokes::PDE::evaluateFlux(const double* Q, const double* gradQ, doubl
   // of course implies that we need to change the derivative of the temperature as well,
   // but only in z direction
   if (useGravity) {
-    const double g = 9.81; // TODO(Lukas) Refactor g
     // Gravity happens in y direction in 2D and in z direction in 3D
 #if DIMENSIONS == 2
-    Ty -= (g * (gamma - 1)) / gasConstant;
+    Ty -= (gravitation * (gamma - 1)) / gasConstant;
 #else
-    Tz -= (g * (gamma - 1)) / gasConstant;
+    Tz -= (gravitation * (gamma - 1)) / gasConstant;
 #endif
   }
 

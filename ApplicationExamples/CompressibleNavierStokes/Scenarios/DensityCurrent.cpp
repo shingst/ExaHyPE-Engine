@@ -14,9 +14,9 @@ void NavierStokes::DensityCurrent::initialValues(const double* const x,
   const double backgroundPressure =
       ns.referencePressure;  // [Pa], background pressure of atmosphere at sea
                              // level
-  const double backgroundT = 300;  // [K], background potential temperature
+  const double backgroundPotentialT = 300;  // [K], background potential temperature
 
-  double potentialT = backgroundT;
+  double potentialT = backgroundPotentialT;
 
   const auto centerX = 0;
   const auto centerZ = 3000;
@@ -34,8 +34,6 @@ void NavierStokes::DensityCurrent::initialValues(const double* const x,
     potentialT += pertubationSize / 2 * (1 + std::cos(pi * r));
   }
 
-  const double g = 9.81;  // [m/s^2]
-
   // Air is initially at rest.
 #if DIMENSIONS == 2
   vars.j(0, 0);
@@ -43,19 +41,39 @@ void NavierStokes::DensityCurrent::initialValues(const double* const x,
   vars.j(0, 0, 0);
 #endif
 
-  const auto pressure = computeHydrostaticPressure(ns, g, posZ, backgroundT);
+  const auto pressure = computeHydrostaticPressure(ns, getGravity(), posZ, backgroundPotentialT);
   const auto temperature = potentialTToT(ns, pressure, potentialT);
   vars.rho() = pressure / (ns.gasConstant * temperature);
   vars.E() = ns.evaluateEnergy(vars.rho(), pressure, vars.j());
+
+  if (ns.useBackgroundState) {
+    // TODO(Lukas) Refactor?
+    // Then compute background state (without pot.T. pertubation
+    const auto backgroundTemperature = potentialTToT(ns, pressure, potentialT);
+    const auto backgroundRho = pressure / (ns.gasConstant * backgroundPotentialT);
+    ns.setBackgroundState(vars.data(), backgroundRho, pressure);
+  }
 }
 
 void NavierStokes::DensityCurrent::source(
     const tarch::la::Vector<DIMENSIONS, double>& x, double t, const PDE& ns,
     const double* const Q, double* S) {
   Scenario::source(x, t, ns, Q, S);
-  const double g = -9.81;
-  S[DIMENSIONS] = Q[0] * g;
-  S[DIMENSIONS + 1] = Q[2] * g;
+  double rhoPertubation = Q[0];
+  if (ns.useBackgroundState) {
+    auto backgroundRho = 0.0;
+    auto backgroundPressure = 0.0;
+    std::tie(backgroundRho, backgroundPressure) = ns.getBackgroundState(Q);
+
+    rhoPertubation -= backgroundRho;
+  }
+  S[DIMENSIONS] = -1 * rhoPertubation * getGravity();
+
+  // Only use this source term if the gravitational force is not already
+  // included in the pressure.
+  if (!ns.useGravity) {
+    S[DIMENSIONS + 1] = -1 * Q[2] * getGravity();
+  }
 }
 
 double NavierStokes::DensityCurrent::getGamma() const { return gamma; }
@@ -72,6 +90,10 @@ double NavierStokes::DensityCurrent::getGasConstant() const {
 
 double NavierStokes::DensityCurrent::getReferencePressure() const {
   return referencePressure;
+}
+
+double NavierStokes::DensityCurrent::getGravity() const {
+  return 9.81;
 }
 
 NavierStokes::BoundaryType NavierStokes::DensityCurrent::getBoundaryType(int faceId) {

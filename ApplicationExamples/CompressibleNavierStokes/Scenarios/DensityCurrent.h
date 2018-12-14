@@ -35,6 +35,9 @@ class DensityCurrent : public Scenario {
   double getGasConstant() const override;
 
   double getReferencePressure() const override;
+
+  double getGravity() const override;
+
   BoundaryType getBoundaryType(int faceId) override;
 
 };

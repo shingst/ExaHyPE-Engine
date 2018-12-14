@@ -63,6 +63,7 @@ public:
   // Settings for scenarios with gravity source term
   bool useGravity;
   bool useBackgroundState;
+  double gravitation;
 
   // Unused:
   double referenceT;
