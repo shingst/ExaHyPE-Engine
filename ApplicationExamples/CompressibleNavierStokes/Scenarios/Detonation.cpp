@@ -83,18 +83,18 @@ void NavierStokes::Detonation::source(
   }
 }
 
-const double NavierStokes::Detonation::getGamma() const { return 1.4; }
+double NavierStokes::Detonation::getGamma() const { return 1.4; }
 
-const double NavierStokes::Detonation::getPr() const {
+double NavierStokes::Detonation::getPr() const {
   // TODO(Lukas) What's the best value?
   return 0.7;
 }
 
-const double NavierStokes::Detonation::getC_v() const { return 2.5; }
+double NavierStokes::Detonation::getC_v() const { return 2.5; }
 
-const double NavierStokes::Detonation::getC_p() const { return 3.5; }
+double NavierStokes::Detonation::getC_p() const { return 3.5; }
 
-const double NavierStokes::Detonation::getGasConstant() const {
+double NavierStokes::Detonation::getGasConstant() const {
   return 1.0;
 }
 

@@ -21,12 +21,12 @@ class Scenario {
                       const PDE& ns, const double* const Q, double* S);
   virtual BoundaryType getBoundaryType(int faceId);
 
-  virtual const double getGamma() const;
-  virtual const double getPr() const;
-  virtual const double getC_v() const;
-  virtual const double getC_p() const;
-  virtual const double getGasConstant() const;
-  virtual const double getReferencePressure() const;
+  virtual double getGamma() const;
+  virtual double getPr() const;
+  virtual double getC_v() const;
+  virtual double getC_p() const;
+  virtual double getGasConstant() const;
+  virtual double getReferencePressure() const;
   virtual bool getUseAdvection() const;
 
   virtual double getMolecularDiffusionCoeff() const;

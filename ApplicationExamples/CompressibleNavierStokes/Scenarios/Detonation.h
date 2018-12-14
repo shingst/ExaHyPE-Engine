@@ -11,11 +11,11 @@ public:
                      Variables &vars) final override;
   double getMolecularDiffusionCoeff() const override;
   double getQ0() const override;
-  const double getGamma() const override;
-  const double getPr() const override;
-  const double getC_v() const override;
-  const double getC_p() const override;
-  const double getGasConstant() const override;
+  double getGamma() const override;
+  double getPr() const override;
+  double getC_v() const override;
+  double getC_p() const override;
+  double getGasConstant() const override;
   bool getUseAdvection() const override;
   void source(const tarch::la::Vector<DIMENSIONS, double>& x, double t,
               const PDE& ns, const double* const Q, double* S) override;

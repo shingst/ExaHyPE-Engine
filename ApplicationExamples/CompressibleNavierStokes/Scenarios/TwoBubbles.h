@@ -41,12 +41,12 @@ class TwoBubbles : public Scenario {
   const double c_v = 1 / (gamma - 1) * gasConstant;
   const double referencePressure = 10000;
 
-  const double getGamma() const override;
-  const double getPr() const override;
-  const double getC_v() const override;
-  const double getC_p() const override;
-  const double getGasConstant() const override;
-  const double getReferencePressure() const override;
+  double getGamma() const override;
+  double getPr() const override;
+  double getC_v() const override;
+  double getC_p() const override;
+  double getGasConstant() const override;
+  double getReferencePressure() const override;
 };
 }  // namespace NavierStokes
 

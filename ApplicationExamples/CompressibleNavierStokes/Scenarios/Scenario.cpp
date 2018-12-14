@@ -21,8 +21,7 @@ void NavierStokes::Scenario::analyticalSolution(const double* const x,
 void NavierStokes::Scenario::source(
     const tarch::la::Vector<DIMENSIONS, double>& x, double t, const PDE& ns,
     const double* const Q, double* S) {
-  constexpr auto NumberOfVariables = DIMENSIONS + 2;  // TODO(Lukas) generalise?
-  auto source = ReadOnlyVariables(S);
+  const auto source = ReadOnlyVariables(S);
   std::fill_n(S, source.SizeVariables, 0.0);
 }
 
@@ -30,19 +29,19 @@ NavierStokes::BoundaryType NavierStokes::Scenario::getBoundaryType(int faceId) {
   return BoundaryType::wall;
 }
 
-const double NavierStokes::Scenario::getGamma() const { return gamma; }
+double NavierStokes::Scenario::getGamma() const { return gamma; }
 
-const double NavierStokes::Scenario::getPr() const { return Pr; }
+double NavierStokes::Scenario::getPr() const { return Pr; }
 
-const double NavierStokes::Scenario::getC_v() const { return c_v; }
+double NavierStokes::Scenario::getC_v() const { return c_v; }
 
-const double NavierStokes::Scenario::getC_p() const { return c_p; }
+double NavierStokes::Scenario::getC_p() const { return c_p; }
 
-const double NavierStokes::Scenario::getGasConstant() const {
+double NavierStokes::Scenario::getGasConstant() const {
   return gasConstant;
 }
 
-const double NavierStokes::Scenario::getReferencePressure() const {
+double NavierStokes::Scenario::getReferencePressure() const {
   return referencePressure;
 }
 

@@ -58,19 +58,19 @@ void NavierStokes::DensityCurrent::source(
   S[DIMENSIONS + 1] = Q[2] * g;
 }
 
-const double NavierStokes::DensityCurrent::getGamma() const { return gamma; }
+double NavierStokes::DensityCurrent::getGamma() const { return gamma; }
 
-const double NavierStokes::DensityCurrent::getPr() const { return Pr; }
+double NavierStokes::DensityCurrent::getPr() const { return Pr; }
 
-const double NavierStokes::DensityCurrent::getC_v() const { return c_v; }
+double NavierStokes::DensityCurrent::getC_v() const { return c_v; }
 
-const double NavierStokes::DensityCurrent::getC_p() const { return c_p; }
+double NavierStokes::DensityCurrent::getC_p() const { return c_p; }
 
-const double NavierStokes::DensityCurrent::getGasConstant() const {
+double NavierStokes::DensityCurrent::getGasConstant() const {
   return gasConstant;
 }
 
-const double NavierStokes::DensityCurrent::getReferencePressure() const {
+double NavierStokes::DensityCurrent::getReferencePressure() const {
   return referencePressure;
 }
 

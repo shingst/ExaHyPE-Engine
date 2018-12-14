@@ -127,19 +127,19 @@ void NavierStokes::TwoBubbles::source(
   }
 }
 
-const double NavierStokes::TwoBubbles::getGamma() const { return gamma; }
+double NavierStokes::TwoBubbles::getGamma() const { return gamma; }
 
-const double NavierStokes::TwoBubbles::getPr() const { return Pr; }
+double NavierStokes::TwoBubbles::getPr() const { return Pr; }
 
-const double NavierStokes::TwoBubbles::getC_v() const { return c_v; }
+double NavierStokes::TwoBubbles::getC_v() const { return c_v; }
 
-const double NavierStokes::TwoBubbles::getC_p() const { return c_p; }
+double NavierStokes::TwoBubbles::getC_p() const { return c_p; }
 
-const double NavierStokes::TwoBubbles::getGasConstant() const {
+double NavierStokes::TwoBubbles::getGasConstant() const {
   return gasConstant;
 }
 
-const double NavierStokes::TwoBubbles::getReferencePressure() const {
+double NavierStokes::TwoBubbles::getReferencePressure() const {
   return referencePressure;
 }
 
