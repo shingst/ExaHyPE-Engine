@@ -319,15 +319,15 @@ void NavierStokes::NavierStokesSolver_ADERDG::viscousFlux(const double *const Q,
 
 double NavierStokes::NavierStokesSolver_ADERDG::stableTimeStepSize(const double* const luh, const tarch::la::Vector<DIMENSIONS,double>& dx) {
   // TODO(Lukas) Integrate diffusive time step size into standard timestep size!
-  return (0.7/0.9) * stableDiffusiveTimeStepSize<NavierStokesSolver_ADERDG>(*static_cast<NavierStokesSolver_ADERDG*>(this),luh,dx);
+  //return (0.7/0.9) * stableDiffusiveTimeStepSize<NavierStokesSolver_ADERDG>(*static_cast<NavierStokesSolver_ADERDG*>(this),luh,dx);
+  return (0.7/0.9) * kernels::aderdg::generic::c::stableTimeStepSize<NavierStokesSolver_ADERDG,true>(*static_cast<NavierStokesSolver_ADERDG*>(this),luh,dx);
 }
 
-void NavierStokes::NavierStokesSolver_ADERDG::riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double t, const double dt,const tarch::la::Vector<DIMENSIONS, double>& lengthScale, const int direction, bool isBoundaryFace, int faceIndex) {
+void NavierStokes::NavierStokesSolver_ADERDG::riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double t, const double dt,const tarch::la::Vector<DIMENSIONS, double>& dx, const int direction, bool isBoundaryFace, int faceIndex) {
   assertion2(direction>=0,dt,direction);
   assertion2(direction<DIMENSIONS,dt,direction);
-  // TODO(Lukas) Integrate Riemann solver changes into standard solver.
-  riemannSolverNonlinear<false,NavierStokesSolver_ADERDG>(*static_cast<NavierStokesSolver_ADERDG*>(this),FL,FR,QL,QR,lengthScale, dt,direction);
-
+  //riemannSolverNonlinear<false,NavierStokesSolver_ADERDG>(*static_cast<NavierStokesSolver_ADERDG*>(this),FL,FR,QL,QR,dx, dt,direction);
+  kernels::aderdg::generic::c::riemannSolverNonlinear<false,true, NavierStokesSolver_ADERDG>(*static_cast<NavierStokesSolver_ADERDG*>(this),FL,FR,QL,QR,t,dt,dx,direction);
 }
 
 void NavierStokes::NavierStokesSolver_ADERDG::boundaryConditions( double* const fluxIn, const double* const stateIn, const double* const gradStateIn, const double* const luh, const tarch::la::Vector<DIMENSIONS, double>& cellCentre, const tarch::la::Vector<DIMENSIONS,double>&  cellSize, const double t,const double dt, const int direction, const int orientation) {
@@ -374,7 +374,6 @@ void NavierStokes::NavierStokesSolver_ADERDG::boundaryConditions( double* const 
     }
 #else
    // TODO(Lukas) Is this correct for 3D? Untested!
-   /*
     kernels::idx3 idx_F(Order + 1, Order + 1, NumberOfVariables);
     for (int i = 0; i < (Order + 1); ++i) {
       for (int j = 0; j < (Order + 1); ++j) {
@@ -382,7 +381,6 @@ void NavierStokes::NavierStokesSolver_ADERDG::boundaryConditions( double* const 
         fluxIn[idx_F(i, j, NavierStokesSolver_ADERDG_Variables::shortcuts::E)] = 0.0;
       }
     }
-    */
 #endif
   }
 
