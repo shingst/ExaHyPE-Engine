@@ -495,11 +495,12 @@ void GenericEulerKernelTest::testRiemannSolverNonlinear() {
     double FL[nVar*basisSize] = {0.0}; // ~nVar
     double FR[nVar*basisSize] = {0.0};
 
-    kernels::aderdg::generic::c::riemannSolverNonlinear<false,GenericEulerKernelTest>(
+    kernels::aderdg::generic::c::riemannSolverNonlinear<false,false,GenericEulerKernelTest>(
         *this,
         FL, FR, QL, QR,
         0,   // t
         0.0, // dt
+        tarch::la::Vector<DIMENSIONS, double>(0.5, 0.5), // dx
         0    // direction
         );
 
@@ -538,11 +539,12 @@ void GenericEulerKernelTest::testRiemannSolverNonlinear() {
                         testRiemannSolverNonlinear::FR_1_in,
                 20 * sizeof(double));
 
-    kernels::aderdg::generic::c::riemannSolverNonlinear<false,GenericEulerKernelTest>(
+    kernels::aderdg::generic::c::riemannSolverNonlinear<false,false,GenericEulerKernelTest>(
         *this,
         FL, FR, QL, QR,
         0,     // t
         0.0,  // dt
+        tarch::la::Vector<DIMENSIONS, double>(0.5, 0.5), // dx
         0     // direction
         );
 
@@ -590,11 +592,12 @@ void GenericEulerKernelTest::testRiemannSolverNonlinear() {
                         testRiemannSolverNonlinear::FR_2_in,
                 20 * sizeof(double));
 
-    kernels::aderdg::generic::c::riemannSolverNonlinear<false,GenericEulerKernelTest>(
+    kernels::aderdg::generic::c::riemannSolverNonlinear<false,false,GenericEulerKernelTest>(
         *this,
         FL, FR, QL, QR,
         0,   // t
         0.0, // dt
+        tarch::la::Vector<DIMENSIONS, double>(0.5, 0.5), // dx
         1    // direction
         );
 

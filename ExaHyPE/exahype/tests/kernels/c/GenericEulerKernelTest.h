@@ -68,6 +68,7 @@ class GenericEulerKernelTest : public tarch::tests::TestCase {
           double *S);
 
   static void eigenvalues(const double* const Q, const int normalNonZeroIndex, double* lambda);
+  static void viscousEigenvalues(const double* const Q, const int normalNonZeroIndex, double* lambda);
 
   static void nonConservativeProduct(const double* const Q, const double* const gradQ, double* BgradQ);
 

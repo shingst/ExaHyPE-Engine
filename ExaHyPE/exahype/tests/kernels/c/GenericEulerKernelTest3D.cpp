@@ -430,11 +430,11 @@ void GenericEulerKernelTest::testRiemannSolverNonlinear() {
       QR[i_Qbnd]= ::exahype::tests::testdata::generic_euler::testRiemannSolver::QR[i_Qbnd_testdata];
     }
   }
-
-  kernels::aderdg::generic::c::riemannSolverNonlinear<false,GenericEulerKernelTest>(
+  kernels::aderdg::generic::c::riemannSolverNonlinear<false,false,falseGenericEulerKernelTest>(
       *this,
       FL, FR, QL, QR,
       dt,
+      tarch::la::Vector<DIMENSIONS, double>(0.5, 0.5), // dx
       t,
       1  // normalNonZero
   );
