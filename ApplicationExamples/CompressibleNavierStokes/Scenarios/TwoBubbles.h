@@ -48,6 +48,7 @@ class TwoBubbles : public Scenario {
   double getGasConstant() const override;
   double getReferencePressure() const override;
   double getGravity() const override;
+  double getBackgroundPotentialTemperature() const override;
 };
 }  // namespace NavierStokes
 

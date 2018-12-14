@@ -38,6 +38,8 @@ class DensityCurrent : public Scenario {
 
   double getGravity() const override;
 
+  double getBackgroundPotentialTemperature() const override;
+
   BoundaryType getBoundaryType(int faceId) override;
 
 };

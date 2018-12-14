@@ -29,10 +29,7 @@ void NavierStokes::TwoBubbles::initialValues(const double* const x,
   const auto posX = x[0];
   const auto posZ = (DIMENSIONS == 2) ? x[1] : x[2];
 
-  const double backgroundPressure =
-      ns.referencePressure;  // [Pa], background pressure of atmosphere at sea
-                             // level
-  const double backgroundPotentialT = 300;  // [K], background potential temperature
+  const double backgroundPotentialT = getBackgroundPotentialTemperature();  // [K], background potential temperature
 
   // Parameters for bubbles.
   // Large, hot bubble
@@ -99,7 +96,7 @@ void NavierStokes::TwoBubbles::initialValues(const double* const x,
     // TODO(Lukas) Refactor?
     // Then compute background state (without pot.T. pertubation
     const auto backgroundTemperature = potentialTToT(ns, pressure, potentialT);
-    const auto backgroundRho = pressure / (ns.gasConstant * backgroundPotentialT);
+    const auto backgroundRho = pressure / (ns.gasConstant * backgroundTemperature);
     ns.setBackgroundState(vars.data(), backgroundRho, pressure);
   }
 }
@@ -144,6 +141,10 @@ double NavierStokes::TwoBubbles::getReferencePressure() const {
 
 double NavierStokes::TwoBubbles::getGravity() const {
   return 9.81;
+}
+
+double NavierStokes::TwoBubbles::getBackgroundPotentialTemperature() const {
+  return 300;
 }
 
 NavierStokes::BoundaryType NavierStokes::TwoBubbles::getBoundaryType(int faceId) {
