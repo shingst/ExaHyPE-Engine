@@ -20,7 +20,7 @@
  * We use Peano's logging
  */
 #include "tarch/logging/Log.h"
-
+#include "AMR/AMRSettings.h"
 
 namespace NavierStokes{
   class NavierStokesSolver_FV;
@@ -36,6 +36,7 @@ class NavierStokes::NavierStokesSolver_FV : public NavierStokes::AbstractNavierS
     std::unique_ptr<Scenario> scenario;
     std::string scenarioName;
     PDE ns;
+    AMRSettings amrSettings;
 
     NavierStokesSolver_FV(
       const double maximumMeshSize,

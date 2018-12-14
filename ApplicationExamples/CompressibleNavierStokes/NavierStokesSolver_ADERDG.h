@@ -23,6 +23,7 @@
 #include <memory>
 #include "tarch/logging/Log.h"
 #include "PDE.h"
+#include "AMR/AMRSettings.h"
 
 namespace NavierStokes{
   class NavierStokesSolver_ADERDG;
@@ -38,6 +39,7 @@ class NavierStokes::NavierStokesSolver_ADERDG : public NavierStokes::AbstractNav
     std::unique_ptr<Scenario> scenario;
     std::string scenarioName;
     PDE ns;
+    AMRSettings amrSettings;
 
     NavierStokesSolver_ADERDG(
         const double maximumMeshSize,

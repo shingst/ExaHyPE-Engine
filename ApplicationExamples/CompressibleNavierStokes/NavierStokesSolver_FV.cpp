@@ -12,10 +12,11 @@
 tarch::logging::Log NavierStokes::NavierStokesSolver_FV::_log( "NavierStokes::NavierStokesSolver_FV" );
 
 void NavierStokes::NavierStokesSolver_FV::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
-  auto parsedConfig = parseConfig(cmdlineargs, constants);
+  auto parsedConfig = parseConfig(cmdlineargs, constants, NumberOfVariables, NumberOfParameters, NumberOfGlobalObservables);
   ns = std::move(parsedConfig.ns);
   scenarioName = std::move(parsedConfig.scenarioName);
   scenario = std::move(parsedConfig.scenario);
+  amrSettings = std::move(parsedConfig.amrSettings);
 }
 
 void NavierStokes::NavierStokesSolver_FV::adjustSolution(const double* const x,const double t,const double dt, double* Q) {
@@ -121,9 +122,9 @@ void NavierStokes::NavierStokesSolver_FV::algebraicSource(const tarch::la::Vecto
 std::vector<double> NavierStokes::NavierStokesSolver_FV::mapGlobalObservables(const double *const Q,
         const tarch::la::Vector<DIMENSIONS,double>& dx) const {
   // TODO(Lukas): Implementation is really slow but should work.
-  return mapGlobalObservablesFV<PatchSize, GhostLayerWidth, NumberOfVariables,
+  return ::NavierStokes::mapGlobalObservablesFV<PatchSize, GhostLayerWidth, NumberOfVariables,
           NumberOfVariables, NumberOfGlobalObservables>(
-          Q, dx, scenarioName, ns);
+          Q, dx, scenarioName, ns, amrSettings);
 }
 
 std::vector<double> NavierStokes::NavierStokesSolver_FV::resetGlobalObservables() const {

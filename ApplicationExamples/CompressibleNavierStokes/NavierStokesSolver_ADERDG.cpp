@@ -32,10 +32,11 @@
 tarch::logging::Log NavierStokes::NavierStokesSolver_ADERDG::_log( "NavierStokes::NavierStokesSolver_ADERDG" );
 
 void NavierStokes::NavierStokesSolver_ADERDG::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
-  auto parsedConfig = parseConfig(cmdlineargs, constants);
+  auto parsedConfig = parseConfig(cmdlineargs, constants, NumberOfVariables, NumberOfParameters, NumberOfGlobalObservables);
   ns = std::move(parsedConfig.ns);
   scenarioName = std::move(parsedConfig.scenarioName);
   scenario = std::move(parsedConfig.scenario);
+  amrSettings = std::move(parsedConfig.amrSettings);
 }
 
 void NavierStokes::NavierStokesSolver_ADERDG::adjustPointSolution(const double* const x,const double t,const double dt,double* Q) {
@@ -264,13 +265,8 @@ exahype::solvers::Solver::RefinementControl NavierStokes::NavierStokesSolver_ADE
     const tarch::la::Vector<DIMENSIONS, double>& dx,
     const double t,
     const int level) {
-  const bool isAmrScenario =
-          true ||
-          scenarioName == "two-bubbles" ||
-          scenarioName == "density-current" ||
-          scenarioName == "taylor-green" ||
-          scenarioName == "coupling-test";
-  if (!isAmrScenario || _globalObservables.size() < 2) {
+
+  if (!amrSettings.useAMR) {
     return exahype::solvers::Solver::RefinementControl::Keep;
   }
 
@@ -291,8 +287,8 @@ exahype::solvers::Solver::RefinementControl NavierStokes::NavierStokesSolver_ADE
   const auto varianceGlobal = (countGlobal - 1)/countGlobal * _globalObservables[1];
   const auto stdGlobal = std::sqrt(varianceGlobal);
 
-  const auto factorRefine = 1.0;
-  const auto factorCoarse = 0.5;
+  const auto factorRefine = amrSettings.factorRefine;
+  const auto factorCoarse = amrSettings.factorErase;
 
   const auto hi = meanGlobal + factorRefine * stdGlobal;
   const auto lo = meanGlobal + factorCoarse * stdGlobal;
@@ -400,7 +396,8 @@ void NavierStokes::NavierStokesSolver_ADERDG::boundaryConditions( double* const 
 
 std::vector<double> NavierStokes::NavierStokesSolver_ADERDG::mapGlobalObservables(const double *const Q,
         const tarch::la::Vector<DIMENSIONS,double>& dx) const {
-  return ::NavierStokes::mapGlobalObservables(Q, dx, scenarioName, ns, Order, NumberOfVariables, NumberOfParameters, NumberOfGlobalObservables);
+  return ::NavierStokes::mapGlobalObservables(Q, dx, scenarioName, ns, amrSettings,
+          Order, NumberOfVariables, NumberOfParameters, NumberOfGlobalObservables);
 }
 
 std::vector<double> NavierStokes::NavierStokesSolver_ADERDG::resetGlobalObservables() const {
@@ -410,6 +407,6 @@ std::vector<double> NavierStokes::NavierStokesSolver_ADERDG::resetGlobalObservab
 void NavierStokes::NavierStokesSolver_ADERDG::reduceGlobalObservables(
         std::vector<double> &reducedGlobalObservables,
         const std::vector<double> &curGlobalObservables) const {
-    ::NavierStokes::reduceGlobalObservables(reducedGlobalObservables, curGlobalObservables,
-            NumberOfGlobalObservables);
+    ::NavierStokes::reduceGlobalObservables(reducedGlobalObservables,
+            curGlobalObservables, NumberOfGlobalObservables);
 }

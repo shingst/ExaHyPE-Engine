@@ -6,26 +6,28 @@
 
 #include "PDE.h"
 
+#include "AMRSettings.h"
 #include "kernels/limiter/generic/Limiter.h"
 
 namespace NavierStokes {
 std::vector<double> resetGlobalObservables(int NumberOfGlobalObservables);
 
 std::vector<double> mapGlobalObservables(
-    const double *const Q, const tarch::la::Vector<DIMENSIONS, double> &dx,
-    const std::string &scenarioName, const PDE &ns, int Order,
-    int NumberOfVariables, int NumberOfParameters,
-    int NumberOfGlobalObservables);
+    const double* const Q, const tarch::la::Vector<DIMENSIONS, double>& dx,
+    const std::string& scenarioName, const PDE& ns,
+    const AMRSettings& amrSettings, int Order, int NumberOfVariables,
+    int NumberOfParameters, int NumberOfGlobalObservables);
 
-void reduceGlobalObservables(std::vector<double> &reducedGlobalObservables,
-                             const std::vector<double> &curGlobalObservables,
+void reduceGlobalObservables(std::vector<double>& reducedGlobalObservables,
+                             const std::vector<double>& curGlobalObservables,
                              int NumberOfGlobalObservables);
 
 template <int PatchSize, int GhostLayerWidth, int NumberOfVariables,
           int NumberOfParameters, int NumberOfGlobalObservables>
 std::vector<double> mapGlobalObservablesFV(
-    const double *const Q, const tarch::la::Vector<DIMENSIONS, double> &dx,
-    const std::string &scenarioName, const PDE &ns) {
+    const double* const Q, const tarch::la::Vector<DIMENSIONS, double>& dx,
+    const std::string& scenarioName, const PDE& ns,
+    const AMRSettings& amrSettings) {
   // Idea: Map FV-Data to DG-Representation, and compute global variables there.
   // This way, we can use the same implementation of total variance for both
   // solvers. Additionally, we have the same TV before and after limiting. It is
@@ -47,7 +49,7 @@ std::vector<double> mapGlobalObservablesFV(
                                                                   QDG.data());
 
   return ::NavierStokes::mapGlobalObservables(
-      QDG.data(), dx, scenarioName, ns, Order, NumberOfVariables,
+      QDG.data(), dx, scenarioName, ns, amrSettings, Order, NumberOfVariables,
       NumberOfParameters, NumberOfGlobalObservables);
 }
 

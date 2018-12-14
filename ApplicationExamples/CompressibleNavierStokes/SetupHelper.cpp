@@ -3,23 +3,16 @@
 
 NavierStokes::ScenarioConfig NavierStokes::parseConfig(
     const std::vector<std::string>& cmdlineargs,
-    const exahype::parser::ParserView& constants) {
-  // TODO(Lukas) Pass from solver, otherwise DG/FV have to agree!
-  constexpr auto NumberOfVariables =
-      AbstractNavierStokesSolver_ADERDG::NumberOfVariables;
-  constexpr auto NumberOfParameters =
-      AbstractNavierStokesSolver_ADERDG::NumberOfParameters;
-
+    const exahype::parser::ParserView& constants,
+    int numberOfVariables,
+    int numberOfParameters,
+    int numberOfGlobalObservables) {
+  // TODO(Lukas) Error handling?
   assert(constants.isValueValidString("scenario"));
 
   double referenceViscosity;
-  if (constants.isValueValidString("viscosity") &&
-      constants.getValueAsString("viscosity") == "default") {
-    throw - 1;
-  } else {
-    assert(constants.isValueValidDouble("viscosity"));
-    referenceViscosity = constants.getValueAsDouble("viscosity");
-  }
+  assert(constants.isValueValidDouble("viscosity"));
+  referenceViscosity = constants.getValueAsDouble("viscosity");
 
   auto scenarioName = constants.getValueAsString("scenario");
   auto scenario = ScenarioFactory::createScenario(scenarioName);
@@ -31,27 +24,43 @@ NavierStokes::ScenarioConfig NavierStokes::parseConfig(
   assert(useGravity ||
          !useBackgroundState);  // Background state only works with gravity.
 
+  // AMR-Settings
+  auto amrSettings = AMRSettings{};
+  amrSettings.useAMR = constants.getValueAsBoolOrDefault("use-amr", false);
+  if (amrSettings.useAMR) {
+    amrSettings.useTotalVariation = constants.getValueAsBool("use-tv-amr");
+    amrSettings.indicator =
+        parseIndicatorVariable(constants.getValueAsString("amr-indicator"));
+    amrSettings.factorRefine = constants.getValueAsDouble("amr-factor-refine");
+    amrSettings.factorErase = constants.getValueAsDouble("amr-factor-erase");
+  }
+
   // Make sure we have the correct number of variables/parameters:
   auto numberOfNecessaryVariables = 1 + DIMENSIONS + 1;
   if (scenario->getUseAdvection()) {
     ++numberOfNecessaryVariables;
   }
-  if (NumberOfVariables != numberOfNecessaryVariables) {
+  if (numberOfVariables != numberOfNecessaryVariables) {
     throw - 1;
   }
 
-  auto NumberOfNecessaryParameters = 0;
+  auto numberOfNecessaryParameters = 0;
   if (useGravity) {
-    ++NumberOfNecessaryParameters;
+    ++numberOfNecessaryParameters;
   }
   if (useBackgroundState) {
-    NumberOfNecessaryParameters += 2;
+    numberOfNecessaryParameters += 2;
   }
-  if (NumberOfParameters != NumberOfNecessaryParameters) {
+  if (numberOfParameters != numberOfNecessaryParameters) {
+    throw - 1;
+  }
+
+  auto numberOfNecessaryGlobalObservables = amrSettings.useAMR ? 3 : 0;
+  if (numberOfGlobalObservables != numberOfNecessaryGlobalObservables) {
     throw - 1;
   }
 
   auto ns = PDE(referenceViscosity, *scenario, useGravity, useBackgroundState);
 
-  return {ns, scenarioName, std::move(scenario)};
+  return {ns, scenarioName, std::move(scenario), amrSettings};
 }

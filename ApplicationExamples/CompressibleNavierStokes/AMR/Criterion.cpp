@@ -13,43 +13,53 @@ std::vector<double> NavierStokes::resetGlobalObservables(
 
 std::vector<double> NavierStokes::mapGlobalObservables(
     const double *const Q, const tarch::la::Vector<DIMENSIONS, double> &dx,
-    const std::string &scenarioName, const PDE &ns, int Order,
-    int NumberOfVariables, int NumberOfParameters,
-    int NumberOfGlobalObservables) {
+    const std::string &scenarioName, const PDE &ns,
+    const AMRSettings &amrSettings, int Order, int NumberOfVariables,
+    int NumberOfParameters, int NumberOfGlobalObservables) {
   if (NumberOfGlobalObservables == 0) {
     return {};
   }
 
-  auto observables = resetGlobalObservables(NumberOfGlobalObservables);
-  // TODO(Lukas) Implement global observables for 3D!
-  const auto idxQ = kernels::idx3(Order + 1, Order + 1,
-                                  NumberOfVariables + NumberOfParameters);
+  assertion1(amrSettings.useAMR, NumberOfGlobalObservables);
+  auto indicator = amrSettings.indicator;
+  auto useTV = amrSettings.useTotalVariation;
 
-  auto tv = 0.0;
-  if (scenarioName == "two-bubbles" || scenarioName == "density-current" ||
-      scenarioName == "coupling-test") {
-    auto computePotT = [&](const double *const Q) {
-      const auto vars = ReadOnlyVariables{Q};
+  auto computeIndicator = [&](const double *const Q) {
+    const auto vars = ReadOnlyVariables{Q};
+    if (indicator == IndicatorVariable::potentialTemperature) {
       const auto pressure =
           ns.evaluatePressure(vars.E(), vars.rho(), vars.j(), ns.getZ(Q));
       const auto temperature = ns.evaluateTemperature(vars.rho(), pressure);
       return ns.evaluatePotentialTemperature(temperature, pressure);
-    };
+    }
+    auto backgroundRho = 0.0;
+    auto backgroundPressure = 0.0;
+    std::tie(backgroundRho, backgroundPressure) = ns.getBackgroundState(Q);
 
-    tv = totalVariation(Q, Order, NumberOfVariables, NumberOfParameters, dx,
-                        false, computePotT);
-  } else {
-    auto computeIndicator = [&](const double *const Q) {
-      const auto vars = ReadOnlyVariables{Q};
-      const auto pressure =
-          ns.evaluatePressure(vars.E(), vars.rho(), vars.j(), ns.getZ(Q));
-      return vars.E();
-    };
-    tv = totalVariation(Q, Order, NumberOfVariables, NumberOfParameters, dx,
-                        false, computeIndicator);
+    if (indicator == IndicatorVariable::rho) {
+      return vars.rho() - backgroundRho;
+    } else {
+      // Pressure
+      return ns.evaluatePressure(vars.E(), vars.rho(), vars.j(), ns.getZ(Q)) -
+             backgroundPressure;
+    }
+  };
+
+  auto observables = resetGlobalObservables(NumberOfGlobalObservables);
+  // TODO(Lukas) Implement global observables for 3D!
+  // const auto idxQ = kernels::idx3(Order + 1, Order + 1,
+  //                                NumberOfVariables + NumberOfParameters);
+  assertion(useTV);
+
+  if (useTV) {
+    const auto tv =
+        totalVariation(Q, Order, NumberOfVariables, NumberOfParameters, dx,
+                       false, computeIndicator);
+    return {tv, 0, 1};
   }
+  throw -1;
 
-  return {tv, 0, 1};
+  return {-1, -1, -1};  // TODO(Lukas)
 }
 
 void NavierStokes::reduceGlobalObservables(
