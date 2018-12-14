@@ -1769,7 +1769,7 @@ void exahype::solvers::LimitingADERDGSolver::reduceGlobalObservables(
     SolverPatch& solverPatch = cellInfo._ADERDGCellDescriptions[solverElement];
 
     // TODO(Lukas) Maybe use previous refinement status? Depends on update time.
-    bool isUnlimited = solverPatch.getRefinementStatus() < _solver->_minimumRefinementStatusForActiveFVPatch;
+    bool isUnlimited = solverPatch.getPreviousRefinementStatus() < _solver->_minimumRefinementStatusForActiveFVPatch;
     //bool isUnlimited = solverPatch.getPreviousRefinementStatus() < _solver->_minimumRefinementStatusForActiveFVPatch;
     if (isUnlimited) {
       // Solution is saved in DG-Space.
