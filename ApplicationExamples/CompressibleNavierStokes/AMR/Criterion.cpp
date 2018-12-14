@@ -5,7 +5,9 @@
 
 std::vector<double> NavierStokes::resetGlobalObservables(
     int NumberOfGlobalObservables) {
-  if (NumberOfGlobalObservables == 0) return {};
+  if (NumberOfGlobalObservables == 0) {
+    return {};
+  }
   return {-1.0, -1.0, 0};
 }
 
@@ -14,7 +16,9 @@ std::vector<double> NavierStokes::mapGlobalObservables(
     const std::string &scenarioName, const PDE &ns, int Order,
     int NumberOfVariables, int NumberOfParameters,
     int NumberOfGlobalObservables) {
-  if (NumberOfGlobalObservables == 0) return {};
+  if (NumberOfGlobalObservables == 0) {
+    return {};
+  }
 
   auto observables = resetGlobalObservables(NumberOfGlobalObservables);
   // TODO(Lukas) Implement global observables for 3D!
@@ -52,7 +56,9 @@ void NavierStokes::reduceGlobalObservables(
     std::vector<double> &reducedGlobalObservables,
     const std::vector<double> &curGlobalObservables,
     int NumberOfGlobalObservables) {
-  if (NumberOfGlobalObservables == 0) return;
+  if (NumberOfGlobalObservables == 0) {
+    return;
+  }
 
   assertion2(reducedGlobalObservables.size() == curGlobalObservables.size(),
              reducedGlobalObservables.size(), curGlobalObservables.size());
