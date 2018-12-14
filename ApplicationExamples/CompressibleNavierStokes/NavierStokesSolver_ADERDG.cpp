@@ -236,6 +236,14 @@ bool NavierStokes::NavierStokesSolver_ADERDG::isPhysicallyAdmissible(
         if (pointVars.rho() < 0.0 || curPressure < 0.0 || isCurAdvectionTroubled) {
           return false;
         }
+
+        // Surprisingly, this is necessary.
+        for (int v = 0; v < NumberOfVariables; v++) {
+          if (!std::isfinite(solution[v])) {
+            std::cout << "Solution is " << solution[v] << "." << std::endl;
+            return false;
+          }
+        }
       }
     }
     // TODO(Lukas) 3D!
