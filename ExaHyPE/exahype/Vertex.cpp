@@ -35,9 +35,6 @@
 
 tarch::logging::Log exahype::Vertex::_log( "exahype::Vertex");
 
-constexpr int exahype::Vertex::pos1Scalar[2*(DIMENSIONS-1)*DIMENSIONS];
-constexpr int exahype::Vertex::pos2Scalar[2*(DIMENSIONS-1)*DIMENSIONS];
-
 exahype::Vertex::Vertex() : Base() {
   _vertexData.setCellDescriptionsIndex(
       multiscalelinkedcell::HangingVertexBookkeeper::getInstance()
@@ -205,10 +202,11 @@ void exahype::Vertex::mergeOnlyNeighboursMetadata(
     const bool                              checkThoroughly) const {
   assertion(!isHangingNode());
   assertion(isInside() || isBoundary());
-
-  for (int i=0; i<2*(DIMENSIONS-1)*(DIMENSIONS); i++) {
-    mergeOnlyNeighboursMetadataLoopBody(pos1Scalar[i],pos2Scalar[i],_vertexData.getCellDescriptionsIndex(pos1Scalar[i]),_vertexData.getCellDescriptionsIndex(pos2Scalar[i]),section,x,h,checkThoroughly);
-  }
+  mergeOnlyNeighboursMetadataLoopBody(0,1,_vertexData.getCellDescriptionsIndex(0),_vertexData.getCellDescriptionsIndex(1),section,x,h,checkThoroughly);
+  mergeOnlyNeighboursMetadataLoopBody(0,2,_vertexData.getCellDescriptionsIndex(0),_vertexData.getCellDescriptionsIndex(2),section,x,h,checkThoroughly);
+  #if DIMENSIONS==3
+  mergeOnlyNeighboursMetadataLoopBody(0,4,_vertexData.getCellDescriptionsIndex(0),_vertexData.getCellDescriptionsIndex(4),section,x,h,checkThoroughly);
+  #endif
 }
 
 void exahype::Vertex::validateNeighbourhood(

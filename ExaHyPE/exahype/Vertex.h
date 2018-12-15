@@ -56,14 +56,6 @@ public:
    */
   static bool SpawnNeighbourMergeAsThread;
 
-  #if DIMENSIONS==2
-  static constexpr int pos1Scalar[4] = {0,0,1,2};
-  static constexpr int pos2Scalar[4] = {1,2,3,3};
-  #elif DIMENSIONS==3
-  static constexpr int pos1Scalar[12] = {0,0,0,1,1,2,2,3,4,4,5,6};
-  static constexpr int pos2Scalar[12] = {1,2,4,3,5,3,6,7,5,6,7,7};
-  #endif
-
   /**
    * @return a mapping specification which applies to all neighbour merges.
    */ 

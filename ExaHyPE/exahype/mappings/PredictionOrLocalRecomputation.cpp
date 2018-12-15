@@ -407,9 +407,11 @@ void exahype::mappings::PredictionOrLocalRecomputation::touchVertexFirstTime(
       _stateCopy.isFirstIterationOfBatchOrNoBatch() &&
       OneSolverRequestedLocalRecomputation
   ) {
-    for (int i=0; i<2*(DIMENSIONS-1)*(DIMENSIONS); i++) {
-      mergeNeighboursDataDuringLocalRecomputationLoopBody(Vertex::pos1Scalar[i],Vertex::pos2Scalar[i],vertex,x,h);
-    }
+    mergeNeighboursDataDuringLocalRecomputationLoopBody(0,1,vertex,x,h);
+    mergeNeighboursDataDuringLocalRecomputationLoopBody(0,2,vertex,x,h);
+    #if DIMENSIONS==3
+    mergeNeighboursDataDuringLocalRecomputationLoopBody(0,4,vertex,x,h);
+    #endif
   }
 
   logTraceOutWith1Argument( "touchVertexFirstTime(...)", vertex );
