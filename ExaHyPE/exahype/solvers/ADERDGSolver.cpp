@@ -4044,30 +4044,6 @@ void exahype::solvers::ADERDGSolver::sendDataToNeighbour(
   }
 }
 
-void exahype::solvers::ADERDGSolver::sendEmptyDataToNeighbour( // TODO(Dominic): Still needed?
-    const int                                     toRank,
-    const tarch::la::Vector<DIMENSIONS, double>&  x,
-    const int                                     level) const {
-  // Send order: lQhbnd,lFhbnd,observablesMin,observablesMax
-  // Receive order: observablesMax,observablesMin,lFhbnd,lQhbnd
-  // TODO(WORKAROUND)
-  #if defined(UsePeanosSymmetricBoundaryExchanger)
-  const int dofsPerFace = getBndFluxSize();
-  const int dataPerFace = getBndFaceSize();
-  DataHeap::getInstance().sendData(
-      _invalidExtrapolatedPredictor.data(), dataPerFace, toRank, x, level,
-      peano::heap::MessageType::NeighbourCommunication);
-  DataHeap::getInstance().sendData(
-      _invalidFluctuations.data(), dofsPerFace, toRank, x, level,
-      peano::heap::MessageType::NeighbourCommunication);
-  #else
-  for(int sends=0; sends<DataMessagesPerNeighbourCommunication; ++sends)
-    DataHeap::getInstance().sendData(
-        exahype::EmptyDataHeapMessage, toRank, x, level,
-        peano::heap::MessageType::NeighbourCommunication);
-  #endif
-}
-
 // TODO(Dominic): Add to docu: We only perform a Riemann solve if a Cell is involved.
 void exahype::solvers::ADERDGSolver::mergeWithNeighbourData(
     const int                                    fromRank,
@@ -4087,7 +4063,7 @@ void exahype::solvers::ADERDGSolver::mergeWithNeighbourData(
       // Send order: lQhbnd,lFhbnd
       // Receive order: lFhbnd,lQhbnd
       // TODO(Dominic): If anarchic time stepping, receive the time step too.
-       const int dofsPerFace  = getBndFluxSize();
+       const int dofsPerFace = getBndFluxSize();
        const int dataPerFace = getBndFaceSize();
        DataHeap::getInstance().receiveData(
            const_cast<double*>(_receivedFluctuations.data()),dofsPerFace, // TODO const-correct peano

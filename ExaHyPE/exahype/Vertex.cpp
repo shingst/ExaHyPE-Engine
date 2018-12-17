@@ -720,10 +720,11 @@ void exahype::Vertex::sendToNeighbourLoopBody(
     // metadata is sent and received as block
     bool sendNoMetadata = /* negative */
         (exahype::solvers::Solver::DisablePeanoNeighbourExchangeInTimeSteps &&
-            exahype::solvers::Solver::DisableMetaDataExchangeInBatchedTimeSteps)
-            ||
-            (exahype::solvers::Solver::DisableMetaDataExchangeInBatchedTimeSteps
-                && !isLastIterationOfBatchOrNoBatch);
+        exahype::solvers::Solver::DisableMetaDataExchangeInBatchedTimeSteps)
+        ||
+        (exahype::solvers::Solver::DisableMetaDataExchangeInBatchedTimeSteps
+        && !isLastIterationOfBatchOrNoBatch);
+
     if ( !sendNoMetadata && validIndex ){
       sendNeighbourCommunicationMetadata(
           toRank,srcCellDescriptionsIndex,src,dest,x,level);
@@ -839,22 +840,21 @@ void exahype::Vertex::receiveNeighbourData(
     const int                                    level) const {
   if ( hasToCommunicate(level) ) {
     bool receiveNoMetadata =
-              (exahype::solvers::Solver::DisablePeanoNeighbourExchangeInTimeSteps &&
-              exahype::solvers::Solver::DisableMetaDataExchangeInBatchedTimeSteps)
-              ||
-              (exahype::solvers::Solver::DisableMetaDataExchangeInBatchedTimeSteps
-              && !isFirstIterationOfBatchOrNoBatch);
-    if ( hasToCommunicate(level) ) {
-      const tarch::la::Vector<DIMENSIONS,int> lowerLeft(0);
-      #if DIMENSIONS==3
-      receiveNeighbourDataLoopBody(fromRank,4,0,_vertexData.getCellDescriptionsIndex(0),mergeWithReceivedData,!receiveNoMetadata,getAdjacentRanks(),computeFaceBarycentre(x,h,2,lowerLeft),level);
-      receiveNeighbourDataLoopBody(fromRank,0,4,_vertexData.getCellDescriptionsIndex(4),mergeWithReceivedData,!receiveNoMetadata,getAdjacentRanks(),computeFaceBarycentre(x,h,2,lowerLeft),level);
-      #endif
-      receiveNeighbourDataLoopBody(fromRank,2,0,_vertexData.getCellDescriptionsIndex(0),mergeWithReceivedData,!receiveNoMetadata,getAdjacentRanks(),computeFaceBarycentre(x,h,1,lowerLeft),level);
-      receiveNeighbourDataLoopBody(fromRank,0,2,_vertexData.getCellDescriptionsIndex(2),mergeWithReceivedData,!receiveNoMetadata,getAdjacentRanks(),computeFaceBarycentre(x,h,1,lowerLeft),level);
-      receiveNeighbourDataLoopBody(fromRank,1,0,_vertexData.getCellDescriptionsIndex(0),mergeWithReceivedData,!receiveNoMetadata,getAdjacentRanks(),computeFaceBarycentre(x,h,0,lowerLeft),level);
-      receiveNeighbourDataLoopBody(fromRank,0,1,_vertexData.getCellDescriptionsIndex(1),mergeWithReceivedData,!receiveNoMetadata,getAdjacentRanks(),computeFaceBarycentre(x,h,0,lowerLeft),level);
-    }
+            (exahype::solvers::Solver::DisablePeanoNeighbourExchangeInTimeSteps &&
+            exahype::solvers::Solver::DisableMetaDataExchangeInBatchedTimeSteps)
+            ||
+            (exahype::solvers::Solver::DisableMetaDataExchangeInBatchedTimeSteps
+            && !isFirstIterationOfBatchOrNoBatch);
+
+    const tarch::la::Vector<DIMENSIONS,int> lowerLeft(0);
+    #if DIMENSIONS==3
+    receiveNeighbourDataLoopBody(fromRank,4,0,_vertexData.getCellDescriptionsIndex(0),mergeWithReceivedData,!receiveNoMetadata,getAdjacentRanks(),computeFaceBarycentre(x,h,2,lowerLeft),level);
+    receiveNeighbourDataLoopBody(fromRank,0,4,_vertexData.getCellDescriptionsIndex(4),mergeWithReceivedData,!receiveNoMetadata,getAdjacentRanks(),computeFaceBarycentre(x,h,2,lowerLeft),level);
+    #endif
+    receiveNeighbourDataLoopBody(fromRank,2,0,_vertexData.getCellDescriptionsIndex(0),mergeWithReceivedData,!receiveNoMetadata,getAdjacentRanks(),computeFaceBarycentre(x,h,1,lowerLeft),level);
+    receiveNeighbourDataLoopBody(fromRank,0,2,_vertexData.getCellDescriptionsIndex(2),mergeWithReceivedData,!receiveNoMetadata,getAdjacentRanks(),computeFaceBarycentre(x,h,1,lowerLeft),level);
+    receiveNeighbourDataLoopBody(fromRank,1,0,_vertexData.getCellDescriptionsIndex(0),mergeWithReceivedData,!receiveNoMetadata,getAdjacentRanks(),computeFaceBarycentre(x,h,0,lowerLeft),level);
+    receiveNeighbourDataLoopBody(fromRank,0,1,_vertexData.getCellDescriptionsIndex(1),mergeWithReceivedData,!receiveNoMetadata,getAdjacentRanks(),computeFaceBarycentre(x,h,0,lowerLeft),level);
   }
 }
 #endif

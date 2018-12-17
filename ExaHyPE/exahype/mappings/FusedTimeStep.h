@@ -171,6 +171,15 @@ private:
    *
    * Alters the state as we have a counter which checks
    * if we have waited for the background jobs to complete.
+   *
+   * MPI / TBB optimisation
+   * ----------------------
+   *
+   * We need to turn this event on only in every second iteration.
+   * This can be accomplished in non-parallel builds.
+   * Switching this event off in every second sweep does
+   * not work with parallel builds as it corrupts the neighbour
+   * data communication behaviour.
    */
   peano::MappingSpecification touchVertexFirstTimeSpecification(int level);
 
