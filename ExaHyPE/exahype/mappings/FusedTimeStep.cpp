@@ -90,6 +90,11 @@ exahype::mappings::FusedTimeStep::communicationSpecification() const {
 
 peano::MappingSpecification
 exahype::mappings::FusedTimeStep::enterCellSpecification(int level) {
+  #ifdef Parallel
+  return peano::MappingSpecification(
+      peano::MappingSpecification::WholeTree,
+      peano::MappingSpecification::RunConcurrentlyOnFineGrid,true); // counter
+  #else
   updateBatchIterationCounter(false); // comes after beginIteration in first iteration -> never init counter
   
   const int coarsestSolverLevel = solvers::Solver::getCoarsestMeshLevelOfAllSolvers();
@@ -102,10 +107,16 @@ exahype::mappings::FusedTimeStep::enterCellSpecification(int level) {
           peano::MappingSpecification::Nop,
           peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
   }
+  #endif
 }
 
 peano::MappingSpecification
 exahype::mappings::FusedTimeStep::leaveCellSpecification(int level) {
+  #ifdef Parallel
+  return peano::MappingSpecification(
+      peano::MappingSpecification::WholeTree,
+      peano::MappingSpecification::RunConcurrentlyOnFineGrid,true); // counter
+  #else
   updateBatchIterationCounter(false); // comes after beginIteration in first iteration -> never init counter
   
   const int coarsestSolverLevel = solvers::Solver::getCoarsestMeshLevelOfAllSolvers();
@@ -118,6 +129,7 @@ exahype::mappings::FusedTimeStep::leaveCellSpecification(int level) {
           peano::MappingSpecification::Nop,
           peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
   }
+  #endif
 }
 
 peano::MappingSpecification
