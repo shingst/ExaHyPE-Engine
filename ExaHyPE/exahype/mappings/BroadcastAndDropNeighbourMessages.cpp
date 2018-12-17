@@ -115,7 +115,7 @@ void exahype::mappings::BroadcastAndDropNeighbourMessages::enterCell(
       // }
     }
 
-    Cell::resetNeighbourMergeFlagsAndCounters(cellInfo,fineGridVertices,fineGridVerticesEnumerator);
+    Cell::resetNeighbourMergePerformedFlags(cellInfo,fineGridVertices,fineGridVerticesEnumerator);
   }
 }
 
@@ -130,7 +130,7 @@ void exahype::mappings::BroadcastAndDropNeighbourMessages::mergeWithNeighbour(
   if ( exahype::solvers::Solver::FuseADERDGPhases ) {
   vertex.receiveNeighbourData(
       fromRank,false /*no merge*/,true /*no batch*/,
-      fineGridX,level);
+      fineGridX,fineGridH,level);
   }
 }
 

@@ -498,7 +498,7 @@ void exahype::mappings::MeshRefinement::enterCell(
 
   if ( fineGridCell.isInitialised() ) {
     solvers::Solver::CellInfo cellInfo = fineGridCell.createCellInfo();
-    Cell::resetNeighbourMergeFlagsAndCounters(cellInfo,fineGridVertices,fineGridVerticesEnumerator);
+    Cell::resetNeighbourMergePerformedFlags(cellInfo,fineGridVertices,fineGridVerticesEnumerator);
     // shutdown metadata for empty cells (no cell descriptions)
     if ( fineGridCell.isEmpty() ) {
       fineGridCell.shutdownMetaDataAndResetCellDescriptionsIndex();
@@ -843,7 +843,7 @@ void exahype::mappings::MeshRefinement::prepareCopyToRemoteNode(
   if ( 
       localCell.hasToCommunicate(level) &&
       localCell.getRankOfRemoteNode()==toRank 
-  ) { // isAsignedToRemoteRank does not work, remeber the halo sends
+  ) { // isAsignedToRemoteRank does not work, remember the halo sends
     const int cellDescriptionsIndex = localCell.getCellDescriptionsIndex();
     exahype::solvers::ADERDGSolver::sendCellDescriptions(toRank,cellDescriptionsIndex,
         exahype::State::isJoiningWithMaster()/* send out data from worker side */,

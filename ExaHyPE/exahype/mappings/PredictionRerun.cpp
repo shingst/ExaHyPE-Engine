@@ -172,7 +172,7 @@ void exahype::mappings::PredictionRerun::mergeWithNeighbour(
   if ( exahype::State::BroadcastInThisIteration ) {
     vertex.receiveNeighbourData(
         fromRank,false /*no merge*/,true /*no batch*/,
-        fineGridX,level);
+        fineGridX,fineGridH,level);
   }
   logTraceOut( "mergeWithMaster(...)" );
 }
@@ -184,7 +184,7 @@ void exahype::mappings::PredictionRerun::prepareSendToNeighbour(
   logTraceInWith5Arguments( "prepareSendToNeighbour(...)", vertex, toRank, x, h, level );
 
   if ( _stateCopy.isLastIterationOfBatchOrNoBatch() ) {
-    vertex.sendToNeighbour(toRank,true,x,level);
+    vertex.sendToNeighbour(toRank,true,x,h,level);
   }
   logTraceOut( "prepareSendToNeighbour(...)" );
 }

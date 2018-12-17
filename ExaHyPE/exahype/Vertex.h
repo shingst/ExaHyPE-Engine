@@ -56,14 +56,6 @@ public:
    */
   static bool SpawnNeighbourMergeAsThread;
 
-  #if DIMENSIONS==2
-  static constexpr int pos1Scalar[4] = {0,0,1,2};
-  static constexpr int pos2Scalar[4] = {1,2,3,3};
-  #elif DIMENSIONS==3
-  static constexpr int pos1Scalar[12] = {0,0,0,1,1,2,2,3,4,4,5,6};
-  static constexpr int pos2Scalar[12] = {1,2,4,3,5,3,6,7,5,6,7,7};
-  #endif
-
   /**
    * @return a mapping specification which applies to all neighbour merges.
    */ 
@@ -221,7 +213,7 @@ private:
    * @param destScalar
    * @param srcCellDescriptionIndex
    * @param adjacentRanks
-   * @param x
+   * @param baryCentre of a face
    * @param h
    * @param level
    * @param checkThoroughly
@@ -232,7 +224,7 @@ private:
       const int                                    destScalar,
       const int                                    srcCellDescriptionIndex,
       const tarch::la::Vector<TWO_POWER_D, int>&   adjacentRanks,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
+      const tarch::la::Vector<DIMENSIONS, double>& baryCentre,
       const tarch::la::Vector<DIMENSIONS, double>& h,
       const int                                    level,
       const bool                                   checkThoroughly);
@@ -319,7 +311,7 @@ private:
    * @param mergeWithReceivedData
    * @param receiveNeighbourMetadata
    * @param adjacentRanks
-   * @param x
+   * @param baryCentre bary centre of the face
    * @param level
    */
   static void receiveNeighbourDataLoopBody(
@@ -330,7 +322,7 @@ private:
     const bool                                   mergeWithReceivedData,
     const bool                                   receiveNeighbourMetadata,
     const tarch::la::Vector<TWO_POWER_D, int>&   adjacentRanks,
-    const tarch::la::Vector<DIMENSIONS, double>& x,
+    const tarch::la::Vector<DIMENSIONS, double>& baryCentre,
     const int                                    level);
 
 #endif
@@ -633,7 +625,7 @@ private:
       const tarch::la::Vector<DIMENSIONS,int>&     src,
       const tarch::la::Vector<DIMENSIONS,int>&     dest,
       const int                                    srcCellDescriptionsIndex,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
+      const tarch::la::Vector<DIMENSIONS, double>& baryCentre,
       const tarch::la::Vector<DIMENSIONS, double>& h);
 
   /**
@@ -739,59 +731,8 @@ private:
   void dropNeighbourMetadata(
       const int                                    fromRank,
       const tarch::la::Vector<DIMENSIONS, double>& x,
+      const tarch::la::Vector<DIMENSIONS, double>& h,
       const int                                    level) const;
-
-  /**
-   * Checks for a cell description (ADER-DG, FV, ...)
-   * if now is the time to send out face data to a neighbouring rank.
-   *
-   * !! Side effects !!
-   *
-   * Every call of this function decrements the
-   * cellDescription's faceDataExchangeCounter for the particular @p face.
-   *
-   * <h2>Face data exchange counters<\h2>
-   * On every cell description, we hold a field of 2*d
-   * counters. If a face is part of the MPI boundary,
-   * we initialise the corresponding counter with
-   * value 2^{d-1}.
-   *
-   * In the Prediction::prepareSendToNeighbour(...) and
-   * RiemannSolver::mergeWithNeighbour(...) routine,
-   * we then decrement the counters for the face
-   * every time one of the 2^{d-1}
-   * adjacent vertices touches the face.
-   *
-   * @note Not thread-safe.
-   *
-   * @param cellDescription a cell description
-   * @param face            see BoundaryFaceInfo
-   */
-  template <typename CellDescription>
-  static bool hasToSendToNeighbourNow(CellDescription& cellDescription,solvers::Solver::BoundaryFaceInfo& face) {
-    // decrement counter beforehand
-    const int newCounterValue = cellDescription.getFaceDataExchangeCounter(face._faceIndex)-1;
-    assertion2(newCounterValue>=0,newCounterValue,cellDescription.toString());
-    assertion1(newCounterValue<TWO_POWER_D,newCounterValue);
-    cellDescription.setFaceDataExchangeCounter(face._faceIndex,newCounterValue);
-    return cellDescription.getFaceDataExchangeCounter(face._faceIndex)==0; // check counter
-  }
-
-  /**
-   * @return If the cell description flags and counters state that
-   * sending data is required.
-   *
-   * @note this call has side effects. It changes flags and counters on the cell descriptions.
-   *
-   * @note such a collective treatment was required because of the LimitingADERDGSolver
-   * which combines an ADER-DG with a FV scheme.
-   *
-   * @param cellInfo refers to the cell descriptions found for a cell.
-   * @param face     struct holding face index, normal vector direction and orientation, and more.
-   */
-  static bool hasToSendToNeighbourNow(
-      solvers::Solver::CellInfo&         cellInfo,
-      solvers::Solver::BoundaryFaceInfo& face);
 
   /*! Send face data to neighbouring remote ranks.
    *
@@ -811,67 +752,8 @@ private:
       int toRank,
       const bool isLastIterationOfBatchOrNoBatch,
       const tarch::la::Vector<DIMENSIONS, double>& x,
+      const tarch::la::Vector<DIMENSIONS, double>& h,
       const int                                    level) const;
-
-  /**
-   * Checks for a cell description (ADER-DG, FV, ...) if now is the time to
-   * receive face data from a neighbouring rank.
-   *
-   * !! Side effects !!
-   *
-   * Resets the face data exchange counters of
-   * the the cell descriptions corresponding
-   * to cell position \p dest.
-   *
-   * Further sets the neighbour merge performed
-   * flag to true.
-   *
-   * <h2>Face data exchange counters<\h2>
-   * On every cell description, we hold a field of 2*d
-   * counters. If a face is part of the MPI boundary,
-   * we initialise the corresponding counter with
-   * value 2^{d-1}.
-   *
-   * When we send out data, we then decrement the counters for the face
-   * every time one of the 2^{d-1}
-   * adjacent vertices touches the face.
-   *
-   * @note Not thread-safe.
-   *
-   * @param cellDescription a cell description
-   * @param face            see BoundaryFaceInfo
-   * @return if we have to merge with the neighbour data. If not, it needs to be received and dropped.
-   */
-  template <typename CellDescription>
-  static bool hasToReceiveFromNeighbourNow(CellDescription& cellDescription,solvers::Solver::BoundaryFaceInfo& face) {
-    if ( cellDescription.getFaceDataExchangeCounter(face._faceIndex)==0 ) {
-      assertion1(!cellDescription.getNeighbourMergePerformed(face._faceIndex),cellDescription.toString());
-      cellDescription.setFaceDataExchangeCounter(face._faceIndex,TWO_POWER_D); // TODO(Dominic): maybe do not do that here but in the cell? Can be used to determine which cell belongs to skeleton
-      cellDescription.setNeighbourMergePerformed(face._faceIndex,(signed char) true);
-      return true;
-    } else {
-      return false;
-    }
-  }
-
-  /**
-   * @return If the cell description flags and counters state that
-   * receiving data is required.
-   *
-   * @note this call has side effects. It changes flags and counters on the cell descriptions.
-   *
-   * @note such a collective treatment was required because of the LimitingADERDGSolver
-   * which combines an ADER-DG with a FV scheme.
-   *
-   * @param cellInfo              refers to the cell descriptions found for a cell.
-   * @param face                  struct holding face index, normal vector direction and orientation, and more.
-   * @param prefethADERDGFaceData if ADER-DG face data should be prefetched
-   *                              (if defined(SharedTBB) && !defined(noTBBPrefetchesJobData))
-   */
-  static bool hasToReceiveFromNeighbourNow(
-      solvers::Solver::CellInfo&         cellInfo,
-      solvers::Solver::BoundaryFaceInfo& face,
-      const bool prefetchADERDGFaceData);
 
   /*! Receive data from remote ranks at all remote boundary faces adjacent to this vertex.
    *
@@ -882,6 +764,7 @@ private:
       const bool                                   mergeWithReceivedData,
       const bool                                   isFirstIterationOfBatchOrNoBatch,
       const tarch::la::Vector<DIMENSIONS, double>& x,
+      const tarch::la::Vector<DIMENSIONS, double>& h,
       const int                                    level) const;
   #endif
 };
