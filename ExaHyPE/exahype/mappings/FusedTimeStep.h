@@ -160,10 +160,28 @@ private:
    * Alters the state if we perform a reduction. This
    * is the case if we perform the last iteration of a batch
    * or no batch iteration at all.
+   *
+   * MPI / TBB optimisation
+   * ----------------------
+   *
+   * We need to turn this event on only in every second iteration.
+   * This can be accomplished in non-parallel builds.
+   * Switching this event off in every second sweep does
+   * not work with parallel builds as it corrupts the neighbour
+   * data communication behaviour.
    */
   peano::MappingSpecification enterCellSpecification(int level);
   /**
    * Run through the whole tree. Run concurrently on the fine grid.
+   *
+   * MPI / TBB optimisation
+   * ----------------------
+   *
+   * We need to turn this event on only in every second iteration.
+   * This can be accomplished in non-parallel builds.
+   * Switching this event off in every second sweep does
+   * not work with parallel builds as it corrupts the neighbour
+   * data communication behaviour.
    */
   peano::MappingSpecification leaveCellSpecification(int level);
   /**
