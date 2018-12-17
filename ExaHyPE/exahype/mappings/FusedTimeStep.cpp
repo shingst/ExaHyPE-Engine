@@ -96,7 +96,7 @@ exahype::mappings::FusedTimeStep::enterCellSpecification(int level) {
   if ( std::abs(level)>=coarsestSolverLevel && sendOutRiemannDataInThisIteration() ) {
     return peano::MappingSpecification(
           peano::MappingSpecification::WholeTree,
-          peano::MappingSpecification::RunConcurrentlyOnFineGrid,true); // performs reductions
+          peano::MappingSpecification::RunConcurrentlyOnFineGrid,true); // counter
   } else {
     return peano::MappingSpecification(
           peano::MappingSpecification::Nop,
@@ -122,18 +122,24 @@ exahype::mappings::FusedTimeStep::leaveCellSpecification(int level) {
 
 peano::MappingSpecification
 exahype::mappings::FusedTimeStep::touchVertexFirstTimeSpecification(int level) {
+  #ifdef Parallel
+  return peano::MappingSpecification(
+      peano::MappingSpecification::WholeTree,
+      peano::MappingSpecification::RunConcurrentlyOnFineGrid,true); // counter
+  #else
   updateBatchIterationCounter(false); // comes after beginIteration in first iteration -> never init counter
 
   const int coarsestSolverLevel = solvers::Solver::getCoarsestMeshLevelOfAllSolvers();
   if ( std::abs(level)>=coarsestSolverLevel && issuePredictionJobsInThisIteration() ) {
     return peano::MappingSpecification(
           peano::MappingSpecification::WholeTree,
-          peano::MappingSpecification::RunConcurrentlyOnFineGrid,true); // performs reductions
+          peano::MappingSpecification::RunConcurrentlyOnFineGrid,true); // counter
   } else {
     return peano::MappingSpecification(
           peano::MappingSpecification::Nop,
           peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
   }
+  #endif
 }
 
 /**
