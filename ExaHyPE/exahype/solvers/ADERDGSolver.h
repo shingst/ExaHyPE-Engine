@@ -966,6 +966,7 @@ private:
           const tarch::la::Vector<DIMENSIONS,int>& subcellIndex);
 
       bool run() override;
+      void prefetchData() override;
   };
 
   /**
