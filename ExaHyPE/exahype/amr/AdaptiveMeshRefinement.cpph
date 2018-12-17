@@ -1,8 +1,7 @@
 
-template <class CellDescription,class CellDescriptionHeap,bool topMost>
+template <class CellDescription,class CellDescriptionHeap>
 exahype::solvers::Solver::SubcellPosition
-exahype::amr::computeSubcellPositionOfDescendant(
-    const CellDescription& pChild) {
+exahype::amr::computeSubcellPositionOfDescendant(const CellDescription& pChild) {
   assertion1(pChild.getType()==CellDescription::Descendant,pChild.toString());
   assertion1(CellDescriptionHeap::getInstance().isValidIndex(
       pChild.getParentIndex()),pChild.getParentIndex());
@@ -26,24 +25,9 @@ exahype::amr::computeSubcellPositionOfDescendant(
   // a parent in the parent's cell description array.
   assertion1(pParent!=0,pChild.toString());
 
-  // 2. If the current parent is a Descendant that doesn't,
-  // hold face data try to determine iteratively the next parent that holds data.
-  // If topMost is true, look for a Cell or a Descendant at the master-worker boundary.
-  while (
-      (pParent->getType()==CellDescription::Descendant &&
-       pParent->getCommunicationStatus()==0
-       #ifdef Parallel
-       && !pParent->getHasToHoldDataForMasterWorkerCommunication()
-       #endif
-       )
-      ||
-      (topMost                                         &&
-       pParent->getType()==CellDescription::Descendant
-       #ifdef Parallel
-       && !pParent->getHasToHoldDataForMasterWorkerCommunication()
-       #endif
-       )
-  ) {
+  // 2. If the current parent is a Descendant try to determine iteratively the next Cell
+  // or the top most Descendant.
+  while ( pParent->getType()==CellDescription::Descendant ) {
     const int currentParentIndex =
         pParent->getParentIndex();
     assertion1(CellDescriptionHeap::getInstance().isValidIndex(
