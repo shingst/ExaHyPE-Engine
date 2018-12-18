@@ -34,33 +34,10 @@ class exahype::records::ADERDGCellDescription {
   ///@}
   
   /**
-   * Flag indicating if this cell description has completed the last time
-   * step and its data can be used for the next neighbour merges (Riemann solves).
+   * Flag indicating if the last operation was completed for this cell description
+   * and its data can be used for the next operations.
    */
-  persistent packed bool hasCompletedTimeStep;
-  
-  #ifdef Parallel  
-   /**
-    * Indicates if the cell this
-    * cell description is associated with
-    * is adjacent to a remote rank at
-    * at least one of its faces.
-    */
-  persistent packed bool adjacentToRemoteRank;
-  
-  /**
-   * This flag is set just before a cell description is sent to a new
-   * worker. 
-   * 
-   * It indicates that a worker cell description of type Ancestor or Descendant
-   * needs to hold data to enable the allow the exchange of 
-   * data between it and a master cell description.
-   * 
-   * In contrast to hasToHoldDataForMasterWorkerCommunication,
-   * it is updated only after a fork or join event.
-   */
-  parallelise persistent bool hasToHoldDataForMasterWorkerCommunication;
-  #endif
+  persistent packed bool hasCompletedLastStep;
 
   /**
    * @defgroup AMRInfo AMR information

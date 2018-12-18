@@ -22,12 +22,11 @@ exahype::solvers::ADERDGSolver::PredictionJob::PredictionJob(
   _predictorTimeStepSize(predictorTimeStepSize),
   _uncompressBefore(uncompressBefore),
   _isSkeletonJob(isSkeletonJob) {
-  tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  {
-    int& jobCounter = (_isSkeletonJob) ? NumberOfSkeletonJobs : NumberOfEnclaveJobs;
-    jobCounter++;
+  if (_isSkeletonJob) {
+    NumberOfSkeletonJobs++;
+  } else {
+    NumberOfEnclaveJobs++;
   }
-  lock.free();
 }
 
 

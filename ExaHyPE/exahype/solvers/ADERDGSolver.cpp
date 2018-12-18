@@ -118,7 +118,7 @@ void exahype::solvers::ADERDGSolver::addNewCellDescription(
   newCellDescription.setSolverNumber(solverNumber);
 
   // Background job completion monitoring (must be initialised with true)
-  newCellDescription.setHasCompletedTimeStep(true);
+  newCellDescription.setHasCompletedLastStep(true);
 
   // Default AMR settings
   newCellDescription.setType(cellType);
@@ -145,11 +145,6 @@ void exahype::solvers::ADERDGSolver::addNewCellDescription(
   // Pass geometry information to the cellDescription description
   newCellDescription.setSize(cellSize);
   newCellDescription.setOffset(cellOffset);
-
-  // Initialise MPI helper variables
-  #ifdef Parallel
-  newCellDescription.setHasToHoldDataForMasterWorkerCommunication(false); // TODO(Dominic): Still necessary?
-  #endif
 
   // Default field data indices
   newCellDescription.setSolutionIndex(-1);
@@ -1078,11 +1073,6 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInEnterCell(
                fineGridVerticesEnumerator.getCellCenter(),center,fineGridVerticesEnumerator.getLevel(),fineGridCellDescription.getLevel(),tarch::parallel::Node::getInstance().getRank());
     assertionEquals3(fineGridVerticesEnumerator.getLevel(),fineGridCellDescription.getLevel(),fineGridVerticesEnumerator.getCellCenter(),fineGridCellDescription.getOffset()+0.5*fineGridCellDescription.getSize(),tarch::parallel::Node::getInstance().getRank());
 
-    #ifdef Parallel // TODO(Dominic): Still needed?
-    fineGridCellDescription.setAdjacentToRemoteRank(
-        exahype::Cell::isAtRemoteBoundary(fineGridVertices,fineGridVerticesEnumerator));
-    #endif
-
     // Update the status flagging
     updateCommunicationStatus(fineGridCellDescription);
     ensureNecessaryMemoryIsAllocated(fineGridCellDescription);
@@ -1265,9 +1255,6 @@ void exahype::solvers::ADERDGSolver::alterErasingRequestsIfNecessary(
         fineGridCellDescription.getHasVirtualChildren()
         || fineGridCellDescription.getRefinementEvent()==CellDescription::RefinementEvent::VirtualRefining
         || fineGridCellDescription.getRefinementEvent()==CellDescription::RefinementEvent::VirtualRefiningRequested
-        #ifdef Parallel
-        || fineGridCellDescription.getHasToHoldDataForMasterWorkerCommunication()
-        #endif
     ) {
       tarch::multicore::Lock lock(CoarseGridSemaphore);
       switch (coarseGridCellDescription.getRefinementEvent()) {
@@ -2161,7 +2148,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
   const int element = cellInfo.indexOfADERDGCellDescription(solverNumber);
   if ( element != NotFound ) {
     CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[element];
-    cellDescription.setHasCompletedTimeStep(false);
+    cellDescription.setHasCompletedLastStep(false);
 
     if ( cellDescription.getType()==CellDescription::Type::Cell ) {
       const bool isAMRSkeletonCell     = cellDescription.getHasVirtualChildren();
@@ -2187,11 +2174,11 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
         cellDescription.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication
     ) {
       restrictToTopMostParent(cellDescription);
-      cellDescription.setHasCompletedTimeStep(true);
+      cellDescription.setHasCompletedLastStep(true);
       // TODO(Dominic): Evaluate ref crit here too // halos
       return UpdateResult();
     } else {
-      cellDescription.setHasCompletedTimeStep(true);
+      cellDescription.setHasCompletedLastStep(true);
       return UpdateResult();
     }
   } else {
@@ -2214,7 +2201,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::updateBod
 
   compress(cellDescription,isAtRemoteBoundary);
 
-  cellDescription.setHasCompletedTimeStep(true); // required as prediction checks the flag too. Field should be renamed "setHasCompletedLastOperation(...)".
+  cellDescription.setHasCompletedLastStep(true); // required as prediction checks the flag too. Field should be renamed "setHasCompletedLastOperation(...)".
   return result;
 }
 
@@ -2225,7 +2212,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::updateOrR
   const int element = cellInfo.indexOfADERDGCellDescription(solverNumber);
   if ( element != NotFound ) {
     CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[element];
-    cellDescription.setHasCompletedTimeStep(false);
+    cellDescription.setHasCompletedLastStep(false);
 
     if (
         cellDescription.getType()==CellDescription::Type::Cell &&
@@ -2245,12 +2232,12 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::updateOrR
         cellDescription.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication
     ) {
       restrictToTopMostParent(cellDescription);
-      cellDescription.setHasCompletedTimeStep(true);
+      cellDescription.setHasCompletedLastStep(true);
       // TODO(Dominic): Evaluate ref crit here too // halos
       return UpdateResult();
     }
     else {
-      cellDescription.setHasCompletedTimeStep(true);
+      cellDescription.setHasCompletedLastStep(true);
       return UpdateResult();
     }
   }
@@ -2317,7 +2304,7 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegralBody(
 
   validateCellDescriptionData(cellDescription,true,true,false,"exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegralBody [post]");
 
-  cellDescription.setHasCompletedTimeStep(true);
+  cellDescription.setHasCompletedLastStep(true);
 }
 
 void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
@@ -2331,7 +2318,7 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
   CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[element];
 
   if ( cellDescription.getType()==CellDescription::Type::Cell ) {
-    cellDescription.setHasCompletedTimeStep(false);
+    cellDescription.setHasCompletedLastStep(false);
 
     const bool isAMRSkeletonCell     = cellDescription.getHasVirtualChildren();
     const bool isSkeletonCell        = isAMRSkeletonCell || isAtRemoteBoundary;
@@ -2466,7 +2453,7 @@ double exahype::solvers::ADERDGSolver::updateTimeStepSizes(CellDescription& cell
   } else {
     cellDescription.setPredictorTimeStamp   ( cellDescription.getCorrectorTimeStamp() );
   }
-  cellDescription.setHasCompletedTimeStep(true);
+  cellDescription.setHasCompletedLastStep(true);
   return admissibleTimeStepSize;
 }
 
@@ -2755,7 +2742,7 @@ void exahype::solvers::ADERDGSolver::prolongateFaceDataToDescendant(
     prolongateObservablesMinAndMax(cellDescription,parentCellDescription);
   }
 
-  cellDescription.setHasCompletedTimeStep(true);
+  cellDescription.setHasCompletedLastStep(true);
 }
 
 void exahype::solvers::ADERDGSolver::prolongateFaceData(
@@ -2784,7 +2771,7 @@ void exahype::solvers::ADERDGSolver::prolongateFaceData(
         ) {
           prolongateFaceDataToDescendant(cellDescription,parentCellDescription,subcellPosition.subcellIndex);
         } else {
-          cellDescription.setHasCompletedTimeStep(false); // done here in order to skip lookup of cell description in job constructor
+          cellDescription.setHasCompletedLastStep(false); // done here in order to skip lookup of cell description in job constructor
           peano::datatraversal::TaskSet spawn( new ProlongationJob( *this, 
               cellDescription, parentCellDescription, subcellPosition.subcellIndex) );
         }
@@ -2833,17 +2820,8 @@ void exahype::solvers::ADERDGSolver::restrictToTopMostParent(const CellDescripti
       getCellDescription(subcellPosition.parentCellDescriptionsIndex,subcellPosition.parentElement);
 
   assertion(parentCellDescription.getSolverNumber()==cellDescription.getSolverNumber());
-  assertion1(cellDescription.getType()==CellDescription::Type::Descendant && parentCellDescription.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication,
-             cellDescription.toString());
-  #ifdef Parallel
-  assertion1(parentCellDescription.getType()==CellDescription::Type::Cell ||
-      (parentCellDescription.getType()==CellDescription::Type::Descendant &&
-      parentCellDescription.getHasToHoldDataForMasterWorkerCommunication()),
-      parentCellDescription.toString());
-  #else
-  assertion1(parentCellDescription.getType()==CellDescription::Type::Cell,
-             parentCellDescription.toString());
-  #endif
+  assertion1(cellDescription.getType()==CellDescription::Type::Descendant,cellDescription.toString());
+  assertion1(parentCellDescription.getType()==CellDescription::Type::Cell,parentCellDescription.toString());
 
 
   // Perform the face integrals on fine grid cell
@@ -3341,9 +3319,8 @@ bool exahype::solvers::ADERDGSolver::sendCellDescriptions(
         " cell descriptions to rank "<<toRank<<" (x="<< x.toString() << ",level="<< level << ")");
     bool oneSolverRequiresVerticalCommunication = false;
     for (auto& cellDescription : Heap::getInstance().getData(cellDescriptionsIndex)) {
-      if ( fromWorkerSide ) {
-        prepareWorkerCellDescriptionAtMasterWorkerBoundary(cellDescription);
-      }
+      oneSolverRequiresVerticalCommunication &=
+          cellDescription.getType()==CellDescription::Type::Descendant && cellDescription.getHasVirtualChildren();
     }
     Heap::getInstance().sendData(cellDescriptionsIndex,toRank,x,level,messageType);
     return oneSolverRequiresVerticalCommunication;
@@ -3394,8 +3371,6 @@ void exahype::solvers::ADERDGSolver::receiveCellDescriptions(
 void exahype::solvers::ADERDGSolver::resetIndicesAndFlagsOfReceivedCellDescription(
     CellDescription& cellDescription,const int parentIndex) {
   cellDescription.setParentIndex(parentIndex);
-
-  cellDescription.setAdjacentToRemoteRank(false);
 
   // Default field data indices
   cellDescription.setSolutionIndex(-1);
@@ -3506,22 +3481,11 @@ exahype::solvers::ADERDGSolver::appendMasterWorkerCommunicationMetadata(
     metadata.push_back(cellDescription.getAugmentationStatus()); // TODO(Dominic): Add to docu: Might be merged multiple times!
     metadata.push_back(cellDescription.getCommunicationStatus());
     metadata.push_back(cellDescription.getRefinementStatus());
-    metadata.push_back(
-        (cellDescription.getHasToHoldDataForMasterWorkerCommunication()) ? 1 : 0 );
+    metadata.push_back( (cellDescription.getHasVirtualChildren()) ? 1 : 0 );
   } else {
     for (int i = 0; i < exahype::MasterWorkerCommunicationMetadataPerSolver; ++i) {
       metadata.push_back(exahype::InvalidMetadataEntry); // implicit conversion
     }
-  }
-}
-
-void exahype::solvers::ADERDGSolver::prepareWorkerCellDescriptionAtMasterWorkerBoundary(
-    CellDescription& cellDescription) {
-  if ( 
-     cellDescription.getType()==CellDescription::Type::Cell ||
-     cellDescription.getType()==CellDescription::Type::Descendant
-  ) {
-    cellDescription.setHasToHoldDataForMasterWorkerCommunication(cellDescription.getHasVirtualChildren());
   }
 }
 
@@ -3597,7 +3561,7 @@ void exahype::solvers::ADERDGSolver::progressMeshRefinementInPrepareSendToWorker
       CellDescription& fineGridCellDescription = getCellDescription(cellDescriptionsIndex,element);
       if ( 
         fineGridCellDescription.getType()==CellDescription::Type::Descendant &&
-        fineGridCellDescription.getHasToHoldDataForMasterWorkerCommunication()
+        fineGridCellDescription.getHasVirtualChildren()
       ) {
         Solver::SubcellPosition subcellPosition =  amr::computeSubcellPositionOfDescendant<CellDescription,Heap>(fineGridCellDescription);
         CellDescription& topMostParentCellDescription = 
@@ -4369,12 +4333,11 @@ exahype::solvers::ADERDGSolver::CompressionJob::CompressionJob(
   _solver(solver),
   _cellDescription(cellDescription),
   _isSkeletonJob(isSkeletonJob) {
-  tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  {
-    int& jobCounter = (_isSkeletonJob) ? NumberOfSkeletonJobs : NumberOfEnclaveJobs;
-    jobCounter++;
+  if (_isSkeletonJob) {
+    NumberOfSkeletonJobs++;
+  } else {
+    NumberOfEnclaveJobs++;
   }
-  lock.free();
 }
 
 
@@ -4383,13 +4346,13 @@ bool exahype::solvers::ADERDGSolver::CompressionJob::run() {
   _solver.computeHierarchicalTransform(_cellDescription,-1.0);
   _solver.putUnknownsIntoByteStream(_cellDescription);
 
-  tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  {
-    int& jobCounter = (_isSkeletonJob) ? NumberOfSkeletonJobs : NumberOfEnclaveJobs;
-    jobCounter--;
-    assertion( jobCounter>=0 );
+  if (_isSkeletonJob) {
+    NumberOfSkeletonJobs--;
+    assertion( NumberOfSkeletonJobs.load()>=0 );
+  } else {
+    NumberOfEnclaveJobs--;
+    assertion( NumberOfEnclaveJobs.load()>=0 );
   }
-  lock.free();
   return false;
 }
 
@@ -4440,13 +4403,6 @@ void exahype::solvers::ADERDGSolver::uncompress(CellDescription& cellDescription
   bool uncompress = CompressionAccuracy>0.0
       && cellDescription.getCompressionState() == CellDescription::Compressed;
   #endif
-
-/*
-  #ifdef Parallel
-  assertion1(!cellDescription.getAdjacentToRemoteRank() || cellDescription.getCompressionState() == CellDescription::Compressed,
-             cellDescription.toString());
-  #endif
-*/
 
   if (uncompress) {
     pullUnknownsFromByteStream(cellDescription);

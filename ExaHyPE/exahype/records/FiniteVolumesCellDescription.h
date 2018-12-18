@@ -32,7 +32,7 @@ namespace exahype {
  *
  * 		   build date: 09-02-2014 14:40
  *
- * @date   13/12/2018 17:25
+ * @date   18/12/2018 11:21
  */
 class exahype::records::FiniteVolumesCellDescription { 
    
@@ -59,7 +59,7 @@ class exahype::records::FiniteVolumesCellDescription {
          #else
          tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> _neighbourMergePerformed;
          #endif
-         bool _hasCompletedTimeStep;
+         bool _hasCompletedLastStep;
          double _timeStepSize;
          double _timeStamp;
          double _previousTimeStepSize;
@@ -108,7 +108,7 @@ class exahype::records::FiniteVolumesCellDescription {
          /**
           * Generated
           */
-         PersistentRecords(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const double& timeStepSize, const double& timeStamp, const double& previousTimeStepSize, const double& previousTimeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& extrapolatedSolutionIndex, const int& extrapolatedSolutionAveragesIndex, const int& extrapolatedSolutionCompressedIndex, void* extrapolatedSolution, void* extrapolatedSolutionAverages, void* extrapolatedSolutionCompressed, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInExtrapolatedSolution, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const Type& type, const int& parentIndex, const RefinementEvent& refinementEvent);
+         PersistentRecords(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const bool& hasCompletedLastStep, const double& timeStepSize, const double& timeStamp, const double& previousTimeStepSize, const double& previousTimeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& extrapolatedSolutionIndex, const int& extrapolatedSolutionAveragesIndex, const int& extrapolatedSolutionCompressedIndex, void* extrapolatedSolution, void* extrapolatedSolutionAverages, void* extrapolatedSolutionCompressed, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInExtrapolatedSolution, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const Type& type, const int& parentIndex, const RefinementEvent& refinementEvent);
          
          
          inline int getSolverNumber() const 
@@ -189,22 +189,22 @@ class exahype::records::FiniteVolumesCellDescription {
          
          
          
-         inline bool getHasCompletedTimeStep() const 
+         inline bool getHasCompletedLastStep() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-            return _hasCompletedTimeStep;
+            return _hasCompletedLastStep;
          }
          
          
          
-         inline void setHasCompletedTimeStep(const bool& hasCompletedTimeStep) 
+         inline void setHasCompletedLastStep(const bool& hasCompletedLastStep) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-            _hasCompletedTimeStep = hasCompletedTimeStep;
+            _hasCompletedLastStep = hasCompletedLastStep;
          }
          
          
@@ -943,7 +943,7 @@ class exahype::records::FiniteVolumesCellDescription {
          /**
           * Generated
           */
-         FiniteVolumesCellDescription(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const double& timeStepSize, const double& timeStamp, const double& previousTimeStepSize, const double& previousTimeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& extrapolatedSolutionIndex, const int& extrapolatedSolutionAveragesIndex, const int& extrapolatedSolutionCompressedIndex, void* extrapolatedSolution, void* extrapolatedSolutionAverages, void* extrapolatedSolutionCompressed, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInExtrapolatedSolution, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const Type& type, const int& parentIndex, const RefinementEvent& refinementEvent);
+         FiniteVolumesCellDescription(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const bool& hasCompletedLastStep, const double& timeStepSize, const double& timeStamp, const double& previousTimeStepSize, const double& previousTimeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& extrapolatedSolutionIndex, const int& extrapolatedSolutionAveragesIndex, const int& extrapolatedSolutionCompressedIndex, void* extrapolatedSolution, void* extrapolatedSolutionAverages, void* extrapolatedSolutionCompressed, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInExtrapolatedSolution, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const Type& type, const int& parentIndex, const RefinementEvent& refinementEvent);
          
          /**
           * Generated
@@ -1055,22 +1055,22 @@ class exahype::records::FiniteVolumesCellDescription {
          
          
          
-         inline bool getHasCompletedTimeStep() const 
+         inline bool getHasCompletedLastStep() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-            return _persistentRecords._hasCompletedTimeStep;
+            return _persistentRecords._hasCompletedLastStep;
          }
          
          
          
-         inline void setHasCompletedTimeStep(const bool& hasCompletedTimeStep) 
+         inline void setHasCompletedLastStep(const bool& hasCompletedLastStep) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-            _persistentRecords._hasCompletedTimeStep = hasCompletedTimeStep;
+            _persistentRecords._hasCompletedLastStep = hasCompletedLastStep;
          }
          
          
@@ -1942,7 +1942,7 @@ class exahype::records::FiniteVolumesCellDescription {
  *
  * 		   build date: 09-02-2014 14:40
  *
- * @date   13/12/2018 17:25
+ * @date   18/12/2018 11:21
  */
 class exahype::records::FiniteVolumesCellDescriptionPacked { 
    
@@ -1988,7 +1988,7 @@ class exahype::records::FiniteVolumesCellDescriptionPacked {
          
          /** mapping of records:
          || Member 	|| startbit 	|| length
-          |  hasCompletedTimeStep	| startbit 0	| #bits 1
+          |  hasCompletedLastStep	| startbit 0	| #bits 1
           |  compressionState	| startbit 1	| #bits 2
           |  bytesPerDoFInPreviousSolution	| startbit 3	| #bits 3
           |  bytesPerDoFInSolution	| startbit 6	| #bits 3
@@ -2004,7 +2004,7 @@ class exahype::records::FiniteVolumesCellDescriptionPacked {
          /**
           * Generated
           */
-         PersistentRecords(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const double& timeStepSize, const double& timeStamp, const double& previousTimeStepSize, const double& previousTimeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& extrapolatedSolutionIndex, const int& extrapolatedSolutionAveragesIndex, const int& extrapolatedSolutionCompressedIndex, void* extrapolatedSolution, void* extrapolatedSolutionAverages, void* extrapolatedSolutionCompressed, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInExtrapolatedSolution, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const Type& type, const int& parentIndex, const RefinementEvent& refinementEvent);
+         PersistentRecords(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const bool& hasCompletedLastStep, const double& timeStepSize, const double& timeStamp, const double& previousTimeStepSize, const double& previousTimeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& extrapolatedSolutionIndex, const int& extrapolatedSolutionAveragesIndex, const int& extrapolatedSolutionCompressedIndex, void* extrapolatedSolution, void* extrapolatedSolutionAverages, void* extrapolatedSolutionCompressed, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInExtrapolatedSolution, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const Type& type, const int& parentIndex, const RefinementEvent& refinementEvent);
          
          
          inline int getSolverNumber() const 
@@ -2085,7 +2085,7 @@ class exahype::records::FiniteVolumesCellDescriptionPacked {
          
          
          
-         inline bool getHasCompletedTimeStep() const 
+         inline bool getHasCompletedLastStep() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -2097,13 +2097,13 @@ class exahype::records::FiniteVolumesCellDescriptionPacked {
          
          
          
-         inline void setHasCompletedTimeStep(const bool& hasCompletedTimeStep) 
+         inline void setHasCompletedLastStep(const bool& hasCompletedLastStep) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
             int mask = 1 << (0);
-   _packedRecords0 = static_cast<int>( hasCompletedTimeStep ? (_packedRecords0 | mask) : (_packedRecords0 & ~mask));
+   _packedRecords0 = static_cast<int>( hasCompletedLastStep ? (_packedRecords0 | mask) : (_packedRecords0 & ~mask));
          }
          
          
@@ -2881,7 +2881,7 @@ class exahype::records::FiniteVolumesCellDescriptionPacked {
          /**
           * Generated
           */
-         FiniteVolumesCellDescriptionPacked(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const double& timeStepSize, const double& timeStamp, const double& previousTimeStepSize, const double& previousTimeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& extrapolatedSolutionIndex, const int& extrapolatedSolutionAveragesIndex, const int& extrapolatedSolutionCompressedIndex, void* extrapolatedSolution, void* extrapolatedSolutionAverages, void* extrapolatedSolutionCompressed, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInExtrapolatedSolution, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const Type& type, const int& parentIndex, const RefinementEvent& refinementEvent);
+         FiniteVolumesCellDescriptionPacked(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const bool& hasCompletedLastStep, const double& timeStepSize, const double& timeStamp, const double& previousTimeStepSize, const double& previousTimeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& extrapolatedSolutionIndex, const int& extrapolatedSolutionAveragesIndex, const int& extrapolatedSolutionCompressedIndex, void* extrapolatedSolution, void* extrapolatedSolutionAverages, void* extrapolatedSolutionCompressed, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInExtrapolatedSolution, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const Type& type, const int& parentIndex, const RefinementEvent& refinementEvent);
          
          /**
           * Generated
@@ -2993,7 +2993,7 @@ class exahype::records::FiniteVolumesCellDescriptionPacked {
          
          
          
-         inline bool getHasCompletedTimeStep() const 
+         inline bool getHasCompletedLastStep() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -3005,13 +3005,13 @@ class exahype::records::FiniteVolumesCellDescriptionPacked {
          
          
          
-         inline void setHasCompletedTimeStep(const bool& hasCompletedTimeStep) 
+         inline void setHasCompletedLastStep(const bool& hasCompletedLastStep) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
             int mask = 1 << (0);
-   _persistentRecords._packedRecords0 = static_cast<int>( hasCompletedTimeStep ? (_persistentRecords._packedRecords0 | mask) : (_persistentRecords._packedRecords0 & ~mask));
+   _persistentRecords._packedRecords0 = static_cast<int>( hasCompletedLastStep ? (_persistentRecords._packedRecords0 | mask) : (_persistentRecords._packedRecords0 & ~mask));
          }
          
          

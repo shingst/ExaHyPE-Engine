@@ -23,6 +23,8 @@
 #include <iostream>
 #include <vector>
 
+#include <atomic>
+
 #include "tarch/compiler/CompilerSpecificSettings.h"
 #include "peano/utils/PeanoOptimisations.h"
 #include "tarch/multicore/MulticoreDefinitions.h"
@@ -664,7 +666,7 @@ class exahype::solvers::Solver {
   /**
    * \see ensureAllBackgroundJobsHaveTerminated
    */
-  static int NumberOfAMRBackgroundJobs;
+  static std::atomic<int> NumberOfAMRBackgroundJobs;
 
   /**
    * Number of jobs spawned which perform a reduction.
@@ -672,7 +674,7 @@ class exahype::solvers::Solver {
    * Reduction Jobs are spawned as high priority.
    * They might be enclave or skeleton jobs.
    */
-  static int NumberOfReductionJobs;
+  static std::atomic<int> NumberOfReductionJobs;
 
   /**
    * Number of background jobs spawned
@@ -680,7 +682,7 @@ class exahype::solvers::Solver {
    *
    * \see ensureAllBackgroundJobsHaveTerminated
    */
-  static int NumberOfEnclaveJobs;
+  static std::atomic<int> NumberOfEnclaveJobs;
   /**
    * Number of background jobs spawned
    * from skeleton cells, i.e. cells at parallel
@@ -688,7 +690,7 @@ class exahype::solvers::Solver {
    *
    * \see ensureAllBackgroundJobsHaveTerminated
    */
-  static int NumberOfSkeletonJobs;
+  static std::atomic<int> NumberOfSkeletonJobs;
 
   /**
    * The type of a solver.
@@ -1080,7 +1082,7 @@ class exahype::solvers::Solver {
   *
   * <h2> Thread-safety </h2>
   *
-  * We only read (sample) the hasCompletedTimeStep flag and thus do not need any locks.
+  * We only read (sample) the hasCompletedLastStep flag and thus do not need any locks.
   * If this flag were to assume an undefined state, this would happen after the job working processing the
   * cell description was completed. This routine will then do an extra iteration or finish.
   * Either is fine.
@@ -1104,10 +1106,10 @@ class exahype::solvers::Solver {
  template <typename CellDescription>
  void waitUntilCompletedTimeStep(
      const CellDescription& cellDescription,const bool waitForHighPriorityJob,const bool receiveDanglingMessages) {
-   if ( !cellDescription.getHasCompletedTimeStep() ) {
+   if ( !cellDescription.getHasCompletedLastStep() ) {
      peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
    }
-   while ( !cellDescription.getHasCompletedTimeStep() ) {
+   while ( !cellDescription.getHasCompletedLastStep() ) {
      // do some work myself
      if ( receiveDanglingMessages ) {
        tarch::parallel::Node::getInstance().receiveDanglingMessages();

@@ -106,10 +106,10 @@ bool exahype::solvers::Solver::SpawnAMRBackgroundJobs = false;
 double exahype::solvers::Solver::CompressionAccuracy = 0.0;
 bool exahype::solvers::Solver::SpawnCompressionAsBackgroundJob = false;
 
-int exahype::solvers::Solver::NumberOfAMRBackgroundJobs = 0;
-int exahype::solvers::Solver::NumberOfReductionJobs = 0;
-int exahype::solvers::Solver::NumberOfEnclaveJobs = 0;
-int exahype::solvers::Solver::NumberOfSkeletonJobs = 0;
+std::atomic<int> exahype::solvers::Solver::NumberOfAMRBackgroundJobs(0);
+std::atomic<int> exahype::solvers::Solver::NumberOfReductionJobs(0);
+std::atomic<int> exahype::solvers::Solver::NumberOfEnclaveJobs(0);
+std::atomic<int> exahype::solvers::Solver::NumberOfSkeletonJobs(0);
 
 std::string exahype::solvers::Solver::toString(const JobType& jobType) {
   switch (jobType) {
@@ -173,7 +173,7 @@ void exahype::solvers::Solver::ensureAllJobsHaveTerminated(JobType jobType) {
 }
 
 void exahype::solvers::Solver::configurePredictionPhase(const bool usePredictionBackgroundJobs, bool useProlongationBackgroundJobs) {
-  exahype::solvers::Solver::SpawnPredictionAsBackgroundJob              = usePredictionBackgroundJobs;
+  exahype::solvers::Solver::SpawnPredictionAsBackgroundJob   = usePredictionBackgroundJobs;
   exahype::solvers::Solver::SpawnProlongationAsBackgroundJob = useProlongationBackgroundJobs;
 
   #ifdef PredictionSweeps
