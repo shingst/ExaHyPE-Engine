@@ -454,7 +454,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
       UpdateResult result;
       if (
           solverPatch.getType()==SolverPatch::Type::Descendant &&
-          ADERDGSolver::determineCommunicationStatus(solverPatch)>=ADERDGSolver::MinimumCommunicationStatusForNeighbourCommunication
+          solverPatch.getCommunicationStatus()>=ADERDGSolver::MinimumCommunicationStatusForNeighbourCommunication
       ) {
         _solver->restrictToTopMostParent(solverPatch);
       }
@@ -553,7 +553,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::u
       UpdateResult result;
       if (
           solverPatch.getType()==SolverPatch::Type::Descendant &&
-          ADERDGSolver::determineCommunicationStatus(solverPatch)>=ADERDGSolver::MinimumCommunicationStatusForNeighbourCommunication
+          solverPatch.getCommunicationStatus()>=ADERDGSolver::MinimumCommunicationStatusForNeighbourCommunication
       ) {
         _solver->restrictToTopMostParent(solverPatch);
       }
@@ -1251,11 +1251,11 @@ void exahype::solvers::LimitingADERDGSolver::mergeSolutionMinMaxOnFace(
   SolverPatch& solverPatch2,
   Solver::InterfaceInfo& face) const {
   if (
-      (ADERDGSolver::determineCommunicationStatus(solverPatch1)==ADERDGSolver::CellCommunicationStatus &&
+      (solverPatch1.getCommunicationStatus()==ADERDGSolver::CellCommunicationStatus &&
       solverPatch1.getFacewiseCommunicationStatus(face._faceIndex1) >= ADERDGSolver::MinimumCommunicationStatusForNeighbourCommunication &&
       solverPatch1.getFacewiseAugmentationStatus(face._faceIndex1)  <  ADERDGSolver::MaximumAugmentationStatus) // excludes Ancestors
       ||
-      (ADERDGSolver::determineCommunicationStatus(solverPatch2)==ADERDGSolver::CellCommunicationStatus &&
+      (solverPatch2.getCommunicationStatus()==ADERDGSolver::CellCommunicationStatus &&
       solverPatch2.getFacewiseCommunicationStatus(face._faceIndex2) >= ADERDGSolver::MinimumCommunicationStatusForNeighbourCommunication &&
       solverPatch2.getFacewiseAugmentationStatus(face._faceIndex2)  <  ADERDGSolver::MaximumAugmentationStatus) // excludes Ancestors
   ) {

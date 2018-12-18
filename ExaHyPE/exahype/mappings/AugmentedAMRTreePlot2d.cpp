@@ -380,35 +380,35 @@ void exahype::mappings::AugmentedAMRTreePlot2d::enterCell(
           _refinementEventWriter->plotCell(       cellIndex, static_cast<int>(pFine.getRefinementEvent()));
           _cellDataWriter->plotCell(              cellIndex, 2 * static_cast<int>(pFine.getSolutionIndex() > -1) +
                                                                  static_cast<int>(pFine.getExtrapolatedPredictorIndex() > -1));
-          _augmentationStatusWriter->plotCell(       cellIndex, exahype::solvers::ADERDGSolver::determineAugmentationStatus(pFine));
-          _communicationStatusWriter->plotCell(      cellIndex, exahype::solvers::ADERDGSolver::determineCommunicationStatus(pFine));
+          _augmentationStatusWriter->plotCell(    cellIndex, pFine.getAugmentationStatus());
+          _communicationStatusWriter->plotCell(          cellIndex, pFine.getCommunicationStatus());
           _refinementStatusWriter->plotCell(         cellIndex, pFine.getRefinementStatus());
           _previousRefinementStatusWriter->plotCell( cellIndex, pFine.getPreviousRefinementStatus());
-          _hasVirtualChildrenWriter->plotCell(       cellIndex, pFine.getHasVirtualChildren() ? 1 : 0);
+          _hasVirtualChildrenWriter->plotCell(    cellIndex, pFine.getHasVirtualChildren() ? 1 : 0);
           solverFound = true;
         }
       }
 
       if (!solverFound) {
-        _cellTypeWriter->plotCell(                 cellIndex, -1);
-        _refinementEventWriter->plotCell(          cellIndex, -1);
-        _cellDataWriter->plotCell(                 cellIndex,  0);
-        _augmentationStatusWriter->plotCell(       cellIndex, -1);
-        _communicationStatusWriter->plotCell(      cellIndex, -1);
-        _refinementStatusWriter->plotCell(         cellIndex, -1);
-        _previousRefinementStatusWriter->plotCell( cellIndex, -1);
-        _hasVirtualChildrenWriter->plotCell(       cellIndex,  0);
+        _cellTypeWriter->plotCell(             cellIndex, -1);
+        _refinementEventWriter->plotCell(      cellIndex, -1);
+        _cellDataWriter->plotCell(             cellIndex,  0);
+        _augmentationStatusWriter->plotCell(   cellIndex, -1);
+        _communicationStatusWriter->plotCell(  cellIndex, -1);
+        _refinementStatusWriter->plotCell(        cellIndex, -1);
+        _previousRefinementStatusWriter->plotCell(cellIndex, -1);
+        _hasVirtualChildrenWriter->plotCell(   cellIndex,  0);
       }
 
     } else {
-      _cellTypeWriter->plotCell(                 cellIndex, static_cast<int>(fineGridCell.getCellDescriptionsIndex()));
-      _refinementEventWriter->plotCell(          cellIndex, -1);
-      _cellDataWriter->plotCell(                 cellIndex,  0);
-      _augmentationStatusWriter->plotCell(       cellIndex, -1);
-      _communicationStatusWriter->plotCell(      cellIndex, -1);
-      _refinementStatusWriter->plotCell(         cellIndex, -1);
-      _previousRefinementStatusWriter->plotCell( cellIndex, -1);
-      _hasVirtualChildrenWriter->plotCell(       cellIndex,  0);
+      _cellTypeWriter->plotCell(             cellIndex, static_cast<int>(fineGridCell.getCellDescriptionsIndex()));
+      _refinementEventWriter->plotCell(      cellIndex, -1);
+      _cellDataWriter->plotCell(             cellIndex,  0);
+      _augmentationStatusWriter->plotCell(   cellIndex, -1);
+      _communicationStatusWriter->plotCell(         cellIndex, -1);
+      _refinementStatusWriter->plotCell(        cellIndex, -1);
+      _previousRefinementStatusWriter->plotCell(cellIndex, -1);
+      _hasVirtualChildrenWriter->plotCell(   cellIndex,  0);
     }
 
     _cellCounter++;
