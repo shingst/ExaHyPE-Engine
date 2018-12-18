@@ -1036,19 +1036,11 @@ class exahype::solvers::Solver {
   /**
    * Starts a new time step on all solvers.
    *
-   * \param[in] meshUpdateEvents     flags for each solver indicating if a mesh or limiter domain update is necessary.
-   * \param[in] limiterDomainChanges flags for each solver indicating if the limiter domain has changed.
-   * \param[in] minTimeStepSizes     the minimum CFL-stable time step size for all solvers.
-   * \param[in] minCellSizes         the minimum cell size found in the grid for each solver.
-   * \param[in] maxCellSizes         the maximum cell size found in the grid for each solver.
-   * \param[in] isFirstIterationOfBatchOrNoBatch we run the first iteration of a batch or no batch at all
-   * \param[in] isLastIterationOfBatchOrNoBatch we run the last iteration of a batch or no batch at all
-   * \param[in] fusedTimeStepping fused time stepping is used or not
+   * @param[in] isFirstIterationOfBatchOrNoBatch we run the first iteration of a batch or no batch at all
+   * @param[in] isLastIterationOfBatchOrNoBatch we run the last iteration of a batch or no batch at all
+   * @param[in] fusedTimeStepping fused time stepping is used or not
    */
   static void startNewTimeStepForAllSolvers(
-      const std::vector<double>& minTimeStepSizes,
-      const std::vector<int>& maxLevels,
-      const std::vector<exahype::solvers::Solver::MeshUpdateEvent>& meshUpdateEvents,
       const bool isFirstIterationOfBatchOrNoBatch,
       const bool isLastIterationOfBatchOrNoBatch,
       const bool fusedTimeStepping);

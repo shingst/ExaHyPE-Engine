@@ -709,9 +709,6 @@ void exahype::solvers::Solver::reinitialiseTimeStepDataIfLastPredictorTimeStepSi
 }
 
 void exahype::solvers::Solver::startNewTimeStepForAllSolvers(
-      const std::vector<double>& minTimeStepSizes,
-      const std::vector<int>& maxLevels,
-      const std::vector<exahype::solvers::Solver::MeshUpdateEvent>& meshUpdateEvents,
       const bool isFirstIterationOfBatchOrNoBatch,
       const bool isLastIterationOfBatchOrNoBatch,
       const bool fusedTimeStepping) {
@@ -722,17 +719,9 @@ void exahype::solvers::Solver::startNewTimeStepForAllSolvers(
      * Update reduced quantities (over multiple batch iterations)
      */
     // mesh refinement events
-    solver->updateNextMeshUpdateEvent(meshUpdateEvents[solverNumber]);
     if ( isLastIterationOfBatchOrNoBatch ) { // set the next as current event
       solver->setNextMeshUpdateEvent();
     }
-    // cell sizes (for AMR)
-    solver->updateNextMaxLevel(maxLevels[solverNumber]);
-
-    // time
-    assertion1(std::isfinite(minTimeStepSizes[solverNumber]),minTimeStepSizes[solverNumber]);
-    assertion1(minTimeStepSizes[solverNumber]>0.0,minTimeStepSizes[solverNumber]);
-    solver->updateMinNextTimeStepSize(minTimeStepSizes[solverNumber]);
 
     // time
     // only update the time step size in last iteration; just advance with old time step size otherwise
