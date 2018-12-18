@@ -260,7 +260,7 @@ exahype::mappings::FusedTimeStep::FusedTimeStep(
   _stateCopy(masterThread._stateCopy), 
   _batchIterationCounterUpdated(masterThread._batchIterationCounterUpdated),
   _batchIteration(masterThread._batchIteration) {
-  initialiseLocalVariables();
+  // do nothing
 }
 // Merge over threads
 void exahype::mappings::FusedTimeStep::mergeWithWorkerThread(
