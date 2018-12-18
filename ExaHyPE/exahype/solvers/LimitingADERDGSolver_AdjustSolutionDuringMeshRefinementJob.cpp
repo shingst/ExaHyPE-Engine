@@ -19,6 +19,6 @@ bool exahype::solvers::LimitingADERDGSolver::AdjustSolutionDuringMeshRefinementJ
   _solver.adjustSolutionDuringMeshRefinementBody(_solverPatch,_cellInfo,_isInitialMeshRefinement);
 
   NumberOfAMRBackgroundJobs--;
-  assertion( NumberOfAMRBackgroundJobs>=0 );
+  assertion( NumberOfAMRBackgroundJobs.load()>=0 );
   return false;
 }

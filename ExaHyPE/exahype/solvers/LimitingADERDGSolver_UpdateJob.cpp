@@ -31,7 +31,7 @@ bool exahype::solvers::LimitingADERDGSolver::UpdateJob::run() {
 
 
   NumberOfReductionJobs--;
-  assertion( NumberOfReductionJobs>=0 );
+  assertion( NumberOfReductionJobs.load()>=0 );
 
   return false;
 }

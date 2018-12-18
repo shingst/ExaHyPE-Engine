@@ -126,10 +126,10 @@ std::string exahype::solvers::Solver::toString(const JobType& jobType) {
 
 int exahype::solvers::Solver::getNumberOfQueuedJobs(const JobType& jobType) {
   switch (jobType) {
-    case JobType::AMRJob:       return NumberOfAMRBackgroundJobs;
-    case JobType::ReductionJob: return NumberOfReductionJobs;
-    case JobType::EnclaveJob:   return NumberOfEnclaveJobs;
-    case JobType::SkeletonJob:  return NumberOfSkeletonJobs;
+    case JobType::AMRJob:       return NumberOfAMRBackgroundJobs.load();
+    case JobType::ReductionJob: return NumberOfReductionJobs.load();
+    case JobType::EnclaveJob:   return NumberOfEnclaveJobs.load();
+    case JobType::SkeletonJob:  return NumberOfSkeletonJobs.load();
     default:
       logError("getNumberOfQueuedJobs(const JobType&)","Job type not supported.");
       std::abort();
@@ -138,12 +138,8 @@ int exahype::solvers::Solver::getNumberOfQueuedJobs(const JobType& jobType) {
 }
 
 void exahype::solvers::Solver::ensureAllJobsHaveTerminated(JobType jobType) {
-  bool finishedWait = false;
-
-  tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  const int queuedJobs = getNumberOfQueuedJobs(jobType);
-  lock.free();
-  finishedWait = queuedJobs == 0;
+  int queuedJobs = getNumberOfQueuedJobs(jobType);
+  bool finishedWait = queuedJobs == 0;
 
   if ( !finishedWait ) {
     #if defined(Asserts)
@@ -165,10 +161,8 @@ void exahype::solvers::Solver::ensureAllJobsHaveTerminated(JobType jobType) {
       tarch::multicore::jobs::processBackgroundJobs(1);
     }
 
-    tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-    const int queuedJobs = getNumberOfQueuedJobs(jobType);
-    lock.free();
-    finishedWait = queuedJobs == 0;
+    int queuedJobs = getNumberOfQueuedJobs(jobType);
+    bool finishedWait = queuedJobs == 0;
   }
 }
 

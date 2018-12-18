@@ -16,6 +16,6 @@ bool exahype::solvers::ADERDGSolver::AdjustSolutionDuringMeshRefinementJob::run(
   _solver.ensureNecessaryMemoryIsAllocated(_cellDescription);
   _solver.adjustSolutionDuringMeshRefinementBody(_cellDescription,_isInitialMeshRefinement);
   NumberOfAMRBackgroundJobs--;
-  assertion( NumberOfAMRBackgroundJobs>=0 );
+  assertion( NumberOfAMRBackgroundJobs.load()>=0 );
   return false;
 }
