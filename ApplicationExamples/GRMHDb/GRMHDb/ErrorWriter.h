@@ -12,6 +12,10 @@
 #include "GRMHDbSolver_ADERDG_Variables.h"
 #include "GRMHDbSolver_ADERDG.h"
 
+// see ch.18 Post-processing of the Guidebook.  
+#include <mpi.h> 
+#include "tarch/parallel/Node.h"
+#include "tarch/parallel/NodePool.h"
 namespace GRMHDb {
   class ErrorWriter;
 }
@@ -27,7 +31,7 @@ class GRMHDb::ErrorWriter : public exahype::plotters::ADERDG2UserDefined {
    double normL1Ana  [GRMHDbSolver_ADERDG::NumberOfVariables];  
    double normL2Ana  [GRMHDbSolver_ADERDG::NumberOfVariables];  
    double normLInfAna[GRMHDbSolver_ADERDG::NumberOfVariables]; 
-
+   
  public:
   /**
    * Constructor.
