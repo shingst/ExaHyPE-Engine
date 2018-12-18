@@ -34,6 +34,8 @@ class exahype::stealing::DiffusiveDistributor {
 
     void updateZeroThreshold(int threshold);
 
+    void handleEmergencyOnRank(int rank);
+
     // return next victim rank
     bool selectVictimRank(int& victim);
 

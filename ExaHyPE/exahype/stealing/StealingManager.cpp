@@ -425,6 +425,8 @@ void exahype::stealing::StealingManager::triggerEmergencyForRank(int rank) {
 //  }
 #ifdef StealingStrategyAggressive
   exahype::stealing::AggressiveDistributor::getInstance().handleEmergencyOnRank(rank);
+#elif StealingStrategyDiffusive
+  exahype::stealing::DiffusiveDistributor::getInstance().handleEmergencyOnRank(rank);
 #endif
   _emergencyHeatMap[rank]++;
 }
@@ -436,9 +438,17 @@ void exahype::stealing::StealingManager::decreaseHeat() {
     _emergencyHeatMap[i]*= 0.9;
 } 
 
+bool exahype::stealing::StealingManager::isBlacklisted(int rank) { 
+  return _emergencyHeatMap[rank]>0.5;
+}
+
 bool exahype::stealing::StealingManager::isEmergencyTriggered() {
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
   return !std::all_of(&_emergencyHeatMap[0], &_emergencyHeatMap[nnodes], [](double d){return d<0.5;});
+}
+
+bool exahype::stealing::StealingManager::isEmergencyTriggeredOnRank(int rank) {
+  return !_emergencyHeatMap[rank]<0.5;
 }
 
 //void exahype::stealing::StealingManager::resetEmergency() {

@@ -171,7 +171,9 @@ class exahype::stealing::StealingManager {
     void resetVictimFlag();
     bool isVictim();
 
+    bool isBlacklisted(int rank);
     bool isEmergencyTriggered();
+    bool isEmergencyTriggeredOnRank(int rank);
     void triggerEmergencyForRank(int rank);
     //void resetEmergency();
 
