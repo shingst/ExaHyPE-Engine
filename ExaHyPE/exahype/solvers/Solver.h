@@ -213,11 +213,6 @@ namespace exahype {
    */
   extern tarch::multicore::BooleanSemaphore HeapSemaphore;
 
-  /**
-   * Defines an invalid metadata entry.
-   */
-  static constexpr int InvalidMetadataEntry = -10;
-
 #ifdef Parallel
   /**
    * An empty DataHeap message.
@@ -267,6 +262,11 @@ namespace exahype {
     peano::heap::RLEBoundaryDataExchanger< char, true,  peano::heap::SendReceiveTask<char> >
   >     MetadataHeap;
   #endif
+
+  /**
+   * Defines an invalid metadata entry.
+   */
+  static constexpr int InvalidMetadataEntry = -10;
 
   /**
    * Defines the length of the metadata
