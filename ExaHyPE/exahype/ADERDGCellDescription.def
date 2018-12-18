@@ -368,48 +368,16 @@ class exahype::records::ADERDGCellDescription {
   persistent pointer solutionMax;
   
   /**
-   * \see augmentationStatus
+   * Per face, the augmentation status of the neighbour.
+   * Type Ancestor cell descriptions hold the maximum value.
    */
   persistent int facewiseAugmentationStatus[DIMENSIONS_TIMES_TWO];
-
-  /**
-   * Another diffused status flag that controls how many
-   * cell descriptions of type Cell in vicinity of
-   * a helper cell description of type Ancestor are
-   * augmented with Descendant cells.
-   */
-  parallelise persistent int augmentationStatus;
   
   /**
-   * The augmentation status that was set after the
-   * last mesh refinement iterations.
-   *
-   * This is used mainly to introduce some inertia into 
-   */
-  parallelise persistent int previousAugmentationStatus;
-  
-  /**
-   * \see communicationStatus
+   * Per face, the communication status of the neighbour.
+   * Type Cell cell descriptions hold the maximum value.
    */
   persistent int facewiseCommunicationStatus[DIMENSIONS_TIMES_TWO];
-  
-  /**
-   * Status of a helper cell description (Descendant,Ancestor)
-   * which is diffused similarly to the limiter status.
-   * 
-   * Cell description of type Cell write the maximum value 
-   * on the boundary. Descendant and Ancestor cell descriptions
-   * will merge and diffuse the value and allocate 
-   * or deallocate memory according the converged value.
-   * 
-   * Usually, the cell descriptions which are direct
-   * neighbours to a cell description of type Cell
-   * allocate memory and the others don't.
-   * 
-   * We write the maximum value of the facewiseCommunicationStatus flags
-   * to this field in each limiter status merging iteration.
-   */
-  parallelise persistent int communicationStatus;
   
   /**
    * \see refinementStatus

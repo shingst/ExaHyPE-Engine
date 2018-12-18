@@ -1151,31 +1151,28 @@ public:
    */
   static void eraseCellDescriptions(const int cellDescriptionsIndex);
 
-  void updateCommunicationStatus(
-        exahype::solvers::ADERDGSolver::CellDescription& cellDescription) const;
   /**
-   * Determine the communication status of this cell
-   * description based on the face wise communication status flags
-   * if the cell is of type Descendant.
-   *
-   * If the cell description is of type Ancestor, return 0.
-   * If the cell description of type Cell, return the maximum
-   * commmunication status.
+   * Writes a negative value into the fields for directions
+   * where no neighbour merge has been performed.
    */
-  int determineCommunicationStatus(
-      exahype::solvers::ADERDGSolver::CellDescription& cellDescription) const;
+  static void updateCommunicationStatus(CellDescription& cellDescription);
+  /**
+   * @return maximum status if cell description is of type Cell.
+   * Maximum of neighbour values -1 otherwise.
+   */
+  static int determineCommunicationStatus(const CellDescription& cellDescription);
 
   /**
-   * TODO(Dominic): Add docu.
+   * Writes a negative value into the fields for directions
+   * where no neighbour merge has been performed.
    */
-  void updateAugmentationStatus(
-      exahype::solvers::ADERDGSolver::CellDescription& cellDescription) const;
+  static void updateAugmentationStatus(CellDescription& cellDescription);
 
   /**
-   * TODO(Dominic): Add docu.
+   * @return maximum status if cell description is of type Ancestor.
+   * Maximum of neighbour values -1 otherwise.
    */
-  int determineAugmentationStatus(
-      exahype::solvers::ADERDGSolver::CellDescription& cellDescription) const;
+  static int determineAugmentationStatus(const CellDescription& cellDescription);
 
   /**
    * Determine a new limiter status for the given direction based on the neighbour's
