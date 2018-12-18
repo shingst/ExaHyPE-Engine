@@ -10,8 +10,16 @@
 namespace exahype {
   namespace stealing {
     class PerformanceMonitor;
+    enum class PerformanceMetric;
   }
 }
+
+enum class exahype::stealing::PerformanceMetric {
+  CurrentTasks,
+  RemainingTasks,
+  TasksPerTimestep,
+  CurrentWaitingTime
+};
 
 /*
  * The PerformanceMonitor stores and distributes on-line live performance
@@ -25,38 +33,41 @@ class exahype::stealing::PerformanceMonitor {
     // status flag, if false then a rank has terminated locally
     bool _isStarted;
     // here, current global view on the load information is stored
-    int *_currentLoadSnapshot;
+    int *_currentTasksSnapshot;
     /*
      *  A double buffering scheme is used: The buffer stores intermediate
-     *  "in-flight" values (for asynchronous MPI).
+     *  "in-flight" values (for non-blocking MPI).
      */
-    int *_currentLoadBuffer;
+    int *_currentTasksReceiveBuffer;
     /*
      *  local load counter of a rank, represents current load (i.e. number of tasks
      *  in queue)
      */
-    std::atomic<int> _currentLoadLocal;
+    std::atomic<int> _currentTasks;
     /*
      * remaining load uses the additional information of how many tasks will be
      * spawned in a time step, i.e. it tells us how many tasks will still need
      * to be processed before a time step can be completed
      */
-    std::atomic<int> _remainingLoadLocal;
+    std::atomic<int> _remainingTasks;
 
     // stores total number of tasks spawned in every time step
-    int _localLoadPerTimestep;
+    int _tasksPerTimestep;
     // send buffer for repeated MPIIallgather
-    int _currentLoadLocalBuffer;
+    int _currentTasksSendBuffer;
 
-    // the current gather request
-    MPI_Request _gather_request;
+    // the current gather requests
+    MPI_Request _gatherTasksRequest;
+    MPI_Request _gatherWaitingTimesRequest;
 
     tarch::multicore::BooleanSemaphore _semaphore;
 
-    // make progress on current gather request
+    // make progress on current gather requests
     void progressGather();
     // posts a new gather request
-    void postGather();
+    void postGatherTasks();
+
+    void postGatherWaitingTimes();
 
   public:
     // signals that a rank has finished computing any local work
