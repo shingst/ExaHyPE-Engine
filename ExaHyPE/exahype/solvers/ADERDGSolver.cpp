@@ -128,10 +128,6 @@ void exahype::solvers::ADERDGSolver::addNewCellDescription(
 
   newCellDescription.setHasVirtualChildren(false);
   newCellDescription.setAugmentationStatus(0);
-  newCellDescription.setPreviousAugmentationStatus(0);
-  if (cellType==CellDescription::Type::Cell) {
-    newCellDescription.setPreviousAugmentationStatus(MaximumAugmentationStatus);
-  }
   newCellDescription.setFacewiseAugmentationStatus(0); // implicit conversion
   newCellDescription.setCommunicationStatus(0);
   newCellDescription.setFacewiseCommunicationStatus(0); // implicit conversion
@@ -1964,7 +1960,6 @@ void exahype::solvers::ADERDGSolver::finaliseStateUpdates(
       validateCellDescriptionData(cellDescription,cellDescription.getCorrectorTimeStamp()>0,false,true,"finaliseStateUpdates");
     }
     cellDescription.setRefinementFlag(false);
-    cellDescription.setPreviousAugmentationStatus(cellDescription.getAugmentationStatus());
   }
 }
 

@@ -381,14 +381,6 @@ class exahype::records::ADERDGCellDescription {
   parallelise persistent int augmentationStatus;
   
   /**
-   * The augmentation status that was set after the
-   * last mesh refinement iterations.
-   *
-   * This is used mainly to introduce some inertia into 
-   */
-  parallelise persistent int previousAugmentationStatus;
-  
-  /**
    * \see communicationStatus
    */
   persistent int facewiseCommunicationStatus[DIMENSIONS_TIMES_TWO];
