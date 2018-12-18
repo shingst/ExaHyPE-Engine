@@ -1104,7 +1104,7 @@ class exahype::solvers::Solver {
   * @param receiveDanglingMessages receive dangling messages while waiting
   */
  template <typename CellDescription>
- void waitUntilCompletedTimeStep(
+ void waitUntilCompletedLastStep(
      const CellDescription& cellDescription,const bool waitForHighPriorityJob,const bool receiveDanglingMessages) {
    if ( !cellDescription.getHasCompletedLastStep() ) {
      peano::datatraversal::TaskSet::startToProcessBackgroundJobs();

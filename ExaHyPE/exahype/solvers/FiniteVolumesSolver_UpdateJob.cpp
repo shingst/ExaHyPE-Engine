@@ -25,7 +25,7 @@ bool exahype::solvers::FiniteVolumesSolver::UpdateJob::run() {
           _cellDescription,_cellInfo,_neighbourMergePerformed,
           true,true,_isAtRemoteBoundary,true);
   NumberOfReductionJobs--;
-  assertion( NumberOfReductionJobsload()>=0 );
+  assertion( NumberOfReductionJobs.load()>=0 );
 
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
   {

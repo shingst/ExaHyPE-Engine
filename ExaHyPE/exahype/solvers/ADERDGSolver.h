@@ -1882,7 +1882,7 @@ public:
    *
    * All FusedTimeStepJob and PredictionJob instances finish here.
    * This is where an ADER-DG time step ends.
-   * We thus call cellDescription.setHasCompletedTimeStep(true) at
+   * We thus call cellDescription.setHasCompletedLastStep(true) at
    * the end of this function.
    *
    * \param[in] uncompressBefore             uncompress the cell description arrays before computing

@@ -1066,6 +1066,9 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInEnterCell(
     CellDescription& fineGridCellDescription =
         getCellDescription(fineGridCell.getCellDescriptionsIndex(),fineGridElement);
 
+    // wait for background jobs to complete
+    waitUntilCompletedLastStep(fineGridCellDescription,false,false);
+
     #ifdef Asserts
     const tarch::la::Vector<DIMENSIONS,double> center = fineGridCellDescription.getOffset()+0.5*fineGridCellDescription.getSize();
     #endif
@@ -2350,7 +2353,7 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
     const bool isAMRSkeletonCell = cellDescription.getHasVirtualChildren();
     const bool isSkeletonCell    = isAMRSkeletonCell || isAtRemoteBoundary;
 
-    waitUntilCompletedTimeStep(cellDescription,isSkeletonCell,false);
+    waitUntilCompletedLastStep(cellDescription,isSkeletonCell,false);
     synchroniseTimeStepping(cellDescription);
 
     if ( cellDescription.getType()==CellDescription::Type::Cell ) {
@@ -2504,6 +2507,7 @@ void exahype::solvers::ADERDGSolver::adjustSolutionDuringMeshRefinement(
     CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[element];
     const bool isInitialMeshRefinement = getMeshUpdateEvent()==MeshUpdateEvent::InitialRefinementRequested;
     if ( exahype::solvers::Solver::SpawnAMRBackgroundJobs ) {
+      cellDescription.setHasCompletedLastStep(false);
       peano::datatraversal::TaskSet( new AdjustSolutionDuringMeshRefinementJob(*this,cellDescription,isInitialMeshRefinement));
     } else {
       adjustSolutionDuringMeshRefinementBody(cellDescription,isInitialMeshRefinement);
@@ -2530,6 +2534,8 @@ void exahype::solvers::ADERDGSolver::adjustSolutionDuringMeshRefinementBody(
     adjustSolution(cellDescription);
     markForRefinement(cellDescription);
   }
+
+  cellDescription.setHasCompletedLastStep(true);
 }
 
 void exahype::solvers::ADERDGSolver::adjustSolution(CellDescription& cellDescription) {
@@ -2764,7 +2770,7 @@ void exahype::solvers::ADERDGSolver::prolongateFaceData(
             subcellPosition.parentCellDescriptionsIndex,subcellPosition.parentElement);
         assertion1(parentCellDescription.getType()==CellDescription::Type::Cell,parentCellDescription.toString());
 
-        waitUntilCompletedTimeStep<CellDescription>(parentCellDescription,true,false); // TODO(Dominic): We wait for skeleton jobs here. It might make sense to receiveDanglingMessages here too
+        waitUntilCompletedLastStep<CellDescription>(parentCellDescription,true,false); // TODO(Dominic): We wait for skeleton jobs here. It might make sense to receiveDanglingMessages here too
         if (
             !SpawnProlongationAsBackgroundJob ||
             isAtRemoteBoundary
@@ -3096,8 +3102,8 @@ void exahype::solvers::ADERDGSolver::mergeNeighboursData(
       counter++;
       #endif
 
-      waitUntilCompletedTimeStep<CellDescription>(cellDescription1,false,false);  // must be done before any other operation on the patches
-      waitUntilCompletedTimeStep<CellDescription>(cellDescription2,false,false);
+      waitUntilCompletedLastStep<CellDescription>(cellDescription1,false,false);  // must be done before any other operation on the patches
+      waitUntilCompletedLastStep<CellDescription>(cellDescription2,false,false);
 
       // synchronise time stepping if necessary
       synchroniseTimeStepping(cellDescription1);
@@ -3234,7 +3240,7 @@ void exahype::solvers::ADERDGSolver::mergeWithBoundaryData(
     CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[element];
 
     if ( cellDescription.getType()==CellDescription::Type::Cell ) {
-      waitUntilCompletedTimeStep<CellDescription>(cellDescription,false,false); // must be done before any other operation on the patch
+      waitUntilCompletedLastStep<CellDescription>(cellDescription,false,false); // must be done before any other operation on the patch
 
       synchroniseTimeStepping(cellDescription);
 
@@ -3319,6 +3325,13 @@ bool exahype::solvers::ADERDGSolver::sendCellDescriptions(
         " cell descriptions to rank "<<toRank<<" (x="<< x.toString() << ",level="<< level << ")");
     bool oneSolverRequiresVerticalCommunication = false;
     for (auto& cellDescription : Heap::getInstance().getData(cellDescriptionsIndex)) {
+      // wait for background jobs to complete
+      if ( !cellDescription.getHasCompletedLastStep() ) {
+        peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
+      }
+      while ( !cellDescription.getHasCompletedLastStep() ) {
+        tarch::multicore::jobs::processBackgroundJobs(1);
+      }
       oneSolverRequiresVerticalCommunication &=
           cellDescription.getType()==CellDescription::Type::Descendant && cellDescription.getHasVirtualChildren();
     }
@@ -3432,6 +3445,9 @@ void exahype::solvers::ADERDGSolver::resetIndicesAndFlagsOfReceivedCellDescripti
   #ifdef Asserts
   cellDescription.setCreation(CellDescription::Creation::ReceivedDueToForkOrJoin);
   #endif
+
+  // background jobs
+  cellDescription.setHasCompletedLastStep(true);
 }
 
 void exahype::solvers::ADERDGSolver::ensureOnlyNecessaryMemoryIsAllocated(CellDescription& cellDescription) {
@@ -3923,7 +3939,7 @@ void exahype::solvers::ADERDGSolver::sendDataToNeighbour(
       const double* lQhbnd = static_cast<double*>(cellDescription.getExtrapolatedPredictor()) + dataPerFace * face._faceIndex;
       const double* lFhbnd = static_cast<double*>(cellDescription.getFluctuation())           + dofsPerFace * face._faceIndex;
 
-      waitUntilCompletedTimeStep<CellDescription>(cellDescription,true,true);
+      waitUntilCompletedLastStep<CellDescription>(cellDescription,true,true);
 
       // Send order: lQhbnd,lFhbnd,observablesMin,observablesMax
       // Receive order: observablesMax,observablesMin,lFhbnd,lQhbnd
@@ -4361,9 +4377,8 @@ void exahype::solvers::ADERDGSolver::compress( CellDescription& cellDescription,
   assertion1( cellDescription.getCompressionState() ==  CellDescription::Uncompressed, cellDescription.toString() );
   if (CompressionAccuracy>0.0) {
     if ( SpawnCompressionAsBackgroundJob ) {
-      int& jobCounter = ( isSkeletonCell ) ? NumberOfSkeletonJobs : NumberOfEnclaveJobs;
       cellDescription.setCompressionState(CellDescription::CurrentlyProcessed);
-      CompressionJob compressionJob( *this, cellDescription, jobCounter );
+      CompressionJob compressionJob( *this, cellDescription, isSkeletonCell );
       assertionMsg( false, "this call is invalid" );
 /*
       if ( isSkeletonCell ) {
