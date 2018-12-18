@@ -966,6 +966,7 @@ private:
           const tarch::la::Vector<DIMENSIONS,int>& subcellIndex);
 
       bool run() override;
+      void prefetchData() override;
   };
 
   /**
@@ -2333,33 +2334,6 @@ public:
       const tarch::la::Vector<DIMENSIONS, int>&     dest,
       const tarch::la::Vector<DIMENSIONS, double>&  x,
       const int                                     level);
-
-  /**
-   * Sends out two empty messages, one for
-   * the boundary-extrapolated space-time predictor and one
-   * for the boundary-extrapolated space-time flux.
-   *
-   * <h2>LimitingADERDGSolver's min and max</h2>
-   * This method does not send an empty message for each,
-   * the minimum and maximum values required for the
-   * LimitingADERDGSolver's discrete h2>maximum principle.
-   * The LimitingADERDGSolver does this in his
-   * LimitingADERDGSolver::sendEmptyDataToNeighbour method.
-   *
-   * Min and max have to be merge
-   * independent of the limiter status of the cell while
-   * a ADER-DG neighbour merge has to be performed
-   * only for cells with certain limiter status
-   * flags.
-   *
-   * @param toRank the adjacent rank we want to send to
-   * @param x      vertex' position
-   * @param level  vertex' level
-   */
-  void sendEmptyDataToNeighbour(
-      const int                                    toRank,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) const;
 
   /** \copydoc Solver::mergeWithNeighbourData
    *
