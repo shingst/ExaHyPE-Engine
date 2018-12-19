@@ -4355,9 +4355,9 @@ exahype::solvers::ADERDGSolver::CompressionJob::CompressionJob(
   _cellDescription(cellDescription),
   _isSkeletonJob(isSkeletonJob) {
   if (_isSkeletonJob) {
-    NumberOfSkeletonJobs++;
+    NumberOfSkeletonJobs.fetch_add(1);
   } else {
-    NumberOfEnclaveJobs++;
+    NumberOfEnclaveJobs.fetch_add(1);
   }
 }
 
@@ -4368,10 +4368,10 @@ bool exahype::solvers::ADERDGSolver::CompressionJob::run() {
   _solver.putUnknownsIntoByteStream(_cellDescription);
 
   if (_isSkeletonJob) {
-    NumberOfSkeletonJobs--;
+    NumberOfSkeletonJobs.fetch_sub(1);
     assertion( NumberOfSkeletonJobs.load()>=0 );
   } else {
-    NumberOfEnclaveJobs--;
+    NumberOfEnclaveJobs.fetch_sub(1);
     assertion( NumberOfEnclaveJobs.load()>=0 );
   }
   return false;

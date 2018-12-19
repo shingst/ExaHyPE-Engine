@@ -23,9 +23,9 @@ exahype::solvers::ADERDGSolver::PredictionJob::PredictionJob(
   _uncompressBefore(uncompressBefore),
   _isSkeletonJob(isSkeletonJob) {
   if (_isSkeletonJob) {
-    NumberOfSkeletonJobs++;
+    NumberOfSkeletonJobs.fetch_add(1);
   } else {
-    NumberOfEnclaveJobs++;
+    NumberOfEnclaveJobs.fetch_add(1);
   }
 }
 
@@ -36,10 +36,10 @@ bool exahype::solvers::ADERDGSolver::PredictionJob::run() {
       _uncompressBefore,_isSkeletonJob); // ignore return value
 
   if (_isSkeletonJob) {
-    NumberOfSkeletonJobs--;
+    NumberOfSkeletonJobs.fetch_sub(1);
     assertion( NumberOfSkeletonJobs.load()>=0 );
   } else {
-    NumberOfEnclaveJobs--;
+    NumberOfEnclaveJobs.fetch_sub(1);
     assertion( NumberOfEnclaveJobs.load()>=0 );
   }
   return false;

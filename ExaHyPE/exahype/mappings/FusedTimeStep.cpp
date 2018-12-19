@@ -219,7 +219,7 @@ void exahype::mappings::FusedTimeStep::endIteration(
 
     if ( _stateCopy.isLastIterationOfBatchOrNoBatch() ) {
       // background threads
-        exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::ReductionJob);
+      exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::ReductionJob);
     }
 
     exahype::solvers::Solver::startNewTimeStepForAllSolvers(
