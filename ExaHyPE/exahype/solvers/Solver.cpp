@@ -110,12 +110,12 @@ bool exahype::solvers::Solver::SpawnAMRBackgroundJobs = false;
 double exahype::solvers::Solver::CompressionAccuracy = 0.0;
 bool exahype::solvers::Solver::SpawnCompressionAsBackgroundJob = false;
 
-int exahype::solvers::Solver::NumberOfAMRBackgroundJobs = 0;
-int exahype::solvers::Solver::NumberOfReductionJobs = 0;
-int exahype::solvers::Solver::NumberOfEnclaveJobs = 0;
-int exahype::solvers::Solver::NumberOfSkeletonJobs = 0;
-int exahype::solvers::Solver::NumberOfRemoteJobs = 0;
-int exahype::solvers::Solver::NumberOfStolenJobs = 0;
+std::atomic<int> exahype::solvers::Solver::NumberOfAMRBackgroundJobs = 0;
+std::atomic<int> exahype::solvers::Solver::NumberOfReductionJobs = 0;
+std::atomic<int> exahype::solvers::Solver::NumberOfEnclaveJobs = 0;
+std::atomic<int> exahype::solvers::Solver::NumberOfSkeletonJobs = 0;
+std::atomic<int> exahype::solvers::Solver::NumberOfRemoteJobs = 0;
+std::atomic<int> exahype::solvers::Solver::NumberOfStolenJobs = 0;
 
 #ifdef USE_ITAC
 int event_wait = -1;
@@ -136,10 +136,10 @@ std::string exahype::solvers::Solver::toString(const JobType& jobType) {
 
 int exahype::solvers::Solver::getNumberOfQueuedJobs(const JobType& jobType) {
   switch (jobType) {
-    case JobType::AMRJob:       return NumberOfAMRBackgroundJobs;
-    case JobType::ReductionJob: return NumberOfReductionJobs;
-    case JobType::EnclaveJob:   return NumberOfEnclaveJobs;
-    case JobType::SkeletonJob:  return NumberOfSkeletonJobs;
+    case JobType::AMRJob:       return NumberOfAMRBackgroundJobs.load();
+    case JobType::ReductionJob: return NumberOfReductionJobs.load();
+    case JobType::EnclaveJob:   return NumberOfEnclaveJobs.load();
+    case JobType::SkeletonJob:  return NumberOfSkeletonJobs.load();
     default:
       logError("getNumberOfQueuedJobs(const JobType&)","Job type not supported.");
       std::abort();
@@ -148,7 +148,8 @@ int exahype::solvers::Solver::getNumberOfQueuedJobs(const JobType& jobType) {
 }
 
 void exahype::solvers::Solver::ensureAllJobsHaveTerminated(JobType jobType) {
-  bool finishedWait = false;
+  int queuedJobs = getNumberOfQueuedJobs(jobType);
+  bool finishedWait = queuedJobs == 0;
   bool waitingForRemoteJobs = false;
 
 #ifdef USE_ITAC
@@ -162,11 +163,7 @@ void exahype::solvers::Solver::ensureAllJobsHaveTerminated(JobType jobType) {
   exahype::stealing::StealingProfiler::getInstance().beginWaitForTasks();
   double time_background = -MPI_Wtime();
 #endif
-  tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  const int queuedJobs = getNumberOfQueuedJobs(jobType);
-  lock.free();
-  finishedWait = queuedJobs == 0;
-
+  
   if ( !finishedWait ) {
     #if defined(Asserts)
     logInfo("waitUntilAllBackgroundTasksHaveTerminated()",
@@ -187,9 +184,8 @@ void exahype::solvers::Solver::ensureAllJobsHaveTerminated(JobType jobType) {
       tarch::multicore::jobs::processBackgroundJobs(1);
     }
 
-    tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-    const int queuedJobs = getNumberOfQueuedJobs(jobType);
-    lock.free();
+    queuedJobs = getNumberOfQueuedJobs(jobType);
+    finishedWait = queuedJobs == 0;
     if (NumberOfRemoteJobs > 0 && NumberOfRemoteJobs == NumberOfEnclaveJobs
         && !waitingForRemoteJobs && jobType == JobType::EnclaveJob) {
       waitingForRemoteJobs = true;
@@ -197,7 +193,6 @@ void exahype::solvers::Solver::ensureAllJobsHaveTerminated(JobType jobType) {
           "there are still " << NumberOfRemoteJobs << " remote background job(s) to complete!");
 
     }
-    finishedWait = queuedJobs == 0;
   }
 
 #if defined (StealingUseProfiler)
@@ -211,7 +206,7 @@ void exahype::solvers::Solver::ensureAllJobsHaveTerminated(JobType jobType) {
 }
 
 void exahype::solvers::Solver::configurePredictionPhase(const bool usePredictionBackgroundJobs, bool useProlongationBackgroundJobs) {
-  exahype::solvers::Solver::SpawnPredictionAsBackgroundJob              = usePredictionBackgroundJobs;
+  exahype::solvers::Solver::SpawnPredictionAsBackgroundJob   = usePredictionBackgroundJobs;
   exahype::solvers::Solver::SpawnProlongationAsBackgroundJob = useProlongationBackgroundJobs;
 
   #ifdef PredictionSweeps
@@ -751,9 +746,6 @@ void exahype::solvers::Solver::reinitialiseTimeStepDataIfLastPredictorTimeStepSi
 }
 
 void exahype::solvers::Solver::startNewTimeStepForAllSolvers(
-      const std::vector<double>& minTimeStepSizes,
-      const std::vector<int>& maxLevels,
-      const std::vector<exahype::solvers::Solver::MeshUpdateEvent>& meshUpdateEvents,
       const bool isFirstIterationOfBatchOrNoBatch,
       const bool isLastIterationOfBatchOrNoBatch,
       const bool fusedTimeStepping) {
@@ -764,17 +756,9 @@ void exahype::solvers::Solver::startNewTimeStepForAllSolvers(
      * Update reduced quantities (over multiple batch iterations)
      */
     // mesh refinement events
-    solver->updateNextMeshUpdateEvent(meshUpdateEvents[solverNumber]);
     if ( isLastIterationOfBatchOrNoBatch ) { // set the next as current event
       solver->setNextMeshUpdateEvent();
     }
-    // cell sizes (for AMR)
-    solver->updateNextMaxLevel(maxLevels[solverNumber]);
-
-    // time
-    assertion1(std::isfinite(minTimeStepSizes[solverNumber]),minTimeStepSizes[solverNumber]);
-    assertion1(minTimeStepSizes[solverNumber]>0.0,minTimeStepSizes[solverNumber]);
-    solver->updateMinNextTimeStepSize(minTimeStepSizes[solverNumber]);
 
     // time
     // only update the time step size in last iteration; just advance with old time step size otherwise

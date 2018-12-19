@@ -71,33 +71,13 @@ private:
    * This semaphore is used for locking the plotters'
    * plotPatch function which is usually not thread-safe.
    */
-  static tarch::multicore::BooleanSemaphore SemaphoreForPlotting;
+  static tarch::multicore::BooleanSemaphore Semaphore;
 
   /**
    * A local copy of the state set
    * in beginIteration(...).
    */
   exahype::State _stateCopy;
-
-  /**
-   * A minimum time step size for each solver.
-   */
-  std::vector<double> _minTimeStepSizes;
-  /**
-   * The maximum level occupied by cells of a solver.
-   */
-  std::vector<int> _maxLevels;
-  /**
-   * Per solver a flag, indicating if has requested
-   * a mesh update request or a limiter domain change.
-   */
-  std::vector<exahype::solvers::Solver::MeshUpdateEvent> _meshUpdateEvents;
-
-  /**
-   * Prepare the vectors _minTimeStepSizes, _maxLevels,
-   * _meshUpdateRequests, _limiterDomainChanges.
-   */
-  void initialiseLocalVariables();
 
   /**
    * Indicates that the background tasks have terminated.
@@ -158,10 +138,28 @@ private:
    * Alters the state if we perform a reduction. This
    * is the case if we perform the last iteration of a batch
    * or no batch iteration at all.
+   *
+   * MPI / TBB optimisation
+   * ----------------------
+   *
+   * We need to turn this event on only in every second iteration.
+   * This can be accomplished in non-parallel builds.
+   * Switching this event off in every second sweep does
+   * not work with parallel builds as it corrupts the neighbour
+   * data communication behaviour.
    */
   peano::MappingSpecification enterCellSpecification(int level);
   /**
    * Run through the whole tree. Run concurrently on the fine grid.
+   *
+   * MPI / TBB optimisation
+   * ----------------------
+   *
+   * We need to turn this event on only in every second iteration.
+   * This can be accomplished in non-parallel builds.
+   * Switching this event off in every second sweep does
+   * not work with parallel builds as it corrupts the neighbour
+   * data communication behaviour.
    */
   peano::MappingSpecification leaveCellSpecification(int level);
   /**
@@ -169,6 +167,15 @@ private:
    *
    * Alters the state as we have a counter which checks
    * if we have waited for the background jobs to complete.
+   *
+   * MPI / TBB optimisation
+   * ----------------------
+   *
+   * We need to turn this event on only in every second iteration.
+   * This can be accomplished in non-parallel builds.
+   * Switching this event off in every second sweep does
+   * not work with parallel builds as it corrupts the neighbour
+   * data communication behaviour.
    */
   peano::MappingSpecification touchVertexFirstTimeSpecification(int level);
 

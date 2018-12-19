@@ -87,6 +87,15 @@ void exahype::stealing::DiffusiveDistributor::updateLoadDistribution() {
  
   logInfo("updateLoadDistribution()", "optimal victim: "<<currentOptimalVictim<<" critical rank:"<<criticalRank);
 
+  if(criticalRank==currentOptimalVictim) {
+    for(int i=0; i<nnodes; i++) {
+      for(int j=0; j<nnodes; j++) {
+      logInfo("updateLoadDistribution()","critical==optimal; rank "<<i<<" waiting for "<<waitingTimesSnapshot[k+j]<<" for rank "<<j);  
+    }
+    k+= nnodes;
+  }
+  }
+
   if(myRank == criticalRank && criticalRank!=currentOptimalVictim) {
     if(!isVictim) {
       _tasksToOffload[currentOptimalVictim]++;
