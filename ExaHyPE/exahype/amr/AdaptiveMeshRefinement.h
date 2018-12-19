@@ -25,14 +25,14 @@ namespace exahype {
 namespace amr {
   /**
    * Per coordinate direction xi, count the number of shifts
-   * of step size \p childSize(xi) necessary to
-   * reach \p childOffset from \p parentOffset.
+   * of step size @p childSize(xi) necessary to
+   * reach @p childOffset from @p parentOffset.
    *
-   * \param[in] childOffset  Offset of a child cell.
-   * \param[in] childSize    Size of the child cell.
-   * \param[in] parentOffset Offset of the parent cell.
+   * @param[in] childOffset  Offset of a child cell.
+   * @param[in] childSize    Size of the child cell.
+   * @param[in] parentOffset Offset of the parent cell.
    *
-   * \see getSubfaceIndex
+   * @see getSubfaceIndex
    */
   tarch::la::Vector<DIMENSIONS,int> computeSubcellIndex(
         const tarch::la::Vector<DIMENSIONS,double>& childOffset,
@@ -41,9 +41,9 @@ namespace amr {
 
   /**
    * Collect all the element with index!=d
-   * from \p subcellIndex.
+   * from @p subcellIndex.
    *
-   * \see getSubcellIndex
+   * @see getSubcellIndex
    */
   tarch::la::Vector<DIMENSIONS-1,int> getSubfaceIndex(
         const tarch::la::Vector<DIMENSIONS, int>& subcellIndex,
@@ -60,7 +60,7 @@ namespace amr {
       const int levelDelta);
 
   /**
-   * Determines if the face \p faceIndex is
+   * Determines if the face @p faceIndex is
    * a subset of the hull of the parent
    *
    * This is the case if
@@ -104,21 +104,12 @@ namespace amr {
 
   /**
    * Determine the position of a Descendant with respect
-   * to a  Cell or Descendant that contains data, i.e.,
-   * has at least one neighbour that is a real cell.
+   * to a Cell or the top most Descendant.
    *
-   * \note This function only makes sense if the
-   * Descendant has a valid parentIndex attribute.
-   *
-   * This method is required for the face data prolongation, the
-   * volume data prolongation (!), and the FV volume data prolongation (!).
-   *
-   * \param topMost Set to true if you want to lookup the
-   * rank-local top-most parent of the descendant which
-   * might either be of type Cell or a Descendant at the
-   * master-worker boundaryl
+   * This method is required for the face data prolongation and restriction, and the
+   * volume data prolongation and restriction.
    */
-  template <class CellDescription,class CellDescriptionHeap, bool topMost>
+  template <class CellDescription,class CellDescriptionHeap>
   exahype::solvers::Solver::SubcellPosition
   computeSubcellPositionOfDescendant(const CellDescription& pChild);
 }  // namespace amr

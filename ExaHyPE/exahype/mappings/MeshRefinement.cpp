@@ -837,13 +837,12 @@ void exahype::mappings::MeshRefinement::prepareCopyToRemoteNode(
 
   _allSolversAttainedStableState = false;
 
-  exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::AMRJob);
-
   if ( 
       localCell.hasToCommunicate(level) &&
       localCell.getRankOfRemoteNode()==toRank 
   ) { // isAsignedToRemoteRank does not work, remember the halo sends
     const int cellDescriptionsIndex = localCell.getCellDescriptionsIndex();
+
     exahype::solvers::ADERDGSolver::sendCellDescriptions(toRank,cellDescriptionsIndex,
         exahype::State::isJoiningWithMaster()/* send out data from worker side */,
         peano::heap::MessageType::ForkOrJoinCommunication,cellCentre,level);

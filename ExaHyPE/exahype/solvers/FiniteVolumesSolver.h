@@ -768,7 +768,7 @@ public:
 
   /** @copydoc: exahype::solvers::Solver::fusedTimeStepOrRestrict
    *
-   * The "hasCompletedTimeStep" flag must be only be unset when
+   * The "hasCompletedLastStep" flag must be only be unset when
    * a background job is spawned.
    */
   UpdateResult fusedTimeStepOrRestrict(
