@@ -23,7 +23,7 @@ exahype::stealing::StealingAnalyser::StealingAnalyser():
   _waitForWorkerDataWatch("exahype::stealing::StealingAnalyser", "-", false,false),
   _waitForMasterDataWatch("exahype::stealing::StealingAnalyser", "-", false,false),
   _waitForOtherRank(tarch::parallel::Node::getInstance().getNumberOfNodes()),
-  _currentMaxWaitTime(0),
+  //_currentMaxWaitTime(0),
   _iterationCounter(0)
 {
   enable(true);
@@ -61,7 +61,7 @@ void exahype::stealing::StealingAnalyser::endIteration(double numberOfInnerLeafC
       exahype::stealing::PerformanceMonitor::getInstance().submitWaitingTimeForRank(static_cast<int>(_waitForOtherRank[i].getValue()*1e06), i);
     }     
   }
-  logInfo("endIteration()","submitting new wait time "<<_currentMaxWaitTime<<" to performance monitor and updating current load distribution");
+  //logInfo("endIteration()","submitting new wait time "<<_currentMaxWaitTime<<" to performance monitor and updating current load distribution");
 
 #if defined(StealingStrategyDiffusive)
   exahype::stealing::DiffusiveDistributor::getInstance().updateLoadDistribution();
@@ -94,8 +94,7 @@ void exahype::stealing::StealingAnalyser::endToReceiveDataFromWorker( int fromRa
       logInfo(
         "endToReceiveDataFromWorker()",
         "rank had to wait for worker " << fromRank << " for "<< elapsedTime<<
-        " currentAvg "<< currentAvg << "s"<<
-        " currentMaxWaitTime "<<_currentMaxWaitTime<<"s"
+        " currentAvg "<< currentAvg << "s"
       );
     }
 
