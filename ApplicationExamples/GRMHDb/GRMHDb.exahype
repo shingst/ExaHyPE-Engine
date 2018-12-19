@@ -1,0 +1,144 @@
+/**
+ * This file is part of the ExaHyPE project.
+ * Copyright (c) 2016  http://exahype.eu
+ * All rights reserved.
+ *
+ * The project has received funding from the European Union's Horizon 
+ * 2020 research and innovation programme under grant agreement
+ * No 671698. For copyrights and licensing, please consult the webpage.
+ *
+ * Released under the BSD 3 Open Source License.
+ * For the full license text, see LICENSE.txt
+ **/
+ 
+/**
+
+ GRMHD, General Relativistic Magneto HydroDynamics
+
+ */
+exahype-project GRMHDb 
+
+  peano-kernel-path const          = ./Peano
+  exahype-path const               = ./ExaHyPE
+  output-directory const           = ./ApplicationExamples/GRMHDb/GRMHDb
+  architecture const               = hsw
+  log-file                         = whatever.log
+
+  computational-domain
+     dimension const                = 3
+     width                          = 27.0, 27.0, 27.0
+     offset                         = 3., 3., 3.
+     end-time                       = 1.0000001 
+  end computational-domain
+  
+  shared-memory
+    identifier               = dummy
+    configure                = {background-tasks:1}
+    cores                    = 1
+    properties-file          = sharedmemory.properties
+  end shared-memory  
+  
+  distributed-memory
+    identifier       = static_load_balancing
+    configure        = {hotspot,fair,ranks-per-node:28}
+    buffer-size      = 6400
+    timeout          = 6000
+  end distributed-memory
+
+  global-optimisation
+    fuse-algorithmic-steps          = on
+    fuse-algorithmic-steps-factor   = 0.99
+    spawn-predictor-as-background-thread = on
+    // spawn-predictor-as-background-thread = off
+    spawn-amr-background-threads         = off
+    disable-vertex-exchange-in-time-steps = on
+    time-step-batch-factor           = 0.0
+    disable-metadata-exchange-in-batched-time-steps = off
+    double-compression = 0.0
+    spawn-double-compression-as-background-thread = on
+  end global-optimisation
+
+  solver ADER-DG GRMHDbSolver_ADERDG
+    /* gamma is actually parts of a matrix... */
+    variables const                = rho:1,vel:3,p:1,B:3,psi:1,lapse:1,shift:3,gamma:6
+    order const                    = 3
+    maximum-mesh-size              = 1.0
+    maximum-mesh-depth             = 0
+    time-stepping                  = global
+    type const = nonlinear
+    terms const = flux,ncp
+    optimisation const = generic
+
+/*
+    plot Carpet::Cartesian::Vertices::HDF5 ConservedWriter
+           variables const = 19
+           time = 0.0
+           repeat = 0.01
+           output = ./hdf5/conserved
+           select = y:0,z:0
+         end plot
+
+
+    plot vtu::Legendre::vertices::ascii ConservedWriter
+      variables const = 19
+      time      = 0.0
+      repeat    = 0.50
+      output    = ./vtk-output/conserved
+    end plot
+
+    plot vtu::Legendre::vertices::ascii Michel
+      variables const = 4 
+      time      = 0.0
+      repeat    = 0.50
+      output    = ./vtk-output/michel
+    end plot
+*/
+
+  /*  plot vtu::Legendre::vertices::ascii PrimitiveWriter
+      variables const = 19
+      time      = 0.0
+      repeat    = 0.50
+      output    = ./vtk-output/primitive
+    end plot 
+
+    plot vtk::Legendre::vertices::ascii IntegralsWriter
+      variables const = 0
+      time = 0.0
+      repeat = 0.50
+      output = ./global-integrals
+    end plot
+    
+   */
+   
+
+   /*
+    plot user::defined ErrorWriter
+       variables const = 19
+       time            = 0.0 
+       repeat          = 0.1
+       output          = ./output/errors
+     end plot
+    */
+/*
+    plot vtk::Cartesian::vertices::ascii ErrorPlotter
+      // abserrorl1percell[nvar],q[nvar],qanalytical[nvar]
+      variables const = 19 
+      time            = 0.0
+      repeat          = 1e0
+      output          = ./output/errors
+    end plot
+*/
+	 
+/*
+    plot user::defined TecplotWriter
+       variables const = 19
+       time            = 0.0
+       repeat          = 0.01
+       output          = ./output/tecplot
+     end plot
+  */ 
+
+  end solver
+
+
+end exahype-project

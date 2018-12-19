@@ -23,6 +23,8 @@
 #include <iostream>
 #include <vector>
 
+#include <atomic>
+
 #include "tarch/compiler/CompilerSpecificSettings.h"
 #include "peano/utils/PeanoOptimisations.h"
 #include "tarch/multicore/MulticoreDefinitions.h"
@@ -664,7 +666,7 @@ class exahype::solvers::Solver {
   /**
    * \see ensureAllBackgroundJobsHaveTerminated
    */
-  static int NumberOfAMRBackgroundJobs;
+  static std::atomic<int> NumberOfAMRBackgroundJobs;
 
   /**
    * Number of jobs spawned which perform a reduction.
@@ -672,7 +674,7 @@ class exahype::solvers::Solver {
    * Reduction Jobs are spawned as high priority.
    * They might be enclave or skeleton jobs.
    */
-  static int NumberOfReductionJobs;
+  static std::atomic<int> NumberOfReductionJobs;
 
   /**
    * Number of background jobs spawned
@@ -680,7 +682,7 @@ class exahype::solvers::Solver {
    *
    * \see ensureAllBackgroundJobsHaveTerminated
    */
-  static int NumberOfEnclaveJobs;
+  static std::atomic<int> NumberOfEnclaveJobs;
   /**
    * Number of background jobs spawned
    * from skeleton cells, i.e. cells at parallel
@@ -688,7 +690,7 @@ class exahype::solvers::Solver {
    *
    * \see ensureAllBackgroundJobsHaveTerminated
    */
-  static int NumberOfSkeletonJobs;
+  static std::atomic<int> NumberOfSkeletonJobs;
 
   /**
    * The type of a solver.
@@ -1036,19 +1038,11 @@ class exahype::solvers::Solver {
   /**
    * Starts a new time step on all solvers.
    *
-   * \param[in] meshUpdateEvents     flags for each solver indicating if a mesh or limiter domain update is necessary.
-   * \param[in] limiterDomainChanges flags for each solver indicating if the limiter domain has changed.
-   * \param[in] minTimeStepSizes     the minimum CFL-stable time step size for all solvers.
-   * \param[in] minCellSizes         the minimum cell size found in the grid for each solver.
-   * \param[in] maxCellSizes         the maximum cell size found in the grid for each solver.
-   * \param[in] isFirstIterationOfBatchOrNoBatch we run the first iteration of a batch or no batch at all
-   * \param[in] isLastIterationOfBatchOrNoBatch we run the last iteration of a batch or no batch at all
-   * \param[in] fusedTimeStepping fused time stepping is used or not
+   * @param[in] isFirstIterationOfBatchOrNoBatch we run the first iteration of a batch or no batch at all
+   * @param[in] isLastIterationOfBatchOrNoBatch we run the last iteration of a batch or no batch at all
+   * @param[in] fusedTimeStepping fused time stepping is used or not
    */
   static void startNewTimeStepForAllSolvers(
-      const std::vector<double>& minTimeStepSizes,
-      const std::vector<int>& maxLevels,
-      const std::vector<exahype::solvers::Solver::MeshUpdateEvent>& meshUpdateEvents,
       const bool isFirstIterationOfBatchOrNoBatch,
       const bool isLastIterationOfBatchOrNoBatch,
       const bool fusedTimeStepping);
@@ -1088,7 +1082,7 @@ class exahype::solvers::Solver {
   *
   * <h2> Thread-safety </h2>
   *
-  * We only read (sample) the hasCompletedTimeStep flag and thus do not need any locks.
+  * We only read (sample) the hasCompletedLastStep flag and thus do not need any locks.
   * If this flag were to assume an undefined state, this would happen after the job working processing the
   * cell description was completed. This routine will then do an extra iteration or finish.
   * Either is fine.
@@ -1110,12 +1104,12 @@ class exahype::solvers::Solver {
   * @param receiveDanglingMessages receive dangling messages while waiting
   */
  template <typename CellDescription>
- void waitUntilCompletedTimeStep(
+ void waitUntilCompletedLastStep(
      const CellDescription& cellDescription,const bool waitForHighPriorityJob,const bool receiveDanglingMessages) {
-   if ( !cellDescription.getHasCompletedTimeStep() ) {
+   if ( !cellDescription.getHasCompletedLastStep() ) {
      peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
    }
-   while ( !cellDescription.getHasCompletedTimeStep() ) {
+   while ( !cellDescription.getHasCompletedLastStep() ) {
      // do some work myself
      if ( receiveDanglingMessages ) {
        tarch::parallel::Node::getInstance().receiveDanglingMessages();

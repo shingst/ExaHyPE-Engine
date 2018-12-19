@@ -26,6 +26,10 @@ def parseArgs():
     
     parser.add_argument("--output-delim", dest="outputDelim", nargs="?", default=",",
         help="Specify the delimiter for the output table.")
+    
+    parser.add_argument("--invert",dest="invertSpeedup",action="store_true",
+        help="Inverts the speedup and thus simply computes a ratio.")
+    parser.set_defaults(invertSpeedup=False)
 
     parser.add_argument("--reference",nargs="?",default="-1", help="Specify a reference value > 0.")
     
@@ -120,8 +124,12 @@ if __name__ == "__main__":
                 resultRow.append(str(product))
             if keepData:
                 resultRow.append(row[-1])
-            
-            resultRow.append("%1.2f" % ( reference/float(row[-1])) ) # compute speedup
+
+            speedup = reference/float(row[-1]) # compute speedup
+            if args.invertSpeedup:
+                speedup = 1.0/speedup;
+               
+            resultRow.append("%1.2f" % speedup)
             result.append(resultRow)
             n += 1
     
