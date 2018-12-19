@@ -2440,6 +2440,9 @@ public:
   /**
     * Finish prolongation operations started on the master.
     *
+    * Veto erasing requests of the coarse grid cell if the received
+    * cell description has virtual children.
+    *
     * \return If we the solver requires master worker communication
     * at this cell
     *

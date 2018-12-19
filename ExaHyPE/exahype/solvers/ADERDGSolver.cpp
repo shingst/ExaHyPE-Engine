@@ -2705,7 +2705,9 @@ void exahype::solvers::ADERDGSolver::prolongateFaceDataToDescendant(
   for (int faceIndex = 0; faceIndex < DIMENSIONS_TIMES_TWO; ++faceIndex) {
     const int direction = faceIndex/2;
     if ( cellDescription.getFacewiseCommunicationStatus(faceIndex)==CellCommunicationStatus ) { // TODO(Dominic): If the grid changes dynamically during the time steps,
-      assertion( exahype::amr::faceIsOnBoundaryOfParent(faceIndex,subcellIndex,levelFine-levelCoarse) ); // necessary but not sufficient
+      assertion4( exahype::amr::faceIsOnBoundaryOfParent(faceIndex,subcellIndex,levelFine-levelCoarse),
+            cellDescription.toString(),parentCellDescription.toString(),tarch::parallel::Node::getInstance().getRank(),
+            tarch::parallel::NodePool::getInstance().getMasterRank() ); // necessary but not sufficient
 
       logDebug("prolongateFaceDataToDescendant(...)","cell=" << cellDescription.getOffset() <<
                ",level=" << cellDescription.getLevel() <<
@@ -3764,10 +3766,18 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInMergeWithMaster(
     eraseCellDescriptionIfNecessary(localCellDescriptionsIndex,localElement,coarseGridCellDescription);
   }
 
+  // potentially veto
   if ( coarseGridElement != exahype::solvers::Solver::NotFound ) {
     CellDescription& coarseGridCellDescription = getCellDescription(
         cellDescription.getParentIndex(),coarseGridElement);
     updateCoarseGridAncestorRefinementStatus(cellDescription,coarseGridCellDescription);
+
+    if ( 
+      coarseGridCellDescription.getType()==CellDescription::Type::Ancestor && 
+      cellDescription.getHasVirtualChildren() 
+    ) {            // no lock required; serial context
+       coarseGridCellDescription.setVetoErasingChildren(true);  // we should not overwrite a veto with false. Hence the if-clause
+    }
   }
 
   progressCollectiveRefinementOperationsInLeaveCell(cellDescription,stillInRefiningMode);

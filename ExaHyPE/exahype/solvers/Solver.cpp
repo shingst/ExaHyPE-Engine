@@ -161,8 +161,8 @@ void exahype::solvers::Solver::ensureAllJobsHaveTerminated(JobType jobType) {
       tarch::multicore::jobs::processBackgroundJobs(1);
     }
 
-    int queuedJobs = getNumberOfQueuedJobs(jobType);
-    bool finishedWait = queuedJobs == 0;
+    queuedJobs = getNumberOfQueuedJobs(jobType);
+    finishedWait = queuedJobs == 0;
   }
 }
 
