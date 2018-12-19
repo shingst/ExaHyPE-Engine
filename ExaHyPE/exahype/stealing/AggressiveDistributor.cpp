@@ -157,21 +157,21 @@ void exahype::stealing::AggressiveDistributor::handleEmergencyOnRank(int rank) {
   _remainingTasksToOffload[rank] = _tasksToOffload[rank];
 }
 
-void exahype::stealing::AggressiveDistributor::updateLoadDistribution(int currentLoad) {
+void exahype::stealing::AggressiveDistributor::updateLoadDistribution(int waitingTime) {
 
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
   int myRank = tarch::parallel::Node::getInstance().getRank();
 
-  int *loadSnapshot = new int[nnodes];
-  const int* currentLoadSnapshot = exahype::stealing::PerformanceMonitor::getInstance().getCurrentLoadSnapshot();
-  std::copy(&currentLoadSnapshot[0], &currentLoadSnapshot[nnodes], loadSnapshot);
+  int *waitingTimesSnapshot = new int[nnodes*nnodes];
+  const int* currentWaitingTimesSnapshot = exahype::stealing::PerformanceMonitor::getInstance().getWaitingTimesSnapshot();
+  std::copy(&currentWaitingTimesSnapshot[0], &currentWaitingTimesSnapshot[nnodes], waitingTimesSnapshot);
 
-  loadSnapshot[myRank] = currentLoad;
+  waitingTimesSnapshot[myRank] = waitingTime;
 
   bool isVictim = exahype::stealing::StealingManager::getInstance().isVictim();
   bool emergencyTriggered = exahype::stealing::StealingManager::getInstance().isEmergencyTriggered();
 
-  logInfo("updateLoadDistribution()", "current maximum wait time "<<currentLoad
+  logInfo("updateLoadDistribution()", "current maximum wait time "<<waitingTime
                                       <<" isVictim: "<<isVictim<<" emergency event: "<<emergencyTriggered);
 
   //determine who is fastest
@@ -184,7 +184,7 @@ void exahype::stealing::AggressiveDistributor::updateLoadDistribution(int curren
   int slowestRank = std::distance(&_initialLoadPerRank[0], std::max_element(&_initialLoadPerRank[0], &_initialLoadPerRank[nnodes]));
 
   if(myRank == slowestRank) {
-    if(!isVictim && !emergencyTriggered && *std::min_element(&loadSnapshot[0], &loadSnapshot[nnodes])<_zeroThreshold) {
+    if(!isVictim && !emergencyTriggered && *std::min_element(&waitingTimesSnapshot[0], &waitingTimesSnapshot[nnodes])<_zeroThreshold) {
       for(int i=0; i<nnodes; i++) {
         if(i!=myRank) { 
           _tasksToOffload[i] = 0.5* (_tasksToOffload[i] + _idealTasksToOffload[i]);
@@ -200,7 +200,7 @@ void exahype::stealing::AggressiveDistributor::updateLoadDistribution(int curren
 
   resetRemainingTasksToOffload();
 
-  delete[] loadSnapshot;
+  delete[] waitingTimesSnapshot;
 
 }
 

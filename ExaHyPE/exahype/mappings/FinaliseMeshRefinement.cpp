@@ -250,7 +250,7 @@ void exahype::mappings::FinaliseMeshRefinement::endIteration(
   NumberOfSkeletonCells = _numberOfSkeletonCells;
 
 #ifdef DistributedStealing
-  exahype::stealing::PerformanceMonitor::getInstance().setLocalLoadPerTimestep(_numberOfEnclaveCells + _numberOfSkeletonCells);
+  exahype::stealing::PerformanceMonitor::getInstance().setTasksPerTimestep(_numberOfEnclaveCells + _numberOfSkeletonCells);
 #endif
 
   _backgroundJobsHaveTerminated = false;

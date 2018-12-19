@@ -30,7 +30,7 @@ class exahype::stealing::DiffusiveDistributor {
     static DiffusiveDistributor& getInstance();
     virtual ~DiffusiveDistributor();
 
-    void updateLoadDistribution(int load);
+    void updateLoadDistribution();
 
     void updateZeroThreshold(int threshold);
 

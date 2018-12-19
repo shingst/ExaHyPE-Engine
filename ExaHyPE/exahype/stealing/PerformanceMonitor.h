@@ -32,6 +32,12 @@ class exahype::stealing::PerformanceMonitor {
     PerformanceMonitor();
     // status flag, if false then a rank has terminated locally
     bool _isStarted;
+
+    int *_currentWaitingTimesSnapshot; //length nranks*nranks
+    int *_currentWaitingTimesReceiveBuffer; //length nrank*nranks
+    int *_currentWaitingTimesSendBuffer; //length nrank
+    int *_currentWaitingTimes; //lenght nrank
+
     // here, current global view on the load information is stored
     int *_currentTasksSnapshot;
     /*
@@ -73,25 +79,28 @@ class exahype::stealing::PerformanceMonitor {
     // signals that a rank has finished computing any local work
     void stop();
 
-    void setCurrentLoad(int load);
+    void submitWaitingTimeForRank(int waitingTime, int rank);
+    const int *getWaitingTimesSnapshot();
+
+    void setCurrentTasks(int numTasks);
     // increases the current load, to be called when a new task
     // is created
-    void incCurrentLoad();
+    void incCurrentTasks();
     // decreases the current load
-    void decCurrentLoad();
+    void decCurrentTasks();
 
     // sets the local load per time step (needs to be called again after
     // mesh refinement)
-    void setLocalLoadPerTimestep(int load);
+    void setTasksPerTimestep(int numTasks);
     // getter for remaining load for the current time step
-    int getRemainingLocalLoad();
+    int getRemainingTasks();
     // getter for local load per time step
-    int getLocalLoadPerTimestep();
+    int getTasksPerTimestep();
     // getter for current load snapshot
-    const int *getCurrentLoadSnapshot();
+    const int *getCurrentTasksSnapshot();
 
     // decreases remaining load for current time step
-    void decRemainingLocalLoad();
+    void decRemainingTasks();
 
     // returns true, if every rank has finished computing during
     // an ExahyPE run

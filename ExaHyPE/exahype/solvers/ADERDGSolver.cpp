@@ -4628,7 +4628,7 @@ void exahype::solvers::ADERDGSolver::submitOrSendStealablePredictionJob(Stealabl
      lock.free();
 
      exahype::stealing::StealingProfiler::getInstance().notifyOffloadedTask(destRank);
-     exahype::stealing::PerformanceMonitor::getInstance().decCurrentLoad();
+     exahype::stealing::PerformanceMonitor::getInstance().decCurrentTasks();
 
      delete job;
   }
@@ -5232,7 +5232,7 @@ exahype::solvers::ADERDGSolver::StealablePredictionJob::StealablePredictionJob(
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
   NumberOfEnclaveJobs++;
   lock.free();
-  exahype::stealing::PerformanceMonitor::getInstance().incCurrentLoad();
+  exahype::stealing::PerformanceMonitor::getInstance().incCurrentTasks();
 };
 
 exahype::solvers::ADERDGSolver::StealablePredictionJob::StealablePredictionJob(
@@ -5270,7 +5270,7 @@ exahype::solvers::ADERDGSolver::StealablePredictionJob::StealablePredictionJob(
   else
   NumberOfEnclaveJobs++;
   lock.free();
-  exahype::stealing::PerformanceMonitor::getInstance().incCurrentLoad();
+  exahype::stealing::PerformanceMonitor::getInstance().incCurrentTasks();
 };
 
 exahype::solvers::ADERDGSolver::StealablePredictionJob::~StealablePredictionJob() {};
@@ -5318,7 +5318,7 @@ bool exahype::solvers::ADERDGSolver::StealablePredictionJob::handleLocalExecutio
         _predictorTimeStepSize);
     cellDescription.setHasCompletedTimeStep(true);
 
-    exahype::stealing::PerformanceMonitor::getInstance().decRemainingLocalLoad();
+    exahype::stealing::PerformanceMonitor::getInstance().decRemainingTasks();
   }
   else {
     _solver.fusedSpaceTimePredictorVolumeIntegral(
@@ -5329,7 +5329,7 @@ bool exahype::solvers::ADERDGSolver::StealablePredictionJob::handleLocalExecutio
         _predictorTimeStamp,
         _predictorTimeStepSize);
   }
-  exahype::stealing::PerformanceMonitor::getInstance().decCurrentLoad();
+  exahype::stealing::PerformanceMonitor::getInstance().decCurrentTasks();
 #if defined(StealingUseProfiler)
   time += MPI_Wtime();
   exahype::stealing::StealingProfiler::getInstance().endComputation(time);

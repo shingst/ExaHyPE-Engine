@@ -57,17 +57,18 @@ void exahype::stealing::StealingAnalyser::endIteration(double numberOfInnerLeafC
   for(int i=0; i<_waitForOtherRank.size(); i++) {
     if(i != tarch::parallel::Node::getInstance().getRank()) {
       logInfo("endIteration()", "wait for rank "<<i<<_waitForOtherRank[i].toString());
-      if(_waitForOtherRank[i].getValue()>_currentMaxWaitTime) _currentMaxWaitTime = _waitForOtherRank[i].getValue();
+      //if(_waitForOtherRank[i].getValue()>_currentMaxWaitTime) _currentMaxWaitTime = _waitForOtherRank[i].getValue();
+      exahype::stealing::PerformanceMonitor::getInstance().submitWaitingTimeForRank(static_cast<int>(_waitForOtherRank[i].getValue()*1e06), i);
     }     
   }
   logInfo("endIteration()","submitting new wait time "<<_currentMaxWaitTime<<" to performance monitor and updating current load distribution");
 
 #if defined(StealingStrategyDiffusive)
-  exahype::stealing::DiffusiveDistributor::getInstance().updateLoadDistribution(static_cast<int>(_currentMaxWaitTime*1e06));
+  exahype::stealing::DiffusiveDistributor::getInstance().updateLoadDistribution();
 #elif defined(StealingStrategyAggressive)
-  exahype::stealing::AggressiveDistributor::getInstance().updateLoadDistribution(static_cast<int>(_currentMaxWaitTime*1e06));
+  exahype::stealing::AggressiveDistributor::getInstance().updateLoadDistribution();
 #endif
-  exahype::stealing::PerformanceMonitor::getInstance().setCurrentLoad(static_cast<int>(_currentMaxWaitTime*1e06));
+  //exahype::stealing::PerformanceMonitor::getInstance().setCurrentLoad(static_cast<int>(_currentMaxWaitTime*1e06));
 
   _iterationCounter++;
 }
