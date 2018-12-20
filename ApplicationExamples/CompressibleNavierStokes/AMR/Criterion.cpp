@@ -20,7 +20,6 @@ std::vector<double> NavierStokes::mapGlobalObservables(
     return {};
   }
 
-  assertion1(amrSettings.useAMR, NumberOfGlobalObservables);
   auto indicator = amrSettings.indicator;
   auto useTV = amrSettings.useTotalVariation;
 
@@ -28,9 +27,13 @@ std::vector<double> NavierStokes::mapGlobalObservables(
     const auto vars = ReadOnlyVariables{Q};
     if (indicator == IndicatorVariable::potentialTemperature) {
       const auto pressure =
-          ns.evaluatePressure(vars.E(), vars.rho(), vars.j(), ns.getZ(Q));
+          ns.evaluatePressure(vars.E(), vars.rho(), vars.j(), ns.getZ(Q),
+                  ns.getHeight(Q));
       const auto temperature = ns.evaluateTemperature(vars.rho(), pressure);
       return ns.evaluatePotentialTemperature(temperature, pressure);
+    }
+    if (indicator == IndicatorVariable::Z) {
+      return ns.getZ(Q)/vars.rho();
     }
     auto backgroundRho = 0.0;
     auto backgroundPressure = 0.0;
@@ -40,7 +43,8 @@ std::vector<double> NavierStokes::mapGlobalObservables(
       return vars.rho() - backgroundRho;
     } else {
       // Pressure
-      return ns.evaluatePressure(vars.E(), vars.rho(), vars.j(), ns.getZ(Q)) -
+      return ns.evaluatePressure(vars.E(), vars.rho(), vars.j(),
+              ns.getZ(Q), ns.getHeight(Q)) -
              backgroundPressure;
     }
   };
@@ -54,7 +58,7 @@ std::vector<double> NavierStokes::mapGlobalObservables(
   if (useTV) {
     const auto tv =
         totalVariation(Q, Order, NumberOfVariables, NumberOfParameters, dx,
-                       false, computeIndicator);
+                       amrSettings.correctForVolume, computeIndicator);
     return {tv, 0, 1};
   }
   throw -1;

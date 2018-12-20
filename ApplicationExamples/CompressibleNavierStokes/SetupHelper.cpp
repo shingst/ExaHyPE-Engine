@@ -29,6 +29,7 @@ NavierStokes::ScenarioConfig NavierStokes::parseConfig(
   amrSettings.useAMR = constants.getValueAsBoolOrDefault("use-amr", false);
   if (amrSettings.useAMR) {
     amrSettings.useTotalVariation = constants.getValueAsBool("use-tv-amr");
+    amrSettings.correctForVolume = constants.getValueAsBool("use-tv-volume-correction");
     amrSettings.indicator =
         parseIndicatorVariable(constants.getValueAsString("amr-indicator"));
     amrSettings.factorRefine = constants.getValueAsDouble("amr-factor-refine");
@@ -56,7 +57,7 @@ NavierStokes::ScenarioConfig NavierStokes::parseConfig(
   }
 
   auto numberOfNecessaryGlobalObservables = amrSettings.useAMR ? 3 : 0;
-  if (numberOfGlobalObservables != numberOfNecessaryGlobalObservables) {
+  if (numberOfGlobalObservables < numberOfNecessaryGlobalObservables) {
     throw - 1;
   }
 

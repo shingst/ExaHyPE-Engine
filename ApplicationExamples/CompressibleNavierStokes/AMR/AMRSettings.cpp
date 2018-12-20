@@ -6,6 +6,8 @@ NavierStokes::IndicatorVariable NavierStokes::parseIndicatorVariable(
     return IndicatorVariable::rho;
   } else if (name == "pressure") {
     return IndicatorVariable::pressure;
+  } else if (name == "Z") {
+    return IndicatorVariable::Z;
   } else if (name == "potential-temperature") {
     return IndicatorVariable::potentialTemperature;
   } else {
