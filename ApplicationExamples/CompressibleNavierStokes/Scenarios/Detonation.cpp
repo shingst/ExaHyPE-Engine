@@ -53,7 +53,6 @@ void NavierStokes::Detonation::initialValues(const double* const x,
 
   vars.E() = ns.evaluateEnergy(vars.rho(), pressure, vars.j(), ns.getZ(vars.data()));
 
-  assert(ns.getZ(vars.data()) >= 0 && ns.getZ(vars.data()) <= 1.0);
   assert(ns.getZ(vars.data()) == 0 || ns.getZ(vars.data()) == rhoU);
 }
 double NavierStokes::Detonation::getMolecularDiffusionCoeff() const {
@@ -61,7 +60,7 @@ double NavierStokes::Detonation::getMolecularDiffusionCoeff() const {
 }
 
 double NavierStokes::Detonation::getQ0() const {
-  return 25.0;
+  return 1.0;
 }
 void NavierStokes::Detonation::source(
     const tarch::la::Vector<DIMENSIONS, double>& x, double t, const PDE& ns,
