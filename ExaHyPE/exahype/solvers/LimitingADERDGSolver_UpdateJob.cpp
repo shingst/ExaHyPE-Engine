@@ -16,7 +16,7 @@ exahype::solvers::LimitingADERDGSolver::UpdateJob::UpdateJob(
   _cellInfo(cellInfo),
   _neighbourMergePerformed(solverPatch.getNeighbourMergePerformed()),
   _isAtRemoteBoundary(isAtRemoteBoundary) {
-  NumberOfReductionJobs++;
+  NumberOfReductionJobs.fetch_add(1);
 }
 
 bool exahype::solvers::LimitingADERDGSolver::UpdateJob::run() {
@@ -30,7 +30,7 @@ bool exahype::solvers::LimitingADERDGSolver::UpdateJob::run() {
   lock.free();
 
 
-  NumberOfReductionJobs--;
+  NumberOfReductionJobs.fetch_sub(1);
   assertion( NumberOfReductionJobs.load()>=0 );
 
   return false;

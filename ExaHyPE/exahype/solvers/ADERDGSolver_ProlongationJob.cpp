@@ -14,14 +14,14 @@ exahype::solvers::ADERDGSolver::ProlongationJob::ProlongationJob(
   _cellDescription(cellDescription),
   _parentCellDescription(parentCellDescription),
   _subcellIndex(subcellIndex) {
-  NumberOfEnclaveJobs++; // TODO(Dominic): Not sure yet which queue is optimal
+  NumberOfEnclaveJobs.fetch_add(1); // TODO(Dominic): Not sure yet which queue is optimal
 }
 
 bool exahype::solvers::ADERDGSolver::ProlongationJob::run() {
   _solver.prolongateFaceDataToDescendant(
       _cellDescription,_parentCellDescription,_subcellIndex);
 
-  NumberOfEnclaveJobs--;
+  NumberOfEnclaveJobs.fetch_sub(1);
   assertion( NumberOfEnclaveJobs>=0 );
   return false;
 }

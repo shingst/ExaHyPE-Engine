@@ -16,7 +16,7 @@ exahype::solvers::FiniteVolumesSolver::UpdateJob::UpdateJob(
   _cellInfo(cellInfo),
   _neighbourMergePerformed(cellDescription.getNeighbourMergePerformed()),
   _isAtRemoteBoundary(isAtRemoteBoundary) {
-  NumberOfReductionJobs++;
+  NumberOfReductionJobs.fetch_add(1);
 }
 
 bool exahype::solvers::FiniteVolumesSolver::UpdateJob::run() {
@@ -24,7 +24,7 @@ bool exahype::solvers::FiniteVolumesSolver::UpdateJob::run() {
       _solver.updateBody(
           _cellDescription,_cellInfo,_neighbourMergePerformed,
           true,true,_isAtRemoteBoundary,true);
-  NumberOfReductionJobs--;
+  NumberOfReductionJobs.fetch_sub(1);
   assertion( NumberOfReductionJobs.load()>=0 );
 
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);

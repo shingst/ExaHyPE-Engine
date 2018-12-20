@@ -9,13 +9,13 @@ exahype::solvers::FiniteVolumesSolver::AdjustSolutionDuringMeshRefinementJob::Ad
   _cellDescription(cellDescription),
   _isInitialMeshRefinement(isInitialMeshRefinement)
 {
-  NumberOfAMRBackgroundJobs++;
+  NumberOfAMRBackgroundJobs.fetch_add(1);
 }
 
 bool exahype::solvers::FiniteVolumesSolver::AdjustSolutionDuringMeshRefinementJob::run() {
   _solver.adjustSolutionDuringMeshRefinementBody(_cellDescription,_isInitialMeshRefinement);
 
-  NumberOfAMRBackgroundJobs--;
+  NumberOfAMRBackgroundJobs.fetch_sub(1);
   assertion( NumberOfAMRBackgroundJobs>=0 );
   return false;
 }

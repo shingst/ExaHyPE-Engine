@@ -11,14 +11,14 @@ exahype::solvers::LimitingADERDGSolver::AdjustSolutionDuringMeshRefinementJob::A
   _cellInfo(cellInfo),
   _isInitialMeshRefinement(isInitialMeshRefinement)
 {
-  NumberOfAMRBackgroundJobs++;
+  NumberOfAMRBackgroundJobs.fetch_add(1);
 }
 
 bool exahype::solvers::LimitingADERDGSolver::AdjustSolutionDuringMeshRefinementJob::run() {
   _solver._solver->ensureNecessaryMemoryIsAllocated(_solverPatch);
   _solver.adjustSolutionDuringMeshRefinementBody(_solverPatch,_cellInfo,_isInitialMeshRefinement);
 
-  NumberOfAMRBackgroundJobs--;
+  NumberOfAMRBackgroundJobs.fetch_sub(1);
   assertion( NumberOfAMRBackgroundJobs.load()>=0 );
   return false;
 }
