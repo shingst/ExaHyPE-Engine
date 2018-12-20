@@ -10,7 +10,7 @@ double totalVariation(const double* Q, int order, int numberOfVariables,
   const auto idx_lQi = kernels::idx3(basisSize, basisSize, numberOfData);
 #else
   const auto idx_lQi =
-      kernels::idx3(basisSize, basisSize, basisSize, numberOfData);
+      kernels::idx4(basisSize, basisSize, basisSize, numberOfData);
 #endif
 
   const auto& quadratureWeights = kernels::gaussLegendreWeights[order];
@@ -59,7 +59,7 @@ double totalVariation(const double* Q, int order, int numberOfVariables,
         for (int m = 0; m < numberOfVariables; m++) {
           double curGrad = 0.0;
           for (int n = 0; n < basisSize; n++) {
-            const auto t = 1.0 * invDx[0] * lQi[idx_lQi(j, k, n, i, m)] *
+            const auto t = Q[idx_lQi(j, k, n, m)] *
                            kernels::dudx[order][l][n];
             curGrad += t;
           }
@@ -79,7 +79,7 @@ double totalVariation(const double* Q, int order, int numberOfVariables,
         for (int m = 0; m < numberOfVariables; m++) {
           double curGrad = 0.0;
           for (int n = 0; n < basisSize; n++) {
-            const auto t = 1.0 * invDx[1] * lQi[idx_lQi(j, n, k, i, m)] *
+            const auto t = Q[idx_lQi(j, n, k, m)] *
                            kernels::dudx[order][l][n];
             curGrad += t;
           }
@@ -99,7 +99,7 @@ double totalVariation(const double* Q, int order, int numberOfVariables,
         for (int m = 0; m < numberOfVariables; m++) {
           double curGrad = 0.0;
           for (int n = 0; n < basisSize; n++) {
-            const auto t = 1.0 * invDx[2] * lQi[idx_lQi(n, j, k, i, m)] *
+            const auto t = Q[idx_lQi(n, j, k, m)] *
                            kernels::dudx[order][l][n];
             curGrad += t;
           }
@@ -108,11 +108,14 @@ double totalVariation(const double* Q, int order, int numberOfVariables,
       }
     }
   }
-}
 #endif
 
   if (correctForVolume) {
+#if DIMENSIONS == 2
     const auto volume = dx[0] * dx[1];
+#else
+    const auto volume = dx[0] * dx[1] * dx[2];
+#endif
     return volume * tv;
   }
 

@@ -39,8 +39,8 @@ double totalVariation(const double* Q, int order, int numberOfVariables,
   }
 #else
   const auto idxQ =
-      kernels::idx3(basisSize, basisSize, basisSize, numberOfData);
-  const auto idxObservable = kernels::idx3(basisSize, basisSize, basisSize, 1);
+      kernels::idx4(basisSize, basisSize, basisSize, numberOfData);
+  const auto idxObservable = kernels::idx4(basisSize, basisSize, basisSize, 1);
   for (int j = 0; j < basisSize; j++) {
     for (int k = 0; k < basisSize; k++) {
       for (int l = 0; l < basisSize; l++) {
