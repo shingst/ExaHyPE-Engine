@@ -198,50 +198,48 @@ bool NavierStokes::NavierStokesSolver_ADERDG::isPhysicallyAdmissible(
       const tarch::la::Vector<DIMENSIONS,double>& center,
       const tarch::la::Vector<DIMENSIONS,double>& dx,
       const double t, const double dt) const {
-    // TODO(Lukas) What about advection-reaction-diffusion?
-    auto vars = ReadOnlyVariables{observablesMin};
-
-    // Positive energy is not enough, as it does not guarantee positive pressure!
-    const auto pressure = ns.evaluatePressure(vars.E(), vars.rho(), vars.j(), ns.getZ(observablesMin),
-            ns.getHeight(observablesMin));
-    // Pressure > 0 -> E > 0
-
-    bool isAdvectionTroubled = ns.useAdvection && (ns.getZ(vars.data()) < 0) && (ns.getZ(vars.data()) > 1);
-    if (vars.rho() <= 0.0 || vars.E() < 0.0 || isAdvectionTroubled) {
+    // First perform a quick sanity check.
+    auto varsMin = ReadOnlyVariables{observablesMin};
+    if (varsMin.rho() <= 0.0 || varsMin.E() < 0.0) {
       return false;
     }
 
-    // After quick sanity check, do pointwise check for pressure
-    // TODO(Lukas) Is necessary? If yes, there has to be a faster way...
-    // TODO(Lukas) At least refactor this.
+    // We now need to to a pointwise check for the primitive variables
+    // pressure and Z.
+    // TODO(Lukas) At least refactor this. And 3D!
 #if DIMENSIONS == 2
     constexpr auto basisSize = Order + 1;
     kernels::idx3 idx(basisSize,basisSize,NumberOfVariables);
     for (int i = 0; i < basisSize; ++i) {
       for (int j = 0; j < basisSize; ++j) {
-        auto pointVars = ReadOnlyVariables{solution + idx(i,j,0)};
-        const auto curPressure = ns.evaluatePressure(pointVars.E(),
-                pointVars.rho(),
-                pointVars.j(),
-                ns.getZ(pointVars.data()),
-                ns.getHeight(pointVars.data())
+        const double* const Q = solution + idx(i,j,0);
+        auto vars = ReadOnlyVariables{Q};
+        const auto Zrho = ns.getZ(Q);
+        const auto Z = Zrho / vars.rho();
+        const auto height = ns.getHeight(Q);
+        const auto pressure = ns.evaluatePressure(vars.E(),
+                vars.rho(),
+                vars.j(),
+                Zrho,
+                height
                 );
-        bool isCurAdvectionTroubled = ns.useAdvection && ((ns.getZ(pointVars.data()) < 0) ||
-                (ns.getZ(pointVars.data()) > 1.0));
-        if (pointVars.rho() <= 0.0 || curPressure < 0.0 || isCurAdvectionTroubled) {
+        bool isAdvectionTroubled = ns.useAdvection && (Z < 0.0);
+        if (vars.rho() <= 0.0 || pressure < 0.0 || isAdvectionTroubled) {
           return false;
         }
 
         // Surprisingly, this is necessary.
         for (int v = 0; v < NumberOfVariables; v++) {
           if (!std::isfinite(solution[v])) {
-            std::cout << "Solution is " << solution[v] << "." << std::endl;
+            //std::cout << "Solution is " << solution[v] << "." << std::endl;
             return false;
           }
         }
       }
     }
-    // TODO(Lukas) 3D!
+#else
+    // TODO(Lukas) Limiting in 3D!
+    std::abort();
 #endif
   return true;
 }
