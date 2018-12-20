@@ -302,7 +302,7 @@ RECURSIVE SUBROUTINE PDEVarName(MyNameOUT,ind)
   USE iso_c_binding
   USE GRMHD_Mod
   IMPLICIT NONE     
-  CHARACTER(LEN=30):: MyName(nVar),MyNameOUT
+  CHARACTER(LEN=20):: MyName(nVar),MyNameOUT
   INTEGER			:: ind
 	!
 	CALL PDEVarNameGRMHD(MyName)

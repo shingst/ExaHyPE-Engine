@@ -4050,7 +4050,8 @@ END SUBROUTINE FUNC_C2P_RMHD_F2F3
 
 
  
-RECURSIVE SUBROUTINE PDEVarNameGRMHD(MyName)  
+RECURSIVE SUBROUTINE PDEVarNameGRMHD(MyName) 
+  USE ISO_C_BINDING 
   IMPLICIT NONE     
 #ifdef VECTOR    
 #ifdef AVX512 
@@ -4061,28 +4062,28 @@ RECURSIVE SUBROUTINE PDEVarNameGRMHD(MyName)
 #else
   INTEGER, PARAMETER :: nVar = 19                           ! The number of variables of the PDE system 
 #endif
-  CHARACTER(LEN=30):: MyName(nVar)
+  CHARACTER(LEN=20):: MyName(nVar)
   INTEGER			:: ind
 	!
-    MyName(1)  = 'rho'
-    MyName(2)  = 'u'
-    MyName(3)  = 'v'
-    MyName(4)  = 'w'
-    MyName(5)  = 'p'
-    MyName(6)  = 'Bx'
-    MyName(7)  = 'By'
-    MyName(8)  = 'Bz'
-    MyName(9)  = 'psi'
-    MyName(10) = 'lapse'
-    MyName(11) = 'shift_x'
-    MyName(12) = 'shift_y'
-    MyName(13) = 'shift_z'
-    MyName(14) = 'gammaij_1'
-    MyName(15) = 'gammaij_2'
-    MyName(16) = 'gammaij_3'
-    MyName(17) = 'gammaij_4'
-    MyName(18) = 'gammaij_5'
-    MyName(19) = 'gammaij_6'
+    MyName(1)  = 'rho'      //C_NULL_CHAR
+    MyName(2)  = 'u'        //C_NULL_CHAR
+    MyName(3)  = 'v'        //C_NULL_CHAR
+    MyName(4)  = 'w'        //C_NULL_CHAR
+    MyName(5)  = 'p'        //C_NULL_CHAR
+    MyName(6)  = 'Bx'       //C_NULL_CHAR
+    MyName(7)  = 'By'       //C_NULL_CHAR
+    MyName(8)  = 'Bz'       //C_NULL_CHAR
+    MyName(9)  = 'psi'      //C_NULL_CHAR
+    MyName(10) = 'lapse'    //C_NULL_CHAR
+    MyName(11) = 'shift_x'  //C_NULL_CHAR
+    MyName(12) = 'shift_y'  //C_NULL_CHAR
+    MyName(13) = 'shift_z'  //C_NULL_CHAR
+    MyName(14) = 'gammaij_1'//C_NULL_CHAR
+    MyName(15) = 'gammaij_2'//C_NULL_CHAR
+    MyName(16) = 'gammaij_3'//C_NULL_CHAR
+    MyName(17) = 'gammaij_4'//C_NULL_CHAR
+    MyName(18) = 'gammaij_5'//C_NULL_CHAR
+    MyName(19) = 'gammaij_6'//C_NULL_CHAR
 	!
 END SUBROUTINE PDEVarNameGRMHD   
 
@@ -4101,15 +4102,15 @@ RECURSIVE SUBROUTINE PDEAuxNameGRMHD(AuxName)
   CHARACTER(LEN=10):: AuxName(nAux)
   !
 #if defined(SPHERICAL) || defined(CYLINDRICAL)
-  AuxName(1) = 'x1' 
-  AuxName(2) = 'x2'
-  AuxName(3) = 'x3'
-  AuxName(4) = 'V_x'
-  AuxName(5) = 'V_y'
-  AuxName(6) = 'V_z'
-  AuxName(7) = 'B_x'
-  AuxName(8) = 'B_y'
-  AuxName(9) = 'B_z'
+  AuxName(1) = 'x1' //C_NULL_CHAR
+  AuxName(2) = 'x2' //C_NULL_CHAR
+  AuxName(3) = 'x3' //C_NULL_CHAR
+  AuxName(4) = 'V_x'//C_NULL_CHAR
+  AuxName(5) = 'V_y'//C_NULL_CHAR
+  AuxName(6) = 'V_z'//C_NULL_CHAR
+  AuxName(7) = 'B_x'//C_NULL_CHAR
+  AuxName(8) = 'B_y'//C_NULL_CHAR
+  AuxName(9) = 'B_z'//C_NULL_CHAR
 #endif 
   !
  END SUBROUTINE PDEAuxNameGRMHD     
