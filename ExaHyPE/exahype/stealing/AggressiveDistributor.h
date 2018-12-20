@@ -56,7 +56,7 @@ class exahype::stealing::AggressiveDistributor {
     // return next victim rank
     bool selectVictimRank(int& victim);
  
-    void updateLoadDistribution(int load);
+    void updateLoadDistribution();
     void handleEmergencyOnRank(int rank);
 
 };

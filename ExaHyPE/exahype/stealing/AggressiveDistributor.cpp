@@ -11,7 +11,7 @@
 #include "exahype/stealing/StealingProfiler.h"
 #include "exahype/stealing/PerformanceMonitor.h"
 #include "tarch/multicore/Core.h"
-#include "tarch/multicore/Jobs.h"
+#include "tarch/multicore/tbb/Jobs.h"
 
 tarch::logging::Log exahype::stealing::AggressiveDistributor::_log( "exahype::stealing::AggressiveDistributor" );
 
@@ -157,55 +157,95 @@ void exahype::stealing::AggressiveDistributor::handleEmergencyOnRank(int rank) {
   _remainingTasksToOffload[rank] = _tasksToOffload[rank];
 }
 
-void exahype::stealing::AggressiveDistributor::updateLoadDistribution(int waitingTime) {
+void exahype::stealing::AggressiveDistributor::updateLoadDistribution() {
 
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
   int myRank = tarch::parallel::Node::getInstance().getRank();
 
   int *waitingTimesSnapshot = new int[nnodes*nnodes];
   const int* currentWaitingTimesSnapshot = exahype::stealing::PerformanceMonitor::getInstance().getWaitingTimesSnapshot();
-  std::copy(&currentWaitingTimesSnapshot[0], &currentWaitingTimesSnapshot[nnodes], waitingTimesSnapshot);
+  std::copy(&currentWaitingTimesSnapshot[0], &currentWaitingTimesSnapshot[nnodes*nnodes], waitingTimesSnapshot);
 
-  waitingTimesSnapshot[myRank] = waitingTime;
+  //waitingTimesSnapshot[myRank] = waitingTime;
 
-  bool isVictim = exahype::stealing::StealingManager::getInstance().isVictim();
-  bool emergencyTriggered = exahype::stealing::StealingManager::getInstance().isEmergencyTriggered();
+  //determine who is the fastest rank which is not blacklisted and who is a critical rank
+  int *waitingRanks = new int[nnodes];
+  bool *isWaitingForSomeone = new bool[nnodes];
+  std::fill(waitingRanks, waitingRanks+nnodes, 0);
 
-  logInfo("updateLoadDistribution()", "current maximum wait time "<<waitingTime
-                                      <<" isVictim: "<<isVictim<<" emergency event: "<<emergencyTriggered);
+  int currentLongestWaitTime = -1;
+  int currentOptimalVictim = -1;
+  int k = 0;
 
-  //determine who is fastest
-  //int fastestRank = std::distance(&loadSnapshot[0], std::max_element(&loadSnapshot[0], &loadSnapshot[nnodes]));
-
-  //determine who is slowest
-  //int slowestRank = std::distance(&loadSnapshot[0], std::min_element(&loadSnapshot[0], &loadSnapshot[nnodes]));
-  
-  //logInfo("updateLoadDistribution()", "fastest: "<<fastestRank<<" slowest:"<<slowestRank);
-  int slowestRank = std::distance(&_initialLoadPerRank[0], std::max_element(&_initialLoadPerRank[0], &_initialLoadPerRank[nnodes]));
-
-  if(myRank == slowestRank) {
-    if(!isVictim && !emergencyTriggered && *std::min_element(&waitingTimesSnapshot[0], &waitingTimesSnapshot[nnodes])<_zeroThreshold) {
-      for(int i=0; i<nnodes; i++) {
-        if(i!=myRank) { 
-          _tasksToOffload[i] = 0.5* (_tasksToOffload[i] + _idealTasksToOffload[i]);
-          logInfo("updateLoadDistribution()", "I am a critical rank, increment, send "<<_tasksToOffload[i]<<" to rank "<<i );          
-        }
+  for(int i=0; i<nnodes; i++) {
+    bool waitingForSomeone = false;
+    for(int j=0; j<nnodes; j++) {
+      logInfo("updateLoadDistribution()","rank "<<i<<" waiting for "<<waitingTimesSnapshot[k+j]<<" for rank "<<j);
+      if(waitingTimesSnapshot[k+j]>currentLongestWaitTime && !exahype::stealing::StealingManager::getInstance().isBlacklisted(i)) {
+        currentLongestWaitTime = waitingTimesSnapshot[k+j];
+        currentOptimalVictim = i;
+      }
+      if(waitingTimesSnapshot[k+j]>_zeroThreshold) {
+        waitingRanks[j]++;   
+        waitingForSomeone = true;
       }
     }
-    else if(emergencyTriggered){
-      //TODO: maybe step back a bit
-      //exahype::stealing::StealingManager::getInstance().resetEmergency();
-    }   
+    isWaitingForSomeone[i]= waitingForSomeone;
+    k+= nnodes;
   }
+
+  int criticalRank = -1;
+  for(int i=0; i<nnodes; i++) {
+    if(!isWaitingForSomeone[i] && waitingRanks[i]>0) {
+      criticalRank = i; 
+      break;
+    }
+  }
+
+  logInfo("updateLoadDistribution()", "optimal victim: "<<currentOptimalVictim<<" critical rank:"<<criticalRank);
+
+  bool isVictim = exahype::stealing::StealingManager::getInstance().isVictim();
+  if(myRank == criticalRank && criticalRank!=currentOptimalVictim) {
+    if(!isVictim) {
+      int currentTasksCritical = _initialLoadPerRank[criticalRank];
+      for(int i=0; i<nnodes; i++) {
+        currentTasksCritical -= _tasksToOffload[i];
+      }
+      int currentTasksOptimal = _initialLoadPerRank[currentOptimalVictim]+_tasksToOffload[currentOptimalVictim];
+
+      _tasksToOffload[currentOptimalVictim] += 0.5*(currentTasksCritical-currentTasksOptimal);
+      logInfo("updateLoadDistribution()", "I am a critical rank, increment, send "<<_tasksToOffload[currentOptimalVictim]<<" to rank "<<currentOptimalVictim );
+    }
+  }
+  else if(_tasksToOffload[criticalRank]>0) {
+    _tasksToOffload[criticalRank]--;
+    logInfo("updateLoadDistribution()", "decrement, send "<<_tasksToOffload[criticalRank]<<" to rank "<<criticalRank );
+  }
+
+//  if(myRank == slowestRank) {
+//    if(!isVictim && !emergencyTriggered && *std::min_element(&waitingTimesSnapshot[0], &waitingTimesSnapshot[nnodes])<_zeroThreshold) {
+//      for(int i=0; i<nnodes; i++) {
+//        if(i!=myRank) { 
+//          _tasksToOffload[i] = 0.5* (_tasksToOffload[i] + _idealTasksToOffload[i]);
+//          logInfo("updateLoadDistribution()", "I am a critical rank, increment, send "<<_tasksToOffload[i]<<" to rank "<<i );          
+//        }
+//      }
+//    }
+//    else if(emergencyTriggered){
+//      //TODO: maybe step back a bit
+//      //exahype::stealing::StealingManager::getInstance().resetEmergency();
+//    }   
+//  }
 
   resetRemainingTasksToOffload();
 
+  delete[] isWaitingForSomeone;
+  delete[] waitingRanks;
   delete[] waitingTimesSnapshot;
 
 }
 
 bool exahype::stealing::AggressiveDistributor::selectVictimRank(int& victim) {
-
 
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
   int myRank = tarch::parallel::Node::getInstance().getRank();
@@ -226,8 +266,13 @@ bool exahype::stealing::AggressiveDistributor::selectVictimRank(int& victim) {
     l_rank = (l_rank + 1)%nnodes;
   }
   rank_cnt=l_rank;
+ 
+  //logInfo("selectVictimRank", "chose victim "<<victim<<" _remainingTasksToOffload "<<_remainingTasksToOffload[victim]);
 
-
+  if(tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs()<(tarch::multicore::Core::getInstance().getNumberOfThreads()-1)*tarch::multicore::jobs::internal::_minimalNumberOfJobsPerConsumerRun) {
+    //logInfo("selectVictimRank", "number of running consumers: "<<tarch::multicore::jobs::internal::_numberOfRunningJobConsumerTasks.load()<<" max running "<<tarch::multicore::Core::getInstance().getNumberOfThreads()-1);
+    victim = myRank;
+  }
   //if(victim!=myRank)
   // logInfo("selectVictimRank", "chose victim "<<victim<<" _remainingTasksToOffload "<<_remainingTasksToOffload[victim]);
   

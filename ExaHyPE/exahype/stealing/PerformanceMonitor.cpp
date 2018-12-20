@@ -235,6 +235,14 @@ void exahype::stealing::PerformanceMonitor::progressGather() {
     //logInfo("progressGather","collected new waiting times snapshot");
     std::copy(&_currentWaitingTimesReceiveBuffer[0], &_currentWaitingTimesReceiveBuffer[nnodes*nnodes], &_currentWaitingTimesSnapshot[0]);
     _gatherWaitingTimesRequest = MPI_REQUEST_NULL;
+      
+    //int k = 0;
+    //for(int i=0; i<nnodes; i++) {
+    //  for(int j=0; j<nnodes; j++) {
+    //    logInfo("progressGather()","rank "<<i<<" waiting for "<<_currentWaitingTimesSnapshot[k+j]<<" for rank "<<j);
+    //  }
+    //  k+= nnodes;
+    //}
   }
 
   if(_gatherWaitingTimesRequest==MPI_REQUEST_NULL && !isGloballyTerminated()) {

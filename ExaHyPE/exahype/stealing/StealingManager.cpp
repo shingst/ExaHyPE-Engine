@@ -157,10 +157,10 @@ void exahype::stealing::StealingManager::submitRequests(
     _requests[mapId].push(id);
   }
 
-  if(type==RequestType::send) {
+  /*if(type==RequestType::send) {
     ProgressSendJob *job = new ProgressSendJob();
     peano::datatraversal::TaskSet spawnedSet( job, peano::datatraversal::TaskSet::TaskType::Background);
-  }
+  }*/
 }
 
 void exahype::stealing::StealingManager::createRequestArray(
