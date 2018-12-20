@@ -41,7 +41,7 @@ void NavierStokes::DensityCurrent::initialValues(const double* const x,
   const auto pressure = computeHydrostaticPressure(ns, getGravity(), posZ, backgroundPotentialT);
   const auto temperature = potentialTToT(ns, pressure, potentialT);
   vars.rho() = pressure / (ns.gasConstant * temperature);
-  vars.E() = ns.evaluateEnergy(vars.rho(), pressure, vars.j());
+  vars.E() = ns.evaluateEnergy(vars.rho(), pressure, vars.j(), 0.0, ns.getHeight(vars.data()));
 
   if (ns.useBackgroundState) {
     // TODO(Lukas) Refactor?
