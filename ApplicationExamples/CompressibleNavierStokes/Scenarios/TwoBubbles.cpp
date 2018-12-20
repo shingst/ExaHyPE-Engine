@@ -95,7 +95,7 @@ void NavierStokes::TwoBubbles::initialValues(const double* const x,
   if (ns.useBackgroundState) {
     // TODO(Lukas) Refactor?
     // Then compute background state (without pot.T. pertubation
-    const auto backgroundTemperature = potentialTToT(ns, pressure, potentialT);
+    const auto backgroundTemperature = potentialTToT(ns, pressure, backgroundPotentialT);
     const auto backgroundRho = pressure / (ns.gasConstant * backgroundTemperature);
     ns.setBackgroundState(vars.data(), backgroundRho, pressure);
   }
