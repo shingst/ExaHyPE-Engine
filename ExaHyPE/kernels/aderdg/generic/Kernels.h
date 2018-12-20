@@ -138,13 +138,14 @@ void solutionAdjustment(SolverType& solver, double* luh,
 // @todo Dominic Etienne Charrier
 // Inconsistent ordering of inout and in arguments
 // template argument functions and non-template argument function.
-template <bool useNCP, typename SolverType>
+template <bool useNCP, bool useViscousFlux, typename SolverType>
 void riemannSolverNonlinear(
-    SolverType& solver,
-    double* FL, double* FR, const double* const QL,
+    SolverType& solver, double* FL, double* FR,
+    const double* const QL,
     const double* const QR,
     const double t,
     const double dt,
+    const tarch::la::Vector<DIMENSIONS, double>& dx,
     const int direction);
 
 template <typename SolverType>

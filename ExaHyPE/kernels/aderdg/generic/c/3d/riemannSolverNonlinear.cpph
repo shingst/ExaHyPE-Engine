@@ -67,6 +67,9 @@ void riemannSolverNonlinear(SolverType& solver, double* FL, double* FR,
     }
   }
 
+  double LL[numberOfVariables] = {0.0}; // do not need to store material parameters
+  double LR[numberOfVariables] = {0.0};
+
   // Hyperbolic eigenvalues
   solver.eigenvalues(QavL, direction, LL);
   solver.eigenvalues(QavR, direction, LR);
