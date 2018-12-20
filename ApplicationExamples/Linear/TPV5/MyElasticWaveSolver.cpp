@@ -656,7 +656,7 @@ void Elastic::MyElasticWaveSolver::extractTransformation(const double* const Q,
   s_z     =Q[numberOfVariables + 12];
 }
 
-void Elastic::MyElasticWaveSolver::riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double dt,const int normalNonZeroIndex, bool isBoundaryFace, int faceIndex){
+void Elastic::MyElasticWaveSolver::riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double t, const double dt,const int normalNonZeroIndex, bool isBoundaryFace, int faceIndex){
   constexpr int numberOfVariables  = MyElasticWaveSolver::NumberOfVariables;
   constexpr int numberOfVariables2 = numberOfVariables*numberOfVariables;
   constexpr int numberOfParameters = MyElasticWaveSolver::NumberOfParameters;
