@@ -480,11 +480,11 @@ void NavierStokes::PDE::evaluateFlux(const double* Q, const double* gradQ, doubl
              Q[Z] * gradQ[idxGradQ(0, rho)]);
     Ty -= factor *
             (Q[rho] * gradQ[idxGradQ(1,Z)] -
-                    Q[Z] * gradQ[idxGradQ(1, rho)]);
+             Q[Z] * gradQ[idxGradQ(1, rho)]);
 #if DIMENSIONS == 3
-    Tz -= factor * q0 *
+    Tz -= factor *
              (Q[rho] * gradQ[idxGradQ(2,Z)] -
-                     Q[Z] * gradQ[idxGradQ(2, rho)]);
+              Q[Z] * gradQ[idxGradQ(2, rho)]);
 #endif
   }
 
