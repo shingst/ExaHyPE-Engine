@@ -12,14 +12,18 @@
 
 
 tarch::logging::Log Elastic::MyElasticWaveSolver::_log( "Elastic::MyElasticWaveSolver" );
+int Elastic::MyElasticWaveSolver::outputCounter=0;
+
 
 
 void Elastic::MyElasticWaveSolver::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
   // @todo Please implement/augment if required
 
   initPointSourceLocations();
+  faultWriter = nullptr;
 
   //double fault_position=1.0/3.0 * _domainSize[0] + _domainOffset[0]; // fault has no effect
+  
   double fault_position= 40.0/27*(27-1)*0.5;
   transformation = new CurvilinearTransformation(MyElasticWaveSolver::Order+1,
 						 _coarsestMeshLevel, fault_position,
@@ -680,6 +684,7 @@ void Elastic::MyElasticWaveSolver::riemannSolver(double* FL,double* FR,const dou
     }
   }
 
+  
   double n_p[3]={0,0,0};
   double n_m[3]={0,0,0};
 
@@ -764,17 +769,39 @@ void Elastic::MyElasticWaveSolver::riemannSolver(double* FL,double* FR,const dou
 	Sx_m = QL[idx_QLR(i,j,numberOfVariables-3)];
 	Sy_m = QL[idx_QLR(i,j,numberOfVariables-2)];
 	Sz_m = QL[idx_QLR(i,j,numberOfVariables-1)];
-	
+        
+        tarch::la::Vector<3,double> coords;
+
+        coords = 
+          QL[idx_QLR(i,j,numberOfVariables+13)],
+          QL[idx_QLR(i,j,numberOfVariables+14)],
+          QL[idx_QLR(i,j,numberOfVariables+15)];
+
+        int point_index = vertexWriter->plotVertex(coords);
+
+
+        int cell_index  = cellWriter->plotPoint(point_index);
 	
 	rotate_into_orthogonal_basis(n_m,m_m,l_m,Sx_m,Sy_m,Sz_m,Sn_m,Sm_m,Sl_m);
         rotate_into_orthogonal_basis(n_p,m_p,l_p,Sx_p,Sy_p,Sz_p,Sn_p,Sm_p,Sl_p);
 	
 	double S =  std::sqrt((Sl_p- Sl_m)*(Sl_p- Sl_m)+(Sm_p- Sm_m)*(Sm_p- Sm_m));
+
 	
 	SlipWeakeningFriction(vn_p,vn_m, Tn_p,Tn_m, zp_p , zp_m, vn_hat_p , vn_hat_m, Tn_hat_p,Tn_hat_m, vm_p,vm_m,
 			      Tm_p,Tm_m, zs_p,zs_m, vm_hat_p, vm_hat_m, Tm_hat_p,Tm_hat_m, vl_p,vl_m,Tl_p,Tl_m, zs_p,
 			      zs_m, vl_hat_p , vl_hat_m, Tl_hat_p,Tl_hat_m, l_p, m_p, n_p, x, S);
 
+        double values[7] =
+          { vn_hat_p - vn_hat_m,
+            vm_hat_p - vm_hat_m,
+            vl_hat_p - vl_hat_m,
+            Tn_hat_p,
+            Tm_hat_p,
+            Tl_hat_p,
+            S};
+        
+        dataWriter->plotCell(cell_index,values,7);
 
       }else{
 	if (isBoundaryFace) {
@@ -1312,5 +1339,24 @@ void Elastic::MyElasticWaveSolver::initialstresstensor(double& sxx, double& syy,
   // sxz = 29.380;
   // syz = 0.00;
  
+}
+
+void Elastic::MyElasticWaveSolver::beginTimeStep(const double minTimeStamp){
+  if(faultWriter != nullptr){
+    outputCounter++;
+    vertexWriter->close();
+    cellWriter->close();
+    dataWriter->close();
+    std::stringstream ss;
+    ss << "series.fault_";
+    ss << outputCounter;
+    faultWriter->writeToFile(ss.str());
+  }
+  
+  faultWriter = new tarch::plotter::griddata::unstructured::vtk::VTUTextFileWriter() ;
+  vertexWriter= faultWriter->createVertexWriter();
+  cellWriter = faultWriter->createCellWriter();
+  dataWriter = faultWriter->createCellDataWriter("Q",7);
+
 }
 

@@ -17,6 +17,8 @@
  */
 #include "tarch/logging/Log.h"
 #include "tarch/la/Vector.h"
+#include "tarch/la/Vector.h"
+#include "tarch/plotter/griddata/unstructured/vtk/VTUTextFileWriter.h"
 
 #include "CurvilinearTransformation.h"
 
@@ -31,6 +33,15 @@ class Elastic::MyElasticWaveSolver : public Elastic::AbstractMyElasticWaveSolver
      */
     static tarch::logging::Log _log;
     CurvilinearTransformation* transformation;
+    tarch::plotter::griddata::unstructured::vtk::VTUTextFileWriter* faultWriter;
+    tarch::plotter::griddata::unstructured::UnstructuredGridWriter::VertexWriter* vertexWriter;
+    tarch::plotter::griddata::unstructured::UnstructuredGridWriter::CellWriter*   cellWriter;
+    tarch::plotter::griddata::Writer::CellDataWriter* dataWriter;
+
+
+    static int outputCounter;
+    
+    
   public:
     //MyElasticWaveSolver(double maximumMeshSize,int maximumAdaptiveMeshDepth,int DMPObservables,int limiterHelperLayers,exahype::solvers::Solver::TimeStepping timeStepping);
     MyElasticWaveSolver(
@@ -185,6 +196,9 @@ class Elastic::MyElasticWaveSolver : public Elastic::AbstractMyElasticWaveSolver
     void slip_weakening(double& v1, double& v2, double& Vel, double& tau1, double& tau2,
 			double phi_1, double phi_2, double eta, double tau_str, double sigma_n);
     void SlipWeakeningFriction(double vn_p,double vn_m, double Tn_p, double Tn_m, double zp_p , double zp_m, double& vn_hat_p , double& vn_hat_m, double& Tn_hat_p, double& Tn_hat_m, double vm_p,double vm_m, double Tm_p, double Tm_m, double zl_p , double zl_m, double& vm_hat_p , double& vm_hat_m, double& Tm_hat_p, double& Tm_hat_m, double vl_p,double vl_m, double Tl_p, double Tl_m, double zm_p , double zm_m, double& vl_hat_p , double& vl_hat_m, double& Tl_hat_p, double& Tl_hat_m, double* l, double* m, double* n, double* x, double S);
+    void beginTimeStep(const double minTimeStamp) override;
 };
+
+
 
 #endif // __MyElasticWaveSolver_CLASS_HEADER__
