@@ -19,6 +19,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <tuple>
 
 #include "exahype/solvers/Solver.h"
 
@@ -335,6 +336,8 @@ private:
 
   /**
    * Body of FiniteVolumesSolver::adjustSolutionDuringMeshRefinement(int,int).
+   *
+   * @note May be called from background task. Do not synchronise time step data here.
    */
   void adjustSolutionDuringMeshRefinementBody(
       CellDescription& cellDescription,
@@ -794,7 +797,7 @@ private:
    * \note Not thread-safe.
    */
   void solveRiemannProblemAtInterface(
-      records::ADERDGCellDescription& cellDescription,
+      CellDescription& cellDescription,
       Solver::BoundaryFaceInfo& face,
       const double* const lQhbnd,
       const double* lFhbnd,
@@ -1644,6 +1647,20 @@ public:
     const double* const Q) const = 0;
 
   /**
+   * Deduces a time stamp and time step size for the two cells depending
+   * on the time stepping strategy and the data on the cell descriptions.
+   *
+   * @note The arguments are currently unused but they will be used
+   * when we interpolate face values between neighbouring cells.
+   *
+   * @param cellDescription1 one of the cell descriptions
+   * @param cellDescription2 one of the cell descriptions
+   */
+  std::tuple<double,double> getRiemannSolverTimeStepData(
+      const CellDescription& cellDescription1,
+      const CellDescription& cellDescription2) const;
+
+  /**
    * Copies the time stepping data from the global solver onto the patch's time
    * stepping data.
    */
@@ -1858,10 +1875,13 @@ public:
 
   /*! Perform prediction and volume integral.
    *
-   * \note Different to the overloaded method, this method
+   * @note Different to the overloaded method, this method
    * waits for completion of a cell's last operation.
    *
-   * \note Requests to uncompress the cell description arrays before computing the predictor
+   * @note Requests to uncompress the cell description arrays before computing the predictor
+   *
+   * @note This function must not be called from a task/thread as it
+   * synchronises time step data.
    */
   void performPredictionAndVolumeIntegral(
       const int  solverNumber,
@@ -1889,7 +1909,7 @@ public:
    *                                         the space-time predictor quantities.
    * \param[in] vetoCompressionBackgroundJob veto that the compression is run as a background task
    *
-   * \note If this job is called by
+   * @note Might be called by background task. Do not synchronise time step data here.
    */
   void performPredictionAndVolumeIntegralBody(
       CellDescription& cellDescription,
@@ -2009,6 +2029,8 @@ public:
    *
    * @param cellDescriptionsIndex cell description heap index
    * @param element               element in the cell description heap array
+   *
+   * @note Might be called by background task. Do not synchronise time step data here.
    */
   UpdateResult fusedTimeStepBody(
         CellDescription&                                           cellDescription,
@@ -2028,6 +2050,8 @@ public:
    * @param cellDescription a cell description
    * @return a struct containing a mesh update event triggered by this cell,
    * and a new time step size.
+   *
+   * @note Might be called by background task. Do not synchronise time step data here.
    */
   UpdateResult updateBody(
       CellDescription&                                           cellDescription,
