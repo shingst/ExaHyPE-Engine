@@ -4,34 +4,16 @@
 // ========================
 //   www.exahype.eu
 // ========================
-#ifndef ErrorWriter_CLASS_HEADER_
-#define ErrorWriter_CLASS_HEADER_
+#ifndef TecplotWriter_CLASS_HEADER_
+#define TecplotWriter_CLASS_HEADER_
 
-#include "exahype/plotters/ADERDG2UserDefined.h"
-#include "exahype/plotters/ascii/MultipleReductionsWriter.h"
-#include "GRMHDbSolver_ADERDG_Variables.h"
-#include "GRMHDbSolver_ADERDG.h"
+#include "exahype/plotters/LimitingADERDG2UserDefined.h"
 
-// see ch.18 Post-processing of the Guidebook.  
-//#include <mpi.h> 
-//#include "tarch/parallel/Node.h"
-//#include "tarch/parallel/NodePool.h"
 namespace GRMHDb {
-  class ErrorWriter;
+  class TecplotWriter;
 }
 
-class GRMHDb::ErrorWriter : public exahype::plotters::ADERDG2UserDefined {
- private:
-   double _timeStamp;
-
-   double errorL1  [GRMHDbSolver_ADERDG::NumberOfVariables]; 
-   double errorL2  [GRMHDbSolver_ADERDG::NumberOfVariables]; 
-   double errorLInf[GRMHDbSolver_ADERDG::NumberOfVariables];
-   
-   double normL1Ana  [GRMHDbSolver_ADERDG::NumberOfVariables];  
-   double normL2Ana  [GRMHDbSolver_ADERDG::NumberOfVariables];  
-   double normLInfAna[GRMHDbSolver_ADERDG::NumberOfVariables]; 
-   
+class GRMHDb::TecplotWriter : public exahype::plotters::LimitingADERDG2UserDefined {
  public:
   /**
    * Constructor.
@@ -40,9 +22,7 @@ class GRMHDb::ErrorWriter : public exahype::plotters::ADERDG2UserDefined {
    * you if you use user defined plotting. You have
    * to declare and manage such member variables yourself. 
    */
-  ErrorWriter();
-  //ErrorWriter(GRMHDb::GRMHDbSolver_FV& solver);
-  //ErrorWriter(GRMHDb::GRMHDbSolver_ADERDG& solver);
+  TecplotWriter();
 
   /**
    * This method is invoked every time a cell 
@@ -79,4 +59,4 @@ class GRMHDb::ErrorWriter : public exahype::plotters::ADERDG2UserDefined {
   void finishPlotting() override;
 };
 
-#endif /* ErrorWriter_CLASS_HEADER_ */
+#endif /* TecplotWriter_CLASS_HEADER_ */

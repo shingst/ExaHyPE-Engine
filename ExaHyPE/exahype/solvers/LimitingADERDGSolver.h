@@ -367,6 +367,8 @@ private:
    * the time step update. Fortunately, it is already memorised as it is copied
    * into the correction time step data fields of the patch
    * after the time step data update.
+   *
+   * @note Might be called by background task. Do not synchronise time step data here.
    */
   UpdateResult fusedTimeStepBody(
       SolverPatch&                                               solverPatch,
@@ -404,6 +406,8 @@ private:
 
   /**
    * Body of LimitingADERDGSolver::adjustSolutionDuringMeshRefinement(int,int).
+   *
+   * @note May be called from background task. Do not synchronise time step data here.
    */
   void adjustSolutionDuringMeshRefinementBody(
       SolverPatch& solverPatch,

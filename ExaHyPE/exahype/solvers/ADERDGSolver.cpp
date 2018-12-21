@@ -680,6 +680,25 @@ void exahype::solvers::ADERDGSolver::overwriteMeshUpdateEvent(MeshUpdateEvent ne
    _meshUpdateEvent = newMeshUpdateEvent;
 }
 
+std::tuple<double,double> exahype::solvers::ADERDGSolver::getRiemannSolverTimeStepData(
+    const CellDescription& cellDescription1,
+    const CellDescription& cellDescription2) const {
+  auto result  = std::make_tuple<double,double>(0.0,0.0);
+  switch (_timeStepping) {
+    case TimeStepping::Global:
+    case TimeStepping::GlobalFixed:
+      std::get<0>(result) = _minCorrectorTimeStamp;
+      std::get<1>(result) = _minCorrectorTimeStepSize;
+      break;
+    default:
+//      std::get<0>(result) = std::max(cellDescription1.getCorrectorTimeStamp(),cellDescription2.getCorrectorTimeStamp());
+//      std::get<1>(result) = std::min(cellDescription1.getCorrectorTimeStepSize(),cellDescription2.getCorrectorTimeStepSize());
+      logError("getRiemannSolverTimeStepData(...)","Unknown time stepping scheme.")
+      std::abort();
+  }
+  return result;
+}
+
 void exahype::solvers::ADERDGSolver::synchroniseTimeStepping(
     CellDescription& p) const {
   switch (_timeStepping) {
@@ -2146,6 +2165,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
   const int element = cellInfo.indexOfADERDGCellDescription(solverNumber);
   if ( element != NotFound ) {
     CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[element];
+    synchroniseTimeStepping(cellDescription);
     cellDescription.setHasCompletedLastStep(false);
 
     if ( cellDescription.getType()==CellDescription::Type::Cell ) {
@@ -2210,6 +2230,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::updateOrR
   const int element = cellInfo.indexOfADERDGCellDescription(solverNumber);
   if ( element != NotFound ) {
     CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[element];
+    synchroniseTimeStepping(cellDescription);
     cellDescription.setHasCompletedLastStep(false);
 
     if (
@@ -2500,6 +2521,8 @@ void exahype::solvers::ADERDGSolver::adjustSolutionDuringMeshRefinement(
   const int element = cellInfo.indexOfADERDGCellDescription(solverNumber);
   if ( element != NotFound ) {
     CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[element];
+    synchroniseTimeStepping(cellDescription);
+
     const bool isInitialMeshRefinement = getMeshUpdateEvent()==MeshUpdateEvent::InitialRefinementRequested;
     if ( exahype::solvers::Solver::SpawnAMRBackgroundJobs ) {
       cellDescription.setHasCompletedLastStep(false);
@@ -2513,8 +2536,6 @@ void exahype::solvers::ADERDGSolver::adjustSolutionDuringMeshRefinement(
 void exahype::solvers::ADERDGSolver::adjustSolutionDuringMeshRefinementBody(
     CellDescription& cellDescription,
     const bool isInitialMeshRefinement) {
-  synchroniseTimeStepping(cellDescription);
-
   if ( cellDescription.getType()==CellDescription::Type::Cell ) {
     assertion1(
         cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::None ||
@@ -2705,9 +2726,14 @@ void exahype::solvers::ADERDGSolver::prolongateFaceDataToDescendant(
   for (int faceIndex = 0; faceIndex < DIMENSIONS_TIMES_TWO; ++faceIndex) {
     const int direction = faceIndex/2;
     if ( cellDescription.getFacewiseCommunicationStatus(faceIndex)==CellCommunicationStatus ) { // TODO(Dominic): If the grid changes dynamically during the time steps,
+      #ifdef Parallel
       assertion4( exahype::amr::faceIsOnBoundaryOfParent(faceIndex,subcellIndex,levelFine-levelCoarse),
             cellDescription.toString(),parentCellDescription.toString(),tarch::parallel::Node::getInstance().getRank(),
             tarch::parallel::NodePool::getInstance().getMasterRank() ); // necessary but not sufficient
+      #else
+      assertion2( exahype::amr::faceIsOnBoundaryOfParent(faceIndex,subcellIndex,levelFine-levelCoarse),
+                  cellDescription.toString(),parentCellDescription.toString() ); // necessary but not sufficient
+      #endif
 
       logDebug("prolongateFaceDataToDescendant(...)","cell=" << cellDescription.getOffset() <<
                ",level=" << cellDescription.getLevel() <<
@@ -3102,10 +3128,6 @@ void exahype::solvers::ADERDGSolver::mergeNeighboursData(
       waitUntilCompletedLastStep<CellDescription>(cellDescription1,false,false);  // must be done before any other operation on the patches
       waitUntilCompletedLastStep<CellDescription>(cellDescription2,false,false);
 
-      // synchronise time stepping if necessary
-      synchroniseTimeStepping(cellDescription1);
-      synchroniseTimeStepping(cellDescription2);
-
       if ( CompressionAccuracy > 0.0 ) {
         peano::datatraversal::TaskSet uncompression(
             [&] () -> bool {
@@ -3126,7 +3148,6 @@ void exahype::solvers::ADERDGSolver::mergeNeighboursData(
       // 1. Solve Riemann problem (merge data)
       //
       solveRiemannProblemAtInterface(cellDescription1,cellDescription2,face);
-
     }
   }
 }
@@ -3200,10 +3221,11 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
   std::string inputDataR = riemannDataToString(QR,FR,"R");
   #endif
 
+  std::tuple<double,double> timeStepData = getRiemannSolverTimeStepData(pLeft,pRight);
   riemannSolver(
       FL,FR,QL,QR,
-      std::min( pLeft.getCorrectorTimeStamp(),pRight.getCorrectorTimeStamp() ),
-      std::min( pLeft.getCorrectorTimeStepSize(),pRight.getCorrectorTimeStepSize() ),
+      std::get<0>(timeStepData),
+      std::get<1>(timeStepData),
       face._direction, false, -1); // TODO(Dominic): Merge Riemann solver directly with the face integral and push the result on update
                                    // does not make sense to overwrite the flux when performing local time stepping; coarse grid flux must be constant, or not?
 
@@ -3239,7 +3261,7 @@ void exahype::solvers::ADERDGSolver::mergeWithBoundaryData(
     if ( cellDescription.getType()==CellDescription::Type::Cell ) {
       waitUntilCompletedLastStep<CellDescription>(cellDescription,false,false); // must be done before any other operation on the patch
 
-      synchroniseTimeStepping(cellDescription);
+//      synchroniseTimeStepping(cellDescription); // TODO(Dominic): Not used anymore because of data races
 
       uncompress(cellDescription);
 
@@ -3279,13 +3301,15 @@ void exahype::solvers::ADERDGSolver::applyBoundaryConditions(CellDescription& p,
   #endif
 
   // TODO(Dominic): Hand in space-time volume data. Time integrate it afterwards
+
+  std::tuple<double,double> timeStepData = getRiemannSolverTimeStepData(p,p);
   boundaryConditions(
       FIn,QIn,
       luh,
       p.getOffset() + 0.5*p.getSize(),
       p.getSize(),
-      p.getCorrectorTimeStamp(),
-      p.getCorrectorTimeStepSize(),
+      std::get<0>(timeStepData),
+      std::get<1>(timeStepData),
       face._direction,face._orientation);
 
   #ifdef Asserts
@@ -3972,7 +3996,7 @@ void exahype::solvers::ADERDGSolver::mergeWithNeighbourData(
   if ( element != NotFound ) {
     Solver::BoundaryFaceInfo face(dest,src);
     CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[element];
-    synchroniseTimeStepping(cellDescription);
+//    synchroniseTimeStepping(cellDescription);
 
     if( communicateWithNeighbour(cellDescription,face._faceIndex) ) {
       // Send order: lQhbnd,lFhbnd
@@ -3997,7 +4021,7 @@ void exahype::solvers::ADERDGSolver::mergeWithNeighbourData(
 }
 
 void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
-    records::ADERDGCellDescription& cellDescription,
+    CellDescription& cellDescription,
     Solver::BoundaryFaceInfo& face,
     const double* const lQhbnd,
     const double* lFhbnd,
@@ -4046,10 +4070,12 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
     std::string inputDataR = riemannDataToString(QR,FR,"R");
     #endif
 
+    std::tuple<double,double> timeStepData = getRiemannSolverTimeStepData(cellDescription,cellDescription);
     riemannSolver(
         FL, FR, QL, QR,
-        cellDescription.getCorrectorTimeStamp(),
-        cellDescription.getCorrectorTimeStepSize(),face._direction,false,face._faceIndex);
+        std::get<0>(timeStepData),
+        std::get<1>(timeStepData),
+        face._direction,false,face._faceIndex);
     
     #ifdef Asserts
     for (int ii = 0; ii<dofsPerFace; ii++) {
@@ -4074,7 +4100,6 @@ void exahype::solvers::ADERDGSolver::dropNeighbourData(
   if ( element != NotFound ) {
     Solver::BoundaryFaceInfo face(dest,src);
     CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[element];
-    synchroniseTimeStepping(cellDescription);
 
     if( communicateWithNeighbour(cellDescription,face._faceIndex) ) {
       for(int receives=0; receives<DataMessagesPerNeighbourCommunication; ++receives)

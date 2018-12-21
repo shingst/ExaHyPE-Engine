@@ -7,10 +7,11 @@
 #ifndef ErrorWriter_CLASS_HEADER_
 #define ErrorWriter_CLASS_HEADER_
 
-#include "exahype/plotters/ADERDG2UserDefined.h"
+#include "exahype/plotters/LimitingADERDG2UserDefined.h"
 #include "exahype/plotters/ascii/MultipleReductionsWriter.h"
+#include "GRMHDbSolver.h"
 #include "GRMHDbSolver_ADERDG_Variables.h"
-#include "GRMHDbSolver_ADERDG.h"
+#include "GRMHDbSolver_FV_Variables.h"
 
 // see ch.18 Post-processing of the Guidebook.  
 //#include <mpi.h> 
@@ -20,7 +21,7 @@ namespace GRMHDb {
   class ErrorWriter;
 }
 
-class GRMHDb::ErrorWriter : public exahype::plotters::ADERDG2UserDefined {
+class GRMHDb::ErrorWriter : public exahype::plotters::LimitingADERDG2UserDefined {
  private:
    double _timeStamp;
 
@@ -31,7 +32,6 @@ class GRMHDb::ErrorWriter : public exahype::plotters::ADERDG2UserDefined {
    double normL1Ana  [GRMHDbSolver_ADERDG::NumberOfVariables];  
    double normL2Ana  [GRMHDbSolver_ADERDG::NumberOfVariables];  
    double normLInfAna[GRMHDbSolver_ADERDG::NumberOfVariables]; 
-   
  public:
   /**
    * Constructor.
@@ -41,8 +41,6 @@ class GRMHDb::ErrorWriter : public exahype::plotters::ADERDG2UserDefined {
    * to declare and manage such member variables yourself. 
    */
   ErrorWriter();
-  //ErrorWriter(GRMHDb::GRMHDbSolver_FV& solver);
-  //ErrorWriter(GRMHDb::GRMHDbSolver_ADERDG& solver);
 
   /**
    * This method is invoked every time a cell 

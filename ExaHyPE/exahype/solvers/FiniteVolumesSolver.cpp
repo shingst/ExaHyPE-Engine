@@ -692,8 +692,6 @@ void exahype::solvers::FiniteVolumesSolver::adjustSolutionDuringMeshRefinementBo
     const bool isInitialMeshRefinement) {
   assertion(cellDescription.getType()==CellDescription::Cell);
 
-  synchroniseTimeStepping(cellDescription);
-
   adjustSolution(cellDescription);
 
   cellDescription.setHasCompletedLastStep(true);
@@ -755,6 +753,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::FiniteVolumesSolver::fu
       (SpawnUpdateAsBackgroundJob || (SpawnPredictionAsBackgroundJob && !isLastTimeStepOfBatch))
   ) {
     CellDescription& cellDescription = cellInfo._FiniteVolumesCellDescriptions[element];
+    synchroniseTimeStepping(cellDescription);
     cellDescription.setHasCompletedLastStep(false);
 
     bool isSkeletonCell = isAtRemoteBoundary;
@@ -766,6 +765,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::FiniteVolumesSolver::fu
   }
   else if ( element != NotFound ) {
     CellDescription& cellDescription = cellInfo._FiniteVolumesCellDescriptions[element];
+    synchroniseTimeStepping(cellDescription);
     cellDescription.setHasCompletedLastStep(false);
     return updateBody(
         cellDescription,cellInfo,cellDescription.getNeighbourMergePerformed(),
@@ -784,14 +784,18 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::FiniteVolumesSolver::up
   const int element = cellInfo.indexOfFiniteVolumesCellDescription(solverNumber);
   if ( (element!=NotFound) && SpawnUpdateAsBackgroundJob) {
     CellDescription& cellDescription = cellInfo._FiniteVolumesCellDescriptions[element];
+    synchroniseTimeStepping(cellDescription);
     cellDescription.setHasCompletedLastStep(false);
+
     peano::datatraversal::TaskSet(
         new UpdateJob(*this,cellDescription,cellInfo,isAtRemoteBoundary) );
     return UpdateResult();
   }
   else if ( element!=NotFound ) {
     CellDescription& cellDescription = cellInfo._FiniteVolumesCellDescriptions[element];
+    synchroniseTimeStepping(cellDescription);
     cellDescription.setHasCompletedLastStep(false);
+
     return updateBody(
         cellDescription,cellInfo,cellDescription.getNeighbourMergePerformed(),
         true,true,isAtRemoteBoundary,true/*uncompressBefore*/);
@@ -817,6 +821,8 @@ void exahype::solvers::FiniteVolumesSolver::adjustSolutionDuringMeshRefinement(
   const int element = cellInfo.indexOfFiniteVolumesCellDescription(solverNumber);
   if ( element != NotFound ) {
     CellDescription& cellDescription = cellInfo._FiniteVolumesCellDescriptions[element];
+    synchroniseTimeStepping(cellDescription);
+
     if ( exahype::solvers::Solver::SpawnAMRBackgroundJobs ) {
       peano::datatraversal::TaskSet( new AdjustSolutionDuringMeshRefinementJob(*this,cellDescription,isInitialMeshRefinement) );
     } else {
@@ -933,9 +939,6 @@ void exahype::solvers::FiniteVolumesSolver::mergeNeighboursData(
     }
     counter++;
     #endif
-
-    synchroniseTimeStepping(cellDescription1);
-    synchroniseTimeStepping(cellDescription2);
 
     waitUntilCompletedLastStep<CellDescription>(cellDescription1,false,false);
     waitUntilCompletedLastStep<CellDescription>(cellDescription2,false,false);
@@ -1351,7 +1354,6 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithNeighbourData(
   if ( element != NotFound ) {
     Solver::BoundaryFaceInfo face(dest,src);
     CellDescription& cellDescription = cellInfo._FiniteVolumesCellDescriptions[element];
-    synchroniseTimeStepping(cellDescription);
 
     assertion(DataHeap::getInstance().isValidIndex(cellDescription.getSolutionIndex()));
     assertion(DataHeap::getInstance().isValidIndex(cellDescription.getPreviousSolutionIndex()));

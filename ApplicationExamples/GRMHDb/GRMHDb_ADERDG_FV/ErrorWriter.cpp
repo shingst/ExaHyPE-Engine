@@ -32,7 +32,7 @@ using namespace std;
 #include "tarch/parallel/Node.h"
 #include "tarch/parallel/NodePool.h"
 
-GRMHDb::ErrorWriter::ErrorWriter() : exahype::plotters::ADERDG2UserDefined::ADERDG2UserDefined(){
+GRMHDb::ErrorWriter::ErrorWriter() : exahype::plotters::LimitingADERDG2UserDefined::LimitingADERDG2UserDefined(){
   // @TODO Please insert your code here.
 }
 
@@ -56,7 +56,7 @@ void GRMHDb::ErrorWriter::plotPatch(
      for (int d=0; d<DIMENSIONS; d++) {
        x[d]  = offsetOfPatch[d] + sizeOfPatch[d] * kernels::gaussLegendreNodes[order][i(d)];
        w_dV *= sizeOfPatch[d] * kernels::gaussLegendreWeights[order][i(d)];
-     }
+}
 
      double uAna[numberOfVariables];
      GRMHDbSolver_ADERDG::referenceSolution(x,timeStamp,uAna);

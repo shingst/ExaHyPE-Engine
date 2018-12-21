@@ -51,7 +51,7 @@ void GRMHDb::GRMHDbSolver_ADERDG::init(const std::vector<std::string>& cmdlinear
 	printf("\n**************<<<       DONE       >>>****************************");
 	printf("\n******************************************************************");
   fflush(stdout);
-
+    
 }
 
 void GRMHDb::GRMHDbSolver_ADERDG::adjustPointSolution(const double* const x,const double t,const double dt,double* Q) {
@@ -82,13 +82,8 @@ void GRMHDb::GRMHDbSolver_ADERDG::adjustPointSolution(const double* const x,cons
   }
 }
 
-void GRMHDb::GRMHDbSolver_ADERDG::boundaryValues(
-	const double* const x,
-	const double t,const double dt,
-	const int faceIndex,
-	const int normalNonZero,
-  	const double * const fluxIn,
-	const double* const stateIn,
+void GRMHDb::GRMHDbSolver_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,
+  const double * const fluxIn,const double* const stateIn,
   double *fluxOut,double* stateOut) {
 const int nVar = GRMHDb::AbstractGRMHDbSolver_ADERDG::NumberOfVariables;
   const int order = GRMHDb::AbstractGRMHDbSolver_ADERDG::Order;
@@ -318,3 +313,6 @@ void  GRMHDb::GRMHDbSolver_ADERDG::nonConservativeProduct(const double* const Q,
     /**
      * @TODO LR : document
      */
+void GRMHDb::GRMHDbSolver_ADERDG::multiplyMaterialParameterMatrix(const double* const Q, double* rhs) {
+  // @todo Please implement/augment if required
+}
