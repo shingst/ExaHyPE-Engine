@@ -37,6 +37,7 @@ class exahype::stealing::AggressiveDistributor {
     std::atomic<int> *_remainingTasksToOffload;
     // stores the number of consumers per rank that defines a weight for the load balancing
     int *_consumersPerRank;
+    bool _isEnabled;
 
   public:
     static AggressiveDistributor& getInstance();
@@ -58,6 +59,9 @@ class exahype::stealing::AggressiveDistributor {
  
     void updateLoadDistribution();
     void handleEmergencyOnRank(int rank);
+
+    void enable();
+    void disable();
 
 };
 

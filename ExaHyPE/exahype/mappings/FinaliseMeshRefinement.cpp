@@ -29,6 +29,10 @@
 
 #include "exahype/stealing/PerformanceMonitor.h"
 
+#ifdef DistributedStealing
+#include "exahype/stealing/AggressiveDistributor.h"
+#endif
+
 int exahype::mappings::FinaliseMeshRefinement::NumberOfEnclaveCells = 0;
 int exahype::mappings::FinaliseMeshRefinement::NumberOfSkeletonCells = 0;
 
@@ -251,6 +255,11 @@ void exahype::mappings::FinaliseMeshRefinement::endIteration(
 
 #ifdef DistributedStealing
   exahype::stealing::PerformanceMonitor::getInstance().setTasksPerTimestep(_numberOfEnclaveCells + _numberOfSkeletonCells);
+
+#ifdef StealingStrategyAggressive
+  exahype::stealing::AggressiveDistributor::getInstance().enable();
+#endif
+
 #endif
 
   _backgroundJobsHaveTerminated = false;

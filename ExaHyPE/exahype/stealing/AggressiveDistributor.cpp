@@ -16,7 +16,9 @@
 tarch::logging::Log exahype::stealing::AggressiveDistributor::_log( "exahype::stealing::AggressiveDistributor" );
 
 exahype::stealing::AggressiveDistributor::AggressiveDistributor() :
-  _zeroThreshold(2000*10) {
+  _zeroThreshold(2000*10),
+  _isEnabled(false) {
+
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
   int myRank = tarch::parallel::Node::getInstance().getRank();
 
@@ -49,6 +51,14 @@ exahype::stealing::AggressiveDistributor::~AggressiveDistributor() {
   delete[] _remainingTasksToOffload;
   delete[] _consumersPerRank;
   delete[] _idealTasksToOffload;
+}
+
+void exahype::stealing::AggressiveDistributor::enable() {
+  _isEnabled = true;
+}
+
+void exahype::stealing::AggressiveDistributor::disable() {
+  _isEnabled = false;
 }
 
 void exahype::stealing::AggressiveDistributor::computeIdealLoadDistribution(int enclaveCells, int skeletonCells) {
@@ -158,6 +168,10 @@ void exahype::stealing::AggressiveDistributor::handleEmergencyOnRank(int rank) {
 }
 
 void exahype::stealing::AggressiveDistributor::updateLoadDistribution() {
+
+  if(!_isEnabled) {
+    return;
+  }
 
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
   int myRank = tarch::parallel::Node::getInstance().getRank();
