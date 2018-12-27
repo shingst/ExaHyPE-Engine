@@ -92,8 +92,7 @@ void riemannSolverNonlinear(SolverType& solver, double* FL, double* FR,
     //assertion2(std::isfinite(maxViscousEigenvalue), maxViscousEigenvalueL, maxViscousEigenvalueR);
 
     const auto pi = std::acos(-1); // not constexpr for intel compilers
-    // TODO(Lukas) Dx-idx should not matter here
-    const double factor = 2 * (2 * order + 1) / (dx[0] * std::sqrt(0.5 * pi));
+    const double factor = 2 * (2 * order + 1) / (dx[direction] * std::sqrt(0.5 * pi));
     smax += factor * maxViscousEigenvalue;
   }
 

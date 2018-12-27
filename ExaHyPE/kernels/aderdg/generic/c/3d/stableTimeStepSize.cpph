@@ -63,7 +63,7 @@ double kernels::aderdg::generic::c::stableTimeStepSize(
               }
 
               dt = std::min(dt, cflFactor * PNPM[order] / 
-                      denominator);  // order N = basisSize-1
+                      denominator);
           }
       }
   }

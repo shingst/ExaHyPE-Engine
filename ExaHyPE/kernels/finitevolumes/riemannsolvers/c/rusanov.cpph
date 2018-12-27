@@ -66,7 +66,10 @@ double kernels::finitevolumes::riemannsolvers::c::rusanov(
       maxViscousEigenvalue = std::max(maxViscousEigenvalue, std::abs(sR[i]));
     }
 
-    s_max += 2 * maxViscousEigenvalue / cellSize[normalNonZero];
+    const auto pi = std::acos(-1); // not constexpr for intel compilers
+    const auto factor = std::sqrt(0.5 * pi);
+
+    s_max += 2 * maxViscousEigenvalue / (cellSize[normalNonZero] * factor);
   }
 
   // determine BgradQ from ncp
@@ -139,13 +142,37 @@ double kernels::finitevolumes::riemannsolvers::c::rusanov(
 
   double s_max = -1.0;
   for (int i = 0; i < numberOfVariables; i++) {
-    const double abs_sL_i = std::abs(sL[i]);
-    s_max = std::max( abs_sL_i, s_max );
+    maxEigenvalue = std::max(maxEigenvalue, std::abs(sL[i]));
   }
   for (int i = 0; i < numberOfVariables; i++) {
-    const double abs_sR_i = std::abs(sR[i]);
-    s_max = std::max( abs_sR_i, s_max );
+    maxEigenvalue = std::max(maxEigenvalue, std::abs(sR[i]));
   }
+
+  double s_max = maxEigenvalue;
+
+  if (useViscousFlux) {
+    double maxViscousEigenvalue = 0.0;
+
+    // Compute penalty contribution of diffusive eigenvalues
+    std::fill_n(sL, numberOfVariables, 0.0);
+    std::fill_n(sR, numberOfVariables, 0.0);
+
+    solver.viscousEigenvalues(qL, normalNonZero, sL);
+    solver.viscousEigenvalues(qR, normalNonZero, sR);
+
+    for (int i = 0; i < numberOfVariables; i++) {
+      maxViscousEigenvalue = std::max(maxViscousEigenvalue, std::abs(sL[i]));
+    }
+    for (int i = 0; i < numberOfVariables; i++) {
+      maxViscousEigenvalue = std::max(maxViscousEigenvalue, std::abs(sR[i]));
+    }
+
+    const auto pi = std::acos(-1); // not constexpr for intel compilers
+    const auto factor = std::sqrt(0.5 * pi);
+
+    s_max += 2 * maxViscousEigenvalue / (cellSize[normalNonZero] * factor);
+  }
+
 
   // determine BgradQ from ncp
   double ncp[numberOfData] = {0.0};

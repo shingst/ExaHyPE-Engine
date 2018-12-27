@@ -296,7 +296,7 @@ double kernels::finitevolumes::musclhancock::c::solutionUpdate(
             for (int l = 0; l < numberOfVariables; l++) {
               Qt[l] -= F[2][l] * invCellSize[2];
             }
-          } else if(useFlux) {
+          } else if (useFlux) {
             // x fluxes
             solver.flux(wLx + idx_w(i, j, k, 0), F); // FLx
             for (int l = 0; l < numberOfVariables; l++) {
