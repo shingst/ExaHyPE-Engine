@@ -128,11 +128,20 @@ void NavierStokes::NavierStokesSolver_ADERDG::boundaryValues(const double* const
   std::copy_n(stateIn, NumberOfVariables, stateOut);
   varsOut.j(0) = -varsIn.j(0);
   varsOut.j(1) = -varsIn.j(1);
+  if (scenario->getBoundaryType(faceIndex) == BoundaryType::freeSlipWall) {
+    varsOut.j(normalNonZero) = -varsOut.j(normalNonZero);
+  } else {
+    // No-slip
+    varsOut.j(0) = -varsIn.j(0);
+    varsOut.j(1) = -varsIn.j(1);
 #if DIMENSIONS == 3
-  varsOut.j(2) = -varsIn.j(2);
+    varsOut.j(2) = -varsIn.j(2);
 #endif
+  }
+
 
   if (scenario->getBoundaryType(faceIndex) == BoundaryType::movingWall) {
+    // Wall speed after Riemann solve
     const auto wallSpeed = 1.0;
     varsOut.j(0) = 2 * wallSpeed - varsIn.j(0);
   }
@@ -363,7 +372,8 @@ void NavierStokes::NavierStokesSolver_ADERDG::boundaryConditions( double* const 
 
   }
 
-  if (scenario->getBoundaryType(faceIndex) == NavierStokes::BoundaryType::wall) {
+  if (scenario->getBoundaryType(faceIndex) == NavierStokes::BoundaryType::wall ||
+      scenario->getBoundaryType(faceIndex) == NavierStokes::BoundaryType::freeSlipWall) {
 #if DIMENSIONS == 2
     kernels::idx2 idx_F(Order + 1, NumberOfVariables);
     for (int i = 0; i < (Order + 1); ++i) {
