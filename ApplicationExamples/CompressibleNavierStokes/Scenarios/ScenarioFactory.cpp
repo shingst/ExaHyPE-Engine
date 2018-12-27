@@ -17,6 +17,7 @@
 // Atmospheric Flows
 #include "Scenarios/TwoBubbles.h"
 #include "Scenarios/DensityCurrent.h"
+#include "Scenarios/CosineBubble.h"
 
 // Coupled Scenarios
 #include "Scenarios/CouplingTest.h"
@@ -46,6 +47,8 @@ NavierStokes::ScenarioFactory::createScenario(const std::string& scenarioName) {
     return std::move(ScenarioPtr(new TwoBubbles()));
   } else if (scenarioName == "density-current") {
     return std::move(ScenarioPtr(new DensityCurrent()));
+  } else if (scenarioName == "cosine-bubble") {
+    return std::move(ScenarioPtr(new CosineBubble()));
   } else if (scenarioName == "convergence") {
     return std::move(ScenarioPtr(new ConvergenceTest()));
   } else if (scenarioName == "coupling-test") {
