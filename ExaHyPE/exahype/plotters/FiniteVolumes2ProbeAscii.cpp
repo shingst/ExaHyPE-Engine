@@ -54,7 +54,7 @@ void exahype::plotters::FiniteVolumes2ProbeAscii::init(const std::string& filena
   _plotterParameters    = plotterParameters;
   _filename             = filename;
 
-  if (!plotterParameters.isValueValidDouble("x") || !plotterParameters.isValueValidDouble("y") || ( DIMENSIONS==3 &&!plotterParameters.isValueValidDouble("z"))) {
+  if (!plotterParameters.isValueValidDouble("select/x") || !plotterParameters.isValueValidDouble("select/y") || ( DIMENSIONS==3 &&!plotterParameters.isValueValidDouble("select/z"))) {
     logError("init()", "Probe location is invalid. Require x,y,z values. Have " << plotterParameters.dump());
   }
   
