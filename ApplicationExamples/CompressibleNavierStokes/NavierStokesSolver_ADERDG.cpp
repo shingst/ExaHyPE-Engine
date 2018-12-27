@@ -72,10 +72,12 @@ void NavierStokes::NavierStokesSolver_ADERDG::boundaryValues(const double* const
   std::fill_n(fluxOut, NumberOfVariables, 0.0);
   std::fill_n(stateOut, NumberOfData, 0.0);
 
-  // Set parameters:
-  ns.setHeight(stateOut, x[DIMENSIONS-1]); // TODO(Lukas) Check/refactor?
-  ns.setBackgroundState(stateOut, 0.0, 0.0); // TODO(Lukas) Or extrapolate? Shouldn't matter, right?
-
+  ns.setHeight(stateOut, x[DIMENSIONS-1]);
+  ns.setBackgroundState(stateOut, 0.0, 0.0);
+  // Need to reconstruct the background state in this case.
+  // Extrapolating does not work!
+  assert(!ns.useBackgroundState || scenario->getBoundaryType(faceIndex) ==
+      BoundaryType::hydrostaticWall);
 
   double _F[DIMENSIONS][NumberOfVariables]={0.0};
 #if DIMENSIONS == 2
@@ -117,7 +119,8 @@ void NavierStokes::NavierStokesSolver_ADERDG::boundaryValues(const double* const
 
   assertion(scenario->getBoundaryType(faceIndex) == BoundaryType::wall ||
                  scenario->getBoundaryType(faceIndex) == BoundaryType::hydrostaticWall ||
-                 scenario->getBoundaryType(faceIndex) == BoundaryType::movingWall);
+                 scenario->getBoundaryType(faceIndex) == BoundaryType::movingWall ||
+                 scenario->getBoundaryType(faceIndex) == BoundaryType::freeSlipWall);
 
   // Set no slip wall boundary conditions.
   ReadOnlyVariables varsIn(stateIn);
@@ -126,8 +129,7 @@ void NavierStokes::NavierStokesSolver_ADERDG::boundaryValues(const double* const
   // Rho/E extrapolated, velocity mirrored.
   // Leads to zero velocity after Riemann solver.
   std::copy_n(stateIn, NumberOfVariables, stateOut);
-  varsOut.j(0) = -varsIn.j(0);
-  varsOut.j(1) = -varsIn.j(1);
+
   if (scenario->getBoundaryType(faceIndex) == BoundaryType::freeSlipWall) {
     varsOut.j(normalNonZero) = -varsOut.j(normalNonZero);
   } else {
@@ -146,12 +148,6 @@ void NavierStokes::NavierStokesSolver_ADERDG::boundaryValues(const double* const
     varsOut.j(0) = 2 * wallSpeed - varsIn.j(0);
   }
 
-  // TODO(Lukas) Is this correct? Maybe just extrapolate?
-  if (scenario->getUseAdvection()) {
-    //varsOut[NumberOfVariables-1] = -varsIn[NumberOfVariables-1];
-    varsOut[NumberOfVariables-1] = varsIn[NumberOfVariables-1];
-  }
-
   // Extrapolate gradient.
   std::copy_n(gradStateIn, gradSize, gradStateOut.data());
 
@@ -161,7 +157,8 @@ void NavierStokes::NavierStokesSolver_ADERDG::boundaryValues(const double* const
   // The incoming flux is reconstructed in boundaryConditions.
 
   // Then compute the outgoing flux.
-  if (scenario->getBoundaryType(faceIndex) == BoundaryType::hydrostaticWall) {
+  if ( scenario->getBoundaryType(faceIndex) == BoundaryType::hydrostaticWall) {
+    // TODO(Lukas): Add support for advection-coupling + hydrostatic flows?
     // We need to reconstruct the temperature gradient here.
     const auto posZ = x[DIMENSIONS-1];
 
@@ -176,19 +173,15 @@ void NavierStokes::NavierStokesSolver_ADERDG::boundaryValues(const double* const
     const auto pressure = computeHydrostaticPressure(ns, scenario->getGravity(),
             posZ, scenario->getBackgroundPotentialTemperature());
     const auto T = potentialTToT(ns, pressure, scenario->getBackgroundPotentialTemperature());
-    const auto rho = pressure / (ns.gasConstant * T);
-    // TODO(Lukas) What should we do in case of an advection-scenarios?
+    varsOut.rho() = pressure / (ns.gasConstant * T);
 
-    // TODO(Lukas) Is background state necessary here?
-    ns.setBackgroundState(stateOut, rho, pressure);
-    auto E = -1;
+    ns.setBackgroundState(stateOut, varsOut.rho(), pressure);
     if (ns.useGravity) {
-      E = ns.evaluateEnergy(rho, pressure, varsOut.j(), ns.getZ(stateIn), x[DIMENSIONS-1]);
+      varsOut.E() = ns.evaluateEnergy(varsOut.rho(), pressure, varsOut.j(), ns.getZ(stateIn),
+              x[DIMENSIONS-1]);
     } else {
-      E = ns.evaluateEnergy(rho, pressure, varsOut.j(), ns.getZ(stateIn));
+      varsOut.E() = ns.evaluateEnergy(varsOut.rho(), pressure, varsOut.j(), ns.getZ(stateIn));
     }
-    varsOut.E() = E;
-    varsOut.rho() = rho;
 
     // Use no viscous effects and use equilibrium temperature gradient.
     ns.evaluateFlux(stateOut, gradStateOut.data(), F, false, true, equilibriumTemperatureGradient);
@@ -369,7 +362,6 @@ void NavierStokes::NavierStokesSolver_ADERDG::boundaryConditions( double* const 
     double* FR = fluxOut; const double* const QR = stateOut;
 
     riemannSolver(FL,FR,QL,QR,t,dt,cellSize,direction,true,faceIndex);
-
   }
 
   if (scenario->getBoundaryType(faceIndex) == NavierStokes::BoundaryType::wall ||
