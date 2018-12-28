@@ -355,7 +355,7 @@ double exahype::solvers::LimitingADERDGSolver::updateTimeStepSizes(
 
 void exahype::solvers::LimitingADERDGSolver::rollbackToPreviousTimeStep(
     SolverPatch& solverPatch,CellInfo& cellInfo,const bool fused) const {
-  synchroniseTimeStepping(solverPatch,cellInfo);
+  synchroniseTimeStepping(solverPatch,cellInfo); // TODO(Dominic): Correct?
   if ( fused ) {
     _solver->rollbackToPreviousTimeStepFused(solverPatch);
   } else {
@@ -368,8 +368,6 @@ void exahype::solvers::LimitingADERDGSolver::adjustSolutionDuringMeshRefinementB
     SolverPatch& solverPatch,
     CellInfo& cellInfo,
     const bool isInitialMeshRefinement) {
-  synchroniseTimeStepping(solverPatch,cellInfo);
-
   if ( solverPatch.getType()==SolverPatch::Type::Cell ) {
     if (solverPatch.getRefinementEvent()==SolverPatch::RefinementEvent::Prolongating) {
       _solver->prolongateVolumeData(solverPatch,isInitialMeshRefinement);
@@ -424,6 +422,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
   const int element        = cellInfo.indexOfADERDGCellDescription(solverNumber);
   if ( element != NotFound ) {
     SolverPatch& solverPatch = cellInfo._ADERDGCellDescriptions[element];
+    synchroniseTimeStepping(solverPatch,cellInfo);
     solverPatch.setHasCompletedLastStep(false);
 
     // Write the previous limiter status back onto the patch for all cell description types
@@ -536,6 +535,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::u
   const int solverElement = cellInfo.indexOfADERDGCellDescription(solverNumber);
   if ( solverElement != NotFound ) {
     SolverPatch& solverPatch = cellInfo._ADERDGCellDescriptions[solverElement];
+    synchroniseTimeStepping(solverPatch,cellInfo);
     solverPatch.setHasCompletedLastStep(false);
 
     // Write the previous limiter status back onto the patch for all cell description types
@@ -610,6 +610,8 @@ void exahype::solvers::LimitingADERDGSolver::adjustSolutionDuringMeshRefinement(
   const int solverElement = cellInfo.indexOfADERDGCellDescription(solverNumber);
   if ( solverElement != NotFound ) {
     SolverPatch& solverPatch = cellInfo._ADERDGCellDescriptions[solverElement];
+    synchroniseTimeStepping(solverPatch,cellInfo);
+
     const bool isInitialMeshRefinement = getMeshUpdateEvent()==MeshUpdateEvent::InitialRefinementRequested;
     if ( exahype::solvers::Solver::SpawnAMRBackgroundJobs ) {
       solverPatch.setHasCompletedLastStep(false);
@@ -1172,9 +1174,6 @@ void exahype::solvers::LimitingADERDGSolver::mergeNeighboursData(
     waitUntilCompletedLastStep<SolverPatch>(solverPatch1,false,false); // must come before any other operation
     waitUntilCompletedLastStep<SolverPatch>(solverPatch2,false,false);
 
-    synchroniseTimeStepping(solverPatch1,cellInfo1);
-    synchroniseTimeStepping(solverPatch2,cellInfo2);
-
     //
     // 1. Solve the Riemann problems/copy boundary layers
     //
@@ -1299,8 +1298,6 @@ void exahype::solvers::LimitingADERDGSolver::mergeWithBoundaryData(
     SolverPatch& solverPatch = cellInfo._ADERDGCellDescriptions[solverElement];
 
     waitUntilCompletedLastStep<SolverPatch>(solverPatch,false,false); // must come before any other operation
-
-    synchroniseTimeStepping(solverPatch,cellInfo);
 
     if (solverPatch.getType()==SolverPatch::Type::Cell) {
       if (solverPatch.getLevel()==getMaximumAdaptiveMeshLevel()) {
