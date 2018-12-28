@@ -18,7 +18,7 @@ template = json.loads(r'''
   },
   "computational_domain": {
     "dimension": 2,
-    "end_time": 0.6,
+    "end_time": 0.55,
     "offset": [
       0.0,
       0.0
@@ -29,14 +29,14 @@ template = json.loads(r'''
     ]
   },
   "shared_memory": {
-    "cores": 14,
-    "background_job_consumers": 7,
+    "cores": 28,
+    "background_job_consumers": 14,
     "properties_file": "sharedmemory.properties",
     "autotuning_strategy": "dummy",
     "manual_pinning": false
   },
   "distributed_memory": {
-      "ranks_per_node": 2,
+      "ranks_per_node": 1,
       "load_balancing_strategy": "greedy_naive",
       "load_balancing_type": "static",
       "node_pool_strategy": "fair",
@@ -49,7 +49,7 @@ template = json.loads(r'''
     "spawn_predictor_as_background_thread": true,
     "spawn_amr_background_threads": true,
     "disable_vertex_exchange_in_time_steps": true,
-    "time_step_batch_factor": 1.0,
+    "time_step_batch_factor": 0.0,
     "disable_metadata_exchange_in_batched_time_steps": true,
     "double_compression": 0.0,
     "spawn_double_compression_as_background_thread": true
@@ -96,12 +96,12 @@ template = json.loads(r'''
       },
       "plotters": [
         {
-          "type": "vtu::Legendre::vertices::ascii",
-          "name": "Plotter",
+          "type": "user::defined ErrorWriter",
+          "name": "ErrorWriter",
           "time": 0.5,
           "repeat": 0.5,
           "output": "./results/solution",
-          "variables": 5
+          "variables": 4
         }
       ]
     }
@@ -291,10 +291,10 @@ def main():
     my_env['SHAREDMEM'] = 'TBB'
     my_env['MODE'] = 'Release'
 
-    user_config = {'nodes': 5,
-                   'tasks_per_node': 2,
-                   'threads_per_task': 14,
-                   'background_threads_per_task': 7,
+    user_config = {'nodes': 1,
+                   'tasks_per_node': 1,
+                   'threads_per_task': 28,
+                   'background_threads_per_task': 14,
 
                    'tmp_dir': os.path.expanduser('/gss/scratch/pr83no/ga24dib2/exahype/'),                           
                    'results_dir': os.path.expanduser('/gpfs/work/pr83no/ga24dib2/exahype/results/'),                 
@@ -303,7 +303,7 @@ def main():
     }
     user_config['total_tasks'] = user_config['nodes'] * user_config['tasks_per_node']                                
 
-    order_grid = [1,4]
+    order_grid = [1,2,3,4,5,6]
     max_factor = 4
     factor_grid = range(1, max_factor+1)
 
