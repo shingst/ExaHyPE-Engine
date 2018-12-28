@@ -207,7 +207,7 @@ bool NavierStokes::NavierStokesSolver_ADERDG::isPhysicallyAdmissible(
       return false;
     }
 
-    // We now need to to a pointwise check for the primitive variables
+    // We now need to do a pointwise check for the primitive variables
     // pressure and Z.
     // TODO(Lukas) At least refactor this. And 3D!
 #if DIMENSIONS == 2
@@ -234,7 +234,6 @@ bool NavierStokes::NavierStokesSolver_ADERDG::isPhysicallyAdmissible(
         // Surprisingly, this is necessary.
         for (int v = 0; v < NumberOfVariables; v++) {
           if (!std::isfinite(solution[v])) {
-            //std::cout << "Solution is " << solution[v] << "." << std::endl;
             return false;
           }
         }
@@ -319,8 +318,6 @@ void NavierStokes::NavierStokesSolver_ADERDG::viscousFlux(const double *const Q,
 }
 
 double NavierStokes::NavierStokesSolver_ADERDG::stableTimeStepSize(const double* const luh, const tarch::la::Vector<DIMENSIONS,double>& dx) {
-  // TODO(Lukas) Integrate diffusive time step size into standard timestep size!
-  //return (0.7/0.9) * stableDiffusiveTimeStepSize<NavierStokesSolver_ADERDG>(*static_cast<NavierStokesSolver_ADERDG*>(this),luh,dx);
   return (0.7/0.9) * kernels::aderdg::generic::c::stableTimeStepSize<NavierStokesSolver_ADERDG,true>(*static_cast<NavierStokesSolver_ADERDG*>(this),luh,dx);
 }
 
