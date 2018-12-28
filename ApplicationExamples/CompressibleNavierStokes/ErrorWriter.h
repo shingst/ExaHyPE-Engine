@@ -10,6 +10,7 @@
 #include "NavierStokesSolver_ADERDG.h"
 #include "exahype/plotters/ADERDG2UserDefined.h"
 #include <array>
+#include <chrono>
 
 namespace NavierStokes {
 class ErrorWriter;
@@ -22,10 +23,12 @@ class NavierStokes::ErrorWriter : public exahype::plotters::ADERDG2UserDefined {
   bool isMpi;
   NavierStokesSolver_ADERDG* solver;
 
-  using Array_t = std::array<double, NavierStokesSolver_ADERDG::NumberOfVariables>;
+  using Array_t = std::array<long double, NavierStokesSolver_ADERDG::NumberOfVariables>;
   double hmin;
   Array_t errorL1, errorL2, errorLInf;
   Array_t normL1Ana, normL2Ana, normLInfAna;
+  using Time_t = std::chrono::time_point<std::chrono::high_resolution_clock>;
+  Time_t startTime;
 
  public:
   void init(const std::string& filename, int orderPlusOne, int solverUnknowns,

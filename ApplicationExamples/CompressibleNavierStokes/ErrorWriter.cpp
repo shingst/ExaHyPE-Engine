@@ -50,7 +50,7 @@ void NavierStokes::ErrorWriter::plotPatch(
 
   kernels::idx4 idx(basisSize, basisSize, basisSize, numberOfData);
   dfor(i, numberOfQuadPoints) {
-    double w_dV = 1.0;
+    long double w_dV = 1.0;
     for (int d = 0; d < DIMENSIONS; d++) {
       x[d] = offsetOfPatch[d] +
              sizeOfPatch[d] * quadratureNodes[i(d)];
@@ -76,14 +76,17 @@ void NavierStokes::ErrorWriter::plotPatch(
               order,
               u);
 
-      const double uDiff = std::abs(curNum - curAna);
+      const long double uDiff = std::abs(
+              static_cast<long double>(curNum) -
+              static_cast<long double>(curAna));
       errorL2[v] += uDiff * uDiff * w_dV;
       errorL1[v] += uDiff * w_dV;
       errorLInf[v] = std::max(errorLInf[v], uDiff);
 
       normL1Ana[v] += std::abs(uAna[v]) * w_dV;
       normL2Ana[v] += uAna[v] * uAna[v] * w_dV;
-      normLInfAna[v] = std::max(normLInfAna[v], std::abs(uAna[v]));
+      normLInfAna[v] = std::max(normLInfAna[v],
+              static_cast<long double>(std::abs(uAna[v])));
     }
   }
 }
@@ -104,6 +107,11 @@ void NavierStokes::ErrorWriter::finishPlotting() {
   constexpr int numberOfVariables =
       AbstractNavierStokesSolver_ADERDG::NumberOfVariables;
 
+  // Compute elapsed simulation time.
+  const auto endTime = std::chrono::high_resolution_clock::now();
+  const auto timeDiff = std::chrono::duration_cast<std::chrono::milliseconds>(
+          endTime - startTime).count();
+
   // Check whether our file exists already.
   const bool isExisting = [&]() -> bool {
     auto file = std::ifstream(filename);
@@ -118,7 +126,7 @@ void NavierStokes::ErrorWriter::finishPlotting() {
   assert(file.is_open());
 
   // TODO(Lukas) Is this enough precision?
-  const auto precision = std::numeric_limits<double>::max_digits10 + 5;
+  const auto precision = std::numeric_limits<long double>::max_digits10 + 5;
 
   // Write csv header in case of new file.
   if (!isExisting) {
@@ -127,7 +135,7 @@ void NavierStokes::ErrorWriter::finishPlotting() {
     for (int i = 0; i < numberOfVariables; ++i) {
       file << "var" << i << ",";
     }
-    file << "time" << std::endl;
+    file << "time" << "," << "runTime" << std::endl;
   }
 
   auto plotRow = [&](const std::string& normType, const Array_t arr) {
@@ -137,7 +145,7 @@ void NavierStokes::ErrorWriter::finishPlotting() {
     for (int i = 0; i < numberOfVariables; ++i) {
       file << std::setprecision(precision) << std::fixed << arr[i] << ",";
     }
-    file << timeStamp << std::endl;
+    file << timeStamp << "," << timeDiff << std::endl;
   };
 
   // Note that we write the l2-norms without applying the square root.
@@ -160,7 +168,7 @@ void NavierStokes::ErrorWriter::finishPlotting() {
 
   // Now pretty print for console:
   auto prettyPrintRow = [&](const std::string& normType, const Array_t arr) {
-    std::cout << normType << "-Error for order "
+    std::cout << "[" << timeDiff << "ms]: " << normType << "-Error for order "
               << AbstractNavierStokesSolver_ADERDG::Order << " and hmin of " << hmin
               << " at time " << timeStamp << ":" << std::endl;
 
@@ -205,4 +213,6 @@ void NavierStokes::ErrorWriter::init(
   fs << ".csv";
 
   this->filename = fs.str();
+
+  startTime = std::chrono::high_resolution_clock::now();
 }
