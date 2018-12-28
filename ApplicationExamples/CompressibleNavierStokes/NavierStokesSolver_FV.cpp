@@ -116,8 +116,8 @@ void NavierStokes::NavierStokesSolver_FV::algebraicSource(const tarch::la::Vecto
 std::vector<double> NavierStokes::NavierStokesSolver_FV::mapGlobalObservables(const double *const Q,
         const tarch::la::Vector<DIMENSIONS,double>& dx) const {
   // TODO(Lukas): Implementation is really slow but should work.
-  return ::NavierStokes::mapGlobalObservablesFV<PatchSize, GhostLayerWidth, NumberOfVariables,
-          NumberOfVariables, NumberOfGlobalObservables>(
+   return ::NavierStokes::mapGlobalObservablesFV<PatchSize, GhostLayerWidth, NumberOfVariables,
+          NumberOfParameters, NumberOfGlobalObservables>(
           Q, dx, scenarioName, ns, amrSettings);
 }
 
