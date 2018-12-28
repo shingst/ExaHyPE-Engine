@@ -16,6 +16,7 @@ public:
   double getC_v() const override;
   double getC_p() const override;
   double getGasConstant() const override;
+  BoundaryType getBoundaryType(int faceId) override;
   bool getUseAdvection() const override;
   void source(const tarch::la::Vector<DIMENSIONS, double>& x, double t,
               const PDE& ns, const double* const Q, double* S) override;

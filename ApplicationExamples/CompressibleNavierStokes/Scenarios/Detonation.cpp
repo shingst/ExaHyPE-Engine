@@ -56,7 +56,7 @@ void NavierStokes::Detonation::initialValues(const double* const x,
   assert(ns.getZ(vars.data()) == 0 || ns.getZ(vars.data()) == rhoU);
 }
 double NavierStokes::Detonation::getMolecularDiffusionCoeff() const {
-  return 0.0; // Euler, for now.
+  return 0.0;
 }
 
 double NavierStokes::Detonation::getQ0() const {
@@ -99,4 +99,8 @@ double NavierStokes::Detonation::getGasConstant() const {
 
 bool NavierStokes::Detonation::getUseAdvection() const {
   return true;
+}
+
+NavierStokes::BoundaryType NavierStokes::Detonation::getBoundaryType(int faceId) {
+  return BoundaryType::freeSlipWall;
 }
