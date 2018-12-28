@@ -44,7 +44,7 @@ void NavierStokes::NavierStokesSolver_FV::boundaryValues(
     const double* const x,
     const double t,const double dt,
     const int faceIndex,
-    const int d,
+    const int normalNonZero,
     const double* const stateIn,
     double* stateOut) {
   // No slip, 2D
@@ -57,16 +57,31 @@ void NavierStokes::NavierStokesSolver_FV::boundaryValues(
   // All bcs here are walls!
   assertion(scenario->getBoundaryType(faceIndex) == BoundaryType::wall ||
                  scenario->getBoundaryType(faceIndex) == BoundaryType::hydrostaticWall ||
-                 scenario->getBoundaryType(faceIndex) == BoundaryType::movingWall);
+                 scenario->getBoundaryType(faceIndex) == BoundaryType::movingWall ||
+                 scenario->getBoundaryType(faceIndex) == BoundaryType::freeSlipWall);
+
+  ns.setHeight(stateOut, x[DIMENSIONS-1]);
+  ns.setBackgroundState(stateOut, 0.0, 0.0);
+  // Need to reconstruct the background state in this case.
+  // Extrapolating does not work!
+  assert(!ns.useBackgroundState || scenario->getBoundaryType(faceIndex) ==
+      BoundaryType::hydrostaticWall);
 
   // Rho/E extrapolated, velocity mirrored.
-  // Leads to zero velocity after Riemann solver.
   std::copy_n(stateIn, NumberOfVariables, stateOut);
-  varsOut.j(0) = -varsIn.j(0);
-  varsOut.j(1) = -varsIn.j(1);
+
+  if (scenario->getBoundaryType(faceIndex) == BoundaryType::freeSlipWall) {
+    // Normal velocity zero after Riemann.
+    varsOut.j(normalNonZero) = -varsOut.j(normalNonZero);
+  } else {
+    // No-slip
+    // All velocities zero after Riemann.
+    varsOut.j(0) = -varsIn.j(0);
+    varsOut.j(1) = -varsIn.j(1);
 #if DIMENSIONS == 3
-  varsOut.j(2) = -varsIn.j(2);
+    varsOut.j(2) = -varsIn.j(2);
 #endif
+  }
 
   if (scenario->getBoundaryType(faceIndex) == BoundaryType::movingWall) {
     const auto wallSpeed = 1.0;

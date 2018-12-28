@@ -127,13 +127,14 @@ void NavierStokes::NavierStokesSolver_ADERDG::boundaryValues(const double* const
   Variables varsOut(stateOut);
 
   // Rho/E extrapolated, velocity mirrored.
-  // Leads to zero velocity after Riemann solver.
   std::copy_n(stateIn, NumberOfVariables, stateOut);
 
   if (scenario->getBoundaryType(faceIndex) == BoundaryType::freeSlipWall) {
+    // Normal velocity zero after Riemann.
     varsOut.j(normalNonZero) = -varsOut.j(normalNonZero);
   } else {
     // No-slip
+    // All velocities zero after Riemann.
     varsOut.j(0) = -varsIn.j(0);
     varsOut.j(1) = -varsIn.j(1);
 #if DIMENSIONS == 3
