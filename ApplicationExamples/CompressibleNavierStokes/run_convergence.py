@@ -289,6 +289,7 @@ def main():
     # TODO: Maybe extract to shell script?
     my_env = os.environ.copy()
     my_env['SHAREDMEM'] = 'TBB'
+    my_env['DISTRIBUTEDMEM'] = 'None'
     my_env['MODE'] = 'Release'
 
     user_config = {'nodes': 1,
