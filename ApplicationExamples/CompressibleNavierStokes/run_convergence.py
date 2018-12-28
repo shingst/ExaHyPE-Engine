@@ -57,7 +57,7 @@ template = json.loads(r'''
   "solvers": [
     {
       "type": "ADER-DG",
-      "name": "NavierStokesSolverDG",
+      "name": "NavierStokesSolver_ADERDG",
       "order": 1,
       "maximum_mesh_size": 0.37,
       "maximum_mesh_depth": 10,
