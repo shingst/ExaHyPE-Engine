@@ -225,7 +225,7 @@ class Controller:
                 msg = str(e); length=len(msg); maxLength=600
                 msg = msg[0:min(maxLength,length)]
                 if length>maxLength:
-                    msg += "\n(Error message cut off after "+maxLength+" characters. Run with -v or -d to see the full message.)"
+                    msg += "\n(Error message cut off after "+str(maxLength)+" characters. Run with -v or -d to see the full message.)"
                 self.log.error("Specification file does not hold a valid ExaHyPE specification, it did not pass the schema validation step. The error message is: %s" % 
                 msg)
             self.log.exception(e)
