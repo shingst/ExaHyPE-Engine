@@ -160,11 +160,11 @@ void NavierStokes::PDE::evaluateEigenvalues(const double* const Q, const int d, 
 void NavierStokes::PDE::evaluateDiffusiveEigenvalues(const double* const Q, const int d, double* lambda) const {
   ReadOnlyVariables vars(Q);
 
-  const auto pressure = evaluatePressure(vars.E(), vars.rho(), vars.j(), getZ(Q), getHeight(Q));
+  //const auto pressure = evaluatePressure(vars.E(), vars.rho(), vars.j(), getZ(Q), getHeight(Q));
   //const double pressure = evaluatePressure(vars.E(), vars.rho(), vars.j());
 
-  const double T = evaluateTemperature(vars.rho(), pressure);
-  const double viscosity = evaluateViscosity(T);
+  //const double T = evaluateTemperature(vars.rho(), pressure);
+  const double viscosity = referenceViscosity; //evaluateViscosity(T);
 
   // TODO(Lukas): Need to init to zero here?
   std::fill_n(lambda, vars.variables(), 0.0);
