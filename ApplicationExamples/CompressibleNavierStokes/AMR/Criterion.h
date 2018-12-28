@@ -44,9 +44,8 @@ std::vector<double> mapGlobalObservablesFV(
   // TODO(Lukas) Stack allocate this?
   auto QDG =
       std::vector<double>(std::pow(Order + 1, DIMENSIONS) * NumberOfData);
-  kernels::limiter::generic::c::projectOnDGSpace<Order + 1, NumberOfVariables,
-                                                 GhostLayerWidth>(Q,
-                                                                  QDG.data());
+  kernels::limiter::generic::c::projectOnDGSpace<Order + 1,
+       NumberOfData, GhostLayerWidth>(Q, QDG.data());
 
   return ::NavierStokes::mapGlobalObservables(
       QDG.data(), dx, scenarioName, ns, amrSettings, Order, NumberOfVariables,
