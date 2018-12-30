@@ -1,7 +1,7 @@
 #include "VarianceHelper.h"
 
 std::pair<double, double> mergeVariance(double mean0, double mean1, double var0,
-                                        double var1, int count0, int count1) {
+                                        double var1, double count0, double count1) {
   // Merge using Chan et al. algorithm
   // https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Parallel_algorithm
   if (count0 == 0) {

@@ -81,8 +81,8 @@ void NavierStokes::reduceGlobalObservables(
   const auto mean1 = curGlobalObservables[0];
   const auto var0 = reducedGlobalObservables[1];
   const auto var1 = curGlobalObservables[1];
-  const auto count0 = static_cast<int>(reducedGlobalObservables[2]);
-  const auto count1 = static_cast<int>(curGlobalObservables[2]);
+  const auto count0 = reducedGlobalObservables[2];
+  const auto count1 = curGlobalObservables[2];
 
   auto mergedMean = 0.0;
   auto mergedVariance = 0.0;
