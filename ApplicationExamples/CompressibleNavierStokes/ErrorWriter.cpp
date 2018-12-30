@@ -33,6 +33,11 @@ void NavierStokes::ErrorWriter::plotPatch(
     const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
     const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* u,
     double timeStamp) {
+  if (solver->scenarioName == "two-bubbles") {
+    // Only measure time!
+    return;
+  }
+
   constexpr int numberOfVariables = NavierStokesSolver_ADERDG::NumberOfVariables;
   constexpr int numberOfParameters = NavierStokesSolver_ADERDG::NumberOfParameters;
   constexpr int numberOfData = numberOfVariables + numberOfParameters;
@@ -131,7 +136,7 @@ void NavierStokes::ErrorWriter::finishPlotting() {
   // Write csv header in case of new file.
   if (!isExisting) {
     file << std::setprecision(precision) << std::fixed;
-    file << "norm,order,hmin,";
+    file << "nbackgroundJobs,norm,order,hmin,";
     for (int i = 0; i < numberOfVariables; ++i) {
       file << "var" << i << ",";
     }
@@ -139,7 +144,9 @@ void NavierStokes::ErrorWriter::finishPlotting() {
   }
 
   auto plotRow = [&](const std::string& normType, const Array_t arr) {
-    file << std::setprecision(precision) << std::fixed << normType << ","
+    file << std::setprecision(precision) << std::fixed
+         << solver->MaxNumberOfRunningBackgroundJobConsumerTasksDuringTraversal << ","
+         << normType << ","
          << AbstractNavierStokesSolver_ADERDG::Order << "," << hmin << ",";
 
     for (int i = 0; i < numberOfVariables; ++i) {
