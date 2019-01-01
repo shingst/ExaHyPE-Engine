@@ -67,7 +67,7 @@ double kernels::finitevolumes::commons::c::stableTimeStepSize(
           double s_max_y = *std::max_element(lambda, lambda + numberOfVariables);
 
           if(useViscousFlux){
-              solver.viscousEigenvalues(luh + idx(j, k, 0), 0, lambda);
+              solver.viscousEigenvalues(luh + idx(j, k, 0), 1, lambda);
               std::transform(lambda, lambda + numberOfVariables, lambda,
                       std::abs<double>);
               const double s_max_y_vis = *std::max_element(lambda, lambda + numberOfVariables);
