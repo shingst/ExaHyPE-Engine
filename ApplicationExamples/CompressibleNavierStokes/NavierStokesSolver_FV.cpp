@@ -72,7 +72,7 @@ void NavierStokes::NavierStokesSolver_FV::boundaryValues(
 
   if (scenario->getBoundaryType(faceIndex) == BoundaryType::freeSlipWall) {
     // Normal velocity zero after Riemann.
-    varsOut.j(normalNonZero) = -varsOut.j(normalNonZero);
+    varsOut.j(normalNonZero) = -varsIn.j(normalNonZero);
   } else {
     // No-slip
     // All velocities zero after Riemann.
