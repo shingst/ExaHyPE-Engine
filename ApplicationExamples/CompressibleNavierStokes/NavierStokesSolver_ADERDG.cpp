@@ -261,7 +261,10 @@ exahype::solvers::Solver::RefinementControl NavierStokes::NavierStokesSolver_ADE
     const int level) {
 
   if (!amrSettings.useAMR) {
-    return exahype::solvers::Solver::RefinementControl::Keep;
+    // Default: Delete cells.
+    // This is useful when one wants to use limiting-guided refinement
+    // without another source of AMR.
+    return exahype::solvers::Solver::RefinementControl::Erase;
   }
 
   if (t == 0) {
