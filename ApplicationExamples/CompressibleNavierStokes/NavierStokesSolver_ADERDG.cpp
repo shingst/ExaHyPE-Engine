@@ -278,10 +278,7 @@ exahype::solvers::Solver::RefinementControl NavierStokes::NavierStokesSolver_ADE
   const auto countGlobal = _globalObservables[2];
   const auto meanGlobal = _globalObservables[0];
 
-  // Computed variance applies Bessel's correction.
-  // As we use the complete population to compute the statistics
-  // this is unnecessary.
-  const auto varianceGlobal = (countGlobal - 1)/countGlobal * _globalObservables[1];
+  const auto varianceGlobal = _globalObservables[1];
   const auto stdGlobal = std::sqrt(varianceGlobal);
 
   const auto factorRefine = amrSettings.factorRefine;
