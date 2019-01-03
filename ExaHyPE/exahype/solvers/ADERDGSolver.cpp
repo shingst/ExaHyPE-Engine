@@ -648,7 +648,11 @@ int exahype::solvers::ADERDGSolver::getDMPObservables() const {
   return _DMPObservables;
 }
 
-int exahype::solvers::ADERDGSolver::getMinimumRefinementStatusForBufferCell() const {
+int exahype::solvers::ADERDGSolver::getMinRefinementStatusForSerparationCell() const {
+  return _minRefinementStatusForSeparationCell;
+}
+
+int exahype::solvers::ADERDGSolver::getMinRefinementStatusForBufferCell() const {
   return _minRefinementStatusForBufferCell;
 }
 

@@ -813,7 +813,7 @@ void exahype::solvers::LimitingADERDGSolver::determineMinAndMax(
       if ( solverPatch.getRefinementStatus()<-1 ) {
         logError("determineMinAndMax(...)","solverPatch.getRefinementStatus()<-1 for cell="<<solverPatch.toString());
         std::abort();
-      } else if (solverPatch.getRefinementStatus()<_solver->getMinimumRefinementStatusForBufferCell()) {
+      } else if (solverPatch.getRefinementStatus()<_solver->getMinRefinementStatusForBufferCell()) {
         determineSolverMinAndMax(solverPatch,true);
       } else { // solverPatch.getRefinementStatus()>=ADERDGSolver::MinimumLimiterStatusForActiveFVPatch
         LimiterPatch& limiterPatch = getLimiterPatch(solverPatch,cellInfo);
@@ -1134,7 +1134,7 @@ double exahype::solvers::LimitingADERDGSolver::recomputeSolutionLocally(
           &&
           solverPatch.getRefinementStatus() < _solver->getMinRefinementStatusForTroubledCell()
           &&                                                                                                 // is not troubled and
-          (solverPatch.getRefinementStatus() >= _solver->getMinimumRefinementStatusForBufferCell() ||     // holds an active FV patch                                                                                                 // or
+          (solverPatch.getRefinementStatus() >= _solver->getMinRefinementStatusForBufferCell() ||     // holds an active FV patch                                                                                                 // or
           solverPatch.getPreviousRefinementStatus() >=_solver->getMinRefinementStatusForTroubledCell())  // was previously troubled but is no more
       ) {
         _solver->performPredictionAndVolumeIntegral(
@@ -1319,7 +1319,7 @@ void exahype::solvers::LimitingADERDGSolver::mergeWithBoundaryData(
     if (
         solverPatch.getType()==SolverPatch::Type::Cell &&
         (solverPatch.getLevel()!=getMaximumAdaptiveMeshLevel() || // if then
-        solverPatch.getRefinementStatus()<_solver->getMinRefinementStatusForTroubledCell()-1)
+        solverPatch.getRefinementStatus()<_solver->_minRefinementStatusForTroubledCell-1)
     ) {
       _solver->mergeWithBoundaryData(solverNumber,cellInfo,posCell,posBoundary);
     } else if (
@@ -1476,7 +1476,7 @@ void exahype::solvers::LimitingADERDGSolver::mergeWithNeighbourDataBasedOnLimite
       SolverPatch& solverPatch = cellInfo._ADERDGCellDescriptions[solverElement];
       assertion1(solverPatch.getRefinementStatus()>=ADERDGSolver::Pending,solverPatch.toString());
 
-      if ( solverPatch.getRefinementStatus()<_solver->getMinimumRefinementStatusForBufferCell() ) {
+      if ( solverPatch.getRefinementStatus()<_solver->getMinRefinementStatusForBufferCell() ) {
         _limiter->dropNeighbourData(fromRank,x,level); // !!! Receive order must be inverted in neighbour comm.
         if ( !isRecomputation ) {
           _solver->mergeWithNeighbourData(fromRank,solverNumber,cellInfo,src,dest,x,level);

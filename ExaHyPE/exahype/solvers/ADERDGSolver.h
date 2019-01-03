@@ -1323,28 +1323,20 @@ public:
   /**
    * !!! LimitingADERDGSolver functionality !!!
    *
-   * \return the number of Limiter/FV helper layers
-   * surrounding a troubled cell.
-   *
-   * The helper layers of the the ADER-DG solver have
-   * the same cardinality.
-   * We thus have a total number of helper layers
-   * which is twice the returned value.
    */
-  int getMinimumRefinementStatusForBufferCell() const;
+  int getMinRefinementStatusForSepaationCell() const;
 
   /**
    * !!! LimitingADERDGSolver functionality !!!
    *
-   * \return the number of Limiter/FV helper layers
-   * surrounding a troubled cell.
-   *
-   * The helper layers of the the ADER-DG solver have
-   * the same cardinality.
-   * We thus have a total number of helper layers
-   * which is twice the returned value.
    */
-  int getMinimumRefinementStatusForTroubledCell() const;
+  int getMinRefinementStatusForBufferCell() const;
+
+  /**
+   * !!! LimitingADERDGSolver functionality !!!
+   *
+   */
+  int getMinRefinementStatusForTroubledCell() const;
 
   MeshUpdateEvent getNextMeshUpdateEvent() const final override;
   void updateNextMeshUpdateEvent(MeshUpdateEvent meshUpdateEvent) final override;
