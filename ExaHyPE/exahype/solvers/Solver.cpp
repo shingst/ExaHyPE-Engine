@@ -601,13 +601,13 @@ int exahype::solvers::Solver::getMaxRefinementStatus() {
         result =
             std::max(result,
                 static_cast<exahype::solvers::ADERDGSolver*>(solver)->
-                getMinimumRefinementStatusForTroubledCell());
+                getMinRefinementStatusForTroubledCell());
         break;
       case Type::LimitingADERDG:
         result =
             std::max(result,
                 static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getSolver()->
-                getMinimumRefinementStatusForTroubledCell());
+                getMinRefinementStatusForTroubledCell());
         break;
       default:
         break;

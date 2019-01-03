@@ -261,27 +261,26 @@ private:
   const int _DMPObservables;
 
   /**
-   * The minimum limiter status a cell must have
-   * to allocate a passive FV patch.
-   *
-   * All patches with limiter status smaller than this value,
-   * hold no FV patch at all.
+   * Cells placed in the separation layers around a troubled cells either project the DG solution
+   * onto an FV patch or compute with FV and project onto a DG polynomial depending on
+   * if they neighbour a well-behaved or troubled cell, respectively.
+   * If a cell in the separation layer becomes troubled, a local recomputation
+   * must be performed.
    */
-  const int _minimumRefinementStatusForPassiveFVPatch;
+  const int _minRefinementStatusForSeparationCell;
 
   /**
-   * The minimum limiter status a cell must have
-   * to allocate an active FV patch.
-   *
-   * All patches with nonzero limiter status smaller than this value,
-   * hold a passive FV patch.
+   * Cells placed in the buffer layers around a troubled cell either project the DG solution
+   * onto an FV patch or compute with FV and project onto a DG polynomial depending on
+   * if they neighbour a well-behaved or troubled cell, respectively.
+   * If a cell in the buffer layer becomes troubled, no local recomputation must be performed
    */
-  const int _minimumRefinementStatusForActiveFVPatch;
+  const int _minRefinementStatusForBufferCell;
 
   /**
    * Minimum limiter status a troubled cell can have.
    */
-  const int _minimumRefinementStatusForTroubledCell;
+  const int _minRefinementStatusForTroubledCell;
 
   /**
    * Check for NaNs.
@@ -1332,7 +1331,7 @@ public:
    * We thus have a total number of helper layers
    * which is twice the returned value.
    */
-  int getMinimumRefinementStatusForActiveFVPatch() const;
+  int getMinimumRefinementStatusForBufferCell() const;
 
   /**
    * !!! LimitingADERDGSolver functionality !!!

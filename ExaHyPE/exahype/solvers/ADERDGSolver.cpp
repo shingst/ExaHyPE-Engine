@@ -579,9 +579,9 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
      _refineOrKeepOnFineGrid(1+haloCells),
      _limiterHelperLayers(limiterHelperLayers),
      _DMPObservables(DMPObservables),
-     _minimumRefinementStatusForPassiveFVPatch(_refineOrKeepOnFineGrid+1),
-     _minimumRefinementStatusForActiveFVPatch (limiterHelperLayers+_minimumRefinementStatusForPassiveFVPatch),
-     _minimumRefinementStatusForTroubledCell  (limiterHelperLayers+_minimumRefinementStatusForActiveFVPatch),
+     _minRefinementStatusForSeparationCell(_refineOrKeepOnFineGrid+1),
+     _minRefinementStatusForBufferCell (limiterHelperLayers+_minRefinementStatusForSeparationCell),
+     _minRefinementStatusForTroubledCell  (limiterHelperLayers+_minRefinementStatusForBufferCell),
      _checkForNaNs(true),
      _meshUpdateEvent(MeshUpdateEvent::None),
      _nextMeshUpdateEvent(MeshUpdateEvent::None) {
@@ -648,12 +648,12 @@ int exahype::solvers::ADERDGSolver::getDMPObservables() const {
   return _DMPObservables;
 }
 
-int exahype::solvers::ADERDGSolver::getMinimumRefinementStatusForActiveFVPatch() const {
-  return _minimumRefinementStatusForActiveFVPatch;
+int exahype::solvers::ADERDGSolver::getMinimumRefinementStatusForBufferCell() const {
+  return _minRefinementStatusForBufferCell;
 }
 
-int exahype::solvers::ADERDGSolver::getMinimumRefinementStatusForTroubledCell() const {
-  return _minimumRefinementStatusForTroubledCell;
+int exahype::solvers::ADERDGSolver::getMinRefinementStatusForTroubledCell() const {
+  return _minRefinementStatusForTroubledCell;
 }
 
 exahype::solvers::Solver::MeshUpdateEvent
@@ -1503,9 +1503,9 @@ void exahype::solvers::ADERDGSolver::prolongateVolumeData(
   // We thus do not flag children with troubled
   if (
       !initialGrid &&
-      coarseGridCellDescription.getRefinementStatus()>=_minimumRefinementStatusForTroubledCell
+      coarseGridCellDescription.getRefinementStatus()>=_minRefinementStatusForTroubledCell
   ) {
-    fineGridCellDescription.setRefinementStatus(_minimumRefinementStatusForTroubledCell);
+    fineGridCellDescription.setRefinementStatus(_minRefinementStatusForTroubledCell);
     fineGridCellDescription.setIterationsToCureTroubledCell(coarseGridCellDescription.getIterationsToCureTroubledCell());
   }
   fineGridCellDescription.setFacewiseRefinementStatus(Pending);
@@ -2062,8 +2062,6 @@ exahype::solvers::ADERDGSolver::evaluateRefinementCriteriaAfterSolutionUpdate(
     CellDescription&                                           cellDescription,
     const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed
 ) {
-  cellDescription.setPreviousRefinementStatus(cellDescription.getRefinementStatus());
-
   cellDescription.setRefinementFlag(false);
   if ( cellDescription.getType()==CellDescription::Type::Cell ) {
     const double* solution = static_cast<double*>(cellDescription.getSolution());
@@ -2132,6 +2130,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
 
   UpdateResult result;
   result._timeStepSize    = startNewTimeStepFused(cellDescription,isFirstTimeStepOfBatch,isLastTimeStepOfBatch);
+  cellDescription.setPreviousRefinementStatus(cellDescription.getRefinementStatus());
   result._meshUpdateEvent = evaluateRefinementCriteriaAfterSolutionUpdate(cellDescription,neighbourMergePerformed);
 
   if (
@@ -2215,6 +2214,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::updateBod
   UpdateResult result;
   updateSolution(cellDescription,neighbourMergePerformed,true);
   result._timeStepSize    = startNewTimeStep(cellDescription);
+  cellDescription.setPreviousRefinementStatus(cellDescription.getRefinementStatus());
   result._meshUpdateEvent = evaluateRefinementCriteriaAfterSolutionUpdate(cellDescription,neighbourMergePerformed);
 
   compress(cellDescription,isAtRemoteBoundary);
@@ -2989,7 +2989,7 @@ void exahype::solvers::ADERDGSolver::updateRefinementStatus(
     CellDescription&                                           cellDescription,
     const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed) const {
   if (
-    cellDescription.getRefinementStatus()<_minimumRefinementStatusForTroubledCell &&
+    cellDescription.getRefinementStatus()<_minRefinementStatusForTroubledCell &&
     cellDescription.getLevel()==getMaximumAdaptiveMeshLevel()
   ) {
     int max = ( cellDescription.getRefinementFlag() ) ? _refineOrKeepOnFineGrid : Erase;

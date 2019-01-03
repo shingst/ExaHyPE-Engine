@@ -321,15 +321,15 @@ void exahype::Vertex::mergeNeighboursDataAndMetadata(
         switch ( solver->getType() ) {
           case solvers::Solver::Type::ADERDG:
             static_cast<solvers::ADERDGSolver*>(solver)->
-            mergeNeighboursData(solverNumber,cellInfo1,cellInfo2,pos1,pos2);
-            static_cast<solvers::ADERDGSolver*>(solver)->
                 mergeNeighboursMetadata(solverNumber,cellInfo1,cellInfo2,pos1,pos2,x,h,false);
+            static_cast<solvers::ADERDGSolver*>(solver)->
+                mergeNeighboursData(solverNumber,cellInfo1,cellInfo2,pos1,pos2);
             break;
           case solvers::Solver::Type::LimitingADERDG:
-            static_cast<solvers::LimitingADERDGSolver*>(solver)->
-            mergeNeighboursData(solverNumber,cellInfo1,cellInfo2,pos1,pos2,false);
             static_cast<solvers::LimitingADERDGSolver*>(solver)->getSolver()->
                 mergeNeighboursMetadata(solverNumber,cellInfo1,cellInfo2,pos1,pos2,x,h,false);
+            static_cast<solvers::LimitingADERDGSolver*>(solver)->
+                mergeNeighboursData(solverNumber,cellInfo1,cellInfo2,pos1,pos2,false);
             break;
           case solvers::Solver::Type::FiniteVolumes:
             static_cast<solvers::FiniteVolumesSolver*>(solver)->
@@ -789,23 +789,23 @@ void exahype::Vertex::receiveNeighbourDataLoopBody(
           switch ( solver->getType() ) {
           case solvers::Solver::Type::ADERDG:
             if ( mergeWithReceivedData ) {
-              static_cast<solvers::ADERDGSolver*>(solver)->mergeWithNeighbourData(fromRank,solverNumber,cellInfo,src,dest,baryCentre,level);
               if ( receiveNeighbourMetadata ) {
                 MetadataHeap::HeapEntries metadataPortion(receivedMetadata.begin()+begin,receivedMetadata.begin()+end);
                 static_cast<solvers::ADERDGSolver*>(solver)->mergeWithNeighbourMetadata(solverNumber,cellInfo,metadataPortion,src,dest);
               }
+              static_cast<solvers::ADERDGSolver*>(solver)->mergeWithNeighbourData(fromRank,solverNumber,cellInfo,src,dest,baryCentre,level);
             } else {
               static_cast<solvers::ADERDGSolver*>(solver)->dropNeighbourData(fromRank,solverNumber,cellInfo,src,dest,baryCentre,level);
             }
             break;
           case solvers::Solver::Type::LimitingADERDG:
             if ( mergeWithReceivedData ) {
-              static_cast<solvers::LimitingADERDGSolver*>(solver)->mergeWithNeighbourData(fromRank,solverNumber,cellInfo,src,dest,baryCentre,level);
               if ( receiveNeighbourMetadata ) {
                 MetadataHeap::HeapEntries metadataPortion(receivedMetadata.begin()+begin,receivedMetadata.begin()+end);
                 static_cast<solvers::LimitingADERDGSolver*>(solver)->getSolver()->
                     mergeWithNeighbourMetadata(solverNumber,cellInfo,metadataPortion,src,dest);
               }
+              static_cast<solvers::LimitingADERDGSolver*>(solver)->mergeWithNeighbourData(fromRank,solverNumber,cellInfo,src,dest,baryCentre,level);
             } else {
               static_cast<solvers::LimitingADERDGSolver*>(solver)->dropNeighbourData(fromRank,solverNumber,cellInfo,src,dest,baryCentre,level);
             }
