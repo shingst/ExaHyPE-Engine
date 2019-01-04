@@ -31,4 +31,5 @@ info  exahype::runners::Runner::createRepository -1  white
 
 info  exahype::mappings::LoadBalancing::endIteration -1 black
 
-
+info tarch::logging::CommandLineLogger::filterOut -1 black
+debug exahype::mappings::MeshRefinement::createBoundaryVertex

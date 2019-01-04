@@ -4065,25 +4065,28 @@ RECURSIVE SUBROUTINE PDEVarNameGRMHD(MyName)
   CHARACTER(LEN=20):: MyName(nVar)
   INTEGER			:: ind
 	!
-    MyName(1)  = 'rho'      //C_NULL_CHAR
-    MyName(2)  = 'u'        //C_NULL_CHAR
-    MyName(3)  = 'v'        //C_NULL_CHAR
-    MyName(4)  = 'w'        //C_NULL_CHAR
-    MyName(5)  = 'p'        //C_NULL_CHAR
-    MyName(6)  = 'Bx'       //C_NULL_CHAR
-    MyName(7)  = 'By'       //C_NULL_CHAR
-    MyName(8)  = 'Bz'       //C_NULL_CHAR
-    MyName(9)  = 'psi'      //C_NULL_CHAR
-    MyName(10) = 'lapse'    //C_NULL_CHAR
-    MyName(11) = 'shift_x'  //C_NULL_CHAR
-    MyName(12) = 'shift_y'  //C_NULL_CHAR
-    MyName(13) = 'shift_z'  //C_NULL_CHAR
-    MyName(14) = 'gammaij_1'//C_NULL_CHAR
-    MyName(15) = 'gammaij_2'//C_NULL_CHAR
-    MyName(16) = 'gammaij_3'//C_NULL_CHAR
-    MyName(17) = 'gammaij_4'//C_NULL_CHAR
-    MyName(18) = 'gammaij_5'//C_NULL_CHAR
-    MyName(19) = 'gammaij_6'//C_NULL_CHAR
+    MyName(1)  = 'rho'      
+    MyName(2)  = 'u'        
+    MyName(3)  = 'v'        
+    MyName(4)  = 'w'        
+    MyName(5)  = 'p'        
+    MyName(6)  = 'Bx'       
+    MyName(7)  = 'By'       
+    MyName(8)  = 'Bz'       
+    MyName(9)  = 'psi'      
+    MyName(10) = 'lapse'    
+    MyName(11) = 'shift_x'  
+    MyName(12) = 'shift_y'  
+    MyName(13) = 'shift_z'  
+    MyName(14) = 'gammaij_1'
+    MyName(15) = 'gammaij_2'
+    MyName(16) = 'gammaij_3'
+    MyName(17) = 'gammaij_4'
+    MyName(18) = 'gammaij_5'
+    MyName(19) = 'gammaij_6'
+#ifdef VECTOR
+    PRINT *,'nVar = ', nVar
+#endif
 	!
 END SUBROUTINE PDEVarNameGRMHD   
 

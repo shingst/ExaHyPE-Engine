@@ -177,7 +177,7 @@ void GRMHDb::ErrorWriter::finishPlotting() {
 			myfile << "**Errors for ADER-DG solver with order=" << AbstractGRMHDbSolver_ADERDG::Order << "**" << std::endl;
 			myfile << "*********************************************" << std::endl;
 			myfile << "---------------------------------------------" << std::endl;
-			myfile << "variable:\t";
+                        myfile << "variable:\t";
 			for (int v = 0; v < numberOfVariables; v++) {
 				myfile << v << " \t ";
 			}

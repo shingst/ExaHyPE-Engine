@@ -1,3 +1,4 @@
+#define RNSTOV
 
     
 MODULE NSTOV_mod
@@ -40,13 +41,13 @@ MODULE NSTOV_mod
         MODULE PROCEDURE NSTOV_rbar
     END INTERFACE 
     !
-    INTERFACE DGTOV
-        MODULE PROCEDURE DGTOV
-    END INTERFACE 
+    !INTERFACE DGTOV
+    !    MODULE PROCEDURE DGTOV
+    !END INTERFACE 
     !
-    INTERFACE BaseFunc1D_t
-        MODULE PROCEDURE BaseFunc1D_t
-    END INTERFACE 
+    !INTERFACE BaseFunc1D_t
+    !    MODULE PROCEDURE BaseFunc1D_t
+    !END INTERFACE 
     ! 
     PUBLIC :: NSTOV_Main,NSTOV_x,NSTOV_rbar !,DGTOV
     !
@@ -218,6 +219,12 @@ RECURSIVE SUBROUTINE NSTOV_rbar(r,NSTOV_q)
         x1=NSTOVVar_barNew%r(jm)
         x2=NSTOVVar_barNew%r(j)
         x3=NSTOVVar_barNew%r(jp)
+        IF(jm.LT.0.OR.jp.GT.NSTOVVar_barNew%n_B+1) THEN
+            PRINT *,'jm=',jm
+            PRINT *,'j=',j
+            PRINT *,'jp=',jp
+        ENDIF
+        ! 
         y1(1:nVar)=NSTOVVar_barNew%q(1:nVar,jm)
         y2(1:nVar)=NSTOVVar_barNew%q(1:nVar,j)
         y3(1:nVar)= NSTOVVar_barNew%q(1:nVar,jp)
@@ -448,6 +455,9 @@ RECURSIVE SUBROUTINE NSTOV_solution_rbar
         ! CLOSE(2)
         ! CLOSE(4)
     ! END IF
+    PRINT *,'******************************************'
+    PRINT *,'NSTOV solution has been computed'
+    PRINT *,'******************************************'
     !
     continue
     !

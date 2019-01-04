@@ -13,12 +13,12 @@
 #include <ostream>
 
 #include "AbstractGRMHDbSolver_ADERDG.h" 
+#include "exahype/parser/ParserView.h"
 
 /**
  * We use Peano's logging
  */
 #include "tarch/logging/Log.h"
-#include "exahype/parser/ParserView.h"
 
 namespace GRMHDb{
   class GRMHDbSolver_ADERDG;

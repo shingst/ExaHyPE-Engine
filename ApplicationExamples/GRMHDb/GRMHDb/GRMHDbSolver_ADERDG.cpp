@@ -7,7 +7,6 @@
 // ========================
 
 #include "GRMHDbSolver_ADERDG.h"
-
 #include "GRMHDbSolver_ADERDG_Variables.h"
 
 // User defined calls

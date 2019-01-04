@@ -39,8 +39,10 @@
     INTEGER, PARAMETER             	:: nDim = 2                   ! The number of space dimensions
 #endif
 	!
-    CHARACTER(LEN=200), PARAMETER :: ICType      = 'GRMHDAccretion'
-    CHARACTER(LEN=200), PARAMETER :: ICType2     = 'GRMHD-MichelAccretion' 
+    !CHARACTER(LEN=200), PARAMETER :: ICType      = 'GRMHDAccretion'
+    !CHARACTER(LEN=200), PARAMETER :: ICType2     = 'GRMHD-MichelAccretion' 
+    CHARACTER(LEN=200), PARAMETER :: ICType      = 'GRMHDTOV'
+    CHARACTER(LEN=200), PARAMETER :: ICType2     = 'GRMHDTOV' 
 	!
 	REAL, PARAMETER 				:: Exc_radius = -1.0  
   
