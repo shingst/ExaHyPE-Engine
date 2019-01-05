@@ -140,7 +140,7 @@ double kernels::finitevolumes::riemannsolvers::c::rusanov(
   solver.eigenvalues(qL, normalNonZero, sL);
   solver.eigenvalues(qR, normalNonZero, sR);
 
-  double s_max = -1.0;
+  double maxEigenvalue = -1.0;
   for (int i = 0; i < numberOfVariables; i++) {
     maxEigenvalue = std::max(maxEigenvalue, std::abs(sL[i]));
   }
