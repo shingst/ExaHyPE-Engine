@@ -128,29 +128,38 @@ void NavierStokes::NavierStokesSolver_ADERDG::boundaryValues(const double* const
 
   // Rho/E extrapolated, velocity mirrored.
   std::copy_n(stateIn, NumberOfVariables, stateOut);
+  // Extrapolate gradient.
+  std::copy_n(gradStateIn, gradSize, gradStateOut.data());
 
-  if (scenario->getBoundaryType(faceIndex) == BoundaryType::freeSlipWall) {
+  // TODO(Lukas) Are these gradients here correct?
+  if (scenario->getBoundaryType(faceIndex) == BoundaryType::freeSlipWall ||
+  scenario->getBoundaryType(faceIndex) == BoundaryType::hydrostaticWall) {
     // Normal velocity zero after Riemann.
     varsOut.j(normalNonZero) = -varsIn.j(normalNonZero);
+    for (int i = 0; i < DIMENSIONS; ++i) {
+      gradStateOut[idxGradQ(i, 1+normalNonZero)] = -gradStateIn[idxGradQ(i, 1+normalNonZero)];
+    }
   } else {
     // No-slip
     // All velocities zero after Riemann.
-    varsOut.j(0) = -varsIn.j(0);
-    varsOut.j(1) = -varsIn.j(1);
-#if DIMENSIONS == 3
-    varsOut.j(2) = -varsIn.j(2);
-#endif
+    for (int i = 0; i < DIMENSIONS; ++i) {
+      varsOut.j(i) = -varsIn.j(i);
+      for (int j = 0; j < DIMENSIONS; ++j) {
+        gradStateOut[idxGradQ(j, 1+i)] = -gradStateIn[idxGradQ(j, 1+i)];
+      }
+    }
   }
-
 
   if (scenario->getBoundaryType(faceIndex) == BoundaryType::movingWall) {
     // Wall speed after Riemann solve
     const auto wallSpeed = 1.0;
     varsOut.j(0) = 2 * wallSpeed - varsIn.j(0);
+    // TODO(Lukas) Is this gradient correct?
+    for (int i = 0; i < DIMENSIONS; ++i) {
+      gradStateOut[idxGradQ(i, 0)] += 2 * wallSpeed;
+    }
   }
 
-  // Extrapolate gradient.
-  std::copy_n(gradStateIn, gradSize, gradStateOut.data());
 
   // We deal with heat conduction by computing the flux at the boundary without heat conduction,
   // To do this, we reconstruct the incoming flux using the extrapolated/time-averaged state/gradient.
@@ -187,7 +196,9 @@ void NavierStokes::NavierStokesSolver_ADERDG::boundaryValues(const double* const
     // Use no viscous effects and use equilibrium temperature gradient.
     ns.evaluateFlux(stateOut, gradStateOut.data(), F, false, true, equilibriumTemperatureGradient);
   } else {
-    ns.evaluateFlux(stateOut, gradStateOut.data(), F);
+    // No viscous flux at wall boundary.
+    // TODO(Lukas) Maybe only for free-slip?
+    ns.evaluateFlux(stateOut, gradStateOut.data(), F, false, true, 0.0);
   }
 
   std::copy_n(F[normalNonZero], NumberOfVariables, fluxOut);
