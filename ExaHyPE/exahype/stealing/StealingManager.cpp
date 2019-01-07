@@ -429,13 +429,18 @@ void exahype::stealing::StealingManager::triggerEmergencyForRank(int rank) {
   exahype::stealing::DiffusiveDistributor::getInstance().handleEmergencyOnRank(rank);
 #endif
   _emergencyHeatMap[rank]++;
+  logInfo("triggerEmergencyForRank()","blacklist value for rank "<<rank<<":"<<_emergencyHeatMap[rank]);
 }
 
 void exahype::stealing::StealingManager::decreaseHeat() {
   logInfo("decreaseHeat()","decrease heat of emergency heat map");
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
-  for(int i=0; i<nnodes;i++)
+  for(int i=0; i<nnodes;i++) {
     _emergencyHeatMap[i]*= 0.9;
+    if(_emergencyHeatMap[i]>0.4) {
+      logInfo("decreaseHeat()","blacklist value for rank "<<i<<":"<<_emergencyHeatMap[i]);
+    }
+  }
 } 
 
 bool exahype::stealing::StealingManager::isBlacklisted(int rank) { 
