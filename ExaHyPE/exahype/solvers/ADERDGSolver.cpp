@@ -3107,15 +3107,9 @@ void exahype::solvers::ADERDGSolver::mergeNeighboursData(
     CellDescription& cellDescription1 = cellInfo1._ADERDGCellDescriptions[element1];
     CellDescription& cellDescription2 = cellInfo2._ADERDGCellDescriptions[element2];
 
-    if (
-        ((cellDescription1.getCommunicationStatus()==CellCommunicationStatus &&
-        cellDescription1.getFacewiseCommunicationStatus(face._faceIndex1) >= MinimumCommunicationStatusForNeighbourCommunication &&
-        cellDescription1.getFacewiseAugmentationStatus(face._faceIndex1)  <  MaximumAugmentationStatus) // excludes Ancestors
-        ||
-        (cellDescription2.getCommunicationStatus()==CellCommunicationStatus &&
-        cellDescription2.getFacewiseCommunicationStatus(face._faceIndex2) >= MinimumCommunicationStatusForNeighbourCommunication &&
-        cellDescription2.getFacewiseAugmentationStatus(face._faceIndex2)  <  MaximumAugmentationStatus)) // excludes Ancestors
-    ) { // check
+     if ( ADERDGSolver::communicateWithNeighbour(cellDescription1,face._faceIndex1) ) {
+      assertion1( ADERDGSolver::communicateWithNeighbour(cellDescription2,face._faceIndex2),cellDescription2.toString() );
+
       #if !defined(SharedMemoryParallelisation) && !defined(Parallel) && defined(Asserts)
       static int counter = 0;
       static double timeStamp = 0;

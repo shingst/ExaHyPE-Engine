@@ -269,7 +269,7 @@ void exahype::Vertex::mergeWithBoundaryData(
           break;
         case solvers::Solver::Type::LimitingADERDG:
           static_cast<solvers::LimitingADERDGSolver*>(solver)->
-            mergeWithBoundaryData(solverNumber,cellInfo,posCell,posBoundary,false);
+            mergeWithBoundaryData(solverNumber,cellInfo,posCell,posBoundary);
           break;
         case solvers::Solver::Type::FiniteVolumes:
           static_cast<solvers::FiniteVolumesSolver*>(solver)->
@@ -329,7 +329,7 @@ void exahype::Vertex::mergeNeighboursDataAndMetadata(
             static_cast<solvers::LimitingADERDGSolver*>(solver)->getSolver()->
                 mergeNeighboursMetadata(solverNumber,cellInfo1,cellInfo2,pos1,pos2,x,h,false);
             static_cast<solvers::LimitingADERDGSolver*>(solver)->
-                mergeNeighboursData(solverNumber,cellInfo1,cellInfo2,pos1,pos2,false);
+                mergeNeighboursData(solverNumber,cellInfo1,cellInfo2,pos1,pos2);
             break;
           case solvers::Solver::Type::FiniteVolumes:
             static_cast<solvers::FiniteVolumesSolver*>(solver)->

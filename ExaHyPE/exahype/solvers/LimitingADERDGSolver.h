@@ -1060,6 +1060,44 @@ public:
   ///////////////////////////////////
 
   /**
+   * Merge two neighbouring cell descriptions during the local recomputation phase of the limiting ADER-DG
+   * algorithm.
+   *
+   * As it is performed during the local recomputation phase, the merge only considers
+   * cells with troubled status - i, where i=0,1,2.
+   * All cells with one of these statuses, perform a merge using the limiter.
+   *
+   * @param solverNumber identifier for this solver
+   * @param cellInfo1    cell descriptions associated with one cell
+   * @param cellInfo2    cell descriptions associated with the other cell
+   * @param pos1         relative position of the first cell to the vertex issuing the neighbour merge
+   * @param pos2         relative position of the first cell to the vertex issuing the neighbour merge
+   */
+  void mergeNeighboursDataDuringLocalRecomputation(
+      const int                                  solverNumber,
+      Solver::CellInfo&                          cellInfo1,
+      Solver::CellInfo&                          cellInfo2,
+      const tarch::la::Vector<DIMENSIONS, int>&  pos1,
+      const tarch::la::Vector<DIMENSIONS, int>&  pos2);
+
+  /**
+   * Merge cell descriptions with status - i, where i=0,1, with boundary data during
+   * the local recomputation phase.
+   * All cells with one of these statuses, perform a merge using the limiter.
+   *
+   * @param solverNumber identifier for this solver
+   * @param cellInfo1    cell descriptions associated with a cell
+   * @param posCell      relative position of the (interior) cell to the vertex issuing the merge
+   * @param posBoundary  relative position of the boundary (=outside cell) to the vertex issuing the merge
+   */
+  void mergeWithBoundaryDataDuringLocalRecomputation(
+      const int                                 solverNumber,
+      Solver::CellInfo&                         cellInfo,
+      const tarch::la::Vector<DIMENSIONS, int>& posCell,
+      const tarch::la::Vector<DIMENSIONS, int>& posBoundary);
+
+
+  /**
    * Merge solver boundary data (and other values) of two adjacent
    * cells based on their limiter status.
    *
@@ -1167,6 +1205,53 @@ public:
       const int solverNumber) const final override;
 
   /**
+   * Send data to a neighbouring rank during the local recomputation phase.
+   *
+   * Merge it if the limiter status of the solver patch is troubled or one or two less than
+   * troubled. All other cells send empty messages.
+   *
+   * @param toRank       the rank we send data to
+   * @param solverNumber identifier for this solver
+   * @param cellInfo     a struct linking to the cell descriptions associated with a cell
+   * @param src          position of the src
+   * @param dest         position of the dest
+   * @param x            barycentre of the face
+   * @param level        mesh level of the face
+   */
+  void sendDataToNeighbourDuringLocalRecomputation(
+      const int                                    toRank,
+      const int                                    solverNumber,
+      CellInfo&                                    cellInfo,
+      const tarch::la::Vector<DIMENSIONS, int>&    src,
+      const tarch::la::Vector<DIMENSIONS, int>&    dest,
+      const tarch::la::Vector<DIMENSIONS, double>& x,
+      const int                                    level);
+
+  /**
+   * Receive limiter data from a neighbouring rank durin the local
+   * recomputation phase.
+   *
+   * Merge it if the limiter status of the solver patch is troubled or one less than
+   * troubled. All other cells drop it.
+   *
+   * @param fromRank     the rank we receive data from
+   * @param solverNumber identifier for this solver
+   * @param cellInfo     a struct linking to the cell descriptions associated with a cell
+   * @param src          position of the src
+   * @param dest         position of the dest
+   * @param x            barycentre of the face
+   * @param level        mesh level of the face
+   */
+  void mergeWithNeighbourDataDuringLocalRecomputation(
+      const int                                    fromRank,
+      const int                                    solverNumber,
+      CellInfo&                                    cellInfo,
+      const tarch::la::Vector<DIMENSIONS, int>&    src,
+      const tarch::la::Vector<DIMENSIONS, int>&    dest,
+      const tarch::la::Vector<DIMENSIONS, double>& x,
+      const int                                    level);
+
+  /**
    * Send data to a neighbouring rank.
    *
    * send order:   minAndMax,solver,limiter
@@ -1192,25 +1277,6 @@ public:
   /**
    * Send data or empty data to the neighbour data based
    * on the limiter status.
-   *
-   * Do not send/receive any ADER-DG solver data at all during
-   * a local recomputation.
-   *
-   * \param[in] isRecomputation Indicates if this called within a local recomputation
-   *                            process.
-   * \param[in] limiterStatus   This method is used in two different contexts (see \p isRecomputation)
-   *                            which either make use of the unified face-wise limiter status (isRecomputation)
-   *                            or make use of the cell-wise limiter status (!isRecomputation).
-   *
-   * <h2>Local Recomputation</h2>
-   * In case this method is called during a local recomputation,
-   * the ADER-DG solver does only send empty messages to the neighbour.
-   * Otherwise it merges the received data and adds it to the update.
-   *
-   * <h2>Fused Time Stepping</h2>
-   * If the limiter status of a cell changes dramatically, a cell might have
-   * not allocated a limiter patch yet when fused time stepping is used.
-   * In this case, we send out an empty FV boundary data message.
    */
   void sendDataToNeighbourBasedOnLimiterStatus(
         const int                                    toRank,
@@ -1218,7 +1284,6 @@ public:
         Solver::CellInfo&                            cellInfo,
         const tarch::la::Vector<DIMENSIONS, int>&    src,
         const tarch::la::Vector<DIMENSIONS, int>&    dest,
-        const bool                                   isRecomputation,
         const tarch::la::Vector<DIMENSIONS, double>& x,
         const int                                    level);
 
@@ -1234,23 +1299,6 @@ public:
   /**
    * Merge or drop received neighbour data based
    * on the limiter status.
-   *
-   * Do not send/receive any ADER-DG solver data at all during
-   * a local recomputation.
-   *
-   * \param isRecomputation Indicates if this called within a solution recomputation
-   *                        process.
-   * \param limiterStatus   This method is used in two different contexts (see \p isRecomputation)
-   *                        which either make use of the unified face-wise limiter status (isRecomputation)
-   *                        or make use of the cell-wise limiter status (!isRecomputation).
-   *
-   * <h2>SolutionRecomputation</h2>
-   * In case this method is called within a solution recomputation,
-   * the ADER-DG solver drops the received boundary data.
-   * Otherwise it merges the received data and adds it to the update.
-   *
-   *  \note This method assumes that there has been a unified face-wise limiter status value
-   *  determined and written back to the faces.
    */
   void mergeWithNeighbourDataBasedOnLimiterStatus(
       const int                                    fromRank,
@@ -1258,7 +1306,6 @@ public:
       Solver::CellInfo&                            cellInfo,
       const tarch::la::Vector<DIMENSIONS, int>&    src,
       const tarch::la::Vector<DIMENSIONS, int>&    dest,
-      const bool                                   isRecomputation,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level);
 

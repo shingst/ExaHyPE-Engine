@@ -358,7 +358,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::mergeNeighboursDataDurin
         auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
         if ( performLocalRecomputation(solver) ) {
           static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->
-              mergeNeighboursData(solverNumber,cellInfo1,cellInfo2,pos1,pos2,true/* isRecomputation */);
+              mergeNeighboursDataDuringLocalRecomputation(solverNumber,cellInfo1,cellInfo2,pos1,pos2);
         }
       }
     }
@@ -385,7 +385,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::mergeNeighboursDataDurin
         auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
         if ( performLocalRecomputation(solver) ) {
           static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->
-              mergeWithBoundaryData(solverNumber,cellInfo,posCell,posBoundary,true);
+              mergeWithBoundaryDataDuringLocalRecomputation(solverNumber,cellInfo,posCell,posBoundary);
         }
       }
     }
@@ -469,7 +469,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::receiveNeighbourDataLoop
         if ( performLocalRecomputation( solver ) ) {
           assertion1( solver->getType()==solvers::Solver::Type::LimitingADERDG, solver->toString() );
           static_cast<solvers::LimitingADERDGSolver*>(solver)->
-              mergeWithNeighbourDataBasedOnLimiterStatus(fromRank,solverNumber,cellInfo,src,dest,true/*isRecomputation*/,x,level);
+              mergeWithNeighbourDataDuringLocalRecomputation(fromRank,solverNumber,cellInfo,src,dest,x,level);
         }
       }
     }
