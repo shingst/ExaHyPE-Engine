@@ -402,6 +402,6 @@ bool Euler::EulerSolver_ADERDG::isPhysicallyAdmissible(
               std::isfinite(observablesMax[i]);
   }
   result &= (observablesMin[0] > 0.0) &&
-            (observablesMin[1] <= 0.0);
+            (observablesMin[1] >= 0.0);
   return result;
 }
