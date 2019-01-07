@@ -1324,7 +1324,7 @@ public:
    * !!! LimitingADERDGSolver functionality !!!
    *
    */
-  int getMinRefinementStatusForSepaationCell() const;
+  int getMinRefinementStatusForSeparationCell() const;
 
   /**
    * !!! LimitingADERDGSolver functionality !!!

@@ -580,7 +580,7 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
      _limiterHelperLayers(limiterHelperLayers),
      _DMPObservables(DMPObservables),
      _minRefinementStatusForSeparationCell(_refineOrKeepOnFineGrid+1),
-     _minRefinementStatusForBufferCell (limiterHelperLayers+_minRefinementStatusForSeparationCell),
+     _minRefinementStatusForBufferCell    (_minRefinementStatusForSeparationCell+2),
      _minRefinementStatusForTroubledCell  (limiterHelperLayers+_minRefinementStatusForBufferCell),
      _checkForNaNs(true),
      _meshUpdateEvent(MeshUpdateEvent::None),
@@ -648,7 +648,7 @@ int exahype::solvers::ADERDGSolver::getDMPObservables() const {
   return _DMPObservables;
 }
 
-int exahype::solvers::ADERDGSolver::getMinRefinementStatusForSerparationCell() const {
+int exahype::solvers::ADERDGSolver::getMinRefinementStatusForSeparationCell() const {
   return _minRefinementStatusForSeparationCell;
 }
 
@@ -2992,10 +2992,7 @@ void exahype::solvers::ADERDGSolver::mergeWithAugmentationStatus(
 void exahype::solvers::ADERDGSolver::updateRefinementStatus(
     CellDescription&                                           cellDescription,
     const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed) const {
-  if (
-    cellDescription.getRefinementStatus()<_minRefinementStatusForTroubledCell &&
-    cellDescription.getLevel()==getMaximumAdaptiveMeshLevel()
-  ) {
+  if ( cellDescription.getLevel()==getMaximumAdaptiveMeshLevel() ) {
     int max = ( cellDescription.getRefinementFlag() ) ? _refineOrKeepOnFineGrid : Erase;
     for (unsigned int i=0; i<DIMENSIONS_TIMES_TWO; i++) {
       if ( neighbourMergePerformed[i] ) {
@@ -3015,6 +3012,7 @@ void exahype::solvers::ADERDGSolver::updateCoarseGridAncestorRefinementStatus(
     if ( fineGridCellDescription.getType()==CellDescription::Type::Cell ) {
       coarseGridCellDescription.setRefinementStatus(
           std::max( coarseGridCellDescription.getRefinementStatus(), fineGridCellDescription.getRefinementStatus()) );
+      // TODO(Dominic): Does that make sense?
       coarseGridCellDescription.setPreviousRefinementStatus(
           std::max( coarseGridCellDescription.getPreviousRefinementStatus(), fineGridCellDescription.getPreviousRefinementStatus()) );
     } else if ( fineGridCellDescription.getType()==CellDescription::Type::Ancestor ) {

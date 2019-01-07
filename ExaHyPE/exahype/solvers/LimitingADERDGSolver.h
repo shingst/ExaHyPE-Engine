@@ -1069,19 +1069,19 @@ public:
    * | Status 1 | Status 2 | Solver to Merge
    * ---------------------------------------
    * | O        | O        | ADER-DG       |
-   * | O        | NNT      | ADER-DG       |// O|NNT x O|NNT
-   * | NNT      | O        | ADER-DG       |
-   * | NNT      | NNT      | ADER-DG       |
+   * | O        | Tm2      | ADER-DG       |// O|Tm2 x O|Tm2
+   * | Tm2      | O        | ADER-DG       |
+   * | Tm2      | Tm2      | ADER-DG       |
    *
-   * | NNT      | NT       | FV            |
-   * | NT       | NNT      | FV            | // NT&NNT | N&NNT
+   * | Tm2      | Tm1       | FV            |
+   * | Tm1      | Tm2       | FV            | // Tm1&Tm2 | N&Tm2
    *
-   * | NT       | NT       | FV            |
-   * | NT       | T        | FV            |
-   * | T        | NT       | FV            | // T|NT x T|NT
-   * | T        | T        | FV            |
+   * | Tm1       | Tm1      | FV            |
+   * | Tm1       | T        | FV            |
+   * | T         | Tm1      | FV            | // T|Tm1 x T|Tm1
+   * | T         | T        | FV            |
    *
-   * Legend: O: Ok, T: Troubled, NT: NeighbourIsTroubledCell, NNT: NeighbourIsNeighbourOfTroubledCell
+   * Legend: O: Ok, T: Troubled, Tm1: Troubled (status) minus 1, Tm2: Troubled (status) minus 2
    *
    * <h2>Solution Recomputation</h2>
    * If we perform a solution recomputation, we do not need to perform
@@ -1112,8 +1112,7 @@ public:
       Solver::CellInfo&                          cellInfo1,
       Solver::CellInfo&                          cellInfo2,
       const tarch::la::Vector<DIMENSIONS, int>&  pos1,
-      const tarch::la::Vector<DIMENSIONS, int>&  pos2,
-      const bool                                 isRecomputation);
+      const tarch::la::Vector<DIMENSIONS, int>&  pos2);
 
   /**
    * Merge solver boundary data (and other values) of a
@@ -1154,8 +1153,7 @@ public:
       const int                                 solverNumber,
       Solver::CellInfo&                         context,
       const tarch::la::Vector<DIMENSIONS, int>& posCell,
-      const tarch::la::Vector<DIMENSIONS, int>& posBoundary,
-      const bool                                isRecomputation);
+      const tarch::la::Vector<DIMENSIONS, int>& posBoundary);
 
 #ifdef Parallel
   ///////////////////////////////////
