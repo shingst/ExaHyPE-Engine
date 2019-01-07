@@ -824,9 +824,9 @@ void exahype::solvers::LimitingADERDGSolver::determineMinAndMax(
         solverPatch.getType()==SolverPatch::Type::Cell &&
         solverPatch.getLevel()==getMaximumAdaptiveMeshLevel()
     ) {
-      assertion1( solverPatch.getRefinementStatus()>=-1,solverPatch.getRefinementStatus() );
+      assertion1( solverPatch.getRefinementStatus()>=ADERDGSolver::Erase,solverPatch.getRefinementStatus() );
 
-      if ( solverPatch.getRefinementStatus()<-1 ) {
+      if ( solverPatch.getRefinementStatus()<ADERDGSolver::Erase ) {
         logError("determineMinAndMax(...)","solverPatch.getRefinementStatus()<-1 for cell="<<solverPatch.toString());
         std::abort();
       } else if (solverPatch.getRefinementStatus()<_solver->getMinRefinementStatusForTroubledCell()) {
