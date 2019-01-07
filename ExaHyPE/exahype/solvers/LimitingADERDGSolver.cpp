@@ -516,6 +516,20 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
   return result;
 }
 
+void exahype::solvers::LimitingADERDGSolver::performPredictionAndVolumeIntegral(
+    const int solverNumber,
+    CellInfo& cellInfo,
+    const bool isAtRemoteBoundary) {
+  const int element = cellInfo.indexOfADERDGCellDescription(solverNumber);
+  if ( element != Solver::NotFound ) {
+    SolverPatch& cellDescription = cellInfo._ADERDGCellDescriptions[element];
+
+    if ( cellDescription.getPreviousRefinementStatus()<_solver->getMinRefinementStatusForTroubledCell() ) {
+      _solver->performPredictionAndVolumeIntegral(solverNumber,cellInfo,isAtRemoteBoundary);
+    }
+  }
+}
+
 exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::updateBody(
     SolverPatch&                                               solverPatch,
     CellInfo&                                                  cellInfo,

@@ -847,6 +847,15 @@ public:
       CellInfo& cellInfo,
       const bool fused) final override;
 
+  /**
+   * Just refers to the ADERDGSolver equivalent if
+   * the ADERDG cell description is not troubled.
+   */
+  void performPredictionAndVolumeIntegral(
+      const int solverNumber,
+      CellInfo& cellInfo,
+      const bool isAtRemoteBoundary);
+
   UpdateResult fusedTimeStepOrRestrict(
       const int  solverNumber,
       CellInfo&  cellInfo,
