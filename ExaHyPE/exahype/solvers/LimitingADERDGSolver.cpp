@@ -633,13 +633,12 @@ void exahype::solvers::LimitingADERDGSolver::updateSolution(
       solverPatch.getLevel()==getMaximumAdaptiveMeshLevel()) {
     assertion(solverPatch.getRefinementStatus()>=-1);
 
-    const int maxNeighbourLimiterStatus = ADERDGSolver::Pending;
+    int mergedLimiterStatus = solverPatch.getRefinementStatus();
     for (int i=0; i<DIMENSIONS_TIMES_TWO; i++) {
       if ( neighbourMergePerformed[i] ) {
-        maxNeighbourLimiterStatus = std::max(maxNeighbourLimiterStatus,solverPatch.getFacewiseRefinementStatus(i));
+        mergedLimiterStatus = std::max(mergedLimiterStatus,solverPatch.getFacewiseRefinementStatus(i)-1);
       }
     }
-    const int mergedLimiterStatus = std::max(solverPatch.getRefinementStatus(),maxNeighbourLimiterStatus-1);
 
     if ( mergedLimiterStatus >= _solver->_minRefinementStatusForTroubledCell-1 ) { // limiter update
       assertion1(solverPatch.getRefinementStatus()>0,solverPatch.toString());
