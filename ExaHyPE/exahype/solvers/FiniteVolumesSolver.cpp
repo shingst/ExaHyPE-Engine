@@ -864,7 +864,7 @@ void exahype::solvers::FiniteVolumesSolver::updateSolution(
   assertion1(cellDescription.getTimeStamp()<std::numeric_limits<double>::max(),cellDescription.toString());
   assertion1(cellDescription.getTimeStepSize()<std::numeric_limits<double>::max(),cellDescription.toString());
   double admissibleTimeStepSize=0;
-  if (cellDescription.getTimeStepSize()>0) {
+  if (cellDescription.getTimeStepSize()>0) { // TODO(Dominic): is this if necessary?
     solutionUpdate(solution,cellDescription.getSize(),cellDescription.getTimeStepSize(),admissibleTimeStepSize);
   }
 

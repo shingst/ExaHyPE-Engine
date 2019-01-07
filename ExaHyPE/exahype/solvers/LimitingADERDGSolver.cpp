@@ -14,6 +14,7 @@
  **/
 
 #include <algorithm> //copy_n
+#include <iomanip> //copy_n
 
 #include "LimitingADERDGSolver.h"
 
@@ -650,9 +651,43 @@ void exahype::solvers::LimitingADERDGSolver::updateSolution(
       _limiter->updateSolution(limiterPatch,neighbourMergePerformed,cellInfo._cellDescriptionsIndex,backupPreviousSolution);
       _solver->swapSolutionAndPreviousSolution(solverPatch);
       projectFVSolutionOnDGSpace(solverPatch,limiterPatch);
+
+      if ( cellInfo._cellDescriptionsIndex==284 ) { // TODO remove
+        logError("updateSolution(...)","[limiter] solverPatch="<<solverPatch.toString());
+      }
     }
     else { // solver update
+      if ( cellInfo._cellDescriptionsIndex==284 ) { // TODO remove
+        double* solution = static_cast<double*>(solverPatch.getSolution()); // TODO remove
+        for (int unknown=0; unknown < _numberOfVariables; unknown++) {
+          std::cout <<  "unknown(DG,pre)=" << unknown << std::endl;
+          dfor(i,_nodesPerCoordinateAxis) {
+            int iScalar = peano::utils::dLinearisedWithoutLookup(i,_nodesPerCoordinateAxis)*_numberOfVariables+unknown;
+            std::cout << std::setprecision(3) << solution[iScalar] << ",";
+            if (i(0)==_nodesPerCoordinateAxis-1) {
+              std::cout << std::endl;
+            }
+          }
+        }
+
+        double* fluctuation = static_cast<double*>(solverPatch.getFluctuation()); // TODO remove
+        for(int f=0; f < DIMENSIONS_TIMES_TWO; f++) {
+          for (int unknown=0; unknown < _numberOfVariables; unknown++) {
+            std::cout <<  "face-unknown(DG,pre)=" << unknown << std::endl;
+            for(int i=0; i < _nodesPerCoordinateAxis; i++) {
+              const int iScalar =f*_numberOfVariables*_nodesPerCoordinateAxis + i*_numberOfVariables+unknown;
+              std::cout << std::setprecision(3) << fluctuation[iScalar] << ",";
+              if (i==_nodesPerCoordinateAxis-1) {
+                std::cout << std::endl;
+              }
+            }
+          }
+        }
+      }
+
       _solver->updateSolution(solverPatch,neighbourMergePerformed,backupPreviousSolution);
+
+      // TODO(Dominic): Evaluate DMP etc. already here!
 
       if (
           mergedLimiterStatus >=_solver->getMinRefinementStatusForSeparationCell() ||
@@ -664,6 +699,25 @@ void exahype::solvers::LimitingADERDGSolver::updateSolution(
         LimiterPatch& limiterPatch = getLimiterPatch(solverPatch,cellInfo);
         _limiter->swapSolutionAndPreviousSolution(limiterPatch);
         projectDGSolutionOnFVSpace(solverPatch,limiterPatch);
+
+        if ( cellInfo._cellDescriptionsIndex==284 ) { // TODO remove
+          logError("updateSolution(...)","[solver] solverPatch="<<solverPatch.toString());
+
+          double* solution = static_cast<double*>(solverPatch.getSolution());
+          for (int unknown=0; unknown < _numberOfVariables; unknown++) {
+            std::cout <<  "unknown(DG,post)=" << unknown << std::endl;
+            dfor(i,_nodesPerCoordinateAxis) {
+              int iScalar = peano::utils::dLinearisedWithoutLookup(i,_nodesPerCoordinateAxis)*_numberOfVariables+unknown;
+              std::cout << std::setprecision(3) << solution[iScalar] << ",";
+              if (i(0)==_nodesPerCoordinateAxis-1) {
+                std::cout << std::endl;
+              }
+            }
+          }
+
+          _limiter->printFiniteVolumesSolution(limiterPatch);
+        }
+        _limiter->validateNoNansInFiniteVolumesSolution(limiterPatch,cellInfo._cellDescriptionsIndex,"LimitingADERDGSolver::updateSolution(...)");
       } else {
         ensureNoUnrequiredLimiterPatchIsAllocatedOnComputeCell(solverPatch,cellInfo);
       }
@@ -1237,7 +1291,7 @@ void exahype::solvers::LimitingADERDGSolver::mergeNeighboursData(
 
       if (solverPatch1.getRefinementStatus()<_solver->getMinRefinementStatusForTroubledCell() &&
           solverPatch2.getRefinementStatus()<_solver->getMinRefinementStatusForTroubledCell()) {
-        // assumes that face fluxes are not directly added to cell update or the update is cleared if FV update is performed
+        // assumes that face fluxes are not directly added to cell update or the update is cleared if FV update is performe
         _solver->mergeNeighboursData(solverNumber,cellInfo1,cellInfo2,pos1,pos2);
       }
 
