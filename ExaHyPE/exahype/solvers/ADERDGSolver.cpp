@@ -1983,6 +1983,10 @@ void exahype::solvers::ADERDGSolver::finaliseStateUpdates(
       validateCellDescriptionData(cellDescription,cellDescription.getCorrectorTimeStamp()>0,false,true,"finaliseStateUpdates");
     }
     cellDescription.setRefinementFlag(false);
+
+    if ( getMeshUpdateEvent()==MeshUpdateEvent::InitialRefinementRequested ) {
+      cellDescription.setPreviousRefinementStatus(cellDescription.getRefinementStatus());
+    }
   }
 }
 
@@ -2993,7 +2997,12 @@ void exahype::solvers::ADERDGSolver::updateRefinementStatus(
     CellDescription&                                           cellDescription,
     const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed) const {
   if ( cellDescription.getLevel()==getMaximumAdaptiveMeshLevel() ) {
-    int max = ( cellDescription.getRefinementFlag() ) ? _refineOrKeepOnFineGrid : Erase;
+    int max = Erase;
+    if ( cellDescription.getRefinementFlag() )
+      max = _refineOrKeepOnFineGrid;
+    if ( cellDescription.getRefinementStatus() == getMinRefinementStatusForTroubledCell() )
+      max = cellDescription.getRefinementStatus();
+
     for (unsigned int i=0; i<DIMENSIONS_TIMES_TWO; i++) {
       if ( neighbourMergePerformed[i] ) {
         max = std::max( max, cellDescription.getFacewiseRefinementStatus(i)-1 );

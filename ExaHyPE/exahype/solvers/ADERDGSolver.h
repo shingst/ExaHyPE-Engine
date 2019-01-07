@@ -1192,7 +1192,7 @@ public:
    * Determine the refinement status from the face
    * neighbour values.
    *
-   * \note It is very important that any troubled cell indicator
+   * @note It is very important that any troubled cell indicator
    * and any refinement criterion has been evaluated before
    * calling this function.
    */

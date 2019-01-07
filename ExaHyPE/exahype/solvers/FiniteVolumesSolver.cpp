@@ -925,7 +925,6 @@ void exahype::solvers::FiniteVolumesSolver::mergeNeighboursData(
   const int element1 = cellInfo1.indexOfFiniteVolumesCellDescription(solverNumber);
   const int element2 = cellInfo2.indexOfFiniteVolumesCellDescription(solverNumber);
   if ( element1 != Solver::NotFound && element2 != Solver::NotFound ) {
-    Solver::InterfaceInfo face(pos1,pos2);
     CellDescription& cellDescription1 = cellInfo1._FiniteVolumesCellDescriptions[element1];
     CellDescription& cellDescription2 = cellInfo2._FiniteVolumesCellDescriptions[element2];
 
@@ -980,7 +979,6 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithBoundaryData(
     const tarch::la::Vector<DIMENSIONS, int>& posCell,
     const tarch::la::Vector<DIMENSIONS, int>& posBoundary) {
   assertion2(tarch::la::countEqualEntries(posCell,posBoundary)==(DIMENSIONS-1),posCell.toString(),posBoundary.toString());
-  Solver::BoundaryFaceInfo face(posCell,posBoundary);
 
   const int element = cellInfo.indexOfFiniteVolumesCellDescription(solverNumber);
   if ( element != Solver::NotFound ) {

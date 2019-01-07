@@ -278,24 +278,16 @@ private:
   /**
    * Update the limiter status based on the cell-local solution values.
    *
-   * If the new limiter status is changed to or remains troubled,
-   * set the iterationsToCureTroubledCell counter to a certain
-   * maximum value.
-   * If the limiter status changes from troubled to something else,
-   * decrease the iterationsToCureTroubledCell counter.
-   * If the counter is set to zero, change a troubled cell
-   * to NeighbourOfCellIsTroubled1.
-   *
-   * \return True if the limiter domain changes irregularly in the cell, i.e.,
-   * if a patch with status Ok, NeighbourOfTroubled3, NeighbourOfTroubled4
-   * changes its status to Troubled.
-   *
-   * If the limiter status changes regularly, i.e., from NeighbourOfTroubled1
-   * to Troubled or from Troubled to NeighbourOfTroubled3, NeighbourOfTroubled4, this
-   * methods returns false.
+   * \return MeshUpdateEvent::IrregularLimiterDomainChange if the limiter domain changes irregularly on the finest grid level, i.e.,
+   * if a cell outside of the buffer layers is set to troubled.
+   * Returns MeshUpdateEvent::RefinementRequested if a coarse grid cell is flagged as a troubled or
+   * if feature-based refinement was requested by the user.
+   * Returns MeshUpdateEvent::None in all other cases.
    */
   MeshUpdateEvent determineRefinementStatusAfterSolutionUpdate(
-      SolverPatch& solverPatch,
+      SolverPatch&                                               solverPatch,
+      CellInfo&                                                  cellInfo,
+      const bool                                                 isTroubled,
       const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed);
 
   /**
