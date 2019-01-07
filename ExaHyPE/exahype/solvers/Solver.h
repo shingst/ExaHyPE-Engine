@@ -92,8 +92,10 @@ namespace exahype {
   #ifdef ALIGNMENT
   #if defined(CompilerICC) && defined(SharedTBB)
   typedef tbb::cache_aligned_allocator<double> AlignedAllocator;
+  typedef tbb::cache_aligned_allocator<char> AlignedCharAllocator;
   #else
   typedef peano::heap::HeapAllocator<double, ALIGNMENT > AlignedAllocator;
+  typedef peano::heap::HeapAllocator<char, ALIGNMENT > AlignedCharAllocator;
   #endif
   typedef peano::heap::AlignedDoubleSendReceiveTask<ALIGNMENT> AlignedDoubleSendReceiveTask;
   typedef peano::heap::AlignedCharSendReceiveTask<ALIGNMENT>   AlignedCharSendReceiveTask;
@@ -107,10 +109,10 @@ namespace exahype {
     std::vector< double, AlignedAllocator >
   >     DataHeap;
   typedef peano::heap::CharHeap<
-    peano::heap::SynchronousDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedAllocator > >,
-    peano::heap::SynchronousDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedAllocator > >,
-    peano::heap::SymmetricBoundaryDataExchanger< char, false, AlignedCharSendReceiveTask, std::vector< char, AlignedAllocator > >,
-    std::vector< char, AlignedAllocator >
+    peano::heap::SynchronousDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedCharAllocator > >,
+    peano::heap::SynchronousDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedCharAllocator > >,
+    peano::heap::SymmetricBoundaryDataExchanger< char, false, AlignedCharSendReceiveTask, std::vector< char, AlignedCharAllocator > >,
+    std::vector< char, AlignedCharAllocator >
   >     CompressedDataHeap;
   #elif defined(ALIGNMENT) and !defined(UsePeanosSymmetricBoundaryExchanger)
   typedef peano::heap::DoubleHeap<
@@ -120,10 +122,10 @@ namespace exahype {
     std::vector< double, AlignedAllocator >
   >     DataHeap;
   typedef peano::heap::CharHeap<
-    peano::heap::SynchronousDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedAllocator > >,
-    peano::heap::SynchronousDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedAllocator > >,
-    peano::heap::RLEBoundaryDataExchanger< char, false, AlignedCharSendReceiveTask, std::vector< char, AlignedAllocator > >,
-    std::vector< char, AlignedAllocator >
+    peano::heap::SynchronousDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedCharAllocator > >,
+    peano::heap::SynchronousDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedCharAllocator > >,
+    peano::heap::RLEBoundaryDataExchanger< char, false, AlignedCharSendReceiveTask, std::vector< char, AlignedCharAllocator > >,
+    std::vector< char, AlignedCharAllocator >
   >     CompressedDataHeap;
   #elif !defined(ALIGNMENT) and defined(UsePeanosSymmetricBoundaryExchanger)
   typedef peano::heap::DoubleHeap<
@@ -145,10 +147,10 @@ namespace exahype {
     std::vector< double, AlignedAllocator >
   >     DataHeap;
   typedef peano::heap::CharHeap<
-    peano::heap::SynchronousDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedAllocator > >,
-    peano::heap::SynchronousDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedAllocator > >,
-    peano::heap::AggregationBoundaryDataExchanger< char, AlignedCharSendReceiveTask, std::vector< char, AlignedAllocator > >,
-    std::vector< char, AlignedAllocator >
+    peano::heap::SynchronousDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedCharAllocator > >,
+    peano::heap::SynchronousDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedCharAllocator > >,
+    peano::heap::AggregationBoundaryDataExchanger< char, AlignedCharSendReceiveTask, std::vector< char, AlignedCharAllocator > >,
+    std::vector< char, AlignedCharAllocator >
   >     CompressedDataHeap;
   #elif defined(ALIGNMENT) and !defined(UsePeanosAggregationBoundaryExchanger)
   typedef peano::heap::DoubleHeap<
@@ -158,10 +160,10 @@ namespace exahype {
    std::vector< double, AlignedAllocator >
   >      DataHeap;
   typedef peano::heap::CharHeap<
-    peano::heap::SynchronousDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedAllocator > >,
-    peano::heap::SynchronousDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedAllocator > >,
-    peano::heap::AggregationBoundaryDataExchanger< char, AlignedCharSendReceiveTask, std::vector< char, AlignedAllocator > >,
-    std::vector< char, AlignedAllocator >
+    peano::heap::SynchronousDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedCharAllocator > >,
+    peano::heap::SynchronousDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedCharAllocator > >,
+    peano::heap::AggregationBoundaryDataExchanger< char, AlignedCharSendReceiveTask, std::vector< char, AlignedCharAllocator > >,
+    std::vector< char, AlignedCharAllocator >
   >     CompressedDataHeap;
   #elif !defined(ALIGNMENT) and defined(UsePeanosAggregationBoundaryExchanger)
   typedef peano::heap::DoubleHeap<

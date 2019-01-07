@@ -1,4 +1,5 @@
-   
+#define RNSTOV
+    
  MODULE NSTOV_modVar
     IMPLICIT NONE 
 #if defined(RNSTOV) 

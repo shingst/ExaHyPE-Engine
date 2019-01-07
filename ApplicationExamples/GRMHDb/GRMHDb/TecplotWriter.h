@@ -15,7 +15,7 @@
 
 namespace GRMHDb {
   class TecplotWriter;
-  //class GRMHDbSolver_ADERDG;
+  // class GRMHDbSolver_ADERDG;
   // class GRMHDSolver_FV;
 }
 
@@ -33,7 +33,7 @@ class GRMHDb::TecplotWriter : public exahype::plotters::ADERDG2UserDefined {
    */
   TecplotWriter();
   //TecplotWriter(GPR::GPRSolver_FV& solver);
-  //TecplotWriter(GRMHDb::GRMHDbSolver_ADERDG& solver);
+  TecplotWriter(GRMHDb::GRMHDbSolver_ADERDG& solver);
   //TecplotWriter(exahype::solvers::LimitingADERDGSolver&  solver);
 
   /**
@@ -69,8 +69,12 @@ class GRMHDb::TecplotWriter : public exahype::plotters::ADERDG2UserDefined {
    * or to increment file counters
    */
   void finishPlotting() override;
-  private:
-	int plotForADERSolver;
+
+ private:
+  int plotForADERSolver;
+  int mpirank;
+  //int counterloc;
+  //int counterloc2;
 
 };
 
