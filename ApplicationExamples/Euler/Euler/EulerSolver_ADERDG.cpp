@@ -396,7 +396,7 @@ bool Euler::EulerSolver_ADERDG::isPhysicallyAdmissible(
       const tarch::la::Vector<DIMENSIONS,double>& center,
       const tarch::la::Vector<DIMENSIONS,double>& dx,
       const double t, const double dt) const {
-  bool result;
+  bool result = true;
   for (int i=0; i<NumberOfDMPObservables; i++) {
     result &= std::isfinite(observablesMin[i]) &&
               std::isfinite(observablesMax[i]);
