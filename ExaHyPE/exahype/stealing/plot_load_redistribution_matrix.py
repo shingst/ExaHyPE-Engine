@@ -84,7 +84,7 @@ for line in file:
 
 if animate:
   ani = animation.ArtistAnimation(fig, ims, interval=int(current_step), blit=True, repeat_delay=1000)
-  ani.save("movie.mp4")
+  #ani.save("movie.mp4")
   #vid=ani.to_html5_video()
   #print vid
   plt.show()

@@ -164,7 +164,7 @@ void exahype::stealing::AggressiveDistributor::resetRemainingTasksToOffload() {
 void exahype::stealing::AggressiveDistributor::handleEmergencyOnRank(int rank) {
   _tasksToOffload[rank]--;
   logInfo("handleEmergencyOnRank()","decrement for rank:"<<rank<<" tasks to offload "<<_tasksToOffload[rank]);
-  _remainingTasksToOffload[rank] = _tasksToOffload[rank];
+  //_remainingTasksToOffload[rank] = _tasksToOffload[rank];
 }
 
 void exahype::stealing::AggressiveDistributor::updateLoadDistribution() {
