@@ -524,7 +524,7 @@ void exahype::solvers::LimitingADERDGSolver::performPredictionAndVolumeIntegral(
   if ( element != Solver::NotFound ) {
     SolverPatch& cellDescription = cellInfo._ADERDGCellDescriptions[element];
 
-    if ( cellDescription.getPreviousRefinementStatus()<_solver->getMinRefinementStatusForTroubledCell() ) {
+    if ( cellDescription.getRefinementStatus()<_solver->getMinRefinementStatusForTroubledCell() ) {
       _solver->performPredictionAndVolumeIntegral(solverNumber,cellInfo,isAtRemoteBoundary);
     }
   }
