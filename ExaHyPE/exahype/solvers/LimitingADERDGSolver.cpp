@@ -489,7 +489,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
   const bool isTroubled = checkIfCellIsTroubledAndDetermineMinAndMax(solverPatch,cellInfo);
   revisitSolverPatchesInBuffer(solverPatch,cellInfo,isTroubled,neighbourMergePerformed,true);
   result._timeStepSize    = startNewTimeStep(solverPatch,cellInfo);
-  result._meshUpdateEvent = updateRefinementStatusAfterSolutionUpdate(solverPatch,cellInfo,isTroubled,neighbourMergePerformed);
+  result._meshUpdateEvent = determineRefinementStatusAfterSolutionUpdate(solverPatch,cellInfo,isTroubled,neighbourMergePerformed);
 
   if (
       solverPatch.getRefinementStatus()<_solver->getMinRefinementStatusForTroubledCell() &&
@@ -545,7 +545,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::u
   const bool isTroubled = checkIfCellIsTroubledAndDetermineMinAndMax(solverPatch,cellInfo);
   revisitSolverPatchesInBuffer(solverPatch,cellInfo,isTroubled,neighbourMergePerformed,true);
   result._timeStepSize    = startNewTimeStep(solverPatch,cellInfo);
-  result._meshUpdateEvent = updateRefinementStatusAfterSolutionUpdate(solverPatch,cellInfo,isTroubled,neighbourMergePerformed);
+  result._meshUpdateEvent = determineRefinementStatusAfterSolutionUpdate(solverPatch,cellInfo,isTroubled,neighbourMergePerformed);
 
   if (CompressionAccuracy>0.0) { compress(solverPatch,cellInfo,isAtRemoteBoundary); }
 
@@ -716,24 +716,6 @@ exahype::solvers::LimitingADERDGSolver::checkIfCellIsTroubledAndDetermineMinAndM
   }
 
   return isTroubled;
-}
-
-
-exahype::solvers::Solver::MeshUpdateEvent
-exahype::solvers::LimitingADERDGSolver::updateRefinementStatusAfterSolutionUpdate(
-    SolverPatch&                                               solverPatch,
-    CellInfo&                                                  cellInfo,
-    const bool                                                 isTroubled,
-    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed) {
-  MeshUpdateEvent meshUpdateEvent = MeshUpdateEvent::None;
-  if ( solverPatch.getType()==SolverPatch::Type::Cell ) {
-    meshUpdateEvent =
-        determineRefinementStatusAfterSolutionUpdate(solverPatch,cellInfo,isTroubled,neighbourMergePerformed);
-  } else {
-    _solver->updateRefinementStatus(solverPatch,neighbourMergePerformed);
-    ensureNoLimiterPatchIsAllocatedOnHelperCell(solverPatch,cellInfo);
-  }
-  return meshUpdateEvent;
 }
 
 void exahype::solvers::LimitingADERDGSolver::revisitSolverPatchesInBuffer(

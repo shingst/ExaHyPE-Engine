@@ -961,30 +961,6 @@ public:
   void determineMinAndMax(const int solverNumber,Solver::CellInfo& cellInfo);
 
   /**
-   * Evaluates a discrete maximum principle (DMP) and
-   * the physical admissibility detection (PAD) criterion for
-   * the solution values stored for any solver patch
-   * that is of type Cell independent of the mesh level
-   * it is located at.
-   * This method then invokes
-   * ::determinLimiterStatusAfterSolutionUpdate(SolverPatch&,const bool)
-   * with the result of these checks.
-   *
-   * For solver patches of a type other than Cell,
-   * we simply update the limiter status using
-   * the information taken from the neighbour
-   * merging.
-   *
-   * \note Must be called after starting a new time step for the patch.
-   */
-  MeshUpdateEvent
-  updateRefinementStatusAfterSolutionUpdate(
-      SolverPatch&                                               solverPatch,
-      CellInfo&                                                  cellInfo,
-      const bool                                                 isTroubled,
-      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed);
-
-  /**
    * Deallocate the limiter patch on all AMR related
    * helper cells.
    *
