@@ -29,6 +29,7 @@ exahype::stealing::AggressiveDistributor::AggressiveDistributor() :
   _remainingTasksToOffload = new std::atomic<int>[nnodes];
 
   _consumersPerRank        = new int[nnodes];
+  _notOffloaded            = new int[nnodes];
  
   for(int i=1; i<nnodes;i++) {
     _consumersPerRank[i] = tarch::multicore::Core::getInstance().getNumberOfThreads()-1;
@@ -42,9 +43,11 @@ exahype::stealing::AggressiveDistributor::AggressiveDistributor() :
   std::fill( &_idealTasksToOffload[0], &_idealTasksToOffload[nnodes], 0);
   std::fill( &_newLoadDistribution[0], &_newLoadDistribution[nnodes], 0);
   std::fill( &_initialLoadPerRank[0], &_initialLoadPerRank[nnodes], 0);
+  std::fill( &_notOffloaded[0], &_notOffloaded[nnodes], 0);
 }
 
 exahype::stealing::AggressiveDistributor::~AggressiveDistributor() {
+  delete[] _notOffloaded;
   delete[] _initialLoadPerRank;
   delete[] _newLoadDistribution;
   delete[] _tasksToOffload;
@@ -145,9 +148,21 @@ exahype::stealing::AggressiveDistributor& exahype::stealing::AggressiveDistribut
   return aggressiveDist;
 }
 
+void exahype::stealing::AggressiveDistributor::printOffloadingStatistics() {
+  int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
+  int myRank = tarch::parallel::Node::getInstance().getRank();
+
+  for(int i=0; i<nnodes; i++) {
+    if(i==myRank)
+      continue;
+    logInfo("printOffloadingStatistics()", "target tasks to rank "<<i<<" ntasks "<<_tasksToOffload[i]<<" not offloaded "<<_notOffloaded[i]); 
+    _notOffloaded[i]=0;
+  }
+}
+
 void exahype::stealing::AggressiveDistributor::resetRemainingTasksToOffload() {
 
-  logInfo("resetRemainingTasksToOffload()", "resetting remaining tasks to offload");
+  //logInfo("resetRemainingTasksToOffload()", "resetting remaining tasks to offload");
 
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
   int myRank = tarch::parallel::Node::getInstance().getRank();
@@ -157,7 +172,7 @@ void exahype::stealing::AggressiveDistributor::resetRemainingTasksToOffload() {
       continue;
     _remainingTasksToOffload[i] = _tasksToOffload[i];
     _newLoadDistribution[i] = _tasksToOffload[i] + _initialLoadPerRank[i];
-    logInfo("resetRemainingTasksToOffload()", "to rank "<<i<<" ntasks "<<_tasksToOffload[i]<<" new load "<<_newLoadDistribution[i]); 
+    //logInfo("resetRemainingTasksToOffload()", "to rank "<<i<<" ntasks "<<_tasksToOffload[i]<<" new load "<<_newLoadDistribution[i]); 
   }
 }
 
@@ -283,8 +298,10 @@ bool exahype::stealing::AggressiveDistributor::selectVictimRank(int& victim) {
  
   //logInfo("selectVictimRank", "chose victim "<<victim<<" _remainingTasksToOffload "<<_remainingTasksToOffload[victim]);
 
-  if(tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs()<(tarch::multicore::Core::getInstance().getNumberOfThreads()-1)*tarch::multicore::jobs::internal::_minimalNumberOfJobsPerConsumerRun) {
+  if(tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs()<
+        (tarch::multicore::Core::getInstance().getNumberOfThreads()-1)*tarch::multicore::jobs::internal::_minimalNumberOfJobsPerConsumerRun) {
     //logInfo("selectVictimRank", "number of running consumers: "<<tarch::multicore::jobs::internal::_numberOfRunningJobConsumerTasks.load()<<" max running "<<tarch::multicore::Core::getInstance().getNumberOfThreads()-1);
+    _notOffloaded[victim]++;
     victim = myRank;
   }
   //if(victim!=myRank)

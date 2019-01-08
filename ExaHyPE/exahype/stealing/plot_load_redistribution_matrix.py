@@ -11,11 +11,12 @@ file = open(sys.argv[1], 'r')
 
 ranks = int(sys.argv[2])
 timestep_pattern = re.compile(".*step ([0-9]+).*t_min.*")
-task_offload_pattern = re.compile(".*rank:([0-9]+).*resetRemainingTasksToOffload.*to rank ([0-9]+) ntasks ([0-9]+).*")
+task_offload_pattern = re.compile(".*rank:([0-9]+).*printOffloadingStatistics.* target tasks to rank ([0-9]+) ntasks ([0-9]+) not offloaded ([0-9]+).*")
 blacklist_pattern = re.compile(".*blacklist value for rank ([0-9]+):([0-9]+\.[0-9]+)")
 
 
 cur_tasks_to_offload = np.zeros([ranks,ranks])
+cur_tasks_not_offloaded = np.zeros([ranks,ranks])
 cur_blacklist_values = np.zeros([ranks,1])
 
 animate = sys.argv[3].lower() in ("yes", "true", "t", "1")
@@ -61,8 +62,13 @@ for line in file:
 
     for i in range(0,ranks):
       for j in range(0,ranks):
-         val= cur_tasks_to_offload[j,i]
-         txt = ax.text(i, j, str(val), va='center', ha='center')
+         tasks_to_offload = cur_tasks_to_offload[j,i]
+         tasks_not_offloaded = cur_tasks_not_offloaded[j,i]
+         tasks_offloaded = tasks_to_offload - tasks_not_offloaded
+         if(i!=j):
+           txt = ax.text(i, j, str(tasks_offloaded)+"/"+str(tasks_to_offload), va='center', ha='center')
+         else:
+           txt = ax.text(i, j, str(tasks_to_offload), va='center', ha='center')
          if animate:
            ims_tmp.append(txt)
 
@@ -73,7 +79,8 @@ for line in file:
   m=task_offload_pattern.match(line)
   if m:
     #print line
-    cur_tasks_to_offload[int(m.group(1))][int(m.group(2))]=m.group(3)
+    cur_tasks_to_offload[int(m.group(1))][int(m.group(2))] = m.group(3)
+    cur_tasks_not_offloaded[int(m.group(1))][int(m.group(2))]= m.group(4)
     #print cur_tasks_to_offload
   m=blacklist_pattern.match(line)
   if m:
