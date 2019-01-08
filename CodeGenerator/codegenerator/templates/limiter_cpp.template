@@ -168,8 +168,8 @@ void {{codeNamespace}}::findCellLocalLimiterMinAndMax(
     double* const localMinPerVariables, double* const localMaxPerVariables
 ) {
   
-  std::fill_n(localMinPerVariables,{{nObs}},std::numeric_limits<double>::max());
-  std::fill_n(localMaxPerVariables,{{nObs}},-std::numeric_limits<double>::max());
+  std::fill_n(localMinPerVariables,{{nObs}},+std::numeric_limits<double>::infinity());
+  std::fill_n(localMaxPerVariables,{{nObs}},-std::numeric_limits<double>::infinity());
 
   double observables[{{nObs}}] __attribute__((aligned(ALIGNMENT)));
   
@@ -197,8 +197,8 @@ void {{codeNamespace}}::findCellLocalMinAndMax(
     double* const localMinPerVariables, double* const localMaxPerVariables
 ) {
   
-  std::fill_n(localMinPerVariables,{{nObs}},std::numeric_limits<double>::max());
-  std::fill_n(localMaxPerVariables,{{nObs}},-std::numeric_limits<double>::max());
+  std::fill_n(localMinPerVariables,{{nObs}},+std::numeric_limits<double>::infinity());
+  std::fill_n(localMaxPerVariables,{{nObs}},-std::numeric_limits<double>::infinity());
 
   double observables[{{nObs}}] __attribute__((aligned(ALIGNMENT)));
 

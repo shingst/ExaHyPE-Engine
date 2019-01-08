@@ -202,8 +202,8 @@ void kernels::limiter::generic::c::findCellLocalLimiterMinAndMax(
   if ( numberOfObservables>0 ) {
     constexpr int numberOfData = SolverType::NumberOfVariables+SolverType::NumberOfParameters;
     
-    std::fill_n(localMinPerVariables,numberOfObservables,std::numeric_limits<double>::max());
-    std::fill_n(localMaxPerVariables,numberOfObservables,-std::numeric_limits<double>::max());
+    std::fill_n(localMinPerVariables,numberOfObservables,+std::numeric_limits<double>::inifinity());
+    std::fill_n(localMaxPerVariables,numberOfObservables,-std::numeric_limits<double>::inifinity());
   
     constexpr int basisSize    = SolverType::Order+1;
     constexpr int basisSizeLim = 2*(basisSize-1)+1;
@@ -249,8 +249,8 @@ void kernels::limiter::generic::c::findCellLocalMinAndMax(
     const int basisSize = SolverType::Order+1;
     constexpr int numberOfData = SolverType::NumberOfVariables+SolverType::NumberOfParameters;
     
-    std::fill_n(localMinPerVariables,numberOfObservables,std::numeric_limits<double>::max());
-    std::fill_n(localMaxPerVariables,numberOfObservables,-std::numeric_limits<double>::max());
+    std::fill_n(localMinPerVariables,numberOfObservables,+std::numeric_limits<double>::infinity());
+    std::fill_n(localMaxPerVariables,numberOfObservables,-std::numeric_limits<double>::infinity());
   
     #if DIMENSIONS == 3
     constexpr int basisSize3D = basisSize;
