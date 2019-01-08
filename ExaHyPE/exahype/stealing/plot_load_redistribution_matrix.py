@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from numpy.ma import masked_array
+import matplotlib.animation as animation
 
 import re
 import sys
@@ -17,46 +18,58 @@ blacklist_pattern = re.compile(".*blacklist value for rank ([0-9]+):([0-9]+\.[0-
 cur_tasks_to_offload = np.zeros([ranks,ranks])
 cur_blacklist_values = np.zeros([ranks,1])
 
-#animation = sys.argv[3].lower() in ("yes", "true", "t", "1")
-#if animation:
+animate = sys.argv[3].lower() in ("yes", "true", "t", "1")
+print (animate)
+#if animate:
 #  plt.ion()
 
 current_step = -1
 
-#fig, ax = plt.subplots()
-#plt.show()
+if animate:
+  fig, ax = plt.subplots()
+  ims = []
+
 
 for line in file:
   m=timestep_pattern.match(line)
   if m:
     current_step = m.group(1)
-    fig, ax = plt.subplots()
-    ax.set_title("time step: "+current_step)
-    print current_step
+    if not animate:
+      fig, ax = plt.subplots()
+      ax.set_title("time step: "+current_step)
+    if animate:
+      ims_tmp = []
+    print (current_step)
   
     for i in range(0,ranks):
       cur_tasks_to_offload[i][i]= -cur_blacklist_values[i]
 
-    print cur_tasks_to_offload
+    print (cur_tasks_to_offload)
+   
+    tmp_copy = cur_tasks_to_offload.copy() 
+    tmp_tasks_to_offload_a = masked_array(tmp_copy, tmp_copy<0)
+    tmp_tasks_to_offload_b = masked_array(tmp_copy, tmp_copy>-0.5)
     
-    cur_tasks_to_offload_a = masked_array(cur_tasks_to_offload, cur_tasks_to_offload<0)
-    cur_tasks_to_offload_b = masked_array(cur_tasks_to_offload, cur_tasks_to_offload>-0.5)
-    
-    pa = ax.matshow(cur_tasks_to_offload_a, cmap=plt.cm.Reds)
-    cba = plt.colorbar(pa)
-    pb = ax.matshow(cur_tasks_to_offload_b, cmap=plt.cm.gray, vmax=-0.5, vmin=-20)
-    cbb = plt.colorbar(pb)
+    pa = ax.matshow(tmp_tasks_to_offload_a, cmap=plt.cm.Reds)
+    #cba = plt.colorbar(pa)
+    pb = ax.matshow(tmp_tasks_to_offload_b, cmap=plt.cm.gray, vmax=-0.5, vmin=-20)
+    #cbb = plt.colorbar(pb)
+
+    if animate:
+      ims_tmp.append(pa)
+      ims_tmp.append(pb)
 
     for i in range(0,ranks):
       for j in range(0,ranks):
          val= cur_tasks_to_offload[j,i]
-         ax.text(i, j, str(val), va='center', ha='center')
+         txt = ax.text(i, j, str(val), va='center', ha='center')
+         if animate:
+           ims_tmp.append(txt)
 
-    plt.show()
-   # if animation:
-      #wait=raw_input("Press enter to continue")
-   #   time.sleep(1)
-      #plt.close()
+    if animate:
+      ims.append(ims_tmp) 
+    if not animate:
+      plt.show()
   m=task_offload_pattern.match(line)
   if m:
     #print line
@@ -67,5 +80,13 @@ for line in file:
     #print line
     #print float(m.group(2))
     cur_blacklist_values[int(m.group(1))]=float(m.group(2))
+
+
+if animate:
+  ani = animation.ArtistAnimation(fig, ims, interval=int(current_step), blit=True, repeat_delay=1000)
+  ani.save("movie.mp4")
+  #vid=ani.to_html5_video()
+  #print vid
+  plt.show()
 
 file.close()
