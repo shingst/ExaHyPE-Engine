@@ -146,6 +146,10 @@ bool {{codeNamespace}}::discreteMaximumPrincipleAndMinAndMaxSearch(
       discreteMaximumPrincipleSatisfied=false;
     }
 
+    // check for nans and infinity values
+    discreteMaximumPrincipleSatisfied &= std::isfinite(localMinPerObservable[v]) &&
+                                         std::isfinite(localMaxPerObservable[v]);
+
     // TODO(Dominic): A little hacky
 
     // We have the new min and max directly available now and

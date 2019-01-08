@@ -179,7 +179,11 @@ bool kernels::limiter::generic::c::discreteMaximumPrincipleAndMinAndMaxSearch(
       if((localMinPerObservable[v] < (boundaryMin - scaledDifference)) ||
          (localMaxPerObservable[v] > (boundaryMax + scaledDifference))) {
         discreteMaximumPrincipleSatisfied=false;
-      }
+      } 
+      
+      // check for nans and infinity values
+      discreteMaximumPrincipleSatisfied &= std::isfinite(localMinPerObservable[v]) &&
+                                           std::isfinite(localMaxPerObservable[v]);
 
       // We have the new min and max directly available now and
       // overwrite the block for face 0 with it
@@ -202,8 +206,8 @@ void kernels::limiter::generic::c::findCellLocalLimiterMinAndMax(
   if ( numberOfObservables>0 ) {
     constexpr int numberOfData = SolverType::NumberOfVariables+SolverType::NumberOfParameters;
     
-    std::fill_n(localMinPerVariables,numberOfObservables,+std::numeric_limits<double>::inifinity());
-    std::fill_n(localMaxPerVariables,numberOfObservables,-std::numeric_limits<double>::inifinity());
+    std::fill_n(localMinPerVariables,numberOfObservables,+std::numeric_limits<double>::infinity());
+    std::fill_n(localMaxPerVariables,numberOfObservables,-std::numeric_limits<double>::infinity());
   
     constexpr int basisSize    = SolverType::Order+1;
     constexpr int basisSizeLim = 2*(basisSize-1)+1;
