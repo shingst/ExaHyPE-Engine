@@ -47,11 +47,20 @@ for line in file:
 
     print (cur_tasks_to_offload)
    
-    tmp_copy = cur_tasks_to_offload.copy() 
+    tmp_copy = cur_tasks_to_offload.copy()
+
+    for i in range(0,ranks):
+      for j in range(0,ranks):
+         if(i!=j):
+           tasks_to_offload = cur_tasks_to_offload[j,i]
+           tasks_not_offloaded = cur_tasks_not_offloaded[j,i]
+           tasks_offloaded = tasks_to_offload - tasks_not_offloaded
+           tmp_copy[j][i] = tasks_offloaded
+
     tmp_tasks_to_offload_a = masked_array(tmp_copy, tmp_copy<0)
     tmp_tasks_to_offload_b = masked_array(tmp_copy, tmp_copy>-0.5)
     
-    pa = ax.matshow(tmp_tasks_to_offload_a, cmap=plt.cm.Reds)
+    pa = ax.matshow(tmp_tasks_to_offload_a, cmap=plt.cm.Reds, vmin=0, vmax=20000)
     #cba = plt.colorbar(pa)
     pb = ax.matshow(tmp_tasks_to_offload_b, cmap=plt.cm.gray, vmax=-0.5, vmin=-20)
     #cbb = plt.colorbar(pb)
@@ -59,18 +68,23 @@ for line in file:
     if animate:
       ims_tmp.append(pa)
       ims_tmp.append(pb)
-
+    
     for i in range(0,ranks):
       for j in range(0,ranks):
-         tasks_to_offload = cur_tasks_to_offload[j,i]
-         tasks_not_offloaded = cur_tasks_not_offloaded[j,i]
-         tasks_offloaded = tasks_to_offload - tasks_not_offloaded
          if(i!=j):
+           tasks_to_offload = cur_tasks_to_offload[j,i]
+           tasks_not_offloaded = cur_tasks_not_offloaded[j,i]
+           tasks_offloaded = tasks_to_offload - tasks_not_offloaded
            txt = ax.text(i, j, str(tasks_offloaded)+"/"+str(tasks_to_offload), va='center', ha='center')
+           if animate:
+             ims_tmp.append(txt)
          else:
-           txt = ax.text(i, j, str(tasks_to_offload), va='center', ha='center')
-         if animate:
-           ims_tmp.append(txt)
+           blacklist_val = cur_tasks_to_offload[i,i]
+           if blacklist_val<-0.5:
+             print ('adding')
+             txt = ax.text(i, j, str(blacklist_val), va='center', ha='center')
+             if animate:
+               ims_tmp.append(txt)
 
     if animate:
       ims.append(ims_tmp) 
@@ -84,7 +98,7 @@ for line in file:
     #print cur_tasks_to_offload
   m=blacklist_pattern.match(line)
   if m:
-    #print line
+    print line
     #print float(m.group(2))
     cur_blacklist_values[int(m.group(1))]=float(m.group(2))
 
