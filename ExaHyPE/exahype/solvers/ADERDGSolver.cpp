@@ -4723,7 +4723,7 @@ void exahype::solvers::ADERDGSolver::progressStealing(exahype::solvers::ADERDGSo
            StealablePredictionJob::receiveHandler(solver, stat.MPI_TAG, stat.MPI_SOURCE);
          else {
            if(tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs()<=1) {
-             logInfo("progressStealing()","running out of tasks and could not receive stolen task so we just block!");
+             //logInfo("progressStealing()","running out of tasks and could not receive stolen task so we just block!");
              double wtime = -MPI_Wtime();
              exahype::stealing::StealingManager::getInstance().submitRequests(
              receiveRequests,
