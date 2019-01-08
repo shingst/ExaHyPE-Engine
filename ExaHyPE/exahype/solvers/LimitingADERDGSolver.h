@@ -276,6 +276,29 @@ private:
       const SolverPatch&  solverPatch,CellInfo& cellInfo) const;
 
   /**
+   * Revisits the cells in the buffer layers which compute the solution with
+   * the main solver based on the maximum refinement status in the solver patch's neighbourhood.
+   *
+   * However, the so computed solution may be found troubled after the update. In this case,
+   * the solution must be recomputed with the limiter solver.
+   *
+   * If the solution is not troubled,
+   * it is safe to project the main solver solution onto the limiter solution.
+   *
+   * @param solverPatch             a solver patch
+   * @param cellInfo                a struct referring to all cell descriptions associatd with a cell
+   * @param isTroubled              if the main solver solution is troubled
+   * @param neighbourMergePerformed per face a flag indicating if a neighbour/boundary merge has been performed
+   * @param backupPreviousSolution  if the previous solution should be backed up.
+   */
+  void revisitSolverPatchesInBuffer(
+      SolverPatch&                                               solverPatch,
+      CellInfo&                                                  cellInfo,
+      const bool                                                 isTroubled,
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
+      const bool                                                 backupPreviousSolution);
+
+  /**
    * Update the limiter status based on the cell-local solution values.
    *
    * \return MeshUpdateEvent::IrregularLimiterDomainChange if the limiter domain changes irregularly on the finest grid level, i.e.,
@@ -875,6 +898,20 @@ public:
 
   void adjustSolutionDuringMeshRefinement(const int solverNumber,CellInfo& cellInfo) final override;
 
+
+  /**
+   * TODO make prviate
+   *
+   * @return the maximum out of the solver patch's refinement
+   * status and of the maximum refinement status of its neighbours minus one.
+   *
+   * @param solverPatch a solver patch
+   * @param neighbourMergePerformed a flag per face indicating if a neighbour/boudnary merge was performed
+   */
+  int getMaxiumRefinementStatusInNeighbourhood(
+      SolverPatch& solverPatch,
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed) const;
+
   /**
    * Update the solution of a solver patch and or
    * its associated limiter patch
@@ -899,6 +936,19 @@ public:
       CellInfo&                                                  cellInfo,
       const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
       const bool                                                 backupPreviousSolution);
+
+  /**
+   * Evaluate the discrete maximum principle and the physically admissibility detection criterion.
+   *
+   * Furthermore, computes the new cell local minimum and maximum of the DMP observables.
+   * These are written to the solutionMin and solutionMax arrays of the cell solver patch.
+   * If a cell is troubled, the limiter patch is used to compute the minimum and maximum.
+   *
+   * @param solverPatch a solver patch
+   * @param cellInfo    a struct referring to all cell descriptions
+   * @return true if the cell is troubled.
+   */
+  bool checkIfCellIsTroubledAndDetermineMinAndMax(SolverPatch& solverPatch,CellInfo& cellInfo);
 
   /**
    * Determine the new cell-local min max values.
@@ -928,9 +978,10 @@ public:
    * \note Must be called after starting a new time step for the patch.
    */
   MeshUpdateEvent
-  updateRefinementStatusAndMinAndMaxAfterSolutionUpdate(
+  updateRefinementStatusAfterSolutionUpdate(
       SolverPatch&                                               solverPatch,
       CellInfo&                                                  cellInfo,
+      const bool                                                 isTroubled,
       const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed);
 
   /**

@@ -591,6 +591,11 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
     _profiler->registerTag(tag);
   }
 
+//  logInfo("ADERDSolver(...)", // TODO remove
+//      "_minRefinementStatusForSeparationCell="<<_minRefinementStatusForSeparationCell<<
+//      ",_minRefinementStatusForBufferCell    ="<<_minRefinementStatusForBufferCell    <<
+//      ",_minRefinementStatusForTroubledCell  ="<<_minRefinementStatusForTroubledCell);
+
   #ifdef Parallel
   _invalidExtrapolatedPredictor.resize(getBndFaceSize());
   _invalidFluctuations.resize(getBndFluxSize());
@@ -2598,6 +2603,77 @@ void exahype::solvers::ADERDGSolver::adjustSolution(CellDescription& cellDescrip
   #endif
 }
 
+
+void exahype::solvers::ADERDGSolver::printADERDGSolution2D(const CellDescription& cellDescription)  const {
+  #if DIMENSIONS==2
+  double* solution = static_cast<double*>(cellDescription.getSolution());
+  assertion1(cellDescription.getType()==CellDescription::Type::Cell,cellDescription.toString());
+  assertion1(solution!=nullptr,cellDescription.toString());
+
+  std::cout <<  "solution:" << std::endl;
+  const int numberOfData = _numberOfVariables + _numberOfParameters;
+  for (int unknown=0; unknown < numberOfData; unknown++) {
+    std::cout <<  "unknown=" << unknown << std::endl;
+    dfor(i,_nodesPerCoordinateAxis) {
+      int iScalar = peano::utils::dLinearisedWithoutLookup(i,_nodesPerCoordinateAxis)*numberOfData+unknown;
+      std::cout << std::setprecision(3) << solution[iScalar] << ",";
+      if (i(0)==_nodesPerCoordinateAxis-1) {
+        std::cout << std::endl;
+      }
+    }
+  }
+  std::cout <<  "}" << std::endl;
+  #endif
+}
+
+void exahype::solvers::ADERDGSolver::printADERDGExtrapolatedPredictor2D(const CellDescription& cellDescription) const {
+  #if DIMENSIONS==2
+  double* extrapolatedPredictor = static_cast<double*>(cellDescription.getExtrapolatedPredictor());
+  assertion1(extrapolatedPredictor!=nullptr,cellDescription.toString());
+
+  std::cout <<  "extrapolated predictor:" << std::endl;
+  const int numberOfData = _numberOfVariables + _numberOfParameters;
+  for (int f=0; f<DIMENSIONS_TIMES_TWO; f++) {
+    std::cout <<  "face=" << f << std::endl;
+    for (int unknown=0; unknown < numberOfData; unknown++) {
+      std::cout <<  "unknown=" << unknown << std::endl;
+      for (int i=0; i<_nodesPerCoordinateAxis; i++) {
+        int iScalar = f*numberOfData*_nodesPerCoordinateAxis + numberOfData*i + unknown;
+        std::cout << std::setprecision(3) << extrapolatedPredictor[iScalar] << ",";
+        if (i==_nodesPerCoordinateAxis-1) {
+          std::cout << std::endl;
+        }
+      }
+    }
+  }
+  std::cout <<  "}" << std::endl;
+  #endif
+}
+
+void exahype::solvers::ADERDGSolver::printADERDGFluctuations2D(const CellDescription& cellDescription) const {
+  #if DIMENSIONS==2
+  double* fluctuation = static_cast<double*>(cellDescription.getFluctuation());
+  assertion1(fluctuation!=nullptr,cellDescription.toString());
+
+  std::cout << "fluctuations:" << std::endl;
+  const int numberOfData = _numberOfVariables + _numberOfParameters;
+  for (int f=0; f<DIMENSIONS_TIMES_TWO; f++) {
+    std::cout <<  "face=" << f << std::endl;
+    for (int unknown=0; unknown < numberOfData; unknown++) {
+      std::cout <<  "unknown=" << unknown << std::endl;
+      for (int i=0; i<_nodesPerCoordinateAxis; i++) {
+        int iScalar = f*numberOfData*_nodesPerCoordinateAxis + numberOfData*i + unknown;
+        std::cout << std::setprecision(3) << fluctuation[iScalar] << ",";
+        if (i==_nodesPerCoordinateAxis-1) {
+          std::cout << std::endl;
+        }
+      }
+    }
+  }
+  std::cout <<  "}" << std::endl;
+  #endif
+}
+
 void exahype::solvers::ADERDGSolver::updateSolution(
     CellDescription&                                           cellDescription,
     const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
@@ -2648,7 +2724,7 @@ void exahype::solvers::ADERDGSolver::updateSolution(
     if ( backupPreviousSolution ) {
       // perform the update
       swapSolutionAndPreviousSolution(cellDescription); // solution is overwritten with the current solution plus the update,
-                                                        // while update is remebered as the current solution.
+                                                        // while current solution is remembered as the previous solution.
       double* solution         = static_cast<double*>(cellDescription.getSolution());
       double* previousSolution = static_cast<double*>(cellDescription.getPreviousSolution());
       solutionUpdate(solution,previousSolution,update,cellDescription.getCorrectorTimeStepSize());

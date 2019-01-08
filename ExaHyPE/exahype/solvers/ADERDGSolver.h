@@ -2070,6 +2070,16 @@ public:
   void adjustSolutionDuringMeshRefinement(const int solverNumber,CellInfo& cellInfo) final override;
 
   /**
+   * Print the 2D ADER-DG solution.
+   * @param cellDescription a cell description of type Cell
+   */
+  void printADERDGSolution2D(const CellDescription& cellDescription) const;
+
+  void printADERDGExtrapolatedPredictor2D(const CellDescription& cellDescription) const;
+
+  void printADERDGFluctuations2D(const CellDescription& cellDescription) const;
+
+  /**
    * Computes the surface integral contributions to the
    * cell update and then adds the update degrees
    * to the solution degrees of freedom.

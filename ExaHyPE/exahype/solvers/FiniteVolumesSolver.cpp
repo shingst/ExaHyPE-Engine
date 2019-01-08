@@ -944,10 +944,10 @@ void exahype::solvers::FiniteVolumesSolver::mergeNeighboursData(
 
     assertion(cellDescription1.getType()==CellDescription::Cell && cellDescription2.getType()==CellDescription::Cell);
 
-    assertion1(cellDescription1.getTimeStamp()<std::numeric_limits<double>::max(),cellDescription1.toString());
-    assertion1(cellDescription1.getTimeStepSize()<std::numeric_limits<double>::max(),cellDescription1.toString());
-    assertion1(cellDescription2.getTimeStamp()<std::numeric_limits<double>::max(),cellDescription2.toString());
-    assertion1(cellDescription2.getTimeStepSize()<std::numeric_limits<double>::max(),cellDescription2.toString());
+    assertion2(cellDescription1.getTimeStamp()<std::numeric_limits<double>::max(),cellDescription1.toString(),cellInfo1._cellDescriptionsIndex);
+    assertion2(cellDescription1.getTimeStepSize()<std::numeric_limits<double>::max(),cellDescription1.toString(),cellInfo1._cellDescriptionsIndex);
+    assertion2(cellDescription2.getTimeStamp()<std::numeric_limits<double>::max(),cellDescription2.toString(),cellInfo2._cellDescriptionsIndex);
+    assertion2(cellDescription2.getTimeStepSize()<std::numeric_limits<double>::max(),cellDescription2.toString(),cellInfo2._cellDescriptionsIndex);
 
     if ( CompressionAccuracy > 0.0 ) {
      peano::datatraversal::TaskSet uncompression(
