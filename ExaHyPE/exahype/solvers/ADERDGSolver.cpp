@@ -4133,11 +4133,13 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
         cellDescription.getCorrectorTimeStepSize(),face._direction,false,face._faceIndex);
     
     #ifdef Asserts
-    for (int ii = 0; ii<dofsPerFace; ii++) {
-      assertion8(std::isfinite(FL[ii]), cellDescription.toString(),
-          face._faceIndex, ii, QR[ii], QL[ii], FR[ii], FL[ii],fromRank);
-      assertion8(std::isfinite(FR[ii]), cellDescription.toString(),
-          face._faceIndex, ii, QR[ii], QL[ii], FR[ii], FL[ii],fromRank);
+    if ( _checkForNaNs ) {
+      for (int ii = 0; ii<dofsPerFace; ii++) {
+        assertion8(std::isfinite(FL[ii]), cellDescription.toString(),
+            face._faceIndex, ii, QR[ii], QL[ii], FR[ii], FL[ii],fromRank);
+        assertion8(std::isfinite(FR[ii]), cellDescription.toString(),
+            face._faceIndex, ii, QR[ii], QL[ii], FR[ii], FL[ii],fromRank);
+      }
     }
     #endif
   } else {
@@ -4159,11 +4161,13 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
         face._direction,false,face._faceIndex);
     
     #ifdef Asserts
-    for (int ii = 0; ii<dofsPerFace; ii++) {
-      assertion10(std::isfinite(FL[ii]), cellDescription.toString(),
-          face._faceIndex, ii, QR[ii], QL[ii], FR[ii], FL[ii],fromRank,inputDataL,inputDataR);
-      assertion10(std::isfinite(FR[ii]), cellDescription.toString(),
-          face._faceIndex, ii, QR[ii], QL[ii], FR[ii], FL[ii],fromRank,inputDataL,inputDataR);
+    if ( _checkForNaNs ) {
+      for (int ii = 0; ii<dofsPerFace; ii++) {
+        assertion10(std::isfinite(FL[ii]), cellDescription.toString(),
+            face._faceIndex, ii, QR[ii], QL[ii], FR[ii], FL[ii],fromRank,inputDataL,inputDataR);
+        assertion10(std::isfinite(FR[ii]), cellDescription.toString(),
+            face._faceIndex, ii, QR[ii], QL[ii], FR[ii], FL[ii],fromRank,inputDataL,inputDataR);
+      }
     }
     #endif
   }
