@@ -83,6 +83,9 @@ void exahype::stealing::AggressiveDistributor::computeIdealLoadDistribution(int 
   int total_consumers = 0;
   total_consumers = std::accumulate(&_consumersPerRank[0], &_consumersPerRank[nnodes], total_consumers);
 
+  if(total_consumers==0)
+     total_consumers = 1;
+
   int avg_l_per_consumer = 0;
   avg_l_per_consumer = total_l / total_consumers;
 
