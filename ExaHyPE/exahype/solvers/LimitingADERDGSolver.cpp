@@ -1178,7 +1178,7 @@ double exahype::solvers::LimitingADERDGSolver::recomputeSolutionLocally(
       if (
           solverPatch.getLevel()==getMaximumAdaptiveMeshLevel()                                     &&
           solverPatch.getType()==SolverPatch::Type::Cell                                            &&
-          solverPatch.getPredictorTimeStepSize() > 0
+          solverPatch.getPredictorTimeStepSize() > 0 // TODO(Dominic): Why is the dt > 0 necessary? Historic?
           &&
           solverPatch.getRefinementStatus() < _solver->getMinRefinementStatusForTroubledCell()
           &&                                                                                                  // is not troubled and

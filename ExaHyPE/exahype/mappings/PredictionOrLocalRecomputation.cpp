@@ -464,12 +464,14 @@ void exahype::mappings::PredictionOrLocalRecomputation::receiveNeighbourDataLoop
       solvers::Solver::CellInfo         cellInfo = vertex.createCellInfo(destScalar);
       solvers::Solver::BoundaryFaceInfo face(dest,src); // dest and src are swapped
 
-      for(unsigned int solverNumber = solvers::RegisteredSolvers.size(); solverNumber-- > 0;) {
-        auto* solver = solvers::RegisteredSolvers[solverNumber];
-        if ( performLocalRecomputation( solver ) ) {
-          assertion1( solver->getType()==solvers::Solver::Type::LimitingADERDG, solver->toString() );
-          static_cast<solvers::LimitingADERDGSolver*>(solver)->
-              mergeWithNeighbourDataDuringLocalRecomputation(fromRank,solverNumber,cellInfo,src,dest,x,level);
+      if ( vertex.hasToMergeAtFace(cellInfo,face._faceIndex,false/*prefetchADERDGFaceData*/) ) {
+        for(unsigned int solverNumber = solvers::RegisteredSolvers.size(); solverNumber-- > 0;) {
+          auto* solver = solvers::RegisteredSolvers[solverNumber];
+          if ( performLocalRecomputation( solver ) ) {
+            assertion1( solver->getType()==solvers::Solver::Type::LimitingADERDG, solver->toString() );
+            static_cast<solvers::LimitingADERDGSolver*>(solver)->
+                mergeWithNeighbourDataDuringLocalRecomputation(fromRank,solverNumber,cellInfo,src,dest,x,level);
+          }
         }
       }
     }
