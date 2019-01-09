@@ -1579,7 +1579,10 @@ void exahype::solvers::LimitingADERDGSolver::mergeWithNeighbourDataBasedOnLimite
       assertion1(solverPatch.getRefinementStatus()>=ADERDGSolver::Pending,solverPatch.toString());
 
       // limiter !!! Receive order must be inverted in neighbour comm.
-      if ( solverPatch.getRefinementStatus() >= _solver->getMinRefinementStatusForSeparationCell() ) {
+      if (
+          solverPatch.getRefinementStatus()                        >= _solver->getMinRefinementStatusForSeparationCell() &&
+          solverPatch.getFacewiseRefinementStatus(face._faceIndex) >= _solver->getMinRefinementStatusForSeparationCell() // requires metadata exchange
+      ) {
         assertion1(cellInfo.indexOfFiniteVolumesCellDescription(solverNumber)!=Solver::NotFound,solverPatch.toString());
         _limiter->mergeWithNeighbourData(fromRank,solverNumber,cellInfo,src,dest,x,level);
       } else {
