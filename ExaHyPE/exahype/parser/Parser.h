@@ -540,6 +540,18 @@ class exahype::parser::Parser {
   ProfilingTarget getProfilingTarget() const;
 
   /**
+   * @return if the cell processing times (time per update, min/max time per prediction) should be measured per solver.
+   */
+  bool getMeasureCellProcessingTimes() const;
+
+  /**
+   * @return number of measurements to er
+   *
+   * @see getMeasureCellProcessingTimes()
+   */
+  int getMeasureCellProcessingTimesIterations() const;
+
+  /**
    * @TODO This function should be renamed to createParserViewForSolver, as we also
    * now also create ParserViews for plotters.
    **/

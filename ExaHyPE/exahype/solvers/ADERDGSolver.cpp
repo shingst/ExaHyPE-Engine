@@ -16,8 +16,8 @@
 
 #include <limits>
 #include <iomanip>
-
-#include <algorithm>
+#include <chrono>
+#include <algorithm> // copy_n
 
 #include "exahype/Cell.h"
 #include "exahype/Vertex.h"
@@ -2292,7 +2292,7 @@ void exahype::solvers::ADERDGSolver::compress(
   }
 }
 
-void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegralBody(
+int exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegralBody(
     CellDescription& cellDescription,
     const double predictorTimeStamp,
     const double predictorTimeStepSize,
@@ -2324,7 +2324,7 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegralBody(
   counter++;
   #endif
 
-  fusedSpaceTimePredictorVolumeIntegral(
+  const int numberOfPicardIterations = fusedSpaceTimePredictorVolumeIntegral(
       lduh,lQhbnd,lFhbnd,
       luh,
       cellDescription.getOffset()+0.5*cellDescription.getSize(),
@@ -2337,6 +2337,8 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegralBody(
   validateCellDescriptionData(cellDescription,true,true,false,"exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegralBody [post]");
 
   cellDescription.setHasCompletedLastStep(true);
+
+  return numberOfPicardIterations;
 }
 
 void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
@@ -2682,14 +2684,14 @@ void exahype::solvers::ADERDGSolver::updateSolution(
     cellDescription.getType()==CellDescription::Type::Cell &&
     cellDescription.getRefinementEvent()==CellDescription::None
   ) {
-    if ( !tarch::la::equals(neighbourMergePerformed,static_cast<signed char>(true)) && !ProfileUpdate ) {
+    if ( !tarch::la::equals(neighbourMergePerformed,static_cast<signed char>(true)) && !SwitchOffNeighbourMergePerformedCheck ) {
       logError("updateSolution(...)","Riemann solve was not performed on all faces of cell= "<<cellDescription.toString());
       std::terminate();
     }
     double* update = static_cast<double*>(cellDescription.getUpdate());
 
     #ifdef Asserts
-    assertion1( tarch::la::equals(neighbourMergePerformed,static_cast<signed char>(true)) || ProfileUpdate,cellDescription.toString());
+    assertion1( tarch::la::equals(neighbourMergePerformed,static_cast<signed char>(true)) || SwitchOffNeighbourMergePerformedCheck,cellDescription.toString());
     if ( _checkForNaNs ) {
       for (int i=0; i<getUnknownsPerCell(); i++) { // update does not store parameters
         assertion3(tarch::la::equals(cellDescription.getCorrectorTimeStepSize(),0.0)  || std::isfinite(update[i]),cellDescription.toString(),"updateSolution",i);
@@ -2742,7 +2744,7 @@ void exahype::solvers::ADERDGSolver::updateSolution(
         cellDescription.getCorrectorTimeStepSize());
 
     // only for profiling
-    if ( Solver::ProfileUpdate ) { swapSolutionAndPreviousSolution(cellDescription); }
+    if ( Solver::SwitchOffNeighbourMergePerformedCheck ) { swapSolutionAndPreviousSolution(cellDescription); }
 
     #ifdef Asserts
     if ( _checkForNaNs ) {
@@ -5114,4 +5116,75 @@ void exahype::solvers::ADERDGSolver::pullUnknownsFromByteStream(
     peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
     true
   );
+}
+
+///////////////////////
+// PROFILING
+///////////////////////
+
+exahype::solvers::Solver::CellProcessingTimes exahype::solvers::ADERDGSolver::measureCellProcessingTimes(const int numberOfRuns) {
+  // Setup
+  const int cellDescriptionsIndex = ADERDGSolver::Heap::getInstance().createData(0,1);
+
+  Solver::CellInfo cellInfo(cellDescriptionsIndex);
+  addNewCellDescription(
+      0,cellInfo,CellDescription::Type::Cell,CellDescription::RefinementEvent::None,
+      getMaximumAdaptiveMeshLevel(), /* needs to be on the fine grid for the limiter cells */-1,
+      getCoarsestMeshSize(),
+      _domainOffset);
+
+  CellDescription& cellDescription   = cellInfo._ADERDGCellDescriptions[0];
+
+  ensureNecessaryMemoryIsAllocated(cellDescription);
+
+  adjustSolutionDuringMeshRefinementBody(cellDescription,true);
+  cellDescription.setRefinementEvent(CellDescription::RefinementEvent::None);
+  updateTimeStepSizes(0,cellInfo,false);
+
+  // ADER-DG specific setup ( all Riemanns have been performed, cell is surrounded by other Cell type cells )
+  cellDescription.setNeighbourMergePerformed(true);
+  cellDescription.setAugmentationStatus(0);
+  cellDescription.setFacewiseAugmentationStatus(0);
+  cellDescription.setCommunicationStatus(ADERDGSolver::CellCommunicationStatus);
+  cellDescription.setFacewiseCommunicationStatus(ADERDGSolver::CellCommunicationStatus);
+
+  // MEASUREMENTS
+  CellProcessingTimes result;
+
+  // measure ADERDG STP
+  {
+    const std::chrono::high_resolution_clock::time_point timeStart = std::chrono::high_resolution_clock::now();
+    int numberOfPicardIterations = std::numeric_limits<int>::max();
+    for (int it=0; it<numberOfRuns; it++) {
+      numberOfPicardIterations = performPredictionAndVolumeIntegralBody(cellDescription,cellDescription.getPredictorTimeStamp(),cellDescription.getPredictorTimeStepSize(),false,true);
+    }
+    const double time_sec = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-timeStart).count() * 1e-9;
+    result._minTimePredictor = time_sec / numberOfRuns / numberOfPicardIterations;
+    result._maxTimePredictor = result._minTimePredictor * getNodesPerCoordinateAxis(); // * (order+1)
+  }
+
+  // measure ADER-DG cells
+  cellDescription.setRefinementStatus(_refineOrKeepOnFineGrid);
+  cellDescription.setFacewiseRefinementStatus(_refineOrKeepOnFineGrid);
+  {
+    const std::chrono::high_resolution_clock::time_point timeStart = std::chrono::high_resolution_clock::now();
+    for (int it=0; it<numberOfRuns; it++) {
+      updateBody(cellDescription,cellInfo,cellDescription.getNeighbourMergePerformed(),true);
+
+      swapSolutionAndPreviousSolution(cellDescription); // assumed to be very cheap
+      rollbackToPreviousTimeStep(cellDescription);
+    }
+    const double time_sec = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-timeStart).count() * 1e-9;
+    result._timeADERDGUpdate = time_sec / numberOfRuns;
+  }
+
+  // Clean up
+  cellDescription.setType(CellDescription::Type::Erased);
+  ensureNoUnnecessaryMemoryIsAllocated(cellDescription);
+
+  DataHeap::getInstance().deleteAllData();
+  ADERDGSolver::Heap::getInstance().deleteAllData();
+  FiniteVolumesSolver::Heap::getInstance().deleteAllData();
+
+  return result;
 }
