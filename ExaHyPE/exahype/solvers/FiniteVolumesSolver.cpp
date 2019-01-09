@@ -18,7 +18,8 @@
 #include <iomanip>
 #include <string>
 #include <limits>
-#include <algorithm>
+#include <algorithm> // copy_n
+#include <chrono>    // profiling
 
 #include "peano/utils/Loop.h"
 
@@ -836,8 +837,8 @@ void exahype::solvers::FiniteVolumesSolver::updateSolution(
     const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
     const int                                                  cellDescriptionsIndex,
     const bool                                                 backupPreviousSolution) {
-  assertion1( tarch::la::equals(neighbourMergePerformed,static_cast<signed char>(true)) || ProfileUpdate,cellDescription.toString());
-  if ( !tarch::la::equals(neighbourMergePerformed,static_cast<signed char>(true)) && !ProfileUpdate ) {
+  assertion1( tarch::la::equals(neighbourMergePerformed,static_cast<signed char>(true)) || SwitchOffNeighbourMergePerformedCheck,cellDescription.toString());
+  if ( !tarch::la::equals(neighbourMergePerformed,static_cast<signed char>(true)) && !SwitchOffNeighbourMergePerformedCheck ) {
     logError("updateSolution(...)","Not all ghost layers were copied to cell="<<cellDescription.toString());
     std::terminate();
   }
@@ -887,7 +888,7 @@ void exahype::solvers::FiniteVolumesSolver::updateSolution(
       cellDescription.getTimeStepSize());
 
   // only for profiling
-  if ( Solver::ProfileUpdate ) { swapSolutionAndPreviousSolution(cellDescription); }
+  if ( Solver::SwitchOffNeighbourMergePerformedCheck ) { swapSolutionAndPreviousSolution(cellDescription); }
 
   validateNoNansInFiniteVolumesSolution(cellDescription,cellDescriptionsIndex,"updateSolution[post]");
 }
@@ -989,7 +990,7 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithBoundaryData(
     static int counter = 0;
     static double timeStamp = 0;
     if ( !tarch::la::equals(timeStamp,_minTimeStamp,1e-9) ) {
-      logInfo("applyBoundaryConditions(...)","#boundaryConditions="<<counter);
+      logInfo("mergeWithBoundaryData(...)","#boundaryConditions="<<counter);
       timeStamp = _minTimeStamp;
       counter=0;
     }
@@ -2111,4 +2112,54 @@ bool exahype::solvers::FiniteVolumesSolver::CompressionJob::run() {
     assertion( NumberOfEnclaveJobs.load()>=0 );
   }
   return false;
+}
+
+///////////////////////
+// PROFILING
+///////////////////////
+
+exahype::solvers::Solver::CellProcessingTimes exahype::solvers::FiniteVolumesSolver::measureCellProcessingTimes(const int numberOfRuns) {
+  // Setup
+  const int cellDescriptionsIndex = ADERDGSolver::Heap::getInstance().createData(0,1);
+
+  Solver::CellInfo cellInfo(cellDescriptionsIndex);
+  addNewCellDescription(
+      0,cellInfo,CellDescription::Type::Cell,CellDescription::RefinementEvent::None,
+      getMaximumAdaptiveMeshLevel(), /* needs to be on the fine grid for the limiter cells */-1,
+      getCoarsestMeshSize(),
+      _domainOffset);
+
+  CellDescription& cellDescription = cellInfo._FiniteVolumesCellDescriptions[0];
+  ensureNecessaryMemoryIsAllocated(cellDescription);
+
+  adjustSolutionDuringMeshRefinementBody(cellDescription,true);
+  updateTimeStepSizes(0,cellInfo,false);
+  cellDescription.setRefinementEvent(CellDescription::RefinementEvent::None);
+  cellDescription.setNeighbourMergePerformed(true);
+
+  // MEASUREMENTS
+  CellProcessingTimes result;
+
+  // measure FV cekks
+  {
+    const std::chrono::high_resolution_clock::time_point timeStart = std::chrono::high_resolution_clock::now();
+    for (int it=0; it<numberOfRuns; it++) {
+      updateBody(cellDescription,cellInfo,cellDescription.getNeighbourMergePerformed(),true,true,true,false);
+
+      swapSolutionAndPreviousSolution(cellDescription); // assumed to be very cheap
+      rollbackToPreviousTimeStep(cellDescription);
+    }
+    const double time_sec = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-timeStart).count() * 1e-9;
+    result._timeFVUpdate = time_sec / numberOfRuns;
+  }
+
+  // Clean up
+  cellDescription.setType(CellDescription::Type::Erased);
+  ensureNoUnnecessaryMemoryIsAllocated(cellDescription);
+
+  DataHeap::getInstance().deleteAllData();
+  ADERDGSolver::Heap::getInstance().deleteAllData();
+  FiniteVolumesSolver::Heap::getInstance().deleteAllData();
+
+  return result;
 }

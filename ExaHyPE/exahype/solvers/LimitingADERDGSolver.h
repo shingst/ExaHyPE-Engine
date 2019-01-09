@@ -1493,6 +1493,12 @@ public:
   getSolver () const {
     return _solver;
   }
+
+  ///////////////////////
+  // PROFILING
+  ///////////////////////
+
+  CellProcessingTimes measureCellProcessingTimes(const int numberOfRuns=100) override;
 };
 
 

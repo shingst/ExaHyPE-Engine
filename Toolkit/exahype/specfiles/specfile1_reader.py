@@ -109,6 +109,7 @@ class SpecFile1Reader():
             "buffer_size",\
             "timeout",\
             "cores",\
+            "measure_cell_processing_times_iter",\
             "order",\
             "patch_size",\
             "halo_cells",\
@@ -399,10 +400,11 @@ class SpecFile1Reader():
             if option in ["log_file","peano_kernel_path","peano_toolbox_path","exahype_path","output_directory","plotter_subdirectory"]:
                 context["paths"][option] = context.pop(option)
         self.map_computational_domain(context["computational_domain"])
-        if "optimisation" in context:
-            for option in context["optimisation"]:
-                if context["optimisation"][option] in ["on","off"]:
-                    context["optimisation"][option]=False if context["optimisation"][option]=="off" else True
+        for section in ["optimisation","profiling"]:
+            if section in context:
+                for option in context[section]:
+                    if context[section][option] in ["on","off"]:
+                        context[section][option]=False if context[section][option]=="off" else True
         if "distributed_memory" in context:
             self.map_distributed_memory(context["distributed_memory"])    
         if "shared_memory" in context:

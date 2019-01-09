@@ -1901,8 +1901,10 @@ public:
    * \param[in] vetoCompressionBackgroundJob veto that the compression is run as a background task
    *
    * @note Might be called by background task. Do not synchronise time step data here.
+   *
+   * @return the number of Picard iterations performed by the solver.
    */
-  void performPredictionAndVolumeIntegralBody(
+  int performPredictionAndVolumeIntegralBody(
       CellDescription& cellDescription,
       const double predictorTimeStamp,
       const double predictorTimeStepSize,
@@ -2591,6 +2593,12 @@ public:
    * \param[in] isSkeletonJob decides to which queue we spawn the job if we spawn any
    */
   void compress( CellDescription& cellDescription, const bool isSkeletonCell ) const;
+
+  ///////////////////////
+  // PROFILING
+  ///////////////////////
+
+  CellProcessingTimes measureCellProcessingTimes(const int numberOfRuns=100) override;
 };
 
 #endif

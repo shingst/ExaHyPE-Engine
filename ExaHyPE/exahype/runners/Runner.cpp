@@ -670,7 +670,7 @@ void exahype::runners::Runner::shutdownHeaps() {
 void exahype::runners::Runner::initHPCEnvironment() {
   peano::performanceanalysis::Analysis::getInstance().enable(false);
 
-  solvers::Solver::ProfileUpdate = _parser.getProfilingTarget()==parser::Parser::ProfilingTarget::Update;
+  solvers::Solver::SwitchOffNeighbourMergePerformedCheck = _parser.getProfilingTarget()==parser::Parser::ProfilingTarget::Update;
 }
 
 void exahype::runners::Runner::initOptimisations() const {
@@ -730,6 +730,10 @@ int exahype::runners::Runner::run() {
     // must come after repository creation
     initSolvers();
 
+    if (_parser.isValid() && _parser.getMeasureCellProcessingTimes() ) {
+      measureCellProcessingTimes();
+    }
+
     if ( _parser.isValid() )
       initDistributedMemoryConfiguration();
     if ( _parser.isValid() )
@@ -774,6 +778,26 @@ void exahype::runners::Runner::initSolvers() const {
       0.0,_domainOffset,_domainSize,_boundingBoxSize,
       _cmdlineargs,_parser.createParserView(solverNumber)
     );
+  }
+
+  // profiling functionality
+  if ( _parser.getMeasureCellProcessingTimes() ) {
+
+  }
+}
+
+void exahype::runners::Runner::measureCellProcessingTimes() const {
+  int solverNumber = 0;
+  for ( auto* solver : solvers::RegisteredSolvers ) {
+    solvers::Solver::CellProcessingTimes result =
+        solver->measureCellProcessingTimes(_parser.getMeasureCellProcessingTimesIterations());
+
+    std::ostringstream stringstr;
+    stringstr << "cell processing times for solver "<<solverNumber<<":"<<std::endl;
+    result.toString(stringstr,1e6,3,"\u00B5s","\t\t");
+    logInfo("measureCellProcessingTimes()",stringstr.str());
+
+    solverNumber++;
   }
 }
 

@@ -148,7 +148,22 @@
           "scope" : "run-time",
           "default": "whole_code",
           "enum" : [ "whole_code", "neighbour_merge", "predictor", "update" ]
+        },
+        "measure_cell_processing_times" : {
+          "type" : "boolean", 
+          "title" : "Measure the times the solvers require to perform updates and predictor computations", 
+          "scope" : "run-time"
+        },
+        "measure_cell_processing_times_iter" : {
+          "type" : "integer", 
+          "title" : "Number of measurements to perform when measuring cell processing times. The results are averaged over the number of measurements", 
+          "scope" : "run-time",
+          "minimum" : 1,
+          "exclusiveMinimum" : false
         }
+      },
+      "dependencies" : {
+        "measure_cell_processing_times_iter" : ["measure_cell_processing_times"]
       }
     },
     "architecture" : {

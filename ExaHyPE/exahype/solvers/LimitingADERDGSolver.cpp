@@ -13,13 +13,16 @@
  * \author Dominic E. Charrier, Tobias Weinzierl
  **/
 
-#include <algorithm> //copy_n
-#include <iomanip> //copy_n
+#include <algorithm> // copy_n
+#include <iomanip>
+#include <chrono>
 
 #include "LimitingADERDGSolver.h"
 
 #include "exahype/VertexOperations.h"
 #include "exahype/amr/AdaptiveMeshRefinement.h"
+
+#include "kernels/finitevolumes/commons/c/commons.h" // TODO measurements
 
 namespace exahype {
 namespace solvers {
@@ -1006,6 +1009,11 @@ void exahype::solvers::LimitingADERDGSolver::allocateLimiterPatch(const SolverPa
 
   LimiterPatch& limiterPatch = getLimiterPatch(solverPatch,cellInfo);
   _limiter->ensureNecessaryMemoryIsAllocated(limiterPatch);
+
+  assertion1(DataHeap::getInstance().isValidIndex(limiterPatch.getPreviousSolutionIndex()),limiterPatch.toString());
+  assertion1(DataHeap::getInstance().isValidIndex(limiterPatch.getSolutionIndex()),limiterPatch.toString());
+  assertion1(limiterPatch.getSolution()!=nullptr,limiterPatch.toString());
+  assertion1(limiterPatch.getPreviousSolution()!=nullptr,limiterPatch.toString());
 }
 
 bool exahype::solvers::LimitingADERDGSolver::ensureRequiredLimiterPatchIsAllocated(
@@ -1831,4 +1839,170 @@ void exahype::solvers::LimitingADERDGSolver::toString (std::ostream& out) const 
   out << _solver->toString() << "}\n";
   out << getIdentifier() << "{_FV: ";
   out << _limiter->toString() << "}";
+}
+
+exahype::solvers::Solver::CellProcessingTimes exahype::solvers::LimitingADERDGSolver::measureCellProcessingTimes(const int numberOfRuns) {
+  // Setup
+  const int cellDescriptionsIndex = ADERDGSolver::Heap::getInstance().createData(0,1);
+  FiniteVolumesSolver::Heap::getInstance().createDataForIndex(cellDescriptionsIndex,0,1);
+
+  Solver::CellInfo cellInfo(cellDescriptionsIndex);
+  _solver->addNewCellDescription(
+      0,cellInfo,SolverPatch::Type::Cell,SolverPatch::RefinementEvent::None,
+      getMaximumAdaptiveMeshLevel(), /* needs to be on the fine grid for the limiter cells */-1,
+      getCoarsestMeshSize(),
+      _domainOffset);
+
+  SolverPatch& solverPatch   = cellInfo._ADERDGCellDescriptions[0];
+  _solver->ensureNecessaryMemoryIsAllocated(solverPatch);
+
+  adjustSolutionDuringMeshRefinementBody(solverPatch,cellInfo,true);
+  solverPatch.setRefinementEvent(SolverPatch::RefinementEvent::None);
+  updateTimeStepSizes(0,cellInfo,false);
+
+  // ADER-DG specific setup ( all Riemanns have been performed, cell is surrounded by other Cell type cells )
+  solverPatch.setNeighbourMergePerformed(true);
+  solverPatch.setAugmentationStatus(0);
+  solverPatch.setFacewiseAugmentationStatus(0);
+  solverPatch.setCommunicationStatus(ADERDGSolver::CellCommunicationStatus);
+  solverPatch.setFacewiseCommunicationStatus(ADERDGSolver::CellCommunicationStatus);
+
+  // MEASUREMENTS
+  CellProcessingTimes result;
+
+  // measure ADERDG STP
+  {
+    const std::chrono::high_resolution_clock::time_point timeStart = std::chrono::high_resolution_clock::now();
+    int numberOfPicardIterations = std::numeric_limits<int>::max();
+    for (int it=0; it<numberOfRuns; it++) {
+      numberOfPicardIterations = _solver->performPredictionAndVolumeIntegralBody(solverPatch,solverPatch.getPredictorTimeStamp(),solverPatch.getPredictorTimeStepSize(),false,true);
+    }
+    const double time_sec = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-timeStart).count() * 1e-9;
+    result._minTimePredictor = time_sec / numberOfRuns / numberOfPicardIterations;
+    result._maxTimePredictor = result._minTimePredictor * _solver->getNodesPerCoordinateAxis(); // * (order+1)
+  }
+
+  // measure ADER-DG cells
+  {
+    const std::chrono::high_resolution_clock::time_point timeStart = std::chrono::high_resolution_clock::now();
+    for (int it=0; it<numberOfRuns; it++) {
+      solverPatch.setRefinementStatus(_solver->_refineOrKeepOnFineGrid);
+      solverPatch.setFacewiseRefinementStatus(_solver->_refineOrKeepOnFineGrid); // assumed  to be very cheap
+
+      updateBody(solverPatch,cellInfo,solverPatch.getNeighbourMergePerformed(),true);
+
+      _solver->swapSolutionAndPreviousSolution(solverPatch); // assumed  to be very cheap
+      _solver->rollbackToPreviousTimeStep(solverPatch);
+    }
+    const double time_sec = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-timeStart).count() * 1e-9;
+    result._timeADERDGUpdate = time_sec / numberOfRuns;
+  }
+
+  // measure ADER-DG -> FV cells
+  solverPatch.setRefinementStatus(_solver->getMinRefinementStatusForSeparationCell());
+  solverPatch.setFacewiseRefinementStatus(_solver->getMinRefinementStatusForSeparationCell());
+  {
+    // FV specific setup ( all copies have been performed, impose periodic boundary conditions )
+    ensureRequiredLimiterPatchIsAllocated(solverPatch,cellInfo,solverPatch.getRefinementStatus());
+    LimiterPatch& limiterPatch = getLimiterPatch(solverPatch,cellInfo);
+    adjustLimiterSolution(solverPatch,limiterPatch);
+    limiterPatch.setNeighbourMergePerformed(true);
+    tarch::la::Vector<DIMENSIONS,int> center(1);
+    dfor3(neighbour) // periodic BCs
+      if ( tarch::la::countEqualEntries(center,neighbour)==DIMENSIONS-1 ) { // only consider faces
+        double* FVSolution = static_cast<double*>(limiterPatch.getSolution());
+        _limiter->ghostLayerFilling(FVSolution,FVSolution,neighbour-center);
+      }
+    enddforx
+
+    const std::chrono::high_resolution_clock::time_point timeStart = std::chrono::high_resolution_clock::now();
+    for (int it=0; it<numberOfRuns; it++) {
+      solverPatch.setRefinementStatus(_solver->_refineOrKeepOnFineGrid);
+      solverPatch.setFacewiseRefinementStatus(_solver->getMinRefinementStatusForSeparationCell()); // assumed  to be very cheap
+
+      updateBody(solverPatch,cellInfo,solverPatch.getNeighbourMergePerformed(),true);
+
+      _solver->swapSolutionAndPreviousSolution(solverPatch); // assumed  to be very cheap
+      _limiter->swapSolutionAndPreviousSolution(limiterPatch);
+      _solver->rollbackToPreviousTimeStep(solverPatch);
+    }
+    const double time_sec = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-timeStart).count() * 1e-9;
+    result._timeADERDG2FVUpdate = time_sec / numberOfRuns;
+  }
+
+  // measure FV -> ADERDG cells
+  solverPatch.setRefinementStatus(_solver->getMinRefinementStatusForTroubledCell()-1);
+  solverPatch.setFacewiseRefinementStatus(_solver->getMinRefinementStatusForTroubledCell());
+  {
+    // FV specific setup ( all copies have been performed, impose periodic boundary conditions )
+    ensureRequiredLimiterPatchIsAllocated(solverPatch,cellInfo,solverPatch.getRefinementStatus());
+    LimiterPatch& limiterPatch = getLimiterPatch(solverPatch,cellInfo);
+    adjustLimiterSolution(solverPatch,limiterPatch);
+    limiterPatch.setNeighbourMergePerformed(true);
+    tarch::la::Vector<DIMENSIONS,int> center(1);
+    dfor3(neighbour) // periodic BCs
+      if ( tarch::la::countEqualEntries(center,neighbour)==DIMENSIONS-1 ) { // only consider faces
+        double* FVSolution = static_cast<double*>(limiterPatch.getSolution());
+        _limiter->ghostLayerFilling(FVSolution,FVSolution,neighbour-center);
+      }
+    enddforx
+
+    const std::chrono::high_resolution_clock::time_point timeStart = std::chrono::high_resolution_clock::now();
+    for (int it=0; it<numberOfRuns; it++) {
+      solverPatch.setRefinementStatus(_solver->getMinRefinementStatusForTroubledCell()-1);
+      solverPatch.setFacewiseRefinementStatus(_solver->getMinRefinementStatusForTroubledCell()); // assumed  to be very cheap
+
+      updateBody(solverPatch,cellInfo,solverPatch.getNeighbourMergePerformed(),true);
+
+      _solver->swapSolutionAndPreviousSolution(solverPatch);
+      _limiter->swapSolutionAndPreviousSolution(limiterPatch);
+      _solver->rollbackToPreviousTimeStep(solverPatch); // assumed  to be very cheap
+    }
+    const double time_sec = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-timeStart).count() * 1e-9;
+    result._timeFV2ADERDGUpdate = time_sec / numberOfRuns;
+  }
+
+  // measure troubled / FV cells
+  solverPatch.setRefinementStatus(_solver->getMinRefinementStatusForTroubledCell());
+  solverPatch.setFacewiseRefinementStatus(_solver->getMinRefinementStatusForTroubledCell());
+  {
+    // FV specific setup ( all copies have been performed, impose periodic boundary conditions )
+    ensureRequiredLimiterPatchIsAllocated(solverPatch,cellInfo,solverPatch.getRefinementStatus());
+    LimiterPatch& limiterPatch = getLimiterPatch(solverPatch,cellInfo);
+    adjustLimiterSolution(solverPatch,limiterPatch);
+    limiterPatch.setNeighbourMergePerformed(true);
+    tarch::la::Vector<DIMENSIONS,int> center(1);
+    dfor3(neighbour) // periodic BCs
+      if ( tarch::la::countEqualEntries(center,neighbour)==DIMENSIONS-1 ) { // only consider faces
+        double* FVSolution = static_cast<double*>(limiterPatch.getSolution());
+        _limiter->ghostLayerFilling(FVSolution,FVSolution,neighbour-center);
+      }
+    enddforx
+
+    const std::chrono::high_resolution_clock::time_point timeStart = std::chrono::high_resolution_clock::now();
+    for (int it=0; it<numberOfRuns; it++) {
+      solverPatch.setRefinementStatus(_solver->getMinRefinementStatusForTroubledCell());
+      solverPatch.setFacewiseRefinementStatus(_solver->getMinRefinementStatusForTroubledCell());
+
+      updateBody(solverPatch,cellInfo,solverPatch.getNeighbourMergePerformed(),true);
+
+      _solver->swapSolutionAndPreviousSolution(solverPatch);
+      _limiter->swapSolutionAndPreviousSolution(limiterPatch);
+      _solver->rollbackToPreviousTimeStep(solverPatch);
+    }
+    const double time_sec = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-timeStart).count() * 1e-9;
+    result._timeFVUpdate = time_sec / numberOfRuns;
+  }
+
+  // Clean up
+  solverPatch.setRefinementStatus(0);
+  ensureNoUnrequiredLimiterPatchIsAllocatedOnComputeCell(solverPatch,cellInfo);
+  solverPatch.setType(SolverPatch::Type::Erased);
+  _solver->ensureNoUnnecessaryMemoryIsAllocated(solverPatch);
+
+  DataHeap::getInstance().deleteAllData();
+  ADERDGSolver::Heap::getInstance().deleteAllData();
+  FiniteVolumesSolver::Heap::getInstance().deleteAllData();
+
+  return result;
 }
