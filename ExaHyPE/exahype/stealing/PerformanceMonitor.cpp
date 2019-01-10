@@ -176,7 +176,7 @@ void exahype::stealing::PerformanceMonitor::progressGather() {
   if( !isGloballyTerminated() && _gatherWaitingTimesRequest!=MPI_REQUEST_NULL) {
 //    double time = - MPI_Wtime();
 //    exahype::stealing::StealingProfiler::getInstance().beginCommunication();
-    MPI_Test(&_gatherTasksRequest, &completed_waiting_times, MPI_STATUS_IGNORE);
+    MPI_Test(&_gatherWaitingTimesRequest, &completed_waiting_times, MPI_STATUS_IGNORE);
 //    time += MPI_Wtime();
  
   }
@@ -282,7 +282,6 @@ void exahype::stealing::PerformanceMonitor::postGatherTasks() {
 
 void exahype::stealing::PerformanceMonitor::postGatherWaitingTimes() {
   int nnodes    = tarch::parallel::Node::getInstance().getNumberOfNodes();
-
   std::copy(&_currentWaitingTimes[0], &_currentWaitingTimes[nnodes], &_currentWaitingTimesSendBuffer[0]);
 
   //logInfo("postGatherWaitingTimes","posting gather for waiting times");
