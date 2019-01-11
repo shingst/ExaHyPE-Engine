@@ -21,9 +21,9 @@ exahype::stealing::DynamicDistributor::DynamicDistributor() {
   _remainingTasksToOffload = new std::atomic<int>[nnodes];
 
   std::fill( &_consumersPerRank[0], &_consumersPerRank[nnodes], 0);
-  _consumersPerRank[0] = tarch::multicore::Core::getInstance().getNumberOfThreads()-1;
+  _consumersPerRank[0] = std::max(1, tarch::multicore::Core::getInstance().getNumberOfThreads()-1);
   for(int i=1; i<nnodes;i++) {
-    _consumersPerRank[i] = tarch::multicore::Core::getInstance().getNumberOfThreads();
+    _consumersPerRank[i] = std::max(tarch::multicore::Core::getInstance().getNumberOfThreads(),1);
 //	  logInfo("","weight "<<_consumersPerRank[i]<<" rank "<<i);
   }
 
@@ -58,9 +58,6 @@ void exahype::stealing::DynamicDistributor::computeNewLoadDistribution(int *curr
 
   int total_consumers = 0;
   total_consumers = std::accumulate(&_consumersPerRank[0], &_consumersPerRank[nnodes], total_consumers);
-
-  if(total_consumers == 0)
-    total_consumers = 1;
 
   int avg_l_per_consumer = 0;
   avg_l_per_consumer = total_l / total_consumers;

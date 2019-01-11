@@ -158,6 +158,12 @@ void exahype::stealing::PerformanceMonitor::progressGather() {
     MPI_Test(&_gatherTasksRequest, &completed_tasks, MPI_STATUS_IGNORE);
     time += MPI_Wtime();
 
+    //std::string str;
+    //for(int i=0;i<nnodes;i++) str=str+" , "+std::to_string(_currentTasksReceiveBuffer[i]);
+    //str+="\n";
+    //logInfo("performance monitor", "progressing "<<_gatherTasksRequest);
+    
+
 #if defined(PerformanceAnalysisStealing)
     if(completed) {
       exahype::stealing::StealingProfiler::getInstance().endCommunication(true, time);
@@ -177,7 +183,7 @@ void exahype::stealing::PerformanceMonitor::progressGather() {
 //    double time = - MPI_Wtime();
 //    exahype::stealing::StealingProfiler::getInstance().beginCommunication();
     MPI_Test(&_gatherWaitingTimesRequest, &completed_waiting_times, MPI_STATUS_IGNORE);
-//    time += MPI_Wtime();
+//    time += MPI_Wtime();_currentTasksSendBuffer
  
   }
 
@@ -200,15 +206,19 @@ void exahype::stealing::PerformanceMonitor::progressGather() {
     //logInfo("progressGather","collected new tasks snapshot");
     stealing::StealingProfiler::getInstance().notifyPerformanceUpdate();
     std::copy(&_currentTasksReceiveBuffer[0], &_currentTasksReceiveBuffer[nnodes], &_currentTasksSnapshot[0]);
+ 
+    //std::string str;
+    //for(int i=0;i<nnodes;i++) str=str+" , "+std::to_string(_currentTasksSnapshot[i]);
+    //str+="\n";
+    //logInfo("performance monitor", str);
+
 #if defined(PerformanceAnalysisStealing)
     std::string str="received new update, current load "+std::to_string(_currentTasks.load());
 //    if(timeSinceLastGather>0.001) {
 //      str=str+ " took too long: "+std::to_string(timeSinceLastGather);
 //      stealing::StealingProfiler::getInstance().notifyLatePerformanceUpdate();
 //    }
-    for(int i=0;i<nnodes;i++) str=str+" , "+std::to_string(_currentTasksBuffer[i]);
-    str+="\n";
-    logInfo("performance monitor", str);
+
 #endif
     if(_currentTasks.load()>0 && std::all_of(&_currentTasksSnapshot[0], &_currentTasksSnapshot[nnodes], [](int i) {return i>=0;})) {
       exahype::stealing::DynamicDistributor::getInstance().computeNewLoadDistribution(_currentTasksSnapshot);
@@ -276,7 +286,11 @@ void exahype::stealing::PerformanceMonitor::postGatherTasks() {
   int myRank = tarch::parallel::Node::getInstance().getRank();
 
   _currentTasksSendBuffer = _isStarted ? _currentTasks.load() : TERMINATE_SIGNAL;
+  
+  //if(!_isStarted)
+  //  logInfo("postGatherTasks","posted terminate signal");
 
+  assert(_gatherTasksRequest==MPI_REQUEST_NULL);
   MPI_Iallgather(&_currentTasksSendBuffer, 1, MPI_INTEGER, _currentTasksReceiveBuffer, 1, MPI_INTEGER, exahype::stealing::StealingManager::getInstance().getMPICommunicator(), &_gatherTasksRequest);
 }
 
@@ -288,6 +302,7 @@ void exahype::stealing::PerformanceMonitor::postGatherWaitingTimes() {
   //for(int i=0; i<nnodes; i++) {
   //  logInfo("postGatherWaitingTimes","_currentWaitingTimesSendBuffer["<<i<<"]: "<<_currentWaitingTimesSendBuffer[i]);
   //}
+  assert(_gatherWaitingTimesRequest==MPI_REQUEST_NULL);
   MPI_Iallgather(&_currentWaitingTimesSendBuffer[0], nnodes, MPI_INTEGER, &_currentWaitingTimesReceiveBuffer[0],
                    nnodes, MPI_INTEGER, exahype::stealing::StealingManager::getInstance().getMPICommunicator(),
                    &_gatherWaitingTimesRequest);

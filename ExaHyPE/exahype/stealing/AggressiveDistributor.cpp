@@ -32,11 +32,11 @@ exahype::stealing::AggressiveDistributor::AggressiveDistributor() :
   _notOffloaded            = new int[nnodes];
  
   for(int i=1; i<nnodes;i++) {
-    _consumersPerRank[i] = tarch::multicore::Core::getInstance().getNumberOfThreads()-1;
+    _consumersPerRank[i] = std::max(1, tarch::multicore::Core::getInstance().getNumberOfThreads()-1);
     logInfo("AggressiveDistributor()","weight "<<_consumersPerRank[i]<<" for rank "<<i);
   }
-  _consumersPerRank[myRank] = tarch::multicore::Core::getInstance().getNumberOfThreads();
-  _consumersPerRank[0]     = tarch::multicore::Core::getInstance().getNumberOfThreads()-1;
+  _consumersPerRank[myRank] = std::max(1, tarch::multicore::Core::getInstance().getNumberOfThreads());
+  _consumersPerRank[0]     = std::max(1, tarch::multicore::Core::getInstance().getNumberOfThreads()-1);
  
   std::fill( &_remainingTasksToOffload[0], &_remainingTasksToOffload[nnodes], 0);
   std::fill( &_tasksToOffload[0], &_tasksToOffload[nnodes], 0);
@@ -83,8 +83,6 @@ void exahype::stealing::AggressiveDistributor::computeIdealLoadDistribution(int 
   int total_consumers = 0;
   total_consumers = std::accumulate(&_consumersPerRank[0], &_consumersPerRank[nnodes], total_consumers);
 
-  if(total_consumers==0)
-     total_consumers = 1;
 
   int avg_l_per_consumer = 0;
   avg_l_per_consumer = total_l / total_consumers;
@@ -212,7 +210,7 @@ void exahype::stealing::AggressiveDistributor::updateLoadDistribution() {
   for(int i=0; i<nnodes; i++) {
     bool waitingForSomeone = false;
     for(int j=0; j<nnodes; j++) {
-      logInfo("updateLoadDistribution()","rank "<<i<<" waiting for "<<waitingTimesSnapshot[k+j]<<" for rank "<<j);
+      //logInfo("updateLoadDistribution()","rank "<<i<<" waiting for "<<waitingTimesSnapshot[k+j]<<" for rank "<<j);
       if(waitingTimesSnapshot[k+j]>currentLongestWaitTime && !exahype::stealing::StealingManager::getInstance().isBlacklisted(i)) {
         currentLongestWaitTime = waitingTimesSnapshot[k+j];
         currentOptimalVictim = i;
@@ -246,12 +244,12 @@ void exahype::stealing::AggressiveDistributor::updateLoadDistribution() {
       int currentTasksOptimal = _initialLoadPerRank[currentOptimalVictim]+_tasksToOffload[currentOptimalVictim];
 
       _tasksToOffload[currentOptimalVictim] += 0.5*(currentTasksCritical-currentTasksOptimal);
-      logInfo("updateLoadDistribution()", "I am a critical rank, increment, send "<<_tasksToOffload[currentOptimalVictim]<<" to rank "<<currentOptimalVictim );
+      //logInfo("updateLoadDistribution()", "I am a critical rank, increment, send "<<_tasksToOffload[currentOptimalVictim]<<" to rank "<<currentOptimalVictim );
     }
   }
   else if(_tasksToOffload[criticalRank]>0) {
     _tasksToOffload[criticalRank]--;
-    logInfo("updateLoadDistribution()", "decrement, send "<<_tasksToOffload[criticalRank]<<" to rank "<<criticalRank );
+    //logInfo("updateLoadDistribution()", "decrement, send "<<_tasksToOffload[criticalRank]<<" to rank "<<criticalRank );
   }
 
 //  if(myRank == slowestRank) {

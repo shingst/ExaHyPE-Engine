@@ -4879,10 +4879,10 @@ bool exahype::solvers::ADERDGSolver::StealingManagerJob::run() {
     case State::Terminate:
     {
       exahype::stealing::PerformanceMonitor::getInstance().stop();
-      if(!exahype::stealing::PerformanceMonitor::getInstance().isGloballyTerminated()) { 
-        exahype::solvers::ADERDGSolver::progressStealing(&_solver);
-        return true;
-      }
+      //if(!exahype::stealing::PerformanceMonitor::getInstance().isLocallyTerminated()) { 
+      //  exahype::solvers::ADERDGSolver::progressStealing(&_solver);
+      //  return true;
+      //}
       logInfo("stealingManager", " terminated ");
       result = false;
 
@@ -4914,7 +4914,8 @@ void exahype::solvers::ADERDGSolver::stopStealingManager() {
   logInfo("stopStealingManager", " stopping ");
   //assert(_stealingManagerJob != nullptr);
   _stealingManagerJob->terminate();
-  while(!exahype::stealing::PerformanceMonitor::getInstance().isGloballyTerminated()) {tarch::multicore::jobs::finishToProcessBackgroundJobs(); };
+  //while(!exahype::stealing::PerformanceMonitor::getInstance().isLocallyTerminated()) {tarch::multicore::jobs::finishToProcessBackgroundJobs(); };
+  while(tarch::multicore::jobs::finishToProcessBackgroundJobs()) {};
 
   //assert(_stealingManagerJob != nullptr);
   //delete _stealingManagerJob;
