@@ -2140,7 +2140,7 @@ exahype::solvers::Solver::CellProcessingTimes exahype::solvers::FiniteVolumesSol
   // MEASUREMENTS
   CellProcessingTimes result;
 
-  // measure FV cekks
+  // measure FV cells
   {
     const std::chrono::high_resolution_clock::time_point timeStart = std::chrono::high_resolution_clock::now();
     for (int it=0; it<numberOfRuns; it++) {

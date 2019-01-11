@@ -205,7 +205,7 @@ private:
    * \note This method assumes the (previous) refinement status
    * was not modified yet by another routine.
    */
-  bool evaluatePhysicalAdmissibilityCriterion(SolverPatch& solverPatch);
+  bool evaluatePhysicalAdmissibilityCriterion(SolverPatch& solverPatch,const double t);
 
   /**
    * Computes the cell-local minimum and maximum
@@ -946,6 +946,7 @@ public:
    *
    * @param solverPatch a solver patch
    * @param cellInfo    a struct referring to all cell descriptions
+   *
    * @return true if the cell is troubled.
    */
   bool checkIfCellIsTroubledAndDetermineMinAndMax(SolverPatch& solverPatch,CellInfo& cellInfo);
