@@ -1610,15 +1610,27 @@ public:
    * a-priori.
    *
    * This operation is required for limiting.
+   *
+   * @note @p localObservablesMin and @p localObservablesMax are a nullptr if
+   * no the DMP is switched off.
+   *
+   * @param[in] solution                      all of the cell's solution values
+   * @param[in] localObservablesMin           the minimum value of the cell local observables or a nullptr if no DMP observables are computed.
+   * @param[in] localObservablesMax           the maximum value of the cell local observables or a nullptr if no DMP observables are computed.
+   * @param[in] wasTroubledInPreviousTimeStep indicates if the cell was troubled in a previous time step
+   * @param[in] center                        cell center
+   * @param[in] dx                            cell extents
+   * @param[in] timeStamp                     post-update time stamp during time stepping.  Current time stamp during the mesh refinement iterations.
+   *
+   * @return true if the solution is admissible.
    */
   virtual bool isPhysicallyAdmissible(
       const double* const solution,
-      const double* const observablesMin,const double* const observablesMax,
+      const double* const localObservablesMin,const double* const localObservablesMax,
       const bool wasTroubledInPreviousTimeStep,
       const tarch::la::Vector<DIMENSIONS,double>& center,
       const tarch::la::Vector<DIMENSIONS,double>& dx,
-      const double t, const double dt
-      ) const = 0;
+      const double timeStamp) const = 0;
 
   /**
    * Maps the solution values Q to

@@ -385,7 +385,7 @@ void exahype::solvers::LimitingADERDGSolver::adjustSolutionDuringMeshRefinementB
     _solver->adjustSolution(solverPatch);
 
     determineSolverMinAndMax(solverPatch,false);
-    if ( !evaluatePhysicalAdmissibilityCriterion(solverPatch) ) {
+    if ( !evaluatePhysicalAdmissibilityCriterion(solverPatch,solverPatch.getCorrectorTimeStamp()) ) {
        solverPatch.setRefinementStatus(_solver->getMinRefinementStatusForTroubledCell());
        solverPatch.setIterationsToCureTroubledCell(_iterationsToCureTroubledCell+1);
     } else {
@@ -547,7 +547,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::u
   updateSolution(solverPatch,cellInfo,neighbourMergePerformed,true);
   const bool isTroubled = checkIfCellIsTroubledAndDetermineMinAndMax(solverPatch,cellInfo);
   revisitSolverPatchesInBuffer(solverPatch,cellInfo,isTroubled,neighbourMergePerformed,true);
-  result._timeStepSize    = startNewTimeStep(solverPatch,cellInfo);
+  result._timeStepSize    = startNewTimeStep(solverPatch,cellInfo); // uses DG solution to compute time step size; might be result of FV->DG projection
   result._meshUpdateEvent = determineRefinementStatusAfterSolutionUpdate(solverPatch,cellInfo,isTroubled,neighbourMergePerformed);
 
   if (CompressionAccuracy>0.0) { compress(solverPatch,cellInfo,isAtRemoteBoundary); }
@@ -677,7 +677,7 @@ void exahype::solvers::LimitingADERDGSolver::updateSolution(
 
       _limiter->updateSolution(limiterPatch,neighbourMergePerformed,cellInfo._cellDescriptionsIndex,backupPreviousSolution);
       _solver->swapSolutionAndPreviousSolution(solverPatch);
-      projectFVSolutionOnDGSpace(solverPatch,limiterPatch);
+      projectFVSolutionOnDGSpace(solverPatch,limiterPatch); // TODO(Dominic): If we do static limiting, this is not necessary in troubled cells
     }
     else {
       _solver->updateSolution(solverPatch,neighbourMergePerformed,backupPreviousSolution);
@@ -706,9 +706,10 @@ bool
 exahype::solvers::LimitingADERDGSolver::checkIfCellIsTroubledAndDetermineMinAndMax(
     SolverPatch& solverPatch,
     CellInfo&    cellInfo) {
-  bool dmpViolated = !evaluateDiscreteMaximumPrincipleAndDetermineMinAndMax(solverPatch);
-  bool padViolated = !evaluatePhysicalAdmissibilityCriterion(solverPatch); // after min and max was found
-  bool isTroubled  = dmpViolated || padViolated;
+  bool isTroubled =
+      !evaluateDiscreteMaximumPrincipleAndDetermineMinAndMax(solverPatch) ||
+      !evaluatePhysicalAdmissibilityCriterion(solverPatch,
+          solverPatch.getCorrectorTimeStamp()+solverPatch.getCorrectorTimeStepSize()); // after min and max was found
 
   if ( // above call computes DG min and max on-the-fly. We use the FV min and max if the cell is troubled
       solverPatch.getLevel()==getMaximumAdaptiveMeshLevel() &&
@@ -833,7 +834,8 @@ bool exahype::solvers::LimitingADERDGSolver::evaluateDiscreteMaximumPrincipleAnd
   }
 }
 
-bool exahype::solvers::LimitingADERDGSolver::evaluatePhysicalAdmissibilityCriterion(SolverPatch& solverPatch) {
+bool exahype::solvers::LimitingADERDGSolver::evaluatePhysicalAdmissibilityCriterion(
+    SolverPatch& solverPatch,const double timeStamp) {
   double* observablesMin = nullptr;
   double* observablesMax = nullptr;
 
@@ -850,7 +852,7 @@ bool exahype::solvers::LimitingADERDGSolver::evaluatePhysicalAdmissibilityCriter
       observablesMin,observablesMax,
       solverPatch.getRefinementStatus()>=_solver->_minRefinementStatusForTroubledCell,
       solverPatch.getOffset()+0.5*solverPatch.getSize(),solverPatch.getSize(),
-      solverPatch.getCorrectorTimeStamp(),solverPatch.getCorrectorTimeStepSize());
+      timeStamp);
 }
 
 void exahype::solvers::LimitingADERDGSolver::determineMinAndMax(
