@@ -58,8 +58,7 @@ exahype::stealing::PerformanceMonitor::~PerformanceMonitor() {
 }
 
 void exahype::stealing::PerformanceMonitor::submitWaitingTimeForRank(int waitingTime, int rank) {
-<<<<<<< HEAD
-  if(waitingTime>0)
+//  if(waitingTime>0)
  // logInfo("submitWaitingTimes", "submitting new waiting time "<<waitingTime<< " for rank "<<rank);
   _currentWaitingTimes[rank] =  waitingTime;
 }
