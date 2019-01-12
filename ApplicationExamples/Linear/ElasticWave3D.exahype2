@@ -22,7 +22,7 @@
     ]
   },
   "shared_memory": {
-    "cores": 1,
+    "cores":1,
     "background_job_consumers": 1,
     "high_priority_background_job_processing" : "all_in_a_rush",
     "low_priority_background_job_processing" : "run_always",

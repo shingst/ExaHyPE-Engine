@@ -58,7 +58,7 @@ exahype::stealing::PerformanceMonitor::~PerformanceMonitor() {
 }
 
 void exahype::stealing::PerformanceMonitor::submitWaitingTimeForRank(int waitingTime, int rank) {
-  logInfo("submitWaitingTimes", "submitting new waiting time "<<waitingTime<< " for rank "<<rank);
+ // logInfo("submitWaitingTimes", "submitting new waiting time "<<waitingTime<< " for rank "<<rank);
   _currentWaitingTimes[rank] =  waitingTime;
 }
 
@@ -155,7 +155,7 @@ void exahype::stealing::PerformanceMonitor::progressGather() {
   if( !isGloballyTerminated() && _gatherTasksRequest!=MPI_REQUEST_NULL) {
 	double time = - MPI_Wtime();
     exahype::stealing::StealingProfiler::getInstance().beginCommunication();
-    MPI_Test(&_gatherTasksRequest, &completed_tasks, MPI_STATUS_IGNORE);
+    int err = MPI_Test(&_gatherTasksRequest, &completed_tasks, MPI_STATUS_IGNORE); //assert(err==MPI_SUCCESS);
     time += MPI_Wtime();
 
     //std::string str;
@@ -182,7 +182,9 @@ void exahype::stealing::PerformanceMonitor::progressGather() {
   if( !isGloballyTerminated() && _gatherWaitingTimesRequest!=MPI_REQUEST_NULL) {
 //    double time = - MPI_Wtime();
 //    exahype::stealing::StealingProfiler::getInstance().beginCommunication();
-    MPI_Test(&_gatherWaitingTimesRequest, &completed_waiting_times, MPI_STATUS_IGNORE);
+    //logInfo("performance monitoŕ()","progressing waiting times");
+   int err= MPI_Test(&_gatherWaitingTimesRequest, &completed_waiting_times, MPI_STATUS_IGNORE);
+   //assert(err==MPI_SUCCESS);
 //    time += MPI_Wtime();_currentTasksSendBuffer
  
   }
@@ -203,7 +205,7 @@ void exahype::stealing::PerformanceMonitor::progressGather() {
 #endif
 
   if(completed_tasks) {
-    //logInfo("progressGather","collected new tasks snapshot");
+  //  logInfo("progressGather","collected new tasks snapshot");
     stealing::StealingProfiler::getInstance().notifyPerformanceUpdate();
     std::copy(&_currentTasksReceiveBuffer[0], &_currentTasksReceiveBuffer[nnodes], &_currentTasksSnapshot[0]);
  
@@ -242,7 +244,7 @@ void exahype::stealing::PerformanceMonitor::progressGather() {
   }
 
   if(completed_waiting_times) {
-    //logInfo("progressGather","collected new waiting times snapshot");
+    //logInfo("progressGather","collected new waiting times snapshot, request"<< _gatherWaitingTimesRequest);
     std::copy(&_currentWaitingTimesReceiveBuffer[0], &_currentWaitingTimesReceiveBuffer[nnodes*nnodes], &_currentWaitingTimesSnapshot[0]);
     _gatherWaitingTimesRequest = MPI_REQUEST_NULL;
       
@@ -262,7 +264,7 @@ void exahype::stealing::PerformanceMonitor::progressGather() {
 
   if(_gatherTasksRequest==MPI_REQUEST_NULL && !isGloballyTerminated()) {
     //logInfo("progressGather","post gather tasks");
-    postGatherTasks();
+    //postGatherTasks();
 #if defined(PerformanceAnalysisStealing)
     lastGather=-MPI_Wtime();
     watch.stopTimer();
@@ -291,21 +293,26 @@ void exahype::stealing::PerformanceMonitor::postGatherTasks() {
   //  logInfo("postGatherTasks","posted terminate signal");
 
   assert(_gatherTasksRequest==MPI_REQUEST_NULL);
-  MPI_Iallgather(&_currentTasksSendBuffer, 1, MPI_INTEGER, _currentTasksReceiveBuffer, 1, MPI_INTEGER, exahype::stealing::StealingManager::getInstance().getMPICommunicator(), &_gatherTasksRequest);
+  int err = MPI_Iallgather(&_currentTasksSendBuffer, 1, MPI_INTEGER, _currentTasksReceiveBuffer, 1, MPI_INTEGER, exahype::stealing::StealingManager::getInstance().getMPICommunicator(), &_gatherTasksRequest); //assert(err==MPI_SUCCESS);
 }
 
 void exahype::stealing::PerformanceMonitor::postGatherWaitingTimes() {
   int nnodes    = tarch::parallel::Node::getInstance().getNumberOfNodes();
   std::copy(&_currentWaitingTimes[0], &_currentWaitingTimes[nnodes], &_currentWaitingTimesSendBuffer[0]);
 
+
+  static int nposted = 0;
   //logInfo("postGatherWaitingTimes","posting gather for waiting times");
   //for(int i=0; i<nnodes; i++) {
   //  logInfo("postGatherWaitingTimes","_currentWaitingTimesSendBuffer["<<i<<"]: "<<_currentWaitingTimesSendBuffer[i]);
   //}
   assert(_gatherWaitingTimesRequest==MPI_REQUEST_NULL);
-  MPI_Iallgather(&_currentWaitingTimesSendBuffer[0], nnodes, MPI_INTEGER, &_currentWaitingTimesReceiveBuffer[0],
+  int err = MPI_Iallgather(&_currentWaitingTimesSendBuffer[0], nnodes, MPI_INTEGER, &_currentWaitingTimesReceiveBuffer[0],
                    nnodes, MPI_INTEGER, exahype::stealing::StealingManager::getInstance().getMPICommunicator(),
-                   &_gatherWaitingTimesRequest);
+                   &_gatherWaitingTimesRequest);// assert(err==MPI_SUCCESS);
+
+  nposted++;
+  logInfo("postGatherWaitingTimes", "nposted "<<nposted<< " request "<<_gatherWaitingTimesRequest);
 }
 
 bool exahype::stealing::PerformanceMonitor::isGloballyTerminated() {
