@@ -16,7 +16,7 @@ void NavierStokes::ABCFlow::analyticalSolution(const double *const x,
   const auto Z = E + 1;  // Only defined if coupling is used!
 
   const auto c = 100 / ns.gamma;  // TODO(Lukas) Find good c!
-  const auto Ft = std::exp(-2 * ns.referenceViscosity * t);
+  const auto Ft = std::exp(-1 * ns.referenceViscosity * t);
   const auto pressure = c -
       (std::sin(x[1]) * std::cos(x[0]) + std::sin(x[0]) * std::cos(x[2]) +
        std::sin(x[2]) * std::cos(x[1])) *
