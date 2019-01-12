@@ -2,7 +2,6 @@
 
 void NavierStokes::Detonation::initialValues(const double* const x,
                                              const PDE& ns, Variables& vars) {
-
   assert(ns.useAdvection);
 
   const auto centerX = 0.0;
@@ -85,8 +84,7 @@ void NavierStokes::Detonation::source(
 double NavierStokes::Detonation::getGamma() const { return 1.4; }
 
 double NavierStokes::Detonation::getPr() const {
-  // TODO(Lukas) What's the best value?
-  return 0.7;
+  return 0.75;
 }
 
 double NavierStokes::Detonation::getC_v() const { return 2.5; }
@@ -102,5 +100,6 @@ bool NavierStokes::Detonation::getUseAdvection() const {
 }
 
 NavierStokes::BoundaryType NavierStokes::Detonation::getBoundaryType(int faceId) {
-  return BoundaryType::freeSlipWall;
+  // TODO(Lukas) Use free-slip for Euler and no-slip for NS?
+  return BoundaryType::wall;
 }
