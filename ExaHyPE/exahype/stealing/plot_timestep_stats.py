@@ -36,19 +36,20 @@ tasksoffloaded_arr = []
 for line in file:
   m=timestep_pattern.match(line)
   if m:
-    print line
-    current_step = m.group(2)
+    print (line)
+    current_step = int(m.group(2))
     if current_step>0:
       duration = float(m.group(1))-last_timestamp
     last_timestamp = float(m.group(1))
-    print duration
-    duration_arr.append(duration)
+    if current_step>0:
+      print (duration)
+      duration_arr.append(duration)
   
     tasksoffloaded_arr.append(tasksoffloaded)
     tasksoffloaded = 0
   m=task_offload_pattern.match(line)
   if m:
-    print line
+    print (line)
     tasksoffloaded += int(m.group(3)) - int(m.group(4))
   #  if(tasks>0):
   #    tasksoffloaded_critical += tasks
@@ -79,8 +80,8 @@ for line in file:
   #  #print float(m.group(2))
   #  cur_blacklist_values[int(m.group(1))]=float(m.group(2))
 
-print duration_arr
-print tasksoffloaded_arr
+print (duration_arr)
+print (tasksoffloaded_arr)
 
 fig,ax1 = plt.subplots()
 

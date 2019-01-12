@@ -21,10 +21,9 @@ exahype::stealing::DynamicDistributor::DynamicDistributor() {
   _remainingTasksToOffload = new std::atomic<int>[nnodes];
 
   std::fill( &_consumersPerRank[0], &_consumersPerRank[nnodes], 0);
-  _consumersPerRank[0] = std::max(1, tarch::multicore::Core::getInstance().getNumberOfThreads()-1);
-  for(int i=1; i<nnodes;i++) {
-    _consumersPerRank[i] = std::max(tarch::multicore::Core::getInstance().getNumberOfThreads(),1);
-//	  logInfo("","weight "<<_consumersPerRank[i]<<" rank "<<i);
+  for(int i=0; i<nnodes;i++) {
+    _consumersPerRank[i] = std::max(1, tarch::multicore::Core::getInstance().getNumberOfThreads()-1);
+ //   logInfo("AggressiveDistributor()","weight "<<_consumersPerRank[i]<<" for rank "<<i);
   }
 
   std::fill( &_tasksToOffload[0], &_tasksToOffload[nnodes], 0);
