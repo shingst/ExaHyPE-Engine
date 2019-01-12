@@ -7,7 +7,11 @@ void NavierStokes::LidDrivenCavity::initialValues(const double* const x, const P
 #else
     vars.j(0.0, 0.0, 0.0);
 #endif
-    const auto pressure = 1.0;
+    // Mach = u/c
+    const auto mach = 0.1;
+    const auto wallSpeed = 1.0;
+    const auto speedOfSound = wallSpeed/mach;
+    const auto pressure = (speedOfSound * speedOfSound)/gamma;
     vars.E() = ns.evaluateEnergy(vars.rho(), pressure, vars.j());
     ns.setZ(vars.data(), 0.0); // Disable advection.
 }
