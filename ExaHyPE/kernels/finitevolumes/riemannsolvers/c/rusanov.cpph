@@ -49,6 +49,7 @@ double kernels::finitevolumes::riemannsolvers::c::rusanov(
   }
 
   double s_max = maxEigenvalue;
+  double s_max_dt = maxEigenvalue;
 
   double maxViscousEigenvalue = 0.0;
   if (useViscousFlux) {
@@ -69,7 +70,8 @@ double kernels::finitevolumes::riemannsolvers::c::rusanov(
     const auto pi = std::acos(-1); // not constexpr for intel compilers
     const auto factor = std::sqrt(0.5 * pi);
 
-    s_max += 2 * maxViscousEigenvalue / (cellSize[normalNonZero] * factor);
+    s_max += 2 * factor * maxViscousEigenvalue / (cellSize[normalNonZero] * factor);
+    s_max_dt += 2 * maxViscousEigenvalue / (cellSize[normalNonZero]);
   }
 
   // determine BgradQ from ncp
@@ -109,7 +111,7 @@ double kernels::finitevolumes::riemannsolvers::c::rusanov(
       fnR[i] = fnL[i];
     }
   }
-  return s_max;
+  return s_max_dt;
 }
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////

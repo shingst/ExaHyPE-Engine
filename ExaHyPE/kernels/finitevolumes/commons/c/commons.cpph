@@ -54,7 +54,7 @@ double kernels::finitevolumes::commons::c::stableTimeStepSize(
               std::transform(lambda, lambda + numberOfVariables, lambda,
                       std::abs<double>);
               const double s_max_x_vis = *std::max_element(lambda, lambda + numberOfVariables);
-              s_max_x += 2.0/(dx[0]/patchSize)*s_max_x_vis;
+              s_max_x += (2.0/(dx[0]/patchSize)) * s_max_x_vis;
           }
 
           dt_max_stable = std::min(
@@ -71,7 +71,7 @@ double kernels::finitevolumes::commons::c::stableTimeStepSize(
               std::transform(lambda, lambda + numberOfVariables, lambda,
                       std::abs<double>);
               const double s_max_y_vis = *std::max_element(lambda, lambda + numberOfVariables);
-              s_max_y += 2.0/(dx[1]/patchSize)*s_max_y_vis;
+              s_max_y += (2.0/(dx[1]/patchSize)) * s_max_y_vis;
           }
 
           dt_max_stable = std::min(
