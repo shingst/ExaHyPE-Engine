@@ -73,12 +73,13 @@ void NavierStokes::Plotter_FV::mapQuantities(
   }
 
   if (writePotT) {
+    return;
     const auto temperature = ns.evaluateTemperature(vars.rho(), pressure);
     const auto potT = ns.evaluatePotentialTemperature(temperature, pressure);
 
     // Write potential temperature
     outputQuantities[vars.SizeVariables] = potT;
   } else {
-    outputQuantities[vars.SizeVariables] = 0.0;
+    outputQuantities[vars.SizeVariables] = Q[Z]/Q[rho];
   }
 }

@@ -49,7 +49,8 @@ void NavierStokes::Plotter::mapQuantities(
   const bool writePrimitive = true;
 
   const auto& ns = solver->ns;
-  const bool writePotT = !ns.useAdvection; // TODO(Lukas) Fix pott for coupled eq.
+  // TODO(Lukas) Fix pott for coupled eq.
+  const bool writePotT = !ns.useAdvection && (solver->scenarioName != "lid-driven-cavity");
   const auto pressure = ns.evaluatePressure(vars.E(), vars.rho(), vars.j(),
                                             ns.getZ(Q), ns.getHeight(Q));
   if (writePrimitive) {
