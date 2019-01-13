@@ -377,7 +377,7 @@ void exahype::solvers::ADERDGSolver::ensureNoUnnecessaryMemoryIsAllocated(
     cellDescription.setExtrapolatedPredictorAverages(nullptr);
 
     // gradient of extrapolated predictor
-    if ( cellDescription.getExtrapolatedPredictorGradient() <= 0) {
+    if (cellDescription.getExtrapolatedPredictorGradientIndex() >= 0) {
       assertion(DataHeap::getInstance().isValidIndex(cellDescription.getExtrapolatedPredictorGradientIndex()));
 
       DataHeap::getInstance().deleteData(cellDescription.getExtrapolatedPredictorGradientIndex());
