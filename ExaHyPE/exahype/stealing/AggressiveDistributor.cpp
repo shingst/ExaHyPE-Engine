@@ -304,7 +304,7 @@ bool exahype::stealing::AggressiveDistributor::selectVictimRank(int& victim) {
   threshold = std::max(threshold, 20);
 
 
-  logInfo("selectVictimRank","waiting "<<tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs()<<" criterion "<<threshold);
+//  logInfo("selectVictimRank","waiting "<<tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs()<<" criterion "<<threshold);
  
   if(tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs()<
         threshold) {
