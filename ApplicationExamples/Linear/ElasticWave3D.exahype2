@@ -22,8 +22,8 @@
     ]
   },
   "shared_memory": {
-    "cores": 1,
-    "background_job_consumers": 1,
+    "cores": 4,
+    "background_job_consumers": 2,
     "high_priority_background_job_processing" : "all_in_a_rush",
     "low_priority_background_job_processing" : "run_always",
     "min_background_jobs_in_one_rush" : 1,
