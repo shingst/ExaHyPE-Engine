@@ -302,7 +302,7 @@ void exahype::stealing::PerformanceMonitor::postGatherWaitingTimes() {
   std::copy(&_currentWaitingTimes[0], &_currentWaitingTimes[nnodes], &_currentWaitingTimesSendBuffer[0]);
 
 
-  //static int nposted = 0;
+ // static int nposted = 0;
   //logInfo("postGatherWaitingTimes","posting gather for waiting times");
   //for(int i=0; i<nnodes; i++) {
   //  logInfo("postGatherWaitingTimes","_currentWaitingTimesSendBuffer["<<i<<"]: "<<_currentWaitingTimesSendBuffer[i]);
