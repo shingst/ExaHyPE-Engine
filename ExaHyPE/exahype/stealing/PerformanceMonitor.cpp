@@ -302,7 +302,7 @@ void exahype::stealing::PerformanceMonitor::postGatherWaitingTimes() {
   std::copy(&_currentWaitingTimes[0], &_currentWaitingTimes[nnodes], &_currentWaitingTimesSendBuffer[0]);
 
 
-  static int nposted = 0;
+  //static int nposted = 0;
   //logInfo("postGatherWaitingTimes","posting gather for waiting times");
   //for(int i=0; i<nnodes; i++) {
   //  logInfo("postGatherWaitingTimes","_currentWaitingTimesSendBuffer["<<i<<"]: "<<_currentWaitingTimesSendBuffer[i]);
@@ -312,8 +312,8 @@ void exahype::stealing::PerformanceMonitor::postGatherWaitingTimes() {
                    nnodes, MPI_INTEGER, exahype::stealing::StealingManager::getInstance().getMPICommunicator(),
                    &_gatherWaitingTimesRequest);// assert(err==MPI_SUCCESS);
 
-  nposted++;
-  logInfo("postGatherWaitingTimes", "nposted "<<nposted<< " request "<<_gatherWaitingTimesRequest);
+  //nposted++;
+  //logInfo("postGatherWaitingTimes", "nposted "<<nposted<< " request "<<_gatherWaitingTimesRequest);
 }
 
 bool exahype::stealing::PerformanceMonitor::isGloballyTerminated() {
