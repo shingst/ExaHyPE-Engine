@@ -452,7 +452,7 @@ RECURSIVE SUBROUTINE FinalizeTECPLOTPLOTTER(Myrank)
 	INTEGER, INTENT(IN) :: Myrank 	! CPU rank
 	CHARACTER(LEN=200) :: ZoneTitle,Title,ScratchDir, BaseFile ! BaseFile is the folder	where place the plots
 	CHARACTER(LEN=1000) :: VarString,Filename
-	CHARACTER(LEN=10)  :: cmyrank,varname , AuxName
+	CHARACTER(LEN=20)  :: cmyrank,varname , AuxName
 	INTEGER				:: ZoneType, iRet,visdouble,i
 	REAL				:: loctime
 	REAL(td)           :: Test
@@ -481,23 +481,23 @@ RECURSIVE SUBROUTINE FinalizeTECPLOTPLOTTER(Myrank)
 	ALLOCATE(NData(1:nVertex,1:nSubPlotElem))  
 	ALLOCATE(DataArray(1:nRealNodes,1:nDim+nVar+nAux+1+1))
 	
-	! **********************************
-    !IF(Myrank.EQ.0) THEN
-	    !print *, "****************************************************"
-	    !print *, "*********** TECPLOT PLOTTER INFO *******************"
-	    print *, 'Time t = ', PLOT_TIME, ''
-	    !PRINT *, "Myrank		=",myrank
-	    print *, "NElem			=",nSubPlotElem/M**nDim
-	    print *, "nSubPlotElem	=",nSubPlotElem
-	    print *, "nRealNodes	=",nRealNodes
-	    print *, "nVertex	=",nVertex
-	    print *, "*******************"
-	    print *, "nDim	=",nDim
-	    print *, "nVar	=",nVar
-	    print *, "nAux	=",nAux
-	    print *, "****************************************************"
-    !ENDIF
-    !
+	!! **********************************
+    !!IF(Myrank.EQ.0) THEN
+	!    print *, "****************************************************"
+	!    print *, "*********** TECPLOT PLOTTER INFO *******************"
+	!    print *, 'Time t = ', PLOT_TIME, ''
+	!    !PRINT *, "Myrank		=",myrank
+	!    print *, "NElem			=",nSubPlotElem/M**nDim
+	!    print *, "nSubPlotElem	=",nSubPlotElem
+	!    print *, "nRealNodes	=",nRealNodes
+	!    print *, "nVertex	=",nVertex
+	!    print *, "*******************"
+	!    print *, "nDim	=",nDim
+	!    print *, "nVar	=",nVar
+	!    print *, "nAux	=",nAux
+	!    print *, "****************************************************"
+    !!ENDIF
+    !!
 	DataArray(1:nRealNodes,1:(nDim+nVar+nAux+1+1))=DataArray_max(1:nRealNodes,1:(nDim+nVar+nAux+1+1))
 	NData(1:nVertex,1:nSubPlotElem)=NData_max(1:nVertex,1:nSubPlotElem)
 	!do i=1,nSubPlotElem
@@ -512,11 +512,11 @@ RECURSIVE SUBROUTINE FinalizeTECPLOTPLOTTER(Myrank)
 	WRITE(ScratchDir,'(a)') '.'//C_NULL_CHAR 
 	SELECT CASE(nDim)
 	CASE(2)
-	        print *, 'x y z ' 
+	        !print *, 'x y z ' 
 	        WRITE(VarString,*) 'x y ' 
 	        ZoneType = 3 ! FEM Quad  
 	CASE(3)
-	        print *, 'x y z ' 
+	        !print *, 'x y z ' 
 	        WRITE(VarString,*) 'x y z ' 
 	        ZoneType = 5 ! FEM Brick 
 	END SELECT 
@@ -541,13 +541,13 @@ RECURSIVE SUBROUTINE FinalizeTECPLOTPLOTTER(Myrank)
 	!PRINT *, 'TRIM(Varstring)//''//C_NULL_CHAR:', TRIM(Varstring)//''//C_NULL_CHAR
 	!PRINT *, 'TRIM(FileName)//''//C_NULL_CHAR:', TRIM(FileName)//''//C_NULL_CHAR
 	!PRINT *, 'TRIM(ScratchDir)//''//C_NULL_CHAR:',TRIM(ScratchDir)//''//C_NULL_CHAR
-    !
-	PRINT *, 'SONO QUI FinalizeTECPLOTPLOTTER'
+    !!
+	!PRINT *, 'SONO QUI FinalizeTECPLOTPLOTTER'
 	iret = TecIni112(TRIM(Title)//''//C_NULL_CHAR,TRIM(Varstring)//''//C_NULL_CHAR,TRIM(FileName)//''//C_NULL_CHAR,TRIM(ScratchDir)//''//C_NULL_CHAR,0,0,visdouble) 
 	loctime = PLOT_TIME 
 	ZoneTitle = Title
 	!StrandID=0
-    PRINT *, 'TRIM(ZoneTitle)//C_NULL_CHAR:',TRIM(ZoneTitle)//C_NULL_CHAR
+    !PRINT *, 'TRIM(ZoneTitle)//C_NULL_CHAR:',TRIM(ZoneTitle)//C_NULL_CHAR
 	iRet = TecZne112(TRIM(ZoneTitle)//C_NULL_CHAR, ZoneType, nRealNodes, nSubPlotElem, 0, 0, 0, 0, loctime, StrandID, 0, 1, 0, 0, 0, 0, 0, NullPtr, NullPtr, NullPtr, 0) 
 	iRet = TecDat112( nRealNodes*(nDim+nVar+nAux+1+1), DataArray, visdouble )	
 	iRet = TecNod112(NData)
@@ -610,11 +610,11 @@ RECURSIVE SUBROUTINE SetMainParameters(N_in,M_in)
 	
 	CALL ComputeOutputMatrices()
 	
-	print *, "***********************************************************"
-	print *, "************ TECPLOT INITIALIZATION ***********************"
-	PRINT *, "N,M=",N,M
-	print *, "(nElem,nSubPlotElem,nRealNodes)_MAX=",nElem_max,nSubPlotElem_max,nRealNodes_max
-	print *, "***********************************************************"
+	!print *, "***********************************************************"
+	!print *, "************ TECPLOT INITIALIZATION ***********************"
+	!PRINT *, "N,M=",N,M
+	!print *, "(nElem,nSubPlotElem,nRealNodes)_MAX=",nElem_max,nSubPlotElem_max,nRealNodes_max
+	!print *, "***********************************************************"
 END SUBROUTINE SetMainParameters
 
 
