@@ -1129,6 +1129,12 @@ public:
   std::string toString() const override;
 
   void toString (std::ostream& out) const override;
+
+  ///////////////////////
+  // PROFILING
+  ///////////////////////
+
+  CellProcessingTimes measureCellProcessingTimes(const int numberOfRuns=100) override;
 };
 
 #endif

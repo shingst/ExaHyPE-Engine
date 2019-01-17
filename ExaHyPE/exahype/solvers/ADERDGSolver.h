@@ -261,27 +261,26 @@ private:
   const int _DMPObservables;
 
   /**
-   * The minimum limiter status a cell must have
-   * to allocate a passive FV patch.
-   *
-   * All patches with limiter status smaller than this value,
-   * hold no FV patch at all.
+   * Cells placed in the separation layers around a troubled cells either project the DG solution
+   * onto an FV patch or compute with FV and project onto a DG polynomial depending on
+   * if they neighbour a well-behaved or troubled cell, respectively.
+   * If a cell in the separation layer becomes troubled, a local recomputation
+   * must be performed.
    */
-  const int _minimumRefinementStatusForPassiveFVPatch;
+  const int _minRefinementStatusForSeparationCell;
 
   /**
-   * The minimum limiter status a cell must have
-   * to allocate an active FV patch.
-   *
-   * All patches with nonzero limiter status smaller than this value,
-   * hold a passive FV patch.
+   * Cells placed in the buffer layers around a troubled cell either project the DG solution
+   * onto an FV patch or compute with FV and project onto a DG polynomial depending on
+   * if they neighbour a well-behaved or troubled cell, respectively.
+   * If a cell in the buffer layer becomes troubled, no local recomputation must be performed
    */
-  const int _minimumRefinementStatusForActiveFVPatch;
+  const int _minRefinementStatusForBufferCell;
 
   /**
    * Minimum limiter status a troubled cell can have.
    */
-  const int _minimumRefinementStatusForTroubledCell;
+  const int _minRefinementStatusForTroubledCell;
 
   /**
    * Check for NaNs.
@@ -1193,7 +1192,7 @@ public:
    * Determine the refinement status from the face
    * neighbour values.
    *
-   * \note It is very important that any troubled cell indicator
+   * @note It is very important that any troubled cell indicator
    * and any refinement criterion has been evaluated before
    * calling this function.
    */
@@ -1324,28 +1323,20 @@ public:
   /**
    * !!! LimitingADERDGSolver functionality !!!
    *
-   * \return the number of Limiter/FV helper layers
-   * surrounding a troubled cell.
-   *
-   * The helper layers of the the ADER-DG solver have
-   * the same cardinality.
-   * We thus have a total number of helper layers
-   * which is twice the returned value.
    */
-  int getMinimumRefinementStatusForActiveFVPatch() const;
+  int getMinRefinementStatusForSeparationCell() const;
 
   /**
    * !!! LimitingADERDGSolver functionality !!!
    *
-   * \return the number of Limiter/FV helper layers
-   * surrounding a troubled cell.
-   *
-   * The helper layers of the the ADER-DG solver have
-   * the same cardinality.
-   * We thus have a total number of helper layers
-   * which is twice the returned value.
    */
-  int getMinimumRefinementStatusForTroubledCell() const;
+  int getMinRefinementStatusForBufferCell() const;
+
+  /**
+   * !!! LimitingADERDGSolver functionality !!!
+   *
+   */
+  int getMinRefinementStatusForTroubledCell() const;
 
   MeshUpdateEvent getNextMeshUpdateEvent() const final override;
   void updateNextMeshUpdateEvent(MeshUpdateEvent meshUpdateEvent) final override;
@@ -1619,15 +1610,27 @@ public:
    * a-priori.
    *
    * This operation is required for limiting.
+   *
+   * @note @p localObservablesMin and @p localObservablesMax are a nullptr if
+   * no the DMP is switched off.
+   *
+   * @param[in] solution                      all of the cell's solution values
+   * @param[in] localObservablesMin           the minimum value of the cell local observables or a nullptr if no DMP observables are computed.
+   * @param[in] localObservablesMax           the maximum value of the cell local observables or a nullptr if no DMP observables are computed.
+   * @param[in] wasTroubledInPreviousTimeStep indicates if the cell was troubled in a previous time step
+   * @param[in] center                        cell center
+   * @param[in] dx                            cell extents
+   * @param[in] timeStamp                     post-update time stamp during time stepping.  Current time stamp during the mesh refinement iterations.
+   *
+   * @return true if the solution is admissible.
    */
   virtual bool isPhysicallyAdmissible(
       const double* const solution,
-      const double* const observablesMin,const double* const observablesMax,
+      const double* const localObservablesMin,const double* const localObservablesMax,
       const bool wasTroubledInPreviousTimeStep,
       const tarch::la::Vector<DIMENSIONS,double>& center,
       const tarch::la::Vector<DIMENSIONS,double>& dx,
-      const double t, const double dt
-      ) const = 0;
+      const double timeStamp) const = 0;
 
   /**
    * Maps the solution values Q to
@@ -1910,8 +1913,10 @@ public:
    * \param[in] vetoCompressionBackgroundJob veto that the compression is run as a background task
    *
    * @note Might be called by background task. Do not synchronise time step data here.
+   *
+   * @return the number of Picard iterations performed by the solver.
    */
-  void performPredictionAndVolumeIntegralBody(
+  int performPredictionAndVolumeIntegralBody(
       CellDescription& cellDescription,
       const double predictorTimeStamp,
       const double predictorTimeStepSize,
@@ -2077,6 +2082,16 @@ public:
       const bool isAtRemoteBoundary) const final override;
 
   void adjustSolutionDuringMeshRefinement(const int solverNumber,CellInfo& cellInfo) final override;
+
+  /**
+   * Print the 2D ADER-DG solution.
+   * @param cellDescription a cell description of type Cell
+   */
+  void printADERDGSolution2D(const CellDescription& cellDescription) const;
+
+  void printADERDGExtrapolatedPredictor2D(const CellDescription& cellDescription) const;
+
+  void printADERDGFluctuations2D(const CellDescription& cellDescription) const;
 
   /**
    * Computes the surface integral contributions to the
@@ -2590,6 +2605,12 @@ public:
    * \param[in] isSkeletonJob decides to which queue we spawn the job if we spawn any
    */
   void compress( CellDescription& cellDescription, const bool isSkeletonCell ) const;
+
+  ///////////////////////
+  // PROFILING
+  ///////////////////////
+
+  CellProcessingTimes measureCellProcessingTimes(const int numberOfRuns=100) override;
 };
 
 #endif

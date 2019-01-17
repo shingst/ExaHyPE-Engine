@@ -1054,6 +1054,20 @@ exahype::parser::Parser::ProfilingTarget exahype::parser::Parser::getProfilingTa
   }
 }
 
+bool exahype::parser::Parser::getMeasureCellProcessingTimes() const {
+  return getBoolFromPath("/profiling/measure_cell_processing_times", false, isOptional);
+}
+
+int exahype::parser::Parser::getMeasureCellProcessingTimesIterations() const {
+  const int result = getIntFromPath("/profiling/measure_cell_processing_times_iter", 100, isOptional);
+
+  if ( result <  1 ) {
+    logError("getMeasureCellProcessingTimesIterations(...)",";measure-cell-processing-times-iter' must be greater than 0.");
+    invalidate();
+  }
+  return result;
+}
+
 std::string exahype::parser::Parser::getMetricsIdentifierList() const {
   return getStringFromPath("/profiling/metrics", "{}", isOptional);
 }

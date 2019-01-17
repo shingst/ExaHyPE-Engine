@@ -327,7 +327,13 @@ def build(buildOnlyMissing=False, skipMakeClean=False):
                         if not os.path.exists(oldExecutable):
                             print("ERROR: could not find built executable '"+oldExecutable+"'. The parameter 'project' in your configuration file is probably wrong." ,file=sys.stderr)
                             sys.exit()
-                        os.rename(oldExecutable,executable)
+                        try:
+                            os.rename(oldExecutable,executable)
+                        except OSError:
+                            import shutil
+                            shutil.copy(oldExecutable,executable)
+                            os.remove(oldExecutable)
+                        
                         print("created executable:"+executable)
                          
                         print("SUCCESS!")
