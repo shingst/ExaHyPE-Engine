@@ -1879,7 +1879,7 @@ exahype::solvers::Solver::CellProcessingTimes exahype::solvers::LimitingADERDGSo
     for (int it=0; it<numberOfRuns; it++) {
       numberOfPicardIterations = _solver->performPredictionAndVolumeIntegralBody(solverPatch,solverPatch.getPredictorTimeStamp(),solverPatch.getPredictorTimeStepSize(),false,true);
     }
-    const double time_sec = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-timeStart).count() * 1e-9;
+    const double time_sec = std::chrono::duration_cast<std::chrono::nanoseconds>( ( std::chrono::high_resolution_clock::now()-timeStart).count() ) * 1e-9;
     result._minTimePredictor = time_sec / numberOfRuns / numberOfPicardIterations;
     result._maxTimePredictor = result._minTimePredictor * _solver->getNodesPerCoordinateAxis(); // * (order+1)
   }
@@ -1896,7 +1896,7 @@ exahype::solvers::Solver::CellProcessingTimes exahype::solvers::LimitingADERDGSo
       _solver->swapSolutionAndPreviousSolution(solverPatch); // assumed  to be very cheap
       _solver->rollbackToPreviousTimeStep(solverPatch);
     }
-    const double time_sec = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-timeStart).count() * 1e-9;
+    const double time_sec = std::chrono::duration_cast<std::chrono::nanoseconds>( ( std::chrono::high_resolution_clock::now()-timeStart).count() ) * 1e-9;
     result._timeADERDGUpdate = time_sec / numberOfRuns;
   }
 
@@ -1928,7 +1928,7 @@ exahype::solvers::Solver::CellProcessingTimes exahype::solvers::LimitingADERDGSo
       _limiter->swapSolutionAndPreviousSolution(limiterPatch);
       _solver->rollbackToPreviousTimeStep(solverPatch);
     }
-    const double time_sec = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-timeStart).count() * 1e-9;
+    const double time_sec = std::chrono::duration_cast<std::chrono::nanoseconds>( ( std::chrono::high_resolution_clock::now()-timeStart).count() ) * 1e-9;
     result._timeADERDG2FVUpdate = time_sec / numberOfRuns;
   }
 
@@ -1960,7 +1960,7 @@ exahype::solvers::Solver::CellProcessingTimes exahype::solvers::LimitingADERDGSo
       _limiter->swapSolutionAndPreviousSolution(limiterPatch);
       _solver->rollbackToPreviousTimeStep(solverPatch); // assumed  to be very cheap
     }
-    const double time_sec = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-timeStart).count() * 1e-9;
+    const double time_sec = std::chrono::duration_cast<std::chrono::nanoseconds>( ( std::chrono::high_resolution_clock::now()-timeStart).count() ) * 1e-9;
     result._timeFV2ADERDGUpdate = time_sec / numberOfRuns;
   }
 
@@ -1992,7 +1992,7 @@ exahype::solvers::Solver::CellProcessingTimes exahype::solvers::LimitingADERDGSo
       _limiter->swapSolutionAndPreviousSolution(limiterPatch);
       _solver->rollbackToPreviousTimeStep(solverPatch);
     }
-    const double time_sec = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-timeStart).count() * 1e-9;
+    const double time_sec = std::chrono::duration_cast<std::chrono::nanoseconds>( ( std::chrono::high_resolution_clock::now()-timeStart).count() ) * 1e-9;
     result._timeFVUpdate = time_sec / numberOfRuns;
   }
 
