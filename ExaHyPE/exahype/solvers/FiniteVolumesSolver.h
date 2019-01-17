@@ -141,6 +141,8 @@ private:
    * @param isLastTimeStepOfBatch   if the current time step is the last time step of a batch of time steps
    * @param isAtRemoteBoundary      if the cell description is at a remote boundary.
    * @param uncompressBefore        if the cell description should uncompress data before doing any PDE operations
+   *
+   * @note Might be called by background task. Do not synchronise time step data here.
    */
   UpdateResult updateBody(
       CellDescription&                                           cellDescription,
@@ -516,10 +518,16 @@ public:
    **/
   virtual double riemannSolver(double* fL, double *fR, const double* qL, const double* qR, int normalNonZero) = 0;
 
-  virtual void solutionUpdate(
-      double* luhNew,const double* luh,
-      const tarch::la::Vector<DIMENSIONS, double>& dx,
-      const double dt, double& maxAdmissibleDt) = 0;
+  /**
+   * Update the solution of all volumes on a patch.
+   *
+   * @param[inout] luh             the current (and then new) solution
+   * @param[in]    dx              the extends of the cell holding the FV patch
+   * @param[in]    dt              time step size the FV patch is marching with
+   * @param[inout] maxAdmissibleDt admissible time step size obtained from the Riemann solves
+   */
+  virtual void solutionUpdate(double* luh,const tarch::la::Vector<DIMENSIONS, double>& dx,
+                              const double dt, double& maxAdmissibleDt) = 0;
 
   /**
    * Adjust the conserved variables and parameters (together: Q) at a given time t at the (quadrature) point x.
@@ -762,7 +770,7 @@ public:
 
   /** @copydoc: exahype::solvers::Solver::fusedTimeStepOrRestrict
    *
-   * The "hasCompletedTimeStep" flag must be only be unset when
+   * The "hasCompletedLastStep" flag must be only be unset when
    * a background job is spawned.
    */
   UpdateResult fusedTimeStepOrRestrict(
@@ -772,6 +780,14 @@ public:
       const bool isLastTimeStepOfBatch,
       const bool isAtRemoteBoundary) final override;
 
+  /**
+   *  TODO
+   *
+   * @param solverNumber
+   * @param cellInfo
+   * @param isAtRemoteBoundary
+   * @return
+   */
   UpdateResult updateOrRestrict(
         const int  solverNumber,
         CellInfo&  cellInfo,
@@ -1113,6 +1129,12 @@ public:
   std::string toString() const override;
 
   void toString (std::ostream& out) const override;
+
+  ///////////////////////
+  // PROFILING
+  ///////////////////////
+
+  CellProcessingTimes measureCellProcessingTimes(const int numberOfRuns=100) override;
 };
 
 #endif

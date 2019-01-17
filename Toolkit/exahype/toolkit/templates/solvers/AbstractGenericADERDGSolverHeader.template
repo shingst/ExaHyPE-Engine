@@ -136,7 +136,7 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, pu
       const bool wasTroubledInPreviousTimeStep,
       const tarch::la::Vector<DIMENSIONS,double>& center,
       const tarch::la::Vector<DIMENSIONS,double>& dx,
-      const double t, const double dt) const override { return true; }
+      const double t) const override { return true; }
     
     /**
      * Default implementation. Please overwrite.
@@ -151,7 +151,7 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, pu
      
     int fusedSpaceTimePredictorVolumeIntegral(double* lduh, double* lQhbnd, double* lFhbnd, const double* const luh, const tarch::la::Vector<DIMENSIONS, double>& center, const tarch::la::Vector<DIMENSIONS, double>& dx, const double t, const double dt) override;
     void solutionUpdate(double* luh,const double* const luhOld,const double* const lduh,const double dt) override;
-    void riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double dt,const int direction, bool isBoundaryFace, int faceIndex) override;
+    void riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double t,const double dt,const int direction, bool isBoundaryFace, int faceIndex) override;
     void boundaryConditions(double* const fluxIn,const double* const stateIn,const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const int direction,const int orientation) override;
     void faceIntegral(double* const lduh,const double* const lFhbnd,const int direction, const int orientation,const tarch::la::Vector<DIMENSIONS-1,int>& subfaceIndex,const int levelDelta,const tarch::la::Vector<DIMENSIONS, double>& cellSize) override;    
     double stableTimeStepSize(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& dx) override;

@@ -86,7 +86,7 @@ namespace c {
    */
   template <bool useSource, bool useNCP, bool useFlux, bool robustDiagonalLimiting, typename SolverType>
   double solutionUpdate(
-      SolverType& solver,double* luh_new, const double* luh,
+      SolverType& solver,double* luh,
       const tarch::la::Vector<DIMENSIONS, double>& dx,double dt);
 }  // namespace c
 }  // namespace musclhancock

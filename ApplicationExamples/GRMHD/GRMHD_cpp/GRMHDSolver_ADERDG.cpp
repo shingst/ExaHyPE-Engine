@@ -100,7 +100,7 @@ bool GRMHD::GRMHDSolver_ADERDG::isPhysicallyAdmissible(
       const bool wasTroubledInPreviousTimeStep,
       const tarch::la::Vector<DIMENSIONS,double>& center,
       const tarch::la::Vector<DIMENSIONS,double>& dx,
-      const double t, const double dt) const {
+      const double t) const {
 
 	// Q: Do we have to check the observables{Min,Max} whether they are useful?
 

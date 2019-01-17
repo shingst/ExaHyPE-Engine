@@ -386,6 +386,7 @@ void GenericEulerKernelTest::testRiemannSolverLinear() {
         FL, FR,
         QL,
         QR,
+        0.0,
         dt,
         direction);
 
@@ -435,6 +436,7 @@ void GenericEulerKernelTest::testRiemannSolverLinear() {
         FL, FR,
         QL,
         QR,
+        0.0, 
         dt,
         direction
     );
@@ -498,7 +500,8 @@ void GenericEulerKernelTest::testRiemannSolverNonlinear() {
     kernels::aderdg::generic::c::riemannSolverNonlinear<false,GenericEulerKernelTest>(
         *this,
         FL, FR, QL, QR,
-        0.0,  // dt
+        0,   // t
+        0.0, // dt
         0    // direction
         );
 
@@ -540,6 +543,7 @@ void GenericEulerKernelTest::testRiemannSolverNonlinear() {
     kernels::aderdg::generic::c::riemannSolverNonlinear<false,GenericEulerKernelTest>(
         *this,
         FL, FR, QL, QR,
+        0,     // t
         0.0,  // dt
         0     // direction
         );
@@ -591,7 +595,8 @@ void GenericEulerKernelTest::testRiemannSolverNonlinear() {
     kernels::aderdg::generic::c::riemannSolverNonlinear<false,GenericEulerKernelTest>(
         *this,
         FL, FR, QL, QR,
-        0.0,  // dt
+        0,   // t
+        0.0, // dt
         1    // direction
         );
 

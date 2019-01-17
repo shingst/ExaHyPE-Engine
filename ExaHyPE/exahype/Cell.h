@@ -123,7 +123,7 @@ class exahype::Cell : public peano::grid::Cell<exahype::records::Cell> {
    * 4^{d-2} - full face connection where cell is inside and face vertices are all inside:
    * send at time of 2^{d-2}-th touch of face.
    */
-  static void resetNeighbourMergeFlagsAndCounters(
+  static void resetNeighbourMergePerformedFlags(
       const solvers::Solver::CellInfo& cellInfo,
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator);

@@ -156,6 +156,13 @@ class exahype::runners::Runner {
   void initSolvers() const;
 
   /**
+   * Measure the time it takes for the solver to perform
+   * a single cell update or predictor computation.
+   * Print the result to the standard output.
+   */
+  void measureCellProcessingTimes() const;
+
+  /**
    * Plot some information about the current mesh setup iteration.
    */
   void printMeshSetupInfo(
