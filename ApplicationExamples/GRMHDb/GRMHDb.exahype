@@ -65,7 +65,8 @@ exahype-project GRMHDb
     variables const                = rho:1,vel:3,p:1,B:3,psi:1,lapse:1,shift:3,gamma:6
     order const                    = 3
     //maximum-mesh-size              = 1.0								 
-    maximum-mesh-size              = 0.88888888888888888888888888888889	 
+    //maximum-mesh-size              = 0.88888888888888888888888888888889	 
+    maximum-mesh-size              = 0.2962962962962962962962962962963
     maximum-mesh-depth             = 0
     time-stepping                  = global
     type const = nonlinear
@@ -139,7 +140,7 @@ exahype-project GRMHDb
        repeat          = 10.0
        output          = ./output/tecplot
      end plot
- 
+
 
   end solver
 
