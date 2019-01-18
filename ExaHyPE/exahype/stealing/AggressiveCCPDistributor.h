@@ -37,8 +37,7 @@ class exahype::stealing::AggressiveCCPDistributor {
     int *_tasksToOffload;
     // stores how many tasks still need to be offloaded in the current time step
     std::atomic<int> *_remainingTasksToOffload;
-    // stores the number of consumers per rank that defines a weight for the load balancing
-    int *_consumersPerRank;
+    int *_emergenciesPerRank;
 
     int _totalTasksOffloaded;
     int _oldTotalTasksOffloaded;

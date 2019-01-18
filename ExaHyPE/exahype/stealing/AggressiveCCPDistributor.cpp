@@ -31,8 +31,7 @@ exahype::stealing::AggressiveCCPDistributor::AggressiveCCPDistributor() :
   _idealTasksToOffload     = new int[nnodes];
   _tasksToOffload          = new int[nnodes];
   _remainingTasksToOffload = new std::atomic<int>[nnodes];
-
-  //_consumersPerRank        = new int[nnodes];
+  _emergenciesPerRank      = new int[nnodes];
   _notOffloaded            = new int[nnodes];
  
   //for(int i=0; i<nnodes;i++) {
@@ -48,15 +47,16 @@ exahype::stealing::AggressiveCCPDistributor::AggressiveCCPDistributor() :
   std::fill( &_newLoadDistribution[0], &_newLoadDistribution[nnodes], 0);
   std::fill( &_initialLoadPerRank[0], &_initialLoadPerRank[nnodes], 0);
   std::fill( &_notOffloaded[0], &_notOffloaded[nnodes], 0);
+  std::fill( &_emergenciesPerRank[0], &_emergenciesPerRank[nnodes], 0);
 }
 
 exahype::stealing::AggressiveCCPDistributor::~AggressiveCCPDistributor() {
+  delete[] _emergenciesPerRank;
   delete[] _notOffloaded;
   delete[] _initialLoadPerRank;
   delete[] _newLoadDistribution;
   delete[] _tasksToOffload;
   delete[] _remainingTasksToOffload;
-  delete[] _consumersPerRank;
   delete[] _idealTasksToOffload;
 }
 
@@ -179,8 +179,8 @@ void exahype::stealing::AggressiveCCPDistributor::resetRemainingTasksToOffload()
 }
 
 void exahype::stealing::AggressiveCCPDistributor::handleEmergencyOnRank(int rank) {
-  _tasksToOffload[rank]--;
-  logInfo("handleEmergencyOnRank()","decrement for rank:"<<rank<<" tasks to offload "<<_tasksToOffload[rank]);
+  _emergenciesPerRank[rank]++;
+  logInfo("handleEmergencyOnRank()","emergencies for rank:"<<_emergenciesPerRank[rank]);
 }
 
 void exahype::stealing::AggressiveCCPDistributor::updateLoadDistribution() {
@@ -188,11 +188,14 @@ void exahype::stealing::AggressiveCCPDistributor::updateLoadDistribution() {
   if(!_isEnabled) {
     return;
   }
+  logInfo("updateLoadDistribution()","total offloaded: "<<_totalTasksOffloaded<<" previous: "<<_oldTotalTasksOffloaded);
 
-  if(_totalTasksOffloaded-_oldTotalTasksOffloaded>=0)
-    _temperature = std::min(1.0, _temperature*1.5);
-  else
-    _temperature = std::max(0.1, _temperature*0.9);
+  if(_totalTasksOffloaded>0) {
+    if(_totalTasksOffloaded-_oldTotalTasksOffloaded>=0)
+      _temperature = std::min(1.0, _temperature*1.1);
+    else
+      _temperature = std::max(0.1, _temperature*0.9);
+  }
 
   _oldTotalTasksOffloaded = _totalTasksOffloaded;
 
@@ -236,7 +239,7 @@ void exahype::stealing::AggressiveCCPDistributor::updateLoadDistribution() {
   }
 
   logInfo("updateLoadDistribution()", " critical rank:"<<criticalRank);
-
+  
   bool isVictim = exahype::stealing::StealingManager::getInstance().isVictim();
   if(myRank == criticalRank && !isVictim) {
      for(int i=0; i<nnodes; i++) {
@@ -244,13 +247,19 @@ void exahype::stealing::AggressiveCCPDistributor::updateLoadDistribution() {
          //we have a potential victim rank
          if(!exahype::stealing::StealingManager::getInstance().isBlacklisted(i)) {
            _tasksToOffload[i] = (1-_temperature)*_tasksToOffload[i] + _temperature*_idealTasksToOffload[i];
-           _totalTasksOffloaded += _tasksToOffload[i];
          }
        }
      }
   }
   else if(_tasksToOffload[criticalRank]>0) {
     _tasksToOffload[criticalRank]--;
+  }
+
+  _totalTasksOffloaded = 0;
+  for(int i=0; i<nnodes; i++) {
+    _tasksToOffload[i] = _tasksToOffload[i]-_emergenciesPerRank[i];
+    _emergenciesPerRank[i] = 0;
+    _totalTasksOffloaded += _tasksToOffload[i];
   }
 
   resetRemainingTasksToOffload();
