@@ -388,7 +388,7 @@
         "stealing" : {
           "type" : "string", 
           "title" : "Stealing strategy (TODO)",  
-          "enum"  : ["none", "static", "dynamic", "hybrid", "static_hardcoded", "dynamic_diffusive", "aggressive_diffusive"],
+          "enum"  : ["none", "static", "dynamic", "hybrid", "static_hardcoded", "dynamic_diffusive", "aggressive_diffusive", "aggressiveCCP_diffusive"],
           "default" : "none",
           "old_format" : { "token_after" : "stealing" }
 	    },

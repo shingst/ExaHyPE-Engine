@@ -68,6 +68,9 @@ void exahype::stealing::StealingAnalyser::endIteration(double numberOfInnerLeafC
 #elif defined(StealingStrategyAggressive)
   exahype::stealing::AggressiveDistributor::getInstance().printOffloadingStatistics();
   exahype::stealing::AggressiveDistributor::getInstance().updateLoadDistribution();
+#elif defined(StealingStrategyAggressiveCCP)
+  exahype::stealing::AggressiveDistributor::getInstance().printOffloadingStatistics();
+  exahype::stealing::AggressiveDistributor::getInstance().updateLoadDistribution();
 #endif
   //exahype::stealing::PerformanceMonitor::getInstance().setCurrentLoad(static_cast<int>(_currentMaxWaitTime*1e06));
 

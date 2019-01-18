@@ -69,6 +69,8 @@ PROJECT_CFLAGS += -DDistributedStealing -DStealingStrategyDynamic
 PROJECT_CFLAGS += -DDistributedStealing -DStealingStrategyDiffusive -DPerformanceAnalysis
 {% elif stealing=="aggressive_diffusive" %}
 PROJECT_CFLAGS += -DDistributedStealing -DStealingStrategyAggressive -DPerformanceAnalysis
+{% elif stealing=="aggressiveCCP_diffusive" %}
+PROJECT_CFLAGS += -DDistributedStealing -DStealingStrategyAggressiveCCP -DPerformanceAnalysis
 {% elif stealing=="hybrid" %}
 PROJECT_CFLAGS += -DDistributedStealing -DStealingStrategyHybrid
 {% elif stealing=="static_hardcoded" %}

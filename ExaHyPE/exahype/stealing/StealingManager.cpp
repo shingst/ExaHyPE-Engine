@@ -15,6 +15,7 @@
 #include "exahype/stealing/DynamicDistributor.h"
 #include "exahype/stealing/DiffusiveDistributor.h"
 #include "exahype/stealing/AggressiveDistributor.h"
+#include "exahype/stealing/AggressiveCCPDistributor.h"
 #include "exahype/stealing/PerformanceMonitor.h"
 
 #ifdef USE_ITAC
@@ -469,6 +470,8 @@ bool exahype::stealing::StealingManager::selectVictimRank(int& victim) {
     return exahype::stealing::DiffusiveDistributor::getInstance().selectVictimRank(victim);
 #elif defined(StealingStrategyAggressive)
     return exahype::stealing::AggressiveDistributor::getInstance().selectVictimRank(victim);
+#elif defined(StealingStrategyAggressiveCCP)
+    return exahype::stealing::AggressiveCCPDistributor::getInstance().selectVictimRank(victim);
 #else
   double remainingLoadRatio = static_cast<double> (exahype::stealing::PerformanceMonitor::getInstance().getRemainingLocalLoad())
 		  	  	  	  	  	  /
