@@ -13,6 +13,7 @@
 #include "exahype/stealing/PerformanceMonitor.h"
 #include "exahype/stealing/DiffusiveDistributor.h"
 #include "exahype/stealing/AggressiveDistributor.h"
+#include "exahype/stealing/AggressiveCCPDistributor.h"
 #include "exahype/stealing/StealingManager.h"
 
 tarch::logging::Log  exahype::stealing::StealingAnalyser::_log( "exahype::stealing::StealingAnalyser" );
@@ -69,8 +70,8 @@ void exahype::stealing::StealingAnalyser::endIteration(double numberOfInnerLeafC
   exahype::stealing::AggressiveDistributor::getInstance().printOffloadingStatistics();
   exahype::stealing::AggressiveDistributor::getInstance().updateLoadDistribution();
 #elif defined(StealingStrategyAggressiveCCP)
-  exahype::stealing::AggressiveDistributor::getInstance().printOffloadingStatistics();
-  exahype::stealing::AggressiveDistributor::getInstance().updateLoadDistribution();
+  exahype::stealing::AggressiveCCPDistributor::getInstance().printOffloadingStatistics();
+  exahype::stealing::AggressiveCCPDistributor::getInstance().updateLoadDistribution();
 #endif
   //exahype::stealing::PerformanceMonitor::getInstance().setCurrentLoad(static_cast<int>(_currentMaxWaitTime*1e06));
 

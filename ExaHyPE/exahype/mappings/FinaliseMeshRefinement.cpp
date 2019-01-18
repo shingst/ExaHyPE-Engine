@@ -31,6 +31,7 @@
 
 #ifdef DistributedStealing
 #include "exahype/stealing/AggressiveDistributor.h"
+#include "exahype/stealing/AggressiveCCPDistributor.h"
 #endif
 
 int exahype::mappings::FinaliseMeshRefinement::NumberOfEnclaveCells = 0;
@@ -256,8 +257,10 @@ void exahype::mappings::FinaliseMeshRefinement::endIteration(
 #ifdef DistributedStealing
   exahype::stealing::PerformanceMonitor::getInstance().setTasksPerTimestep(_numberOfEnclaveCells + _numberOfSkeletonCells);
 
-#ifdef StealingStrategyAggressive
+#if defined(StealingStrategyAggressive)
   exahype::stealing::AggressiveDistributor::getInstance().enable();
+#elif defined(StealingStrategyAggressiveCCP)
+  exahype::stealing::AggressiveCCPDistributor::getInstance().enable();
 #endif
 
 #endif
