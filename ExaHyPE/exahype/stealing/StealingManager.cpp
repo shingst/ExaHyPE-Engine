@@ -426,6 +426,8 @@ void exahype::stealing::StealingManager::triggerEmergencyForRank(int rank) {
 //  }
 #ifdef StealingStrategyAggressive
   exahype::stealing::AggressiveDistributor::getInstance().handleEmergencyOnRank(rank);
+#elif StealingStrategyAggressiveCCP
+  exahype::stealing::AggressiveCCPDistributor::getInstance().handleEmergencyOnRank(rank);
 #elif StealingStrategyDiffusive
   exahype::stealing::DiffusiveDistributor::getInstance().handleEmergencyOnRank(rank);
 #endif

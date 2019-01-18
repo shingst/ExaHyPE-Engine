@@ -17,7 +17,11 @@ tarch::logging::Log exahype::stealing::AggressiveCCPDistributor::_log( "exahype:
 
 exahype::stealing::AggressiveCCPDistributor::AggressiveCCPDistributor() :
   _zeroThreshold(2000*10),
-  _isEnabled(false) {
+  _isEnabled(false),
+  _temperature(0.5),
+  _totalTasksOffloaded(0),
+  _oldTotalTasksOffloaded(0)
+{
 
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
   int myRank = tarch::parallel::Node::getInstance().getRank();
@@ -154,6 +158,8 @@ void exahype::stealing::AggressiveCCPDistributor::printOffloadingStatistics() {
     logInfo("printOffloadingStatistics()", "target tasks to rank "<<i<<" ntasks "<<_tasksToOffload[i]<<" not offloaded "<<_notOffloaded[i]); 
     _notOffloaded[i]=0;
   }
+  logInfo("printOffloadingStatistics()", "temperature value "<<_temperature );
+
 }
 
 void exahype::stealing::AggressiveCCPDistributor::resetRemainingTasksToOffload() {
@@ -182,6 +188,13 @@ void exahype::stealing::AggressiveCCPDistributor::updateLoadDistribution() {
   if(!_isEnabled) {
     return;
   }
+
+  if(_totalTasksOffloaded-_oldTotalTasksOffloaded>=0)
+    _temperature = std::min(1.0, _temperature*1.5);
+  else
+    _temperature = std::max(0.1, _temperature*0.9);
+
+  _oldTotalTasksOffloaded = _totalTasksOffloaded;
 
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
   int myRank = tarch::parallel::Node::getInstance().getRank();
@@ -223,7 +236,6 @@ void exahype::stealing::AggressiveCCPDistributor::updateLoadDistribution() {
   }
 
   logInfo("updateLoadDistribution()", " critical rank:"<<criticalRank);
-  double C=1;
 
   bool isVictim = exahype::stealing::StealingManager::getInstance().isVictim();
   if(myRank == criticalRank && !isVictim) {
@@ -231,7 +243,8 @@ void exahype::stealing::AggressiveCCPDistributor::updateLoadDistribution() {
        if(_idealTasksToOffload[i]>0) {
          //we have a potential victim rank
          if(!exahype::stealing::StealingManager::getInstance().isBlacklisted(i)) {
-           _tasksToOffload[i] = (1-C)*_tasksToOffload[i] + C*_idealTasksToOffload[i];
+           _tasksToOffload[i] = (1-_temperature)*_tasksToOffload[i] + _temperature*_idealTasksToOffload[i];
+           _totalTasksOffloaded += _tasksToOffload[i];
          }
        }
      }

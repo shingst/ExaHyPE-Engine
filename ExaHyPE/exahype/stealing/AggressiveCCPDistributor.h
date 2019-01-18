@@ -28,6 +28,8 @@ class exahype::stealing::AggressiveCCPDistributor {
 
     int _zeroThreshold;
 
+    double _temperature;
+
     int *_initialLoadPerRank;
     int *_newLoadDistribution;
     int *_idealTasksToOffload;
@@ -37,6 +39,9 @@ class exahype::stealing::AggressiveCCPDistributor {
     std::atomic<int> *_remainingTasksToOffload;
     // stores the number of consumers per rank that defines a weight for the load balancing
     int *_consumersPerRank;
+
+    int _totalTasksOffloaded;
+    int _oldTotalTasksOffloaded;
 
     int *_notOffloaded;
     bool _isEnabled;
