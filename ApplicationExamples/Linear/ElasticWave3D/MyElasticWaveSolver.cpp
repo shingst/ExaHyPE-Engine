@@ -380,7 +380,7 @@ void Elastic::MyElasticWaveSolver::multiplyMaterialParameterMatrix(const double*
   rhs[26]= mu*rhs[26];
 }
 
-void Elastic::MyElasticWaveSolver::riemannSolver(double* FL_,double* FR_,const double* const QL_,const double* const QR_,const double dt,const int normalNonZeroIndex, bool isBoundaryFace, int faceIndex){
+void Elastic::MyElasticWaveSolver::riemannSolver(double* FL_,double* FR_,const double* const QL_,const double* const QR_,const double t,const double dt,const int normalNonZeroIndex, bool isBoundaryFace, int faceIndex){
 
 #ifdef OPT_KERNELS
   double FL[converter::getFFaceGenArraySize()];
@@ -601,10 +601,10 @@ void Elastic::MyElasticWaveSolver::localBasis(double* n, double * m, double* l, 
       m[1] = 1.;
       m[2] = 0.;
       
-      diff_norm1 =  std::sqrt(pow(n[0]-m[0],2) + pow(n[1]-m[1], 2) + pow(n[2]-m[2], 2));
-      diff_norm2 =  std::sqrt(pow(n[0]+m[0],2) + pow(n[1]+m[1], 2) + pow(n[2]+m[2], 2));
+      diff_norm1 = pow2(n[0]-m[0]) + pow2(n[1]-m[1]) + pow2(n[2]-m[2]);
+      diff_norm2 = pow2(n[0]+m[0]) + pow2(n[1]+m[1]) + pow2(n[2]+m[2]);
       
-      if (diff_norm1 >= tol && diff_norm2 >= tol){
+      if (diff_norm1 >= pow2(tol) && diff_norm2 >= pow2(tol)){
       	Gram_Schmidt(n, m);
       }else{
       	  m[0] = 0.;

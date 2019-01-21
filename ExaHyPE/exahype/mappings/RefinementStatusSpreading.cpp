@@ -52,10 +52,9 @@ exahype::mappings::RefinementStatusSpreading::communicationSpecification() const
 // Switched on.
 peano::MappingSpecification
 exahype::mappings::RefinementStatusSpreading::touchVertexFirstTimeSpecification(int level) const {
-  return peano::MappingSpecification(
-      peano::MappingSpecification::OnlyLeaves,
-      peano::MappingSpecification::AvoidFineGridRaces,true); // TODO(Dominic): false should work in theory
+  return Vertex::getNeighbourMergeSpecification(level);
 }
+
 peano::MappingSpecification
 exahype::mappings::RefinementStatusSpreading::enterCellSpecification(int level) const {
   return peano::MappingSpecification(
@@ -189,7 +188,7 @@ void exahype::mappings::RefinementStatusSpreading::enterCell(
                            coarseGridCell, fineGridPositionOfCell);
 
   if (fineGridCell.isInitialised()) {
-    solvers::Solver::CellInfo cellInfo(fineGridCell.getCellDescriptionsIndex());
+    solvers::Solver::CellInfo cellInfo = fineGridCell.createCellInfo();
 
     for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
@@ -199,7 +198,7 @@ void exahype::mappings::RefinementStatusSpreading::enterCell(
           case exahype::solvers::Solver::Type::ADERDG: {
             auto& cellDescription = cellInfo._ADERDGCellDescriptions[element];
             static_cast<exahype::solvers::ADERDGSolver*>(solver)->
-                updateRefinementStatus(cellInfo._ADERDGCellDescriptions[element],cellDescription.getNeighbourMergePerformed());
+                updateRefinementStatus(cellDescription,cellDescription.getNeighbourMergePerformed());
           } break;
           case exahype::solvers::Solver::Type::LimitingADERDG: {
             auto& cellDescription = cellInfo._ADERDGCellDescriptions[element];
@@ -215,7 +214,7 @@ void exahype::mappings::RefinementStatusSpreading::enterCell(
       }
     }
 
-    exahype::Cell::resetNeighbourMergeFlags(cellInfo,fineGridVertices,fineGridVerticesEnumerator);
+    Cell::resetNeighbourMergePerformedFlags(cellInfo,fineGridVertices,fineGridVerticesEnumerator);
   }
 
   logTraceOutWith1Argument("enterCell(...)", fineGridCell);

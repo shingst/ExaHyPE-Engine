@@ -58,24 +58,9 @@ private:
   static tarch::logging::Log _log;
 
   /**
-   * A minimum time step size for each solver.
+   * Semaphore used for reductions.
    */
-  std::vector<double> _minTimeStepSizes;
-  /**
-   * The maximum level occupied by cells of a solver.
-   */
-  std::vector<int> _maxLevels;
-  /**
-   * Per solver a flag, indicating if has requested
-   * a mesh update request or a limiter domain change.
-   */
-  std::vector<exahype::solvers::Solver::MeshUpdateEvent> _meshUpdateEvents;
-
-  /**
-   * Prepare the vectors _minTimeStepSizes, _maxLevels,
-   * _meshUpdateRequests, _limiterDomainChanges.
-   */
-  void initialiseLocalVariables();
+  static tarch::multicore::BooleanSemaphore Semaphore;
 
  public:
   /**

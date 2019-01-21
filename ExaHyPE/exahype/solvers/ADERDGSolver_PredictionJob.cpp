@@ -22,12 +22,11 @@ exahype::solvers::ADERDGSolver::PredictionJob::PredictionJob(
   _predictorTimeStepSize(predictorTimeStepSize),
   _uncompressBefore(uncompressBefore),
   _isSkeletonJob(isSkeletonJob) {
-  tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  {
-    int& jobCounter = (_isSkeletonJob) ? NumberOfSkeletonJobs : NumberOfEnclaveJobs;
-    jobCounter++;
+  if (_isSkeletonJob) {
+    NumberOfSkeletonJobs.fetch_add(1);
+  } else {
+    NumberOfEnclaveJobs.fetch_add(1);
   }
-  lock.free();
 }
 
 
@@ -35,13 +34,14 @@ bool exahype::solvers::ADERDGSolver::PredictionJob::run() {
   _solver.performPredictionAndVolumeIntegralBody(
       _cellDescription,_predictorTimeStamp,_predictorTimeStepSize,
       _uncompressBefore,_isSkeletonJob); // ignore return value
-  tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  {
-    int& jobCounter = (_isSkeletonJob) ? NumberOfSkeletonJobs : NumberOfEnclaveJobs;
-    jobCounter--;
-    assertion( jobCounter>=0 );
+
+  if (_isSkeletonJob) {
+    NumberOfSkeletonJobs.fetch_sub(1);
+    assertion( NumberOfSkeletonJobs.load()>=0 );
+  } else {
+    NumberOfEnclaveJobs.fetch_sub(1);
+    assertion( NumberOfEnclaveJobs.load()>=0 );
   }
-  lock.free();
   return false;
 }
 
@@ -50,12 +50,10 @@ bool exahype::solvers::ADERDGSolver::PredictionJob::run() {
 //
 void exahype::solvers::ADERDGSolver::PredictionJob::prefetchData() {
   #if defined(SharedTBB) && !defined(noTBBPrefetchesJobData)
-  const CellDescription& cellDescription = getCellDescription(_cellDescriptionsIndex,_element);
-
-  double* luh  = static_cast<double*>(cellDescription.getSolution());
-  double* lduh = static_cast<double*>(cellDescription.getUpdate());
-  double* lQhbnd = static_cast<double*>(cellDescription.getExtrapolatedPredictor());
-  double* lFhbnd = static_cast<double*>(cellDescription.getFluctuation());
+  double* luh  = static_cast<double*>(_cellDescription.getSolution());
+  double* lduh = static_cast<double*>(_cellDescription.getUpdate());
+  double* lQhbnd = static_cast<double*>(_cellDescription.getExtrapolatedPredictor());
+  double* lFhbnd = static_cast<double*>(_cellDescription.getFluctuation());
 
   _mm_prefetch(luh, _MM_HINT_NTA);
   _mm_prefetch(lduh, _MM_HINT_NTA);

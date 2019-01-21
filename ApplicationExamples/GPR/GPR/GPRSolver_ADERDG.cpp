@@ -133,8 +133,10 @@ bool GPR::GPRSolver_ADERDG::isPhysicallyAdmissible(
       const bool wasTroubledInPreviousTimeStep,
       const tarch::la::Vector<DIMENSIONS,double>& center,
       const tarch::la::Vector<DIMENSIONS,double>& dx,
-      const double t, const double dt) const {
+      const double t) const {
   int limvalue;
+  int NumberOfObservables;
+  NumberOfObservables=1;
   //pdelimitervalue_(&limvalue,&center[0]);
   pdelimitervalue_(&limvalue,&center[0],&NumberOfObservables, observablesMin, observablesMax);
   if(limvalue>0){

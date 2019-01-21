@@ -147,7 +147,7 @@ class SWE::MySWESolver_ADERDG : public SWE::AbstractMySWESolver_ADERDG {
      * \param[inout]  The vector BgradQ (extends nVar), already allocated. 
      *
      **/
-    bool isPhysicallyAdmissible(const double* const solution,const double* const observablesMin,const double* const observablesMax,const bool wasTroubledInPreviousTimeStep,const tarch::la::Vector<DIMENSIONS,double>& center,	const tarch::la::Vector<DIMENSIONS,double>& dx,	const double t, const double dt) const;
+    bool isPhysicallyAdmissible(const double* const solution,const double* const observablesMin,const double* const observablesMax,const bool wasTroubledInPreviousTimeStep,const tarch::la::Vector<DIMENSIONS,double>& center,	const tarch::la::Vector<DIMENSIONS,double>& dx,	const double t) const;
 
     void nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) final override;
 

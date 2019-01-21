@@ -48,9 +48,9 @@ void {{Project}}::{{Solver}}::surfaceIntegral(double* lduh, const double* const 
 
 
 
-void {{Project}}::{{Solver}}::riemannSolver(double* FL, double* FR, const double* const QL, const double* const QR, double* tempFaceUnknownsArray, double** tempStateSizedVectors, double** tempStateSizedSquareMatrices, const double dt, const int normalNonZeroIndex) {
-  assertion2(normalNonZeroIndex>=0,dt,normalNonZeroIndex);
-  assertion2(normalNonZeroIndex<DIMENSIONS,dt,normalNonZeroIndex);
+void {{Project}}::{{Solver}}::riemannSolver(double* FL, double* FR, const double* const QL, const double* const QR, double* tempFaceUnknownsArray, double** tempStateSizedVectors, double** tempStateSizedSquareMatrices, const double t, const double dt, const int direction) {
+  assertion2(direction>=0,dt,direction);
+  assertion2(direction<DIMENSIONS,dt,direction);
   // @todo Please implement/augment if required
 }
 

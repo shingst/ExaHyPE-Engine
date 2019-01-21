@@ -1,0 +1,18 @@
+# MPI Logfilter.
+# black or white list entry
+# -1 means all ranks
+
+# default entries
+
+debug tarch -1 black
+debug peano -1 black
+debug exahype -1 black
+
+info tarch -1 black
+info peano -1 black
+info exahype -1 black
+
+info peano::util -1 white
+
+info exahype::runners::Runner -1 white
+info exahype::repositories::RepositorySTDStack::restart -1 white

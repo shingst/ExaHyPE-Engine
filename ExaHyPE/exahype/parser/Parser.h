@@ -221,7 +221,7 @@ class exahype::parser::Parser {
     GrainSizeSampling
   };
 
-  enum class MPILoadBalancingType { Static };
+  enum class MPILoadBalancingType { Static, Dynamic };
 
 
   void readFile(const std::string& filename);
@@ -302,10 +302,16 @@ class exahype::parser::Parser {
   double getFuseAlgorithmicStepsFactor() const;
 
   /**
-   * @return if the predictor should be spawned as background
-   * thread whenever this is possible.
+   * @return if the predictor and the first and intermediate fused time steps should be
+   * spawned as background thread.
    */
   bool getSpawnPredictionAsBackgroundThread() const;
+
+  /**
+   * @return if the update or the last fused timste iterations
+   *  should be spawned as background.
+   */
+  bool getSpawnUpdateAsBackgroundThread() const;
 
   /**
    * @return if the prolongation should be spawned as background
@@ -532,6 +538,18 @@ class exahype::parser::Parser {
    * Specify what code part you plan to run/profile.
    */
   ProfilingTarget getProfilingTarget() const;
+
+  /**
+   * @return if the cell processing times (time per update, min/max time per prediction) should be measured per solver.
+   */
+  bool getMeasureCellProcessingTimes() const;
+
+  /**
+   * @return number of measurements to er
+   *
+   * @see getMeasureCellProcessingTimes()
+   */
+  int getMeasureCellProcessingTimesIterations() const;
 
   /**
    * @TODO This function should be renamed to createParserViewForSolver, as we also

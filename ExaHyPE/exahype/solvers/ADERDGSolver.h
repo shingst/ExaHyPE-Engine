@@ -19,6 +19,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <tuple>
 
 #include "exahype/solvers/Solver.h"
 
@@ -260,27 +261,26 @@ private:
   const int _DMPObservables;
 
   /**
-   * The minimum limiter status a cell must have
-   * to allocate a passive FV patch.
-   *
-   * All patches with limiter status smaller than this value,
-   * hold no FV patch at all.
+   * Cells placed in the separation layers around a troubled cells either project the DG solution
+   * onto an FV patch or compute with FV and project onto a DG polynomial depending on
+   * if they neighbour a well-behaved or troubled cell, respectively.
+   * If a cell in the separation layer becomes troubled, a local recomputation
+   * must be performed.
    */
-  const int _minimumRefinementStatusForPassiveFVPatch;
+  const int _minRefinementStatusForSeparationCell;
 
   /**
-   * The minimum limiter status a cell must have
-   * to allocate an active FV patch.
-   *
-   * All patches with nonzero limiter status smaller than this value,
-   * hold a passive FV patch.
+   * Cells placed in the buffer layers around a troubled cell either project the DG solution
+   * onto an FV patch or compute with FV and project onto a DG polynomial depending on
+   * if they neighbour a well-behaved or troubled cell, respectively.
+   * If a cell in the buffer layer becomes troubled, no local recomputation must be performed
    */
-  const int _minimumRefinementStatusForActiveFVPatch;
+  const int _minRefinementStatusForBufferCell;
 
   /**
    * Minimum limiter status a troubled cell can have.
    */
-  const int _minimumRefinementStatusForTroubledCell;
+  const int _minRefinementStatusForTroubledCell;
 
   /**
    * Check for NaNs.
@@ -335,6 +335,8 @@ private:
 
   /**
    * Body of FiniteVolumesSolver::adjustSolutionDuringMeshRefinement(int,int).
+   *
+   * @note May be called from background task. Do not synchronise time step data here.
    */
   void adjustSolutionDuringMeshRefinementBody(
       CellDescription& cellDescription,
@@ -650,21 +652,6 @@ private:
       CellDescription& coarseGridCellDescription);
 
   /**
-   * Checks if a cell description is next to an 
-   * adaptivity boundary.
-   *
-   * This is the case if the following conditions hold:
-   *
-   * - A cell description is not augmented. Otherwise it
-   *   needs to prolongate face data such that its
-   *   children can perform their prolongation.
-   *
-   * - A cell description is not at the boundary
-   *   of a parent Ancestor.
-   */
-  static bool belongsToAMRSkeleton(const CellDescription& cellDescription, const bool isAtRemoteBoundary);
-
-  /**
    * Turns checking for NaNs off.
    * If this solver is the main solver
    * of a LimitingADERDGSolver,
@@ -809,7 +796,7 @@ private:
    * \note Not thread-safe.
    */
   void solveRiemannProblemAtInterface(
-      records::ADERDGCellDescription& cellDescription,
+      CellDescription& cellDescription,
       Solver::BoundaryFaceInfo& face,
       const double* const lQhbnd,
       const double* lFhbnd,
@@ -981,34 +968,92 @@ private:
           const tarch::la::Vector<DIMENSIONS,int>& subcellIndex);
 
       bool run() override;
+      void prefetchData() override;
   };
 
   /**
    * A job which performs a fused ADER-DG time step, i.e., it performs the solution update,
    * updates the local time stamp, and finally performs the space-time predictor commputation.
    *
-   * \note Spawning these operations as background job makes only sense if you
-   * do not plan to reduce the admissible time step size or refinement requests
-   * within a consequent reduction step.
-   *
    * TODO(Dominic): Minimise time step sizes and refinement requests per patch
    * (->transpose the typical minimisation order)
    */
   class FusedTimeStepJob: public tarch::multicore::jobs::Job {
     private:
-      ADERDGSolver&                                              _solver; // TODO not const because of kernels
-      CellDescription&                                           _cellDescription;
-      const int                                                  _cellDescriptionsIndex; // indices are used for identification of patch
-      const int                                                  _element;
-      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>  _neighbourMergePerformed;
-      const bool                                                 _isSkeletonJob;
+      ADERDGSolver&                                             _solver; // TODO not const because of kernels
+      CellDescription&                                          _cellDescription;
+      CellInfo                                                  _cellInfo; // copy
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> _neighbourMergePerformed; // copy
+      const bool                                                _isFirstTimeStepOfBatch;
+      const bool                                                _isLastTimeStepOfBatch;
+      const bool                                                _isSkeletonJob;
     public:
+      /**
+       * Construct a FusedTimeStepJob.
+       *
+       * @note Job is spawned as high priority job if spawned in the last time step.
+       * It further spawns a prediction job in this case in order
+       * to overlap work with the reduction of time step size
+       * and mesh update events.
+       *
+       * @note The state of the neighbourMergePerformed flags is used internally by
+       * some of the kernels, e.g. in order to determine where to perform a face integral.
+       * However, they have to be reset before the next iteration as they indicate on
+       * which face a Riemann solve has already been performed or not (their original usage).
+       * The flags are thus reset directly after spawning a FusedTimeStepJob.
+       * Therefore, we need to copy the neighbourMergePerformed flags when spawning
+       * a FusedTimeStep job.
+       *
+       * @param solver                 the spawning solver
+       * @param cellDescription        a cell description
+       * @param cellInfo               links to all cell descriptions associated with the cell
+       * @param isFirstTimeStepOfBatch if we currently run the first time step of a batch
+       * @param isLastTimeStepOfBatch  if we currently run the last time step of a batch
+       * @param isSkeletonJob          if the cell is a skeleton cell
+       */
       FusedTimeStepJob(
-        ADERDGSolver&                                              solver,
-        CellDescription&                                           cellDescription,
-        const int                                                  cellDescriptionsIndex,
-        const int                                                  element,
-        const bool                                                 isSkeletonJob);
+        ADERDGSolver&    solver,
+        CellDescription& cellDescription,
+        CellInfo&        cellInfo,
+        const bool       isFirstTimeStepOfBatch,
+        const bool       isLastTimeStepOfBatch,
+        const bool       isSkeletonJob);
+
+      bool run() override;
+      void prefetchData() override;
+  };
+
+  /**
+   * A job which performs the solution update and computes a new time step size.
+   *
+   * \note Spawning these operations as background job makes only sense if you
+   * wait in endIteration(...) on the completion of the job.
+   * It further important to flag this job as high priority job to
+   * ensure completion before the next reduction.
+   */
+  class UpdateJob: public tarch::multicore::jobs::Job {
+    private:
+      ADERDGSolver&                                             _solver; // TODO not const because of kernels
+      CellDescription&                                          _cellDescription;
+      CellInfo                                                  _cellInfo;
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> _neighbourMergePerformed; // copy
+      const bool                                                _isAtRemoteBoundary;
+    public:
+      /**
+       * Construct a UpdateJob.
+       *
+       * @note Job is always spawned as high priority job.
+       *
+       * @param solver                 the spawning solver
+       * @param cellDescription        a cell description
+       * @param cellInfo               links to all cell descriptions associated with the cell
+       * @param isSkeletonJob          if the cell is a skeleton cell
+       */
+      UpdateJob(
+        ADERDGSolver&    solver,
+        CellDescription& cellDescription,
+        CellInfo&        cellInfo,
+        const bool       isAtRemoteBoundary);
 
       bool run() override;
       void prefetchData() override;
@@ -1147,12 +1192,12 @@ public:
    * Determine the refinement status from the face
    * neighbour values.
    *
-   * \note It is very important that any troubled cell indicator
+   * @note It is very important that any troubled cell indicator
    * and any refinement criterion has been evaluated before
    * calling this function.
    */
   void updateRefinementStatus(
-      CellDescription& cellDescription,
+      CellDescription&                                           cellDescription,
       const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed) const;
 
   /**
@@ -1278,28 +1323,20 @@ public:
   /**
    * !!! LimitingADERDGSolver functionality !!!
    *
-   * \return the number of Limiter/FV helper layers
-   * surrounding a troubled cell.
-   *
-   * The helper layers of the the ADER-DG solver have
-   * the same cardinality.
-   * We thus have a total number of helper layers
-   * which is twice the returned value.
    */
-  int getMinimumRefinementStatusForActiveFVPatch() const;
+  int getMinRefinementStatusForSeparationCell() const;
 
   /**
    * !!! LimitingADERDGSolver functionality !!!
    *
-   * \return the number of Limiter/FV helper layers
-   * surrounding a troubled cell.
-   *
-   * The helper layers of the the ADER-DG solver have
-   * the same cardinality.
-   * We thus have a total number of helper layers
-   * which is twice the returned value.
    */
-  int getMinimumRefinementStatusForTroubledCell() const;
+  int getMinRefinementStatusForBufferCell() const;
+
+  /**
+   * !!! LimitingADERDGSolver functionality !!!
+   *
+   */
+  int getMinRefinementStatusForTroubledCell() const;
 
   MeshUpdateEvent getNextMeshUpdateEvent() const final override;
   void updateNextMeshUpdateEvent(MeshUpdateEvent meshUpdateEvent) final override;
@@ -1364,11 +1401,12 @@ public:
   /**
    * @brief Adds the solution update to the solution.
    *
-   * \param[inout] luh  Cell-local solution DoF.
-   * \param[in]    lduh Cell-local update DoF.
-   * \param[dt]    dt   Time step size.
+   * \param[inout] luh    cell-local solution DoF.
+   * \param[in]    luhOld the old solution a
+   * \param[in]    lduh   cell-local update DoF.
+   * \param[dt]    dt     time step size.
    */
-  virtual void solutionUpdate(double* luh, const double* const lduh,const double dt) = 0;
+  virtual void solutionUpdate(double* luh, const double* const luhOld, const double* const lduh, const double dt) = 0;
 
 
   /**
@@ -1411,6 +1449,7 @@ public:
    */
   virtual void riemannSolver(double* FL, double* FR,
                              const double* const QL,const double* const QR,
+                             const double t,
                              const double dt,
                              const int normalNonZero,
                              bool isBoundaryFace,
@@ -1571,15 +1610,27 @@ public:
    * a-priori.
    *
    * This operation is required for limiting.
+   *
+   * @note @p localObservablesMin and @p localObservablesMax are a nullptr if
+   * no the DMP is switched off.
+   *
+   * @param[in] solution                      all of the cell's solution values
+   * @param[in] localObservablesMin           the minimum value of the cell local observables or a nullptr if no DMP observables are computed.
+   * @param[in] localObservablesMax           the maximum value of the cell local observables or a nullptr if no DMP observables are computed.
+   * @param[in] wasTroubledInPreviousTimeStep indicates if the cell was troubled in a previous time step
+   * @param[in] center                        cell center
+   * @param[in] dx                            cell extents
+   * @param[in] timeStamp                     post-update time stamp during time stepping.  Current time stamp during the mesh refinement iterations.
+   *
+   * @return true if the solution is admissible.
    */
   virtual bool isPhysicallyAdmissible(
       const double* const solution,
-      const double* const observablesMin,const double* const observablesMax,
+      const double* const localObservablesMin,const double* const localObservablesMax,
       const bool wasTroubledInPreviousTimeStep,
       const tarch::la::Vector<DIMENSIONS,double>& center,
       const tarch::la::Vector<DIMENSIONS,double>& dx,
-      const double t, const double dt
-      ) const = 0;
+      const double timeStamp) const = 0;
 
   /**
    * Maps the solution values Q to
@@ -1597,6 +1648,20 @@ public:
     double* observables,
     const int numberOfObservables,
     const double* const Q) const = 0;
+
+  /**
+   * Deduces a time stamp and time step size for the two cells depending
+   * on the time stepping strategy and the data on the cell descriptions.
+   *
+   * @note The arguments are currently unused but they will be used
+   * when we interpolate face values between neighbouring cells.
+   *
+   * @param cellDescription1 one of the cell descriptions
+   * @param cellDescription2 one of the cell descriptions
+   */
+  std::tuple<double,double> getRiemannSolverTimeStepData(
+      const CellDescription& cellDescription1,
+      const CellDescription& cellDescription2) const;
 
   /**
    * Copies the time stepping data from the global solver onto the patch's time
@@ -1626,8 +1691,8 @@ public:
   void startNewTimeStep() override;
 
   void startNewTimeStepFused(
-      const bool isFirstIterationOfBatch,
-      const bool isLastIterationOfBatch) final override;
+      const bool isFirstTimeStepOfBatch,
+      const bool isLastTimeStepOfBatch) final override;
 
   /**
    * \copydoc Solver::updateTimeStepSizes
@@ -1808,15 +1873,18 @@ public:
    * \note Has no const modifier since kernels are not const functions yet.
    */
   MeshUpdateEvent evaluateRefinementCriteriaAfterSolutionUpdate(
-      CellDescription& cellDescription,
+      CellDescription&                                           cellDescription,
       const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed);
 
   /*! Perform prediction and volume integral.
    *
-   * \note Uncompresses the cell description arrays before calling
-   * performPredictionAndVolumeIntegral(CellDescription,bool)
+   * @note Different to the overloaded method, this method
+   * waits for completion of a cell's last operation.
    *
-   * \see performPredictionAndVolumeIntegral(CellDescription,bool)
+   * @note Requests to uncompress the cell description arrays before computing the predictor
+   *
+   * @note This function must not be called from a task/thread as it
+   * synchronises time step data.
    */
   void performPredictionAndVolumeIntegral(
       const int  solverNumber,
@@ -1837,16 +1905,18 @@ public:
    *
    * All FusedTimeStepJob and PredictionJob instances finish here.
    * This is where an ADER-DG time step ends.
-   * We thus call cellDescription.setHasCompletedTimeStep(true) at
+   * We thus call cellDescription.setHasCompletedLastStep(true) at
    * the end of this function.
    *
    * \param[in] uncompressBefore             uncompress the cell description arrays before computing
    *                                         the space-time predictor quantities.
    * \param[in] vetoCompressionBackgroundJob veto that the compression is run as a background task
    *
-   * \note If this job is called by
+   * @note Might be called by background task. Do not synchronise time step data here.
+   *
+   * @return the number of Picard iterations performed by the solver.
    */
-  void performPredictionAndVolumeIntegralBody(
+  int performPredictionAndVolumeIntegralBody(
       CellDescription& cellDescription,
       const double predictorTimeStamp,
       const double predictorTimeStepSize,
@@ -1922,11 +1992,11 @@ public:
   /**
    * Same as \p startNewTimeStep for the fused time stepping scheme.
    *
-   * \param[in] isFirstIterationOfBatch indicates that we are in the first iteration
+   * \param[in] isFirstTimeStepOfBatch indicates that we are in the first iteration
    *                                    of a batch or not. Note that this must be also set to true
    *                                    in case we run a batch of size 1, i.e. no batch at all.
    *
-   * \param[in] isLastIterationOfBatch indicates that we are in the last iteration
+   * \param[in] isLastTimeStepOfBatch indicates that we are in the last iteration
    *                                    of a batch or not. Note that this must be also set to true
    *                                    in case we run a batch of size 1, i.e. no batch at all.
    *
@@ -1934,8 +2004,8 @@ public:
    */
   double startNewTimeStepFused(
       CellDescription& cellDescription,
-      const bool isFirstIterationOfBatch,
-      const bool isLastIterationOfBatch);
+      const bool isFirstTimeStepOfBatch,
+      const bool isLastTimeStepOfBatch);
 
   /** \copydoc Solver::updateTimeStepSizes
    *
@@ -1964,22 +2034,41 @@ public:
    *
    * @param cellDescriptionsIndex cell description heap index
    * @param element               element in the cell description heap array
+   *
+   * @note Might be called by background task. Do not synchronise time step data here.
    */
   UpdateResult fusedTimeStepBody(
-        CellDescription& cellDescription,
-        const int cellDescriptionsIndex,
-        const int element,
-        const bool isFirstIterationOfBatch,
-        const bool isLastIterationOfBatch,
-        const bool isSkeletonCell,
-        const bool mustBeDoneImmediately,
-        const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed);
+        CellDescription&                                           cellDescription,
+        CellInfo&                                                  cellInfo,
+        const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
+        const bool                                                 isFirstTimeStepOfBatch,
+        const bool                                                 isLastTimeStepOfBatch,
+        const bool                                                 isSkeletonCell,
+        const bool                                                 mustBeDoneImmediately);
+
+  /**
+   * If the cell description is of type Cell, update the solution, evaluate the refinement criterion,
+   * and compute an admissible time step size.
+   *
+   * @note Not const as kernels are not const.
+   *
+   * @param cellDescription a cell description
+   * @return a struct containing a mesh update event triggered by this cell,
+   * and a new time step size.
+   *
+   * @note Might be called by background task. Do not synchronise time step data here.
+   */
+  UpdateResult updateBody(
+      CellDescription&                                           cellDescription,
+      CellInfo&                                                  cellInfo,
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
+      const bool                                                 isAtRemoteBoundary);
 
   UpdateResult fusedTimeStepOrRestrict(
       const int  solverNumber,
       CellInfo&  cellInfo,
-      const bool isFirstIterationOfBatch,
-      const bool isLastIterationOfBatch,
+      const bool isFirstTimeStepOfBatch,
+      const bool isLastTimeStepOfBatch,
       const bool isAtRemoteBoundary) final override;
 
   UpdateResult updateOrRestrict(
@@ -1993,6 +2082,16 @@ public:
       const bool isAtRemoteBoundary) const final override;
 
   void adjustSolutionDuringMeshRefinement(const int solverNumber,CellInfo& cellInfo) final override;
+
+  /**
+   * Print the 2D ADER-DG solution.
+   * @param cellDescription a cell description of type Cell
+   */
+  void printADERDGSolution2D(const CellDescription& cellDescription) const;
+
+  void printADERDGExtrapolatedPredictor2D(const CellDescription& cellDescription) const;
+
+  void printADERDGFluctuations2D(const CellDescription& cellDescription) const;
 
   /**
    * Computes the surface integral contributions to the
@@ -2013,32 +2112,13 @@ public:
    * a solution adjustment and adding of source term contributions here.
    *
    * @param[in] cellDescription         a cell description
-   * @param[in] neighbourMergePerformed an array of bools (modelled as byte) indicating if a merge (Riemann solve) was
-   *                                    performed for all DIMENSIONS_TIMES_TWO face adjacent to a cell
    * @param[in] backupPreviousSolution  Set to true if the solution should be backed up before
    *                                    we overwrite it by the updated solution.
-   *
    */
   void updateSolution(
-      CellDescription& cellDescription,
+      CellDescription&                                           cellDescription,
       const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
-      const bool backupPreviousSolution=true);
-
-  /**
-   * Update the solution of a cell description.
-   *
-   * \note Make sure to reset neighbour merge
-   * helper variables in this method call.
-   *
-   * \note Has no const modifier since kernels are not const functions yet.
-   *
-   * \param[in] backupPreviousSolution Set to true if the solution should be backed up before
-   *                                   we overwrite it by the updated solution.
-   */
-  void updateSolution(
-      const int cellDescriptionsIndex,
-      const int element,
-      const bool backupPreviousSolution);
+      const bool                                                 backupPreviousSolution);
 
   /**
    * TODO(Dominic): Update docu.
@@ -2292,34 +2372,7 @@ public:
       const tarch::la::Vector<DIMENSIONS, int>&     src,
       const tarch::la::Vector<DIMENSIONS, int>&     dest,
       const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const;
-
-  /**
-   * Sends out two empty messages, one for
-   * the boundary-extrapolated space-time predictor and one
-   * for the boundary-extrapolated space-time flux.
-   *
-   * <h2>LimitingADERDGSolver's min and max</h2>
-   * This method does not send an empty message for each,
-   * the minimum and maximum values required for the
-   * LimitingADERDGSolver's discrete h2>maximum principle.
-   * The LimitingADERDGSolver does this in his
-   * LimitingADERDGSolver::sendEmptyDataToNeighbour method.
-   *
-   * Min and max have to be merge
-   * independent of the limiter status of the cell while
-   * a ADER-DG neighbour merge has to be performed
-   * only for cells with certain limiter status
-   * flags.
-   *
-   * @param toRank the adjacent rank we want to send to
-   * @param x      vertex' position
-   * @param level  vertex' level
-   */
-  void sendEmptyDataToNeighbour(
-      const int                                    toRank,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) const;
+      const int                                     level);
 
   /** \copydoc Solver::mergeWithNeighbourData
    *
@@ -2356,6 +2409,10 @@ public:
    */
   void dropNeighbourData(
       const int                                    fromRank,
+      const int                                    solverNumber,
+      Solver::CellInfo&                            cellInfo,
+      const tarch::la::Vector<DIMENSIONS, int>&    src,
+      const tarch::la::Vector<DIMENSIONS, int>&    dest,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level) const;
 
@@ -2421,6 +2478,9 @@ public:
 
   /**
     * Finish prolongation operations started on the master.
+    *
+    * Veto erasing requests of the coarse grid cell if the received
+    * cell description has virtual children.
     *
     * \return If we the solver requires master worker communication
     * at this cell
@@ -2545,6 +2605,12 @@ public:
    * \param[in] isSkeletonJob decides to which queue we spawn the job if we spawn any
    */
   void compress( CellDescription& cellDescription, const bool isSkeletonCell ) const;
+
+  ///////////////////////
+  // PROFILING
+  ///////////////////////
+
+  CellProcessingTimes measureCellProcessingTimes(const int numberOfRuns=100) override;
 };
 
 #endif

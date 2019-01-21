@@ -48,8 +48,7 @@ inline double kernels::finitevolumes::musclhancock::c::minmod(double a, double b
  */
 template <bool useSource, bool useNCP, bool useFlux, bool robustDiagonalLimiting, typename SolverType>
 double kernels::finitevolumes::musclhancock::c::solutionUpdate(
-    SolverType& solver,
-    double* luh_new, const double* luh,
+    SolverType& solver,double* luh,
     const tarch::la::Vector<DIMENSIONS, double>& dx,double dt) {
   constexpr int numberOfVariables  = SolverType::NumberOfVariables;
   constexpr int numberOfParameters = SolverType::NumberOfParameters;
@@ -64,13 +63,18 @@ double kernels::finitevolumes::musclhancock::c::solutionUpdate(
   const double invCellSize[3]        = {1./cellSize[0],1./cellSize[1],1./cellSize[2]};
   const double invCellSizeTimesDt[3] = {dt*invCellSize[0], dt*invCellSize[1], dt*invCellSize[2]};
 
+  // 0. Copy old solution into temporary variable
+  constexpr int stride       = patchSize+2*ghostLayerWidth;
+  constexpr int dataPerPatch = stride*stride*stride*numberOfData;
+  double luhOld[dataPerPatch];
+  std::copy_n(luh,dataPerPatch,luhOld);
+
   // 1. Gather data from neighbouring cells; already done.
 
   // 2. Compute slopes TODO(Dominic): Make sure to only consider parameters in luh
-  constexpr int stride = patchSize+2*ghostLayerWidth;
   idx4 idx(stride, stride, stride, numberOfData);
-  idx5 idx_slope(stride,stride,stride,DIMENSIONS,numberOfVariables);
-  constexpr int variablesPerPatch = stride*stride*stride*numberOfVariables;
+  idx5 idx_slope(stride,stride,stride,DIMENSIONS,numberOfData);
+  constexpr int variablesPerPatch = stride*stride*stride*numberOfData;
   double slope[variablesPerPatch*DIMENSIONS] = {0.0};
 
   // This musclhancock does not yet use 2. ghostlayer.
@@ -78,10 +82,10 @@ double kernels::finitevolumes::musclhancock::c::solutionUpdate(
   for(int i = patchBegin-1; i < patchEnd+1; i++) { // z
     for (int j = patchBegin-1; j < patchEnd+1; j++) { // y 
       for (int k = patchBegin-1; k < patchEnd+1; k++) { // x
-        for (int l = 0; l < numberOfVariables; l++) {
+        for (int l = 0; l < numberOfData; l++) {
           slope[idx_slope(i, j, k, 0, l)] =
-              minmod(luh[idx(i, j, k + 1, l)] - luh[idx(i, j, k, l)],
-                  luh[idx(i, j, k, l)] - luh[idx(i, j, k - 1, l)]) * invCellSize[0];
+              minmod(luhOld[idx(i, j, k + 1, l)] - luhOld[idx(i, j, k, l)],
+                  luhOld[idx(i, j, k, l)] - luhOld[idx(i, j, k - 1, l)]) * invCellSize[0];
         }
       }
     }
@@ -90,10 +94,10 @@ double kernels::finitevolumes::musclhancock::c::solutionUpdate(
   for(int i = patchBegin-1; i < patchEnd+1; i++) { // z 
     for (int j = patchBegin-1; j < patchEnd+1; j++) { // y
       for (int k = patchBegin-1; k < patchEnd+1; k++) { // x
-        for (int l = 0; l < numberOfVariables; l++) {
+        for (int l = 0; l < numberOfData; l++) {
           slope[idx_slope(i, j, k, 1, l)] = 
-              minmod(luh[idx(i, j + 1, k, l)] - luh[idx(i, j, k, l)],
-                  luh[idx(i, j, k, l)] - luh[idx(i, j - 1, k, l)]) * invCellSize[1];
+              minmod(luhOld[idx(i, j + 1, k, l)] - luhOld[idx(i, j, k, l)],
+                  luhOld[idx(i, j, k, l)] - luhOld[idx(i, j - 1, k, l)]) * invCellSize[1];
         }
       }
     }
@@ -102,10 +106,10 @@ double kernels::finitevolumes::musclhancock::c::solutionUpdate(
   for(int i = patchBegin-1; i < patchEnd+1; i++) { // z
     for (int j = patchBegin-1; j < patchEnd+1; j++) { // y x TODO new
       for (int k = patchBegin-1; k < patchEnd+1; k++) { // x TODO new
-        for (int l = 0; l < numberOfVariables; l++) {
+        for (int l = 0; l < numberOfData; l++) {
           slope[idx_slope(i, j, k, 2, l)] = 
-              minmod(luh[idx(i + 1, j, k, l)] - luh[idx(i, j, k, l)],
-                  luh[idx(i, j, k, l)] - luh[idx(i -1, j, k, l)]) * invCellSize[2];
+              minmod(luhOld[idx(i + 1, j, k, l)] - luhOld[idx(i, j, k, l)],
+                  luhOld[idx(i, j, k, l)] - luhOld[idx(i -1, j, k, l)]) * invCellSize[2];
         }
       }
     }
@@ -158,7 +162,7 @@ double kernels::finitevolumes::musclhancock::c::solutionUpdate(
   }
 
   // 3.Boundary extrapolation (left and right value per face)
-  idx4 idx_w(stride,stride,stride,numberOfVariables);
+  idx4 idx_w(stride,stride,stride,numberOfData);
   double wLx[variablesPerPatch] = {0.0};
   double wLy[variablesPerPatch] = {0.0};
   double wLz[variablesPerPatch] = {0.0};
@@ -172,9 +176,9 @@ double kernels::finitevolumes::musclhancock::c::solutionUpdate(
   for(int i = patchBegin-1; i < patchEnd+1; i++) { // z
     for (int j = patchBegin-1; j < patchEnd+1; j++) { // y TODO new
       for (int k = patchBegin-1; k < patchEnd+1; k++) {
-        for (int l = 0; l < numberOfVariables; l++) {
-          wLx[idx_w(i, j, k, l)] = luh[idx(i, j, k, l)] - 0.5 * cellSize[0] * slope[idx_slope(i, j, k, 0, l)];
-          wRx[idx_w(i, j, k, l)] = luh[idx(i, j, k, l)] + 0.5 * cellSize[0] * slope[idx_slope(i, j, k, 0, l)];
+        for (int l = 0; l < numberOfData; l++) {
+          wLx[idx_w(i, j, k, l)] = luhOld[idx(i, j, k, l)] - 0.5 * cellSize[0] * slope[idx_slope(i, j, k, 0, l)];
+          wRx[idx_w(i, j, k, l)] = luhOld[idx(i, j, k, l)] + 0.5 * cellSize[0] * slope[idx_slope(i, j, k, 0, l)];
         }
       }
     }
@@ -185,9 +189,9 @@ double kernels::finitevolumes::musclhancock::c::solutionUpdate(
     for (int j = patchBegin-1; j < patchEnd+1; j++) { // y
       //      for (int k = patchBegin; k < patchEnd; k++) { // x / TODO previous
       for (int k = patchBegin-1; k < patchEnd+1; k++) { // x TODO new
-        for (int l = 0; l < numberOfVariables; l++) {
-          wLy[idx_w(i, j, k, l)] = luh[idx(i, j, k, l)] - 0.5 * cellSize[1] * slope[idx_slope(i, j, k, 1, l)];
-          wRy[idx_w(i, j, k, l)] = luh[idx(i, j, k, l)] + 0.5 * cellSize[1] * slope[idx_slope(i, j, k, 1, l)];
+        for (int l = 0; l < numberOfData; l++) {
+          wLy[idx_w(i, j, k, l)] = luhOld[idx(i, j, k, l)] - 0.5 * cellSize[1] * slope[idx_slope(i, j, k, 1, l)];
+          wRy[idx_w(i, j, k, l)] = luhOld[idx(i, j, k, l)] + 0.5 * cellSize[1] * slope[idx_slope(i, j, k, 1, l)];
         }
       }
     }
@@ -198,9 +202,9 @@ double kernels::finitevolumes::musclhancock::c::solutionUpdate(
       for (int k = patchBegin-1; k < patchEnd+1; k++) { // x TODO new
         //    for (int j = patchBegin; j < patchEnd; j++) { // y TODO previous
         //      for (int k = patchBegin; k < patchEnd; k++) { // x TODO previous
-        for (int l = 0; l < numberOfVariables; l++) {
-          wLz[idx_w(i, j, k, l)] = luh[idx(i, j, k, l)] - 0.5 * cellSize[2] * slope[idx_slope(i, j, k, 2, l)];
-          wRz[idx_w(i, j, k, l)] = luh[idx(i, j, k, l)] + 0.5 * cellSize[2] * slope[idx_slope(i, j, k, 2, l)];
+        for (int l = 0; l < numberOfData; l++) {
+          wLz[idx_w(i, j, k, l)] = luhOld[idx(i, j, k, l)] - 0.5 * cellSize[2] * slope[idx_slope(i, j, k, 2, l)];
+          wRz[idx_w(i, j, k, l)] = luhOld[idx(i, j, k, l)] + 0.5 * cellSize[2] * slope[idx_slope(i, j, k, 2, l)];
         }
       }
     }
@@ -220,19 +224,19 @@ double kernels::finitevolumes::musclhancock::c::solutionUpdate(
         for (int k = patchBegin-1; k < patchEnd+1; k++) {
         if (
             (j==patchBegin-1 && k==patchBegin-1) ||
-            (j==patchBegin-1 && k==patchEnd+1) ||
-            (j==patchEnd+1 && k==patchBegin-1) ||
-            (j==patchEnd+1 && k==patchEnd+1)
+            (j==patchBegin-1 && k==patchEnd) ||
+            (j==patchEnd     && k==patchBegin-1) ||
+            (j==patchEnd     && k==patchEnd)
             ||
             (j==patchBegin-1 && i==patchBegin-1) ||
-            (j==patchBegin-1 && i==patchEnd+1) ||
-            (j==patchEnd+1 && i==patchBegin-1) ||
-            (j==patchEnd+1 && i==patchEnd+1)
+            (j==patchBegin-1 && i==patchEnd) ||
+            (j==patchEnd     && i==patchBegin-1) ||
+            (j==patchEnd     && i==patchEnd)
             ||
             (i==patchBegin-1 && k==patchBegin-1) ||
-            (i==patchBegin-1 && k==patchEnd+1) ||
-            (i==patchEnd+1 && k==patchBegin-1) ||
-            (i==patchEnd+1 && k==patchEnd+1)
+            (i==patchBegin-1 && k==patchEnd) ||
+            (i==patchEnd     && k==patchBegin-1) ||
+            (i==patchEnd     && k==patchEnd)
         ) {
           // skip all ghost cells where we do not have neighbour data
         }
@@ -243,13 +247,18 @@ double kernels::finitevolumes::musclhancock::c::solutionUpdate(
           if(useSource || useNCP) {
             // Old code (for reference): solver.fusedSource(luh + idx(i, j, k, 0), gradQ, Qt);
             if(useSource) {
-              solver.algebraicSource(luh + idx(i, j, k, 0), Qt);
+              solver.algebraicSource(luhOld + idx(i, j, k, 0), Qt);
             } else {
               std::fill_n(Qt, numberOfVariables, 0.0);
             }
             if(useNCP) {
               double ncp[numberOfVariables];
-              solver.nonConservativeProduct(luh + idx(i, j, k, 0), gradQ, ncp);
+//              std::cout << i<<" ," << j<<" ," << k<<": " << std::endl;
+//              for (int l = 0; l < numberOfData; l++) {
+//                std::cout<< luh[idx(i, j, k, l)] << std::endl;
+//              }
+//              std::cout << std::endl; //TODO Remove
+              solver.nonConservativeProduct(luhOld + idx(i, j, k, 0), gradQ, ncp);
               for(int l=0; l<numberOfVariables; l++) {
                 Qt[l] -= ncp[l];
               }
@@ -319,8 +328,8 @@ double kernels::finitevolumes::musclhancock::c::solutionUpdate(
             dt_max_allowed, cflFactor / DIMENSIONS * cellSize[0] / s_max_x);
 
         for (int l=0; l<numberOfVariables; ++l) {
-          luh_new[idx(i, j, k, l)]   -= invCellSizeTimesDt[0] * fL[l];  
-          luh_new[idx(i, j, k+1, l)] += invCellSizeTimesDt[0] * fR[l];
+          luh[idx(i, j, k, l)]   -= invCellSizeTimesDt[0] * fL[l];  
+          luh[idx(i, j, k+1, l)] += invCellSizeTimesDt[0] * fR[l];
         }
       }
     }
@@ -340,8 +349,8 @@ double kernels::finitevolumes::musclhancock::c::solutionUpdate(
             dt_max_allowed, cflFactor / DIMENSIONS * cellSize[1] / s_max_y);
 
         for (int l=0; l<numberOfVariables; ++l) {
-          luh_new[idx(i, j, k, l)]   -= invCellSizeTimesDt[1] * fL[l];  
-          luh_new[idx(i, j+1, k, l)] += invCellSizeTimesDt[1] * fR[l];
+          luh[idx(i, j, k, l)]   -= invCellSizeTimesDt[1] * fL[l];  
+          luh[idx(i, j+1, k, l)] += invCellSizeTimesDt[1] * fR[l];
         }
       }
     }
@@ -361,8 +370,8 @@ double kernels::finitevolumes::musclhancock::c::solutionUpdate(
             dt_max_allowed, cflFactor / DIMENSIONS * cellSize[2] / s_max_y);
 
         for (int l=0; l<numberOfVariables; ++l) {
-          luh_new[idx(i, j, k, l)]   -= invCellSizeTimesDt[2] * fL[l];  
-          luh_new[idx(i+1, j, k, l)] += invCellSizeTimesDt[2] * fR[l];
+          luh[idx(i, j, k, l)]   -= invCellSizeTimesDt[2] * fL[l];  
+          luh[idx(i+1, j, k, l)] += invCellSizeTimesDt[2] * fR[l];
         }
       }
     }
@@ -372,14 +381,15 @@ double kernels::finitevolumes::musclhancock::c::solutionUpdate(
 
   // 5. Evolve, evaluate source, update cells
   if(useSource || useNCP) {
-    double ws[numberOfVariables]  = {0.0};
+    double ws [numberOfData]      = {0.0};
     double src[numberOfVariables] = {0.0};
 
     for (int i= patchBegin; i < patchEnd; i++) {
       for (int j = patchBegin; j < patchEnd; j++) {
         for (int k = patchBegin; k < patchEnd; k++) {
+          std::copy_n(luhOld + idx(i,j,k,0),numberOfData,ws); // copy the material parameters over
           for (int l = 0; l < numberOfVariables; l++) {
-            ws[l] = luh[idx(i,j,k,l)] + 0.5 * dt * slopet[idx_w(i,j,k,l)]; // idx_w ~ idx_slopet
+            ws[l] += 0.5 * dt * slopet[idx_w(i,j,k,l)]; // idx_w ~ idx_slopet
           }
 
           double* gradQ = slope + idx_slope(i, j, k, 0, 0); // const in time
@@ -398,7 +408,7 @@ double kernels::finitevolumes::musclhancock::c::solutionUpdate(
           }
 
           for(int l = 0; l < numberOfVariables; l++) {
-            luh_new[idx(i, j, k, l)] += dt * src[l];
+            luh[idx(i, j, k, l)] += dt * src[l];
           }
         }
       }

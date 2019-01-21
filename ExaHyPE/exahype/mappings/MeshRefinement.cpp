@@ -38,6 +38,8 @@
 
 #include <sstream>
 
+bool exahype::mappings::MeshRefinement::DynamicLoadBalancing    = false;
+
 bool exahype::mappings::MeshRefinement::IsFirstIteration        = true;
 bool exahype::mappings::MeshRefinement::IsInitialMeshRefinement = true;
 
@@ -69,9 +71,7 @@ exahype::mappings::MeshRefinement::touchVertexFirstTimeSpecification(int level) 
 
 peano::MappingSpecification
 exahype::mappings::MeshRefinement::touchVertexLastTimeSpecification(int level) const {
-  return peano::MappingSpecification(
-      peano::MappingSpecification::WholeTree,
-      peano::MappingSpecification::AvoidFineGridRaces,true);
+  return Vertex::getNeighbourMergeSpecification(level);
 }
 
 peano::MappingSpecification
@@ -134,7 +134,10 @@ void exahype::mappings::MeshRefinement::beginIteration( exahype::State& solverSt
   _localState = solverState;
 
   tarch::multicore::jobs::Job::setMaxNumberOfRunningBackgroundThreads(0); // during the traversal only have zero/one consumer thread running
-  peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(true);
+
+  if ( IsInitialMeshRefinement || DynamicLoadBalancing ) {
+    peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(true);
+  }
     
    //logInfo("beginIteration(...)","solverState.getAllSolversAttainedStableStateInPreviousIteration()="<<solverState.getAllSolversAttainedStableStateInPreviousIteration());
 
@@ -486,15 +489,15 @@ void exahype::mappings::MeshRefinement::enterCell(
           (firstMeshRefinementIteration && fineGridCell.isInitialised()) ||
           newComputeCell
       ) {
-        solvers::Solver::CellInfo cellInfo(fineGridCell.getCellDescriptionsIndex());
+        solvers::Solver::CellInfo cellInfo = fineGridCell.createCellInfo();
         solver->adjustSolutionDuringMeshRefinement(solverNumber,cellInfo); // TODO(Dominic): Consider to merge this into the last loop
       }
     }
   }
 
   if ( fineGridCell.isInitialised() ) {
-    solvers::Solver::CellInfo cellInfo(fineGridCell.getCellDescriptionsIndex());
-    exahype::Cell::resetNeighbourMergeFlags(cellInfo,fineGridVertices,fineGridVerticesEnumerator);
+    solvers::Solver::CellInfo cellInfo = fineGridCell.createCellInfo();
+    Cell::resetNeighbourMergePerformedFlags(cellInfo,fineGridVertices,fineGridVerticesEnumerator);
     // shutdown metadata for empty cells (no cell descriptions)
     if ( fineGridCell.isEmpty() ) {
       fineGridCell.shutdownMetaDataAndResetCellDescriptionsIndex();
@@ -561,7 +564,7 @@ void exahype::mappings::MeshRefinement::mergeWithNeighbour(
   logTraceInWith6Arguments("mergeWithNeighbour(...)", vertex, neighbour,
                            fromRank, fineGridX, fineGridH, level);
 
-  if ( !exahype::mappings::MeshRefinement::IsFirstIteration ) {
+  if ( !IsInitialMeshRefinement || !IsFirstIteration ) {
     vertex.mergeOnlyWithNeighbourMetadata(fromRank,fineGridX,fineGridH,level,exahype::State::AlgorithmSection::MeshRefinement,true);
   }
 
@@ -706,7 +709,7 @@ void exahype::mappings::MeshRefinement::mergeWithWorker(
                   receivedCellDescriptionsIndex,receivedElement);
 
           if ( newComputeCell ) {
-            solvers::Solver::CellInfo cellInfo(localCell.getCellDescriptionsIndex());
+            solvers::Solver::CellInfo cellInfo = localCell.createCellInfo();
             solver->adjustSolutionDuringMeshRefinement(solverNumber,cellInfo);
           }
         }
@@ -834,13 +837,12 @@ void exahype::mappings::MeshRefinement::prepareCopyToRemoteNode(
 
   _allSolversAttainedStableState = false;
 
-  exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::AMRJob);
-
   if ( 
       localCell.hasToCommunicate(level) &&
       localCell.getRankOfRemoteNode()==toRank 
-  ) { // isAsignedToRemoteRank does not work, remeber the halo sends
+  ) { // isAsignedToRemoteRank does not work, remember the halo sends
     const int cellDescriptionsIndex = localCell.getCellDescriptionsIndex();
+
     exahype::solvers::ADERDGSolver::sendCellDescriptions(toRank,cellDescriptionsIndex,
         exahype::State::isJoiningWithMaster()/* send out data from worker side */,
         peano::heap::MessageType::ForkOrJoinCommunication,cellCentre,level);

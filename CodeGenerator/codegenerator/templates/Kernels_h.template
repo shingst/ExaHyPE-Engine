@@ -104,7 +104,8 @@ namespace {{namespaceName}} {
 {% endif %}
 
   void solutionUpdate( 
-    double* restrict luh, 
+    double* restrict luh,
+    const double* restrict const luhOld, 
     const double* restrict const lduh, 
     const double dt
   );
@@ -138,6 +139,7 @@ namespace {{namespaceName}} {
     double* restrict FR,
     const double* restrict const QL,
     const double* restrict const QR,
+    const double t,
     const double dt,
     const int direction
   );

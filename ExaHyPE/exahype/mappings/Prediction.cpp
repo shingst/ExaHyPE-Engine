@@ -35,9 +35,16 @@
 #endif
 
 peano::MappingSpecification exahype::mappings::Prediction::determineEnterLeaveCellSpecification(int level) {
-  return peano::MappingSpecification(
-      peano::MappingSpecification::WholeTree,
-      peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
+  const int coarsestSolverLevel = solvers::Solver::getCoarsestMeshLevelOfAllSolvers();
+  if ( std::abs(level)>=coarsestSolverLevel-1 ) {
+    return peano::MappingSpecification(
+          peano::MappingSpecification::WholeTree,
+          peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
+  } else {
+    return peano::MappingSpecification(
+          peano::MappingSpecification::Nop,
+          peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
+  }
 }
 
 peano::CommunicationSpecification
@@ -158,9 +165,9 @@ void exahype::mappings::Prediction::performPredictionOrProlongate(
     const exahype::State::AlgorithmSection& algorithmSection,
     const bool performPrediction) {
   if ( fineGridCell.isInitialised() ) {
-    solvers::Solver::CellInfo cellInfo(fineGridCell.getCellDescriptionsIndex());
+    solvers::Solver::CellInfo cellInfo = fineGridCell.createCellInfo();
 
-    Cell::resetNeighbourMergeFlags(cellInfo,fineGridVertices,fineGridVerticesEnumerator);
+    exahype::Cell::resetNeighbourMergePerformedFlags(cellInfo,fineGridVertices,fineGridVerticesEnumerator);
     const bool isAtRemoteBoundary = exahype::Cell::isAtRemoteBoundary(fineGridVertices,fineGridVerticesEnumerator);
     for (unsigned int solverNumber=0; solverNumber<solvers::RegisteredSolvers.size(); solverNumber++) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
@@ -171,14 +178,14 @@ void exahype::mappings::Prediction::performPredictionOrProlongate(
       ) {
         switch (solver->getType()) {
           case exahype::solvers::Solver::Type::ADERDG:
-            static_cast<exahype::solvers::ADERDGSolver*>(solver)->
+            static_cast<solvers::ADERDGSolver*>(solver)->
               performPredictionAndVolumeIntegral(solverNumber,cellInfo,isAtRemoteBoundary);
             break;
-          case exahype::solvers::Solver::Type::LimitingADERDG:
-            static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getSolver()->
+          case solvers::Solver::Type::LimitingADERDG: {
+            static_cast<solvers::LimitingADERDGSolver*>(solver)->
               performPredictionAndVolumeIntegral(solverNumber,cellInfo,isAtRemoteBoundary);
-            break;
-          case exahype::solvers::Solver::Type::FiniteVolumes:
+          }  break;
+          case solvers::Solver::Type::FiniteVolumes:
             // do nothing
             break;
           default:
@@ -244,7 +251,7 @@ void exahype::mappings::Prediction::prepareSendToNeighbour(
   logTraceInWith5Arguments( "prepareSendToNeighbour(...)", vertex, toRank, x, h, level );
 
   if ( _stateCopy.isLastIterationOfBatchOrNoBatch() ) {
-    vertex.sendToNeighbour(toRank,true,x,level);
+    vertex.sendToNeighbour(toRank,true,x,h,level);
   }
 
   logTraceOut( "prepareSendToNeighbour(...)" );

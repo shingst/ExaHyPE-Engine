@@ -120,7 +120,7 @@ class Euler::LimitingADERDG_ADERDG : public Euler::AbstractLimitingADERDG_ADERDG
       const bool wasTroubledInPreviousTimeStep,
       const tarch::la::Vector<DIMENSIONS,double>& center,
       const tarch::la::Vector<DIMENSIONS,double>& dx,
-      const double t, const double dt) const override;
+      const double t) const override;
 
 
 

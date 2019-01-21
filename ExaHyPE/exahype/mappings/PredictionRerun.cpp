@@ -112,17 +112,6 @@ void exahype::mappings::PredictionRerun::beginIteration(
 
   _stateCopy = solverState;
 
-  if ( _stateCopy.isFirstIterationOfBatchOrNoBatch() ) {
-    exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::EnclaveJob);
-  } // this is a rerun; enclave jobs have been spawned before
-  if (
-      exahype::solvers::Solver::SpawnPredictionAsBackgroundJob &&
-      _stateCopy.isLastIterationOfBatchOrNoBatch()
-  ) {
-    exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::SkeletonJob);
-    peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
-  }
-
   logTraceOutWith1Argument("beginIteration(State)", solverState);
 }
 
@@ -181,7 +170,7 @@ void exahype::mappings::PredictionRerun::mergeWithNeighbour(
   if ( exahype::State::BroadcastInThisIteration ) {
     vertex.receiveNeighbourData(
         fromRank,false /*no merge*/,true /*no batch*/,
-        fineGridX,level);
+        fineGridX,fineGridH,level);
   }
   logTraceOut( "mergeWithMaster(...)" );
 }
@@ -193,7 +182,7 @@ void exahype::mappings::PredictionRerun::prepareSendToNeighbour(
   logTraceInWith5Arguments( "prepareSendToNeighbour(...)", vertex, toRank, x, h, level );
 
   if ( _stateCopy.isLastIterationOfBatchOrNoBatch() ) {
-    vertex.sendToNeighbour(toRank,true,x,level);
+    vertex.sendToNeighbour(toRank,true,x,h,level);
   }
   logTraceOut( "prepareSendToNeighbour(...)" );
 }
