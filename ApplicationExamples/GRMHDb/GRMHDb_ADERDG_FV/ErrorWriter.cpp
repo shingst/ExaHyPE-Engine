@@ -9,6 +9,7 @@
 #include "Tools.h"
 #include "PDE.h"
 #include "GRMHDbSolver_ADERDG.h"
+#include "GRMHDbSolver_FV.h"
 #include "kernels/GaussLegendreQuadrature.h"
 #include "kernels/KernelUtils.h"
 #include <cmath>
@@ -32,12 +33,14 @@ using namespace std;
 #include "tarch/parallel/Node.h"
 #include "tarch/parallel/NodePool.h"
 
+
+
 GRMHDb::ErrorWriter::ErrorWriter() : exahype::plotters::LimitingADERDG2UserDefined::LimitingADERDG2UserDefined(){
   // @TODO Please insert your code here.
 }
 
 
-void GRMHDb::ErrorWriter::plotPatch(
+void GRMHDb::ErrorWriter::plotADERDGPatch(
     const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
     const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* u,
     double timeStamp) {
@@ -62,6 +65,51 @@ void GRMHDb::ErrorWriter::plotPatch(
      GRMHDbSolver_ADERDG::referenceSolution(x,timeStamp,uAna);
 
      const double* uNum = u + idx ( (DIMENSIONS==3) ? i(2) : 0, i(1), i(0), 0);
+
+     for (int v=0; v<numberOfVariables; v++) {
+        const double uDiff = std::abs(uNum[v]-uAna[v]);
+        errorL2[v]   += uDiff*uDiff * w_dV;
+        errorL1[v]   += uDiff * w_dV;
+        errorLInf[v]  = std::max( errorLInf[v], uDiff );
+
+        normL1Ana[v]  += std::abs(uAna[v]) * w_dV;
+        normL2Ana[v]  += uAna[v] * uAna[v] * w_dV;
+        normLInfAna[v] = std::max( normLInfAna[v], std::abs(uAna[v]) );
+     }
+  }
+}
+
+
+
+void GRMHDb::ErrorWriter::plotFiniteVolumesPatch(
+    const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
+    const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* u,
+    double timeStamp) {
+  // @TODO Please insert your code here.
+  constexpr int numberOfVariables  = AbstractGRMHDbSolver_FV::NumberOfVariables;
+  constexpr int numberOfParameters = AbstractGRMHDbSolver_FV::NumberOfParameters;
+  constexpr int numberOfData       = numberOfVariables+numberOfParameters;
+  constexpr int basisSize          = AbstractGRMHDbSolver_FV::PatchSize;
+  constexpr int ghostLayerWidth   = AbstractGRMHDbSolver_FV::GhostLayerWidth;
+  constexpr int order              = basisSize-1;
+
+  double x[DIMENSIONS];
+  //double cellSize;
+
+  //kernels::idx4 idx(basisSize,basisSize,basisSize,numberOfData);
+  kernels::idx4 idx(basisSize+2*ghostLayerWidth,basisSize+2*ghostLayerWidth,basisSize+2*ghostLayerWidth,numberOfData);
+  dfor(i,basisSize) {
+     double w_dV = 1.0;
+     for (int d=0; d<DIMENSIONS; d++) {
+       const double cellSize = sizeOfPatch[d] / basisSize;
+       x[d]  = offsetOfPatch[d] + cellSize * (i(d)+0.5);
+       w_dV *= cellSize;
+		}
+
+     double uAna[numberOfVariables];
+     GRMHDbSolver_FV::referenceSolution(x,timeStamp,uAna);
+
+     const double* uNum = u + idx ( (DIMENSIONS==3) ? i(2)+ghostLayerWidth : 0, i(1)+ghostLayerWidth, i(0)+ghostLayerWidth, 0);
 
      for (int v=0; v<numberOfVariables; v++) {
         const double uDiff = std::abs(uNum[v]-uAna[v]);
@@ -177,7 +225,7 @@ void GRMHDb::ErrorWriter::finishPlotting() {
 			myfile << "**Errors for ADER-DG solver with order=" << AbstractGRMHDbSolver_ADERDG::Order << "**" << std::endl;
 			myfile << "*********************************************" << std::endl;
 			myfile << "---------------------------------------------" << std::endl;
-			myfile << "variable:\t";
+                        myfile << "variable:\t";
 			for (int v = 0; v < numberOfVariables; v++) {
 				myfile << v << " \t ";
 			}
@@ -229,4 +277,3 @@ void GRMHDb::ErrorWriter::finishPlotting() {
 		myfile.close();  
 	}
 }
-

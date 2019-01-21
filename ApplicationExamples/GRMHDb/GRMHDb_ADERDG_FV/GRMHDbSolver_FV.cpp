@@ -76,6 +76,11 @@ void GRMHDb::GRMHDbSolver_FV::adjustSolution(const double* const x,const double 
 }
 
 
+void GRMHDb::GRMHDbSolver_FV::referenceSolution(const double* const x, double t, double* Q) {
+
+	initialdata_(x, &t, Q);
+}
+
 
 void GRMHDb::GRMHDbSolver_FV::eigenvalues(const double* const Q, const int dIndex, double* lambda) {
   // Dimensions             = 3
@@ -113,8 +118,6 @@ void GRMHDb::GRMHDbSolver_FV::boundaryValues(
     const double* const stateInside,
     double* stateOutside) {
 const int nVar = GRMHDb::AbstractGRMHDbSolver_FV::NumberOfVariables;
-  const int order = GRMHDb::AbstractGRMHDbSolver_FV::Order;
-  const int basisSize = order + 1;
   const int nDim = DIMENSIONS;
   double Qgp[nVar],*F[nDim], Fs[nDim][nVar];
   // Dimensions             = 3

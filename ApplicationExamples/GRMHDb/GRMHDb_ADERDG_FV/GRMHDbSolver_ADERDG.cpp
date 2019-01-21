@@ -18,6 +18,8 @@
 #include "tarch/parallel/Node.h"
 #include "tarch/la/MatrixVectorOperations.h"
 
+#include "GRMHDbSolver_FV.h"  // for FV patchsize and ghostlayerwidth
+
 #include <algorithm>
 
 #include <cstring> // memset
@@ -38,20 +40,23 @@ void GRMHDb::GRMHDbSolver_ADERDG::init(const std::vector<std::string>& cmdlinear
   // @todo Please implement/augment if required
 
     const int order = GRMHDb::AbstractGRMHDbSolver_ADERDG::Order;
+	constexpr int basisSize = AbstractGRMHDbSolver_FV::PatchSize;
+	constexpr int Ghostlayers = AbstractGRMHDbSolver_FV::GhostLayerWidth;
+
     int mpirank = tarch::parallel::Node::getInstance().getRank();
-	printf("\n******************************************************************");
-	printf("\n**************<<<  INIT TECPLOT    >>>****************************");
-	printf("\n******************************************************************");
-    inittecplot_(&order,&order);
-	printf("\n******************************************************************");
-	printf("\n**************<<<  INIT PDE SETUP  >>>****************************");
-	printf("\n******************************************************************");
+	//printf("\n******************************************************************");
+	//printf("\n**************<<<  INIT TECPLOT    >>>****************************");
+	//printf("\n******************************************************************");
+    inittecplot_(&order,&order,&basisSize,&Ghostlayers);
+	//printf("\n******************************************************************");
+	//printf("\n**************<<<  INIT PDE SETUP  >>>****************************");
+	//printf("\n******************************************************************");
     pdesetup_(&mpirank);
-	printf("\n******************************************************************");
-	printf("\n**************<<<       DONE       >>>****************************");
-	printf("\n******************************************************************");
+	//printf("\n******************************************************************");
+	//printf("\n**************<<<       DONE       >>>****************************");
+	//printf("\n******************************************************************");
   fflush(stdout);
-    
+
 }
 
 void GRMHDb::GRMHDbSolver_ADERDG::adjustPointSolution(const double* const x,const double t,const double dt,double* Q) {
@@ -313,6 +318,46 @@ void  GRMHDb::GRMHDbSolver_ADERDG::nonConservativeProduct(const double* const Q,
     /**
      * @TODO LR : document
      */
-void GRMHDb::GRMHDbSolver_ADERDG::multiplyMaterialParameterMatrix(const double* const Q, double* rhs) {
+/*void GRMHDb::GRMHDbSolver_ADERDG::multiplyMaterialParameterMatrix(const double* const Q, double* rhs) {
   // @todo Please implement/augment if required
+}*/
+
+
+void GRMHDb::GRMHDbSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(
+    double* observables,const int numberOfObservables,
+    const double* const Q) const {
+  assertion(numberOfObservables==10);
+  ReadOnlyVariables vars(Q);
+
+  observables[0] = Q[0];  
+  observables[1] = Q[1];   
+  observables[2] = Q[2];   
+  observables[3] = Q[3];   
+  observables[4] = Q[4];   
+  observables[5] = Q[5];   
+  observables[6] = Q[6];   
+  observables[7] = Q[7];   
+  observables[8] = Q[8];   
+  observables[9] = Q[9];   
+  observables[10] = Q[10]; 
+}
+
+bool GRMHDb::GRMHDbSolver_ADERDG::isPhysicallyAdmissible(
+      const double* const solution,
+      const double* const observablesMin,const double* const observablesMax,
+      const bool wasTroubledInPreviousTimeStep,
+      const tarch::la::Vector<DIMENSIONS,double>& center,
+      const tarch::la::Vector<DIMENSIONS,double>& dx,
+      const double t) const {
+  //int limvalue;
+  //int NumberOfObservables;
+  //NumberOfObservables=1;
+  //pdelimitervalue_(&limvalue,&center[0]);
+  //pdelimitervalue_(&limvalue,&center[0],&NumberOfObservables, observablesMin, observablesMax);
+  //if(limvalue>0){
+	//  return false;
+  //}else{
+	//  return true;
+  //};
+  return true;
 }
