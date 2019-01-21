@@ -1,3 +1,5 @@
+#define RNSTOV
+    
 MODULE AstroMod
     IMPLICIT NONE
     PRIVATE

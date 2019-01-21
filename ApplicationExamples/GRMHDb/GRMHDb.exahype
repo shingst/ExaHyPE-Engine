@@ -116,13 +116,13 @@ exahype-project GRMHDb
    
 
 
-    plot user::defined ErrorWriter
+   plot user::defined ErrorWriter
        variables const = 19
        time            = 0.0 
        repeat          = 10.0
        output          = ./output/errors
     end plot
-  
+ 
 /*
     plot vtk::Cartesian::vertices::ascii ErrorPlotter
       // abserrorl1percell[nvar],q[nvar],qanalytical[nvar]

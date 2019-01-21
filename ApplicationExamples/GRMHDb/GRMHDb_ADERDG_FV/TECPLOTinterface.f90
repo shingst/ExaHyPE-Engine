@@ -7,8 +7,32 @@ RECURSIVE SUBROUTINE ElementCallTECPLOTPLOTTER(wh,lx0,ldx,limiter)
 	integer :: limiter
 	lx0_3(1:nDim)=lx0
 	ldx_3(1:nDim)=ldx
-	CALL ElementTECPLOTPLOTTER(wh,lx0_3,ldx_3,limiter)
+    CALL ElementTECPLOTPLOTTER(wh,lx0_3,ldx_3,limiter)
 END SUBROUTINE ElementCallTECPLOTPLOTTER
+
+RECURSIVE SUBROUTINE ElementCallTECPLOTADERDGPLOTTER(wh,lx0,ldx,limiter)
+	USE TECPLOTPLOTTERmod
+	USE Parameters, only : nVar, nDim
+	implicit none
+	REAL, INTENT(IN) :: wh(nVar,nDOFm),lx0(nDim),ldx(nDim)
+	real :: lx0_3(3),ldx_3(3)
+	integer :: limiter
+	lx0_3(1:nDim)=lx0
+	ldx_3(1:nDim)=ldx
+	CALL ElementTECPLOTPLOTTER_ADERDG(wh,lx0_3,ldx_3,limiter)
+ END SUBROUTINE ElementCallTECPLOTADERDGPLOTTER
+
+RECURSIVE SUBROUTINE ElementCallTECPLOTFVPLOTTER(wh,lx0,ldx,limiter)
+	USE TECPLOTPLOTTERmod
+	USE Parameters, only : nVar, nDim
+	implicit none
+	REAL, INTENT(IN) :: wh(nVar,nDOFm),lx0(nDim),ldx(nDim)
+	real :: lx0_3(3),ldx_3(3)
+	integer :: limiter
+	lx0_3(1:nDim)=lx0
+	ldx_3(1:nDim)=ldx
+	CALL ElementTECPLOTPLOTTER_FV(wh,lx0_3,ldx_3,limiter)
+END SUBROUTINE ElementCallTECPLOTFVPLOTTER
 
 RECURSIVE SUBROUTINE InitializeTECPLOTPLOTTER(time)
 	USE TECPLOTPLOTTERmod
