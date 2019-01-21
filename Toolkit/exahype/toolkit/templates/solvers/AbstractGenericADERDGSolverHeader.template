@@ -180,7 +180,7 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, pu
     void multiplyMaterialParameterMatrix(const double* const Q, double* rhs) final {}
 {% endif %}
 {% if patchwiseAdjust %}
-    void adjustPointSolution(const double* const x,const double t,const double dt,double* Q) final {};
+    void adjustPointSolution(const double* const x,const double t,const double dt,double* Q) final {}
 {% endif %}
     
 {% if isLinear %}
