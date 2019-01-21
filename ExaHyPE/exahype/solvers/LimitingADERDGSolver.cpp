@@ -667,7 +667,7 @@ void exahype::solvers::LimitingADERDGSolver::updateSolution(
     const bool                                                 backupPreviousSolution) {
   if (solverPatch.getType()==SolverPatch::Type::Cell &&
       solverPatch.getLevel()==getMaximumAdaptiveMeshLevel()) {
-    assertion(solverPatch.getRefinementStatus()>=-ADERDGSolver::Erase);
+    assertion(solverPatch.getRefinementStatus()>=ADERDGSolver::Erase);
     const int mergedLimiterStatus = getMaxiumRefinementStatusInNeighbourhood(solverPatch,neighbourMergePerformed);
 
     // update
