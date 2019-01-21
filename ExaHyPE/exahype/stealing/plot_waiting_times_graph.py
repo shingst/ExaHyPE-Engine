@@ -14,9 +14,11 @@ file = open(sys.argv[1], 'r')
 ranks = int(sys.argv[2])
 timestep_pattern = re.compile(".([0-9]+\.[0-9]+).*step ([0-9]+).*t_min.*")
 task_offload_pattern = re.compile(".*rank:([0-9]+).*printOffloadingStatistics.* target tasks to rank ([0-9]+) ntasks ([0-9]+) not offloaded ([0-9]+).*")
+temperature_pattern = re.compile(".*rank:([0-9]+).*printOffloadingStatistics.* temperature value ([0-9]+\.[0-9]+).*")
 blacklist_pattern = re.compile(".*blacklist value for rank ([0-9]+):([0-9]+\.[0-9]+)")
 waiting_times_pattern = re.compile(".*rank:0.*updateLoadDistribution\(\) rank ([0-9]+) waiting for ([0-9]+) for rank ([0-9]+)")
 critical_rank_pattern = re.compile(".*rank:([0-9]+).*updateLoadDistribution\(\).*optimal victim: ([0-9]+) critical rank:([0-9]+)")
+critical_rank_pattern2 = re.compile(".*rank:([0-9]+).*updateLoadDistribution\(\).*critical rank:([0-9]+)")
 
 
 animate = sys.argv[3].lower() in ("yes", "true", "t", "1")
@@ -59,7 +61,7 @@ for line in file:
     dot = AGraph(strict=False,directed=True,style="filled", label="timestep: "+str(current_step+1))
 
     for i in range(0,ranks):
-      dot.add_node(str(i))
+      dot.add_node(str(i), label=str(i))
   m=task_offload_pattern.match(line)
   if m:
     #print (line)
@@ -75,7 +77,7 @@ for line in file:
     dot.add_edge(src, dest, label=str(time),fontcolor="red", color="red")
   m = critical_rank_pattern.match(line)
   if m:
-    print (line)
+    #print (line)
     printing_rank = int(m.group(1)) 
     optimal_victim = int(m.group(2))
     critical_rank = int(m.group(3))
@@ -86,6 +88,15 @@ for line in file:
       opt= dot.get_node(optimal_victim)
       opt.attr['style'] = 'filled'
       opt.attr['fillcolor']='green'
+  m = critical_rank_pattern2.match(line)
+  if m:
+    #print (line)
+    printing_rank = int(m.group(1)) 
+    critical_rank = int(m.group(2))
+    if(printing_rank==critical_rank):
+      n=dot.get_node(critical_rank)
+      n.attr['style']='filled'
+      n.attr['fillcolor']='red'
   m=blacklist_pattern.match(line)
   if m:
     #print line
@@ -95,9 +106,16 @@ for line in file:
     n.attr['fillcolor'] = 'grey'
     n.attr['style'] = 'filled'
     #cur_blacklist_values[int(m.group(1))]=float(m.group(2))
+  m=temperature_pattern.match(line)
+  if m and current_step>0:
+    n = dot.get_node(int(m.group(1)))
+    if(n.attr['label'] ==None):
+      n.attr['label']=m.group(1)
+    print (str(n.attr['label'])+" temp="+m.group(2))
+    n.attr['label']= str(n.attr['label'])+ " temp="+m.group(2)
 
 if animate:
-    ani = animation.ArtistAnimation(fig, ims, interval=1, blit=True, repeat_delay=1000)
+    ani = animation.ArtistAnimation(fig, ims, interval=5000, blit=True, repeat_delay=1000)
     #ani.save("movie.avi")
     plt.show()
 
