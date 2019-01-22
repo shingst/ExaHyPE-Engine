@@ -7,6 +7,11 @@
 #ifndef FrancescosErrorWriter_CLASS_HEADER_
 #define FrancescosErrorWriter_CLASS_HEADER_
 
+#include "GRMHDSolver_ADERDG.h"
+using namespace GRMHD;
+using AbstractGRMHDbSolver_ADERDG = GRMHD::AbstractGRMHDSolver_ADERDG;
+using GRMHDbSolver_ADERDG         = GRMHD::GRMHDSolver_ADERDG;
+
 #include "exahype/plotters/ADERDG2UserDefined.h"
 
 namespace GRMHD {

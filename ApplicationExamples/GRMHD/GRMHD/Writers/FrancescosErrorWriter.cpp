@@ -9,8 +9,6 @@
 
 #include "AbstractGRMHDSolver_ADERDG.h"
 
-#define AbstractGRMHDbSolver_ADERDG AbstractGRMHDSolver_ADERDG
-
 
 #include <fstream>
 #include <iostream>
@@ -31,6 +29,7 @@ using namespace std;
 #include "tarch/parallel/Node.h"
 #include "tarch/parallel/NodePool.h"
 
+#include "InitialData/InitialData.h"
 
 
 GRMHD::FrancescosErrorWriter::FrancescosErrorWriter() : exahype::plotters::ADERDG2UserDefined::ADERDG2UserDefined(){
@@ -59,7 +58,7 @@ void GRMHD::FrancescosErrorWriter::plotPatch(
      } 
 
      double uAna[numberOfVariables];
-     GRMHDbSolver_ADERDG::referenceSolution(x,timeStamp,uAna);
+     id->Interpolate(x, timeStamp, uAna);
 
      const double* uNum = u + idx ( (DIMENSIONS==3) ? i(2) : 0, i(1), i(0), 0);
 
