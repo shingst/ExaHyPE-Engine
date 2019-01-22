@@ -23,9 +23,6 @@
 #include "tarch/plotter/griddata/unstructured/vtk/VTUTextFileWriter.h"
 #include "tarch/plotter/griddata/unstructured/vtk/VTUBinaryFileWriter.h"
 
-//#include "exahype/plotters/ascii/CSVUnstructuredGridWriter.h"
-
-
 // @todo 16/05/03:Dominic Etienne Charreir Plotter depends now on kernels.
 // Should thus be placed in kernel module or the solver
 // should provide a function that computes solution values
@@ -140,19 +137,6 @@ std::string exahype::plotters::Patch2VTUGapsBinary::getIdentifier() {
   return "vtk::patches::gaps::binary";
 }
 
-exahype::plotters::Patch2CSVAscii::Patch2CSVAscii(
-  exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing,
-  exahype::solvers::Solver::Type solvertype
-):
-  exahype::plotters::Patch2VTK(postProcessing,PlotterType::ASCIICSV,true /* has no meaning */,solvertype) {
-}
-
-
-std::string exahype::plotters::Patch2CSVAscii::getIdentifier() {
-  return "csv::patches::ascii";
-}
-
-
 exahype::plotters::Patch2VTK::Patch2VTK(
     exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing,
     PlotterType plotterType,
@@ -213,10 +197,6 @@ void exahype::plotters::Patch2VTK::startPlotting( double time ) {
       case PlotterType::ASCIIVTU:
         _gridWriter = new tarch::plotter::griddata::unstructured::vtk::VTUTextFileWriter();
         break;
-      case PlotterType::ASCIICSV:
-        //_gridWriter = new exahype::plotters::ascii::CSVUnstructuredGridWriter();
-	// TBD
-	break;
     }
 
     _vertexWriter                = _gridWriter->createVertexWriter();
@@ -268,9 +248,6 @@ void exahype::plotters::Patch2VTK::finishPlotting() {
 	case PlotterType::ASCIIVTU:
 		_timeSeriesWriter.addSnapshot( snapshotFileName.str(), _time);
 		_timeSeriesWriter.writeFile(_filename);
-		break;
-	case PlotterType::ASCIICSV:
-		/* not yet implemented */
 		break;
 	}
 
@@ -367,7 +344,7 @@ std::pair<int,int> exahype::plotters::Patch2VTK::plotCellBoundary(
 }
 
 // just a local shorthand
-void plotInt(tarch::plotter::griddata::Writer::CellDataWriter *writer, int cellIndex, int data) {
+inline void plotInt(tarch::plotter::griddata::Writer::CellDataWriter *writer, int cellIndex, int data) {
 	writer->plotCell(cellIndex, static_cast<double>(data));
 }
 
