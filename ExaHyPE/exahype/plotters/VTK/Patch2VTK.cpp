@@ -269,6 +269,9 @@ void exahype::plotters::Patch2VTK::finishPlotting() {
 		_timeSeriesWriter.addSnapshot( snapshotFileName.str(), _time);
 		_timeSeriesWriter.writeFile(_filename);
 		break;
+	case PlotterType::ASCIICSV:
+		/* not yet implemented */
+		break;
 	}
 
 	const bool hasBeenSuccessful =
