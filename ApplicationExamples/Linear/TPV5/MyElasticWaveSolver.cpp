@@ -23,8 +23,9 @@ void Elastic::MyElasticWaveSolver::init(const std::vector<std::string>& cmdlinea
   faultWriter = nullptr;
 
   //double fault_position=1.0/3.0 * _domainSize[0] + _domainOffset[0]; // fault has no effect
-  
-  double fault_position= 40.0/27*(27-1)*0.5;
+  //  double fault_position= 40.0/27*(27-1)*0.5;
+  double fault_position= 10;
+	  
   transformation = new CurvilinearTransformation(MyElasticWaveSolver::Order+1,
 						 _coarsestMeshLevel, fault_position,
 						 &_domainOffset[0],
@@ -36,10 +37,10 @@ void Elastic::MyElasticWaveSolver::adjustSolution(double *luh, const tarch::la::
   // Number of variables + parameters  = 12 + 16
   // @todo Please implement/augment if required
 
-   int level=std::round(log(_domainSize[0]/dx[0])/log(3.)) + 1;
+  int level=std::round(log(_domainSize[0]/dx[0])/log(3.)) + 1;
   
 
-   //std::cout << level <<std::endl;
+  //std::cout << level <<std::endl;
    
   if (tarch::la::equals(t,0.0)) {
     constexpr int numberOfVariables  = MyElasticWaveSolver::NumberOfVariables;
@@ -152,8 +153,8 @@ void Elastic::MyElasticWaveSolver::adjustSolution(double *luh, const tarch::la::
 }
 
 void Elastic::MyElasticWaveSolver::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,
-  const double * const fluxIn,const double* const stateIn,
-  double *fluxOut,double* stateOut) {
+						  const double * const fluxIn,const double* const stateIn,
+						  double *fluxOut,double* stateOut) {
   // Dimensions                        = 3
   // Number of variables + parameters  = 12 + 16
 
@@ -167,53 +168,139 @@ void Elastic::MyElasticWaveSolver::boundaryValues(const double* const x,const do
   }
  
   for (int i = 0; i< numberOfVariables; i++){
-  fluxOut[i] =  fluxIn[i];
+    fluxOut[i] =  fluxIn[i];
   }
 }
 
 exahype::solvers::Solver::RefinementControl Elastic::MyElasticWaveSolver::refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
   // @todo Please implement/augment if required
- if(!tarch::la::equals(t,0.0)){
-    return exahype::solvers::Solver::RefinementControl::Keep;
-  }
- 
-  double left_vertex[3];
-  double right_vertex[3];
+  //if(!tarch::la::equals(t,0.0)){
+  //  return exahype::solvers::Solver::RefinementControl::Keep;
+  //}
+
+  double left_vertex[DIMENSIONS];
+  double right_vertex[DIMENSIONS];
 
   for(int i = 0 ; i<DIMENSIONS; i++){
     left_vertex[i]  = center[i] - dx[i]*0.5;
     right_vertex[i] = center[i] + dx[i]*0.5;
   }
 
-  double fault_position= 40.0/27*(27-1)*0.5;
+  //  double fault_position= 40.0/27*(27-1)*0.5;
+  double fault_position= 10; 
 
-  //bool elementOnSurface=left_vertex[1] < 1.0;
-  bool elementOnFault =  std::abs(center[0]-fault_position) < 2*dx[0];
+  double abs_velocity;
 
-  if(elementOnFault && (level == getCoarsestMeshLevel())){
-    return exahype::solvers::Solver::RefinementControl::Refine;
-  }
+  double abs_shear_velocity;
 
-  bool pointSourceInElement= false; //true;
-
-  //for(int i = 0 ; i<DIMENSIONS; i++){
-  //  pointSourceInElement &= ((left_vertex[i] <= pointSourceLocation[0][i]) && (right_vertex[i] >= pointSourceLocation[0][i]));
-  //}
-  
-  if(pointSourceInElement){
-    return exahype::solvers::Solver::RefinementControl::Refine;
-  }
-
-  /*  for(int k ; k< (Order+1); k++){
-    for(int j ; j< (Order+1); j++){
-      for(int i ; i< (Order+1); i++){
-  	double abs_velocity=sqrt(luh[]);
+  for(int k =0; k< (Order+1); k++){
+    for(int j =0; j< (Order+1); j++){
+      for(int i=0 ; i< (Order+1); i++){
+	abs_velocity = 0;
+	abs_shear_velocity = 0;
+	for(int l=1 ; l< DIMENSIONS; l++){
+	  abs_shear_velocity= abs_velocity + luh[i, j, k, l]*luh[i, j, k, l];
+	}
+	abs_shear_velocity = std::sqrt(abs_shear_velocity);
+	
+	for(int l=0 ; l< DIMENSIONS; l++){
+	  abs_velocity= abs_velocity + luh[i, j, k, l]*luh[i, j, k, l];
+	}
+	abs_velocity = std::sqrt(abs_velocity);
       }
     }
-  }*/
+  }
+
+  //abs_velocity = 0.1;
+
+  bool elementOnHypocenter = ((left_vertex[1] > 6.0) && (right_vertex[1] < 9.0) &&  (left_vertex[2] > 18.5) && (right_vertex[2] < 21.5));
+  bool elementOnFault =  std::abs(center[0]-fault_position) < 2*dx[0];
+  bool elementOnFault_inner =  std::abs(center[0]-fault_position) < dx[0];
+  bool FaultSlipping =  abs_shear_velocity >= 0.01;
+  bool shaking =  abs_velocity >= 0.25;
+
+
+  if(tarch::la::equals(t,0.0)){
+
+    //if(elementOnHypocenter && ((level >= getCoarsestMeshLevel()) && (level <= getCoarsestMeshLevel()+1))){
+    //  return exahype::solvers::Solver::RefinementControl::Refine;
+    //}
+    // if(elementOnHypocenter && ((level >= getCoarsestMeshLevel()) && (level <= getCoarsestMeshLevel()+1)) && elementOnFault){
+    //   return exahype::solvers::Solver::RefinementControl::Refine;
+    // }
+    // else{
+    // return exahype::solvers::Solver::RefinementControl::Keep;
+    // }
+
+    return exahype::solvers::Solver::RefinementControl::Keep;
+  }
+
+  if(elementOnHypocenter && ((level >= getCoarsestMeshLevel()) && (level <= getCoarsestMeshLevel()+1)) &&  elementOnFault_inner){
+    return exahype::solvers::Solver::RefinementControl::Refine;
+  }
   
+
+  if(elementOnFault && (level == getCoarsestMeshLevel() && FaultSlipping)){
+    return exahype::solvers::Solver::RefinementControl::Refine;
+  }
+
+  if(elementOnFault_inner && (level == getCoarsestMeshLevel()+1 && FaultSlipping)){
+    return exahype::solvers::Solver::RefinementControl::Refine;
+  }
+  else if (level > getCoarsestMeshLevel()){
+    return exahype::solvers::Solver::RefinementControl::Erase;
+  }
+
+  if((level == getCoarsestMeshLevel() &&  shaking)){
+    return exahype::solvers::Solver::RefinementControl::Refine;
+  }
+  else if (level > getCoarsestMeshLevel()){
+    return exahype::solvers::Solver::RefinementControl::Erase;
+  }
   //return exahype::solvers::Solver::RefinementControl::Keep;
-  return exahype::solvers::Solver::RefinementControl::Keep;
+
+  //if(level == getCoarsestMeshLevel() && FaultSlipping){
+  //  return exahype::solvers::Solver::RefinementControl::Refine;
+  //}
+
+ 
+  // double left_vertex[3];
+  // double right_vertex[3];
+
+  // for(int i = 0 ; i<DIMENSIONS; i++){
+  //   left_vertex[i]  = center[i] - dx[i]*0.5;
+  //   right_vertex[i] = center[i] + dx[i]*0.5;
+  // }
+
+  // double fault_position= 40.0/27*(27-1)*0.5;
+
+  // //bool elementOnSurface=left_vertex[1] < 1.0;
+  // bool elementOnFault =  std::abs(center[0]-fault_position) < 2*dx[0];
+
+  // if(elementOnFault && (level == getCoarsestMeshLevel())){
+  //   return exahype::solvers::Solver::RefinementControl::Refine;
+  // }
+
+  // bool pointSourceInElement= false; //true;
+
+  // //for(int i = 0 ; i<DIMENSIONS; i++){
+  // //  pointSourceInElement &= ((left_vertex[i] <= pointSourceLocation[0][i]) && (right_vertex[i] >= pointSourceLocation[0][i]));
+  // //}
+  
+  // if(pointSourceInElement){
+  //   return exahype::solvers::Solver::RefinementControl::Refine;
+  // }
+
+  // /*  for(int k ; k< (Order+1); k++){
+  //   for(int j ; j< (Order+1); j++){
+  //     for(int i ; i< (Order+1); i++){
+  // 	double abs_velocity=sqrt(luh[]);
+  //     }
+  //   }
+  // }*/
+  
+  // //return exahype::solvers::Solver::RefinementControl::Keep;
+   return exahype::solvers::Solver::RefinementControl::Keep;
 }
 
 //*****************************************************************************
@@ -228,7 +315,7 @@ void Elastic::MyElasticWaveSolver::eigenvalues(const double* const Q,const int d
   // Number of variables + parameters  = 12 + 16
   
   // @todo Please implement/augment if required
-   constexpr int numberOfVariables  = MyElasticWaveSolver::NumberOfVariables;
+  constexpr int numberOfVariables  = MyElasticWaveSolver::NumberOfVariables;
   double cp = Q[numberOfVariables+1];
   double cs = Q[numberOfVariables+2];
 
@@ -267,7 +354,7 @@ void Elastic::MyElasticWaveSolver::flux(const double* const Q,double** F) {
   // Number of variables + parameters  = 12 + 16
   
   // @todo Please implement/augment if required
-   constexpr int numberOfVariables  = MyElasticWaveSolver::NumberOfVariables;
+  constexpr int numberOfVariables  = MyElasticWaveSolver::NumberOfVariables;
   
   double sigma_xx=Q[3];
   double sigma_yy=Q[4];
@@ -575,9 +662,9 @@ void  Elastic::MyElasticWaveSolver::pointSource(const double* const Q,const doub
   // }
 }
 
-    /**
-     * @TODO LR : document
-     */
+/**
+ * @TODO LR : document
+ */
 void Elastic::MyElasticWaveSolver::multiplyMaterialParameterMatrix(const double* const Q, double* rhs) {
   constexpr int numberOfVariables  = MyElasticWaveSolver::NumberOfVariables;
   double rho = Q[numberOfVariables];  
@@ -661,6 +748,7 @@ void Elastic::MyElasticWaveSolver::extractTransformation(const double* const Q,
 }
 
 void Elastic::MyElasticWaveSolver::riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double t, const double dt,const int normalNonZeroIndex, bool isBoundaryFace, int faceIndex){
+
   constexpr int numberOfVariables  = MyElasticWaveSolver::NumberOfVariables;
   constexpr int numberOfVariables2 = numberOfVariables*numberOfVariables;
   constexpr int numberOfParameters = MyElasticWaveSolver::NumberOfParameters;
@@ -675,9 +763,10 @@ void Elastic::MyElasticWaveSolver::riemannSolver(double* FL,double* FR,const dou
   kernels::idx3 idx_FLR(basisSize,basisSize,numberOfVariables);
 
   //check if the face lies on a fault
-  double fault_position= 40.0/27*(27-1)*0.5;
+  //  double fault_position= 40.0/27*(27-1)*0.5;
+  double fault_position= 10.0;
   bool is_fault=true;
-   for (int i = 0; i < basisSize; i++) {
+  for (int i = 0; i < basisSize; i++) {
     for (int j = 0; j < basisSize; j++) {
       // TODO: Change position to static parameter
       is_fault=is_fault && std::abs(QL[idx_QLR(i,j,numberOfData-3)] - fault_position) < 1.0e-5; 
@@ -917,34 +1006,34 @@ void Elastic::MyElasticWaveSolver::Gram_Schmidt(double* y, double* z){
 
 void Elastic::MyElasticWaveSolver::localBasis(double* n, double * m, double* l, int d){
   if (d == 2){
-      l[0] = 0.;
-      l[1] = 0.;
-      l[2] = 1.0;
+    l[0] = 0.;
+    l[1] = 0.;
+    l[2] = 1.0;
       
-      m[0] = n[1]*l[2]-n[2]*l[1];
-      m[1] = -(n[0]*l[2]-n[2]*l[0]);
-      m[2] = n[0]*l[1]-n[1]*l[0];
+    m[0] = n[1]*l[2]-n[2]*l[1];
+    m[1] = -(n[0]*l[2]-n[2]*l[0]);
+    m[2] = n[0]*l[1]-n[1]*l[0];
   }else if (d == 3){
-      double tol, diff_norm1, diff_norm2;
-      tol = 1e-12;
+    double tol, diff_norm1, diff_norm2;
+    tol = 1e-12;
+    m[0] = 0.;
+    m[1] = 1.;
+    m[2] = 0.;
+      
+    diff_norm1 =  std::sqrt(pow(n[0]-m[0],2) + pow(n[1]-m[1], 2) + pow(n[2]-m[2], 2));
+    diff_norm2 =  std::sqrt(pow(n[0]+m[0],2) + pow(n[1]+m[1], 2) + pow(n[2]+m[2], 2));
+      
+    if (diff_norm1 >= tol && diff_norm2 >= tol){
+      Gram_Schmidt(n, m);
+    }else{
       m[0] = 0.;
-      m[1] = 1.;
-      m[2] = 0.;
-      
-      diff_norm1 =  std::sqrt(pow(n[0]-m[0],2) + pow(n[1]-m[1], 2) + pow(n[2]-m[2], 2));
-      diff_norm2 =  std::sqrt(pow(n[0]+m[0],2) + pow(n[1]+m[1], 2) + pow(n[2]+m[2], 2));
-      
-      if (diff_norm1 >= tol && diff_norm2 >= tol){
-      	Gram_Schmidt(n, m);
-      }else{
-      	  m[0] = 0.;
-      	  m[1] = 0.;
-      	  m[2] = 1.;
-      	  Gram_Schmidt(n, m);
-      }
-      l[0] = n[1]*m[2]-n[2]*m[1];
-      l[1] = -(n[0]*m[2]-n[2]*m[0]);
-      l[2] = n[0]*m[1]-n[1]*m[0];
+      m[1] = 0.;
+      m[2] = 1.;
+      Gram_Schmidt(n, m);
+    }
+    l[0] = n[1]*m[2]-n[2]*m[1];
+    l[1] = -(n[0]*m[2]-n[2]*m[0]);
+    l[2] = n[0]*m[1]-n[1]*m[0];
   }
 }
 
@@ -989,28 +1078,28 @@ void Elastic::MyElasticWaveSolver::riemannSolver_Nodal(double v_p,double v_m, do
     v_hat_p=v_p;
     v_hat_m=v_m;     
   }
- }
+}
 
 void Elastic::MyElasticWaveSolver::riemannSolver_BC0(double v, double sigma, double z,  double r, double& v_hat, double& sigma_hat){
-   double p = 0.5*(z*v + sigma);
-   if(z > 0){
-     v_hat = (1+r)/z*p;
-     sigma_hat = (1-r)*p;
-   }else{
-     v_hat = v;
-     sigma_hat = sigma;
-   }
+  double p = 0.5*(z*v + sigma);
+  if(z > 0){
+    v_hat = (1+r)/z*p;
+    sigma_hat = (1-r)*p;
+  }else{
+    v_hat = v;
+    sigma_hat = sigma;
+  }
 }
 
 void Elastic::MyElasticWaveSolver::riemannSolver_BCn(double v,double sigma, double z, double r, double& v_hat, double& sigma_hat){
-   double q = 0.5*(z*v - sigma);
-   if(z > 0){
-     v_hat = (1+r)/z*q;
-     sigma_hat = -(1-r)*q;
-   }else{
-     v_hat = v;
-     sigma_hat = sigma;
-   }
+  double q = 0.5*(z*v - sigma);
+  if(z > 0){
+    v_hat = (1+r)/z*q;
+    sigma_hat = -(1-r)*q;
+  }else{
+    v_hat = v;
+    sigma_hat = sigma;
+  }
 }
 
 void Elastic::MyElasticWaveSolver::get_normals(int normalNonZeroIndex,double& norm, double* n,const double* Q){
@@ -1067,9 +1156,9 @@ void Elastic::MyElasticWaveSolver::extract_tractions_and_particle_velocity(doubl
 
 
 void Elastic::MyElasticWaveSolver::rotate_into_orthogonal_basis(double* n,double* m,double* l, double Tx,double Ty,double Tz, double& Tn, double& Tm, double& Tl){
-    Tn= Tx*n[0] + Ty*n[1] + Tz*n[2];
-    Tm= Tx*m[0] + Ty*m[1] + Tz*m[2];
-    Tl= Tx*l[0] + Ty*l[1] + Tz*l[2];
+  Tn= Tx*n[0] + Ty*n[1] + Tz*n[2];
+  Tm= Tx*m[0] + Ty*m[1] + Tz*m[2];
+  Tl= Tx*l[0] + Ty*l[1] + Tz*l[2];
 }
 
 void Elastic::MyElasticWaveSolver::rotate_into_physical_basis(double* n,double* m,double* l, double Fn,double Fm,double Fl, double& Fx, double& Fy, double& Fz){
@@ -1170,9 +1259,9 @@ void Elastic::MyElasticWaveSolver::SlipWeakeningFriction(double vn_p,double vn_m
   
 }
 
-  // solve for slip-rate (vv):  
+// solve for slip-rate (vv):  
 void Elastic::MyElasticWaveSolver::slip_weakening(double& v1, double& v2, double& Vel, double& tau1, double& tau2,
-								double phi_1, double phi_2, double eta, double tau_str, double sigma_n){
+						  double phi_1, double phi_2, double eta, double tau_str, double sigma_n){
   
   double Phi = std::sqrt(std::pow(phi_1, 2) + std::pow(phi_2, 2));   // stress-transfer functional
   Vel = (Phi - tau_str)/eta;                // slip-rate

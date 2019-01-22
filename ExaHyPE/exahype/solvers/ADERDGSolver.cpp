@@ -2149,7 +2149,6 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
   if (
       SpawnPredictionAsBackgroundJob &&
       !mustBeDoneImmediately &&
-      !isSkeletonCell        &&
       isLastTimeStepOfBatch // only spawned in last iteration if a FusedTimeStepJob was spawned before
   ) {
     const int element = cellInfo.indexOfADERDGCellDescription(cellDescription.getSolverNumber());
