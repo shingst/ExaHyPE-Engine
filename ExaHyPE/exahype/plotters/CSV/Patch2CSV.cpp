@@ -134,6 +134,7 @@ void exahype::plotters::Patch2CSV::startPlotting( double time ) {
 	
 	if(_one_file_per_timestep || _fileCounter==0) {
 		_writer->openFile(snapshotFileName.str());
+		_writer->columns = patch2csv_columns;
 		_writer->writeHeader();
 	}
 }
