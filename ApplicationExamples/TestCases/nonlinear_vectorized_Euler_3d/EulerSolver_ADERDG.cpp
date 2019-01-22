@@ -283,7 +283,7 @@ bool Euler::EulerSolver_ADERDG::isPhysicallyAdmissible(
       const bool wasTroubledInPreviousTimeStep,
       const tarch::la::Vector<DIMENSIONS,double>& center,
       const tarch::la::Vector<DIMENSIONS,double>& dx,
-      const double t, const double dt) const {
+      const double t) const {
   if (observablesMin[0] <= 0.0) return false;
   if (observablesMin[4] < 0.0) return false;
   return true;

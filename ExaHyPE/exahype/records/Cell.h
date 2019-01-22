@@ -35,7 +35,7 @@ namespace exahype {
     *
     * 		   build date: 09-02-2014 14:40
     *
-    * @date   31/10/2018 18:11
+    * @date   15/11/2018 18:02
     */
    class exahype::records::Cell { 
       
@@ -49,6 +49,8 @@ namespace exahype {
          
          struct PersistentRecords {
             int _CellDescriptionsIndex;
+            void* _ADERDGCellDescriptions;
+            void* _FiniteVolumesCellDescriptions;
             bool _isInside;
             State _state;
             #ifdef UseManualAlignment
@@ -69,7 +71,7 @@ namespace exahype {
             /**
              * Generated
              */
-            PersistentRecords(const int& CellDescriptionsIndex, const bool& isInside, const State& state, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber);
+            PersistentRecords(const int& CellDescriptionsIndex, void* ADERDGCellDescriptions, void* FiniteVolumesCellDescriptions, const bool& isInside, const State& state, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber);
             
             
             inline int getCellDescriptionsIndex() const 
@@ -88,6 +90,46 @@ namespace exahype {
  #endif 
  {
                _CellDescriptionsIndex = CellDescriptionsIndex;
+            }
+            
+            
+            
+            inline void* getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _ADERDGCellDescriptions;
+            }
+            
+            
+            
+            inline void setADERDGCellDescriptions(void* ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _ADERDGCellDescriptions = ADERDGCellDescriptions;
+            }
+            
+            
+            
+            inline void* getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _FiniteVolumesCellDescriptions;
+            }
+            
+            
+            
+            inline void setFiniteVolumesCellDescriptions(void* FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _FiniteVolumesCellDescriptions = FiniteVolumesCellDescriptions;
             }
             
             
@@ -266,7 +308,7 @@ namespace exahype {
             /**
              * Generated
              */
-            Cell(const int& CellDescriptionsIndex, const bool& isInside, const State& state, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber);
+            Cell(const int& CellDescriptionsIndex, void* ADERDGCellDescriptions, void* FiniteVolumesCellDescriptions, const bool& isInside, const State& state, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber);
             
             /**
              * Generated
@@ -290,6 +332,46 @@ namespace exahype {
  #endif 
  {
                _persistentRecords._CellDescriptionsIndex = CellDescriptionsIndex;
+            }
+            
+            
+            
+            inline void* getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _persistentRecords._ADERDGCellDescriptions;
+            }
+            
+            
+            
+            inline void setADERDGCellDescriptions(void* ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _persistentRecords._ADERDGCellDescriptions = ADERDGCellDescriptions;
+            }
+            
+            
+            
+            inline void* getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _persistentRecords._FiniteVolumesCellDescriptions;
+            }
+            
+            
+            
+            inline void setFiniteVolumesCellDescriptions(void* FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _persistentRecords._FiniteVolumesCellDescriptions = FiniteVolumesCellDescriptions;
             }
             
             
@@ -596,7 +678,7 @@ namespace exahype {
     *
     * 		   build date: 09-02-2014 14:40
     *
-    * @date   31/10/2018 18:11
+    * @date   15/11/2018 18:02
     */
    class exahype::records::CellPacked { 
       
@@ -606,6 +688,8 @@ namespace exahype {
          
          struct PersistentRecords {
             int _CellDescriptionsIndex;
+            void* _ADERDGCellDescriptions;
+            void* _FiniteVolumesCellDescriptions;
             tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int> _accessNumber;
             
             /** mapping of records:
@@ -624,7 +708,7 @@ namespace exahype {
             /**
              * Generated
              */
-            PersistentRecords(const int& CellDescriptionsIndex, const bool& isInside, const State& state, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber);
+            PersistentRecords(const int& CellDescriptionsIndex, void* ADERDGCellDescriptions, void* FiniteVolumesCellDescriptions, const bool& isInside, const State& state, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber);
             
             
             inline int getCellDescriptionsIndex() const 
@@ -643,6 +727,46 @@ namespace exahype {
  #endif 
  {
                _CellDescriptionsIndex = CellDescriptionsIndex;
+            }
+            
+            
+            
+            inline void* getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _ADERDGCellDescriptions;
+            }
+            
+            
+            
+            inline void setADERDGCellDescriptions(void* ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _ADERDGCellDescriptions = ADERDGCellDescriptions;
+            }
+            
+            
+            
+            inline void* getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _FiniteVolumesCellDescriptions;
+            }
+            
+            
+            
+            inline void setFiniteVolumesCellDescriptions(void* FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _FiniteVolumesCellDescriptions = FiniteVolumesCellDescriptions;
             }
             
             
@@ -841,7 +965,7 @@ namespace exahype {
             /**
              * Generated
              */
-            CellPacked(const int& CellDescriptionsIndex, const bool& isInside, const State& state, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber);
+            CellPacked(const int& CellDescriptionsIndex, void* ADERDGCellDescriptions, void* FiniteVolumesCellDescriptions, const bool& isInside, const State& state, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber);
             
             /**
              * Generated
@@ -865,6 +989,46 @@ namespace exahype {
  #endif 
  {
                _persistentRecords._CellDescriptionsIndex = CellDescriptionsIndex;
+            }
+            
+            
+            
+            inline void* getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _persistentRecords._ADERDGCellDescriptions;
+            }
+            
+            
+            
+            inline void setADERDGCellDescriptions(void* ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _persistentRecords._ADERDGCellDescriptions = ADERDGCellDescriptions;
+            }
+            
+            
+            
+            inline void* getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _persistentRecords._FiniteVolumesCellDescriptions;
+            }
+            
+            
+            
+            inline void setFiniteVolumesCellDescriptions(void* FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _persistentRecords._FiniteVolumesCellDescriptions = FiniteVolumesCellDescriptions;
             }
             
             
@@ -1194,7 +1358,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   31/10/2018 18:11
+       * @date   15/11/2018 18:02
        */
       class exahype::records::Cell { 
          
@@ -1208,6 +1372,8 @@ namespace exahype {
             
             struct PersistentRecords {
                int _CellDescriptionsIndex;
+               void* _ADERDGCellDescriptions;
+               void* _FiniteVolumesCellDescriptions;
                bool _isInside;
                State _state;
                #ifdef UseManualAlignment
@@ -1231,7 +1397,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& CellDescriptionsIndex, const bool& isInside, const State& state, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& responsibleRank, const bool& subtreeHoldsWorker, const bool& cellIsAForkCandidate);
+               PersistentRecords(const int& CellDescriptionsIndex, void* ADERDGCellDescriptions, void* FiniteVolumesCellDescriptions, const bool& isInside, const State& state, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& responsibleRank, const bool& subtreeHoldsWorker, const bool& cellIsAForkCandidate);
                
                
                inline int getCellDescriptionsIndex() const 
@@ -1250,6 +1416,46 @@ namespace exahype {
  #endif 
  {
                   _CellDescriptionsIndex = CellDescriptionsIndex;
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(void* ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _ADERDGCellDescriptions = ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(void* FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _FiniteVolumesCellDescriptions = FiniteVolumesCellDescriptions;
                }
                
                
@@ -1488,7 +1694,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               Cell(const int& CellDescriptionsIndex, const bool& isInside, const State& state, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& responsibleRank, const bool& subtreeHoldsWorker, const bool& cellIsAForkCandidate);
+               Cell(const int& CellDescriptionsIndex, void* ADERDGCellDescriptions, void* FiniteVolumesCellDescriptions, const bool& isInside, const State& state, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& responsibleRank, const bool& subtreeHoldsWorker, const bool& cellIsAForkCandidate);
                
                /**
                 * Generated
@@ -1512,6 +1718,46 @@ namespace exahype {
  #endif 
  {
                   _persistentRecords._CellDescriptionsIndex = CellDescriptionsIndex;
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(void* ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._ADERDGCellDescriptions = ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(void* FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._FiniteVolumesCellDescriptions = FiniteVolumesCellDescriptions;
                }
                
                
@@ -1878,7 +2124,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   31/10/2018 18:11
+       * @date   15/11/2018 18:02
        */
       class exahype::records::CellPacked { 
          
@@ -1888,6 +2134,8 @@ namespace exahype {
             
             struct PersistentRecords {
                int _CellDescriptionsIndex;
+               void* _ADERDGCellDescriptions;
+               void* _FiniteVolumesCellDescriptions;
                tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int> _accessNumber;
                int _responsibleRank;
                bool _subtreeHoldsWorker;
@@ -1909,7 +2157,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& CellDescriptionsIndex, const bool& isInside, const State& state, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& responsibleRank, const bool& subtreeHoldsWorker, const bool& cellIsAForkCandidate);
+               PersistentRecords(const int& CellDescriptionsIndex, void* ADERDGCellDescriptions, void* FiniteVolumesCellDescriptions, const bool& isInside, const State& state, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& responsibleRank, const bool& subtreeHoldsWorker, const bool& cellIsAForkCandidate);
                
                
                inline int getCellDescriptionsIndex() const 
@@ -1928,6 +2176,46 @@ namespace exahype {
  #endif 
  {
                   _CellDescriptionsIndex = CellDescriptionsIndex;
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(void* ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _ADERDGCellDescriptions = ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(void* FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _FiniteVolumesCellDescriptions = FiniteVolumesCellDescriptions;
                }
                
                
@@ -2189,7 +2477,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               CellPacked(const int& CellDescriptionsIndex, const bool& isInside, const State& state, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& responsibleRank, const bool& subtreeHoldsWorker, const bool& cellIsAForkCandidate);
+               CellPacked(const int& CellDescriptionsIndex, void* ADERDGCellDescriptions, void* FiniteVolumesCellDescriptions, const bool& isInside, const State& state, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& responsibleRank, const bool& subtreeHoldsWorker, const bool& cellIsAForkCandidate);
                
                /**
                 * Generated
@@ -2213,6 +2501,46 @@ namespace exahype {
  #endif 
  {
                   _persistentRecords._CellDescriptionsIndex = CellDescriptionsIndex;
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(void* ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._ADERDGCellDescriptions = ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(void* FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._FiniteVolumesCellDescriptions = FiniteVolumesCellDescriptions;
                }
                
                
@@ -2606,7 +2934,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   31/10/2018 18:11
+       * @date   15/11/2018 18:02
        */
       class exahype::records::Cell { 
          
@@ -2620,6 +2948,8 @@ namespace exahype {
             
             struct PersistentRecords {
                int _CellDescriptionsIndex;
+               void* _ADERDGCellDescriptions;
+               void* _FiniteVolumesCellDescriptions;
                bool _isInside;
                State _state;
                #ifdef UseManualAlignment
@@ -2642,7 +2972,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& CellDescriptionsIndex, const bool& isInside, const State& state, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& numberOfLoadsFromInputStream, const int& numberOfStoresToOutputStream);
+               PersistentRecords(const int& CellDescriptionsIndex, void* ADERDGCellDescriptions, void* FiniteVolumesCellDescriptions, const bool& isInside, const State& state, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& numberOfLoadsFromInputStream, const int& numberOfStoresToOutputStream);
                
                
                inline int getCellDescriptionsIndex() const 
@@ -2661,6 +2991,46 @@ namespace exahype {
  #endif 
  {
                   _CellDescriptionsIndex = CellDescriptionsIndex;
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(void* ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _ADERDGCellDescriptions = ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(void* FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _FiniteVolumesCellDescriptions = FiniteVolumesCellDescriptions;
                }
                
                
@@ -2879,7 +3249,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               Cell(const int& CellDescriptionsIndex, const bool& isInside, const State& state, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& numberOfLoadsFromInputStream, const int& numberOfStoresToOutputStream);
+               Cell(const int& CellDescriptionsIndex, void* ADERDGCellDescriptions, void* FiniteVolumesCellDescriptions, const bool& isInside, const State& state, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& numberOfLoadsFromInputStream, const int& numberOfStoresToOutputStream);
                
                /**
                 * Generated
@@ -2903,6 +3273,46 @@ namespace exahype {
  #endif 
  {
                   _persistentRecords._CellDescriptionsIndex = CellDescriptionsIndex;
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(void* ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._ADERDGCellDescriptions = ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(void* FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._FiniteVolumesCellDescriptions = FiniteVolumesCellDescriptions;
                }
                
                
@@ -3249,7 +3659,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   31/10/2018 18:11
+       * @date   15/11/2018 18:02
        */
       class exahype::records::CellPacked { 
          
@@ -3259,6 +3669,8 @@ namespace exahype {
             
             struct PersistentRecords {
                int _CellDescriptionsIndex;
+               void* _ADERDGCellDescriptions;
+               void* _FiniteVolumesCellDescriptions;
                tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int> _accessNumber;
                int _numberOfLoadsFromInputStream;
                int _numberOfStoresToOutputStream;
@@ -3279,7 +3691,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& CellDescriptionsIndex, const bool& isInside, const State& state, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& numberOfLoadsFromInputStream, const int& numberOfStoresToOutputStream);
+               PersistentRecords(const int& CellDescriptionsIndex, void* ADERDGCellDescriptions, void* FiniteVolumesCellDescriptions, const bool& isInside, const State& state, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& numberOfLoadsFromInputStream, const int& numberOfStoresToOutputStream);
                
                
                inline int getCellDescriptionsIndex() const 
@@ -3298,6 +3710,46 @@ namespace exahype {
  #endif 
  {
                   _CellDescriptionsIndex = CellDescriptionsIndex;
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(void* ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _ADERDGCellDescriptions = ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(void* FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _FiniteVolumesCellDescriptions = FiniteVolumesCellDescriptions;
                }
                
                
@@ -3536,7 +3988,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               CellPacked(const int& CellDescriptionsIndex, const bool& isInside, const State& state, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& numberOfLoadsFromInputStream, const int& numberOfStoresToOutputStream);
+               CellPacked(const int& CellDescriptionsIndex, void* ADERDGCellDescriptions, void* FiniteVolumesCellDescriptions, const bool& isInside, const State& state, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& numberOfLoadsFromInputStream, const int& numberOfStoresToOutputStream);
                
                /**
                 * Generated
@@ -3560,6 +4012,46 @@ namespace exahype {
  #endif 
  {
                   _persistentRecords._CellDescriptionsIndex = CellDescriptionsIndex;
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(void* ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._ADERDGCellDescriptions = ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(void* FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._FiniteVolumesCellDescriptions = FiniteVolumesCellDescriptions;
                }
                
                
@@ -3930,7 +4422,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   31/10/2018 18:11
+       * @date   15/11/2018 18:02
        */
       class exahype::records::Cell { 
          
@@ -3944,6 +4436,8 @@ namespace exahype {
             
             struct PersistentRecords {
                int _CellDescriptionsIndex;
+               void* _ADERDGCellDescriptions;
+               void* _FiniteVolumesCellDescriptions;
                bool _isInside;
                State _state;
                #ifdef UseManualAlignment
@@ -3965,7 +4459,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& CellDescriptionsIndex, const bool& isInside, const State& state, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& persistentRegularSubtreeIndex);
+               PersistentRecords(const int& CellDescriptionsIndex, void* ADERDGCellDescriptions, void* FiniteVolumesCellDescriptions, const bool& isInside, const State& state, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& persistentRegularSubtreeIndex);
                
                
                inline int getCellDescriptionsIndex() const 
@@ -3984,6 +4478,46 @@ namespace exahype {
  #endif 
  {
                   _CellDescriptionsIndex = CellDescriptionsIndex;
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(void* ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _ADERDGCellDescriptions = ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(void* FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _FiniteVolumesCellDescriptions = FiniteVolumesCellDescriptions;
                }
                
                
@@ -4182,7 +4716,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               Cell(const int& CellDescriptionsIndex, const bool& isInside, const State& state, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& persistentRegularSubtreeIndex);
+               Cell(const int& CellDescriptionsIndex, void* ADERDGCellDescriptions, void* FiniteVolumesCellDescriptions, const bool& isInside, const State& state, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& persistentRegularSubtreeIndex);
                
                /**
                 * Generated
@@ -4206,6 +4740,46 @@ namespace exahype {
  #endif 
  {
                   _persistentRecords._CellDescriptionsIndex = CellDescriptionsIndex;
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(void* ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._ADERDGCellDescriptions = ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(void* FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._FiniteVolumesCellDescriptions = FiniteVolumesCellDescriptions;
                }
                
                
@@ -4532,7 +5106,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   31/10/2018 18:11
+       * @date   15/11/2018 18:02
        */
       class exahype::records::CellPacked { 
          
@@ -4542,6 +5116,8 @@ namespace exahype {
             
             struct PersistentRecords {
                int _CellDescriptionsIndex;
+               void* _ADERDGCellDescriptions;
+               void* _FiniteVolumesCellDescriptions;
                tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int> _accessNumber;
                int _persistentRegularSubtreeIndex;
                
@@ -4561,7 +5137,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& CellDescriptionsIndex, const bool& isInside, const State& state, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& persistentRegularSubtreeIndex);
+               PersistentRecords(const int& CellDescriptionsIndex, void* ADERDGCellDescriptions, void* FiniteVolumesCellDescriptions, const bool& isInside, const State& state, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& persistentRegularSubtreeIndex);
                
                
                inline int getCellDescriptionsIndex() const 
@@ -4580,6 +5156,46 @@ namespace exahype {
  #endif 
  {
                   _CellDescriptionsIndex = CellDescriptionsIndex;
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(void* ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _ADERDGCellDescriptions = ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(void* FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _FiniteVolumesCellDescriptions = FiniteVolumesCellDescriptions;
                }
                
                
@@ -4798,7 +5414,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               CellPacked(const int& CellDescriptionsIndex, const bool& isInside, const State& state, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& persistentRegularSubtreeIndex);
+               CellPacked(const int& CellDescriptionsIndex, void* ADERDGCellDescriptions, void* FiniteVolumesCellDescriptions, const bool& isInside, const State& state, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& persistentRegularSubtreeIndex);
                
                /**
                 * Generated
@@ -4822,6 +5438,46 @@ namespace exahype {
  #endif 
  {
                   _persistentRecords._CellDescriptionsIndex = CellDescriptionsIndex;
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(void* ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._ADERDGCellDescriptions = ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(void* FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._FiniteVolumesCellDescriptions = FiniteVolumesCellDescriptions;
                }
                
                
@@ -5172,7 +5828,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   31/10/2018 18:11
+       * @date   15/11/2018 18:02
        */
       class exahype::records::Cell { 
          
@@ -5186,6 +5842,8 @@ namespace exahype {
             
             struct PersistentRecords {
                int _CellDescriptionsIndex;
+               void* _ADERDGCellDescriptions;
+               void* _FiniteVolumesCellDescriptions;
                bool _isInside;
                State _state;
                int _level;
@@ -5207,7 +5865,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& CellDescriptionsIndex, const bool& isInside, const State& state, const int& level, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber);
+               PersistentRecords(const int& CellDescriptionsIndex, void* ADERDGCellDescriptions, void* FiniteVolumesCellDescriptions, const bool& isInside, const State& state, const int& level, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber);
                
                
                inline int getCellDescriptionsIndex() const 
@@ -5226,6 +5884,46 @@ namespace exahype {
  #endif 
  {
                   _CellDescriptionsIndex = CellDescriptionsIndex;
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(void* ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _ADERDGCellDescriptions = ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(void* FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _FiniteVolumesCellDescriptions = FiniteVolumesCellDescriptions;
                }
                
                
@@ -5424,7 +6122,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               Cell(const int& CellDescriptionsIndex, const bool& isInside, const State& state, const int& level, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber);
+               Cell(const int& CellDescriptionsIndex, void* ADERDGCellDescriptions, void* FiniteVolumesCellDescriptions, const bool& isInside, const State& state, const int& level, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber);
                
                /**
                 * Generated
@@ -5448,6 +6146,46 @@ namespace exahype {
  #endif 
  {
                   _persistentRecords._CellDescriptionsIndex = CellDescriptionsIndex;
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(void* ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._ADERDGCellDescriptions = ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(void* FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._FiniteVolumesCellDescriptions = FiniteVolumesCellDescriptions;
                }
                
                
@@ -5774,7 +6512,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   31/10/2018 18:11
+       * @date   15/11/2018 18:02
        */
       class exahype::records::CellPacked { 
          
@@ -5784,6 +6522,8 @@ namespace exahype {
             
             struct PersistentRecords {
                int _CellDescriptionsIndex;
+               void* _ADERDGCellDescriptions;
+               void* _FiniteVolumesCellDescriptions;
                int _level;
                tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int> _accessNumber;
                
@@ -5803,7 +6543,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& CellDescriptionsIndex, const bool& isInside, const State& state, const int& level, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber);
+               PersistentRecords(const int& CellDescriptionsIndex, void* ADERDGCellDescriptions, void* FiniteVolumesCellDescriptions, const bool& isInside, const State& state, const int& level, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber);
                
                
                inline int getCellDescriptionsIndex() const 
@@ -5822,6 +6562,46 @@ namespace exahype {
  #endif 
  {
                   _CellDescriptionsIndex = CellDescriptionsIndex;
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(void* ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _ADERDGCellDescriptions = ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(void* FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _FiniteVolumesCellDescriptions = FiniteVolumesCellDescriptions;
                }
                
                
@@ -6040,7 +6820,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               CellPacked(const int& CellDescriptionsIndex, const bool& isInside, const State& state, const int& level, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber);
+               CellPacked(const int& CellDescriptionsIndex, void* ADERDGCellDescriptions, void* FiniteVolumesCellDescriptions, const bool& isInside, const State& state, const int& level, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber);
                
                /**
                 * Generated
@@ -6064,6 +6844,46 @@ namespace exahype {
  #endif 
  {
                   _persistentRecords._CellDescriptionsIndex = CellDescriptionsIndex;
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(void* ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._ADERDGCellDescriptions = ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(void* FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._FiniteVolumesCellDescriptions = FiniteVolumesCellDescriptions;
                }
                
                
@@ -6414,7 +7234,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   31/10/2018 18:11
+       * @date   15/11/2018 18:02
        */
       class exahype::records::Cell { 
          
@@ -6428,6 +7248,8 @@ namespace exahype {
             
             struct PersistentRecords {
                int _CellDescriptionsIndex;
+               void* _ADERDGCellDescriptions;
+               void* _FiniteVolumesCellDescriptions;
                bool _isInside;
                State _state;
                int _level;
@@ -6452,7 +7274,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& CellDescriptionsIndex, const bool& isInside, const State& state, const int& level, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& responsibleRank, const bool& subtreeHoldsWorker, const bool& cellIsAForkCandidate);
+               PersistentRecords(const int& CellDescriptionsIndex, void* ADERDGCellDescriptions, void* FiniteVolumesCellDescriptions, const bool& isInside, const State& state, const int& level, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& responsibleRank, const bool& subtreeHoldsWorker, const bool& cellIsAForkCandidate);
                
                
                inline int getCellDescriptionsIndex() const 
@@ -6471,6 +7293,46 @@ namespace exahype {
  #endif 
  {
                   _CellDescriptionsIndex = CellDescriptionsIndex;
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(void* ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _ADERDGCellDescriptions = ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(void* FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _FiniteVolumesCellDescriptions = FiniteVolumesCellDescriptions;
                }
                
                
@@ -6729,7 +7591,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               Cell(const int& CellDescriptionsIndex, const bool& isInside, const State& state, const int& level, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& responsibleRank, const bool& subtreeHoldsWorker, const bool& cellIsAForkCandidate);
+               Cell(const int& CellDescriptionsIndex, void* ADERDGCellDescriptions, void* FiniteVolumesCellDescriptions, const bool& isInside, const State& state, const int& level, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& responsibleRank, const bool& subtreeHoldsWorker, const bool& cellIsAForkCandidate);
                
                /**
                 * Generated
@@ -6753,6 +7615,46 @@ namespace exahype {
  #endif 
  {
                   _persistentRecords._CellDescriptionsIndex = CellDescriptionsIndex;
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(void* ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._ADERDGCellDescriptions = ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(void* FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._FiniteVolumesCellDescriptions = FiniteVolumesCellDescriptions;
                }
                
                
@@ -7139,7 +8041,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   31/10/2018 18:11
+       * @date   15/11/2018 18:02
        */
       class exahype::records::CellPacked { 
          
@@ -7149,6 +8051,8 @@ namespace exahype {
             
             struct PersistentRecords {
                int _CellDescriptionsIndex;
+               void* _ADERDGCellDescriptions;
+               void* _FiniteVolumesCellDescriptions;
                int _level;
                tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int> _accessNumber;
                int _responsibleRank;
@@ -7171,7 +8075,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& CellDescriptionsIndex, const bool& isInside, const State& state, const int& level, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& responsibleRank, const bool& subtreeHoldsWorker, const bool& cellIsAForkCandidate);
+               PersistentRecords(const int& CellDescriptionsIndex, void* ADERDGCellDescriptions, void* FiniteVolumesCellDescriptions, const bool& isInside, const State& state, const int& level, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& responsibleRank, const bool& subtreeHoldsWorker, const bool& cellIsAForkCandidate);
                
                
                inline int getCellDescriptionsIndex() const 
@@ -7190,6 +8094,46 @@ namespace exahype {
  #endif 
  {
                   _CellDescriptionsIndex = CellDescriptionsIndex;
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(void* ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _ADERDGCellDescriptions = ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(void* FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _FiniteVolumesCellDescriptions = FiniteVolumesCellDescriptions;
                }
                
                
@@ -7471,7 +8415,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               CellPacked(const int& CellDescriptionsIndex, const bool& isInside, const State& state, const int& level, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& responsibleRank, const bool& subtreeHoldsWorker, const bool& cellIsAForkCandidate);
+               CellPacked(const int& CellDescriptionsIndex, void* ADERDGCellDescriptions, void* FiniteVolumesCellDescriptions, const bool& isInside, const State& state, const int& level, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& responsibleRank, const bool& subtreeHoldsWorker, const bool& cellIsAForkCandidate);
                
                /**
                 * Generated
@@ -7495,6 +8439,46 @@ namespace exahype {
  #endif 
  {
                   _persistentRecords._CellDescriptionsIndex = CellDescriptionsIndex;
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(void* ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._ADERDGCellDescriptions = ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(void* FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._FiniteVolumesCellDescriptions = FiniteVolumesCellDescriptions;
                }
                
                
@@ -7908,7 +8892,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   31/10/2018 18:11
+       * @date   15/11/2018 18:02
        */
       class exahype::records::Cell { 
          
@@ -7922,6 +8906,8 @@ namespace exahype {
             
             struct PersistentRecords {
                int _CellDescriptionsIndex;
+               void* _ADERDGCellDescriptions;
+               void* _FiniteVolumesCellDescriptions;
                bool _isInside;
                State _state;
                #ifdef UseManualAlignment
@@ -7945,7 +8931,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& CellDescriptionsIndex, const bool& isInside, const State& state, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& numberOfLoadsFromInputStream, const int& numberOfStoresToOutputStream, const int& persistentRegularSubtreeIndex);
+               PersistentRecords(const int& CellDescriptionsIndex, void* ADERDGCellDescriptions, void* FiniteVolumesCellDescriptions, const bool& isInside, const State& state, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& numberOfLoadsFromInputStream, const int& numberOfStoresToOutputStream, const int& persistentRegularSubtreeIndex);
                
                
                inline int getCellDescriptionsIndex() const 
@@ -7964,6 +8950,46 @@ namespace exahype {
  #endif 
  {
                   _CellDescriptionsIndex = CellDescriptionsIndex;
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(void* ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _ADERDGCellDescriptions = ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(void* FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _FiniteVolumesCellDescriptions = FiniteVolumesCellDescriptions;
                }
                
                
@@ -8202,7 +9228,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               Cell(const int& CellDescriptionsIndex, const bool& isInside, const State& state, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& numberOfLoadsFromInputStream, const int& numberOfStoresToOutputStream, const int& persistentRegularSubtreeIndex);
+               Cell(const int& CellDescriptionsIndex, void* ADERDGCellDescriptions, void* FiniteVolumesCellDescriptions, const bool& isInside, const State& state, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& numberOfLoadsFromInputStream, const int& numberOfStoresToOutputStream, const int& persistentRegularSubtreeIndex);
                
                /**
                 * Generated
@@ -8226,6 +9252,46 @@ namespace exahype {
  #endif 
  {
                   _persistentRecords._CellDescriptionsIndex = CellDescriptionsIndex;
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(void* ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._ADERDGCellDescriptions = ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(void* FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._FiniteVolumesCellDescriptions = FiniteVolumesCellDescriptions;
                }
                
                
@@ -8592,7 +9658,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   31/10/2018 18:11
+       * @date   15/11/2018 18:02
        */
       class exahype::records::CellPacked { 
          
@@ -8602,6 +9668,8 @@ namespace exahype {
             
             struct PersistentRecords {
                int _CellDescriptionsIndex;
+               void* _ADERDGCellDescriptions;
+               void* _FiniteVolumesCellDescriptions;
                tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int> _accessNumber;
                int _numberOfLoadsFromInputStream;
                int _numberOfStoresToOutputStream;
@@ -8623,7 +9691,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& CellDescriptionsIndex, const bool& isInside, const State& state, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& numberOfLoadsFromInputStream, const int& numberOfStoresToOutputStream, const int& persistentRegularSubtreeIndex);
+               PersistentRecords(const int& CellDescriptionsIndex, void* ADERDGCellDescriptions, void* FiniteVolumesCellDescriptions, const bool& isInside, const State& state, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& numberOfLoadsFromInputStream, const int& numberOfStoresToOutputStream, const int& persistentRegularSubtreeIndex);
                
                
                inline int getCellDescriptionsIndex() const 
@@ -8642,6 +9710,46 @@ namespace exahype {
  #endif 
  {
                   _CellDescriptionsIndex = CellDescriptionsIndex;
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(void* ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _ADERDGCellDescriptions = ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(void* FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _FiniteVolumesCellDescriptions = FiniteVolumesCellDescriptions;
                }
                
                
@@ -8900,7 +10008,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               CellPacked(const int& CellDescriptionsIndex, const bool& isInside, const State& state, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& numberOfLoadsFromInputStream, const int& numberOfStoresToOutputStream, const int& persistentRegularSubtreeIndex);
+               CellPacked(const int& CellDescriptionsIndex, void* ADERDGCellDescriptions, void* FiniteVolumesCellDescriptions, const bool& isInside, const State& state, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& numberOfLoadsFromInputStream, const int& numberOfStoresToOutputStream, const int& persistentRegularSubtreeIndex);
                
                /**
                 * Generated
@@ -8924,6 +10032,46 @@ namespace exahype {
  #endif 
  {
                   _persistentRecords._CellDescriptionsIndex = CellDescriptionsIndex;
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(void* ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._ADERDGCellDescriptions = ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(void* FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._FiniteVolumesCellDescriptions = FiniteVolumesCellDescriptions;
                }
                
                
@@ -9314,7 +10462,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   31/10/2018 18:11
+       * @date   15/11/2018 18:02
        */
       class exahype::records::Cell { 
          
@@ -9328,6 +10476,8 @@ namespace exahype {
             
             struct PersistentRecords {
                int _CellDescriptionsIndex;
+               void* _ADERDGCellDescriptions;
+               void* _FiniteVolumesCellDescriptions;
                bool _isInside;
                State _state;
                int _level;
@@ -9351,7 +10501,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& CellDescriptionsIndex, const bool& isInside, const State& state, const int& level, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& numberOfLoadsFromInputStream, const int& numberOfStoresToOutputStream);
+               PersistentRecords(const int& CellDescriptionsIndex, void* ADERDGCellDescriptions, void* FiniteVolumesCellDescriptions, const bool& isInside, const State& state, const int& level, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& numberOfLoadsFromInputStream, const int& numberOfStoresToOutputStream);
                
                
                inline int getCellDescriptionsIndex() const 
@@ -9370,6 +10520,46 @@ namespace exahype {
  #endif 
  {
                   _CellDescriptionsIndex = CellDescriptionsIndex;
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(void* ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _ADERDGCellDescriptions = ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(void* FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _FiniteVolumesCellDescriptions = FiniteVolumesCellDescriptions;
                }
                
                
@@ -9608,7 +10798,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               Cell(const int& CellDescriptionsIndex, const bool& isInside, const State& state, const int& level, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& numberOfLoadsFromInputStream, const int& numberOfStoresToOutputStream);
+               Cell(const int& CellDescriptionsIndex, void* ADERDGCellDescriptions, void* FiniteVolumesCellDescriptions, const bool& isInside, const State& state, const int& level, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& numberOfLoadsFromInputStream, const int& numberOfStoresToOutputStream);
                
                /**
                 * Generated
@@ -9632,6 +10822,46 @@ namespace exahype {
  #endif 
  {
                   _persistentRecords._CellDescriptionsIndex = CellDescriptionsIndex;
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(void* ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._ADERDGCellDescriptions = ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(void* FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._FiniteVolumesCellDescriptions = FiniteVolumesCellDescriptions;
                }
                
                
@@ -9998,7 +11228,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   31/10/2018 18:11
+       * @date   15/11/2018 18:02
        */
       class exahype::records::CellPacked { 
          
@@ -10008,6 +11238,8 @@ namespace exahype {
             
             struct PersistentRecords {
                int _CellDescriptionsIndex;
+               void* _ADERDGCellDescriptions;
+               void* _FiniteVolumesCellDescriptions;
                int _level;
                tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int> _accessNumber;
                int _numberOfLoadsFromInputStream;
@@ -10029,7 +11261,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& CellDescriptionsIndex, const bool& isInside, const State& state, const int& level, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& numberOfLoadsFromInputStream, const int& numberOfStoresToOutputStream);
+               PersistentRecords(const int& CellDescriptionsIndex, void* ADERDGCellDescriptions, void* FiniteVolumesCellDescriptions, const bool& isInside, const State& state, const int& level, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& numberOfLoadsFromInputStream, const int& numberOfStoresToOutputStream);
                
                
                inline int getCellDescriptionsIndex() const 
@@ -10048,6 +11280,46 @@ namespace exahype {
  #endif 
  {
                   _CellDescriptionsIndex = CellDescriptionsIndex;
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(void* ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _ADERDGCellDescriptions = ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(void* FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _FiniteVolumesCellDescriptions = FiniteVolumesCellDescriptions;
                }
                
                
@@ -10306,7 +11578,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               CellPacked(const int& CellDescriptionsIndex, const bool& isInside, const State& state, const int& level, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& numberOfLoadsFromInputStream, const int& numberOfStoresToOutputStream);
+               CellPacked(const int& CellDescriptionsIndex, void* ADERDGCellDescriptions, void* FiniteVolumesCellDescriptions, const bool& isInside, const State& state, const int& level, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& numberOfLoadsFromInputStream, const int& numberOfStoresToOutputStream);
                
                /**
                 * Generated
@@ -10330,6 +11602,46 @@ namespace exahype {
  #endif 
  {
                   _persistentRecords._CellDescriptionsIndex = CellDescriptionsIndex;
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(void* ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._ADERDGCellDescriptions = ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(void* FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._FiniteVolumesCellDescriptions = FiniteVolumesCellDescriptions;
                }
                
                
@@ -10720,7 +12032,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   31/10/2018 18:11
+       * @date   15/11/2018 18:02
        */
       class exahype::records::Cell { 
          
@@ -10734,6 +12046,8 @@ namespace exahype {
             
             struct PersistentRecords {
                int _CellDescriptionsIndex;
+               void* _ADERDGCellDescriptions;
+               void* _FiniteVolumesCellDescriptions;
                bool _isInside;
                State _state;
                int _level;
@@ -10756,7 +12070,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& CellDescriptionsIndex, const bool& isInside, const State& state, const int& level, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& persistentRegularSubtreeIndex);
+               PersistentRecords(const int& CellDescriptionsIndex, void* ADERDGCellDescriptions, void* FiniteVolumesCellDescriptions, const bool& isInside, const State& state, const int& level, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& persistentRegularSubtreeIndex);
                
                
                inline int getCellDescriptionsIndex() const 
@@ -10775,6 +12089,46 @@ namespace exahype {
  #endif 
  {
                   _CellDescriptionsIndex = CellDescriptionsIndex;
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(void* ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _ADERDGCellDescriptions = ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(void* FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _FiniteVolumesCellDescriptions = FiniteVolumesCellDescriptions;
                }
                
                
@@ -10993,7 +12347,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               Cell(const int& CellDescriptionsIndex, const bool& isInside, const State& state, const int& level, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& persistentRegularSubtreeIndex);
+               Cell(const int& CellDescriptionsIndex, void* ADERDGCellDescriptions, void* FiniteVolumesCellDescriptions, const bool& isInside, const State& state, const int& level, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& persistentRegularSubtreeIndex);
                
                /**
                 * Generated
@@ -11017,6 +12371,46 @@ namespace exahype {
  #endif 
  {
                   _persistentRecords._CellDescriptionsIndex = CellDescriptionsIndex;
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(void* ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._ADERDGCellDescriptions = ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(void* FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._FiniteVolumesCellDescriptions = FiniteVolumesCellDescriptions;
                }
                
                
@@ -11363,7 +12757,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   31/10/2018 18:11
+       * @date   15/11/2018 18:02
        */
       class exahype::records::CellPacked { 
          
@@ -11373,6 +12767,8 @@ namespace exahype {
             
             struct PersistentRecords {
                int _CellDescriptionsIndex;
+               void* _ADERDGCellDescriptions;
+               void* _FiniteVolumesCellDescriptions;
                int _level;
                tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int> _accessNumber;
                int _persistentRegularSubtreeIndex;
@@ -11393,7 +12789,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& CellDescriptionsIndex, const bool& isInside, const State& state, const int& level, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& persistentRegularSubtreeIndex);
+               PersistentRecords(const int& CellDescriptionsIndex, void* ADERDGCellDescriptions, void* FiniteVolumesCellDescriptions, const bool& isInside, const State& state, const int& level, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& persistentRegularSubtreeIndex);
                
                
                inline int getCellDescriptionsIndex() const 
@@ -11412,6 +12808,46 @@ namespace exahype {
  #endif 
  {
                   _CellDescriptionsIndex = CellDescriptionsIndex;
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(void* ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _ADERDGCellDescriptions = ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(void* FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _FiniteVolumesCellDescriptions = FiniteVolumesCellDescriptions;
                }
                
                
@@ -11650,7 +13086,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               CellPacked(const int& CellDescriptionsIndex, const bool& isInside, const State& state, const int& level, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& persistentRegularSubtreeIndex);
+               CellPacked(const int& CellDescriptionsIndex, void* ADERDGCellDescriptions, void* FiniteVolumesCellDescriptions, const bool& isInside, const State& state, const int& level, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& persistentRegularSubtreeIndex);
                
                /**
                 * Generated
@@ -11674,6 +13110,46 @@ namespace exahype {
  #endif 
  {
                   _persistentRecords._CellDescriptionsIndex = CellDescriptionsIndex;
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(void* ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._ADERDGCellDescriptions = ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(void* FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._FiniteVolumesCellDescriptions = FiniteVolumesCellDescriptions;
                }
                
                
@@ -12044,7 +13520,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   31/10/2018 18:11
+       * @date   15/11/2018 18:02
        */
       class exahype::records::Cell { 
          
@@ -12058,6 +13534,8 @@ namespace exahype {
             
             struct PersistentRecords {
                int _CellDescriptionsIndex;
+               void* _ADERDGCellDescriptions;
+               void* _FiniteVolumesCellDescriptions;
                bool _isInside;
                State _state;
                #ifdef UseManualAlignment
@@ -12083,7 +13561,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& CellDescriptionsIndex, const bool& isInside, const State& state, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& responsibleRank, const bool& subtreeHoldsWorker, const bool& cellIsAForkCandidate, const int& numberOfLoadsFromInputStream, const int& numberOfStoresToOutputStream);
+               PersistentRecords(const int& CellDescriptionsIndex, void* ADERDGCellDescriptions, void* FiniteVolumesCellDescriptions, const bool& isInside, const State& state, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& responsibleRank, const bool& subtreeHoldsWorker, const bool& cellIsAForkCandidate, const int& numberOfLoadsFromInputStream, const int& numberOfStoresToOutputStream);
                
                
                inline int getCellDescriptionsIndex() const 
@@ -12102,6 +13580,46 @@ namespace exahype {
  #endif 
  {
                   _CellDescriptionsIndex = CellDescriptionsIndex;
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(void* ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _ADERDGCellDescriptions = ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(void* FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _FiniteVolumesCellDescriptions = FiniteVolumesCellDescriptions;
                }
                
                
@@ -12380,7 +13898,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               Cell(const int& CellDescriptionsIndex, const bool& isInside, const State& state, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& responsibleRank, const bool& subtreeHoldsWorker, const bool& cellIsAForkCandidate, const int& numberOfLoadsFromInputStream, const int& numberOfStoresToOutputStream);
+               Cell(const int& CellDescriptionsIndex, void* ADERDGCellDescriptions, void* FiniteVolumesCellDescriptions, const bool& isInside, const State& state, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& responsibleRank, const bool& subtreeHoldsWorker, const bool& cellIsAForkCandidate, const int& numberOfLoadsFromInputStream, const int& numberOfStoresToOutputStream);
                
                /**
                 * Generated
@@ -12404,6 +13922,46 @@ namespace exahype {
  #endif 
  {
                   _persistentRecords._CellDescriptionsIndex = CellDescriptionsIndex;
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(void* ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._ADERDGCellDescriptions = ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(void* FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._FiniteVolumesCellDescriptions = FiniteVolumesCellDescriptions;
                }
                
                
@@ -12810,7 +14368,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   31/10/2018 18:11
+       * @date   15/11/2018 18:02
        */
       class exahype::records::CellPacked { 
          
@@ -12820,6 +14378,8 @@ namespace exahype {
             
             struct PersistentRecords {
                int _CellDescriptionsIndex;
+               void* _ADERDGCellDescriptions;
+               void* _FiniteVolumesCellDescriptions;
                tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int> _accessNumber;
                int _responsibleRank;
                bool _subtreeHoldsWorker;
@@ -12843,7 +14403,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& CellDescriptionsIndex, const bool& isInside, const State& state, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& responsibleRank, const bool& subtreeHoldsWorker, const bool& cellIsAForkCandidate, const int& numberOfLoadsFromInputStream, const int& numberOfStoresToOutputStream);
+               PersistentRecords(const int& CellDescriptionsIndex, void* ADERDGCellDescriptions, void* FiniteVolumesCellDescriptions, const bool& isInside, const State& state, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& responsibleRank, const bool& subtreeHoldsWorker, const bool& cellIsAForkCandidate, const int& numberOfLoadsFromInputStream, const int& numberOfStoresToOutputStream);
                
                
                inline int getCellDescriptionsIndex() const 
@@ -12862,6 +14422,46 @@ namespace exahype {
  #endif 
  {
                   _CellDescriptionsIndex = CellDescriptionsIndex;
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(void* ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _ADERDGCellDescriptions = ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(void* FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _FiniteVolumesCellDescriptions = FiniteVolumesCellDescriptions;
                }
                
                
@@ -13163,7 +14763,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               CellPacked(const int& CellDescriptionsIndex, const bool& isInside, const State& state, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& responsibleRank, const bool& subtreeHoldsWorker, const bool& cellIsAForkCandidate, const int& numberOfLoadsFromInputStream, const int& numberOfStoresToOutputStream);
+               CellPacked(const int& CellDescriptionsIndex, void* ADERDGCellDescriptions, void* FiniteVolumesCellDescriptions, const bool& isInside, const State& state, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& responsibleRank, const bool& subtreeHoldsWorker, const bool& cellIsAForkCandidate, const int& numberOfLoadsFromInputStream, const int& numberOfStoresToOutputStream);
                
                /**
                 * Generated
@@ -13187,6 +14787,46 @@ namespace exahype {
  #endif 
  {
                   _persistentRecords._CellDescriptionsIndex = CellDescriptionsIndex;
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(void* ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._ADERDGCellDescriptions = ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(void* FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._FiniteVolumesCellDescriptions = FiniteVolumesCellDescriptions;
                }
                
                
@@ -13620,7 +15260,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   31/10/2018 18:11
+       * @date   15/11/2018 18:02
        */
       class exahype::records::Cell { 
          
@@ -13634,6 +15274,8 @@ namespace exahype {
             
             struct PersistentRecords {
                int _CellDescriptionsIndex;
+               void* _ADERDGCellDescriptions;
+               void* _FiniteVolumesCellDescriptions;
                bool _isInside;
                State _state;
                #ifdef UseManualAlignment
@@ -13658,7 +15300,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& CellDescriptionsIndex, const bool& isInside, const State& state, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& responsibleRank, const bool& subtreeHoldsWorker, const bool& cellIsAForkCandidate, const int& persistentRegularSubtreeIndex);
+               PersistentRecords(const int& CellDescriptionsIndex, void* ADERDGCellDescriptions, void* FiniteVolumesCellDescriptions, const bool& isInside, const State& state, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& responsibleRank, const bool& subtreeHoldsWorker, const bool& cellIsAForkCandidate, const int& persistentRegularSubtreeIndex);
                
                
                inline int getCellDescriptionsIndex() const 
@@ -13677,6 +15319,46 @@ namespace exahype {
  #endif 
  {
                   _CellDescriptionsIndex = CellDescriptionsIndex;
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(void* ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _ADERDGCellDescriptions = ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(void* FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _FiniteVolumesCellDescriptions = FiniteVolumesCellDescriptions;
                }
                
                
@@ -13935,7 +15617,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               Cell(const int& CellDescriptionsIndex, const bool& isInside, const State& state, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& responsibleRank, const bool& subtreeHoldsWorker, const bool& cellIsAForkCandidate, const int& persistentRegularSubtreeIndex);
+               Cell(const int& CellDescriptionsIndex, void* ADERDGCellDescriptions, void* FiniteVolumesCellDescriptions, const bool& isInside, const State& state, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& responsibleRank, const bool& subtreeHoldsWorker, const bool& cellIsAForkCandidate, const int& persistentRegularSubtreeIndex);
                
                /**
                 * Generated
@@ -13959,6 +15641,46 @@ namespace exahype {
  #endif 
  {
                   _persistentRecords._CellDescriptionsIndex = CellDescriptionsIndex;
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(void* ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._ADERDGCellDescriptions = ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(void* FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._FiniteVolumesCellDescriptions = FiniteVolumesCellDescriptions;
                }
                
                
@@ -14345,7 +16067,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   31/10/2018 18:11
+       * @date   15/11/2018 18:02
        */
       class exahype::records::CellPacked { 
          
@@ -14355,6 +16077,8 @@ namespace exahype {
             
             struct PersistentRecords {
                int _CellDescriptionsIndex;
+               void* _ADERDGCellDescriptions;
+               void* _FiniteVolumesCellDescriptions;
                tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int> _accessNumber;
                int _responsibleRank;
                bool _subtreeHoldsWorker;
@@ -14377,7 +16101,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& CellDescriptionsIndex, const bool& isInside, const State& state, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& responsibleRank, const bool& subtreeHoldsWorker, const bool& cellIsAForkCandidate, const int& persistentRegularSubtreeIndex);
+               PersistentRecords(const int& CellDescriptionsIndex, void* ADERDGCellDescriptions, void* FiniteVolumesCellDescriptions, const bool& isInside, const State& state, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& responsibleRank, const bool& subtreeHoldsWorker, const bool& cellIsAForkCandidate, const int& persistentRegularSubtreeIndex);
                
                
                inline int getCellDescriptionsIndex() const 
@@ -14396,6 +16120,46 @@ namespace exahype {
  #endif 
  {
                   _CellDescriptionsIndex = CellDescriptionsIndex;
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(void* ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _ADERDGCellDescriptions = ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(void* FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _FiniteVolumesCellDescriptions = FiniteVolumesCellDescriptions;
                }
                
                
@@ -14677,7 +16441,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               CellPacked(const int& CellDescriptionsIndex, const bool& isInside, const State& state, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& responsibleRank, const bool& subtreeHoldsWorker, const bool& cellIsAForkCandidate, const int& persistentRegularSubtreeIndex);
+               CellPacked(const int& CellDescriptionsIndex, void* ADERDGCellDescriptions, void* FiniteVolumesCellDescriptions, const bool& isInside, const State& state, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& responsibleRank, const bool& subtreeHoldsWorker, const bool& cellIsAForkCandidate, const int& persistentRegularSubtreeIndex);
                
                /**
                 * Generated
@@ -14701,6 +16465,46 @@ namespace exahype {
  #endif 
  {
                   _persistentRecords._CellDescriptionsIndex = CellDescriptionsIndex;
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(void* ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._ADERDGCellDescriptions = ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(void* FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._FiniteVolumesCellDescriptions = FiniteVolumesCellDescriptions;
                }
                
                
@@ -15114,7 +16918,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   31/10/2018 18:11
+       * @date   15/11/2018 18:02
        */
       class exahype::records::Cell { 
          
@@ -15128,6 +16932,8 @@ namespace exahype {
             
             struct PersistentRecords {
                int _CellDescriptionsIndex;
+               void* _ADERDGCellDescriptions;
+               void* _FiniteVolumesCellDescriptions;
                bool _isInside;
                State _state;
                int _level;
@@ -15152,7 +16958,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& CellDescriptionsIndex, const bool& isInside, const State& state, const int& level, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& numberOfLoadsFromInputStream, const int& numberOfStoresToOutputStream, const int& persistentRegularSubtreeIndex);
+               PersistentRecords(const int& CellDescriptionsIndex, void* ADERDGCellDescriptions, void* FiniteVolumesCellDescriptions, const bool& isInside, const State& state, const int& level, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& numberOfLoadsFromInputStream, const int& numberOfStoresToOutputStream, const int& persistentRegularSubtreeIndex);
                
                
                inline int getCellDescriptionsIndex() const 
@@ -15171,6 +16977,46 @@ namespace exahype {
  #endif 
  {
                   _CellDescriptionsIndex = CellDescriptionsIndex;
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(void* ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _ADERDGCellDescriptions = ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(void* FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _FiniteVolumesCellDescriptions = FiniteVolumesCellDescriptions;
                }
                
                
@@ -15429,7 +17275,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               Cell(const int& CellDescriptionsIndex, const bool& isInside, const State& state, const int& level, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& numberOfLoadsFromInputStream, const int& numberOfStoresToOutputStream, const int& persistentRegularSubtreeIndex);
+               Cell(const int& CellDescriptionsIndex, void* ADERDGCellDescriptions, void* FiniteVolumesCellDescriptions, const bool& isInside, const State& state, const int& level, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& numberOfLoadsFromInputStream, const int& numberOfStoresToOutputStream, const int& persistentRegularSubtreeIndex);
                
                /**
                 * Generated
@@ -15453,6 +17299,46 @@ namespace exahype {
  #endif 
  {
                   _persistentRecords._CellDescriptionsIndex = CellDescriptionsIndex;
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(void* ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._ADERDGCellDescriptions = ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(void* FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._FiniteVolumesCellDescriptions = FiniteVolumesCellDescriptions;
                }
                
                
@@ -15839,7 +17725,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   31/10/2018 18:11
+       * @date   15/11/2018 18:02
        */
       class exahype::records::CellPacked { 
          
@@ -15849,6 +17735,8 @@ namespace exahype {
             
             struct PersistentRecords {
                int _CellDescriptionsIndex;
+               void* _ADERDGCellDescriptions;
+               void* _FiniteVolumesCellDescriptions;
                int _level;
                tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int> _accessNumber;
                int _numberOfLoadsFromInputStream;
@@ -15871,7 +17759,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& CellDescriptionsIndex, const bool& isInside, const State& state, const int& level, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& numberOfLoadsFromInputStream, const int& numberOfStoresToOutputStream, const int& persistentRegularSubtreeIndex);
+               PersistentRecords(const int& CellDescriptionsIndex, void* ADERDGCellDescriptions, void* FiniteVolumesCellDescriptions, const bool& isInside, const State& state, const int& level, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& numberOfLoadsFromInputStream, const int& numberOfStoresToOutputStream, const int& persistentRegularSubtreeIndex);
                
                
                inline int getCellDescriptionsIndex() const 
@@ -15890,6 +17778,46 @@ namespace exahype {
  #endif 
  {
                   _CellDescriptionsIndex = CellDescriptionsIndex;
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(void* ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _ADERDGCellDescriptions = ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(void* FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _FiniteVolumesCellDescriptions = FiniteVolumesCellDescriptions;
                }
                
                
@@ -16168,7 +18096,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               CellPacked(const int& CellDescriptionsIndex, const bool& isInside, const State& state, const int& level, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& numberOfLoadsFromInputStream, const int& numberOfStoresToOutputStream, const int& persistentRegularSubtreeIndex);
+               CellPacked(const int& CellDescriptionsIndex, void* ADERDGCellDescriptions, void* FiniteVolumesCellDescriptions, const bool& isInside, const State& state, const int& level, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& numberOfLoadsFromInputStream, const int& numberOfStoresToOutputStream, const int& persistentRegularSubtreeIndex);
                
                /**
                 * Generated
@@ -16192,6 +18120,46 @@ namespace exahype {
  #endif 
  {
                   _persistentRecords._CellDescriptionsIndex = CellDescriptionsIndex;
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(void* ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._ADERDGCellDescriptions = ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(void* FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._FiniteVolumesCellDescriptions = FiniteVolumesCellDescriptions;
                }
                
                
@@ -16602,7 +18570,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   31/10/2018 18:11
+       * @date   15/11/2018 18:02
        */
       class exahype::records::Cell { 
          
@@ -16616,6 +18584,8 @@ namespace exahype {
             
             struct PersistentRecords {
                int _CellDescriptionsIndex;
+               void* _ADERDGCellDescriptions;
+               void* _FiniteVolumesCellDescriptions;
                bool _isInside;
                State _state;
                int _level;
@@ -16642,7 +18612,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& CellDescriptionsIndex, const bool& isInside, const State& state, const int& level, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& responsibleRank, const bool& subtreeHoldsWorker, const bool& cellIsAForkCandidate, const int& numberOfLoadsFromInputStream, const int& numberOfStoresToOutputStream);
+               PersistentRecords(const int& CellDescriptionsIndex, void* ADERDGCellDescriptions, void* FiniteVolumesCellDescriptions, const bool& isInside, const State& state, const int& level, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& responsibleRank, const bool& subtreeHoldsWorker, const bool& cellIsAForkCandidate, const int& numberOfLoadsFromInputStream, const int& numberOfStoresToOutputStream);
                
                
                inline int getCellDescriptionsIndex() const 
@@ -16661,6 +18631,46 @@ namespace exahype {
  #endif 
  {
                   _CellDescriptionsIndex = CellDescriptionsIndex;
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(void* ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _ADERDGCellDescriptions = ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(void* FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _FiniteVolumesCellDescriptions = FiniteVolumesCellDescriptions;
                }
                
                
@@ -16959,7 +18969,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               Cell(const int& CellDescriptionsIndex, const bool& isInside, const State& state, const int& level, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& responsibleRank, const bool& subtreeHoldsWorker, const bool& cellIsAForkCandidate, const int& numberOfLoadsFromInputStream, const int& numberOfStoresToOutputStream);
+               Cell(const int& CellDescriptionsIndex, void* ADERDGCellDescriptions, void* FiniteVolumesCellDescriptions, const bool& isInside, const State& state, const int& level, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& responsibleRank, const bool& subtreeHoldsWorker, const bool& cellIsAForkCandidate, const int& numberOfLoadsFromInputStream, const int& numberOfStoresToOutputStream);
                
                /**
                 * Generated
@@ -16983,6 +18993,46 @@ namespace exahype {
  #endif 
  {
                   _persistentRecords._CellDescriptionsIndex = CellDescriptionsIndex;
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(void* ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._ADERDGCellDescriptions = ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(void* FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._FiniteVolumesCellDescriptions = FiniteVolumesCellDescriptions;
                }
                
                
@@ -17409,7 +19459,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   31/10/2018 18:11
+       * @date   15/11/2018 18:02
        */
       class exahype::records::CellPacked { 
          
@@ -17419,6 +19469,8 @@ namespace exahype {
             
             struct PersistentRecords {
                int _CellDescriptionsIndex;
+               void* _ADERDGCellDescriptions;
+               void* _FiniteVolumesCellDescriptions;
                int _level;
                tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int> _accessNumber;
                int _responsibleRank;
@@ -17443,7 +19495,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& CellDescriptionsIndex, const bool& isInside, const State& state, const int& level, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& responsibleRank, const bool& subtreeHoldsWorker, const bool& cellIsAForkCandidate, const int& numberOfLoadsFromInputStream, const int& numberOfStoresToOutputStream);
+               PersistentRecords(const int& CellDescriptionsIndex, void* ADERDGCellDescriptions, void* FiniteVolumesCellDescriptions, const bool& isInside, const State& state, const int& level, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& responsibleRank, const bool& subtreeHoldsWorker, const bool& cellIsAForkCandidate, const int& numberOfLoadsFromInputStream, const int& numberOfStoresToOutputStream);
                
                
                inline int getCellDescriptionsIndex() const 
@@ -17462,6 +19514,46 @@ namespace exahype {
  #endif 
  {
                   _CellDescriptionsIndex = CellDescriptionsIndex;
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(void* ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _ADERDGCellDescriptions = ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(void* FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _FiniteVolumesCellDescriptions = FiniteVolumesCellDescriptions;
                }
                
                
@@ -17783,7 +19875,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               CellPacked(const int& CellDescriptionsIndex, const bool& isInside, const State& state, const int& level, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& responsibleRank, const bool& subtreeHoldsWorker, const bool& cellIsAForkCandidate, const int& numberOfLoadsFromInputStream, const int& numberOfStoresToOutputStream);
+               CellPacked(const int& CellDescriptionsIndex, void* ADERDGCellDescriptions, void* FiniteVolumesCellDescriptions, const bool& isInside, const State& state, const int& level, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& responsibleRank, const bool& subtreeHoldsWorker, const bool& cellIsAForkCandidate, const int& numberOfLoadsFromInputStream, const int& numberOfStoresToOutputStream);
                
                /**
                 * Generated
@@ -17807,6 +19899,46 @@ namespace exahype {
  #endif 
  {
                   _persistentRecords._CellDescriptionsIndex = CellDescriptionsIndex;
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(void* ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._ADERDGCellDescriptions = ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(void* FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._FiniteVolumesCellDescriptions = FiniteVolumesCellDescriptions;
                }
                
                
@@ -18260,7 +20392,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   31/10/2018 18:11
+       * @date   15/11/2018 18:02
        */
       class exahype::records::Cell { 
          
@@ -18274,6 +20406,8 @@ namespace exahype {
             
             struct PersistentRecords {
                int _CellDescriptionsIndex;
+               void* _ADERDGCellDescriptions;
+               void* _FiniteVolumesCellDescriptions;
                bool _isInside;
                State _state;
                #ifdef UseManualAlignment
@@ -18300,7 +20434,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& CellDescriptionsIndex, const bool& isInside, const State& state, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& responsibleRank, const bool& subtreeHoldsWorker, const bool& cellIsAForkCandidate, const int& numberOfLoadsFromInputStream, const int& numberOfStoresToOutputStream, const int& persistentRegularSubtreeIndex);
+               PersistentRecords(const int& CellDescriptionsIndex, void* ADERDGCellDescriptions, void* FiniteVolumesCellDescriptions, const bool& isInside, const State& state, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& responsibleRank, const bool& subtreeHoldsWorker, const bool& cellIsAForkCandidate, const int& numberOfLoadsFromInputStream, const int& numberOfStoresToOutputStream, const int& persistentRegularSubtreeIndex);
                
                
                inline int getCellDescriptionsIndex() const 
@@ -18319,6 +20453,46 @@ namespace exahype {
  #endif 
  {
                   _CellDescriptionsIndex = CellDescriptionsIndex;
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(void* ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _ADERDGCellDescriptions = ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(void* FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _FiniteVolumesCellDescriptions = FiniteVolumesCellDescriptions;
                }
                
                
@@ -18617,7 +20791,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               Cell(const int& CellDescriptionsIndex, const bool& isInside, const State& state, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& responsibleRank, const bool& subtreeHoldsWorker, const bool& cellIsAForkCandidate, const int& numberOfLoadsFromInputStream, const int& numberOfStoresToOutputStream, const int& persistentRegularSubtreeIndex);
+               Cell(const int& CellDescriptionsIndex, void* ADERDGCellDescriptions, void* FiniteVolumesCellDescriptions, const bool& isInside, const State& state, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& responsibleRank, const bool& subtreeHoldsWorker, const bool& cellIsAForkCandidate, const int& numberOfLoadsFromInputStream, const int& numberOfStoresToOutputStream, const int& persistentRegularSubtreeIndex);
                
                /**
                 * Generated
@@ -18641,6 +20815,46 @@ namespace exahype {
  #endif 
  {
                   _persistentRecords._CellDescriptionsIndex = CellDescriptionsIndex;
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(void* ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._ADERDGCellDescriptions = ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(void* FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._FiniteVolumesCellDescriptions = FiniteVolumesCellDescriptions;
                }
                
                
@@ -19067,7 +21281,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   31/10/2018 18:11
+       * @date   15/11/2018 18:02
        */
       class exahype::records::CellPacked { 
          
@@ -19077,6 +21291,8 @@ namespace exahype {
             
             struct PersistentRecords {
                int _CellDescriptionsIndex;
+               void* _ADERDGCellDescriptions;
+               void* _FiniteVolumesCellDescriptions;
                tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int> _accessNumber;
                int _responsibleRank;
                bool _subtreeHoldsWorker;
@@ -19101,7 +21317,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& CellDescriptionsIndex, const bool& isInside, const State& state, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& responsibleRank, const bool& subtreeHoldsWorker, const bool& cellIsAForkCandidate, const int& numberOfLoadsFromInputStream, const int& numberOfStoresToOutputStream, const int& persistentRegularSubtreeIndex);
+               PersistentRecords(const int& CellDescriptionsIndex, void* ADERDGCellDescriptions, void* FiniteVolumesCellDescriptions, const bool& isInside, const State& state, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& responsibleRank, const bool& subtreeHoldsWorker, const bool& cellIsAForkCandidate, const int& numberOfLoadsFromInputStream, const int& numberOfStoresToOutputStream, const int& persistentRegularSubtreeIndex);
                
                
                inline int getCellDescriptionsIndex() const 
@@ -19120,6 +21336,46 @@ namespace exahype {
  #endif 
  {
                   _CellDescriptionsIndex = CellDescriptionsIndex;
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(void* ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _ADERDGCellDescriptions = ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(void* FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _FiniteVolumesCellDescriptions = FiniteVolumesCellDescriptions;
                }
                
                
@@ -19441,7 +21697,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               CellPacked(const int& CellDescriptionsIndex, const bool& isInside, const State& state, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& responsibleRank, const bool& subtreeHoldsWorker, const bool& cellIsAForkCandidate, const int& numberOfLoadsFromInputStream, const int& numberOfStoresToOutputStream, const int& persistentRegularSubtreeIndex);
+               CellPacked(const int& CellDescriptionsIndex, void* ADERDGCellDescriptions, void* FiniteVolumesCellDescriptions, const bool& isInside, const State& state, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& responsibleRank, const bool& subtreeHoldsWorker, const bool& cellIsAForkCandidate, const int& numberOfLoadsFromInputStream, const int& numberOfStoresToOutputStream, const int& persistentRegularSubtreeIndex);
                
                /**
                 * Generated
@@ -19465,6 +21721,46 @@ namespace exahype {
  #endif 
  {
                   _persistentRecords._CellDescriptionsIndex = CellDescriptionsIndex;
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(void* ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._ADERDGCellDescriptions = ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(void* FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._FiniteVolumesCellDescriptions = FiniteVolumesCellDescriptions;
                }
                
                
@@ -19918,7 +22214,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   31/10/2018 18:11
+       * @date   15/11/2018 18:02
        */
       class exahype::records::Cell { 
          
@@ -19932,6 +22228,8 @@ namespace exahype {
             
             struct PersistentRecords {
                int _CellDescriptionsIndex;
+               void* _ADERDGCellDescriptions;
+               void* _FiniteVolumesCellDescriptions;
                bool _isInside;
                State _state;
                int _level;
@@ -19957,7 +22255,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& CellDescriptionsIndex, const bool& isInside, const State& state, const int& level, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& responsibleRank, const bool& subtreeHoldsWorker, const bool& cellIsAForkCandidate, const int& persistentRegularSubtreeIndex);
+               PersistentRecords(const int& CellDescriptionsIndex, void* ADERDGCellDescriptions, void* FiniteVolumesCellDescriptions, const bool& isInside, const State& state, const int& level, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& responsibleRank, const bool& subtreeHoldsWorker, const bool& cellIsAForkCandidate, const int& persistentRegularSubtreeIndex);
                
                
                inline int getCellDescriptionsIndex() const 
@@ -19976,6 +22274,46 @@ namespace exahype {
  #endif 
  {
                   _CellDescriptionsIndex = CellDescriptionsIndex;
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(void* ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _ADERDGCellDescriptions = ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(void* FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _FiniteVolumesCellDescriptions = FiniteVolumesCellDescriptions;
                }
                
                
@@ -20254,7 +22592,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               Cell(const int& CellDescriptionsIndex, const bool& isInside, const State& state, const int& level, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& responsibleRank, const bool& subtreeHoldsWorker, const bool& cellIsAForkCandidate, const int& persistentRegularSubtreeIndex);
+               Cell(const int& CellDescriptionsIndex, void* ADERDGCellDescriptions, void* FiniteVolumesCellDescriptions, const bool& isInside, const State& state, const int& level, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& responsibleRank, const bool& subtreeHoldsWorker, const bool& cellIsAForkCandidate, const int& persistentRegularSubtreeIndex);
                
                /**
                 * Generated
@@ -20278,6 +22616,46 @@ namespace exahype {
  #endif 
  {
                   _persistentRecords._CellDescriptionsIndex = CellDescriptionsIndex;
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(void* ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._ADERDGCellDescriptions = ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(void* FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._FiniteVolumesCellDescriptions = FiniteVolumesCellDescriptions;
                }
                
                
@@ -20684,7 +23062,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   31/10/2018 18:11
+       * @date   15/11/2018 18:02
        */
       class exahype::records::CellPacked { 
          
@@ -20694,6 +23072,8 @@ namespace exahype {
             
             struct PersistentRecords {
                int _CellDescriptionsIndex;
+               void* _ADERDGCellDescriptions;
+               void* _FiniteVolumesCellDescriptions;
                int _level;
                tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int> _accessNumber;
                int _responsibleRank;
@@ -20717,7 +23097,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& CellDescriptionsIndex, const bool& isInside, const State& state, const int& level, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& responsibleRank, const bool& subtreeHoldsWorker, const bool& cellIsAForkCandidate, const int& persistentRegularSubtreeIndex);
+               PersistentRecords(const int& CellDescriptionsIndex, void* ADERDGCellDescriptions, void* FiniteVolumesCellDescriptions, const bool& isInside, const State& state, const int& level, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& responsibleRank, const bool& subtreeHoldsWorker, const bool& cellIsAForkCandidate, const int& persistentRegularSubtreeIndex);
                
                
                inline int getCellDescriptionsIndex() const 
@@ -20736,6 +23116,46 @@ namespace exahype {
  #endif 
  {
                   _CellDescriptionsIndex = CellDescriptionsIndex;
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(void* ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _ADERDGCellDescriptions = ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(void* FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _FiniteVolumesCellDescriptions = FiniteVolumesCellDescriptions;
                }
                
                
@@ -21037,7 +23457,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               CellPacked(const int& CellDescriptionsIndex, const bool& isInside, const State& state, const int& level, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& responsibleRank, const bool& subtreeHoldsWorker, const bool& cellIsAForkCandidate, const int& persistentRegularSubtreeIndex);
+               CellPacked(const int& CellDescriptionsIndex, void* ADERDGCellDescriptions, void* FiniteVolumesCellDescriptions, const bool& isInside, const State& state, const int& level, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& responsibleRank, const bool& subtreeHoldsWorker, const bool& cellIsAForkCandidate, const int& persistentRegularSubtreeIndex);
                
                /**
                 * Generated
@@ -21061,6 +23481,46 @@ namespace exahype {
  #endif 
  {
                   _persistentRecords._CellDescriptionsIndex = CellDescriptionsIndex;
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(void* ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._ADERDGCellDescriptions = ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(void* FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._FiniteVolumesCellDescriptions = FiniteVolumesCellDescriptions;
                }
                
                
@@ -21494,7 +23954,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   31/10/2018 18:11
+       * @date   15/11/2018 18:02
        */
       class exahype::records::Cell { 
          
@@ -21508,6 +23968,8 @@ namespace exahype {
             
             struct PersistentRecords {
                int _CellDescriptionsIndex;
+               void* _ADERDGCellDescriptions;
+               void* _FiniteVolumesCellDescriptions;
                bool _isInside;
                State _state;
                int _level;
@@ -21535,7 +23997,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& CellDescriptionsIndex, const bool& isInside, const State& state, const int& level, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& responsibleRank, const bool& subtreeHoldsWorker, const bool& cellIsAForkCandidate, const int& numberOfLoadsFromInputStream, const int& numberOfStoresToOutputStream, const int& persistentRegularSubtreeIndex);
+               PersistentRecords(const int& CellDescriptionsIndex, void* ADERDGCellDescriptions, void* FiniteVolumesCellDescriptions, const bool& isInside, const State& state, const int& level, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& responsibleRank, const bool& subtreeHoldsWorker, const bool& cellIsAForkCandidate, const int& numberOfLoadsFromInputStream, const int& numberOfStoresToOutputStream, const int& persistentRegularSubtreeIndex);
                
                
                inline int getCellDescriptionsIndex() const 
@@ -21554,6 +24016,46 @@ namespace exahype {
  #endif 
  {
                   _CellDescriptionsIndex = CellDescriptionsIndex;
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(void* ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _ADERDGCellDescriptions = ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(void* FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _FiniteVolumesCellDescriptions = FiniteVolumesCellDescriptions;
                }
                
                
@@ -21872,7 +24374,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               Cell(const int& CellDescriptionsIndex, const bool& isInside, const State& state, const int& level, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& responsibleRank, const bool& subtreeHoldsWorker, const bool& cellIsAForkCandidate, const int& numberOfLoadsFromInputStream, const int& numberOfStoresToOutputStream, const int& persistentRegularSubtreeIndex);
+               Cell(const int& CellDescriptionsIndex, void* ADERDGCellDescriptions, void* FiniteVolumesCellDescriptions, const bool& isInside, const State& state, const int& level, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& responsibleRank, const bool& subtreeHoldsWorker, const bool& cellIsAForkCandidate, const int& numberOfLoadsFromInputStream, const int& numberOfStoresToOutputStream, const int& persistentRegularSubtreeIndex);
                
                /**
                 * Generated
@@ -21896,6 +24398,46 @@ namespace exahype {
  #endif 
  {
                   _persistentRecords._CellDescriptionsIndex = CellDescriptionsIndex;
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(void* ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._ADERDGCellDescriptions = ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(void* FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._FiniteVolumesCellDescriptions = FiniteVolumesCellDescriptions;
                }
                
                
@@ -22342,7 +24884,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   31/10/2018 18:11
+       * @date   15/11/2018 18:02
        */
       class exahype::records::CellPacked { 
          
@@ -22352,6 +24894,8 @@ namespace exahype {
             
             struct PersistentRecords {
                int _CellDescriptionsIndex;
+               void* _ADERDGCellDescriptions;
+               void* _FiniteVolumesCellDescriptions;
                int _level;
                tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int> _accessNumber;
                int _responsibleRank;
@@ -22377,7 +24921,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& CellDescriptionsIndex, const bool& isInside, const State& state, const int& level, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& responsibleRank, const bool& subtreeHoldsWorker, const bool& cellIsAForkCandidate, const int& numberOfLoadsFromInputStream, const int& numberOfStoresToOutputStream, const int& persistentRegularSubtreeIndex);
+               PersistentRecords(const int& CellDescriptionsIndex, void* ADERDGCellDescriptions, void* FiniteVolumesCellDescriptions, const bool& isInside, const State& state, const int& level, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& responsibleRank, const bool& subtreeHoldsWorker, const bool& cellIsAForkCandidate, const int& numberOfLoadsFromInputStream, const int& numberOfStoresToOutputStream, const int& persistentRegularSubtreeIndex);
                
                
                inline int getCellDescriptionsIndex() const 
@@ -22396,6 +24940,46 @@ namespace exahype {
  #endif 
  {
                   _CellDescriptionsIndex = CellDescriptionsIndex;
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(void* ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _ADERDGCellDescriptions = ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(void* FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _FiniteVolumesCellDescriptions = FiniteVolumesCellDescriptions;
                }
                
                
@@ -22737,7 +25321,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               CellPacked(const int& CellDescriptionsIndex, const bool& isInside, const State& state, const int& level, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& responsibleRank, const bool& subtreeHoldsWorker, const bool& cellIsAForkCandidate, const int& numberOfLoadsFromInputStream, const int& numberOfStoresToOutputStream, const int& persistentRegularSubtreeIndex);
+               CellPacked(const int& CellDescriptionsIndex, void* ADERDGCellDescriptions, void* FiniteVolumesCellDescriptions, const bool& isInside, const State& state, const int& level, const std::bitset<DIMENSIONS>& evenFlags, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,short int>& accessNumber, const int& responsibleRank, const bool& subtreeHoldsWorker, const bool& cellIsAForkCandidate, const int& numberOfLoadsFromInputStream, const int& numberOfStoresToOutputStream, const int& persistentRegularSubtreeIndex);
                
                /**
                 * Generated
@@ -22761,6 +25345,46 @@ namespace exahype {
  #endif 
  {
                   _persistentRecords._CellDescriptionsIndex = CellDescriptionsIndex;
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(void* ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._ADERDGCellDescriptions = ADERDGCellDescriptions;
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(void* FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._FiniteVolumesCellDescriptions = FiniteVolumesCellDescriptions;
                }
                
                

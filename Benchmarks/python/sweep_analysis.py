@@ -12,7 +12,7 @@
 """
 import csv
 import json
-import os
+import sys,os
 import re
 import codecs
 import math
@@ -20,13 +20,22 @@ import math
 import collections
 import statistics
 
+import argparse
+
 lastKeyColumn=-1
 
 knownParameters  = ["architecture", "dimension"]
 
+# |      DP MFLOP/s STAT      |   9041.3374 |   68.6500 |  415.9467 |  251.1483 |
+# |    AVX DP MFLOP/s STAT    |   8052.8481 |   61.4873 |  377.0757 |  223.6902 |
+# |   AVX512 DP MFLOP/s STAT  |   5974.9405 |   45.5262 |  279.9348 |  165.9706 |
+
 metrics =  [
         ["  MFLOP/s",                   "Sum"],  # Two whitespaces are required to not find the AVX MFLOP/s by accident
         ["AVX MFLOP/s",                 "Sum"],
+        ["  DP MFLOP/s",                "Sum"],  # Two whitespaces are required to not find the AVX MFLOP/s by accident
+        ["AVX DP MFLOP/s",              "Sum"],
+        ["AVX512 DP MFLOP/s",           "Sum"],
         ["Memory bandwidth [MBytes/s]", "Sum"],
         ["Memory data volume [GBytes]", "Sum"],
         ["Local bandwidth [MByte/s]",   "Avg"],
@@ -669,7 +678,7 @@ def parseLikwidMetrics(filePath,metrics,counters,singlecore=False):
                     segments = line.split('|')
 
                     #    |     Runtime (RDTSC) [s]    |    6.5219    |
-                    value  = float(segments[2].strip());
+                    value  = convertToFloat(segments[3].strip());
                     values = {}
                     values["Sum"] = value
                     values["Min"] = value
@@ -996,3 +1005,38 @@ def parseJobStatisticsFromResultsFile(resultsFile):
                         bucket = int(math.log(num_tasks, base)) + 1
                         statsRunningConsumers[bucket] += occurences
     return environmentDict,parameterDict,statsNoOfBackgroundTasks,statsGrabbedBackgroundTasks,statsRunningConsumers
+
+
+def parseArgs():
+    parser = argparse.ArgumentParser(
+        description="A collection of parsers for analysing ExaHyPE application output.",
+            epilog="End of help message.",
+    )
+    parser.add_argument("--compress", dest="compress", action="store_true",help="Remove columns where the same value is found in every row.")
+    parser.set_defaults(compress=False)
+
+    parser.add_argument("--prefix",nargs="?",default=None, help="Specify the prefix of the sweep/ExaHyPE output files.")
+    parser.set_defaults(prefix=None)
+    
+    # subprograms
+    parser.add_argument("--parseAllMetrics", dest="parseAllMetrics", action="store_true",help="Parse all output files in the specified directory with the specified prefix.")
+    parser.set_defaults(parseAllMetrics=False)
+    parser.add_argument("--parseAllAdapters", dest="parseAllAdapters", action="store_true",help="Parse all output files in the specified directory with the specified prefix.")
+    parser.set_defaults(parseAllAdapters=False)
+    parser.add_argument("--parseAllTimeStepTimes", dest="parseAllTimeStepTimes", action="store_true",help="Parse all output files in the specified directory with the specified prefix.")
+    parser.set_defaults(parseAllTimeStepTimes=False)
+    
+    parser.add_argument("file",
+        type=str,help="The directory or CSV file to work with.")
+    
+    return parser.parse_args()
+
+if __name__ == "__main__":
+    args = parseArgs();
+
+    if args.parseAllMetrics and args.prefix!=None and os.path.isdir(args.file):
+        parseMetrics(args.file,args.prefix,args.compress)
+    if args.parseAllAdapters and args.prefix!=None and os.path.isdir(args.file):
+        parseAdapterTimes(args.file,args.prefix,args.compress)
+    if args.parseAllTimeStepTimes and args.prefix!=None and os.path.isdir(args.file):
+        parseSummedTimes(args.file,args.prefix,True)

@@ -201,7 +201,7 @@ void exahype::plotters::LimitingADERDGSubcells2CartesianVTK::plotPatch(const int
       previousRefinementStatus = 0;
     }
 
-    if (refinementStatus>=limitingADERDG->getSolver()->getMinimumRefinementStatusForActiveFVPatch()) {
+    if (refinementStatus>=limitingADERDG->getSolver()->getMinRefinementStatusForBufferCell()) {
       auto& limiterPatch = limitingADERDG->getLimiterPatch(solverPatch,cellInfo);
 
       double* limiterSolution = static_cast<double*>(limiterPatch.getSolution());

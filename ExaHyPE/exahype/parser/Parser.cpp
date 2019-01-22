@@ -524,6 +524,8 @@ exahype::parser::Parser::MPILoadBalancingType exahype::parser::Parser::getMPILoa
   exahype::parser::Parser::MPILoadBalancingType result = MPILoadBalancingType::Static;
   if (token.compare("static") == 0) {
     result = MPILoadBalancingType::Static;
+  } else if (token.compare("dynamic") == 0) {
+    result = MPILoadBalancingType::Dynamic;
   } else {
     logError("getMPILoadBalancingType()",
              "Invalid distributed memory identifier " << token);
@@ -669,6 +671,10 @@ double exahype::parser::Parser::getFuseAlgorithmicStepsFactor() const {
 
 bool exahype::parser::Parser::getSpawnPredictionAsBackgroundThread() const {
   return getBoolFromPath("/optimisation/spawn_predictor_as_background_thread", false, isOptional);
+}
+
+bool exahype::parser::Parser::getSpawnUpdateAsBackgroundThread() const {
+  return getBoolFromPath("/optimisation/spawn_update_as_background_thread", false, isOptional);
 }
 
 bool exahype::parser::Parser::getSpawnProlongationAsBackgroundThread() const {
@@ -1048,6 +1054,20 @@ exahype::parser::Parser::ProfilingTarget exahype::parser::Parser::getProfilingTa
   }
 }
 
+bool exahype::parser::Parser::getMeasureCellProcessingTimes() const {
+  return getBoolFromPath("/profiling/measure_cell_processing_times", false, isOptional);
+}
+
+int exahype::parser::Parser::getMeasureCellProcessingTimesIterations() const {
+  const int result = getIntFromPath("/profiling/measure_cell_processing_times_iter", 100, isOptional);
+
+  if ( result <  1 ) {
+    logError("getMeasureCellProcessingTimesIterations(...)",";measure-cell-processing-times-iter' must be greater than 0.");
+    invalidate();
+  }
+  return result;
+}
+
 std::string exahype::parser::Parser::getMetricsIdentifierList() const {
   return getStringFromPath("/profiling/metrics", "{}", isOptional);
 }
@@ -1163,12 +1183,12 @@ int exahype::parser::Parser::getNumberOfBackgroundJobConsumerTasks() {
 }
 
 bool exahype::parser::Parser::getProcessHighPriorityBackgroundJobsInAnRush() {
-  return getStringFromPath("/shared_memory/high_priority_background_job_processing","all_in_a_rush",isOptional).
+  return getStringFromPath("/shared_memory/high_priority_background_job_processing","one_at_a_time",isOptional).
       compare("all_in_a_rush")==0;
 }
 
 bool exahype::parser::Parser::getSpawnHighPriorityBackgroundJobsAsATask() {
-  return getStringFromPath("/shared_memory/high_priority_background_job_processing","all_in_a_rush",isOptional).
+  return getStringFromPath("/shared_memory/high_priority_background_job_processing","one_at_a_time",isOptional).
       compare("spawn_as_a_task")==0;
 }
 
@@ -1178,7 +1198,7 @@ bool exahype::parser::Parser::getRunLowPriorityJobsOnlyIfNoHighPriorityJobIsLeft
 }
 
 bool exahype::parser::Parser::getSpawnLowPriorityBackgroundJobsAsATask() {
-  return getStringFromPath("/shared_memory/high_priority_background_job_processing","all_in_a_rush",isOptional).
+  return getStringFromPath("/shared_memory/low_priority_background_job_processing","one_at_a_time",isOptional).
       compare("spawn_as_a_task")==0;
 }
 

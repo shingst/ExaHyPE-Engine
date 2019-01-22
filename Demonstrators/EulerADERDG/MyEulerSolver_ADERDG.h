@@ -134,7 +134,7 @@ class EulerADERDG::MyEulerSolver_ADERDG : public EulerADERDG::AbstractMyEulerSol
         const bool wasTroubledInPreviousTimeStep,
         const tarch::la::Vector<DIMENSIONS,double>& center,
         const tarch::la::Vector<DIMENSIONS,double>& dx,
-        const double t, const double dt) const override;
+        const double t) const override;
 };
 
 #endif // __MyEulerSolver_ADERDG_CLASS_HEADER__

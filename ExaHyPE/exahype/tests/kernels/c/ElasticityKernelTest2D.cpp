@@ -278,7 +278,7 @@ void ElasticityKernelTest::testRiemannSolverLinear() {
   // TODO(Dominic): Fix test
   kernels::aderdg::generic::c::riemannSolverLinear<true,false,false,ElasticityKernelTest>(*this,
       FL, FR, qL, qR,
-      dt, 1 /* normalNonZero */);
+      0.0 /*t*/, dt, 1 /* normalNonZero */);
 
   kernels::idx2 idx_F(basisSize, nVar);
 

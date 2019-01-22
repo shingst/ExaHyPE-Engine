@@ -146,6 +146,10 @@ bool {{codeNamespace}}::discreteMaximumPrincipleAndMinAndMaxSearch(
       discreteMaximumPrincipleSatisfied=false;
     }
 
+    // check for nans and infinity values
+    discreteMaximumPrincipleSatisfied &= std::isfinite(localMinPerObservable[v]) &&
+                                         std::isfinite(localMaxPerObservable[v]);
+
     // TODO(Dominic): A little hacky
 
     // We have the new min and max directly available now and
@@ -168,8 +172,8 @@ void {{codeNamespace}}::findCellLocalLimiterMinAndMax(
     double* const localMinPerVariables, double* const localMaxPerVariables
 ) {
   
-  std::fill_n(localMinPerVariables,{{nObs}},std::numeric_limits<double>::max());
-  std::fill_n(localMaxPerVariables,{{nObs}},-std::numeric_limits<double>::max());
+  std::fill_n(localMinPerVariables,{{nObs}},+std::numeric_limits<double>::infinity());
+  std::fill_n(localMaxPerVariables,{{nObs}},-std::numeric_limits<double>::infinity());
 
   double observables[{{nObs}}] __attribute__((aligned(ALIGNMENT)));
   
@@ -197,8 +201,8 @@ void {{codeNamespace}}::findCellLocalMinAndMax(
     double* const localMinPerVariables, double* const localMaxPerVariables
 ) {
   
-  std::fill_n(localMinPerVariables,{{nObs}},std::numeric_limits<double>::max());
-  std::fill_n(localMaxPerVariables,{{nObs}},-std::numeric_limits<double>::max());
+  std::fill_n(localMinPerVariables,{{nObs}},+std::numeric_limits<double>::infinity());
+  std::fill_n(localMaxPerVariables,{{nObs}},-std::numeric_limits<double>::infinity());
 
   double observables[{{nObs}}] __attribute__((aligned(ALIGNMENT)));
 

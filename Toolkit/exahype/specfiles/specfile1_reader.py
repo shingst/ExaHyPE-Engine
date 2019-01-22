@@ -52,16 +52,16 @@ class SpecFile1Reader():
         plotter.append(0)
         spec_file_1_ini = ""
         reads_multiline_comment = 0
-        reads_singline_comment    = False
+        reads_singline_comment  = False
         in_solver = False
         for line in spec_file_1:
             reads_singline_comment = line.strip().startswith("//") or line.strip().startswith("#")
             reads_multiline_comment += 1 if line.strip().startswith("/*") else 0
             if reads_multiline_comment==0 and not reads_singline_comment:
-                m_project = re.match(r"\s*exahype-project\s+(\w+)",line)
-                m_group     = re.match(r"\s*(computational-domain|shared-memory|distributed-memory|(global-)?optimisation|profiling)\s*(//.+)?$",line)
-                m_solver    = re.match(r"\s*solver\s+([^\s]+)\s+(\w+)",line)
-                m_plotter = re.match(r"\s*plot\s+([^\s]+)(\s+(\w+))?",line)
+                m_project = re.match(r"^\s*exahype-project\s+(\w+)",line)
+                m_group   = re.match(r"^\s*(computational-domain|shared-memory|distributed-memory|(global-)?optimisation|profiling)\s*(//.+)?$",line)
+                m_solver  = re.match(r"^\s*solver\s+([^\s]+)\s+(\w+)",line)
+                m_plotter = re.match(r"^\s*plot\s+([^\s]+)(\s+(\w+))?",line)
                 if m_project:
                     spec_file_1_ini += "[project]\n"
                     spec_file_1_ini += "project_name="+m_project.group(1)+"\n"
@@ -72,7 +72,7 @@ class SpecFile1Reader():
                     spec_file_1_ini += "[solver%d]" % (solver)    +"\n"
                     spec_file_1_ini += "solver_type="+m_solver.group(1)+"\n" # will be replaced later on
                     spec_file_1_ini += "name="+m_solver.group(2)+"\n"
-                elif re.match(r"^\s*end\s*solver",line):
+                elif re.match(r"^\s*end\s+solver",line):
                     in_solver = False
                     solver+=1
                     plotter.append(0)
@@ -109,6 +109,7 @@ class SpecFile1Reader():
             "buffer_size",\
             "timeout",\
             "cores",\
+            "measure_cell_processing_times_iter",\
             "order",\
             "patch_size",\
             "halo_cells",\
@@ -205,7 +206,7 @@ class SpecFile1Reader():
                     distributed_memory["primary_ranks_per_node"]=int(m_ranks_per_node.group(1))
                     found_token = True
                 if m_node_pool_strategy:
-                    distributed_memory["node_pool_strategy"]=m_node_pool_strategy.group(1)
+                    distributed_memory["node_pool_strategy"]=m_node_pool_strategy.group(1).replace("-","_")
                     found_token = True
                 if m_load_balancing_strategy:
                     distributed_memory["load_balancing_strategy"]=m_load_balancing_strategy.group(1).replace("-","_")
@@ -399,10 +400,11 @@ class SpecFile1Reader():
             if option in ["log_file","peano_kernel_path","peano_toolbox_path","exahype_path","output_directory","plotter_subdirectory"]:
                 context["paths"][option] = context.pop(option)
         self.map_computational_domain(context["computational_domain"])
-        if "optimisation" in context:
-            for option in context["optimisation"]:
-                if context["optimisation"][option] in ["on","off"]:
-                    context["optimisation"][option]=False if context["optimisation"][option]=="off" else True
+        for section in ["optimisation","profiling"]:
+            if section in context:
+                for option in context[section]:
+                    if context[section][option] in ["on","off"]:
+                        context[section][option]=False if context[section][option]=="off" else True
         if "distributed_memory" in context:
             self.map_distributed_memory(context["distributed_memory"])    
         if "shared_memory" in context:
@@ -535,7 +537,9 @@ class SpecFile1Reader():
         (spec_file_1_ini, n_solvers, n_plotters) = self.spec_file_1_to_ini(spec_file_1)
         self.log.info("OK")
         self.log.debug("INI file is:\n" + str(spec_file_1_ini))
-        
+       
+        self.log.debug("Number of solvers found in legacy specification file: {}\n".format(n_solvers))
+ 
         config = configparser.ConfigParser(delimiters=('='))
         try:
             config.read_string(spec_file_1_ini)

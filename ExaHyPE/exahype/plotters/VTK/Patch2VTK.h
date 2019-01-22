@@ -36,6 +36,8 @@ namespace exahype {
     class Patch2VTUBoxesBinary;
     class Patch2VTUGapsAscii;
     class Patch2VTUGapsBinary;
+    
+    class Patch2CSVAscii;
 
     class Slicer; // external forward decl, #include exahype/plotters/slicing/Slicer.h
   }
@@ -47,7 +49,8 @@ class exahype::plotters::Patch2VTK: public exahype::plotters::Plotter::Device {
      BinaryVTK,
      ASCIIVTK,
      BinaryVTU,
-     ASCIIVTU
+     ASCIIVTU,
+     ASCIICSV
    };
  private:
   const exahype::solvers::Solver::Type _solverType;
@@ -172,6 +175,12 @@ class exahype::plotters::Patch2VTUGapsAscii: public exahype::plotters::Patch2VTK
 class exahype::plotters::Patch2VTUGapsBinary: public exahype::plotters::Patch2VTK {
   public:
     Patch2VTUGapsBinary(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing, exahype::solvers::Solver::Type solvertype);
+    static std::string getIdentifier();
+};
+
+class exahype::plotters::Patch2CSVAscii: public exahype::plotters::Patch2VTK {
+  public:
+    Patch2CSVAscii(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing, exahype::solvers::Solver::Type solvertype);
     static std::string getIdentifier();
 };
 

@@ -160,7 +160,7 @@ class GPR::GPRSolver_ADERDG : public GPR::AbstractGPRSolver_ADERDG {
       const bool wasTroubledInPreviousTimeStep,
       const tarch::la::Vector<DIMENSIONS,double>& center,
       const tarch::la::Vector<DIMENSIONS,double>& dx,
-      const double t, const double dt) const override;
+      const double t) const override;
 };
 
 #endif // __GPRSolver_ADERDG_CLASS_HEADER__

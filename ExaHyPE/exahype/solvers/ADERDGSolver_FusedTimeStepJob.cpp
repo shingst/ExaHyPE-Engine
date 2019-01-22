@@ -8,35 +8,56 @@
 exahype::solvers::ADERDGSolver::FusedTimeStepJob::FusedTimeStepJob(
   ADERDGSolver&    solver,
   CellDescription& cellDescription,
-  const int        cellDescriptionsIndex,
-  const int        element,
-  const bool       isSkeletonJob):
-  tarch::multicore::jobs::Job(Solver::getTaskType(isSkeletonJob),0),
+  CellInfo&        cellInfo,
+  const bool       isFirstTimeStepOfBatch,
+  const bool       isLastTimeStepOfBatch,
+  const bool       isSkeletonJob)
+  :
+  tarch::multicore::jobs::Job(
+      isLastTimeStepOfBatch ?
+          tarch::multicore::jobs::JobType::RunTaskAsSoonAsPossible :
+          Solver::getTaskType(isSkeletonJob),
+  0),
   _solver(solver),
   _cellDescription(cellDescription),
-  _cellDescriptionsIndex(cellDescriptionsIndex),
-  _element(element),
+  _cellInfo(cellInfo),
   _neighbourMergePerformed(cellDescription.getNeighbourMergePerformed()),
+  _isFirstTimeStepOfBatch(isFirstTimeStepOfBatch),
+  _isLastTimeStepOfBatch(isLastTimeStepOfBatch),
   _isSkeletonJob(isSkeletonJob) {
-  tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  {
-    int& jobCounter = (_isSkeletonJob) ? NumberOfSkeletonJobs : NumberOfEnclaveJobs;
-    jobCounter++;
+  NumberOfReductionJobs.fetch_add(1);
+  if (_isSkeletonJob) {
+    NumberOfSkeletonJobs.fetch_add(1);
+  } else {
+    NumberOfEnclaveJobs.fetch_add(1);
   }
-  lock.free();
 }
 
 bool exahype::solvers::ADERDGSolver::FusedTimeStepJob::run() {
-  _solver.fusedTimeStepBody(
-      _cellDescription, _cellDescriptionsIndex, _element, false, false, _isSkeletonJob, false, _neighbourMergePerformed );
+  UpdateResult result =
+      _solver.fusedTimeStepBody(
+          _cellDescription, _cellInfo, _neighbourMergePerformed,
+          _isFirstTimeStepOfBatch,_isLastTimeStepOfBatch,
+          _isSkeletonJob,false/*mustBeDoneImmediately*/);
 
-  tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  {
-    int& jobCounter = (_isSkeletonJob) ? NumberOfSkeletonJobs : NumberOfEnclaveJobs;
-    jobCounter--;
-    assertion( jobCounter>=0 );
+  if (_isLastTimeStepOfBatch) {
+    tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
+    {
+      _solver.updateNextMeshUpdateEvent(result._meshUpdateEvent);
+      _solver.updateMinNextTimeStepSize(result._timeStepSize);
+    }
+    lock.free();
   }
-  lock.free();
+
+  NumberOfReductionJobs.fetch_sub(1);
+  assertion( NumberOfReductionJobs.load()>=0 );
+  if (_isSkeletonJob) {
+    NumberOfSkeletonJobs.fetch_sub(1);
+    assertion( NumberOfSkeletonJobs.load()>=0 );
+  } else {
+    NumberOfEnclaveJobs.fetch_sub(1);
+    assertion( NumberOfEnclaveJobs.load()>=0 );
+  }
   return false;
 }
 

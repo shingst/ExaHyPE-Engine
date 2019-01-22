@@ -45,9 +45,9 @@ class exahype::adapters::FusedTimeStep {
 
   public:
     peano::MappingSpecification         touchVertexLastTimeSpecification(int level) const;
-    peano::MappingSpecification         touchVertexFirstTimeSpecification(int level) const;
-    peano::MappingSpecification         enterCellSpecification(int level) const;
-    peano::MappingSpecification         leaveCellSpecification(int level) const;
+    peano::MappingSpecification         touchVertexFirstTimeSpecification(int level);
+    peano::MappingSpecification         enterCellSpecification(int level);
+    peano::MappingSpecification         leaveCellSpecification(int level);
     peano::MappingSpecification         ascendSpecification(int level) const;
     peano::MappingSpecification         descendSpecification(int level) const;
     peano::CommunicationSpecification   communicationSpecification() const;

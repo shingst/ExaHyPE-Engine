@@ -40,9 +40,16 @@ exahype::mappings::FinaliseMeshRefinement::communicationSpecification() const {
 
 peano::MappingSpecification
 exahype::mappings::FinaliseMeshRefinement::enterCellSpecification(int level) const {
-  return peano::MappingSpecification(
-      peano::MappingSpecification::WholeTree,
-      peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
+  const int coarsestSolverLevel = solvers::Solver::getCoarsestMeshLevelOfAllSolvers();
+  if ( std::abs(level)>=coarsestSolverLevel ) {
+    return peano::MappingSpecification(
+          peano::MappingSpecification::WholeTree,
+          peano::MappingSpecification::RunConcurrentlyOnFineGrid,true); // performs reduction
+  } else {
+    return peano::MappingSpecification(
+          peano::MappingSpecification::Nop,
+          peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
+  }
 }
 
 // Below all specs are Nop
@@ -154,7 +161,7 @@ void exahype::mappings::FinaliseMeshRefinement::enterCell(
       exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::AMRJob);
       _backgroundJobsHaveTerminated = true;
     } // TODO(Dominic): Still necessary? Mesh Refinement terminates the background jobs in endIteration now.
-    solvers::Solver::CellInfo cellInfo(fineGridCell.getCellDescriptionsIndex());
+    solvers::Solver::CellInfo cellInfo = fineGridCell.createCellInfo();
 
     for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
@@ -167,7 +174,7 @@ void exahype::mappings::FinaliseMeshRefinement::enterCell(
         }
 
         // compute a new time step size
-        double admissibleTimeStepSize = solver->updateTimeStepSizes(solverNumber,cellInfo,exahype::solvers::Solver::FuseADERDGPhases);
+        double admissibleTimeStepSize   = solver->updateTimeStepSizes(solverNumber,cellInfo,exahype::solvers::Solver::FuseADERDGPhases);
         _minTimeStepSizes[solverNumber] = std::min(admissibleTimeStepSize, _minTimeStepSizes[solverNumber]);
         _maxLevels[solverNumber]        = std::max(fineGridVerticesEnumerator.getLevel(),_maxLevels[solverNumber]);
 
@@ -180,7 +187,7 @@ void exahype::mappings::FinaliseMeshRefinement::enterCell(
       }
     }
 
-    exahype::Cell::resetNeighbourMergeFlags(cellInfo,fineGridVertices,fineGridVerticesEnumerator);
+    Cell::resetNeighbourMergePerformedFlags(cellInfo,fineGridVertices,fineGridVerticesEnumerator);
   }
 }
 
@@ -230,7 +237,7 @@ void exahype::mappings::FinaliseMeshRefinement::mergeWithNeighbour(
   logTraceInWith6Arguments("mergeWithNeighbour(...)", vertex, neighbour,
                            fromRank, fineGridX, fineGridH, level);
 
-  vertex.dropNeighbourMetadata(fromRank,fineGridX,level);
+  vertex.dropNeighbourMetadata(fromRank,fineGridX,fineGridH,level);
 
   logTraceOut("mergeWithNeighbour(...)");
 }

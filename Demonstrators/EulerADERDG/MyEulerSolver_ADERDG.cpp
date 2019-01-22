@@ -150,7 +150,7 @@ bool EulerADERDG::MyEulerSolver_ADERDG::isPhysicallyAdmissible(
       const bool wasTroubledInPreviousTimeStep,
       const tarch::la::Vector<DIMENSIONS,double>& center,
       const tarch::la::Vector<DIMENSIONS,double>& dx,
-      const double t, const double dt) const {
+      const double t) const {
   // This is an example for the compressible Euler equations.
   // Modify it according to your needs.
   if (observablesMin[0] <= 0.0) return false;

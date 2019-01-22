@@ -148,7 +148,22 @@
           "scope" : "run-time",
           "default": "whole_code",
           "enum" : [ "whole_code", "neighbour_merge", "predictor", "update" ]
+        },
+        "measure_cell_processing_times" : {
+          "type" : "boolean", 
+          "title" : "Measure the times the solvers require to perform updates and predictor computations", 
+          "scope" : "run-time"
+        },
+        "measure_cell_processing_times_iter" : {
+          "type" : "integer", 
+          "title" : "Number of measurements to perform when measuring cell processing times. The results are averaged over the number of measurements", 
+          "scope" : "run-time",
+          "minimum" : 1,
+          "exclusiveMinimum" : false
         }
+      },
+      "dependencies" : {
+        "measure_cell_processing_times_iter" : ["measure_cell_processing_times"]
       }
     },
     "architecture" : {
@@ -414,9 +429,14 @@
         },
         "spawn_predictor_as_background_thread" : {
           "type" : "boolean", 
-          "title" : "Wether to spawn the predictor as a background thread, or so.",
+          "title" : "Wether to spawn the predictor or the first and intermediate fused time steps as background jobs.",
           "default" : false,
           "old_format" : { "token_after" : "spawn-predictor-as-background-thread" }
+        },
+        "spawn_update_as_background_thread" : {
+          "type" : "boolean", 
+          "title" : "Wether to spawn the update or the last fused time step in a batch as a background job",
+          "default" : false
         },
         "spawn_prolongation_as_background_thread" : {
           "type" : "boolean", 

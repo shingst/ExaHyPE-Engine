@@ -17,7 +17,7 @@ peano::MappingSpecification   exahype::adapters::FusedTimeStep::touchVertexLastT
 }
 
 
-peano::MappingSpecification   exahype::adapters::FusedTimeStep::touchVertexFirstTimeSpecification(int level) const { 
+peano::MappingSpecification   exahype::adapters::FusedTimeStep::touchVertexFirstTimeSpecification(int level) { 
   return peano::MappingSpecification::getMinimalSpecification()
     &  _map2FusedTimeStep.touchVertexFirstTimeSpecification(level)
 
@@ -25,7 +25,7 @@ peano::MappingSpecification   exahype::adapters::FusedTimeStep::touchVertexFirst
 }
 
 
-peano::MappingSpecification   exahype::adapters::FusedTimeStep::enterCellSpecification(int level) const {
+peano::MappingSpecification   exahype::adapters::FusedTimeStep::enterCellSpecification(int level) {
   return peano::MappingSpecification::getMinimalSpecification()
     &  _map2FusedTimeStep.enterCellSpecification(level)
 
@@ -33,7 +33,7 @@ peano::MappingSpecification   exahype::adapters::FusedTimeStep::enterCellSpecifi
 }
 
 
-peano::MappingSpecification   exahype::adapters::FusedTimeStep::leaveCellSpecification(int level) const {
+peano::MappingSpecification   exahype::adapters::FusedTimeStep::leaveCellSpecification(int level) {
   return peano::MappingSpecification::getMinimalSpecification()
     &  _map2FusedTimeStep.leaveCellSpecification(level)
 
