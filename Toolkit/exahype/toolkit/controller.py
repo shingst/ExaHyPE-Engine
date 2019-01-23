@@ -266,6 +266,8 @@ class Controller:
         context = self.buildBaseContext()
         
         context["architecture"]      = self.spec["architecture"]
+        context["compilerFlags"]     = self.spec["compiler_flags"]
+        context["linkerFlags"]       = self.spec["linker_flags"]
         context["useSharedMem"]      = "shared_memory" in self.spec;
         context["useDistributedMem"] = "distributed_memory" in self.spec;
         context["useIpcm"]   = False # TODO
