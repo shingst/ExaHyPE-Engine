@@ -152,3 +152,12 @@ README_generated.md
 
 .vscode
 .pydevproject
+
+# Rendering or simliar, raw data files, movies
+*.h5
+*.hdf5
+*.jpg
+*.png
+*.avi
+*.mp4
+*.webm
