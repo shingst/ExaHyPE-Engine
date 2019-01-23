@@ -32,6 +32,7 @@ dot = AGraph(strict=False,directed=True, style="filled",label="timestep: 0")
 for i in range(0,ranks):
   dot.add_node(str(i))
 
+zero_threshold = 0.020000
 
 current_step = -1
 last_timestamp = 0
@@ -72,9 +73,10 @@ for line in file:
   if m:
     src = int(m.group(1))
     dest = int(m.group(3))
-    time = int(m.group(2))
-    current_waiting_times[int(m.group(1))][int(m.group(3))]= int(m.group(2))
-    dot.add_edge(src, dest, label=str(time),fontcolor="red", color="red")
+    time = int(m.group(2))*1.0/1000000
+    if time>zero_threshold:
+     current_waiting_times[int(m.group(1))][int(m.group(3))]= int(m.group(2))
+     dot.add_edge(src, dest, label=str(time),fontcolor="red", color="red")
   m = critical_rank_pattern.match(line)
   if m:
     #print (line)

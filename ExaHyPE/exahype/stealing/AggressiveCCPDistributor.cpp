@@ -78,13 +78,22 @@ void exahype::stealing::AggressiveCCPDistributor::computeIdealLoadDistribution(i
   int totalCells   = enclaveCells + skeletonCells;
   MPI_Allgather(&totalCells, 1, MPI_INTEGER, _initialLoadPerRank, 1, MPI_INTEGER, MPI_COMM_WORLD);
 
+#if defined(STEALING_USE_MASTER)
   int input_r=0, input_l=0;
   int output_r=0, output_l=0;
+#else
+  int input_r=1, input_l=0;
+  int output_r=1, output_l=0;
+#endif
 
   int total_l=0;
   total_l = std::accumulate(&_initialLoadPerRank[0], &_initialLoadPerRank[nnodes], total_l);
 
+#if defined(STEALING_USE_MASTER)
   int avg_l = total_l / nnodes;
+#else
+  int avg_l = total_l / (nnodes-1);
+#endif
 
   input_l = _initialLoadPerRank[input_r];
   output_l = _initialLoadPerRank[output_r];
@@ -246,9 +255,10 @@ void exahype::stealing::AggressiveCCPDistributor::updateLoadDistribution() {
        if(_idealTasksToOffload[i]>0) {
          //we have a potential victim rank
          if(!exahype::stealing::StealingManager::getInstance().isBlacklisted(i)) {
-          // logInfo("updateLoadDistribution", "tasks for victim "<<i<<" before recomputation:"<<_tasksToOffload[i]<< " ideal: "<<_idealTasksToOffload[i]<< " temp "<<_temperature);
-           _tasksToOffload[i] = (1.0d-_temperature)*_tasksToOffload[i] + _temperature*_idealTasksToOffload[i];
-          // logInfo("updateLoadDistribution", "tasks for victim "<<i<<" after recomputation:"<<_tasksToOffload[i]);
+          //logInfo("updateLoadDistribution", "tasks for victim "<<i<<" before recomputation:"<<_tasksToOffload[i]<< " ideal: "<<_idealTasksToOffload[i]<< " temp "<<_temperature);
+          //logInfo("updateLoadDistribution", "first : "<<(1.0-_temperature)*_tasksToOffload[i]<<" second:"<<_temperature*_idealTasksToOffload[i]);
+           _tasksToOffload[i] = (1.0-_temperature)*_tasksToOffload[i] + _temperature*_idealTasksToOffload[i];
+          //logInfo("updateLoadDistribution", "tasks for victim "<<i<<" after recomputation:"<<_tasksToOffload[i]);
          }
        }
      }

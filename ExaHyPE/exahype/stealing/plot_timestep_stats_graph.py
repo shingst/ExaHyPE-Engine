@@ -46,7 +46,7 @@ for line in file:
       dot.node(str(i), str(i))
   m=task_offload_pattern.match(line)
   if m:
-    print line
+    print (line)
     tasksoffloaded = int(m.group(3)) - int(m.group(4))
     if tasksoffloaded>0:
       dot.edge(m.group(1),m.group(2), label=str(tasksoffloaded)+"/"+m.group(3))
