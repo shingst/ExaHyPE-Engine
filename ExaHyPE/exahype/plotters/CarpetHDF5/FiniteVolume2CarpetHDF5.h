@@ -17,6 +17,7 @@
 #define _EXAHYPE_PLOTTERS_FV_2_CARPETHDF5_H_
 
 #include "exahype/plotters/Plotter.h"
+#include "exahype/plotters/slicing/CartesianSlicer.h"
 
 namespace exahype {
   namespace plotters {
@@ -76,6 +77,15 @@ class exahype::plotters::FiniteVolume2CarpetHDF5 : public exahype::plotters::Plo
     double *u,
     double *mappedCell,
     double timeStamp
+  );
+
+  void interpolateCartesianSlicedVertexPatch(
+    const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
+    const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch,
+    double *u,
+    double *mappedCell,
+    double timeStamp,
+    const exahype::plotters::CartesianSlicer& slicer
   );
 };
 
