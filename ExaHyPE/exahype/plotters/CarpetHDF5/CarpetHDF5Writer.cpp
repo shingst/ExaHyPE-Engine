@@ -25,9 +25,7 @@ exahype::plotters::CarpetHDF5Writer::CarpetHDF5Writer(
 	int _solverUnknowns,
 	int _writtenUnknowns,
 	exahype::parser::ParserView  _plotterParameters,
-	char** _writtenQuantitiesNames,
-	bool _oneFilePerTimestep,
-	bool _allUnknownsInOneFile)
+	char** _writtenQuantitiesNames)
 	:
 	_log("exahype::plotters::CarpetHDF5Writer"),
 	solverUnknowns(_solverUnknowns),
@@ -35,8 +33,8 @@ exahype::plotters::CarpetHDF5Writer::CarpetHDF5Writer(
 	basisFilename(_filename),
 	basisSize(_basisSize),
 	plotterParameters(_plotterParameters),
-	oneFilePerTimestep(_oneFilePerTimestep),
-	allUnknownsInOneFile(_allUnknownsInOneFile),
+	oneFilePerTimestep(_plotterParameters.getValueAsBoolOrDefault("select/one_file_per_timestep", true)),
+	allUnknownsInOneFile(_plotterParameters.getValueAsBoolOrDefault("select/all_unknowns_in_one_file", true)),
 	
 	// default values for init(...)-level runtime parameters:
 	dim(DIMENSIONS),
@@ -137,10 +135,15 @@ exahype::plotters::CarpetHDF5Writer::CarpetHDF5Writer(
 	if(!oneFilePerTimestep) openH5();
 	
 	// for Debugging:
-	logInfo("CarpetHDF5Writer", "Writing in " << dim << " Dimensions, written cell shape " << writtenCellIdx->toString() << ", single field shape " << singleFieldIdx->toString());
+	logInfo("CarpetHDF5Writer", "Writing in " << dim << " Dimensions, written cell shape " << writtenCellIdx->toString() << ", single field shape " << singleFieldIdx->toString()
+		<< ", "
+		<< (oneFilePerTimestep ? "One file per timestep" : "All times in one file")
+		<< ", "
+		<< (allUnknownsInOneFile ? "All unknowns in the same file" : "Each unknown goes in its own file.")
+	);
 }
 
-void exahype::plotters::CarpetHDF5Writer::writeBasicGroup(H5::H5File* file) {
+void exahype::plotters::CarpetHDF5Writer::writeBasicGroup(H5::H5File* file, int writtenUnknown) {
 	Group* parameters = new Group(file->createGroup( "/Parameters and Global Attributes" ));
 	
 	// nioprocs is required
@@ -179,15 +182,20 @@ void exahype::plotters::CarpetHDF5Writer::writeBasicGroup(H5::H5File* file) {
 
 	// List all fields which go into this file (required by rugutils, not by visit),
 	// goes to "/Parameters and Global Attributes/Datasets" and contains the qualified variable names
-	hsize_t str_dimsf[1] {(hsize_t) writtenUnknowns};
+	
+	hsize_t str_dimsf[1] {(hsize_t) (allUnknownsInOneFile ? writtenUnknowns : 1)};
         DataSpace str_dataspace(1, str_dimsf);
 	StrType str_datatype(H5::PredType::C_S1, H5T_VARIABLE); 
 	DataSet list_of_datasets = parameters->createDataSet("Datasets", str_datatype, str_dataspace);
 	
 	std::vector<const char*> qualifiedWrittenQuantitiesNames_c;
-        for (int ii = 0; ii < writtenUnknowns; ++ii) 
-            qualifiedWrittenQuantitiesNames_c.push_back(qualifiedWrittenQuantitiesNames[ii].c_str());
-	
+	if(allUnknownsInOneFile) {
+		for (int ii = 0; ii < writtenUnknowns; ++ii) 
+			qualifiedWrittenQuantitiesNames_c.push_back(qualifiedWrittenQuantitiesNames[ii].c_str());
+	} else {
+		qualifiedWrittenQuantitiesNames_c.push_back(qualifiedWrittenQuantitiesNames[writtenUnknown].c_str());
+	}
+		
 	list_of_datasets.write(qualifiedWrittenQuantitiesNames_c.data(), str_datatype);
 }
 
@@ -211,13 +219,16 @@ void exahype::plotters::CarpetHDF5Writer::openH5() {
 	closeH5(); // just to be sure
 	int writtenUnknown=0;
 	for(auto& file : files) {
-		// @TODO: MPI Rank number should go in here.
-		local_filename = prefix + (allUnknownsInOneFile ? "" : (sep + writtenQuantitiesNames[writtenUnknown])) + suffix;
+		local_filename = prefix + (allUnknownsInOneFile ? "" : (sep + writtenQuantitiesNames[writtenUnknown]));
+		#ifdef Parallel
+		local_filename += sep + "rank" + toString(tarch::parallel::Node::getInstance().getRank());
+		#endif
+		local_filename += suffix;
 
 		logInfo("open", "Opening File '"<< local_filename << "'");
 		file = new H5File(local_filename, H5F_ACC_TRUNC);
-		file->setComment("Created by ExaHyPE");
-		writeBasicGroup(file);
+		file->setComment("Created by ExaHyPE/CarpetHDF5Writer");
+		writeBasicGroup(file, writtenUnknown);
 		writtenUnknown++;
 	}
 }
