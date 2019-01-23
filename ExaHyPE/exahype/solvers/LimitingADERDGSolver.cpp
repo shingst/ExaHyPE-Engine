@@ -498,7 +498,6 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
       solverPatch.getRefinementStatus()<_solver->getMinRefinementStatusForTroubledCell() &&
       SpawnPredictionAsBackgroundJob &&
       !mustBeDoneImmediately         &&
-      !isSkeletonCell                &&
       isLastTimeStepOfBatch
   ) {
     const int element = cellInfo.indexOfADERDGCellDescription(solverPatch.getSolverNumber());

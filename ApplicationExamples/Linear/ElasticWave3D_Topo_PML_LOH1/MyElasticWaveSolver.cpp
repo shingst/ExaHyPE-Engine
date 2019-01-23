@@ -84,7 +84,7 @@ void Elastic::MyElasticWaveSolver::adjustSolution(double *luh, const tarch::la::
     double dpmly =  4.0*dx[1];
     double dpmlz =  4.0*dx[2];
     
-    int n = 0;
+    int n = 2;
     double tol = 1e-3; 
    
     
@@ -168,13 +168,13 @@ void Elastic::MyElasticWaveSolver::adjustSolution(double *luh, const tarch::la::
 
 
 	    if( level <= getCoarsestMeshLevel()){ 
-	       double xx  =  (offset_x+width_x*kernels::gaussLegendreNodes[basisSize-1][i]);
-	       double yy  =  (offset_y+width_y*kernels::gaussLegendreNodes[basisSize-1][j]);
-	       double zz  =  (offset_z+width_z*kernels::gaussLegendreNodes[basisSize-1][k]);
+	      //double xx  =  (offset_x+width_x*kernels::gaussLegendreNodes[basisSize-1][i]);
+	      // double yy  =  (offset_y+width_y*kernels::gaussLegendreNodes[basisSize-1][j]);
+	      // double zz  =  (offset_z+width_z*kernels::gaussLegendreNodes[basisSize-1][k]);
 
-	      //double xx  =  (offset_x+width_x*kernels::gaussLobattoNodes[basisSize-1][i]);
-	      //double yy  =  (offset_y+width_y*kernels::gaussLobattoNodes[basisSize-1][j]);
-	      //double zz  =  (offset_z+width_z*kernels::gaussLobattoNodes[basisSize-1][k]);
+	      double xx  =  (offset_x+width_x*kernels::gaussLobattoNodes[basisSize-1][basisSize-1-i]);
+	      double yy  =  (offset_y+width_y*kernels::gaussLobattoNodes[basisSize-1][basisSize-1-j]);
+	      double zz  =  (offset_z+width_z*kernels::gaussLobattoNodes[basisSize-1][basisSize-1-k]);
 
 
 	      double x= gl_vals_x[id_xyz(k,j,i)];
@@ -189,7 +189,7 @@ void Elastic::MyElasticWaveSolver::adjustSolution(double *luh, const tarch::la::
 	      luh[id_xyzf(k,j,i,38)] = 3.343; //cs
           
          
-	       if(x < 1.0) {
+	       if(x <= 1.0 && center[0] <= 0.944444444444445) {
 		
 	    // 	luh[id_xyzf(k,j,i,36)]  = 2.7; //rho
 	    // 	luh[id_xyzf(k,j,i,37)] = 6.0; //cp
@@ -198,6 +198,17 @@ void Elastic::MyElasticWaveSolver::adjustSolution(double *luh, const tarch::la::
 	    	luh[id_xyzf(k,j,i,36)]  = 2.6; //rho
 	    	luh[id_xyzf(k,j,i,37)] = 4.0; //cp
 	    	luh[id_xyzf(k,j,i,38)] = 2.0; //cs
+	      }
+
+	       if(x >= 1.0 && center[0] > 0.944444444444445) {
+		
+	    // 	luh[id_xyzf(k,j,i,36)]  = 2.7; //rho
+	    // 	luh[id_xyzf(k,j,i,37)] = 6.0; //cp
+	    // 	luh[id_xyzf(k,j,i,38)] = 3.343; //cs
+		
+	    	luh[id_xyzf(k,j,i,36)]  = 2.7; //rho
+	    	luh[id_xyzf(k,j,i,37)] = 6.0; //cp
+	    	luh[id_xyzf(k,j,i,38)] = 3.343; //cs
 	      }
 	      // else if (center[1] >= 0.95 && center[1] <= 1.05){
 
@@ -220,25 +231,25 @@ void Elastic::MyElasticWaveSolver::adjustSolution(double *luh, const tarch::la::
 	    // }
 	    
 	    if (xx >= xb){
-	      d_x = d0x*pow((center[0]-xb)/dpmlx, n);
+	      d_x = d0x*pow((xx-xb)/dpmlx, n);
 	      
 	     
 	    }
 	    
 	    if (yy <= ya){
-	       d_y = d0y*pow((ya-center[1])/dpmly, n);
+	       d_y = d0y*pow((ya-yy)/dpmly, n);
 	     }
 	    
 	    if (yy >= yb){
-	      d_y = d0y*pow((center[1]-yb)/dpmly, n);
+	      d_y = d0y*pow((yy-yb)/dpmly, n);
 	    }
 	    
 	    if (zz <= za){
-	      d_z = d0z*pow((za-center[2])/dpmlz, n);
+	      d_z = d0z*pow((za-zz)/dpmlz, n);
 	    }
 	    
 	    if (zz >= zb){
-	      d_z = d0z*pow((center[2]-zb)/dpmlz, n);
+	      d_z = d0z*pow((zz-zb)/dpmlz, n);
 	    }
 
 
@@ -317,11 +328,11 @@ exahype::solvers::Solver::RefinementControl Elastic::MyElasticWaveSolver::refine
   }
 
   bool elementOnSurface=left_vertex[0] < 1.0;
-  bool elementbelowSurface=left_vertex[0] < 4.0;
+  bool elementbelowSurface=left_vertex[0] <= 17.0/27.0*5.0;
 
-  // if(elementbelowSurface && (level == getCoarsestMeshLevel())){
-  //   return exahype::solvers::Solver::RefinementControl::Refine;
-  // }
+  if(elementbelowSurface && (level == getCoarsestMeshLevel())){
+    return exahype::solvers::Solver::RefinementControl::Refine;
+  }
 
   // if(elementOnSurface && (level == getCoarsestMeshLevel()+1)){
   //   return exahype::solvers::Solver::RefinementControl::Refine;
@@ -356,8 +367,8 @@ void Elastic::MyElasticWaveSolver::eigenvalues(const double* const Q,const int d
   // Number of variables + parameters  = 36 + 16
   
   // @todo Please implement/augment if required
-  double cp = Q[37];
-  double cs = Q[38];
+  double cp = 1.0*Q[37];
+  double cs = 1.0*Q[38];
 
   double q_x;
   double q_y;
@@ -668,7 +679,8 @@ void  Elastic::MyElasticWaveSolver::initPointSourceLocations(){
 
   double x1,y1,z1;
     
-   x1 = 2.0;
+  //x1 = 2.0;
+  x1 = 2.0+0.2489;
    y1 = 4.0926;
    z1 = 4.0926;
 
@@ -857,9 +869,9 @@ void Elastic::MyElasticWaveSolver::algebraicSource(const double* const Q,double*
   double d_y = Q[NumberOfVariables+4];
   double d_z = Q[NumberOfVariables+5];
 
-  double alpha_x = (0.1 + 0.05*d_x);
-  double alpha_y = (0.1 + 0.05*d_y);
-  double alpha_z = (0.1 + 0.05*d_z);
+  double alpha_x = 0.2; //(0.1 + 0.05*d_x);
+  double alpha_y = 0.2; //(0.1 + 0.05*d_y);
+  double alpha_z = 0.2; //(0.1 + 0.05*d_z);
 
   double Px[9];
   double Py[9];
@@ -908,7 +920,7 @@ for (int j = 0; j < 9; j++)
 }
 
 
-void Elastic::MyElasticWaveSolver::riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double dt,const int normalNonZeroIndex, bool isBoundaryFace, int faceIndex){
+void Elastic::MyElasticWaveSolver::riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR, const double t, const double dt,const int normalNonZeroIndex, bool isBoundaryFace, int faceIndex){
    constexpr int numberOfVariables  = MyElasticWaveSolver::NumberOfVariables;
   constexpr int numberOfVariables2 = numberOfVariables*numberOfVariables;
   constexpr int numberOfParameters = MyElasticWaveSolver::NumberOfParameters;

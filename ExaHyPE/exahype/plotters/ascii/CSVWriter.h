@@ -80,7 +80,7 @@ struct exahype::plotters::ascii::CSVWriter {
 		
 		
 #define CSVWRITER_WRITE_ROW(csvWriterInstance, userStructureInstance) \
-	csvWriterInstance.writeRow( (exahype::plotters::ascii::CSVWriter::voidptr) &userStructureInstance )
+	(csvWriterInstance).writeRow( (exahype::plotters::ascii::CSVWriter::voidptr) &userStructureInstance )
 
 // etc.
 
