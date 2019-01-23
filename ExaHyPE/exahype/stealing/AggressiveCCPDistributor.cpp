@@ -74,6 +74,7 @@ void exahype::stealing::AggressiveCCPDistributor::computeIdealLoadDistribution(i
   int myRank = tarch::parallel::Node::getInstance().getRank();
 
   int *newLoadDist = new int[nnodes];
+  std::fill(&newLoadDist[0], &newLoadDist[nnodes], 0);
 
   int totalCells   = enclaveCells + skeletonCells;
   MPI_Allgather(&totalCells, 1, MPI_INTEGER, _initialLoadPerRank, 1, MPI_INTEGER, MPI_COMM_WORLD);
@@ -93,6 +94,8 @@ void exahype::stealing::AggressiveCCPDistributor::computeIdealLoadDistribution(i
   int avg_l = total_l / nnodes;
 #else
   int avg_l = total_l / (nnodes-1);
+  newLoadDist[0] = 0;
+  _idealTasksToOffload[0] = 0;
 #endif
 
   input_l = _initialLoadPerRank[input_r];
@@ -122,6 +125,7 @@ void exahype::stealing::AggressiveCCPDistributor::computeIdealLoadDistribution(i
         newLoadDist[input_r]  = input_l;
 
         if(input_r==myRank) {
+          logInfo("computeIdeal","inc_l="<<inc_l);
           _idealTasksToOffload[output_r] = inc_l;
           stealing::StealingProfiler::getInstance().notifyTargetOffloadedTask(inc_l, output_r);
           //_tasksToOffload[output_r]= std::min(inc_l,1);
