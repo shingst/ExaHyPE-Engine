@@ -314,40 +314,21 @@ void  GRMHDb::GRMHDbSolver_ADERDG::nonConservativeProduct(const double* const Q,
   pdencp_(BgradQ, Q, gradQ);
 }
 
-
-    /**
-     * @TODO LR : document
-     */
-/*void GRMHDb::GRMHDbSolver_ADERDG::multiplyMaterialParameterMatrix(const double* const Q, double* rhs) {
-  // @todo Please implement/augment if required
-}*/
-
-
 void GRMHDb::GRMHDbSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(
-    double* observables,const int numberOfObservables,
+	double* observables, const int NumberOfVariables,
     const double* const Q) const {
-  assertion(numberOfObservables==10);
-  ReadOnlyVariables vars(Q);
-
-  observables[0] = Q[0];  
-  observables[1] = Q[1];   
-  observables[2] = Q[2];   
-  observables[3] = Q[3];   
-  observables[4] = Q[4];   
-  observables[5] = Q[5];   
-  observables[6] = Q[6];   
-  observables[7] = Q[7];   
-  observables[8] = Q[8];   
-  observables[9] = Q[9];   
-  observables[10] = Q[10]; 
+	for (int i = 0; i < NumberOfVariables; ++i) {
+		observables[i] = Q[i];
+	}
 }
+
 
 bool GRMHDb::GRMHDbSolver_ADERDG::isPhysicallyAdmissible(
       const double* const solution,
-      const double* const observablesMin,const double* const observablesMax,
+	const double* const observablesMin, const double* const observablesMax,
       const bool wasTroubledInPreviousTimeStep,
-      const tarch::la::Vector<DIMENSIONS,double>& center,
-      const tarch::la::Vector<DIMENSIONS,double>& dx,
+	const tarch::la::Vector<DIMENSIONS, double>& center,
+	const tarch::la::Vector<DIMENSIONS, double>& dx,
       const double t) const {
   //int limvalue;
   //int NumberOfObservables;
