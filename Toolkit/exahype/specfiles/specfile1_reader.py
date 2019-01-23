@@ -116,7 +116,8 @@ class SpecFile1Reader():
             "maximum_mesh_depth",\
             "dmp_observables",\
             "steps_till_cured",\
-            "helper_layers"\
+            "helper_layers",\
+            "thread_stack_size"\
         ]
         numbers=[\
             "end_time",\

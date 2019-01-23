@@ -8,15 +8,12 @@
 #define ErrorWriter_CLASS_HEADER_
 
 #include "exahype/plotters/LimitingADERDG2UserDefined.h"
-#include "exahype/plotters/ascii/MultipleReductionsWriter.h"
-#include "GRMHDbSolver.h"
-#include "GRMHDbSolver_ADERDG_Variables.h"
-#include "GRMHDbSolver_FV_Variables.h"
 
-// see ch.18 Post-processing of the Guidebook.  
-//#include <mpi.h> 
-//#include "tarch/parallel/Node.h"
-//#include "tarch/parallel/NodePool.h"
+
+#include "exahype/plotters/ADERDG2UserDefined.h"
+#include "exahype/plotters/ascii/MultipleReductionsWriter.h"
+#include "GRMHDbSolver_ADERDG_Variables.h"
+#include "GRMHDbSolver_ADERDG.h"
 namespace GRMHDb {
   class ErrorWriter;
 }
@@ -32,6 +29,7 @@ class GRMHDb::ErrorWriter : public exahype::plotters::LimitingADERDG2UserDefined
    double normL1Ana  [GRMHDbSolver_ADERDG::NumberOfVariables];  
    double normL2Ana  [GRMHDbSolver_ADERDG::NumberOfVariables];  
    double normLInfAna[GRMHDbSolver_ADERDG::NumberOfVariables]; 
+   
  public:
   /**
    * Constructor.
@@ -54,7 +52,15 @@ class GRMHDb::ErrorWriter : public exahype::plotters::LimitingADERDG2UserDefined
    * \param[in] sizeOfPatch the offset of the cell/patch.
    * \param[in] u the degrees of freedom "living" inside of the patch.
    */
-  void plotPatch(
+  /*void plotPatch(
+      const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
+      const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* u,
+      double timeStamp) override;*/
+  void plotADERDGPatch(
+      const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
+      const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* u,
+      double timeStamp) override;
+  void plotFiniteVolumesPatch(
       const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
       const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* u,
       double timeStamp) override;

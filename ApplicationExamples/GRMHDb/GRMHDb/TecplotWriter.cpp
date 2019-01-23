@@ -29,9 +29,14 @@ void GRMHDb::TecplotWriter::plotPatch(
     double timeStamp) {
   // @TODO Please insert your code here.
   //counterloc++;
-  //if (!tarch::parallel::NodePool::getInstance().isIdleNode(mpirank)) { 
-		elementcalltecplotplotter_(u, &offsetOfPatch[0], &sizeOfPatch[0],&plotForADERSolver);
-//		}
+//#ifdef Parallel
+//  if (!tarch::parallel::NodePool::getInstance().isIdleNode(mpirank)) { 
+//
+//#endif
+    elementcalltecplotplotter_(u, &offsetOfPatch[0], &sizeOfPatch[0],&plotForADERSolver);
+//#ifdef Parallel
+//	}
+//#endif
     //elementcalltecplotplotter_(u,&offsetOfPatch[0],&sizeOfPatch[0],&counterloc2);
 }
 
@@ -41,9 +46,16 @@ void GRMHDb::TecplotWriter::startPlotting( double time) {
   mpirank = tarch::parallel::Node::getInstance().getRank();
   //counterloc = 0;
   //counterloc2 = 0;
-  //if (!tarch::parallel::NodePool::getInstance().isIdleNode(mpirank)) { 
-		initializetecplotplotter_(&time);
-//		}
+//#ifdef Parallel
+//  if (!tarch::parallel::NodePool::getInstance().isIdleNode(mpirank)) {
+//	  printf("\n******************************************************************");
+//	  printf("\n********* initializetecplotplotter *************");
+//	  printf("\n******************************************************************");
+//#endif
+    initializetecplotplotter_(&time);
+//#ifdef Parallel
+//  }
+//#endif
 }
 
 
@@ -54,9 +66,13 @@ void GRMHDb::TecplotWriter::finishPlotting() {
   //printf("  counterloc=%d", counterloc);
   //printf("  counterloc2=%d", counterloc2);
 
-  //if (!tarch::parallel::NodePool::getInstance().isIdleNode(mpirank)) { 
+//#ifdef Parallel
+//  if (!tarch::parallel::NodePool::getInstance().isIdleNode(mpirank)) {
+//#endif
 		finishtecplotplotter_(&mpirank);
-//		}
+//#ifdef Parallel
+//}
+//#endif
   //printf("2: finishtecplotplotter: DONE! %d ", mpirank);
   //fflush(stdout);
 }

@@ -127,7 +127,7 @@ public:
       const bool wasTroubledInPreviousTimeStep,
       const tarch::la::Vector<DIMENSIONS,double>& center,
       const tarch::la::Vector<DIMENSIONS,double>& dx,
-      const double t, const double dt) const override;
+      const double t) const override;
 };
 
 #endif // __EulerSolver_ADERDG_CLASS_HEADER__

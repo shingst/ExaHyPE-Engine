@@ -184,7 +184,7 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, pu
     void multiplyMaterialParameterMatrix(const double* const Q, double** rhs) final {}
 {% endif %}
 {% if patchwiseAdjust %}
-    void adjustPointSolution(const double* const x,const double t,const double dt,double* Q) final {};
+    void adjustPointSolution(const double* const x,const double t,const double dt,double* Q) final {}
 {% endif %}
 {% if isLinear %}
     void nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) final {}; //unused nonlinear version

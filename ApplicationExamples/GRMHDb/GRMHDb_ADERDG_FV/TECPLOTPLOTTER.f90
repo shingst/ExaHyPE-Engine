@@ -1,14 +1,19 @@
 MODULE TECPLOTPLOTTERmod
-!USE Parameters, ONLY: nVar, nDim, N, M
+USE Parameters, ONLY: nVar, nDim,nAux,StrandID,nElem_max
 IMPLICIT NONE
 ! Problem standard parameters
 INTEGER :: MC, M,N
+INTEGER :: FVbasisSize,FVGhostLayerWidth
 INTEGER :: nGPMC
 INTEGER :: nDOFm
-INTEGER :: nSubLim
-INTEGER :: nSubLimV(3)
+INTEGER :: nSubLim,nSubLim_GL
+INTEGER :: nSubLimV(3),nSubLimV_GL(3)
 INTEGER :: nGPM, nGPVM(3)
 INTEGER :: nFace, nVertex
+INTEGER :: nVtx,ReferenceElement(1:3,1:8)
+INTEGER, ALLOCATABLE :: idxn_lim(:,:,:)
+INTEGER, ALLOCATABLE :: subtri_lim(:,:)
+INTEGER, ALLOCATABLE :: allsubxi_lim(:,:)
 REAL, ALLOCATABLE 	:: xiGPM(:), wGPM(:) 
 REAL, ALLOCATABLE :: MPoly1D(:,:)
 ! 
@@ -18,13 +23,13 @@ REAL, ALLOCATABLE :: SubOutputMatrix(:,:), SubGradOutputMatrix(:,:,:)
 ! Variables needed for the tecplot plotter
 !
 INTEGER					:: nSubPlotElem,nRealNodes,nPlotElem
-INTEGER					:: nElem_max,nRealNodes_max, nSubPlotElem_max
+INTEGER					:: nRealNodes_max, nSubPlotElem_max
 INTEGER, PARAMETER		:: td=4
 INTEGER*4	, POINTER 	:: NData(:,:),NData_max(:,:)
 REAL(td)	, POINTER  	:: DataArray(:,:), DataArray_max(:,:)
 INTEGER, ALLOCATABLE    :: subtri(:,:)
 REAL, ALLOCATABLE       :: allsubxi(:,:)
-INTEGER :: Element_c, Element_nc 
+INTEGER :: Element_c,Element_c_ADERDG,Element_c_FV !, Element_nc 
 INTEGER :: PlotIndex
 REAL	:: PLOT_TIME
 !
@@ -368,7 +373,7 @@ CONTAINS
 
 
 RECURSIVE SUBROUTINE InitTECPLOTPLOTTER(time_in)
-    USE Parameters, ONLY: nDim,nVar,nAux
+    !USE Parameters, ONLY: nDim,nVar,nAux
 	IMPLICIT NONE
 	REAL, INTENT(IN) :: time_in
 	ALLOCATE(NData_max(nVertex,nSubPlotElem_max))  
@@ -380,7 +385,9 @@ RECURSIVE SUBROUTINE InitTECPLOTPLOTTER(time_in)
 	nRealNodes=0
 	nPlotElem=0
 	Element_c=0 
-	Element_nc=0
+	Element_c_FV=0 
+	Element_c_ADERDG=0 
+	!Element_nc=0
 	
 END SUBROUTINE InitTECPLOTPLOTTER
 
@@ -389,10 +396,10 @@ RECURSIVE SUBROUTINE ElementTECPLOTPLOTTER(wh,lx0,ldx,limiter)
     USE Parameters, ONLY: nDim,nVar,nAux
 	IMPLICIT NONE
 	REAL, INTENT(IN) :: wh(nVar,nDOFm)
-	INTEGER :: nSubNodes,J
+	INTEGER :: nSubNodes,J,i
 	REAL    :: LocNode(nVar,(M+1)**nDim),xvec(3),lx0(3),ldx(3)
 	REAL	:: VN(nVar),QN(nVar),AuxNode(nAux)
-	integer :: limiter,iErr
+	integer :: limiter,iErr,iloc,triloc
 
 	nPlotElem = nPlotElem + 1
 	nSubPlotElem = nSubPlotElem + M**nDim  
@@ -404,8 +411,10 @@ RECURSIVE SUBROUTINE ElementTECPLOTPLOTTER(wh,lx0,ldx,limiter)
 	!print *,'Element,',nPlotElem, '->', lx0(1:nDim),'dx=',ldx(1:nDim)
 	!print *, 'nVar = ', nVar
 	!print *, 'nDim = ', nDim 
+    iloc=(Element_c-1)*M**nDim
+    triloc=(Element_c-1)*(M+1)**nDim
 	DO j = 1, M**nDim
-		NData_max(1:nVertex,(Element_c-1)*M**nDim+j) = (Element_c-1)*(M+1)**nDim + subtri(1:nVertex,j)
+		NData_max(1:nVertex,iloc+j) = triloc + subtri(1:nVertex,j)
 	END DO
 	LocNode = MATMUL( wh(:,1:nDOFm), SubOutputMatrix(1:nDOFm,1:(M+1)**nDim) )
 	!print *, wh(:,1)
@@ -415,31 +424,213 @@ RECURSIVE SUBROUTINE ElementTECPLOTPLOTTER(wh,lx0,ldx,limiter)
 	   QN(:) = LocNode(:,j)
 	   xvec = lx0 + allsubxi(:,j)*ldx
 	   CALL PDECons2Prim(VN,QN,iErr)
-	   CALL PDEAuxVar(AuxNode,QN,xvec,PLOT_TIME)
+	   CALL PDEAuxVar(AuxNode,QN,xvec)
 	   !AuxNode=0.
 	   !print *, 'Node of elem=',Element_c,'=', xvec(1:nDim)
 	     
+       iloc=(Element_c-1)*(M+1)**nDim+j
 		if(nAux>0) then
-			DataArray_max((Element_c-1)*(M+1)**nDim+j,:) = (/ xvec(1:nDim), VN, AuxNode, REAL(nPlotElem), REAL(limiter) /) 
-		else
-			DataArray_max((Element_c-1)*(M+1)**nDim+j,:) = (/ xvec(1:nDim), VN, REAL(nPlotElem), REAL(limiter) /) 
-		end if
+			DataArray_max(iloc,:) = (/ xvec(1:nDim), VN, AuxNode, REAL(nPlotElem), REAL(limiter) /) 
+        else
+            DO i=1,nDim
+			    DataArray_max(iloc,i) = xvec(i)
+            ENDDO
+            DO i=1,nVar
+			    DataArray_max(iloc,nDim+i) = VN(i)
+            ENDDO
+			DataArray_max(iloc,nDim+nVar+1) = REAL(nPlotElem)
+			DataArray_max(iloc,nDim+nVar+1+1) = REAL(limiter) 
+            !print *, DataArray_max((Element_c-1)*(M+1)**nDim+j,:)
+			!DataArray_max((Element_c-1)*(M+1)**nDim+j,:) = (/ xvec(1:nDim), VN, REAL(nPlotElem), REAL(limiter) /)  
+        end if
+        !limiter=limiter+1
 	   !DataArray_max(Element_c,:) = (/ xvec(1:nDim), VN /) 	   
 	END DO
-		
-	Element_nc = Element_nc + (M+1)**nDim
+	!
+	!!Element_nc = Element_nc + (M+1)**nDim
 END SUBROUTINE ElementTECPLOTPLOTTER
 
 
+RECURSIVE SUBROUTINE ElementTECPLOTPLOTTER_ADERDG(wh,lx0,ldx,limiter)
+    !USE Parameters, ONLY: nDim,nVar,nAux
+	IMPLICIT NONE
+	REAL, INTENT(IN) :: wh(nVar,nDOFm)
+	INTEGER :: nSubNodes,J,i
+	REAL    :: LocNode(nVar,(M+1)**nDim),xvec(3),lx0(3),ldx(3)
+	REAL	:: VN(nVar),QN(nVar),AuxNode(nAux)
+	integer :: limiter,iErr,iloc,triloc
+ 
+        ! ADER-DG TECPLOT PLOTTER:
+	    nPlotElem = nPlotElem + 1
+	    nSubPlotElem = nSubPlotElem + M**nDim  
+	    nSubNodes = (M+1)**nDim  
+	    nRealNodes = nRealNodes + nSubNodes
+	    
+	    Element_c = Element_c + 1
+	    Element_c_ADERDG = Element_c_ADERDG + 1
+
+	    !print *,'Element,',nPlotElem, '->', lx0(1:nDim),'dx=',ldx(1:nDim)
+	    !print *, 'nVar = ', nVar
+	    !print *, 'nDim = ', nDim 
+        !iloc=(Element_c-1)*M**nDim
+        !triloc=(Element_c-1)*(M+1)**nDim
+        iloc=Element_c_ADERDG*M**nDim + Element_c_FV*FVbasisSize**nDim - M**nDim
+        triloc=Element_c_ADERDG*(M+1)**nDim + Element_c_FV*(FVbasisSize+1)**nDim - (M+1)**nDim
+	    DO j = 1, M**nDim
+	    	NData_max(1:nVertex,iloc+j) = triloc + subtri(1:nVertex,j)
+	    END DO
+	    LocNode = MATMUL( wh(:,1:nDOFm), SubOutputMatrix(1:nDOFm,1:(M+1)**nDim) )
+	    !print *, wh(:,1)
+	    !stop
+	    
+	    DO j = 1, (M+1)**nDim  
+	       QN(:) = LocNode(:,j)
+	       xvec = lx0 + allsubxi(:,j)*ldx
+	       CALL PDECons2Prim(VN,QN,iErr)
+	       CALL PDEAuxVar(AuxNode,QN,xvec)
+	       !AuxNode=0.
+	       !print *, 'Node of elem=',Element_c,'=', xvec(1:nDim)
+	         
+           !iloc=(Element_c-1)*(M+1)**nDim+j
+            iloc=Element_c_ADERDG*(M+1)**nDim + Element_c_FV*(FVbasisSize+1)**nDim - (M+1)**nDim + j
+	    	if(nAux>0) then
+	    		DataArray_max(iloc,:) = (/ xvec(1:nDim), VN, AuxNode, REAL(nPlotElem), REAL(limiter) /) 
+            else
+                DO i=1,nDim
+	    		    DataArray_max(iloc,i) = xvec(i)
+                ENDDO
+                DO i=1,nVar
+	    		    DataArray_max(iloc,nDim+i) = VN(i)
+                ENDDO
+	    		DataArray_max(iloc,nDim+nVar+1) = REAL(nPlotElem)
+	    		DataArray_max(iloc,nDim+nVar+1+1) = REAL(limiter) 
+                !print *, DataArray_max((Element_c-1)*(M+1)**nDim+j,:)
+	    		!DataArray_max((Element_c-1)*(M+1)**nDim+j,:) = (/ xvec(1:nDim), VN, REAL(nPlotElem), REAL(limiter) /)  
+            end if
+            !limiter=limiter+1
+	       !DataArray_max(Element_c,:) = (/ xvec(1:nDim), VN /) 	   
+	    END DO
+	    !
+    !
+END SUBROUTINE ElementTECPLOTPLOTTER_ADERDG
+
+
+RECURSIVE SUBROUTINE ElementTECPLOTPLOTTER_FV(wh,lx0,ldx,limiter)
+    !USE Parameters, ONLY: nDim,nVar,nAux
+	IMPLICIT NONE
+	REAL, INTENT(IN) :: wh(nVar,(nSubLim+2*nSubLim_GL)**nDIM)
+	INTEGER :: nSubNodes,J,i
+	REAL    :: LocNode(nVar,(nSubLim+1)**nDim),xvec(3),lx0(3),ldx(3)
+	REAL	:: VN(nVar),QN(nVar),AuxNode(nAux)
+	integer :: limiter,iErr,iloc,triloc
+ 
+        ! FV subcell TECPLOT PLOTTER:
+	    nPlotElem = nPlotElem + 1
+	    nSubPlotElem = nSubPlotElem + FVbasisSize**nDim  
+	    nSubNodes = (FVbasisSize+1)**nDim  
+	    nRealNodes = nRealNodes + nSubNodes
+	    !
+	    Element_c = Element_c + 1
+	    Element_c_FV = Element_c_FV + 1
+        
+	    !print *,'Element,',nPlotElem, '->', lx0(1:nDim),'dx=',ldx(1:nDim)
+	    !print *, 'nVar = ', nVar
+	    !print *, 'nDim = ', nDim 
+        !iloc=(Element_c-1)*M**nDim
+        !triloc=(Element_c-1)*(M+1)**nDim
+        iloc=Element_c_ADERDG*M**nDim + Element_c_FV*FVbasisSize**nDim - FVbasisSize**nDim
+        triloc=Element_c_ADERDG*(M+1)**nDim + Element_c_FV*(FVbasisSize+1)**nDim - (FVbasisSize+1)**nDim
+	    DO j = 1, FVbasisSize**nDim
+	    	NData_max(1:nVertex,iloc+j) = triloc + subtri(1:nVertex,j)
+        END DO
+	    !LocNode = MATMUL( wh(:,1:nDOFm), SubOutputMatrix(1:nDOFm,1:(M+1)**nDim) )
+	    !print *, wh(:,1)
+	    !stop
+        CALL GetSubcell_wh(LocNode,wh)
+        
+	    DO j = 1, (FVbasisSize+1)**nDim  
+	       QN(:) = LocNode(:,j)
+	       xvec = lx0 + allsubxi_lim(:,j)*ldx
+	       CALL PDECons2Prim(VN,QN,iErr)
+	       CALL PDEAuxVar(AuxNode,QN,xvec)
+	       !AuxNode=0.
+	       !print *, 'Node of elem=',Element_c,'=', xvec(1:nDim)
+	         
+           !iloc=(Element_c-1)*(M+1)**nDim+j
+            iloc=Element_c_ADERDG*(M+1)**nDim + Element_c_FV*(FVbasisSize+1)**nDim - (FVbasisSize+1)**nDim + j
+	    	if(nAux>0) then
+	    		DataArray_max(iloc,:) = (/ xvec(1:nDim), VN, AuxNode, REAL(nPlotElem), REAL(limiter) /) 
+            else
+                DO i=1,nDim
+	    		    DataArray_max(iloc,i) = xvec(i)
+                ENDDO
+                DO i=1,nVar
+	    		    DataArray_max(iloc,nDim+i) = VN(i)
+                ENDDO
+	    		DataArray_max(iloc,nDim+nVar+1) = REAL(nPlotElem)
+	    		DataArray_max(iloc,nDim+nVar+1+1) = REAL(limiter) 
+                !print *, DataArray_max((Element_c-1)*(M+1)**nDim+j,:)
+	    		!DataArray_max((Element_c-1)*(M+1)**nDim+j,:) = (/ xvec(1:nDim), VN, REAL(nPlotElem), REAL(limiter) /)  
+            end if
+            !limiter=limiter+1
+	       !DataArray_max(Element_c,:) = (/ xvec(1:nDim), VN /) 	   
+	    END DO
+	    ! 
+    !
+END SUBROUTINE ElementTECPLOTPLOTTER_FV
+
+
+
+RECURSIVE SUBROUTINE GetSubcell_wh(LocNode,wh)
+   IMPLICIT NONE 
+   ! Argument list
+   REAL, INTENT(IN) :: wh(nVar,(nSubLim+2*nSubLim_GL)**nDIM) 
+   INTEGER :: totsubel
+   REAL    :: LocNode(nVar,(nSubLim+1)**nDim) 
+   !REAL    :: LocNode(nVar,1:nSubLimV(1)+2*nSubLimV_GL(1),1:nSubLimV(2)+2*nSubLimV_GL(2),1:nSubLimV(3)+2*nSubLimV_GL(3))
+   INTEGER :: i
+   ! Local variables
+   INTEGER :: ccc, k, j, kj, ii, jj, kk, iVar, reflev, iDim, iii, jjj, kkk, lll, pp, qq, rr, aa, bb, cc, iErr   
+   REAL    :: lim(nVar,nSubLimV(1),nSubLimV(2),nSubLimV(3))
+   INTEGER :: NodeCounter((nSubLim+1)**nDim) 
+   REAL    :: subuh(nVar,(1-nSubLimV(1)):2*nSubLimV(1),(1-nSubLimV(2)):2*nSubLimV(2),(1-nSubLimV(3)):2*nSubLimV(3)) 
+   ! 
+   ! this is simply the average on the nodes of the subgrid (it is not mandatory)
+   totsubel=(nSubLim+1)**nDim
+   NodeCounter = 0 
+   LocNode = 0. 
+   ccc=0
+   DO kk = 1, nSubLimV(3)+1
+    DO jj = 1, nSubLimV(2)+1
+     DO ii = 1, nSubLimV(1)+1
+         ccc=ccc+1
+         DO aa = 1, nVtx 
+            iii = ReferenceElement(1,aa)-1
+            jjj = ReferenceElement(2,aa)-1
+            kkk = ReferenceElement(3,aa)-1
+            cc= ((nSubLimV(3)+2*nSubLimV_GL(3))**2)*(nSubLimV_GL(3)+kk+kkk-1) + (nSubLimV(2)+2*nSubLimV_GL(2) )*(nSubLimV_GL(2)+jj+jjj-1) + nSubLimV_GL(1) +ii+iii
+            LocNode(:,ccc) = LocNode(:,ccc) + wh(:,cc) 
+            NodeCounter(ccc) = NodeCounter(ccc) + 1 
+         ENDDO 
+     ENDDO
+    ENDDO
+   ENDDO
+   !
+   DO ccc = 1,totsubel 
+         LocNode(:,ccc) = LocNode(:,ccc)/NodeCounter(ccc)  
+   ENDDO
+   ! 
+END SUBROUTINE GetSubcell_wh   
+
 RECURSIVE SUBROUTINE FinalizeTECPLOTPLOTTER(Myrank)
-    USE Parameters, ONLY: nDim,nVar,nAux,StrandID
+    !USE Parameters, ONLY: nDim,nVar,nAux,StrandID
 	!USE teciomod
 	USE ISO_C_BINDING
 	IMPLICIT NONE
 	INTEGER, INTENT(IN) :: Myrank 	! CPU rank
 	CHARACTER(LEN=200) :: ZoneTitle,Title,ScratchDir, BaseFile ! BaseFile is the folder	where place the plots
 	CHARACTER(LEN=1000) :: VarString,Filename
-	CHARACTER(LEN=10)  :: cmyrank,varname , AuxName
+	CHARACTER(LEN=20)  :: cmyrank,varname , AuxName
 	INTEGER				:: ZoneType, iRet,visdouble,i
 	REAL				:: loctime
 	REAL(td)           :: Test
@@ -456,37 +647,37 @@ RECURSIVE SUBROUTINE FinalizeTECPLOTPLOTTER(Myrank)
 		PRINT *, ' IO Kind error. ' 
 		STOP 
     END SELECT 
-	
+	!
 	WRITE(cmyrank,'(I5.5)') myrank
 	BaseFile=trim("./output/TECPLOT")
 	WRITE(FileName,'(a,a2,i1.1,a1,i1.1,a1,i8.8,a1,a,a)') TRIM(BaseFile),'-P',N,'P',M,'-',PlotIndex,'-',TRIM(cmyrank),'.plt'
-    ! FileName=trim("./output/TECPLOTtest.plt")
+    !FileName=trim("./output/TECPLOTtest.plt")
     !return
 	!NullPtr = 0 
 	
 	! Now I know the number of elements, associate the proper Data
-	ALLOCATE(NData(nVertex,nSubPlotElem))  
-	ALLOCATE(DataArray(nRealNodes,nDim+nVar+nAux+1+1))
+	ALLOCATE(NData(1:nVertex,1:nSubPlotElem))  
+	ALLOCATE(DataArray(1:nRealNodes,1:nDim+nVar+nAux+1+1))
 	
-	! **********************************
-    IF(Myrank.EQ.0) THEN
-	    print *, "****************************************************"
-	    print *, "*********** TECPLOT PLOTTER INFO *******************"
-	    print *, 'Time t = ', PLOT_TIME, ''
-	    !PRINT *, "Myrank		=",myrank
-	    print *, "NElem			=",nSubPlotElem/M**nDim
-	    print *, "nSubPlotElem	=",nSubPlotElem
-	    print *, "nRealNodes	=",nRealNodes
-	    print *, "nVertex	=",nVertex
-	    print *, "*******************"
-	    print *, "nDim	=",nDim
-	    print *, "nVar	=",nVar
-	    print *, "nAux	=",nAux
-	    print *, "****************************************************"
-    ENDIF
-    !
-	DataArray=DataArray_max(1:nRealNodes,1:(nDim+nVar+nAux+1+1))
-	NData=NData_max(1:nVertex,1:nSubPlotElem)
+	!! **********************************
+    !!IF(Myrank.EQ.0) THEN
+	!    print *, "****************************************************"
+	!    print *, "*********** TECPLOT PLOTTER INFO *******************"
+	!    print *, 'Time t = ', PLOT_TIME, ''
+	!    !PRINT *, "Myrank		=",myrank
+	!    print *, "NElem			=",nSubPlotElem/M**nDim
+	!    print *, "nSubPlotElem	=",nSubPlotElem
+	!    print *, "nRealNodes	=",nRealNodes
+	!    print *, "nVertex	=",nVertex
+	!    print *, "*******************"
+	!    print *, "nDim	=",nDim
+	!    print *, "nVar	=",nVar
+	!    print *, "nAux	=",nAux
+	!    print *, "****************************************************"
+    !!ENDIF
+    !!
+	DataArray(1:nRealNodes,1:(nDim+nVar+nAux+1+1))=DataArray_max(1:nRealNodes,1:(nDim+nVar+nAux+1+1))
+	NData(1:nVertex,1:nSubPlotElem)=NData_max(1:nVertex,1:nSubPlotElem)
 	!do i=1,nSubPlotElem
 	!	print *, "NData=",NData_max(:,i)
 	!end do
@@ -494,17 +685,18 @@ RECURSIVE SUBROUTINE FinalizeTECPLOTPLOTTER(Myrank)
 	!	print *,"Vert:",i,DataArray_max(i,1:2)
 	!end do
 	DEALLOCATE(NData_max,DataArray_max)
-	
+	!
 	WRITE(Title,'(a,f9.4,a)') 'Time t = ', PLOT_TIME, ''//C_NULL_CHAR  
 	WRITE(ScratchDir,'(a)') '.'//C_NULL_CHAR 
 	SELECT CASE(nDim)
 	CASE(2)
-	WRITE(VarString,*) 'x y ' 
-	ZoneType = 3 ! FEM Quad  
+	        !print *, 'x y z ' 
+	        WRITE(VarString,*) 'x y ' 
+	        ZoneType = 3 ! FEM Quad  
 	CASE(3)
-	!print *, 'x y z ' 
-	WRITE(VarString,*) 'x y z ' 
-	ZoneType = 5 ! FEM Brick 
+	        !print *, 'x y z ' 
+	        WRITE(VarString,*) 'x y z ' 
+	        ZoneType = 5 ! FEM Brick 
 	END SELECT 
 	  
 	DO i = 0, nVar-1
@@ -519,11 +711,21 @@ RECURSIVE SUBROUTINE FinalizeTECPLOTPLOTTER(Myrank)
 		WRITE(VarString,'(a,a,a,a)') TRIM(VarString), ' ', TRIM(AuxName) , ' '   
 	ENDDO	
 	WRITE(VarString,'(a,a)') TRIM(VarString), ' iE lim ' 
+	!PRINT *, 'VarString:', VarString
+	!PRINT *, 'ScratchDir:', ScratchDir
+	!PRINT *, 'cmyrank:', cmyrank
+	!PRINT *, 'FileName:', FileName
+	!PRINT *, 'TRIM(Title)//''//C_NULL_CHAR:', TRIM(Title)//''//C_NULL_CHAR
+	!PRINT *, 'TRIM(Varstring)//''//C_NULL_CHAR:', TRIM(Varstring)//''//C_NULL_CHAR
+	!PRINT *, 'TRIM(FileName)//''//C_NULL_CHAR:', TRIM(FileName)//''//C_NULL_CHAR
+	!PRINT *, 'TRIM(ScratchDir)//''//C_NULL_CHAR:',TRIM(ScratchDir)//''//C_NULL_CHAR
+    !!
 	!PRINT *, 'SONO QUI FinalizeTECPLOTPLOTTER'
 	iret = TecIni112(TRIM(Title)//''//C_NULL_CHAR,TRIM(Varstring)//''//C_NULL_CHAR,TRIM(FileName)//''//C_NULL_CHAR,TRIM(ScratchDir)//''//C_NULL_CHAR,0,0,visdouble) 
 	loctime = PLOT_TIME 
 	ZoneTitle = Title
 	!StrandID=0
+    !PRINT *, 'TRIM(ZoneTitle)//C_NULL_CHAR:',TRIM(ZoneTitle)//C_NULL_CHAR
 	iRet = TecZne112(TRIM(ZoneTitle)//C_NULL_CHAR, ZoneType, nRealNodes, nSubPlotElem, 0, 0, 0, 0, loctime, StrandID, 0, 1, 0, 0, 0, 0, 0, NullPtr, NullPtr, NullPtr, 0) 
 	iRet = TecDat112( nRealNodes*(nDim+nVar+nAux+1+1), DataArray, visdouble )	
 	iRet = TecNod112(NData)
@@ -538,22 +740,28 @@ RECURSIVE SUBROUTINE FinalizeTECPLOTPLOTTER(Myrank)
 END SUBROUTINE FinalizeTECPLOTPLOTTER
 
 
-RECURSIVE SUBROUTINE SetMainParameters(N_in,M_in)
-	USE Parameters, ONLY: nDim, nElem_max
+RECURSIVE SUBROUTINE SetMainParameters(N_in,M_in,basisSize,Ghostlayers)
+	!USE Parameters, ONLY: nDim, nElem_max
 	IMPLICIT NONE
-	INTEGER,INTENT(IN)	:: N_in,M_in
+	INTEGER,INTENT(IN)	:: N_in,M_in,basisSize,Ghostlayers
 	
 	M=M_in
 	N=N_in
+    FVbasisSize = basisSize
+    FVGhostLayerWidth = Ghostlayers
 	MC = M+1
 	nGPMC = MC + 1
 	nDOFm = (M+1)**nDim
-	nSubLim = 2*N+1
+	nSubLim = FVbasisSize !2*N+1
+	nSubLim_GL = FVGhostLayerWidth !2*N+1
 	nGPM  = M + 1
 	if(nDim .eq. 3) then
 		nSubLimV(1) = nSubLim
 		nSubLimV(2) = nSubLim
 		nSubLimV(3) = nSubLim
+		nSubLimV_GL(1) = nSubLim_GL
+		nSubLimV_GL(2) = nSubLim_GL
+		nSubLimV_GL(3) = nSubLim_GL
 		nGPVM(1)=nGPM
 		nGPVM(2)=nGPM
 		nGPVM(3)=nGPM
@@ -561,6 +769,11 @@ RECURSIVE SUBROUTINE SetMainParameters(N_in,M_in)
 		nSubLimV(1) = nSubLim
 		nSubLimV(2) = nSubLim
 		nSubLimV(3) = 1
+		nSubLimV_GL(1) = nSubLim_GL
+		nSubLimV_GL(2) = nSubLim_GL
+		nSubLimV_GL(3) = 0
+        
+        
 		nGPVM(1)=nGPM
 		nGPVM(2)=nGPM
 		nGPVM(3)=1
@@ -570,7 +783,34 @@ RECURSIVE SUBROUTINE SetMainParameters(N_in,M_in)
 	
 	PlotIndex=0
 
-	
+	nVtx=2**nDim
+     ! Reference element 
+     ! 
+     ReferenceElement(1,1) = 0. 
+     ReferenceElement(2,1) = 0. 
+     ReferenceElement(3,1) = 0. 
+     ReferenceElement(1,2) = 1. 
+     ReferenceElement(2,2) = 0. 
+     ReferenceElement(3,2) = 0. 
+     ReferenceElement(1,3) = 1. 
+     ReferenceElement(2,3) = 1. 
+     ReferenceElement(3,3) = 0.
+     ReferenceElement(1,4) = 0. 
+     ReferenceElement(2,4) = 1. 
+     ReferenceElement(3,4) = 0.
+     ReferenceElement(1,5) = 0. 
+     ReferenceElement(2,5) = 0. 
+     ReferenceElement(3,5) = 1.
+     ReferenceElement(1,6) = 1. 
+     ReferenceElement(2,6) = 0. 
+     ReferenceElement(3,6) = 1.
+     ReferenceElement(1,7) = 1. 
+     ReferenceElement(2,7) = 1. 
+     ReferenceElement(3,7) = 1.
+     ReferenceElement(1,8) = 0. 
+     ReferenceElement(2,8) = 1.
+     ReferenceElement(3,8) = 1.
+    !
 	
 	nSubPlotElem_max=nElem_max*M**nDim
 	nRealNodes_max=nElem_max*(M+1)**nDim
@@ -586,16 +826,16 @@ RECURSIVE SUBROUTINE SetMainParameters(N_in,M_in)
 	
 	CALL ComputeOutputMatrices()
 	
-	print *, "***********************************************************"
-	print *, "************ TECPLOT INITIALIZATION ***********************"
-	PRINT *, "N,M=",N,M
-	print *, "(nElem,nSubPlotElem,nRealNodes)_MAX=",nElem_max,nSubPlotElem_max,nRealNodes_max
-	print *, "***********************************************************"
+	!print *, "***********************************************************"
+	!print *, "************ TECPLOT INITIALIZATION ***********************"
+	!PRINT *, "N,M=",N,M
+	!print *, "(nElem,nSubPlotElem,nRealNodes)_MAX=",nElem_max,nSubPlotElem_max,nRealNodes_max
+	!print *, "***********************************************************"
 END SUBROUTINE SetMainParameters
 
 
 RECURSIVE SUBROUTINE ComputeOutputMatrices
-	USE Parameters, ONLY: nDim
+	!USE Parameters, ONLY: nDim
 	IMPLICIT NONE
 	! Local variables
 	real :: psi_i(nGPM),psi_j(nGPM),psi_k(nGPM),psi_xi(nGPM),psi_xj(nGPM),psi_xk(nGPM),subxi(MC)
@@ -659,6 +899,21 @@ RECURSIVE SUBROUTINE ComputeOutputMatrices
 			  allsubxi(1,c) = REAL(i-1)/REAL(M)
 			  allsubxi(2,c) = REAL(j-1)/REAL(M)
 			  allsubxi(3,c) = REAL(k-1)/REAL(M)			  
+           ENDDO
+        ENDDO
+     ENDDO
+	! Compute subtri
+	ALLOCATE( idxn_lim(nSubLim+1,nSubLim+1,nSubLim+1),subtri_lim(8,nSubLim**3),allsubxi_lim(3,(nSubLim+1)**3) )
+     idxn_lim = 0 
+     c = 0 
+     DO k = 1, nSubLim+1
+        DO j = 1, nSubLim+1 
+           DO i = 1, nSubLim+1 
+              c = c + 1 
+              idxn_lim(i,j,k) = c
+			  allsubxi_lim(1,c) = REAL(i-1)/REAL(nSubLim)
+			  allsubxi_lim(2,c) = REAL(j-1)/REAL(nSubLim)
+			  allsubxi_lim(3,c) = REAL(k-1)/REAL(nSubLim)			  
            ENDDO
         ENDDO
      ENDDO

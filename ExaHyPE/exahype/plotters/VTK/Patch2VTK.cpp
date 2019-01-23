@@ -23,7 +23,6 @@
 #include "tarch/plotter/griddata/unstructured/vtk/VTUTextFileWriter.h"
 #include "tarch/plotter/griddata/unstructured/vtk/VTUBinaryFileWriter.h"
 
-
 // @todo 16/05/03:Dominic Etienne Charreir Plotter depends now on kernels.
 // Should thus be placed in kernel module or the solver
 // should provide a function that computes solution values
@@ -137,8 +136,6 @@ exahype::plotters::Patch2VTUGapsBinary::Patch2VTUGapsBinary(
 std::string exahype::plotters::Patch2VTUGapsBinary::getIdentifier() {
   return "vtk::patches::gaps::binary";
 }
-
-
 
 exahype::plotters::Patch2VTK::Patch2VTK(
     exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing,
@@ -347,7 +344,7 @@ std::pair<int,int> exahype::plotters::Patch2VTK::plotCellBoundary(
 }
 
 // just a local shorthand
-void plotInt(tarch::plotter::griddata::Writer::CellDataWriter *writer, int cellIndex, int data) {
+inline void plotInt(tarch::plotter::griddata::Writer::CellDataWriter *writer, int cellIndex, int data) {
 	writer->plotCell(cellIndex, static_cast<double>(data));
 }
 

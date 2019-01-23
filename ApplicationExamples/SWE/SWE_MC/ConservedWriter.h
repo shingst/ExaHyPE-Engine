@@ -4,20 +4,20 @@
 // ========================
 //   www.exahype.eu
 // ========================
-#ifndef POSTPROCESSING_ErrorPlotter_CLASS_HEADER_
-#define POSTPROCESSING_ErrorPlotter_CLASS_HEADER_
+#ifndef POSTPROCESSING_ConservedWriter_CLASS_HEADER_
+#define POSTPROCESSING_ConservedWriter_CLASS_HEADER_
 
 #include "exahype/plotters/Plotter.h"
 
-namespace GRMHDb {
-  class GRMHDbSolver_ADERDG;
-  class ErrorPlotter;
+namespace SWE {
+  class MySWESolver;
+  class ConservedWriter;
 }
 
-class GRMHDb::ErrorPlotter : public exahype::plotters::Plotter::UserOnTheFlyPostProcessing {
+class SWE::ConservedWriter : public exahype::plotters::Plotter::UserOnTheFlyPostProcessing {
 public:
-  ErrorPlotter(GRMHDb::GRMHDbSolver_ADERDG& solver);
-  virtual ~ErrorPlotter();
+  ConservedWriter(SWE::MySWESolver& solver);
+  virtual ~ConservedWriter();
 
   void startPlotting(double time) override;
   void finishPlotting() override;
@@ -31,4 +31,4 @@ public:
     double timeStamp) override;
 };
 
-#endif /* POSTPROCESSING_ErrorPlotter_CLASS_HEADER_ */
+#endif /* POSTPROCESSING_ConservedWriter_CLASS_HEADER_ */

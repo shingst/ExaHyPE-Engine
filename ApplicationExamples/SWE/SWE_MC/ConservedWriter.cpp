@@ -5,25 +5,25 @@
 // ========================
 //   www.exahype.eu
 // ========================
-#include "ErrorPlotter.h"
+#include "ConservedWriter.h"
 
-GRMHDb::ErrorPlotter::ErrorPlotter(GRMHDb::GRMHDbSolver_ADERDG& solver) {
+SWE::ConservedWriter::ConservedWriter(SWE::MySWESolver& solver) {
   // @TODO Please insert your code here.
 }
 
-GRMHDb::ErrorPlotter::~ErrorPlotter() {
+SWE::ConservedWriter::~ConservedWriter() {
 }
 
-void GRMHDb::ErrorPlotter::startPlotting( double time) {
+void SWE::ConservedWriter::startPlotting( double time) {
   // @TODO Please insert your code here.
 }
 
 
-void GRMHDb::ErrorPlotter::finishPlotting() {
+void SWE::ConservedWriter::finishPlotting() {
   // @TODO Please insert your code here.
 }
 
-void GRMHDb::ErrorPlotter::mapQuantities(
+void SWE::ConservedWriter::mapQuantities(
     const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
     const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch,
     const tarch::la::Vector<DIMENSIONS, double>& x,
@@ -32,8 +32,9 @@ void GRMHDb::ErrorPlotter::mapQuantities(
     double* outputQuantities,
     double timeStamp
 ) {
-  const int writtenUnknowns = 19;
-  for (int i=0; i<writtenUnknowns; i++){ 
+  const int writtenUnknowns = 5;
+  for (int i=0; i<writtenUnknowns-1; i++){ 
     outputQuantities[i] = Q[i];
   }
+  outputQuantities[4] = Q[0] + Q[3];
 }

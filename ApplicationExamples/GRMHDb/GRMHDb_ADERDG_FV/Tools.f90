@@ -2,11 +2,11 @@
 
 
 
-RECURSIVE SUBROUTINE InitTECPLOT(N_in,M_in)
+RECURSIVE SUBROUTINE InitTECPLOT(N_in,M_in,basisSize,Ghostlayers)
 	USE TECPLOTPLOTTERmod
 	implicit none
-	INTEGER :: N_in,M_in
-	CALL SetMainParameters(N_in,M_in)
+	INTEGER :: N_in,M_in,basisSize,Ghostlayers
+	CALL SetMainParameters(N_in,M_in,basisSize,Ghostlayers)
 END SUBROUTINE InitTECPLOT
 
 RECURSIVE SUBROUTINE getNumericalSolution(V,Q) 

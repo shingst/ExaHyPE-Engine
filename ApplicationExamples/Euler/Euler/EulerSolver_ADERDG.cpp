@@ -43,6 +43,9 @@ void Euler::EulerSolver_ADERDG::init(const std::vector<std::string>& cmdlineargs
     else if (reference.compare("explosion")==0){
       ReferenceChoice = Reference::SphericalExplosion;
     }
+    else if (reference.compare("shuosher")==0){
+      ReferenceChoice = Reference::ShuOsher;
+    }
     else {
       logError("init(...)","do not recognise value '"<<reference<<"' for constant 'reference'. Use either 'entropywave', "
               "'rarefactionwave', 'sod', or 'explosion'.");
@@ -246,6 +249,27 @@ void Euler::EulerSolver_ADERDG::sodShockTube(const double* const x, const double
   }
 }
 
+void Euler::EulerSolver_ADERDG::shuOsher(const double* const x, double t, double* Q) {
+  double p = 1.0; 
+  if ( x[0] < -4 ) {
+    Q[0]=3.8571; 
+    Q[1]=Q[0]*2.6294; 
+    Q[2]=0.0; 
+    Q[3]=0.0;
+    p=10.333;
+  } else {
+    Q[0]=1.0+0.2*std::sin(5*x[0]);
+    Q[1]=0.0; 
+    Q[2]=0.0; 
+    Q[3]=0.0;
+    p=1.0;
+  }
+  
+  // total energy = internal energy + kinetic energy
+  const double gamma = 1.4;
+  Q[4] = p/(gamma-1) + 0.5 / Q[0] * (Q[1]*Q[1]); // j*j, j=rho*v !!! ; assumes: Q[1+i]=0, i=1,2.
+}
+
 void Euler::EulerSolver_ADERDG::sphericalExplosion(const double* const x,double t, double* Q) {
   constexpr double x0[3]   = {0.5, 0.5, 0.5};
   constexpr double radius  = 0.25;
@@ -319,6 +343,9 @@ void Euler::EulerSolver_ADERDG::referenceSolution(const double* const x,double t
   case Reference::RarefactionWave:
     rarefactionWave(x,t,Q);
     break;
+  case Reference::ShuOsher:
+    shuOsher(x,t,Q);
+    break;
   }
 }
 
@@ -372,6 +399,32 @@ void Euler::EulerSolver_ADERDG::boundaryValues(const double* const x, const doub
       }
     }
   } break;
+  case Reference::ShuOsher:
+    if ( direction==0 ) {  // Dirichlet conditions
+      double Q[NumberOfVariables]     = {0.0};
+      double _F[3][NumberOfVariables] = {0.0};
+      double* F[3] = {_F[0],_F[1],_F[2]};
+
+      // initialise
+      std::fill_n(stateOut, NumberOfVariables, 0.0);
+      std::fill_n(fluxOut,  NumberOfVariables, 0.0);
+      for (int i=0; i<Order+1; i++) {
+        const double ti = t + dt * kernels::gaussLegendreNodes[Order][i];
+        referenceSolution(x,ti,Q);
+        flux(Q,F);
+        for (int v=0; v<NumberOfVariables; v++) {
+          stateOut[v] += Q[v]            * kernels::gaussLegendreWeights[Order][i];
+          fluxOut[v]  += F[direction][v] * kernels::gaussLegendreWeights[Order][i];
+        }
+      }
+    } else { // wall boundary conditions 
+      std::copy_n(stateIn, NumberOfVariables, stateOut);
+      stateOut[1+direction] =  -stateOut[1+direction];
+      double _F[3][NumberOfVariables]={0.0};
+      double* F[3] = {_F[0], _F[1], _F[2]};
+      flux(stateOut,F);
+      std::copy_n(F[direction], NumberOfVariables, fluxOut);
+    }
   }
 }
 

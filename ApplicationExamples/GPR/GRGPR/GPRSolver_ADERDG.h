@@ -165,7 +165,7 @@ class GRGPR::GPRSolver_ADERDG : public GRGPR::AbstractGPRSolver_ADERDG {
       const bool wasTroubledInPreviousTimeStep,
       const tarch::la::Vector<DIMENSIONS,double>& center,
       const tarch::la::Vector<DIMENSIONS,double>& dx,
-      const double t, const double dt) const override;
+      const double t) const override;
 /* pointSource() function not included, as requested in the specification file */
 
 /* multiplyMaterialParameterMatrix() not included, as requested in the specification file */

@@ -55,6 +55,10 @@
 
 #endif
 
+#ifdef __GNUC__ /* GCC does not know __cdecl but this __atribute__ stuff */
+#define __cdecl __attribute__((__cdecl__))
+#endif
+
 #include<immintrin.h>
 
 

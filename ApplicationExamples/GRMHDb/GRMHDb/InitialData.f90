@@ -77,15 +77,19 @@ RECURSIVE SUBROUTINE PDESetup(myrank)
 			continue
 	END SELECT
 	!
-	IF(myrank.eq.0) THEN
+	!IF(myrank.eq.0) THEN
+    PRINT *, "<<<<<<<<<<<<<<<<<<<<<<<<<<<------------------------------------"
 		PRINT *, 'EQN%gamma=',EQN%GAMMA, myrank, myrank_f90 
-	ENDIF
+    PRINT *, "<<<<<<<<<<<<<<<<<<<<<<<<<<<------------------------------------"
+	!ENDIF
     !
     ! 
     SELECT CASE(TRIM(ICTYPE))    ! 
     CASE('GRMHDTOV','CCZ4TOV','GRMHDTOV_perturbed') 
 #ifdef RNSTOV
+        IF(NSTOVVar%Computed.NE.12345) THEN
             CALL NSTOV_Main
+        ENDIF
 #endif  
 	CASE DEFAULT
 		continue
