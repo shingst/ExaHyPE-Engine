@@ -854,6 +854,7 @@
             "scope" : "run-time",
             "old_format" : { "token_after" : "time-stepping" }
           },
+          "_plotters" : {},
           "plotters" : {
             "$comment" : "Each solver has an ordered list of plotters assigned. The order and name of plotters is a compile time constant",
             "type" : "array",
