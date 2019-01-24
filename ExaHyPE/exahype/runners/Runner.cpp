@@ -1721,12 +1721,10 @@ void exahype::runners::Runner::globalReduction(exahype::records::RepositoryState
       case exahype::records::RepositoryState::UseAdapterFinaliseMeshRefinement:
       case exahype::records::RepositoryState::UseAdapterFinaliseMeshRefinementOrLocalRollback: {
         if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
-          if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
-            for (int rank=1; rank<tarch::parallel::Node::getInstance().getNumberOfNodes(); rank++) {
-              for (auto* solver : exahype::solvers::RegisteredSolvers) {
-                if ( solver->hasRequestedMeshRefinement() ) {
-                  solver->mergeWithWorkerData(rank,0.0,0);
-                }
+          for (int rank=1; rank<tarch::parallel::Node::getInstance().getNumberOfNodes(); rank++) {
+            for (auto* solver : exahype::solvers::RegisteredSolvers) {
+              if ( solver->hasRequestedMeshRefinement() ) {
+                solver->mergeWithWorkerData(rank,0.0,0);
               }
             }
           }
@@ -1734,7 +1732,7 @@ void exahype::runners::Runner::globalReduction(exahype::records::RepositoryState
           for (auto* solver : exahype::solvers::RegisteredSolvers) {
             if ( solver->hasRequestedMeshRefinement() ) {
               solver->sendDataToMaster(
-                  tarch::parallel::NodePool::getInstance().getMasterRank(),0.0,0);
+                  tarch::parallel::NodePool::getInstance().getGlobalMasterRank(),0.0,0);
             }
           }
         }
@@ -1752,7 +1750,7 @@ void exahype::runners::Runner::globalReduction(exahype::records::RepositoryState
           for (auto* solver : exahype::solvers::RegisteredSolvers) {
             if ( solver->getMeshUpdateEvent()==exahype::solvers::Solver::MeshUpdateEvent::IrregularLimiterDomainChange ) {
               solver->sendDataToMaster(
-                  tarch::parallel::NodePool::getInstance().getMasterRank(),0.0,0);
+                  tarch::parallel::NodePool::getInstance().getGlobalMasterRank(),0.0,0);
             }
           }
         }
