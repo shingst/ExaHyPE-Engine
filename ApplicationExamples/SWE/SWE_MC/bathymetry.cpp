@@ -1,18 +1,17 @@
 #include "bathymetry.h"
 #include "MySWESolver_Variables.h"
 #include "MySWESolver.h"
+#include "readCsv.h"
 
 #include <cmath>
 
 using namespace std;
 ///// 2D /////
 
-extern const int nelem;
-
 #ifdef Dim2
 
 
-double linearInterpolation_1D(double x, double dx, int idx){
+double linearInterpolation_1D(double x, double dx, int idx, int nelem){
     if(idx == 0){
         if(x < dx)
             return (1.0 - x/dx);
@@ -34,30 +33,36 @@ double linearInterpolation_1D(double x, double dx, int idx){
     return 0.0;
 }
 
-double SWE::linearInterpolation(double x, double y, double* a){
+double SWE::linearInterpolation(double x, double y){
+    std::vector<double> a;
+    readCsv("Input/bathymetry.csv", &a);
+
+    int nelem = (int)std::pow(a.size(),0.5)-1;
+    if(nelem != 27) std::cout << "nelem " << nelem << std::endl;  //TODO remove debug check
     double res = 0.0;
     //loop over "basis functions"
     for(int i=0; i < nelem + 1; i ++){
         for(int j=0; j < nelem + 1; j ++){
-             res += a[(nelem+1)*i+j]*linearInterpolation_1D(x,1.0/nelem,i)*linearInterpolation_1D(y,1.0/nelem,j);
+             res += a[(nelem+1)*i+j]*linearInterpolation_1D(x,1.0/nelem,i,nelem)*linearInterpolation_1D(y,1.0/nelem,j,nelem);
         }
     }
     return res;
 }
 
-double linearInterpolationCoarse(double x, double y, double* a){
+double linearInterpolationCoarse(double x, double y, std::vector<double> a){
     double res = 0.0;
     //loop over "basis functions"
     for(int i=1; i < 3 + 1; i ++){
         for(int j=1; j < 3 + 1; j ++){
-             res += 0.02*a[(3+1)*(i-1)+(j-1)]*linearInterpolation_1D(x,1.0/4,i)*linearInterpolation_1D(y,1.0/4,j);
+             res += 0.02*a[(3+1)*(i-1)+(j-1)]*linearInterpolation_1D(x,1.0/4,i,3)*linearInterpolation_1D(y,1.0/4,j,3);
         }
     }
     return res;
 }
 
 double SWE::bathymetry(double x, double y) {
-    double a[16] = {3.0,6.0,4.0,-1.0,-3.0,-6.0,18.0,1.0,-4.0,15.0,9.0,12.0,17.0,-18.0,24.0,6.0};
+    std::vector<double> a;
+    readCsv("Input/parameters.csv", &a);
     return linearInterpolationCoarse(x,y,a);
 }
 

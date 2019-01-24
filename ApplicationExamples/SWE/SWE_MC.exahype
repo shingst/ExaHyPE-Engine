@@ -42,7 +42,14 @@ exahype-project  SWE
 	optimisation const  = generic, patchwiseadjust, usestack
     language const      = C
 
-   plot vtk::Cartesian::cells::ascii ConservedWriter
+   plot vtk::Cartesian::cells::ascii OutputWriter
+      variables const = 0
+      time            = 0.0
+      repeat          = 0.01
+      output          = ./vtk-output/no-output
+    end plot
+
+  plot vtk::Cartesian::cells::ascii ConservedWriter
       variables const = 5
       time            = 0.0
       repeat          = 0.01

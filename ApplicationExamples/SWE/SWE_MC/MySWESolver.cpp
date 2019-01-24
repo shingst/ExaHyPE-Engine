@@ -11,16 +11,18 @@
 #include "MySWESolver_Variables.h"
 #include "kernels/KernelUtils.h"
 #include "kernels/GaussLegendreQuadrature.h"
+#include "readCsv.h"
 
 double grav;
-extern const int nelem = 9*3;
-double a[(nelem+1)*(nelem+1)];
-
 tarch::logging::Log SWE::MySWESolver::_log( "SWE::MySWESolver" );
 
 
 void SWE::MySWESolver::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
-  // @todo Please implement/augment if required
+    grav = 9.81;
+
+    //for testing csv writer/reader
+    const int nelem = 9*3;
+    std::vector<double> a((nelem+1)*(nelem+1));
     std::default_random_engine generator;
     std::uniform_real_distribution<double> distribution(0.0,0.4);
     //create uniformly distributed pertubation for each nodal point
@@ -29,16 +31,22 @@ void SWE::MySWESolver::init(const std::vector<std::string>& cmdlineargs,const ex
             a[(nelem+1)*i+j] = distribution(generator);
         }
     }
-    grav = 9.81;
+    writeCsv("Input/bathymetry.csv", a);
+
+    std::vector<double> a_param = {3.0,6.0,4.0,-1.0,-3.0,-6.0,18.0,1.0,-4.0,15.0,9.0,12.0,17.0,-18.0,24.0,6.0};
+    writeCsv("Input/parameters.csv", a_param);
+
+    std::vector<std::vector<double>> a_measurements(4);
+    a_measurements[0] = {0.3,0.6};
+    a_measurements[1] = {0.2,0.6};
+    a_measurements[2] = {0.1,0.6};
+    a_measurements[3] = {0.1,0.5};
+    writeCsv("Input/measurements.csv", a_measurements);
 }
-
-
-
 
 void SWE::MySWESolver::adjustSolution(double *luh, const tarch::la::Vector<DIMENSIONS,double>& center, const tarch::la::Vector<DIMENSIONS,double>& dx,double t,double dt) {
     // Dimensions                        = 2
     // Number of variables + parameters  = 4 + 0
-    //Variables vars(Q);
     if (tarch::la::equals(t,0.0)) {
         constexpr int basisSize = MySWESolver::Order+1;
         constexpr int numberOfData=MySWESolver::NumberOfParameters+MySWESolver::NumberOfVariables;
@@ -57,7 +65,7 @@ void SWE::MySWESolver::adjustSolution(double *luh, const tarch::la::Vector<DIMEN
                 double x  =  (offset_x+dx[0]*kernels::gaussLegendreNodes[basisSize-1][i]);
                 double y  =  (offset_y+dx[1]*kernels::gaussLegendreNodes[basisSize-1][j]);
 
-                double b =  SWE::bathymetry(x,y);// + linearInterpolation(x,y,a);
+                double b =  SWE::bathymetry(x,y) + linearInterpolation(x,y);
 
                 if(x < 0.5) {
                     luh[id_xyf(i,j,0)] = 2.0 - b; //h
