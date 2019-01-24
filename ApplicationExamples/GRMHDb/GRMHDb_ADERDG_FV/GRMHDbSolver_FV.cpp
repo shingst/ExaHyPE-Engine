@@ -24,29 +24,34 @@
 #include "kernels/KernelUtils.h" // matrix indexing
 #include "kernels/GaussLegendreQuadrature.h"
 
+#include "GRMHDbSolver_ADERDG.h"
+
 tarch::logging::Log GRMHDb::GRMHDbSolver_FV::_log( "GRMHDb::GRMHDbSolver_FV" );
 
 void GRMHDb::GRMHDbSolver_FV::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
   // @todo Please implement/augment if required
 
-    //const int order = GRMHDb::AbstractGRMHDbSolver_FV::Order;
-    //int mpirank = tarch::parallel::Node::getInstance().getRank();
+    const int order = GRMHDb::AbstractGRMHDbSolver_ADERDG::Order;
+	constexpr int basisSize = AbstractGRMHDbSolver_FV::PatchSize;
+	constexpr int Ghostlayers = AbstractGRMHDbSolver_FV::GhostLayerWidth;
+
+    int mpirank = tarch::parallel::Node::getInstance().getRank();
 	//printf("\n******************************************************************");
 	//printf("\n**************<<<  INIT TECPLOT    >>>****************************");
 	//printf("\n******************************************************************");
-    //inittecplot_(&order,&order);
-	//printf("\n******************************************************************");
-	//printf("\n**************<<<  INIT PDE SETUP  >>>****************************");
-	//printf("\n******************************************************************");
-    //pdesetup_(&mpirank);
-	//printf("\n******************************************************************");
-	//printf("\n**************<<<       DONE       >>>****************************");
-	//printf("\n******************************************************************");
-  //fflush(stdout);
+    //inittecplot_(&order,&order,&basisSize,&Ghostlayers);
+	printf("\n******************************************************************");
+	printf("\n**************<<<  INIT PDE SETUP  >>>****************************");
+	printf("\n******************************************************************");
+    pdesetup_(&mpirank);
+	printf("\n******************************************************************");
+	printf("\n**************<<<       DONE       >>>****************************");
+	printf("\n******************************************************************");
+    fflush(stdout);
 
 }
 
-void GRMHDb::GRMHDbSolver_FV::adjustSolution(const double* const x,const double t,const double dt, double* Q) {
+void GRMHDb::GRMHDbSolver_FV::adjustSolution(const double* const x, const double t, const double dt, double* Q) {
   // Dimensions             = 3
   // Number of variables    = 19 + #parameters
   
@@ -117,9 +122,8 @@ void GRMHDb::GRMHDbSolver_FV::boundaryValues(
     const int d,
     const double* const stateInside,
     double* stateOutside) {
-const int nVar = GRMHDb::AbstractGRMHDbSolver_FV::NumberOfVariables;
-  const int nDim = DIMENSIONS;
-  double Qgp[nVar],*F[nDim], Fs[nDim][nVar];
+	const int nVar = GRMHDb::AbstractGRMHDbSolver_FV::NumberOfVariables;	
+	double Qgp[nVar];
   // Dimensions             = 3
   // Number of variables    = 19 + #parameters
 
@@ -143,8 +147,6 @@ const int nVar = GRMHDb::AbstractGRMHDbSolver_FV::NumberOfVariables;
   stateOutside[16] = stateInside[16];
   stateOutside[17] = stateInside[17];
   stateOutside[18] = stateInside[18];
-	
-	
 	
   double ti = t + 0.5 * dt;
   initialdata_(x, &ti, Qgp);

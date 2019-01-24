@@ -12,7 +12,6 @@
 
 #include "exahype/plotters/ADERDG2UserDefined.h"
 #include "exahype/plotters/ascii/MultipleReductionsWriter.h"
-#include "GRMHDbSolver_ADERDG_Variables.h"
 #include "GRMHDbSolver_ADERDG.h"
 namespace GRMHDb {
   class ErrorWriter;
@@ -41,7 +40,7 @@ class GRMHDb::ErrorWriter : public exahype::plotters::LimitingADERDG2UserDefined
   ErrorWriter();
 
   /**
-   * This method is invoked every time a cell 
+   * This method is invoked every time an ADER-DG cell 
    * is touched by the plotting plotter.
    *
    * \note Use the protected variables _order, _variables to
@@ -52,14 +51,23 @@ class GRMHDb::ErrorWriter : public exahype::plotters::LimitingADERDG2UserDefined
    * \param[in] sizeOfPatch the offset of the cell/patch.
    * \param[in] u the degrees of freedom "living" inside of the patch.
    */
-  /*void plotPatch(
-      const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
-      const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* u,
-      double timeStamp) override;*/
   void plotADERDGPatch(
       const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
       const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* u,
       double timeStamp) override;
+
+  /**
+   * This method is invoked every time a Finite Volume cell 
+   * is touched by the plotting plotter.
+   *
+   * \note Use the protected variables _order, _variables to
+   * determine the size of u. 
+   * The array u has the size _variables * (_order+1)^DIMENSIONS.
+   * 
+   * \param[in] offsetOfPatch the offset of the cell/patch.
+   * \param[in] sizeOfPatch the offset of the cell/patch.
+   * \param[in] u the degrees of freedom "living" inside of the patch.
+   */
   void plotFiniteVolumesPatch(
       const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
       const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* u,
