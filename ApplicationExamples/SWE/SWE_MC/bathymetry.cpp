@@ -20,7 +20,7 @@ double linearInterpolation_1D(double x, double dx, int idx, int nelem){
         if(x > 1.0 - dx)
             return (x/dx - (nelem-1.0));
     }
-    for(int i = 1; i < nelem; i++){
+    for(int i = 1; i < nelem+1; i++){
         if(idx == i){
             //left
             if(x > (i-1)*dx && x <= i*dx)
@@ -38,6 +38,7 @@ double SWE::linearInterpolation(double x, double y){
     readCsv("Input/parameters.csv", &a);
 
     int nelem = (int)std::pow(a.size(),0.5)-1;
+    assert((nelem+1)*(nelem+1) == a.size());
     double res = 0.0;
     //loop over "basis functions"
     for(int i=0; i < nelem + 1; i ++){
