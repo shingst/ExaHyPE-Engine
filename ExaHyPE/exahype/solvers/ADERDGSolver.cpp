@@ -45,7 +45,9 @@
 #include <immintrin.h>
 #endif
 
-
+#ifdef USE_ITAC
+#include "VT.h"
+#endif
 
 namespace {
   constexpr const char* tags[]{"solutionUpdate",
@@ -714,24 +716,28 @@ void exahype::solvers::ADERDGSolver::synchroniseTimeStepping(
     case TimeStepping::Global:
       p.setPreviousCorrectorTimeStamp(_previousMinCorrectorTimeStamp);
       p.setPreviousCorrectorTimeStepSize(_previousMinCorrectorTimeStepSize);
-
+  
       p.setCorrectorTimeStamp(_minCorrectorTimeStamp);
       p.setCorrectorTimeStepSize(_minCorrectorTimeStepSize);
-
+  
       p.setPredictorTimeStamp(_minPredictorTimeStamp);
       p.setPredictorTimeStepSize(_minPredictorTimeStepSize);
       break;
     case TimeStepping::GlobalFixed:
       p.setPreviousCorrectorTimeStamp(_previousMinCorrectorTimeStamp);
       p.setPreviousCorrectorTimeStepSize(_previousMinCorrectorTimeStepSize);
-
+  
       p.setCorrectorTimeStamp(_minCorrectorTimeStamp);
       p.setCorrectorTimeStepSize(_minCorrectorTimeStepSize);
-
+  
       p.setPredictorTimeStamp(_minPredictorTimeStamp);
       p.setPredictorTimeStepSize(_minPredictorTimeStepSize);
       break;
   }
+  const double dt = 0.001;
+  p.setPreviousCorrectorTimeStepSize(dt);
+  p.setCorrectorTimeStepSize(dt);
+  p.setPredictorTimeStepSize(dt);
 }
 
 void exahype::solvers::ADERDGSolver::startNewTimeStep() {
@@ -761,6 +767,10 @@ void exahype::solvers::ADERDGSolver::startNewTimeStep() {
       _minPredictorTimeStamp    = _minCorrectorTimeStamp;
       break;
   }
+  const double dt = 0.001;
+  _previousMinCorrectorTimeStepSize = dt; 
+  _minCorrectorTimeStepSize         = dt; 
+  _minPredictorTimeStepSize         = dt;
 
   _maxLevel     = _nextMaxLevel;
   _nextMaxLevel = -std::numeric_limits<int>::max(); // "-", min
@@ -795,6 +805,10 @@ void exahype::solvers::ADERDGSolver::startNewTimeStepFused(
     _maxLevel     = _nextMaxLevel;
     _nextMaxLevel = -std::numeric_limits<int>::max(); // "-", min
   }
+  const double dt = 0.001;
+  _previousMinCorrectorTimeStepSize = dt; 
+  _minCorrectorTimeStepSize         = dt; 
+  _minPredictorTimeStepSize         = dt;
 }
 
 void exahype::solvers::ADERDGSolver::updateTimeStepSizesFused() {
@@ -814,6 +828,10 @@ void exahype::solvers::ADERDGSolver::updateTimeStepSizesFused() {
     _minPredictorTimeStamp =  _minCorrectorTimeStamp+_minNextTimeStepSize;
     break;
   }
+  const double dt = 0.001;
+  _previousMinCorrectorTimeStepSize = dt; 
+  _minCorrectorTimeStepSize         = dt; 
+  _minPredictorTimeStepSize         = dt;
 
   _stabilityConditionWasViolated = false;
 
@@ -838,6 +856,10 @@ void exahype::solvers::ADERDGSolver::updateTimeStepSizes() {
       _minPredictorTimeStamp =  _minCorrectorTimeStamp;
       break;
   }
+  const double dt = 0.001;
+  _previousMinCorrectorTimeStepSize = dt; 
+  _minCorrectorTimeStepSize         = dt; 
+  _minPredictorTimeStepSize         = dt;
 
   _maxLevel     = _nextMaxLevel;
   _nextMaxLevel = -std::numeric_limits<int>::max(); // "-", min
@@ -1029,7 +1051,7 @@ void exahype::solvers::ADERDGSolver::setStabilityConditionWasViolated(bool state
 }
 
 bool exahype::solvers::ADERDGSolver::getStabilityConditionWasViolated() const {
-  return _stabilityConditionWasViolated;
+  return false; //  _stabilityConditionWasViolated;
 }
 
 bool exahype::solvers::ADERDGSolver::isValidCellDescriptionIndex(
@@ -2139,6 +2161,14 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
     const bool                                                 isLastTimeStepOfBatch,
     const bool                                                 isSkeletonCell,
     const bool                                                 mustBeDoneImmediately) {
+  #ifdef USE_ITAC
+  static int handle = 0;
+  if ( handle == 0 ) {
+    int ierr=VT_funcdef("ADERDG::fusedTimeStepBody", VT_NOCLASS, &handle ); assertion(ierr==0);
+  }
+  VT_begin(handle);
+  #endif
+
   updateSolution(cellDescription,neighbourMergePerformed,isFirstTimeStepOfBatch);
 
   UpdateResult result;
@@ -2164,6 +2194,9 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
           cellDescription.getCorrectorTimeStepSize(),
           false, isSkeletonCell );
   }
+  #ifdef USE_ITAC
+  VT_end(handle);
+  #endif
   return result;
 }
 
@@ -2297,6 +2330,13 @@ int exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegralBody(
     const double predictorTimeStepSize,
     const bool   uncompressBefore,
     const bool   isSkeletonCell ) {
+  #ifdef USE_ITAC
+  static int handle = 0;
+  if ( handle == 0 ) {
+    int ierr=VT_funcdef("ADERDG::predictorBody", VT_NOCLASS, &handle ); assertion(ierr==0);
+  }
+  VT_begin(handle);
+  #endif
   if (uncompressBefore) { uncompress(cellDescription); }
 
   validateCellDescriptionData(cellDescription,true,false,true,"exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegralBody [pre]");
@@ -2336,6 +2376,11 @@ int exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegralBody(
   validateCellDescriptionData(cellDescription,true,true,false,"exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegralBody [post]");
 
   cellDescription.setHasCompletedLastStep(true);
+
+  
+  #ifdef USE_ITAC
+  VT_end(handle);
+  #endif
 
   return numberOfPicardIterations;
 }
@@ -4246,10 +4291,17 @@ void exahype::solvers::ADERDGSolver::sendDataToMaster(
     );
   }
 
-  DataHeap::getInstance().sendData(
-      messageForMaster.data(), messageForMaster.size(),
-      masterRank, x, level,
-      peano::heap::MessageType::MasterWorkerCommunication);
+  MPI_Send(
+    messageForMaster.data(), messageForMaster.size(),
+    MPI_DOUBLE,
+    masterRank,
+    _masterWorkerCommunicationTag,
+    tarch::parallel::Node::getInstance().getCommunicator());
+
+//  DataHeap::getInstance().sendData(
+//      messageForMaster.data(), messageForMaster.size(),
+//      masterRank, x, level,
+//      peano::heap::MessageType::MasterWorkerCommunication);
 }
 
 void exahype::solvers::ADERDGSolver::mergeWithWorkerData(const DataHeap::HeapEntries& message) {
@@ -4294,9 +4346,16 @@ void exahype::solvers::ADERDGSolver::mergeWithWorkerData(
     logDebug("mergeWithWorkerData(...)","Receiving time step data [pre] from rank " << workerRank);
   }
 
-  DataHeap::getInstance().receiveData(
-      messageFromWorker.data(),messageFromWorker.size(),workerRank, x, level,
-      peano::heap::MessageType::MasterWorkerCommunication);
+  MPI_Recv(
+    messageFromWorker.data(), messageFromWorker.size(),
+    MPI_DOUBLE,
+    workerRank,
+    _masterWorkerCommunicationTag,
+    tarch::parallel::Node::getInstance().getCommunicator(),MPI_STATUS_IGNORE);
+
+//  DataHeap::getInstance().receiveData(
+//      messageFromWorker.data(),messageFromWorker.size(),workerRank, x, level,
+//      peano::heap::MessageType::MasterWorkerCommunication);
 
   assertion1(messageFromWorker.size()==3,messageFromWorker.size());
   mergeWithWorkerData(messageFromWorker);
@@ -4352,11 +4411,18 @@ void exahype::solvers::ADERDGSolver::sendDataToWorker(
         ",data[6]=" << messageForWorker[6]);
     logDebug("sendDataWorker(...)","_minNextPredictorTimeStepSize="<<_minNextTimeStepSize);
   }
-
-  DataHeap::getInstance().sendData(
-      messageForWorker.data(), messageForWorker.size(),
-      workerRank, x, level,
-      peano::heap::MessageType::MasterWorkerCommunication);
+  
+  MPI_Send(
+    messageForWorker.data(), messageForWorker.size(),
+    MPI_DOUBLE,
+    workerRank,
+    _masterWorkerCommunicationTag,
+    tarch::parallel::Node::getInstance().getCommunicator());
+  
+//  DataHeap::getInstance().sendData(
+//      messageForWorker.data(), messageForWorker.size(),
+//      workerRank, x, level,
+//      peano::heap::MessageType::MasterWorkerCommunication);
 }
 
 void exahype::solvers::ADERDGSolver::mergeWithMasterData(const DataHeap::HeapEntries& message) {
@@ -4382,9 +4448,17 @@ void exahype::solvers::ADERDGSolver::mergeWithMasterData(
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const int                                    level) {
   DataHeap::HeapEntries messageFromMaster(7);
-  DataHeap::getInstance().receiveData(
-      messageFromMaster.data(),messageFromMaster.size(),masterRank, x, level,
-      peano::heap::MessageType::MasterWorkerCommunication);
+  
+  MPI_Recv(
+    messageFromMaster.data(), messageFromMaster.size(),
+    MPI_DOUBLE,
+    masterRank,
+    _masterWorkerCommunicationTag,
+    tarch::parallel::Node::getInstance().getCommunicator(),MPI_STATUS_IGNORE);
+
+ // DataHeap::getInstance().receiveData(
+ //     messageFromMaster.data(),messageFromMaster.size(),masterRank, x, level,
+ //     peano::heap::MessageType::MasterWorkerCommunication);
 
   assertion1(messageFromMaster.size()==7,messageFromMaster.size());
   mergeWithMasterData(messageFromMaster);

@@ -387,6 +387,10 @@ class exahype::solvers::Solver {
   static tarch::logging::Log _log;
 
  protected:
+  /**
+   * Tag used for master worker communication.
+   */
+  static int _masterWorkerCommunicationTag;
 
   void tearApart(int numberOfEntries, int normalHeapIndex, int compressedHeapIndex, int bytesForMantissa) const;
   void glueTogether(int numberOfEntries, int normalHeapIndex, int compressedHeapIndex, int bytesForMantissa) const;

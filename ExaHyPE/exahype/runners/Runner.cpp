@@ -745,6 +745,10 @@ int exahype::runners::Runner::run() {
       initHPCEnvironment();
 
     if ( _parser.isValid() ) {
+      #ifdef Parallel
+      MPI_Pcontrol(0);
+      #endif
+
       if (tarch::parallel::Node::getInstance().isGlobalMaster()) {
         result = runAsMaster(*repository);
       }

@@ -134,6 +134,10 @@ void exahype::mappings::Prediction::beginIteration(
   VT_traceon();
   #endif
 
+  #ifdef Parallel
+  MPI_Pcontrol(1); 
+  #endif
+
   if (
       !exahype::solvers::Solver::FuseADERDGPhases &&
       _stateCopy.isFirstIterationOfBatchOrNoBatch()

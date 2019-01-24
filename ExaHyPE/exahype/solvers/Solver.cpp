@@ -83,6 +83,8 @@ double exahype::solvers::Solver::PipedCompressedBytes = 0;
 
 tarch::logging::Log exahype::solvers::Solver::_log( "exahype::solvers::Solver");
 
+int exahype::solvers::Solver::_masterWorkerCommunicationTag = tarch::parallel::Node::reserveFreeTag("solver[master<->worker]");
+
 bool exahype::solvers::Solver::SwitchOffNeighbourMergePerformedCheck = false;
 
 bool exahype::solvers::Solver::FuseADERDGPhases           = false;
