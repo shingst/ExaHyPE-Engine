@@ -172,7 +172,7 @@ class GPRDIM::DIMSolver_ADERDG : public GPRDIM::AbstractDIMSolver_ADERDG {
       const bool wasTroubledInPreviousTimeStep,
       const tarch::la::Vector<DIMENSIONS,double>& center,
       const tarch::la::Vector<DIMENSIONS,double>& dx,
-      const double t, const double dt) const override;
+      const double t) const override;
 	
 /* pointSource() function not included, as requested in the specification file */
 

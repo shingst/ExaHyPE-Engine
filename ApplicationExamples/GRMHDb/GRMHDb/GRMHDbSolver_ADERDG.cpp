@@ -7,7 +7,6 @@
 // ========================
 
 #include "GRMHDbSolver_ADERDG.h"
-
 #include "GRMHDbSolver_ADERDG_Variables.h"
 
 // User defined calls
@@ -39,17 +38,17 @@ void GRMHDb::GRMHDbSolver_ADERDG::init(const std::vector<std::string>& cmdlinear
 
     const int order = GRMHDb::AbstractGRMHDbSolver_ADERDG::Order;
     int mpirank = tarch::parallel::Node::getInstance().getRank();
-	printf("\n******************************************************************");
-	printf("\n**************<<<  INIT TECPLOT    >>>****************************");
-	printf("\n******************************************************************");
+	//printf("\n******************************************************************");
+	//printf("\n**************<<<  INIT TECPLOT    >>>****************************");
+	//printf("\n******************************************************************");
     inittecplot_(&order,&order);
-	printf("\n******************************************************************");
-	printf("\n**************<<<  INIT PDE SETUP  >>>****************************");
-	printf("\n******************************************************************");
+	//printf("\n******************************************************************");
+	//printf("\n**************<<<  INIT PDE SETUP  >>>****************************");
+	//printf("\n******************************************************************");
     pdesetup_(&mpirank);
-	printf("\n******************************************************************");
-	printf("\n**************<<<       DONE       >>>****************************");
-	printf("\n******************************************************************");
+	//printf("\n******************************************************************");
+	//printf("\n**************<<<       DONE       >>>****************************");
+	//printf("\n******************************************************************");
   fflush(stdout);
 
 }
@@ -82,8 +81,13 @@ void GRMHDb::GRMHDbSolver_ADERDG::adjustPointSolution(const double* const x,cons
   }
 }
 
-void GRMHDb::GRMHDbSolver_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,
-  const double * const fluxIn,const double* const stateIn,
+void GRMHDb::GRMHDbSolver_ADERDG::boundaryValues(
+	const double* const x,
+	const double t,const double dt,
+	const int faceIndex,
+	const int normalNonZero,
+  	const double * const fluxIn,
+	const double* const stateIn,
   double *fluxOut,double* stateOut) {
 const int nVar = GRMHDb::AbstractGRMHDbSolver_ADERDG::NumberOfVariables;
   const int order = GRMHDb::AbstractGRMHDbSolver_ADERDG::Order;

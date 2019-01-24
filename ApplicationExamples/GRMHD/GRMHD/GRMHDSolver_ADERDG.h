@@ -159,7 +159,7 @@ class GRMHD::GRMHDSolver_ADERDG : public GRMHD::AbstractGRMHDSolver_ADERDG {
       const bool wasTroubledInPreviousTimeStep,
       const tarch::la::Vector<DIMENSIONS,double>& center,
       const tarch::la::Vector<DIMENSIONS,double>& dx,
-      const double t, const double dt) const override;
+      const double t) const override;
 
 /* multiplyMaterialParameterMatrix() not included, as requested in the specification file */
 };

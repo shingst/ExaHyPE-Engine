@@ -28,7 +28,7 @@ using namespace std;
 #include <iomanip>
 
 // see ch.18 Post-processing of the Guidebook.
-#include <mpi.h> 
+//#include <mpi.h> 
 #include "tarch/parallel/Node.h"
 #include "tarch/parallel/NodePool.h"
 
@@ -56,7 +56,7 @@ void GRMHDb::ErrorWriter::plotPatch(
      for (int d=0; d<DIMENSIONS; d++) {
        x[d]  = offsetOfPatch[d] + sizeOfPatch[d] * kernels::gaussLegendreNodes[order][i(d)];
        w_dV *= sizeOfPatch[d] * kernels::gaussLegendreWeights[order][i(d)];
-     }
+     } 
 
      double uAna[numberOfVariables];
      GRMHDbSolver_ADERDG::referenceSolution(x,timeStamp,uAna);
@@ -157,25 +157,27 @@ void GRMHDb::ErrorWriter::finishPlotting() {
 		              SentValues[3*i+2] = errorLInf[i];
 		} 
 		MPI_Isend(&SentValues, numberOfData, MPI_DOUBLE,tarch::parallel::Node::getGlobalMasterRank(), tag+mpirank  , tarch::parallel::Node::getInstance().getCommunicator(), &rq_send[mpirank-1]);
+        MPI_Wait(&rq_send[mpirank-1], MPI_STATUS_IGNORE);
 		//MPI_Isend(&errorL2  , numberOfVariables, MPI_DOUBLE,tarch::parallel::Node::getGlobalMasterRank(), l2tag  , tarch::parallel::Node::getInstance().getCommunicator(), &rq_L2[mpirank-1]);
 		//MPI_Isend(&errorLInf, numberOfVariables, MPI_DOUBLE,tarch::parallel::Node::getGlobalMasterRank(), linftag, tarch::parallel::Node::getInstance().getCommunicator(), &rq_Linf[mpirank-1]);
   }
   tarch::parallel::Node::getInstance().releaseTag(myMessageTagUseForTheReduction);
 #endif
 
-  for (int v = 0; v < numberOfVariables; v++) {
-    errorL2[v] = sqrt(errorL2[v]);
-    normL2Ana[v] = sqrt(normL2Ana[v]);
-  }
-
   if (tarch::parallel::Node::getInstance().isGlobalMaster()) {
+	    //
+		for (int v = 0; v < numberOfVariables; v++) {
+		  errorL2[v] = sqrt(errorL2[v]);
+		  normL2Ana[v] = sqrt(normL2Ana[v]);
+		}
+		//
 		if (tarch::la::equals(_timeStamp, 0.0)) {
 			myfile.open("./output/ErrorNorms.dat", ios::trunc);
 			myfile << "*********************************************" << std::endl;
 			myfile << "**Errors for ADER-DG solver with order=" << AbstractGRMHDbSolver_ADERDG::Order << "**" << std::endl;
 			myfile << "*********************************************" << std::endl;
 			myfile << "---------------------------------------------" << std::endl;
-			myfile << "variable:\t";
+                        myfile << "variable:\t";
 			for (int v = 0; v < numberOfVariables; v++) {
 				myfile << v << " \t ";
 			}

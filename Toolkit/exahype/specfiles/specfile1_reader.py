@@ -109,13 +109,15 @@ class SpecFile1Reader():
             "buffer_size",\
             "timeout",\
             "cores",\
+            "measure_cell_processing_times_iter",\
             "order",\
             "patch_size",\
             "halo_cells",\
             "maximum_mesh_depth",\
             "dmp_observables",\
             "steps_till_cured",\
-            "helper_layers"\
+            "helper_layers",\
+            "thread_stack_size"\
         ]
         numbers=[\
             "end_time",\
@@ -374,9 +376,14 @@ class SpecFile1Reader():
                   try:
                       result[m.group(1)]=float(m.group(2))
                   except:
-                      result[m.group(1)]=m.group(2)
+                      if re.match(r"^(True|Yes|On)$", m.group(2)):
+                          result[m.group(1)] = True
+                      elif re.match(r"^(False|No|Off)$", m.group(2)):
+                          result[m.group(1)] = False
+                      else: # just store the string
+                          result[m.group(1)]=m.group(2)
             else:
-                raise SpecFile1ParserError("constants|select: Token '%s' does not have structure '<string>:<integer>'." % token_s)
+                raise SpecFile1ParserError("constants|select: Token '%s' does not have structure '<string>:<something>'." % token_s)
         if result:
             return result
         else:
@@ -399,10 +406,11 @@ class SpecFile1Reader():
             if option in ["log_file","peano_kernel_path","peano_toolbox_path","exahype_path","output_directory","plotter_subdirectory"]:
                 context["paths"][option] = context.pop(option)
         self.map_computational_domain(context["computational_domain"])
-        if "optimisation" in context:
-            for option in context["optimisation"]:
-                if context["optimisation"][option] in ["on","off"]:
-                    context["optimisation"][option]=False if context["optimisation"][option]=="off" else True
+        for section in ["optimisation","profiling"]:
+            if section in context:
+                for option in context[section]:
+                    if context[section][option] in ["on","off"]:
+                        context[section][option]=False if context[section][option]=="off" else True
         if "distributed_memory" in context:
             self.map_distributed_memory(context["distributed_memory"])    
         if "shared_memory" in context:

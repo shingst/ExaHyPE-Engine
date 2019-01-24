@@ -24,6 +24,41 @@ class {{project}}::{{plotter}} : public exahype::plotters::{{solverType | replac
    */
   {{plotter}}();
 
+  {% if solverType == "Limiting-ADER-DG" %}
+  /**
+   * This method is invoked every time an ADER-DG cell 
+   * is touched by the plotting plotter.
+   *
+   * \note Use the protected variables _order, _variables to
+   * determine the size of u. 
+   * The array u has the size _variables * (_order+1)^DIMENSIONS.
+   * 
+   * \param[in] offsetOfPatch the offset of the cell/patch.
+   * \param[in] sizeOfPatch the offset of the cell/patch.
+   * \param[in] u the degrees of freedom "living" inside of the patch.
+   */
+  void plotADERDGPatch(
+      const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
+      const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* u,
+      double timeStamp) override;
+
+  /**
+   * This method is invoked every time a Finite Volume cell 
+   * is touched by the plotting plotter.
+   *
+   * \note Use the protected variables _order, _variables to
+   * determine the size of u. 
+   * The array u has the size _variables * (_order+1)^DIMENSIONS.
+   * 
+   * \param[in] offsetOfPatch the offset of the cell/patch.
+   * \param[in] sizeOfPatch the offset of the cell/patch.
+   * \param[in] u the degrees of freedom "living" inside of the patch.
+   */
+  void plotFiniteVolumesPatch(
+      const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
+      const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* u,
+      double timeStamp) override;
+  {% else %}
   /**
    * This method is invoked every time a cell 
    * is touched by the plotting plotter.
@@ -40,6 +75,7 @@ class {{project}}::{{plotter}} : public exahype::plotters::{{solverType | replac
       const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
       const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* u,
       double timeStamp) override;
+  {% endif %}
 
   /** 
    * This method is called at the beginning of the plotting.

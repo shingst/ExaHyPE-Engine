@@ -43,11 +43,14 @@ namespace exahype {
  *   x:0  is the plane defined by x=0, ie. the y-z-plane
  *   y:0,z:0  is the axis defined by y=0 and z=0, ie. the x axis
  *   y:7  is the plane defined by y=7, ie. the x-z plane shifted to y=7
- *   x:2.74,y:42,z:3.14  is a single point. This slicer can represent that and
- *        will map all points onto this point.
+ *   x:2.74,y:42,z:3.14  is a single point. As the slicer is supposed to be used for
+ *        extended objects (1D/2D/3D), most plotters won't properly deal with this
+ *        selection, despite the CartesianSlicer can represent it. In ExaHyPE, use a
+ *        probe plotter for that task.
  *   x:123,y:234,z:456,y:819 is something which cannot be represented by the
  *        class members but may appear in a plotterParametersion string, so it's in the
- *        domain of the parser to interpret this.
+ *        domain of the parser to interpret this. In the new toolkit/parser infrastructure,
+ *        such overdefinitions will be prohibited anyway.
  * 
  * <h3>A sub-patch slicer</h3>
  * While for instance the RegionSlicer slices per patch (ie. either a patch is plotted

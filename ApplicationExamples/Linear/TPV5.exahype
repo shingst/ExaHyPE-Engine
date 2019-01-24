@@ -24,16 +24,30 @@ exahype-project  Elastic
   exahype-path const      = ./ExaHyPE
   output-directory const  = ./ApplicationExamples/Linear/TPV5
   architecture const      = noarch
-  log-file                = mylogfile.log
+  //log-file                = mylogfile.log
 
   computational-domain
     dimension const          = 3
-    width                    = 40.0, 20.0, 40.0
+    width                    = 30.0, 30.0, 30.0
     offset                   = 0.0, 0.0, 0.0
     end-time                 = 10.0
   end computational-domain
 
-  shared-memory
+  /*shared-memory
+    identifier               = dummy
+    configure                = {background-tasks:8,manual-pinning}	
+    cores                    = 8
+    properties-file          = sharedmemory.properties
+   end shared-memory*/
+
+   distributed-memory
+    identifier               = static_load_balancing
+    configure                = {hotspot,fair,ranks-per-node:2}
+    buffer-size              = 3200
+    timeout                  = 6000
+  end distributed-memory
+
+  /*shared-memory
     identifier               = dummy
     configure                = {}
     cores                    = 4
@@ -42,11 +56,11 @@ exahype-project  Elastic
 
    distributed-memory
      identifier               = static_load_balancing
-     configure                = {greedy-naive,FCFS}
-     //configure                = {hotspot,fair,ranks-per-node:4}
+     //configure                = {greedy-naive,FCFS}
+     configure                = {hotspot,fair,ranks-per-node:4}
      buffer-size              = 64
      timeout                  = 60
-  end distributed-memory
+  end distributed-memory*/
 
 //   distributed-memory	
 //     identifier               = static_load_balancing
@@ -76,19 +90,27 @@ exahype-project  Elastic
     order const        = 3
     /* 27 points: 0.05, 9 points: 0.15 */
     maximum-mesh-size  = 3.0
-    maximum-mesh-depth = 1
+    maximum-mesh-depth = 0
     time-stepping      = global
     type const         = linear, Legendre
     terms const        = flux,ncp,materialparameters,source,pointsources:0
     optimisation const = generic,patchwiseadjust
     language const     = C
 
-    plot vtu::Legendre::vertices::ascii ConservedQuantitiesWriter
+    /*plot vtu::Lobatto::vertices::ascii ConservedQuantitiesWriter
       variables const = 28
-      time           = 3.0
-      repeat          = 3.0
-      output          = ./conserved_alps
-    end plot
+      time            = 0.0
+      repeat          = 0.1
+      output          = rupture
+    end plot*/
+
+    /*plot vtu::Lobatto::vertices::ascii ConservedQuantitiesWriter
+      variables const = 28
+      time            = 0.0
+      repeat          = 0.1
+      output          = /import/freenas-m-01-seismology/Duru/TPV5/TPV3D
+    end plot*/
+
 
     /* this is the fake plotter used to compute global integrals */
     /* it has no output fields. */
@@ -120,10 +142,10 @@ exahype-project  Elastic
       time            = 0.0
       repeat          = 0.005
       output          = ./seismogram0_alps_10__7_5__27_5
-      select          = x:19.2593,y:7.5,z:27.5
+      select          = x:10.0,y:7.5,z:20.0
     end plot
 
-    plot probe::ascii ProbeWriter_1
+    /*plot probe::ascii ProbeWriter_1
       variables const = 12
       time            = 0.0
       repeat          = 0.005
@@ -153,6 +175,6 @@ exahype-project  Elastic
       repeat          = 0.005
       output          = ./seismogram4_alps_10__7_5__20
       select          = x:19.2593,y:7.5,z:20.0
-    end plot  
+    end plot  */
   end solver
 end exahype-project

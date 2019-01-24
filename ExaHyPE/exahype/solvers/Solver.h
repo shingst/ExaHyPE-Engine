@@ -21,6 +21,7 @@
 #include <memory>
 #include <string>
 #include <iostream>
+#include <iomanip>
 #include <vector>
 
 #include <atomic>
@@ -115,8 +116,10 @@ namespace exahype {
   #ifdef ALIGNMENT
   #if defined(CompilerICC) && defined(SharedTBB)
   typedef tbb::cache_aligned_allocator<double> AlignedAllocator;
+  typedef tbb::cache_aligned_allocator<char> AlignedCharAllocator;
   #else
   typedef peano::heap::HeapAllocator<double, ALIGNMENT > AlignedAllocator;
+  typedef peano::heap::HeapAllocator<char, ALIGNMENT > AlignedCharAllocator;
   #endif
   typedef peano::heap::AlignedDoubleSendReceiveTask<ALIGNMENT> AlignedDoubleSendReceiveTask;
   typedef peano::heap::AlignedCharSendReceiveTask<ALIGNMENT>   AlignedCharSendReceiveTask;
@@ -130,10 +133,10 @@ namespace exahype {
     std::vector< double, AlignedAllocator >
   >     DataHeap;
   typedef peano::heap::CharHeap<
-    peano::heap::SynchronousDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedAllocator > >,
-    peano::heap::SynchronousDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedAllocator > >,
-    peano::heap::SymmetricBoundaryDataExchanger< char, false, AlignedCharSendReceiveTask, std::vector< char, AlignedAllocator > >,
-    std::vector< char, AlignedAllocator >
+    peano::heap::SynchronousDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedCharAllocator > >,
+    peano::heap::SynchronousDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedCharAllocator > >,
+    peano::heap::SymmetricBoundaryDataExchanger< char, false, AlignedCharSendReceiveTask, std::vector< char, AlignedCharAllocator > >,
+    std::vector< char, AlignedCharAllocator >
   >     CompressedDataHeap;
   #elif defined(ALIGNMENT) and !defined(UsePeanosSymmetricBoundaryExchanger)
   typedef peano::heap::DoubleHeap<
@@ -143,10 +146,10 @@ namespace exahype {
     std::vector< double, AlignedAllocator >
   >     DataHeap;
   typedef peano::heap::CharHeap<
-    peano::heap::SynchronousDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedAllocator > >,
-    peano::heap::SynchronousDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedAllocator > >,
-    peano::heap::RLEBoundaryDataExchanger< char, false, AlignedCharSendReceiveTask, std::vector< char, AlignedAllocator > >,
-    std::vector< char, AlignedAllocator >
+    peano::heap::SynchronousDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedCharAllocator > >,
+    peano::heap::SynchronousDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedCharAllocator > >,
+    peano::heap::RLEBoundaryDataExchanger< char, false, AlignedCharSendReceiveTask, std::vector< char, AlignedCharAllocator > >,
+    std::vector< char, AlignedCharAllocator >
   >     CompressedDataHeap;
   #elif !defined(ALIGNMENT) and defined(UsePeanosSymmetricBoundaryExchanger)
   typedef peano::heap::DoubleHeap<
@@ -168,10 +171,10 @@ namespace exahype {
     std::vector< double, AlignedAllocator >
   >     DataHeap;
   typedef peano::heap::CharHeap<
-    peano::heap::SynchronousDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedAllocator > >,
-    peano::heap::SynchronousDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedAllocator > >,
-    peano::heap::AggregationBoundaryDataExchanger< char, AlignedCharSendReceiveTask, std::vector< char, AlignedAllocator > >,
-    std::vector< char, AlignedAllocator >
+    peano::heap::SynchronousDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedCharAllocator > >,
+    peano::heap::SynchronousDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedCharAllocator > >,
+    peano::heap::AggregationBoundaryDataExchanger< char, AlignedCharSendReceiveTask, std::vector< char, AlignedCharAllocator > >,
+    std::vector< char, AlignedCharAllocator >
   >     CompressedDataHeap;
   #elif defined(ALIGNMENT) and !defined(UsePeanosAggregationBoundaryExchanger)
   typedef peano::heap::DoubleHeap<
@@ -181,10 +184,10 @@ namespace exahype {
    std::vector< double, AlignedAllocator >
   >      DataHeap;
   typedef peano::heap::CharHeap<
-    peano::heap::SynchronousDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedAllocator > >,
-    peano::heap::SynchronousDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedAllocator > >,
-    peano::heap::AggregationBoundaryDataExchanger< char, AlignedCharSendReceiveTask, std::vector< char, AlignedAllocator > >,
-    std::vector< char, AlignedAllocator >
+    peano::heap::SynchronousDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedCharAllocator > >,
+    peano::heap::SynchronousDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedCharAllocator > >,
+    peano::heap::AggregationBoundaryDataExchanger< char, AlignedCharSendReceiveTask, std::vector< char, AlignedCharAllocator > >,
+    std::vector< char, AlignedCharAllocator >
   >     CompressedDataHeap;
   #elif !defined(ALIGNMENT) and defined(UsePeanosAggregationBoundaryExchanger)
   typedef peano::heap::DoubleHeap<
@@ -593,7 +596,7 @@ class exahype::solvers::Solver {
    * The solvers need to do adjust some operations slightly
    * when those are run multiple times after each other in isolation.
    */
-  static bool ProfileUpdate;
+  static bool SwitchOffNeighbourMergePerformedCheck;
 
   /**
    * A flag indicating we fuse the algorithmic
@@ -2108,6 +2111,50 @@ class exahype::solvers::Solver {
    */
   virtual void beginTimeStep(const double minTimeStamp) {}
   /** @} */ // end of userHooks
+
+  ///////////////////////
+  // PROFILING
+  ///////////////////////
+
+
+  /**
+   * A struct holding averaged runtime measurements for different cell types.
+   */
+  typedef struct CellProcessingTimes {
+    double _minTimePredictor    = std::numeric_limits<double>::quiet_NaN(); ///> The time (sec) required to run a single ADERDG space-time predictor Picard iteration.
+    double _maxTimePredictor    = std::numeric_limits<double>::quiet_NaN(); ///> The time (sec) required to run order+1 ADERDG space-time predictor Picard iterations.
+    double _timeADERDGUpdate    = std::numeric_limits<double>::quiet_NaN(); ///> The time (sec) to process a (pure) ADER-DG cell minus the predictor computation (plus evaluating the limiting criterion in the LimitingADERDGSolver case).
+    double _timeADERDG2FVUpdate = std::numeric_limits<double>::quiet_NaN(); ///> The time (sec) to process an ADER-DG cell minus the predictor computation which additionally projects the DG solution into FV space (plus evaluating the limiting criterion), i.e. only one Picard iteration is used.
+    double _timeFV2ADERDGUpdate = std::numeric_limits<double>::quiet_NaN(); ///> The time (sec) to process an FV cell which additionally projects the FV solution into DG space (plus evaluating the limiting criterion), i.e. only one Picard iteration is used.
+    double _timeFVUpdate        = std::numeric_limits<double>::quiet_NaN(); ///> The time (sec) to process an FV cell (plus evaluating the limiting criterion in the LimitingADERDGsolver case).
+
+    void toString(std::ostream& out,const double conversion=1.0,const int precision=8,std::string unit="sec",std::string prefix="") const {
+      out.precision(precision);
+      out << prefix << "minTimePredictor    = "<<std::setw(12)<<std::fixed<<_minTimePredictor   *conversion<<" "<<unit<<std::endl;
+      out << prefix << "maxTimePredictor    = "<<std::setw(12)<<std::fixed<<_maxTimePredictor   *conversion<<" "<<unit<<std::endl;
+      out << prefix << "timeADERDGUpdate    = "<<std::setw(12)<<std::fixed<<_timeADERDGUpdate   *conversion<<" "<<unit<<std::endl;
+      out << prefix << "timeADERDG2FVUpdate = "<<std::setw(12)<<std::fixed<<_timeADERDG2FVUpdate*conversion<<" "<<unit<<std::endl;
+      out << prefix << "timeFV2ADERDGUpdate = "<<std::setw(12)<<std::fixed<<_timeFV2ADERDGUpdate*conversion<<" "<<unit<<std::endl;
+      out << prefix << "timeFVUpdate        = "<<std::setw(12)<<std::fixed<<_timeFVUpdate       *conversion<<" "<<unit<<std::endl;
+    }
+  } CellProcessingTimes;
+
+  /**
+   * We perform @p numberOfRuns runs per cell type.
+   *
+   * @note Must be called after exahype::solvers::Solver::initSolver(...)
+   * was called for this solver. As we need to process the
+   *
+   * @note Precondition: SwitchOffNeighbourMergePerformedCheck must be set to true before
+   * measuring the cell processing times.
+   *
+   * @note No const modifier as kernels are not const.
+   *
+   * @param numberOfRuns the number of measurements to perform for each cell type
+   *
+   * @return @see exahype::solvers::Solver::CellProcessingTimes
+   */
+  virtual CellProcessingTimes measureCellProcessingTimes(const int numberOfRuns=100) { return CellProcessingTimes(); }
 };
 
 #endif

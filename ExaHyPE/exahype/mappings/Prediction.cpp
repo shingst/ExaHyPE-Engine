@@ -180,14 +180,14 @@ void exahype::mappings::Prediction::performPredictionOrProlongate(
       ) {
         switch (solver->getType()) {
           case exahype::solvers::Solver::Type::ADERDG:
-            static_cast<exahype::solvers::ADERDGSolver*>(solver)->
+            static_cast<solvers::ADERDGSolver*>(solver)->
               performPredictionAndVolumeIntegral(solverNumber,cellInfo,isAtRemoteBoundary);
             break;
-          case exahype::solvers::Solver::Type::LimitingADERDG:
-            static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getSolver()->
+          case solvers::Solver::Type::LimitingADERDG: {
+            static_cast<solvers::LimitingADERDGSolver*>(solver)->
               performPredictionAndVolumeIntegral(solverNumber,cellInfo,isAtRemoteBoundary);
-            break;
-          case exahype::solvers::Solver::Type::FiniteVolumes:
+          }  break;
+          case solvers::Solver::Type::FiniteVolumes:
             // do nothing
             break;
           default:

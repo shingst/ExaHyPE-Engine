@@ -13,9 +13,9 @@
 #include "GRMHDbSolver_ADERDG.h"
 
 // see ch.18 Post-processing of the Guidebook.  
-#include <mpi.h> 
-#include "tarch/parallel/Node.h"
-#include "tarch/parallel/NodePool.h"
+//#include <mpi.h> 
+//#include "tarch/parallel/Node.h"
+//#include "tarch/parallel/NodePool.h"
 namespace GRMHDb {
   class ErrorWriter;
 }

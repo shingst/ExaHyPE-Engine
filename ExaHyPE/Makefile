@@ -600,6 +600,7 @@ ifeq ($(call tolower,$(USE_IPO_INTERN)),on)
 endif
 	rm -f cipofiles.mk
 	rm -f buildinfo.h
+	rm -f *.mod   # Delete also all Fortran modules
 
 # peano.a: Useful for quickly setting up external applications which use the ExaHyPE
 #          code base as a library.

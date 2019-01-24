@@ -26,9 +26,11 @@ exahype-project GRMHDb
 
   computational-domain
      dimension const                = 3
-     width                          = 27.0, 27.0, 27.0
-     offset                         = 3., 3., 3.
-     end-time                       = 1.0000001 
+     //width                        = 27.0, 27.0, 27.0 
+     //offset                       = 3., 3., 3.		 
+     width                          = 8.0 , 8.0, 8.0	 
+     offset                         = -4.0, -4.0, -4.0 
+     end-time                       = 1000.0000001 
   end computational-domain
   
   shared-memory
@@ -62,7 +64,9 @@ exahype-project GRMHDb
     /* gamma is actually parts of a matrix... */
     variables const                = rho:1,vel:3,p:1,B:3,psi:1,lapse:1,shift:3,gamma:6
     order const                    = 3
-    maximum-mesh-size              = 1.0
+    //maximum-mesh-size              = 1.0								 
+    //maximum-mesh-size              = 0.88888888888888888888888888888889	 
+    maximum-mesh-size              = 0.2962962962962962962962962962963
     maximum-mesh-depth             = 0
     time-stepping                  = global
     type const = nonlinear
@@ -111,32 +115,32 @@ exahype-project GRMHDb
    */
    
 
-   /*
-    plot user::defined ErrorWriter
+
+   plot user::defined ErrorWriter
        variables const = 19
        time            = 0.0 
-       repeat          = 0.1
+       repeat          = 10.0
        output          = ./output/errors
-     end plot
-    */
+    end plot
+ 
 /*
     plot vtk::Cartesian::vertices::ascii ErrorPlotter
       // abserrorl1percell[nvar],q[nvar],qanalytical[nvar]
       variables const = 19 
       time            = 0.0
-      repeat          = 1e0
+      repeat          = 10.0
       output          = ./output/errors
     end plot
 */
 	 
-/*
+ 
     plot user::defined TecplotWriter
        variables const = 19
        time            = 0.0
-       repeat          = 0.01
+       repeat          = 10.0
        output          = ./output/tecplot
      end plot
-  */ 
+
 
   end solver
 

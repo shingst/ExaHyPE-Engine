@@ -87,7 +87,7 @@ double exahype::solvers::Solver::PipedCompressedBytes = 0;
 
 tarch::logging::Log exahype::solvers::Solver::_log( "exahype::solvers::Solver");
 
-bool exahype::solvers::Solver::ProfileUpdate = false;
+bool exahype::solvers::Solver::SwitchOffNeighbourMergePerformedCheck = false;
 
 bool exahype::solvers::Solver::FuseADERDGPhases           = false;
 double exahype::solvers::Solver::WeightForPredictionRerun = 0.99;
@@ -644,13 +644,13 @@ int exahype::solvers::Solver::getMaxRefinementStatus() {
         result =
             std::max(result,
                 static_cast<exahype::solvers::ADERDGSolver*>(solver)->
-                getMinimumRefinementStatusForTroubledCell());
+                getMinRefinementStatusForTroubledCell());
         break;
       case Type::LimitingADERDG:
         result =
             std::max(result,
                 static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getSolver()->
-                getMinimumRefinementStatusForTroubledCell());
+                getMinRefinementStatusForTroubledCell());
         break;
       default:
         break;

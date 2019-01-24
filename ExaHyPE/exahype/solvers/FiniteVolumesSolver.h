@@ -141,6 +141,8 @@ private:
    * @param isLastTimeStepOfBatch   if the current time step is the last time step of a batch of time steps
    * @param isAtRemoteBoundary      if the cell description is at a remote boundary.
    * @param uncompressBefore        if the cell description should uncompress data before doing any PDE operations
+   *
+   * @note Might be called by background task. Do not synchronise time step data here.
    */
   UpdateResult updateBody(
       CellDescription&                                           cellDescription,
@@ -778,6 +780,14 @@ public:
       const bool isLastTimeStepOfBatch,
       const bool isAtRemoteBoundary) final override;
 
+  /**
+   *  TODO
+   *
+   * @param solverNumber
+   * @param cellInfo
+   * @param isAtRemoteBoundary
+   * @return
+   */
   UpdateResult updateOrRestrict(
         const int  solverNumber,
         CellInfo&  cellInfo,
@@ -1119,6 +1129,12 @@ public:
   std::string toString() const override;
 
   void toString (std::ostream& out) const override;
+
+  ///////////////////////
+  // PROFILING
+  ///////////////////////
+
+  CellProcessingTimes measureCellProcessingTimes(const int numberOfRuns=100) override;
 };
 
 #endif

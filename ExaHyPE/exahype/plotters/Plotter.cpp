@@ -16,9 +16,11 @@
 #include "exahype/plotters/VTK/ADERDG2CartesianVTK.h"
 #include "exahype/plotters/VTK/ADERDG2LegendreVTK.h"
 #include "exahype/plotters/VTK/ADERDG2LobattoVTK.h"
-#include "exahype/plotters/CSV/ADERDG2LegendreCSV.h"
 #include "exahype/plotters/VTK/ADERDG2LegendreDivergenceVTK.h"
 #include "exahype/plotters/ADERDG2ProbeAscii.h"
+
+#include "exahype/plotters/CSV/ADERDG2LegendreCSV.h"
+#include "exahype/plotters/CSV/Patch2CSV.h"
 
 #include "exahype/plotters/CarpetHDF5/ADERDG2CarpetHDF5.h"
 #include "exahype/plotters/CarpetHDF5/FiniteVolume2CarpetHDF5.h"
@@ -346,6 +348,10 @@ exahype::plotters::Plotter::Plotter(
         _device = new ADERDG2FlashHDF5(postProcessing);
       }
 
+      if(equalsIgnoreCase(_type, Patch2CSV::getIdentifier())) {
+        _device = new Patch2CSV(postProcessing, solvertype);
+      }
+
       if(equalsIgnoreCase(_type, Patch2VTKBoxesAscii::getIdentifier())) {
         _device = new Patch2VTKBoxesAscii(postProcessing, solvertype);
       }
@@ -472,6 +478,9 @@ exahype::plotters::Plotter::Plotter(
                 solvers::RegisteredSolvers[_solver])->getGhostLayerWidth());
       }
 
+      if(equalsIgnoreCase(_type, Patch2CSV::getIdentifier())) {
+        _device = new Patch2CSV(postProcessing, solvertype);
+      }
 
     break;
   }
