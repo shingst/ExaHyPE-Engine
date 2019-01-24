@@ -22,7 +22,7 @@
     ]
   },
   "shared_memory": {
-    "cores":1,
+    "cores":2,
     "background_job_consumers": 1,
     "high_priority_background_job_processing" : "all_in_a_rush",
     "low_priority_background_job_processing" : "run_always",
@@ -39,7 +39,7 @@
     "buffer_size": 1600,
     "load_balancing_strategy": "hotspot",
     "node_pool_strategy": "fair",
-    "ranks_per_node": 1
+    "ranks_per_node": 14
   },
   "optimisation": {
     "fuse_algorithmic_steps": true,
@@ -57,8 +57,8 @@
     {
       "type": "ADER-DG",
       "name": "MyElasticWaveSolver",
-      "order": 7,
-      "maximum_mesh_size": 2.0,
+      "order": 3,
+      "maximum_mesh_size": 0.66,
       "maximum_mesh_depth": 0,
       "time_stepping": "global",
       "aderdg_kernel": {
