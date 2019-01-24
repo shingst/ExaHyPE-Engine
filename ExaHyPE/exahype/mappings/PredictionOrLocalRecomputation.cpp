@@ -36,35 +36,39 @@ bool exahype::mappings::PredictionOrLocalRecomputation::OneSolverRequestedLocalR
 
 peano::CommunicationSpecification
 exahype::mappings::PredictionOrLocalRecomputation::communicationSpecification() const {
-  // master->worker
-  peano::CommunicationSpecification::ExchangeMasterWorkerData exchangeMasterWorkerData =
-      peano::CommunicationSpecification::ExchangeMasterWorkerData::MaskOutMasterWorkerDataAndStateExchange;
-  #ifdef Parallel
-  if (
-      exahype::solvers::Solver::PredictionSweeps==1 ||
-      !exahype::solvers::Solver::FuseADERDGPhases   ||
-      exahype::State::BroadcastInThisIteration      // must be set in previous iteration
-  ) { // must be set in previous iteration
-    exchangeMasterWorkerData =
-        peano::CommunicationSpecification::ExchangeMasterWorkerData::SendDataAndStateBeforeFirstTouchVertexFirstTime;
-  }
-  #endif
+//  // master->worker
+//  peano::CommunicationSpecification::ExchangeMasterWorkerData exchangeMasterWorkerData =
+//      peano::CommunicationSpecification::ExchangeMasterWorkerData::MaskOutMasterWorkerDataAndStateExchange;
+//  #ifdef Parallel
+//  if (
+//      exahype::solvers::Solver::PredictionSweeps==1 ||
+//      !exahype::solvers::Solver::FuseADERDGPhases   ||
+//      exahype::State::BroadcastInThisIteration      // must be set in previous iteration
+//  ) { // must be set in previous iteration
+//    exchangeMasterWorkerData =
+//        peano::CommunicationSpecification::ExchangeMasterWorkerData::SendDataAndStateBeforeFirstTouchVertexFirstTime;
+//  }
+//  #endif
+//
+//  // worker->master
+//  peano::CommunicationSpecification::ExchangeWorkerMasterData exchangeWorkerMasterData =
+//      peano::CommunicationSpecification::ExchangeWorkerMasterData::MaskOutWorkerMasterDataAndStateExchange;
+//  #ifdef Parallel
+//  if (
+//      exahype::solvers::Solver::PredictionSweeps==1 ||
+//      !exahype::solvers::Solver::FuseADERDGPhases   ||
+//      exahype::State::ReduceInThisIteration         // must be set in previous iteration
+//  ) {
+//    exchangeWorkerMasterData =
+//        peano::CommunicationSpecification::ExchangeWorkerMasterData::SendDataAndStateAfterLastTouchVertexLastTime;
+//  }
+//  #endif
+//
+//  return peano::CommunicationSpecification(exchangeMasterWorkerData,exchangeWorkerMasterData,true);
 
-  // worker->master
-  peano::CommunicationSpecification::ExchangeWorkerMasterData exchangeWorkerMasterData =
-      peano::CommunicationSpecification::ExchangeWorkerMasterData::MaskOutWorkerMasterDataAndStateExchange;
-  #ifdef Parallel
-  if (
-      exahype::solvers::Solver::PredictionSweeps==1 ||
-      !exahype::solvers::Solver::FuseADERDGPhases   ||
-      exahype::State::ReduceInThisIteration         // must be set in previous iteration
-  ) {
-    exchangeWorkerMasterData =
-        peano::CommunicationSpecification::ExchangeWorkerMasterData::SendDataAndStateAfterLastTouchVertexLastTime;
-  }
-  #endif
-
-  return peano::CommunicationSpecification(exchangeMasterWorkerData,exchangeWorkerMasterData,true);
+  return peano::CommunicationSpecification(
+      peano::CommunicationSpecification::ExchangeMasterWorkerData::MaskOutMasterWorkerDataAndStateExchange,
+      peano::CommunicationSpecification::ExchangeWorkerMasterData::MaskOutWorkerMasterDataAndStateExchange,true);
 }
 
 peano::MappingSpecification exahype::mappings::PredictionOrLocalRecomputation::enterCellSpecification(int level) const {

@@ -49,20 +49,23 @@ peano::MappingSpecification exahype::mappings::Prediction::determineEnterLeaveCe
 
 peano::CommunicationSpecification
 exahype::mappings::Prediction::communicationSpecification() const {
-  // master->worker
-  peano::CommunicationSpecification::ExchangeMasterWorkerData exchangeMasterWorkerData =
-      peano::CommunicationSpecification::ExchangeMasterWorkerData::MaskOutMasterWorkerDataAndStateExchange;
-  #ifdef Parallel 
- if ( exahype::State::BroadcastInThisIteration ) { // must be set in previous iteration
-    exchangeMasterWorkerData =
-        peano::CommunicationSpecification::ExchangeMasterWorkerData::SendDataAndStateBeforeFirstTouchVertexFirstTime;
-  }
-  #endif
-  // worker->master
-  peano::CommunicationSpecification::ExchangeWorkerMasterData exchangeWorkerMasterData =
-      peano::CommunicationSpecification::ExchangeWorkerMasterData::MaskOutWorkerMasterDataAndStateExchange;
-
-  return peano::CommunicationSpecification(exchangeMasterWorkerData,exchangeWorkerMasterData,true);
+//  // master->worker
+//  peano::CommunicationSpecification::ExchangeMasterWorkerData exchangeMasterWorkerData =
+//      peano::CommunicationSpecification::ExchangeMasterWorkerData::MaskOutMasterWorkerDataAndStateExchange;
+//  #ifdef Parallel
+// if ( exahype::State::BroadcastInThisIteration ) { // must be set in previous iteration
+//    exchangeMasterWorkerData =
+//        peano::CommunicationSpecification::ExchangeMasterWorkerData::SendDataAndStateBeforeFirstTouchVertexFirstTime;
+//  }
+//  #endif
+//  // worker->master
+//  peano::CommunicationSpecification::ExchangeWorkerMasterData exchangeWorkerMasterData =
+//      peano::CommunicationSpecification::ExchangeWorkerMasterData::MaskOutWorkerMasterDataAndStateExchange;
+//
+//  return peano::CommunicationSpecification(exchangeMasterWorkerData,exchangeWorkerMasterData,true);
+  return peano::CommunicationSpecification(
+      peano::CommunicationSpecification::ExchangeMasterWorkerData::MaskOutMasterWorkerDataAndStateExchange,
+      peano::CommunicationSpecification::ExchangeWorkerMasterData::MaskOutWorkerMasterDataAndStateExchange,true);
 }
 
 peano::MappingSpecification

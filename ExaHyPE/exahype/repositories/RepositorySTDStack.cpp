@@ -19,6 +19,8 @@
 
 #include "peano/performanceanalysis/ScorePMacros.h"
 
+#include "exahype/runners/Runner.h"
+
 #if !defined(CompilerICC)
 #include "peano/grid/Grid.cpph"
 #endif
@@ -227,6 +229,8 @@ void exahype::repositories::RepositorySTDStack::iterate(int numberOfIterations, 
   for (int i=0; i<numberOfIterations; i++) {
     _solverState.setBatchState(numberOfIterations, i );
 
+    exahype::runners::Runner::globalBroadcast(_repositoryState,i);
+
     switch ( _repositoryState.getAction()) {
       case exahype::records::RepositoryState::UseAdapterMeshRefinement: watch.startTimer(); _gridWithMeshRefinement.iterate(); watch.stopTimer(); _measureMeshRefinementCPUTime.setValue( watch.getCPUTime() ); _measureMeshRefinementCalendarTime.setValue( watch.getCalendarTime() ); break;
       case exahype::records::RepositoryState::UseAdapterMeshRefinementAndPlotTree: watch.startTimer(); _gridWithMeshRefinementAndPlotTree.iterate(); watch.stopTimer(); _measureMeshRefinementAndPlotTreeCPUTime.setValue( watch.getCPUTime() ); _measureMeshRefinementAndPlotTreeCalendarTime.setValue( watch.getCalendarTime() ); break;
@@ -262,6 +266,7 @@ void exahype::repositories::RepositorySTDStack::iterate(int numberOfIterations, 
     if ( switchedLoadBalancingTemporarilyOff && i==numberOfIterations-1) {
       peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(true);
     }
+    exahype::runners::Runner::globalReduction(_repositoryState,i);
     #endif
   }
   

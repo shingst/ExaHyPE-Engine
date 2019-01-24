@@ -28,6 +28,10 @@ namespace exahype {
   namespace repositories {
     class Repository;
   }
+
+  namespace records {
+    class RepositoryState;
+  }
 }
 
 #ifdef TBBInvade
@@ -143,6 +147,26 @@ class exahype::runners::Runner {
    * as well.
    */
   void runGlobalStep();
+
+  /**
+   * Static callback to perform global broadcasts between working nodes.
+   *
+   * @todo have a tree-based algorithm. Problem: NodePool does not reveal worker nodes
+   *
+   * @param repositoryState         Contains information about the currently run adapter and the number of batch iterations.
+   * @param currentBatchIteration   the current batch iteration.
+   */
+  static void globalBroadcast(exahype::records::RepositoryState& repositoryState, const int currentBatchIteration);
+
+  /**
+   * Static callback to perform global reductions between working nodes.
+   *
+   * @todo have a tree-based algorithm. Problem: NodePool does not reveal worker nodes
+   *
+   * @param repositoryState         Contains information about the currently run adapter and the number of batch iterations.
+   * @param currentBatchIteration   the current batch iteration.
+   */
+  static void globalReduction(exahype::records::RepositoryState& repositoryState, const int currentBatchIteration);
 #endif
 
   /**

@@ -41,12 +41,15 @@ void exahype::mappings::RefinementStatusSpreading::initialiseLocalVariables(){
 
 peano::CommunicationSpecification
 exahype::mappings::RefinementStatusSpreading::communicationSpecification() const {
+//  return peano::CommunicationSpecification(
+//      peano::CommunicationSpecification::ExchangeMasterWorkerData::
+//          MaskOutMasterWorkerDataAndStateExchange,
+//      peano::CommunicationSpecification::ExchangeWorkerMasterData::
+//          SendDataAndStateAfterLastTouchVertexLastTime,
+//      true);
   return peano::CommunicationSpecification(
-      peano::CommunicationSpecification::ExchangeMasterWorkerData::
-          MaskOutMasterWorkerDataAndStateExchange,
-      peano::CommunicationSpecification::ExchangeWorkerMasterData::
-          SendDataAndStateAfterLastTouchVertexLastTime,
-      true);
+      peano::CommunicationSpecification::ExchangeMasterWorkerData::MaskOutMasterWorkerDataAndStateExchange,
+      peano::CommunicationSpecification::ExchangeWorkerMasterData::MaskOutWorkerMasterDataAndStateExchange,true);
 }
 
 // Switched on.

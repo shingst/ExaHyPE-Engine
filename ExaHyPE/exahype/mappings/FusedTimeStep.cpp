@@ -48,33 +48,36 @@ bool exahype::mappings::FusedTimeStep::sendOutRiemannDataInThisIteration() const
 
 peano::CommunicationSpecification
 exahype::mappings::FusedTimeStep::communicationSpecification() const {
-  // master->worker
-  peano::CommunicationSpecification::ExchangeMasterWorkerData exchangeMasterWorkerData =
-      peano::CommunicationSpecification::ExchangeMasterWorkerData::MaskOutMasterWorkerDataAndStateExchange;
-  #ifdef Parallel
-  if (
-      exahype::solvers::Solver::PredictionSweeps==1 ||
-      exahype::State::BroadcastInThisIteration      // must be set in previous iteration
-  ) { // must be set in previous iteration
-    exchangeMasterWorkerData =
-        peano::CommunicationSpecification::ExchangeMasterWorkerData::SendDataAndStateBeforeFirstTouchVertexFirstTime;
-  }
-  #endif
-
-  // worker->master
-  peano::CommunicationSpecification::ExchangeWorkerMasterData exchangeWorkerMasterData =
-      peano::CommunicationSpecification::ExchangeWorkerMasterData::MaskOutWorkerMasterDataAndStateExchange;
-  #ifdef Parallel
-  if (
-      exahype::solvers::Solver::PredictionSweeps==1 ||
-      exahype::State::ReduceInThisIteration         // must be set in previous iteration
-  ) {
-    exchangeWorkerMasterData =
-        peano::CommunicationSpecification::ExchangeWorkerMasterData::SendDataAndStateAfterLastTouchVertexLastTime;
-  }
-  #endif
-
-  return peano::CommunicationSpecification(exchangeMasterWorkerData,exchangeWorkerMasterData,true);
+//  // master->worker
+//  peano::CommunicationSpecification::ExchangeMasterWorkerData exchangeMasterWorkerData =
+//      peano::CommunicationSpecification::ExchangeMasterWorkerData::MaskOutMasterWorkerDataAndStateExchange;
+//  #ifdef Parallel
+//  if (
+//      exahype::solvers::Solver::PredictionSweeps==1 ||
+//      exahype::State::BroadcastInThisIteration      // must be set in previous iteration
+//  ) { // must be set in previous iteration
+//    exchangeMasterWorkerData =
+//        peano::CommunicationSpecification::ExchangeMasterWorkerData::SendDataAndStateBeforeFirstTouchVertexFirstTime;
+//  }
+//  #endif
+//
+//  // worker->master
+//  peano::CommunicationSpecification::ExchangeWorkerMasterData exchangeWorkerMasterData =
+//      peano::CommunicationSpecification::ExchangeWorkerMasterData::MaskOutWorkerMasterDataAndStateExchange;
+//  #ifdef Parallel
+//  if (
+//      exahype::solvers::Solver::PredictionSweeps==1 ||
+//      exahype::State::ReduceInThisIteration         // must be set in previous iteration
+//  ) {
+//    exchangeWorkerMasterData =
+//        peano::CommunicationSpecification::ExchangeWorkerMasterData::SendDataAndStateAfterLastTouchVertexLastTime;
+//  }
+//  #endif
+//
+//  return peano::CommunicationSpecification(exchangeMasterWorkerData,exchangeWorkerMasterData,true);
+  return peano::CommunicationSpecification(
+      peano::CommunicationSpecification::ExchangeMasterWorkerData::MaskOutMasterWorkerDataAndStateExchange,
+      peano::CommunicationSpecification::ExchangeWorkerMasterData::MaskOutWorkerMasterDataAndStateExchange,true);
 }
 
 peano::MappingSpecification
