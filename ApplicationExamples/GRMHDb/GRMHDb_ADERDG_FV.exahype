@@ -92,33 +92,33 @@ exahype-project GRMHDb
      end plot
   */ 
    
-/*
+
     plot user::defined ErrorWriter
        variables const = 19
        time            = 0.0 
-       repeat          = 10.0
+       repeat          = 0.01
        output          = ./output/errors
      end plot
-*/  
+ 
 
 /*
-    plot vtk::Cartesian::vertices::ascii ErrorPlotter
+    plot vtk::Cartesian::vertices::ascii VTKPlotter
       // abserrorl1percell[nvar],q[nvar],qanalytical[nvar]
       variables const = 19 
       time            = 0.0
       repeat          = 10.0
-      output          = ./output/errors
+      output          = ./output/vtk
     end plot
 */
 	 
-/*
+
     plot user::defined TecplotWriter
        variables const = 19
        time            = 0.0
-       repeat          = 10.0
+       repeat          = 0.01
        output          = ./output/tecplot
      end plot
- */
+
 
   end solver
 

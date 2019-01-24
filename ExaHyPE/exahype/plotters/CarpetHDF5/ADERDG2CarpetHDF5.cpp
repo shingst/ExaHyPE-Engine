@@ -95,20 +95,13 @@ exahype::plotters::ADERDG2CarpetHDF5::~ADERDG2CarpetHDF5() {
 }
 
 void exahype::plotters::ADERDG2CarpetHDF5::init(const std::string& filename, int basisSize, int solverUnknowns, int writtenUnknowns, exahype::parser::ParserView  plotterParameters) {
-	bool oneFilePerTimestep = true;
-	bool allUnknownsInOneFile = true;
-
 	// Determine names of output fields
 	char **writtenQuantitiesNames = new char*[writtenUnknowns];
 	std::fill_n(writtenQuantitiesNames, writtenUnknowns, nullptr);
 	_postProcessing->writtenQuantitiesNames(writtenQuantitiesNames);
 	
 	writer = new exahype::plotters::CarpetHDF5Writer(filename, basisSize, solverUnknowns, writtenUnknowns, plotterParameters,
-		writtenQuantitiesNames, oneFilePerTimestep, allUnknownsInOneFile);	
-
-	if(writer->slicer) {
-		logInfo("init", "Plotting plotterParametersion "<<writer->slicer->toString()<<" to Files "<<filename);
-	}
+		writtenQuantitiesNames);
 }
 
 void exahype::plotters::ADERDG2CarpetHDF5::plotPatch(const int solverNumber,solvers::Solver::CellInfo& cellInfo) {
@@ -128,9 +121,7 @@ void exahype::plotters::ADERDG2CarpetHDF5::plotPatch(const int solverNumber,solv
 }
 
 void exahype::plotters::ADERDG2CarpetHDF5::plotPatch(const dvec& offsetOfPatch, const dvec& sizeOfPatch, double* u, double timeStamp, int limiterStatus) {
-    if(writer->slicer && !writer->slicer->isPatchActive(offsetOfPatch, sizeOfPatch)) {
-	return;
-    }
+    if(writer->slicer && !writer->slicer->isPatchActive(offsetOfPatch, sizeOfPatch)) return;
 
     const int basisSize = writer->basisSize;
     const int order     = basisSize - 1;
@@ -260,7 +251,7 @@ void exahype::plotters::ADERDG2CarpetHDF5::interpolateCartesianSlicedPatch(const
 	dvec line = slicer.project(offsetOfPatch);
 	ivec i;
 	for(i(0)=0; i(0)<basisSize; i(0)++) {
-		dvec pos = line + (i.convertScalar<double>())* (sizeOfPatch(0)/(order));
+		dvec pos = line + slicer.project(i).convertScalar<double>() * (sizeOfPatch(0)/(order));
 		
 		for (int unknown=0; unknown < solverUnknowns; unknown++) {
 			interpoland[unknown] = kernels::interpolate(

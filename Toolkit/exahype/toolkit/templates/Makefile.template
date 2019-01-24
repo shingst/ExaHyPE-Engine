@@ -45,6 +45,16 @@ PROJECT_CFLAGS+= -DALIGNMENT={{alignment}}
 {% else %}
 ARCHITECTURE=CPU
 {% endif %}
+{% if compilerFlags != "" or linkerFlags != "" %}
+
+# Additional flags from specification file
+{% endif %}
+{% if compilerFlags != "" %}
+PROJECT_CFLAGS+={{compilerFlags}}
+{% endif %}
+{% if linkerFlags != "" %}
+PROJECT_LFLAGS+={{linkerFlags}}
+{% endif %}
 
 # Default sharedmem/distributedmem required by the specification file
 ifeq ($(SHAREDMEM),)

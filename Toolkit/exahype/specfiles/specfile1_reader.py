@@ -376,9 +376,14 @@ class SpecFile1Reader():
                   try:
                       result[m.group(1)]=float(m.group(2))
                   except:
-                      result[m.group(1)]=m.group(2)
+                      if re.match(r"^(True|Yes|On)$", m.group(2)):
+                          result[m.group(1)] = True
+                      elif re.match(r"^(False|No|Off)$", m.group(2)):
+                          result[m.group(1)] = False
+                      else: # just store the string
+                          result[m.group(1)]=m.group(2)
             else:
-                raise SpecFile1ParserError("constants|select: Token '%s' does not have structure '<string>:<integer>'." % token_s)
+                raise SpecFile1ParserError("constants|select: Token '%s' does not have structure '<string>:<something>'." % token_s)
         if result:
             return result
         else:
