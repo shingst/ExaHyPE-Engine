@@ -261,7 +261,8 @@ void exahype::stealing::AggressiveCCPDistributor::updateLoadDistribution() {
          if(!exahype::stealing::StealingManager::getInstance().isBlacklisted(i)) {
           //logInfo("updateLoadDistribution", "tasks for victim "<<i<<" before recomputation:"<<_tasksToOffload[i]<< " ideal: "<<_idealTasksToOffload[i]<< " temp "<<_temperature);
           //logInfo("updateLoadDistribution", "first : "<<(1.0-_temperature)*_tasksToOffload[i]<<" second:"<<_temperature*_idealTasksToOffload[i]);
-           _tasksToOffload[i] = (1.0-_temperature)*_tasksToOffload[i] + _temperature*_idealTasksToOffload[i];
+           _tasksToOffload[i] = 0;
+           //_tasksToOffload[i] = (1.0-_temperature)*_tasksToOffload[i] + _temperature*_idealTasksToOffload[i];
           //logInfo("updateLoadDistribution", "tasks for victim "<<i<<" after recomputation:"<<_tasksToOffload[i]);
          }
        }
