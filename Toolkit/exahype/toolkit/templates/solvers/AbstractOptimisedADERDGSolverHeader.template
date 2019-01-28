@@ -292,7 +292,7 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver {
     /**
      * @TODO LR : document
      */
-    virtual void multiplyMaterialParameterMatrix(const double* const Q, double* rhs);
+    virtual void multiplyMaterialParameterMatrix(const double* const Q, double** rhs);
 
     /**
      * Compute a pointSource contribution.
@@ -372,7 +372,6 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver {
     virtual void viscousFlux(const double* const Q, const double* const gradQ, double** F);
     virtual void viscousEigenvalues(const double* const Q,const int d,double* lambda);
     ///@}
->>>>>>> master
     
     //helper function
     inline double* allocateArray(const int size) {return ((double *) _mm_malloc(sizeof(double)*size, ALIGNMENT));}
