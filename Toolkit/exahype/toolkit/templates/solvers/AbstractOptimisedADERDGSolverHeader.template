@@ -17,7 +17,6 @@
 {% endif %}
 
 #include "exahype/solvers/ADERDGSolver.h"
-#include "exahype/solvers/UserSolverInterface.h"
 {% if enableProfiler %}
 #include "exahype/profilers/Profiler.h"
 {% endif %}
@@ -34,7 +33,7 @@ namespace {{project}}{
   class {{abstractSolver}};
 }
 
-class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, public exahype::solvers::UserADERDGSolverInterface {
+class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver {
   public:
     static constexpr int NumberOfVariables         = {{optNamespace}}::getNumberOfVariable();
     static constexpr int NumberOfParameters        = {{optNamespace}}::getNumberOfParameter();
@@ -289,10 +288,10 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, pu
     
     //not used PDE
     {% if not useMaterialParameters %}
-    void multiplyMaterialParameterMatrix(const double* const Q, double* rhs) final {}
+    virtual void multiplyMaterialParameterMatrix(const double* const Q, double* rhs) {}
     {% endif %}
     {% if patchwiseAdjust %}
-    void adjustPointSolution(const double* const x,const double t,const double dt,double* Q) final {};
+    virtual void adjustPointSolution(const double* const x,const double t,const double dt,double* Q) {};
     {% endif %}
     
     //helper function
