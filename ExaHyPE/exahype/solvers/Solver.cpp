@@ -153,7 +153,7 @@ void exahype::solvers::Solver::ensureAllJobsHaveTerminated(JobType jobType) {
   bool waitingForRemoteJobs = false;
 
 #ifdef USE_ITAC
-  VT_begin(event_wait);
+  //VT_begin(event_wait);
 #endif
 
 
@@ -201,7 +201,7 @@ void exahype::solvers::Solver::ensureAllJobsHaveTerminated(JobType jobType) {
 #endif
 
 #ifdef USE_ITAC
-  VT_end(event_wait);
+  //VT_end(event_wait);
 #endif
 }
 

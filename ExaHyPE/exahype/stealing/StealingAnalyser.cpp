@@ -18,6 +18,11 @@
 
 tarch::logging::Log  exahype::stealing::StealingAnalyser::_log( "exahype::stealing::StealingAnalyser" );
 
+#ifdef USE_ITAC
+#include "VT.h"
+static int event_waitForWorker = -1;
+static const char *event_name_waitForWorker = "waitForWorker";
+#endif
 
 exahype::stealing::StealingAnalyser::StealingAnalyser():
   _isSwitchedOn(true),
@@ -28,6 +33,8 @@ exahype::stealing::StealingAnalyser::StealingAnalyser():
   _iterationCounter(0)
 {
   enable(true);
+
+  VT_funcdef(event_name_waitForWorker, VT_NOCLASS, &event_waitForWorker ); assertion(ierr==0)
 }
 
 
@@ -82,12 +89,18 @@ void exahype::stealing::StealingAnalyser::endIteration(double numberOfInnerLeafC
 void exahype::stealing::StealingAnalyser::beginToReceiveDataFromWorker() {
   if (_isSwitchedOn) {
     _waitForWorkerDataWatch.startTimer();
+#ifdef USE_ITAC
+    VT_begin(event_waitForWorker);
+#endif
   }
 }
 
 
 void exahype::stealing::StealingAnalyser::endToReceiveDataFromWorker( int fromRank ) {
   if (_isSwitchedOn) {
+#ifdef USE_ITAC
+    VT_end(event_waitForWorker);
+#endif
     _waitForWorkerDataWatch.stopTimer();
     const double elapsedTime = _waitForWorkerDataWatch.getCalendarTime();
 
@@ -102,7 +115,9 @@ void exahype::stealing::StealingAnalyser::endToReceiveDataFromWorker( int fromRa
         " currentAvg "<< currentAvg << "s"
       );
     }
-
+#ifdef USE_ITAC
+        VT_begin(event_waitForWorker);
+#endif
     _waitForWorkerDataWatch.startTimer();
   }
 }

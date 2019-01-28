@@ -1160,7 +1160,7 @@ class exahype::solvers::Solver {
 
    if ( !cellDescription.getHasCompletedLastStep() ) {
 #ifdef USE_ITAC
-	 VT_begin(event_wait);
+	// VT_begin(event_wait);
 #endif
      peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
 #if defined(DistributedStealing)
@@ -1198,13 +1198,13 @@ class exahype::solvers::Solver {
          && !progress
          && !exahype::stealing::StealingManager::getInstance().getRunningAndReceivingBack()){
 #ifdef USE_ITAC
-	 VT_begin(event_emergency);
+	 //VT_begin(event_emergency);
 #endif
          hasTriggeredEmergency = true;
          logInfo("waitUntilCompletedTimeStep()","EMERGENCY: missing from rank "<<responsibleRank); //TODO: my rank can  no longer be a critical rank and I should give away one less per victim
          exahype::stealing::StealingManager::getInstance().triggerEmergencyForRank(responsibleRank);
 #ifdef USE_ITAC
-	 VT_end(event_emergency);
+	 //VT_end(event_emergency);
 #endif
        }
 #endif
@@ -1221,7 +1221,7 @@ class exahype::solvers::Solver {
 
 
 #ifdef USE_ITAC
-	 VT_end(event_wait);
+	 //VT_end(event_wait);
 #endif
  }
 
