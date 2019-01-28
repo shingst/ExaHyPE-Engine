@@ -2225,7 +2225,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
     }
     else {
 #ifdef USE_ITAC
-      VT_begin(event_spawn);
+     // VT_begin(event_spawn);
 #endif
       StealablePredictionJob *stealablePredictionJob = new StealablePredictionJob(*this,
           cellInfo._cellDescriptionsIndex, element,
@@ -2236,7 +2236,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
       //peano::datatraversal::TaskSet spawnedSet( stealablePredictionJob, peano::datatraversal::TaskSet::TaskType::Background );
       exahype::stealing::StealingProfiler::getInstance().notifySpawnedTask();
 #ifdef USE_ITAC
-      VT_end(event_spawn);
+      //VT_end(event_spawn);
 #endif
     }
 #else
@@ -2460,7 +2460,7 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
       }
       else {
 #ifdef USE_ITAC
-        VT_begin(event_spawn);
+       // VT_begin(event_spawn);
 #endif
         StealablePredictionJob *stealablePredictionJob = new StealablePredictionJob(*this,
           cellInfo._cellDescriptionsIndex, element,
@@ -2469,7 +2469,7 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
         submitOrSendStealablePredictionJob(stealablePredictionJob);
         exahype::stealing::StealingProfiler::getInstance().notifySpawnedTask();
 #ifdef USE_ITAC
-      VT_end(event_spawn);
+     // VT_end(event_spawn);
 #endif
      }
 #else
@@ -4686,7 +4686,7 @@ void exahype::solvers::ADERDGSolver::progressStealing(exahype::solvers::ADERDGSo
     return;
   }
 #ifdef USE_ITAC
-  VT_begin(event_progress);
+  //VT_begin(event_progress);
 #endif
 
   exahype::stealing::StealingManager::getInstance().setRunningAndReceivingBack();
@@ -4885,7 +4885,7 @@ void exahype::solvers::ADERDGSolver::progressStealing(exahype::solvers::ADERDGSo
 #endif
 
 #ifdef USE_ITAC
-  VT_end(event_progress);
+  //VT_end(event_progress);
 #endif
 }
 

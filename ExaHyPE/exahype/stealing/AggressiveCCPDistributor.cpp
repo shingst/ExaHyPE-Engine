@@ -228,6 +228,8 @@ void exahype::stealing::AggressiveCCPDistributor::updateLoadDistribution() {
 
   int k = 0;
 
+  int max_waiting_time = -1;
+  int max_waiting_target = -1;
   for(int i=0; i<nnodes; i++) {
     bool waitingForSomeone = false;
     for(int j=0; j<nnodes; j++) {
@@ -237,6 +239,10 @@ void exahype::stealing::AggressiveCCPDistributor::updateLoadDistribution() {
         waitingRanks[j]++;   
         waitingForSomeone = true;
       }
+      if(waitingTimesSnapshot[k+j]>max_waiting_time) {
+        max_waiting_time = waitingTimesSnapshot[k+j];
+        max_waiting_target = j;
+      }
     }
     isWaitingForSomeone[i]= waitingForSomeone;
     k+= nnodes;
@@ -245,7 +251,7 @@ void exahype::stealing::AggressiveCCPDistributor::updateLoadDistribution() {
   //select critical rank
   int criticalRank = -1;
   for(int i=0; i<nnodes; i++) {
-    if(!isWaitingForSomeone[i] && waitingRanks[i]>0) {
+    if(!isWaitingForSomeone[i] && waitingRanks[i]>0 && max_waiting_target==i) {
       criticalRank = i; 
       break;
     }
@@ -261,8 +267,8 @@ void exahype::stealing::AggressiveCCPDistributor::updateLoadDistribution() {
          if(!exahype::stealing::StealingManager::getInstance().isBlacklisted(i)) {
           //logInfo("updateLoadDistribution", "tasks for victim "<<i<<" before recomputation:"<<_tasksToOffload[i]<< " ideal: "<<_idealTasksToOffload[i]<< " temp "<<_temperature);
           //logInfo("updateLoadDistribution", "first : "<<(1.0-_temperature)*_tasksToOffload[i]<<" second:"<<_temperature*_idealTasksToOffload[i]);
-           _tasksToOffload[i] = 0;
            //_tasksToOffload[i] = (1.0-_temperature)*_tasksToOffload[i] + _temperature*_idealTasksToOffload[i];
+           _tasksToOffload[i] = 0;
           //logInfo("updateLoadDistribution", "tasks for victim "<<i<<" after recomputation:"<<_tasksToOffload[i]);
          }
        }
