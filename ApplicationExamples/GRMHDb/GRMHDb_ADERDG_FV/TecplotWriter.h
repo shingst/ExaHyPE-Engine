@@ -18,15 +18,15 @@
 namespace GRMHDb {
   class TecplotWriter;
 
-  class GRMHDSolver_ADERDG;
-  class GRMHDSolver_FV;
+  //class GRMHDSolver_ADERDG;
+  //class GRMHDSolver_FV;
 }
 
 class GRMHDb::TecplotWriter : public exahype::plotters::LimitingADERDG2UserDefined {
  public:
  static constexpr int nVar = GRMHDb::AbstractGRMHDbSolver_ADERDG::NumberOfVariables;
- static constexpr int order = GRMHDb::AbstractGRMHDbSolver_ADERDG::Order;
- static constexpr int basisSize = order + 1;
+ //static constexpr int order = GRMHDb::AbstractGRMHDbSolver_ADERDG::Order;
+ //static constexpr int basisSize = order + 1;
   /**
    * Constructor.
    * 

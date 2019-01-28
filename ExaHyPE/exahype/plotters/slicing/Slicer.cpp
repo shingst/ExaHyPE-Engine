@@ -168,8 +168,9 @@ Slicer* Slicer::bestFromSelectionQuery(const exahype::parser::ParserView& plotte
 	  Slicer *a = CartesianSlicer::fromSelectionQuery(plotterParameters);
 	  Slicer *b = RegionSlicer::fromSelectionQuery(plotterParameters);
 
+	  // This will get more of an issue once we have more then two slicers available ;-)
 	  if(a->clips() && b->clips()) {
-	    logError("bestFromSelectionQuery", "Warning: Several slicing strategies apply to the given arguments '"<<plotterParameters.dump("select")<<"'. I choose " << a->getIdentifier());
+	    logInfo("bestFromSelectionQuery", "Several slicing strategies apply to the given arguments '"<<plotterParameters.dump("select")<<"'. I choose " << a->getIdentifier());
 	  }
 
 	  if(a->clips()) { delete b; return a;}

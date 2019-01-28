@@ -169,9 +169,9 @@ public:
    *
    **/
   CarpetHDF5Writer(const std::string& _filename, int _basisSize, int _solverUnknowns, int _writtenUnknowns, exahype::parser::ParserView _plotterParameters,
-		   char** writtenQuantitiesNames, bool oneFilePerTimestep_=false, bool allUnknownsInOneFile_=false);
+		   char** writtenQuantitiesNames);
 
-  void writeBasicGroup(H5::H5File* file);
+  void writeBasicGroup(H5::H5File* file, int writtenUnknown=-1);
   
   void openH5(); ///< Opens or switchs the currently active H5 file or the list of H5 files. Closes if neccessary.
   void flushH5(); ///< Flushs all HDF5 file output buffers. Always flushs before.

@@ -99,7 +99,7 @@ case $CMD in
 		;;
 	"toolkit-call") # Just call the toolkit, don't do anything beyond
 		#exec java -jar $(subreq root)/Toolkit/dist/ExaHyPE.jar --not-interactive $@
-		exec Toolkit/toolkit.sh $@
+		exec $GITROOT/Toolkit/toolkit.sh $@
 		;;
 	"compile") # Invokes the toolkit and compilation of an application
 		cdapp;

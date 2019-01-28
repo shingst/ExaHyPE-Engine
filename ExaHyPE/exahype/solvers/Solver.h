@@ -102,6 +102,11 @@ namespace exahype {
   typedef peano::heap::AlignedCharSendReceiveTask<ALIGNMENT>   AlignedCharSendReceiveTask;
   #endif
 
+  #if defined(UsePeanosSymmetricBoundaryExchanger) and defined(UsePeanosAggregationBoundaryExchanger)
+    #error UsePeanosSymmetricBoundaryExchanger and UsePeanosAggregationBoundaryExchanger must not be defined at the same time!
+  #endif
+
+  // aligned data -> AlignedDoubleSendReceiveTask
   #if defined(ALIGNMENT) and defined(UsePeanosSymmetricBoundaryExchanger)
   typedef peano::heap::DoubleHeap<
     peano::heap::SynchronousDataExchanger< double, true, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
@@ -115,31 +120,6 @@ namespace exahype {
     peano::heap::SymmetricBoundaryDataExchanger< char, false, AlignedCharSendReceiveTask, std::vector< char, AlignedCharAllocator > >,
     std::vector< char, AlignedCharAllocator >
   >     CompressedDataHeap;
-  #elif defined(ALIGNMENT) and !defined(UsePeanosSymmetricBoundaryExchanger)
-  typedef peano::heap::DoubleHeap<
-    peano::heap::SynchronousDataExchanger< double, true, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
-    peano::heap::SynchronousDataExchanger< double, true, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
-    peano::heap::RLEBoundaryDataExchanger< double, false, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
-    std::vector< double, AlignedAllocator >
-  >     DataHeap;
-  typedef peano::heap::CharHeap<
-    peano::heap::SynchronousDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedCharAllocator > >,
-    peano::heap::SynchronousDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedCharAllocator > >,
-    peano::heap::RLEBoundaryDataExchanger< char, false, AlignedCharSendReceiveTask, std::vector< char, AlignedCharAllocator > >,
-    std::vector< char, AlignedCharAllocator >
-  >     CompressedDataHeap;
-  #elif !defined(ALIGNMENT) and defined(UsePeanosSymmetricBoundaryExchanger)
-  typedef peano::heap::DoubleHeap<
-    peano::heap::SynchronousDataExchanger< double, true,  peano::heap::SendReceiveTask<double> >,
-    peano::heap::SynchronousDataExchanger< double, true,  peano::heap::SendReceiveTask<double> >,
-    peano::heap::SymmetricBoundaryDataExchanger< double, false, peano::heap::SendReceiveTask<double> >
-  >     DataHeap;
-  typedef peano::heap::CharHeap<
-    peano::heap::SynchronousDataExchanger< char, true,  peano::heap::SendReceiveTask<char> >,
-    peano::heap::SynchronousDataExchanger< char, true,  peano::heap::SendReceiveTask<char> >,
-    peano::heap::SymmetricBoundaryDataExchanger< char, false, peano::heap::SendReceiveTask<char> >
-  >     CompressedDataHeap;
-
   #elif defined(ALIGNMENT) and defined(UsePeanosAggregationBoundaryExchanger)
   typedef peano::heap::DoubleHeap<
     peano::heap::SynchronousDataExchanger< double, true, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
@@ -153,18 +133,31 @@ namespace exahype {
     peano::heap::AggregationBoundaryDataExchanger< char, AlignedCharSendReceiveTask, std::vector< char, AlignedCharAllocator > >,
     std::vector< char, AlignedCharAllocator >
   >     CompressedDataHeap;
-  #elif defined(ALIGNMENT) and !defined(UsePeanosAggregationBoundaryExchanger)
+  #elif defined(ALIGNMENT)
   typedef peano::heap::DoubleHeap<
     peano::heap::SynchronousDataExchanger< double, true, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
     peano::heap::SynchronousDataExchanger< double, true, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
-    peano::heap::AggregationBoundaryDataExchanger< double, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
-   std::vector< double, AlignedAllocator >
-  >      DataHeap;
+    peano::heap::RLEBoundaryDataExchanger< double, false, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
+    std::vector< double, AlignedAllocator >
+  >     DataHeap;
   typedef peano::heap::CharHeap<
     peano::heap::SynchronousDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedCharAllocator > >,
     peano::heap::SynchronousDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedCharAllocator > >,
-    peano::heap::AggregationBoundaryDataExchanger< char, AlignedCharSendReceiveTask, std::vector< char, AlignedCharAllocator > >,
+    peano::heap::RLEBoundaryDataExchanger< char, false, AlignedCharSendReceiveTask, std::vector< char, AlignedCharAllocator > >,
     std::vector< char, AlignedCharAllocator >
+  >     CompressedDataHeap;
+  #endif
+ // non-aligned data -> SendReceiveTask
+  #if !defined(ALIGNMENT) and defined(UsePeanosSymmetricBoundaryExchanger)
+  typedef peano::heap::DoubleHeap<
+    peano::heap::SynchronousDataExchanger< double, true,  peano::heap::SendReceiveTask<double> >,
+    peano::heap::SynchronousDataExchanger< double, true,  peano::heap::SendReceiveTask<double> >,
+    peano::heap::SymmetricBoundaryDataExchanger< double, false, peano::heap::SendReceiveTask<double> >
+  >     DataHeap;
+  typedef peano::heap::CharHeap<
+    peano::heap::SynchronousDataExchanger< char, true,  peano::heap::SendReceiveTask<char> >,
+    peano::heap::SynchronousDataExchanger< char, true,  peano::heap::SendReceiveTask<char> >,
+    peano::heap::SymmetricBoundaryDataExchanger< char, false, peano::heap::SendReceiveTask<char> >
   >     CompressedDataHeap;
   #elif !defined(ALIGNMENT) and defined(UsePeanosAggregationBoundaryExchanger)
   typedef peano::heap::DoubleHeap<
@@ -177,7 +170,7 @@ namespace exahype {
     peano::heap::SynchronousDataExchanger< char, true,  peano::heap::SendReceiveTask<char> >,
     peano::heap::AggregationBoundaryDataExchanger< char, peano::heap::SendReceiveTask<char>, std::vector<char> >
   >     CompressedDataHeap;
-  #else
+  #elif !defined(ALIGNMENT)
   typedef peano::heap::DoubleHeap<
     peano::heap::SynchronousDataExchanger< double, true,  peano::heap::SendReceiveTask<double> >,
     peano::heap::SynchronousDataExchanger< double, true,  peano::heap::SendReceiveTask<double> >,
@@ -246,6 +239,10 @@ namespace exahype {
    * These meta data are not symmetric, i..e we can use the RLE heap but we
    * may not use any symmetric heap.
    */
+  #if defined(UsePeanosSymmetricBoundaryExchangerForMetaData) and defined(UsePeanosAggregationBoundaryExchangerForMetaData)
+    #error UsePeanosSymmetricBoundaryExchangerForMetaData and UsePeanosAggregationBoundaryExchangerForMetaData must not be defined at the same time!
+  #endif
+
   #if defined(UsePeanosAggregationBoundaryExchangerForMetaData)
   typedef peano::heap::CharHeap<
       peano::heap::SynchronousDataExchanger< char, true,  peano::heap::SendReceiveTask<char> >,

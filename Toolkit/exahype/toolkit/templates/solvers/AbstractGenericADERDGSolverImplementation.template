@@ -370,6 +370,9 @@ void {{project}}::{{abstractSolver}}::algebraicSource(const double* const Q,doub
       abortWithMsg("nonConservativeProduct: If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
 }
 
+void {{project}}::{{abstractSolver}}::multiplyMaterialParameterMatrix(const double* const Q, double** rhs) {
+      abortWithMsg("multiplyMaterialParameterMatrix: If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
+}
 
 void {{project}}::{{abstractSolver}}::pointSource(const double* const Q,const double* const x,const double t,const double dt, double* forceVector,int n) {
       abortWithMsg("pointSource: If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
