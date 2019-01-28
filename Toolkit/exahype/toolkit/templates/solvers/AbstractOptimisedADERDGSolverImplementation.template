@@ -196,7 +196,7 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
 
 {% if isLinear %}
 {% if usePointSources %}
-  int picardIt = -1;
+  int picardIt = 1;
   std::vector<int>* pointSources = {{optNamespace}}::getPointSources(*static_cast<{{solver}}*>(this),&center[0],dx[0]);
 {% if countFlops %}
   const int psSize = pointSources != nullptr ? pointSources->size() : 0;

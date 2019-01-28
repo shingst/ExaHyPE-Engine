@@ -169,6 +169,11 @@ public:
   typedef exahype::records::ADERDGCellDescription CellDescription;
   typedef peano::heap::RLEHeap<CellDescription> Heap;
 
+  /**
+   * @return if this an ADER-DG solver which is not able to solve nonlinear problems.
+   */
+  virtual bool isLinear() const;
+
 private:
 
   /**

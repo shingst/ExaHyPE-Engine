@@ -229,9 +229,7 @@ void exahype::repositories::RepositorySTDStack::iterate(int numberOfIterations, 
   for (int i=0; i<numberOfIterations; i++) {
     _solverState.setBatchState(numberOfIterations, i );
 
-    #ifdef Parallel
     exahype::runners::Runner::globalBroadcast(_repositoryState,_solverState,i);
-    #endif
 
     switch ( _repositoryState.getAction()) {
       case exahype::records::RepositoryState::UseAdapterMeshRefinement: watch.startTimer(); _gridWithMeshRefinement.iterate(); watch.stopTimer(); _measureMeshRefinementCPUTime.setValue( watch.getCPUTime() ); _measureMeshRefinementCalendarTime.setValue( watch.getCalendarTime() ); break;
@@ -264,9 +262,9 @@ void exahype::repositories::RepositorySTDStack::iterate(int numberOfIterations, 
         assertionMsg( false, "not implemented yet" );
         break;
     }
-    #ifdef Parallel
-    exahype::runners::Runner::globalReduction(_repositoryState,_solverState,i);
 
+    exahype::runners::Runner::globalReduction(_repositoryState,_solverState,i);
+    #ifdef Parallel
     if ( switchedLoadBalancingTemporarilyOff && i==numberOfIterations-1) {
       peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(true);
     }

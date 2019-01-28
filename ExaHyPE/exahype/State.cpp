@@ -25,11 +25,6 @@
 
 bool exahype::State::VirtuallyExpandBoundingBox = false;
 
-#ifdef Parallel
-bool exahype::State::BroadcastInThisIteration = true;
-bool exahype::State::ReduceInThisIteration    = false;
-#endif
-
 bool exahype::State::isFirstIterationOfBatchOrNoBatch() const {
   return _stateData.getTotalNumberOfBatchIterations()==1 || _stateData.getBatchIteration()==0;
 }

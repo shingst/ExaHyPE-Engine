@@ -1671,11 +1671,26 @@ void exahype::runners::Runner::validateSolverTimeStepDataForThreeAlgorithmicPhas
   #endif
 }
 
-#ifdef Parallel
+
+bool exahype::runners::Runner::issuePredictionJobsInThisIteration(const int currentBatchIteration) const {
+  return
+      exahype::solvers::Solver::PredictionSweeps==1 ||
+      currentBatchIteration % 2 == 0;
+}
+
+bool exahype::runners::Runner::sendOutRiemannDataInThisIteration(const int numberOfBatchIterations,const int currentBatchIteration) const {
+  const bool isLastIterationOfBatchOrNoBatch = ;
+  return
+      exahype::solvers::Solver::PredictionSweeps==1    ||
+      numberOfBatchIterations==1                       ||
+      currentBatchIteration==numberOfBatchIterations-1 ||
+      currentBatchIteration % 2 != 0;
+}
+
 void exahype::runners::Runner::globalBroadcast(exahype::records::RepositoryState& repositoryState, exahype::State& solverState,  const int currentBatchIteration) {
   assertionEquals(tarch::parallel::Node::getGlobalMasterRank(),0);
-  // return; // TODO remove
   // broadcast
+  #ifdef Parallel
   if ( currentBatchIteration==0 ) {
     switch ( repositoryState.getAction()) {
       case exahype::records::RepositoryState::UseAdapterMeshRefinement:
@@ -1707,15 +1722,17 @@ void exahype::runners::Runner::globalBroadcast(exahype::records::RepositoryState
       } break;
     }
   }
+  #endif
 }
 
 void exahype::runners::Runner::globalReduction(exahype::records::RepositoryState& repositoryState, exahype::State& solverState, const int currentBatchIteration) {
   // return; // TODO remove
   assertionEquals(tarch::parallel::Node::getGlobalMasterRank(),0);
 
-  // reductions
   if ( currentBatchIteration==repositoryState.getNumberOfIterations()-1 ) {
-    switch ( repositoryState.getAction()) {
+    // reductions
+    #ifdef Parallel
+    switch ( repositoryState.getAction() ) {
       case exahype::records::RepositoryState::UseAdapterBroadcastAndDropNeighbourMessages: // we do a reduction to sychronise the ranks.
       case exahype::records::RepositoryState::UseAdapterUpdateAndReduce:
       case exahype::records::RepositoryState::UseAdapterFusedTimeStep: {
@@ -1796,19 +1813,6 @@ void exahype::runners::Runner::globalReduction(exahype::records::RepositoryState
         break;
     }
   }
-  
-  // finished to send
-  if ( currentBatchIteration % 2 == 0 ) { // should be 1
-    switch ( repositoryState.getAction()) {
-      case exahype::records::RepositoryState::UseAdapterBroadcastAndDropNeighbourMessages: // we do a reduction to sychronise the ranks.
-      case exahype::records::RepositoryState::UseAdapterPrediction:
-      case exahype::records::RepositoryState::UseAdapterPredictionRerun:
-      case exahype::records::RepositoryState::UseAdapterInitialPrediction:
-      case exahype::records::RepositoryState::UseAdapterUpdateAndReduce:
-      case exahype::records::RepositoryState::UseAdapterFusedTimeStep: {
-        peano::heap::AbstractHeap::allHeapsFinishedToSendBoundaryData( solverState.isTraversalInverted() );
-      } break;
-    }
-  }
+  #endif
 }
 #endif

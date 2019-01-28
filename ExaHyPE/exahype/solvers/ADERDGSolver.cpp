@@ -734,10 +734,6 @@ void exahype::solvers::ADERDGSolver::synchroniseTimeStepping(
       p.setPredictorTimeStepSize(_minPredictorTimeStepSize);
       break;
   }
-  const double dt = 0.001;
-  p.setPreviousCorrectorTimeStepSize(dt);
-  p.setCorrectorTimeStepSize(dt);
-  p.setPredictorTimeStepSize(dt);
 }
 
 void exahype::solvers::ADERDGSolver::startNewTimeStep() {
@@ -767,10 +763,6 @@ void exahype::solvers::ADERDGSolver::startNewTimeStep() {
       _minPredictorTimeStamp    = _minCorrectorTimeStamp;
       break;
   }
-  const double dt = 0.001;
-  _previousMinCorrectorTimeStepSize = dt; 
-  _minCorrectorTimeStepSize         = dt; 
-  _minPredictorTimeStepSize         = dt;
 
   _maxLevel     = _nextMaxLevel;
   _nextMaxLevel = -std::numeric_limits<int>::max(); // "-", min
@@ -805,10 +797,6 @@ void exahype::solvers::ADERDGSolver::startNewTimeStepFused(
     _maxLevel     = _nextMaxLevel;
     _nextMaxLevel = -std::numeric_limits<int>::max(); // "-", min
   }
-  const double dt = 0.001;
-  _previousMinCorrectorTimeStepSize = dt; 
-  _minCorrectorTimeStepSize         = dt; 
-  _minPredictorTimeStepSize         = dt;
 }
 
 void exahype::solvers::ADERDGSolver::updateTimeStepSizesFused() {
@@ -828,10 +816,6 @@ void exahype::solvers::ADERDGSolver::updateTimeStepSizesFused() {
     _minPredictorTimeStamp =  _minCorrectorTimeStamp+_minNextTimeStepSize;
     break;
   }
-  const double dt = 0.001;
-  _previousMinCorrectorTimeStepSize = dt; 
-  _minCorrectorTimeStepSize         = dt; 
-  _minPredictorTimeStepSize         = dt;
 
   _stabilityConditionWasViolated = false;
 
@@ -856,10 +840,6 @@ void exahype::solvers::ADERDGSolver::updateTimeStepSizes() {
       _minPredictorTimeStamp =  _minCorrectorTimeStamp;
       break;
   }
-  const double dt = 0.001;
-  _previousMinCorrectorTimeStepSize = dt; 
-  _minCorrectorTimeStepSize         = dt; 
-  _minPredictorTimeStepSize         = dt;
 
   _maxLevel     = _nextMaxLevel;
   _nextMaxLevel = -std::numeric_limits<int>::max(); // "-", min
@@ -4297,11 +4277,6 @@ void exahype::solvers::ADERDGSolver::sendDataToMaster(
     masterRank,
     _masterWorkerCommunicationTag,
     tarch::parallel::Node::getInstance().getCommunicator());
-
-//  DataHeap::getInstance().sendData(
-//      messageForMaster.data(), messageForMaster.size(),
-//      masterRank, x, level,
-//      peano::heap::MessageType::MasterWorkerCommunication);
 }
 
 void exahype::solvers::ADERDGSolver::mergeWithWorkerData(const DataHeap::HeapEntries& message) {
@@ -4314,14 +4289,6 @@ void exahype::solvers::ADERDGSolver::mergeWithWorkerData(const DataHeap::HeapEnt
   _minNextTimeStepSize    = std::min( _minNextTimeStepSize, message[index++] );
   _nextMaxLevel           = std::max( _nextMaxLevel,        static_cast<int>(message[index++]) );
   updateNextMeshUpdateEvent(convertToMeshUpdateEvent(message[index++])); // TODO remove
-  
-  const double dt = 0.001;
-  _previousMinCorrectorTimeStepSize = dt; 
-  _minCorrectorTimeStepSize         = dt; 
-  _minPredictorTimeStepSize         = dt;
-  _minPredictorTimeStamp = dt;
-  _minCorrectorTimeStamp = 0;
-  _minNextTimeStepSize   = 0.999*dt;
  
 
   if (tarch::parallel::Node::getInstance().getRank()==
@@ -4362,10 +4329,6 @@ void exahype::solvers::ADERDGSolver::mergeWithWorkerData(
     _masterWorkerCommunicationTag,
     tarch::parallel::Node::getInstance().getCommunicator(),
     MPI_STATUS_IGNORE);
-
-//  DataHeap::getInstance().receiveData(
-//      messageFromWorker.data(),messageFromWorker.size(),workerRank, x, level,
-//      peano::heap::MessageType::MasterWorkerCommunication);
 
   assertion1(messageFromWorker.size()==3,messageFromWorker.size());
   mergeWithWorkerData(messageFromWorker);
@@ -4428,11 +4391,6 @@ void exahype::solvers::ADERDGSolver::sendDataToWorker(
     workerRank,
     _masterWorkerCommunicationTag,
     tarch::parallel::Node::getInstance().getCommunicator());
-  
-//  DataHeap::getInstance().sendData(
-//      messageForWorker.data(), messageForWorker.size(),
-//      workerRank, x, level,
-//      peano::heap::MessageType::MasterWorkerCommunication);
 }
 
 void exahype::solvers::ADERDGSolver::mergeWithMasterData(const DataHeap::HeapEntries& message) {
@@ -4465,10 +4423,6 @@ void exahype::solvers::ADERDGSolver::mergeWithMasterData(
     masterRank,
     _masterWorkerCommunicationTag,
     tarch::parallel::Node::getInstance().getCommunicator(),MPI_STATUS_IGNORE);
-
- // DataHeap::getInstance().receiveData(
- //     messageFromMaster.data(),messageFromMaster.size(),masterRank, x, level,
- //     peano::heap::MessageType::MasterWorkerCommunication);
 
   assertion1(messageFromMaster.size()==7,messageFromMaster.size());
   mergeWithMasterData(messageFromMaster);
