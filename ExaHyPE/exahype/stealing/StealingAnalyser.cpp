@@ -115,9 +115,9 @@ void exahype::stealing::StealingAnalyser::endToReceiveDataFromWorker( int fromRa
         " currentAvg "<< currentAvg << "s"
       );
     }
-#ifdef USE_ITAC
-        VT_begin(event_waitForWorker);
-#endif
+//#ifdef USE_ITAC
+//        VT_begin(event_waitForWorker);
+//#endif
     _waitForWorkerDataWatch.startTimer();
   }
 }
