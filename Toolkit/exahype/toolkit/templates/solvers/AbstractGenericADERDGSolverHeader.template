@@ -160,6 +160,11 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver {
      *                         and time-averaged (over [t,t+dt]) as C array (already allocated).
      */
     virtual void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double * const fluxIn,const double* const stateIn,double *fluxOut,double* stateOut) = 0;
+        
+    /**
+     * @TODO LR : document
+     */
+    virtual void multiplyMaterialParameterMatrix(const double* const Q, double* rhs);
 
     /**
      * Compute a pointSource contribution.
