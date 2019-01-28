@@ -81,7 +81,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
   // transposed F slice for flux_vect, or used by ncp_vect as gradQt
   {{m.vectPDEsArrays('Ft', nVar, True) | indent(2)}}{##}
 {% endif %}
-{% if useFluxVect or useNCP or useMaterialParamVect%}
+{% if useFluxVect or useNCPVect or useMaterialParamVect%}
   // transposed Q slice for flux_vect
   {{m.vectPDEsArrays('Qt', nData, False) | indent(2)}}{##}
 {% endif %}
