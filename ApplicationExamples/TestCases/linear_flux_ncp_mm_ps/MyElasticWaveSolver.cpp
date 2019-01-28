@@ -186,52 +186,50 @@ void Elastic::MyElasticWaveSolver::flux(const double* const Q,double** F) {
   F[2][ 8] = 0.0;
 }
 
+void  Elastic::MyElasticWaveSolver::nonConservativeProduct(const double* const Q,const double* const* const gradQ,double** BgradQ) {
 
+  double u_x = gradQ[0][0];
+  double v_x = gradQ[0][1];
+  double w_x = gradQ[0][2];
 
-void  Elastic::MyElasticWaveSolver::nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) {
+  double u_y = gradQ[1][0];
+  double v_y = gradQ[1][1];
+  double w_y = gradQ[1][2];
 
-  double u_x = gradQ[0];
-  double v_x = gradQ[1];
-  double w_x = gradQ[2];
+  double u_z = gradQ[2][0];
+  double v_z = gradQ[2][1];
+  double w_z = gradQ[2][2];
 
-  double u_y = gradQ[9];
-  double v_y = gradQ[10];
-  double w_y = gradQ[11];
+ 
+  BgradQ[0][0] = 0;
+  BgradQ[0][1] = 0;
+  BgradQ[0][2] = 0;  
+  BgradQ[0][3] =-u_x;
+  BgradQ[0][4] =-0;
+  BgradQ[0][5] =-0;
+  BgradQ[0][6] =-v_x; //sigma_xy
+  BgradQ[0][7] =-w_x; //sigma_xz
+  BgradQ[0][8] =-0.0; //sigma_yz
 
-  double u_z = gradQ[18];
-  double v_z = gradQ[19];
-  double w_z = gradQ[20];
+  BgradQ[1][0]= 0;
+  BgradQ[1][1]= 0;
+  BgradQ[1][2]= 0;  
+  BgradQ[1][3]= 0;
+  BgradQ[1][4]= -v_y;
+  BgradQ[1][5]= 0;
+  BgradQ[1][6]= -u_y; //sigma_xy
+  BgradQ[1][7]=- 0; //sigma_xz
+  BgradQ[1][8]=-w_y; //sigma_yz
 
-
-  BgradQ[0] = 0;
-  BgradQ[1] = 0;
-  BgradQ[2] = 0;  
-  BgradQ[3] =-u_x;
-  BgradQ[4] =-0;
-  BgradQ[5] =-0;
-  BgradQ[6] =-v_x; //sigma_xy
-  BgradQ[7] =-w_x; //sigma_xz
-  BgradQ[8] =-0.0; //sigma_yz
-
-  BgradQ[9] = 0;
-  BgradQ[10]= 0;
-  BgradQ[11]= 0;  
-  BgradQ[12]= 0;
-  BgradQ[13]= -v_y;
-  BgradQ[14]= 0;
-  BgradQ[15]= -u_y; //sigma_xy
-  BgradQ[16]=- 0; //sigma_xz
-  BgradQ[17]=-w_y; //sigma_yz
-
-  BgradQ[18]= 0;
-  BgradQ[19]= 0;
-  BgradQ[20]= 0;  
-  BgradQ[21]= 0;
-  BgradQ[22]= 0;
-  BgradQ[23]=- w_z;
-  BgradQ[24]=-0; //sigma_xy
-  BgradQ[25]=-u_z; //sigma_xz
-  BgradQ[26]=-v_z; //sigma_yz    
+  BgradQ[2][0]= 0;
+  BgradQ[2][1]= 0;
+  BgradQ[2][2]= 0;  
+  BgradQ[2][3]= 0;
+  BgradQ[2][4]= 0;
+  BgradQ[2][5]=- w_z;
+  BgradQ[2][6]=-0; //sigma_xy
+  BgradQ[2][7]=-u_z; //sigma_xz
+  BgradQ[2][8]=-v_z; //sigma_yz
 }
 
 void  Elastic::MyElasticWaveSolver::pointSource(const double* const Q,const double* const x,const double t,const double dt, double* forceVector, int n) {
@@ -259,7 +257,7 @@ void  Elastic::MyElasticWaveSolver::pointSource(const double* const Q,const doub
     /**
      * @TODO LR : document
      */
-void Elastic::MyElasticWaveSolver::multiplyMaterialParameterMatrix(const double* const Q, double* rhs) {
+void Elastic::MyElasticWaveSolver::multiplyMaterialParameterMatrix(const double* const Q, double** rhs) {
   double rho = Q[9];  
   double c_p = Q[10];
   double c_s = Q[11];  
@@ -267,50 +265,261 @@ void Elastic::MyElasticWaveSolver::multiplyMaterialParameterMatrix(const double*
   double lambda = rho*c_p*c_p-2*mu;
   double rho_inv=1.0/rho;
 
-  rhs[0]=rho_inv * rhs[0];
-  rhs[1]=rho_inv * rhs[1];
-  rhs[2]=rho_inv * rhs[2];
+  //x
+  rhs[0][0]=rho_inv * rhs[0][0];
+  rhs[0][1]=rho_inv * rhs[0][1];
+  rhs[0][2]=rho_inv * rhs[0][2];
+
+  double lam_temp = lambda * (rhs[0][3] + rhs[0][4] + rhs[0][5]);
+  rhs[0][3]=(2*mu) * rhs[0][3] +lam_temp;
+  rhs[0][4]=(2*mu) * rhs[0][4] +lam_temp;
+  rhs[0][5]=(2*mu) * rhs[0][5] +lam_temp;
+
+  rhs[0][6]= mu*rhs[0][6];
+  rhs[0][7]= mu*rhs[0][7];
+  rhs[0][8]= mu*rhs[0][8];
+
+  //y
+  rhs[1][0]=rho_inv * rhs[1][0];
+  rhs[1][1]=rho_inv * rhs[1][1];
+  rhs[1][2]=rho_inv * rhs[1][2];
+
+  lam_temp = lambda * (rhs[1][3] + rhs[1][4] + rhs[1][5]);
+
+  rhs[1][3]=(2*mu) * rhs[1][3] +lam_temp;
+  rhs[1][4]=(2*mu) * rhs[1][4] +lam_temp;
+  rhs[1][5]=(2*mu) * rhs[1][5] +lam_temp;
+
+  rhs[1][6]= mu*rhs[1][6];
+  rhs[1][7]= mu*rhs[1][7];
+  rhs[1][8]= mu*rhs[1][8];
+
+  //z
+  rhs[2][0] = rho_inv * rhs[2][0];
+  rhs[2][1] = rho_inv * rhs[2][1];
+  rhs[2][2] = rho_inv * rhs[2][2];
   
-  double lam_temp = lambda * (rhs[3] + rhs[4] + rhs[5]);
-  rhs[3]=(2*mu) * rhs[3] +lam_temp;
-  rhs[4]=(2*mu) * rhs[4] +lam_temp;
-  rhs[5]=(2*mu) * rhs[5] +lam_temp;
+  lam_temp = lambda * (rhs[2][3] + rhs[2][4] + rhs[2][5]);
 
-  rhs[6]= mu*rhs[6];
-  rhs[7]= mu*rhs[7];
-  rhs[8]= mu*rhs[8];
+  rhs[2][3]=(2*mu) * rhs[2][3] +lam_temp;
+  rhs[2][4]=(2*mu) * rhs[2][4] +lam_temp;
+  rhs[2][5]=(2*mu) * rhs[2][5] +lam_temp;
 
-
-  rhs[9] =rho_inv * rhs[9];
-  rhs[10]=rho_inv * rhs[10];
-  rhs[11]=rho_inv * rhs[11];
-
-  
-  lam_temp = lambda * (rhs[12] + rhs[13] + rhs[14]);
-
-  rhs[12]=(2*mu) * rhs[12] +lam_temp;
-  rhs[13]=(2*mu) * rhs[13] +lam_temp;
-  rhs[14]=(2*mu) * rhs[14] +lam_temp;
-
-  rhs[15]= mu*rhs[15];
-  rhs[16]= mu*rhs[16];
-  rhs[17]= mu*rhs[17];
-
-  rhs[18] = rho_inv * rhs[18];
-  rhs[19] = rho_inv * rhs[19];
-  rhs[20] = rho_inv * rhs[20];
-  
-  lam_temp = lambda * (rhs[21] + rhs[22] + rhs[23]);
-
-  rhs[21]=(2*mu) * rhs[21] +lam_temp;
-  rhs[22]=(2*mu) * rhs[22] +lam_temp;
-  rhs[23]=(2*mu) * rhs[23] +lam_temp;
-
-  rhs[24]= mu*rhs[24];
-  rhs[25]= mu*rhs[25];
-  rhs[26]= mu*rhs[26];  
+  rhs[2][6]= mu*rhs[2][6];
+  rhs[2][7]= mu*rhs[2][7];
+  rhs[2][8]= mu*rhs[2][8];  
 }
 
+
+/**
+ * Vectorized PDE
+ */
+
+#ifdef __AVX512F__
+#define VECTSIZE 8 //AVX512 (skx/knl)
+#else
+#define VECTSIZE 4 //AVX2 (hsw)
+#endif
+
+#ifndef ALIGNMENT
+#define LOCAL_ALIGNMENT 1
+#else
+#define LOCAL_ALIGNMENT ALIGNMENT
+#endif
+
+void Elastic::MyElasticWaveSolver::flux_vect(const double* const * const restrict Q,double* const * const * const restrict F, const int size) {
+  // Dimensions                        = 3
+  // Number of variables + parameters  = 9 + 3
+  
+  // @todo Please implement/augment if required
+  /*
+  double sigma_xx=Q[3];
+  double sigma_yy=Q[4];
+  double sigma_zz=Q[5];  
+  double sigma_xy=Q[6];
+  double sigma_xz=Q[7];
+  double sigma_yz=Q[8];
+  */
+
+  #pragma vector aligned
+  #pragma omp simd
+  for(int i=0; i<VECTSIZE; i++) {
+    F[0][ 0][i] = -Q[3][i];
+    F[0][ 1][i] = -Q[6][i];
+    F[0][ 2][i] = -Q[7][i];
+    F[0][ 3][i] = 0.0;
+    F[0][ 4][i] = 0.0;
+    F[0][ 5][i] = 0.0;
+    F[0][ 6][i] = 0.0;
+    F[0][ 7][i] = 0.0;
+    F[0][ 8][i] = 0.0;
+
+    F[1][ 0][i] = -Q[6][i];
+    F[1][ 1][i] = -Q[4][i];
+    F[1][ 2][i] = -Q[8][i];
+    F[1][ 3][i] = 0.0;
+    F[1][ 4][i] = 0.0;
+    F[1][ 5][i] = 0.0;
+    F[1][ 6][i] = 0.0;
+    F[1][ 7][i] = 0.0;
+    F[1][ 8][i] = 0.0;
+
+    F[2][ 0][i] = -Q[7][i];
+    F[2][ 1][i] = -Q[8][i];
+    F[2][ 2][i] = -Q[5][i];
+    F[2][ 3][i] = 0.0;
+    F[2][ 4][i] = 0.0;
+    F[2][ 5][i] = 0.0;
+    F[2][ 6][i] = 0.0;
+    F[2][ 7][i] = 0.0;
+    F[2][ 8][i] = 0.0;
+  }
+}
+
+void Elastic::MyElasticWaveSolver::nonConservativeProduct_vect(const double* const * const Q,const double* const * const * const gradQ, double* const * const * const BgradQ, const int size) {
+
+/*
+  double u_x = gradQ[0][0];
+  double v_x = gradQ[0][1];
+  double w_x = gradQ[0][2];
+
+  double u_y = gradQ[1][0];
+  double v_y = gradQ[1][1];
+  double w_y = gradQ[1][2];
+
+  double u_z = gradQ[2][0];
+  double v_z = gradQ[2][1];
+  double w_z = gradQ[2][2];
+*/
+  #pragma vector aligned
+  #pragma omp simd
+  for(int i=0; i<VECTSIZE; i++) {
+    BgradQ[0][0][i]= 0;
+    BgradQ[0][1][i]= 0;
+    BgradQ[0][2][i]= 0;
+    BgradQ[0][3][i]=-gradQ[0][0][i];
+    BgradQ[0][4][i]=-0;
+    BgradQ[0][5][i]=-0;
+    BgradQ[0][6][i]=-gradQ[0][1][i]; //sigma_xy
+    BgradQ[0][7][i]=-gradQ[0][2][i]; //sigma_xz
+    BgradQ[0][8][i]=-0.0; //sigma_yz
+
+    BgradQ[1][0][i]= 0;
+    BgradQ[1][1][i]= 0;
+    BgradQ[1][2][i]= 0;
+    BgradQ[1][3][i]= 0;
+    BgradQ[1][4][i]=-gradQ[1][1][i];
+    BgradQ[1][5][i]= 0;
+    BgradQ[1][6][i]=-gradQ[1][0][i]; //sigma_xy
+    BgradQ[1][7][i]=- 0; //sigma_xz
+    BgradQ[1][8][i]=-gradQ[1][2][i]; //sigma_yz
+
+    BgradQ[2][0][i]= 0;
+    BgradQ[2][1][i]= 0;
+    BgradQ[2][2][i]= 0;
+    BgradQ[2][3][i]= 0;
+    BgradQ[2][4][i]= 0;
+    BgradQ[2][5][i]=-gradQ[2][2][i];
+    BgradQ[2][6][i]=-0; //sigma_xy
+    BgradQ[2][7][i]=-gradQ[2][0][i]; //sigma_xz
+    BgradQ[2][8][i]=-gradQ[2][1][i]; //sigma_yz
+  }
+}
+
+void Elastic::MyElasticWaveSolver::multiplyMaterialParameterMatrix_vect(const double* const * const Q, double* const * const * const rhs, const int size) {
+
+  /*
+  double rho = Q[9];  
+  double c_p = Q[10];
+  double c_s = Q[11];  
+  double mu     = rho*c_s*c_s;
+  double lambda = rho*c_p*c_p-2*mu;
+  double rho_inv=1.0/rho;
+
+  double Q_s[12];
+  double rhs_b[3*9];
+  double* rhs_s[3] = {rhs_b, rhs_b+9, rhs_b+2*9};
+  for(int i=0; i<VECTSIZE; i++){
+    for(int j=0;j<12;j++){
+      Q_s[j] = Q[j][i];
+    }
+    for(int j=0;j<9;j++){
+      rhs_s[0][j] = rhs[0][j][i];
+      rhs_s[1][j] = rhs[1][j][i];
+      rhs_s[2][j] = rhs[2][j][i];
+    }
+    
+    multiplyMaterialParameterMatrix(Q_s,rhs_s);
+    
+    for(int j=0;j<9;j++){
+      rhs[0][j][i] = rhs_s[0][j];
+      rhs[1][j][i] = rhs_s[1][j];
+      rhs[2][j][i] = rhs_s[2][j];
+    }
+  }
+*/
+
+  double mu[VECTSIZE] __attribute__((aligned(LOCAL_ALIGNMENT)));
+  double lambda[VECTSIZE] __attribute__((aligned(LOCAL_ALIGNMENT)));
+  double rho_inv[VECTSIZE] __attribute__((aligned(LOCAL_ALIGNMENT)));
+  double lam_temp[VECTSIZE] __attribute__((aligned(LOCAL_ALIGNMENT)));
+  #pragma vector aligned
+  #pragma omp simd
+  for(int i=0; i<VECTSIZE; i++){
+    mu[i]     = Q[9][i]*Q[11][i]*Q[11][i];
+    lambda[i] = Q[9][i]*Q[10][i]*Q[10][i]-2*mu[i];
+    rho_inv[i]=1.0/Q[9][i];
+  }
+
+  #pragma vector aligned
+  #pragma omp simd
+  for(int i=0; i<VECTSIZE; i++){
+    //x
+    rhs[0][0][i]=rho_inv[i] * rhs[0][0][i];
+    rhs[0][1][i]=rho_inv[i] * rhs[0][1][i];
+    rhs[0][2][i]=rho_inv[i] * rhs[0][2][i];
+
+    lam_temp[i] = lambda[i] * (rhs[0][3][i] + rhs[0][4][i] + rhs[0][5][i]);
+    rhs[0][3][i]=(2*mu[i]) * rhs[0][3][i] +lam_temp[i];
+    rhs[0][4][i]=(2*mu[i]) * rhs[0][4][i] +lam_temp[i];
+    rhs[0][5][i]=(2*mu[i]) * rhs[0][5][i] +lam_temp[i];
+
+    rhs[0][6][i]= mu[i]*rhs[0][6][i];
+    rhs[0][7][i]= mu[i]*rhs[0][7][i];
+    rhs[0][8][i]= mu[i]*rhs[0][8][i];
+
+    //y
+    rhs[1][0][i]=rho_inv[i] * rhs[1][0][i];
+    rhs[1][1][i]=rho_inv[i] * rhs[1][1][i];
+    rhs[1][2][i]=rho_inv[i] * rhs[1][2][i];
+
+    lam_temp[i] = lambda[i] * (rhs[1][3][i] + rhs[1][4][i] + rhs[1][5][i]);
+
+    rhs[1][3][i]=(2*mu[i]) * rhs[1][3][i] +lam_temp[i];
+    rhs[1][4][i]=(2*mu[i]) * rhs[1][4][i] +lam_temp[i];
+    rhs[1][5][i]=(2*mu[i]) * rhs[1][5][i] +lam_temp[i];
+
+    rhs[1][6][i]= mu[i]*rhs[1][6][i];
+    rhs[1][7][i]= mu[i]*rhs[1][7][i];
+    rhs[1][8][i]= mu[i]*rhs[1][8][i];
+
+    //z
+    rhs[2][0][i] = rho_inv[i] * rhs[2][0][i];
+    rhs[2][1][i] = rho_inv[i] * rhs[2][1][i];
+    rhs[2][2][i] = rho_inv[i] * rhs[2][2][i];
+    
+    lam_temp[i] = lambda[i] * (rhs[2][3][i] + rhs[2][4][i] + rhs[2][5][i]);
+
+    rhs[2][3][i]=(2*mu[i]) * rhs[2][3][i] +lam_temp[i];
+    rhs[2][4][i]=(2*mu[i]) * rhs[2][4][i] +lam_temp[i];
+    rhs[2][5][i]=(2*mu[i]) * rhs[2][5][i] +lam_temp[i];
+
+    rhs[2][6][i]= mu[i]*rhs[2][6][i];
+    rhs[2][7][i]= mu[i]*rhs[2][7][i];
+    rhs[2][8][i]= mu[i]*rhs[2][8][i];
+  }
+  
+}
 
 void Elastic::MyElasticWaveSolver::riemannSolver(double* FL_,double* FR_,const double* const QL_,const double* const QR_,const double dt,const int normalNonZeroIndex, bool isBoundaryFace, int faceIndex){
 

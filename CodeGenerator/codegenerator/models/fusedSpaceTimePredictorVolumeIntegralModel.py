@@ -42,11 +42,9 @@ class FusedSpaceTimePredictorVolumeIntegralModel(AbstractModelBaseClass):
         self.context["nDataMinusOne_seq"] = range(self.context["nData"] - 1)
         
         if(self.context["isLinear"]):
-            self.context["ncpOutputShift"] = self.controller.getSizeWithPadding(self.context["nVar"]*self.context["nDim"]) #shift used to split the tmpArray into input and output for NCP
             # size of the tmpArray
             self.context["tmpArraySize"] = max((self.context["nDof"]*self.context["nVarPad"] if self.context["useFlux"]          else 0), \
-                                                 (self.context["nVar"]*self.context["nDim"]    if self.context["useMaterialParam"] else 0), \
-                                                 (2*self.context["ncpOutputShift"]               if self.context["useNCP"]           else 0))
+                                               (self.context["nDim"]*self.context["nVarPad"] if self.context["useNCP"]           else 0))
             self.context["gemm_flux_x"] = gemmNamePad+"_flux_x"
             self.context["gemm_flux_y"] = gemmNamePad+"_flux_y"
             self.context["gemm_flux_z"] = gemmNamePad+"_flux_z"

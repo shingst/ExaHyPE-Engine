@@ -78,8 +78,14 @@ void spaceTimePredictorLinear(SolverType& solver,
   double fluxDerivative[basisSize*numberOfVariables];
   idx2 idx_fluxDerivative(basisSize, numberOfVariables);
   
-  double ncpResult[numberOfVariables*DIMENSIONS];
   idx2 idx_ncpResult(DIMENSIONS, numberOfVariables);
+  double* ncpResult[DIMENSIONS];
+  double ncpResult_vec[numberOfVariables*DIMENSIONS] = {0.0};
+  
+  ncpResult[0] = &ncpResult_vec[idx_ncpResult(0,0)];
+  ncpResult[1] = &ncpResult_vec[idx_ncpResult(1,0)];
+  ncpResult[2] = &ncpResult_vec[idx_ncpResult(2,0)];
+
   
   //***************************
   //**** Cauchy-Kovalewski ****
@@ -182,7 +188,7 @@ void spaceTimePredictorLinear(SolverType& solver,
             double* F[3]; 
             F[0]      = lFi + idx_lFi(i, j, k, l, 0, 0);
             F[1]      = lFi + idx_lFi(i, j, k, l, 1, 0);
-            F[2]      = lFi + idx_lFi(i, j, k, l, 2, 0);    
+            F[2]      = lFi + idx_lFi(i, j, k, l, 2, 0);
             solver.flux(&lQi[idx_lQi(i, j, k, l, 0)], F );
           }
         }
@@ -301,13 +307,15 @@ void spaceTimePredictorLinear(SolverType& solver,
       for (int j = 0; j < basisSize; j++) {
         for (int k = 0; k < basisSize; k++) {
           for (int l = 0; l < basisSize; l++) {
-            std::fill_n(&ncpResult[0],DIMENSIONS*numberOfVariables, 0.); // zero out ncpResult
-            solver.nonConservativeProduct(&lQi[idx_lQi(i, j, k, l, 0)],
-                                          &gradQ[idx_gradQ(j, k, l, 0, 0)],
-                                          ncpResult);
+            std::fill_n(&ncpResult_vec[0],DIMENSIONS*numberOfVariables, 0.); // zero out ncpResult
+            double* G[3];
+            G[0]      = gradQ + idx_gradQ(j, k, l, 0, 0);
+            G[1]      = gradQ + idx_gradQ(j, k, l, 1, 0);
+            G[2]      = gradQ + idx_gradQ(j, k, l, 2, 0);
+            solver.nonConservativeProduct(&lQi[idx_lQi(i, j, k, l, 0)], G, ncpResult);
             for(int d = 0; d < DIMENSIONS; d++) {
               for (int n = 0; n < numberOfVariables; n++) {
-                lFi[idx_lFi(i, j, k, l, d, n)] += ncpResult[idx_ncpResult(d,n)];
+                lFi[idx_lFi(i, j, k, l, d, n)] += ncpResult[d][n];
               }
             }
             
@@ -322,7 +330,11 @@ void spaceTimePredictorLinear(SolverType& solver,
       for (int j = 0; j < basisSize; j++) {
         for (int k = 0; k < basisSize; k++) {
           for (int l = 0; l < basisSize; l++) {
-            solver.multiplyMaterialParameterMatrix(&lQi[idx_lQi(i, j, k, l, 0)], &lFi[idx_lFi(i, j, k, l, 0, 0)]);
+            double* F[3];
+            F[0]      = lFi + idx_lFi(i, j, k, l, 0, 0);
+            F[1]      = lFi + idx_lFi(i, j, k, l, 1, 0);
+            F[2]      = lFi + idx_lFi(i, j, k, l, 2, 0);
+            solver.multiplyMaterialParameterMatrix(&lQi[idx_lQi(i, j, k, l, 0)], F);
           }
         }
       }

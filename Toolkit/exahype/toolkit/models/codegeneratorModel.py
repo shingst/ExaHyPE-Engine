@@ -34,6 +34,7 @@ class CodegeneratorModel:
             "useFusedSource"     : solverContext["useFusedSource"],
             "useFusedSourceVect" : solverContext["useFusedSourceVect"],
             "useMaterialParam"   : solverContext["useMaterialParameters"],
+            "useMaterialParamVect" : solverContext["useMaterialParametersVect"],
             "useCERKGuess"       : solverContext["useCERK"],
             "useGaussLobatto"    : solverContext["basis"] == "lobatto",
             # Optional int parameters (may set redundant flags)
