@@ -124,13 +124,13 @@ namespace exahype {
   typedef peano::heap::DoubleHeap<
     peano::heap::SynchronousDataExchanger< double, true, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
     peano::heap::SynchronousDataExchanger< double, true, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
-    peano::heap::RLEBoundaryDataExchanger< double, false, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
+    peano::heap::AggregationBoundaryDataExchanger< double, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
     std::vector< double, AlignedAllocator >
   >     DataHeap;
   typedef peano::heap::CharHeap<
     peano::heap::SynchronousDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedCharAllocator > >,
     peano::heap::SynchronousDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedCharAllocator > >,
-    peano::heap::RLEBoundaryDataExchanger< char, false, AlignedCharSendReceiveTask, std::vector< char, AlignedCharAllocator > >,
+    peano::heap::AggregationBoundaryDataExchanger< char, AlignedCharSendReceiveTask, std::vector< char, AlignedCharAllocator > >,
     std::vector< char, AlignedCharAllocator >
   >     CompressedDataHeap;
   #elif defined(ALIGNMENT) // Default: AggregationBoundaryDataExchanger
@@ -147,7 +147,7 @@ namespace exahype {
     std::vector< char, AlignedCharAllocator >
   >     CompressedDataHeap;
   #endif
- // non-aligned data -> SendReceiveTask
+  // non-aligned data -> SendReceiveTask
   #if !defined(ALIGNMENT) and defined(UsePeanosSymmetricBoundaryExchanger)
   typedef peano::heap::DoubleHeap<
     peano::heap::SynchronousDataExchanger< double, true,  peano::heap::SendReceiveTask<double> >,
@@ -393,6 +393,9 @@ class exahype::solvers::Solver {
   void glueTogether(int numberOfEntries, int normalHeapIndex, int compressedHeapIndex, int bytesForMantissa) const;
 
  public:
+ 
+  /** TODO */ 
+  static MPI_Comm _masterWorkerComm;
 
   /**
    * Default return value of function getElement(...)

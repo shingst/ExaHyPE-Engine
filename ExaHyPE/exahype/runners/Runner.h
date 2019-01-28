@@ -465,7 +465,7 @@ class exahype::runners::Runner {
    * @param repositoryState         Contains information about the currently run adapter and the number of batch iterations.
    * @param currentBatchIteration   the current batch iteration.
    */
-  static void globalBroadcast(exahype::records::RepositoryState& repositoryState, const int currentBatchIteration);
+  static void globalBroadcast(exahype::records::RepositoryState& repositoryState, exahype::State& solverState, const int currentBatchIteration);
 
   /**
    * Static callback to perform global reductions between working nodes.
@@ -475,7 +475,7 @@ class exahype::runners::Runner {
    * @param repositoryState         Contains information about the currently run adapter and the number of batch iterations.
    * @param currentBatchIteration   the current batch iteration.
    */
-  static void globalReduction(exahype::records::RepositoryState& repositoryState, const int currentBatchIteration);
+  static void globalReduction(exahype::records::RepositoryState& repositoryState, exahype::State& solverState, const int currentBatchIteration);
   #endif
 };
 

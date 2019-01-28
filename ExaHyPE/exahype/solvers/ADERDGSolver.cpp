@@ -1051,7 +1051,7 @@ void exahype::solvers::ADERDGSolver::setStabilityConditionWasViolated(bool state
 }
 
 bool exahype::solvers::ADERDGSolver::getStabilityConditionWasViolated() const {
-  return false; //  _stabilityConditionWasViolated;
+  return false; // _stabilityConditionWasViolated;
 }
 
 bool exahype::solvers::ADERDGSolver::isValidCellDescriptionIndex(
@@ -4313,7 +4313,16 @@ void exahype::solvers::ADERDGSolver::mergeWithWorkerData(const DataHeap::HeapEnt
   int index=0;
   _minNextTimeStepSize    = std::min( _minNextTimeStepSize, message[index++] );
   _nextMaxLevel           = std::max( _nextMaxLevel,        static_cast<int>(message[index++]) );
-  updateNextMeshUpdateEvent(convertToMeshUpdateEvent(message[index++]));
+  updateNextMeshUpdateEvent(convertToMeshUpdateEvent(message[index++])); // TODO remove
+  
+  const double dt = 0.001;
+  _previousMinCorrectorTimeStepSize = dt; 
+  _minCorrectorTimeStepSize         = dt; 
+  _minPredictorTimeStepSize         = dt;
+  _minPredictorTimeStamp = dt;
+  _minCorrectorTimeStamp = 0;
+  _minNextTimeStepSize   = 0.999*dt;
+ 
 
   if (tarch::parallel::Node::getInstance().getRank()==
       tarch::parallel::Node::getInstance().getGlobalMasterRank()) {
@@ -4351,7 +4360,8 @@ void exahype::solvers::ADERDGSolver::mergeWithWorkerData(
     MPI_DOUBLE,
     workerRank,
     _masterWorkerCommunicationTag,
-    tarch::parallel::Node::getInstance().getCommunicator(),MPI_STATUS_IGNORE);
+    tarch::parallel::Node::getInstance().getCommunicator(),
+    MPI_STATUS_IGNORE);
 
 //  DataHeap::getInstance().receiveData(
 //      messageFromWorker.data(),messageFromWorker.size(),workerRank, x, level,

@@ -729,6 +729,10 @@ int exahype::runners::Runner::run() {
 
     auto* repository = createRepository();
     // must come after repository creation
+
+    // TODO(Dominic): Remove
+    MPI_Comm_dup(tarch::parallel::Node::getInstance().getCommunicator(),&exahype::solvers::Solver::_masterWorkerComm);
+
     initSolvers();
 
     if (_parser.isValid() && _parser.getMeasureCellProcessingTimes() ) {
@@ -765,6 +769,8 @@ int exahype::runners::Runner::run() {
       shutdownDistributedMemoryConfiguration();
 
     shutdownHeaps();
+    
+   MPI_Comm_free(&exahype::solvers::Solver::_masterWorkerComm);
 
     delete repository;
   }
@@ -927,8 +933,8 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
     // run time stepping loop
     int timeStep = 0;
     while (
-        tarch::la::greater(solvers::Solver::getMinTimeStepSizeOfAllSolvers(), 0.0) &&
-        solvers::Solver::getMinTimeStampOfAllSolvers() < simulationEndTime         &&
+        //tarch::la::greater(solvers::Solver::getMinTimeStepSizeOfAllSolvers(), 0.0) &&
+        //solvers::Solver::getMinTimeStampOfAllSolvers() < simulationEndTime         &&
         timeStep < simulationTimeSteps
     ) {
       bool plot = exahype::plotters::checkWhetherPlotterBecomesActive(
@@ -1458,32 +1464,32 @@ void exahype::runners::Runner::printTimeStepInfo(int numberOfStepsRanSinceLastCa
   }
   #endif
 
-  #if defined(TrackGridStatistics)
-  if (repository.getState().getNumberOfInnerCells()>0 and repository.getState().getMaxLevel()>0) {
-    logInfo(
-      "startNewTimeStep(...)",
-      "\tinner cells/inner unrefined cells=" << repository.getState().getNumberOfInnerCells()
-      << "/" << repository.getState().getNumberOfInnerLeafCells() );
-    logInfo(
-      "startNewTimeStep(...)",
-      "\tinner max/min mesh width=" << repository.getState().getMaximumMeshWidth()
-      << "/" << repository.getState().getMinimumMeshWidth()
-      );
-    logInfo(
-      "startNewTimeStep(...)",
-      "\tmax level=" << repository.getState().getMaxLevel()
-      );
-  }
-  #endif
-
-  if (solvers::Solver::getMinTimeStampOfAllSolvers()>std::numeric_limits<double>::max()/100.0) {
-    logError("runAsMaster(...)","quit simulation as solver seems to explode" );
-    exit(-1);
-  }
-
-  #if defined(Debug) || defined(Asserts)
-  tarch::logging::CommandLineLogger::getInstance().closeOutputStreamAndReopenNewOne();
-  #endif
+//  #if defined(TrackGridStatistics)
+//  if (repository.getState().getNumberOfInnerCells()>0 and repository.getState().getMaxLevel()>0) {
+//    logInfo(
+//      "startNewTimeStep(...)",
+//      "\tinner cells/inner unrefined cells=" << repository.getState().getNumberOfInnerCells()
+//      << "/" << repository.getState().getNumberOfInnerLeafCells() );
+//    logInfo(
+//      "startNewTimeStep(...)",
+//      "\tinner max/min mesh width=" << repository.getState().getMaximumMeshWidth()
+//      << "/" << repository.getState().getMinimumMeshWidth()
+//      );
+//    logInfo(
+//      "startNewTimeStep(...)",
+//      "\tmax level=" << repository.getState().getMaxLevel()
+//      );
+//  }
+//  #endif
+//
+//  if (solvers::Solver::getMinTimeStampOfAllSolvers()>std::numeric_limits<double>::max()/100.0) {
+//    logError("runAsMaster(...)","quit simulation as solver seems to explode" );
+//    exit(-1);
+//  }
+//
+//  #if defined(Debug) || defined(Asserts)
+//  tarch::logging::CommandLineLogger::getInstance().closeOutputStreamAndReopenNewOne();
+//  #endif
 }
 
 void exahype::runners::Runner::runTimeStepsWithFusedAlgorithmicSteps(
@@ -1666,8 +1672,10 @@ void exahype::runners::Runner::validateSolverTimeStepDataForThreeAlgorithmicPhas
 }
 
 #ifdef Parallel
-void exahype::runners::Runner::globalBroadcast(exahype::records::RepositoryState& repositoryState, const int currentBatchIteration) {
+void exahype::runners::Runner::globalBroadcast(exahype::records::RepositoryState& repositoryState, exahype::State& solverState,  const int currentBatchIteration) {
   assertionEquals(tarch::parallel::Node::getGlobalMasterRank(),0);
+  // return; // TODO remove
+  // broadcast
   if ( currentBatchIteration==0 ) {
     switch ( repositoryState.getAction()) {
       case exahype::records::RepositoryState::UseAdapterMeshRefinement:
@@ -1685,6 +1693,7 @@ void exahype::runners::Runner::globalBroadcast(exahype::records::RepositoryState
       case exahype::records::RepositoryState::UseAdapterPredictionOrLocalRecomputation:
       case exahype::records::RepositoryState::UseAdapterFusedTimeStep:
       case exahype::records::RepositoryState::UseAdapterBroadcastAndDropNeighbourMessages: {
+        peano::heap::AbstractHeap::allHeapsStartToSendBoundaryData( solverState.isTraversalInverted() );
         if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
           for (int rank=1; rank<tarch::parallel::Node::getInstance().getNumberOfNodes(); rank++) {
             if ( !(tarch::parallel::NodePool::getInstance().isIdleNode(rank)) ) {
@@ -1700,8 +1709,11 @@ void exahype::runners::Runner::globalBroadcast(exahype::records::RepositoryState
   }
 }
 
-void exahype::runners::Runner::globalReduction(exahype::records::RepositoryState& repositoryState, const int currentBatchIteration) {
+void exahype::runners::Runner::globalReduction(exahype::records::RepositoryState& repositoryState, exahype::State& solverState, const int currentBatchIteration) {
+  // return; // TODO remove
   assertionEquals(tarch::parallel::Node::getGlobalMasterRank(),0);
+
+  // reductions
   if ( currentBatchIteration==repositoryState.getNumberOfIterations()-1 ) {
     switch ( repositoryState.getAction()) {
       case exahype::records::RepositoryState::UseAdapterBroadcastAndDropNeighbourMessages: // we do a reduction to sychronise the ranks.
@@ -1732,7 +1744,7 @@ void exahype::runners::Runner::globalReduction(exahype::records::RepositoryState
           for (auto* solver : exahype::solvers::RegisteredSolvers) {
             if ( solver->hasRequestedMeshRefinement() ) {
               solver->sendDataToMaster(
-                  tarch::parallel::NodePool::getInstance().getGlobalMasterRank(),0.0,0);
+                  tarch::parallel::Node::getInstance().getGlobalMasterRank(),0.0,0);
             }
           }
         }
@@ -1750,7 +1762,7 @@ void exahype::runners::Runner::globalReduction(exahype::records::RepositoryState
           for (auto* solver : exahype::solvers::RegisteredSolvers) {
             if ( solver->getMeshUpdateEvent()==exahype::solvers::Solver::MeshUpdateEvent::IrregularLimiterDomainChange ) {
               solver->sendDataToMaster(
-                  tarch::parallel::NodePool::getInstance().getGlobalMasterRank(),0.0,0);
+                  tarch::parallel::Node::getInstance().getGlobalMasterRank(),0.0,0);
             }
           }
         }
@@ -1782,6 +1794,20 @@ void exahype::runners::Runner::globalReduction(exahype::records::RepositoryState
       case exahype::records::RepositoryState::UseAdapterPredictionRerun:
         // do nothing
         break;
+    }
+  }
+  
+  // finished to send
+  if ( currentBatchIteration % 2 == 0 ) { // should be 1
+    switch ( repositoryState.getAction()) {
+      case exahype::records::RepositoryState::UseAdapterBroadcastAndDropNeighbourMessages: // we do a reduction to sychronise the ranks.
+      case exahype::records::RepositoryState::UseAdapterPrediction:
+      case exahype::records::RepositoryState::UseAdapterPredictionRerun:
+      case exahype::records::RepositoryState::UseAdapterInitialPrediction:
+      case exahype::records::RepositoryState::UseAdapterUpdateAndReduce:
+      case exahype::records::RepositoryState::UseAdapterFusedTimeStep: {
+        peano::heap::AbstractHeap::allHeapsFinishedToSendBoundaryData( solverState.isTraversalInverted() );
+      } break;
     }
   }
 }

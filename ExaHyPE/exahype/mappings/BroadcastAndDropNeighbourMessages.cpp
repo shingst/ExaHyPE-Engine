@@ -32,7 +32,7 @@ peano::CommunicationSpecification exahype::mappings::BroadcastAndDropNeighbourMe
 //      true);
   return peano::CommunicationSpecification(
       peano::CommunicationSpecification::ExchangeMasterWorkerData::MaskOutMasterWorkerDataAndStateExchange,
-      peano::CommunicationSpecification::ExchangeWorkerMasterData::MaskOutWorkerMasterDataAndStateExchange,true);
+      peano::CommunicationSpecification::ExchangeWorkerMasterData::MaskOutWorkerMasterDataAndStateExchange,false);
 }
 
 peano::MappingSpecification
@@ -148,6 +148,8 @@ bool exahype::mappings::BroadcastAndDropNeighbourMessages::prepareSendToWorker(
     exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
     int worker) {
+  return false;
+
   exahype::Cell::broadcastGlobalDataToWorker(
         worker,
         fineGridVerticesEnumerator.getCellCenter(),
@@ -166,6 +168,7 @@ void exahype::mappings::BroadcastAndDropNeighbourMessages::receiveDataFromMaster
     const peano::grid::VertexEnumerator& workersCoarseGridVerticesEnumerator,
     exahype::Cell& workersCoarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
+  return;
   exahype::Cell::mergeWithGlobalDataFromMaster(
       tarch::parallel::NodePool::getInstance().getMasterRank(),
       receivedVerticesEnumerator.getCellCenter(),

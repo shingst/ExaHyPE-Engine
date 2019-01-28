@@ -347,10 +347,10 @@ void exahype::Cell::broadcastGlobalDataToWorker(
     solver->sendDataToWorker(worker,cellCentre,level);
   }
 
-  for (auto& plotter : exahype::plotters::RegisteredPlotters) {
-    plotter->sendDataToWorker(
-        worker,cellCentre,level);
-  }
+//  for (auto& plotter : exahype::plotters::RegisteredPlotters) {
+//    plotter->sendDataToWorker(
+//        worker,cellCentre,level);
+//  }
 }
 
 void exahype::Cell::mergeWithGlobalDataFromMaster(
@@ -361,9 +361,9 @@ void exahype::Cell::mergeWithGlobalDataFromMaster(
     solver->mergeWithMasterData(master,cellCentre,level);
   }
 
-  for (auto& plotter : exahype::plotters::RegisteredPlotters) {
-    plotter->mergeWithMasterData(master,cellCentre,level);
-  }
+//  for (auto& plotter : exahype::plotters::RegisteredPlotters) {
+//    plotter->mergeWithMasterData(master,cellCentre,level);
+//  }
 }
 
 

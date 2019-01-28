@@ -77,7 +77,7 @@ exahype::mappings::FusedTimeStep::communicationSpecification() const {
 //  return peano::CommunicationSpecification(exchangeMasterWorkerData,exchangeWorkerMasterData,true);
   return peano::CommunicationSpecification(
       peano::CommunicationSpecification::ExchangeMasterWorkerData::MaskOutMasterWorkerDataAndStateExchange,
-      peano::CommunicationSpecification::ExchangeWorkerMasterData::MaskOutWorkerMasterDataAndStateExchange,true);
+      peano::CommunicationSpecification::ExchangeWorkerMasterData::MaskOutWorkerMasterDataAndStateExchange,false);
 }
 
 peano::MappingSpecification
@@ -442,6 +442,7 @@ bool exahype::mappings::FusedTimeStep::prepareSendToWorker(
     exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
     int worker) {
+  return false;
   logTraceIn( "prepareSendToWorker(...)" );
 
   if ( _stateCopy.isFirstIterationOfBatchOrNoBatch() ) {
@@ -467,6 +468,7 @@ void exahype::mappings::FusedTimeStep::receiveDataFromMaster(
     const peano::grid::VertexEnumerator& workersCoarseGridVerticesEnumerator,
     exahype::Cell& workersCoarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
+  return;
   logTraceIn( "receiveDataFromMaster(...)" );
 
   if ( _stateCopy.isFirstIterationOfBatchOrNoBatch() ) {
@@ -495,6 +497,7 @@ void exahype::mappings::FusedTimeStep::prepareSendToMaster(
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
     const exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
+  return;
   logTraceInWith2Arguments( "prepareSendToMaster(...)", localCell, verticesEnumerator.toString() );
 
   if ( _stateCopy.isLastIterationOfBatchOrNoBatch() ) {
@@ -519,6 +522,7 @@ void exahype::mappings::FusedTimeStep::mergeWithMaster(
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
     int worker, const exahype::State& workerState,
     exahype::State& masterState) {
+  return;
   logTraceIn( "mergeWithMaster(...)" );
 
   if ( _stateCopy.isLastIterationOfBatchOrNoBatch() ) {

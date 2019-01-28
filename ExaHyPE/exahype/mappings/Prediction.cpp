@@ -65,7 +65,7 @@ exahype::mappings::Prediction::communicationSpecification() const {
 //  return peano::CommunicationSpecification(exchangeMasterWorkerData,exchangeWorkerMasterData,true);
   return peano::CommunicationSpecification(
       peano::CommunicationSpecification::ExchangeMasterWorkerData::MaskOutMasterWorkerDataAndStateExchange,
-      peano::CommunicationSpecification::ExchangeWorkerMasterData::MaskOutWorkerMasterDataAndStateExchange,true);
+      peano::CommunicationSpecification::ExchangeWorkerMasterData::MaskOutWorkerMasterDataAndStateExchange,false);
 }
 
 peano::MappingSpecification
@@ -272,6 +272,7 @@ bool exahype::mappings::Prediction::prepareSendToWorker(
     exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
     int worker) {
+  return false;
   logTraceIn( "prepareSendToWorker(...)" );
 
   if ( exahype::State::BroadcastInThisIteration ) {
@@ -296,6 +297,7 @@ void exahype::mappings::Prediction::receiveDataFromMaster(
     const peano::grid::VertexEnumerator& workersCoarseGridVerticesEnumerator,
     exahype::Cell& workersCoarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
+  return;
   logTraceIn( "receiveDataFromMaster(...)" );
 
   if ( exahype::State::BroadcastInThisIteration ) {

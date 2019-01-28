@@ -229,7 +229,9 @@ void exahype::repositories::RepositorySTDStack::iterate(int numberOfIterations, 
   for (int i=0; i<numberOfIterations; i++) {
     _solverState.setBatchState(numberOfIterations, i );
 
-    exahype::runners::Runner::globalBroadcast(_repositoryState,i);
+    #ifdef Parallel
+    exahype::runners::Runner::globalBroadcast(_repositoryState,_solverState,i);
+    #endif
 
     switch ( _repositoryState.getAction()) {
       case exahype::records::RepositoryState::UseAdapterMeshRefinement: watch.startTimer(); _gridWithMeshRefinement.iterate(); watch.stopTimer(); _measureMeshRefinementCPUTime.setValue( watch.getCPUTime() ); _measureMeshRefinementCalendarTime.setValue( watch.getCalendarTime() ); break;
@@ -263,10 +265,11 @@ void exahype::repositories::RepositorySTDStack::iterate(int numberOfIterations, 
         break;
     }
     #ifdef Parallel
+    exahype::runners::Runner::globalReduction(_repositoryState,_solverState,i);
+
     if ( switchedLoadBalancingTemporarilyOff && i==numberOfIterations-1) {
       peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(true);
     }
-    exahype::runners::Runner::globalReduction(_repositoryState,i);
     #endif
   }
   
@@ -363,7 +366,7 @@ exahype::repositories::RepositorySTDStack::ContinueCommand exahype::repositories
     int masterNode = tarch::parallel::Node::getInstance().getGlobalMasterRank();
     assertion( masterNode != -1 );
 
-    _repositoryState.receive( masterNode, peano::parallel::SendReceiveBufferPool::getInstance().getIterationManagementTag(), true, records::RepositoryState::ExchangeMode::NonblockingWithPollingLoopOverTests);
+    _repositoryState.receive( masterNode, peano::parallel::SendReceiveBufferPool::getInstance().getIterationManagementTag(), true, records::RepositoryState::ExchangeMode::Blocking);
 
     result = Continue;
     if (_repositoryState.getAction()==exahype::records::RepositoryState::Terminate) {

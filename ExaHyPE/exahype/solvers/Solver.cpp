@@ -211,6 +211,7 @@ exahype::solvers::Solver::Solver(
       _nextMaxLevel(-std::numeric_limits<int>::max()), // "-", min
       _timeStepping(timeStepping),
       _profiler(std::move(profiler)) {
+  logInfo("Solver(...)","master worker communication tag is:" << _masterWorkerCommunicationTag);
 }
 
 
@@ -727,7 +728,7 @@ void exahype::solvers::Solver::startNewTimeStepForAllSolvers(
           tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getGlobalMasterRank()
       ) {
         exahype::solvers::Solver::
-        reinitialiseTimeStepDataIfLastPredictorTimeStepSizeWasInstable(solver);
+          reinitialiseTimeStepDataIfLastPredictorTimeStepSizeWasInstable(solver);
       }
 
       solver->startNewTimeStepFused(
@@ -924,10 +925,13 @@ void exahype::solvers::Solver::sendMeshUpdateEventToMaster(
              ",_nextMeshUpdateEvent=" << toString( getNextMeshUpdateEvent() ));
   }
 
-  DataHeap::getInstance().sendData(
-      meshUpdateEvent.data(), meshUpdateEvent.size(),
-      masterRank, x, level,
-      peano::heap::MessageType::MasterWorkerCommunication);
+  
+  MPI_Send(
+    meshUpdateEvent.data(), meshUpdateEvent.size(),
+    MPI_DOUBLE,
+    masterRank,
+    _masterWorkerCommunicationTag,
+    tarch::parallel::Node::getInstance().getCommunicator());
 }
 
 void exahype::solvers::Solver::mergeWithWorkerMeshUpdateEvent(
@@ -935,10 +939,18 @@ void exahype::solvers::Solver::mergeWithWorkerMeshUpdateEvent(
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const int                                    level) {
   DataHeap::HeapEntries messageFromWorker(1); // !!! fills the vector
+  
+  MPI_Recv(
+    messageFromWorker.data(), messageFromWorker.size(),
+    MPI_DOUBLE,
+    workerRank,
+    _masterWorkerCommunicationTag,
+    tarch::parallel::Node::getInstance().getCommunicator(),
+    MPI_STATUS_IGNORE);
 
-  DataHeap::getInstance().receiveData(
-      messageFromWorker.data(),messageFromWorker.size(),workerRank, x, level,
-      peano::heap::MessageType::MasterWorkerCommunication);
+//  DataHeap::getInstance().receiveData(
+//      messageFromWorker.data(),messageFromWorker.size(),workerRank, x, level,
+//      peano::heap::MessageType::MasterWorkerCommunication);
 
   updateNextMeshUpdateEvent( convertToMeshUpdateEvent( messageFromWorker[0] ) );
   assertion1(messageFromWorker.size()==1,messageFromWorker.size());

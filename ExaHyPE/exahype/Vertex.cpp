@@ -753,6 +753,8 @@ void exahype::Vertex::sendToNeighbour(
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const tarch::la::Vector<DIMENSIONS, double>& h,
     const int                                    level) const {
+//  return; // TODO remove
+
   if ( hasToCommunicate(level) ) {
     const tarch::la::Vector<DIMENSIONS,int> lowerLeft(0);
     sendToNeighbourLoopBody(toRank,0,1,_vertexData.getCellDescriptionsIndex(0),getAdjacentRanks(),isLastIterationOfBatchOrNoBatch,computeFaceBarycentre(x,h,0,lowerLeft),level);
@@ -785,8 +787,8 @@ void exahype::Vertex::receiveNeighbourDataLoopBody(
     exahype::MetadataHeap::HeapEntries receivedMetadata;
     receivedMetadata.clear();
     if ( receiveNeighbourMetadata ) {
-      exahype::receiveNeighbourCommunicationMetadata(receivedMetadata,fromRank,baryCentre,level);
-      assertionEquals(receivedMetadata.size(),exahype::NeighbourCommunicationMetadataPerSolver*solvers::RegisteredSolvers.size());
+     exahype::receiveNeighbourCommunicationMetadata(receivedMetadata,fromRank,baryCentre,level);
+     assertionEquals(receivedMetadata.size(),exahype::NeighbourCommunicationMetadataPerSolver*solvers::RegisteredSolvers.size());
     }
 
     bool validIndex = destCellDescriptionIndex >= 0;
@@ -796,6 +798,7 @@ void exahype::Vertex::receiveNeighbourDataLoopBody(
       solvers::Solver::BoundaryFaceInfo face(dest,src); // dest and src are swapped
 
       if ( hasToMergeAtFace(cellInfo,face._faceIndex,true/*prefetchADERDGFaceData*/) ) {
+//        return; // TODO remove
         for(unsigned int solverNumber = solvers::RegisteredSolvers.size(); solverNumber-- > 0;) {
           auto* solver = solvers::RegisteredSolvers[solverNumber];
           const int begin = exahype::NeighbourCommunicationMetadataPerSolver*solverNumber;
