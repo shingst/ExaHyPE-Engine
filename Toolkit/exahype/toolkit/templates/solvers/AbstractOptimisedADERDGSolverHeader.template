@@ -177,6 +177,7 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver {
       std::cout << "volumeUnknownsRestriction flops: " << volumeUnknownsRestriction_f.load() << std::endl << "volumeUnknownsRestriction time: " << ((double)volumeUnknownsRestriction_t.load()) / 1000000000.0 << std::endl << "volumeUnknownsRestriction GFlops: " <<  ((double) volumeUnknownsRestriction_f.load()) / ((double) volumeUnknownsRestriction_t.load()) << std::endl << "volumeUnknownsRestriction calls: " << volumeUnknownsRestriction_c.load() << std::endl << std::endl;
     }
 {% endif %}
+
     /**
      * Default implementation. Please overwrite.
      *
@@ -293,7 +294,7 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver {
     /**
      * @TODO LR : document
      */
-    virtual void multiplyMaterialParameterMatrix(const double* const Q, double* rhs);
+    virtual void multiplyMaterialParameterMatrix(const double* const Q, double** rhs);
 
     /**
      * Compute a pointSource contribution.
@@ -341,7 +342,12 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver {
      * \param[inout]  The vector BgradQ (extends nVar), already allocated. 
      *
      */
+     
+    {% if isLinear %}
+    virtual void nonConservativeProduct(const double* const Q,const double* const * const gradQ,double** BgradQ);
+    {% else %}
     virtual void nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ);
+    {% endif %}
     
     /**
      * Compute the conserved flux.

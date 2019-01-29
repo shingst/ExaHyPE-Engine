@@ -146,8 +146,9 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver {
      * \param[inout] FOut      the normal fluxes at point x from outside of the domain
      *                         and time-averaged (over [t,t+dt]) as C array (already allocated).
      */
+
     virtual void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double * const fluxIn,const double* const stateIn,double *fluxOut,double* stateOut) = 0;
-       
+
     /**
      * Adjust the conserved variables and parameters (together: Q) at a given time t at the (quadrature) point x.
      *
@@ -164,8 +165,8 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver {
     /**
      * @TODO LR : document
      */
-    virtual void multiplyMaterialParameterMatrix(const double* const Q, double* rhs);
-
+    virtual void multiplyMaterialParameterMatrix(const double* const Q, double** rhs);
+    
     /**
      * Compute a pointSource contribution.
      * 
@@ -212,7 +213,12 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver {
      * \param[inout]  The vector BgradQ (extends nVar), already allocated. 
      *
      */
+
+    {% if isLinear %}
+    virtual void nonConservativeProduct(const double* const Q,const double* const * const gradQ,double** BgradQ);
+    {% else %}
     virtual void nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ);
+    {% endif %}
     
     /**
      * Compute the conserved flux.

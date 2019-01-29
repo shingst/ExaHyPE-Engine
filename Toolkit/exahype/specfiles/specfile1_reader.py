@@ -293,9 +293,13 @@ class SpecFile1Reader():
             if token_s=="usestack":
                 context["allocate_temporary_arrays"]="stack"
                 found_token=True
-            for term in ["fusedsource","fluxvect","fusedsourcevect","ncpvect"]:
+            for term in ["fusedsource","fluxvect","fusedsourcevect","ncpvect","materialparametersvect"]:
                 if token_s==term:
-                    context[opt].append(term)
+                    context[opt].append(term.\
+                            replace("fluxvect",               "flux_vect").\
+                            replace("fusedsourcevect",        "fusedsource_vect").\
+                            replace("materialparametersvect", "material_parameters_vect").\
+                            replace("ncpvect",                "ncp_vect"))
                     found_token=True
             for term in ["converter","flops"]:
                 if token_s==term:
