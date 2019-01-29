@@ -66,7 +66,7 @@ class ElasticityKernelTest : public tarch::tests::TestCase {
   /**
    * BgradQ is a matrix for the linear kernels.
    */
-  void nonConservativeProduct(const double* const Q, const double* const gradQ, double* BgradQ);
+  void nonConservativeProduct(const double* const Q, const double* const *const gradQ, double** BgradQ);
 
   void coefficientMatrix(const double* const Q, const int normalNonZero, double* Bn);
 

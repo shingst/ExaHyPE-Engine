@@ -73,12 +73,9 @@ void riemannSolverLinear(SolverType& solver, double* FL, double* FR,
 
   double Qdiff[numberOfData] = {0.0};
   double Qavg[numberOfData] = {0.0};
-  double gradQ[numberOfVariables*DIMENSIONS] = {0.0};
 
   idx2 idx_2d(DIMENSIONS, numberOfVariables);
   
-  double ncp[numberOfVariables*DIMENSIONS] = {0.0};
-
   double flux_vec[numberOfVariables*DIMENSIONS] = {0.0};
   double* flux[DIMENSIONS];
   

@@ -135,10 +135,11 @@ void ElasticityKernelTest::eigenvalues(const double *const Q,
  * Q stores parameters, gradQ and BgradQ doesn't.
  */
 void ElasticityKernelTest::nonConservativeProduct(const double *const Q,
-                                   const double *const gradQ, double *BgradQ) {
+                                   const double *const * const gradQ, double ** BgradQ) {
   constexpr int nVar  = NumberOfVariables;
 
-  std::fill_n (BgradQ, nVar * DIMENSIONS, 0.0); // !!! For the linear kernels, BgradQ is a nVar*dim sized 2-tensor
+  std::fill_n (BgradQ[0], nVar, 0.0);
+  std::fill_n (BgradQ[1], nVar, 0.0);
 
   double lam  = Q[NumberOfVariables];           // par(1)
   double mu   = Q[NumberOfVariables + 1];       // par(2)
@@ -146,12 +147,12 @@ void ElasticityKernelTest::nonConservativeProduct(const double *const Q,
 
   assert(std::isfinite(irho));
 
-  const double *gradQx = gradQ + 0 * nVar;
-  const double *gradQy = gradQ + 1 * nVar;
+  const double *gradQx = gradQ[0];
+  const double *gradQy = gradQ[1];
   //  const double *gradQz = gradQ + 2 * kNumberOfVariables;
 
-  double *BgradQx = BgradQ + 0 * nVar;
-  double *BgradQy = BgradQ + 1 * nVar;
+  double *BgradQx = BgradQ[0];
+  double *BgradQy = BgradQ[1];
   //  double *BgradQz = BgradQ + 2 * kNumberOfVariables;
 
   BgradQx[1 - 1] = -(lam + 2 * mu) * gradQx[7 - 1];
