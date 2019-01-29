@@ -445,6 +445,11 @@ void exahype::mappings::PredictionOrLocalRecomputation::prepareSendToNeighbour(
   logTraceOut( "prepareSendToNeighbour(...)" );
 }
 
+//
+// Below all methods are nop.
+//
+//=====================================
+
 bool exahype::mappings::PredictionOrLocalRecomputation::prepareSendToWorker(
     exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
@@ -453,17 +458,8 @@ bool exahype::mappings::PredictionOrLocalRecomputation::prepareSendToWorker(
     exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
     int worker) {
-  logTraceIn( "prepareSendToWorker(...)" );
-
-  if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
-    exahype::Cell::broadcastGlobalDataToWorker(
-        worker,
-        fineGridVerticesEnumerator.getCellCenter(),
-        fineGridVerticesEnumerator.getLevel());
-  }
-
-  logTraceOutWith1Argument( "prepareSendToWorker(...)", true );
-  return true; // this must be sent to worker in first broadcast
+  // do nothing
+  return false;
 }
 
 void exahype::mappings::PredictionOrLocalRecomputation::receiveDataFromMaster(
@@ -476,16 +472,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::receiveDataFromMaster(
     const peano::grid::VertexEnumerator& workersCoarseGridVerticesEnumerator,
     exahype::Cell& workersCoarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
-  logTraceIn( "receiveDataFromMaster(...)" );
-
-  if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
-    exahype::Cell::mergeWithGlobalDataFromMaster(
-        tarch::parallel::NodePool::getInstance().getMasterRank(),
-        receivedVerticesEnumerator.getCellCenter(),
-        receivedVerticesEnumerator.getLevel());
-  }
-
-  logTraceOut( "receiveDataFromMaster(...)" );
+  // do nothing
 }
 
 void exahype::mappings::PredictionOrLocalRecomputation::prepareSendToMaster(
@@ -495,20 +482,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::prepareSendToMaster(
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
     const exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
-  logTraceInWith2Arguments( "prepareSendToMaster(...)", localCell, verticesEnumerator.toString() );
-
-  if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
-    for (auto* solver : exahype::solvers::RegisteredSolvers) {
-      if ( performLocalRecomputation(solver) ) {
-        solver->sendDataToMaster(
-            tarch::parallel::NodePool::getInstance().getMasterRank(),
-            verticesEnumerator.getCellCenter(),
-            verticesEnumerator.getLevel());
-      }
-    }
-  }
-
-  logTraceOut( "prepareSendToMaster(...)" );
+  // do nothing
 }
 
 void exahype::mappings::PredictionOrLocalRecomputation::mergeWithMaster(
@@ -523,27 +497,8 @@ void exahype::mappings::PredictionOrLocalRecomputation::mergeWithMaster(
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
     int worker, const exahype::State& workerState,
     exahype::State& masterState) {
-  logTraceIn( "mergeWithMaster(...)" );
-
-  if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
-    for (auto* solver : exahype::solvers::RegisteredSolvers) {
-      if ( performLocalRecomputation(solver) ) {
-        solver->mergeWithWorkerData(
-            worker,
-            fineGridVerticesEnumerator.getCellCenter(),
-            fineGridVerticesEnumerator.getLevel());
-      }
-    }
-  }
-
-  logTraceOut( "mergeWithMaster(...)" );
+  // do nothing
 }
-
-//
-// Below all methods are nop.
-//
-//=====================================
-
 
 void exahype::mappings::PredictionOrLocalRecomputation::prepareCopyToRemoteNode(
     exahype::Vertex& localVertex, int toRank,

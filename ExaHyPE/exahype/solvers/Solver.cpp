@@ -682,12 +682,12 @@ void exahype::solvers::Solver::reinitialiseTimeStepDataIfLastPredictorTimeStepSi
   }
 
   if (aderdgSolver!=nullptr) {
-    const double stableTimeStepSize = aderdgSolver->getMinNextPredictorTimeStepSize();
-    double usedTimeStepSize         = aderdgSolver->getMinPredictorTimeStepSize();
+    const double stableTimeStepSize = aderdgSolver->getMinPredictorTimeStepSize();
+    double usedTimeStepSize         = aderdgSolver->getMinCorrectorTimeStepSize(); // post update
 
-    if (tarch::la::equals(usedTimeStepSize,0.0)) {
-      usedTimeStepSize = stableTimeStepSize; // TODO(Dominic): Still necessary?
-    }
+//    if (tarch::la::equals(usedTimeStepSize,0.0)) {
+//      usedTimeStepSize = stableTimeStepSize; // TODO(Dominic): Still necessary?
+//    }
 
     bool usedTimeStepSizeWasInstable = usedTimeStepSize > stableTimeStepSize;
     aderdgSolver->setStabilityConditionWasViolated(usedTimeStepSizeWasInstable);
@@ -715,14 +715,6 @@ void exahype::solvers::Solver::startNewTimeStepForAllSolvers(
     // time
     // only update the time step size in last iteration; just advance with old time step size otherwise
     if ( fusedTimeStepping ) {
-      if (
-          isLastIterationOfBatchOrNoBatch &&
-          tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getGlobalMasterRank()
-      ) {
-        exahype::solvers::Solver::
-          reinitialiseTimeStepDataIfLastPredictorTimeStepSizeWasInstable(solver);
-      }
-
       solver->startNewTimeStepFused(
           isFirstIterationOfBatchOrNoBatch,
           isLastIterationOfBatchOrNoBatch);

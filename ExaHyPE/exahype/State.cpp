@@ -25,6 +25,7 @@
 
 #include "exahype/records/RepositoryState.h"
 
+tarch::logging::Log exahype::State::_log("exahype::State");
 
 int exahype::State::CurrentBatchIteration   = 0;
 int exahype::State::NumberOfBatchIterations = 1;
@@ -231,9 +232,8 @@ void exahype::State::globalBroadcast(exahype::records::RepositoryState& reposito
       case exahype::records::RepositoryState::UseAdapterPrediction:
       case exahype::records::RepositoryState::UseAdapterFusedTimeStep: {
         for (auto* solver : exahype::solvers::RegisteredSolvers) {
-          std::cout << "rank: "<<tarch::parallel::Node::getInstance().getRank()<< "globalBroadcast(...):" << "[pre] MeshUpdateEvent = " << static_cast<int>(solver->getMeshUpdateEvent()) << std::endl;
           solver->resetMeshUpdateEvent();
-          std::cout << "rank: "<<tarch::parallel::Node::getInstance().getRank()<< "globalBroadcast(...):" << "[post] MeshUpdateEvent = " << static_cast<int>(solver->getMeshUpdateEvent()) << std::endl;
+          logInfo("globalBroadcast(...):", "MeshUpdateEvent = " << static_cast<int>(solver->getMeshUpdateEvent()));
         }
       } break;
       default:
@@ -252,7 +252,6 @@ void exahype::State::globalBroadcast(exahype::records::RepositoryState& reposito
       case exahype::records::RepositoryState::UseAdapterPredictionOrLocalRecomputation:
       case exahype::records::RepositoryState::UseAdapterFusedTimeStep:
       case exahype::records::RepositoryState::UseAdapterBroadcastAndDropNeighbourMessages: {
-        peano::heap::AbstractHeap::allHeapsStartToSendBoundaryData( solverState.isTraversalInverted() );
         if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
           for (int rank=1; rank<tarch::parallel::Node::getInstance().getNumberOfNodes(); rank++) {
             if ( !(tarch::parallel::NodePool::getInstance().isIdleNode(rank)) ) {
@@ -357,4 +356,22 @@ void exahype::State::globalReduction(exahype::records::RepositoryState& reposito
     }
   }
   #endif
+
+  // postProcessing
+  if ( currentBatchIteration==repositoryState.getNumberOfIterations()-1 ) {
+    switch ( repositoryState.getAction()) {
+    case exahype::records::RepositoryState::UseAdapterFusedTimeStep: {
+      for (auto* solver : exahype::solvers::RegisteredSolvers) {
+        logInfo("globalReduction(...):", "MeshUpdateEvent = " << static_cast<int>(solver->getMeshUpdateEvent()));
+      }
+      if ( tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+        for (auto* solver : solvers::RegisteredSolvers) {
+          solvers::Solver::reinitialiseTimeStepDataIfLastPredictorTimeStepSizeWasInstable(solver);
+        }
+      }
+    } break;
+    default:
+      break;
+    }
+  }
 }

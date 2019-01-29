@@ -51,6 +51,8 @@ namespace exahype {
  */
 class exahype::State : public peano::grid::State<exahype::records::State> {
  private:
+  static tarch::logging::Log _log;
+
   static int CurrentBatchIteration;
   static int NumberOfBatchIterations;
 

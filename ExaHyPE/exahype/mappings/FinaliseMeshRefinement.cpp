@@ -194,8 +194,9 @@ void exahype::mappings::FinaliseMeshRefinement::endIteration(
   if (OneSolverRequestedMeshUpdate) {
     if (exahype::mappings::MeshRefinement::IsInitialMeshRefinement) {
       peano::performanceanalysis::Analysis::getInstance().enable(true);
-    }
+    };
     exahype::mappings::MeshRefinement::IsInitialMeshRefinement = false;
+    exahype::mappings::MeshRefinement::IsFirstIteration        = true;
 
     // time stepping
     for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
@@ -257,15 +258,7 @@ void exahype::mappings::FinaliseMeshRefinement::prepareSendToMaster(
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
     const exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
-
-  for (auto* solver : exahype::solvers::RegisteredSolvers) {
-    if ( solver->hasRequestedMeshRefinement() ) {
-      solver->sendDataToMaster(
-          tarch::parallel::NodePool::getInstance().getMasterRank(),
-          verticesEnumerator.getCellCenter(),
-          verticesEnumerator.getLevel());
-    }
-  }
+  // do nothing
 }
 
 void exahype::mappings::FinaliseMeshRefinement::mergeWithMaster(
@@ -280,14 +273,7 @@ void exahype::mappings::FinaliseMeshRefinement::mergeWithMaster(
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
     int worker, const exahype::State& workerState,
     exahype::State& masterState) {
-  for (auto* solver : exahype::solvers::RegisteredSolvers) {
-    if ( solver->hasRequestedMeshRefinement() ) {
-      solver->mergeWithWorkerData(
-          worker,
-          fineGridVerticesEnumerator.getCellCenter(),
-          fineGridVerticesEnumerator.getLevel());
-    }
-  }
+  // do nothing
 }
 
 //
