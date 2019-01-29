@@ -65,6 +65,7 @@ class ArgumentParser:
         ("useMaterialParamVect",ArgType.OptionalBool,    "enable vectorized material parameters"),
         ("usePointSources",     ArgType.OptionalInt ,    "enable numberOfPointSources point sources", -1, "numberOfPointSources"),
         ("useCERKGuess",        ArgType.OptionalBool,    "use CERK for SpaceTimePredictor inital guess (nonlinear only)"),
+        ("useSplitCK",          ArgType.OptionalBool,    "use split Cauchy–Kowalevski formulation (linear only)"),
         ("useGaussLobatto",     ArgType.OptionalBool,    "use Gauss Lobatto Quadrature instead of Gauss Legendre"),
         ("useLimiter",          ArgType.OptionalInt,     "enable limiter with the given number of observable", -1, "numberOfObservable"),
         ("ghostLayerWidth",     ArgType.OptionalInt,     "use limiter with the given ghostLayerWidth, requires useLimiter option, default = 0", 0, "width"),

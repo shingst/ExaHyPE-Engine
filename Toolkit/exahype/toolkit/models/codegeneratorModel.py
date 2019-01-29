@@ -36,6 +36,7 @@ class CodegeneratorModel:
             "useMaterialParam"   : solverContext["useMaterialParameters"],
             "useMaterialParamVect" : solverContext["useMaterialParametersVect"],
             "useCERKGuess"       : solverContext["useCERK"],
+            "useSplitCK"         : solverContext["useSplitCK"],
             "useGaussLobatto"    : solverContext["basis"] == "lobatto",
             # Optional int parameters (may set redundant flags)
             "usePointSources"    : solverContext["numberOfPointSources"] if solverContext["numberOfPointSources"] > 0 else -1,
