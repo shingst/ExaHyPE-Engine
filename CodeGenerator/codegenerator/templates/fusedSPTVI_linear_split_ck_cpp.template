@@ -169,7 +169,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
   }
   //Initialize PS derivation operator
   double derPS[{{nDof}}] __attribute__((aligned(ALIGNMENT)));
-  std::copy_n(FLCoeff, {{nDof}}, FLCoeff);
+  std::copy_n(FLCoeff, {{nDof}}, derPS);
 {% endif %}
 
   double dtavFac = 0.5 * dt;
