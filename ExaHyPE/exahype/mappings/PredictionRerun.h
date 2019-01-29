@@ -54,12 +54,6 @@ private:
    */
   static tarch::logging::Log _log;
 
-  /**
-   * A local copy of the state set
-   * in beginIteration(...).
-   */
-  exahype::State _stateCopy;
-
  public:
   /**
    * Level for which we ask what to do. This value is negative

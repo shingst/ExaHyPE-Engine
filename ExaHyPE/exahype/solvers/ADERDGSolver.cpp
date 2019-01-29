@@ -585,9 +585,8 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
      _minRefinementStatusForBufferCell    (_minRefinementStatusForSeparationCell+2),
      _minRefinementStatusForTroubledCell  (limiterHelperLayers+_minRefinementStatusForBufferCell),
      _checkForNaNs(true),
-     _meshUpdateEvent(MeshUpdateEvent::None),
-     _nextMeshUpdateEvent(MeshUpdateEvent::None) {
-
+     _meshUpdateEvent(MeshUpdateEvent::None)
+{
   // register tags with profiler
   for (const char* tag : tags) {
     _profiler->registerTag(tag);
@@ -667,28 +666,17 @@ int exahype::solvers::ADERDGSolver::getMinRefinementStatusForTroubledCell() cons
   return _minRefinementStatusForTroubledCell;
 }
 
-exahype::solvers::Solver::MeshUpdateEvent
-exahype::solvers::ADERDGSolver::getNextMeshUpdateEvent() const {
-  return _nextMeshUpdateEvent;
+void exahype::solvers::ADERDGSolver::resetMeshUpdateEvent() {
+  _meshUpdateEvent = MeshUpdateEvent::None;
 }
 
-void exahype::solvers::ADERDGSolver::setNextMeshUpdateEvent() {
-  _meshUpdateEvent         = _nextMeshUpdateEvent;
-  _nextMeshUpdateEvent     = MeshUpdateEvent::None;
-}
-
-void exahype::solvers::ADERDGSolver::updateNextMeshUpdateEvent(
-    exahype::solvers::Solver::MeshUpdateEvent meshUpdateEvent) {
-  _nextMeshUpdateEvent = mergeMeshUpdateEvents(_nextMeshUpdateEvent,meshUpdateEvent);
+void exahype::solvers::ADERDGSolver::updateMeshUpdateEvent(MeshUpdateEvent meshUpdateEvent) {
+  _meshUpdateEvent = mergeMeshUpdateEvents(_meshUpdateEvent,meshUpdateEvent);
 }
 
 exahype::solvers::ADERDGSolver::MeshUpdateEvent
 exahype::solvers::ADERDGSolver::getMeshUpdateEvent() const {
   return _meshUpdateEvent;
-}
-
-void exahype::solvers::ADERDGSolver::overwriteMeshUpdateEvent(MeshUpdateEvent newMeshUpdateEvent) {
-   _meshUpdateEvent = newMeshUpdateEvent;
 }
 
 std::tuple<double,double> exahype::solvers::ADERDGSolver::getRiemannSolverTimeStepData(
@@ -986,14 +974,14 @@ void exahype::solvers::ADERDGSolver::initSolver(
   _coarsestMeshLevel = coarsestMeshInfo.second;
 
   _previousMinCorrectorTimeStepSize = 0.0;
-  _minCorrectorTimeStepSize = 0.0;
-  _minPredictorTimeStepSize = 0.0;
+  _minCorrectorTimeStepSize         = 0.0;
+  _minPredictorTimeStepSize         = 0.0;
 
   _previousMinCorrectorTimeStamp = timeStamp;
   _minCorrectorTimeStamp         = timeStamp;
   _minPredictorTimeStamp         = timeStamp;
 
-  overwriteMeshUpdateEvent(MeshUpdateEvent::InitialRefinementRequested);
+  _meshUpdateEvent = MeshUpdateEvent::InitialRefinementRequested;
 
   init(cmdlineargs,parserView); // call user define initalisiation
 }
@@ -2149,7 +2137,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
   VT_begin(handle);
   #endif
 
-  updateSolution(cellDescription,neighbourMergePerformed,isFirstTimeStepOfBatch);
+  surfaceIntegralAndAddUpdateToSolution(cellDescription,neighbourMergePerformed,isFirstTimeStepOfBatch);
 
   UpdateResult result;
   result._timeStepSize    = startNewTimeStepFused(cellDescription,isFirstTimeStepOfBatch,isLastTimeStepOfBatch);
@@ -2237,7 +2225,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::updateBod
   uncompress(cellDescription);
 
   UpdateResult result;
-  updateSolution(cellDescription,neighbourMergePerformed,true);
+  surfaceIntegralAndAddUpdateToSolution(cellDescription,neighbourMergePerformed,true);
   result._timeStepSize    = startNewTimeStep(cellDescription);
   cellDescription.setPreviousRefinementStatus(cellDescription.getRefinementStatus());
   result._meshUpdateEvent = evaluateRefinementCriteriaAfterSolutionUpdate(cellDescription,neighbourMergePerformed);
@@ -2700,7 +2688,7 @@ void exahype::solvers::ADERDGSolver::printADERDGFluctuations2D(const CellDescrip
   #endif
 }
 
-void exahype::solvers::ADERDGSolver::updateSolution(
+void exahype::solvers::ADERDGSolver::surfaceIntegralAndAddUpdateToSolution(
     CellDescription&                                           cellDescription,
     const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
     const bool                                                 backupPreviousSolution) {
@@ -4224,19 +4212,6 @@ void exahype::solvers::ADERDGSolver::dropNeighbourData(
 ///////////////////////////////////
 // WORKER->MASTER
 ///////////////////////////////////
-exahype::DataHeap::HeapEntries
-exahype::solvers::ADERDGSolver::compileMessageForMaster(const int capacity) const {
-  DataHeap::HeapEntries messageForMaster(0,std::max(3,capacity));
-  messageForMaster.push_back(_minPredictorTimeStamp);
-  messageForMaster.push_back(_minPredictorTimeStepSize);
-  messageForMaster.push_back(_maxLevel);
-  messageForMaster.push_back(convertToDouble(getMeshUpdateEvent()));
-
-  assertion1(std::isfinite(messageForMaster[0]),messageForMaster[0]) ;
-  assertion1(std::isfinite(messageForMaster[1]),messageForMaster[1]) ;
-  return messageForMaster;
-}
-
 /*
  * At the time of sending data to the master,
  * we have already performed a time step update locally
@@ -4261,13 +4236,15 @@ void exahype::solvers::ADERDGSolver::sendDataToMaster(
                                 tarch::parallel::Node::getInstance().getRank());
   }
 
-  if (tarch::parallel::Node::getInstance().getRank()!=
-      tarch::parallel::Node::getInstance().getGlobalMasterRank()) {
-    logDebug("sendDataToMaster(...)","Sending time step data: " <<
-             "data[0]=" << messageForMaster[0] <<
-             ",data[1]=" << messageForMaster[1] <<
-             ",data[2]=" << messageForMaster[2] <<
-             " to rank " << masterRank <<
+  if ( !tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+    logInfo("sendDataToMaster(...)","Sending data to master: " <<
+             "data[0]=" << messageForMaster[0] << "," <<
+             "data[1]=" << messageForMaster[1] << "," <<
+             "data[2]=" << messageForMaster[2] << "," <<
+             "data[3]=" << messageForMaster[3] << "," <<
+             "data[4]=" << messageForMaster[4] << "," <<
+             "data[5]=" << messageForMaster[5] << "," <<
+             "to rank " << masterRank <<
              ", message size="<<messageForMaster.size()
     );
   }
@@ -4280,29 +4257,21 @@ void exahype::solvers::ADERDGSolver::sendDataToMaster(
     tarch::parallel::Node::getInstance().getCommunicator());
 }
 
-void exahype::solvers::ADERDGSolver::mergeWithWorkerData(const DataHeap::HeapEntries& message) {
-  assertion1(message[0]>=0,message[0]);
-  assertion1(std::isfinite(message[0]),message[0]);
-  // The master solver has not yet updated its minNextPredictorTimeStepSize.
-  // Thus it does not equal MAX_DOUBLE.
+exahype::DataHeap::HeapEntries
+exahype::solvers::ADERDGSolver::compileMessageForMaster(const int capacity) const {
+  DataHeap::HeapEntries messageForMaster(0,std::max(6,capacity));
+  messageForMaster.push_back(_minCorrectorTimeStamp);
+  messageForMaster.push_back(_minCorrectorTimeStepSize);
+  messageForMaster.push_back(_minPredictorTimeStamp);
+  messageForMaster.push_back(_minPredictorTimeStepSize);
+  messageForMaster.push_back(_maxLevel);
+  messageForMaster.push_back(convertToDouble(getMeshUpdateEvent()));
 
-  int index=0;
-  _minNextTimeStepSize    = std::min( _minNextTimeStepSize, message[index++] );
-  _nextMaxLevel           = std::max( _nextMaxLevel,        static_cast<int>(message[index++]) );
-  updateNextMeshUpdateEvent(convertToMeshUpdateEvent(message[index++])); // TODO remove
- 
-
-  if (tarch::parallel::Node::getInstance().getRank()==
-      tarch::parallel::Node::getInstance().getGlobalMasterRank()) {
-    logDebug("mergeWithWorkerData(...)","[post] Receiving time step data: " <<
-        "data[0]=" << message[0] <<
-        ",data[1]=" << message[1] <<
-        ",data[2]=" << message[2] );
-    logDebug("mergeWithWorkerData(...)","[post] Updated time step fields: " <<
-        ",_minNextPredictorTimeStepSize=" << _minNextTimeStepSize <<
-        ",_nextMeshUpdateEvent=" << Solver::toString(_nextMeshUpdateEvent) <<
-        ",_nextMaxLevel=" << _nextMaxLevel);
-  }
+  assertion1(std::isfinite(messageForMaster[0]),messageForMaster[0]);
+  assertion1(std::isfinite(messageForMaster[1]),messageForMaster[1]);
+  assertion1(std::isfinite(messageForMaster[2]),messageForMaster[2]);
+  assertion1(std::isfinite(messageForMaster[3]),messageForMaster[3]);
+  return messageForMaster;
 }
 
 /**
@@ -4316,12 +4285,7 @@ void exahype::solvers::ADERDGSolver::mergeWithWorkerData(
     const int                                    workerRank,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const int                                    level) {
-  DataHeap::HeapEntries messageFromWorker(3);
-
-  if (tarch::parallel::Node::getInstance().getRank()!=
-      tarch::parallel::Node::getInstance().getGlobalMasterRank()) {
-    logDebug("mergeWithWorkerData(...)","Receiving time step data [pre] from rank " << workerRank);
-  }
+  DataHeap::HeapEntries messageFromWorker(6);
 
   MPI_Recv(
     messageFromWorker.data(), messageFromWorker.size(),
@@ -4331,8 +4295,40 @@ void exahype::solvers::ADERDGSolver::mergeWithWorkerData(
     tarch::parallel::Node::getInstance().getCommunicator(),
     MPI_STATUS_IGNORE);
 
-  assertion1(messageFromWorker.size()==3,messageFromWorker.size());
   mergeWithWorkerData(messageFromWorker);
+}
+
+void exahype::solvers::ADERDGSolver::mergeWithWorkerData(const DataHeap::HeapEntries& message) {
+  assertion1(message[0]>=0,message[0]);
+  assertion1(std::isfinite(message[0]),message[0]);
+  assertion1(std::isfinite(message[0]),message[0]);
+  // The master solver has not yet updated its minNextPredictorTimeStepSize.
+  // Thus it does not equal MAX_DOUBLE.
+
+  int index=0; // post update // TODO
+  _minCorrectorTimeStamp    = std::min( _minCorrectorTimeStamp,    message[index++] );
+  _minCorrectorTimeStepSize = std::min( _minCorrectorTimeStepSize, message[index++] );
+  _minPredictorTimeStamp    = std::min( _minPredictorTimeStamp,    message[index++] );
+  _minPredictorTimeStepSize = std::min( _minPredictorTimeStepSize, message[index++] );
+  _maxLevel                 = std::max( _maxLevel,                 static_cast<int>(message[index++]) );
+  _meshUpdateEvent          = mergeMeshUpdateEvents(_meshUpdateEvent,convertToMeshUpdateEvent(message[index++]));
+
+  if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+    logInfo("mergeWithWorkerData(...)","[post] Receiving time step data: " <<
+        "data[0]=" << message[0] << "," <<
+        "data[1]=" << message[1] << "," <<
+        "data[2]=" << message[2] << "," <<
+        "data[3]=" << message[3] << "," <<
+        "data[4]=" << message[4] << "," <<
+        "data[5]=" << message[5] );
+    logInfo("mergeWithWorkerData(...)","[post] Updated time step fields: " <<
+        "_minCorrectorTimeStamp="    << _minCorrectorTimeStamp             << "," <<
+        "_minCorrectorTimeStepSize=" << _minCorrectorTimeStepSize          << "," <<
+        "_minPredictorTimeStamp="    << _minPredictorTimeStamp             << "," <<
+        "_minPredictorTimeStepSize=" << _minPredictorTimeStepSize          << "," <<
+        "_meshUpdateEvent="          << Solver::toString(_meshUpdateEvent) << "," <<
+        "_maxLevel=" << _maxLevel);
+  }
 }
 
 ///////////////////////////////////
@@ -4340,23 +4336,8 @@ void exahype::solvers::ADERDGSolver::mergeWithWorkerData(
 ///////////////////////////////////
 exahype::DataHeap::HeapEntries
 exahype::solvers::ADERDGSolver::compileMessageForWorker(const int capacity) const {
-  DataHeap::HeapEntries messageForWorker(0,std::max(7,capacity));
-  messageForWorker.push_back(_minCorrectorTimeStamp);
-  messageForWorker.push_back(_minCorrectorTimeStepSize);
-  messageForWorker.push_back(_minPredictorTimeStamp);
-  messageForWorker.push_back(_minPredictorTimeStepSize);
-
-  messageForWorker.push_back(_maxLevel);
-
-  messageForWorker.push_back(convertToDouble( getMeshUpdateEvent() ));
-
+  DataHeap::HeapEntries messageForWorker = compileMessageForMaster(std::max(7,capacity));
   messageForWorker.push_back(_stabilityConditionWasViolated ? 1.0 : -1.0);
-
-  assertion1(messageForWorker.size()==7,messageForWorker.size());
-  assertion1(std::isfinite(messageForWorker[0]),messageForWorker[0]);
-  assertion1(std::isfinite(messageForWorker[1]),messageForWorker[1]);
-  assertion1(std::isfinite(messageForWorker[2]),messageForWorker[2]);
-  assertion1(std::isfinite(messageForWorker[3]),messageForWorker[3]);
 
   if (_timeStepping==TimeStepping::Global) {
     assertionEquals1(_minNextTimeStepSize,std::numeric_limits<double>::infinity(),
@@ -4376,13 +4357,13 @@ void exahype::solvers::ADERDGSolver::sendDataToWorker(
       tarch::parallel::Node::getInstance().getGlobalMasterRank()) {
     logDebug(
         "sendDataToWorker(...)","Broadcasting time step data: " <<
-        " data[0]=" << messageForWorker[0] <<
-        ",data[1]=" << messageForWorker[1] <<
-        ",data[2]=" << messageForWorker[2] <<
-        ",data[3]=" << messageForWorker[3] <<
-        ",data[4]=" << messageForWorker[4] <<
-        ",data[5]=" << messageForWorker[5] <<
-        ",data[6]=" << messageForWorker[6]);
+        "data[0]=" << messageForWorker[0] << "," <<
+        "data[1]=" << messageForWorker[1] << "," <<
+        "data[2]=" << messageForWorker[2] << "," <<
+        "data[3]=" << messageForWorker[3] << "," <<
+        "data[4]=" << messageForWorker[4] << "," <<
+        "data[5]=" << messageForWorker[5] << "," <<
+        "data[6]=" << messageForWorker[6]);
     logDebug("sendDataWorker(...)","_minNextPredictorTimeStepSize="<<_minNextTimeStepSize);
   }
   
@@ -4400,10 +4381,8 @@ void exahype::solvers::ADERDGSolver::mergeWithMasterData(const DataHeap::HeapEnt
   _minCorrectorTimeStepSize      = message[index++];
   _minPredictorTimeStamp         = message[index++];
   _minPredictorTimeStepSize      = message[index++];
-
   _maxLevel                      = message[index++];
-
-  overwriteMeshUpdateEvent( convertToMeshUpdateEvent(message[index++]) );
+  _meshUpdateEvent               = convertToMeshUpdateEvent(message[index++]);
   _stabilityConditionWasViolated = (message[index++] > 0.0) ? true : false;
 
   logDebug("mergeWithMasterData(...)",
@@ -4419,31 +4398,26 @@ void exahype::solvers::ADERDGSolver::mergeWithMasterData(
   DataHeap::HeapEntries messageFromMaster(7);
   
   MPI_Recv(
-    messageFromMaster.data(), messageFromMaster.size(),
-    MPI_DOUBLE,
-    masterRank,
-    _masterWorkerCommunicationTag,
-    tarch::parallel::Node::getInstance().getCommunicator(),MPI_STATUS_IGNORE);
+      messageFromMaster.data(), messageFromMaster.size(),
+      MPI_DOUBLE,
+      masterRank,
+      _masterWorkerCommunicationTag,
+      tarch::parallel::Node::getInstance().getCommunicator(),MPI_STATUS_IGNORE);
 
   assertion1(messageFromMaster.size()==7,messageFromMaster.size());
   mergeWithMasterData(messageFromMaster);
 
-  if (_timeStepping==TimeStepping::Global) {
-    assertionNumericalEquals1(_minNextTimeStepSize,std::numeric_limits<double>::infinity(),
-                                  _minNextTimeStepSize);
-  }
-
   if (tarch::parallel::Node::getInstance().getRank()!=
       tarch::parallel::Node::getInstance().getGlobalMasterRank()) {
     logDebug(
-        "mergeWithMasterData(...)","Received time step data: " <<
-        "data[0]="  << messageFromMaster[0] <<
-        ",data[1]=" << messageFromMaster[1] <<
-        ",data[2]=" << messageFromMaster[2] <<
-        ",data[3]=" << messageFromMaster[3] <<
-        ",data[4]=" << messageFromMaster[4] <<
-        ",data[5]=" << messageFromMaster[5] <<
-        ",data[6]=" << messageFromMaster[6]);
+        "mergeWithMasterData(...)","Received message from master: " <<
+        "data[0]=" << messageFromMaster[0] << "," <<
+        "data[1]=" << messageFromMaster[1] << "," <<
+        "data[2]=" << messageFromMaster[2] << "," <<
+        "data[3]=" << messageFromMaster[3] << "," <<
+        "data[4]=" << messageFromMaster[4] << "," <<
+        "data[5]=" << messageFromMaster[5] << "," <<
+        "data[6]=" << messageFromMaster[6]);
   }
 }
 #endif

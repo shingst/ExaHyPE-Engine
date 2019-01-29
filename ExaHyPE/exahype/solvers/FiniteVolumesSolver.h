@@ -104,12 +104,6 @@ private:
   MeshUpdateEvent _meshUpdateEvent;
 
   /**
-   * The mesh update event which will become active
-   * in the next iteration.
-   */
-  MeshUpdateEvent _nextMeshUpdateEvent;
-
-  /**
    * Synchronises the cell description's time stepping data with
    * the solver's time stepping data.
    */
@@ -411,11 +405,9 @@ public:
   FiniteVolumesSolver(const FiniteVolumesSolver& other) = delete;
   FiniteVolumesSolver& operator=(const FiniteVolumesSolver& other) = delete;
 
-  MeshUpdateEvent getNextMeshUpdateEvent() const final override;
-  void updateNextMeshUpdateEvent(MeshUpdateEvent meshUpdateEvent) final override;
-  void setNextMeshUpdateEvent() final override;
+  void updateMeshUpdateEvent(MeshUpdateEvent meshUpdateEvent) final override;
+  void resetMeshUpdateEvent() final override;
   MeshUpdateEvent getMeshUpdateEvent() const final override;
-  void overwriteMeshUpdateEvent(MeshUpdateEvent newMeshUpdateEvent) final override;
 
   /**
    * \brief Returns a stable time step size.

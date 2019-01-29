@@ -49,20 +49,6 @@ peano::MappingSpecification exahype::mappings::Prediction::determineEnterLeaveCe
 
 peano::CommunicationSpecification
 exahype::mappings::Prediction::communicationSpecification() const {
-//  // master->worker
-//  peano::CommunicationSpecification::ExchangeMasterWorkerData exchangeMasterWorkerData =
-//      peano::CommunicationSpecification::ExchangeMasterWorkerData::MaskOutMasterWorkerDataAndStateExchange;
-//  #ifdef Parallel
-// if ( exahype::State::BroadcastInThisIteration ) { // must be set in previous iteration
-//    exchangeMasterWorkerData =
-//        peano::CommunicationSpecification::ExchangeMasterWorkerData::SendDataAndStateBeforeFirstTouchVertexFirstTime;
-//  }
-//  #endif
-//  // worker->master
-//  peano::CommunicationSpecification::ExchangeWorkerMasterData exchangeWorkerMasterData =
-//      peano::CommunicationSpecification::ExchangeWorkerMasterData::MaskOutWorkerMasterDataAndStateExchange;
-//
-//  return peano::CommunicationSpecification(exchangeMasterWorkerData,exchangeWorkerMasterData,true);
   return peano::CommunicationSpecification(
       peano::CommunicationSpecification::ExchangeMasterWorkerData::MaskOutMasterWorkerDataAndStateExchange,
       peano::CommunicationSpecification::ExchangeWorkerMasterData::MaskOutWorkerMasterDataAndStateExchange,false);
@@ -114,21 +100,9 @@ exahype::mappings::Prediction::~Prediction() {
   // do nothing
 }
 
-#if defined(SharedMemoryParallelisation)
-exahype::mappings::Prediction::Prediction(const Prediction& masterThread) : 
-  _stateCopy(masterThread._stateCopy) {
-}
-
-void exahype::mappings::Prediction::mergeWithWorkerThread(
-    const Prediction& workerThread) {
-}
-#endif
-
 void exahype::mappings::Prediction::beginIteration(
     exahype::State& solverState) {
   logTraceInWith1Argument("beginIteration(State)", solverState);
-
-  _stateCopy = solverState;
 
   #ifdef USE_ITAC
   VT_traceon();
@@ -140,7 +114,7 @@ void exahype::mappings::Prediction::beginIteration(
 
   if (
       !exahype::solvers::Solver::FuseADERDGPhases &&
-      _stateCopy.isFirstIterationOfBatchOrNoBatch()
+      exahype::State::isFirstIterationOfBatchOrNoBatch()
   ) {
     for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
@@ -153,16 +127,7 @@ void exahype::mappings::Prediction::beginIteration(
 
 void exahype::mappings::Prediction::endIteration(
     exahype::State& solverState) {
-  #ifdef Parallel
-  if ( _stateCopy.isFirstIterationOfBatchOrNoBatch() ) { // this is after the broadcast
-    assertion(exahype::State::BroadcastInThisIteration==true);
-    exahype::State::BroadcastInThisIteration = false;
-  }
-  if ( _stateCopy.isLastIterationOfBatchOrNoBatch() ) {
-    assertion(exahype::State::BroadcastInThisIteration==false);
-    exahype::State::BroadcastInThisIteration = true;
-  }
-  #endif
+  // do nothing
 }
 
 void exahype::mappings::Prediction::performPredictionOrProlongate(
@@ -245,7 +210,7 @@ void exahype::mappings::Prediction::enterCell(
       fineGridCell,
       fineGridVertices,fineGridVerticesEnumerator,
       exahype::State::AlgorithmSection::TimeStepping,
-      _stateCopy.isFirstIterationOfBatchOrNoBatch());
+      exahype::State::isFirstIterationOfBatchOrNoBatch());
 
   logTraceOutWith1Argument("enterCell(...)", fineGridCell);
 }
@@ -257,12 +222,17 @@ void exahype::mappings::Prediction::prepareSendToNeighbour(
     const tarch::la::Vector<DIMENSIONS, double>& h, int level) {
   logTraceInWith5Arguments( "prepareSendToNeighbour(...)", vertex, toRank, x, h, level );
 
-  if ( _stateCopy.isLastIterationOfBatchOrNoBatch() ) {
+  if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
     vertex.sendToNeighbour(toRank,true,x,h,level);
   }
 
   logTraceOut( "prepareSendToNeighbour(...)" );
 }
+
+//
+// Below all methods are nop.
+//
+// ====================================
 
 bool exahype::mappings::Prediction::prepareSendToWorker(
     exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
@@ -273,18 +243,6 @@ bool exahype::mappings::Prediction::prepareSendToWorker(
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
     int worker) {
   return false;
-  logTraceIn( "prepareSendToWorker(...)" );
-
-  if ( exahype::State::BroadcastInThisIteration ) {
-    exahype::Cell::broadcastGlobalDataToWorker(
-        worker,
-        fineGridVerticesEnumerator.getCellCenter(),
-        fineGridVerticesEnumerator.getLevel());
-  }
-
-  logTraceOutWith1Argument( "prepareSendToWorker(...)", true );
-
-  return true;
 }
 
 void exahype::mappings::Prediction::receiveDataFromMaster(
@@ -298,16 +256,6 @@ void exahype::mappings::Prediction::receiveDataFromMaster(
     exahype::Cell& workersCoarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
   return;
-  logTraceIn( "receiveDataFromMaster(...)" );
-
-  if ( exahype::State::BroadcastInThisIteration ) {
-    exahype::Cell::mergeWithGlobalDataFromMaster(
-        tarch::parallel::NodePool::getInstance().getMasterRank(),
-        receivedVerticesEnumerator.getCellCenter(),
-        receivedVerticesEnumerator.getLevel());
-  }
-
-  logTraceOut( "receiveDataFromMaster(...)" );
 }
 
 void exahype::mappings::Prediction::prepareSendToMaster(
@@ -334,11 +282,6 @@ void exahype::mappings::Prediction::mergeWithMaster(
     exahype::State& masterState) {
   // do nothing
 }
-
-//
-// Below all methods are nop.
-//
-// ====================================
 
 void exahype::mappings::Prediction::mergeWithNeighbour(
     exahype::Vertex& vertex, const exahype::Vertex& neighbour, int fromRank,
@@ -386,6 +329,17 @@ void exahype::mappings::Prediction::mergeWithWorker(
     exahype::Vertex& localVertex, const exahype::Vertex& receivedMasterVertex,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const tarch::la::Vector<DIMENSIONS, double>& h, int level) {
+  // do nothing
+}
+#endif
+
+#if defined(SharedMemoryParallelisation)
+exahype::mappings::Prediction::Prediction(const Prediction& masterThread) {
+  // do nothing
+}
+
+void exahype::mappings::Prediction::mergeWithWorkerThread(
+    const Prediction& workerThread) {
   // do nothing
 }
 #endif

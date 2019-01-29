@@ -67,20 +67,14 @@ exahype::solvers::LimitingADERDGSolver::LimitingADERDGSolver(
   #endif
 }
 /** Wire through to limiting ADER-DG solver */
-exahype::solvers::Solver::MeshUpdateEvent exahype::solvers::LimitingADERDGSolver::getNextMeshUpdateEvent() const {
-  return _solver->getNextMeshUpdateEvent();
+void exahype::solvers::LimitingADERDGSolver::updateMeshUpdateEvent(exahype::solvers::Solver::MeshUpdateEvent meshUpdateEvent) {
+  return _solver->updateMeshUpdateEvent(meshUpdateEvent);
 }
-void exahype::solvers::LimitingADERDGSolver::updateNextMeshUpdateEvent(exahype::solvers::Solver::MeshUpdateEvent meshUpdateEvent) {
-  return _solver->updateNextMeshUpdateEvent(meshUpdateEvent);
-}
-void exahype::solvers::LimitingADERDGSolver::setNextMeshUpdateEvent() {
-  _solver->setNextMeshUpdateEvent();
+void exahype::solvers::LimitingADERDGSolver::resetMeshUpdateEvent() {
+  _solver->resetMeshUpdateEvent();
 }
 exahype::solvers::Solver::MeshUpdateEvent exahype::solvers::LimitingADERDGSolver::getMeshUpdateEvent() const {
   return _solver->getMeshUpdateEvent();
-}
-void exahype::solvers::LimitingADERDGSolver::overwriteMeshUpdateEvent(MeshUpdateEvent newMeshUpdateEvent) {
-   _solver->overwriteMeshUpdateEvent(newMeshUpdateEvent);
 }
 
 double exahype::solvers::LimitingADERDGSolver::getMinTimeStamp() const {
@@ -113,8 +107,7 @@ void exahype::solvers::LimitingADERDGSolver::initSolver(
   _coarsestMeshSize  = coarsestMeshInfo.first; // TODO(Dominic): Wire through as well
   _coarsestMeshLevel = coarsestMeshInfo.second;
 
-  updateNextMeshUpdateEvent(MeshUpdateEvent::InitialRefinementRequested);
-  setNextMeshUpdateEvent();
+  resetMeshUpdateEvent();
 
   _solver->initSolver(timeStamp, domainOffset, domainSize, boundingBoxSize, cmdlineargs, parserView);
   _limiter->initSolver(timeStamp, domainOffset, domainSize, boundingBoxSize, cmdlineargs, parserView);
@@ -679,7 +672,7 @@ void exahype::solvers::LimitingADERDGSolver::updateSolution(
       projectFVSolutionOnDGSpace(solverPatch,limiterPatch); // TODO(Dominic): If we do static limiting, this is not necessary in troubled cells
     }
     else {
-      _solver->updateSolution(solverPatch,neighbourMergePerformed,backupPreviousSolution);
+      _solver->surfaceIntegralAndAddUpdateToSolution(solverPatch,neighbourMergePerformed,backupPreviousSolution);
 
       if (
           mergedLimiterStatus >=_solver->getMinRefinementStatusForSeparationCell() &&
@@ -697,7 +690,7 @@ void exahype::solvers::LimitingADERDGSolver::updateSolution(
       }
     }
   } else {
-    _solver->updateSolution(solverPatch,neighbourMergePerformed,backupPreviousSolution);
+    _solver->surfaceIntegralAndAddUpdateToSolution(solverPatch,neighbourMergePerformed,backupPreviousSolution);
   }
 }
 

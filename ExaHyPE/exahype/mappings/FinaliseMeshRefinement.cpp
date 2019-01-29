@@ -29,12 +29,6 @@
 
 peano::CommunicationSpecification
 exahype::mappings::FinaliseMeshRefinement::communicationSpecification() const {
-//  return peano::CommunicationSpecification(
-//      peano::CommunicationSpecification::ExchangeMasterWorkerData::
-//          MaskOutMasterWorkerDataAndStateExchange,
-//      peano::CommunicationSpecification::ExchangeWorkerMasterData::
-//          SendDataAndStateAfterLastTouchVertexLastTime,
-//      true);
   return peano::CommunicationSpecification(
       peano::CommunicationSpecification::ExchangeMasterWorkerData::MaskOutMasterWorkerDataAndStateExchange,
       peano::CommunicationSpecification::ExchangeWorkerMasterData::MaskOutWorkerMasterDataAndStateExchange,true);

@@ -564,7 +564,7 @@ void exahype::mappings::MeshRefinement::mergeWithNeighbour(
   logTraceInWith6Arguments("mergeWithNeighbour(...)", vertex, neighbour,
                            fromRank, fineGridX, fineGridH, level);
 
-  if ( !IsInitialMeshRefinement || !IsFirstIteration ) {
+  if ( !exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
     vertex.mergeOnlyWithNeighbourMetadata(fromRank,fineGridX,fineGridH,level,exahype::State::AlgorithmSection::MeshRefinement,true);
   }
 

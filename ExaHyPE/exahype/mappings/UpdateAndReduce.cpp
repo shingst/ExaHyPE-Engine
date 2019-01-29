@@ -32,13 +32,9 @@ tarch::multicore::BooleanSemaphore exahype::mappings::UpdateAndReduce::Semaphore
 
 peano::CommunicationSpecification
 exahype::mappings::UpdateAndReduce::communicationSpecification() const {
-//  return peano::CommunicationSpecification(
-//      peano::CommunicationSpecification::ExchangeMasterWorkerData::MaskOutMasterWorkerDataAndStateExchange,
-//      peano::CommunicationSpecification::ExchangeWorkerMasterData::SendDataAndStateAfterLastTouchVertexLastTime,
-//      true);
   return peano::CommunicationSpecification(
       peano::CommunicationSpecification::ExchangeMasterWorkerData::MaskOutMasterWorkerDataAndStateExchange,
-      peano::CommunicationSpecification::ExchangeWorkerMasterData::MaskOutWorkerMasterDataAndStateExchange,true);
+      peano::CommunicationSpecification::ExchangeWorkerMasterData::MaskOutWorkerMasterDataAndStateExchange,false);
 }
 
 peano::MappingSpecification
@@ -122,10 +118,6 @@ void exahype::mappings::UpdateAndReduce::beginIteration(
   exahype::plotters::startPlottingIfAPlotterIsActive(
       solvers::Solver::getMinTimeStampOfAllSolvers());
 
-  for (auto* solver : exahype::solvers::RegisteredSolvers) {
-    solver->setNextMeshUpdateEvent();
-  }
-
   logTraceOutWith1Argument("beginIteration(State)", solverState);
 }
 
@@ -151,14 +143,7 @@ void exahype::mappings::UpdateAndReduce::prepareSendToMaster(
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
     const exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
-  logTraceInWith2Arguments( "prepareSendToMaster(...)", localCell, verticesEnumerator.toString() );
-
-  exahype::Cell::reduceGlobalDataToMaster(
-      tarch::parallel::NodePool::getInstance().getMasterRank(),
-      verticesEnumerator.getCellCenter(),
-      verticesEnumerator.getLevel());
-
-  logTraceOut( "prepareSendToMaster(...)" );
+  // do nothing
 }
 
 void exahype::mappings::UpdateAndReduce::mergeWithMaster(
@@ -173,14 +158,7 @@ void exahype::mappings::UpdateAndReduce::mergeWithMaster(
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
     int worker, const exahype::State& workerState,
     exahype::State& masterState) {
-  logTraceIn( "mergeWithMaster(...)" );
-
-  exahype::Cell::mergeWithGlobalDataFromWorker(
-      worker,
-      fineGridVerticesEnumerator.getCellCenter(),
-      fineGridVerticesEnumerator.getLevel());
-
-  logTraceOut( "mergeWithMaster(...)" );
+  // do nothing
 }
 
 bool exahype::mappings::UpdateAndReduce::prepareSendToWorker(
@@ -410,7 +388,7 @@ void exahype::mappings::UpdateAndReduce::leaveCell(
 
       tarch::multicore::Lock lock(Semaphore);
       {
-        solver->updateNextMeshUpdateEvent(result._meshUpdateEvent);
+        solver->updateMeshUpdateEvent(result._meshUpdateEvent);
         solver->updateNextMaxLevel(fineGridVerticesEnumerator.getLevel());
         solver->updateMinNextTimeStepSize(result._timeStepSize);
       }

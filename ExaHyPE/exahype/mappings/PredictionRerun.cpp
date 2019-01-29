@@ -34,20 +34,6 @@
 
 peano::CommunicationSpecification
 exahype::mappings::PredictionRerun::communicationSpecification() const {
-//  // master->worker
-//  peano::CommunicationSpecification::ExchangeMasterWorkerData exchangeMasterWorkerData =
-//      peano::CommunicationSpecification::ExchangeMasterWorkerData::MaskOutMasterWorkerDataAndStateExchange;
-//  #ifdef Parallel
-//  if ( exahype::State::BroadcastInThisIteration ) { // must be set in previous iteration
-//    exchangeMasterWorkerData =
-//        peano::CommunicationSpecification::ExchangeMasterWorkerData::SendDataAndStateBeforeFirstTouchVertexFirstTime;
-//  }
-//  #endif
-//  // worker->master
-//  peano::CommunicationSpecification::ExchangeWorkerMasterData exchangeWorkerMasterData =
-//      peano::CommunicationSpecification::ExchangeWorkerMasterData::MaskOutWorkerMasterDataAndStateExchange;
-//
-//  return peano::CommunicationSpecification(exchangeMasterWorkerData,exchangeWorkerMasterData,true);
   return peano::CommunicationSpecification(
         peano::CommunicationSpecification::ExchangeMasterWorkerData::MaskOutMasterWorkerDataAndStateExchange,
         peano::CommunicationSpecification::ExchangeWorkerMasterData::MaskOutWorkerMasterDataAndStateExchange,true);
@@ -93,45 +79,6 @@ exahype::mappings::PredictionRerun::descendSpecification(int level) const {
 tarch::logging::Log exahype::mappings::PredictionRerun::_log(
     "exahype::mappings::PredictionRerun");
 
-exahype::mappings::PredictionRerun::PredictionRerun() {}
-
-exahype::mappings::PredictionRerun::~PredictionRerun() {
-  // do nothing
-}
-
-#if defined(SharedMemoryParallelisation)
-exahype::mappings::PredictionRerun::PredictionRerun(const PredictionRerun& masterThread) :
-  _stateCopy(masterThread._stateCopy) {
-}
-
-void exahype::mappings::PredictionRerun::mergeWithWorkerThread(
-    const PredictionRerun& workerThread) {
-}
-#endif
-
-void exahype::mappings::PredictionRerun::beginIteration(
-    exahype::State& solverState) {
-  logTraceInWith1Argument("beginIteration(State)", solverState);
-
-  _stateCopy = solverState;
-
-  logTraceOutWith1Argument("beginIteration(State)", solverState);
-}
-
-void exahype::mappings::PredictionRerun::endIteration(
-    exahype::State& solverState) {
-  #ifdef Parallel
-  if ( _stateCopy.isFirstIterationOfBatchOrNoBatch() ) { // this is after the broadcast
-    assertion(exahype::State::BroadcastInThisIteration==true);
-    exahype::State::BroadcastInThisIteration = false;
-  }
-  if ( _stateCopy.isLastIterationOfBatchOrNoBatch() ) {
-    assertion(exahype::State::BroadcastInThisIteration==false);
-    exahype::State::BroadcastInThisIteration = true;
-  }
-  #endif
-}
-
 void exahype::mappings::PredictionRerun::enterCell(
     exahype::Cell& fineGridCell,
     exahype::Vertex* const fineGridVertices,
@@ -148,7 +95,7 @@ void exahype::mappings::PredictionRerun::enterCell(
       fineGridCell,
       fineGridVertices,fineGridVerticesEnumerator,
       exahype::State::AlgorithmSection::PredictionRerunAllSend,
-      _stateCopy.isFirstIterationOfBatchOrNoBatch());
+      exahype::State::isFirstIterationOfBatchOrNoBatch());
 
   logTraceOutWith1Argument("enterCell(...)", fineGridCell);
 }
@@ -170,7 +117,7 @@ void exahype::mappings::PredictionRerun::mergeWithNeighbour(
     const tarch::la::Vector<DIMENSIONS, double>& fineGridH, int level) {
   logTraceIn( "mergeWithMaster(...)" );
 
-  if ( exahype::State::BroadcastInThisIteration ) {
+  if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
     vertex.receiveNeighbourData(
         fromRank,false /*no merge*/,true /*no batch*/,
         fineGridX,fineGridH,level);
@@ -184,7 +131,7 @@ void exahype::mappings::PredictionRerun::prepareSendToNeighbour(
     const tarch::la::Vector<DIMENSIONS, double>& h, int level) {
   logTraceInWith5Arguments( "prepareSendToNeighbour(...)", vertex, toRank, x, h, level );
 
-  if ( _stateCopy.isLastIterationOfBatchOrNoBatch() ) {
+  if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
     vertex.sendToNeighbour(toRank,true,x,h,level);
   }
   logTraceOut( "prepareSendToNeighbour(...)" );
@@ -198,7 +145,7 @@ bool exahype::mappings::PredictionRerun::prepareSendToWorker(
     exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
     int worker) {
-  if ( _stateCopy.isFirstIterationOfBatchOrNoBatch() ) {
+  if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
     exahype::Cell::broadcastGlobalDataToWorker(
         worker,
         fineGridVerticesEnumerator.getCellCenter(),
@@ -218,7 +165,7 @@ void exahype::mappings::PredictionRerun::receiveDataFromMaster(
     const peano::grid::VertexEnumerator& workersCoarseGridVerticesEnumerator,
     exahype::Cell& workersCoarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
-  if ( _stateCopy.isFirstIterationOfBatchOrNoBatch() ) {
+  if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
     exahype::Cell::mergeWithGlobalDataFromMaster(
         tarch::parallel::NodePool::getInstance().getMasterRank(),
         receivedVerticesEnumerator.getCellCenter(),
@@ -295,6 +242,33 @@ void exahype::mappings::PredictionRerun::mergeWithWorker(
     exahype::Vertex& localVertex, const exahype::Vertex& receivedMasterVertex,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const tarch::la::Vector<DIMENSIONS, double>& h, int level) {
+  // do nothing
+}
+#endif
+
+exahype::mappings::PredictionRerun::PredictionRerun() {}
+
+exahype::mappings::PredictionRerun::~PredictionRerun() {
+  // do nothing
+}
+
+void exahype::mappings::PredictionRerun::beginIteration(
+    exahype::State& solverState) {
+  // do nothing
+}
+
+void exahype::mappings::PredictionRerun::endIteration(
+    exahype::State& solverState) {
+  // do nothing
+}
+
+#if defined(SharedMemoryParallelisation)
+exahype::mappings::PredictionRerun::PredictionRerun(const PredictionRerun& masterThread) {
+  // do nothing
+}
+
+void exahype::mappings::PredictionRerun::mergeWithWorkerThread(
+    const PredictionRerun& workerThread) {
   // do nothing
 }
 #endif

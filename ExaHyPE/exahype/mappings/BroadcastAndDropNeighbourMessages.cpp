@@ -26,10 +26,6 @@
 #include "exahype/mappings/RefinementStatusSpreading.h"
 
 peano::CommunicationSpecification exahype::mappings::BroadcastAndDropNeighbourMessages::communicationSpecification() const {
-//  return peano::CommunicationSpecification(
-//      peano::CommunicationSpecification::ExchangeMasterWorkerData::SendDataAndStateBeforeFirstTouchVertexFirstTime,
-//      peano::CommunicationSpecification::ExchangeWorkerMasterData::SendDataAndStateAfterLastTouchVertexLastTime,
-//      true);
   return peano::CommunicationSpecification(
       peano::CommunicationSpecification::ExchangeMasterWorkerData::MaskOutMasterWorkerDataAndStateExchange,
       peano::CommunicationSpecification::ExchangeWorkerMasterData::MaskOutWorkerMasterDataAndStateExchange,false);
@@ -86,11 +82,7 @@ tarch::logging::Log exahype::mappings::BroadcastAndDropNeighbourMessages::_log(
 
 void exahype::mappings::BroadcastAndDropNeighbourMessages::beginIteration(
     exahype::State& solverState) {
-  logTraceInWith1Argument("beginIteration(State)", solverState);
-
-  exahype::mappings::RefinementStatusSpreading::IsFirstIteration = true;
-
-  logTraceOutWith1Argument("beginIteration(State)", solverState);
+  // do nothing
 }
 
 void exahype::mappings::BroadcastAndDropNeighbourMessages::enterCell(

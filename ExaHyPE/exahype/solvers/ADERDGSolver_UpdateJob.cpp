@@ -24,7 +24,7 @@ bool exahype::solvers::ADERDGSolver::UpdateJob::run() {
 
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
   {
-    _solver.updateNextMeshUpdateEvent(result._meshUpdateEvent);
+    _solver.updateMeshUpdateEvent(result._meshUpdateEvent);
     _solver.updateMinNextTimeStepSize(result._timeStepSize);
   }
   lock.free();

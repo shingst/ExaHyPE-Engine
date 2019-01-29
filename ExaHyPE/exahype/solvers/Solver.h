@@ -1371,35 +1371,20 @@ class exahype::solvers::Solver {
   virtual std::string toString() const;
 
   virtual void toString(std::ostream& out) const;
-
-  /**
-   * \return the mesh update event which will be set in
-   * the next iteration. (This value might change during an iteration.)
-   *
-   * \note We decided to make these functions virtual as the LimitingADERDGSolver
-   * delegates these events to the wrapped ADERDGSolver.
-   */
-  virtual  MeshUpdateEvent getNextMeshUpdateEvent() const = 0;
   /**
    * \see mergeMeshUpdateEvents
    */
-  virtual void updateNextMeshUpdateEvent(MeshUpdateEvent meshUpdateEvent) = 0;
+  virtual void updateMeshUpdateEvent(MeshUpdateEvent meshUpdateEvent) = 0;
   /**
    * Sets the _nextMeshUpdateEvent as this solver's
    * current event. Furthermore resets the
    * _nextMeshUpdateEvent variable.
    */
-  virtual void setNextMeshUpdateEvent() = 0;
+  virtual void resetMeshUpdateEvent() = 0;
   /**
    * \return the currently set mesh update event.
    */
   virtual MeshUpdateEvent getMeshUpdateEvent() const = 0;
-  /**
-   * Overwrite the current mesh update event with the given value.
-   *
-   * Is used to set the master's value on a worker rank.
-   */
-  virtual void overwriteMeshUpdateEvent(MeshUpdateEvent newMeshUpdateEvent) = 0;
 
   /**
    * \return true if the current mesh update event

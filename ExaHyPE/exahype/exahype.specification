@@ -48,9 +48,6 @@ event-mapping:
 event-mapping:
   name: PredictionOrLocalRecomputation
   
-event-mapping:
-  name: GlobalRollback
-
 // GridUpdate     
 event-mapping:
   name: MeshRefinement

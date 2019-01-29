@@ -126,10 +126,6 @@ private:
   /**
    * Prepares the temporary variables and copies
    * the state.
-   *
-   * Resets the next mesh update request flag to false and
-   * the next limiter domain change to Regular
-   * using the "setNext..." methods.
    */
   void beginIteration(exahype::State& solverState);
 

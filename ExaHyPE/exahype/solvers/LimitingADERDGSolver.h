@@ -626,11 +626,9 @@ public:
   LimitingADERDGSolver& operator=(const ADERDGSolver& other) = delete;
   
   /** Wire through to ADER-DG Solver */
-  MeshUpdateEvent getNextMeshUpdateEvent() const final override;
-  void updateNextMeshUpdateEvent(MeshUpdateEvent meshUpdateEvent) final override;
-  void setNextMeshUpdateEvent() final override;
+  void updateMeshUpdateEvent(MeshUpdateEvent meshUpdateEvent) final override;
+  void resetMeshUpdateEvent() final override;
   MeshUpdateEvent getMeshUpdateEvent() const final override;
-  void overwriteMeshUpdateEvent(MeshUpdateEvent newMeshUpdateEvent) final override;
 
   /*
    * A time stamp minimised over all the ADERDG and FV solver

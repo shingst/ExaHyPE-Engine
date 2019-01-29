@@ -22,23 +22,20 @@
 
 #include "peano/grid/Checkpoint.h"
 
+/**
+ * Forward declaration
+ */
 namespace exahype {
-class State;
+  class State;
+  class Vertex;
+  class Cell;
 
-/**
- * Forward declaration
- */
-class Vertex;
-/**
- * Forward declaration
- */
-class Cell;
+  namespace records {
+    class RepositoryState;
+  }
 
-namespace repositories {
-  /**
-   * Forward declaration
-   */
-  class RepositoryArrayStack;
+  namespace repositories {
+    class RepositoryArrayStack;
     class RepositorySTDStack;
   }
 }
@@ -54,6 +51,9 @@ namespace repositories {
  */
 class exahype::State : public peano::grid::State<exahype::records::State> {
  private:
+  static int CurrentBatchIteration;
+  static int NumberOfBatchIterations;
+
   typedef class peano::grid::State<exahype::records::State> Base;
 
   /**
@@ -131,58 +131,6 @@ class exahype::State : public peano::grid::State<exahype::records::State> {
    * TODO(Dominic): Make private and hide in init function
    */
   static bool VirtuallyExpandBoundingBox;
-
-  #ifdef Parallel //TODO Dominic fix, had to comment for single core to compile (JMG)
-  /**
-   * Toggle switches used by the Prediction* and FusedTimeStep
-   * mappings where we turn broadcasts and reduction on and
-   * off in certain batch iterations.
-   *
-   * \note Use this switches only
-   */
-  static bool BroadcastInThisIteration;
-  static bool ReduceInThisIteration;
-  #endif
-
-  /**
-   * \return true if we run no batch or if
-   * we are in the first iteration of a batch (iteration: 0).
-   *
-   * \note It makes only sense to query the batch state from
-   * within a mapping.
-   */
-  bool isFirstIterationOfBatchOrNoBatch() const;
-  
-
-  /**
-   * \return true if we run no batch or if
-   * we are in the second iteration of a batch (iteration: 1).
-   *
-   * \note It makes only sense to query the batch state from
-   * within a mapping.
-   */
-  bool isSecondIterationOfBatchOrNoBatch() const;
-
-  /**
-   * \return true if we run no batch or if
-   * we are in the last iteration of a batch (iteration: #iterations-1)
-   *
-   * \note It makes only sense to query the batch state from
-   * within a mapping.
-   */
-  bool isLastIterationOfBatchOrNoBatch() const;
-
-  /**
-   * \return true if we run no batch or if
-   * we are in the second to last iteration of a batch (iteration: #iterations-2)
-   *
-   * \note It makes only sense to query the batch state from
-   * within a mapping.
-   *
-   * \note This function takes the role of isLastIterationOfBatchOrNoBatch() when we use
-   * two Prediction or FusedTimeStep sweeps.
-   */
-  bool isSecondToLastIterationOfBatchOrNoBatch() const;
 
   /**
    * Default Constructor
@@ -267,6 +215,71 @@ class exahype::State : public peano::grid::State<exahype::records::State> {
    * Please consult Peano guidebook Section 6.3.2 for details.
    */
   bool continueToConstructGrid() const;
+
+  /**
+   * @return if we are in an even batch iterations, i.e.
+   * CurrentBatchIteration % 2 == 0.
+   */
+  static bool isEvenBatchIteration();
+
+  /**
+   * \return true if we run no batch or if
+   * we are in the first iteration of a batch (iteration: 0).
+   *
+   * \note It makes only sense to query the batch state from
+   * within a mapping.
+   */
+  static bool isFirstIterationOfBatchOrNoBatch();
+
+  /**
+   * \return true if we run no batch or if
+   * we are in the second iteration of a batch (iteration: 1).
+   *
+   * \note It makes only sense to query the batch state from
+   * within a mapping.
+   */
+  static bool isSecondIterationOfBatchOrNoBatch();
+
+  /**
+   * \return true if we run no batch or if
+   * we are in the last iteration of a batch (iteration: #iterations-1)
+   *
+   * \note It makes only sense to query the batch state from
+   * within a mapping.
+   */
+  static bool isLastIterationOfBatchOrNoBatch();
+
+  /**
+   * \return true if we run no batch or if
+   * we are in the second to last iteration of a batch (iteration: #iterations-2)
+   *
+   * \note It makes only sense to query the batch state from
+   * within a mapping.
+   *
+   * \note This function takes the role of isLastIterationOfBatchOrNoBatch() when we use
+   * two Prediction or FusedTimeStep sweeps.
+   */
+  static bool isSecondToLastIterationOfBatchOrNoBatch();
+
+  /**
+   * Static callback to perform global broadcasts between working nodes.
+   *
+   * @todo have a tree-based algorithm. Problem: NodePool does not reveal worker nodes
+   *
+   * @param repositoryState         Contains information about the currently run adapter and the number of batch iterations.
+   * @param currentBatchIteration   the current batch iteration.
+   */
+  static void globalBroadcast(exahype::records::RepositoryState& repositoryState, exahype::State& solverState, const int currentBatchIteration);
+
+  /**
+   * Static callback to perform global reductions between working nodes.
+   *
+   * @todo have a tree-based algorithm. Problem: NodePool does not reveal worker nodes
+   *
+   * @param repositoryState         Contains information about the currently run adapter and the number of batch iterations.
+   * @param currentBatchIteration   the current batch iteration.
+   */
+  static void globalReduction(exahype::records::RepositoryState& repositoryState, exahype::State& solverState, const int currentBatchIteration);
 };
 
 #endif

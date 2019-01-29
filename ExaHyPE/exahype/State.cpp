@@ -23,23 +23,13 @@
 
 #include <limits>
 
+#include "exahype/records/RepositoryState.h"
+
+
+int exahype::State::CurrentBatchIteration   = 0;
+int exahype::State::NumberOfBatchIterations = 1;
+
 bool exahype::State::VirtuallyExpandBoundingBox = false;
-
-bool exahype::State::isFirstIterationOfBatchOrNoBatch() const {
-  return _stateData.getTotalNumberOfBatchIterations()==1 || _stateData.getBatchIteration()==0;
-}
-
-bool exahype::State::isSecondIterationOfBatchOrNoBatch() const {
-  return _stateData.getTotalNumberOfBatchIterations()==1 || _stateData.getBatchIteration()==1;
-}
-
-bool exahype::State::isLastIterationOfBatchOrNoBatch() const {
-  return _stateData.getTotalNumberOfBatchIterations()==1 || _stateData.getBatchIteration()==_stateData.getTotalNumberOfBatchIterations()-1;
-}
-
-bool exahype::State::isSecondToLastIterationOfBatchOrNoBatch() const {
-  return _stateData.getTotalNumberOfBatchIterations()==1 || _stateData.getBatchIteration()==_stateData.getTotalNumberOfBatchIterations()-2;
-}
 
 exahype::State::State() : Base() {
   // @todo Guidebook
@@ -207,4 +197,164 @@ bool exahype::State::continueToConstructGrid() const {
 #else
   return !isGridBalanced() || !_stateData.getMeshRefinementHasConverged();
 #endif
+}
+
+bool exahype::State::isEvenBatchIteration() {
+  return CurrentBatchIteration % 2 == 0;
+}
+
+bool exahype::State::isFirstIterationOfBatchOrNoBatch() {
+  return NumberOfBatchIterations==1 || CurrentBatchIteration==0;
+}
+
+bool exahype::State::isSecondIterationOfBatchOrNoBatch() {
+  return NumberOfBatchIterations==1 || CurrentBatchIteration==1;
+}
+
+bool exahype::State::isLastIterationOfBatchOrNoBatch() {
+  return NumberOfBatchIterations==1 || CurrentBatchIteration==NumberOfBatchIterations-1;
+}
+
+bool exahype::State::isSecondToLastIterationOfBatchOrNoBatch()  {
+  return NumberOfBatchIterations==1 || CurrentBatchIteration==NumberOfBatchIterations-2;
+}
+
+void exahype::State::globalBroadcast(exahype::records::RepositoryState& repositoryState, exahype::State& solverState,  const int currentBatchIteration) {
+  assertionEquals(tarch::parallel::Node::getGlobalMasterRank(),0);
+  CurrentBatchIteration   = currentBatchIteration;
+  NumberOfBatchIterations = repositoryState.getNumberOfIterations();
+
+  // reset previous events
+  if ( currentBatchIteration==0 ) {
+    switch ( repositoryState.getAction()) {
+      case exahype::records::RepositoryState::UseAdapterInitialPrediction:
+      case exahype::records::RepositoryState::UseAdapterPrediction:
+      case exahype::records::RepositoryState::UseAdapterFusedTimeStep: {
+        for (auto* solver : exahype::solvers::RegisteredSolvers) {
+          std::cout << "rank: "<<tarch::parallel::Node::getInstance().getRank()<< "globalBroadcast(...):" << "[pre] MeshUpdateEvent = " << static_cast<int>(solver->getMeshUpdateEvent()) << std::endl;
+          solver->resetMeshUpdateEvent();
+          std::cout << "rank: "<<tarch::parallel::Node::getInstance().getRank()<< "globalBroadcast(...):" << "[post] MeshUpdateEvent = " << static_cast<int>(solver->getMeshUpdateEvent()) << std::endl;
+        }
+      } break;
+      default:
+        break;
+    }
+  }
+  std::cout << "globalBroadcast(...)" << repositoryState.toString() << std::endl;
+
+  #ifdef Parallel
+  if ( currentBatchIteration==0 ) {
+    // broadcast
+    switch ( repositoryState.getAction()) {
+      case exahype::records::RepositoryState::UseAdapterInitialPrediction:
+      case exahype::records::RepositoryState::UseAdapterPrediction:
+      case exahype::records::RepositoryState::UseAdapterPredictionRerun:
+      case exahype::records::RepositoryState::UseAdapterPredictionOrLocalRecomputation:
+      case exahype::records::RepositoryState::UseAdapterFusedTimeStep:
+      case exahype::records::RepositoryState::UseAdapterBroadcastAndDropNeighbourMessages: {
+        peano::heap::AbstractHeap::allHeapsStartToSendBoundaryData( solverState.isTraversalInverted() );
+        if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+          for (int rank=1; rank<tarch::parallel::Node::getInstance().getNumberOfNodes(); rank++) {
+            if ( !(tarch::parallel::NodePool::getInstance().isIdleNode(rank)) ) {
+              exahype::Cell::broadcastGlobalDataToWorker(rank,0.0,0);
+            }
+          }
+        } else {
+          exahype::Cell::mergeWithGlobalDataFromMaster(
+              tarch::parallel::Node::getInstance().getGlobalMasterRank(),0.0,0);
+        }
+      } break;
+      default:
+        // do nothing
+        break;
+    }
+  }
+  #endif
+}
+
+
+void exahype::State::globalReduction(exahype::records::RepositoryState& repositoryState, exahype::State& solverState, const int currentBatchIteration) {
+  std::cout << "globalReduction(...)" << repositoryState.toString() << std::endl;
+
+  assertionEquals(tarch::parallel::Node::getGlobalMasterRank(),0);
+  #ifdef Parallel
+  if ( currentBatchIteration==repositoryState.getNumberOfIterations()-1 ) {
+    // reductions
+    switch ( repositoryState.getAction() ) {
+      case exahype::records::RepositoryState::UseAdapterBroadcastAndDropNeighbourMessages: // we do a reduction to sychronise the ranks.
+      case exahype::records::RepositoryState::UseAdapterUpdateAndReduce:
+      case exahype::records::RepositoryState::UseAdapterFusedTimeStep: {
+        if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+          for (int rank=1; rank<tarch::parallel::Node::getInstance().getNumberOfNodes(); rank++) {
+            if ( !(tarch::parallel::NodePool::getInstance().isIdleNode(rank)) ) {
+              exahype::Cell::mergeWithGlobalDataFromWorker(rank,0.0,0);
+            }
+          }
+        } else {
+          exahype::Cell::reduceGlobalDataToMaster(
+              tarch::parallel::Node::getInstance().getGlobalMasterRank(),0.0,0);
+        }
+      } break;
+      case exahype::records::RepositoryState::UseAdapterFinaliseMeshRefinement:
+      case exahype::records::RepositoryState::UseAdapterFinaliseMeshRefinementOrLocalRollback: {
+        if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+          for (int rank=1; rank<tarch::parallel::Node::getInstance().getNumberOfNodes(); rank++) {
+            for (auto* solver : exahype::solvers::RegisteredSolvers) {
+              if ( solver->hasRequestedMeshRefinement() ) {
+                solver->mergeWithWorkerData(rank,0.0,0);
+              }
+            }
+          }
+        } else {
+          for (auto* solver : exahype::solvers::RegisteredSolvers) {
+            if ( solver->hasRequestedMeshRefinement() ) {
+              solver->sendDataToMaster(
+                  tarch::parallel::Node::getInstance().getGlobalMasterRank(),0.0,0);
+            }
+          }
+        }
+      } break;
+      case exahype::records::RepositoryState::UseAdapterPredictionOrLocalRecomputation: {
+        if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+          for (int rank=1; rank<tarch::parallel::Node::getInstance().getNumberOfNodes(); rank++) {
+            for (auto* solver : exahype::solvers::RegisteredSolvers) {
+              if ( solver->getMeshUpdateEvent()==exahype::solvers::Solver::MeshUpdateEvent::IrregularLimiterDomainChange ) {
+                solver->mergeWithWorkerData(rank,0.0,0);
+              }
+            }
+          }
+        } else {
+          for (auto* solver : exahype::solvers::RegisteredSolvers) {
+            if ( solver->getMeshUpdateEvent()==exahype::solvers::Solver::MeshUpdateEvent::IrregularLimiterDomainChange ) {
+              solver->sendDataToMaster(
+                  tarch::parallel::Node::getInstance().getGlobalMasterRank(),0.0,0);
+            }
+          }
+        }
+      } break;
+      case exahype::records::RepositoryState::UseAdapterRefinementStatusSpreading: {
+        if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+          for (int rank=1; rank<tarch::parallel::Node::getInstance().getNumberOfNodes(); rank++) {
+            for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
+              auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
+              if ( solver->getMeshUpdateEvent()!=exahype::solvers::Solver::MeshUpdateEvent::None ) {
+                solver->mergeWithWorkerMeshUpdateEvent(rank,0.0,0);
+              }
+            }
+          }
+        } else {
+          for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
+            auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
+            if ( solver->getMeshUpdateEvent()!=exahype::solvers::Solver::MeshUpdateEvent::None ) {
+              solver->sendMeshUpdateEventToMaster(tarch::parallel::Node::getInstance().getGlobalMasterRank(),0.0,0);
+            }
+          }
+        }
+      } break;
+      default:
+        // do nothing
+        break;
+    }
+  }
+  #endif
 }

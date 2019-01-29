@@ -72,12 +72,6 @@ class exahype::mappings::PredictionOrLocalRecomputation {
   static tarch::logging::Log _log;
 
   /**
-   * A local copy of the state set
-   * in beginIteration(...).
-   */
-  exahype::State _stateCopy;
-
-  /**
    * Flag indicating if one solver requested a local recomputation.
    * Is set in beginIteration(...).
    */

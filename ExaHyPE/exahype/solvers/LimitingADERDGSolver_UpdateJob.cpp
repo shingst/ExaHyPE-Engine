@@ -24,7 +24,7 @@ bool exahype::solvers::LimitingADERDGSolver::UpdateJob::run() {
       _solver.updateBody(_solverPatch,_cellInfo,_neighbourMergePerformed,_isAtRemoteBoundary);
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
   {
-    _solver.updateNextMeshUpdateEvent(result._meshUpdateEvent);
+    _solver.updateMeshUpdateEvent(result._meshUpdateEvent);
     _solver.updateMinNextTimeStepSize(result._timeStepSize);
   }
   lock.free();

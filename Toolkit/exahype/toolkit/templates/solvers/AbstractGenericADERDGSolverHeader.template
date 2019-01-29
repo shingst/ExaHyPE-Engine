@@ -41,14 +41,14 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver {
     static constexpr int NumberOfPointSources = {{numberOfPointSources}};
     double pointSourceLocation[NumberOfPointSources][DIMENSIONS];
 {% endif %}
-    
-    double isLinear() const override { return {{isLinear_s}} };
 
     // getters for the constexpr's ; TODO(Dominic): Who uses this?
     int    constexpr_getNumberOfVariables()  const { return NumberOfVariables; };
     int    constexpr_getNumberOfParameters() const { return NumberOfParameters; };
     int    constexpr_getOrder()              const { return Order; };
-    double constexpr_getCFLNumber()          const { return CFL; };  
+    double constexpr_getCFLNumber()          const { return CFL; };
+    
+    bool isLinear() const override { return {{isLinear_s}}; }  
     
     class VariableMetrics;
     class Variables;

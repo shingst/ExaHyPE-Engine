@@ -87,8 +87,7 @@ exahype::solvers::FiniteVolumesSolver::FiniteVolumesSolver(
             _minTimeStepSize( std::numeric_limits<double>::infinity() ),
             _minNextTimeStepSize( std::numeric_limits<double>::infinity() ),
             _ghostLayerWidth( ghostLayerWidth ),
-            _meshUpdateEvent( MeshUpdateEvent::None ),
-            _nextMeshUpdateEvent( MeshUpdateEvent::None ) {
+            _meshUpdateEvent( MeshUpdateEvent::None ) {
   // register tags with profiler
   for (const char* tag : tags) {
     _profiler->registerTag(tag);
@@ -120,28 +119,18 @@ int exahype::solvers::FiniteVolumesSolver::getDataPerPatchBoundary() const {
   return DIMENSIONS_TIMES_TWO *getDataPerPatchFace();
 }
 
-exahype::solvers::Solver::MeshUpdateEvent
-exahype::solvers::FiniteVolumesSolver::getNextMeshUpdateEvent() const {
-  return _nextMeshUpdateEvent;
+void exahype::solvers::FiniteVolumesSolver::resetMeshUpdateEvent() {
+  _meshUpdateEvent = MeshUpdateEvent::None;
 }
 
-void exahype::solvers::FiniteVolumesSolver::setNextMeshUpdateEvent() {
-  _meshUpdateEvent         = _nextMeshUpdateEvent;
-  _nextMeshUpdateEvent     = MeshUpdateEvent::None;
-}
-
-void exahype::solvers::FiniteVolumesSolver::updateNextMeshUpdateEvent(
+void exahype::solvers::FiniteVolumesSolver::updateMeshUpdateEvent(
     exahype::solvers::Solver::MeshUpdateEvent meshUpdateEvent) {
-  _nextMeshUpdateEvent = mergeMeshUpdateEvents(_nextMeshUpdateEvent,meshUpdateEvent);
+  _meshUpdateEvent = mergeMeshUpdateEvents(_meshUpdateEvent,meshUpdateEvent);
 }
 
 exahype::solvers::Solver::MeshUpdateEvent
 exahype::solvers::FiniteVolumesSolver::getMeshUpdateEvent() const {
   return _meshUpdateEvent;
-}
-
-void exahype::solvers::FiniteVolumesSolver::overwriteMeshUpdateEvent(MeshUpdateEvent newMeshUpdateEvent) {
-   _meshUpdateEvent = newMeshUpdateEvent;
 }
 
 double exahype::solvers::FiniteVolumesSolver::getPreviousMinTimeStepSize() const {
@@ -181,7 +170,7 @@ void exahype::solvers::FiniteVolumesSolver::initSolver(
   _minTimeStepSize = 0.0;
   _minTimeStamp = timeStamp;
 
-  overwriteMeshUpdateEvent(MeshUpdateEvent::InitialRefinementRequested);
+  _meshUpdateEvent = MeshUpdateEvent::InitialRefinementRequested;
 
   init(cmdlineargs,parserView); // call user defined initalisation
 }
@@ -1412,26 +1401,25 @@ void exahype::solvers::FiniteVolumesSolver::sendDataToMaster(
     const int                                    masterRank,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const int                                    level) const {
-  DataHeap::HeapEntries timeStepDataToReduce(0,1);
-  timeStepDataToReduce.push_back(_minTimeStepSize);
+  DataHeap::HeapEntries messageForMaster(0,1);
+  messageForMaster.push_back(_minTimeStamp);
+  messageForMaster.push_back(_minTimeStepSize);
 
-  assertion1(timeStepDataToReduce.size()==1,timeStepDataToReduce.size());
-  assertion1(std::isfinite(timeStepDataToReduce[0]),timeStepDataToReduce[0]);
-  if (_timeStepping==TimeStepping::Global) {
-    assertionNumericalEquals1(_minNextTimeStepSize,std::numeric_limits<double>::infinity(),
-        tarch::parallel::Node::getInstance().getRank());
-  }
+  assertion1(std::isfinite(messageForMaster[0]),messageForMaster[0]);
+  assertion1(std::isfinite(messageForMaster[1]),messageForMaster[0]);
 
-  if (tarch::parallel::Node::getInstance().getRank()!=
-      tarch::parallel::Node::getInstance().getGlobalMasterRank()) {
+  if ( !tarch::parallel::Node::getInstance().isGlobalMaster() ) {
     logDebug("sendDataToMaster(...)","Sending time step data: " <<
-        "data[0]=" << timeStepDataToReduce[0]);
+      "data[0]=" << messageForMaster[0] << ","
+      "data[1]=" << messageForMaster[1]);
   }
 
-  DataHeap::getInstance().sendData(
-      timeStepDataToReduce.data(), timeStepDataToReduce.size(),
-      masterRank, x, level,
-      peano::heap::MessageType::MasterWorkerCommunication);
+  MPI_Send(
+      messageForMaster.data(), messageForMaster.size(),
+      MPI_DOUBLE,
+      masterRank,
+      _masterWorkerCommunicationTag,
+      tarch::parallel::Node::getInstance().getCommunicator());
 }
 
 /**
@@ -1445,33 +1433,35 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithWorkerData(
     const int                                    workerRank,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const int                                    level) {
-  DataHeap::HeapEntries receivedTimeStepData(1);
+  DataHeap::HeapEntries messageFromWorker(2);
 
-  if (true || tarch::parallel::Node::getInstance().getRank()==
-      tarch::parallel::Node::getInstance().getGlobalMasterRank()) {
+  if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
     logDebug("mergeWithWorkerData(...)","Receiving time step data [pre] from rank " << workerRank);
   }
 
-  DataHeap::getInstance().receiveData(
-      receivedTimeStepData.data(),receivedTimeStepData.size(),workerRank, x, level,
-      peano::heap::MessageType::MasterWorkerCommunication);
+  MPI_Recv(
+      messageFromWorker.data(), messageFromWorker.size(),
+      MPI_DOUBLE,
+      workerRank,
+      _masterWorkerCommunicationTag,
+      tarch::parallel::Node::getInstance().getCommunicator(),
+      MPI_STATUS_IGNORE);
 
-  assertion1(receivedTimeStepData.size()==1,receivedTimeStepData.size());
-  assertion1(receivedTimeStepData[0]>=0,receivedTimeStepData[0]);
-  assertion1(std::isfinite(receivedTimeStepData[0]),receivedTimeStepData[0]);
-  // The master solver has not yet updated its minNextTimeStepSize.
-  // Thus it does not yet equal MAX_DOUBLE.
+  assertion1(std::isfinite(messageFromWorker[0]),messageFromWorker[0]);
+  assertion1(std::isfinite(messageFromWorker[1]),messageFromWorker[1]);
 
   int index=0;
-  _minNextTimeStepSize = std::min( _minNextTimeStepSize, receivedTimeStepData[index++] );
+  _minTimeStamp    = std::min( _minTimeStamp,    messageFromWorker[index++] );
+  _minTimeStepSize = std::min( _minTimeStepSize, messageFromWorker[index++] );
 
-  if (true || tarch::parallel::Node::getInstance().getRank()==
-      tarch::parallel::Node::getInstance().getGlobalMasterRank()) {
+  if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
     logDebug("mergeWithWorkerData(...)","Receiving time step data: " <<
-             "data[0]=" << receivedTimeStepData[0]);
+             "data[0]=" << messageFromWorker[0] << "," <<
+             "data[1]=" << messageFromWorker[1]);
 
     logDebug("mergeWithWorkerData(...)","Updated time step fields: " <<
-             "_minNextTimeStepSize="     << _minNextTimeStepSize);
+             "_minTimeStamp="    << _minTimeStamp << "," <<
+             "_minTimeStepSize=" << _minTimeStepSize);
   }
 }
 
@@ -1482,57 +1472,59 @@ void exahype::solvers::FiniteVolumesSolver::sendDataToWorker(
     const int                                    workerRank,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const int                                    level) const {
-  std::vector<double> timeStepDataToSend(0,2);
-  timeStepDataToSend.push_back(_minTimeStamp); // TODO(Dominic): Append previous time step size
-  timeStepDataToSend.push_back(_minTimeStepSize);
+  std::vector<double> messageForWorker(0,2);
+  messageForWorker.push_back(_minTimeStamp);
+  messageForWorker.push_back(_minTimeStepSize);
 
-  assertion1(timeStepDataToSend.size()==2,timeStepDataToSend.size());
-  assertion1(std::isfinite(timeStepDataToSend[0]),timeStepDataToSend[0]);
-  assertion1(std::isfinite(timeStepDataToSend[1]),timeStepDataToSend[1]);
+  assertion1(std::isfinite(messageForWorker[0]),messageForWorker[0]);
+  assertion1(std::isfinite(messageForWorker[1]),messageForWorker[1]);
 
   if (_timeStepping==TimeStepping::Global) {
     assertionEquals1(_minNextTimeStepSize,std::numeric_limits<double>::infinity(),
         tarch::parallel::Node::getInstance().getRank());
   }
 
-  if (tarch::parallel::Node::getInstance().getRank()==
-      tarch::parallel::Node::getInstance().getGlobalMasterRank()) {
+  if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
     logDebug("sendDataToWorker(...)","Broadcasting time step data: " <<
-        " data[0]=" << timeStepDataToSend[0] <<
-        ",data[1]=" << timeStepDataToSend[1]);
+        " data[0]=" << messageForWorker[0] <<
+        ",data[1]=" << messageForWorker[1]);
     logDebug("sendDataWorker(...)","_minNextTimeStepSize="<<_minNextTimeStepSize);
   }
 
-  DataHeap::getInstance().sendData(
-      timeStepDataToSend.data(), timeStepDataToSend.size(),
-      workerRank, x, level,
-      peano::heap::MessageType::MasterWorkerCommunication);
+  MPI_Send(
+      messageForWorker.data(), messageForWorker.size(),
+      MPI_DOUBLE,
+      workerRank,
+      _masterWorkerCommunicationTag,
+      tarch::parallel::Node::getInstance().getCommunicator());
 }
 
 void exahype::solvers::FiniteVolumesSolver::mergeWithMasterData(
     const int                                    masterRank,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const int                                    level) {
-  std::vector<double> receivedTimeStepData(2);
-  DataHeap::getInstance().receiveData(
-      receivedTimeStepData.data(),receivedTimeStepData.size(),masterRank, x, level,
-      peano::heap::MessageType::MasterWorkerCommunication);
-  assertion1(receivedTimeStepData.size()==2,receivedTimeStepData.size());
+  std::vector<double> messageFromMaster(2);
+
+  MPI_Recv(
+      messageFromMaster.data(), messageFromMaster.size(),
+      MPI_DOUBLE,
+      masterRank,
+      _masterWorkerCommunicationTag,
+      tarch::parallel::Node::getInstance().getCommunicator(),MPI_STATUS_IGNORE);
 
   if (_timeStepping==TimeStepping::Global) {
     assertionNumericalEquals1(_minNextTimeStepSize,std::numeric_limits<double>::infinity(),
         _minNextTimeStepSize);
   }
 
-  if (tarch::parallel::Node::getInstance().getRank()!=
-      tarch::parallel::Node::getInstance().getGlobalMasterRank()) {
-    logDebug("mergeWithMasterData(...)","Received time step data: " <<
-        "data[0]="  << receivedTimeStepData[0] <<
-        ",data[1]=" << receivedTimeStepData[1]);
+  if ( !tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+    logDebug("mergeWithMasterData(...)","Received message from master: " <<
+        "data[0]=" << messageFromMaster[0] << "," <<
+        "data[1]=" << messageFromMaster[1]);
   }
 
-  _minTimeStamp    = receivedTimeStepData[0];
-  _minTimeStepSize = receivedTimeStepData[1];
+  _minTimeStamp    = messageFromMaster[0];
+  _minTimeStepSize = messageFromMaster[1];
 }
 #endif
 

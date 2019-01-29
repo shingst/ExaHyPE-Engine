@@ -172,7 +172,7 @@ public:
   /**
    * @return if this an ADER-DG solver which is not able to solve nonlinear problems.
    */
-  virtual bool isLinear() const;
+  virtual bool isLinear() const = 0;
 
 private:
 
@@ -293,15 +293,10 @@ private:
   bool _checkForNaNs;
 
   /**
-   * The current mesh update event.
+   * The mesh update event may set to a value other than none
+   * during time stepping iterations.
    */
   MeshUpdateEvent _meshUpdateEvent;
-
-  /**
-   * The mesh update event which will become active
-   * in the next iteration.
-   */
-  MeshUpdateEvent _nextMeshUpdateEvent;
 
   /**
    * Different to compress(), this operation is called automatically by
@@ -1343,11 +1338,9 @@ public:
    */
   int getMinRefinementStatusForTroubledCell() const;
 
-  MeshUpdateEvent getNextMeshUpdateEvent() const final override;
-  void updateNextMeshUpdateEvent(MeshUpdateEvent meshUpdateEvent) final override;
-  void setNextMeshUpdateEvent() final override;
+  void resetMeshUpdateEvent() final override;
+  void updateMeshUpdateEvent(MeshUpdateEvent meshUpdateEvent) final override;
   MeshUpdateEvent getMeshUpdateEvent() const final override;
-  void overwriteMeshUpdateEvent(MeshUpdateEvent newMeshUpdateEvent) final override;
 
 
   /**
@@ -2120,7 +2113,7 @@ public:
    * @param[in] backupPreviousSolution  Set to true if the solution should be backed up before
    *                                    we overwrite it by the updated solution.
    */
-  void updateSolution(
+  void surfaceIntegralAndAddUpdateToSolution(
       CellDescription&                                           cellDescription,
       const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
       const bool                                                 backupPreviousSolution);
@@ -2535,7 +2528,7 @@ public:
    * \see LimitingADERDGSolver::sendDataToMaster
    */
   DataHeap::HeapEntries
-  compileMessageForMaster(const int capacity=4) const;
+  compileMessageForMaster(const int capacity=6) const;
 
   void sendDataToMaster(
       const int masterRank,

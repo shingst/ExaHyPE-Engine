@@ -85,12 +85,6 @@ private:
    * Logging device for the trace macros.
    */
   static tarch::logging::Log _log;
-
-  /**
-   * A local copy of the state set
-   * in beginIteration(...).
-   */
-  exahype::State _stateCopy;
  public:
   /**
    * Determine the enter cell specification depending

@@ -712,14 +712,6 @@ void exahype::solvers::Solver::startNewTimeStepForAllSolvers(
   for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
 
-    /*
-     * Update reduced quantities (over multiple batch iterations)
-     */
-    // mesh refinement events
-    if ( isLastIterationOfBatchOrNoBatch ) { // set the next as current event
-      solver->setNextMeshUpdateEvent();
-    }
-
     // time
     // only update the time step size in last iteration; just advance with old time step size otherwise
     if ( fusedTimeStepping ) {
@@ -952,7 +944,7 @@ void exahype::solvers::Solver::mergeWithWorkerMeshUpdateEvent(
 //      messageFromWorker.data(),messageFromWorker.size(),workerRank, x, level,
 //      peano::heap::MessageType::MasterWorkerCommunication);
 
-  updateNextMeshUpdateEvent( convertToMeshUpdateEvent( messageFromWorker[0] ) );
+  updateMeshUpdateEvent( convertToMeshUpdateEvent( messageFromWorker[0] ) );
   assertion1(messageFromWorker.size()==1,messageFromWorker.size());
 
   if (tarch::parallel::Node::getInstance().getRank()==
