@@ -44,23 +44,17 @@ class FusedSpaceTimePredictorVolumeIntegralModel(AbstractModelBaseClass):
         if(self.context["isLinear"]):
 
             if(self.context["useSplitCK"]):
-                # TODO JMG rewrite to use the same template for pointsource
-                self.context["tmpArraySize"] = max((self.context["nDof"]*self.context["nVarPad"] if self.context["useFlux"]          else 0), \
-                                                   (self.context["nDim"]*self.context["nVarPad"] if self.context["useNCP"]           else 0))
-                self.context["gemm_flux_x"] = gemmNamePad+"_flux_x"
-                self.context["gemm_flux_y"] = gemmNamePad+"_flux_y"
-                self.context["gemm_flux_z"] = gemmNamePad+"_flux_z"
-         
-                self.render("fusedSPTVI_linear_cpp.template", "fusedSpaceTimePredictorVolumeIntegral.cpp")
+
+                self.render("fusedSPTVI_linear_split_ck_cpp.template", "fusedSpaceTimePredictorVolumeIntegral.cpp")
                 
                 if(self.context["usePointSources"]):
                     localContext = copy.copy(self.context)
                     localContext["usePointSources"] = False
                     localContext["nameSuffix"] = "_WithoutPS"
                     
-                    localContext["gemm_gradQ_x_sck"] = gemmName+"_gradQ_x_sck"
-                    localContext["gemm_gradQ_y_sck"] = gemmName+"_gradQ_y_sck"
-                    localContext["gemm_gradQ_z_sck"] = gemmName+"_gradQ_z_sck"
+                    # localContext["gemm_gradQ_x_sck"] = gemmName+"_gradQ_x_sck"
+                    # localContext["gemm_gradQ_y_sck"] = gemmName+"_gradQ_y_sck"
+                    # localContext["gemm_gradQ_z_sck"] = gemmName+"_gradQ_z_sck"
                     
                     self.render("fusedSPTVI_linear_split_ck_cpp.template", "fusedSpaceTimePredictorVolumeIntegral_WithoutPS.cpp", localContext)
             else:
