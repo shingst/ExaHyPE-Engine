@@ -577,7 +577,7 @@ exahype::repositories::Repository* exahype::runners::Runner::createRepository() 
 
     double boundingBoxScaling         = 0;
     double boundingBoxExtent          = 0;
-    double boundingBoxMeshSpacing     = std::numeric_limits<double>::max();
+    double boundingBoxMeshSpacing     = std::numeric_limits<double>::infinity();
 
     int level = coarsestUserMeshLevel; // level=1 means a single cell
     while (boundingBoxMeshSpacing > coarsestUserMeshSpacing) {
@@ -916,8 +916,8 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
     logInfo("runAsMaster(...)","computed first predictor (number of predictor sweeps: "<<exahype::solvers::Solver::PredictionSweeps<<")");
 
     // configure time stepping loop
-    double simulationEndTime   = std::numeric_limits<double>::max();
-    int simulationTimeSteps = std::numeric_limits<int>::max();
+    double simulationEndTime = std::numeric_limits<double>::infinity();
+    int simulationTimeSteps  = std::numeric_limits<int>::max();
     if (_parser.foundSimulationEndTime()) {
       simulationEndTime = _parser.getSimulationEndTime();
     } else {
@@ -933,8 +933,8 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
     // run time stepping loop
     int timeStep = 0;
     while (
-        //tarch::la::greater(solvers::Solver::getMinTimeStepSizeOfAllSolvers(), 0.0) &&
-        //solvers::Solver::getMinTimeStampOfAllSolvers() < simulationEndTime         &&
+        tarch::la::greater(solvers::Solver::getMinTimeStepSizeOfAllSolvers(), 0.0) &&
+        solvers::Solver::getMinTimeStampOfAllSolvers() < simulationEndTime         &&
         timeStep < simulationTimeSteps
     ) {
       bool plot = exahype::plotters::checkWhetherPlotterBecomesActive(
@@ -1011,7 +1011,7 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
 int exahype::runners::Runner::determineNumberOfBatchedTimeSteps(const int& currentTimeStep) {
   int batchSize = 0;
 
-  double simulationEndTime   = std::numeric_limits<double>::max();
+  double simulationEndTime   = std::numeric_limits<double>::infinity();
   int simulationTimeSteps = std::numeric_limits<int>::max();
   if (_parser.foundSimulationEndTime()) {
     simulationEndTime = _parser.getSimulationEndTime();
@@ -1022,7 +1022,7 @@ int exahype::runners::Runner::determineNumberOfBatchedTimeSteps(const int& curre
   const double minTimeStepSize          = solvers::Solver::getMinTimeStepSizeOfAllSolvers();
   const double maxTimeStamp             = solvers::Solver::getMaxTimeStampOfAllSolvers();
   const double timeIntervalTillNextPlot = exahype::plotters::getTimeOfNextPlot() - maxTimeStamp;
-  const bool   haveActivePlotters       = exahype::plotters::getTimeOfNextPlot() < std::numeric_limits<double>::max();
+  const bool   haveActivePlotters       = exahype::plotters::getTimeOfNextPlot() < std::numeric_limits<double>::infinity();
 
   if (_parser.foundSimulationEndTime()) {
     const double timeIntervalTillEndTime = simulationEndTime - maxTimeStamp;
@@ -1272,7 +1272,7 @@ void exahype::runners::Runner::validateInitialSolverTimeStepData(const bool fuse
 
     switch(solver->getTimeStepping()) {
       case exahype::solvers::Solver::TimeStepping::Global:
-        assertionEquals(solver->getMinNextTimeStepSize(),std::numeric_limits<double>::max());
+        assertionEquals(solver->getMinNextTimeStepSize(),std::numeric_limits<double>::infinity());
         break;
       case exahype::solvers::Solver::TimeStepping::GlobalFixed:
         break;
@@ -1293,7 +1293,7 @@ void exahype::runners::Runner::validateInitialSolverTimeStepData(const bool fuse
         }
         switch(solver->getTimeStepping()) {
           case exahype::solvers::Solver::TimeStepping::Global:
-            assertionEquals(aderdgSolver->getMinNextPredictorTimeStepSize(),std::numeric_limits<double>::max());
+            assertionEquals(aderdgSolver->getMinNextPredictorTimeStepSize(),std::numeric_limits<double>::infinity());
             break;
           case exahype::solvers::Solver::TimeStepping::GlobalFixed:
             break;
@@ -1316,7 +1316,7 @@ void exahype::runners::Runner::validateInitialSolverTimeStepData(const bool fuse
         }
         switch(solver->getTimeStepping()) {
           case exahype::solvers::Solver::TimeStepping::Global:
-            assertionEquals(aderdgSolver->getMinNextPredictorTimeStepSize(),std::numeric_limits<double>::max());
+            assertionEquals(aderdgSolver->getMinNextPredictorTimeStepSize(),std::numeric_limits<double>::infinity());
             break;
           case exahype::solvers::Solver::TimeStepping::GlobalFixed:
             break;
@@ -1388,9 +1388,9 @@ void exahype::runners::Runner::updateMeshOrLimiterDomain(
 }
 
 void exahype::runners::Runner::printTimeStepInfo(int numberOfStepsRanSinceLastCall, const exahype::repositories::Repository& repository) {
-  double currentMinTimeStamp    = std::numeric_limits<double>::max();
-  double currentMinTimeStepSize = std::numeric_limits<double>::max();
-  double nextMinTimeStepSize    = std::numeric_limits<double>::max();
+  double currentMinTimeStamp    = std::numeric_limits<double>::infinity();
+  double currentMinTimeStepSize = std::numeric_limits<double>::infinity();
+  double nextMinTimeStepSize    = std::numeric_limits<double>::infinity();
 
   static int n = 0;
   if (numberOfStepsRanSinceLastCall==0) {
@@ -1464,32 +1464,32 @@ void exahype::runners::Runner::printTimeStepInfo(int numberOfStepsRanSinceLastCa
   }
   #endif
 
-//  #if defined(TrackGridStatistics)
-//  if (repository.getState().getNumberOfInnerCells()>0 and repository.getState().getMaxLevel()>0) {
-//    logInfo(
-//      "startNewTimeStep(...)",
-//      "\tinner cells/inner unrefined cells=" << repository.getState().getNumberOfInnerCells()
-//      << "/" << repository.getState().getNumberOfInnerLeafCells() );
-//    logInfo(
-//      "startNewTimeStep(...)",
-//      "\tinner max/min mesh width=" << repository.getState().getMaximumMeshWidth()
-//      << "/" << repository.getState().getMinimumMeshWidth()
-//      );
-//    logInfo(
-//      "startNewTimeStep(...)",
-//      "\tmax level=" << repository.getState().getMaxLevel()
-//      );
-//  }
-//  #endif
-//
-//  if (solvers::Solver::getMinTimeStampOfAllSolvers()>std::numeric_limits<double>::max()/100.0) {
-//    logError("runAsMaster(...)","quit simulation as solver seems to explode" );
-//    exit(-1);
-//  }
-//
-//  #if defined(Debug) || defined(Asserts)
-//  tarch::logging::CommandLineLogger::getInstance().closeOutputStreamAndReopenNewOne();
-//  #endif
+  #if defined(TrackGridStatistics)
+  if (repository.getState().getNumberOfInnerCells()>0 and repository.getState().getMaxLevel()>0) {
+    logInfo(
+      "startNewTimeStep(...)",
+      "\tinner cells/inner unrefined cells=" << repository.getState().getNumberOfInnerCells()
+      << "/" << repository.getState().getNumberOfInnerLeafCells() );
+    logInfo(
+      "startNewTimeStep(...)",
+      "\tinner max/min mesh width=" << repository.getState().getMaximumMeshWidth()
+      << "/" << repository.getState().getMinimumMeshWidth()
+      );
+    logInfo(
+      "startNewTimeStep(...)",
+      "\tmax level=" << repository.getState().getMaxLevel()
+      );
+  }
+  #endif
+
+  if (solvers::Solver::getMinTimeStampOfAllSolvers()>std::numeric_limits<double>::infinity()/100.0) {
+    logError("runAsMaster(...)","quit simulation as solver seems to explode" );
+    exit(-1);
+  }
+
+  #if defined(Debug) || defined(Asserts)
+  tarch::logging::CommandLineLogger::getInstance().closeOutputStreamAndReopenNewOne();
+  #endif
 }
 
 void exahype::runners::Runner::runTimeStepsWithFusedAlgorithmicSteps(
@@ -1611,7 +1611,7 @@ void exahype::runners::Runner::validateSolverTimeStepDataForThreeAlgorithmicPhas
 
     switch(solver->getTimeStepping()) {
       case exahype::solvers::Solver::TimeStepping::Global:
-        assertionEquals(solver->getMinNextTimeStepSize(),std::numeric_limits<double>::max());
+        assertionEquals(solver->getMinNextTimeStepSize(),std::numeric_limits<double>::infinity());
         break;
       case exahype::solvers::Solver::TimeStepping::GlobalFixed:
         break;
@@ -1627,7 +1627,7 @@ void exahype::runners::Runner::validateSolverTimeStepDataForThreeAlgorithmicPhas
         }
         switch(solver->getTimeStepping()) {
           case exahype::solvers::Solver::TimeStepping::Global:
-            assertionEquals(aderdgSolver->getMinNextPredictorTimeStepSize(),std::numeric_limits<double>::max());
+            assertionEquals(aderdgSolver->getMinNextPredictorTimeStepSize(),std::numeric_limits<double>::infinity());
             break;
           case exahype::solvers::Solver::TimeStepping::GlobalFixed:
             break;
@@ -1645,7 +1645,7 @@ void exahype::runners::Runner::validateSolverTimeStepDataForThreeAlgorithmicPhas
         }
         switch(solver->getTimeStepping()) {
           case exahype::solvers::Solver::TimeStepping::Global:
-            assertionEquals(aderdgSolver->getMinNextPredictorTimeStepSize(),std::numeric_limits<double>::max());
+            assertionEquals(aderdgSolver->getMinNextPredictorTimeStepSize(),std::numeric_limits<double>::infinity());
             break;
           case exahype::solvers::Solver::TimeStepping::GlobalFixed:
             break;
@@ -1658,7 +1658,7 @@ void exahype::runners::Runner::validateSolverTimeStepDataForThreeAlgorithmicPhas
         assertion1(finiteVolumesSolver->getMinTimeStepSize()>0,finiteVolumesSolver->getMinTimeStepSize());
         switch(solver->getTimeStepping()) {
           case exahype::solvers::Solver::TimeStepping::Global:
-            assertionEquals(finiteVolumesSolver->getMinNextTimeStepSize(),std::numeric_limits<double>::max());
+            assertionEquals(finiteVolumesSolver->getMinNextTimeStepSize(),std::numeric_limits<double>::infinity());
             break;
           case exahype::solvers::Solver::TimeStepping::GlobalFixed:
             break;
@@ -1671,26 +1671,10 @@ void exahype::runners::Runner::validateSolverTimeStepDataForThreeAlgorithmicPhas
   #endif
 }
 
-
-bool exahype::runners::Runner::issuePredictionJobsInThisIteration(const int currentBatchIteration) const {
-  return
-      exahype::solvers::Solver::PredictionSweeps==1 ||
-      currentBatchIteration % 2 == 0;
-}
-
-bool exahype::runners::Runner::sendOutRiemannDataInThisIteration(const int numberOfBatchIterations,const int currentBatchIteration) const {
-  const bool isLastIterationOfBatchOrNoBatch = ;
-  return
-      exahype::solvers::Solver::PredictionSweeps==1    ||
-      numberOfBatchIterations==1                       ||
-      currentBatchIteration==numberOfBatchIterations-1 ||
-      currentBatchIteration % 2 != 0;
-}
-
+#ifdef Parallel
 void exahype::runners::Runner::globalBroadcast(exahype::records::RepositoryState& repositoryState, exahype::State& solverState,  const int currentBatchIteration) {
   assertionEquals(tarch::parallel::Node::getGlobalMasterRank(),0);
   // broadcast
-  #ifdef Parallel
   if ( currentBatchIteration==0 ) {
     switch ( repositoryState.getAction()) {
       case exahype::records::RepositoryState::UseAdapterMeshRefinement:
@@ -1726,9 +1710,7 @@ void exahype::runners::Runner::globalBroadcast(exahype::records::RepositoryState
 }
 
 void exahype::runners::Runner::globalReduction(exahype::records::RepositoryState& repositoryState, exahype::State& solverState, const int currentBatchIteration) {
-  // return; // TODO remove
   assertionEquals(tarch::parallel::Node::getGlobalMasterRank(),0);
-
   if ( currentBatchIteration==repositoryState.getNumberOfIterations()-1 ) {
     // reductions
     #ifdef Parallel
@@ -1813,6 +1795,5 @@ void exahype::runners::Runner::globalReduction(exahype::records::RepositoryState
         break;
     }
   }
-  #endif
 }
 #endif

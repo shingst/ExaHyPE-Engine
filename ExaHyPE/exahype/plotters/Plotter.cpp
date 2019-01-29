@@ -69,7 +69,7 @@ exahype::plotters::Plotter::Plotter(
         _type(parser.getTypeForPlotter(solverConfig, plotterConfig)),
         _writtenUnknowns(parser.getUnknownsForPlotter(solverConfig, plotterConfig)),
         _time(parser.getFirstSnapshotTimeForPlotter(solverConfig, plotterConfig)),
-        _solverTimeStamp(-std::numeric_limits<double>::max()),
+        _solverTimeStamp(-std::numeric_limits<double>::infinity()),
         _repeat(parser.getRepeatTimeForPlotter(solverConfig, plotterConfig)),
         _filename(parser.getFilenameForPlotter(solverConfig, plotterConfig)),
         _plotterParameters(parser.getParametersForPlotter(solverConfig, plotterConfig)),
@@ -133,7 +133,7 @@ exahype::plotters::Plotter::Plotter(
       _type(parser.getTypeForPlotter(solverConfig, plotterConfig)),
       _writtenUnknowns(parser.getUnknownsForPlotter(solverConfig, plotterConfig)),
       _time(parser.getFirstSnapshotTimeForPlotter(solverConfig, plotterConfig)),
-      _solverTimeStamp(-std::numeric_limits<double>::max()),
+      _solverTimeStamp(-std::numeric_limits<double>::infinity()),
       _repeat(parser.getRepeatTimeForPlotter(solverConfig, plotterConfig)),
       _filename(parser.getFilenameForPlotter(solverConfig, plotterConfig)),
       _plotterParameters(parser.getParametersForPlotter(solverConfig, plotterConfig)),
@@ -581,7 +581,7 @@ bool exahype::plotters::Plotter::checkWetherPlotterBecomesActiveAndStartPlotting
       _device->startPlotting(currentTimeStamp);
     }
   } else {
-    _solverTimeStamp = -std::numeric_limits<double>::max();
+    _solverTimeStamp = -std::numeric_limits<double>::infinity();
   }
 
   logDebug(
@@ -665,7 +665,7 @@ bool exahype::plotters::checkWhetherPlotterBecomesActive(double currentTimeStamp
 }
 
 double exahype::plotters::getTimeOfNextPlot() {
-  double result = std::numeric_limits<double>::max();
+  double result = std::numeric_limits<double>::infinity();
   for (const auto& p : RegisteredPlotters) {
     result = std::min(result,p->getNextPlotTime());
   }

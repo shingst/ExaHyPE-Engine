@@ -806,7 +806,7 @@ class exahype::solvers::Solver {
    * methods are run.
    */
   typedef struct UpdateResult {
-    double _timeStepSize                     = std::numeric_limits<double>::max();
+    double _timeStepSize                     = std::numeric_limits<double>::infinity();
     MeshUpdateEvent _meshUpdateEvent         = MeshUpdateEvent::None;
 
     UpdateResult() {}

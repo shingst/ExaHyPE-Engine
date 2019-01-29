@@ -201,11 +201,11 @@ exahype::solvers::Solver::Solver(
       _numberOfVariables(numberOfVariables),
       _numberOfParameters(numberOfParameters),
       _nodesPerCoordinateAxis(nodesPerCoordinateAxis),
-      _domainOffset(std::numeric_limits<double>::max()),
-      _domainSize(std::numeric_limits<double>::max()),
+      _domainOffset(std::numeric_limits<double>::infinity()),
+      _domainSize(std::numeric_limits<double>::infinity()),
       _maximumMeshSize(maximumMeshSize),
       _coarsestMeshLevel(std::numeric_limits<int>::max()),
-      _coarsestMeshSize(std::numeric_limits<double>::max()),
+      _coarsestMeshSize(std::numeric_limits<double>::infinity()),
       _maximumAdaptiveMeshDepth(maximumAdaptiveMeshDepth),
       _maxLevel(-std::numeric_limits<int>::max()), // "-", min
       _nextMaxLevel(-std::numeric_limits<int>::max()), // "-", min
@@ -336,7 +336,7 @@ void exahype::solvers::Solver::glueTogether(
 
 std::pair<double,int> exahype::solvers::Solver::computeCoarsestMeshSizeAndLevel(double meshSize, double domainSize) {
   int    peanoLevel      = 1; // The domain root cell is actually at Peano level 1
-  double currenthMax = std::numeric_limits<double>::max();
+  double currenthMax = std::numeric_limits<double>::infinity();
   while (currenthMax>meshSize) {
     currenthMax = domainSize / threePowI(peanoLevel-1);
     peanoLevel++;
@@ -411,7 +411,7 @@ bool exahype::solvers::Solver::oneSolverIsOfType(const Type& type) {
 }
 
 double exahype::solvers::Solver::getMinTimeStampOfAllSolvers() {
-  double currentMinTimeStamp = std::numeric_limits<double>::max();
+  double currentMinTimeStamp = std::numeric_limits<double>::infinity();
 
   for (const auto& p : exahype::solvers::RegisteredSolvers) {
     currentMinTimeStamp =
@@ -422,7 +422,7 @@ double exahype::solvers::Solver::getMinTimeStampOfAllSolvers() {
 
 
 double exahype::solvers::Solver::getMaxTimeStampOfAllSolvers() {
-  double currentMaxTimeStamp = -std::numeric_limits<double>::max(); // "-", min
+  double currentMaxTimeStamp = -std::numeric_limits<double>::infinity(); // "-", min
 
   for (const auto& p : exahype::solvers::RegisteredSolvers) {
     currentMaxTimeStamp =
@@ -433,7 +433,7 @@ double exahype::solvers::Solver::getMaxTimeStampOfAllSolvers() {
 }
 
 double exahype::solvers::Solver::estimateMinNextSolverTimeStampOfAllSolvers() {
-  double currentMinTimeStamp = std::numeric_limits<double>::max();
+  double currentMinTimeStamp = std::numeric_limits<double>::infinity();
 
   for (const auto& p : exahype::solvers::RegisteredSolvers) {
     currentMinTimeStamp =
@@ -443,7 +443,7 @@ double exahype::solvers::Solver::estimateMinNextSolverTimeStampOfAllSolvers() {
 }
 
 double exahype::solvers::Solver::getMinTimeStepSizeOfAllSolvers() {
-  double currentMinTimeStepSize = std::numeric_limits<double>::max();
+  double currentMinTimeStepSize = std::numeric_limits<double>::infinity();
 
   for (const auto& p : exahype::solvers::RegisteredSolvers) {
     currentMinTimeStepSize =
@@ -454,7 +454,7 @@ double exahype::solvers::Solver::getMinTimeStepSizeOfAllSolvers() {
 }
 
 double exahype::solvers::Solver::getMaxSolverTimeStepSizeOfAllSolvers() {
-  double currentMaxTimeStepSize = -std::numeric_limits<double>::max();
+  double currentMaxTimeStepSize = -std::numeric_limits<double>::infinity();
 
   for (const auto& p : exahype::solvers::RegisteredSolvers) {
     currentMaxTimeStepSize =
@@ -475,9 +475,9 @@ bool exahype::solvers::Solver::allSolversUseTimeSteppingScheme(solvers::Solver::
 }
 
 double exahype::solvers::Solver::getCoarsestMaximumMeshSizeOfAllSolvers() {
-  static double result = std::numeric_limits<double>::max();
+  static double result = std::numeric_limits<double>::infinity();
 
-  if ( result == std::numeric_limits<double>::max() ) {
+  if ( result == std::numeric_limits<double>::infinity() ) {
     for (const auto& p : exahype::solvers::RegisteredSolvers) {
       result = std::min( result, p->getMaximumMeshSize() );
     }
@@ -497,7 +497,7 @@ const tarch::la::Vector<DIMENSIONS,double>& exahype::solvers::Solver::getDomainO
 }
 
 double exahype::solvers::Solver::getFinestMaximumMeshSizeOfAllSolvers() {
-  double result = -std::numeric_limits<double>::max(); // "-", min
+  double result = -std::numeric_limits<double>::infinity(); // "-", min
 
   for (const auto& p : exahype::solvers::RegisteredSolvers) {
     result = std::max( result, p->getMaximumMeshSize() );
@@ -528,7 +528,7 @@ int exahype::solvers::Solver::getFinestUniformMeshLevelOfAllSolvers() {
 
 
 double exahype::solvers::Solver::getCoarsestMeshSizeOfAllSolvers() {
-  double result = std::numeric_limits<double>::max();
+  double result = std::numeric_limits<double>::infinity();
 
   for (const auto& p : exahype::solvers::RegisteredSolvers) {
     result = std::min( result, p->getCoarsestMeshSize() );

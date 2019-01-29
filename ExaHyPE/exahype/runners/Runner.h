@@ -456,13 +456,6 @@ class exahype::runners::Runner {
    */
   int run();
 
-
-  /**
-   * Helper functions for globalBroadcast,globalReduction
-   */
-  bool issuePredictionJobsInThisIteration(const int currentBatchIteration) const;
-  bool sendOutRiemannDataInThisIteration(const int numberOfBatchIterations,const int currentBatchIteration) const;
-
   #ifdef Parallel
   /**
    * Static callback to perform global broadcasts between working nodes.

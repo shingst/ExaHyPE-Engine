@@ -25,7 +25,7 @@ void exahype::plotters::ascii::TimeSeriesReductions::startRow(double current_tim
   data[index::l1] = 0.0;
   data[index::l2] = 0.0;
   data[index::max] = 0.0;
-  data[index::min] = std::numeric_limits<double>::max();
+  data[index::min] = std::numeric_limits<double>::infinity();
   data[index::avg] = 0.0;
   data[index::nelem] = 0.0;
   data[index::nnan] = 0.0;

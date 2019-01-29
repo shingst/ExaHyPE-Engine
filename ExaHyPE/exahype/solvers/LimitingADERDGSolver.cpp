@@ -352,13 +352,13 @@ double exahype::solvers::LimitingADERDGSolver::updateTimeStepSizes(
   const int solverElement = cellInfo.indexOfADERDGCellDescription(solverNumber);
   if ( solverElement != Solver::NotFound ) {
     SolverPatch& solverPatch = cellInfo._ADERDGCellDescriptions[solverElement];
-    double admissibleTimeStepSize = std::numeric_limits<double>::max();
+    double admissibleTimeStepSize = std::numeric_limits<double>::infinity();
     admissibleTimeStepSize = _solver->updateTimeStepSizes(solverPatch,fused);
     ensureLimiterPatchTimeStepDataIsConsistent(solverPatch,cellInfo);
     return admissibleTimeStepSize;
   }
   else {
-    return std::numeric_limits<double>::max();
+    return std::numeric_limits<double>::infinity();
   }
 }
 
@@ -498,7 +498,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
       solverPatch.getRefinementStatus()<_solver->getMinRefinementStatusForTroubledCell() &&
       SpawnPredictionAsBackgroundJob &&
       !mustBeDoneImmediately         &&
-      isLastTimeStepOfBatch
+      isLastTimeStepOfBatch  // may only spawned in last iteration
   ) {
     const int element = cellInfo.indexOfADERDGCellDescription(solverPatch.getSolverNumber());
     peano::datatraversal::TaskSet( new ADERDGSolver::PredictionJob(
@@ -910,8 +910,8 @@ void exahype::solvers::LimitingADERDGSolver::determineSolverMinAndMax(
     #ifdef Asserts
     if ( validate ) {
       for (int i=0; i<DIMENSIONS_TIMES_TWO*numberOfObservables; ++i) {
-        assertion2(*(observablesMin+i)<std::numeric_limits<double>::max(),i,solverPatch.toString());
-        assertion2(*(observablesMax+i)>-std::numeric_limits<double>::max(),i,solverPatch.toString());
+        assertion2(*(observablesMin+i)<std::numeric_limits<double>::infinity(),i,solverPatch.toString());
+        assertion2(*(observablesMax+i)>-std::numeric_limits<double>::infinity(),i,solverPatch.toString());
       } // Dead code elimination will get rid of this loop
     }
     #endif
@@ -941,8 +941,8 @@ void exahype::solvers::LimitingADERDGSolver::determineLimiterMinAndMax(SolverPat
     }
 
     for (int i=0; i<DIMENSIONS_TIMES_TWO*numberOfObservables; ++i) {
-      assertion(*(observablesMin+i)<std::numeric_limits<double>::max());
-      assertion(*(observablesMax+i)>-std::numeric_limits<double>::max());
+      assertion(*(observablesMin+i)<std::numeric_limits<double>::infinity());
+      assertion(*(observablesMax+i)>-std::numeric_limits<double>::infinity());
     } // Dead code elimination will get rid of this loop
   }
 }
@@ -1181,7 +1181,7 @@ double exahype::solvers::LimitingADERDGSolver::recomputeSolutionLocally(
     recomputeSolution(solverPatch,cellInfo);
 
     // 1.1. Compute the predictor if the fused scheme is used
-    double admissibleTimeStepSize = std::numeric_limits<double>::max();
+    double admissibleTimeStepSize = std::numeric_limits<double>::infinity();
     if ( fusedTimeStepping ) {
       admissibleTimeStepSize = startNewTimeStepFused(solverPatch,cellInfo,true,true); // TODO(Dominic): Check
       if (
@@ -1209,7 +1209,7 @@ double exahype::solvers::LimitingADERDGSolver::recomputeSolutionLocally(
 
     return admissibleTimeStepSize;
   } else {
-    return std::numeric_limits<double>::max();
+    return std::numeric_limits<double>::infinity();
   }
 }
 
