@@ -571,9 +571,17 @@ void {{project}}::{{abstractSolver}}::flux(const double* const Q,double** F) {
 void {{project}}::{{abstractSolver}}::algebraicSource(const double* const Q,double* S) {
   abortWithMsg("If this operation is entered (algebraicSource), you have activated the corresponding guard. Then you have to re-implement this routine, too." );
 }
-        
-void {{project}}::{{abstractSolver}}::nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) {
+
+{% if isLinear %}
+    void {{project}}::{{abstractSolver}}::nonConservativeProduct(const double* const Q,const double* const * const gradQ,double** BgradQ) {
+{% else %}
+    void {{project}}::{{abstractSolver}}::nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) {
+{% endif %}
   abortWithMsg("If this operation is entered (nonConservativeProduct), you have activated the corresponding guard. Then you have to re-implement this routine, too." );
+}
+
+void {{project}}::{{abstractSolver}}::multiplyMaterialParameterMatrix(const double* const Q, double** rhs) {
+      abortWithMsg("multiplyMaterialParameterMatrix: If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
 }
 
 void {{project}}::{{abstractSolver}}::pointSource(const double* const Q,const double* const x,const double t,const double dt, double* forceVector,int n) {
