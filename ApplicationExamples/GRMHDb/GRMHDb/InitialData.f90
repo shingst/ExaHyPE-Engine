@@ -75,7 +75,7 @@ RECURSIVE SUBROUTINE PDESetup(myrank)
 		!    
 		CASE DEFAULT
 			continue
-	END SELECT
+    END SELECT
 	!
 	!IF(myrank.eq.0) THEN
     PRINT *, "<<<<<<<<<<<<<<<<<<<<<<<<<<<------------------------------------"

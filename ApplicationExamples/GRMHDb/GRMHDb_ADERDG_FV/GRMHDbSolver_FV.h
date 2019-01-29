@@ -59,7 +59,7 @@ class GRMHDb::GRMHDbSolver_FV : public GRMHDb::AbstractGRMHDbSolver_FV {
      * \param[inout] lambda the eigenvalues as C array (already allocated).
      */
     void eigenvalues(const double* const Q,const int d,double* lambda) override;
-
+        
 	static void referenceSolution(const double* const x, const double t, double* Q);
     /**
      * Impose boundary conditions at a point on a boundary face

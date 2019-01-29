@@ -33,6 +33,11 @@
 #include "kernels/KernelUtils.h" // matrix indexing
 #include "kernels/GaussLegendreQuadrature.h"
 
+
+#include "tarch/multicore/BooleanSemaphore.h"
+
+#include "tarch/multicore/Lock.h"
+
 tarch::logging::Log GRMHDb::GRMHDbSolver_ADERDG::_log( "GRMHDb::GRMHDbSolver_ADERDG" );
 
 
@@ -42,27 +47,41 @@ void GRMHDb::GRMHDbSolver_ADERDG::init(const std::vector<std::string>& cmdlinear
     const int order = GRMHDb::AbstractGRMHDbSolver_ADERDG::Order;
 	constexpr int basisSize = AbstractGRMHDbSolver_FV::PatchSize;
 	constexpr int Ghostlayers = AbstractGRMHDbSolver_FV::GhostLayerWidth;
-
     int mpirank = tarch::parallel::Node::getInstance().getRank();
+
+	/**************************************************************************/
+	static tarch::multicore::BooleanSemaphore initialDataSemaphore;
+	tarch::multicore::Lock lock(initialDataSemaphore);
+	/***************************************************/
+	// everything in here is thread-safe w.r.t. the lock
+	// call Fortran routines
+	/***********************/
+
 	//printf("\n******************************************************************");
 	//printf("\n**************<<<  INIT TECPLOT    >>>****************************");
 	//printf("\n******************************************************************");
     inittecplot_(&order,&order,&basisSize,&Ghostlayers);
-	//printf("\n******************************************************************");
-	//printf("\n**************<<<  INIT PDE SETUP  >>>****************************");
-	//printf("\n******************************************************************");
-    pdesetup_(&mpirank);
-	//printf("\n******************************************************************");
-	//printf("\n**************<<<       DONE       >>>****************************");
-	//printf("\n******************************************************************");
-  fflush(stdout);
+	 printf("\n******************************************************************");
+	 printf("\n**************<<<  INIT PDE SETUP  >>>****************************");
+	 printf("\n******************************************************************");
+     pdesetup_(&mpirank);
+	 printf("\n******************************************************************");
+	 printf("\n**************<<<       DONE       >>>****************************");
+	 printf("\n******************************************************************");
+  //fflush(stdout);
 
+
+	/************/
+	 lock.free();
+	 // everything afterwards is not thread-safe anymore w.r.t. the lock
+	 /**************************************************************************/
 }
 
 void GRMHDb::GRMHDbSolver_ADERDG::adjustPointSolution(const double* const x,const double t,const double dt,double* Q) {
   // Dimensions                        = 3
   // Number of variables + parameters  = 19 + 0
   // @todo Please implement/augment if required
+	//const int nVar = GRMHDb::AbstractGRMHDbSolver_ADERDG::NumberOfVariables;
   if (tarch::la::equals(t,0.0)) {
     Q[0] = 0.0;
     Q[1] = 0.0;
@@ -83,7 +102,29 @@ void GRMHDb::GRMHDbSolver_ADERDG::adjustPointSolution(const double* const x,cons
     Q[16] = 0.0;
     Q[17] = 0.0;
     Q[18] = 0.0;
+
+
+	/**************************************************************************/
+	static tarch::multicore::BooleanSemaphore initialDataSemaphore;
+	tarch::multicore::Lock lock(initialDataSemaphore);
+	/***************************************************/
+	// everything in here is thread-safe w.r.t. the lock
+	// call Fortran routines
+	/***********************/
     initialdata_(x, &t, Q);
+
+	/************/
+	lock.free();
+	// everything afterwards is not thread-safe anymore w.r.t. the lock
+	/**************************************************************************/
+
+	//Q[3] = Q[0];
+	//Q[0] = exp(-(x[0] * x[0] + x[1] * x[1] + x[2] * x[2]) / 8.0);
+	//Q[1] = sin(x[1])*sin(x[0]);
+	//Q[2] = sin(x[2]);
+//	for (int i = 3; i < nVar; i++) {
+//		Q[i] = cos(x[0]);
+//	}
   }
 }
 
@@ -141,21 +182,35 @@ const int nVar = GRMHDb::AbstractGRMHDbSolver_ADERDG::NumberOfVariables;
   fluxOut[17] = 0.0;
   fluxOut[18] = 0.0;
 
-  for(int dd=0; dd<nDim; dd++) F[dd] = Fs[dd];
-  
-  for(int i=0; i < basisSize; i++)  { // i == time
-     const double weight = kernels::gaussLegendreWeights[order][i];
-     const double xi = kernels::gaussLegendreNodes[order][i];
-     double ti = t + xi * dt;
 
-     initialdata_(x, &ti, Qgp);
-    //pdeflux_(F[0], F[1], F[2], Qgp);
-	flux(Qgp, F);
-     for(int m=0; m < nVar; m++) {
-        stateOut[m] += weight * Qgp[m];
-        fluxOut[m] += weight * Fs[normalNonZero][m];
-     }
+ /* stateOut[0] = exp(-(x[0] * x[0] + x[1] * x[1] + x[2] * x[2]) / 8.0);
+  stateOut[1] = sin(x[1])*sin(x[0]);
+  stateOut[2] = sin(x[2]);
+  for (int i = 3; i < nVar; i++) {
+	  stateOut[i] = cos(x[0]);
   }
+  fluxOut[0] = exp(-(x[0] * x[0] + x[1] * x[1] + x[2] * x[2]) / 8.0);
+  fluxOut[1] = sin(x[1])*sin(x[0]);
+  fluxOut[2] = sin(x[2]);
+  for (int i = 3; i < nVar; i++) {
+	  fluxOut[i] = cos(x[0]);
+  }*/
+ for(int dd=0; dd<nDim; dd++) F[dd] = Fs[dd];
+
+ for(int i=0; i < basisSize; i++)  { // i == time
+	  const double weight = kernels::gaussLegendreWeights[order][i];
+	  const double xi = kernels::gaussLegendreNodes[order][i];
+	  double ti = t + xi * dt;
+
+	  initialdata_(x, &ti, Qgp);
+	  //pdeflux_(F[0], F[1], F[2], Qgp);
+	  flux(Qgp, F);
+    for(int m=0; m < nVar; m++) {
+		  stateOut[m] += weight * Qgp[m];
+		  fluxOut[m] += weight * Fs[normalNonZero][m];
+	  }
+ }
+
   /*
 	for(int m=0; m < nVar; m++) {
 	stateOut[m] = stateIn[m];
@@ -207,9 +262,23 @@ void GRMHDb::GRMHDbSolver_ADERDG::eigenvalues(const double* const Q,const int d,
 
 
 
-void GRMHDb::GRMHDbSolver_ADERDG::referenceSolution(const double* const x,double t, double* Q) { 
-  
-    initialdata_(x, &t, Q);
+void GRMHDb::GRMHDbSolver_ADERDG::referenceSolution(const double* const x,double t, double* Q) {
+	//const int nVar = GRMHDb::AbstractGRMHDbSolver_ADERDG::NumberOfVariables;
+	const int nVar = GRMHDb::AbstractGRMHDbSolver_ADERDG::NumberOfVariables;
+	int iErr;
+	double Qcons[nVar];
+	iErr = 0;
+
+	initialdata_(x, &t, &Qcons[0]);
+	
+	//// test:
+	//Q[0] = exp(-(x[0] * x[0] + x[1] * x[1] + x[2] * x[2]) / 8.0);
+	//	Q[1] = sin(x[1])*sin(x[0]);
+	//	Q[2] = sin(x[2]);
+	//for (int i = 3; i < nVar; i++) {
+	//	Q[i] = cos(x[0]);
+	//}
+	pdecons2prim_(Q, &Qcons[0], &iErr);
 }
 
 
@@ -285,7 +354,6 @@ void GRMHDb::GRMHDbSolver_ADERDG::flux(const double* const Q,double** F) {
 	}else{
 		pdeflux_(F[0], F[1],F[2], Q);
 	}
-
 }
 
 
@@ -316,7 +384,7 @@ void  GRMHDb::GRMHDbSolver_ADERDG::nonConservativeProduct(const double* const Q,
 
 void GRMHDb::GRMHDbSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(
 	double* observables, const int NumberOfVariables,
-    const double* const Q) const {
+	const double* const Q) const {
 	for (int i = 0; i < NumberOfVariables; ++i) {
 		observables[i] = Q[i];
 	}
@@ -324,12 +392,12 @@ void GRMHDb::GRMHDbSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(
 
 
 bool GRMHDb::GRMHDbSolver_ADERDG::isPhysicallyAdmissible(
-      const double* const solution,
+	const double* const solution,
 	const double* const observablesMin, const double* const observablesMax,
-      const bool wasTroubledInPreviousTimeStep,
+	const bool wasTroubledInPreviousTimeStep,
 	const tarch::la::Vector<DIMENSIONS, double>& center,
 	const tarch::la::Vector<DIMENSIONS, double>& dx,
-      const double t) const {
+	const double t) const {
   //int limvalue;
   //int NumberOfObservables;
   //NumberOfObservables=1;
@@ -339,6 +407,7 @@ bool GRMHDb::GRMHDbSolver_ADERDG::isPhysicallyAdmissible(
 	//  return false;
   //}else{
 	//  return true;
+
   //};
-  return true;
+  return false;
 }

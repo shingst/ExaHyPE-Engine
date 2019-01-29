@@ -3,11 +3,14 @@
 
 
 RECURSIVE SUBROUTINE InitTECPLOT(N_in,M_in,SubLim_in,Ghostlayers_in)
-	USE TECPLOTPLOTTERmod
+	USE, INTRINSIC :: ISO_C_BINDING
+	USE TECPLOTPLOTTERmod !, only : SetMainParameters
 	implicit none
 	INTEGER :: N_in,M_in,SubLim_in,Ghostlayers_in
 	CALL SetMainParameters(N_in,M_in,SubLim_in,Ghostlayers_in)
 END SUBROUTINE InitTECPLOT
+    
+    
 
 RECURSIVE SUBROUTINE getNumericalSolution(V,Q) 
   USE Parameters, ONLY: nVar  
