@@ -76,7 +76,7 @@ void exahype::plotters::LimitingADERDG2UserDefined::plotPatch(const int solverNu
       plotADERDGPatch(
           solverPatch.getOffset(),
           solverPatch.getSize(), solverSolution,
-          solverPatch.getCorrectorTimeStamp());
+          solverPatch.getTimeStamp());
     }
   }
 }

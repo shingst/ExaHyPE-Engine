@@ -9,6 +9,8 @@ exahype::solvers::ADERDGSolver::FusedTimeStepJob::FusedTimeStepJob(
   ADERDGSolver&    solver,
   CellDescription& cellDescription,
   CellInfo&        cellInfo,
+  const double     predictionTimeStamp,
+  const double     predictionTimeStepSize,
   const bool       isFirstTimeStepOfBatch,
   const bool       isLastTimeStepOfBatch,
   const bool       isSkeletonJob)
@@ -22,6 +24,8 @@ exahype::solvers::ADERDGSolver::FusedTimeStepJob::FusedTimeStepJob(
   _cellDescription(cellDescription),
   _cellInfo(cellInfo),
   _neighbourMergePerformed(cellDescription.getNeighbourMergePerformed()),
+  _predictionTimeStamp   (predictionTimeStamp   ),
+  _predictionTimeStepSize(predictionTimeStepSize),
   _isFirstTimeStepOfBatch(isFirstTimeStepOfBatch),
   _isLastTimeStepOfBatch(isLastTimeStepOfBatch),
   _isSkeletonJob(isSkeletonJob) {
@@ -37,6 +41,7 @@ bool exahype::solvers::ADERDGSolver::FusedTimeStepJob::run() {
   UpdateResult result =
       _solver.fusedTimeStepBody(
           _cellDescription, _cellInfo, _neighbourMergePerformed,
+          _predictionTimeStamp,_predictionTimeStepSize,
           _isFirstTimeStepOfBatch,_isLastTimeStepOfBatch,
           _isSkeletonJob,false/*mustBeDoneImmediately*/);
 

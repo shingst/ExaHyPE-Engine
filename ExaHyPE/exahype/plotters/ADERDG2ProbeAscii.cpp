@@ -124,7 +124,7 @@ void exahype::plotters::ADERDG2ProbeAscii::plotPatch(const int solverNumber,solv
     plotPatch(
         aderdgCellDescription.getOffset(),
         aderdgCellDescription.getSize(), solverSolution,
-        aderdgCellDescription.getCorrectorTimeStamp());
+        aderdgCellDescription.getTimeStamp());
   }
 }
 

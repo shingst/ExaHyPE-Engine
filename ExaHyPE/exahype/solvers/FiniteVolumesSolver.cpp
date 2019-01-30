@@ -616,20 +616,8 @@ void exahype::solvers::FiniteVolumesSolver::finaliseStateUpdates(
 // CELL-LOCAL
 //////////////////////////////////
 
-double exahype::solvers::FiniteVolumesSolver::startNewTimeStep(CellDescription& cellDescription) {
-  return startNewTimeStepFused(cellDescription,true,true);
-}
-
-double exahype::solvers::FiniteVolumesSolver::startNewTimeStepFused(
-    CellDescription& cellDescription,
-    const bool isFirstTimeStepOfBatch, // TODOD(Dominic): same code
-    const bool isLastTimeStepOfBatch) {
+double exahype::solvers::FiniteVolumesSolver::startNewTimeStep(CellDescription& cellDescription,const bool isFirstTimeStepOfBatch) {
   assertion1(cellDescription.getType()==exahype::records::FiniteVolumesCellDescription::Cell,cellDescription.toString());
-  double* solution = static_cast<double*>(cellDescription.getSolution());
-
-  double admissibleTimeStepSize = stableTimeStepSize(solution, cellDescription.getSize());
-  assertion(!std::isnan(admissibleTimeStepSize));
-
   // n-1
   if (isFirstTimeStepOfBatch) {
     cellDescription.setPreviousTimeStamp(cellDescription.getTimeStamp());
@@ -637,26 +625,27 @@ double exahype::solvers::FiniteVolumesSolver::startNewTimeStepFused(
   }
   // n
   cellDescription.setTimeStamp(cellDescription.getTimeStamp()+cellDescription.getTimeStepSize());
-  if (isLastTimeStepOfBatch) {
+  if ( getTimeStepping() != TimeStepping::GlobalFixed ) {
+    double* solution = static_cast<double*>(cellDescription.getSolution());
+    double admissibleTimeStepSize = stableTimeStepSize(solution, cellDescription.getSize());
+    assertion1(std::isfinite(admissibleTimeStepSize),cellDescription.toString());
     cellDescription.setTimeStepSize(admissibleTimeStepSize);
+    return admissibleTimeStepSize;
+  } else {
+    return cellDescription.getTimeStepSize();
   }
-
-  return admissibleTimeStepSize;
 }
 
-double exahype::solvers::FiniteVolumesSolver::updateTimeStepSizes(
-    const int solverNumber,CellInfo& cellInfo,const bool fused) {
+double exahype::solvers::FiniteVolumesSolver::updateTimeStepSize(const int solverNumber,CellInfo& cellInfo) {
   const int element = cellInfo.indexOfFiniteVolumesCellDescription(solverNumber);
   if ( element != NotFound ) {
     CellDescription& cellDescription = cellInfo._FiniteVolumesCellDescriptions[element];
     if ( cellDescription.getType()==exahype::records::FiniteVolumesCellDescription::Cell ) {
       double* solution = static_cast<double*>(cellDescription.getSolution());
-
       double admissibleTimeStepSize = stableTimeStepSize(solution, cellDescription.getSize());
+      assertion1(std::isfinite(admissibleTimeStepSize),cellDescription);
 
-      assertion(!std::isnan(admissibleTimeStepSize));
       cellDescription.setTimeStepSize(admissibleTimeStepSize);
-
       return admissibleTimeStepSize;
     } else {
       return std::numeric_limits<double>::infinity();
@@ -671,10 +660,6 @@ void exahype::solvers::FiniteVolumesSolver::rollbackToPreviousTimeStep(CellDescr
   cellDescription.setTimeStepSize(cellDescription.getPreviousTimeStepSize());
 
   cellDescription.setPreviousTimeStepSize(std::numeric_limits<double>::infinity());
-}
-
-void exahype::solvers::FiniteVolumesSolver::rollbackToPreviousTimeStepFused(CellDescription& cellDescription) const {
-  rollbackToPreviousTimeStep(cellDescription);
 }
 
 void exahype::solvers::FiniteVolumesSolver::adjustSolutionDuringMeshRefinementBody(
@@ -723,7 +708,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::FiniteVolumesSolver::up
 
   updateSolution(cellDescription,neighbourMergePerformed,cellInfo._cellDescriptionsIndex,isFirstTimeStepOfBatch);
   UpdateResult result;
-  result._timeStepSize = startNewTimeStepFused(cellDescription,isFirstTimeStepOfBatch,isLastTimeStepOfBatch);
+  result._timeStepSize = startNewTimeStep(cellDescription,isFirstTimeStepOfBatch);
 
   compress(cellDescription,isAtRemoteBoundary);
 
@@ -893,10 +878,7 @@ void exahype::solvers::FiniteVolumesSolver::swapSolutionAndPreviousSolution(
   cellDescription.setSolution(previousSolution);
 }
 
-void exahype::solvers::FiniteVolumesSolver::rollbackSolutionGlobally(
-    const int solverNumber,
-    CellInfo& cellInfo,
-    const bool fusedTimeStepping) const {
+void exahype::solvers::FiniteVolumesSolver::rollbackSolutionGlobally(const int solverNumber,CellInfo& cellInfo) const {
   // do nothing
   logError("rollbackSolutionGlobally(...)","Not implemented");
   std::abort();
@@ -2125,7 +2107,7 @@ exahype::solvers::Solver::CellProcessingTimes exahype::solvers::FiniteVolumesSol
   ensureNecessaryMemoryIsAllocated(cellDescription);
 
   adjustSolutionDuringMeshRefinementBody(cellDescription,true);
-  updateTimeStepSizes(0,cellInfo,false);
+  updateTimeStepSize(0,cellInfo);
   cellDescription.setRefinementEvent(CellDescription::RefinementEvent::None);
   cellDescription.setNeighbourMergePerformed(true);
 

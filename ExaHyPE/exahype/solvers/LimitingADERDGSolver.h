@@ -383,12 +383,24 @@ private:
    * into the correction time step data fields of the patch
    * after the time step data update.
    *
+   * @param solverPatch             an ADER-DG cell description of type Cell
+   * @param cellInfo                struct referring to all cell descriptions registered for a cell
+   * @param neighbourMergePerformed flag indicating where a neighbour merge has been performed (at spawn time if run by job)
+   * @param isFirstTimeStepOfBatch  if this the first time step in a batch (at spawn time if run by job)
+   * @param isLastTimeStepOfBatch   if this the last time step in a batch  (at spawn time if run by job)
+   * @param predictionTimeStamp     the time stamp which should be used for the prediction (at spawn time if run by job)
+   * @param predictionTimeStepSize  the time step size which should be used for the prediction (at spawn time if run by job)
+   * @param isSkeletonCell          if this cell description belongs to the MPI or AMR skeleton.
+   * @param mustBeDoneImmediately   if the prediction has to be performed immediately and cannot be spawned as background job
+   *
    * @note Might be called by background task. Do not synchronise time step data here.
    */
   UpdateResult fusedTimeStepBody(
       SolverPatch&                                               solverPatch,
       CellInfo&                                                  cellInfo,
       const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
+      const double                                               predictionTimeStamp,
+      const double                                               predictionTimeStepSize,
       const bool                                                 isFirstTimeStepOfBatch,
       const bool                                                 isLastTimeStepOfBatch,
       const bool                                                 isSkeletonCell,
@@ -414,10 +426,8 @@ private:
    * overwrite the time step size and time stamp
    * fields of the solver and limiter patches
    * by the values used in the previous iteration.
-   *
-   * TODO(Dominic): Move into solver
    */
-  void rollbackToPreviousTimeStep(SolverPatch& solverPatch,CellInfo& cellInfo,const bool fused) const;
+  void rollbackToPreviousTimeStep(SolverPatch& solverPatch,CellInfo& cellInfo) const;
 
   /**
    * Body of LimitingADERDGSolver::adjustSolutionDuringMeshRefinement(int,int).
@@ -497,8 +507,10 @@ private:
     SolverPatch&                                              _solverPatch;
     CellInfo                                                  _cellInfo;                // copy
     const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> _neighbourMergePerformed; // copy
-    const bool                                                _isFirstTimeStepOfBatch;
-    const bool                                                _isLastTimeStepOfBatch;
+    const double                                              _predictionTimeStamp;     // copy
+    const double                                              _predictionTimeStepSize;  // copy
+    const bool                                                _isFirstTimeStepOfBatch;  // copy
+    const bool                                                _isLastTimeStepOfBatch;   // copy
     const bool                                                _isSkeletonJob;
   public:
 
@@ -519,6 +531,8 @@ private:
    * @param solver                 the solver the patch is associated with
    * @param solverPatch            solver patch linking to the data
    * @param cellInfo               refers to all cell descriptions/patches found in the cell holding the solver patch
+   * @param predictionTimeStamp    the time stamp used for the prediction at time of the job spawning.
+   * @param predictionTimeStepSize the time step size used for the prediction at time of the job spawning.
    * @param isFirstTimeStepOfBatch if this is the first time step in a batch
    * @param isLastTimeStepOfBatch  if this is the last time step in a batch
    * @param isSkeletonJob          if this job was spawned in a cell belonging to the MPI or AMR skeleton
@@ -527,6 +541,8 @@ private:
         LimitingADERDGSolver& solver,
         SolverPatch&          solverPatch,
         CellInfo&             cellInfo,
+        const double          predictionTimeStamp,
+        const double          predictionTimeStepSize,
         const bool            isFirstTimeStepOfBatch,
         const bool            isLastTimeStepOfBatch,
         const bool            isSkeletonJob);
@@ -551,7 +567,7 @@ private:
       const bool                                                _isAtRemoteBoundary;
     public:
       /**
-       * Construct a UpdateJob.
+       * Construct an UpdateJob.
        *
        * @note Job is always spawned as high priority job.
        *
@@ -848,17 +864,11 @@ public:
   // CELL-LOCAL
   //////////////////////////////////
 
-  double startNewTimeStep(SolverPatch& solverPatch,Solver::CellInfo& cellInfo);
+  double startNewTimeStep(
+      SolverPatch& solverPatch,Solver::CellInfo& cellInfo,
+      const bool isFirstTimeStepOfBatch);
 
-  double startNewTimeStepFused(
-        SolverPatch& solverPatch,CellInfo& cellInfo,
-        const bool isFirstTimeStepOfBatch,
-        const bool isLastTimeStepOfBatch);
-
-  double updateTimeStepSizes(
-      const int solverNumber,
-      CellInfo& cellInfo,
-      const bool fused) final override;
+  double updateTimeStepSize(const int solverNumber,CellInfo& cellInfo) final override;
 
   /**
    * Just refers to the ADERDGSolver equivalent if
@@ -986,10 +996,7 @@ public:
     *
     * Allocate necessary new limiter patches.
     */
-   void rollbackSolutionGlobally(
-       const int  solverNumber,
-       CellInfo&  cellInfo,
-       const bool fusedTimeStepping) const final override;
+   void rollbackSolutionGlobally(const int  solverNumber,CellInfo&  cellInfo) const final override;
 
   /**
    * Reinitialises cells that have been subject to a limiter status change.

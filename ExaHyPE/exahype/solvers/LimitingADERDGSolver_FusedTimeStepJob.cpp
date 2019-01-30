@@ -8,6 +8,8 @@ exahype::solvers::LimitingADERDGSolver::FusedTimeStepJob::FusedTimeStepJob(
   LimitingADERDGSolver& solver,
   SolverPatch&          solverPatch,
   CellInfo&             cellInfo,
+  const double          predictionTimeStamp,
+  const double          predictionTimeStepSize,
   const bool            isFirstTimeStepOfBatch,
   const bool            isLastTimeStepOfBatch,
   const bool            isSkeletonJob):
@@ -20,8 +22,10 @@ exahype::solvers::LimitingADERDGSolver::FusedTimeStepJob::FusedTimeStepJob(
   _solverPatch(solverPatch),
   _cellInfo(cellInfo),
   _neighbourMergePerformed(solverPatch.getNeighbourMergePerformed()),
+  _predictionTimeStamp   (predictionTimeStamp),
+  _predictionTimeStepSize(predictionTimeStepSize),
   _isFirstTimeStepOfBatch(isFirstTimeStepOfBatch),
-  _isLastTimeStepOfBatch(isLastTimeStepOfBatch),
+  _isLastTimeStepOfBatch (isLastTimeStepOfBatch),
   _isSkeletonJob(isSkeletonJob) {
   NumberOfReductionJobs.fetch_add(1);
   if (_isSkeletonJob) {
@@ -35,6 +39,7 @@ bool exahype::solvers::LimitingADERDGSolver::FusedTimeStepJob::run() {
   UpdateResult result =
       _solver.fusedTimeStepBody(
           _solverPatch,_cellInfo,_neighbourMergePerformed,
+          _predictionTimeStamp,_predictionTimeStepSize,
           _isFirstTimeStepOfBatch,_isLastTimeStepOfBatch,
           _isSkeletonJob,false/*mustBeDoneImmedetially*/);
 

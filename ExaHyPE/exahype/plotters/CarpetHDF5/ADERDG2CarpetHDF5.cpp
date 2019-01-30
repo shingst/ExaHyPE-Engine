@@ -114,7 +114,7 @@ void exahype::plotters::ADERDG2CarpetHDF5::plotPatch(const int solverNumber,solv
     plotPatch(
         aderdgCellDescription.getOffset(),
         aderdgCellDescription.getSize(), solverSolution,
-        aderdgCellDescription.getCorrectorTimeStamp(),
+        aderdgCellDescription.getTimeStamp(),
 	aderdgCellDescription.getRefinementStatus() // interestingly this method is always available, even in non-limiter context
     );
   }

@@ -596,26 +596,16 @@ public:
   ///////////////////////////////////
   // CELL-LOCAL
   //////////////////////////////////
-  double startNewTimeStep(CellDescription& cellDescription);
-
   /**
    * Required by the fusedTimeStep routine.
    * Further, used by the other startNewTimeStepFused
    * routine.
    */
-  double startNewTimeStepFused(
-      CellDescription& cellDescription,
-      const bool isFirstTimeStepOfBatch,
-      const bool isLastTimeStepOfBatch);
+  double startNewTimeStep(CellDescription& cellDescription,const bool isFirstTimeStepOfBatch);
 
-  double updateTimeStepSizes(
-      const int solverNumber,
-      CellInfo& cellInfo,
-      const bool fused) override final;
+  double updateTimeStepSize(const int solverNumber,CellInfo& cellInfo) final override;
 
   void rollbackToPreviousTimeStep(CellDescription& cellDescription) const;
-
-  void rollbackToPreviousTimeStepFused(CellDescription& cellDescription) const;
 
   /** @copydoc: exahype::solvers::Solver::fusedTimeStepOrRestrict
    *
@@ -687,10 +677,7 @@ public:
    * Does nothing as a FV solver should never do global rollbacks;
    * no mesh refinement is performed by this solver type.
    */
-  void rollbackSolutionGlobally(
-      const int solverNumber,
-      CellInfo& cellInfo,
-      const bool fusedTimeStepping) const final override;
+  void rollbackSolutionGlobally(const int solverNumber,CellInfo& cellInfo) const final override;
 
   ///////////////////////////////////
   // NEIGHBOUR

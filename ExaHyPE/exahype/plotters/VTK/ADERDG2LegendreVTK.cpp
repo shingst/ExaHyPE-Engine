@@ -487,7 +487,7 @@ void exahype::plotters::ADERDG2LegendreVTK::plotPatch(const int solverNumber,sol
     plotPatch(
         aderdgCellDescription.getOffset(),
         aderdgCellDescription.getSize(), solverSolution,
-        aderdgCellDescription.getCorrectorTimeStamp());
+        aderdgCellDescription.getTimeStamp());
   }
 }
 

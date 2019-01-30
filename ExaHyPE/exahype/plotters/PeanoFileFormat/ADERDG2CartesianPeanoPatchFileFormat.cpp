@@ -328,7 +328,7 @@ void exahype::plotters::ADERDG2CartesianPeanoFileFormat::plotPatch(const int sol
     plotPatch(
         aderdgCellDescription.getOffset(),
         aderdgCellDescription.getSize(), solverSolution,
-        aderdgCellDescription.getCorrectorTimeStamp());
+        aderdgCellDescription.getTimeStamp());
   }
 }
 

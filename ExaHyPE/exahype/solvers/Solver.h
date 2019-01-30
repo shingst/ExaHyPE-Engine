@@ -1620,7 +1620,7 @@ class exahype::solvers::Solver {
    *
    * \note Has no const modifier since kernels are not const functions yet.
    */
-    virtual double updateTimeStepSizes(const int solverNumber,CellInfo& cellInfo,const bool fusedTimeStepping) = 0;
+    virtual double updateTimeStepSize(const int solverNumber,CellInfo& cellInfo) = 0;
 
   /**
    * Impose initial conditions and mark for refinement.
@@ -1733,10 +1733,7 @@ class exahype::solvers::Solver {
    *
    * Allocate necessary new limiter patches.
    */
-  virtual void rollbackSolutionGlobally(
-         const int solverNumber,
-         CellInfo& cellInfo,
-         const bool fusedTimeStepping) const = 0;
+  virtual void rollbackSolutionGlobally(const int solverNumber,CellInfo& cellInfo) const = 0;
 
   /**
    * Explicitly ask the solver to compress

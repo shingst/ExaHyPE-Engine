@@ -121,7 +121,7 @@ void exahype::plotters::ExaHyPE2Tecplot::plotPatch(const int solverNumber,solver
     double* cellOffset = aderdgCellDescription.getOffset().data();
     double* cellSize = aderdgCellDescription.getSize().data();
     
-    double time = aderdgCellDescription.getCorrectorTimeStamp();
+    double time = aderdgCellDescription.getTimeStamp();
     
     int order     = _orderPlusOne - 1;
     // compute the dx as vector for instance with:

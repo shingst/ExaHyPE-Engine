@@ -382,7 +382,7 @@ void exahype::plotters::ADERDG2CartesianVTK::plotPatch(const int solverNumber,so
     plotPatch(
         aderdgCellDescription.getOffset(),
         aderdgCellDescription.getSize(), solverSolution,
-        aderdgCellDescription.getCorrectorTimeStamp());
+        aderdgCellDescription.getTimeStamp());
   }
 }
 

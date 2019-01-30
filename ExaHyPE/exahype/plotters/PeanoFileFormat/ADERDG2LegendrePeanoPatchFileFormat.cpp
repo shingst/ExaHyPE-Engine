@@ -410,7 +410,7 @@ void exahype::plotters::ADERDG2LegendrePeanoPatchFileFormat::plotPatch(const int
     plotPatch(
         aderdgCellDescription.getOffset(),
         aderdgCellDescription.getSize(), solverSolution,
-        aderdgCellDescription.getCorrectorTimeStamp());
+        aderdgCellDescription.getTimeStamp());
   }
 }
 

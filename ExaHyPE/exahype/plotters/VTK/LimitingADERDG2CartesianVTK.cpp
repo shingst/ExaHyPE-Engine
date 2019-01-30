@@ -421,7 +421,7 @@ void exahype::plotters::LimitingADERDG2CartesianVTK::plotPatch(const int solverN
       plotADERDGPatch(
           solverPatch.getOffset(),
           solverPatch.getSize(), solverSolution,
-          solverPatch.getCorrectorTimeStamp(),
+          solverPatch.getTimeStamp(),
           refinementStatus,
           previousRefinementStatus);
     }

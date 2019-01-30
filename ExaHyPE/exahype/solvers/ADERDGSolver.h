@@ -315,18 +315,6 @@ private:
     */
    void rollbackToPreviousTimeStep(CellDescription& cellDescription) const;
 
-   /**
-    * Same as rollbackToPreviousTimeStep
-    * but for the fused time stepping scheme.
-    *
-    * Corrector time stamp and corrector time step size must
-    * add up to predictor time stamp after rollback.
-    *
-    * Corrector time step size is assumed to be used
-    * predictor time step size in batch.
-    */
-   void rollbackToPreviousTimeStepFused(CellDescription& cellDescription) const;
-
   /**
    * Simply adjust the solution if necessary. Do not modify the time step
    * data or anything else.
@@ -341,15 +329,6 @@ private:
   void adjustSolutionDuringMeshRefinementBody(
       CellDescription& cellDescription,
       const bool isInitialMeshRefinement);
-
-  /**
-   * Update time step sizes and time stamps for the fused/nonfused time stepping variant.
-   *
-   * @param cellDescription   a cell description
-   * @param fusedTimeStepping if fused time stepping is used
-   * @return the new admissible time step size if the cell description is of type Cell. Otherwise, the maximum double value.
-   */
-  double updateTimeStepSizes(CellDescription& cellDescription,const bool fusedTimeStepping);
 
   /**
    * Evaluate the refinement criterion and convert the user
@@ -1006,8 +985,10 @@ private:
     private:
       ADERDGSolver&                                             _solver; // TODO not const because of kernels
       CellDescription&                                          _cellDescription;
-      CellInfo                                                  _cellInfo; // copy
+      CellInfo                                                  _cellInfo;                // copy
       const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> _neighbourMergePerformed; // copy
+      const double                                              _predictionTimeStamp;     // copy
+      const double                                              _predictionTimeStepSize;  // copy
       const bool                                                _isFirstTimeStepOfBatch;
       const bool                                                _isLastTimeStepOfBatch;
       const bool                                                _isSkeletonJob;
@@ -1028,17 +1009,21 @@ private:
        * Therefore, we need to copy the neighbourMergePerformed flags when spawning
        * a FusedTimeStep job.
        *
-       * @param solver                 the spawning solver
-       * @param cellDescription        a cell description
-       * @param cellInfo               links to all cell descriptions associated with the cell
-       * @param isFirstTimeStepOfBatch if we currently run the first time step of a batch
-       * @param isLastTimeStepOfBatch  if we currently run the last time step of a batch
-       * @param isSkeletonJob          if the cell is a skeleton cell
+       * @param solver                 the spawning solver.
+       * @param cellDescription        a cell description.
+       * @param cellInfo               links to all cell descriptions associated with the cell.
+       * @param predictionTimeStamp    the time stamp used for the prediction at time of the job spawning.
+       * @param predictionTimeStepSize the time step size used for the prediction at time of the job spawning.
+       * @param isFirstTimeStepOfBatch if we currently run the first time step of a batch.
+       * @param isLastTimeStepOfBatch  if we currently run the last time step of a batch.
+       * @param isSkeletonJob          if the cell is a skeleton cell.
        */
       FusedTimeStepJob(
         ADERDGSolver&    solver,
         CellDescription& cellDescription,
         CellInfo&        cellInfo,
+        const double     predictionTimeStamp,
+        const double     predictionTimeStepSize,
         const bool       isFirstTimeStepOfBatch,
         const bool       isLastTimeStepOfBatch,
         const bool       isSkeletonJob);
@@ -1401,10 +1386,22 @@ public:
    *
    * @param cellDescription1 one of the cell descriptions
    * @param cellDescription2 one of the cell descriptions
+   *
+   * @return a tupe with first entry being the time stamp and the second entry being the time step size.
    */
   std::tuple<double,double> getRiemannSolverTimeStepData(
       const CellDescription& cellDescription1,
       const CellDescription& cellDescription2) const;
+
+  /**
+   * Returns time step data for the prediction.
+   *
+   * @param cellDescription                a cell description
+   * @param fusedTimeSteppingAndNoRollback if fused time stepping is used and no rollback is performed.
+   *
+   * @return a tupe with first entry being the time stamp and the second entry being the time step size.
+   */
+  std::tuple<double,double> getPredictionTimeStepData(const CellDescription& cellDescription,const bool fusedTimeSteppingAndNoRollback) const;
 
   /**
    * Copies the time stepping data from the global solver onto the patch's time
@@ -1455,17 +1452,6 @@ public:
 
   void rollbackToPreviousTimeStep() final override;
 
-  /**
-   * \copydoc Solver::rollbackToPreviousTimeStepFused()
-   *
-   * <h2> Fused ADER-DG Time Stepping </h2>
-   *
-   * Corrector time stamp and corrector time step size must
-   * add up to predictor time stamp after rollback.
-   *
-   * Corrector time step size is assumed to be used
-   * predictor time step size in batch.
-   */
   void rollbackToPreviousTimeStepFused() final override;
 
   /**
@@ -1731,48 +1717,29 @@ public:
   double computeTimeStepSize(
       CellDescription& cellDescription);
 
-
   /**
-   * Update the time stamps and time step sizes
-   * for a cell description when nonfused time stepping
-   * is used.
+   * Advances the local time stamp of a cell by adding the
+   * time local time step size.
    *
-   * @note that these local quantities might
-   * be overwritten again by the synchronisation
-   * happening in the next time step.
+   * If no fixed time step size is chosen, computes a new admissible
+   * time step size.
    *
-   * @note No const modifier as kernels are not const yet.
-   */
-  double startNewTimeStep(CellDescription& cellDescription);
-
-  /**
-   * Same as @p startNewTimeStep for the fused time stepping scheme.
+   * @return the new admissible time step size.
    *
-   * @note The previous time step data is only saved in the iteration
+   * @note The previous time step data is only saved in the first time step
    * of a batch. Rolling back a batch means going back to this time level.
    *
    * @param[in] isFirstTimeStepOfBatch indicates that we are in the first iteration
    *                                    of a batch or not. Note that this must be also set to true
    *                                    in case we run a batch of size 1, i.e. no batch at all.
    *
-   * @param[in] isLastTimeStepOfBatch indicates that we are in the last iteration
-   *                                    of a batch or not. Note that this must be also set to true
-   *                                    in case we run a batch of size 1, i.e. no batch at all.
-   *
    * @note No const modifier as kernels are not const yet.
    */
-  double startNewTimeStepFused(
+  double startNewTimeStep(
       CellDescription& cellDescription,
-      const bool isFirstTimeStepOfBatch,
-      const bool isLastTimeStepOfBatch);
+      const bool isFirstTimeStepOfBatch);
 
-  /** \copydoc Solver::updateTimeStepSizes
-   *
-   * @param solverNumber      identification number of this solver
-   * @param cellInfo          refers to a cell's data
-   * @param fusedTimeStepping advances the predictor time stamp in time.
-   */
-  double updateTimeStepSizes(const int solverNumber,CellInfo& cellInfo,const bool fusedTimeStepping) final override;
+  double updateTimeStepSize(const int solverNumber,CellInfo& cellInfo) final override;
 
   /**
    * Perform a fused time step, i.e. perform the update, update time step data, mark
@@ -1791,8 +1758,15 @@ public:
    * into the correction time step data fields of the patch
    * after the time step data update.
    *
-   * @param cellDescriptionsIndex cell description heap index
-   * @param element               element in the cell description heap array
+   * @param cellDescription         an ADER-DG cell description of type Cell
+   * @param cellInfo                struct referring to all cell descriptions registered for a cell
+   * @param neighbourMergePerformed flag indicating where a neighbour merge has been performed (at spawn time if run by job)
+   * @param isFirstTimeStepOfBatch  if this the first time step in a batch (at spawn time if run by job)
+   * @param isLastTimeStepOfBatch   if this the last time step in a batch  (at spawn time if run by job)
+   * @param predictionTimeStamp     the time stamp which should be used for the prediction (at spawn time if run by job)
+   * @param predictionTimeStepSize  the time step size which should be used for the prediction (at spawn time if run by job)
+   * @param isSkeletonCell          if this cell description belongs to the MPI or AMR skeleton.
+   * @param mustBeDoneImmediately   if the prediction has to be performed immediately and cannot be spawned as background job
    *
    * @note Might be called by background task. Do not synchronise time step data here.
    */
@@ -1800,6 +1774,8 @@ public:
         CellDescription&                                           cellDescription,
         CellInfo&                                                  cellInfo,
         const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
+        const double                                               predictionTimeStamp,
+        const double                                               predictionTimeStepSize,
         const bool                                                 isFirstTimeStepOfBatch,
         const bool                                                 isLastTimeStepOfBatch,
         const bool                                                 isSkeletonCell,
@@ -1861,7 +1837,7 @@ public:
    * --------------------
    *
    * After the update, the solution is at time
-   * cellDescription.getCorrectorTimeStamp() + cellDescription.getCorrectorTimeStepSize().
+   * cellDescription.getTimeStamp() + cellDescription.getTimeStepSize().
    * The value cellDescription.getCorrectorTimeStepSize()
    * handed to the solution adjustment function is the one
    * used to update the solution.
@@ -1947,10 +1923,7 @@ public:
    *
    * Allocate necessary new limiter patches.
    */
-  void rollbackSolutionGlobally(
-      const int solverNumber,
-      CellInfo& cellInfo,
-      const bool fusedTimeStepping) const final override;
+  void rollbackSolutionGlobally(const int solverNumber,CellInfo& cellInfo) const final override;
 
   ///////////////////////////////////
   // NEIGHBOUR

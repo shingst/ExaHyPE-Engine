@@ -167,11 +167,11 @@ void exahype::mappings::FinaliseMeshRefinement::enterCell(
         solver->finaliseStateUpdates(solverNumber,cellInfo);
 
         if ( solver->getMeshUpdateEvent()==exahype::solvers::Solver::MeshUpdateEvent::RefinementRequested ) { // is not the same as the above check
-          solver->rollbackSolutionGlobally(solverNumber,cellInfo,exahype::solvers::Solver::FuseADERDGPhases);
+          solver->rollbackSolutionGlobally(solverNumber,cellInfo);
         }
 
         // compute a new time step size
-        double admissibleTimeStepSize   = solver->updateTimeStepSizes(solverNumber,cellInfo,exahype::solvers::Solver::FuseADERDGPhases);
+        double admissibleTimeStepSize   = solver->updateTimeStepSize(solverNumber,cellInfo);
         _minTimeStepSizes[solverNumber] = std::min(admissibleTimeStepSize, _minTimeStepSizes[solverNumber]);
         _maxLevels[solverNumber]        = std::max(fineGridVerticesEnumerator.getLevel(),_maxLevels[solverNumber]);
 
