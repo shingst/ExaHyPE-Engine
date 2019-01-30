@@ -292,6 +292,13 @@ void exahype::mappings::FusedTimeStep::leaveCell(
           std::abort();
           break;
       }
+
+      if ( result._meshUpdateEvent != solvers::Solver::MeshUpdateEvent::None ) {
+        std::cout << "exahype::State::isLastIterationOfBatchOrNoBatch()=" << exahype::State::isLastIterationOfBatchOrNoBatch() << std::endl;
+        std::cout << "isLastTimeStep=" << isLastTimeStep << std::endl;
+        std::cout << "result._meshUpdateEvent=" << solvers::Solver::toString(result._meshUpdateEvent) << std::endl;
+      }
+
       // mesh refinement events, cell sizes (for AMR), time
       if ( isLastTimeStep ) {
         tarch::multicore::Lock lock(Semaphore);

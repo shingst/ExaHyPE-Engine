@@ -223,6 +223,7 @@ void exahype::repositories::RepositorySTDStack::iterate(int numberOfIterations, 
 
   peano::parallel::loadbalancing::Oracle::getInstance().switchToOracle(_repositoryState.getAction());
   #else
+  _repositoryState.setNumberOfIterations(numberOfIterations);
   peano::datatraversal::autotuning::Oracle::getInstance().switchToOracle(_repositoryState.getAction());
   #endif
   

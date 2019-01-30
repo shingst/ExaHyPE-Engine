@@ -764,9 +764,9 @@ exahype::solvers::LimitingADERDGSolver::determineRefinementStatusAfterSolutionUp
       solverPatch.getPreviousRefinementStatus()>=_solver->_minRefinementStatusForTroubledCell
   ) {
     int newRefinementStatus = _solver->_minRefinementStatusForTroubledCell-2; // allows increasing the status if we are "suddenly" are next to FV solver
-    for (int i=0; i<DIMENSIONS_TIMES_TWO; i++) { // TODO TODO TODO
-      if ( neighbourMergePerformed[i] ) { // TODO TODO TODO
-        newRefinementStatus = std::max(newRefinementStatus,solverPatch.getFacewiseRefinementStatus(i)-1); // TODO TODO TODO
+    for (int i=0; i<DIMENSIONS_TIMES_TWO; i++) {
+      if ( neighbourMergePerformed[i] ) {
+        newRefinementStatus = std::max(newRefinementStatus,solverPatch.getFacewiseRefinementStatus(i)-1);
       }
     }
     solverPatch.setRefinementStatus(newRefinementStatus);

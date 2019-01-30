@@ -233,14 +233,12 @@ void exahype::State::globalBroadcast(exahype::records::RepositoryState& reposito
       case exahype::records::RepositoryState::UseAdapterFusedTimeStep: {
         for (auto* solver : exahype::solvers::RegisteredSolvers) {
           solver->resetMeshUpdateEvent();
-          logInfo("globalBroadcast(...):", "MeshUpdateEvent = " << static_cast<int>(solver->getMeshUpdateEvent()));
         }
       } break;
       default:
         break;
     }
   }
-  std::cout << "globalBroadcast(...)" << repositoryState.toString() << std::endl;
 
   #ifdef Parallel
   if ( currentBatchIteration==0 ) {
@@ -273,8 +271,6 @@ void exahype::State::globalBroadcast(exahype::records::RepositoryState& reposito
 
 
 void exahype::State::globalReduction(exahype::records::RepositoryState& repositoryState, exahype::State& solverState, const int currentBatchIteration) {
-  std::cout << "globalReduction(...)" << repositoryState.toString() << std::endl;
-
   assertionEquals(tarch::parallel::Node::getGlobalMasterRank(),0);
   #ifdef Parallel
   if ( currentBatchIteration==repositoryState.getNumberOfIterations()-1 ) {
@@ -357,13 +353,10 @@ void exahype::State::globalReduction(exahype::records::RepositoryState& reposito
   }
   #endif
 
-  // postProcessing
+  // postProcessing for fused time stepping
   if ( currentBatchIteration==repositoryState.getNumberOfIterations()-1 ) {
     switch ( repositoryState.getAction()) {
     case exahype::records::RepositoryState::UseAdapterFusedTimeStep: {
-      for (auto* solver : exahype::solvers::RegisteredSolvers) {
-        logInfo("globalReduction(...):", "MeshUpdateEvent = " << static_cast<int>(solver->getMeshUpdateEvent()));
-      }
       if ( tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().isGlobalMaster() ) {
         for (auto* solver : solvers::RegisteredSolvers) {
           solvers::Solver::reinitialiseTimeStepDataIfLastPredictorTimeStepSizeWasInstable(solver);

@@ -643,7 +643,7 @@ double exahype::solvers::FiniteVolumesSolver::updateTimeStepSize(const int solve
     if ( cellDescription.getType()==exahype::records::FiniteVolumesCellDescription::Cell ) {
       double* solution = static_cast<double*>(cellDescription.getSolution());
       double admissibleTimeStepSize = stableTimeStepSize(solution, cellDescription.getSize());
-      assertion1(std::isfinite(admissibleTimeStepSize),cellDescription);
+      assertion1(std::isfinite(admissibleTimeStepSize),cellDescription.toString());
 
       cellDescription.setTimeStepSize(admissibleTimeStepSize);
       return admissibleTimeStepSize;
