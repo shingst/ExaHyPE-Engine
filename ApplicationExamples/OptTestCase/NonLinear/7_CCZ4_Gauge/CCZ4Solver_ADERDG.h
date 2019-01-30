@@ -150,7 +150,7 @@ class CCZ4::CCZ4Solver_ADERDG : public CCZ4::AbstractCCZ4Solver_ADERDG {
     // + physicalAdmissibility:
     bool isPhysicallyAdmissible(
       const double* const solution,
-      const double* const observablesMin,const double* const observablesMax,const int numberOfObservables,
+      const double* const observablesMin,const double* const observablesMax,const int NumberOfDMPObservables,
       const tarch::la::Vector<DIMENSIONS,double>& center, const tarch::la::Vector<DIMENSIONS,double>& dx,
       const double t) const;
 

@@ -164,10 +164,8 @@ exahype::solvers::Solver::RefinementControl GRMHD::GRMHDSolver_ADERDG::refinemen
 
 // only evaluated in Limiting context
 /*
-void GRMHD::GRMHDSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(
-    double* observables,const int numberOfObservables,
-    const double* const Q) const {
-  assertion(numberOfObservables==2);
+void GRMHD::GRMHDSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(double* observables, const double* const Q) const {
+  assertion(NumberOfDMPObservables==2);
 
   observables[0] = Q[0]; // rho
   observables[1] = Q[4]; // dens

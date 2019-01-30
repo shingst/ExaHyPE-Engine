@@ -150,9 +150,7 @@ class GPR::GPRSolver_ADERDG : public GPR::AbstractGPRSolver_ADERDG {
      **/
     void nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) final override;
 
-    void mapDiscreteMaximumPrincipleObservables(
-        double* observables,const int numberOfObservables,
-        const double* const Q) const override;
+    void mapDiscreteMaximumPrincipleObservables(double* observables, const double* const Q) const override;
 
     bool isPhysicallyAdmissible(
       const double* const solution,

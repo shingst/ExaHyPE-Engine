@@ -184,7 +184,7 @@ void  __attribute__((optimize("O0"))) DIM::DIMSolver::boundaryValues(const doubl
 }
 
 
-exahype::solvers::Solver::RefinementControl DIM::DIMSolver::refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
+exahype::solvers::Solver::RefinementControl DIM::DIMSolver::refinementCriterion(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
   // @todo Please implement/augment if required
   if( (center[0]*center[0]+center[1]*center[1]) < 0.25*0.25 )
   {

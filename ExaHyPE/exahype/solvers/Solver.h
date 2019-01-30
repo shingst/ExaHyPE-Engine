@@ -577,7 +577,7 @@ class exahype::solvers::Solver {
    * The solvers need to do adjust some operations slightly
    * when those are run multiple times after each other in isolation.
    */
-  static bool SwitchOffNeighbourMergePerformedCheck;
+  static bool ProfileUpdate;
 
   /**
    * A flag indicating we fuse the algorithmic

@@ -140,7 +140,7 @@ class {{project}}::{{solver}} : public {{project}}::{{abstractSolver}} {
     {% endif %}
     
     {% if usePointSources %}
-    void pointSource(const double* const x,const double t,const double dt, double* forceVector, double* x0) override; 
+    void pointSource(const double* const x,const double t,const double dt, double* const forceVector, double* x0) override; 
     {% else %}
     /* pointSource() function not included, as requested in the specification file */
     {% endif %}

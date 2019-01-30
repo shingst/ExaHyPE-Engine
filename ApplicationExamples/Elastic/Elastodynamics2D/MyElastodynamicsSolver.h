@@ -111,15 +111,15 @@ class Elastodynamics::MyElastodynamicsSolver: public Elastodynamics::AbstractMyE
      * \param[in]    dt        the width of the time interval.
      * \return One of exahype::solvers::Solver::RefinementControl::{Erase,Keep,Refine}.
      */
-    exahype::solvers::Solver::RefinementControl refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& centre,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) override;
+    exahype::solvers::Solver::RefinementControl refinementCriterion(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& centre,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) override;
 
 
     virtual void nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ);
 
     virtual void coefficientMatrix(const double* const Q,const int d,double* Bn);
-    virtual void pointSource(const double* const x,const double t,const double dt, double* forceVector, double* x0);
+    virtual void pointSource(const double* const x,const double t,const double dt, double* const forceVector, double* x0);
 
-    void riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,double* tempFaceUnknownsArray,double** tempStateSizedVectors,double** tempStateSizedSquareMatrices,const double dt,const int normalNonZeroIndex) override;
+    void riemannSolver(double* const FL,double* const FR,const double* const QL,const double* const QR,double* tempFaceUnknownsArray,double** tempStateSizedVectors,double** tempStateSizedSquareMatrices,const double dt,const int normalNonZeroIndex) override;
 
     void riemannSolver_Nodal(double v_p,double v_m, double sigma_p, double sigma_m, double z_p , double z_m, double& v_hat_p , double& v_hat_m, double& sigma_hat_p, double& sigma_hat_m);
     void localBasis(double* n, double * m, double* l, int d);

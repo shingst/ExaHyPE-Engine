@@ -301,7 +301,7 @@ void Elastic::MyElasticWaveSolver::boundaryValues(const double* const x,const do
   
 }
 
-exahype::solvers::Solver::RefinementControl Elastic::MyElasticWaveSolver::refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
+exahype::solvers::Solver::RefinementControl Elastic::MyElasticWaveSolver::refinementCriterion(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
   // @todo Please implement/augment if required
   //return exahype::solvers::Solver::RefinementControl::Keep;
 
@@ -717,7 +717,7 @@ void  Elastic::MyElasticWaveSolver::initPointSourceLocations(){
 
 }
 
-void  Elastic::MyElasticWaveSolver::pointSource(const double* const Q,const double* const x,const double t,const double dt, double* forceVector, int n) {
+void  Elastic::MyElasticWaveSolver::pointSource(const double* const Q,const double* const x,const double t,const double dt, double* const forceVector, int n) {
   // @todo Please implement/augment if required
   static tarch::logging::Log _log("MyLinearWaveSolver::pointSource");
   constexpr int numberOfVariables  = MyElasticWaveSolver::NumberOfVariables;
@@ -935,7 +935,7 @@ for (int j = 0; j < 9; j++)
 }
 
 
-void Elastic::MyElasticWaveSolver::riemannSolver(double* FL_,double* FR_,const double* const QL_,const double* const QR_,const double dt,const int normalNonZeroIndex, bool isBoundaryFace, int faceIndex){
+void Elastic::MyElasticWaveSolver::riemannSolver(double* const FL_,double* const FR_,const double* const QL_,const double* const QR_,const double dt,const int normalNonZeroIndex, bool isBoundaryFace, int faceIndex){
 
 #ifdef OPT_KERNELS
   double FL[converter::getFFaceGenArraySize()];

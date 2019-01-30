@@ -107,7 +107,7 @@ void Elastic::MyElasticWaveSolver::boundaryValues(const double* const x,const do
   }
 }
 
-exahype::solvers::Solver::RefinementControl Elastic::MyElasticWaveSolver::refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
+exahype::solvers::Solver::RefinementControl Elastic::MyElasticWaveSolver::refinementCriterion(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
   // @todo Please implement/augment if required
   return exahype::solvers::Solver::RefinementControl::Keep;
 }
@@ -234,7 +234,7 @@ void  Elastic::MyElasticWaveSolver::nonConservativeProduct(const double* const Q
   BgradQ[26]=-v_z; //sigma_yz    
 }
 
-void  Elastic::MyElasticWaveSolver::pointSource(const double* const Q,const double* const x,const double t,const double dt, double* forceVector, int n) {
+void  Elastic::MyElasticWaveSolver::pointSource(const double* const Q,const double* const x,const double t,const double dt, double* const forceVector, int n) {
   constexpr double pi = 3.14159265359;
   constexpr double sigma = 0.1149;
   constexpr double t0 = 0.7;
@@ -312,7 +312,7 @@ void Elastic::MyElasticWaveSolver::multiplyMaterialParameterMatrix(const double*
 }
 
 
-void Elastic::MyElasticWaveSolver::riemannSolver(double* FL_,double* FR_,const double* const QL_,const double* const QR_,const double dt,const int normalNonZeroIndex, bool isBoundaryFace, int faceIndex){
+void Elastic::MyElasticWaveSolver::riemannSolver(double* const FL_,double* const FR_,const double* const QL_,const double* const QR_,const double dt,const int normalNonZeroIndex, bool isBoundaryFace, int faceIndex){
 
 #ifdef OPT_KERNELS
   double FL[converter::getFFaceGenArraySize()];

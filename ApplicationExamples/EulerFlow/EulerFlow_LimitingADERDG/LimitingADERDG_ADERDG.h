@@ -110,9 +110,7 @@ class Euler::LimitingADERDG_ADERDG : public Euler::AbstractLimitingADERDG_ADERDG
     void flux(const double* const Q,double** F) final override;
 
 
-    void mapDiscreteMaximumPrincipleObservables(
-        double* observables,const int numberOfObservables,
-        const double* const Q) const override;
+    void mapDiscreteMaximumPrincipleObservables(double* observables, const double* const Q) const override;
 
     bool isPhysicallyAdmissible(
       const double* const solution,

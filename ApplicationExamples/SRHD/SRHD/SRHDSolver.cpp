@@ -8,9 +8,9 @@ using std::cout;
 
 extern "C" {
 void hastoadjustsolution_(double* time, bool* refine);
-void adjustedsolutionvalues_(const double* const x,const double* w,const double* t,const double* dt,double* Q);
+void adjustedsolutionvalues_(const double* const x,const double* w,const double* t,const double* const dt,double* Q);
 void pdeflux_(double* F, const double* const Q);
-void pdeeigenvalues_(double* lambda, const double* const Q, const double* nv);
+void pdeeigenvalues_(double* const lambda, const double* const Q, const double* nv);
 }
 
 void SRHD::SRHDSolver::init(){
@@ -63,7 +63,7 @@ void SRHD::SRHDSolver::algebraicSource(const double* const Q, double* S){
 }
 
 
-exahype::solvers::Solver::RefinementControl SRHD::SRHDSolver::refinementCriterion(const double* luh, const tarch::la::Vector<DIMENSIONS, double>& center, const tarch::la::Vector<DIMENSIONS, double>& dx, double t, const int level) {
+exahype::solvers::Solver::RefinementControl SRHD::SRHDSolver::refinementCriterion(const double* const luh, const tarch::la::Vector<DIMENSIONS, double>& center, const tarch::la::Vector<DIMENSIONS, double>& dx, double t, const int level) {
   return exahype::solvers::Solver::RefinementControl::Keep;
 }
 

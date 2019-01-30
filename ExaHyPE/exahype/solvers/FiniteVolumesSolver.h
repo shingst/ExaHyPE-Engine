@@ -44,7 +44,7 @@ public:
   /**
    * Rank-local heap that stores FiniteVolumesCellDescription instances.
    *
-   * \note This heap might be shared by multiple FiniteVolumesSolver instances
+   * @note This heap might be shared by multiple FiniteVolumesSolver instances
    * that differ in their solver number and other attributes.
    * @see solvers::Solver::RegisteredSolvers.
    */
@@ -177,7 +177,7 @@ private:
    * There are no prolongations and restrictions
    * for the Finite Volums Solver in ExaHyPE
    *
-   * \param[in] isSkeletonCell indicates that the cell is adjacent to a remote boundary.
+   * @param[in] isSkeletonCell indicates that the cell is adjacent to a remote boundary.
    *            (There is currently no AMR for the pure FVM solver.)
    */
   void compress(
@@ -270,7 +270,7 @@ private:
   /**
    * A job which performs the solution update and computes a new time step size.
    *
-   * \note Spawning these operations as background job makes only sense if you
+   * @note Spawning these operations as background job makes only sense if you
    * wait in endIteration(...) on the completion of the job.
    * It further important to flag this job as high priority job to
    * ensure completion before the next reduction.
@@ -410,149 +410,6 @@ public:
   MeshUpdateEvent getMeshUpdateEvent() const final override;
 
   /**
-   * \brief Returns a stable time step size.
-   *
-   * \param[in] luh             Cell-local solution DoF.
-   * \param[in] cellSize        Extent of the cell in each coordinate direction.
-   */
-  virtual double stableTimeStepSize(
-      const double* const luh,
-      const tarch::la::Vector<DIMENSIONS, double>& cellSize) = 0;
-
-  /**
-   * Extract volume averages belonging to the boundary layer
-   * of the neighbour patch and store them in the ghost layer
-   * of the current patch.
-   *
-   * Depending on the implementation (if reconstruction is applied),
-   * the boundary layer/ghost layer might not just be a single layer.
-   *
-   * \param luhbnd Points to the extrapolated solution values.
-   * \param luh Points to the the new solution values.
-   * \param neighbourPosition Contains the relative position of the neighbour patch
-   * with respect to the patch this method was invoked for. The entries of the vector are in the range
-   * {-1,0,1}.
-   *
-   * \note The theoretical arithmetic intensity of this operation is zero.
-   * \note This operation is invoked per vertex in touchVertexFirstTime and mergeWithNeighbour
-   * in mapping Merging.
-   *
-   * <h2>MPI</h2>
-   * No ghost layer is necessary if a patch is surrounded only
-   * by local cells. However as soon as the cell is adjacent
-   * to a MPI boundary this becomes necessary.
-   * We thus always hold ghost layers.
-   */
-  virtual void ghostLayerFilling(
-      double* luh,
-      const double* luhNeighbour,
-      const tarch::la::Vector<DIMENSIONS,int>& neighbourPosition) = 0;
-
-  /**
-   * Similar to ghostLayerFilling but we do not work with
-   * complete patches from a local neighbour here but with smaller arrays received
-   * from a remote neighbour or containing boundary conditions.
-   *
-   * \note The theoretical arithmetic intensity of this operation is zero.
-   * \note This operation is invoked per vertex in mergeWithNeighbour in mapping Merging.
-   */
-  virtual void ghostLayerFillingAtBoundary(
-      double* luh,
-      const double* luhbnd,
-      const tarch::la::Vector<DIMENSIONS,int>& boundaryPosition) = 0;
-
-  /**
-   * Extract boundary layers of \p luh before
-   * sending them away via MPI.
-   *
-   * \note The theoretical arithmetic intensity of this operation is zero.
-   * \note This operation is invoked per vertex in prepareSendToNeighbour in mapping Sending.
-   */
-  virtual void boundaryLayerExtraction(
-      double* luhbnd,
-      const double* luh,
-      const tarch::la::Vector<DIMENSIONS,int>& boundaryPosition) = 0;
-
-  /**
-   * Return the state variables at the boundary.
-   *
-   * @param[inout] luh           the solution patch
-   * @param[in]    cellCentre    cell centre.
-   * @param[in]    cellSize      cell size.
-   * @param[in]    t             The time.
-   * @param[in]    dt            A time step size.
-   * @param[in]    normalNonZero Index of the nonzero normal vector component,
-   *i.e., 0 for e_x, 1 for e_y, and 2 for e_z.
-   */
-  virtual void boundaryConditions(
-      double* luh,
-      const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
-      const tarch::la::Vector<DIMENSIONS,double>& cellSize,
-      const double t,const double dt,
-      const tarch::la::Vector<DIMENSIONS, int>& posCell,
-      const tarch::la::Vector<DIMENSIONS, int>& posBoundary) = 0;
-
-
-  /**
-   * Compute the Riemann problem.
-   * 
-   * This function shall implement a pointwise riemann Solver, in contrast to the ADERDGSolver::riemannSolver
-   * function which implements a patch-wise riemann solver.
-   * 
-   * In a fully conservative scheme, it is fL = fR and the Riemann solver really computes the fluxes
-   * in normalNonzero direction steming from the contribution of qL and qR.
-   * 
-   * \param[out]   fL      the fluxes on the left side of the point cell (already allocated)
-   * \param[out]   fR      the fluxes on the right side of the point cell (already allocated).
-   * \param[in]    qL      the state vector in the left neighbour cell
-   * \param[in]    qR      the state vector in the right neighbour cell
-   * \param[in]    normalNonZero  Index of the nonzero normal vector component.
-   **/
-  virtual double riemannSolver(double* fL, double *fR, const double* qL, const double* qR, int normalNonZero) = 0;
-
-  /**
-   * Update the solution of all volumes on a patch.
-   *
-   * @param[inout] luh             the current (and then new) solution
-   * @param[in]    dx              the extends of the cell holding the FV patch
-   * @param[in]    dt              time step size the FV patch is marching with
-   * @param[inout] maxAdmissibleDt admissible time step size obtained from the Riemann solves
-   */
-  virtual void solutionUpdate(double* luh,const tarch::la::Vector<DIMENSIONS, double>& dx,
-                              const double dt, double& maxAdmissibleDt) = 0;
-
-  /**
-   * Adjust the conserved variables and parameters (together: Q) at a given time t at the (quadrature) point x.
-   *
-   * \note Use this function and ::useAdjustSolution to set initial conditions.
-   *
-   * \param[in]    x         the physical coordinate on the face.
-   * \param[in]    t         the start of the time interval.
-   * \param[in]    dt        the width of the time interval.
-   * \param[inout] Q         the conserved variables (and parameters) associated with a quadrature point
-   *                         as C array (already allocated).
-   */
-  virtual void adjustSolution(
-      double* luh, const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
-      const tarch::la::Vector<DIMENSIONS, double>& dx,
-      const double t,
-      const double dt) = 0;
-
-  /**
-   * Pointwise solution adjustment.
-   * 
-   * In the FV solver, we currently don't support both patchwise
-   * and pointwise adjustment @TODO.
-   * 
-   * \param[in]   x   The position (array with DIMENSIONS entries)
-   * \param[in]   t   the start of the time interval
-   * \param[in]   dt  the width of the time interval.
-   * \param[inout] Q  the conserved variables and parameters as C array (already allocated).
-   * 
-   **/
-  virtual void adjustSolution(const double* const x,const double t,const double dt, double* Q) = 0;
-
-  /**
    * Returns the min time step size of the
    * previous iteration.
    * This value is initialised with zero
@@ -615,7 +472,7 @@ public:
   /**
     * User defined solver initialisation.
     *
-    * \param[in] cmdlineargs the command line arguments.
+    * @param[in] cmdlineargs the command line arguments.
     */
   virtual void init(
         const std::vector<std::string>& cmdlineargs,
@@ -681,7 +538,7 @@ public:
       const int solverNumber);
 
   /**
-   * Check if the heap array with index \p index could be allocated.
+   * Check if the heap array with index @p index could be allocated.
    */
   static void checkDataHeapIndex(const CellDescription& cellDescription, const int arrayIndex, const std::string arrayName);
 
@@ -696,7 +553,7 @@ public:
    * If this is not the case, it allocates the necessary
    * memory for the cell description.
    *
-   * \note Heap data creation assumes default policy
+   * @note Heap data creation assumes default policy
    * DataHeap::Allocation::UseRecycledEntriesIfPossibleCreateNewEntriesIfRequired.
    */
   void ensureNecessaryMemoryIsAllocated(CellDescription& cellDescription) const;
@@ -795,12 +652,12 @@ public:
   /**
    * Update the solution of a cell description.
    *
-   * \note Make sure to reset neighbour merge
+   * @note Make sure to reset neighbour merge
    * helper variables in this method call.
    *
-   * \note Has no const modifier since kernels are not const functions yet.
+   * @note Has no const modifier since kernels are not const functions yet.
    *
-   * \param[in] backupPreviousSolution Set to true if the solution should be backed up before
+   * @param[in] backupPreviousSolution Set to true if the solution should be backed up before
    *                                   we overwrite it by the updated solution.
    */
   void updateSolution(
@@ -862,14 +719,14 @@ public:
 
   /**
      * Sets heap indices of an FiniteVolumesCellDescription to -1,
-     * and the parent index of the cell descriptions to the specified \p
+     * and the parent index of the cell descriptions to the specified @p
      * parentIndex.
      */
    static void resetIndicesAndFlagsOfReceivedCellDescription(CellDescription& cellDescription,const int parentIndex);
 
   /**
    * Send all ADERDG cell descriptions to rank
-   * \p toRank.
+   * @p toRank.
    */
   static void sendCellDescriptions(
       const int                                     toRank,
@@ -880,7 +737,7 @@ public:
 
   /**
    * Send an empty message to rank
-   * \p toRank.
+   * @p toRank.
    */
   static void sendEmptyCellDescriptions(
       const int                                     toRank,
@@ -889,20 +746,20 @@ public:
       const int                                     level);
 
   /**
-   * Receives cell descriptions from rank \p fromRank
+   * Receives cell descriptions from rank @p fromRank
    * and resets the data heap indices to -1.
    *
    * If a received cell description has the same
    * solver number as a cell description in the
-   * array at address \p cellDescriptionsIndex,
+   * array at address @p cellDescriptionsIndex,
    * we merge the metadata (time stamps, time step size)
    * of both cell descriptions.
    *
    * If no cell description in the array at address
-   * \p cellDescriptionsIndex can be found with the
+   * @p cellDescriptionsIndex can be found with the
    * same solver number than a received cell description,
    * we push the received cell description to
-   * the back of the array at address \p cellDescriptions
+   * the back of the array at address @p cellDescriptions
    * Index.
    *
    * This operation is intended to be used in combination
@@ -918,7 +775,7 @@ public:
       const int                                     level);
 
   /**
-   * Drop cell descriptions received from \p fromRank.
+   * Drop cell descriptions received from @p fromRank.
    */
   static void dropCellDescriptions(
       const int                                     fromRank,
@@ -1127,6 +984,179 @@ public:
   ///////////////////////
 
   CellProcessingTimes measureCellProcessingTimes(const int numberOfRuns=100) override;
+
+protected:
+  /** @name Plugin points for derived solvers.
+   *
+   *  These are the macro kernels solvers derived from
+   *  FiniteVolumesSolver need to implement.
+   */
+  ///@{
+  /**
+   * @brief Returns a stable time step size.
+   *
+   * @param[in] luh             Cell-local solution DoF.
+   * @param[in] cellSize        Extent of the cell in each coordinate direction.
+   */
+  virtual double stableTimeStepSize(
+      const double* const                          luh,
+      const tarch::la::Vector<DIMENSIONS, double>& cellSize) = 0;
+
+  /**
+   * Extract volume averages belonging to the boundary layer
+   * of the neighbour patch and store them in the ghost layer
+   * of the current patch.
+   *
+   * Depending on the implementation (if reconstruction is applied),
+   * the boundary layer/ghost layer might not just be a single layer.
+   *
+   * @param[inout] luh               the solution vector (with updated ghost layers).
+   * @param[in]    luhbnd            hold the boundary layers obtained from the neighbour.
+   * @param[in]    neighbourPosition contains the relative position of the neighbour patch
+   *                          with respect to the patch this method was invoked for. The entries of the vector are in the range
+   *                          {-1,0,1}.
+   *
+   * @note The theoretical arithmetic intensity of this operation is zero.
+   * @note This operation is invoked per vertex in touchVertexFirstTime and mergeWithNeighbour
+   * in mapping Merging.
+   *
+   * <h2>MPI</h2>
+   * No ghost layer is necessary if a patch is surrounded only
+   * by local cells. However as soon as the cell is adjacent
+   * to a MPI boundary this becomes necessary.
+   * We thus always hold ghost layers.
+   */
+  virtual void ghostLayerFilling(
+      double* const                                  luh,
+      const double* const                            luhNeighbour,
+      const tarch::la::Vector<DIMENSIONS,int>& boundaryPosition) = 0;
+
+  /**
+   * Similar to ghostLayerFilling but we do not work with
+   * complete patches from a local neighbour here but with smaller arrays received
+   * from a remote neighbour or containing boundary conditions.
+   *
+   * @note The theoretical arithmetic intensity of this operation is zero.
+   * @note This operation is invoked per vertex in mergeWithNeighbour in mapping Merging.
+   *
+   * @param[inout] luh              the local solution vector
+   * @param[in]    luhbnd           a vector with enough space to hold the method-specific boundary layers
+   * @param[in]    boundaryPosition positon of the boundary w.r.t. the cell
+   */
+  virtual void ghostLayerFillingAtBoundary(
+      double* const                                  luh,
+      const double* const                            luhbnd,
+      const tarch::la::Vector<DIMENSIONS,int>& boundaryPosition) = 0;
+
+  /**
+   * Extract boundary layers of @p luh before
+   * sending them away via MPI, e.g.
+   *
+   * @note The theoretical arithmetic intensity of this operation is zero.
+   * @note This operation is invoked per vertex in prepareSendToNeighbour in mapping Sending.
+   *
+   * @param[inout] luhbnd           a vector with enough space to hold the method-specific boundary layers
+   * @param[in]    luh              the local solution vector
+   * @param[in]    boundaryPosition positon of the boundary w.r.t. the cell
+   */
+  virtual void boundaryLayerExtraction(
+      double* const                                  luhbnd,
+      const double* const                            luh,
+      const tarch::la::Vector<DIMENSIONS,int>& boundaryPosition) = 0;
+
+  /**
+   * Return the state variables at the boundary.
+   *
+   * @param[inout] luh         the solution patch
+   * @param[in]    cellCentre  cell centre.
+   * @param[in]    dx          cell size.
+   * @param[in]    t           a time stamp.
+   * @param[in]    dt          a time step size.
+   * @param[in]    posCell     position of the cell w.r.t. a vertex.
+   * @param[in]    posBoundary position of the boundary w.r.t. the same vertex.
+   */
+  virtual void boundaryConditions(
+      double* const luh,
+      const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+      const tarch::la::Vector<DIMENSIONS,double>& dx,
+      const double                                t,
+      const double                                dt,
+      const tarch::la::Vector<DIMENSIONS, int>&   posCell,
+      const tarch::la::Vector<DIMENSIONS, int>&   posBoundary) = 0;
+
+
+  /**
+   * Compute the Riemann problem.
+   *
+   * This function shall implement a pointwise riemann Solver, in contrast to the ADERDGSolver::riemannSolver
+   * function which implements a patch-wise riemann solver.
+   *
+   * In a fully conservative scheme, it is fL = fR and the Riemann solver really computes the fluxes
+   * in normalNonzero direction steming from the contribution of qL and qR.
+   *
+   * @param[out] fL        the fluxes on the left side of the point cell (already allocated)
+   * @param[out] fR        the fluxes on the right side of the point cell (already allocated).
+   * @param[in]  qL        the state vector in the left neighbour cell
+   * @param[in]  qR        the state vector in the right neighbour cell
+   * @param[in]  direction coordinate direction the normal vector of the face points to,
+   *                       i.e., 0 for e_x, 1 for e_y, and 2 for e_z.
+   */
+  virtual double riemannSolver(
+      double* const       fL,
+      double* const       fR,
+      const double* const qL,
+      const double* const qR,
+      const int     direction) = 0;
+
+  /**
+   * Update the solution of all volumes on a patch.
+   *
+   * @param[inout] luh             the current (and then new) solution
+   * @param[in]    dx              the extends of the cell holding the FV patch
+   * @param[in]    dt              time step size the FV patch is marching with
+   * @param[inout] maxAdmissibleDt admissible time step size obtained from the Riemann solves
+   */
+  virtual void solutionUpdate(
+      double* const                                      luh,
+      const tarch::la::Vector<DIMENSIONS, double>& dx,
+      const double dt, double&                     maxAdmissibleDt) = 0;
+
+  /**
+   * Adjust the conserved variables and parameters (together: Q) at a given time t at the (quadrature) point x.
+   *
+   * @note Use this function and ::useAdjustSolution to set initial conditions.
+   *
+   * @param[in]    x         the physical coordinate on the face.
+   * @param[in]    t         the start of the time interval.
+   * @param[in]    dt        the width of the time interval.
+   * @param[inout] Q         the conserved variables (and parameters) associated with a quadrature point
+   *                         as C array (already allocated).
+   */
+  virtual void adjustSolution(
+      double* const                                luh,
+      const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
+      const tarch::la::Vector<DIMENSIONS, double>& dx,
+      const double                                 t,
+      const double                                 dt) = 0;
+
+  /**
+   * Pointwise solution adjustment.
+   *
+   * In the FV solver, we currently don't support both patchwise
+   * and pointwise adjustment @TODO.
+   *
+   * @param[in]   x   The position (array with DIMENSIONS entries)
+   * @param[in]   t   the start of the time interval
+   * @param[in]   dt  the width of the time interval.
+   * @param[inout] Q  the conserved variables and parameters as C array (already allocated).
+   *
+   **/
+  virtual void adjustSolution(
+      const double* const x,
+      const double        t,
+      const double        dt,
+      double* const       Q) = 0;
+  ///@}
 };
 
 #endif

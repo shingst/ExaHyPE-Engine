@@ -100,7 +100,7 @@ void EulerADERDG::MyEulerSolver::boundaryValues(const double* const x,const doub
 }
 
 
-exahype::solvers::Solver::RefinementControl EulerADERDG::MyEulerSolver::refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
+exahype::solvers::Solver::RefinementControl EulerADERDG::MyEulerSolver::refinementCriterion(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
   double largestE   = -std::numeric_limits<double>::max();
   double smallestE  = +std::numeric_limits<double>::max();
 

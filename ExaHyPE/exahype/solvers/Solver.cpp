@@ -85,7 +85,7 @@ tarch::logging::Log exahype::solvers::Solver::_log( "exahype::solvers::Solver");
 
 int exahype::solvers::Solver::_masterWorkerCommunicationTag = tarch::parallel::Node::reserveFreeTag("solver[master<->worker]");
 
-bool exahype::solvers::Solver::SwitchOffNeighbourMergePerformedCheck = false;
+bool exahype::solvers::Solver::ProfileUpdate = false;
 
 bool exahype::solvers::Solver::FuseADERDGPhases           = false;
 double exahype::solvers::Solver::WeightForPredictionRerun = 0.99;

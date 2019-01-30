@@ -126,7 +126,7 @@ class {{project}}::{{solver}} : public {{project}}::{{abstractSolver}} {
      * \param[in]    dt        the width of the time interval.
      * \return One of exahype::solvers::Solver::RefinementControl::{Erase,Keep,Refine}.
      */
-    exahype::solvers::Solver::RefinementControl refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& centre,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) override;
+    exahype::solvers::Solver::RefinementControl refinementCriterion(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& centre,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) override;
     
     //PDE
     
@@ -153,7 +153,7 @@ class {{project}}::{{solver}} : public {{project}}::{{abstractSolver}} {
      *                     as C array (already allocated).
      * \param[inout] F the fluxes at that point as C array (already allocated).
      */
-    void viscousFlux(const double* const Q,const double* gradQ, double** F) final override;
+    void viscousFlux(const double* const Q,const double* const gradQ, double** F) final override;
 {% else %}
 /* viscousFlux() function not included, as requested in the specification file */
 {% endif %}
@@ -235,7 +235,7 @@ class {{project}}::{{solver}} : public {{project}}::{{abstractSolver}} {
      * \param[out] forceVector the force vector of the point source
      * 
     **/
-     void pointSource(const double* const Q,const double* const x,const double t,const double dt, double* forceVector,int n) override;
+     void pointSource(const double* const Q,const double* const x,const double t,const double dt, double* const forceVector,int n) override;
 {% else %}
 /* pointSource() function not included, as requested in the specification file */
 {% endif %}

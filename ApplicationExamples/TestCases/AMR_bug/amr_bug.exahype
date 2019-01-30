@@ -24,19 +24,25 @@ exahype-project Euler
   exahype-path const      = ./ExaHyPE
   output-directory const  = ./ApplicationExamples/TestCases/AMR_bug
   architecture const      = hsw
-  log-file                = mylogfile.log
+  
+  shared-memory
+    identifier               = dummy
+    configure                = {}
+    cores                    = 2
+    properties-file          = sharedmemory.properties
+  end shared-memory
 
   computational-domain
     dimension const          = 2
     width                    = 3.0, 1.0
     offset                   = 0.0, 0.0
-    time-steps = 10000
+    time-steps = 20
   end computational-domain
 
   global-optimisation
-    fuse-algorithmic-steps          = off
+    fuse-algorithmic-steps          = on
     fuse-algorithmic-steps-factor   = 0.99
-    spawn-predictor-as-background-thread = off
+    spawn-predictor-as-background-thread = on
     spawn-amr-background-threads = off
     /* 0.0 und 0.8 sind schon mal zwei Faktoren */
     disable-vertex-exchange-in-time-steps        = off
@@ -50,30 +56,13 @@ exahype-project Euler
     variables const    = rho:1,j:3,E:1
     order const        = 6
     /* 27 points: 0.05, 9 points: 0.15 */
-    maximum-mesh-size  = 0.4
-    maximum-mesh-depth = 2
-    time-stepping      = global
+    maximum-mesh-size  = 0.12
+    maximum-mesh-depth = 0
+    time-stepping      = globalfixed
     type const         = nonlinear
     terms const        = flux
     optimisation const = optimised, usestack
     language const     = C
     constants          = reference:entropywave
-   
-    // works only properly for single-node runs
-    /*
-    plot user::defined ErrorWriter
-      variables const = 5
-      time            = 0.0
-      repeat          = 1e-2
-      output          = not-available
-    end plot
-    */
-    
-    plot vtk::Legendre::cells::ascii ConservedQuantitiesWriter
-      variables const = 5
-      time            = 0.0
-      repeat          = 0.05
-      output          = ./conserved
-    end plot
   end solver
 end exahype-project

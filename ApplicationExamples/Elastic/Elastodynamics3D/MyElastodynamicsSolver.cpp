@@ -210,7 +210,7 @@ void Elastodynamics::MyElastodynamicsSolver::boundaryValues(const double* const 
   }
 }
 
-exahype::solvers::Solver::RefinementControl Elastodynamics::MyElastodynamicsSolver::refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
+exahype::solvers::Solver::RefinementControl Elastodynamics::MyElastodynamicsSolver::refinementCriterion(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
   // @todo Please implement/augment if required
   return exahype::solvers::Solver::RefinementControl::Keep;
 }
@@ -343,7 +343,7 @@ void Elastodynamics::MyElastodynamicsSolver::coefficientMatrix(const double* con
 
 
 
-void Elastodynamics::MyElastodynamicsSolver::riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,double* tempFaceUnknownsArray,double** tempStateSizedVectors,double** tempStateSizedSquareMatrices,const double dt,const int normalNonZeroIndex){
+void Elastodynamics::MyElastodynamicsSolver::riemannSolver(double* const FL,double* const FR,const double* const QL,const double* const QR,double* tempFaceUnknownsArray,double** tempStateSizedVectors,double** tempStateSizedSquareMatrices,const double dt,const int normalNonZeroIndex){
 
   constexpr int numberOfVariables  = MyElastodynamicsSolver::NumberOfVariables;
   constexpr int numberOfVariables2 = numberOfVariables*numberOfVariables;
@@ -540,7 +540,7 @@ void Elastodynamics::MyElastodynamicsSolver::riemannSolver(double* FL,double* FR
 
 
 
-void Elastodynamics::MyElastodynamicsSolver::pointSource(const double* const x,const double t,const double dt, double* forceVector, double* x0) {
+void Elastodynamics::MyElastodynamicsSolver::pointSource(const double* const x,const double t,const double dt, double* const forceVector, double* x0) {
   //TODO KD // @todo Please implement/augment if required and set bool function
   double pi = 3.14159265359;
   double sigma = 0.1149;

@@ -111,10 +111,8 @@ void DIM::DIMSolver_ADERDG::flux(const double* const Q,double** F) {
 	}
 }
 
-void DIM::DIMSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(
-    double* observables,const int numberOfObservables,
-    const double* const Q) const {
-  assertion(numberOfObservables==2);
+void DIM::DIMSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(double* observables, const double* const Q) const {
+  assertion(NumberOfDMPObservables==2);
   ReadOnlyVariables vars(Q);
 
   observables[0]=Q[12]; //extract alpha
@@ -157,11 +155,11 @@ bool DIM::DIMSolver_ADERDG::isPhysicallyAdmissible(
   //  double obsMax[(NumberOfVariables+NumberOfParameters)];
   //  kernels::limiter::generic::c::computeMinimumAndMaximumValueAtGaussLobattoNodes<Order+1,NumberOfVariables+NumberOfParameters>(
   //      solution,obsMin,obsMax);
-  //  pdelimitervalue_(&limvalue,&center[0],&NumberOfObservables, obsMin, obsMax);
+  //  pdelimitervalue_(&limvalue,&center[0],&NumberOfDMPObservables, obsMin, obsMax);
 
-  //pdelimitervalue_(&limvalue,&center[0],&NumberOfObservables, observablesMin, observablesMax);
+  //pdelimitervalue_(&limvalue,&center[0],&NumberOfDMPObservables, observablesMin, observablesMax);
   if (tarch::la::equals(t,0.0)) {
-	  //pdelimitervalue_(&limvalue,&center[0],&NumberOfObservables, observablesMin, observablesMax);
+	  //pdelimitervalue_(&limvalue,&center[0],&NumberOfDMPObservables, observablesMin, observablesMax);
 	  pdegeometriclimitervalue_(&limvalue,&center[0]);
 	  if(limvalue>0){
 		  return false;

@@ -160,10 +160,8 @@ void  GPRDIM::DIMSolver_ADERDG::nonConservativeProduct(const double* const Q,con
 
 
 
-void GPRDIM::DIMSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(
-    double* observables,const int numberOfObservables,
-    const double* const Q) const {
-	assertion(numberOfObservables==1);
+void GPRDIM::DIMSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(double* observables, const double* const Q) const {
+	assertion(NumberOfDMPObservables==1);
 	ReadOnlyVariables vars(Q);
 	observables[0]=Q[13];
 	observables[1]=Q[13];
@@ -177,9 +175,9 @@ bool GPRDIM::DIMSolver_ADERDG::isPhysicallyAdmissible(
       const tarch::la::Vector<DIMENSIONS,double>& dx,
       const double t) const {
 		  
-	int limvalue, LocNumberOfObservables;
-	LocNumberOfObservables=1;
-	pdelimitervalue_(&limvalue,&center[0],&LocNumberOfObservables, observablesMin, observablesMax);
+	int limvalue, LocNumberOfDMPObservables;
+	LocNumberOfDMPObservables=1;
+	pdelimitervalue_(&limvalue,&center[0],&LocNumberOfDMPObservables, observablesMin, observablesMax);
 	if(limvalue>0){
 		return false;
 	}else{
@@ -187,7 +185,7 @@ bool GPRDIM::DIMSolver_ADERDG::isPhysicallyAdmissible(
 	};
 	/*
 	if (tarch::la::equals(t,0.0)) {
-	  pdelimitervalue_(&limvalue,&center[0],&NumberOfObservables, observablesMin, observablesMax);
+	  pdelimitervalue_(&limvalue,&center[0],&NumberOfDMPObservables, observablesMin, observablesMax);
 	  //pdegeometriclimitervalue_(&limvalue,&center[0]);
 	  if(limvalue>0){
 		  return false;

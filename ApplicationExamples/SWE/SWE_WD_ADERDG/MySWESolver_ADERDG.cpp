@@ -211,6 +211,6 @@ bool SWE::MySWESolver_ADERDG::isPhysicallyAdmissible(
     }
 }
 
-// void SWE::MySWESolver_ADERDG::mapDiscreteMaximumPrincipleObservables(double* observables, const int numberOfObservables, const double* const Q){
+// void SWE::MySWESolver_ADERDG::mapDiscreteMaximumPrincipleObservables(double* observables, const double* const Q){
 
 //}

@@ -328,7 +328,7 @@ void Linear::MyLinearWaveSolver::boundaryValues(const double* const x,const doub
  
 }
 
-exahype::solvers::Solver::RefinementControl Linear::MyLinearWaveSolver::refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
+exahype::solvers::Solver::RefinementControl Linear::MyLinearWaveSolver::refinementCriterion(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
   // @todo Please implement/augment if required
   return exahype::solvers::Solver::RefinementControl::Keep;
 }
@@ -494,7 +494,7 @@ void Linear::MyLinearWaveSolver::coefficientMatrix(const double* const Q,const i
   }
 }
 
-void  Linear::MyLinearWaveSolver::pointSource(const double* const x,const double t,const double dt, double* forceVector, double* x0, int n) {
+void  Linear::MyLinearWaveSolver::pointSource(const double* const x,const double t,const double dt, double* const forceVector, double* const x0, int n) {
   // @todo Please implement/augment if required
 
   static tarch::logging::Log _log("MyLinearWaveSolver::pointSource");
@@ -629,7 +629,7 @@ void Linear::MyLinearWaveSolver::multiplyMaterialParameterMatrix(const double* c
   rhs[11]=1/rho * rhs[11];
 }
 
-void Linear::MyLinearWaveSolver::riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double dt,const int normalNonZeroIndex, bool isBoundaryFace, int faceIndex){
+void Linear::MyLinearWaveSolver::riemannSolver(double* const FL,double* const FR,const double* const QL,const double* const QR,const double dt,const int normalNonZeroIndex, bool isBoundaryFace, int faceIndex){
   
   constexpr int numberOfVariables  = MyLinearWaveSolver::NumberOfVariables;
   constexpr int numberOfVariables2 = numberOfVariables*numberOfVariables;

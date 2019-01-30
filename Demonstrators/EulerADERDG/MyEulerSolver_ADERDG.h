@@ -118,9 +118,7 @@ class EulerADERDG::MyEulerSolver_ADERDG : public EulerADERDG::AbstractMyEulerSol
      */
     static void getInitialProfile(const double* const x, double& E, double t, double dt);
 
-    void mapDiscreteMaximumPrincipleObservables(
-        double* observables,const int numberOfObservables,
-        const double* const Q) const override;
+    void mapDiscreteMaximumPrincipleObservables(double* observables, const double* const Q) const override;
 
     /**
      * Our two admissibility entries are the Energy and the density. Those may

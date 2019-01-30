@@ -23,23 +23,23 @@ class Elastic::MyElasticSolver : public exahype::solvers::ADERDGSolver {
                   exahype::solvers::Solver::TimeStepping timeStepping,
                   std::unique_ptr<exahype::profilers::Profiler> profiler);
 
-  void spaceTimePredictor(double* lQi, double* lFi, double* lQhi, double* lFhi,
-                          double* lQhbnd, double* lFhbnd,
+  void spaceTimePredictor(double* const lQi, double* const lFi, double* const lQhi, double* const lFhi,
+                          double* const lQhbnd, double* const lFhbnd,
                           const double* const luh,
                           const tarch::la::Vector<DIMENSIONS, double>& dx,
                           const double dt) override;
-  void solutionUpdate(double* luh, const double* const lduh,
+  void solutionUpdate(double* const luh, const double* const lduh,
                       const double dt) override;
-  void volumeIntegral(double* lduh, const double* const lFhi,
+  void volumeIntegral(double* const lduh, const double* const lFhi,
                       const tarch::la::Vector<DIMENSIONS, double>& dx) override;
   void surfaceIntegral(
-      double* lduh, const double* const lFhbnd,
+      double* const lduh, const double* const lFhbnd,
       const tarch::la::Vector<DIMENSIONS, double>& dx) override;
-  void riemannSolver(double* FL, double* FR, const double* const QL,
+  void riemannSolver(double* const FL, double* const FR, const double* const QL,
                      const double* const QR, const double dt,
                      const int normalNonZeroIndex) override;
   void boundaryConditions(
-      double* fluxOut, double* stateOut, const double* const fluxIn,
+      double* const fluxOut, double* stateOut, const double* const fluxIn,
       const double* const stateIn,
       const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
       const tarch::la::Vector<DIMENSIONS, double>& cellSize, const double t,
@@ -47,7 +47,7 @@ class Elastic::MyElasticSolver : public exahype::solvers::ADERDGSolver {
   double stableTimeStepSize(
       const double* const luh,
       const tarch::la::Vector<DIMENSIONS, double>& dx) override;
-  void solutionAdjustment(double* luh,
+  void solutionAdjustment(double* const luh,
                           const tarch::la::Vector<DIMENSIONS, double>& center,
                           const tarch::la::Vector<DIMENSIONS, double>& dx,
                           double t, double dt) override;
@@ -55,25 +55,25 @@ class Elastic::MyElasticSolver : public exahype::solvers::ADERDGSolver {
                            const tarch::la::Vector<DIMENSIONS, double>& dx,
                            double t) override;
   exahype::solvers::Solver::RefinementControl refinementCriterion(
-      const double* luh, const tarch::la::Vector<DIMENSIONS, double>& center,
+      const double* const luh, const tarch::la::Vector<DIMENSIONS, double>& center,
       const tarch::la::Vector<DIMENSIONS, double>& dx, double t,
       const int level) override;
   void faceUnknownsProlongation(
-      double* lQhbndFine, double* lFhbndFine, const double* lQhbndCoarse,
-      const double* lFhbndCoarse, const int coarseGridLevel,
+      double* const lQhbndFine, double* const lFhbndFine, const double* const lQhbndCoarse,
+      const double* const lFhbndCoarse, const int coarseGridLevel,
       const int fineGridLevel,
       const tarch::la::Vector<DIMENSIONS - 1, int>& subfaceIndex) override;
   void faceUnknownsRestriction(
-      double* lQhbndCoarse, double* lFhbndCoarse, const double* lQhbndFine,
-      const double* lFhbndFine, const int coarseGridLevel,
+      double* const lQhbndCoarse, double* const lFhbndCoarse, const double* const lQhbndFine,
+      const double* const lFhbndFine, const int coarseGridLevel,
       const int fineGridLevel,
       const tarch::la::Vector<DIMENSIONS - 1, int>& subfaceIndex) override;
   void volumeUnknownsProlongation(
-      double* luhFine, const double* luhCoarse, const int coarseGridLevel,
+      double* const luhFine, const double* const luhCoarse, const int coarseGridLevel,
       const int fineGridLevel,
       const tarch::la::Vector<DIMENSIONS, int>& subcellIndex) override;
   void volumeUnknownsRestriction(
-      double* luhCoarse, const double* luhFine, const int coarseGridLevel,
+      double* const luhCoarse, const double* const luhFine, const int coarseGridLevel,
       const int fineGridLevel,
       const tarch::la::Vector<DIMENSIONS, int>& subcellIndex) override;
 
@@ -86,12 +86,12 @@ class Elastic::MyElasticSolver : public exahype::solvers::ADERDGSolver {
   static void boundaryValues(const double* const x, const double t,
                              const int faceIndex, const int normalNonZero,
                              const double* const fluxIn,
-                             const double* const stateIn, double* fluxOut,
+                             const double* const stateIn, double* const fluxOut,
                              double* stateOut);
   static void adjustedSolutionValues(const double* const x, const double w,
                                      const double t, const double dt,
                                      double* Q);
-  static void pointSources(double* luh,
+  static void pointSources(double* const luh,
                            const tarch::la::Vector<DIMENSIONS, double>& center,
                            const tarch::la::Vector<DIMENSIONS, double>& dx,
                            double t, double dt, int nVar, int nParam,

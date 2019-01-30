@@ -428,9 +428,7 @@ void Euler::EulerSolver_ADERDG::boundaryValues(const double* const x, const doub
   }
 }
 
-void Euler::EulerSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(
-    double* observables,const int numberOfObservables,
-    const double* const Q) const {
+void Euler::EulerSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(double* observables, const double* const Q) const {
   ReadOnlyVariables vars(Q);
 
   const double gamma = 1.4;

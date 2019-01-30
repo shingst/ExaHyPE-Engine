@@ -143,7 +143,7 @@ class SWE::MySWESolver_ADERDG : public SWE::AbstractMySWESolver_ADERDG {
 
 /* multiplyMaterialParameterMatrix() not included, as requested in the specification file */
 
-    void mapDiscreteMaximumPrincipleObservables(double* observables, const int numberOfObservables, const double* const Q) const override {
+    void mapDiscreteMaximumPrincipleObservables(double* observables, const double* const Q) const override {
     };
 
     bool isPhysicallyAdmissible(

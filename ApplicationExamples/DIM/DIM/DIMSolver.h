@@ -120,7 +120,7 @@ class DIM::DIMSolver: public DIM::AbstractDIMSolver {
      * \param[in]    dt        the width of the time interval.
      * \return One of exahype::solvers::Solver::RefinementControl::{Erase,Keep,Refine}.
      */
-    exahype::solvers::Solver::RefinementControl refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& centre,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) override;
+    exahype::solvers::Solver::RefinementControl refinementCriterion(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& centre,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) override;
 
     void nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) override;
     void coefficientMatrix(const double* const Q,const int d,double* Bn) override;

@@ -107,10 +107,8 @@ void DIM::DIMSolver_ADERDG::flux(const double* const Q,double** F) {
 	}
 }
 
-void DIM::DIMSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(
-    double* observables,const int numberOfObservables,
-    const double* const Q) const {
-  assertion(numberOfObservables==2);
+void DIM::DIMSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(double* observables, const double* const Q) const {
+  assertion(NumberOfDMPObservables==2);
   ReadOnlyVariables vars(Q);
 
   observables[0]=Q[12]; //extract alpha
@@ -146,7 +144,7 @@ bool DIM::DIMSolver_ADERDG::isPhysicallyAdmissible(
   // Slow bug has to works
   //pdelimitervalue_(&limvalue,xx);
   //if (tarch::la::equals(t,0.0)) {
-  pdelimitervalue_(&limvalue,&center[0],&NumberOfObservables, observablesMin, observablesMax);
+  pdelimitervalue_(&limvalue,&center[0],&NumberOfDMPObservables, observablesMin, observablesMax);
   if(limvalue>0){
 	  return false;
   }else{

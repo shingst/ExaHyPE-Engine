@@ -78,10 +78,8 @@ void DIM::DIMSolver_ADERDG::eigenvalues(const double* const Q,const int d,double
   pdeeigenvalues_(lambda, Q, nv);
 }
 
-void DIM::DIMSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(
-    double* observables,const int numberOfObservables,
-    const double* const Q) const {
-  assertion(numberOfObservables==1);
+void DIM::DIMSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(double* observables, const double* const Q) const {
+  assertion(NumberOfDMPObservables==1);
   observables[0]=Q[12]; //extract alpha
 }
 

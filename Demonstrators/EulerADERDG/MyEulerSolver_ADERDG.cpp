@@ -135,9 +135,7 @@ void EulerADERDG::MyEulerSolver_ADERDG::flux(const double* const Q,double** F) {
 }
 
 
-void EulerADERDG::MyEulerSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(
-    double* observables,const int numberOfObservables,
-    const double* const Q) const {
+void EulerADERDG::MyEulerSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(double* observables, const double* const Q) const {
   for (int i=0; i<NumberOfVariables; ++i) {
     observables[i] = Q[i];
   }

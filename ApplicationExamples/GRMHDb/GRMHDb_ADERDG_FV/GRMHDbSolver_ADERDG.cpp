@@ -331,10 +331,10 @@ bool GRMHDb::GRMHDbSolver_ADERDG::isPhysicallyAdmissible(
 	const tarch::la::Vector<DIMENSIONS, double>& dx,
       const double t) const {
   //int limvalue;
-  //int NumberOfObservables;
-  //NumberOfObservables=1;
+  //int NumberOfDMPObservables;
+  //NumberOfDMPObservables=1;
   //pdelimitervalue_(&limvalue,&center[0]);
-  //pdelimitervalue_(&limvalue,&center[0],&NumberOfObservables, observablesMin, observablesMax);
+  //pdelimitervalue_(&limvalue,&center[0],&NumberOfDMPObservables, observablesMin, observablesMax);
   //if(limvalue>0){
 	//  return false;
   //}else{

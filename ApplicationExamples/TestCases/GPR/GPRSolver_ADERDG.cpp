@@ -117,10 +117,8 @@ void  GPR::GPRSolver_ADERDG::nonConservativeProduct(const double* const Q,const 
   pdencp_(BgradQ, Q, gradQ);
 }
 
-void GPR::GPRSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(
-    double* observables,const int numberOfObservables,
-    const double* const Q) const {
-  assertion(numberOfObservables==1);
+void GPR::GPRSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(double* observables, const double* const Q) const {
+  assertion(NumberOfDMPObservables==1);
   ReadOnlyVariables vars(Q);
 
   observables[0]=Q[0]; //extract alpha
@@ -135,8 +133,8 @@ bool GPR::GPRSolver_ADERDG::isPhysicallyAdmissible(
       const double t) const {
   int limvalue;
   //pdelimitervalue_(&limvalue,&center[0]);
-  int numberOfObservables=1;
-  pdelimitervalue_(&limvalue,&center[0],&numberOfObservables, observablesMin, observablesMax);
+  int NumberOfDMPObservables=1;
+  pdelimitervalue_(&limvalue,&center[0],&NumberOfDMPObservables, observablesMin, observablesMax);
   if(limvalue>0){
 	  return false;
   }else{

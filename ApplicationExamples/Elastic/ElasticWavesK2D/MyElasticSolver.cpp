@@ -27,7 +27,7 @@ void Elastic::MyElasticSolver::adjustedSolutionValues(const double* const x,cons
   Q[4] = 0.0;
 }
 
-exahype::solvers::Solver::RefinementControl Elastic::MyElasticSolver::refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
+exahype::solvers::Solver::RefinementControl Elastic::MyElasticSolver::refinementCriterion(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
   // @todo Please implement/augment if required
   return exahype::solvers::Solver::RefinementControl::Keep;
 }
@@ -255,7 +255,7 @@ void Elastic::MyElasticSolver::coefficientMatrix(const double* const Q,const int
 }
 
 //TODO KD
-void Elastic::MyElasticSolver::pointSource(const double* const x,const double t,const double dt, double* forceVector, double* x0) {
+void Elastic::MyElasticSolver::pointSource(const double* const x,const double t,const double dt, double* const forceVector, double* x0) {
   //TODO KD // @todo Please implement/augment if required and set bool function
 
    double pi = 3.14159265359;

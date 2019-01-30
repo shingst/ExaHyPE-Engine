@@ -196,20 +196,19 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver {
      *
 	 * See superclass for function's semantics.
 	 */
-    void mapDiscreteMaximumPrincipleObservables(double* observables,const int numberOfObservables,const double* const Q) const override {
-      if (numberOfObservables>0) {
-      	std::copy_n(Q,numberOfObservables,observables);
+    void mapDiscreteMaximumPrincipleObservables(double* observables, const double* const Q) const override {
+      if (NumberOfDMPObservables>0) {
+      	std::copy_n(Q,NumberOfDMPObservables,observables);
       }
   	}
-    
-    // old: void fusedSpaceTimePredictorVolumeIntegral(double* lduh, double* lQhbnd,double* lFhbnd,double** tempSpaceTimeUnknowns,double** tempSpaceTimeFluxUnknowns,double* tempUnknowns,double* tempFluxUnknowns,const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& dx,const double dt, double** tempPointForceSources) override; 
-    int fusedSpaceTimePredictorVolumeIntegral(double* lduh, double* lQhbnd, double* lFhbnd, const double* const luh, const tarch::la::Vector<DIMENSIONS, double>& center, const tarch::la::Vector<DIMENSIONS, double>& dx, const double t, const double dt) override; 
-    void solutionUpdate(double* luh,const double* const luhOld,const double* const lduh,const double dt) override;
-    void surfaceIntegral(double* lduh,const double* const lFhbnd,const tarch::la::Vector<DIMENSIONS,double>& dx); //override; //TODO JMG make override again when enabled back
+     
+    int fusedSpaceTimePredictorVolumeIntegral(double* const lduh,double* const lQhbnd,double* const lFhbnd,double* const luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,const double t,const double dt,const bool addVolumeIntegralResultToUpdate) override; 
+    void addUpdateToSolution(double* const luh,const double* const luhOld,const double* const lduh,const double dt) override;
+    void surfaceIntegral(double* const lduh,const double* const lFhbnd,const tarch::la::Vector<DIMENSIONS,double>& dx); //override; //TODO JMG make override again when enabled back
     void faceIntegral(double* const lduh, const double* const lFhbnd, const int direction, const int orientation,const tarch::la::Vector<DIMENSIONS-1,int>& subfaceIndex, const int levelDelta, const tarch::la::Vector<DIMENSIONS, double>& cellSize) override;    
-    void riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double t,const double dt,const int direction, bool isBoundaryFace, int faceIndex) override;
-    // old: void boundaryConditions(double* fluxOut,double* stateOut,const double* const fluxIn,const double* const stateIn,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const int faceIndex,const int normalNonZero) override;
-    // old: void boundaryConditions(double* fluxIn,const double* const stateIn,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const int faceIndex,const int direction) override;
+    void riemannSolver(double* const FL,double* const FR,const double* const QL,const double* const QR,const double t,const double dt,const int direction, bool isBoundaryFace, int faceIndex) override;
+    // old: void boundaryConditions(double* const fluxOut,double* stateOut,const double* const fluxIn,const double* const stateIn,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const int faceIndex,const int normalNonZero) override;
+    // old: void boundaryConditions(double* const fluxIn,const double* const stateIn,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const int faceIndex,const int direction) override;
     void boundaryConditions(double* const fluxIn,const double* const stateIn,const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const int direction,const int orientation) override;
     double stableTimeStepSize(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& dx) override;
     {% if patchwiseAdjust %}
@@ -217,10 +216,10 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver {
     {% else %}
     void adjustSolution(double *luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,const double t,const double dt) override; 
     {% endif %}
-    void faceUnknownsProlongation(double* lQhbndFine,double* lFhbndFine,const double* lQhbndCoarse,const double* lFhbndCoarse,const int coarseGridLevel,const int fineGridLevel,const tarch::la::Vector<DIMENSIONS-1,int>& subfaceIndex) override;
-    //old: void faceUnknownsRestriction(double* lQhbndCoarse,double* lFhbndCoarse,const double* lQhbndFine,const double* lFhbndFine,const int coarseGridLevel,const int fineGridLevel,const tarch::la::Vector<DIMENSIONS-1,int>& subfaceIndex) override;
-    void volumeUnknownsProlongation(double* luhFine,const double* luhCoarse,const int coarseGridLevel,const int fineGridLevel,const tarch::la::Vector<DIMENSIONS,int>& subcellIndex) override;
-    void volumeUnknownsRestriction(double* luhCoarse,const double* luhFine,const int coarseGridLevel,const int fineGridLevel,const tarch::la::Vector<DIMENSIONS,int>& subcellIndex) override;
+    void faceUnknownsProlongation(double* const lQhbndFine,double* const lFhbndFine,const double* const lQhbndCoarse,const double* const lFhbndCoarse,const int coarseGridLevel,const int fineGridLevel,const tarch::la::Vector<DIMENSIONS-1,int>& subfaceIndex) override;
+    //old: void faceUnknownsRestriction(double* const lQhbndCoarse,double* const lFhbndCoarse,const double* const lQhbndFine,const double* const lFhbndFine,const int coarseGridLevel,const int fineGridLevel,const tarch::la::Vector<DIMENSIONS-1,int>& subfaceIndex) override;
+    void volumeUnknownsProlongation(double* const luhFine,const double* const luhCoarse,const int coarseGridLevel,const int fineGridLevel,const tarch::la::Vector<DIMENSIONS,int>& subcellIndex) override;
+    void volumeUnknownsRestriction(double* const luhCoarse,const double* const luhFine,const int coarseGridLevel,const int fineGridLevel,const tarch::la::Vector<DIMENSIONS,int>& subcellIndex) override;
 
     static void constantsToString(std::ostream& os);
     static void abortWithMsg(const char* const msg);
@@ -301,7 +300,7 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver {
      * 
      * @TODO(Leo): Please document
      */
-    virtual void pointSource(const double* const Q,const double* const x,const double t,const double dt, double* forceVector,int n);
+    virtual void pointSource(const double* const Q,const double* const x,const double t,const double dt, double* const forceVector,int n);
 
     /**
      * Compute the Algebraic Sourceterms.

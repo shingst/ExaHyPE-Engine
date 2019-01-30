@@ -90,7 +90,7 @@ void elasticwaves2d::MyElasticSolver::adjustedSolutionValues(
 
 exahype::solvers::Solver::RefinementControl
 elasticwaves2d::MyElasticSolver::refinementCriterion(
-    const double* luh, const tarch::la::Vector<DIMENSIONS, double>& center,
+    const double* const luh, const tarch::la::Vector<DIMENSIONS, double>& center,
     const tarch::la::Vector<DIMENSIONS, double>& dx, double t,
     const int level) {
   // @todo Please implement

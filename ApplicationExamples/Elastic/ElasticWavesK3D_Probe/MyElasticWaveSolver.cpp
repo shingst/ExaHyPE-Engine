@@ -24,7 +24,7 @@ void ElasticWave::MyElasticWaveSolver::adjustedSolutionValues(const double* cons
   vars.cp()=6.0;
 }
 
-exahype::solvers::Solver::RefinementControl ElasticWave::MyElasticWaveSolver::refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
+exahype::solvers::Solver::RefinementControl ElasticWave::MyElasticWaveSolver::refinementCriterion(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
   // @todo Please implement/augment if required
   return exahype::solvers::Solver::RefinementControl::Keep;
 }
@@ -279,7 +279,7 @@ void ElasticWave::MyElasticWaveSolver::coefficientMatrix(const double* const Q,c
 }
 
 //TODO KD
-void ElasticWave::MyElasticWaveSolver::pointSource(const double* const x,const double t,const double dt, double* forceVector, double* x0) {
+void ElasticWave::MyElasticWaveSolver::pointSource(const double* const x,const double t,const double dt, double* const forceVector, double* x0) {
   //TODO KD // @todo Please implement/augment if required and set bool function
   double pi = 3.14159265359;
   double sigma = 0.1149;

@@ -68,8 +68,8 @@ void GRMHD::GRMHDSolver_ADERDG::riemannSolver(double* FL,double* FR,const double
 	#endif
 }
 
-void GRMHD::GRMHDSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(double* observables,const int numberOfObservables,const double* const Q) const {
-	// ensure numberOfObservables == 2
+void GRMHD::GRMHDSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(double* observables, const double* const Q) const {
+	// ensure NumberOfDMPObservables == 2
 	observables[0] = Q[0]; // conserved density
 	observables[1] = Q[4]; // conserved tau
 	

@@ -26,7 +26,7 @@ void ScalarWave::MyScalarWaveSolver::adjustedSolutionValues(const double* const 
   //0.5*x[0] + 1.0*x[1] + 2.0*x[2];
 }
 
-exahype::solvers::Solver::RefinementControl ScalarWave::MyScalarWaveSolver::refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
+exahype::solvers::Solver::RefinementControl ScalarWave::MyScalarWaveSolver::refinementCriterion(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
   // @todo Please implement/augment if required
   return exahype::solvers::Solver::RefinementControl::Keep;
 }

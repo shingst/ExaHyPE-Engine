@@ -39,9 +39,9 @@ std::atomic_ulong {{project}}::{{abstractSolver}}::faceIntegral_f = 0;
 std::atomic_ulong {{project}}::{{abstractSolver}}::faceIntegral_t = 0;
 std::atomic_ulong {{project}}::{{abstractSolver}}::faceIntegral_c = 0;
     
-std::atomic_ulong {{project}}::{{abstractSolver}}::solutionUpdate_f = 0;
-std::atomic_ulong {{project}}::{{abstractSolver}}::solutionUpdate_t = 0;
-std::atomic_ulong {{project}}::{{abstractSolver}}::solutionUpdate_c = 0;
+std::atomic_ulong {{project}}::{{abstractSolver}}::addUpdateToSolution_f = 0;
+std::atomic_ulong {{project}}::{{abstractSolver}}::addUpdateToSolution_t = 0;
+std::atomic_ulong {{project}}::{{abstractSolver}}::addUpdateToSolution_c = 0;
     
 std::atomic_ulong {{project}}::{{abstractSolver}}::riemannSolver_f = 0;
 std::atomic_ulong {{project}}::{{abstractSolver}}::riemannSolver_t = 0;
@@ -132,7 +132,7 @@ void {{project}}::{{abstractSolver}}::constantsToString(std::ostream& os) {
 
 
 
-int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(double* lduh, double* lQhbnd, double* lFhbnd, const double* const luh, const tarch::la::Vector<DIMENSIONS, double>& center, const tarch::la::Vector<DIMENSIONS, double>& dx, const double t, const double dt) {
+int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(double* const lduh,double* const lQhbnd,double* const lFhbnd,double* const luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,const double t,const double dt,const bool addVolumeIntegralResultToUpdate) {
 {% if enableProfiler %}
   _profiler->start("fusedSpaceTimePredictorVolumeIntegral");
 {% endif %}
@@ -194,6 +194,14 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
   constexpr double* PSderivatives = nullptr;
   {% endif %}
 
+  // this switch should probably moved into the fusedSpaceTimePredictorVolumeIntegral kernel
+  double* const update = lduh;
+  double tempUpdate[{{optNamespace}}::getUpdateSize()] __attribute__((aligned(ALIGNMENT))); // TODO no heap variant implemented
+  if ( !addVolumeIntegralResultToUpdate ) {
+    std::fill_n(tempUpdate,{{optNamespace}}::getUpdateSize(),0.0); // initialise with zeros
+    update = tempUpdate;
+  }
+  
 {% if isLinear %}
 {% if usePointSources %}
   int picardIt = 1;
@@ -204,17 +212,22 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
   
   if(pointSources != nullptr) {
     // perform pointsource
-    picardIt = {{optNamespace}}::fusedSpaceTimePredictorVolumeIntegral(*static_cast<{{solver}}*>(this), lduh, lQhbnd, lFhbnd, lQi, lFi, lSi, lQhi, lFhi, lShi, gradQ, PSi, PSderivatives, luh, &center[0], dx[0], t, dt, pointSources);
+    picardIt = {{optNamespace}}::fusedSpaceTimePredictorVolumeIntegral(*static_cast<{{solver}}*>(this), update, lQhbnd, lFhbnd, lQi, lFi, lSi, lQhi, lFhi, lShi, gradQ, PSi, PSderivatives, luh, &center[0], dx[0], t, dt, pointSources);
   } else {
-    picardIt = {{optNamespace}}::fusedSpaceTimePredictorVolumeIntegral_WithoutPS(*static_cast<{{solver}}*>(this), lduh, lQhbnd, lFhbnd, lQi, lFi, lSi, lQhi, lFhi, lShi, gradQ, PSi, PSderivatives, luh, &center[0], dx[0], t, dt, pointSources);
+    picardIt = {{optNamespace}}::fusedSpaceTimePredictorVolumeIntegral_WithoutPS(*static_cast<{{solver}}*>(this), update, lQhbnd, lFhbnd, lQi, lFi, lSi, lQhi, lFhi, lShi, gradQ, PSi, PSderivatives, luh, &center[0], dx[0], t, dt, pointSources);
   }
 {% else %}
-  const int picardIt = {{optNamespace}}::fusedSpaceTimePredictorVolumeIntegral(*static_cast<{{solver}}*>(this), lduh, lQhbnd, lFhbnd, lQi, lFi, lSi, lQhi, lFhi, lShi, gradQ, PSi, PSderivatives, luh, &center[0], dx[0], t, dt, nullptr);
+  const int picardIt = {{optNamespace}}::fusedSpaceTimePredictorVolumeIntegral(*static_cast<{{solver}}*>(this), update, lQhbnd, lFhbnd, lQi, lFi, lSi, lQhi, lFhi, lShi, gradQ, PSi, PSderivatives, luh, &center[0], dx[0], t, dt, nullptr);
 {% endif %}
   
 {% else %}
-  const int picardIt = {{optNamespace}}::fusedSpaceTimePredictorVolumeIntegral(*static_cast<{{solver}}*>(this), lduh, lQhbnd, lFhbnd, lQi, rhs, lFi, lSi, lQhi, lFhi, lShi, gradQ, luh, 1./dx[0] /*inverseDx*/, dt);
+  const int picardIt = {{optNamespace}}::fusedSpaceTimePredictorVolumeIntegral(*static_cast<{{solver}}*>(this), update, lQhbnd, lFhbnd, lQi, rhs, lFi, lSi, lQhi, lFhi, lShi, gradQ, luh, 1./dx[0] /*inverseDx*/, dt);
 {% endif %}
+
+  // this switch should probably moved into the fusedSpaceTimePredictorVolumeIntegral kernel
+  if ( !addVolumeIntegralResultToUpdate ) {
+    addUpdateToSolution(luh,luh,update,dt);
+  }
 
 {% if not tempVarsOnStack %}
   //exahype::DataHeap::getInstance().deleteData(index,true);
@@ -246,7 +259,7 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
 
 
 
-void {{project}}::{{abstractSolver}}::solutionUpdate(double* luh,const double* const luhOld,const double* const lduh,const double dt) {
+void {{project}}::{{abstractSolver}}::addUpdateToSolution(double* const luh,const double* const luhOld,const double* const lduh,const double dt) {
 {% if enableProfiler %}
   _profiler->start("solutionUpdate");
 {% endif %}
@@ -271,7 +284,7 @@ void {{project}}::{{abstractSolver}}::solutionUpdate(double* luh,const double* c
 
 
 
-void {{project}}::{{abstractSolver}}::surfaceIntegral(double* lduh,const double* const lFhbnd,const tarch::la::Vector<DIMENSIONS,double>& dx) {
+void {{project}}::{{abstractSolver}}::surfaceIntegral(double* const lduh,const double* const lFhbnd,const tarch::la::Vector<DIMENSIONS,double>& dx) {
 {% if enableProfiler %}
   _profiler->start("surfaceIntegral");
 {% endif %}
@@ -296,7 +309,7 @@ void {{project}}::{{abstractSolver}}::surfaceIntegral(double* lduh,const double*
 
 
 
-void {{project}}::{{abstractSolver}}::faceIntegral(double* const lduh,const double* const lFhbnd,const int direction, const int orientation,const tarch::la::Vector<DIMENSIONS-1,int>& subfaceIndex,const int levelDelta,const tarch::la::Vector<DIMENSIONS, double>& cellSize) {
+void {{project}}::{{abstractSolver}}::faceIntegral(double* const out,const double* const lFhbnd,const int direction, const int orientation,const tarch::la::Vector<DIMENSIONS-1,int>& subfaceIndex,const int levelDelta,const tarch::la::Vector<DIMENSIONS, double>& cellSize,const double dt,const bool addToUpdate) {
 {% if enableProfiler %}
   _profiler->start("faceIntegral");
 {% endif %}
@@ -304,20 +317,29 @@ void {{project}}::{{abstractSolver}}::faceIntegral(double* const lduh,const doub
   const std::chrono::high_resolution_clock::time_point timeStart = std::chrono::high_resolution_clock::now();
 {% endif %}
   if ( levelDelta > 0 ) {
-{% if tempVarsOnStack %}
     double lFhbndCoarse[{{optNamespace}}::getBndFluxSize()] __attribute__((aligned(ALIGNMENT)));
-{% else %}  
-    double* lFhbndCoarse = allocateArray({{optNamespace}}::getBndFluxSize());
-{% endif %}
     {{optNamespace}}::faceFluxRestriction(lFhbndCoarse,lFhbnd,&subfaceIndex[0],levelDelta);
     
     tarch::la::Vector<DIMENSIONS,double> coarseGridCellSize = tarch::la::aPowI(levelDelta,3) * 1.0 * cellSize;
-    {{optNamespace}}::faceIntegral(lduh,lFhbndCoarse,direction,orientation,1./coarseGridCellSize[direction] /*inverseDxDirection*/);
-{% if not tempVarsOnStack %}
-    freeArray(lFhbndCoarse);
-{% endif %}    
+    if ( addToUpdate ) {
+      {{optNamespace}}::faceIntegral(out,lFhbndCoarse,direction,orientation,1./coarseGridCellSize[direction] /*inverseDxDirection*/);
+    } else {
+      double lduh[{{optNamespace}}::getUpdateSize()] __attribute__((aligned(ALIGNMENT)));
+      std::fill_n(lduh,{{optNamespace}}::getBndFluxSize(),0.0);
+      {{optNamespace}}::faceIntegral(lduh,lFhbndCoarse,direction,orientation,1./coarseGridCellSize[direction] /*inverseDxDirection*/);
+      tarch::multicore::Lock lock(RestrictionSemaphore); // inherited
+      addUpdateToSolution(out,out,lduh,dt);
+      lock.free();
+    }
   } else {
-    {{optNamespace}}::faceIntegral(lduh,lFhbnd,direction,orientation,1./cellSize[direction]);
+    if ( addToUpdate ) {
+      {{optNamespace}}::faceIntegral(out,lFhbnd,direction,orientation,1./cellSize[direction]);
+    else {
+      double lduh[{{optNamespace}}::getUpdateSize()] __attribute__((aligned(ALIGNMENT)));
+      std::fill_n(lduh,{{optNamespace}}::getBndFluxSize(),0.0);
+      {{optNamespace}}::faceIntegral(lduh,lFhbndCoarse,direction,orientation,1./coarseGridCellSize[direction] /*inverseDxDirection*/);
+      addUpdateToSolution(out,out,lduh,dt); // adds lduh to solution out
+    }
   }
 {% if countFlops %}
   double time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-timeStart).count();
@@ -336,7 +358,7 @@ void {{project}}::{{abstractSolver}}::faceIntegral(double* const lduh,const doub
 
 
 
-void {{project}}::{{abstractSolver}}::riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double t,const double dt,const int direction,bool isBoundaryFace, int faceIndex) {
+void {{project}}::{{abstractSolver}}::riemannSolver(double* const FL,double* const FR,const double* const QL,const double* const QR,const double t,const double dt,const int direction,bool isBoundaryFace, int faceIndex) {
   assertion2(direction>=0,dt,direction);
   assertion2(direction<DIMENSIONS,dt,direction);
 {% if enableProfiler %}
@@ -477,7 +499,7 @@ void {{project}}::{{abstractSolver}}::adjustSolution(double *luh,const tarch::la
 
 
 
-void {{project}}::{{abstractSolver}}::faceUnknownsProlongation(double* lQhbndFine,double* lFhbndFine,const double* lQhbndCoarse,const double* lFhbndCoarse,const int coarseGridLevel,const int fineGridLevel,const tarch::la::Vector<DIMENSIONS-1,int>& subfaceIndex) {
+void {{project}}::{{abstractSolver}}::faceUnknownsProlongation(double* const lQhbndFine,double* const lFhbndFine,const double* const lQhbndCoarse,const double* const lFhbndCoarse,const int coarseGridLevel,const int fineGridLevel,const tarch::la::Vector<DIMENSIONS-1,int>& subfaceIndex) {
 {% if enableProfiler %}
   _profiler->start("faceUnknownsProlongation");
 {% endif %}
@@ -504,7 +526,7 @@ void {{project}}::{{abstractSolver}}::faceUnknownsProlongation(double* lQhbndFin
 
 
 
-void {{project}}::{{abstractSolver}}::volumeUnknownsProlongation(double* luhFine,const double* luhCoarse,const int coarseGridLevel,const int fineGridLevel,const tarch::la::Vector<DIMENSIONS,int>& subcellIndex) {
+void {{project}}::{{abstractSolver}}::volumeUnknownsProlongation(double* const luhFine,const double* const luhCoarse,const int coarseGridLevel,const int fineGridLevel,const tarch::la::Vector<DIMENSIONS,int>& subcellIndex) {
 {% if enableProfiler %}
   _profiler->start("volumeUnknownsProlongation");
 {% endif %}
@@ -531,7 +553,7 @@ void {{project}}::{{abstractSolver}}::volumeUnknownsProlongation(double* luhFine
 
 
 
-void {{project}}::{{abstractSolver}}::volumeUnknownsRestriction(double* luhCoarse,const double* luhFine,const int coarseGridLevel,const int fineGridLevel,const tarch::la::Vector<DIMENSIONS,int>& subcellIndex) {
+void {{project}}::{{abstractSolver}}::volumeUnknownsRestriction(double* const luhCoarse,const double* const luhFine,const int coarseGridLevel,const int fineGridLevel,const tarch::la::Vector<DIMENSIONS,int>& subcellIndex) {
 {% if enableProfiler %}
   _profiler->start("volumeUnknownsRestriction");
 {% endif %}
@@ -584,7 +606,7 @@ void {{project}}::{{abstractSolver}}::multiplyMaterialParameterMatrix(const doub
       abortWithMsg("multiplyMaterialParameterMatrix: If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
 }
 
-void {{project}}::{{abstractSolver}}::pointSource(const double* const Q,const double* const x,const double t,const double dt, double* forceVector,int n) {
+void {{project}}::{{abstractSolver}}::pointSource(const double* const Q,const double* const x,const double t,const double dt, double* const forceVector,int n) {
   abortWithMsg("If this operation is entered (pointSource), you have activated the corresponding guard. Then you have to re-implement this routine, too." );
 }
 

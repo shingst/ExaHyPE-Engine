@@ -191,9 +191,7 @@ public:
    */
   exahype::solvers::Solver::RefinementControl refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& centre,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) override;
 
-  void mapDiscreteMaximumPrincipleObservables(
-      double* observables,const int numberOfObservables,
-      const double* const Q) const override;
+  void mapDiscreteMaximumPrincipleObservables(double* observables, const double* const Q) const override;
 
       bool isPhysicallyAdmissible(
       const double* const solution,

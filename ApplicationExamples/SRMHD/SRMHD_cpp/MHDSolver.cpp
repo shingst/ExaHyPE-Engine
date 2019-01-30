@@ -33,7 +33,7 @@ void MHDSolver::MHDSolver::init() {
 }
 
 
-void FUNC_C2P_RMHD1(const double x,double* f,double* df,const double gam,const double d,const double e,const double s2,const double b2,
+void FUNC_C2P_RMHD1(const double x,double* f,double* const df,const double gam,const double d,const double e,const double s2,const double b2,
     const double sb2,double* w_out) {
   //
   // This is the CONS2PRIM strategy adopted by Del Zanna et al. (2007) A&A, 473, 11-30
@@ -488,7 +488,7 @@ void MHDSolver::MHDSolver::algebraicSource(const double* const Q, double* S) {
 
 
 
-exahype::solvers::Solver::RefinementControl MHDSolver::MHDSolver::refinementCriterion(const double* luh, const tarch::la::Vector<DIMENSIONS, double>& center, const tarch::la::Vector<DIMENSIONS, double>& dx, double t, const int level) {
+exahype::solvers::Solver::RefinementControl MHDSolver::MHDSolver::refinementCriterion(const double* const luh, const tarch::la::Vector<DIMENSIONS, double>& center, const tarch::la::Vector<DIMENSIONS, double>& dx, double t, const int level) {
   // @todo Please implement
   return exahype::solvers::Solver::RefinementControl::Keep;
 }

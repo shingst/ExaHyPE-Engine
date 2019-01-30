@@ -58,7 +58,7 @@ void Euler::MyEulerSolver::adjustSolution(const double* const x,const double w,c
   vars.j(0,0,0);
 }
 
-exahype::solvers::Solver::RefinementControl Euler::MyEulerSolver::refinementCriterion(const double* luh, const tarch::la::Vector<DIMENSIONS, double>& center,const tarch::la::Vector<DIMENSIONS, double>& dx, double t,const int level) {
+exahype::solvers::Solver::RefinementControl Euler::MyEulerSolver::refinementCriterion(const double* const luh, const tarch::la::Vector<DIMENSIONS, double>& center,const tarch::la::Vector<DIMENSIONS, double>& dx, double t,const int level) {
   return exahype::solvers::Solver::RefinementControl::Keep;
 }
 

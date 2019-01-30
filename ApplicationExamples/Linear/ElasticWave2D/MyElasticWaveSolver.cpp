@@ -83,7 +83,7 @@ void Elastic::MyElasticWaveSolver::boundaryValues(const double* const x,const do
   
 }
 
-exahype::solvers::Solver::RefinementControl Elastic::MyElasticWaveSolver::refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
+exahype::solvers::Solver::RefinementControl Elastic::MyElasticWaveSolver::refinementCriterion(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
   // @todo Please implement/augment if required
   return exahype::solvers::Solver::RefinementControl::Keep;
 }
@@ -205,7 +205,7 @@ void  Elastic::MyElasticWaveSolver::nonConservativeProduct(const double* const Q
 
 // }
 
-void  Elastic::MyElasticWaveSolver::pointSource(const double* const x,const double t,const double dt, double* forceVector, double* x0, int n) {
+void  Elastic::MyElasticWaveSolver::pointSource(const double* const x,const double t,const double dt, double* const forceVector, double* const x0, int n) {
   // @todo Please implement/augment if required
 
   static tarch::logging::Log _log("MyLinearWaveSolver::pointSource");
@@ -289,7 +289,7 @@ void Elastic::MyElasticWaveSolver::multiplyMaterialParameterMatrix(const double*
 
 
 
-void Elastic::MyElasticWaveSolver::riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double dt,const int normalNonZeroIndex, bool isBoundaryFace, int faceIndex) {
+void Elastic::MyElasticWaveSolver::riemannSolver(double* const FL,double* const FR,const double* const QL,const double* const QR,const double dt,const int normalNonZeroIndex, bool isBoundaryFace, int faceIndex) {
   
   constexpr int numberOfVariables  = MyElasticWaveSolver::NumberOfVariables;
   constexpr int numberOfVariables2 = numberOfVariables*numberOfVariables;

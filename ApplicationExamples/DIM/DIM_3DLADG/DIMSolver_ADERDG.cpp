@@ -133,10 +133,8 @@ void DIM::DIMSolver_ADERDG::flux(const double* const Q,double** F) {
   
 }
 
-void DIM::DIMSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(
-    double* observables,const int numberOfObservables,
-    const double* const Q) const {
-  assertion(numberOfObservables==1);
+void DIM::DIMSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(double* observables, const double* const Q) const {
+  assertion(NumberOfDMPObservables==1);
   ReadOnlyVariables vars(Q);
 
   observables[0]=0.5; //extract alpha

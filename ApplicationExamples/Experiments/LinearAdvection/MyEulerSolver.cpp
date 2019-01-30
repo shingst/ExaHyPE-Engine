@@ -131,7 +131,7 @@ void Euler::MyEulerSolver::adjustedSolutionValues(const double* const x,
 
 exahype::solvers::Solver::RefinementControl
 Euler::MyEulerSolver::refinementCriterion(
-    const double* luh, const tarch::la::Vector<DIMENSIONS, double>& center,
+    const double* const luh, const tarch::la::Vector<DIMENSIONS, double>& center,
     const tarch::la::Vector<DIMENSIONS, double>& dx, double t,
     const int level) {
   // @todo Please implement
@@ -151,7 +151,7 @@ void Euler::MyEulerSolver::boundaryValues(const double* const x, const double t,
                                           const int normalNonZero,
                                           const double* const fluxIn,
                                           const double* const stateIn,
-                                          double* fluxOut, double* stateOut) {
+                                          double* const fluxOut, double* stateOut) {
   // Dimensions             = 2
   // Number of variables    = 5 (#unknowns + #parameters)
 

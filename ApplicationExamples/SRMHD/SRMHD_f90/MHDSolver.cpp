@@ -11,7 +11,7 @@
 
 // Fortran functions:
 extern "C" {
-void adjustedsolutionvalues_(const double* const x,const double* w,const double* t,const double* dt,double* Q);
+void adjustedsolutionvalues_(const double* const x,const double* w,const double* t,const double* const dt,double* Q);
 }/* extern "C" */
 
 
@@ -87,7 +87,7 @@ void MHDSolver::MHDSolver::adjustedSolutionValues(const double* const x,const do
 
 
 
-exahype::solvers::Solver::RefinementControl MHDSolver::MHDSolver::refinementCriterion(const double* luh, const tarch::la::Vector<DIMENSIONS, double>& center, const tarch::la::Vector<DIMENSIONS, double>& dx, double t, const int level) {
+exahype::solvers::Solver::RefinementControl MHDSolver::MHDSolver::refinementCriterion(const double* const luh, const tarch::la::Vector<DIMENSIONS, double>& center, const tarch::la::Vector<DIMENSIONS, double>& dx, double t, const int level) {
   // @todo Please implement
   return exahype::solvers::Solver::RefinementControl::Keep;
 }

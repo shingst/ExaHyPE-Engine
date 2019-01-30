@@ -225,7 +225,7 @@ int exahype::main(int argc, char** argv) {
 */
 
 
-  exahype::runners::Runner runner(parser, cmdlineargs);
+  exahype::runners::Runner runner(parser, cmdlineargs); // TODO Make runner singleton?
   int programExitCode = runner.run();
 
   if (programExitCode == 0) {

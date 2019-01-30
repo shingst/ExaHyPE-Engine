@@ -29,6 +29,7 @@ exahype-project Euler
     configure                = {}
     cores                    = 4
     properties-file          = sharedmemory.properties
+    thread-stack-size        = 8000000
   end shared-memory
   
   distributed-memory
@@ -54,7 +55,7 @@ exahype-project Euler
   solver Finite-Volumes EulerSolver_FV
     variables const    = rho:1,j:3,E:1
     patch-size const   = 7
-    maximum-mesh-size  = 0.038
+    maximum-mesh-size  = 0.12
     time-stepping      = global
     type const         = godunov
     terms const        = flux
@@ -67,7 +68,7 @@ exahype-project Euler
     /*
     plot user::defined ErrorWriter
       variables const = 5
-      time            = 0.0
+      time            = 10.0
       repeat          = 1e-2
       output          = not-available
     end plot
@@ -76,7 +77,7 @@ exahype-project Euler
     plot vtu::Cartesian::cells::ascii ErrorPlotter
       // absErrorL1perCell[nvar],Q[nvar],QAnalytical[nvar]
       variables const = 15 
-      time            = 0.0
+      time            = 10.0
       repeat          = 1e-10
       output          = ./errors
     end plot

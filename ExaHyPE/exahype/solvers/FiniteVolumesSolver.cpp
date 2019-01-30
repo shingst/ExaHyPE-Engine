@@ -826,8 +826,8 @@ void exahype::solvers::FiniteVolumesSolver::updateSolution(
     const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
     const int                                                  cellDescriptionsIndex,
     const bool                                                 backupPreviousSolution) {
-  assertion1( tarch::la::equals(neighbourMergePerformed,static_cast<signed char>(true)) || SwitchOffNeighbourMergePerformedCheck,cellDescription.toString());
-  if ( !tarch::la::equals(neighbourMergePerformed,static_cast<signed char>(true)) && !SwitchOffNeighbourMergePerformedCheck ) {
+  assertion1( tarch::la::equals(neighbourMergePerformed,static_cast<signed char>(true)) || ProfileUpdate,cellDescription.toString());
+  if ( !tarch::la::equals(neighbourMergePerformed,static_cast<signed char>(true)) && !ProfileUpdate ) {
     logError("updateSolution(...)","Not all ghost layers were copied to cell="<<cellDescription.toString());
     std::terminate();
   }
@@ -877,7 +877,7 @@ void exahype::solvers::FiniteVolumesSolver::updateSolution(
       cellDescription.getTimeStepSize());
 
   // only for profiling
-  if ( Solver::SwitchOffNeighbourMergePerformedCheck ) { swapSolutionAndPreviousSolution(cellDescription); }
+  if ( Solver::ProfileUpdate ) { swapSolutionAndPreviousSolution(cellDescription); }
 
   validateNoNansInFiniteVolumesSolution(cellDescription,cellDescriptionsIndex,"updateSolution[post]");
 }
