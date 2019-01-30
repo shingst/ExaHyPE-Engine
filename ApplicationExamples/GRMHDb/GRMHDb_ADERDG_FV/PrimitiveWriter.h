@@ -9,14 +9,14 @@
 
 #include "exahype/plotters/Plotter.h"
 
-namespace GRMHD {
-  class GRMHDSolver;
+namespace GRMHDb {
+  class GRMHDbSolver;
   class PrimitiveWriter;
 }
 
-class GRMHD::PrimitiveWriter : public exahype::plotters::Plotter::UserOnTheFlyPostProcessing {
+class GRMHDb::PrimitiveWriter : public exahype::plotters::Plotter::UserOnTheFlyPostProcessing {
 public:
-  PrimitiveWriter(GRMHD::GRMHDSolver& solver);
+  PrimitiveWriter(GRMHDb::GRMHDbSolver& solver);
   virtual ~PrimitiveWriter();
 
   void startPlotting(double time) override;

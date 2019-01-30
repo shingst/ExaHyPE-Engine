@@ -5,25 +5,25 @@
 // ========================
 //   www.exahype.eu
 // ========================
-#include "Writers/PrimitiveWriter.h"
+#include "PrimitiveWriter.h"
 
-GRMHD::PrimitiveWriter::PrimitiveWriter(GRMHD::GRMHDSolver& solver) {
+GRMHDb::PrimitiveWriter::PrimitiveWriter(GRMHDb::GRMHDbSolver_ADERDG& solver) {
   // @TODO Please insert your code here.
 }
 
-GRMHD::PrimitiveWriter::~PrimitiveWriter() {
+GRMHDb::PrimitiveWriter::~PrimitiveWriter() {
 }
 
-void GRMHD::PrimitiveWriter::startPlotting( double time) {
+void GRMHDb::PrimitiveWriter::startPlotting( double time) {
   // @TODO Please insert your code here.
 }
 
 
-void GRMHD::PrimitiveWriter::finishPlotting() {
+void GRMHDb::PrimitiveWriter::finishPlotting() {
   // @TODO Please insert your code here.
 }
 
-void GRMHD::PrimitiveWriter::mapQuantities(
+void GRMHDb::PrimitiveWriter::mapQuantities(
     const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
     const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch,
     const tarch::la::Vector<DIMENSIONS, double>& x,
@@ -32,7 +32,7 @@ void GRMHD::PrimitiveWriter::mapQuantities(
     double* outputQuantities,
     double timeStamp
 ) {
-  const int writtenUnknowns = 1;
+  const int writtenUnknowns = 19;
   for (int i=0; i<writtenUnknowns; i++){ 
     outputQuantities[i] = Q[i];
   }

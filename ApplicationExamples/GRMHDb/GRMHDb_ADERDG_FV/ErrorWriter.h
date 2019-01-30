@@ -9,26 +9,11 @@
 
 #include "exahype/plotters/LimitingADERDG2UserDefined.h"
 
-
-#include "exahype/plotters/ADERDG2UserDefined.h"
-#include "exahype/plotters/ascii/MultipleReductionsWriter.h"
-#include "GRMHDbSolver_ADERDG.h"
 namespace GRMHDb {
   class ErrorWriter;
 }
 
 class GRMHDb::ErrorWriter : public exahype::plotters::LimitingADERDG2UserDefined {
- private:
-   double _timeStamp;
-
-   double errorL1  [GRMHDbSolver_ADERDG::NumberOfVariables]; 
-   double errorL2  [GRMHDbSolver_ADERDG::NumberOfVariables]; 
-   double errorLInf[GRMHDbSolver_ADERDG::NumberOfVariables];
-   
-   double normL1Ana  [GRMHDbSolver_ADERDG::NumberOfVariables];  
-   double normL2Ana  [GRMHDbSolver_ADERDG::NumberOfVariables];  
-   double normLInfAna[GRMHDbSolver_ADERDG::NumberOfVariables]; 
-   
  public:
   /**
    * Constructor.

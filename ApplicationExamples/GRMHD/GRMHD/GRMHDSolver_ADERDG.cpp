@@ -61,13 +61,13 @@ void GRMHD::GRMHDSolver_ADERDG::init(const std::vector<std::string>& cmdlineargs
 }
 
 void __attribute__((optimize("O0"))) initialData(const double* const x,const double t,const double dt,double* Q) {
-    id->Interpolate(x, t, Q);
-    //printf("Interpoalted at x=[%f,%f,%f], t=%f, Q0=%f\n", x[0],x[1],x[2], t, Q[0]);
-    for(int i=0; i<nVar; i++) {
-      if(!std::isfinite(Q[i])) {
-        printf("NAN in i=%d at t=%f, x=[%f,%f,%f], Q[%d]=%f\n", i, t, x[0],x[1],x[2], i, Q[i]);
-      }
+  id->Interpolate(x, t, Q);
+  //printf("Interpoalted at x=[%f,%f,%f], t=%f, Q0=%f\n", x[0],x[1],x[2], t, Q[0]);
+  for(int i=0; i<nVar; i++) {
+    if(!std::isfinite(Q[i])) {
+      printf("NAN in i=%d at t=%f, x=[%f,%f,%f], Q[%d]=%f\n", i, t, x[0],x[1],x[2], i, Q[i]);
     }
+  }
 }
 
 
@@ -172,6 +172,16 @@ void GRMHD::GRMHDSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(double* o
 }
 */
 
+void GRMHD::GRMHDSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(
+  double* observables, const int NumberOfVariables,
+  const double* const Q) const {
+  for (int i = 0; i < NumberOfVariables; ++i) {
+    observables[i] = Q[i];
+  }
+}
+
+
+
 bool GRMHD::GRMHDSolver_ADERDG::isPhysicallyAdmissible(
       const double* const solution,
       const double* const observablesMin,const double* const observablesMax,
@@ -180,11 +190,18 @@ bool GRMHD::GRMHDSolver_ADERDG::isPhysicallyAdmissible(
       const tarch::la::Vector<DIMENSIONS,double>& dx,
       const double t) const {
 
+//	double radius = 8.12514;
 	double radius = 8.12514;
-	// lower left, upper right radius of cell
+//	// lower left, upper right radius of cell
+//  double radius = 0.0;
 	double cen = tarch::la::norm2(center);
 	double dr = 0.5;
-	bool shouldLimit = (cen > (radius -dr) ) && ( cen  <= (radius+dr) ); 
+//	bool shouldLimit = (cen > (radius -dr) ) && ( cen  <= (radius+dr) ); 
+//  bool shouldLimit = cen <= (1.0+dr);
+//  double dr=2.0;
+//  bool shouldLimit =  cen <= (radius +dr);
+
+    bool shouldLimit = cen <= (1.5);
 //  if(isAdmissible) {
 //    printf("Cell has centre = %f => isAdmissible=%s\n",cen,isAdmissible?"true":"false");
 //  }
@@ -193,6 +210,10 @@ bool GRMHD::GRMHDSolver_ADERDG::isPhysicallyAdmissible(
 
   // return TRUE if the cell does not need limited
 	return !shouldLimit;
+//  return true;
+
+ // return false;
+ // return true;
 
 
 }

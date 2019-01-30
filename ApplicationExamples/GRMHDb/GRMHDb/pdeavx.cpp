@@ -53,11 +53,11 @@
 
 #include<immintrin.h>
 
-#ifdef __GNUC__ /* GCC does not know __cdecl but this __atribute__ stuff */
-#define __cdecl __attribute__((__cdecl__))
-#define _mm256_pow_pd(a,b) __m256d() /* apparently, GCC doesnt know this on my machine */
-#pragma message "Compiling with GCC, but require Intel compiler for vectorized PDEs. Will not work properly!"
-#endif
+//#ifdef __GNUC__ /* GCC does not know __cdecl but this __atribute__ stuff */
+//#define __cdecl __attribute__((__cdecl__))
+//#define _mm256_pow_pd(a,b) __m256d() /* apparently, GCC doesnt know this on my machine */
+//#pragma message "Compiling with GCC, but require Intel compiler for vectorized PDEs. Will not work properly!"
+//#endif
 
 extern "C" void __cdecl pdefluxvectoravx( double F[3][nVar][VECTORLENGTH], double V[nVar][VECTORLENGTH], double Q[nVar][VECTORLENGTH] )
 {

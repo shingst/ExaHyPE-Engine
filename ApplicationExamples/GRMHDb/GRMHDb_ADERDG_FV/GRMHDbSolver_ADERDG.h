@@ -123,11 +123,9 @@ class GRMHDb::GRMHDbSolver_ADERDG : public GRMHDb::AbstractGRMHDbSolver_ADERDG {
      */
     void flux(const double* const Q,double** F) final override;
 
-/* viscousFlux() function not included, as requested in the specification file */
-
-
-    
-/* algebraicSource() function not included, as requested by the specification file */
+    /* viscousFlux() function not included, as requested in the specification file */
+        
+    /* algebraicSource() function not included, as requested by the specification file */
 
     /**
      * Compute the nonconservative term $B(Q) \nabla Q$.
@@ -151,21 +149,20 @@ class GRMHDb::GRMHDbSolver_ADERDG : public GRMHDb::AbstractGRMHDbSolver_ADERDG {
      * \param[inout]  The vector BgradQ (extends nVar), already allocated. 
      *
      **/
-    void nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) final override;
+  void mapDiscreteMaximumPrincipleObservables(double* observables, const double* const Q) const override;
+  
+  bool isPhysicallyAdmissible(
+    const double* const solution,
+    const double* const observablesMin,const double* const observablesMax,
+    const bool wasTroubledInPreviousTimeStep,
+    const tarch::la::Vector<DIMENSIONS,double>& center,
+    const tarch::la::Vector<DIMENSIONS,double>& dx,
+    const double t) const override;
 
 /* pointSource() function not included, as requested in the specification file */
 
 /* multiplyMaterialParameterMatrix() not included, as requested in the specification file */
 
-    void mapDiscreteMaximumPrincipleObservables(double* observables, const double* const Q) const override;
-
-    bool isPhysicallyAdmissible(
-      const double* const solution,
-      const double* const observablesMin,const double* const observablesMax,
-      const bool wasTroubledInPreviousTimeStep,
-      const tarch::la::Vector<DIMENSIONS,double>& center,
-      const tarch::la::Vector<DIMENSIONS,double>& dx,
-      const double t) const override;
 };
 
 #endif // __GRMHDbSolver_ADERDG_CLASS_HEADER__

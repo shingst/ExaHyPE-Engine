@@ -305,7 +305,7 @@ class SpecFile1Reader():
                 if token_s==term:
                     context[opt_dbg].append(term)
                     found_token=True
-            for term in ["cerkguess","notimeavg","maxpicarditer"]:
+            for term in ["cerkguess","notimeavg","maxpicarditer","split_ck"]:
                 if token_s.startswith(term):
                     if term=="maxpicarditer":
                         try:

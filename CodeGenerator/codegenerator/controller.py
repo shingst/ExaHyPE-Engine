@@ -92,6 +92,7 @@ class Controller:
             "pathToLibxsmmGemmGenerator"  : Configuration.pathToLibxsmmGemmGenerator,
             "quadratureType"        : ("Gauss-Lobatto" if args["useGaussLobatto"] else "Gauss-Legendre"),
             "useCERKGuess"          : args["useCERKGuess"],
+            "useSplitCK"            : args["useSplitCK"],
             "tempVarsOnStack"       : args["tempVarsOnStack"],
             "useLibxsmm"            : Configuration.useLibxsmm,
             "runtimeDebug"          : Configuration.runtimeDebug #for debug

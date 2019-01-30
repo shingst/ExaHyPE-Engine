@@ -1,47 +1,46 @@
-MODULE TECPLOTPLOTTERmod
-USE Parameters, ONLY: nVar, nDim,nAux,StrandID,nElem_max
-IMPLICIT NONE
-! Problem standard parameters
-INTEGER :: MC, M,N
-INTEGER :: FVbasisSize,FVGhostLayerWidth
-INTEGER :: nGPMC
-INTEGER :: nDOFm
-INTEGER :: nSubLim,nSubLim_GL
-INTEGER :: nSubLimV(3),nSubLimV_GL(3)
-INTEGER :: nGPM, nGPVM(3)
-INTEGER :: nFace, nVertex
-INTEGER :: nVtx,ReferenceElement(1:3,1:8)
-INTEGER, ALLOCATABLE :: idxn_lim(:,:,:)
-INTEGER, ALLOCATABLE :: subtri_lim(:,:)
-REAL, ALLOCATABLE :: allsubxi_lim(:,:)
-REAL, ALLOCATABLE 	:: xiGPM(:), wGPM(:) 
-REAL, ALLOCATABLE :: MPoly1D(:,:)
-INTEGER, ALLOCATABLE ::  idxn_Lim_S2U(:,:,:), idxn_Lim_U2S(:,:),subtri_lim_Exa(:,:) 
-LOGICAL, ALLOCATABLE :: Corner_Vtx(:,:)
-REAL, ALLOCATABLE :: SubOutputMatrix(:,:), SubGradOutputMatrix(:,:,:)
-!
-! ------------------------------------------
-! Variables needed for the tecplot plotter
-!
-INTEGER					:: nSubPlotElem,nRealNodes,nPlotElem
-INTEGER					:: nRealNodes_max, nSubPlotElem_max
-INTEGER, PARAMETER		:: td=4
-INTEGER*4	, POINTER 	:: NData(:,:),NData_max(:,:)
-REAL(td)	, POINTER  	:: DataArray(:,:), DataArray_max(:,:)
-INTEGER, ALLOCATABLE    :: subtri(:,:)
-REAL, ALLOCATABLE       :: allsubxi(:,:)
-INTEGER :: Element_c,Element_c_ADERDG,Element_c_FV !, Element_nc 
-INTEGER :: PlotIndex
-REAL	:: PLOT_TIME
-!
-! ------------------------------------------
-private :: MatrixInverse
-public :: SetMainParameters
-public :: ComputeOutputMatrices
-private :: MakeMCPoly1D
-private :: MBaseFunc1D
-private :: gauleg
 
+MODULE TECPLOTPLOTTERmod
+    USE Parameters, ONLY: nVar, nDim,nAux,StrandID,nElem_max 
+    IMPLICIT NONE 
+    ! Problem standard parameters
+    ! ---------------------------------------------
+    !PRIVATE
+    ! ---------------------------------------------
+    INTEGER :: MC, M,N
+    INTEGER :: FVbasisSize,FVGhostLayerWidth
+    INTEGER :: nGPMC
+    INTEGER :: nSubLimV(3),nSubLimV_GL(3)
+    INTEGER :: nGPM, nGPVM(3)
+    INTEGER :: nFace, nVertex
+    INTEGER :: ReferenceElement(1:3,1:8)
+    INTEGER, ALLOCATABLE :: idxn_lim(:,:,:)
+    INTEGER, ALLOCATABLE :: subtri_lim(:,:)
+    REAL, ALLOCATABLE :: allsubxi_lim(:,:)
+    REAL, ALLOCATABLE 	:: xiGPM(:), wGPM(:) 
+    REAL, ALLOCATABLE :: MPoly1D(:,:)
+    INTEGER, ALLOCATABLE ::  idxn_Lim_S2U(:,:,:), idxn_Lim_U2S(:,:),subtri_lim_Exa(:,:) 
+    LOGICAL, ALLOCATABLE :: Corner_Vtx(:,:)
+    REAL, ALLOCATABLE :: SubOutputMatrix(:,:), SubGradOutputMatrix(:,:,:)
+    INTEGER					:: nSubPlotElem,nRealNodes,nPlotElem
+    INTEGER					:: nRealNodes_max, nSubPlotElem_max
+    ! ------------------------------------------
+    ! Variables needed for the tecplot plotter
+    !
+    INTEGER, PARAMETER		:: td=4
+    INTEGER*4	, POINTER 	:: NData(:,:),NData_max(:,:)
+    REAL(td)	, POINTER  	:: DataArray(:,:), DataArray_max(:,:)
+    INTEGER, ALLOCATABLE    :: subtri(:,:)
+    REAL, ALLOCATABLE       :: allsubxi(:,:),allsubxi_GL(:,:)
+    INTEGER :: Element_c,Element_c_ADERDG,Element_c_FV !, Element_nc 
+    INTEGER :: PlotIndex
+    REAL	:: PLOT_TIME
+    ! 
+    ! ---------------------------------------------
+    PUBLIC
+    ! ---------------------------------------------
+    INTEGER :: nDOFm
+    INTEGER :: nSubLim,nSubLim_GL
+! ------------------------------------------
 INTERFACE 
 
 
@@ -370,6 +369,35 @@ END FUNCTION tecpoly112
 
 END INTERFACE
 
+
+    INTERFACE InitTECPLOTPLOTTER 
+        MODULE PROCEDURE InitTECPLOTPLOTTER
+    END INTERFACE 
+    INTERFACE ElementTECPLOTPLOTTER
+        MODULE PROCEDURE ElementTECPLOTPLOTTER
+    END INTERFACE  
+    INTERFACE ElementTECPLOTPLOTTER_ADERDG
+        MODULE PROCEDURE ElementTECPLOTPLOTTER_ADERDG
+    END INTERFACE 
+    INTERFACE ElementTECPLOTPLOTTER_FV
+        MODULE PROCEDURE ElementTECPLOTPLOTTER_FV
+    END INTERFACE 
+    INTERFACE FinalizeTECPLOTPLOTTER
+        MODULE PROCEDURE FinalizeTECPLOTPLOTTER
+    END INTERFACE 
+    INTERFACE ComputeOutputMatrices
+        MODULE PROCEDURE ComputeOutputMatrices
+    END INTERFACE 
+    INTERFACE SetMainParameters
+        MODULE PROCEDURE SetMainParameters
+    END INTERFACE  
+    
+   
+public :: InitTECPLOTPLOTTER,ElementTECPLOTPLOTTER,ElementTECPLOTPLOTTER_ADERDG,&
+          ElementTECPLOTPLOTTER_FV,FinalizeTECPLOTPLOTTER,SetMainParameters,&
+          ComputeOutputMatrices
+private :: MatrixInverse,MakeMCPoly1D,MBaseFunc1D,gauleg
+    
 CONTAINS
 
 
@@ -457,6 +485,7 @@ RECURSIVE SUBROUTINE ElementTECPLOTPLOTTER_ADERDG(wh,lx0,ldx,limiter)
 	IMPLICIT NONE
 	REAL, INTENT(IN) :: wh(nVar,nDOFm)
 	INTEGER :: nSubNodes,J,i
+	REAL :: Vh(nVar,nDOFm)
 	REAL    :: LocNode(nVar,(M+1)**nDim),xvec(3),lx0(3),ldx(3)
 	REAL	:: VN(nVar),QN(nVar),AuxNode(nAux)
 	integer :: limiter,iErr,iloc,triloc
@@ -482,15 +511,34 @@ RECURSIVE SUBROUTINE ElementTECPLOTPLOTTER_ADERDG(wh,lx0,ldx,limiter)
 	    DO j = 1, M**nDim
 	    	NData_max(1:nVertex,iloc+j) = triloc + subtri(1:nVertex,j)
 	    END DO
-	    LocNode = MATMUL( wh(:,1:nDOFm), SubOutputMatrix(1:nDOFm,1:(M+1)**nDim) )
+	   ! LocNode(1:nVar,1:(M+1)**nDim) = MATMUL( wh(1:nVar,1:nDOFm), SubOutputMatrix(1:nDOFm,1:(M+1)**nDim) )
+	    DO j = 1, nDOFm
+            QN(:) = wh(:,j)
+	        xvec(1:3) = lx0(1:3) + allsubxi_GL(1:3,j)*ldx(1:3)
+	    	CALL PDECons2Prim(Vh(:,j), QN(:),iErr)
+            CALL InitialField(xvec,0.0,QN(:))
+	    	CALL PDECons2Prim(VN(:), QN(:),iErr)
+            Vh(2,j)=VN(1)
+            Vh(4,j) = xvec(2)
+            Vh(5,j) = lx0(2)
+	    END DO
+	    LocNode = MATMUL(Vh(:,1:nDOFm), SubOutputMatrix(1:nDOFm,1:(M+1)**nDim) )
 	    !print *, wh(:,1)
 	    !stop
 	    
 	    DO j = 1, (M+1)**nDim  
-	       QN(:) = LocNode(:,j)
+	       VN(:) = LocNode(:,j)
 	       xvec = lx0 + allsubxi(:,j)*ldx
-	       CALL PDECons2Prim(VN,QN,iErr)
-	       CALL PDEAuxVar(AuxNode,QN,xvec)
+           CALL InitialField(xvec,0.0,QN(:))
+           CALL PDECons2Prim(Vh(:,1), QN(:),iErr)
+           VN(3)=Vh(1,1)
+           VN(4) = VN(4) - xvec(2)
+           VN(5) = VN(5) - lx0(2)
+           !
+	       !QN(:) = LocNode(:,j)
+	       !xvec = lx0 + allsubxi(:,j)*ldx
+	       !CALL PDECons2Prim(VN,QN,iErr)
+	       !CALL PDEAuxVar(AuxNode,QN,xvec)
 	       !AuxNode=0.
 	       !print *, 'Node of elem=',Element_c,'=', xvec(1:nDim)
 	         
@@ -581,7 +629,7 @@ RECURSIVE SUBROUTINE ElementTECPLOTPLOTTER_FV(wh,lx0,ldx,limiter)
             end if
             !limiter=limiter+1
 	       !DataArray_max(Element_c,:) = (/ xvec(1:nDim), VN /) 	   
-	    END DO
+        END DO
 	    ! 
         !STOP
     !
@@ -641,7 +689,7 @@ RECURSIVE SUBROUTINE GetSubcell_wh(LocNode,wh)
     DO jj = 1, nSubLimV(2)+1
      DO ii = 1, nSubLimV(1)+1
          ccc=ccc+1
-         DO aa = 1, nVtx 
+         DO aa = 1, nVertex 
             !iii = ReferenceElement(1,aa)-1
             !jjj = ReferenceElement(2,aa)-1
             !kkk = ReferenceElement(3,aa)-1
@@ -677,7 +725,7 @@ RECURSIVE SUBROUTINE GetSubcell_wh(LocNode,wh)
     ENDDO
          !STOP
     !STOP
-   ENDDO
+    ENDDO
          !STOP
    !
    DO ccc = 1,totsubel 
@@ -707,7 +755,10 @@ RECURSIVE SUBROUTINE FinalizeTECPLOTPLOTTER(Myrank)
 	!POINTER(NullPtr,Null)
 	!Integer*4 MyNull(*)
 	integer*4,dimension(:), POINTER :: NullPtr => NULL ()
-	
+	IF(nSubPlotElem.LE.0) THEN
+        RETURN
+    ENDIF
+    !
 	SELECT CASE(KIND(Test))
 	CASE(4)
 		visdouble = 0
@@ -902,7 +953,7 @@ RECURSIVE SUBROUTINE SetMainParameters(N_in,M_in,basisSize,Ghostlayers)
 		nSubLimV(3) = 1
 		nSubLimV_GL(1) = nSubLim_GL
 		nSubLimV_GL(2) = nSubLim_GL
-		nSubLimV_GL(3) = 0
+		nSubLimV_GL(3) = 0 
 		nGPVM(1)=nGPM
 		nGPVM(2)=nGPM
 		nGPVM(3)=1
@@ -913,8 +964,7 @@ RECURSIVE SUBROUTINE SetMainParameters(N_in,M_in,basisSize,Ghostlayers)
 	nVertex = 2**nDim
 	
 	PlotIndex=0
-
-	nVtx=2**nDim
+ 
      ! Reference element 
      ! 
      ReferenceElement(1,1) = 0. 
@@ -992,9 +1042,14 @@ RECURSIVE SUBROUTINE ComputeOutputMatrices
 	
 	DO i = 1, M+1 
 		subxi(i) = REAL(i-1)/REAL(M) 
-	ENDDO
+    ENDDO
 	!print *, subxi
 	!stop
+    !
+    ! Pointwise evaluation of the polynomials at the nodes of the (M+1)^3 subrid.
+    ! i.e.    P(x_m) = sum_l  ( phi_l (x_m) * p_l )
+    !                =  A_ml*p_l           => A_ml    = { phi_l(x_m) }^T
+    !                = p_l*{A^T}_lm        =>{A^T}_lm =   phi_l(x_m)  
 	cnt = 0
      DO k = 1, M+1
         DO j = 1, M+1 
@@ -1004,11 +1059,13 @@ RECURSIVE SUBROUTINE ComputeOutputMatrices
               CALL MBaseFunc1D(psi_j,psi_xj,subxi(j))
               CALL MBaseFunc1D(psi_k,psi_xk,subxi(k))
               counter = 0 
+               ! this "counter" runs over the polynomial basis elements phi_l
+               ! this is stored as first index of the SubOutoutMatrix   => SubOutputMatrix = {A^T}_lm =   phi_l(x_m) 
               DO kk = 1, nGPVM(3)  
                  DO jj = 1, nGPVM(2)  
                     DO ii = 1, nGPVM(1) 
                        counter = counter + 1 
-					   aux(1)=psi_i(ii)
+					   aux(1)=psi_i(ii)   ! this is phi_ii (x_i)
 					   aux(2)=psi_j(jj)
 					   aux(3)=psi_k(kk)
                        SubOutputMatrix(counter,cnt) = PRODUCT( aux(1:nDim) ) 
@@ -1025,6 +1082,7 @@ RECURSIVE SUBROUTINE ComputeOutputMatrices
 					   aux(3)=psi_xk(kk) 
                        SubGradOutputMatrix(counter,cnt,3) = PRODUCT( aux(1:nDim) )
                     ENDDO
+                    !PRINT *, SubOutputMatrix(counter,cnt)
                  ENDDO
               ENDDO
            ENDDO
@@ -1033,8 +1091,9 @@ RECURSIVE SUBROUTINE ComputeOutputMatrices
 
 	
 	! Compute subtri
-	ALLOCATE( idxn(M+1,M+1,M+1),subtri(8,M**3),allsubxi(3,(M+1)**3) )
+	ALLOCATE( idxn(M+1,M+1,M+1),subtri(8,M**3),allsubxi(3,(M+1)**3),allsubxi_GL(3,(M+1)**3) )
      idxn = 0 
+     allsubxi_GL=0.
      c = 0 
      DO k = 1, M+1
         DO j = 1, M+1 
@@ -1043,7 +1102,10 @@ RECURSIVE SUBROUTINE ComputeOutputMatrices
               idxn(i,j,k) = c
 			  allsubxi(1,c) = REAL(i-1)/REAL(M)
 			  allsubxi(2,c) = REAL(j-1)/REAL(M)
-			  allsubxi(3,c) = REAL(k-1)/REAL(M)			  
+			  allsubxi(3,c) = REAL(k-1)/REAL(M)		
+			  allsubxi_GL(1,c) = xiGPM(i) 
+			  allsubxi_GL(2,c) = xiGPM(j) 
+			  allsubxi_GL(3,c) = xiGPM(k)		  
            ENDDO
         ENDDO
      ENDDO
@@ -1138,59 +1200,59 @@ RECURSIVE SUBROUTINE ComputeOutputMatrices
     !PRINT *, " matrix DEFINED: 2nd block ZZZZZZZZZZZZZZZZZZZZ" 
      i=1
      j=1
-     DO k=1,nSubLim+1
+     DO k=1,nSubLim+1 
          c=idxn_lim(i,j,k)
-		 Corner_Vtx(1,c) = .TRUE.
-		 Corner_Vtx(5,c) = .TRUE.
+		 Corner_Vtx(1,c) = .TRUE. !
+		 Corner_Vtx(5,c) = .TRUE. !
      ENDDO
      i=nSubLim+1
      j=1
      DO k=1,nSubLim+1
          c=idxn_lim(i,j,k)
-		 Corner_Vtx(2,c) = .TRUE.
-		 Corner_Vtx(6,c) = .TRUE.
+		 Corner_Vtx(2,c) = .TRUE. !
+		 Corner_Vtx(6,c) = .TRUE. !
      ENDDO
      i=nSubLim+1
      j=nSubLim+1
      DO k=1,nSubLim+1
          c=idxn_lim(i,j,k)
-		 Corner_Vtx(3,c) = .TRUE.
-		 Corner_Vtx(7,c) = .TRUE.
+		 Corner_Vtx(3,c) = .TRUE. !
+		 Corner_Vtx(7,c) = .TRUE. !
      ENDDO
      i=1
      j=nSubLim+1
      DO k=1,nSubLim+1
          c=idxn_lim(i,j,k)
-		 Corner_Vtx(4,c) = .TRUE.
-		 Corner_Vtx(8,c) = .TRUE.
+		 Corner_Vtx(4,c) = .TRUE. !
+		 Corner_Vtx(8,c) = .TRUE. !
      ENDDO 
      i=1
      j=1
      DO k=1,nSubLim+1
          c=idxn_lim(i,k,j)
-		 Corner_Vtx(1,c) = .TRUE.
-		 Corner_Vtx(4,c) = .TRUE.
+		 Corner_Vtx(1,c) = .TRUE. !
+		 Corner_Vtx(4,c) = .TRUE. !
      ENDDO
      i=nSubLim+1
      j=1
      DO k=1,nSubLim+1
          c=idxn_lim(i,k,j)
-		 Corner_Vtx(2,c) = .TRUE.
-		 Corner_Vtx(3,c) = .TRUE.
+		 Corner_Vtx(2,c) = .TRUE. !
+		 Corner_Vtx(3,c) = .TRUE. !
      ENDDO
      i=nSubLim+1
      j=nSubLim+1
      DO k=1,nSubLim+1
          c=idxn_lim(i,k,j)
-		 Corner_Vtx(6,c) = .TRUE.
-		 Corner_Vtx(7,c) = .TRUE.
+		 Corner_Vtx(6,c) = .TRUE. !
+		 Corner_Vtx(7,c) = .TRUE. !
      ENDDO
      i=1
      j=nSubLim+1
      DO k=1,nSubLim+1
          c=idxn_lim(i,k,j)
-		 Corner_Vtx(5,c) = .TRUE.
-		 Corner_Vtx(8,c) = .TRUE.
+		 Corner_Vtx(5,c) = .TRUE. !
+		 Corner_Vtx(8,c) = .TRUE. !
      ENDDO
       
      
@@ -1198,29 +1260,29 @@ RECURSIVE SUBROUTINE ComputeOutputMatrices
      j=1
      DO k=1,nSubLim+1
          c=idxn_lim(k,i,j)
-		 Corner_Vtx(1,c) = .TRUE.
-		 Corner_Vtx(2,c) = .TRUE.
+		 Corner_Vtx(1,c) = .TRUE. !
+		 Corner_Vtx(2,c) = .TRUE. !
      ENDDO
      i=nSubLim+1
      j=1
      DO k=1,nSubLim+1
          c=idxn_lim(k,i,j)
-		 Corner_Vtx(3,c) = .TRUE.
-		 Corner_Vtx(4,c) = .TRUE.
+		 Corner_Vtx(3,c) = .TRUE. !
+		 Corner_Vtx(4,c) = .TRUE. !
      ENDDO
      i=nSubLim+1
      j=nSubLim+1
      DO k=1,nSubLim+1
          c=idxn_lim(k,i,j)
-		 Corner_Vtx(7,c) = .TRUE.
-		 Corner_Vtx(8,c) = .TRUE.
+		 Corner_Vtx(7,c) = .TRUE. !
+		 Corner_Vtx(8,c) = .TRUE. !
      ENDDO
      i=1
      j=nSubLim+1
      DO k=1,nSubLim+1
          c=idxn_lim(k,i,j)
-		 Corner_Vtx(5,c) = .TRUE.
-		 Corner_Vtx(6,c) = .TRUE.
+		 Corner_Vtx(5,c) = .TRUE. !
+		 Corner_Vtx(6,c) = .TRUE. !
      ENDDO  
     !PRINT *, " Corner_Vtx DEFINED: ZZZZZZZZZZZZZZZZZZZZ"
      
@@ -1255,7 +1317,7 @@ RECURSIVE SUBROUTINE MBaseFunc1D(psi,psi_xi,xi)
 	IMPLICIT NONE     
 	REAL             :: psi(M+1), psi_xi(M+1) 
 	REAL             :: xi
-	REAL             :: xipower(0:M)  
+	REAL             :: xipower(0:M) !,dxi(M+1),xi_v(M+1)
 	INTEGER          :: i 
 	!
 	! 1D Lagrange basis function associated with the Gauss-Legendre points 
@@ -1271,8 +1333,18 @@ RECURSIVE SUBROUTINE MBaseFunc1D(psi,psi_xi,xi)
 	psi_xi = 0  
 	DO i = 1, M
 		psi_xi = psi_xi + i*MPoly1D(i,:)*xipower(i-1)  
-	ENDDO
+    ENDDO
 	!  
+    !psi(1:M+1)=1.0
+    !xi_v(1:M+1)=xi
+    !dxi(1:M+1)=(xi_v(1:M+1)-xiGP(1:M+1)) 
+    !DO j=1,M+1
+    !    DO i=1,M+1
+    !        IF(i.eq.j) CYCLE
+    !        psi(j)=psi(j)*(xi-xiGP(i))/(xiGP(j)-xiGP(i))
+    !    ENDDO
+    !ENDDO
+    
 END SUBROUTINE MBaseFunc1D
 
 
