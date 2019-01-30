@@ -30,22 +30,28 @@ exahype-project GRMHD
 
   computational-domain
    dimension const                = 3
-   width                          = 30.0, 30.0, 30.0
-   offset                         = -15., -15., -15. 
-//  end-time                       = 0.05
-   time-steps                      = 10 
+//    width                          = 30.0, 30.0, 30.0
+//    offset                         = -15., -15., -15. 
+   width                          = 10.0, 10.0, 10.0
+   offset                         = -5.0, -5.0, -5.0
+  end-time                       = 10.0
+//   time-steps                      = 20
   end computational-domain
   
   shared-memory
     identifier               = dummy
     configure                = {background-tasks:3}
     cores                    = 4
+//    configure                = {background-tasks:23}
+//    cores                    = 24
     properties-file          = sharedmemory.properties
+    thread-stack-size        = 8000000
   end shared-memory  
   
   distributed-memory
     identifier       = static_load_balancing
     configure        = {hotspot,fair,ranks-per-node:6}
+//    configure        = {hotspot,fair,ranks-per-node:1}
     buffer-size      = 64000
     timeout          = 3600
   end distributed-memory
@@ -66,7 +72,9 @@ exahype-project GRMHD
   solver Limiting-ADER-DG GRMHDSolver
     variables const                = rho:1,vel:3,E:1,B:3,psi:1,lapse:1,shift:3,gij:6
     order const                    = 3
-    maximum-mesh-size              = 1.2
+//    maximum-mesh-size              = 1.11111112
+    maximum-mesh-size              = 0.38
+//    maximum-mesh-size              = 0.34
     maximum-mesh-depth             = 0
     time-stepping                  = global
     type const = nonlinear
@@ -79,25 +87,32 @@ exahype-project GRMHD
     limiter-type const             = godunov
     limiter-optimisation const     = generic
     limiter-language const         = C
-/* 
-    dmp-observables const          = 2
-    dmp-relaxation-parameter       = 1e-2 
+    dmp-observables const          = 10 
+    dmp-relaxation-parameter       = 1e-4 
     dmp-difference-scaling         = 1e-3 
-*/
+//    dmp-relaxation-parameter       = 1e14 
+//    dmp-difference-scaling         = 1e13 
     steps-till-cured               = 0
 
   plot vtu::Legendre::vertices::ascii ConservedWriter
       variables const = 1
       time      = 0.0
-      repeat    = 0.01
+      repeat    = 0.25
       output    = ./vtk-output/primitive
     end plot 
 
     plot vtu::Cartesian::vertices::limited::ascii ConservedWriter
       variables const = 1
       time      = 0.0
-      repeat    = 0.01
+      repeat    = 0.25
       output    = ./vtk-output/limited
+    end plot 
+
+    plot vtu::Cartesian::vertices::ascii PrimitiveWriter
+      variables const = 1
+      time      = 0.0
+      repeat    = 0.25
+      output    = ./vtk-output/prim
     end plot 
 
     plot vtk::Cartesian::cells::ascii IntegralsWriter
