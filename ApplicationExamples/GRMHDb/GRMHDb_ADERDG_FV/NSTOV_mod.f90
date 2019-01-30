@@ -249,22 +249,20 @@ RECURSIVE SUBROUTINE NSTOV_Main
         NSTOVVar%n_B =ceiling(tend_B/dt_B) +1   ! il "+1" è la condizione iniziale al t=0
         !NSTOVVar%n_B = NSTOVVar%n_B
         ALLOCATE (NSTOVVar%r(0:NSTOVVar%n_B+1),NSTOVVar%dr(0:NSTOVVar%n_B-1),NSTOVVar%q(NSTOV_nODE,0:NSTOVVar%n_B))
-        ALLOCATE (t(0:NSTOVVar%n_B),void1(0:NSTOVVar%n_B),void2(0:NSTOVVar%n_B),void3(0:NSTOVVar%n_B),y(NSTOV_nODE,0:NSTOVVar%n_B))
+        ALLOCATE (t(0:NSTOVVar%n_B),y(NSTOV_nODE,0:NSTOVVar%n_B))
         ALLOCATE(NSTOVVar%qloc(NSTOV_nODE))
         !
-        ALLOCATE(yDG(mDOF_loc,NSTOV_nODE,0:NSTOVVar%n_B))
+        !ALLOCATE(yDG(mDOF_loc,NSTOV_nODE,0:NSTOVVar%n_B))
         !
         CALL NSTOV_solution(NSTOVVar%r,NSTOVVar%dr,NSTOVVar%q,1)
         !
 #ifndef SPHERICAL
         NSTOVVar_bar%n_B=NSTOVVar%n_B
-        ALLOCATE (NSTOVVar_bar%r(0:NSTOVVar_bar%n_B+1),NSTOVVar_bar%dr(0:NSTOVVar_bar%n_B-1),NSTOVVar_bar%q(NSTOV_nODE,0:NSTOVVar_bar%n_B+1))
-        !ALLOCATE (t(0:NSTOVVar_bar%n_B),void1(0:NSTOVVar_bar%n_B),void2(0:NSTOVVar_bar%n_B),void3(0:NSTOVVar_bar%n_B),y(NSTOV_nODE,0:NSTOVVar_bar%n_B))
+        ALLOCATE (NSTOVVar_bar%r(0:NSTOVVar_bar%n_B+1),NSTOVVar_bar%dr(0:NSTOVVar_bar%n_B-1),NSTOVVar_bar%q(NSTOV_nODE,0:NSTOVVar_bar%n_B+1)) 
         ALLOCATE(NSTOVVar_bar%qloc(NSTOV_nODE))
         !
         NSTOVVar_barNew%n_B=NSTOVVar%n_B
-        ALLOCATE (NSTOVVar_barNew%r(0:NSTOVVar_barNew%n_B+1),NSTOVVar_barNew%dr(0:NSTOVVar_barNew%n_B-1),NSTOVVar_barNew%q(NSTOV_nODE,0:NSTOVVar_barNew%n_B+1))
-        !ALLOCATE (t(0:NSTOVVar_barNew%n_B),void1(0:NSTOVVar_barNew%n_B),void2(0:NSTOVVar_barNew%n_B),void3(0:NSTOVVar_barNew%n_B),y(NSTOV_nODE,0:NSTOVVar_barNew%n_B))
+        ALLOCATE (NSTOVVar_barNew%r(0:NSTOVVar_barNew%n_B+1),NSTOVVar_barNew%dr(0:NSTOVVar_barNew%n_B-1),NSTOVVar_barNew%q(NSTOV_nODE,0:NSTOVVar_barNew%n_B+1)) 
         ALLOCATE(NSTOVVar_barNew%qloc(NSTOV_nODE))
         !
         CALL NSTOV_solution_rbar
@@ -631,42 +629,6 @@ END SUBROUTINE NSTOV_ODESys
 
 
 
-RECURSIVE SUBROUTINE NSTOV_ODESys_DG(yDG,t,f)  
-    USE Parameters, ONLY : EQN,NSTOVVar, NSTOV_nODE, NSTOV_rho_c, NSTOV_rho_atmo, NSTOV_p_atmo, NSTOV_kappa, NSTOV_p_zero, NSTOV_nODE_p
-    IMPLICIT NONE
-    REAL, DIMENSION(mDOF_loc) :: q1,q2,q3,q4,t,rho,igamma,gamma1,p,den,rhoh,t2,m2_r
-    REAL, DIMENSION (mDOF_loc,NSTOV_nODE) :: f,yDG
-    !
-    q1 = yDG(:,1)       ! m
-    q2 = yDG(:,2)       ! phi
-    q3 = MAX(yDG(:,3),NSTOV_p_zero)       ! p
-    !
-    p=q3
-    igamma = 1.0/EQN%gamma 
-    rho(:)=(p(:)/NSTOV_kappa)**igamma 
-    gamma1 = EQN%gamma/(EQN%gamma-1.0)
-    rhoh(:) = rho(:) + gamma1*p(:)
-    !
-    IF(ANY(ABS(t).LT.1e-12)) THEN
-        f=0.
-        RETURN
-    ENDIF
-    !
-    t2=t**2
-    f(:,1) = 4.0*EQN%PI*(rhoh-p)*t2     
-    f(:,2) = 4.0*EQN%PI*p*t2*t+q1
-    den(:) =t(:)*(t(:) -2.0*q1(:))
-    f(:,2) = f(:,2)/den(:)  
-    f(:,3) = -rhoh(:)*f(:,2)  
-    !
-#ifndef SPHERICAL    
-    q4(:) = yDG(:,4)               ! p
-    m2_r(:) = SQRT(1.0-2.0*q1(:)/t(:))
-    f(:,4) = (1.0-m2_r(:))/m2_r(:)/t(:)             ! p
-#endif    
-    !
-END SUBROUTINE NSTOV_ODESys_DG
- 
 
 
 #endif

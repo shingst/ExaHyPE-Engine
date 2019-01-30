@@ -88,6 +88,7 @@ RECURSIVE SUBROUTINE PDESetup(myrank)
     CASE('GRMHDTOV','CCZ4TOV','GRMHDTOV_perturbed') 
 #ifdef RNSTOV
         IF(NSTOVVar%Computed.NE.12345) THEN
+            NSTOVVar%Computed=12345   
             CALL NSTOV_Main
         ENDIF
 #endif  

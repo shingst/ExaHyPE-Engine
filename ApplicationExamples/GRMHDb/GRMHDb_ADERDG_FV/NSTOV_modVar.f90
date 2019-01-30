@@ -2,10 +2,10 @@
     
  MODULE NSTOV_modVar
     IMPLICIT NONE 
+    PUBLIC
 #if defined(RNSTOV) 
-    REAL, DIMENSION (:), POINTER :: t,void1,void2,void3
-    REAL, DIMENSION (:,:), POINTER :: y
-    REAL, DIMENSION (:,:,:), POINTER :: yDG
+    REAL, DIMENSION (:), ALLOCATABLE :: t
+    REAL, DIMENSION (:,:), ALLOCATABLE :: y
     !
 #endif     
  END MODULE NSTOV_modVar
