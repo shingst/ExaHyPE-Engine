@@ -2427,33 +2427,32 @@ double exahype::solvers::ADERDGSolver::computeTimeStepSize(CellDescription& cell
 
 double exahype::solvers::ADERDGSolver::startNewTimeStepFused(
     CellDescription& cellDescription,
-    const bool firstBatchIteration,
-    const bool lastBatchIteration) {
-    assertion1(cellDescription.getType()==CellDescription::Type::Cell,cellDescription.toString());
-    // n-1
-    if ( firstBatchIteration ) {
-      cellDescription.setPreviousCorrectorTimeStamp(cellDescription.getCorrectorTimeStamp());
-      cellDescription.setPreviousCorrectorTimeStepSize(cellDescription.getCorrectorTimeStepSize());
-    }
-    // n
-    cellDescription.setCorrectorTimeStamp(cellDescription.getPredictorTimeStamp());
-    cellDescription.setCorrectorTimeStepSize(cellDescription.getPredictorTimeStepSize());
-    // n+1
-    cellDescription.setPredictorTimeStamp(
-        cellDescription.getPredictorTimeStamp() + cellDescription.getPredictorTimeStepSize());
-
-    double admissibleTimeStepSize = std::numeric_limits<double>::infinity();
-    if (
-        lastBatchIteration                                     &&
-        cellDescription.getType()==CellDescription::Type::Cell &&
-        getTimeStepping() != TimeStepping::GlobalFixed
-    ) {
-      admissibleTimeStepSize = computeTimeStepSize(cellDescription);
-      cellDescription.setPredictorTimeStepSize(admissibleTimeStepSize);
-    }
-
-    return admissibleTimeStepSize; // still reduce the admissibile time step size over multiple iterations
+    const bool isFirstTimeStepOfBatch,
+    const bool isLastTimeStepOfBatch) {
+  assertion1(cellDescription.getType()==CellDescription::Type::Cell,cellDescription.toString());
+  // n-1
+  if ( isFirstTimeStepOfBatch ) {
+    cellDescription.setPreviousCorrectorTimeStamp(cellDescription.getCorrectorTimeStamp());
+    cellDescription.setPreviousCorrectorTimeStepSize(cellDescription.getCorrectorTimeStepSize());
   }
+  // n
+  cellDescription.setCorrectorTimeStamp(cellDescription.getPredictorTimeStamp());
+  cellDescription.setCorrectorTimeStepSize(cellDescription.getPredictorTimeStepSize());
+  // n+1
+  cellDescription.setPredictorTimeStamp(
+      cellDescription.getPredictorTimeStamp() + cellDescription.getPredictorTimeStepSize());
+
+  double admissibleTimeStepSize = cellDescription.getPredictorTimeStepSize();
+  if (
+      cellDescription.getType()==CellDescription::Type::Cell &&
+      getTimeStepping() != TimeStepping::GlobalFixed
+  ) {
+    admissibleTimeStepSize = computeTimeStepSize(cellDescription);
+  }
+  if ( isLastTimeStepOfBatch ) { // else freeze time step size
+    cellDescription.setPredictorTimeStepSize(admissibleTimeStepSize);
+  }
+  return admissibleTimeStepSize; // still reduce the admissibile time step size over multiple iterations
 }
 
 double exahype::solvers::ADERDGSolver::startNewTimeStep(CellDescription& cellDescription) {
@@ -2464,7 +2463,7 @@ double exahype::solvers::ADERDGSolver::startNewTimeStep(CellDescription& cellDes
 
   double admissibleTimeStepSize = cellDescription.getCorrectorTimeStepSize();
   if ( getTimeStepping() != TimeStepping::GlobalFixed ) {
-    const double admissibleTimeStepSize = computeTimeStepSize(cellDescription);
+    admissibleTimeStepSize = computeTimeStepSize(cellDescription);
   }
 
   // n
@@ -2709,7 +2708,7 @@ void exahype::solvers::ADERDGSolver::surfaceIntegral(
       if ( cellDescription.getFacewiseAugmentationStatus(faceIndex)<MaximumAugmentationStatus ) { // ignore Ancestors
         const double* const lFhbnd = static_cast<double*>(cellDescription.getFluctuation()) + dofsPerFace * faceIndex;
         faceIntegral(output,lFhbnd,direction,orientation,0/*implicit conversion*/,0,cellDescription.getSize(),
-                     cellDescription.getPreviousCorrectorTimeStepSize(),addToUpdate);
+                     cellDescription.getCorrectorTimeStepSize(),addToUpdate);
       }
     }
   }
@@ -2769,7 +2768,7 @@ void exahype::solvers::ADERDGSolver::correction(
   assertion1(cellDescription.getType()==CellDescription::Type::Cell && cellDescription.getRefinementEvent()==CellDescription::None,cellDescription.toString())
   assertion1(std::isfinite(cellDescription.getCorrectorTimeStamp()   ),cellDescription.toString());
   assertion1(std::isfinite(cellDescription.getCorrectorTimeStepSize()),cellDescription.toString());
-  #if !defined(SharedMemoryParallelisation) && !defined(Parallel)
+  #if !defined(SharedMemoryParallelisation) && !defined(Parallel) && defined(Asserts)
   static int counter = 0;
   static double timeStamp = 0;
   if ( !tarch::la::equals(timeStamp,_minCorrectorTimeStamp,1e-9) ) {
@@ -2779,11 +2778,10 @@ void exahype::solvers::ADERDGSolver::correction(
   }
   counter++;
   #endif
-  #endif
 
-  const bool beginOrEndOfBatch = isFirstTimeStep || isLastTimeStep;
-  surfaceIntegral(cellDescription,neighbourMergePerformed,beginOrEndOfBatch);
-  if ( beginOrEndOfBatch ) {
+  const bool addSurfaceIntegralResultToUpdate = isFirstTimeStep || isLastTimeStep;
+  surfaceIntegral(cellDescription,neighbourMergePerformed,addSurfaceIntegralResultToUpdate);
+  if ( addSurfaceIntegralResultToUpdate ) {
     addUpdateToSolution(cellDescription,isFirstTimeStep);
   }
   adjustSolutionAfterUpdate(cellDescription);
@@ -2978,6 +2976,16 @@ void exahype::solvers::ADERDGSolver::restrictToTopMostParent(const CellDescripti
           cellDescription.getOffset(),cellDescription.getSize(),
           parentCellDescription.getOffset()); // TODO(Dominic): Maybe, I get can get rid of some variables again
   // gather contributions
+  double dt = cellDescription.getCorrectorTimeStepSize();
+  switch (getTimeStepping()) {
+    case TimeStepping::Global:
+    case TimeStepping::GlobalFixed:
+      // do nothing
+      break;
+    default:
+      logError("restrictToTopMostParent(...)","Time stepping scheme not supported.");
+      break;
+  }
   const int dofsPerFace = getBndFluxSize();
   for (int faceIndex=0; faceIndex<DIMENSIONS_TIMES_TWO; faceIndex++) {
     const int direction   = faceIndex / 2;
@@ -2989,7 +2997,7 @@ void exahype::solvers::ADERDGSolver::restrictToTopMostParent(const CellDescripti
       assertion1(SpawnProlongationAsBackgroundJob || cellDescription.getNeighbourMergePerformed(faceIndex),cellDescription.toString());// necessary but not sufficient
 
       const double* const lFhbnd = static_cast<double*>(cellDescription.getFluctuation()) + dofsPerFace * faceIndex;
-      faceIntegral(updateFine,lFhbnd,direction,orientation,subfaceIndex,levelDelta,cellDescription.getSize());
+      faceIntegral(updateFine,lFhbnd,direction,orientation,subfaceIndex,levelDelta,cellDescription.getSize(),dt,addToCoarseGridUpdate);
 
       logDebug("restrictToTopMostParent(...)","cell=" << cellDescription.getOffset() <<
              ",level=" << cellDescription.getLevel() <<
@@ -3011,17 +3019,6 @@ void exahype::solvers::ADERDGSolver::restrictToTopMostParent(const CellDescripti
     lock.free();
   } else {
     double* solutionCoarse = static_cast<double*>(parentCellDescription.getSolution());
-    double dt = cellDescription.getCorrectorTimeStepSize();
-    switch (getTimeStepping()) {
-      case TimeStepping::Global:
-      case TimeStepping::GlobalFixed:
-        // do nothing
-        break;
-      default:
-        logError("restrictToTopMostParent(...)","Time stepping scheme not supported.");
-        break;
-    }
-
     tarch::multicore::Lock lock(RestrictionSemaphore);
     addUpdateToSolution(solutionCoarse,solutionCoarse,updateFine,dt);
     lock.free();

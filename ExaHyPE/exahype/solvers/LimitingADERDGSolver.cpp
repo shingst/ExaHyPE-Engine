@@ -1196,7 +1196,7 @@ double exahype::solvers::LimitingADERDGSolver::recomputeSolutionLocally(
             solverNumber,cellInfo,
             solverPatch.getCorrectorTimeStamp(), // corrector time step data is correct; see docu
             solverPatch.getCorrectorTimeStepSize(),
-            false/*already uncompressed*/,isAtRemoteBoundary);
+            false/*already uncompressed*/,isAtRemoteBoundary,true/*addVolumeIntegralResultToUpdate*/);
       }
     } else {
       admissibleTimeStepSize = startNewTimeStep(solverPatch,cellInfo);
