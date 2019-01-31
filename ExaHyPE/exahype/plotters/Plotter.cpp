@@ -703,8 +703,7 @@ void exahype::plotters::Plotter::sendDataToWorker(
   assertion1(plotterDataToSend.size()==1,plotterDataToSend.size());
   assertion1(std::isfinite(plotterDataToSend[0]),plotterDataToSend[0]);
 
-  if (tarch::parallel::Node::getInstance().getRank()==
-      tarch::parallel::Node::getInstance().getGlobalMasterRank()) {
+  if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
     logDebug("sendDataToWorker(...)","Broadcasting plotter data: " <<
         " data[0]=" << plotterDataToSend[0]);
     logDebug("sendDataWorker(...)","_time="<<_time);

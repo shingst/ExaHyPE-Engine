@@ -350,46 +350,6 @@ class exahype::Cell : public peano::grid::Cell<exahype::records::Cell> {
       const int                            faceIndex,
       exahype::Vertex* const               verticesAroundCell,
       const peano::grid::VertexEnumerator& verticesEnumerator);
-
-  // MASTER->WORKER
-
-  /*!
-   * Send data such global solver and plotter
-   * time step data down to a worker.
-   */
-  static void broadcastGlobalDataToWorker(
-      const int                                   worker,
-      const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
-      const int                                   level);
-
-  /*!
-   * Merge with global data such as global solver and plotter
-   * time step data sent down from the master.
-   */
-  static void mergeWithGlobalDataFromMaster(
-      const int                                   master,
-      const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
-      const int                                   level);
-
-  // global
-
-  /*!
-   * Send data such global solver
-   * time step data up to the master.
-   */
-  static void reduceGlobalDataToMaster(
-    const int                                   master,
-    const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
-    const int                                   level);
-
-  /*!
-   * Merge with global data such as global solver
-   * time step data sent up from the master.
-   */
-  static void mergeWithGlobalDataFromWorker(
-      const int                                   worker,
-      const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
-      const int                                   level);
   #endif
 };
 

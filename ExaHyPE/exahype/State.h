@@ -69,6 +69,30 @@ class exahype::State : public peano::grid::State<exahype::records::State> {
   void readFromCheckpoint(
       const peano::grid::Checkpoint<Vertex, Cell>& checkpoint);
 
+  /**
+   * Static callback to perform global broadcasts between working nodes.
+   *
+   * @todo have a tree-based algorithm. Problem: NodePool does not reveal worker nodes
+   *
+   * @note private scope since we are friends with the Repositories.
+   *
+   * @param repositoryState         Contains information about the currently run adapter and the number of batch iterations.
+   * @param currentBatchIteration   the current batch iteration.
+   */
+  static void globalBroadcast(exahype::records::RepositoryState& repositoryState, exahype::State& solverState, const int currentBatchIteration);
+
+  /**
+   * Static callback to perform global reductions between working nodes.
+   *
+   * @todo have a tree-based algorithm. Problem: NodePool does not reveal worker nodes
+   *
+   * @note private scope since we are friends with the Repositories.
+   *
+   * @param repositoryState         Contains information about the currently run adapter and the number of batch iterations.
+   * @param currentBatchIteration   the current batch iteration.
+   */
+  static void globalReduction(exahype::records::RepositoryState& repositoryState, exahype::State& solverState, const int currentBatchIteration);
+
  public:
   /**
    * This enum is used to select certain solvers
@@ -263,25 +287,43 @@ class exahype::State : public peano::grid::State<exahype::records::State> {
    */
   static bool isSecondToLastIterationOfBatchOrNoBatch();
 
-  /**
-   * Static callback to perform global broadcasts between working nodes.
-   *
-   * @todo have a tree-based algorithm. Problem: NodePool does not reveal worker nodes
-   *
-   * @param repositoryState         Contains information about the currently run adapter and the number of batch iterations.
-   * @param currentBatchIteration   the current batch iteration.
+  #ifdef Parallel
+  /*!
+   * Send data such global solver and plotter
+   * time step data down to a worker.
    */
-  static void globalBroadcast(exahype::records::RepositoryState& repositoryState, exahype::State& solverState, const int currentBatchIteration);
+  static void broadcastGlobalDataToWorker(
+      const int                                   worker,
+      const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+      const int                                   level);
 
-  /**
-   * Static callback to perform global reductions between working nodes.
-   *
-   * @todo have a tree-based algorithm. Problem: NodePool does not reveal worker nodes
-   *
-   * @param repositoryState         Contains information about the currently run adapter and the number of batch iterations.
-   * @param currentBatchIteration   the current batch iteration.
+  /*!
+   * Merge with global data, such as global solver and plotter
+   * time step data, sent down from the master.
    */
-  static void globalReduction(exahype::records::RepositoryState& repositoryState, exahype::State& solverState, const int currentBatchIteration);
+  static void mergeWithGlobalDataFromMaster(
+      const int                                   master,
+      const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+      const int                                   level);
+
+  /*!
+   * Send data such global solver
+   * time step data up to the master.
+   */
+  static void reduceGlobalDataToMaster(
+    const int                                   master,
+    const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+    const int                                   level);
+
+  /*!
+   * Merge with global data, such as global solver
+   * time step data, sent up from the master.
+   */
+  static void mergeWithGlobalDataFromWorker(
+      const int                                   worker,
+      const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+      const int                                   level);
+  #endif
 };
 
 #endif

@@ -685,10 +685,6 @@ void exahype::solvers::Solver::reinitialiseTimeStepDataIfLastPredictorTimeStepSi
     const double stableTimeStepSize = aderdgSolver->getMinPredictorTimeStepSize();
     double usedTimeStepSize         = aderdgSolver->getMinCorrectorTimeStepSize(); // post update
 
-//    if (tarch::la::equals(usedTimeStepSize,0.0)) {
-//      usedTimeStepSize = stableTimeStepSize; // TODO(Dominic): Still necessary?
-//    }
-
     bool usedTimeStepSizeWasInstable = usedTimeStepSize > stableTimeStepSize;
     aderdgSolver->setStabilityConditionWasViolated(usedTimeStepSizeWasInstable);
 

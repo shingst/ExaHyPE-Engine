@@ -137,6 +137,11 @@ void exahype::mappings::PredictionRerun::prepareSendToNeighbour(
   logTraceOut( "prepareSendToNeighbour(...)" );
 }
 
+//
+// Below all methods are nop.
+//
+// ====================================
+
 bool exahype::mappings::PredictionRerun::prepareSendToWorker(
     exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
@@ -145,14 +150,7 @@ bool exahype::mappings::PredictionRerun::prepareSendToWorker(
     exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
     int worker) {
-  if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
-    exahype::Cell::broadcastGlobalDataToWorker(
-        worker,
-        fineGridVerticesEnumerator.getCellCenter(),
-        fineGridVerticesEnumerator.getLevel());
-  }
-
-  return true;
+  return false;
 }
 
 void exahype::mappings::PredictionRerun::receiveDataFromMaster(
@@ -165,12 +163,7 @@ void exahype::mappings::PredictionRerun::receiveDataFromMaster(
     const peano::grid::VertexEnumerator& workersCoarseGridVerticesEnumerator,
     exahype::Cell& workersCoarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
-  if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
-    exahype::Cell::mergeWithGlobalDataFromMaster(
-        tarch::parallel::NodePool::getInstance().getMasterRank(),
-        receivedVerticesEnumerator.getCellCenter(),
-        receivedVerticesEnumerator.getLevel());
-  }
+  // do nothing
 }
 
 void exahype::mappings::PredictionRerun::prepareSendToMaster(
@@ -197,11 +190,6 @@ void exahype::mappings::PredictionRerun::mergeWithMaster(
     exahype::State& masterState) {
   // do nothing
 }
-
-//
-// Below all methods are nop.
-//
-// ====================================
 
 void exahype::mappings::PredictionRerun::prepareCopyToRemoteNode(
     exahype::Vertex& localVertex, int toRank,

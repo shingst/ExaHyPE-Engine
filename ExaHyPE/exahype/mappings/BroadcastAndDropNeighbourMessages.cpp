@@ -129,9 +129,11 @@ void exahype::mappings::BroadcastAndDropNeighbourMessages::mergeWithNeighbour(
   }
 }
 
-///////////////////////////////////////
-// MASTER->WORKER
-///////////////////////////////////////
+//
+// Below all methods are nop.
+//
+// ====================================
+
 bool exahype::mappings::BroadcastAndDropNeighbourMessages::prepareSendToWorker(
     exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
@@ -141,13 +143,6 @@ bool exahype::mappings::BroadcastAndDropNeighbourMessages::prepareSendToWorker(
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
     int worker) {
   return false;
-
-  exahype::Cell::broadcastGlobalDataToWorker(
-        worker,
-        fineGridVerticesEnumerator.getCellCenter(),
-        fineGridVerticesEnumerator.getLevel());
-
-  return true; // see docu
 }
 
 void exahype::mappings::BroadcastAndDropNeighbourMessages::receiveDataFromMaster(
@@ -160,17 +155,8 @@ void exahype::mappings::BroadcastAndDropNeighbourMessages::receiveDataFromMaster
     const peano::grid::VertexEnumerator& workersCoarseGridVerticesEnumerator,
     exahype::Cell& workersCoarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
-  return;
-  exahype::Cell::mergeWithGlobalDataFromMaster(
-      tarch::parallel::NodePool::getInstance().getMasterRank(),
-      receivedVerticesEnumerator.getCellCenter(),
-      receivedVerticesEnumerator.getLevel());
+  // do nothing
 }
-
-//
-// Below all methods are nop.
-//
-// ====================================
 
 void exahype::mappings::BroadcastAndDropNeighbourMessages::mergeWithWorker(
     exahype::Cell& localCell, const exahype::Cell& receivedMasterCell,
