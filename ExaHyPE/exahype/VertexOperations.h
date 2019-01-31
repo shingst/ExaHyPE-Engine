@@ -1,5 +1,4 @@
-// This file is part of the Peano project. For conditions of distribution and 
-// use, please see the copyright notice at www.peano-framework.org
+// THIS FILE WAS MODIFIED BY HAND. BE CAREFUL WHEN RUNNING PEANO'S PDT
 #ifndef _EXAHYPE_VERTEX_OPERATIONS_H_ 
 #define _EXAHYPE_VERTEX_OPERATIONS_H_
 #include "exahype/Vertex.h"
