@@ -53,7 +53,7 @@ exahype::mappings::FusedTimeStep::communicationSpecification() const {
 }
 
 peano::MappingSpecification
-exahype::mappings::FusedTimeStep::enterCellSpecification(int level) {
+exahype::mappings::FusedTimeStep::enterCellSpecification(int level) const {
   #ifdef Parallel
   return peano::MappingSpecification(
       peano::MappingSpecification::WholeTree,
@@ -74,7 +74,7 @@ exahype::mappings::FusedTimeStep::enterCellSpecification(int level) {
 }
 
 peano::MappingSpecification
-exahype::mappings::FusedTimeStep::leaveCellSpecification(int level) {
+exahype::mappings::FusedTimeStep::leaveCellSpecification(int level) const {
   #ifdef Parallel
   return peano::MappingSpecification(
       peano::MappingSpecification::WholeTree,
@@ -95,7 +95,7 @@ exahype::mappings::FusedTimeStep::leaveCellSpecification(int level) {
 }
 
 peano::MappingSpecification
-exahype::mappings::FusedTimeStep::touchVertexFirstTimeSpecification(int level) {
+exahype::mappings::FusedTimeStep::touchVertexFirstTimeSpecification(int level) const {
   #ifdef Parallel
   return peano::MappingSpecification(
       peano::MappingSpecification::WholeTree,

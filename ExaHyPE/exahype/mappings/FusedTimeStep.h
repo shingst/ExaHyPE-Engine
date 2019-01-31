@@ -104,7 +104,7 @@ private:
    * not work with parallel builds as it corrupts the neighbour
    * data communication behaviour.
    */
-  peano::MappingSpecification enterCellSpecification(int level);
+  peano::MappingSpecification enterCellSpecification(int level) const;
   /**
    * Run through the whole tree. Run concurrently on the fine grid.
    *
@@ -117,7 +117,7 @@ private:
    * not work with parallel builds as it corrupts the neighbour
    * data communication behaviour.
    */
-  peano::MappingSpecification leaveCellSpecification(int level);
+  peano::MappingSpecification leaveCellSpecification(int level) const;
   /**
    * Run concurrently through the whole tree.
    *
@@ -133,7 +133,7 @@ private:
    * not work with parallel builds as it corrupts the neighbour
    * data communication behaviour.
    */
-  peano::MappingSpecification touchVertexFirstTimeSpecification(int level);
+  peano::MappingSpecification touchVertexFirstTimeSpecification(int level) const;
 
   /**
    * Nop.
