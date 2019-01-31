@@ -197,7 +197,7 @@ private:
   /**
    * Minimum corrector time stamp of all cell descriptions.
    */
-  double _previousMinCorrectorTimeStamp;
+  double _previousMinTimeStamp;
 
   /**
    * Minimum corrector time step size of all
@@ -206,30 +206,30 @@ private:
    * This time step size is necessary for the fused time stepping + limiting
    * to reconstruct the minCorrectorTimeStepSize during a rollback.
    */
-  double _previousMinCorrectorTimeStepSize;
+  double _previousMinTimeStepSize;
 
   /**
    * Minimum corrector time stamp of all cell descriptions.
    */
-  double _minCorrectorTimeStamp;
+  double _minTimeStamp;
 
   /**
    * Minimum corrector time step size of
    * all cell descriptions.
    */
-  double _minCorrectorTimeStepSize;
+  double _minTimeStepSize;
 
   /**
    * Minimum predictor time stamp of all cell descriptions.
    * Always equal or larger than the minimum corrector time stamp.
    */
-  double _minPredictorTimeStamp;
+  double _estimatedMinTimeStamp;
 
   /**
    * Minimum predictor time step size of
    * all cell descriptions.
    */
-  double _minPredictorTimeStepSize;
+  double _estimatedTimeStepSize;
 
   /**
    * Minimum next predictor time step size of
@@ -1396,12 +1396,12 @@ public:
   /**
    * Returns time step data for the prediction.
    *
-   * @param cellDescription                a cell description
-   * @param fusedTimeSteppingAndNoRollback if fused time stepping is used and no rollback is performed.
+   * @param cellDescription     a cell description
+   * @param duringFusedTimeStep if the prediction is performed during a fused time step
    *
-   * @return a tupe with first entry being the time stamp and the second entry being the time step size.
+   * @return a tuple with first entry being the time stamp and the second entry being the time step size.
    */
-  std::tuple<double,double> getPredictionTimeStepData(const CellDescription& cellDescription,const bool fusedTimeSteppingAndNoRollback) const;
+  std::tuple<double,double> getPredictionTimeStepData(const CellDescription& cellDescription,const bool duringFusedTimeStep) const;
 
   /**
    * Copies the time stepping data from the global solver onto the patch's time

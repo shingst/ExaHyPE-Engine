@@ -693,14 +693,11 @@ void exahype::solvers::Solver::reinitialiseTimeStepDataIfLastPredictorTimeStepSi
     aderdgSolver->setStabilityConditionWasViolated(usedTimeStepSizeWasInstable);
 
     const double timeStepSizeWeight = exahype::solvers::Solver::WeightForPredictionRerun;
-    if (usedTimeStepSizeWasInstable) {
-      aderdgSolver->updateMinNextPredictorTimeStepSize(
-          timeStepSizeWeight * stableTimeStepSize);
-      aderdgSolver->setMinPredictorTimeStepSize(
-          timeStepSizeWeight * stableTimeStepSize); // This will be propagated to the corrector
+    if ( usedTimeStepSizeWasInstable ) {
+      aderdgSolver->_minTimeStepSize(timeStepSizeWeight * stableTimeStepSize); // reset
     } else {
-      aderdgSolver->updateMinNextPredictorTimeStepSize(
-          0.5 * (usedTimeStepSize + timeStepSizeWeight * stableTimeStepSize));
+
+      aderdgSolver->_estimatedTimeStepSize(0.5 * (usedTimeStepSize + timeStepSizeWeight * stableTimeStepSize));
     }
   }
 }

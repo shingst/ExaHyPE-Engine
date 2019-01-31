@@ -570,12 +570,12 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
              numberOfParameters, basisSize,
              maximumMeshSize, maximumAdaptiveMeshDepth,
              timeStepping, std::move(profiler)),
-     _previousMinCorrectorTimeStamp( std::numeric_limits<double>::infinity() ),
-     _previousMinCorrectorTimeStepSize( std::numeric_limits<double>::infinity() ),
-     _minCorrectorTimeStamp( std::numeric_limits<double>::infinity() ),
-     _minCorrectorTimeStepSize( std::numeric_limits<double>::infinity() ),
-     _minPredictorTimeStamp( std::numeric_limits<double>::infinity() ),
-     _minPredictorTimeStepSize( std::numeric_limits<double>::infinity() ),
+     _previousMinTimeStamp( std::numeric_limits<double>::infinity() ),
+     _previousMinTimeStepSize( std::numeric_limits<double>::infinity() ),
+     _minTimeStamp( std::numeric_limits<double>::infinity() ),
+     _minTimeStepSize( std::numeric_limits<double>::infinity() ),
+     _estimatedMinTimeStamp( std::numeric_limits<double>::infinity() ),
+     _estimatedTimeStepSize( std::numeric_limits<double>::infinity() ),
      _minNextTimeStepSize( std::numeric_limits<double>::infinity() ),
      _stabilityConditionWasViolated( false ),
      _refineOrKeepOnFineGrid(1+haloCells),
@@ -681,8 +681,8 @@ std::tuple<double,double> exahype::solvers::ADERDGSolver::getRiemannSolverTimeSt
   switch (_timeStepping) {
     case TimeStepping::Global:
     case TimeStepping::GlobalFixed:
-      std::get<0>(result) = _minCorrectorTimeStamp;
-      std::get<1>(result) = _minCorrectorTimeStepSize;
+      std::get<0>(result) = _minTimeStamp;
+      std::get<1>(result) = _minTimeStepSize;
       break;
     default:
 //      std::get<0>(result) = std::max(cellDescription1.getTimeStamp(),cellDescription2.getTimeStamp());
@@ -694,17 +694,17 @@ std::tuple<double,double> exahype::solvers::ADERDGSolver::getRiemannSolverTimeSt
 }
 
 std::tuple<double,double> exahype::solvers::ADERDGSolver::getPredictionTimeStepData(
-    const CellDescription& cellDescription,const bool fusedTimeSteppingAndNoRollback) const {
+    const CellDescription& cellDescription,const bool duringFusedTimeStep) const {
   auto result  = std::make_tuple<double,double>(0.0,0.0);
   switch (_timeStepping) {
     case TimeStepping::Global:
     case TimeStepping::GlobalFixed:
-      if ( fusedTimeSteppingAndNoRollback ) {
-        std::get<0>(result) = _minPredictorTimeStamp;
-        std::get<1>(result) = _minPredictorTimeStepSize;
+      if ( duringFusedTimeStep ) {
+        std::get<0>(result) = _estimatedMinTimeStamp;
+        std::get<1>(result) = _estimatedTimeStepSize;
       } else {
-        std::get<0>(result) = _minCorrectorTimeStamp;
-        std::get<1>(result) = _minCorrectorTimeStepSize;
+        std::get<0>(result) = _minTimeStamp;
+        std::get<1>(result) = _minTimeStepSize;
       }
       break;
     default:
@@ -719,11 +719,11 @@ void exahype::solvers::ADERDGSolver::synchroniseTimeStepping(
   switch (_timeStepping) {
     case TimeStepping::Global:
     case TimeStepping::GlobalFixed:
-      p.setPreviousTimeStamp(_previousMinCorrectorTimeStamp);
-      p.setPreviousTimeStepSize(_previousMinCorrectorTimeStepSize);
+      p.setPreviousTimeStamp(_previousMinTimeStamp);
+      p.setPreviousTimeStepSize(_previousMinTimeStepSize);
   
-      p.setTimeStamp(_minCorrectorTimeStamp);
-      p.setTimeStepSize(_minCorrectorTimeStepSize);
+      p.setTimeStamp(_minTimeStamp);
+      p.setTimeStepSize(_minTimeStepSize);
   }
 }
 
@@ -731,27 +731,21 @@ void exahype::solvers::ADERDGSolver::startNewTimeStep() {
   switch (_timeStepping) {
     case TimeStepping::Global:
       // n-1
-      _previousMinCorrectorTimeStamp    = _minCorrectorTimeStamp;
-      _previousMinCorrectorTimeStepSize = _minCorrectorTimeStepSize;
+      _previousMinTimeStamp    = _minTimeStamp;
+      _previousMinTimeStepSize = _minTimeStepSize;
       // n
-      _minCorrectorTimeStepSize = _minNextTimeStepSize;
-      _minCorrectorTimeStamp    = _minCorrectorTimeStamp+_minCorrectorTimeStepSize;
-
-      _minPredictorTimeStepSize = _minCorrectorTimeStepSize;
-      _minPredictorTimeStamp    = _minCorrectorTimeStamp;
+      _minTimeStamp    = _minTimeStamp+_minTimeStepSize;
+      _minTimeStepSize = _minNextTimeStepSize;
 
       _minNextTimeStepSize = std::numeric_limits<double>::infinity();
       break;
     case TimeStepping::GlobalFixed:
       // n-1
-      _previousMinCorrectorTimeStamp    = _minCorrectorTimeStamp;
-      _previousMinCorrectorTimeStepSize = _minCorrectorTimeStepSize;
+      _previousMinTimeStamp    = _minTimeStamp;
+      _previousMinTimeStepSize = _minTimeStepSize;
       // n
-      _minCorrectorTimeStepSize = _minNextTimeStepSize;
-      _minCorrectorTimeStamp    = _minCorrectorTimeStamp+_minNextTimeStepSize;
-
-      _minPredictorTimeStepSize = _minCorrectorTimeStepSize;
-      _minPredictorTimeStamp    = _minCorrectorTimeStamp;
+      _minTimeStamp    = _minTimeStamp+_minNextTimeStepSize;
+      _minTimeStepSize = _minNextTimeStepSize;
       break;
   }
 
@@ -764,22 +758,22 @@ void exahype::solvers::ADERDGSolver::startNewTimeStepFused(
     const bool isLastTimeStepOfBatch) {
   // n-1
   if ( isFirstTimeStepOfBatch ) {
-    _previousMinCorrectorTimeStamp    = _minCorrectorTimeStamp;
-    _previousMinCorrectorTimeStepSize = _minCorrectorTimeStepSize;
+    _previousMinTimeStamp    = _minTimeStamp;
+    _previousMinTimeStepSize = _minTimeStepSize;
   }
   // n
-  _minCorrectorTimeStamp    = _minPredictorTimeStamp;
-  _minCorrectorTimeStepSize = _minPredictorTimeStepSize;
+  _minTimeStamp    = _minTimeStamp+_minTimeStepSize;
+  _minTimeStepSize = _estimatedTimeStepSize;
   // n+1
-  _minPredictorTimeStamp    = _minPredictorTimeStamp + _minPredictorTimeStepSize;
+  _estimatedMinTimeStamp  = _estimatedMinTimeStamp + _estimatedTimeStepSize;
   if ( isLastTimeStepOfBatch ) {
     switch (_timeStepping) {
       case TimeStepping::Global:
-        _minPredictorTimeStepSize = _minNextTimeStepSize;
-        _minNextTimeStepSize      = std::numeric_limits<double>::infinity();
+        _estimatedTimeStepSize = _minNextTimeStepSize;
+        _minNextTimeStepSize   = std::numeric_limits<double>::infinity();
         break;
       case TimeStepping::GlobalFixed:
-        _minPredictorTimeStepSize = _minNextTimeStepSize;
+        _estimatedTimeStepSize = _minNextTimeStepSize;
         break;
     }
     _maxLevel     = _nextMaxLevel;
@@ -790,18 +784,18 @@ void exahype::solvers::ADERDGSolver::startNewTimeStepFused(
 void exahype::solvers::ADERDGSolver::updateTimeStepSizesFused() {
   switch (_timeStepping) {
   case TimeStepping::Global:
-    _minCorrectorTimeStepSize = _minNextTimeStepSize;
-    _minPredictorTimeStepSize = _minNextTimeStepSize;
+    _minTimeStepSize = _minNextTimeStepSize;
+    _estimatedTimeStepSize = _minNextTimeStepSize;
 
-    _minPredictorTimeStamp    =  _minCorrectorTimeStamp+_minNextTimeStepSize;
+    _estimatedMinTimeStamp    =  _minTimeStamp+_minNextTimeStepSize;
 
     _minNextTimeStepSize = std::numeric_limits<double>::infinity();
     break;
   case TimeStepping::GlobalFixed:
-    _minCorrectorTimeStepSize = _minNextTimeStepSize;
-    _minPredictorTimeStepSize = _minNextTimeStepSize;
+    _minTimeStepSize = _minNextTimeStepSize;
+    _estimatedTimeStepSize = _minNextTimeStepSize;
 
-    _minPredictorTimeStamp =  _minCorrectorTimeStamp+_minNextTimeStepSize;
+    _estimatedMinTimeStamp =  _minTimeStamp+_minNextTimeStepSize;
     break;
   }
 
@@ -814,18 +808,18 @@ void exahype::solvers::ADERDGSolver::updateTimeStepSizesFused() {
 void exahype::solvers::ADERDGSolver::updateTimeStepSizes() {
   switch (_timeStepping) {
     case TimeStepping::Global:
-      _minCorrectorTimeStepSize = _minNextTimeStepSize;
-      _minPredictorTimeStepSize = _minNextTimeStepSize;
+      _minTimeStepSize = _minNextTimeStepSize;
+      _estimatedTimeStepSize = _minNextTimeStepSize;
 
-      _minPredictorTimeStamp    =  _minCorrectorTimeStamp;
+      _estimatedMinTimeStamp    =  _minTimeStamp;
 
       _minNextTimeStepSize = std::numeric_limits<double>::infinity();
       break;
     case TimeStepping::GlobalFixed:
-      _minCorrectorTimeStepSize = _minNextTimeStepSize;
-      _minPredictorTimeStepSize = _minNextTimeStepSize;
+      _minTimeStepSize = _minNextTimeStepSize;
+      _estimatedTimeStepSize = _minNextTimeStepSize;
 
-      _minPredictorTimeStamp =  _minCorrectorTimeStamp;
+      _estimatedMinTimeStamp =  _minTimeStamp;
       break;
   }
 
@@ -838,24 +832,24 @@ void exahype::solvers::ADERDGSolver::rollbackToPreviousTimeStep() {
     case TimeStepping::Global:
       _minNextTimeStepSize                     = std::numeric_limits<double>::infinity();
 
-      _minPredictorTimeStamp                    = _previousMinCorrectorTimeStamp;
-      _minPredictorTimeStepSize                 = _previousMinCorrectorTimeStepSize;
+      _estimatedMinTimeStamp                    = _previousMinTimeStamp;
+      _estimatedTimeStepSize                 = _previousMinTimeStepSize;
 
-      _minCorrectorTimeStamp                    = _previousMinCorrectorTimeStamp;
-      _minCorrectorTimeStepSize                 = _previousMinCorrectorTimeStepSize;
+      _minTimeStamp                    = _previousMinTimeStamp;
+      _minTimeStepSize                 = _previousMinTimeStepSize;
 
-      _previousMinCorrectorTimeStamp            = std::numeric_limits<double>::infinity();
-      _previousMinCorrectorTimeStepSize         = std::numeric_limits<double>::infinity();
+      _previousMinTimeStamp            = std::numeric_limits<double>::infinity();
+      _previousMinTimeStepSize         = std::numeric_limits<double>::infinity();
       break;
     case TimeStepping::GlobalFixed:
-      _minPredictorTimeStamp                    = _previousMinCorrectorTimeStamp;
-      _minPredictorTimeStepSize                 = _previousMinCorrectorTimeStepSize;
+      _estimatedMinTimeStamp                    = _previousMinTimeStamp;
+      _estimatedTimeStepSize                 = _previousMinTimeStepSize;
 
-      _minCorrectorTimeStamp                    = _previousMinCorrectorTimeStamp;
-      _minCorrectorTimeStepSize                 = _previousMinCorrectorTimeStepSize;
+      _minTimeStamp                    = _previousMinTimeStamp;
+      _minTimeStepSize                 = _previousMinTimeStepSize;
 
-      _previousMinCorrectorTimeStamp            = std::numeric_limits<double>::infinity();
-      _previousMinCorrectorTimeStepSize         = std::numeric_limits<double>::infinity();
+      _previousMinTimeStamp            = std::numeric_limits<double>::infinity();
+      _previousMinTimeStepSize         = std::numeric_limits<double>::infinity();
       break;
   }
 
@@ -868,24 +862,24 @@ void exahype::solvers::ADERDGSolver::rollbackToPreviousTimeStepFused() {
     case TimeStepping::Global:
       _minNextTimeStepSize                      = std::numeric_limits<double>::infinity();
 
-      _minPredictorTimeStamp                    = _previousMinCorrectorTimeStamp+_previousMinCorrectorTimeStepSize;
-      _minPredictorTimeStepSize                 = _minCorrectorTimeStepSize;
+      _estimatedMinTimeStamp                    = _previousMinTimeStamp+_previousMinTimeStepSize;
+      _estimatedTimeStepSize                 = _minTimeStepSize;
 
-      _minCorrectorTimeStamp                    = _previousMinCorrectorTimeStamp;
-      _minCorrectorTimeStepSize                 = _previousMinCorrectorTimeStepSize;
+      _minTimeStamp                    = _previousMinTimeStamp;
+      _minTimeStepSize                 = _previousMinTimeStepSize;
 
-      _previousMinCorrectorTimeStamp            = std::numeric_limits<double>::infinity();
-      _previousMinCorrectorTimeStepSize         = std::numeric_limits<double>::infinity();
+      _previousMinTimeStamp            = std::numeric_limits<double>::infinity();
+      _previousMinTimeStepSize         = std::numeric_limits<double>::infinity();
       break;
     case TimeStepping::GlobalFixed:
-      _minPredictorTimeStamp                    = _previousMinCorrectorTimeStamp+_previousMinCorrectorTimeStepSize;
-      _minPredictorTimeStepSize                 = _minCorrectorTimeStepSize;
+      _estimatedMinTimeStamp                    = _previousMinTimeStamp+_previousMinTimeStepSize;
+      _estimatedTimeStepSize                 = _minTimeStepSize;
 
-      _minCorrectorTimeStamp                    = _previousMinCorrectorTimeStamp;
-      _minCorrectorTimeStepSize                 = _previousMinCorrectorTimeStepSize;
+      _minTimeStamp                    = _previousMinTimeStamp;
+      _minTimeStepSize                 = _previousMinTimeStepSize;
 
-      _previousMinCorrectorTimeStamp            = std::numeric_limits<double>::infinity();
-      _previousMinCorrectorTimeStepSize         = std::numeric_limits<double>::infinity();
+      _previousMinTimeStamp            = std::numeric_limits<double>::infinity();
+      _previousMinTimeStepSize         = std::numeric_limits<double>::infinity();
       break;
   }
 
@@ -902,7 +896,7 @@ void exahype::solvers::ADERDGSolver::updateMinNextPredictorTimeStepSize(
       break;
     case TimeStepping::GlobalFixed: // TODO(Dominic): Problematic in MPI where we merge with the worker first
       _minNextTimeStepSize =
-          _minPredictorTimeStamp == _minCorrectorTimeStamp
+          _estimatedMinTimeStamp == _minTimeStamp
               ? std::min(_minNextTimeStepSize,
                          minNextPredictorTimeStepSize)
               : _minNextTimeStepSize;
@@ -915,31 +909,31 @@ double exahype::solvers::ADERDGSolver::getMinNextPredictorTimeStepSize() const {
 }
 
 double exahype::solvers::ADERDGSolver::getMinCorrectorTimeStamp() const {
-  return _minCorrectorTimeStamp;
+  return _minTimeStamp;
 }
 
 double exahype::solvers::ADERDGSolver::getMinPredictorTimeStamp() const {
-  return _minPredictorTimeStamp;
+  return _estimatedMinTimeStamp;
 }
 
 double exahype::solvers::ADERDGSolver::getMinCorrectorTimeStepSize() const {
-  return _minCorrectorTimeStepSize;
+  return _minTimeStepSize;
 }
 
 double exahype::solvers::ADERDGSolver::getMinPredictorTimeStepSize() const {
-  return _minPredictorTimeStepSize;
+  return _estimatedTimeStepSize;
 }
 
 void exahype::solvers::ADERDGSolver::setMinPredictorTimeStepSize(const double value) {
-  _minPredictorTimeStepSize = value;
+  _estimatedTimeStepSize = value;
 }
 
 double exahype::solvers::ADERDGSolver::getPreviousMinCorrectorTimeStepSize() const {
-  return _previousMinCorrectorTimeStepSize;
+  return _previousMinTimeStepSize;
 }
 
 double exahype::solvers::ADERDGSolver::getPreviousMinCorrectorTimeStamp() const {
-  return _previousMinCorrectorTimeStamp;
+  return _previousMinTimeStamp;
 }
 
 double exahype::solvers::ADERDGSolver::getMinTimeStamp() const {
@@ -973,13 +967,13 @@ void exahype::solvers::ADERDGSolver::initSolver(
   _coarsestMeshSize  = coarsestMeshInfo.first;
   _coarsestMeshLevel = coarsestMeshInfo.second;
 
-  _previousMinCorrectorTimeStepSize = 0.0;
-  _minCorrectorTimeStepSize         = 0.0;
-  _minPredictorTimeStepSize         = 0.0;
+  _previousMinTimeStepSize = 0.0;
+  _minTimeStepSize         = 0.0;
+  _estimatedTimeStepSize         = 0.0;
 
-  _previousMinCorrectorTimeStamp = timeStamp;
-  _minCorrectorTimeStamp         = timeStamp;
-  _minPredictorTimeStamp         = timeStamp;
+  _previousMinTimeStamp = timeStamp;
+  _minTimeStamp         = timeStamp;
+  _estimatedMinTimeStamp         = timeStamp;
 
   _meshUpdateEvent = MeshUpdateEvent::InitialRefinementRequested;
 
@@ -2311,9 +2305,9 @@ int exahype::solvers::ADERDGSolver::predictionAndVolumeIntegralBody(
   #if !defined(SharedMemoryParallelisation) && !defined(Parallel) && defined(Asserts)
   static int counter = 0;
   static double timeStamp = 0;
-  if ( !tarch::la::equals(timeStamp,_minCorrectorTimeStamp,1e-9) ) {
+  if ( !tarch::la::equals(timeStamp,_minTimeStamp,1e-9) ) {
     logInfo("performPredictionAndVolumeIntegralBody(...)","#predictions="<<counter);
-    timeStamp = _minCorrectorTimeStamp;
+    timeStamp = _minTimeStamp;
     counter=0;
   }
   counter++;
@@ -2388,7 +2382,7 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
     const bool isSkeletonCell    = isAMRSkeletonCell || isAtRemoteBoundary;
     waitUntilCompletedLastStep(cellDescription,isSkeletonCell,false);
     if ( cellDescription.getType()==CellDescription::Type::Cell ) {
-      const auto predictionTimeStepData = getPredictionTimeStepData(cellDescription,true); // must be fixed at spawn time
+      const auto predictionTimeStepData = getPredictionTimeStepData(cellDescription,false); // this is either the fused scheme or a predictor recomputation
       performPredictionAndVolumeIntegral(solverNumber,cellInfo,
           std::get<0>(predictionTimeStepData),
           std::get<1>(predictionTimeStepData),
@@ -2696,9 +2690,9 @@ void exahype::solvers::ADERDGSolver::correction(
   #if !defined(SharedMemoryParallelisation) && !defined(Parallel) && defined(Asserts)
   static int counter = 0;
   static double timeStamp = 0;
-  if ( !tarch::la::equals(timeStamp,_minCorrectorTimeStamp,1e-9) ) {
+  if ( !tarch::la::equals(timeStamp,_minTimeStamp,1e-9) ) {
     logInfo("mergeNeighboursData(...)","#updateSolution="<<counter);
-    timeStamp = _minCorrectorTimeStamp;
+    timeStamp = _minTimeStamp;
     counter=0;
   }
   counter++;
@@ -3166,9 +3160,9 @@ void exahype::solvers::ADERDGSolver::mergeNeighboursData(
       #if !defined(SharedMemoryParallelisation) && !defined(Parallel) && defined(Asserts)
       static int counter = 0;
       static double timeStamp = 0;
-      if ( !tarch::la::equals(timeStamp,_minCorrectorTimeStamp,1e-9) ) {
+      if ( !tarch::la::equals(timeStamp,_minTimeStamp,1e-9) ) {
         logInfo("mergeNeighboursData(...)","#riemanns="<<counter);
-        timeStamp = _minCorrectorTimeStamp;
+        timeStamp = _minTimeStamp;
         counter=0;
       }
       counter++;
@@ -3331,9 +3325,9 @@ void exahype::solvers::ADERDGSolver::applyBoundaryConditions(CellDescription& p,
   #if !defined(SharedMemoryParallelisation) && !defined(Parallel) && defined(Asserts)
   static int counter = 0;
   static double timeStamp = 0;
-  if ( !tarch::la::equals(timeStamp,_minCorrectorTimeStamp,1e-9) ) {
+  if ( !tarch::la::equals(timeStamp,_minTimeStamp,1e-9) ) {
     logInfo("applyBoundaryConditions(...)","#boundaryConditions="<<counter);
-    timeStamp = _minCorrectorTimeStamp;
+    timeStamp = _minTimeStamp;
     counter=0;
   }
   counter++;
@@ -4196,10 +4190,10 @@ void exahype::solvers::ADERDGSolver::sendDataToMaster(
 exahype::DataHeap::HeapEntries
 exahype::solvers::ADERDGSolver::compileMessageForMaster(const int capacity) const {
   DataHeap::HeapEntries messageForMaster(0,std::max(6,capacity));
-  messageForMaster.push_back(_minCorrectorTimeStamp);
-  messageForMaster.push_back(_minCorrectorTimeStepSize);
-  messageForMaster.push_back(_minPredictorTimeStamp);
-  messageForMaster.push_back(_minPredictorTimeStepSize);
+  messageForMaster.push_back(_minTimeStamp);
+  messageForMaster.push_back(_minTimeStepSize);
+  messageForMaster.push_back(_estimatedMinTimeStamp);
+  messageForMaster.push_back(_estimatedTimeStepSize);
   messageForMaster.push_back(_maxLevel);
   messageForMaster.push_back(convertToDouble(_meshUpdateEvent));
 
@@ -4243,10 +4237,10 @@ void exahype::solvers::ADERDGSolver::mergeWithWorkerData(
              "message size="<<messageFromWorker.size());
 
     logDebug("mergeWithWorkerData(...)","Updated fields: " <<
-             "_minCorrectorTimeStamp="    << _minCorrectorTimeStamp    << "," <<
-             "_minCorrectorTimeStepSize=" << _minCorrectorTimeStepSize << "," <<
-             "_minPredictorTimeStamp="    << _minPredictorTimeStamp    << "," <<
-             "_minPredictorTimeStepSize=" << _minPredictorTimeStepSize << "," <<
+             "_minCorrectorTimeStamp="    << _minTimeStamp    << "," <<
+             "_minCorrectorTimeStepSize=" << _minTimeStepSize << "," <<
+             "_minPredictorTimeStamp="    << _estimatedMinTimeStamp    << "," <<
+             "_minPredictorTimeStepSize=" << _estimatedTimeStepSize << "," <<
              "_maxLevel="                 << _maxLevel                 << "," <<
              "_meshUpdateEvent="          << Solver::toString(_meshUpdateEvent) );
    }
@@ -4255,10 +4249,10 @@ void exahype::solvers::ADERDGSolver::mergeWithWorkerData(
 
   if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
     logDebug("mergeWithWorkerData(...)","Updated fields: " <<
-        "_minCorrectorTimeStamp="    << _minCorrectorTimeStamp    << "," <<
-        "_minCorrectorTimeStepSize=" << _minCorrectorTimeStepSize << "," <<
-        "_minPredictorTimeStamp="    << _minPredictorTimeStamp    << "," <<
-        "_minPredictorTimeStepSize=" << _minPredictorTimeStepSize << "," <<
+        "_minCorrectorTimeStamp="    << _minTimeStamp    << "," <<
+        "_minCorrectorTimeStepSize=" << _minTimeStepSize << "," <<
+        "_minPredictorTimeStamp="    << _estimatedMinTimeStamp    << "," <<
+        "_minPredictorTimeStepSize=" << _estimatedTimeStepSize << "," <<
         "_maxLevel="                 << _maxLevel                 << "," <<
         "_meshUpdateEvent="          << Solver::toString(_meshUpdateEvent) );
   }
@@ -4269,10 +4263,10 @@ void exahype::solvers::ADERDGSolver::mergeWithWorkerData(const DataHeap::HeapEnt
   // Thus it does not equal MAX_DOUBLE.
 
   int index=0; // post update
-  _minCorrectorTimeStamp    = std::min( _minCorrectorTimeStamp,    message[index++] );
-  _minCorrectorTimeStepSize = std::min( _minCorrectorTimeStepSize, message[index++] );
-  _minPredictorTimeStamp    = std::min( _minPredictorTimeStamp,    message[index++] );
-  _minPredictorTimeStepSize = std::min( _minPredictorTimeStepSize, message[index++] );
+  _minTimeStamp    = std::min( _minTimeStamp,    message[index++] );
+  _minTimeStepSize = std::min( _minTimeStepSize, message[index++] );
+  _estimatedMinTimeStamp    = std::min( _estimatedMinTimeStamp,    message[index++] );
+  _estimatedTimeStepSize = std::min( _estimatedTimeStepSize, message[index++] );
   _maxLevel                 = std::max( _maxLevel,                 static_cast<int>(message[index++]) );
   _meshUpdateEvent          = mergeMeshUpdateEvents(_meshUpdateEvent,convertToMeshUpdateEvent(message[index++]));
 }
@@ -4321,10 +4315,10 @@ void exahype::solvers::ADERDGSolver::sendDataToWorker(
 
 void exahype::solvers::ADERDGSolver::mergeWithMasterData(const DataHeap::HeapEntries& message) {
   int index=0;
-  _minCorrectorTimeStamp         = message[index++];
-  _minCorrectorTimeStepSize      = message[index++];
-  _minPredictorTimeStamp         = message[index++];
-  _minPredictorTimeStepSize      = message[index++];
+  _minTimeStamp         = message[index++];
+  _minTimeStepSize      = message[index++];
+  _estimatedMinTimeStamp         = message[index++];
+  _estimatedTimeStepSize      = message[index++];
   _maxLevel                      = message[index++];
   _meshUpdateEvent               = convertToMeshUpdateEvent(message[index++]);
   _stabilityConditionWasViolated = (message[index++] > 0.0) ? true : false;
@@ -4399,15 +4393,15 @@ void exahype::solvers::ADERDGSolver::toString (std::ostream& out) const {
   out << ",";
   out << "_spaceTimeFluxUnknownsPerCell:" << getSpaceTimeFluxUnknownsPerCell();
   out << ",";
-  out << "_previousMinCorrectorTimeStamp:" << _previousMinCorrectorTimeStamp;
+  out << "_previousMinCorrectorTimeStamp:" << _previousMinTimeStamp;
   out << ",";
-  out << "_previousMinCorrectorTimeStepSize:" << _previousMinCorrectorTimeStepSize;
+  out << "_previousMinCorrectorTimeStepSize:" << _previousMinTimeStepSize;
   out << ",";
-  out << "_minCorrectorTimeStamp:" << _minCorrectorTimeStamp;
+  out << "_minCorrectorTimeStamp:" << _minTimeStamp;
   out << ",";
-  out << "_minCorrectorTimeStepSize:" << _minCorrectorTimeStepSize;
+  out << "_minCorrectorTimeStepSize:" << _minTimeStepSize;
   out << ",";
-  out << "_minPredictorTimeStepSize:" << _minPredictorTimeStepSize;
+  out << "_minPredictorTimeStepSize:" << _estimatedTimeStepSize;
   out << ",";
   out << "_minNextPredictorTimeStepSize:" << _minNextTimeStepSize;
   out <<  ")";

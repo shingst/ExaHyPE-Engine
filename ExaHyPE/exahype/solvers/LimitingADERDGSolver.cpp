@@ -157,10 +157,10 @@ void exahype::solvers::LimitingADERDGSolver::startNewTimeStepFused(
 }
 
 void exahype::solvers::LimitingADERDGSolver::ensureLimiterTimeStepDataIsConsistent() const {
-  _limiter->_minTimeStamp            = _solver->_minCorrectorTimeStamp;
-  _limiter->_minTimeStepSize         = _solver->_minCorrectorTimeStepSize;
-  _limiter->_previousMinTimeStamp    = _solver->_previousMinCorrectorTimeStamp;
-  _limiter->_previousMinTimeStepSize = _solver->_previousMinCorrectorTimeStepSize;
+  _limiter->_minTimeStamp            = _solver->_minTimeStamp;
+  _limiter->_minTimeStepSize         = _solver->_minTimeStepSize;
+  _limiter->_previousMinTimeStamp    = _solver->_previousMinTimeStamp;
+  _limiter->_previousMinTimeStepSize = _solver->_previousMinTimeStepSize;
 }
 
 void exahype::solvers::LimitingADERDGSolver::updateTimeStepSizesFused()  {
@@ -414,14 +414,14 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
           (SpawnUpdateAsBackgroundJob || (SpawnPredictionAsBackgroundJob && !isLastTimeStepOfBatch)) &&
           !mustBeDoneImmediately
       ) {
-        const auto predictionTimeStepData = _solver->getPredictionTimeStepData(solverPatch,true/*fused...AndNoRollback*/);
+        const auto predictionTimeStepData = _solver->getPredictionTimeStepData(solverPatch,true/*duringFusedTimeStep*/);
         peano::datatraversal::TaskSet( new FusedTimeStepJob(
             *this,solverPatch,cellInfo,
             std::get<0>(predictionTimeStepData),std::get<1>(predictionTimeStepData),
             isFirstTimeStepOfBatch,isLastTimeStepOfBatch,isSkeletonCell) );
         return UpdateResult();
       } else {
-        const auto predictionTimeStepData = _solver->getPredictionTimeStepData(solverPatch,true/*fused...AndNoRollback*/);
+        const auto predictionTimeStepData = _solver->getPredictionTimeStepData(solverPatch,true/*duringFusedTimeStep*/);
         return fusedTimeStepBody(
             solverPatch, cellInfo,
             solverPatch.getNeighbourMergePerformed(),
@@ -1170,7 +1170,7 @@ double exahype::solvers::LimitingADERDGSolver::recomputeSolutionLocally(
           (solverPatch.getRefinementStatus()        == _solver->getMinRefinementStatusForTroubledCell()-1 ||  // holds an active FV patch                                                                                                 // or
           solverPatch.getPreviousRefinementStatus() >= _solver->getMinRefinementStatusForTroubledCell())      // was previously troubled but is no more
       ) {
-        const auto predictionTimeStepData = _solver->getPredictionTimeStepData(solverPatch,false/*fusedTimeSteppingAndNoRollback*/);
+        const auto predictionTimeStepData = _solver->getPredictionTimeStepData(solverPatch,false/*duringFusedTimeStep*/);
         _solver->performPredictionAndVolumeIntegral(
             solverNumber,cellInfo,
             std::get<0>(predictionTimeStepData),
