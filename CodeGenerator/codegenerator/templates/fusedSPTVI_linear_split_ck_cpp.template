@@ -212,6 +212,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
       }
     }
     
+{% if nDim ==3 %}
     //ncp in z
     // z direction (independent from the x and y derivatives)
     for (int xy = 0; xy < {{nDof*nDof}}; xy++) {
@@ -226,7 +227,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
         lQi_next[xyz*{{nVarPad}}+n] -= tmpArray[n]; 
       }
     }
-    
+{% endif%}
 {% if usePointSources %}
     //add ith Ps derivative to lQi_next
     for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {
@@ -261,82 +262,11 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
   } // end time loop
   
   
-  //recompute lFhi in x
-  for (int yz = 0; yz < {{nDof*nDof3D}}; yz++) {
-    {{ m.matmul('gradQ_x_sck', 'lQhi', 'dudxT_by_dx', 'gradQ', 'yz*'~nDof*nVarPad, '0', 'yz*'~nDof*nVarPad) | indent(4) }}{##}
-  }
-  for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {
-    //include flux here
-    std::memset(lFhi+xyz*{{nVarPad}}, 0, {{nVarPad}}*sizeof(double)); // TODO JMG flux ersatzt
-    solver.Elastic::ElasticWaveSolver::nonConservativeProduct_x(lQhi+xyz*{{nVarPad}}, {% if nPar != 0 %}P+xyz*{{nParPad}}{% else %}nullptr{%endif%}, gradQ+xyz*{{nVarPad}}, tmpArray);
-    #pragma omp simd aligned(lFhi,tmpArray:ALIGNMENT)
-    for (int n = 0; n < {{nVarPad}}; n++) {
-      lFhi[xyz*{{nVarPad}}+n] += tmpArray[n];
-    }
-  }
-  
-  
-  //recompute lFhi in y
-  for (int z = 0; z < {{nDof3D}}; z++) {
-      for (int x = 0; x < {{nDof}}; x++) {
-        {{ m.matmul('gradQ_y_sck', 'lQhi', 'dudxT_by_dx', 'gradQ', '(z*'~nDof*nDof~'+x)*'~nVarPad, '0', '(z*'~nDof*nDof~'+x)*'~nVarPad) | indent(6) }}{##}
-      }
-    }
-  for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {
-    //include flux here
-    std::memset(lFhi+xyz*{{nVarPad}}+{{nVarPad*(nDof**nDim)}}, 0, {{nVarPad}}*sizeof(double)); // TODO JMG flux ersatzt
-    solver.Elastic::ElasticWaveSolver::nonConservativeProduct_y(lQhi+xyz*{{nVarPad}}, {% if nPar != 0 %}P+xyz*{{nParPad}}{% else %}nullptr{%endif%}, gradQ+xyz*{{nVarPad}}, tmpArray);
-    #pragma omp simd aligned(lFhi,tmpArray:ALIGNMENT)
-    for (int n = 0; n < {{nVarPad}}; n++) {
-      lFhi[xyz*{{nVarPad}}+n+{{nVarPad*(nDof**nDim)}}] += tmpArray[n];
-    }
-  }
-  
-  //recompute lFhi in z
-  for (int xy = 0; xy < {{nDof*nDof}}; xy++) {
-    {{ m.matmul('gradQ_z_sck', 'lQhi', 'dudxT_by_dx', 'gradQ', 'xy*'~nVarPad, '0', 'xy*'~nVarPad) | indent(4) }}{##}
-  }
-  for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {
-    //include flux here
-    std::memset(lFhi+xyz*{{nVarPad}}+{{2*nVarPad*(nDof**nDim)}}, 0, {{nVarPad}}*sizeof(double)); // TODO JMG flux ersatzt
-    solver.Elastic::ElasticWaveSolver::nonConservativeProduct_z(lQhi+xyz*{{nVarPad}}, {% if nPar != 0 %}P+xyz*{{nParPad}}{% else %}nullptr{%endif%}, gradQ+xyz*{{nVarPad}}, tmpArray);
-    #pragma omp simd aligned(lFhi,tmpArray:ALIGNMENT)
-    for (int n = 0; n < {{nVarPad}}; n++) {
-      lFhi[xyz*{{nVarPad}}+n+{{2*nVarPad*(nDof**nDim)}}] += tmpArray[n];
-    }
-  }
-
-
-{% if usePointSources %}
-  // Add point source to the right hand side
-  double sum_array[{{nVarPad}}] __attribute__((aligned(ALIGNMENT)));
-  for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {
-    std::memset(sum_array, 0, {{nVarPad}}*sizeof(double));
-    for (int n0 = 0; n0 < {{nDof}}; n0++) {
-      const double coeff = weights1[n0] / {{nDim}};
-      #pragma omp simd aligned(sum_array,PSi:ALIGNMENT)
-      for (int n = 0; n < {{nVarPad}}; n++) {
-        sum_array[n] += coeff * PSi[(n0*{{nDof**nDim}}+xyz)*{{nVarPad}}+n];
-      }
-    }
-    #pragma omp simd aligned(lFhi,sum_array:ALIGNMENT)
-    for (int n = 0; n < {{nVarPad}}; n++) {
-      lFhi[xyz*{{nVarPad}}+n] += sum_array[n]; //x
-      lFhi[xyz*{{nVarPad}}+n+{{1*(nDof**nDim)*nVarPad}}] += sum_array[n]; //y
-{% if nDim==3 %}
-      lFhi[xyz*{{nVarPad}}+n+{{2*(nDof**nDim)*nVarPad}}] += sum_array[n]; //z
-{% endif %}
-    }
-  }
-{% endif %}
-  
-
   //***********************
   //**** Extrapolation ****
   //***********************
 
   std::memset(lQhbnd, 0, {{2*nDim*nDof*nDof3D*nDataPad}}*sizeof(double));
-  std::memset(lFhbnd, 0, {{2*nDim*nDof*nDof3D*nVarPad }}*sizeof(double));
 
   // x-direction: face 1 (left) and face 2 (right)
   for (int yz = 0; yz < {{nDof*nDof3D}}; yz++) {
@@ -365,16 +295,8 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
         lQhbnd[yz*{{nDataPad}}+n+{{1*nDof*nDof3D*nDataPad+nVar}}] += P[(yz*{{nDof}}+x)*{{nParPad}}+n] * FRCoeff[x];
       }
 {% endif %}
-      #pragma omp simd aligned(lFhbnd,lFhi:ALIGNMENT)
-      for (int n = 0; n < {{nVarPad}}; n++) {
-        // left
-        lFhbnd[yz*{{nVarPad}}+n] += lFhi[(yz*{{nDof}}+x)*{{nVarPad}}+n] * FLCoeff[x];
-        // right
-        lFhbnd[yz*{{nVarPad}}+n+{{1*nDof*nDof3D*nVarPad}}] += lFhi[(yz*{{nDof}}+x)*{{nVarPad}}+n] * FRCoeff[x];
-      }
     }
   }
-
 
   // y-direction: face 3 (left) and face 4 (right)
   for (int z = 0; z < {{nDof3D}}; z++) {
@@ -404,13 +326,6 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
           lQhbnd[(z*{{nDof3D}}+x)*{{nDataPad}}+n+{{3*nDof*nDof3D*nDataPad+nVar}}] += P[((z*{{nDof3D}}+y)*{{nDof}}+x)*{{nParPad}}+n] * FRCoeff[y];
         }
 {% endif %}
-        #pragma omp simd aligned(lFhbnd,lFhi:ALIGNMENT)
-        for (int n = 0; n < {{nVarPad}}; n++) {
-          // left
-          lFhbnd[(z*{{nDof3D}}+x)*{{nVarPad}}+n+{{2*nDof*nDof3D*nVarPad}}] += lFhi[((z*{{nDof3D}}+y)*{{nDof}}+x)*{{nVarPad}}+n+{{1*(nDof**nDim)*nVarPad}}] * FLCoeff[y];
-          // right
-          lFhbnd[(z*{{nDof3D}}+x)*{{nVarPad}}+n+{{3*nDof*nDof3D*nVarPad}}] += lFhi[((z*{{nDof3D}}+y)*{{nDof}}+x)*{{nVarPad}}+n+{{1*(nDof**nDim)*nVarPad}}] * FRCoeff[y];
-        }
       }
     }
   }
@@ -443,56 +358,146 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
         lQhbnd[xy*{{nDataPad}}+n+{{5*nDof*nDof3D*nDataPad+nVar}}] += P[(z*{{nDof*nDof}}+xy)*{{nParPad}}+n] * FRCoeff[z];
       }
 {% endif %}
+    }
+  }
+{% endif %}
+
+  //**********************************
+  //**** Flux and Volume Integral ****
+  //**********************************
+  
+{% if usePointSources %}
+  // Integrate PSi over time on itself
+  { // t=0
+    const double coeff = weights1[0] / {{nDim}};
+    #pragma omp simd aligned(PSi:ALIGNMENT)
+    for (int it = 0; it < {{(nDof**nDim)*nVarPad}}; it++) {
+      PSi[it] *= coeff;
+    }
+  }
+  for (int t = 1; t < {{nDof}}; t++) {
+    const double coeff = weights1[t] / {{nDim}};
+    #pragma omp simd aligned(PSi:ALIGNMENT)
+    for (int it = 0; it < {{(nDof**nDim)*nVarPad}}; it++) {
+      PSi[it] += coeff * PSi[t*{{nDof**nDim*nVarPad}}+it];
+    }
+  }
+  
+{% endif %}
+  
+  //recompute lFhi in x
+  for (int yz = 0; yz < {{nDof*nDof3D}}; yz++) {
+    {{ m.matmul('gradQ_x_sck', 'lQhi', 'dudxT_by_dx', 'gradQ', 'yz*'~nDof*nVarPad, '0', 'yz*'~nDof*nVarPad) | indent(4) }}{##}
+  }
+{% if usePointSources %}
+  std::copy_n(PSi, {{(nDof**nDim)*nVarPad}}, lFhi); //start with the pointsource values
+{%else%}
+  std::memset(lFhi, 0, {{(nDof**nDim)*nVarPad}}*sizeof(double)); // TODO JMG flux ersatzt
+{% endif %}
+  for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {
+    //include flux here
+    //std::memset(lFhi+xyz*{{nVarPad}}, 0, {{nVarPad}}*sizeof(double)); // TODO JMG flux ersatzt
+    solver.Elastic::ElasticWaveSolver::nonConservativeProduct_x(lQhi+xyz*{{nVarPad}}, {% if nPar != 0 %}P+xyz*{{nParPad}}{% else %}nullptr{%endif%}, gradQ+xyz*{{nVarPad}}, tmpArray);
+    #pragma omp simd aligned(lFhi,tmpArray:ALIGNMENT)
+    for (int n = 0; n < {{nVarPad}}; n++) {
+      lFhi[xyz*{{nVarPad}}+n] += tmpArray[n];
+    }
+  }
+  
+  std::memset(lduh, 0, {{(nDof**nDim)*nVarPad}}*sizeof(double)); // reset lduh
+  // x boundary and volume
+  std::memset(lFhbnd, 0, {{2*nDof*nDof3D*nVarPad}}*sizeof(double));
+  for (int yz = 0; yz < {{nDof*nDof3D}}; yz++) {
+    for (int x = 0; x < {{nDof}}; x++) {
       #pragma omp simd aligned(lFhbnd,lFhi:ALIGNMENT)
       for (int n = 0; n < {{nVarPad}}; n++) {
         // left
-        lFhbnd[xy*{{nVarPad}}+n+{{4*nDof*nDof3D*nVarPad}}] += lFhi[(z*{{nDof*nDof}}+xy)*{{nVarPad}}+n+{{2*(nDof**nDim)*nVarPad}}] * FLCoeff[z];
+        lFhbnd[yz*{{nVarPad}}+n] += lFhi[(yz*{{nDof}}+x)*{{nVarPad}}+n] * FLCoeff[x];
         // right
-        lFhbnd[xy*{{nVarPad}}+n+{{5*nDof*nDof3D*nVarPad}}] += lFhi[(z*{{nDof*nDof}}+xy)*{{nVarPad}}+n+{{2*(nDof**nDim)*nVarPad}}] * FRCoeff[z];
+        lFhbnd[yz*{{nVarPad}}+n+{{1*nDof*nDof3D*nVarPad}}] += lFhi[(yz*{{nDof}}+x)*{{nVarPad}}+n] * FRCoeff[x];
+        // volume
+        lduh[(yz*{{nDof}}+x)*{{nVarPad}}+n] -= lFhi[(yz*{{nDof}}+x)*{{nVarPad}}+n] * weights3[yz*{{nDof}}+x];
+      }
+    }
+  }
+  
+  //recompute lFhi in y
+  for (int z = 0; z < {{nDof3D}}; z++) {
+      for (int x = 0; x < {{nDof}}; x++) {
+        {{ m.matmul('gradQ_y_sck', 'lQhi', 'dudxT_by_dx', 'gradQ', '(z*'~nDof*nDof~'+x)*'~nVarPad, '0', '(z*'~nDof*nDof~'+x)*'~nVarPad) | indent(6) }}{##}
+      }
+    }
+{% if usePointSources %}
+  std::copy_n(PSi, {{(nDof**nDim)*nVarPad}}, lFhi); //start with the pointsource values
+{%else%}
+  std::memset(lFhi, 0, {{(nDof**nDim)*nVarPad}}*sizeof(double)); // TODO JMG flux ersatzt
+{% endif %}
+  for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {
+    //include flux here
+    //std::memset(lFhi+xyz*{{nVarPad}}+{{nVarPad*(nDof**nDim)}}, 0, {{nVarPad}}*sizeof(double)); // TODO JMG flux ersatzt
+    solver.Elastic::ElasticWaveSolver::nonConservativeProduct_y(lQhi+xyz*{{nVarPad}}, {% if nPar != 0 %}P+xyz*{{nParPad}}{% else %}nullptr{%endif%}, gradQ+xyz*{{nVarPad}}, tmpArray);
+    #pragma omp simd aligned(lFhi,tmpArray:ALIGNMENT)
+    for (int n = 0; n < {{nVarPad}}; n++) {
+      lFhi[xyz*{{nVarPad}}+n] += tmpArray[n];
+    }
+  }
+  
+  // y boundary and volume
+  std::memset(lFhbnd+{{2*nDof*nDof3D*nVarPad }}, 0, {{2*nDof*nDof3D*nVarPad}}*sizeof(double));
+  for (int z = 0; z < {{nDof3D}}; z++) {
+    for (int x = 0; x < {{nDof}}; x++) {
+      for (int y = 0; y < {{nDof}}; y++) {
+        #pragma omp simd aligned(lFhbnd,lFhi:ALIGNMENT)
+        for (int n = 0; n < {{nVarPad}}; n++) {
+          // left
+          lFhbnd[(z*{{nDof3D}}+x)*{{nVarPad}}+n+{{2*nDof*nDof3D*nVarPad}}] += lFhi[((z*{{nDof3D}}+y)*{{nDof}}+x)*{{nVarPad}}+n] * FLCoeff[y];
+          // right
+          lFhbnd[(z*{{nDof3D}}+x)*{{nVarPad}}+n+{{3*nDof*nDof3D*nVarPad}}] += lFhi[((z*{{nDof3D}}+y)*{{nDof}}+x)*{{nVarPad}}+n] * FRCoeff[y];
+          // volume
+          lduh[((z*{{nDof3D}}+y)*{{nDof}}+x)*{{nVarPad}}+n] -= lFhi[((z*{{nDof3D}}+y)*{{nDof}}+x)*{{nVarPad}}+n] * weights3[((z*{{nDof3D}}+y)*{{nDof}}+x)];
+        }
+      }
+    }
+  }
+  
+{% if nDim==3 %}
+  //recompute lFhi in z
+  for (int xy = 0; xy < {{nDof*nDof}}; xy++) {
+    {{ m.matmul('gradQ_z_sck', 'lQhi', 'dudxT_by_dx', 'gradQ', 'xy*'~nVarPad, '0', 'xy*'~nVarPad) | indent(4) }}{##}
+  }
+{% if usePointSources %}
+  std::copy_n(PSi, {{(nDof**nDim)*nVarPad}}, lFhi); //start with the pointsource values
+{%else%}
+  std::memset(lFhi, 0, {{(nDof**nDim)*nVarPad}}*sizeof(double)); // TODO JMG flux ersatzt
+{% endif %}
+  for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {
+    //include flux here
+    //std::memset(lFhi+xyz*{{nVarPad}}+{{2*nVarPad*(nDof**nDim)}}, 0, {{nVarPad}}*sizeof(double)); // TODO JMG flux ersatzt
+    solver.Elastic::ElasticWaveSolver::nonConservativeProduct_z(lQhi+xyz*{{nVarPad}}, {% if nPar != 0 %}P+xyz*{{nParPad}}{% else %}nullptr{%endif%}, gradQ+xyz*{{nVarPad}}, tmpArray);
+    #pragma omp simd aligned(lFhi,tmpArray:ALIGNMENT)
+    for (int n = 0; n < {{nVarPad}}; n++) {
+      lFhi[xyz*{{nVarPad}}+n] += tmpArray[n];
+    }
+  }
+
+  // z boundary and volume
+  std::memset(lFhbnd+{{4*nDof*nDof3D*nVarPad }}, 0, {{2*nDof*nDof3D*nVarPad}}*sizeof(double));
+  for (int xy = 0; xy < {{nDof*nDof3D}}; xy++) {
+    for (int z = 0; z < {{nDof}}; z++) {
+      #pragma omp simd aligned(lFhbnd,lFhi:ALIGNMENT)
+      for (int n = 0; n < {{nVarPad}}; n++) {
+        // left
+        lFhbnd[xy*{{nVarPad}}+n+{{4*nDof*nDof3D*nVarPad}}] += lFhi[(z*{{nDof*nDof}}+xy)*{{nVarPad}}+n] * FLCoeff[z];
+        // right
+        lFhbnd[xy*{{nVarPad}}+n+{{5*nDof*nDof3D*nVarPad}}] += lFhi[(z*{{nDof*nDof}}+xy)*{{nVarPad}}+n] * FRCoeff[z];
+        // volume
+        lduh[(z*{{nDof*nDof}}+xy)*{{nVarPad}}+n] -= lFhi[(z*{{nDof*nDof}}+xy)*{{nVarPad}}+n] * weights3[(z*{{nDof*nDof}}+xy)];
       }
     }
   }
 {% endif %}
 
 
-  //*****************************
-  //****** Volume Integral ******
-  //*****************************
-
-
-  #ifdef __INTEL_COMPILER
-{% if useFlux %}
-  __assume_aligned(lFhi,     ALIGNMENT);
-{% endif %}{# useFlux #}
-  __assume_aligned(lduh,     ALIGNMENT); //lduh should be aligned, see Solver.h
-{% if useSource %}
-  __assume_aligned(weights3, ALIGNMENT);
-  __assume_aligned(lShi,     ALIGNMENT);
-{% endif %}
-#endif
-  // for linear non-conservative PDE, the volume integral is trivial, since it
-  // only involves the element mass matrix, which later will cancel
-  memset(lduh, 0, {{nVarPad*(nDof**nDim)}}*sizeof(double));
-
-  for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {
-    #pragma omp simd aligned(lduh,lFhi{{',lShi' if useSource else ''}}:ALIGNMENT)
-    for (int n = 0; n < {{nVarPad}}; n++) {
-        lduh[xyz*{{nVarPad}}+n] -= weights3[xyz] *
-            (
-{% if useFlux %}
-                lFhi[xyz*{{nVarPad}}+n+{{0*nVarPad*nDof**nDim}}] //x
-              + lFhi[xyz*{{nVarPad}}+n+{{1*nVarPad*nDof**nDim}}] //y
-{% if nDim==3 %}
-              + lFhi[xyz*{{nVarPad}}+n+{{2*nVarPad*nDof**nDim}}] //z
-{% endif %}
-{% endif %}
-{% if useSource %}
-              {{'+' if useFlux}} lShi[xyz*{{nVarPad}}+n] // source
-{% endif %}
-            );
-
-    }
-  }
 
   return -1; //no picard iteration in linear case
 
