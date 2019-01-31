@@ -399,7 +399,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
   std::memset(lFhbnd, 0, {{2*nDof*nDof3D*nVarPad}}*sizeof(double));
   for (int yz = 0; yz < {{nDof*nDof3D}}; yz++) {
     for (int x = 0; x < {{nDof}}; x++) {
-      #pragma omp simd aligned(lFhbnd,lFhi:ALIGNMENT)
+      #pragma omp simd aligned(lFhbnd,lFhi,lduh:ALIGNMENT)
       for (int n = 0; n < {{nVarPad}}; n++) {
         // left
         lFhbnd[yz*{{nVarPad}}+n] += lFhi[(yz*{{nDof}}+x)*{{nVarPad}}+n] * FLCoeff[x];
@@ -437,7 +437,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
   for (int z = 0; z < {{nDof3D}}; z++) {
     for (int x = 0; x < {{nDof}}; x++) {
       for (int y = 0; y < {{nDof}}; y++) {
-        #pragma omp simd aligned(lFhbnd,lFhi:ALIGNMENT)
+        #pragma omp simd aligned(lFhbnd,lFhi,lduh:ALIGNMENT)
         for (int n = 0; n < {{nVarPad}}; n++) {
           // left
           lFhbnd[(z*{{nDof3D}}+x)*{{nVarPad}}+n+{{2*nDof*nDof3D*nVarPad}}] += lFhi[((z*{{nDof3D}}+y)*{{nDof}}+x)*{{nVarPad}}+n] * FLCoeff[y];
@@ -474,7 +474,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
   std::memset(lFhbnd+{{4*nDof*nDof3D*nVarPad }}, 0, {{2*nDof*nDof3D*nVarPad}}*sizeof(double));
   for (int xy = 0; xy < {{nDof*nDof3D}}; xy++) {
     for (int z = 0; z < {{nDof}}; z++) {
-      #pragma omp simd aligned(lFhbnd,lFhi:ALIGNMENT)
+      #pragma omp simd aligned(lFhbnd,lFhi,lduh:ALIGNMENT)
       for (int n = 0; n < {{nVarPad}}; n++) {
         // left
         lFhbnd[xy*{{nVarPad}}+n+{{4*nDof*nDof3D*nVarPad}}] += lFhi[(z*{{nDof*nDof}}+xy)*{{nVarPad}}+n] * FLCoeff[z];
