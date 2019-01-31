@@ -42,8 +42,17 @@ namespace {{namespaceName}} {
   int fusedSpaceTimePredictorVolumeIntegral(
     {{solverName}}& solver,
     double* restrict lduh,
-    double* restrict lQhbnd, 
+    double* restrict lQhbnd,
     double* restrict lFhbnd,
+{% if useSplitCK %}
+    double* restrict lQi,
+    double* restrict lQiNext,
+    double* restrict lPi,   // for NCP or Source
+    double* restrict lQhi,
+    double* restrict lFhi,
+    double* restrict gradQ, // for NCP or Source
+    double* restrict PSi,   // for pointSource
+{% else %}
     double* restrict lQi,
     double* restrict lFi,
     double* restrict lSi,   // for NCP or Source
@@ -53,6 +62,7 @@ namespace {{namespaceName}} {
     double* restrict gradQ, // for NCP or Source
     double* restrict PSi,   // for pointSource
     double* restrict PSderivatives, // for pointSource
+{% endif %}
     const double* const restrict luh,
     const double* const center,
     const double dx, // Assume dx[0] == dx[1] == dx[2]
@@ -64,8 +74,17 @@ namespace {{namespaceName}} {
   int fusedSpaceTimePredictorVolumeIntegral_WithoutPS(
     {{solverName}}& solver,
     double* restrict lduh,
-    double* restrict lQhbnd, 
+    double* restrict lQhbnd,
     double* restrict lFhbnd,
+{% if useSplitCK %}
+    double* restrict lQi,
+    double* restrict lQiNext,
+    double* restrict lPi,   // for NCP or Source
+    double* restrict lQhi,
+    double* restrict lFhi,
+    double* restrict gradQ, // for NCP or Source
+    double* restrict PSi,   // for pointSource
+{% else %}
     double* restrict lQi,
     double* restrict lFi,
     double* restrict lSi,   // for NCP or Source
@@ -75,6 +94,7 @@ namespace {{namespaceName}} {
     double* restrict gradQ, // for NCP or Source
     double* restrict PSi,   // for pointSource
     double* restrict PSderivatives, // for pointSource
+{% endif %}
     const double* const restrict luh,
     const double* const center,
     const double dx, // Assume dx[0] == dx[1] == dx[2]
@@ -87,7 +107,7 @@ namespace {{namespaceName}} {
   int fusedSpaceTimePredictorVolumeIntegral(
     {{solverName}}& solver,
     double* restrict lduh,
-    double* restrict lQhbnd, 
+    double* restrict lQhbnd,
     double* restrict lFhbnd,
     double* restrict lQi,
     double* restrict rhs,
