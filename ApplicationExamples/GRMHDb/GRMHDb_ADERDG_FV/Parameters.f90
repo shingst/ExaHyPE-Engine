@@ -13,7 +13,7 @@
 	INTEGER, PARAMETER :: N = 3   ! used in VSMM.f90                  
 	INTEGER :: myrank_f90
 	INTEGER, PARAMETER :: StrandID = 1   ! any postitive integer number: time strand for tecplot output; 0: inactive
-    INTEGER, PARAMETER :: nElem_max= 350000     ! max element available for tecplot output.
+    INTEGER, PARAMETER :: nElem_max=1000000     ! max element available for tecplot output.
 	!
 #if defined(AVX512)    
 	INTEGER, PARAMETER :: VECTORLENGTH = 8                    ! Define length of vector registers for AVX 512 

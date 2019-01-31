@@ -36,39 +36,39 @@ tarch::logging::Log GRMHDb::GRMHDbSolver_FV::_log( "GRMHDb::GRMHDbSolver_FV" );
 void GRMHDb::GRMHDbSolver_FV::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
   // @todo Please implement/augment if required
 
-    const int order = GRMHDb::AbstractGRMHDbSolver_ADERDG::Order;
-	constexpr int basisSize = AbstractGRMHDbSolver_FV::PatchSize;
-	constexpr int Ghostlayers = AbstractGRMHDbSolver_FV::GhostLayerWidth;
-    int mpirank = tarch::parallel::Node::getInstance().getRank();
-
-
-	/**************************************************************************/
-	static tarch::multicore::BooleanSemaphore initialDataSemaphore;
-	tarch::multicore::Lock lock(initialDataSemaphore);
-	/***************************************************/
-	// everything in here is thread-safe w.r.t. the lock
-	// call Fortran routines
-	/***********************/
-
+    //const int order = GRMHDb::AbstractGRMHDbSolver_ADERDG::Order;
+	//constexpr int basisSize = AbstractGRMHDbSolver_FV::PatchSize;
+	//constexpr int Ghostlayers = AbstractGRMHDbSolver_FV::GhostLayerWidth;
+    //int mpirank = tarch::parallel::Node::getInstance().getRank();
+	//
+	//
+	///**************************************************************************/
+	//static tarch::multicore::BooleanSemaphore initialDataSemaphore;
+	//tarch::multicore::Lock lock(initialDataSemaphore);
+	///***************************************************/
+	//// everything in here is thread-safe w.r.t. the lock
+	//// call Fortran routines
+	///***********************/
+	//
+	////printf("\n******************************************************************");
+	////printf("\n**************<<<  INIT TECPLOT    >>>****************************");
+	////printf("\n******************************************************************");
+    ////inittecplot_(&order,&order,&basisSize,&Ghostlayers);
 	//printf("\n******************************************************************");
-	//printf("\n**************<<<  INIT TECPLOT    >>>****************************");
+	//printf("\n**************<<<  INIT PDE SETUP  >>>****************************");
 	//printf("\n******************************************************************");
-    //inittecplot_(&order,&order,&basisSize,&Ghostlayers);
-	printf("\n******************************************************************");
-	printf("\n**************<<<  INIT PDE SETUP  >>>****************************");
-	printf("\n******************************************************************");
-    //pdesetup_(&mpirank);
-	printf("\n******************************************************************");
-	printf("\n**************<<<       DONE       >>>****************************");
-	printf("\n******************************************************************");
-    //fflush(stdout);
-
-
-
-	/************/
-	lock.free();
-	// everything afterwards is not thread-safe anymore w.r.t. the lock
-	/**************************************************************************/
+    ////pdesetup_(&mpirank);
+	//printf("\n******************************************************************");
+	//printf("\n**************<<<       DONE       >>>****************************");
+	//printf("\n******************************************************************");
+    ////fflush(stdout);
+	//
+	//
+	//
+	///************/
+	//lock.free();
+	//// everything afterwards is not thread-safe anymore w.r.t. the lock
+	///**************************************************************************/
 }
 
 void GRMHDb::GRMHDbSolver_FV::adjustSolution(const double* const x, const double t, const double dt, double* Q) {
@@ -97,7 +97,20 @@ void GRMHDb::GRMHDbSolver_FV::adjustSolution(const double* const x, const double
 		Q[16] = 0.0;
 		Q[17] = 0.0;
 		Q[18] = 0.0;
-        initialdata_(x, &t, Q);
+		/**************************************************************************/
+		static tarch::multicore::BooleanSemaphore initialDataSemaphore;
+		tarch::multicore::Lock lock(initialDataSemaphore);
+		/***************************************************/
+		// everything in here is thread-safe w.r.t. the lock
+		// call Fortran routines
+		/***********************/
+
+                initialdata_(x, &t, Q);
+
+		/************/
+		lock.free();
+		// everything afterwards is not thread-safe anymore w.r.t. the lock
+		/**************************************************************************/
 
 		/*Q[0] = exp(-(x[0] * x[0] + x[1] * x[1] + x[2] * x[2]) / 8.0);
 		Q[1] = sin(x[1])*sin(x[0]);

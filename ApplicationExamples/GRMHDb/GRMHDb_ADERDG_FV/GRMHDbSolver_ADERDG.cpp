@@ -111,7 +111,7 @@ void GRMHDb::GRMHDbSolver_ADERDG::adjustPointSolution(const double* const x,cons
 	// everything in here is thread-safe w.r.t. the lock
 	// call Fortran routines
 	/***********************/
-    initialdata_(x, &t, Q);
+        initialdata_(x, &t, Q);
 
 	/************/
 	lock.free();
@@ -203,7 +203,7 @@ const int nVar = GRMHDb::AbstractGRMHDbSolver_ADERDG::NumberOfVariables;
 	  double ti = t + xi * dt;
 
 	  initialdata_(x, &ti, Qgp);
-	  //pdeflux_(F[0], F[1], F[2], Qgp);
+	  pdeflux_(F[0], F[1], F[2], Qgp);
 	  flux(Qgp, F);
     for(int m=0; m < nVar; m++) {
 		  stateOut[m] += weight * Qgp[m];
