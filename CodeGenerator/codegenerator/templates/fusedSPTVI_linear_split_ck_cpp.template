@@ -55,6 +55,27 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
     std::vector<int>* pointSources // will be deleted in the end if set
 ) {
 
+#ifdef __INTEL_COMPILER
+  // Aligned input
+  __assume_aligned(lduh,     ALIGNMENT); //lduh should be aligned, see Solver.h
+  __assume_aligned(lQhbnd,   ALIGNMENT);
+  __assume_aligned(lFhbnd,   ALIGNMENT);
+  __assume_aligned(lQi,      ALIGNMENT);
+  __assume_aligned(lQi_next, ALIGNMENT);
+  __assume_aligned(lPi,      ALIGNMENT);
+  __assume_aligned(lQhi,     ALIGNMENT);
+  __assume_aligned(lFhi,     ALIGNMENT);
+  __assume_aligned(gradQ,    ALIGNMENT);
+  __assume_aligned(PSi,      ALIGNMENT);
+  __assume_aligned(luh,      ALIGNMENT);
+  // Aligned global
+  __assume_aligned(dudx_T,   ALIGNMENT);
+  __assume_aligned(weights1, ALIGNMENT);
+  __assume_aligned(weights3, ALIGNMENT);
+  __assume_aligned(iweights3,ALIGNMENT);
+#endif
+
+
   const double invDt = 1. / dt;
   const double invDx = 1. / dx;
 
@@ -150,7 +171,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
   // Add average PS to zero time derviative and lQh
   for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {
     for (int t = 0; t < {{nDof}}; t++) {
-      #pragma omp simd aligned(lQi,weights1:ALIGNMENT)
+      #pragma omp simd aligned(lQi,lQhi,PSi,weights1:ALIGNMENT)
       for (int n = 0; n < {{nVar}}; n++) { //skip parameters //TODO JMG test pad
         lQi [xyz*{{nVarPad}}+n] += dt*weights1[t]*PSi[(t*{{nDof**nDim}}+xyz)*{{nVarPad}}+n];
         lQhi[xyz*{{nVarPad}}+n] += dt*weights1[t]*PSi[(t*{{nDof**nDim}}+xyz)*{{nVarPad}}+n];
@@ -232,6 +253,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
     double derPS_buffer[{{nDof}}] __attribute__((aligned(ALIGNMENT)));
     std::memset(derPS_buffer,0,{{nDof}}*sizeof(double));
     for(int it2 = 0 ; it2 < {{nDof}} ; it2++){
+      #pragma omp simd aligned(derPS_buffer,dudx_T:ALIGNMENT)
       for(int it1 = 0 ; it1 < {{nDof}} ; it1++){
         derPS_buffer[it2] += derPS[it1]*dudx_T[it2*8+it1];
       }
