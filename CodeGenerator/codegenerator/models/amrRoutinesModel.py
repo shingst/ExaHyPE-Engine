@@ -29,10 +29,6 @@ from ..utils import MatmulConfig
 class AMRRoutinesModel(AbstractModelBaseClass):    
     
     def generateCode(self):
-        self.context["gemm_face_Q"] = "gemm_"+str(self.context["nDataPad"])+"_"+str(self.context["nDof"])+"_"+str(self.context["nDof"])+"_face_Q"
-        self.context["gemm_face_F"] = "gemm_"+str(self.context["nVarPad"]) +"_"+str(self.context["nDof"])+"_"+str(self.context["nDof"])+"_face_F"
-        self.context["gemm_volume"] = "gemm_"+str(self.context["nData"])+"_"+str(self.context["nDof"])+"_"+str(self.context["nDof"])+"_volume"
-        
         self.render("amrRoutines_cpp.template", "amrRoutines.cpp")
         # generates gemms
         if(self.context["useLibxsmm"]):
@@ -68,89 +64,3 @@ class AMRRoutinesModel(AbstractModelBaseClass):
         else:
             self.context["matmulConfigs"]["volume_y"] =  MatmulConfig(nData   , nDof, nDof, nDataPad*nDof , nDofPad, nData*nDof   , 1, 0, 1, 0, "volume_y", "nopf", "gemm") # output slice not aligned
             self.context["matmulConfigs"]["volume_y_add"] = MatmulConfig(nData, nDof, nDof, nDataPad*nDof , nDofPad, nData*nDof   , 1, 1, 1, 0, "volume_y_add", "nopf", "gemm") # output slice not aligned, add to result
-        
-        # TODO JMG Old gemms, to delete
-        #-----------------------------
-        # implementation file
-        #-----------------------------
-        self.context["matmulConfigs"]["face_Q"] = MatmulConfig(  
-                                    # M
-                                    self.context["nDataPad"],      \
-                                    # N
-                                    self.context["nDof"],       \
-                                    # K
-                                    self.context["nDof"],       \
-                                    # LDA
-                                    self.context["nDataPad"],   \
-                                    # LDB
-                                    self.context["nDofPad"],    \
-                                    # LDC
-                                    self.context["nDataPad"],   \
-                                    # alpha
-                                    1,                            \
-                                    # beta
-                                    1,                            \
-                                    # alignment A
-                                    0,                            \
-                                    # alignment C
-                                    1,                            \
-                                    # name
-                                    "face_Q",                     \
-                                    # prefetching
-                                    "nopf",                       \
-                                    # type
-                                    "gemm")
-        self.context["matmulConfigs"]["face_F"] = MatmulConfig(  
-                                    # M
-                                    self.context["nVarPad"],       \
-                                    # N
-                                    self.context["nDof"],       \
-                                    # K
-                                    self.context["nDof"],       \
-                                    # LDA
-                                    self.context["nVarPad"],    \
-                                    # LDB
-                                    self.context["nDofPad"],    \
-                                    # LDC
-                                    self.context["nVarPad"],    \
-                                    # alpha
-                                    1,                            \
-                                    # beta
-                                    1,                            \
-                                    # alignment A
-                                    0,                            \
-                                    # alignment C
-                                    1,                            \
-                                    # name
-                                    "face_F",                     \
-                                    # prefetching
-                                    "nopf",                       \
-                                    # type
-                                    "gemm")
-        self.context["matmulConfigs"]["volume"] = MatmulConfig(  
-                                    # M
-                                    self.context["nData"],       \
-                                    # N
-                                    self.context["nDof"],       \
-                                    # K
-                                    self.context["nDof"],       \
-                                    # LDA
-                                    self.context["nData"],      \
-                                    # LDB
-                                    self.context["nDofPad"],    \
-                                    # LDC
-                                    self.context["nData"],      \
-                                    # alpha
-                                    1,                            \
-                                    # beta
-                                    1,                            \
-                                    # alignment A
-                                    0,                            \
-                                    # alignment C
-                                    1,                            \
-                                    # name
-                                    "volume",                     \
-                                    # prefetching
-                                    "nopf",                       \
-                                    # type
-                                    "gemm")
