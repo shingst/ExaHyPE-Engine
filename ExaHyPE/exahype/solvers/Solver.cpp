@@ -213,7 +213,9 @@ exahype::solvers::Solver::Solver(
       _nextMaxLevel(-std::numeric_limits<int>::max()), // "-", min
       _timeStepping(timeStepping),
       _profiler(std::move(profiler)) {
+  #ifdef Parallel
   logInfo("Solver(...)","master worker communication tag is:" << MasterWorkerCommunicationTag);
+  #endif
 }
 
 

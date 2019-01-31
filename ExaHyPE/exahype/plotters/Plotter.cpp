@@ -533,8 +533,6 @@ exahype::plotters::Plotter::Plotter(
   _solver   = solverDataSource;
   _filename = _filename + "_" + std::to_string(solverDataSource);
 
-  // TODO(Dominic): Looks like a hack. Clean.
-
   if (_device!=nullptr) {
     _device->init(
         _filename,

@@ -371,6 +371,7 @@ void exahype::State::globalReduction(exahype::records::RepositoryState& reposito
   }
 }
 
+#ifdef Parallel
 void exahype::State::broadcastGlobalDataToWorker(
     const int                                   worker,
     const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
@@ -413,3 +414,4 @@ void exahype::State::mergeWithGlobalDataFromWorker(
     solver->mergeWithWorkerData(worker,cellCentre,level);
   }
 }
+#endif
