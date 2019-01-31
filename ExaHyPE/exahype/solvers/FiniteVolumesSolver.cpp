@@ -1495,8 +1495,7 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithMasterData(
       tarch::parallel::Node::getInstance().getCommunicator(),MPI_STATUS_IGNORE);
 
   if (_timeStepping==TimeStepping::Global) {
-    assertionNumericalEquals1(_minNextTimeStepSize,std::numeric_limits<double>::infinity(),
-        _minNextTimeStepSize);
+    assertion1(!std::isfinite(_minNextTimeStepSize),_minNextTimeStepSize);
   }
 
   if ( !tarch::parallel::Node::getInstance().isGlobalMaster() ) {

@@ -2440,19 +2440,23 @@ protected:
    *                              belonging to the left cell.
    * @param[in]    QR             DoF of the boundary extrapolated predictor
    *                              belonging to the right cell.
-   * @param[in]    direction  Index of the nonzero normal vector component,
-   *               i.e., 0 for e_x, 1 for e_y, and 2 for e_z.
+   * @param[in]    t              time stamp
+   * @param[in]    dt             time step size
+   * @param[in]    direction      Index of the nonzero normal vector component,
+   *                              i.e., 0 for e_x, 1 for e_y, and 2 for e_z.
+   * @param[in]    isBoundaryFace if the Riemann solver is called at the domain boundary
+   * @param[in]    faceIndex      the index of the face, @p faceIndex=2*direction+f, where f is 0 ("left face") or 1 ("right face").
    */
   virtual void riemannSolver(
-      double* const                FL,
-      double* const                FR,
-      const double* const          QL,
-      const double* const          QR,
-      const double                 t,
-      const double                 dt,
-      const int                    normalNonZero,
-      bool                         isBoundaryFace,
-      int                          faceIndex) = 0;
+      double* const        FL,
+      double* const        FR,
+      const double* const  QL,
+      const double* const  QR,
+      const double         t,
+      const double         dt,
+      const int            direction,
+      bool                 isBoundaryFace,
+      int                  faceIndex) = 0;
 
   /**
    * Impose boundary conditions on the fluxes (or fluctuations).
@@ -2471,8 +2475,6 @@ protected:
    *                             i.e., 0 for e_x, 1 for e_y, and 2 for e_z.
    * @param[in]    orientation   orientation of the normal vector where 0 means negative and
    *                             1 means positive.
-   *
-   *
    */
   virtual void boundaryConditions(
       double* const                                fluxIn,
