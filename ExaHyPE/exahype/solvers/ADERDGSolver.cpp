@@ -592,11 +592,6 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
     _profiler->registerTag(tag);
   }
 
-//  logInfo("ADERDSolver(...)", // TODO remove
-//      "_minRefinementStatusForSeparationCell="<<_minRefinementStatusForSeparationCell<<
-//      ",_minRefinementStatusForBufferCell    ="<<_minRefinementStatusForBufferCell    <<
-//      ",_minRefinementStatusForTroubledCell  ="<<_minRefinementStatusForTroubledCell);
-
   #ifdef Parallel
   _invalidExtrapolatedPredictor.resize(getBndFaceSize());
   _invalidFluctuations.resize(getBndFluxSize());
@@ -2142,14 +2137,14 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
       !mustBeDoneImmediately &&
       isLastTimeStepOfBatch // only spawned in last iteration if a FusedTimeStepJob was spawned before
   ) {
-    const bool addVolumeIntegralResultToUpdate = isFirstTimeStepOfBatch || isLastTimeStepOfBatch;
+    const bool addVolumeIntegralResultToUpdate = isLastTimeStepOfBatch;
     const int element                          = cellInfo.indexOfADERDGCellDescription(cellDescription.getSolverNumber());
     peano::datatraversal::TaskSet( new PredictionJob(
         *this, cellDescription, cellInfo._cellDescriptionsIndex,element,
         predictionTimeStamp, predictionTimeStepSize,
         false/*is uncompressed*/, isSkeletonCell, addVolumeIntegralResultToUpdate ) );
   } else {
-    const bool addVolumeIntegralResultToUpdate       = isFirstTimeStepOfBatch || isLastTimeStepOfBatch;
+    const bool addVolumeIntegralResultToUpdate = isLastTimeStepOfBatch;
     predictionAndVolumeIntegralBody(
         cellDescription,
         predictionTimeStamp, predictionTimeStepSize,
@@ -2331,7 +2326,7 @@ int exahype::solvers::ADERDGSolver::predictionAndVolumeIntegralBody(
       cellDescription.getSize(),
       predictorTimeStamp,
       predictorTimeStepSize,
-      addVolumeIntegralResultToUpdate);
+      addVolumeIntegralResultToUpdate); // TODO(Dominic): fix 'false' case
 
   compress(cellDescription,isSkeletonCell);
 
@@ -2709,7 +2704,7 @@ void exahype::solvers::ADERDGSolver::correction(
   counter++;
   #endif
 
-  const bool addSurfaceIntegralResultToUpdate = isFirstTimeStep || isLastTimeStep;
+  const bool addSurfaceIntegralResultToUpdate = isFirstTimeStep || isLastTimeStep; // TODO(Dominic): fix 'false' case
   surfaceIntegral(cellDescription,neighbourMergePerformed,addSurfaceIntegralResultToUpdate);
   if ( addSurfaceIntegralResultToUpdate ) {
     addUpdateToSolution(cellDescription,isFirstTimeStep);

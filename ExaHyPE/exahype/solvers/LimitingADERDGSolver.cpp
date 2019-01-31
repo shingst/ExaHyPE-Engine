@@ -476,7 +476,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
       !mustBeDoneImmediately         &&
       isLastTimeStepOfBatch  // may only spawned in last iteration
   ) {
-    const bool addVolumeIntegralResultToUpdate = isFirstTimeStepOfBatch || isLastTimeStepOfBatch;
+    const bool addVolumeIntegralResultToUpdate = isLastTimeStepOfBatch;
     const int element                          = cellInfo.indexOfADERDGCellDescription(solverPatch.getSolverNumber());
     peano::datatraversal::TaskSet( new ADERDGSolver::PredictionJob(
         *_solver.get(),solverPatch/*the reductions are delegated to _solver anyway*/,
@@ -486,7 +486,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
         false/*is uncompressed*/,isSkeletonCell,addVolumeIntegralResultToUpdate));
   }
   else if ( solverPatch.getRefinementStatus()<_solver->getMinRefinementStatusForTroubledCell() ){
-    const bool addVolumeIntegralResultToUpdate = isFirstTimeStepOfBatch || isLastTimeStepOfBatch;
+    const bool addVolumeIntegralResultToUpdate = isLastTimeStepOfBatch;
     _solver->predictionAndVolumeIntegralBody(
         solverPatch,
         predictionTimeStamp,
