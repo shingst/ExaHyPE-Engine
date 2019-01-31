@@ -223,11 +223,12 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
 {% endif %}
 
   // this switch should probably moved into the fusedSpaceTimePredictorVolumeIntegral kernel
-  double* update = lduh;
-  double tempUpdate[{{optNamespace}}::getUpdateSize()] __attribute__((aligned(ALIGNMENT))); // TODO no heap variant implemented
+  double  tempUpdate[{{optNamespace}}::getUpdateSize()] __attribute__((aligned(ALIGNMENT))); // TODO no heap variant implemented
+  double* update = &tempUpdate[0]; // in order to not get tempUpdate optimised away
   if ( !addVolumeIntegralResultToUpdate ) {
     std::fill_n(tempUpdate,{{optNamespace}}::getUpdateSize(),0.0); // initialise with zeros
-    update = tempUpdate;
+  } else {
+    update = &lduh[0];
   }
   
 {% if isLinear %}
@@ -352,21 +353,21 @@ void {{project}}::{{abstractSolver}}::faceIntegral(double* const out,const doubl
     if ( addToUpdate ) {
       {{optNamespace}}::faceIntegral(out,lFhbndCoarse,direction,orientation,1./coarseGridCellSize[direction] /*inverseDxDirection*/);
     } else {
-      double lduh[{{optNamespace}}::getUpdateSize()] __attribute__((aligned(ALIGNMENT)));
-      std::fill_n(lduh,{{optNamespace}}::getBndFluxSize(),0.0);
-      {{optNamespace}}::faceIntegral(lduh,lFhbndCoarse,direction,orientation,1./coarseGridCellSize[direction] /*inverseDxDirection*/);
+      double update[{{optNamespace}}::getUpdateSize()] __attribute__((aligned(ALIGNMENT)));
+      std::fill_n(update,{{optNamespace}}::getUpdateSize(),0.0);
+      {{optNamespace}}::faceIntegral(update,lFhbndCoarse,direction,orientation,1./coarseGridCellSize[direction] /*inverseDxDirection*/);
       tarch::multicore::Lock lock(RestrictionSemaphore); // inherited
-      addUpdateToSolution(out,out,lduh,dt);
+      addUpdateToSolution(out,out,update,dt);
       lock.free();
     }
   } else {
     if ( addToUpdate ) {
       {{optNamespace}}::faceIntegral(out,lFhbnd,direction,orientation,1./cellSize[direction]);
     } else {
-      double lduh[{{optNamespace}}::getUpdateSize()] __attribute__((aligned(ALIGNMENT)));
-      std::fill_n(lduh,{{optNamespace}}::getBndFluxSize(),0.0);
-      {{optNamespace}}::faceIntegral(lduh,lFhbnd,direction,orientation,1./cellSize[direction]);
-      addUpdateToSolution(out,out,lduh,dt); // adds lduh to solution out
+      double update[{{optNamespace}}::getUpdateSize()] __attribute__((aligned(ALIGNMENT)));
+      std::fill_n(update,{{optNamespace}}::getUpdateSize(),0.0);
+      {{optNamespace}}::faceIntegral(update,lFhbnd,direction,orientation,1./cellSize[direction]);
+      addUpdateToSolution(out,out,update,dt); // adds update to solution out
     }
   }
 {% if countFlops %}
