@@ -223,7 +223,7 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
 {% endif %}
 
   // this switch should probably moved into the fusedSpaceTimePredictorVolumeIntegral kernel
-  double* const update = lduh;
+  double* update = lduh;
   double tempUpdate[{{optNamespace}}::getUpdateSize()] __attribute__((aligned(ALIGNMENT))); // TODO no heap variant implemented
   if ( !addVolumeIntegralResultToUpdate ) {
     std::fill_n(tempUpdate,{{optNamespace}}::getUpdateSize(),0.0); // initialise with zeros
@@ -362,10 +362,10 @@ void {{project}}::{{abstractSolver}}::faceIntegral(double* const out,const doubl
   } else {
     if ( addToUpdate ) {
       {{optNamespace}}::faceIntegral(out,lFhbnd,direction,orientation,1./cellSize[direction]);
-    else {
+    } else {
       double lduh[{{optNamespace}}::getUpdateSize()] __attribute__((aligned(ALIGNMENT)));
       std::fill_n(lduh,{{optNamespace}}::getBndFluxSize(),0.0);
-      {{optNamespace}}::faceIntegral(lduh,lFhbndCoarse,direction,orientation,1./coarseGridCellSize[direction] /*inverseDxDirection*/);
+      {{optNamespace}}::faceIntegral(lduh,lFhbnd,direction,orientation,1./cellSize[direction]);
       addUpdateToSolution(out,out,lduh,dt); // adds lduh to solution out
     }
   }
