@@ -252,18 +252,17 @@ void exahype::State::globalBroadcast(exahype::records::RepositoryState& reposito
       case exahype::records::RepositoryState::UseAdapterPredictionOrLocalRecomputation:
       case exahype::records::RepositoryState::UseAdapterFusedTimeStep:
       case exahype::records::RepositoryState::UseAdapterBroadcastAndDropNeighbourMessages: {
-        if ( !tarch::parallel::Node::getInstance().isGlobalMaster() ) { // TODO scalability bottleneck; use tree-based approach
-          exahype::State::mergeWithGlobalDataFromMaster(
-              masterRank,0.0,0);
-        }
-        for (int workerRank=1; workerRank<tarch::parallel::Node::getInstance().getNumberOfNodes(); workerRank++) {
-          if (!(tarch::parallel::NodePool::getInstance().isIdleNode(workerRank))) { // TODO scalability bottleneck; use tree-based approach
-            exahype::State::broadcastGlobalDataToWorker(workerRank,0.0,0);
+        if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) { // TODO scalability bottleneck; use tree-based approach
+          for (int workerRank=1; workerRank<tarch::parallel::Node::getInstance().getNumberOfNodes(); workerRank++) {
+            if (!(tarch::parallel::NodePool::getInstance().isIdleNode(workerRank))) { // TODO scalability bottleneck; use tree-based approach
+              exahype::State::broadcastGlobalDataToWorker(workerRank,0.0,0);
+            }
           }
+        } else {
+          exahype::State::mergeWithGlobalDataFromMaster(masterRank,0.0,0);
         }
       } break;
       default:
-        // do nothing
         break;
     }
   }
@@ -279,67 +278,69 @@ void exahype::State::globalReduction(exahype::records::RepositoryState& reposito
     switch ( repositoryState.getAction() ) {
       case exahype::records::RepositoryState::UseAdapterBroadcastAndDropNeighbourMessages: // we do a reduction to sychronise the ranks.
       case exahype::records::RepositoryState::UseAdapterUpdateAndReduce:
+      case exahype::records::RepositoryState::UseAdapterCorrection:
       case exahype::records::RepositoryState::UseAdapterFusedTimeStep: {
-        for (int workerRank=1; workerRank<tarch::parallel::Node::getInstance().getNumberOfNodes(); workerRank++) {
-          if (!(tarch::parallel::NodePool::getInstance().isIdleNode(workerRank))) { // TODO scalability bottleneck; use tree-based approach
-            exahype::State::mergeWithGlobalDataFromWorker(workerRank,0.0,0);
+        if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+          for (int workerRank=1; workerRank<tarch::parallel::Node::getInstance().getNumberOfNodes(); workerRank++) {
+            if (!(tarch::parallel::NodePool::getInstance().isIdleNode(workerRank))) { // TODO scalability bottleneck; use tree-based approach
+              exahype::State::mergeWithGlobalDataFromWorker(workerRank,0.0,0);
+            }
           }
-        }
-        if ( !tarch::parallel::Node::getInstance().isGlobalMaster() ) { // TODO scalability bottleneck; use tree-based approach
-          exahype::State::reduceGlobalDataToMaster(
-              masterRank,0.0,0);
+        } else {
+          exahype::State::reduceGlobalDataToMaster(masterRank,0.0,0);
         }
       } break;
       case exahype::records::RepositoryState::UseAdapterFinaliseMeshRefinement:
       case exahype::records::RepositoryState::UseAdapterFinaliseMeshRefinementOrLocalRollback: {
-        for (int workerRank=1; workerRank<tarch::parallel::Node::getInstance().getNumberOfNodes(); workerRank++) {
-          if (!(tarch::parallel::NodePool::getInstance().isIdleNode(workerRank))) {
-            for (auto* solver : exahype::solvers::RegisteredSolvers) {
-              if ( solver->hasRequestedMeshRefinement() ) {
-                solver->mergeWithWorkerData(workerRank,0.0,0);
+        if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+          for (int workerRank=1; workerRank<tarch::parallel::Node::getInstance().getNumberOfNodes(); workerRank++) {
+            if (!(tarch::parallel::NodePool::getInstance().isIdleNode(workerRank))) {
+              for (auto* solver : exahype::solvers::RegisteredSolvers) {
+                if ( solver->hasRequestedMeshRefinement() ) {
+                  solver->mergeWithWorkerData(workerRank,0.0,0);
+                }
               }
             }
           }
-        }
-        if ( !tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+        } else {
           for (auto* solver : exahype::solvers::RegisteredSolvers) {
             if ( solver->hasRequestedMeshRefinement() ) {
-              solver->sendDataToMaster(
-                  masterRank,0.0,0);
+              solver->sendDataToMaster(masterRank,0.0,0);
             }
           }
         }
       } break;
       case exahype::records::RepositoryState::UseAdapterPredictionOrLocalRecomputation: {
-        for (int workerRank=1; workerRank<tarch::parallel::Node::getInstance().getNumberOfNodes(); workerRank++) {
-          if (!(tarch::parallel::NodePool::getInstance().isIdleNode(workerRank))) {
-            for (auto* solver : exahype::solvers::RegisteredSolvers) {
-              if ( solver->getMeshUpdateEvent()==exahype::solvers::Solver::MeshUpdateEvent::IrregularLimiterDomainChange ) {
-                solver->mergeWithWorkerData(workerRank,0.0,0);
+        if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+          for (int workerRank=1; workerRank<tarch::parallel::Node::getInstance().getNumberOfNodes(); workerRank++) {
+            if (!(tarch::parallel::NodePool::getInstance().isIdleNode(workerRank))) {
+              for (auto* solver : exahype::solvers::RegisteredSolvers) {
+                if ( solver->getMeshUpdateEvent()==exahype::solvers::Solver::MeshUpdateEvent::IrregularLimiterDomainChange ) {
+                  solver->mergeWithWorkerData(workerRank,0.0,0);
+                }
               }
             }
           }
-        }
-        if ( !tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+        } else {
           for (auto* solver : exahype::solvers::RegisteredSolvers) {
             if ( solver->getMeshUpdateEvent()==exahype::solvers::Solver::MeshUpdateEvent::IrregularLimiterDomainChange ) {
-              solver->sendDataToMaster(
-                  masterRank,0.0,0);
+              solver->sendDataToMaster(masterRank,0.0,0);
             }
           }
         }
       } break;
       case exahype::records::RepositoryState::UseAdapterRefinementStatusSpreading: {
-        for (int workerRank=1; workerRank<tarch::parallel::Node::getInstance().getNumberOfNodes(); workerRank++) {
-          if (!(tarch::parallel::NodePool::getInstance().isIdleNode(workerRank))) {
-            for (auto* solver : exahype::solvers::RegisteredSolvers) {
-              if ( solver->getMeshUpdateEvent()!=exahype::solvers::Solver::MeshUpdateEvent::None ) {
-                solver->mergeWithWorkerMeshUpdateEvent(workerRank,0.0,0);
+        if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+          for (int workerRank=1; workerRank<tarch::parallel::Node::getInstance().getNumberOfNodes(); workerRank++) {
+            if (!(tarch::parallel::NodePool::getInstance().isIdleNode(workerRank))) {
+              for (auto* solver : exahype::solvers::RegisteredSolvers) {
+                if ( solver->getMeshUpdateEvent()!=exahype::solvers::Solver::MeshUpdateEvent::None ) {
+                  solver->mergeWithWorkerMeshUpdateEvent(workerRank,0.0,0);
+                }
               }
             }
           }
-        }
-        if ( !tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+        } else {
           for (auto* solver : exahype::solvers::RegisteredSolvers) {
             if ( solver->getMeshUpdateEvent()!=exahype::solvers::Solver::MeshUpdateEvent::None ) {
               solver->sendMeshUpdateEventToMaster(tarch::parallel::Node::getInstance().getGlobalMasterRank(),0.0,0);
@@ -348,7 +349,6 @@ void exahype::State::globalReduction(exahype::records::RepositoryState& reposito
         }
       } break;
       default:
-        // do nothing
         break;
     }
   }
@@ -356,8 +356,8 @@ void exahype::State::globalReduction(exahype::records::RepositoryState& reposito
 
   // postProcessing for fused time stepping
   if (
-      currentBatchIteration==repositoryState.getNumberOfIterations()-1  &&
-      tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().isGlobalMaster()
+      (currentBatchIteration==repositoryState.getNumberOfIterations()-1)  &&
+      tarch::parallel::Node::getInstance().isGlobalMaster()
   ) {
     switch ( repositoryState.getAction()) {
     case exahype::records::RepositoryState::UseAdapterFusedTimeStep: {

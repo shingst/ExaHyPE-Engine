@@ -57,6 +57,16 @@ namespace exahype {
  * @author Tobias Weinzierl
  */
 class exahype::plotters::Plotter {
+
+protected:
+
+  #ifdef Parallel
+  /**
+   * Tag used for master worker communication.
+   */
+  static int MasterWorkerCommunicationTag;
+  #endif
+
  public:
 
   /**
@@ -208,6 +218,7 @@ class exahype::plotters::Plotter {
   class Device {
    protected:
     UserOnTheFlyPostProcessing*  _postProcessing;
+
    public:
     Device(UserOnTheFlyPostProcessing* postProcessing):
       _postProcessing(postProcessing) {}

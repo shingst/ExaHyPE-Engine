@@ -1526,6 +1526,33 @@ void exahype::runners::Runner::runTimeStepsWithFusedAlgorithmicSteps(
   // ---- reduction/broadcast barrier ----
 }
 
+void exahype::runners::Runner::runOneTimeStepWithTwoSeparateAlgorithmicSteps(
+    exahype::repositories::Repository& repository, bool plot) {
+  // Only one time step (predictor vs. corrector) is used in this case.
+  bool communicatePeanoVertices =
+        !exahype::solvers::Solver::DisablePeanoNeighbourExchangeInTimeSteps;
+  repository.switchToCorrection();  // Riemann -> face2face, Face to cell + Inside cell
+  repository.iterate( 1, communicatePeanoVertices );
+
+  if (exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalRecomputation()) {
+    logInfo("runOneTimeStepWithThreeSeparateAlgorithmicSteps(...)","local recomputation requested by at least one solver");
+  }
+  if (exahype::solvers::Solver::oneSolverRequestedMeshRefinement()) {
+    logInfo("runOneTimeStepWithThreeSeparateAlgorithmicSteps(...)","mesh update requested by at least one solver");
+  }
+
+  if (exahype::solvers::Solver::oneSolverRequestedMeshRefinement() ||
+      exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalRecomputation()) {
+    updateMeshOrLimiterDomain(repository,false);
+  }
+
+  printTimeStepInfo(1,repository);
+  repository.switchToPrediction(); // Cell onto faces
+  repository.iterate( exahype::solvers::Solver::PredictionSweeps, communicatePeanoVertices );
+
+  updateStatistics();
+}
+
 void exahype::runners::Runner::runOneTimeStepWithThreeSeparateAlgorithmicSteps(
     exahype::repositories::Repository& repository, bool plot) {
   // Only one time step (predictor vs. corrector) is used in this case.

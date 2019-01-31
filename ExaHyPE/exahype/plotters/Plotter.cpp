@@ -61,6 +61,10 @@ tarch::multicore::BooleanSemaphore exahype::plotters::SemaphoreForPlotting;
 
 tarch::logging::Log exahype::plotters::Plotter::_log( "exahype::plotters::Plotter" );
 
+#ifdef Parallel
+int exahype::plotters::Plotter::MasterWorkerCommunicationTag = tarch::parallel::Node::reserveFreeTag("plotter[master<->worker]");
+#endif
+
 exahype::plotters::Plotter::Plotter(
         const int solverConfig,const int plotterConfig,
         const exahype::parser::Parser& parser,
@@ -709,10 +713,12 @@ void exahype::plotters::Plotter::sendDataToWorker(
     logDebug("sendDataWorker(...)","_time="<<_time);
   }
 
-  DataHeap::getInstance().sendData(
+  MPI_Send(
       plotterDataToSend.data(), plotterDataToSend.size(),
-      workerRank, x, level,
-      peano::heap::MessageType::MasterWorkerCommunication);
+      MPI_DOUBLE,
+      workerRank,
+      MasterWorkerCommunicationTag,
+      tarch::parallel::Node::getInstance().getCommunicator());
 }
 
 void exahype::plotters::Plotter::mergeWithMasterData(
@@ -720,13 +726,17 @@ void exahype::plotters::Plotter::mergeWithMasterData(
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const int                                    level) {
   std::vector<double> receivedPlotterData(1);
-  DataHeap::getInstance().receiveData(
-      receivedPlotterData.data(),receivedPlotterData.size(),masterRank, x, level,
-      peano::heap::MessageType::MasterWorkerCommunication);
+
+  MPI_Recv(
+      receivedPlotterData.data(), receivedPlotterData.size(),
+      MPI_DOUBLE,
+      masterRank,
+      MasterWorkerCommunicationTag,
+      tarch::parallel::Node::getInstance().getCommunicator(),MPI_STATUS_IGNORE);
+
   assertion1(receivedPlotterData.size()==1,receivedPlotterData.size());
 
-  if (tarch::parallel::Node::getInstance().getRank()!=
-      tarch::parallel::Node::getInstance().getGlobalMasterRank()) {
+  if ( !tarch::parallel::Node::getInstance().isGlobalMaster() ) {
     logDebug("mergeWithMasterData(...)","Received plotter data: " <<
         "data[0]="  << receivedPlotterData[0]);
   }

@@ -384,19 +384,17 @@ class exahype::solvers::Solver {
   static tarch::logging::Log _log;
 
  protected:
+  #ifdef Parallel
   /**
    * Tag used for master worker communication.
    */
-  static int _masterWorkerCommunicationTag;
+  static int MasterWorkerCommunicationTag;
+  #endif
 
   void tearApart(int numberOfEntries, int normalHeapIndex, int compressedHeapIndex, int bytesForMantissa) const;
   void glueTogether(int numberOfEntries, int normalHeapIndex, int compressedHeapIndex, int bytesForMantissa) const;
 
  public:
- 
-  /** TODO */ 
-  static MPI_Comm _masterWorkerComm;
-
   /**
    * Default return value of function getElement(...)
    * If we do not find the element in a vector

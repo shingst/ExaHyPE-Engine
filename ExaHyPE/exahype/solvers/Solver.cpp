@@ -83,7 +83,9 @@ double exahype::solvers::Solver::PipedCompressedBytes = 0;
 
 tarch::logging::Log exahype::solvers::Solver::_log( "exahype::solvers::Solver");
 
-int exahype::solvers::Solver::_masterWorkerCommunicationTag = tarch::parallel::Node::reserveFreeTag("solver[master<->worker]");
+#ifdef Parallel
+int exahype::solvers::Solver::MasterWorkerCommunicationTag = tarch::parallel::Node::reserveFreeTag("solver[master<->worker]");
+#endif
 
 bool exahype::solvers::Solver::ProfileUpdate = false;
 
@@ -211,7 +213,7 @@ exahype::solvers::Solver::Solver(
       _nextMaxLevel(-std::numeric_limits<int>::max()), // "-", min
       _timeStepping(timeStepping),
       _profiler(std::move(profiler)) {
-  logInfo("Solver(...)","master worker communication tag is:" << _masterWorkerCommunicationTag);
+  logInfo("Solver(...)","master worker communication tag is:" << MasterWorkerCommunicationTag);
 }
 
 
@@ -910,7 +912,7 @@ void exahype::solvers::Solver::sendMeshUpdateEventToMaster(
     meshUpdateEvent.data(), meshUpdateEvent.size(),
     MPI_DOUBLE,
     masterRank,
-    _masterWorkerCommunicationTag,
+    MasterWorkerCommunicationTag,
     tarch::parallel::Node::getInstance().getCommunicator());
 }
 
@@ -924,7 +926,7 @@ void exahype::solvers::Solver::mergeWithWorkerMeshUpdateEvent(
     messageFromWorker.data(), messageFromWorker.size(),
     MPI_DOUBLE,
     workerRank,
-    _masterWorkerCommunicationTag,
+    MasterWorkerCommunicationTag,
     tarch::parallel::Node::getInstance().getCommunicator(),
     MPI_STATUS_IGNORE);
 

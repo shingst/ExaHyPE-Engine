@@ -1400,7 +1400,7 @@ void exahype::solvers::FiniteVolumesSolver::sendDataToMaster(
       messageForMaster.data(), messageForMaster.size(),
       MPI_DOUBLE,
       masterRank,
-      _masterWorkerCommunicationTag,
+      MasterWorkerCommunicationTag,
       tarch::parallel::Node::getInstance().getCommunicator());
 }
 
@@ -1425,7 +1425,7 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithWorkerData(
       messageFromWorker.data(), messageFromWorker.size(),
       MPI_DOUBLE,
       workerRank,
-      _masterWorkerCommunicationTag,
+      MasterWorkerCommunicationTag,
       tarch::parallel::Node::getInstance().getCommunicator(),
       MPI_STATUS_IGNORE);
 
@@ -1477,7 +1477,7 @@ void exahype::solvers::FiniteVolumesSolver::sendDataToWorker(
       messageForWorker.data(), messageForWorker.size(),
       MPI_DOUBLE,
       workerRank,
-      _masterWorkerCommunicationTag,
+      MasterWorkerCommunicationTag,
       tarch::parallel::Node::getInstance().getCommunicator());
 }
 
@@ -1491,7 +1491,7 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithMasterData(
       messageFromMaster.data(), messageFromMaster.size(),
       MPI_DOUBLE,
       masterRank,
-      _masterWorkerCommunicationTag,
+      MasterWorkerCommunicationTag,
       tarch::parallel::Node::getInstance().getCommunicator(),MPI_STATUS_IGNORE);
 
   if (_timeStepping==TimeStepping::Global) {

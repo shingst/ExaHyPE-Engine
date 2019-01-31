@@ -4173,7 +4173,7 @@ void exahype::solvers::ADERDGSolver::sendDataToMaster(
   DataHeap::HeapEntries messageForMaster = compileMessageForMaster();
 
   if ( !tarch::parallel::Node::getInstance().isGlobalMaster() ) {
-    logInfo("sendDataToMaster(...)","Sending data to master: " <<
+    logDebug("sendDataToMaster(...)","Sending data to master: " <<
         "data[0]=" << messageForMaster[0] << "," <<
         "data[1]=" << messageForMaster[1] << "," <<
         "data[2]=" << messageForMaster[2] << "," <<
@@ -4189,7 +4189,7 @@ void exahype::solvers::ADERDGSolver::sendDataToMaster(
     messageForMaster.data(), messageForMaster.size(),
     MPI_DOUBLE,
     masterRank,
-    _masterWorkerCommunicationTag,
+    MasterWorkerCommunicationTag,
     tarch::parallel::Node::getInstance().getCommunicator());
 }
 
@@ -4227,7 +4227,7 @@ void exahype::solvers::ADERDGSolver::mergeWithWorkerData(
     messageFromWorker.data(), messageFromWorker.size(),
     MPI_DOUBLE,
     workerRank,
-    _masterWorkerCommunicationTag,
+    MasterWorkerCommunicationTag,
     tarch::parallel::Node::getInstance().getCommunicator(),
     MPI_STATUS_IGNORE);
 
@@ -4254,7 +4254,7 @@ void exahype::solvers::ADERDGSolver::mergeWithWorkerData(
   mergeWithWorkerData(messageFromWorker);
 
   if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
-    logInfo("mergeWithWorkerData(...)","Updated fields: " <<
+    logDebug("mergeWithWorkerData(...)","Updated fields: " <<
         "_minCorrectorTimeStamp="    << _minCorrectorTimeStamp    << "," <<
         "_minCorrectorTimeStepSize=" << _minCorrectorTimeStepSize << "," <<
         "_minPredictorTimeStamp="    << _minPredictorTimeStamp    << "," <<
@@ -4315,7 +4315,7 @@ void exahype::solvers::ADERDGSolver::sendDataToWorker(
     messageForWorker.data(), messageForWorker.size(),
     MPI_DOUBLE,
     workerRank,
-    _masterWorkerCommunicationTag,
+    MasterWorkerCommunicationTag,
     tarch::parallel::Node::getInstance().getCommunicator());
 }
 
@@ -4345,7 +4345,7 @@ void exahype::solvers::ADERDGSolver::mergeWithMasterData(
       messageFromMaster.data(), messageFromMaster.size(),
       MPI_DOUBLE,
       masterRank,
-      _masterWorkerCommunicationTag,
+      MasterWorkerCommunicationTag,
       tarch::parallel::Node::getInstance().getCommunicator(),MPI_STATUS_IGNORE);
 
   assertion1(messageFromMaster.size()==7,messageFromMaster.size());

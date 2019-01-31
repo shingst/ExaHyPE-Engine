@@ -262,11 +262,19 @@ class exahype::runners::Runner {
       exahype::repositories::Repository& repository,
       const bool fusedTimeStepping);
 
+
   /**
-   * Do one time step but actually use a couple of iterations to do so.
+   * Do one time step but actually use two algorithmic steps (2 to 3 loops) to do so.
+
+   * @param plot       Do plot before the corrector is applied
+   */
+  void runOneTimeStepWithTwoSeparateAlgorithmicSteps(
+      exahype::repositories::Repository& repository, bool plot);
+
+  /**
+   * Do one time step but actually use three algorithmic steps (3 to 4 loops) to do so.
    *
-   *
-   * @param plot      Do plot in the after the corrector has been applied
+   * @param plot       Do plot before the corrector is applied
    */
   void runOneTimeStepWithThreeSeparateAlgorithmicSteps(
       exahype::repositories::Repository& repository, bool plot);
