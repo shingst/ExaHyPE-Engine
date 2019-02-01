@@ -761,9 +761,6 @@ void exahype::solvers::ADERDGSolver::wrapUpTimeStep(const bool isFirstTimeStepOf
   ) {
     if ( FuseADERDGPhases ) {
       if ( isLastTimeStepOfBatchOrNoBatch ) {
-        std::cout << "_estimatedTimeStepSize="  << _estimatedTimeStepSize << std::endl;
-        std::cout << "_admissibleTimeStepSize=" << _admissibleTimeStepSize << std::endl;
-
         if ( _estimatedTimeStepSize > _admissibleTimeStepSize ) { // rerun
           _minTimeStepSize       = WeightForPredictionRerun * _admissibleTimeStepSize;
           _estimatedTimeStepSize = _minTimeStepSize;
