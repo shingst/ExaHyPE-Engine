@@ -35,4 +35,72 @@ class ConfigurationParametersModel(AbstractModelBaseClass):
         self.context["useMaterialParamFactor"] = 1 if self.context["useMaterialParam"] else 0
         self.context["useSourceOrNCPFactor"]   = 1 if self.context["useSourceOrNCP"]   else 0
         
+        # shortcut
+        nVar     = self.context["nVar"]
+        nVarPad  = self.context["nVarPad"]
+        nPar     = self.context["nPar"]
+        nParPad  = self.context["nParPad"]
+        nData    = self.context["nData"]
+        nDataPad = self.context["nDataPad"]
+        nDof     = self.context["nDof"]
+        nDofPad  = self.context["nDofPad"]
+        nDof3D    = self.context["nDof3D"]
+        nDim     = self.context["nDim"]
+        
+        
+        # SPT buffer sizes
+        # default value
+        self.context["lQiSize"]   =   -1
+        self.context["lQiNextSize"] = -1
+        self.context["lPiSize"]   =   -1
+        self.context["lFiSize"]   =   -1
+        self.context["lSiSize"]   =   -1
+        self.context["lQhiSize"]  =   -1
+        self.context["lFhiSize"]  =   -1
+        self.context["lShiSize"]  =   -1
+        self.context["gradQSize"] =   -1
+        self.context["PSiSize"]   =   -1
+        if self.context["isLinear"]:
+            if(self.context["useSplitCK"]):
+                # Linear + split CK
+                self.context["lQiSize"]   = nVarPad*(nDof**nDim)
+                self.context["lQiNextSize"] = nVarPad*(nDof**nDim)
+                self.context["lPiSize"]   = nParPad*(nDof**nDim)
+                self.context["lQhiSize"]  = nVarPad*(nDof**nDim)
+                self.context["lFhiSize"]  = nVarPad*(nDof**nDim)
+                self.context["gradQSize"] = nVarPad*(nDof**nDim)
+                self.context["PSiSize"]   = nDof*(nDof**nDim)*nVarPad
+            else: 
+                # default linear
+                self.context["lQiSize"]   = nDataPad*(nDof**nDim)*(1+nDof)
+                self.context["lQhiSize"]  = nDataPad*(nDof**nDim)
+                self.context["lFiSize"]   = nVarPad*(nDof**(nDim+1))*(2*nDim+1) # Todo JMG see if 2dim+1 or 2dim
+                self.context["lFhiSize"]  = nVarPad*(nDof**nDim)*nDim
+                if self.context["useSource"]:
+                    self.context["lSiSize"]   = nVarPad*(nDof**(nDim+1))
+                    self.context["lShiSize"]  = nVarPad*(nDof**nDim)
+                if self.context["useNCP"]:
+                    self.context["gradQSize"] = nVarPad*(nDof**nDim)*nDim
+                if self.context["usePointSources"]:
+                    self.context["PSiSize"]   = (nDof+1)*(nDof**nDim)*nVarPad
+        else:
+            # nonlinear
+            self.context["lQiSize"]   = nDataPad*(nDof**(nDim+1))
+            self.context["lQhiSize"]  = nDataPad*(nDof**nDim)
+            if self.context["useFlux"]:
+                self.context["lFiSize"]   = nVarPad*(nDof**(nDim+1))*nDim
+                self.context["lFhiSize"]  = nVarPad*(nDof**nDim)*nDim
+            if self.context["useSource"] or self.context["useNCP"]:
+                self.context["lSiSize"]   = nVarPad*(nDof**(nDim+1))
+                self.context["lShiSize"]  = nVarPad*(nDof**nDim)
+            if self.context["useNCP"]:
+                self.context["gradQSize"] = nVarPad*(nDof**nDim)*nDim
+        
+        # Face buffer size (Riemann)
+        self.context["BndFaceSize"]      = nDataPad*(nDof*nDof3D)
+        self.context["BndFaceTotalSize"] = 2*nDim*self.context["BndFaceSize"]
+        self.context["BndFluxSize"]      = nVarPad*(nDof*nDof3D)
+        self.context["BndFluxTotalSize"] = 2*nDim*nVarPad*self.context["BndFluxSize"]
+
+        
         self.render("configurationParameters_cpph.template", "ConfigurationParameters.cpph")
