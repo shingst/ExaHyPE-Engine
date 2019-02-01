@@ -642,6 +642,7 @@ public:
   double getMinTimeStepSize() const final override;
   double getAdmissibleTimeStepSize() const override;
   void updateAdmissibleTimeStepSize(double value) override;
+  void resetAdmissibleTimeStepSize() final override;
 
   /**
    * \copydoc ::exahype::solvers::Solver::initSolver

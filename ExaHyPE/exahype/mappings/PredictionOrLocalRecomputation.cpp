@@ -113,7 +113,7 @@ bool exahype::mappings::PredictionOrLocalRecomputation::performLocalRecomputatio
 bool exahype::mappings::PredictionOrLocalRecomputation::performPrediction(
     exahype::solvers::Solver* solver) {
   return exahype::solvers::Solver::FuseADERDGPhases &&
-         solver->hasRequestedMeshRefinement();
+         solver->hasRequestedAnyMeshRefinement();
 }
 
 void exahype::mappings::PredictionOrLocalRecomputation::endIteration(

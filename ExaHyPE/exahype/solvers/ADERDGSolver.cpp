@@ -738,6 +738,7 @@ void exahype::solvers::ADERDGSolver::synchroniseTimeStepping(
 
 void exahype::solvers::ADERDGSolver::kickOffTimeStep(const bool isFirstTimeStepOfBatchOrNoBatch) {
   if ( isFirstTimeStepOfBatchOrNoBatch ) {
+    _meshUpdateEvent               = MeshUpdateEvent::None;
     _admissibleTimeStepSize        = std::numeric_limits<double>::infinity();
     _stabilityConditionWasViolated = false;
   }
@@ -753,12 +754,16 @@ void exahype::solvers::ADERDGSolver::wrapUpTimeStep(const bool isFirstTimeStepOf
   }
   _minTimeStamp += _minTimeStepSize;
 
+  _stabilityConditionWasViolated = false;
   if (
       tarch::parallel::Node::getInstance().isGlobalMaster() &&
       getTimeStepping() != TimeStepping::GlobalFixed // fix the time step size in intermediate batch iterations
   ) {
     if ( FuseADERDGPhases ) {
       if ( isLastTimeStepOfBatchOrNoBatch ) {
+        std::cout << "_estimatedTimeStepSize="  << _estimatedTimeStepSize << std::endl;
+        std::cout << "_admissibleTimeStepSize=" << _admissibleTimeStepSize << std::endl;
+
         if ( _estimatedTimeStepSize > _admissibleTimeStepSize ) { // rerun
           _minTimeStepSize       = WeightForPredictionRerun * _admissibleTimeStepSize;
           _estimatedTimeStepSize = _minTimeStepSize;
@@ -828,6 +833,10 @@ void exahype::solvers::ADERDGSolver::updateAdmissibleTimeStepSize( double value 
   lock.free();
 }
 
+void exahype::solvers::ADERDGSolver::resetAdmissibleTimeStepSize() {
+  _admissibleTimeStepSize = std::numeric_limits<double>::infinity();
+}
+
 void exahype::solvers::ADERDGSolver::initSolver(
     const double timeStamp,
     const tarch::la::Vector<DIMENSIONS,double>& domainOffset,
@@ -843,12 +852,14 @@ void exahype::solvers::ADERDGSolver::initSolver(
   _coarsestMeshSize  = coarsestMeshInfo.first;
   _coarsestMeshLevel = coarsestMeshInfo.second;
 
-  _previousMinTimeStepSize = 0.0;
-  _minTimeStepSize         = 0.0;
-  _estimatedTimeStepSize   = 0.0;
-
   _previousMinTimeStamp = timeStamp;
   _minTimeStamp         = timeStamp;
+
+  _previousMinTimeStepSize = 0.0;
+  _minTimeStepSize         = 0.0;
+
+  _estimatedTimeStepSize   = std::numeric_limits<double>::infinity();
+  _admissibleTimeStepSize  = std::numeric_limits<double>::infinity();
 
   _meshUpdateEvent = MeshUpdateEvent::InitialRefinementRequested;
 
@@ -864,11 +875,11 @@ bool exahype::solvers::ADERDGSolver::isPerformingPrediction(
       isPerformingPrediction = true;
       break;
     case exahype::State::AlgorithmSection::PredictionRerunAllSend:
-      isPerformingPrediction = !hasRequestedMeshRefinement() &&
+      isPerformingPrediction = !hasRequestedAnyMeshRefinement() &&
                                getStabilityConditionWasViolated();
       break;
     case exahype::State::AlgorithmSection::PredictionOrLocalRecomputationAllSend:
-      isPerformingPrediction = hasRequestedMeshRefinement();
+      isPerformingPrediction = hasRequestedAnyMeshRefinement();
       break;
     default:
       break;
@@ -880,7 +891,7 @@ bool exahype::solvers::ADERDGSolver::isPerformingPrediction(
 bool exahype::solvers::ADERDGSolver::isMergingMetadata(
     const exahype::State::AlgorithmSection& section) const {
   return ( exahype::State::AlgorithmSection::MeshRefinement==section ) &&
-         hasRequestedMeshRefinement();
+         hasRequestedAnyMeshRefinement();
 }
 
 bool exahype::solvers::ADERDGSolver::getStabilityConditionWasViolated() const {

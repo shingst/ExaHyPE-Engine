@@ -454,6 +454,7 @@ public:
   double getMinTimeStepSize() const override;
   void updateAdmissibleTimeStepSize( double value ) override;
   double getAdmissibleTimeStepSize() const override;
+  void resetAdmissibleTimeStepSize() final override;
 
   /**
    * The number of unknowns per patch.

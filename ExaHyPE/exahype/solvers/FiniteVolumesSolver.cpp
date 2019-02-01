@@ -157,6 +157,10 @@ double exahype::solvers::FiniteVolumesSolver::getAdmissibleTimeStepSize() const 
   return _admissibleTimeStepSize;
 }
 
+void exahype::solvers::FiniteVolumesSolver::resetAdmissibleTimeStepSize() {
+  _admissibleTimeStepSize = std::numeric_limits<double>::infinity();
+}
+
 void exahype::solvers::FiniteVolumesSolver::initSolver(
     const double timeStamp,
     const tarch::la::Vector<DIMENSIONS,double>& domainOffset,
@@ -205,7 +209,10 @@ void exahype::solvers::FiniteVolumesSolver::synchroniseTimeStepping(CellDescript
 }
 
 void exahype::solvers::FiniteVolumesSolver::kickOffTimeStep(const bool isFirstTimeStepOfBatchOrNoBatch) {
-  _admissibleTimeStepSize = std::numeric_limits<double>::infinity();
+  if ( isFirstTimeStepOfBatchOrNoBatch ) {
+    _meshUpdateEvent        = MeshUpdateEvent::None;
+    _admissibleTimeStepSize = std::numeric_limits<double>::infinity();
+  }
 
   // call user code
   beginTimeStep(_minTimeStamp,isFirstTimeStepOfBatchOrNoBatch);

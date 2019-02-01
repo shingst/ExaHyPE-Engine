@@ -1330,7 +1330,7 @@ class exahype::solvers::Solver {
    * \return true if the current mesh update event
    * is either RefinementRequested or InitialRefinementRequested.
    */
-  bool hasRequestedMeshRefinement() const;
+  bool hasRequestedAnyMeshRefinement() const;
   /**
    * \return minimum time stamp of all cell descriptions.
    */
@@ -1359,6 +1359,12 @@ class exahype::solvers::Solver {
    * @note Access is not thread-safe.
    */
   virtual double getAdmissibleTimeStepSize() const=0;
+
+  /**
+   * Reset the admissible time step size to infinity in order
+   * to search for a minimum over all cells.
+   */
+  virtual void resetAdmissibleTimeStepSize() = 0;
 
   /**
    * Initialise the solver's time stamps and time step sizes.

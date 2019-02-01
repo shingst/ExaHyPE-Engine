@@ -219,7 +219,7 @@ bool exahype::State::isSecondToLastIterationOfBatchOrNoBatch()  {
   return NumberOfBatchIterations==1 || CurrentBatchIteration==NumberOfBatchIterations-2;
 }
 
-void exahype::State::kickOffIteration(exahype::records::RepositoryState::Action& action,const int currentBatchIteration,const int numberOfBatchIterations) {
+void exahype::State::kickOffIteration(exahype::records::RepositoryState::Action action,const int currentBatchIteration,const int numberOfBatchIterations) {
   switch ( action ) {
   case exahype::records::RepositoryState::UseAdapterFinaliseMeshRefinement:
   case exahype::records::RepositoryState::UseAdapterFinaliseMeshRefinementOrLocalRollback:
@@ -227,6 +227,9 @@ void exahype::State::kickOffIteration(exahype::records::RepositoryState::Action&
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
       if ( solver->getMeshUpdateEvent()==exahype::solvers::Solver::MeshUpdateEvent::RefinementRequested ) {
         solver->rollbackToPreviousTimeStep();
+      }
+      if ( solver->getMeshUpdateEvent() != solvers::Solver::MeshUpdateEvent::None ) {
+        solver->resetAdmissibleTimeStepSize();
       }
     }
     break;
@@ -254,6 +257,8 @@ void exahype::State::kickOffIteration(exahype::records::RepositoryState::Action&
 void exahype::State::globalBroadcast(exahype::records::RepositoryState& repositoryState, exahype::State& solverState,  const int currentBatchIteration) {
   CurrentBatchIteration   = currentBatchIteration;
   NumberOfBatchIterations = repositoryState.getNumberOfIterations();
+
+  kickOffIteration(repositoryState.getAction(),currentBatchIteration,repositoryState.getNumberOfIterations());
 
   #ifdef Parallel
   if ( currentBatchIteration==0 ) {
@@ -311,7 +316,7 @@ void exahype::State::globalReduction(exahype::records::RepositoryState& reposito
           for (int workerRank=1; workerRank<tarch::parallel::Node::getInstance().getNumberOfNodes(); workerRank++) {
             if (!(tarch::parallel::NodePool::getInstance().isIdleNode(workerRank))) {
               for (auto* solver : exahype::solvers::RegisteredSolvers) {
-                if ( solver->hasRequestedMeshRefinement() ) {
+                if ( solver->hasRequestedAnyMeshRefinement() ) {
                   solver->mergeWithWorkerData(workerRank,0.0,0);
                 }
               }
@@ -319,7 +324,7 @@ void exahype::State::globalReduction(exahype::records::RepositoryState& reposito
           }
         } else {
           for (auto* solver : exahype::solvers::RegisteredSolvers) {
-            if ( solver->hasRequestedMeshRefinement() ) {
+            if ( solver->hasRequestedAnyMeshRefinement() ) {
               solver->sendDataToMaster(masterRank,0.0,0);
             }
           }
@@ -368,15 +373,17 @@ void exahype::State::globalReduction(exahype::records::RepositoryState& reposito
     }
   }
   #endif
+
+  wrapUpIteration(repositoryState.getAction(),currentBatchIteration,repositoryState.getNumberOfIterations());
 }
 
-void exahype::State::wrapUpIteration(exahype::records::RepositoryState::Action& action,const int currentBatchIteration,const int numberOfIterations) {
+void exahype::State::wrapUpIteration(exahype::records::RepositoryState::Action action,const int currentBatchIteration,const int numberOfIterations) {
   if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
     switch ( action ) {
     case exahype::records::RepositoryState::UseAdapterFinaliseMeshRefinement:
     case exahype::records::RepositoryState::UseAdapterFinaliseMeshRefinementOrLocalRollback:
       for (auto* solver : solvers::RegisteredSolvers) {
-        if ( solver->hasRequestedMeshRefinement() ) {
+        if ( solver->hasRequestedAnyMeshRefinement() ) {
           solver->updateTimeStepSize();
         }
       }

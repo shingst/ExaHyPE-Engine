@@ -73,7 +73,7 @@ class exahype::State : public peano::grid::State<exahype::records::State> {
    * @param currentBatchIteration   the current batch iteration
    * @param numberOfBatchIterations the total number of batch iterations.
    */
-  static void kickOffIteration(exahype::records::RepositoryState::Action& action,const int currentBatchIteration,const int numberOfIterations);
+  static void kickOffIteration(exahype::records::RepositoryState::Action action,const int currentBatchIteration,const int numberOfIterations);
 
   /**
    * Wrap up an iterations, i.e. make use of values that are reduced over the cells (and MPI ranks).
@@ -82,7 +82,7 @@ class exahype::State : public peano::grid::State<exahype::records::State> {
    * @param currentBatchIteration   the current batch iteration
    * @param numberOfBatchIterations the total number of batch iterations.
    */
-  static void wrapUpIteration(exahype::records::RepositoryState::Action& action,const int currentBatchIteration,const int numberOfIterations);
+  static void wrapUpIteration(exahype::records::RepositoryState::Action action,const int currentBatchIteration,const int numberOfIterations);
 
   /**
    * Static callback to perform global broadcasts between working nodes.

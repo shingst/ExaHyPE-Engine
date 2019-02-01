@@ -93,6 +93,10 @@ void exahype::solvers::LimitingADERDGSolver::updateAdmissibleTimeStepSize(double
   _solver->updateAdmissibleTimeStepSize(value);
 }
 
+void exahype::solvers::LimitingADERDGSolver::resetAdmissibleTimeStepSize() {
+  _solver->resetAdmissibleTimeStepSize();
+}
+
 void exahype::solvers::LimitingADERDGSolver::initSolver(
     const double timeStamp,
     const tarch::la::Vector<DIMENSIONS,double>& domainOffset,
@@ -128,7 +132,7 @@ bool exahype::solvers::LimitingADERDGSolver::isMergingMetadata(
                           getMeshUpdateEvent()==MeshUpdateEvent::RefinementRequested;
       break;
     case exahype::State::AlgorithmSection::MeshRefinement:
-      isMergingMetadata = hasRequestedMeshRefinement();
+      isMergingMetadata = hasRequestedAnyMeshRefinement();
       break;
     default:
       break;

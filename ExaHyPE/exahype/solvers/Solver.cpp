@@ -387,7 +387,7 @@ int exahype::solvers::Solver::getMaximumAdaptiveMeshLevel() const {
   return _coarsestMeshLevel+_maximumAdaptiveMeshDepth;
 }
 
-bool exahype::solvers::Solver::hasRequestedMeshRefinement() const {
+bool exahype::solvers::Solver::hasRequestedAnyMeshRefinement() const {
   return getMeshUpdateEvent()==MeshUpdateEvent::RefinementRequested ||
          getMeshUpdateEvent()==MeshUpdateEvent::InitialRefinementRequested;
 }
@@ -538,7 +538,7 @@ bool exahype::solvers::Solver::allSolversPerformOnlyUniformRefinement() {
 bool exahype::solvers::Solver::oneSolverRequestedMeshRefinement() {
   bool result = false;
   for (auto* solver : exahype::solvers::RegisteredSolvers) {
-    result |= solver->hasRequestedMeshRefinement();
+    result |= solver->hasRequestedAnyMeshRefinement();
   }
   return result;
 }

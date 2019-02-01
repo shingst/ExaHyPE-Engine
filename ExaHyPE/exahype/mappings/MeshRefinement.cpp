@@ -472,7 +472,7 @@ void exahype::mappings::MeshRefinement::enterCell(
 
   for (unsigned int solverNumber=0; solverNumber<exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-    if ( solver->hasRequestedMeshRefinement() ) {
+    if ( solver->hasRequestedAnyMeshRefinement() ) {
       const bool newComputeCell =
           !firstMeshRefinementIteration && // skip in first iteration
           solver->progressMeshRefinementInEnterCell(
@@ -520,7 +520,7 @@ void exahype::mappings::MeshRefinement::leaveCell(
  
   for (unsigned int solverNumber=0; solverNumber<exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-    if ( solver->hasRequestedMeshRefinement() ) {
+    if ( solver->hasRequestedAnyMeshRefinement() ) {
       solver->progressMeshRefinementInLeaveCell(
           fineGridCell,
           fineGridVertices,

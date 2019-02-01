@@ -1416,17 +1416,18 @@ public:
    *
    * Does not advance the predictor time stamp in time.
    */
-  void updateTimeStepSize() override;
+  void updateTimeStepSize() final override;
 
   void rollbackToPreviousTimeStep() final override;
 
   double getPreviousMinTimeStamp() const;
   double getPreviousMinTimeStepSize() const;
 
-  double getMinTimeStamp() const override;
-  double getMinTimeStepSize() const override;
-  double getAdmissibleTimeStepSize() const override;
-  void updateAdmissibleTimeStepSize(double value) override;
+  double getMinTimeStamp() const final override;
+  double getMinTimeStepSize() const final override;
+  double getAdmissibleTimeStepSize() const final override;
+  void updateAdmissibleTimeStepSize(double value) final override;
+  void resetAdmissibleTimeStepSize() final override;
 
   double getEstimatedTimeStepSize() const;
 
