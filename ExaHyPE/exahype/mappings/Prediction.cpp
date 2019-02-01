@@ -216,8 +216,6 @@ void exahype::mappings::Prediction::enterCell(
   ) {
     solvers::Solver::CellInfo cellInfo = fineGridCell.createCellInfo();
     for (int solverNumber=0; solverNumber<static_cast<int>(solvers::RegisteredSolvers.size()); solverNumber++) {
-      auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-
       // this operates only on compute cells
       plotters::plotPatchIfAPlotterIsActive(solverNumber,cellInfo); // TODO(Dominic) potential for IO overlap?
     }
