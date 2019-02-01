@@ -902,12 +902,6 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
 
     logInfo( "runAsMaster(...)", "initialised all data and computed first time step size" );
 
-    if ( !solvers::Solver::FuseAllADERDGPhases ) {
-      logInfo( "runAsMaster(...)", "plot" );
-      repository.switchToPlot();
-      repository.iterate();
-    }
-
     bool communicatePeanoVertices =
         !exahype::solvers::Solver::DisablePeanoNeighbourExchangeInTimeSteps;
     repository.switchToInitialPrediction();
@@ -1539,12 +1533,6 @@ void exahype::runners::Runner::runOneTimeStepWithTwoSeparateAlgorithmicSteps(
 
   printTimeStepInfo(1,repository);
 
-  if ( plot && !solvers::Solver::FuseAllADERDGPhases ) {
-    logInfo( "runAsMaster(...)", "plot" );
-    repository.switchToPlot();
-    repository.iterate();
-  }
-
   repository.switchToPrediction(); // Cell onto faces
   repository.iterate( exahype::solvers::Solver::PredictionSweeps, communicatePeanoVertices );
 
@@ -1574,12 +1562,6 @@ void exahype::runners::Runner::runOneTimeStepWithThreeSeparateAlgorithmicSteps(
   }
 
   printTimeStepInfo(1,repository);
-
-  if ( plot && !solvers::Solver::FuseAllADERDGPhases ) {
-    logInfo( "runAsMaster(...)", "plot" );
-    repository.switchToPlot();
-    repository.iterate();
-  }
 
   repository.switchToPrediction(); // Cell onto faces
   repository.iterate( exahype::solvers::Solver::PredictionSweeps, communicatePeanoVertices );

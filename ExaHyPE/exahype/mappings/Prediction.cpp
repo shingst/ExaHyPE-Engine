@@ -112,12 +112,25 @@ void exahype::mappings::Prediction::beginIteration(
   MPI_Pcontrol(1); 
   #endif
 
+  if (
+      !exahype::solvers::Solver::FuseAllADERDGPhases &&
+      exahype::State::isFirstIterationOfBatchOrNoBatch()
+  ) {
+    exahype::plotters::startPlottingIfAPlotterIsActive(
+        solvers::Solver::getMinTimeStampOfAllSolvers());
+  }
+
   logTraceOutWith1Argument("beginIteration(State)", solverState);
 }
 
 void exahype::mappings::Prediction::endIteration(
     exahype::State& solverState) {
-  // do nothing
+  if (
+      !exahype::solvers::Solver::FuseAllADERDGPhases &&
+      exahype::State::isFirstIterationOfBatchOrNoBatch()
+  ) {
+    exahype::plotters::finishedPlotting();
+  }
 }
 
 void exahype::mappings::Prediction::performPredictionOrProlongate(
@@ -195,6 +208,20 @@ void exahype::mappings::Prediction::enterCell(
   logTraceInWith4Arguments("enterCell(...)", fineGridCell,
                            fineGridVerticesEnumerator.toString(),
                            coarseGridCell, fineGridPositionOfCell);
+
+  if (
+      !exahype::solvers::Solver::FuseAllADERDGPhases &&
+      exahype::State::isFirstIterationOfBatchOrNoBatch() &&
+      fineGridCell.isInitialised()
+  ) {
+    solvers::Solver::CellInfo cellInfo = fineGridCell.createCellInfo();
+    for (int solverNumber=0; solverNumber<static_cast<int>(solvers::RegisteredSolvers.size()); solverNumber++) {
+      auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
+
+      // this operates only on compute cells
+      plotters::plotPatchIfAPlotterIsActive(solverNumber,cellInfo); // TODO(Dominic) potential for IO overlap?
+    }
+  }
 
   exahype::mappings::Prediction::performPredictionOrProlongate(
       fineGridCell,
