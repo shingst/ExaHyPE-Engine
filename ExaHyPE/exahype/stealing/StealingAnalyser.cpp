@@ -9,6 +9,7 @@
 #include "tarch/multicore/Core.h"
 
 #include <thread>
+#include <limits>
 
 #include "exahype/stealing/PerformanceMonitor.h"
 #include "exahype/stealing/DiffusiveDistributor.h"
@@ -29,16 +30,25 @@ exahype::stealing::StealingAnalyser::StealingAnalyser():
   _waitForWorkerDataWatch("exahype::stealing::StealingAnalyser", "-", false,false),
   _waitForMasterDataWatch("exahype::stealing::StealingAnalyser", "-", false,false),
   _waitForOtherRank(tarch::parallel::Node::getInstance().getNumberOfNodes()),
-  //_currentMaxWaitTime(0),
+  _currentZeroThreshold(20000),
   _iterationCounter(0)
 {
   enable(true);
-
+#ifdef USE_ITAC
   VT_funcdef(event_name_waitForWorker, VT_NOCLASS, &event_waitForWorker ); assertion(ierr==0)
+#endif
+  int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
+  _currentFilteredWaitingTimesSnapshot = new int[nnodes*nnodes];
+  std::fill(&_currentFilteredWaitingTimesSnapshot[0], &_currentFilteredWaitingTimesSnapshot[nnodes*nnodes], 0);
 }
 
+exahype::stealing::StealingAnalyser& exahype::stealing::StealingAnalyser::getInstance() {
+  static StealingAnalyser analyser;
+  return analyser;
+}
 
 exahype::stealing::StealingAnalyser::~StealingAnalyser() {
+  delete[] _currentFilteredWaitingTimesSnapshot;
 }
 
 
@@ -46,11 +56,46 @@ void exahype::stealing::StealingAnalyser::enable(bool value) {
   _isSwitchedOn=value;
 }
 
+const int* exahype::stealing::StealingAnalyser::getFilteredWaitingTimesSnapshot() {
+  return _currentFilteredWaitingTimesSnapshot;
+}
+
+int  exahype::stealing::StealingAnalyser::getZeroThreshold() {
+  return _currentZeroThreshold;
+}
+
+void exahype::stealing::StealingAnalyser::updateZeroTresholdAndFilteredSnapshot() {
+  const int* currentWaitingTimesSnapshot = exahype::stealing::PerformanceMonitor::getInstance().getWaitingTimesSnapshot();
+  int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
+  
+  int min, max;
+  min = std::numeric_limits<int>::max();
+  max = std::numeric_limits<int>::min();
+
+  for(int i=0; i<nnodes; i++) {
+    for(int j=0; j<nnodes; j++) {
+      int currentWaitingTime = currentWaitingTimesSnapshot[i*nnodes+j];
+      // logInfo("updateZeroTresholdAndFilteredSnapshot()","rank "<<i<<" waiting for "<<currentWaitingTime<<" for rank "<<j);
+      if(currentWaitingTime>max) {
+	 max = currentWaitingTime;
+      }
+      else if(currentWaitingTime>0 && currentWaitingTime<min) {
+        min = currentWaitingTime;
+      }
+      _currentFilteredWaitingTimesSnapshot[i*nnodes+j] = (currentWaitingTime < _currentZeroThreshold) ? 0 : currentWaitingTime;
+    }
+  }
+  if(min < std::numeric_limits<int>::max()) {
+    int newThreshold = static_cast<int>(0.9*min+0.1*max);
+    _currentZeroThreshold = newThreshold;
+    logInfo("updateZeroTresholdAndFilteredSnapshot()", " zero treshold set to "<< newThreshold);
+  }
+
+}
 
 void exahype::stealing::StealingAnalyser::beginIteration() {
   if(_iterationCounter%2 !=0) return;
 
-  _currentMaxWaitTime = 0;
   exahype::stealing::StealingManager::getInstance().resetVictimFlag(); //TODO: correct position here?
   exahype::stealing::StealingManager::getInstance().decreaseHeat();
 }
@@ -65,12 +110,11 @@ void exahype::stealing::StealingAnalyser::endIteration(double numberOfInnerLeafC
   for(int i=0; i<_waitForOtherRank.size(); i++) {
     if(i != tarch::parallel::Node::getInstance().getRank()) {
       logInfo("endIteration()", "wait for rank "<<i<<_waitForOtherRank[i].toString());
-      //if(_waitForOtherRank[i].getValue()>_currentMaxWaitTime) _currentMaxWaitTime = _waitForOtherRank[i].getValue();
       exahype::stealing::PerformanceMonitor::getInstance().submitWaitingTimeForRank(static_cast<int>(_waitForOtherRank[i].getValue()*1e06), i);
     }     
   }
-  //logInfo("endIteration()","submitting new wait time "<<_currentMaxWaitTime<<" to performance monitor and updating current load distribution");
 
+  updateZeroTresholdAndFilteredSnapshot();
 #if defined(StealingStrategyDiffusive)
   exahype::stealing::DiffusiveDistributor::getInstance().updateLoadDistribution();
 #elif defined(StealingStrategyAggressive)
@@ -80,7 +124,6 @@ void exahype::stealing::StealingAnalyser::endIteration(double numberOfInnerLeafC
   exahype::stealing::AggressiveCCPDistributor::getInstance().printOffloadingStatistics();
   exahype::stealing::AggressiveCCPDistributor::getInstance().updateLoadDistribution();
 #endif
-  //exahype::stealing::PerformanceMonitor::getInstance().setCurrentLoad(static_cast<int>(_currentMaxWaitTime*1e06));
 
   _iterationCounter++;
 }
@@ -144,8 +187,7 @@ void exahype::stealing::StealingAnalyser::endToReceiveDataFromMaster() {
       logInfo(
         "endToReceiveDataFromMaster()",
         "rank had to wait for master " << myMaster << " for "<< elapsedTime <<
-        " currentAvg "<< currentAvg << "s"<<
-        " currentMaxWaitTime "<<_currentMaxWaitTime<<"s"
+        " currentAvg "<< currentAvg << "s"
       );
     }
   }

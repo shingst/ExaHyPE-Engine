@@ -10,13 +10,13 @@
 
 #include "exahype/stealing/StealingProfiler.h"
 #include "exahype/stealing/PerformanceMonitor.h"
+#include "exahype/stealing/StealingAnalyser.h"
 #include "tarch/multicore/Core.h"
 #include "tarch/multicore/tbb/Jobs.h"
 
 tarch::logging::Log exahype::stealing::AggressiveCCPDistributor::_log( "exahype::stealing::AggressiveCCPDistributor" );
 
 exahype::stealing::AggressiveCCPDistributor::AggressiveCCPDistributor() :
-  _zeroThreshold(2000*10),
   _isEnabled(false),
   _temperature(0.5),
   _totalTasksOffloaded(0),
@@ -216,7 +216,8 @@ void exahype::stealing::AggressiveCCPDistributor::updateLoadDistribution() {
   int myRank = tarch::parallel::Node::getInstance().getRank();
 
   int *waitingTimesSnapshot = new int[nnodes*nnodes];
-  const int* currentWaitingTimesSnapshot = exahype::stealing::PerformanceMonitor::getInstance().getWaitingTimesSnapshot();
+ // const int* currentWaitingTimesSnapshot = exahype::stealing::PerformanceMonitor::getInstance().getWaitingTimesSnapshot();
+  const int* currentWaitingTimesSnapshot = exahype::stealing::StealingAnalyser::getInstance().getFilteredWaitingTimesSnapshot();
   std::copy(&currentWaitingTimesSnapshot[0], &currentWaitingTimesSnapshot[nnodes*nnodes], waitingTimesSnapshot);
 
   //waitingTimesSnapshot[myRank] = waitingTime;
@@ -235,7 +236,7 @@ void exahype::stealing::AggressiveCCPDistributor::updateLoadDistribution() {
     for(int j=0; j<nnodes; j++) {
       if(waitingTimesSnapshot[k+j]>0)
         logInfo("updateLoadDistribution()","rank "<<i<<" waiting for "<<waitingTimesSnapshot[k+j]<<" for rank "<<j);
-      if(waitingTimesSnapshot[k+j]>_zeroThreshold) {
+      if(waitingTimesSnapshot[k+j]> exahype::stealing::StealingAnalyser::getInstance().getZeroThreshold()) {
         waitingRanks[j]++;   
         waitingForSomeone = true;
       }
