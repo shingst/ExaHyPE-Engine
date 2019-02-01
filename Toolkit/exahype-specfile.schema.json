@@ -510,7 +510,8 @@
       },
       "dependencies" : {
         "spawn_double_compression_as_background_thread" : ["double_compression"],
-        "fuse_algorithmic_steps_factor" : ["fuse_algorithmic_steps"],
+        "fuse_algorithmic_steps_rerun_factor" : ["fuse_algorithmic_steps"],
+        "fuse_algorithmic_steps_diffusion_factor" : ["fuse_algorithmic_steps"],
         "disable_metadata_exchange_in_batched_time_steps" : ["time_step_batch_factor"]
       }
     }, 
