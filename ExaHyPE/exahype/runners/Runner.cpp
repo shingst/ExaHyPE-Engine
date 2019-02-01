@@ -1533,6 +1533,10 @@ void exahype::runners::Runner::runOneTimeStepWithTwoSeparateAlgorithmicSteps(
 
   printTimeStepInfo(1,repository);
 
+  if ( plot ) {
+    logInfo("runOneTimeStepWithTwoSeparateAlgorithmicSteps(...)","plot");
+  }
+
   repository.switchToPrediction(); // Cell onto faces
   repository.iterate( exahype::solvers::Solver::PredictionSweeps, communicatePeanoVertices );
 
@@ -1562,6 +1566,10 @@ void exahype::runners::Runner::runOneTimeStepWithThreeSeparateAlgorithmicSteps(
   }
 
   printTimeStepInfo(1,repository);
+
+  if ( plot ) {
+    logInfo("runOneTimeStepWithThreeSeparateAlgorithmicSteps(...)","plot");
+  }
 
   repository.switchToPrediction(); // Cell onto faces
   repository.iterate( exahype::solvers::Solver::PredictionSweeps, communicatePeanoVertices );
