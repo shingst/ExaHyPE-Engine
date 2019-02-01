@@ -748,9 +748,6 @@ void exahype::solvers::ADERDGSolver::startNewTimeStep() {
       _minTimeStepSize = _minNextTimeStepSize;
       break;
   }
-
-  _maxLevel     = _nextMaxLevel;
-  _nextMaxLevel = -std::numeric_limits<int>::max(); // "-", there is no integer infinity
 }
 
 void exahype::solvers::ADERDGSolver::startNewTimeStepFused(
@@ -762,66 +759,20 @@ void exahype::solvers::ADERDGSolver::startNewTimeStepFused(
     _previousMinTimeStepSize = _minTimeStepSize;
   }
   // n
-  _minTimeStamp    = _minTimeStamp+_minTimeStepSize;
-  _minTimeStepSize = _estimatedTimeStepSize;
-  // n+1
-  _estimatedMinTimeStamp  = _estimatedMinTimeStamp + _estimatedTimeStepSize;
-  if ( isLastTimeStepOfBatch ) {
-    switch (_timeStepping) {
-      case TimeStepping::Global:
-        _estimatedTimeStepSize = _minNextTimeStepSize;
-        _minNextTimeStepSize   = std::numeric_limits<double>::infinity();
-        break;
-      case TimeStepping::GlobalFixed:
-        _estimatedTimeStepSize = _minNextTimeStepSize;
-        break;
-    }
-    _maxLevel     = _nextMaxLevel;
-    _nextMaxLevel = -std::numeric_limits<int>::max(); // "-", min
-  }
-}
-
-void exahype::solvers::ADERDGSolver::updateTimeStepSizesFused() {
-  switch (_timeStepping) {
-  case TimeStepping::Global:
-    _minTimeStepSize = _minNextTimeStepSize;
-    _estimatedTimeStepSize = _minNextTimeStepSize;
-
-    _estimatedMinTimeStamp    =  _minTimeStamp+_minNextTimeStepSize;
-
-    _minNextTimeStepSize = std::numeric_limits<double>::infinity();
-    break;
-  case TimeStepping::GlobalFixed:
-    _minTimeStepSize = _minNextTimeStepSize;
-    _estimatedTimeStepSize = _minNextTimeStepSize;
-
-    _estimatedMinTimeStamp =  _minTimeStamp+_minNextTimeStepSize;
-    break;
-  }
-
-  _stabilityConditionWasViolated = false;
-
-  _maxLevel     = _nextMaxLevel;
-  _nextMaxLevel = -std::numeric_limits<int>::max(); // "-", min
+  _minTimeStamp = _minTimeStamp+_minTimeStepSize;
 }
 
 void exahype::solvers::ADERDGSolver::updateTimeStepSizes() {
   switch (_timeStepping) {
     case TimeStepping::Global:
-      _minTimeStepSize = _minNextTimeStepSize;
-      _estimatedTimeStepSize = _minNextTimeStepSize;
-
-      _estimatedMinTimeStamp    =  _minTimeStamp;
-
-      _minNextTimeStepSize = std::numeric_limits<double>::infinity();
-      break;
     case TimeStepping::GlobalFixed:
-      _minTimeStepSize = _minNextTimeStepSize;
-      _estimatedTimeStepSize = _minNextTimeStepSize;
-
-      _estimatedMinTimeStamp =  _minTimeStamp;
+      _minTimeStepSize        = _admissibleTimeStepSize;
+      _admissibleTimeStepSize = std::numeric_limits<double>::infinity();
+      break;
+    default:
       break;
   }
+  _stabilityConditionWasViolated = false;
 
   _maxLevel     = _nextMaxLevel;
   _nextMaxLevel = -std::numeric_limits<int>::max(); // "-", min
@@ -830,125 +781,42 @@ void exahype::solvers::ADERDGSolver::updateTimeStepSizes() {
 void exahype::solvers::ADERDGSolver::rollbackToPreviousTimeStep() {
   switch (_timeStepping) {
     case TimeStepping::Global:
-      _minNextTimeStepSize                     = std::numeric_limits<double>::infinity();
-
-      _estimatedMinTimeStamp                    = _previousMinTimeStamp;
-      _estimatedTimeStepSize                 = _previousMinTimeStepSize;
-
-      _minTimeStamp                    = _previousMinTimeStamp;
-      _minTimeStepSize                 = _previousMinTimeStepSize;
-
-      _previousMinTimeStamp            = std::numeric_limits<double>::infinity();
-      _previousMinTimeStepSize         = std::numeric_limits<double>::infinity();
+      _minTimeStamp            = _previousMinTimeStamp;
+      _minTimeStepSize         = _previousMinTimeStepSize;
+      _previousMinTimeStamp    = std::numeric_limits<double>::infinity();
+      _previousMinTimeStepSize = std::numeric_limits<double>::infinity();
       break;
     case TimeStepping::GlobalFixed:
-      _estimatedMinTimeStamp                    = _previousMinTimeStamp;
-      _estimatedTimeStepSize                 = _previousMinTimeStepSize;
-
-      _minTimeStamp                    = _previousMinTimeStamp;
-      _minTimeStepSize                 = _previousMinTimeStepSize;
-
-      _previousMinTimeStamp            = std::numeric_limits<double>::infinity();
-      _previousMinTimeStepSize         = std::numeric_limits<double>::infinity();
+      _minTimeStamp         = _previousMinTimeStamp;
+      _previousMinTimeStamp = std::numeric_limits<double>::infinity();
       break;
   }
 
   _maxLevel     = _nextMaxLevel;
   _nextMaxLevel = -std::numeric_limits<int>::max(); // "-", min
-}
-
-void exahype::solvers::ADERDGSolver::rollbackToPreviousTimeStepFused() {
-  switch (_timeStepping) {
-    case TimeStepping::Global:
-      _minNextTimeStepSize                      = std::numeric_limits<double>::infinity();
-
-      _estimatedMinTimeStamp                    = _previousMinTimeStamp+_previousMinTimeStepSize;
-      _estimatedTimeStepSize                 = _minTimeStepSize;
-
-      _minTimeStamp                    = _previousMinTimeStamp;
-      _minTimeStepSize                 = _previousMinTimeStepSize;
-
-      _previousMinTimeStamp            = std::numeric_limits<double>::infinity();
-      _previousMinTimeStepSize         = std::numeric_limits<double>::infinity();
-      break;
-    case TimeStepping::GlobalFixed:
-      _estimatedMinTimeStamp                    = _previousMinTimeStamp+_previousMinTimeStepSize;
-      _estimatedTimeStepSize                 = _minTimeStepSize;
-
-      _minTimeStamp                    = _previousMinTimeStamp;
-      _minTimeStepSize                 = _previousMinTimeStepSize;
-
-      _previousMinTimeStamp            = std::numeric_limits<double>::infinity();
-      _previousMinTimeStepSize         = std::numeric_limits<double>::infinity();
-      break;
-  }
-
-  _maxLevel     = _nextMaxLevel;
-  _nextMaxLevel = -std::numeric_limits<int>::max(); // "-", min
-}
-
-void exahype::solvers::ADERDGSolver::updateMinNextPredictorTimeStepSize(
-    const double& minNextPredictorTimeStepSize) {
-  switch (_timeStepping) {
-    case TimeStepping::Global:
-      _minNextTimeStepSize =
-          std::min(_minNextTimeStepSize, minNextPredictorTimeStepSize);
-      break;
-    case TimeStepping::GlobalFixed: // TODO(Dominic): Problematic in MPI where we merge with the worker first
-      _minNextTimeStepSize =
-          _estimatedMinTimeStamp == _minTimeStamp
-              ? std::min(_minNextTimeStepSize,
-                         minNextPredictorTimeStepSize)
-              : _minNextTimeStepSize;
-      break;
-  }
-}
-
-double exahype::solvers::ADERDGSolver::getMinNextPredictorTimeStepSize() const {
-  return _minNextTimeStepSize;
-}
-
-double exahype::solvers::ADERDGSolver::getMinCorrectorTimeStamp() const {
-  return _minTimeStamp;
-}
-
-double exahype::solvers::ADERDGSolver::getMinPredictorTimeStamp() const {
-  return _estimatedMinTimeStamp;
-}
-
-double exahype::solvers::ADERDGSolver::getMinCorrectorTimeStepSize() const {
-  return _minTimeStepSize;
-}
-
-double exahype::solvers::ADERDGSolver::getMinPredictorTimeStepSize() const {
-  return _estimatedTimeStepSize;
-}
-
-void exahype::solvers::ADERDGSolver::setMinPredictorTimeStepSize(const double value) {
-  _estimatedTimeStepSize = value;
-}
-
-double exahype::solvers::ADERDGSolver::getPreviousMinCorrectorTimeStepSize() const {
-  return _previousMinTimeStepSize;
-}
-
-double exahype::solvers::ADERDGSolver::getPreviousMinCorrectorTimeStamp() const {
-  return _previousMinTimeStamp;
 }
 
 double exahype::solvers::ADERDGSolver::getMinTimeStamp() const {
-  return getMinCorrectorTimeStamp();
+  return _minTimeStamp;
 }
 
 double exahype::solvers::ADERDGSolver::getMinTimeStepSize() const {
-  return getMinCorrectorTimeStepSize();
+  return _minTimeStepSize;
 }
 
-double exahype::solvers::ADERDGSolver::getMinNextTimeStepSize() const {
-  return getMinNextPredictorTimeStepSize();
+double exahype::solvers::ADERDGSolver::getPreviousMinTimeStepSize() const {
+  return _previousMinTimeStepSize;
 }
 
-void exahype::solvers::ADERDGSolver::updateMinNextTimeStepSize( double value ) {
+double exahype::solvers::ADERDGSolver::getPreviousMinTimeStamp() const {
+  return _previousMinTimeStamp;
+}
+
+double exahype::solvers::ADERDGSolver::getAdmissibleTimeStepSize() const {
+  return _admissibleTimeStepSize;
+}
+
+void exahype::solvers::ADERDGSolver::updateAdmissibleTimeStepSize( double value ) {
   updateMinNextPredictorTimeStepSize(value);
 }
 

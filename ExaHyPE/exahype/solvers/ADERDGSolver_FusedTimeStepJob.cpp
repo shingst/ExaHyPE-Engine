@@ -49,7 +49,7 @@ bool exahype::solvers::ADERDGSolver::FusedTimeStepJob::run() {
     tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
     {
       _solver.updateMeshUpdateEvent(result._meshUpdateEvent);
-      _solver.updateMinNextTimeStepSize(result._timeStepSize);
+      _solver.updateAdmissibleTimeStepSize(result._timeStepSize);
     }
     lock.free();
   }

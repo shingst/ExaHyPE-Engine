@@ -711,7 +711,7 @@ public:
    */
   void rollbackToPreviousTimeStepFused() final override;
 
-  void updateNextMaxLevel(int maxLevel) final override;
+  void updateMaxLevel(int maxLevel) final override;
   int getNextMaxLevel() const final override;
   int getMaxLevel() const final override;
 

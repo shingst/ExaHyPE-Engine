@@ -389,12 +389,8 @@ int exahype::solvers::Solver::getMaximumAdaptiveMeshLevel() const {
   return _coarsestMeshLevel+_maximumAdaptiveMeshDepth;
 }
 
- void exahype::solvers::Solver::updateNextMaxLevel(int maxLevel) {
-   _nextMaxLevel = std::max( _nextMaxLevel, maxLevel );
-}
-
-int exahype::solvers::Solver::getNextMaxLevel() const {
-  return _nextMaxLevel;
+ void exahype::solvers::Solver::updateMaxLevel(int maxLevel) {
+   _maxLevel = std::max( _maxLevel, maxLevel );
 }
 
 int exahype::solvers::Solver::getMaxLevel() const {
@@ -687,7 +683,7 @@ void exahype::solvers::Solver::reinitialiseTimeStepDataIfLastPredictorTimeStepSi
 
   if (aderdgSolver!=nullptr) {
     const double stableTimeStepSize = aderdgSolver->getMinPredictorTimeStepSize();
-    double usedTimeStepSize         = aderdgSolver->getMinCorrectorTimeStepSize(); // post update
+    double usedTimeStepSize         = aderdgSolver->getMinTimeStepSize(); // post update
 
     bool usedTimeStepSizeWasInstable = usedTimeStepSize > stableTimeStepSize;
     aderdgSolver->setStabilityConditionWasViolated(usedTimeStepSizeWasInstable);

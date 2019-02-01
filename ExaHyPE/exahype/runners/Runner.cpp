@@ -1274,11 +1274,11 @@ void exahype::runners::Runner::validateInitialSolverTimeStepData(const bool fuse
       case exahype::solvers::Solver::Type::ADERDG: {
         auto* aderdgSolver = static_cast<exahype::solvers::ADERDGSolver*>(solver);
         if (!exahype::solvers::Solver::FuseADERDGPhases) {
-          assertionEquals(aderdgSolver->getPreviousMinCorrectorTimeStepSize(),0.0); // TOOD(Dominic): Revision
+          assertionEquals(aderdgSolver->getPreviousMinTimeStepSize(),0.0); // TOOD(Dominic): Revision
         }
         assertion1(std::isfinite(aderdgSolver->getMinPredictorTimeStepSize()),aderdgSolver->getMinPredictorTimeStepSize());
-        assertion1(std::isfinite(aderdgSolver->getMinCorrectorTimeStepSize()),aderdgSolver->getMinPredictorTimeStepSize());
-        assertionEquals(aderdgSolver->getMinCorrectorTimeStamp(),0.0);
+        assertion1(std::isfinite(aderdgSolver->getMinTimeStepSize()),aderdgSolver->getMinPredictorTimeStepSize());
+        assertionEquals(aderdgSolver->getMinTimeStamp(),0.0);
         if (fuseADERDGPhases) {
           assertionEquals(aderdgSolver->getMinPredictorTimeStamp(),aderdgSolver->getMinPredictorTimeStepSize());
         } else {
@@ -1297,11 +1297,11 @@ void exahype::runners::Runner::validateInitialSolverTimeStepData(const bool fuse
         // ADER-DG
         auto* aderdgSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getSolver().get();
         if (!exahype::solvers::Solver::FuseADERDGPhases) {
-          assertionEquals(aderdgSolver->getPreviousMinCorrectorTimeStepSize(),0.0); // TODO(Dominic): Revision
+          assertionEquals(aderdgSolver->getPreviousMinTimeStepSize(),0.0); // TODO(Dominic): Revision
         }
         assertion1(std::isfinite(aderdgSolver->getMinPredictorTimeStepSize()),aderdgSolver->getMinPredictorTimeStepSize());
-        assertion1(std::isfinite(aderdgSolver->getMinCorrectorTimeStepSize()),aderdgSolver->getMinPredictorTimeStepSize());
-        assertionEquals(aderdgSolver->getMinCorrectorTimeStamp(),0.0);
+        assertion1(std::isfinite(aderdgSolver->getMinTimeStepSize()),aderdgSolver->getMinPredictorTimeStepSize());
+        assertionEquals(aderdgSolver->getMinTimeStamp(),0.0);
         if (fuseADERDGPhases) {
           assertionEquals(aderdgSolver->getMinPredictorTimeStamp(),aderdgSolver->getMinPredictorTimeStepSize());
         } else {
@@ -1405,9 +1405,9 @@ void exahype::runners::Runner::printTimeStepInfo(int numberOfStepsRanSinceLastCa
     switch(p->getType()) {
       case exahype::solvers::Solver::Type::ADERDG:
         logInfo("startNewTimeStep(...)",
-                "\tADER-DG correction: t_min         =" << static_cast<exahype::solvers::ADERDGSolver*>(p)->getMinCorrectorTimeStamp());
+                "\tADER-DG correction: t_min         =" << static_cast<exahype::solvers::ADERDGSolver*>(p)->getMinTimeStamp());
         logInfo("startNewTimeStep(...)",
-                "\tADER-DG correction: dt_min         =" << static_cast<exahype::solvers::ADERDGSolver*>(p)->getMinCorrectorTimeStepSize());
+                "\tADER-DG correction: dt_min         =" << static_cast<exahype::solvers::ADERDGSolver*>(p)->getMinTimeStepSize());
         logInfo("startNewTimeStep(...)",
                 "\tADER-DG prediction: t_min         =" << static_cast<exahype::solvers::ADERDGSolver*>(p)->getMinPredictorTimeStamp());
         logInfo("startNewTimeStep(...)",
@@ -1415,13 +1415,13 @@ void exahype::runners::Runner::printTimeStepInfo(int numberOfStepsRanSinceLastCa
         break;
       case exahype::solvers::Solver::Type::LimitingADERDG:
         logInfo("startNewTimeStep(...)",
-                 "\tADER-DG prev correction*:  t_min   =" << static_cast<exahype::solvers::LimitingADERDGSolver*>(p)->getSolver()->getPreviousMinCorrectorTimeStamp());
+                 "\tADER-DG prev correction*:  t_min   =" << static_cast<exahype::solvers::LimitingADERDGSolver*>(p)->getSolver()->getPreviousMinTimeStamp());
         logInfo("startNewTimeStep(...)",
-                "\tADER-DG prev correction*:  dt_min  =" << static_cast<exahype::solvers::LimitingADERDGSolver*>(p)->getSolver()->getPreviousMinCorrectorTimeStepSize());
+                "\tADER-DG prev correction*:  dt_min  =" << static_cast<exahype::solvers::LimitingADERDGSolver*>(p)->getSolver()->getPreviousMinTimeStepSize());
         logInfo("startNewTimeStep(...)",
-                "\tADER-DG correction: t_min         =" << static_cast<exahype::solvers::LimitingADERDGSolver*>(p)->getSolver()->getMinCorrectorTimeStamp());
+                "\tADER-DG correction: t_min         =" << static_cast<exahype::solvers::LimitingADERDGSolver*>(p)->getSolver()->getMinTimeStamp());
         logInfo("startNewTimeStep(...)",
-                "\tADER-DG correction: dt_min        =" << static_cast<exahype::solvers::LimitingADERDGSolver*>(p)->getSolver()->getMinCorrectorTimeStepSize());
+                "\tADER-DG correction: dt_min        =" << static_cast<exahype::solvers::LimitingADERDGSolver*>(p)->getSolver()->getMinTimeStepSize());
         logInfo("startNewTimeStep(...)",
                 "\tADER-DG prediction: t_min         =" << static_cast<exahype::solvers::LimitingADERDGSolver*>(p)->getSolver()->getMinPredictorTimeStamp());
         logInfo("startNewTimeStep(...)",
@@ -1640,10 +1640,10 @@ void exahype::runners::Runner::validateSolverTimeStepDataForThreeAlgorithmicPhas
       case exahype::solvers::Solver::Type::ADERDG: {
         auto* aderdgSolver = static_cast<exahype::solvers::ADERDGSolver*>(solver);
         assertion1(std::isfinite(aderdgSolver->getMinPredictorTimeStepSize()),aderdgSolver->getMinPredictorTimeStepSize());
-        assertion1(std::isfinite(aderdgSolver->getMinCorrectorTimeStepSize()),aderdgSolver->getMinPredictorTimeStepSize());
-        assertion1(aderdgSolver->getMinCorrectorTimeStamp() > 0.0,aderdgSolver->getMinCorrectorTimeStamp());
+        assertion1(std::isfinite(aderdgSolver->getMinTimeStepSize()),aderdgSolver->getMinPredictorTimeStepSize());
+        assertion1(aderdgSolver->getMinTimeStamp() > 0.0,aderdgSolver->getMinTimeStamp());
         if (!fuseADERDGPhases) {
-          assertionEquals(aderdgSolver->getMinPredictorTimeStamp(),aderdgSolver->getMinCorrectorTimeStamp());
+          assertionEquals(aderdgSolver->getMinPredictorTimeStamp(),aderdgSolver->getMinTimeStamp());
         }
         switch(solver->getTimeStepping()) {
           case exahype::solvers::Solver::TimeStepping::Global:
@@ -1658,10 +1658,10 @@ void exahype::runners::Runner::validateSolverTimeStepDataForThreeAlgorithmicPhas
         // ADER-DG
         auto* aderdgSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getSolver().get();
         assertion1(std::isfinite(aderdgSolver->getMinPredictorTimeStepSize()),aderdgSolver->getMinPredictorTimeStepSize());
-        assertion1(std::isfinite(aderdgSolver->getMinCorrectorTimeStepSize()),aderdgSolver->getMinPredictorTimeStepSize());
-        assertion1(aderdgSolver->getMinCorrectorTimeStamp() > 0.0,aderdgSolver->getMinCorrectorTimeStamp());
+        assertion1(std::isfinite(aderdgSolver->getMinTimeStepSize()),aderdgSolver->getMinPredictorTimeStepSize());
+        assertion1(aderdgSolver->getMinTimeStamp() > 0.0,aderdgSolver->getMinTimeStamp());
         if (!fuseADERDGPhases) {
-          assertionEquals(aderdgSolver->getMinPredictorTimeStamp(),aderdgSolver->getMinCorrectorTimeStamp());
+          assertionEquals(aderdgSolver->getMinPredictorTimeStamp(),aderdgSolver->getMinTimeStamp());
         }
         switch(solver->getTimeStepping()) {
           case exahype::solvers::Solver::TimeStepping::Global:

@@ -70,6 +70,24 @@ class exahype::State : public peano::grid::State<exahype::records::State> {
       const peano::grid::Checkpoint<Vertex, Cell>& checkpoint);
 
   /**
+   * Kick off a time step, i.e. reset values that are reduced over the cells (and MPI ranks).
+   *
+   * @param action                  repository action indicating what time step (fused vs non-fused) is run
+   * @param currentBatchIteration   the current batch iteration
+   * @param numberOfBatchIterations the total number of batch iterations.
+   */
+  static void kickOffTimeStep(exahype::records::RepositoryState::Action& action,const int currentBatchIteration,const int numberOfBatchIterations);
+
+  /**
+   * Wrap up a time step, i.e. make use of values that are reduced over the cells (and MPI ranks).
+   *
+   * @param action                  repository action indicating what time step (fused vs non-fused) is run
+   * @param currentBatchIteration   the current batch iteration
+   * @param numberOfBatchIterations the total number of batch iterations.
+   */
+  static void wrapUpTimeStep(exahype::records::RepositoryState::Action& action,const int currentBatchIteration,const int numberOfBatchIterations);
+
+  /**
    * Static callback to perform global broadcasts between working nodes.
    *
    * @todo have a tree-based algorithm. Problem: NodePool does not reveal worker nodes

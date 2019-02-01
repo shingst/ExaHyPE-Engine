@@ -86,11 +86,11 @@ double exahype::solvers::LimitingADERDGSolver::getMinTimeStepSize() const {
 }
 
 double exahype::solvers::LimitingADERDGSolver::getMinNextTimeStepSize() const {
-  return _solver->getMinNextTimeStepSize();
+  return _solver->getAdmissibleTimeStepSize();
 }
 
 void exahype::solvers::LimitingADERDGSolver::updateMinNextTimeStepSize(double value) {
-  _solver->updateMinNextTimeStepSize(value);
+  _solver->updateAdmissibleTimeStepSize(value);
 }
 
 void exahype::solvers::LimitingADERDGSolver::initSolver(
@@ -183,8 +183,8 @@ void exahype::solvers::LimitingADERDGSolver::rollbackToPreviousTimeStepFused() {
   ensureLimiterTimeStepDataIsConsistent();
 }
 
-void exahype::solvers::LimitingADERDGSolver::updateNextMaxLevel(int maxLevel) {
-  _solver->updateNextMaxLevel(maxLevel);
+void exahype::solvers::LimitingADERDGSolver::updateMaxLevel(int maxLevel) {
+  _solver->updateMaxLevel(maxLevel);
 }
 
 int exahype::solvers::LimitingADERDGSolver::getNextMaxLevel() const {

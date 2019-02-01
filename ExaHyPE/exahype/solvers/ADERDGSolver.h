@@ -220,22 +220,21 @@ private:
   double _minTimeStepSize;
 
   /**
-   * Minimum predictor time stamp of all cell descriptions.
-   * Always equal or larger than the minimum corrector time stamp.
-   */
-  double _estimatedMinTimeStamp;
-
-  /**
-   * Minimum predictor time step size of
-   * all cell descriptions.
+   * Time step size estimate used for
+   * the fused ADER-DG scheme for nonlinear PDEs.
    */
   double _estimatedTimeStepSize;
 
   /**
-   * Minimum next predictor time step size of
-   * all cell descriptions.
+   * During the time step, this value
+   * is computed as the minimum of the
+   * admissible time step size of all
+   * cells.
+   *
+   * This minimum time step size is available after
+   * the time step has completed.
    */
-  double _minNextTimeStepSize;
+  double _admissibleTimeStepSize;
 
   /**
    * A flag that is used to track if the
@@ -1452,48 +1451,14 @@ public:
 
   void rollbackToPreviousTimeStep() final override;
 
-  void rollbackToPreviousTimeStepFused() final override;
-
-  /**
-   * Update predictor time step size
-   *
-   * This operation takes the minimum of the current predictor time step size
-   * and the argument handed in. The routine is used in
-   * TimeStepComputation to determine the subsequent time step size.
-   *
-   * <h1>Globalfixed timestepping</h1>
-   * In case of global fixed timestepping,
-   * we rely on the initial condition
-   * _predictorTimeStamp==_correctorTimeStamp
-   * to detect the first time step size
-   * computation.
-   *
-   * <h1>Thread-safety</h1>
-   *
-   * This operation is not thread safe.
-   *
-   */
-  void updateMinNextPredictorTimeStepSize(
-      const double& nextPredictorTimeStepSize);
-
-  /**
-   * Currently, required by TimeStepSizeComputation.
-   */
-  void setMinPredictorTimeStepSize(const double value);
-
-  double getMinNextPredictorTimeStepSize() const;
-  double getMinPredictorTimeStepSize() const;
-  double getMinPredictorTimeStamp() const;
-  double getMinCorrectorTimeStamp() const;
-  double getMinCorrectorTimeStepSize() const;
-  double getPreviousMinCorrectorTimeStamp() const;
-  double getPreviousMinCorrectorTimeStepSize() const;
+  double getPreviousMinTimeStamp() const;
+  double getPreviousMinTimeStepSize() const;
 
   double getMinTimeStamp() const override;
   double getMinTimeStepSize() const override;
-  double getMinNextTimeStepSize() const override;
+  double getAdmissibleTimeStepSize() const override;
 
-  void updateMinNextTimeStepSize(double value) override;
+  void updateAdmissibleTimeStepSize(double value) override;
 
   /**
    * Set if the CFL condition was violated
