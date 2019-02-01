@@ -117,6 +117,7 @@ void exahype::plotters::FiniteVolume2CarpetHDF5::plotPatch(
 
 	if(writer->slicer && !writer->slicer->isPatchActive(offsetOfPatch, sizeOfPatch)) return;
 	
+	dvec dx = 1./numberOfCellsPerAxis * sizeOfPatch;
 	double* mappedCell;
 
 	if(writer->slicer && writer->slicer->getIdentifier() == "CartesianSlicer") {
@@ -127,6 +128,7 @@ void exahype::plotters::FiniteVolume2CarpetHDF5::plotPatch(
 	} else {
 		mappedCell  = new double[writer->patchFieldsSize];
 		interpolateVertexPatch(offsetOfPatch, sizeOfPatch, u, mappedCell, timeStamp);
+		writer->plotPatch(offsetOfPatch, sizeOfPatch, dx, mappedCell, timeStamp);
 	}
 	delete[] mappedCell;
 }
@@ -154,8 +156,10 @@ void exahype::plotters::FiniteVolume2CarpetHDF5::interpolateVertexPatch(
 			ivec icell = ghostLayerWidth + ivertex + (icells - neighbourCellsPerAxis / 2);
 			
 			// if the target cell position in the patch is *not* in the ghost layers:
-			if (tarch::la::allSmaller(icell,numberOfCellsPerAxis+ghostLayerWidth)
-			&& tarch::la::allGreater(icell,ghostLayerWidth-1)) {
+			const bool cellTakenIntoAccount =
+			   tarch::la::allSmaller(icell,numberOfCellsPerAxis+ghostLayerWidth)
+			   &&  tarch::la::allGreater(icell,ghostLayerWidth-1);
+			if (cellTakenIntoAccount) {
 				double *cell = u + patchPos.rowMajor(icell)*solverUnknowns;
 				for (int unknown=0; unknown < solverUnknowns; unknown++) {
 					vertexValue[unknown] += cell[unknown];
@@ -195,21 +199,110 @@ void exahype::plotters::FiniteVolume2CarpetHDF5::interpolateVertexPatch(
 	}
 
 	delete[] vertexValue;
+}
+
+void exahype::plotters::FiniteVolume2CarpetHDF5::interpolateToSubmanifoldVertex(
+	const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
+	const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch,
+	const tarch::la::Vector<DIMENSIONS, double>& manifold_position,
+	const tarch::la::Vector<DIMENSIONS, int>& cell_index,
+	double* u, /* ingoing unknowns in cell, size numberOfCellsPerAxis^DIMENSIONS */
+	double* vertexValue, // intermediate storage, to avoid calling new double[solverUnknowns] all the time
+	double* outputWrittenQuantities,
+	double timeStamp
+) {
+	const dvec dx = 1./numberOfCellsPerAxis * sizeOfPatch;
+	const kernels::dindex patchPos(numberOfCellsPerAxis + 2*ghostLayerWidth); // including ghost zones
+	int neighbourCells = 0; // actual neighbour cells taken into account
+	std::fill_n(vertexValue, solverUnknowns, 0.0);
 	
-	dvec dx = 1./numberOfCellsPerAxis * sizeOfPatch;
-	writer->plotPatch(offsetOfPatch, sizeOfPatch, dx, mappedCell, timeStamp);
+	// A dumb way to detect which FV cells to take into account, compare 1D algorithm
+	dfor(icell, numberOfCellsPerAxis) {
+		dvec baryCenter = offsetOfPatch + icell.convertScalar<double>()*dx - dx(0)*ghostLayerWidth + dx/2.;
+		if(tarch::la::norm2(baryCenter - manifold_position) <= dx(0)) {
+			for (int unknown=0; unknown < solverUnknowns; unknown++) {
+				double *cell = u + patchPos.rowMajor(icell)*solverUnknowns;
+				vertexValue[unknown] += cell[unknown];
+			}
+			neighbourCells++;
+		}
+	}
+
+	// normalize value
+	for (int unknown=0; unknown < solverUnknowns; unknown++) {
+		vertexValue[unknown] = vertexValue[unknown] / neighbourCells;
+	}
+	
+	_postProcessing->mapQuantities(
+		offsetOfPatch,
+		sizeOfPatch,
+		manifold_position,
+		cell_index,
+		vertexValue,
+		outputWrittenQuantities,
+		timeStamp
+	);
 }
 
 void exahype::plotters::FiniteVolume2CarpetHDF5::interpolateCartesianSlicedVertexPatch(
   const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
   const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch,
-  double *u,
-  double *mappedCell,
+  double* u, /* ingoing unknowns in cell, size numberOfCellsPerAxis^DIMENSIONS */
+  double *mappedCell, /* outgoing mapped cell, size writtenUnknowns^DIMENSIONS */
   double timeStamp,
   const exahype::plotters::CartesianSlicer& slicer) {
+	// const int basisSize = writer->basisSize; // => numberOfVerticesPerAxis
+	// const int solverUnknowns = writer->solverUnknowns; // => solverUnknowns
+	// const int order = basisSize-1;
+
+	assertion(sizeOfPatch(0)==sizeOfPatch(1)); // expressing this is all for squared cells.
+	assertion(sizeOfPatch(0)==sizeOfPatch(DIMENSIONS-1));
+	dvec dx = 1./numberOfCellsPerAxis * sizeOfPatch;
+	// for the reduced offfsetOfPatch, sizeOfPatch to put into the invalid positions
+	double empty_slot = std::numeric_limits<double>::signaling_NaN();
 	
+	double* vertexValue = new double[solverUnknowns];
 	
+	if(slicer.targetDim == 2) {
+		// Determine a position on the 2d plane
+		dvec plane = slicer.project(offsetOfPatch);
+		ivec i;
+		for(i(1)=0; i(1)<numberOfVerticesPerAxis; i(1)++)
+		for(i(0)=0; i(0)<numberOfVerticesPerAxis; i(0)++) {
+			dvec planePos = plane + slicer.project(i).convertScalar<double>() * dx;
+			double *outputValue = mappedCell + writer->writtenCellIdx->get(i(1),i(0),0);
+			interpolateToSubmanifoldVertex(offsetOfPatch, sizeOfPatch, planePos, i, u, vertexValue, outputValue, timeStamp);
+		}
+		
+		// project offset and size of 2D patch onto the plane
+		// Todo: ifdef dimensions == 2 case adden
+		dvec offsetOfPatch_2D(offsetOfPatch(slicer.runningAxes(0)), offsetOfPatch(slicer.runningAxes(1)), empty_slot);
+		dvec sizeOfPatch_2D(sizeOfPatch(slicer.runningAxes(0)), sizeOfPatch(slicer.runningAxes(1)), empty_slot);
+		dvec dx_2D(dx(slicer.runningAxes(0)), dx(slicer.runningAxes(1)), empty_slot);
+		
+		writer->plotPatch(offsetOfPatch_2D, sizeOfPatch_2D, dx_2D, mappedCell, timeStamp);
+	} else if(slicer.targetDim == 1) {
+		// Determine a position on the 1d line
+		dvec line = slicer.project(offsetOfPatch);
+		ivec i;
+		for(i(0)=0; i(0)<numberOfVerticesPerAxis; i(0)++) {
+			dvec linePos = line + slicer.project(i).convertScalar<double>() * dx;
+			double *outputValue = mappedCell + writer->writtenCellIdx->get(i(0));
+			interpolateToSubmanifoldVertex(offsetOfPatch, sizeOfPatch, linePos, i, u, vertexValue, outputValue, timeStamp);
+		}
+		
+		// project offset and size of 1D patch onto the plane
+		// Todo: ifdef dimensions == 2 case adden
+		dvec offsetOfPatch_1D(offsetOfPatch(slicer.runningAxes(0)), empty_slot, empty_slot);
+		dvec sizeOfPatch_1D(sizeOfPatch(slicer.runningAxes(0)), empty_slot, empty_slot);
+		dvec dx_1D(dx(slicer.runningAxes(0)), empty_slot, empty_slot);
+		
+		writer->plotPatch(offsetOfPatch_1D, sizeOfPatch_1D, dx_1D, mappedCell, timeStamp);
+	} else {
+		throw std::invalid_argument("Unupported target dimension.");
+	}
 	
+	delete[] vertexValue;
 }
 
 void exahype::plotters::FiniteVolume2CarpetHDF5::startPlotting(double time) {

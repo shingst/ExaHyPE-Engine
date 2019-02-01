@@ -87,6 +87,17 @@ class exahype::plotters::FiniteVolume2CarpetHDF5 : public exahype::plotters::Plo
     double timeStamp,
     const exahype::plotters::CartesianSlicer& slicer
   );
+  
+  void interpolateToSubmanifoldVertex(
+    const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
+    const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch,
+    const tarch::la::Vector<DIMENSIONS, double>& manifold_position,
+    const tarch::la::Vector<DIMENSIONS, int>& cell_index,
+    double *u, // solution vector
+    double* vertexValue,
+    double* outputWrittenQuantities,
+    double timeStamp
+  );
 };
 
 #endif/* _EXAHYPE_PLOTTERS_ADERDG_2_CARPETHDF5_H_ */
