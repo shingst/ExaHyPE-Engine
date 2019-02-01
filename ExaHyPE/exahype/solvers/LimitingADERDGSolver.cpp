@@ -137,23 +137,19 @@ bool exahype::solvers::LimitingADERDGSolver::isMergingMetadata(
   return isMergingMetadata;
 }
 
+void exahype::solvers::LimitingADERDGSolver::kickOffTimeStep(const bool isFirstTimeStepOfBatchOrNoBatch) {
+  _solver->kickOffTimeStep(isFirstTimeStepOfBatchOrNoBatch);
+}
+
+void exahype::solvers::LimitingADERDGSolver::wrapUpTimeStep(const bool isFirstTimeStepOfBatchOrNoBatch,const bool isLastTimeStepOfBatchOrNoBatch) {
+  _solver->wrapUpTimeStep(isFirstTimeStepOfBatchOrNoBatch,isLastTimeStepOfBatchOrNoBatch);
+}
+
 void exahype::solvers::LimitingADERDGSolver::synchroniseTimeStepping(
     SolverPatch& solverPatch,
     Solver::CellInfo& cellInfo) const {
   _solver->synchroniseTimeStepping(solverPatch);
   ensureLimiterPatchTimeStepDataIsConsistent(solverPatch,cellInfo);
-}
-
-void exahype::solvers::LimitingADERDGSolver::startNewTimeStep() {
-  _solver->startNewTimeStep();
-  ensureLimiterTimeStepDataIsConsistent();
-}
-
-void exahype::solvers::LimitingADERDGSolver::startNewTimeStepFused(
-    const bool isFirstTimeStepOfBatch,
-    const bool isLastTimeStepOfBatch) {
-  _solver->startNewTimeStepFused(isFirstTimeStepOfBatch,isLastTimeStepOfBatch);
-  ensureLimiterTimeStepDataIsConsistent();
 }
 
 void exahype::solvers::LimitingADERDGSolver::ensureLimiterTimeStepDataIsConsistent() const {
@@ -168,31 +164,14 @@ void exahype::solvers::LimitingADERDGSolver::updateTimeStepSizesFused()  {
   ensureLimiterTimeStepDataIsConsistent();
 }
 
-void exahype::solvers::LimitingADERDGSolver::updateTimeStepSizes()  {
-  _solver->updateTimeStepSizes();
+void exahype::solvers::LimitingADERDGSolver::updateTimeStepSize()  {
+  _solver->updateTimeStepSize();
   ensureLimiterTimeStepDataIsConsistent();
 }
 
 void exahype::solvers::LimitingADERDGSolver::rollbackToPreviousTimeStep() {
   _solver->rollbackToPreviousTimeStep();
   ensureLimiterTimeStepDataIsConsistent();
-}
-
-void exahype::solvers::LimitingADERDGSolver::rollbackToPreviousTimeStepFused() {
-  _solver->rollbackToPreviousTimeStepFused();
-  ensureLimiterTimeStepDataIsConsistent();
-}
-
-void exahype::solvers::LimitingADERDGSolver::updateMaxLevel(int maxLevel) {
-  _solver->updateMaxLevel(maxLevel);
-}
-
-int exahype::solvers::LimitingADERDGSolver::getNextMaxLevel() const {
-  return _solver->getNextMaxLevel();
-}
-
-int exahype::solvers::LimitingADERDGSolver::getMaxLevel() const {
-  return _solver->getMaxLevel();
 }
 
 exahype::solvers::LimitingADERDGSolver::LimiterPatch& exahype::solvers::LimitingADERDGSolver::getLimiterPatch(
@@ -654,7 +633,7 @@ void exahype::solvers::LimitingADERDGSolver::updateSolution(
       assertion1(solverPatch.getRefinementStatus()>0,solverPatch.toString());
       LimiterPatch& limiterPatch = getLimiterPatch(solverPatch,cellInfo);
 
-      _limiter->updateSolution(limiterPatch,neighbourMergePerformed,cellInfo._cellDescriptionsIndex,isFirstTimeStep);
+      _limiter->updateSolution(limiterPatch,neighbourMergePerformed,solverPatch.getTimeStamp(),solverPatch.getTimeStepSize(),cellInfo._cellDescriptionsIndex,isFirstTimeStep);
       _solver->swapSolutionAndPreviousSolution(solverPatch);
       projectFVSolutionOnDGSpace(solverPatch,limiterPatch); // TODO(Dominic): If we do static limiting, this is not necessary in troubled cells
     }
@@ -716,7 +695,7 @@ void exahype::solvers::LimitingADERDGSolver::revisitSolverPatchesInBuffer(
         solverPatch.getRefinementStatus() >= _solver->getMinRefinementStatusForBufferCell();
     if ( isADERDGCellInBuffer && isTroubled ) { // limiter update
       LimiterPatch& limiterPatch = getLimiterPatch(solverPatch,cellInfo);
-      _limiter->updateSolution(limiterPatch,neighbourMergePerformed,cellInfo._cellDescriptionsIndex,backupPreviousSolution);
+      _limiter->updateSolution(limiterPatch,neighbourMergePerformed,solverPatch.getTimeStamp(),solverPatch.getTimeStepSize(),cellInfo._cellDescriptionsIndex,backupPreviousSolution);
       _solver->swapSolutionAndPreviousSolution(solverPatch);
       projectFVSolutionOnDGSpace(solverPatch,limiterPatch);
       determineLimiterMinAndMax(solverPatch,limiterPatch);
@@ -1071,8 +1050,6 @@ void exahype::solvers::LimitingADERDGSolver::rollbackSolutionLocally(
   if ( solverElement != NotFound ) {
     SolverPatch& solverPatch = cellInfo._ADERDGCellDescriptions[solverElement];
 
-    rollbackToPreviousTimeStep(solverPatch,cellInfo);
-
     // 1. Ensure limiter patch is allocated (based on current limiter status)
     ensureRequiredLimiterPatchIsAllocated(solverPatch,cellInfo,solverPatch.getRefinementStatus());
 
@@ -1127,7 +1104,8 @@ void exahype::solvers::LimitingADERDGSolver::recomputeSolution(
   ) { // these guys are recomputing with the limiter
     LimiterPatch& limiterPatch = getLimiterPatch(solverPatch,cellInfo);
 
-    _limiter->updateSolution(limiterPatch,limiterPatch.getNeighbourMergePerformed(),cellInfo._cellDescriptionsIndex,true);
+    _limiter->updateSolution(limiterPatch,limiterPatch.getNeighbourMergePerformed(),
+        limiterPatch.getPreviousTimeStamp(),limiterPatch.getPreviousTimeStepSize(),cellInfo._cellDescriptionsIndex,true);
     projectFVSolutionOnDGSpace(solverPatch,limiterPatch);
   }
   else if ( fineGridCellInvolvedInLocalRecomputation ) { // these guys are just swapping and projecting
@@ -1170,7 +1148,7 @@ double exahype::solvers::LimitingADERDGSolver::recomputeSolutionLocally(
           (solverPatch.getRefinementStatus()        == _solver->getMinRefinementStatusForTroubledCell()-1 ||  // holds an active FV patch                                                                                                 // or
           solverPatch.getPreviousRefinementStatus() >= _solver->getMinRefinementStatusForTroubledCell())      // was previously troubled but is no more
       ) {
-        const auto predictionTimeStepData = _solver->getPredictionTimeStepData(solverPatch,false/*duringFusedTimeStep*/);
+        const auto predictionTimeStepData = _solver->getPredictionTimeStepData(solverPatch,true/*duringFusedTimeStep*/);
         _solver->performPredictionAndVolumeIntegral(
             solverNumber,cellInfo,
             std::get<0>(predictionTimeStepData),

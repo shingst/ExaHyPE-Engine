@@ -44,7 +44,7 @@ bool exahype::solvers::LimitingADERDGSolver::FusedTimeStepJob::run() {
           _isSkeletonJob,false/*mustBeDoneImmedetially*/);
 
   if (_isLastTimeStepOfBatch) {
-    tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
+    tarch::multicore::Lock lock(exahype::ReductionSemaphore);
     {
       _solver.updateMeshUpdateEvent(result._meshUpdateEvent);
       _solver.updateMinNextTimeStepSize(result._timeStepSize);

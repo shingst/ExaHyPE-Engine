@@ -90,7 +90,7 @@ private:
    * Minimum stable time step size of all patches for
    * the next iteration.
    */
-  double _minNextTimeStepSize;
+  double _admissibleTimeStepSize;
 
   /**
    * Width of the ghost layer used for
@@ -202,6 +202,38 @@ private:
   void pullUnknownsFromByteStream(CellDescription& cellDescription) const;
   void putUnknownsIntoByteStream(CellDescription& cellDescription) const;
   void uncompress(CellDescription& cellDescription) const;
+
+  /**
+   * Perform a solution update.
+   *
+   * @param cellDescription          a cell description
+   * @param neighbourMergePerformed  per face, a flag indicating if ghost layers have been copied over from a neighbour
+   * @param timeStamp                the time stamp to use (this solver might be used for local recomputations by the LimitingADERDGSolver)
+   * @param timeStepSize             the time step size to use (this solver might be used for local recomputations by the LimitingADERDGSolver)
+   * @param cellDescriptionsIndex    a cell descriptions index for debuggin purposes
+   * @param backupPreviousSolution   if the previous solution should be backed up or not. When running batches, we only want to back up the solution in the first step.
+   */
+  void updateSolution(
+      CellDescription&                                           cellDescription,
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
+      const double                                               timeStamp,
+      const double                                               timeStepSize,
+      const int                                                  cellDescriptionsIndex,
+      const bool                                                 backupPreviousSolution);
+
+  /**
+   * Rolls back the solver's solution on the cell description.
+   * This method is used by the ADER-DG a-posteriori
+   * subcell limiter (LimitingADERDGSolver).
+   *
+   * <h2>Open issues</h2>
+   * A rollback is of course not possible if we have adjusted the solution
+   * values. Assuming the rollback is invoked by a LimitingADERDGSolver,
+   * we should use the adjusted FVM solution as reference solution.
+   * A similar issue occurs if we impose initial conditions that
+   * include a discontinuity.
+   */
+  void swapSolutionAndPreviousSolution(CellDescription& cellDescription) const;
 
   class CompressionJob: public tarch::multicore::jobs::Job {
     private:
@@ -373,12 +405,7 @@ public:
    /**
     * Returns if a ADERDGCellDescription type holds face data.
     */
-   static bool holdsFaceData(const CellDescription::Type& cellDescriptionType) {
-//     return cellDescriptionType==CellDescription::Cell ||
-//            cellDescriptionType==CellDescription::Ancestor   ||
-//            cellDescriptionType==CellDescription::Descendant;
-     return true;
-   }
+   static bool holdsFaceData(const CellDescription::Type& cellDescriptionType) { return true; }
 
 
   /**
@@ -405,19 +432,29 @@ public:
   FiniteVolumesSolver(const FiniteVolumesSolver& other) = delete;
   FiniteVolumesSolver& operator=(const FiniteVolumesSolver& other) = delete;
 
+  void initSolver(
+      const double timeStamp,
+      const tarch::la::Vector<DIMENSIONS,double>& domainOffset,
+      const tarch::la::Vector<DIMENSIONS,double>& domainSize,
+      const tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize,
+      const std::vector<std::string>& cmdlineargs,
+      const exahype::parser::ParserView& parserView) override;
+
+  void kickOffTimeStep(const bool isFirstTimeStepOfBatchOrNoBatch) final override;
+  void wrapUpTimeStep(const bool isFirstTimeStepOfBatchOrNoBatch,const bool isLastTimeStepOfBatchOrNoBatch) final override;
+
+  void updateTimeStepSizesFused() override;
+  void updateTimeStepSize()      override;
+  void rollbackToPreviousTimeStep() final override;
+
   void updateMeshUpdateEvent(MeshUpdateEvent meshUpdateEvent) final override;
   void resetMeshUpdateEvent() final override;
   MeshUpdateEvent getMeshUpdateEvent() const final override;
-
-  /**
-   * Returns the min time step size of the
-   * previous iteration.
-   * This value is initialised with zero
-   * to enable an initial "rollback".
-   */
   double getPreviousMinTimeStepSize() const;
-
   double getMinTimeStamp() const override;
+  double getMinTimeStepSize() const override;
+  void updateAdmissibleTimeStepSize( double value ) override;
+  double getAdmissibleTimeStepSize() const override;
 
   /**
    * The number of unknowns per patch.
@@ -462,52 +499,8 @@ public:
   virtual int getTempUnknownsSize()              const {return getDataPerPatch();} // TODO function should be renamed
   virtual int getBndFaceSize()                   const {return getDataPerPatchFace();} // TODO function should be renamed
 
-  /**
-   * Run over all solvers and identify the minimal time step size.
-   */
-  double getMinTimeStepSize() const override;
-
-  void updateMinNextTimeStepSize( double value ) override;
-
-  /**
-    * User defined solver initialisation.
-    *
-    * @param[in] cmdlineargs the command line arguments.
-    */
-  virtual void init(
-        const std::vector<std::string>& cmdlineargs,
-        const exahype::parser::ParserView& constants) = 0;
-
-  void initSolver(
-      const double timeStamp,
-      const tarch::la::Vector<DIMENSIONS,double>& domainOffset,
-      const tarch::la::Vector<DIMENSIONS,double>& domainSize,
-      const tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize,
-      const std::vector<std::string>& cmdlineargs,
-      const exahype::parser::ParserView& parserView) override;
-
   bool isPerformingPrediction(const exahype::State::AlgorithmSection& section) const override;
   bool isMergingMetadata(const exahype::State::AlgorithmSection& section) const override;
-
-  void startNewTimeStep() override;
-
-  void startNewTimeStepFused(
-      const bool isFirstTimeStepOfBatch,
-      const bool isLastTimeStepOfBatch) final override;
-
-  void updateTimeStepSizesFused() override;
-
-  void updateTimeStepSizes()      override;
-
-  /**
-   * Roll back the time step data to the
-   * ones of the previous time step.
-   */
-  void rollbackToPreviousTimeStep() final override;
-
-  void rollbackToPreviousTimeStepFused() final override;
-
-  double getMinNextTimeStepSize() const override;
 
   static bool isValidCellDescriptionIndex(const int cellDescriptionsIndex);
 
@@ -596,20 +589,13 @@ public:
   ///////////////////////////////////
   // CELL-LOCAL
   //////////////////////////////////
-  /**
-   * Required by the fusedTimeStep routine.
-   * Further, used by the other startNewTimeStepFused
-   * routine.
-   */
   double startNewTimeStep(CellDescription& cellDescription,const bool isFirstTimeStepOfBatch);
-
   double updateTimeStepSize(const int solverNumber,CellInfo& cellInfo) final override;
-
   void rollbackToPreviousTimeStep(CellDescription& cellDescription) const;
 
   /** @copydoc: exahype::solvers::Solver::fusedTimeStepOrRestrict
    *
-   * The "hasCompletedLastStep" flag must be only be unset when
+   * The "hasCompletedLastStep" flag must only be unset when
    * a background job is spawned.
    */
   UpdateResult fusedTimeStepOrRestrict(
@@ -619,65 +605,23 @@ public:
       const bool isLastTimeStepOfBatch,
       const bool isAtRemoteBoundary) final override;
 
-  /**
-   *  TODO
-   *
-   * @param solverNumber
-   * @param cellInfo
-   * @param isAtRemoteBoundary
-   * @return
-   */
   UpdateResult updateOrRestrict(
         const int  solverNumber,
         CellInfo&  cellInfo,
         const bool isAtRemoteBoundary) final override;
 
-  void compress(
-      const int solverNumber,
-      CellInfo& cellInfo,
-      const bool isAtRemoteBoundary) const final override;
-
   void adjustSolutionDuringMeshRefinement(const int solverNumber,CellInfo& cellInfo) final override;
-
-  /**
-   * Update the solution of a cell description.
-   *
-   * @note Make sure to reset neighbour merge
-   * helper variables in this method call.
-   *
-   * @note Has no const modifier since kernels are not const functions yet.
-   *
-   * @param[in] backupPreviousSolution Set to true if the solution should be backed up before
-   *                                   we overwrite it by the updated solution.
-   */
-  void updateSolution(
-      CellDescription&                                           cellDescription,
-      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
-      const int                                                  cellDescriptionsIndex,
-      const bool                                                 backupPreviousSolution);
-
-  /**
-   * TODO(Dominic): Update docu.
-   *
-   * Rolls back the solver's solution on the
-   * particular cell description.
-   * This method is used by the ADER-DG a-posteriori
-   * subcell limiter (LimitingADERDGSolver).
-   *
-   * <h2>Open issues</h2>
-   * A rollback is of course not possible if we have adjusted the solution
-   * values. Assuming the rollback is invoked by a LimitingADERDGSolver,
-   * we should use the adjusted FVM solution as reference solution.
-   * A similar issue occurs if we impose initial conditions that
-   * include a discontinuity.
-   */
-  void swapSolutionAndPreviousSolution(CellDescription& cellDescription) const;
 
   /**
    * Does nothing as a FV solver should never do global rollbacks;
    * no mesh refinement is performed by this solver type.
    */
   void rollbackSolutionGlobally(const int solverNumber,CellInfo& cellInfo) const final override;
+
+  void compress(
+      const int solverNumber,
+      CellInfo& cellInfo,
+      const bool isAtRemoteBoundary) const final override;
 
   ///////////////////////////////////
   // NEIGHBOUR
@@ -694,6 +638,8 @@ public:
       Solver::CellInfo&                         context,
       const tarch::la::Vector<DIMENSIONS, int>& posCell,
       const tarch::la::Vector<DIMENSIONS, int>& posBoundary);
+
+
 #ifdef Parallel
   ///////////////////////////////////
   // MASTER<=>WORKER
@@ -975,10 +921,21 @@ public:
 protected:
   /** @name Plugin points for derived solvers.
    *
-   *  These are the macro kernels solvers derived from
+   *  These are the macro kernels and user hooks solvers derived from
    *  FiniteVolumesSolver need to implement.
    */
   ///@{
+  /**
+   * Initialise the solver using command line arguments and specification
+   * file parameters.
+   *
+   * @param cmdlineargs command line arguments as passed to the applciation
+   * @param parameters  user-defined parameters as specified in the specification file
+   */
+  virtual void init(
+      const std::vector<std::string>& cmdlineargs,
+      const exahype::parser::ParserView& parameters) = 0;
+
   /**
    * @brief Returns a stable time step size.
    *

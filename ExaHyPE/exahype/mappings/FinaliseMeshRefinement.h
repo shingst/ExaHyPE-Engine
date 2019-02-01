@@ -60,16 +60,6 @@ class exahype::mappings::FinaliseMeshRefinement {
   static bool OneSolverRequestedMeshUpdate;
 
   /**
-   * A minimum time step size for each solver.
-   */
-  std::vector<double> _minTimeStepSizes;
-
-  /**
-   * The maximum level occupied by cells of a solver.
-   */
-  std::vector<int> _maxLevels;
-
-  /**
    * Indicates that the background tasks have terminated.
    * No further checks are required in this case.
    *
@@ -83,12 +73,6 @@ class exahype::mappings::FinaliseMeshRefinement {
    * and set this flag here as well.
    */
   bool _backgroundJobsHaveTerminated = false;
-
-  /**
-   * Prepare a appropriately sized vector _minTimeStepSizes
-   * with elements initiliased to MAX_DOUBLE.
-   */
-  void initialiseLocalVariables();
 
  public:
   /**

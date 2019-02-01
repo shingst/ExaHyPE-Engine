@@ -202,7 +202,7 @@ namespace exahype {
   /**
    * @see waitUntilAllBackgroundTasksHaveTerminated()
    */
-  extern tarch::multicore::BooleanSemaphore BackgroundJobSemaphore;
+  extern tarch::multicore::BooleanSemaphore ReductionSemaphore;
 
   /**
    * A semaphore for serialising heap access.
@@ -960,19 +960,6 @@ class exahype::solvers::Solver {
   static const tarch::la::Vector<DIMENSIONS,double>& getDomainOffset();
 
   /**
-   * Run over all solvers and identify the maximum depth of adaptive
-   * refinement employed.
-   *
-   * This number might correlate with the number
-   * of grid iterations to run for performing an erasing operation.
-   *
-   * @note It is very important that initSolvers
-   * has been called on all solvers before this
-   * method is used.
-   */
-  static int getMaximumAdaptiveMeshDepthOfAllSolvers();
-
-  /**
    * Loop over the solver registry and check if no solver
    * performs adaptive mesh refinement.
    */
@@ -1025,38 +1012,6 @@ class exahype::solvers::Solver {
    * The minimum possible return value is three.
    */
   static int getMaxRefinementStatus();
-
-  /**
-   * Weights the min next predictor time step size
-   * by the user's safety factor for the fused time stepping
-   * algorithm.
-   */
-  static void weighMinNextPredictorTimeStepSize(exahype::solvers::Solver* solver);
-
-  /**
-   * Reinitialises the corrector and predictor time step sizes of an ADER-DG solver
-   * with stable time step sizes if we detect a-posteriori that the CFL condition was
-   * harmed by the estimated predictor time step size used in the last iteration.
-   */
-  static void reinitialiseTimeStepDataIfLastPredictorTimeStepSizeWasInstable(exahype::solvers::Solver* solver);
-
-  /**
-   * Starts a new time step on all solvers.
-   *
-   * @param[in] isFirstIterationOfBatchOrNoBatch we run the first iteration of a batch or no batch at all
-   * @param[in] isLastIterationOfBatchOrNoBatch we run the last iteration of a batch or no batch at all
-   * @param[in] fusedTimeStepping fused time stepping is used or not
-   */
-  static void startNewTimeStepForAllSolvers(
-      const bool isFirstIterationOfBatchOrNoBatch,
-      const bool isLastIterationOfBatchOrNoBatch,
-      const bool fusedTimeStepping);
-
-  /**
-   * Rolls back those solvers which requested a global rollback
-   * to the previous time step.
-   */
-  static void rollbackSolversToPreviousTimeStepIfApplicable();
 
   /**
    * Specify if solvers spawn background jobs and
@@ -1145,6 +1100,29 @@ class exahype::solvers::Solver {
  }
 */
 
+ /**
+  * Return a string representation for the type @p param.
+  */
+ static std::string toString(const exahype::solvers::Solver::Type& param);
+
+ /**
+  * Return a string representation for the time stepping mode @p param.
+  */
+ static std::string toString(const exahype::solvers::Solver::TimeStepping& param);
+
+ /**
+  * Return the mesh level corresponding to the given mesh size with
+  * respect to the given domainSize.
+  *
+  * @note That the domain root cell is actually at Peano mesh level 1
+  * since the domain itself is embedded in a 3^d mesh in Peano.
+  *
+  * @note Load balancing makes only sense for a Peano mesh with
+  * at least 3 (Peano) levels.
+  * This is not ensured or checked in this routine.
+  */
+ static std::pair<double,int> computeCoarsestMeshSizeAndLevel(double meshSize, double domainSize);
+
  protected:
 
   /**
@@ -1191,6 +1169,20 @@ class exahype::solvers::Solver {
    */
   const double _maximumMeshSize;
 
+  /**
+   * The maximum depth the adaptive mesh is allowed
+   * to occupy (set by the user).
+   * Summing this value with _coarsestMeshdLevel results in
+   * the finest mesh level the solver might occupy during the
+   * simulation.
+   */
+  const int _maximumAdaptiveMeshDepth;
+
+  /**
+   * The time stepping mode of this solver.
+   */
+  const TimeStepping _timeStepping;
+
 
   /**
    * The coarsest level of the adaptive mesh that is
@@ -1207,20 +1199,6 @@ class exahype::solvers::Solver {
    * @note Is set by initSolver(...) function
    */
   double _coarsestMeshSize;
-
-  /**
-   * The maximum depth the adaptive mesh is allowed
-   * to occupy (set by the user).
-   * Summing this value with _coarsestMeshdLevel results in
-   * the finest mesh level the solver might occupy during the
-   * simulation.
-   */
-  const int _maximumAdaptiveMeshDepth;
-
-  /**
-   * The time stepping mode of this solver.
-   */
-  const TimeStepping _timeStepping;
 
   /**
    * A profiler for this solver.
@@ -1244,28 +1222,9 @@ class exahype::solvers::Solver {
   Solver(const Solver& other) = delete;
   Solver& operator=(const Solver& other) = delete;
 
-  /**
-   * Return a string representation for the type @p param.
-   */
-  static std::string toString(const exahype::solvers::Solver::Type& param);
+  virtual std::string toString() const;
 
-  /**
-   * Return a string representation for the time stepping mode @p param.
-   */
-  static std::string toString(const exahype::solvers::Solver::TimeStepping& param);
-
-  /**
-   * Return the mesh level corresponding to the given mesh size with
-   * respect to the given domainSize.
-   *
-   * @note That the domain root cell is actually at Peano mesh level 1
-   * since the domain itself is embedded in a 3^d mesh in Peano.
-   *
-   * @note Load balancing makes only sense for a Peano mesh with
-   * at least 3 (Peano) levels.
-   * This is not ensured or checked in this routine.
-   */
-  static std::pair<double,int> computeCoarsestMeshSizeAndLevel(double meshSize, double domainSize);
+  virtual void toString(std::ostream& out) const;
 
   /**
    * Returns the maximum extent a mesh cell is allowed to have
@@ -1349,13 +1308,13 @@ class exahype::solvers::Solver {
    */
   int getNodesPerCoordinateAxis() const;
 
-  virtual std::string toString() const;
-
-  virtual void toString(std::ostream& out) const;
   /**
    * \see mergeMeshUpdateEvents
+   *
+   * @note Implementation must ensure thread-safety!
    */
   virtual void updateMeshUpdateEvent(MeshUpdateEvent meshUpdateEvent) = 0;
+
   /**
    * Sets the _nextMeshUpdateEvent as this solver's
    * current event. Furthermore resets the
@@ -1368,29 +1327,38 @@ class exahype::solvers::Solver {
   virtual MeshUpdateEvent getMeshUpdateEvent() const = 0;
 
   /**
-   * @note methods are virtual in order to enable
-   * overriding by LimitingADERDGSolver
-   */
-  virtual void updateMaxLevel(int maxLevel);
-  virtual int getMaxLevel() const;
-
-  /**
    * \return true if the current mesh update event
    * is either RefinementRequested or InitialRefinementRequested.
    */
   bool hasRequestedMeshRefinement() const;
   /**
-   * Run over all solvers and identify the minimal time stamp.
+   * \return minimum time stamp of all cell descriptions.
    */
   virtual double getMinTimeStamp() const = 0;
 
   /**
-   * The minimum time step size
-   * of all cell descriptions.
+   * \return minimum time step size of all cell descriptions computed during the last time step or
+   * after the last mesh refinement.
    */
   virtual double getMinTimeStepSize() const = 0;
 
+  /**
+   * Update the admissible time step size which is computed
+   * as the minium of the admissible time step size of all cells.
+   *
+   * @param value a value the current minium is compared against.
+   *
+   * @note Implementation must ensure thread-safety!
+   */
   virtual void updateAdmissibleTimeStepSize(double value) = 0;
+
+  /**
+   * @return the admissible time step size which is only
+   * available at the end of a time step.
+   *
+   * @note Access is not thread-safe.
+   */
+  virtual double getAdmissibleTimeStepSize() const=0;
 
   /**
    * Initialise the solver's time stamps and time step sizes.
@@ -1416,13 +1384,18 @@ class exahype::solvers::Solver {
 
   /**
    * Notify the solver that a time step just started.
+   *
+   * @param isFirstTimeStepOfBatchOrNoBatch  if this is the first time step of a batch or no batch is run.
    */
-  virtual void kickOffTimeStep() = 0;
+  virtual void kickOffTimeStep(const bool isFirstTimeStepOfBatchOrNoBatch) = 0;
 
   /**
    * Notify the solver that a time step just finished.
+   *
+   * @param isFirstTimeStepOfBatchOrNoBatch  if this is the first time step of a batch or no batch is run.
+   * @param isLastTimeStepOfBatchOrNoBatch   if this is the last time step of a batch or if no batch is run.
    */
-  virtual void wrapUpTimeStep() = 0;
+  virtual void wrapUpTimeStep(const bool isFirstTimeStepOfBatchOrNoBatch,const bool isLastTimeStepOfBatchOrNoBatch) = 0;
 
   /**
    * \return true if the solver is computing in the current algorithmic section.
@@ -1451,59 +1424,23 @@ class exahype::solvers::Solver {
   virtual bool isMergingMetadata(const exahype::State::AlgorithmSection& section) const = 0;
 
   /**
-   * This routine is called if we perform
-   * a time step update
-   */
-  virtual void startNewTimeStep() = 0;
-
-  /**
-   * Similar as Solver::startNewTimeStep but
-   * for the fused time stepping scheme.
-   *
-   * @param[in] isFirstIterationOfBatch indicates that we are in the first iteration
-   *                                    of a batch or not. Note that this must be also set to true
-   *                                    in case we run a batch of size 1, i.e. no batch at all.
-   *
-   * @param[in] isLastIterationOfBatch indicates that we are in the last iteration
-   *                                    of a batch or not. Note that this must be also set to true
-   *                                    in case we run a batch of size 1, i.e. no batch at all.
-   */
-  virtual void startNewTimeStepFused(
-      const bool isFirstIterationOfBatch,
-      const bool isLastIterationOfBatch) = 0;
-
-  /**
-   * Similar as Solver::updateTimeStepSizes but
-   * for the fused time stepping scheme.
-   */
-  virtual void updateTimeStepSizesFused() = 0;
-
-  /**
    * In contrast to startNewTimeStep(), this
    * method does not shift the time stamp.
    *
-   * It simply updates the time step sizes
+   * It simply updates the time step size.
    *
    * This method is used after a mesh refinement.
    */
-  virtual void updateTimeStepSizes() = 0;
+  virtual void updateTimeStepSize() = 0;
 
   /**
-   * Rolls the solver time step data back to the
-   * previous time step.
-   * Note that the newest time step
-   * data is lost in this process.
+   * Roll back the minimum time stamp to the one of
+   * the previous time step.
+   *
+   * @note This is a global rollback which is performed happens after mesh refinement.
+   * The time step size then needs to be recomputed. The old one is thus not restored.
    */
   virtual void rollbackToPreviousTimeStep() = 0;
-
-  /**
-   * Same as Solver::rollbackToPreviousTimeStep
-   * for fused time stepping.
-   */
-  virtual void rollbackToPreviousTimeStepFused() = 0;
-
-  virtual double getAdmissibleTimeStepSize() const=0;
-
   /**
    * If an entry for this solver exists,
    * return the element index of the cell description
@@ -2035,9 +1972,13 @@ class exahype::solvers::Solver {
    * the first predictor computation. It will always be called before
    * "adjustSolution" is invoked.
    *
-   * @note Do not use collective MPI operations in here.
+   * @note [MPI] Do not use collective MPI operations in here. Not all ranks call this function.
+   *
+   * @note [MPI] If you perform broadcasts via MPI primitives in here, ensure
+   * that isFirstTimeStepOfBatchOrNoBatch is set to true in order to not synchronise
+   * the MPI ranks during batched time steps.
    */
-  virtual void beginTimeStep(const double minTimeStamp) {}
+  virtual void beginTimeStep(const double minTimeStamp,const bool isFirstTimeStepOfBatchOrNoBatch) {}
 
   /**
    * Signals a user solver that ExaHyPE just finished a time step.
@@ -2047,9 +1988,16 @@ class exahype::solvers::Solver {
    * @note This function is invoked after the solution was updated in all
    * cells.
    *
-   * @note Do not use collective MPI operations in here.
+   * @note [MPI] Do not use collective MPI operations in here. Not all ranks call this function.
+   *
+   * @note [MPI] If you perform reductions via MPI primitives in here, ensure
+   * that isLastTimeStepOfBatchOrNoBatch is set to true in order to not synchronise
+   * the MPI ranks during batched time steps.
+   *
+   * @param isFirstTimeStepOfBatchOrNoBatch  if this is the first time step of a batch or no batch is run.
+   * @param isLastTimeStepOfBatchOrNoBatch   if this is the last time step of a batch or if no batch is run.
    */
-  virtual void endTimeStep(const double minTimeStamp)   {}
+  virtual void endTimeStep(const double minTimeStamp,const bool isLastTimeStepOfBatchOrNoBatch)   {}
   /** @} */ // end of userHooks
 };
 

@@ -15,6 +15,7 @@
 #define _EXAHYPE_STATE_H_
 
 #include "exahype/records/State.h"
+#include "exahype/records/RepositoryState.h"
 #include "peano/grid/State.h"
 
 #include <vector>
@@ -29,10 +30,6 @@ namespace exahype {
   class State;
   class Vertex;
   class Cell;
-
-  namespace records {
-    class RepositoryState;
-  }
 
   namespace repositories {
     class RepositoryArrayStack;
@@ -70,22 +67,22 @@ class exahype::State : public peano::grid::State<exahype::records::State> {
       const peano::grid::Checkpoint<Vertex, Cell>& checkpoint);
 
   /**
-   * Kick off a time step, i.e. reset values that are reduced over the cells (and MPI ranks).
+   * Kick off an iteration, i.e. reset values that are reduced over the cells (and MPI ranks).
    *
    * @param action                  repository action indicating what time step (fused vs non-fused) is run
    * @param currentBatchIteration   the current batch iteration
    * @param numberOfBatchIterations the total number of batch iterations.
    */
-  static void kickOffTimeStep(exahype::records::RepositoryState::Action& action,const int currentBatchIteration,const int numberOfBatchIterations);
+  static void kickOffIteration(exahype::records::RepositoryState::Action& action,const int currentBatchIteration,const int numberOfIterations);
 
   /**
-   * Wrap up a time step, i.e. make use of values that are reduced over the cells (and MPI ranks).
+   * Wrap up an iterations, i.e. make use of values that are reduced over the cells (and MPI ranks).
    *
    * @param action                  repository action indicating what time step (fused vs non-fused) is run
    * @param currentBatchIteration   the current batch iteration
    * @param numberOfBatchIterations the total number of batch iterations.
    */
-  static void wrapUpTimeStep(exahype::records::RepositoryState::Action& action,const int currentBatchIteration,const int numberOfBatchIterations);
+  static void wrapUpIteration(exahype::records::RepositoryState::Action& action,const int currentBatchIteration,const int numberOfIterations);
 
   /**
    * Static callback to perform global broadcasts between working nodes.

@@ -1408,37 +1408,15 @@ public:
    */
   void synchroniseTimeStepping(CellDescription& p) const;
 
-  /**
-   * \copydoc Solver::startNewTimeStep
-   *
-   * Update and reset corrector and predictor
-   * time stamps and time step sizes according to the chosen
-   * time stepping variant.
-   *
-   * Further reset the minimum and maximum cell sizes
-   * to numeric limit values.
-   *
-   * @note The minimum and maximum cell sizes do
-   * not need to be reset to numeric limit values
-   * in every time step for uniform mesh refinement
-   * static adaptive mesh refinement
-   * but we still do it since we want to
-   * utilise dynamic adaptive mesh refinement
-   * since we want to dynamic adaptive mesh refinement
-   * eventually.
-   */
-  void startNewTimeStep() override;
-
-  void startNewTimeStepFused(
-      const bool isFirstTimeStepOfBatch,
-      const bool isLastTimeStepOfBatch) final override;
+  void kickOffTimeStep(const bool isFirstTimeStepOfBatchOrNoBatch) final override;
+  void wrapUpTimeStep(const bool isFirstTimeStepOfBatchOrNoBatch,const bool isLastTimeStepOfBatchOrNoBatch) final override;
 
   /**
    * \copydoc Solver::updateTimeStepSizes
    *
    * Does not advance the predictor time stamp in time.
    */
-  void updateTimeStepSizes() override;
+  void updateTimeStepSize() override;
 
   /** \copydoc Solver::updateTimeStepSizesFused
    *
@@ -1459,12 +1437,6 @@ public:
   double getAdmissibleTimeStepSize() const override;
 
   void updateAdmissibleTimeStepSize(double value) override;
-
-  /**
-   * Set if the CFL condition was violated
-   * (by the last fused time step).
-   */
-  void setStabilityConditionWasViolated(bool state);
 
   /**
    * \return true if the CFL condition was violated

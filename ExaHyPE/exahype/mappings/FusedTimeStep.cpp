@@ -30,8 +30,6 @@
 
 tarch::logging::Log exahype::mappings::FusedTimeStep::_log("exahype::mappings::FusedTimeStep");
 
-tarch::multicore::BooleanSemaphore exahype::mappings::FusedTimeStep::Semaphore;
-
 bool exahype::mappings::FusedTimeStep::issuePredictionJobsInThisIteration() {
   return
       exahype::solvers::Solver::PredictionSweeps==1 ||
@@ -147,13 +145,6 @@ void exahype::mappings::FusedTimeStep::beginIteration(
   if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
     exahype::plotters::startPlottingIfAPlotterIsActive(
         solvers::Solver::getMinTimeStampOfAllSolvers());
-
-    if ( issuePredictionJobsInThisIteration() ) {
-      for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
-        auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-        solver->beginTimeStep(solver->getMinTimeStamp());
-      }
-    }
   }
 
   logTraceOutWith1Argument("beginIteration(State)", solverState);
@@ -295,13 +286,8 @@ void exahype::mappings::FusedTimeStep::leaveCell(
 
       // mesh refinement events, cell sizes (for AMR), time
       if ( isLastTimeStep ) {
-        tarch::multicore::Lock lock(Semaphore);
-        {
-          solver->updateMeshUpdateEvent(result._meshUpdateEvent);
-          solver->updateNextMaxLevel(fineGridVerticesEnumerator.getLevel());
-          solver->updateMinNextTimeStepSize(result._timeStepSize);
-        }
-        lock.free();
+        solver->updateMeshUpdateEvent(result._meshUpdateEvent);
+        solver->updateAdmissibleTimeStepSize(result._timeStepSize);
       }
     }
 

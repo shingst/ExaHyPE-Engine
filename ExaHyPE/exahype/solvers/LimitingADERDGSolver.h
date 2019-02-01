@@ -638,20 +638,8 @@ public:
   void resetMeshUpdateEvent() final override;
   MeshUpdateEvent getMeshUpdateEvent() const final override;
 
-  /*
-   * A time stamp minimised over all the ADERDG and FV solver
-   * patches.
-   */
   double getMinTimeStamp() const final override;
-
-  /**
-   * Run over all solvers and identify the minimal time step size.
-   */
   double getMinTimeStepSize() const final override;
-
-  double getMinNextTimeStepSize() const final override;
-
-  void updateMinNextTimeStepSize(double value) final override;
 
   /**
    * \copydoc ::exahype::solvers::Solver::initSolver
@@ -670,6 +658,9 @@ public:
       const std::vector<std::string>& cmdlineargs,
       const exahype::parser::ParserView& parserView) override;
 
+  void wrapUpTimeStep(const bool isFirstTimeStepOfBatchOrNoBatch,const bool isLastTimeStepOfBatchOrNoBatch) final override;
+  void kickOffTimeStep(const bool isFirstTimeStepOfBatchOrNoBatch) final override;
+
   bool isPerformingPrediction(const exahype::State::AlgorithmSection& section) const final override;
   bool isMergingMetadata(const exahype::State::AlgorithmSection& section) const final override;
 
@@ -685,35 +676,13 @@ public:
    */
   void synchroniseTimeStepping(SolverPatch& solverPatch,Solver::CellInfo& cellInfo) const;
 
-  /**
-   * We always override the limiter time step
-   * data by the ADER-DG one before a solution update.
-   */
-  void startNewTimeStep() final override;
-
-  void startNewTimeStepFused(
-      const bool isFirstTimeStepOfBatch,
-      const bool isLastTimeStepOfBatch) final override;
-
-  void updateTimeStepSizes() final override;
-
-  void updateTimeStepSizesFused() final override;
+  void updateTimeStepSize() final override;
 
   /**
    * Roll back the time step data to the
    * ones of the previous time step.
    */
   void rollbackToPreviousTimeStep() final override;
-
-  /**
-   * Same as LimitingADERDGSolver::rollbackToPreviousTimeStep
-   * but for the fused time stepping scheme.
-   */
-  void rollbackToPreviousTimeStepFused() final override;
-
-  void updateMaxLevel(int maxLevel) final override;
-  int getNextMaxLevel() const final override;
-  int getMaxLevel() const final override;
 
   /**
    * Returns the index of the solver patch registered for the solver with
@@ -744,7 +713,7 @@ public:
   /**
    * @return  the limiter patch matching the solver patch.
    *
-   * @note Copies the solver patch time step data onto the limiter patch. TODO(Dominic): Only copy when necessary.
+   * @note Copies the solver patch time step data onto the limiter patch
    *
    * @param solverPatch a solver patch
    * @param cellInfo    holds references to the cell descriptions associated with a mesh cell
@@ -758,7 +727,7 @@ public:
    * Similar to @see getLimiterPatch(const SolverPatch& solverPatch,CellInfo& cellInfo)
    * but here the limiterElement was already obtained.
    *
-   * @note Copies the solver patch time step data onto the limiter patch. TODO(Dominic): Only copy when necessary.
+   * @note Copies the solver patch time step data onto the limiter patch.
    */
   LimiterPatch& getLimiterPatch(const SolverPatch& solverPatch,CellInfo& cellInfo,const int limiterElement) const;
 

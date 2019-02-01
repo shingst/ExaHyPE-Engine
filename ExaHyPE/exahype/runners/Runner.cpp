@@ -1265,7 +1265,7 @@ void exahype::runners::Runner::validateInitialSolverTimeStepData(const bool fuse
 
     switch(solver->getTimeStepping()) {
       case exahype::solvers::Solver::TimeStepping::Global:
-        assertionEquals(solver->getMinNextTimeStepSize(),std::numeric_limits<double>::infinity());
+        assertionEquals(solver->getAdmissibleTimeStepSize(),std::numeric_limits<double>::infinity());
         break;
       case exahype::solvers::Solver::TimeStepping::GlobalFixed:
         break;
@@ -1399,7 +1399,7 @@ void exahype::runners::Runner::printTimeStepInfo(int numberOfStepsRanSinceLastCa
     currentMinTimeStepSize =
         std::min(currentMinTimeStepSize, p->getMinTimeStepSize());
     nextMinTimeStepSize =
-        std::min(nextMinTimeStepSize, p->getMinNextTimeStepSize());
+        std::min(nextMinTimeStepSize, p->getAdmissibleTimeStepSize());
 
     #if defined(Debug) || defined(Asserts)
     switch(p->getType()) {
@@ -1631,7 +1631,7 @@ void exahype::runners::Runner::validateSolverTimeStepDataForThreeAlgorithmicPhas
 
     switch(solver->getTimeStepping()) {
       case exahype::solvers::Solver::TimeStepping::Global:
-        assertionEquals(solver->getMinNextTimeStepSize(),std::numeric_limits<double>::infinity());
+        assertionEquals(solver->getAdmissibleTimeStepSize(),std::numeric_limits<double>::infinity());
         break;
       case exahype::solvers::Solver::TimeStepping::GlobalFixed:
         break;
@@ -1678,7 +1678,7 @@ void exahype::runners::Runner::validateSolverTimeStepDataForThreeAlgorithmicPhas
         assertion1(finiteVolumesSolver->getMinTimeStepSize()>0,finiteVolumesSolver->getMinTimeStepSize());
         switch(solver->getTimeStepping()) {
           case exahype::solvers::Solver::TimeStepping::Global:
-            assertionEquals(finiteVolumesSolver->getMinNextTimeStepSize(),std::numeric_limits<double>::infinity());
+            assertionEquals(finiteVolumesSolver->getAdmissibleTimeStepSize(),std::numeric_limits<double>::infinity());
             break;
           case exahype::solvers::Solver::TimeStepping::GlobalFixed:
             break;

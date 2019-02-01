@@ -85,17 +85,6 @@ exahype::mappings::FinaliseMeshRefinement::descendSpecification(int level) const
       peano::MappingSpecification::AvoidCoarseGridRaces,false);
 }
 
-void exahype::mappings::FinaliseMeshRefinement::initialiseLocalVariables(){
-  const unsigned int numberOfSolvers = exahype::solvers::RegisteredSolvers.size();
-  _minTimeStepSizes.resize(numberOfSolvers);
-  _maxLevels.resize(numberOfSolvers);
-
-  for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
-    _minTimeStepSizes[solverNumber] = std::numeric_limits<double>::max();
-    _maxLevels    [solverNumber]    = -std::numeric_limits<int>::max(); // "-", min
-  }
-}
-
 tarch::logging::Log exahype::mappings::FinaliseMeshRefinement::_log(
     "exahype::mappings::FinaliseMeshRefinement");
 
@@ -108,18 +97,12 @@ exahype::mappings::FinaliseMeshRefinement::~FinaliseMeshRefinement() {}
 #if defined(SharedMemoryParallelisation)
 exahype::mappings::FinaliseMeshRefinement::FinaliseMeshRefinement(const FinaliseMeshRefinement& masterThread) {
   _backgroundJobsHaveTerminated=masterThread._backgroundJobsHaveTerminated;
-  initialiseLocalVariables();
 }
 
 // Merge over threads
 void exahype::mappings::FinaliseMeshRefinement::mergeWithWorkerThread(
     const FinaliseMeshRefinement& workerThread) {
-  for (int i = 0; i < static_cast<int>(exahype::solvers::RegisteredSolvers.size()); i++) {
-    _minTimeStepSizes[i] =
-        std::min(_minTimeStepSizes[i], workerThread._minTimeStepSizes[i]);
-    _maxLevels[i] =
-        std::max(_maxLevels[i], workerThread._maxLevels[i]);
-  }
+ // do nothing
 }
 #endif
 
@@ -128,17 +111,13 @@ void exahype::mappings::FinaliseMeshRefinement::beginIteration(exahype::State& s
   logTraceInWith1Argument("beginIteration(State)", solverState);
 
   tarch::multicore::jobs::Job::setMaxNumberOfRunningBackgroundThreads(
-      solvers::Solver::MaxNumberOfRunningBackgroundJobConsumerTasksDuringTraversal); // reset the number of running consumer threads
+      solvers::Solver::MaxNumberOfRunningBackgroundJobConsumerTasksDuringTraversal); // reset the number of running consumer threads // TODO(Dominic): What is this?
   peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(false);
 
   OneSolverRequestedMeshUpdate =
       exahype::solvers::Solver::oneSolverRequestedMeshRefinement();
 
-  exahype::solvers::Solver::rollbackSolversToPreviousTimeStepIfApplicable();
-
   exahype::mappings::MeshRefinement::IsFirstIteration = true;
-
-  initialiseLocalVariables();
 
   logTraceOutWith1Argument("beginIteration(State)", solverState);
 }
@@ -169,11 +148,9 @@ void exahype::mappings::FinaliseMeshRefinement::enterCell(
         if ( solver->getMeshUpdateEvent()==exahype::solvers::Solver::MeshUpdateEvent::RefinementRequested ) { // is not the same as the above check
           solver->rollbackSolutionGlobally(solverNumber,cellInfo);
         }
-
         // compute a new time step size
         double admissibleTimeStepSize   = solver->updateTimeStepSize(solverNumber,cellInfo);
-        _minTimeStepSizes[solverNumber] = std::min(admissibleTimeStepSize, _minTimeStepSizes[solverNumber]);
-        _maxLevels[solverNumber]        = std::max(fineGridVerticesEnumerator.getLevel(),_maxLevels[solverNumber]);
+        solver->updateAdmissibleTimeStepSize(admissibleTimeStepSize);
 
         // determine min and max for LimitingADERDGSolver
         if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
@@ -197,31 +174,6 @@ void exahype::mappings::FinaliseMeshRefinement::endIteration(
     };
     exahype::mappings::MeshRefinement::IsInitialMeshRefinement = false;
     exahype::mappings::MeshRefinement::IsFirstIteration        = true;
-
-    // time stepping
-    for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
-      auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-
-      if (solver->hasRequestedMeshRefinement()) {
-        // cell sizes
-        solver->updateNextMaxLevel(_maxLevels[solverNumber]);
-
-        // time
-        assertion1(std::isfinite(_minTimeStepSizes[solverNumber]),_minTimeStepSizes[solverNumber]);
-        assertion1(_minTimeStepSizes[solverNumber]>0.0,_minTimeStepSizes[solverNumber]);
-        solver->updateMinNextTimeStepSize(_minTimeStepSizes[solverNumber]);
-        if ( exahype::solvers::Solver::FuseADERDGPhases ) {
-          #ifdef Parallel
-          if (tarch::parallel::Node::getInstance().isGlobalMaster() ) {
-            exahype::solvers::Solver::weighMinNextPredictorTimeStepSize(solver);
-          }
-          #endif
-          solver->updateTimeStepSizesFused();
-        } else {
-          solver->updateTimeStepSizes();
-        }
-      }
-    }
   }
 
   _backgroundJobsHaveTerminated = false;

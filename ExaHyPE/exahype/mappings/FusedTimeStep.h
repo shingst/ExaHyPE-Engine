@@ -64,12 +64,6 @@ private:
   static tarch::logging::Log _log;
 
   /**
-   * This semaphore is used for locking the plotters'
-   * plotPatch function which is usually not thread-safe.
-   */
-  static tarch::multicore::BooleanSemaphore Semaphore;
-
-  /**
    * \return if the mappings/adapters
    * FusedTimeStep, Prediction, PredictionRerun, and PredictionOrLocalRecomputation
    * are supposed to send out riemann data in this iteration.

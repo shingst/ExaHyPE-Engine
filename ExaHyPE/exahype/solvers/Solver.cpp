@@ -37,7 +37,7 @@ std::vector<exahype::solvers::Solver*> exahype::solvers::RegisteredSolvers;
 exahype::DataHeap::HeapEntries exahype::EmptyDataHeapMessage(0);
 #endif
 
-tarch::multicore::BooleanSemaphore exahype::BackgroundJobSemaphore;
+tarch::multicore::BooleanSemaphore exahype::ReductionSemaphore;
 
 tarch::multicore::BooleanSemaphore exahype::HeapSemaphore;
 
@@ -209,8 +209,6 @@ exahype::solvers::Solver::Solver(
       _coarsestMeshLevel(std::numeric_limits<int>::max()),
       _coarsestMeshSize(std::numeric_limits<double>::infinity()),
       _maximumAdaptiveMeshDepth(maximumAdaptiveMeshDepth),
-      _maxLevel(-std::numeric_limits<int>::max()), // "-", min
-      _nextMaxLevel(-std::numeric_limits<int>::max()), // "-", min
       _timeStepping(timeStepping),
       _profiler(std::move(profiler)) {
   #ifdef Parallel
@@ -389,14 +387,6 @@ int exahype::solvers::Solver::getMaximumAdaptiveMeshLevel() const {
   return _coarsestMeshLevel+_maximumAdaptiveMeshDepth;
 }
 
- void exahype::solvers::Solver::updateMaxLevel(int maxLevel) {
-   _maxLevel = std::max( _maxLevel, maxLevel );
-}
-
-int exahype::solvers::Solver::getMaxLevel() const {
-  return _maxLevel;
-}
-
 bool exahype::solvers::Solver::hasRequestedMeshRefinement() const {
   return getMeshUpdateEvent()==MeshUpdateEvent::RefinementRequested ||
          getMeshUpdateEvent()==MeshUpdateEvent::InitialRefinementRequested;
@@ -537,24 +527,6 @@ double exahype::solvers::Solver::getCoarsestMeshSizeOfAllSolvers() {
   return result;
 }
 
-int exahype::solvers::Solver::getMaximumAdaptiveMeshDepthOfAllSolvers() {
-  int maxDepth = 0;
-
-  for (auto solver : exahype::solvers::RegisteredSolvers) {
-/*
-    assertion1(solver->getMaxCellSize()>0,solver->getMaxCellSize());
-    assertion1(solver->getMinCellSize()>0,solver->getMinCellSize());
-*/
-
-    maxDepth = std::max(
-        maxDepth, solver->getMaxLevel() - solver->getCoarsestMeshLevel()
-    );
-  }
-
-  assertion1(maxDepth>=0,maxDepth);
-  return maxDepth;
-}
-
 bool exahype::solvers::Solver::allSolversPerformOnlyUniformRefinement() {
   bool result = true;
   for (auto* solver : exahype::solvers::RegisteredSolvers) {
@@ -637,104 +609,6 @@ bool exahype::solvers::Solver::oneSolverViolatedStabilityCondition() {
   }
   return result;
 }
-
-
-void exahype::solvers::Solver::weighMinNextPredictorTimeStepSize(
-    exahype::solvers::Solver* solver) {
-  exahype::solvers::ADERDGSolver* aderdgSolver = nullptr;
-
-  switch(solver->getType()) {
-    case exahype::solvers::Solver::Type::ADERDG:
-      aderdgSolver = static_cast<exahype::solvers::ADERDGSolver*>(solver);
-      break;
-    case exahype::solvers::Solver::Type::LimitingADERDG:
-      aderdgSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getSolver().get();
-      break;
-    case exahype::solvers::Solver::Type::FiniteVolumes:
-      break;
-  }
-
-  if (aderdgSolver!=nullptr) {
-    const double stableTimeStepSize = aderdgSolver->getMinNextPredictorTimeStepSize();
-
-    const double timeStepSizeWeight = exahype::solvers::Solver::WeightForPredictionRerun;
-    aderdgSolver->updateMinNextPredictorTimeStepSize(
-        timeStepSizeWeight * stableTimeStepSize);
-    aderdgSolver->setMinPredictorTimeStepSize(
-        timeStepSizeWeight * stableTimeStepSize); // This will be propagated to the corrector
-  }
-}
-
-
-void exahype::solvers::Solver::reinitialiseTimeStepDataIfLastPredictorTimeStepSizeWasInstable(
-    exahype::solvers::Solver* solver) {
-  exahype::solvers::ADERDGSolver* aderdgSolver = nullptr;
-
-  switch(solver->getType()) {
-    case exahype::solvers::Solver::Type::ADERDG:
-      aderdgSolver = static_cast<exahype::solvers::ADERDGSolver*>(solver);
-      break;
-    case exahype::solvers::Solver::Type::LimitingADERDG:
-      aderdgSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getSolver().get();
-      break;
-    case exahype::solvers::Solver::Type::FiniteVolumes:
-      break;
-  }
-
-  if (aderdgSolver!=nullptr) {
-    const double stableTimeStepSize = aderdgSolver->getMinPredictorTimeStepSize();
-    double usedTimeStepSize         = aderdgSolver->getMinTimeStepSize(); // post update
-
-    bool usedTimeStepSizeWasInstable = usedTimeStepSize > stableTimeStepSize;
-    aderdgSolver->setStabilityConditionWasViolated(usedTimeStepSizeWasInstable);
-
-    const double timeStepSizeWeight = exahype::solvers::Solver::WeightForPredictionRerun;
-    if ( usedTimeStepSizeWasInstable ) {
-      aderdgSolver->_minTimeStepSize(timeStepSizeWeight * stableTimeStepSize); // reset
-    } else {
-
-      aderdgSolver->_estimatedTimeStepSize(0.5 * (usedTimeStepSize + timeStepSizeWeight * stableTimeStepSize));
-    }
-  }
-}
-
-void exahype::solvers::Solver::startNewTimeStepForAllSolvers(
-      const bool isFirstIterationOfBatchOrNoBatch,
-      const bool isLastIterationOfBatchOrNoBatch,
-      const bool fusedTimeStepping) {
-  for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
-    auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-
-    // time
-    // only update the time step size in last iteration; just advance with old time step size otherwise
-    if ( fusedTimeStepping ) {
-      solver->startNewTimeStepFused(
-          isFirstIterationOfBatchOrNoBatch,
-          isLastIterationOfBatchOrNoBatch);
-    } else {
-      solver->startNewTimeStep();
-    }
-  }
-}
-
-void exahype::solvers::Solver::rollbackSolversToPreviousTimeStepIfApplicable() {
-    for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
-      auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-      const bool performGlobalRollback =
-          solver->getMeshUpdateEvent()==exahype::solvers::Solver::MeshUpdateEvent::RefinementRequested;
-      if (
-           performGlobalRollback &&
-           exahype::solvers::Solver::FuseADERDGPhases
-      ) {
-        solver->rollbackToPreviousTimeStepFused();
-      } else if (
-           performGlobalRollback
-      ) {
-        solver->rollbackToPreviousTimeStep();
-      }
-
-    }
-  }
 
 std::string exahype::solvers::Solver::toString(const MeshUpdateEvent& meshUpdateEvent) {
   switch (meshUpdateEvent) {

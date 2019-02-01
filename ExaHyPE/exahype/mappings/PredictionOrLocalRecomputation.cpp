@@ -85,43 +85,6 @@ exahype::mappings::PredictionOrLocalRecomputation::descendSpecification(int leve
       peano::MappingSpecification::AvoidCoarseGridRaces,true);
 }
 
-
-void exahype::mappings::PredictionOrLocalRecomputation::initialiseLocalVariables(){
-  const unsigned int numberOfSolvers = exahype::solvers::RegisteredSolvers.size();
-  _minTimeStepSizes.resize(numberOfSolvers);
-  _maxLevels.resize(numberOfSolvers);
-
-  for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
-    _minTimeStepSizes[solverNumber] = std::numeric_limits<double>::max();
-    _maxLevels       [solverNumber] = -std::numeric_limits<int>::max(); // "-", min
-  }
-}
-
-exahype::mappings::PredictionOrLocalRecomputation::PredictionOrLocalRecomputation() {
-  // do nothing
-}
-
-exahype::mappings::PredictionOrLocalRecomputation::~PredictionOrLocalRecomputation() {
-  // do nothing
-}
-
-#if defined(SharedMemoryParallelisation)
-exahype::mappings::PredictionOrLocalRecomputation::PredictionOrLocalRecomputation(
-    const PredictionOrLocalRecomputation& masterThread) {
-  initialiseLocalVariables();
-}
-// Merge over threads
-void exahype::mappings::PredictionOrLocalRecomputation::mergeWithWorkerThread(
-    const PredictionOrLocalRecomputation& workerThread) {
-  for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
-    _minTimeStepSizes[solverNumber] =
-        std::min(_minTimeStepSizes[solverNumber], workerThread._minTimeStepSizes[solverNumber]);
-    _maxLevels[solverNumber] =
-        std::max(_maxLevels[solverNumber], workerThread._maxLevels[solverNumber]);
-  }
-}
-#endif
-
 void exahype::mappings::PredictionOrLocalRecomputation::beginIteration(
     exahype::State& solverState) {
   logTraceInWith1Argument("beginIteration(State)", solverState);
@@ -129,15 +92,13 @@ void exahype::mappings::PredictionOrLocalRecomputation::beginIteration(
   if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
     OneSolverRequestedLocalRecomputation =
         exahype::solvers::Solver::oneSolverRequestedLocalRecomputation();
-
-    initialiseLocalVariables();
   }
 
   if (
       exahype::solvers::Solver::SpawnPredictionAsBackgroundJob &&
       exahype::State::isLastIterationOfBatchOrNoBatch()
   ) {
-    peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
+    peano::datatraversal::TaskSet::startToProcessBackgroundJobs(); // TODO(Dominic): Still necessary?
   }
 
   logTraceOutWith1Argument("beginIteration(State)", solverState);
@@ -159,40 +120,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::endIteration(
     exahype::State& state) {
   logTraceInWith1Argument("endIteration(State)", state);
 
-  if (
-      exahype::State::isLastIterationOfBatchOrNoBatch() &&
-      OneSolverRequestedLocalRecomputation
-  ) {
-    for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
-      auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-      if ( performLocalRecomputation( solver ) ) {
-        assertion1(std::isfinite(_minTimeStepSizes[solverNumber]),_minTimeStepSizes[solverNumber]);
-        assertion1(_minTimeStepSizes[solverNumber]>0.0,_minTimeStepSizes[solverNumber]);
 
-        solver->updateNextMaxLevel(_maxLevels[solverNumber]);
-
-        solver->updateMinNextTimeStepSize(_minTimeStepSizes[solverNumber]);
-
-        logDebug("endIteration(state)","[pre] solver="<<solver->toString());
-        if (
-            exahype::solvers::Solver::FuseADERDGPhases
-            #ifdef Parallel
-            && tarch::parallel::Node::getInstance().isGlobalMaster()
-            #endif
-        ) {
-          exahype::solvers::Solver::
-          reinitialiseTimeStepDataIfLastPredictorTimeStepSizeWasInstable(solver);
-        }
-        if (exahype::solvers::Solver::FuseADERDGPhases) {
-          solver->startNewTimeStepFused(true,true);
-        } else {
-          solver->startNewTimeStep();
-        }
-
-        logDebug("endIteration(state)","[post] updatedTimeStepSize="<<solver->getMinTimeStepSize()<<", solver="<<solver->toString());
-      }
-    }
-  }
 
   logTraceOutWith1Argument("endIteration(State)", state);
 }
@@ -217,12 +145,8 @@ void exahype::mappings::PredictionOrLocalRecomputation::enterCell(
       if ( performLocalRecomputation( solver ) && exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
         auto* limitingADERDG = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
         double admissibleTimeStepSize =
-            limitingADERDG->recomputeSolutionLocally(solverNumber,cellInfo,isAtRemoteBoundary,solvers::Solver::FuseADERDGPhases);
-
-        _minTimeStepSizes[solverNumber] = std::min(
-            admissibleTimeStepSize, _minTimeStepSizes[solverNumber]);
-        _maxLevels[solverNumber] = std::max(
-            fineGridVerticesEnumerator.getLevel(),_maxLevels[solverNumber]);
+        limitingADERDG->recomputeSolutionLocally(solverNumber,cellInfo,isAtRemoteBoundary,solvers::Solver::FuseADERDGPhases);
+        solver->updateAdmissibleTimeStepSize(admissibleTimeStepSize);
 
         limitingADERDG->determineMinAndMax(solverNumber,cellInfo); // TODO(Dominic): Optimistation. Do it only in recomputed cells.
       }
@@ -539,6 +463,26 @@ void exahype::mappings::PredictionOrLocalRecomputation::mergeWithWorker(
     exahype::Vertex& localVertex, const exahype::Vertex& receivedMasterVertex,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const tarch::la::Vector<DIMENSIONS, double>& h, int level) {
+  // do nothing
+}
+#endif
+
+exahype::mappings::PredictionOrLocalRecomputation::PredictionOrLocalRecomputation() {
+  // do nothing
+}
+
+exahype::mappings::PredictionOrLocalRecomputation::~PredictionOrLocalRecomputation() {
+  // do nothing
+}
+
+#if defined(SharedMemoryParallelisation)
+exahype::mappings::PredictionOrLocalRecomputation::PredictionOrLocalRecomputation(
+    const PredictionOrLocalRecomputation& masterThread) {
+  // do nothing
+}
+// Merge over threads
+void exahype::mappings::PredictionOrLocalRecomputation::mergeWithWorkerThread(
+    const PredictionOrLocalRecomputation& workerThread) {
   // do nothing
 }
 #endif

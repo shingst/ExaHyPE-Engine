@@ -78,22 +78,6 @@ class exahype::mappings::PredictionOrLocalRecomputation {
   static bool OneSolverRequestedLocalRecomputation;
 
   /**
-   * A minimum time step size for each solver.
-   */
-  std::vector<double> _minTimeStepSizes;
-
-  /**
-   * The maximum level occupied by cells of a solver.
-   */
-  std::vector<int> _maxLevels;
-
-  /**
-   * Prepare a appropriately sized vector _minTimeStepSizes
-   * with elements initiliased to MAX_DOUBLE.
-   */
-  void initialiseLocalVariables();
-
-  /**
    * \return true if we perform a local recomputation for this solver.
    */
   static bool performLocalRecomputation(exahype::solvers::Solver* solver);

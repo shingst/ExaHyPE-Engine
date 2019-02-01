@@ -85,32 +85,6 @@ exahype::mappings::UpdateAndReduce::descendSpecification(int level) const {
       peano::MappingSpecification::AvoidCoarseGridRaces,false);
 }
 
-exahype::mappings::UpdateAndReduce::~UpdateAndReduce() {
-  // do nothing
-}
-
-#if defined(SharedMemoryParallelisation)
-exahype::mappings::UpdateAndReduce::UpdateAndReduce(
-    const UpdateAndReduce& masterThread) {
-  // do nothing
-}
-// Merge over threads
-void exahype::mappings::UpdateAndReduce::mergeWithWorkerThread(
-    const UpdateAndReduce& workerThread) {
-  // do nothing
-}
-#endif
-
-void exahype::mappings::UpdateAndReduce::enterCell(
-    exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
-    const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-    exahype::Vertex* const coarseGridVertices,
-    const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-    exahype::Cell& coarseGridCell,
-    const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
-  // do nothing
-}
-
 void exahype::mappings::UpdateAndReduce::beginIteration(
     exahype::State& solverState) {
   logTraceInWith1Argument("beginIteration(State)", solverState);
@@ -134,6 +108,57 @@ void exahype::mappings::UpdateAndReduce::endIteration(
 
   logTraceOutWith1Argument("endIteration(State)", state);
 }
+
+void exahype::mappings::UpdateAndReduce::leaveCell(
+    exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
+    const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
+    exahype::Vertex* const coarseGridVertices,
+    const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
+    exahype::Cell& coarseGridCell,
+    const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
+  logTraceInWith4Arguments("leaveCell(...)", fineGridCell,fineGridVerticesEnumerator.toString(),coarseGridCell, fineGridPositionOfCell);
+
+  if (fineGridCell.isInitialised()) {
+    solvers::Solver::CellInfo cellInfo = fineGridCell.createCellInfo();
+    const bool isAtRemoteBoundary = exahype::Cell::isAtRemoteBoundary(fineGridVertices,fineGridVerticesEnumerator);
+
+    for (int solverNumber=0; solverNumber<static_cast<int>(solvers::RegisteredSolvers.size()); solverNumber++) {
+      auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
+
+      // plot if necessary
+      plotters::plotPatchIfAPlotterIsActive(solverNumber,cellInfo);
+
+      solvers::Solver::UpdateResult result;
+      switch ( solver->getType() ) {
+        case solvers::Solver::Type::ADERDG:
+          result = static_cast<solvers::ADERDGSolver*>(solver)->updateOrRestrict(solverNumber,cellInfo,isAtRemoteBoundary);
+          break;
+        case solvers::Solver::Type::LimitingADERDG:
+          result = static_cast<solvers::LimitingADERDGSolver*>(solver)->updateOrRestrict(solverNumber,cellInfo,isAtRemoteBoundary);
+          break;
+        case solvers::Solver::Type::FiniteVolumes:
+          result = static_cast<solvers::FiniteVolumesSolver*>(solver)->updateOrRestrict(solverNumber,cellInfo,isAtRemoteBoundary);
+          break;
+        default:
+          assertionMsg(false,"Unrecognised solver type: "<<solvers::Solver::toString(solver->getType()));
+          logError("mergeWithBoundaryDataIfNotDoneYet(...)","Unrecognised solver type: "<<solvers::Solver::toString(solver->getType()));
+          std::abort();
+          break;
+      }
+
+      solver->updateMeshUpdateEvent(result._meshUpdateEvent);
+      solver->updateAdmissibleTimeStepSize(result._timeStepSize);
+    }
+
+    Cell::resetNeighbourMergePerformedFlags(cellInfo,fineGridVertices,fineGridVerticesEnumerator);
+  }
+  logTraceOutWith1Argument("leaveCell(...)", fineGridCell);
+}
+
+//
+// Below all methods are nop.
+//
+//=====================================
 
 #ifdef Parallel
 void exahype::mappings::UpdateAndReduce::prepareSendToMaster(
@@ -171,12 +196,6 @@ bool exahype::mappings::UpdateAndReduce::prepareSendToWorker(
     int worker) {
   return true;
 }
-
-//
-// Below all methods are nop.
-//
-//=====================================
-
 
 void exahype::mappings::UpdateAndReduce::mergeWithNeighbour(
     exahype::Vertex& vertex, const exahype::Vertex& neighbour, int fromRank,
@@ -249,6 +268,33 @@ void exahype::mappings::UpdateAndReduce::mergeWithWorker(
 #endif
 
 exahype::mappings::UpdateAndReduce::UpdateAndReduce() {
+  // do nothing
+}
+
+
+exahype::mappings::UpdateAndReduce::~UpdateAndReduce() {
+  // do nothing
+}
+
+#if defined(SharedMemoryParallelisation)
+exahype::mappings::UpdateAndReduce::UpdateAndReduce(
+    const UpdateAndReduce& masterThread) {
+  // do nothing
+}
+// Merge over threads
+void exahype::mappings::UpdateAndReduce::mergeWithWorkerThread(
+    const UpdateAndReduce& workerThread) {
+  // do nothing
+}
+#endif
+
+void exahype::mappings::UpdateAndReduce::enterCell(
+    exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
+    const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
+    exahype::Vertex* const coarseGridVertices,
+    const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
+    exahype::Cell& coarseGridCell,
+    const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
   // do nothing
 }
 
@@ -347,57 +393,6 @@ void exahype::mappings::UpdateAndReduce::touchVertexLastTime(
     exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfVertex) {
   // do nothing
-}
-
-void exahype::mappings::UpdateAndReduce::leaveCell(
-    exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
-    const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-    exahype::Vertex* const coarseGridVertices,
-    const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-    exahype::Cell& coarseGridCell,
-    const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
-  logTraceInWith4Arguments("leaveCell(...)", fineGridCell,fineGridVerticesEnumerator.toString(),coarseGridCell, fineGridPositionOfCell);
-
-  if (fineGridCell.isInitialised()) {
-    solvers::Solver::CellInfo cellInfo = fineGridCell.createCellInfo();
-    const bool isAtRemoteBoundary = exahype::Cell::isAtRemoteBoundary(fineGridVertices,fineGridVerticesEnumerator);
-
-    for (int solverNumber=0; solverNumber<static_cast<int>(solvers::RegisteredSolvers.size()); solverNumber++) {
-      auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-
-      // plot if necessary
-      plotters::plotPatchIfAPlotterIsActive(solverNumber,cellInfo);
-
-      solvers::Solver::UpdateResult result;
-      switch ( solver->getType() ) {
-        case solvers::Solver::Type::ADERDG:
-          result = static_cast<solvers::ADERDGSolver*>(solver)->updateOrRestrict(solverNumber,cellInfo,isAtRemoteBoundary);
-          break;
-        case solvers::Solver::Type::LimitingADERDG:
-          result = static_cast<solvers::LimitingADERDGSolver*>(solver)->updateOrRestrict(solverNumber,cellInfo,isAtRemoteBoundary);
-          break;
-        case solvers::Solver::Type::FiniteVolumes:
-          result = static_cast<solvers::FiniteVolumesSolver*>(solver)->updateOrRestrict(solverNumber,cellInfo,isAtRemoteBoundary);
-          break;
-        default:
-          assertionMsg(false,"Unrecognised solver type: "<<solvers::Solver::toString(solver->getType()));
-          logError("mergeWithBoundaryDataIfNotDoneYet(...)","Unrecognised solver type: "<<solvers::Solver::toString(solver->getType()));
-          std::abort();
-          break;
-      }
-
-      tarch::multicore::Lock lock(Semaphore);
-      {
-        solver->updateMeshUpdateEvent(result._meshUpdateEvent);
-        solver->updateNextMaxLevel(fineGridVerticesEnumerator.getLevel());
-        solver->updateMinNextTimeStepSize(result._timeStepSize);
-      }
-      lock.free();
-    }
-
-    Cell::resetNeighbourMergePerformedFlags(cellInfo,fineGridVertices,fineGridVerticesEnumerator);
-  }
-  logTraceOutWith1Argument("leaveCell(...)", fineGridCell);
 }
 
 void exahype::mappings::UpdateAndReduce::descend(

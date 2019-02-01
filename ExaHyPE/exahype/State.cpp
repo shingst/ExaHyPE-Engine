@@ -24,8 +24,6 @@
 
 #include <limits>
 
-#include "exahype/records/RepositoryState.h"
-
 tarch::logging::Log exahype::State::_log("exahype::State");
 
 int exahype::State::CurrentBatchIteration   = 0;
@@ -221,24 +219,35 @@ bool exahype::State::isSecondToLastIterationOfBatchOrNoBatch()  {
   return NumberOfBatchIterations==1 || CurrentBatchIteration==NumberOfBatchIterations-2;
 }
 
-void exahype::State::kickOffTimeStep(exahype::records::RepositoryState::Action& action,const int currentBatchIteration,const int numberOfBatchIterations) {
+void exahype::State::kickOffIteration(exahype::records::RepositoryState::Action& action,const int currentBatchIteration,const int numberOfBatchIterations) {
   switch ( action ) {
-    case exahype::records::RepositoryState::UseAdapterInitialPrediction:
-    case exahype::records::RepositoryState::UseAdapterPrediction:
+  case exahype::records::RepositoryState::UseAdapterFinaliseMeshRefinement:
+  case exahype::records::RepositoryState::UseAdapterFinaliseMeshRefinementOrLocalRollback:
+    for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
+      auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
+      if ( solver->getMeshUpdateEvent()==exahype::solvers::Solver::MeshUpdateEvent::RefinementRequested ) {
+        solver->rollbackToPreviousTimeStep();
+      }
+    }
+    break;
+  case exahype::records::RepositoryState::UseAdapterInitialPrediction:
+  case exahype::records::RepositoryState::UseAdapterPrediction:
+    if ( currentBatchIteration==0 ) {
       for (auto* solver : exahype::solvers::RegisteredSolvers) {
-        solver->kickOffTimeStep();
+        solver->kickOffTimeStep(currentBatchIteration==0);
       }
-      break;
-    case exahype::records::RepositoryState::UseAdapterFusedTimeStep: {
-      const bool beginFusedTimeStep = exahype::solvers::Solver::PredictionSweeps==1 || (currentBatchIteration % 2 == 0);
-      if ( beginFusedTimeStep ) {
-        for (auto* solver : exahype::solvers::RegisteredSolvers) {
-          solver->kickOffTimeStep();
-        }
+    }
+    break;
+  case exahype::records::RepositoryState::UseAdapterFusedTimeStep: {
+    const bool beginFusedTimeStep = exahype::solvers::Solver::PredictionSweeps==1 || (currentBatchIteration % 2 == 0);
+    if ( beginFusedTimeStep ) {
+      for (auto* solver : exahype::solvers::RegisteredSolvers) {
+        solver->kickOffTimeStep(currentBatchIteration==0);
       }
-    } break;
-    default:
-      break;
+    }
+  } break;
+  default:
+    break;
   }
 }
 
@@ -359,25 +368,36 @@ void exahype::State::globalReduction(exahype::records::RepositoryState& reposito
     }
   }
   #endif
-
-
 }
 
-void exahype::solvers::wrapUpTimeStep(exahype::records::RepositoryState::Action& action,const int currentBatchIteration,const int numberOfBatchIterations) {
-  // TODO set new minimum time stamp and step size WRAP UP
-  // postProcessing for fused time steppin
-  if (
-      (currentBatchIteration==repositoryState.getNumberOfIterations()-1)  &&
-      tarch::parallel::Node::getInstance().isGlobalMaster()
-  ) {
-    switch ( repositoryState.getAction() ) {
-      case exahype::records::RepositoryState::UseAdapterFusedTimeStep: {
-        for (auto* solver : solvers::RegisteredSolvers) {
-          solvers::Solver::reinitialiseTimeStepDataIfLastPredictorTimeStepSizeWasInstable(solver);
+void exahype::State::wrapUpIteration(exahype::records::RepositoryState::Action& action,const int currentBatchIteration,const int numberOfIterations) {
+  if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+    switch ( action ) {
+    case exahype::records::RepositoryState::UseAdapterFinaliseMeshRefinement:
+    case exahype::records::RepositoryState::UseAdapterFinaliseMeshRefinementOrLocalRollback:
+      for (auto* solver : solvers::RegisteredSolvers) {
+        if ( solver->hasRequestedMeshRefinement() ) {
+          solver->updateTimeStepSize();
         }
-      } break;
-      default:
-        break;
+      }
+      break;
+    case exahype::records::RepositoryState::UseAdapterUpdateAndReduce:
+    case exahype::records::RepositoryState::UseAdapterCorrection: {
+      for (auto* solver : solvers::RegisteredSolvers) {
+        solver->wrapUpTimeStep(true,true);
+      }
+      break;
+    case exahype::records::RepositoryState::UseAdapterFusedTimeStep: {
+      const bool endOfFusedTimeStep             = exahype::solvers::Solver::PredictionSweeps==1 || (currentBatchIteration % 2 == 1);
+      const bool endOfFirstFusedTimeStepInBatch = currentBatchIteration == exahype::solvers::Solver::PredictionSweeps - 1;
+      if ( (currentBatchIteration==numberOfIterations-1) && endOfFusedTimeStep ) {
+        for (auto* solver : solvers::RegisteredSolvers) {
+          solver->wrapUpTimeStep(endOfFirstFusedTimeStepInBatch,currentBatchIteration==numberOfIterations-1);
+        }
+      }
+    } break;
+    default:
+      break;
     }
   }
 }
