@@ -208,16 +208,12 @@ private:
    *
    * @param cellDescription          a cell description
    * @param neighbourMergePerformed  per face, a flag indicating if ghost layers have been copied over from a neighbour
-   * @param timeStamp                the time stamp to use (this solver might be used for local recomputations by the LimitingADERDGSolver)
-   * @param timeStepSize             the time step size to use (this solver might be used for local recomputations by the LimitingADERDGSolver)
    * @param cellDescriptionsIndex    a cell descriptions index for debuggin purposes
    * @param backupPreviousSolution   if the previous solution should be backed up or not. When running batches, we only want to back up the solution in the first step.
    */
   void updateSolution(
       CellDescription&                                           cellDescription,
       const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
-      const double                                               timeStamp,
-      const double                                               timeStepSize,
       const int                                                  cellDescriptionsIndex,
       const bool                                                 backupPreviousSolution);
 
@@ -589,8 +585,15 @@ public:
   ///////////////////////////////////
   // CELL-LOCAL
   //////////////////////////////////
-  double startNewTimeStep(CellDescription& cellDescription,const bool isFirstTimeStepOfBatch);
   double updateTimeStepSize(const int solverNumber,CellInfo& cellInfo) final override;
+
+  double startNewTimeStep(CellDescription& cellDescription,const bool isFirstTimeStepOfBatch);
+
+  /**
+   * Set the previous time stamp and step size for the patch.
+   *
+   * @note the original time stamp and step size is lost (although the time stamp can be easily recalculated).
+   */
   void rollbackToPreviousTimeStep(CellDescription& cellDescription) const;
 
   /** @copydoc: exahype::solvers::Solver::fusedTimeStepOrRestrict

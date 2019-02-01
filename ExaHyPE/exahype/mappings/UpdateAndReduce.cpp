@@ -87,12 +87,7 @@ exahype::mappings::UpdateAndReduce::descendSpecification(int level) const {
 
 void exahype::mappings::UpdateAndReduce::beginIteration(
     exahype::State& solverState) {
-  logTraceInWith1Argument("beginIteration(State)", solverState);
-
-  exahype::plotters::startPlottingIfAPlotterIsActive(
-      solvers::Solver::getMinTimeStampOfAllSolvers());
-
-  logTraceOutWith1Argument("beginIteration(State)", solverState);
+  // do nothing
 }
 
 void exahype::mappings::UpdateAndReduce::endIteration(
@@ -101,8 +96,6 @@ void exahype::mappings::UpdateAndReduce::endIteration(
 
   // background threads
   exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::ReductionJob);
-
-  exahype::plotters::finishedPlotting();
 
   logTraceOutWith1Argument("endIteration(State)", state);
 }
@@ -122,9 +115,6 @@ void exahype::mappings::UpdateAndReduce::leaveCell(
 
     for (int solverNumber=0; solverNumber<static_cast<int>(solvers::RegisteredSolvers.size()); solverNumber++) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-
-      // plot if necessary
-      plotters::plotPatchIfAPlotterIsActive(solverNumber,cellInfo);
 
       solvers::Solver::UpdateResult result;
       switch ( solver->getType() ) {

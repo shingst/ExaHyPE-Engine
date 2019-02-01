@@ -646,24 +646,37 @@ bool exahype::parser::Parser::getScaleBoundingBox() const {
   return getBoolFromPath("/distributed_memory/scale_bounding_box", false, isOptional);
 }
 
-bool exahype::parser::Parser::getFuseAlgorithmicSteps() const {
-  const bool default_value = false;
-  bool result = getBoolFromPath("/optimisation/fuse_algorithmic_steps", default_value, isOptional);
+bool exahype::parser::Parser::getFuseAllAlgorithmicSteps() const {
+  return getStringFromPath("/optimisation/fuse_algorithmic_steps", "none", isOptional).compare("all")==0;
+}
+
+bool exahype::parser::Parser::getFuseMostAlgorithmicSteps() const {
+  return getStringFromPath("/optimisation/fuse_algorithmic_steps", "none", isOptional).compare("most")==0;
+}
+
+double exahype::parser::Parser::getFuseAlgorithmicStepsRerunFactor() const {
+  const double default_value = 0.99;
+  double result = getDoubleFromPath("/optimisation/fuse_algorithmic_steps_rerun_factor", default_value, isOptional);
+  logDebug("getFuseAlgorithmicStepsFactor()", "found fuse_algorithmic_steps_rerun_factor " << result);
+  if(result < 0.0 || result > 1.0) {
+    logError("getFuseAlgorithmicStepsRerunFactor()",
+              "'fuse_algorithmic_steps_rerun_factor': Value must be greater than zero "
+              "and smaller than or equal to one. It is: "
+                  << result);
+    invalidate();
+  }
   return result;
 }
 
-
-
-double exahype::parser::Parser::getFuseAlgorithmicStepsFactor() const {
-  const double default_value = 0.0;
-  double result = getDoubleFromPath("/optimisation/fuse_algorithmic_steps_factor", default_value, isOptional);
-  logDebug("getFuseAlgorithmicStepsFactor()", "found fuse-algorithmic-steps-factor " << result);
+double exahype::parser::Parser::getFuseAlgorithmicStepsDiffusionFactor() const {
+  const double default_value = 0.99;
+  double result = getDoubleFromPath("/optimisation/fuse_algorithmic_steps_diffusion_factor", default_value, isOptional);
+  logDebug("getFuseAlgorithmicStepsDiffusionFactor()", "found fuse_algorithmic_steps_diffusion_factor" << result);
   if(result < 0.0 || result > 1.0) {
     logError("getFuseAlgorithmicStepsFactor()",
-              "'fuse-algorithmic-steps-factor': Value must be greater than zero "
-              "and smaller than one: "
+              "'fuse_algorithmic_steps_diffusion_factor': Value must be greater than zero "
+              "and smaller than or equal to one. It is: "
                   << result);
-    result = 0.0;
     invalidate();
   }
   return result;

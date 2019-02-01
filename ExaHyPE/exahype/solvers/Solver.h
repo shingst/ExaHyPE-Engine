@@ -577,43 +577,48 @@ class exahype::solvers::Solver {
    */
   static bool ProfileUpdate;
 
+
+ /** @name Global solver optimisations
+  *
+  * Global solver optimisations which are set via the parser.
+  */
+  ///@{
+
   /**
    * A flag indicating we fuse the algorithmic
    * phases of all ADERDGSolver and
    * LimitingADERDGSolver instances.
    *
-   * TODO(Dominic): Make private and hide in init function
    */
-  static bool FuseADERDGPhases;
+  static bool FuseAllADERDGPhases;
+  /**
+   * This factor (alpha) is used to scale
+   * the admissible time step size if the fused
+   * time stepping (for nonlinear PDEs) scheme is reset.
+   *
+   * The fused times stepping time step size estimate is then reset to
+   *
+   * dt_est = alpha * dt_adm.
+   */
+  static double FusedTimeSteppingRerunFactor;
+  /**
+   * This factor (beta) is used in the fused time stepping (for nonlinear PDEs)
+   * time step size estimate as follows:
+   *
+   * dt_est = 0.5 ( beta * dt_adm + dt_est ),
+   *
+   * i.e dt_est approaches beta * dt_adm over time.
+   *
+   * This adds additional numerical diffusion as
+   * a smaller time step size is chosen as necessary.
+   */
+  static double FusedTimeSteppingDiffusionFactor;
 
   /**
-   * The weight which is used to scale
-   * the stable time step size the fused
-   * ADERDG time stepping scheme is
-   * reset to after a rerun has become necessary.
-   *
-   * TODO(Dominic): Further consider to introduce
-   * a second weight for the averaging:
-   *
-   * t_est = 0.5 (t_est_old + beta t_stable), beta<1.
-   *
-   * fuse-algorithmic-steps-reset-factor
-   * fuse-algorithmic-steps-averaging-factor
-   *
-   * TODO(Dominic): Make private and hide in init function
+   * The number of Prediction,PredictionRerun,PredictionOrLocalRecomputation<
+   * and FusedTimeStep iterations we need to run per time step.
    */
-  static double WeightForPredictionRerun;
-
-  /**
-   * If this is set, we can skip sending metadata around during
-   * batching iterations.
-   */
-  static bool DisableMetaDataExchangeInBatchedTimeSteps;
-
-  /**
-   * If this is set, we can skip Peano vertex neighbour exchange during batching iterations.
-   */
-  static bool DisablePeanoNeighbourExchangeInTimeSteps;
+  static int PredictionSweeps;
 
   /**
    * Set to 0 if no floating point compression is used. Is usually done in the
@@ -632,19 +637,16 @@ class exahype::solvers::Solver {
    * Default is zero.
    */
   static int MaxNumberOfRunningBackgroundJobConsumerTasksDuringTraversal;
-
   /**
    * Set to true if the prediction, and the first and intermediate fused time steps in
    * a batch should be launched as background job.
    */
   static bool SpawnPredictionAsBackgroundJob;
-
   /**
    * Set to true if the update and last fused time step in a batch
    * should be launched as background job.
    */
   static bool SpawnUpdateAsBackgroundJob;
-
   /**
    * Set to true if the prolongation
    * should be launched as background job whenever possible.
@@ -652,19 +654,23 @@ class exahype::solvers::Solver {
    * Requires that the prediction is launched as background job too.
    */
   static bool SpawnProlongationAsBackgroundJob;
-
-  /**
-   * The number of Prediction,PredictionRerun,PredictionOrLocalRecomputation<
-   * and FusedTimeStep iterations we need to run per time step.
-   */
-  static int  PredictionSweeps;
-
   /**
    * Set to true if the mesh refinement iterations
    * should run background jobs whenever possible.
    */
   static bool SpawnAMRBackgroundJobs;
 
+
+  /**
+   * If this is set, we can skip sending metadata around during
+   * batching iterations.
+   */
+  static bool DisableMetaDataExchangeInBatchedTimeSteps;
+  /**
+   * If this is set, we can skip Peano vertex neighbour exchange during batching iterations.
+   */
+  static bool DisablePeanoNeighbourExchangeInTimeSteps;
+  ///@}
 
   enum class JobType { AMRJob, ReductionJob, EnclaveJob, SkeletonJob };
 

@@ -613,6 +613,7 @@ void exahype::solvers::FiniteVolumesSolver::rollbackToPreviousTimeStep(CellDescr
   cellDescription.setTimeStamp(cellDescription.getPreviousTimeStamp());
   cellDescription.setTimeStepSize(cellDescription.getPreviousTimeStepSize());
 
+  cellDescription.setPreviousTimeStamp(std::numeric_limits<double>::infinity());
   cellDescription.setPreviousTimeStepSize(std::numeric_limits<double>::infinity());
 }
 
@@ -660,8 +661,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::FiniteVolumesSolver::up
     const bool                                                 uncompressBefore) {
   if ( uncompressBefore ) { uncompress(cellDescription); }
 
-  updateSolution(
-      cellDescription,neighbourMergePerformed,cellDescription.getTimeStamp(),cellDescription.getTimeStepSize(),cellInfo._cellDescriptionsIndex,isFirstTimeStepOfBatch);
+  updateSolution(cellDescription,neighbourMergePerformed,cellInfo._cellDescriptionsIndex,isFirstTimeStepOfBatch);
   UpdateResult result;
   result._timeStepSize = startNewTimeStep(cellDescription,isFirstTimeStepOfBatch);
 
@@ -764,8 +764,6 @@ void exahype::solvers::FiniteVolumesSolver::adjustSolutionDuringMeshRefinement(
 void exahype::solvers::FiniteVolumesSolver::updateSolution(
     CellDescription&                                           cellDescription,
     const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
-    const double                                               timeStamp,
-    const double                                               timeStepSize,
     const int                                                  cellDescriptionsIndex,
     const bool                                                 backupPreviousSolution) {
   assertion1( tarch::la::equals(neighbourMergePerformed,static_cast<signed char>(true)) || ProfileUpdate,cellDescription.toString());
@@ -791,12 +789,11 @@ void exahype::solvers::FiniteVolumesSolver::updateSolution(
     std::copy(solution,solution+getDataPerPatch()+getGhostDataPerPatch(),solutionBackup); // Copy (current solution) in old solution field.
   }
 
-  assertion3(std::isfinite(timeStamp) && std::isfinite(timeStepSize), timeStamp,timeStepSize,cellDescription.toString());
+  assertion3(cellDescription.getTimeStepSize() > 0 && std::isfinite(cellDescription.getTimeStamp()) && std::isfinite(cellDescription.getTimeStepSize()), cellDescription.getTimeStamp(),cellDescription.getTimeStepSize(),cellDescription.toString());
   validateNoNansInFiniteVolumesSolution(cellDescription,cellDescriptionsIndex,"updateSolution[pre]");
-  double admissibleTimeStepSize=0;
-  if (cellDescription.getTimeStepSize()>0) { // TODO(Dominic): is this if necessary?
-    solutionUpdate(solution,timeStamp,timeStepSize,admissibleTimeStepSize);
-  }
+
+  double admissibleTimeStepSize=std::numeric_limits<double>::infinity();
+  solutionUpdate(solution,cellDescription.getSize(),cellDescription.getTimeStepSize(),admissibleTimeStepSize);
 
   if ( !tarch::la::equals(cellDescription.getTimeStepSize(), 0.0) && tarch::la::smaller(admissibleTimeStepSize,cellDescription.getTimeStepSize()) ) {
     logWarning("updateSolution(...)","Finite volumes solver time step size harmed CFL condition. dt="<<
@@ -807,7 +804,7 @@ void exahype::solvers::FiniteVolumesSolver::updateSolution(
       solution,
       cellDescription.getOffset()+0.5*cellDescription.getSize(),
       cellDescription.getSize(),
-      timeStamp+timeStepSize,
+      cellDescription.getTimeStamp()+cellDescription.getTimeStepSize(),
       cellDescription.getTimeStepSize());
 
   // only for profiling
@@ -1469,10 +1466,9 @@ void exahype::solvers::FiniteVolumesSolver::validateNoNansInFiniteVolumesSolutio
       for (int unknown=0; unknown < _numberOfVariables; unknown++) {
         int iScalar = peano::utils::dLinearisedWithoutLookup(i,_nodesPerCoordinateAxis+2*_ghostLayerWidth)*_numberOfVariables+unknown;
         // cellDescription.getTimeStepSize()==0.0 is an initial condition
-        assertion7(tarch::la::equals(cellDescription.getTimeStepSize(),0.0)  || std::isfinite(solution[iScalar]),
+        assertion7(std::isfinite(solution[iScalar]),
                    cellDescription.toString(),cellDescriptionsIndex,solution[iScalar],i.toString(),
-                   _nodesPerCoordinateAxis,_ghostLayerWidth,
-                   methodTrace);
+                   _nodesPerCoordinateAxis,_ghostLayerWidth,methodTrace);
       }
     }
   } // Dead code elimination should get rid of this loop if Asserts is not set.

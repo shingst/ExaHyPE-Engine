@@ -899,15 +899,17 @@ public:
    *
    * \note Has no const modifier since kernels are not const functions yet.
    *
-   * \param[in] backupPreviousSolution Set to true if the solution should be backed up before
-   *                                   we overwrite it by the updated solution.
+   * @param[in] backupPreviousSolution            Set to true if the solution should be backed up before
+   *                                              we overwrite it by the updated solution.
+   * @param[in] addSurfaceIntegralResultToUpdate  set to true if the surface integral result should be added to the update. Otherwise, is added directly to the solution.
+   *                                              (Fused time stepping for nonlinear PDEs is the only time stepping variant where we need to use an update vector.)
    */
   void updateSolution(
       SolverPatch&                                               solverPatch,
       CellInfo&                                                  cellInfo,
       const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
       const bool                                                 isFirstTimeStep,
-      const bool                                                 isLastTimeStep);
+      const bool                                                 addSurfaceIntegralResultToSolution);
 
   /**
    * Evaluate the discrete maximum principle and the physically admissibility detection criterion.
@@ -972,7 +974,7 @@ public:
 
   /**
    * Reinitialises cells that have been subject to a limiter status change.
-   * This method is invoked (during and??) after the limiter status spreading.
+   * This method is invoked after the limiter status spreading.
    *
    * The method has to take into account which solution, the solver's
    * or the limiter's, was populated with valid solution values
@@ -999,16 +1001,14 @@ public:
    * In case of a-posteriori refinement, we also perform a rollback
    * in the Ok cells. Then, the global time step size used by the predictor
    * is not valid anymore (assumption: global time stepping)
-   *  and the last solution update has to be redone.
+   * and the last solution update has to be redone.
    *
-   * <h2>Compute cell limiter patch deallocation</h2>
-   * It is only safe to deallocate unrequired compute cell limiter patches after
-   * the mesh refinement iterations since we might throw away valid
-   * FV values during the first iterations. However, then find out later
-   * that we need them after the limiter status diffusion
-   * has converged.
-   * Helper cell limiter patches can be deallocated during
-   * the mesh refinement iterations.
+   * In this case, we perform a complete rollback, i.e. we redo the last time step (with a new mesh).
+   *
+   * @note Solely the solution arrays are swapped and projections are performed where necessary. The time step
+   * data on the patches is not touched. This has to be taken into account when the local recomputation is performed.
+   *
+   * @see recomputeSolutionLocally (which is run on iteration after).
    */
   void rollbackSolutionLocally(
       const int  solverNumber,
@@ -1034,8 +1034,10 @@ public:
    * |NNT        | Evolve solver and project its solution onto the limiter solution space. (We had to do a rollback beforehand in the reinitialisation phase.) |
    *
    * Legend: O: Ok (ADER-DG cells), T: Troubled (FV cells), NT: FV->DG cells, NNT: DG->FV cells
+   *
+   * @see rollbackSolutionLocally (which is run on iteration before).
    */
-  void recomputeSolution(SolverPatch& solverPatch,CellInfo& cellInfo);
+  void recomputeSolutionLocally(SolverPatch& solverPatch,CellInfo& cellInfo);
 
   /**
    * Invoke ::recomputeSolution(SolverPatch&)

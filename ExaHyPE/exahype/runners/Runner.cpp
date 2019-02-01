@@ -675,8 +675,9 @@ void exahype::runners::Runner::initHPCEnvironment() {
 }
 
 void exahype::runners::Runner::initOptimisations() const {
-  exahype::solvers::Solver::FuseADERDGPhases         = _parser.getFuseAlgorithmicSteps();
-  exahype::solvers::Solver::WeightForPredictionRerun = _parser.getFuseAlgorithmicStepsFactor();
+  exahype::solvers::Solver::FuseAllADERDGPhases              = _parser.getFuseAllAlgorithmicSteps();
+  exahype::solvers::Solver::FusedTimeSteppingRerunFactor     = _parser.getFuseAlgorithmicStepsRerunFactor();
+  exahype::solvers::Solver::FusedTimeSteppingDiffusionFactor = _parser.getFuseAlgorithmicStepsDiffusionFactor();
 
   exahype::solvers::Solver::configurePredictionPhase(
       _parser.getSpawnPredictionAsBackgroundThread(),
@@ -695,8 +696,8 @@ void exahype::runners::Runner::initOptimisations() const {
 
   if ( tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getGlobalMasterRank() ) {
     logInfo("parseOptimisations()","use the following global optimisations:");
-      logInfo("parseOptimisations()","\tfuse-algorithmic-steps="                  << (exahype::solvers::Solver::FuseADERDGPhases ? "on" : "off"));
-      logInfo("parseOptimisations()","\tfuse-algorithmic-steps-factor="           << exahype::solvers::Solver::WeightForPredictionRerun);
+      logInfo("parseOptimisations()","\tfuse-algorithmic-steps="                  << (exahype::solvers::Solver::FuseAllADERDGPhases ? "on" : "off"));
+      logInfo("parseOptimisations()","\tfuse-algorithmic-steps-factor="           << exahype::solvers::Solver::FusedTimeSteppingRerunFactor);
       logInfo("parseOptimisations()","\tspawn-predictor-as-background-thread="    << (exahype::solvers::Solver::SpawnPredictionAsBackgroundJob ? "on" : "off"));
       logInfo("parseOptimisations()","\tspawn-prolongation-as-background-thread=" << (exahype::solvers::Solver::SpawnProlongationAsBackgroundJob ? "on" : "off"));
       logInfo("parseOptimisations()","\tspawn-update-as-background-thread="       << (exahype::solvers::Solver::SpawnUpdateAsBackgroundJob ? "on" : "off"));
@@ -901,9 +902,14 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
 
     logInfo( "runAsMaster(...)", "initialised all data and computed first time step size" );
 
+    if ( !solvers::Solver::FuseAllADERDGPhases ) {
+      logInfo( "runAsMaster(...)", "plot" );
+      repository.switchToPlot();
+      repository.iterate();
+    }
+
     bool communicatePeanoVertices =
         !exahype::solvers::Solver::DisablePeanoNeighbourExchangeInTimeSteps;
-
     repository.switchToInitialPrediction();
     repository.iterate( exahype::solvers::Solver::PredictionSweeps, communicatePeanoVertices );
     logInfo("runAsMaster(...)","computed first predictor (number of predictor sweeps: "<<exahype::solvers::Solver::PredictionSweeps<<")");
@@ -919,9 +925,10 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
     parser::Parser::ProfilingTarget profilingTarget = _parser.getProfilingTarget();
     if ( profilingTarget==parser::Parser::ProfilingTarget::WholeCode ) {
       printTimeStepInfo(-1,repository);
-      validateInitialSolverTimeStepData(exahype::solvers::Solver::FuseADERDGPhases);
+      validateInitialSolverTimeStepData(exahype::solvers::Solver::FuseAllADERDGPhases);
     }
     const bool skipReductionInBatchedTimeSteps  = _parser.getSkipReductionInBatchedTimeSteps();
+    const bool fuseMostADERDGPhases             = _parser.getFuseMostAlgorithmicSteps();
 
     // run time stepping loop
     int timeStep = 0;
@@ -937,7 +944,7 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
 
       // fused time stepping
       int numberOfStepsToRun = 1;
-      if ( profilingTarget==parser::Parser::ProfilingTarget::WholeCode && exahype::solvers::Solver::FuseADERDGPhases  ) {
+      if ( profilingTarget==parser::Parser::ProfilingTarget::WholeCode && exahype::solvers::Solver::FuseAllADERDGPhases  ) {
         if (plot) {
           numberOfStepsToRun = 0;
         }
@@ -953,7 +960,11 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
         printTimeStepInfo(numberOfStepsToRun,repository);
       // straightforward realisation
       } else if ( profilingTarget==parser::Parser::ProfilingTarget::WholeCode ) {
-        runOneTimeStepWithThreeSeparateAlgorithmicSteps(repository, plot);
+        if ( fuseMostADERDGPhases ) {
+          runOneTimeStepWithTwoSeparateAlgorithmicSteps(repository, plot);
+        } else {
+          runOneTimeStepWithThreeSeparateAlgorithmicSteps(repository, plot);
+        }
       }
       // profiling of isolated adapters
       else if ( profilingTarget==parser::Parser::ProfilingTarget::Prediction ) {
@@ -1273,7 +1284,7 @@ void exahype::runners::Runner::validateInitialSolverTimeStepData(const bool fuse
     switch (solver->getType()) {
       case exahype::solvers::Solver::Type::ADERDG: {
         auto* aderdgSolver = static_cast<exahype::solvers::ADERDGSolver*>(solver);
-        if (!exahype::solvers::Solver::FuseADERDGPhases) {
+        if (!exahype::solvers::Solver::FuseAllADERDGPhases) {
           assertionEquals(aderdgSolver->getPreviousMinTimeStepSize(),0.0); // TOOD(Dominic): Revision
         }
         assertionEquals(aderdgSolver->getMinTimeStamp(),0.0);
@@ -1282,14 +1293,14 @@ void exahype::runners::Runner::validateInitialSolverTimeStepData(const bool fuse
       case exahype::solvers::Solver::Type::LimitingADERDG: {
         // ADER-DG
         auto* aderdgSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getSolver().get();
-        if (!exahype::solvers::Solver::FuseADERDGPhases) {
+        if (!exahype::solvers::Solver::FuseAllADERDGPhases) {
           assertionEquals(aderdgSolver->getPreviousMinTimeStepSize(),0.0); // TODO(Dominic): Revision
         }
         assertionEquals(aderdgSolver->getMinTimeStamp(),0.0);
       } break;
       case exahype::solvers::Solver::Type::FiniteVolumes:
         auto* finiteVolumesSolver = static_cast<exahype::solvers::FiniteVolumesSolver*>(solver);
-        if (!exahype::solvers::Solver::FuseADERDGPhases) {
+        if (!exahype::solvers::Solver::FuseAllADERDGPhases) {
           assertionEquals(finiteVolumesSolver->getPreviousMinTimeStepSize(),0.0);
         }
         break;
@@ -1347,7 +1358,7 @@ void exahype::runners::Runner::updateMeshOrLimiterDomain(
       exahype::solvers::Solver::oneSolverRequestedLocalRecomputation()) {
     logInfo("updateMeshAndSubdomains(...)","recompute solution locally (if applicable) and compute new time step size");
     repository.switchToPredictionOrLocalRecomputation(); // do not roll forward here if global recomp.; we want to stay at the old time step
-    const int sweeps = (exahype::solvers::Solver::FuseADERDGPhases) ? exahype::solvers::Solver::PredictionSweeps : 1;
+    const int sweeps = (exahype::solvers::Solver::FuseAllADERDGPhases) ? exahype::solvers::Solver::PredictionSweeps : 1;
     repository.iterate( sweeps ,false ); // local recomputation: has now recomputed predictor in interface cells
   }
 }
@@ -1401,7 +1412,7 @@ void exahype::runners::Runner::printTimeStepInfo(int numberOfStepsRanSinceLastCa
         logInfo("startNewTimeStep(...)",
              "\tLimiting-ADER-DG: dt_est =" << static_cast<exahype::solvers::LimitingADERDGSolver*>(p)->getSolver()->getEstimatedTimeStepSize());
         logInfo("startNewTimeStep(...)",
-            "\tLimiting-ADER-DG: dt_est =" << static_cast<exahype::solvers::LimitingADERDGSolver*>(p)->getSolver()->getAdmissibleTimeStepSize());
+             "\tLimiting-ADER-DG: dt_adm =" << static_cast<exahype::solvers::LimitingADERDGSolver*>(p)->getSolver()->getAdmissibleTimeStepSize());
         break;
       case exahype::solvers::Solver::Type::FiniteVolumes:
         logInfo("startNewTimeStep(...)",
@@ -1527,6 +1538,13 @@ void exahype::runners::Runner::runOneTimeStepWithTwoSeparateAlgorithmicSteps(
   }
 
   printTimeStepInfo(1,repository);
+
+  if ( plot && !solvers::Solver::FuseAllADERDGPhases ) {
+    logInfo( "runAsMaster(...)", "plot" );
+    repository.switchToPlot();
+    repository.iterate();
+  }
+
   repository.switchToPrediction(); // Cell onto faces
   repository.iterate( exahype::solvers::Solver::PredictionSweeps, communicatePeanoVertices );
 
@@ -1556,6 +1574,13 @@ void exahype::runners::Runner::runOneTimeStepWithThreeSeparateAlgorithmicSteps(
   }
 
   printTimeStepInfo(1,repository);
+
+  if ( plot && !solvers::Solver::FuseAllADERDGPhases ) {
+    logInfo( "runAsMaster(...)", "plot" );
+    repository.switchToPlot();
+    repository.iterate();
+  }
+
   repository.switchToPrediction(); // Cell onto faces
   repository.iterate( exahype::solvers::Solver::PredictionSweeps, communicatePeanoVertices );
 

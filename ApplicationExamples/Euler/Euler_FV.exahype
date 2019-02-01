@@ -40,13 +40,14 @@ exahype-project Euler
   end distributed-memory
   
   global-optimisation
-    fuse-algorithmic-steps          = on
-    fuse-algorithmic-steps-factor   = 0.99
+    fuse-algorithmic-steps          = all
+    fuse-algorithmic-steps-rerun-factor   = 0.99
+    fuse-algorithmic-steps-diffusion-factor   = 0.99
     spawn-predictor-as-background-thread = off
     spawn-amr-background-threads = off
     /* 0.0 und 0.8 sind schon mal zwei Faktoren */
     disable-vertex-exchange-in-time-steps = on
-    time-step-batch-factor           = 0.8
+    time-step-batch-factor           = 0.2
     disable-metadata-exchange-in-batched-time-steps = off
     double-compression = 0.0
     spawn-double-compression-as-background-thread = off
@@ -56,7 +57,7 @@ exahype-project Euler
     variables const    = rho:1,j:3,E:1
     patch-size const   = 7
     maximum-mesh-size  = 0.12
-    time-stepping      = global
+    time-stepping      = globalfixed
     type const         = godunov
     terms const        = flux
     optimisation const = generic

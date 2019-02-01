@@ -759,23 +759,23 @@ void exahype::solvers::ADERDGSolver::wrapUpTimeStep(const bool isFirstTimeStepOf
       tarch::parallel::Node::getInstance().isGlobalMaster() &&
       getTimeStepping() != TimeStepping::GlobalFixed // fix the time step size in intermediate batch iterations
   ) {
-    if ( FuseADERDGPhases ) {
+    if ( FuseAllADERDGPhases && !isLinear() ) {
       if ( isLastTimeStepOfBatchOrNoBatch ) {
         if ( _estimatedTimeStepSize > _admissibleTimeStepSize ) { // rerun
-          _minTimeStepSize       = WeightForPredictionRerun * _admissibleTimeStepSize;
+          _minTimeStepSize       = FusedTimeSteppingRerunFactor * _admissibleTimeStepSize;
           _estimatedTimeStepSize = _minTimeStepSize;
 
           _stabilityConditionWasViolated = true;
         } else {
-          _minTimeStepSize       = _estimatedTimeStepSize;
-          _estimatedTimeStepSize = 0.5 * ( _admissibleTimeStepSize + _estimatedTimeStepSize );
+          _minTimeStepSize       = _estimatedTimeStepSize; // as we have computed the predictor with an estimate, we have to use the estimated time step size to perform the face integral
+          _estimatedTimeStepSize = 0.5 * ( FusedTimeSteppingDiffusionFactor * _admissibleTimeStepSize + _estimatedTimeStepSize );
         }
       } else { // use fixed time step size in intermediate batch iterations
         _minTimeStepSize  = _estimatedTimeStepSize;
       }
-    } else { // non-fused
+    } else if ( !isLinear() ) { // non-fused, non-linear
       _minTimeStepSize = _admissibleTimeStepSize;
-    }
+    } // else if linear do not change the time step size at all
   }
 
   // call user code
@@ -783,8 +783,8 @@ void exahype::solvers::ADERDGSolver::wrapUpTimeStep(const bool isFirstTimeStepOf
 }
 
 void exahype::solvers::ADERDGSolver::updateTimeStepSize() {
-  if ( FuseADERDGPhases ) {
-    _minTimeStepSize        = WeightForPredictionRerun *  _admissibleTimeStepSize;
+  if ( FuseAllADERDGPhases ) {
+    _minTimeStepSize        = FusedTimeSteppingRerunFactor * _admissibleTimeStepSize;
     _estimatedTimeStepSize  = _minTimeStepSize;
   } else {
     _minTimeStepSize        = _admissibleTimeStepSize;
@@ -794,7 +794,8 @@ void exahype::solvers::ADERDGSolver::updateTimeStepSize() {
 }
 
 void exahype::solvers::ADERDGSolver::rollbackToPreviousTimeStep() {
-  _minTimeStamp            = _previousMinTimeStamp;
+  _minTimeStamp    = _previousMinTimeStamp;
+  _minTimeStepSize = _previousMinTimeStepSize;
 
   _previousMinTimeStamp    = std::numeric_limits<double>::infinity();
   _previousMinTimeStepSize = std::numeric_limits<double>::infinity();
@@ -2001,8 +2002,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
   }
   VT_begin(handle);
   #endif
-
-  correction(cellDescription,neighbourMergePerformed,isFirstTimeStepOfBatch,isLastTimeStepOfBatch);
+  correction(cellDescription,neighbourMergePerformed,isFirstTimeStepOfBatch,isFirstTimeStepOfBatch/*addSurfaceIntegralContributionToUpdate*/);
 
   UpdateResult result;
   result._timeStepSize    = startNewTimeStep(cellDescription,isFirstTimeStepOfBatch);
@@ -2014,18 +2014,17 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
       !mustBeDoneImmediately &&
       isLastTimeStepOfBatch // only spawned in last iteration if a FusedTimeStepJob was spawned before
   ) {
-    const bool addVolumeIntegralResultToUpdate = isLastTimeStepOfBatch;
-    const int element                          = cellInfo.indexOfADERDGCellDescription(cellDescription.getSolverNumber());
+    const int element = cellInfo.indexOfADERDGCellDescription(cellDescription.getSolverNumber());
     peano::datatraversal::TaskSet( new PredictionJob(
         *this, cellDescription, cellInfo._cellDescriptionsIndex,element,
         predictionTimeStamp, predictionTimeStepSize,
-        false/*is uncompressed*/, isSkeletonCell, addVolumeIntegralResultToUpdate ) );
+        false/*is uncompressed*/, isSkeletonCell, isLastTimeStepOfBatch/*addVolumeIntegralResultToUpdate*/ ) );
   } else {
     const bool addVolumeIntegralResultToUpdate = isLastTimeStepOfBatch;
     predictionAndVolumeIntegralBody(
         cellDescription,
         predictionTimeStamp, predictionTimeStepSize,
-        false, isSkeletonCell, addVolumeIntegralResultToUpdate);
+        false, isSkeletonCell, isLastTimeStepOfBatch/*addVolumeIntegralResultToUpdate*/);
   }
   #ifdef USE_ITAC
   VT_end(handle);
@@ -2073,8 +2072,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
         cellDescription.getType()==CellDescription::Type::Descendant &&
         cellDescription.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication
     ) {
-      const bool addToCoarseGridUpdate = isFirstTimeStepOfBatch || isLastTimeStepOfBatch;
-      restrictToTopMostParent(cellDescription,addToCoarseGridUpdate);
+      restrictToTopMostParent(cellDescription,isFirstTimeStepOfBatch/*addToCoarseGridUpdate*/);
       cellDescription.setHasCompletedLastStep(true);
       // TODO(Dominic): Evaluate ref crit here too // halos
       return UpdateResult();
@@ -2096,7 +2094,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::updateBod
   uncompress(cellDescription);
 
   UpdateResult result;
-  correction(cellDescription,neighbourMergePerformed,true,true);
+  correction(cellDescription,neighbourMergePerformed,true,false/*effect: add surface integral result directly to solution*/);
   result._timeStepSize    = startNewTimeStep(cellDescription,true);
   cellDescription.setPreviousRefinementStatus(cellDescription.getRefinementStatus());
   result._meshUpdateEvent = evaluateRefinementCriteriaAfterSolutionUpdate(cellDescription,neighbourMergePerformed);
@@ -2128,7 +2126,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::updateOrR
         cellDescription.getType()==CellDescription::Type::Descendant &&
         cellDescription.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication
     ) {
-      restrictToTopMostParent(cellDescription,true/*addToCoarseGridUpdate*/); // TODO(Dominic): Linear ADER-DG does not require this
+      restrictToTopMostParent(cellDescription,false/*effect: add surface integral result directly to solution*/);
       cellDescription.setHasCompletedLastStep(true);
       return UpdateResult();
     }
@@ -2265,11 +2263,13 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
     const bool isSkeletonCell    = isAMRSkeletonCell || isAtRemoteBoundary;
     waitUntilCompletedLastStep(cellDescription,isSkeletonCell,false);
     if ( cellDescription.getType()==CellDescription::Type::Cell ) {
-      const auto predictionTimeStepData = getPredictionTimeStepData(cellDescription,false); // this is either the fused scheme or a predictor recomputation
+      const auto predictionTimeStepData          = getPredictionTimeStepData(cellDescription,false); // this is either the fused scheme or a predictor recomputation
+      const bool addVolumeIntegralResultToUpdate = FuseAllADERDGPhases;
       performPredictionAndVolumeIntegral(solverNumber,cellInfo,
           std::get<0>(predictionTimeStepData),
           std::get<1>(predictionTimeStepData),
-          true,isAtRemoteBoundary,true/*addVolumeIntegralResultToUpdate*/);
+          true,isAtRemoteBoundary,
+          addVolumeIntegralResultToUpdate);
     }
   }
 }
@@ -2563,8 +2563,8 @@ void exahype::solvers::ADERDGSolver::adjustSolutionAfterUpdate(CellDescription& 
 void exahype::solvers::ADERDGSolver::correction(
     CellDescription&                                           cellDescription,
     const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
-    const bool                                                 isFirstTimeStep,
-    const bool                                                 isLastTimeStep) {
+    const bool                                                 backupPreviousSolution,
+    const bool                                                 addSurfaceIntegralResultToUpdate) {
   assertion1(cellDescription.getType()==CellDescription::Type::Cell && cellDescription.getRefinementEvent()==CellDescription::None,cellDescription.toString())
   assertion1(std::isfinite(cellDescription.getTimeStamp()   ),cellDescription.toString());
   assertion1(std::isfinite(cellDescription.getTimeStepSize()),cellDescription.toString());
@@ -2579,10 +2579,9 @@ void exahype::solvers::ADERDGSolver::correction(
   counter++;
   #endif
 
-  const bool addSurfaceIntegralResultToUpdate = isFirstTimeStep || isLastTimeStep; // TODO(Dominic): fix 'false' case
   surfaceIntegral(cellDescription,neighbourMergePerformed,addSurfaceIntegralResultToUpdate);
   if ( addSurfaceIntegralResultToUpdate ) {
-    addUpdateToSolution(cellDescription,isFirstTimeStep);
+    addUpdateToSolution(cellDescription,backupPreviousSolution);
   }
   adjustSolutionAfterUpdate(cellDescription);
 

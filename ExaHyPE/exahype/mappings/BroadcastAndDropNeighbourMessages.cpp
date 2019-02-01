@@ -122,7 +122,7 @@ void exahype::mappings::BroadcastAndDropNeighbourMessages::mergeWithNeighbour(
     exahype::Vertex& vertex, const exahype::Vertex& neighbour, int fromRank,
     const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
     const tarch::la::Vector<DIMENSIONS, double>& fineGridH, int level) {
-  if ( exahype::solvers::Solver::FuseADERDGPhases ) {
+  if ( exahype::solvers::Solver::FuseAllADERDGPhases ) {
   vertex.receiveNeighbourData(
       fromRank,false /*no merge*/,true /*no batch*/,
       fineGridX,fineGridH,level);

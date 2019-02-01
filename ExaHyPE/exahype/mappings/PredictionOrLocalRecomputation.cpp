@@ -112,7 +112,7 @@ bool exahype::mappings::PredictionOrLocalRecomputation::performLocalRecomputatio
 
 bool exahype::mappings::PredictionOrLocalRecomputation::performPrediction(
     exahype::solvers::Solver* solver) {
-  return exahype::solvers::Solver::FuseADERDGPhases &&
+  return exahype::solvers::Solver::FuseAllADERDGPhases &&
          solver->hasRequestedAnyMeshRefinement();
 }
 
@@ -145,7 +145,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::enterCell(
       if ( performLocalRecomputation( solver ) && exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
         auto* limitingADERDG = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
         double admissibleTimeStepSize =
-        limitingADERDG->recomputeSolutionLocally(solverNumber,cellInfo,isAtRemoteBoundary,solvers::Solver::FuseADERDGPhases);
+        limitingADERDG->recomputeSolutionLocally(solverNumber,cellInfo,isAtRemoteBoundary,solvers::Solver::FuseAllADERDGPhases);
         solver->updateAdmissibleTimeStepSize(admissibleTimeStepSize);
 
         limitingADERDG->determineMinAndMax(solverNumber,cellInfo); // TODO(Dominic): Optimistation. Do it only in recomputed cells.
@@ -361,7 +361,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::prepareSendToNeighbour(
 
   if (
       exahype::State::isLastIterationOfBatchOrNoBatch() &&
-      exahype::solvers::Solver::FuseADERDGPhases
+      exahype::solvers::Solver::FuseAllADERDGPhases
   ) {
    vertex.sendToNeighbour(toRank,true,x,h,level);
   }

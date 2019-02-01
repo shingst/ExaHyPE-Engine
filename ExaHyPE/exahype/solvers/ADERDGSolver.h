@@ -307,11 +307,10 @@ private:
   void uncompress(CellDescription& cellDescription) const;
 
   /**
-    * Rollback to the previous time step, i.e,
-    * overwrite the time step size and time stamp
-    * fields of the cell description
-    * by previous values.
-    */
+   * Set the previous time stamp and step size for the patch.
+   *
+   * @note the original time stamp and step size is lost (although the time stamp can be easily recalculated).
+   */
    void rollbackToPreviousTimeStep(CellDescription& cellDescription) const;
 
   /**
@@ -1361,6 +1360,8 @@ public:
    * If this is not the case, it deallocates the unnecessarily allocated memory.
    *
    * @note This operation is thread safe as we serialise it.
+   *
+   * @todo: Update vector not necessary if not all algorithmic phases are fused.
    */
   void ensureNoUnnecessaryMemoryIsAllocated(CellDescription& cellDescription) const;
 
@@ -1373,6 +1374,8 @@ public:
    *
    * @note Heap data creation assumes default policy
    * DataHeap::Allocation::UseRecycledEntriesIfPossibleCreateNewEntriesIfRequired.
+   *
+   * @todo: Update vector not necessary if not all algorithmic phases are fused.
    */
   void ensureNecessaryMemoryIsAllocated(exahype::records::ADERDGCellDescription& cellDescription) const;
 
@@ -1785,15 +1788,17 @@ public:
    * but a previous solution. We will thus only perform
    * a solution adjustment and adding of source term contributions here.
    *
-   * @param[in] cellDescription         a cell description
-   * @param[in] backupPreviousSolution  Set to true if the solution should be backed up before
-   *                                    we overwrite it by the updated solution.
+   * @param[in] cellDescription                   a cell description
+   * @param[in] backupPreviousSolution            Set to true if the solution should be backed up before
+   *                                              we overwrite it by the updated solution.
+   * @param[in] addSurfaceIntegralResultToUpdate  set to true if the surface integral result should be added to the update. Otherwise, is added directly to the solution.
+   *                                              (Fused time stepping for nonlinear PDEs is the only time stepping variant where we need to use an update vector.)
    */
   void correction(
       CellDescription&                                           cellDescription,
       const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
       const bool                                                 isFirstTimeStep,
-      const bool                                                 isLastTimeStep);
+      const bool                                                 addSurfaceIntegralResultToUpdate);
 
   /**
    * TODO(Dominic): Update docu.

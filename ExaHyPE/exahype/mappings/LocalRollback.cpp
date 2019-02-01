@@ -146,7 +146,7 @@ void exahype::mappings::LocalRollback::enterCell(
             break;
           case solvers::Solver::Type::LimitingADERDG:
             static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->
-              rollbackSolutionLocally(solverNumber,cellInfo,exahype::solvers::Solver::FuseADERDGPhases);
+              rollbackSolutionLocally(solverNumber,cellInfo,exahype::solvers::Solver::FuseAllADERDGPhases);
             break;
           case solvers::Solver::Type::FiniteVolumes:
             // do nothing

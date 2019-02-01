@@ -433,19 +433,26 @@
       "old_format_prepend" : { "within_one_of_the_sections" : ["global-optimisation", "optimisation"] },
       "properties" : {
         "fuse_algorithmic_steps" : {
-          "type" : "boolean", 
-          "default" : false,
+          "type" : "string", 
+          "default" : "none",
+          "enum" : ["none","most","all"],
           "old_format" : { "token_after" : "fuse-algorithmic-steps" }
         }, 
-        "fuse_algorithmic_steps_factor" : {
+        "fuse_algorithmic_steps_rerun_factor" : {
           "type" : "number", 
-          "title" : "The weight used for estimating the next time step size",
+          "title" : "Factor used for resetting the time step size if the last estimate was not stable according to the CFL condition. Only used if all algorithmic phases are used and nonlinear PDEs are considered.",
+          "default" : 0.99,
+          "old_format" : { "token_after" : "fuse-algorithmic-steps-factor" }
+        },
+        "fuse_algorithmic_steps_diffusion_factor" : {
+          "type" : "number", 
+          "title" : "Factor to estimate the next time step size. Adds numerical diffusion, the smaller it gets. Only used if all algorithmic phases are used and nonlinear PDEs are considered.",
           "default" : 0.99,
           "old_format" : { "token_after" : "fuse-algorithmic-steps-factor" }
         },
         "spawn_predictor_as_background_thread" : {
           "type" : "boolean", 
-          "title" : "Wether to spawn the predictor or the first and intermediate fused time steps as background jobs.",
+          "title" : "Whether to spawn the predictor or the first and intermediate fused time steps as background jobs.",
           "default" : false,
           "old_format" : { "token_after" : "spawn-predictor-as-background-thread" }
         },

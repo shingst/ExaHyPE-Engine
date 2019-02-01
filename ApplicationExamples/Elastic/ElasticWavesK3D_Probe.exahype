@@ -48,8 +48,9 @@ exahype-project  ElasticWave
   end distributed-memory*/
 
   global-optimisation
-    fuse-algorithmic-steps          = on
-    fuse-algorithmic-steps-factor   = 0.8
+    fuse-algorithmic-steps          = all
+    fuse-algorithmic-steps-rerun-factor   = 0.8
+    fuse-algorithmic-steps-diffusion-factor   = 0.8
     spawn-predictor-as-background-thread = off
     spawn-amr-background-threads         = off
     /* 0.0 und 0.8 sind schon mal zwei Faktoren */

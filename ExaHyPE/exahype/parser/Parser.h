@@ -287,19 +287,38 @@ class exahype::parser::Parser {
   int  getSimulationTimeSteps() const;
 
   /**
-   * @return Indicates if the user has chosen the fused ADER-DG time stepping
-   * variant.
+   * @return Indicates if the user has chosen the ADER-DG time stepping variant
+   * where all three phases are fused into one loop.
    *
    * If the parser returns _noTokenFound, we may not issue an error as this is
    * an optional entry in the spec file.
    */
-  bool getFuseAlgorithmicSteps() const;
+  bool getFuseAllAlgorithmicSteps() const;
 
   /**
-   * @return Time step size underestimation factor for the fused ADER-DG time
-   * stepping variant.
+   * @return Indicates if the user has chosen the ADER-DG time stepping variant
+   * where the corrector and update loop are fused into one loop.
+   *
+   * If the parser returns _noTokenFound, we may not issue an error as this is
+   * an optional entry in the spec file.
    */
-  double getFuseAlgorithmicStepsFactor() const;
+  bool getFuseMostAlgorithmicSteps() const;
+
+  /**
+   * @return Time step size factor for the fused ADER-DG time stepping for nonlinear PDEs
+   * used when a rerun is performed.
+   *
+   * @note is only used if a nonlinear PDE is solved and all algorithmic phases are fused.
+   */
+  double getFuseAlgorithmicStepsRerunFactor() const;
+
+  /**
+   * @return Time step size factor for the fused ADER-DG time stepping for nonlinear PDEs
+   * used when a rerun is performed.
+   *
+   * @note is only used if a nonlinear PDE is solved and all algorithmic phases are fused.
+   */
+  double getFuseAlgorithmicStepsDiffusionFactor() const;
 
   /**
    * @return if the predictor and the first and intermediate fused time steps should be
