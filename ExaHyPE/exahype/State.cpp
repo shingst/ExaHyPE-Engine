@@ -382,7 +382,7 @@ void exahype::State::wrapUpIteration(exahype::records::RepositoryState::Action& 
       }
       break;
     case exahype::records::RepositoryState::UseAdapterUpdateAndReduce:
-    case exahype::records::RepositoryState::UseAdapterCorrection: {
+    case exahype::records::RepositoryState::UseAdapterCorrection:
       for (auto* solver : solvers::RegisteredSolvers) {
         solver->wrapUpTimeStep(true,true);
       }

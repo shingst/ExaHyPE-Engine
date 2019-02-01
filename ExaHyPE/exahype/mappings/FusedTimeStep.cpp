@@ -157,19 +157,10 @@ void exahype::mappings::FusedTimeStep::endIteration(
   if ( sendOutRiemannDataInThisIteration() ) {
     exahype::plotters::finishedPlotting();
     
-    const int isFirstTimeStep = 
-          ( exahype::solvers::Solver::PredictionSweeps==1 ) ? 
-            exahype::State::isFirstIterationOfBatchOrNoBatch() :
-            exahype::State::isSecondIterationOfBatchOrNoBatch();
-
     if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
       // background threads
       exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::ReductionJob);
     }
-
-    exahype::solvers::Solver::startNewTimeStepForAllSolvers(
-        isFirstTimeStep,exahype::State::isLastIterationOfBatchOrNoBatch(),
-        true);
   }
 
   logTraceOutWith1Argument("endIteration(State)", state);

@@ -104,8 +104,6 @@ void exahype::mappings::UpdateAndReduce::endIteration(
 
   exahype::plotters::finishedPlotting();
 
-  exahype::solvers::Solver::startNewTimeStepForAllSolvers(true,true,false);
-
   logTraceOutWith1Argument("endIteration(State)", state);
 }
 

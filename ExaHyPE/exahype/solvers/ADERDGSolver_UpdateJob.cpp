@@ -22,13 +22,8 @@ bool exahype::solvers::ADERDGSolver::UpdateJob::run() {
   UpdateResult result =
       _solver.updateBody(_cellDescription,_cellInfo,_neighbourMergePerformed,_isAtRemoteBoundary);
 
-  tarch::multicore::Lock lock(exahype::ReductionSemaphore);
-  {
-    _solver.updateMeshUpdateEvent(result._meshUpdateEvent);
-    _solver.updateAdmissibleTimeStepSize(result._timeStepSize);
-  }
-  lock.free();
-
+  _solver.updateMeshUpdateEvent(result._meshUpdateEvent);
+  _solver.updateAdmissibleTimeStepSize(result._timeStepSize);
 
   NumberOfReductionJobs.fetch_sub(1);
   assertion( NumberOfReductionJobs.load()>=0 );

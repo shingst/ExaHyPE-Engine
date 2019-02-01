@@ -206,10 +206,10 @@ exahype::solvers::Solver::Solver(
       _domainOffset(std::numeric_limits<double>::infinity()),
       _domainSize(std::numeric_limits<double>::infinity()),
       _maximumMeshSize(maximumMeshSize),
-      _coarsestMeshLevel(std::numeric_limits<int>::max()),
-      _coarsestMeshSize(std::numeric_limits<double>::infinity()),
       _maximumAdaptiveMeshDepth(maximumAdaptiveMeshDepth),
       _timeStepping(timeStepping),
+      _coarsestMeshLevel(std::numeric_limits<int>::max()),
+      _coarsestMeshSize(std::numeric_limits<double>::infinity()),
       _profiler(std::move(profiler)) {
   #ifdef Parallel
   logInfo("Solver(...)","master worker communication tag is:" << MasterWorkerCommunicationTag);

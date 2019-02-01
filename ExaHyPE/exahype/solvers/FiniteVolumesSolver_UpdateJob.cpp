@@ -27,11 +27,7 @@ bool exahype::solvers::FiniteVolumesSolver::UpdateJob::run() {
   NumberOfReductionJobs.fetch_sub(1);
   assertion( NumberOfReductionJobs.load()>=0 );
 
-  tarch::multicore::Lock lock(exahype::ReductionSemaphore);
-  {
-    _solver.updateAdmissibleTimeStepSize(result._timeStepSize);
-  }
-  lock.free();
+  _solver.updateAdmissibleTimeStepSize(result._timeStepSize);
   return false;
 }
 

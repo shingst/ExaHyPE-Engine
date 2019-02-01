@@ -85,11 +85,11 @@ double exahype::solvers::LimitingADERDGSolver::getMinTimeStepSize() const {
   return _solver->getMinTimeStepSize();
 }
 
-double exahype::solvers::LimitingADERDGSolver::getMinNextTimeStepSize() const {
+double exahype::solvers::LimitingADERDGSolver::getAdmissibleTimeStepSize() const {
   return _solver->getAdmissibleTimeStepSize();
 }
 
-void exahype::solvers::LimitingADERDGSolver::updateMinNextTimeStepSize(double value) {
+void exahype::solvers::LimitingADERDGSolver::updateAdmissibleTimeStepSize(double value) {
   _solver->updateAdmissibleTimeStepSize(value);
 }
 
@@ -157,11 +157,6 @@ void exahype::solvers::LimitingADERDGSolver::ensureLimiterTimeStepDataIsConsiste
   _limiter->_minTimeStepSize         = _solver->_minTimeStepSize;
   _limiter->_previousMinTimeStamp    = _solver->_previousMinTimeStamp;
   _limiter->_previousMinTimeStepSize = _solver->_previousMinTimeStepSize;
-}
-
-void exahype::solvers::LimitingADERDGSolver::updateTimeStepSizesFused()  {
-  _solver->updateTimeStepSizesFused();
-  ensureLimiterTimeStepDataIsConsistent();
 }
 
 void exahype::solvers::LimitingADERDGSolver::updateTimeStepSize()  {

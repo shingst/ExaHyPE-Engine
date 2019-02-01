@@ -443,7 +443,6 @@ public:
   void kickOffTimeStep(const bool isFirstTimeStepOfBatchOrNoBatch) final override;
   void wrapUpTimeStep(const bool isFirstTimeStepOfBatchOrNoBatch,const bool isLastTimeStepOfBatchOrNoBatch) final override;
 
-  void updateTimeStepSizesFused() override;
   void updateTimeStepSize()      override;
   void rollbackToPreviousTimeStep() final override;
 

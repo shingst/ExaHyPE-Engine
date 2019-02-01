@@ -769,10 +769,10 @@ void exahype::solvers::FiniteVolumesSolver::updateSolution(
 
   #if !defined(SharedMemoryParallelisation) && !defined(Parallel) && defined(Asserts)
     static int counter = 0;
-    static double timeStamp = 0;
-    if ( !tarch::la::equals(timeStamp,_minTimeStamp,1e-9) ) {
+    static double myTimeStamp = 0;
+    if ( !tarch::la::equals(myTimeStamp,_minTimeStamp,1e-9) ) {
       logInfo("mergeNeighboursData(...)","#updateSolution="<<counter);
-      timeStamp = _minTimeStamp;
+      myTimeStamp = _minTimeStamp;
       counter=0;
     }
     counter++;

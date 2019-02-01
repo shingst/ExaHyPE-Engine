@@ -118,21 +118,7 @@ bool exahype::mappings::LocalRollback::performLocalRecomputation(
 
 void exahype::mappings::LocalRollback::endIteration(
     exahype::State& solverState) {
-  if ( OneSolverRequestedLocalRecomputation ) {
-    for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
-      auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-      if (
-          performLocalRecomputation(solver) &&
-          exahype::solvers::Solver::FuseADERDGPhases
-      ) {
-        static_cast<solvers::LimitingADERDGSolver*>(solver)->rollbackToPreviousTimeStepFused();
-      } else if (
-          performLocalRecomputation(solver)
-      ) {
-        static_cast<solvers::LimitingADERDGSolver*>(solver)->rollbackToPreviousTimeStep();
-      }
-    }
-  }
+  // do nothing
 }
 
 void exahype::mappings::LocalRollback::enterCell(

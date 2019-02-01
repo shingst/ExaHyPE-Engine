@@ -1418,15 +1418,6 @@ public:
    */
   void updateTimeStepSize() override;
 
-  /** \copydoc Solver::updateTimeStepSizesFused
-   *
-   * Does advance the predictor time stamp in time.
-   *
-   * We further reset the stability condition was violated condition
-   * to false for the ADER-DG solver.
-   */
-  void updateTimeStepSizesFused() override;
-
   void rollbackToPreviousTimeStep() final override;
 
   double getPreviousMinTimeStamp() const;
@@ -1435,14 +1426,24 @@ public:
   double getMinTimeStamp() const override;
   double getMinTimeStepSize() const override;
   double getAdmissibleTimeStepSize() const override;
-
   void updateAdmissibleTimeStepSize(double value) override;
+
+  double getEstimatedTimeStepSize() const;
 
   /**
    * \return true if the CFL condition was violated
    * (by the last fused time step).
    */
   bool getStabilityConditionWasViolated() const;
+
+  /**
+   * Set to true if if the CFL condition was violated
+   * by a time step size used for the predictor computation
+   * in the last fused time step.
+   *
+   * @param state if the stability condition was violated.
+   */
+  void setStabilityConditionWasViolated(const bool state);
 
   /**
     * User defined solver initialisation.

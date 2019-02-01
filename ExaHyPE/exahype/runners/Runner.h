@@ -289,8 +289,6 @@ class exahype::runners::Runner {
    */
   void runPredictionInIsolation(repositories::Repository& repository);
 
-  void validateSolverTimeStepDataForThreeAlgorithmicPhases(const bool fuseADERDGPhases) const;
-
   /**
    * Per dimension, computes the smallest multiplicity of the coarsest solver mesh size
    * which is larger than the domain size.

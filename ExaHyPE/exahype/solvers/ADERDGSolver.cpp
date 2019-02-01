@@ -806,6 +806,10 @@ double exahype::solvers::ADERDGSolver::getMinTimeStepSize() const {
   return _minTimeStepSize;
 }
 
+double exahype::solvers::ADERDGSolver::getEstimatedTimeStepSize() const {
+  return _estimatedTimeStepSize;
+}
+
 double exahype::solvers::ADERDGSolver::getPreviousMinTimeStepSize() const {
   return _previousMinTimeStepSize;
 }
@@ -881,6 +885,10 @@ bool exahype::solvers::ADERDGSolver::isMergingMetadata(
 
 bool exahype::solvers::ADERDGSolver::getStabilityConditionWasViolated() const {
   return  _stabilityConditionWasViolated;
+}
+
+void exahype::solvers::ADERDGSolver::setStabilityConditionWasViolated(const bool state) {
+  _stabilityConditionWasViolated = state;
 }
 
 bool exahype::solvers::ADERDGSolver::isValidCellDescriptionIndex(
@@ -4194,43 +4202,24 @@ std::string exahype::solvers::ADERDGSolver::toString() const {
 
 void exahype::solvers::ADERDGSolver::toString (std::ostream& out) const {
   out << "(";
-  out << "_identifier:" << _identifier;
-  out << ",";
-  out << "_type:" << exahype::solvers::Solver::toString(_type);
-  out << ",";
-  out << "_numberOfVariables:" << _numberOfVariables;
-  out << ",";
-  out << "_numberOfParameters:" << _numberOfParameters;
-  out << ",";
-  out << "_nodesPerCoordinateAxis:" << _nodesPerCoordinateAxis;
-  out << ",";
-  out << "_maximumMeshSize:" << _maximumMeshSize;
-  out << ",";
-  out << "_timeStepping:" << exahype::solvers::Solver::toString(_timeStepping); // only solver attributes
-  out << ",";
-  out << "_unknownsPerFace:" << getUnknownsPerFace();
-  out << ",";
-  out << "_unknownsPerCellBoundary:" << getUnknownsPerCellBoundary();
-  out << ",";
-  out << "_unknownsPerCell:" << getUnknownsPerCell();
-  out << ",";
-  out << "_fluxUnknownsPerCell:" << getFluxUnknownsPerCell();
-  out << ",";
-  out << "_spaceTimeUnknownsPerCell:" << getSpaceTimeUnknownsPerCell();
-  out << ",";
-  out << "_spaceTimeFluxUnknownsPerCell:" << getSpaceTimeFluxUnknownsPerCell();
-  out << ",";
-  out << "_previousMinCorrectorTimeStamp:" << _previousMinTimeStamp;
-  out << ",";
-  out << "_previousMinCorrectorTimeStepSize:" << _previousMinTimeStepSize;
-  out << ",";
-  out << "_minCorrectorTimeStamp:" << _minTimeStamp;
-  out << ",";
-  out << "_minCorrectorTimeStepSize:" << _minTimeStepSize;
-  out << ",";
-  out << "_minPredictorTimeStepSize:" << _estimatedTimeStepSize;
-  out << ",";
-  out << "_minNextPredictorTimeStepSize:" << _minNextTimeStepSize;
+  out << "_identifier:"                   << _identifier;
+  out << "_type:"                         << Solver::toString(_type) << ",";
+  out << "_numberOfVariables:"            << _numberOfVariables << ",";
+  out << "_numberOfParameters:"           << _numberOfParameters << ",";
+  out << "_nodesPerCoordinateAxis:"       << _nodesPerCoordinateAxis << ",";
+  out << "_maximumMeshSize:"              << _maximumMeshSize << ",";
+  out << "_timeStepping:"                 << Solver::toString(_timeStepping) << ",";
+  out << "_unknownsPerFace:"              << getUnknownsPerFace() << ",";
+  out << "_unknownsPerCellBoundary:"      << getUnknownsPerCellBoundary() << ",";
+  out << "_unknownsPerCell:"              << getUnknownsPerCell() << ",";
+  out << "_fluxUnknownsPerCell:"          << getFluxUnknownsPerCell() << ",";
+  out << "_spaceTimeUnknownsPerCell:"     << getSpaceTimeUnknownsPerCell() << ",";
+  out << "_spaceTimeFluxUnknownsPerCell:" << getSpaceTimeFluxUnknownsPerCell() << ",";
+  out << "_previousMinTimeStamp:"         << _previousMinTimeStamp << ",";
+  out << "_previousMinTimeStepSize:"      << _previousMinTimeStepSize << ",";
+  out << "_minTimeStamp:"                 << _minTimeStamp << ",";
+  out << "_minTimeStepSize:"              << _minTimeStepSize << ",";
+  out << "_estimatedTimeStepSize:"        << _estimatedTimeStepSize << ",";
   out <<  ")";
 }
 
