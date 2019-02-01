@@ -153,10 +153,10 @@ void exahype::mappings::PredictionOrLocalRecomputation::enterCell(
       else if ( performPrediction(solver) && exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
         switch ( solver->getType() ) {
           case solvers::Solver::Type::ADERDG:
-            static_cast<solvers::ADERDGSolver*>(solver)->performPredictionAndVolumeIntegral(solverNumber,cellInfo,isAtRemoteBoundary);
+            static_cast<solvers::ADERDGSolver*>(solver)->predictionAndVolumeIntegral(solverNumber,cellInfo,isAtRemoteBoundary);
             break;
           case solvers::Solver::Type::LimitingADERDG:
-            static_cast<solvers::LimitingADERDGSolver*>(solver)->getSolver()->performPredictionAndVolumeIntegral(solverNumber,cellInfo,isAtRemoteBoundary);
+            static_cast<solvers::LimitingADERDGSolver*>(solver)->getSolver()->predictionAndVolumeIntegral(solverNumber,cellInfo,isAtRemoteBoundary);
             break;
           case solvers::Solver::Type::FiniteVolumes:
             // insert code here

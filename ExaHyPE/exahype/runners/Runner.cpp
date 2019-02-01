@@ -675,6 +675,9 @@ void exahype::runners::Runner::initHPCEnvironment() {
 }
 
 void exahype::runners::Runner::initOptimisations() const {
+  exahype::solvers::Solver::OnlyInitialMeshRefinement = _parser.getStaticMeshRefinement();
+  exahype::solvers::Solver::OnlyStaticLimiting        = _parser.getStaticLimiting();
+
   exahype::solvers::Solver::FuseAllADERDGPhases              = _parser.getFuseAllAlgorithmicSteps();
   exahype::solvers::Solver::FusedTimeSteppingRerunFactor     = _parser.getFuseAlgorithmicStepsRerunFactor();
   exahype::solvers::Solver::FusedTimeSteppingDiffusionFactor = _parser.getFuseAlgorithmicStepsDiffusionFactor();

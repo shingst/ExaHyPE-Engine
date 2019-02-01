@@ -646,6 +646,18 @@ bool exahype::parser::Parser::getScaleBoundingBox() const {
   return getBoolFromPath("/distributed_memory/scale_bounding_box", false, isOptional);
 }
 
+bool exahype::parser::Parser::getStaticMeshRefinement() const {
+  return getStringFromPath("/optimisation/mesh_refinement", "dynamic", isOptional).compare("static")==0;
+}
+
+bool exahype::parser::Parser::getStaticLimiting() const {
+  return getStringFromPath("/optimisation/limiting", "dynamic", isOptional).compare("static")==0;
+}
+
+bool exahype::parser::Parser::getFuseAllAlgorithmicSteps() const {
+  return getStringFromPath("/optimisation/fuse_algorithmic_steps", "none", isOptional).compare("all")==0;
+}
+
 bool exahype::parser::Parser::getFuseAllAlgorithmicSteps() const {
   return getStringFromPath("/optimisation/fuse_algorithmic_steps", "none", isOptional).compare("all")==0;
 }

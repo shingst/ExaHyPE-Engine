@@ -2217,7 +2217,7 @@ int exahype::solvers::ADERDGSolver::predictionAndVolumeIntegralBody(
   return numberOfPicardIterations;
 }
 
-void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
+void exahype::solvers::ADERDGSolver::predictionAndVolumeIntegral(
     const int    solverNumber,
     CellInfo&    cellInfo,
     const double predictorTimeStamp,
@@ -2250,7 +2250,7 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
   }
 }
 
-void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
+void exahype::solvers::ADERDGSolver::predictionAndVolumeIntegral(
     const int solverNumber,
     CellInfo& cellInfo,
     const bool isAtRemoteBoundary) {
@@ -2263,13 +2263,18 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
     const bool isSkeletonCell    = isAMRSkeletonCell || isAtRemoteBoundary;
     waitUntilCompletedLastStep(cellDescription,isSkeletonCell,false);
     if ( cellDescription.getType()==CellDescription::Type::Cell ) {
-      const auto predictionTimeStepData          = getPredictionTimeStepData(cellDescription,false); // this is either the fused scheme or a predictor recomputation
-      const bool addVolumeIntegralResultToUpdate = FuseAllADERDGPhases;
-      performPredictionAndVolumeIntegral(solverNumber,cellInfo,
+      const auto predictionTimeStepData = getPredictionTimeStepData(cellDescription,false); // this is either the fused scheme or a predictor recomputation
+      if ( !FuseAllADERDGPhases && !OnlyInitialMeshRefinement ) { // backup previous solution here as prediction already adds a contribution to solution if not all alg. phases are fused.
+        std::copy_n(
+            static_cast<double*>(cellDescription.getSolution()),getDataPerCell(),
+            static_cast<double*>(cellDescription.getPreviousSolution()));
+      }
+
+      predictionAndVolumeIntegral(solverNumber,cellInfo,
           std::get<0>(predictionTimeStepData),
           std::get<1>(predictionTimeStepData),
           true,isAtRemoteBoundary,
-          addVolumeIntegralResultToUpdate);
+          FuseAllADERDGPhases/*predictionAndVolumeIntegral*/);
     }
   }
 }

@@ -1549,6 +1549,10 @@ public:
 
   /*! Perform prediction and volume integral.
    *
+   * Creates a back up of the solution if not all
+   * algorithmic phases are fused as the prediction then
+   * directly adds volume integral contributions to
+   *
    * @note Different to the overloaded method, this method
    * waits for completion of a cell's last operation.
    *
@@ -1557,7 +1561,7 @@ public:
    * @note This function must not be called from a task/thread as it
    * synchronises time step data.
    */
-  void performPredictionAndVolumeIntegral(
+  void predictionAndVolumeIntegral(
       const int  solverNumber,
       CellInfo&  cellInfo,
       const bool isAtRemoteBoundary);
@@ -1612,7 +1616,7 @@ public:
    * @param[in] addVolumeIntegralResultToUpdate  if the volume integral contribution should be added to the update vector.
    *                                             Otherwise, it is added directly to the solution vector.
    */
-  void performPredictionAndVolumeIntegral(
+  void predictionAndVolumeIntegral(
       const int    solverNumber,
       CellInfo&    cellInfo,
       const double predictorTimeStamp,

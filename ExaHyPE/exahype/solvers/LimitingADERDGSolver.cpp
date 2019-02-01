@@ -485,7 +485,7 @@ void exahype::solvers::LimitingADERDGSolver::performPredictionAndVolumeIntegral(
     SolverPatch& cellDescription = cellInfo._ADERDGCellDescriptions[element];
 
     if ( cellDescription.getRefinementStatus()<_solver->getMinRefinementStatusForTroubledCell() ) {
-      _solver->performPredictionAndVolumeIntegral(solverNumber,cellInfo,isAtRemoteBoundary);
+      _solver->predictionAndVolumeIntegral(solverNumber,cellInfo,isAtRemoteBoundary);
     }
   }
 }
@@ -1147,7 +1147,7 @@ double exahype::solvers::LimitingADERDGSolver::recomputeSolutionLocally(
           solverPatch.getPreviousRefinementStatus() >= _solver->getMinRefinementStatusForTroubledCell())      // was previously troubled but is no more
       ) {
         const auto predictionTimeStepData = _solver->getPredictionTimeStepData(solverPatch,true/*duringFusedTimeStep*/);
-        _solver->performPredictionAndVolumeIntegral(
+        _solver->predictionAndVolumeIntegral(
             solverNumber,cellInfo,
             std::get<0>(predictionTimeStepData),
             std::get<1>(predictionTimeStepData),

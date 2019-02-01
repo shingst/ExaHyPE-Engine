@@ -571,18 +571,43 @@ class exahype::solvers::Solver {
   static double PipedCompressedBytes;
   #endif
 
+  /** @name Global profiling options
+   *
+   * Global profiling options which are set via the parser.
+   */
+   ///@{
   /**
    * The solvers need to do adjust some operations slightly
    * when those are run multiple times after each other in isolation.
    */
   static bool ProfileUpdate;
-
+  ///@}
 
  /** @name Global solver optimisations
   *
   * Global solver optimisations which are set via the parser.
   */
   ///@{
+
+  /**
+   * A flag indicating that only initial mesh refinement is used, i.e.
+   * the mesh remains static.
+   *
+   * Multiple operations can then be omitted during the time stepping
+   * iterations, e.g. backing up a previous solution for
+   * the pure ADER-DG scheme, evaluating the refinement criterion,
+   * computing a new time step size if the scheme is linear, ...
+   */
+  static bool OnlyInitialMeshRefinement;
+
+  /**
+   * Indicates that only static limiting is used.
+   * In this case, the limiter criteria do not need
+   * to be evaluated and no FV->DG projection needs to
+   * be performed in troubled cells. This
+   * makes the troubled cells pure FV cells.
+   */
+  static bool OnlyStaticLimiting;
 
   /**
    * A flag indicating we fuse the algorithmic

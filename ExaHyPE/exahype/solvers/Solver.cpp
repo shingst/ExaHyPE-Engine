@@ -89,6 +89,9 @@ int exahype::solvers::Solver::MasterWorkerCommunicationTag = tarch::parallel::No
 
 bool exahype::solvers::Solver::ProfileUpdate = false;
 
+bool exahype::solvers::Solver::OnlyInitialMeshRefinement          = false;
+bool exahype::solvers::Solver::OnlyStaticLimiting                 = false;
+
 bool exahype::solvers::Solver::FuseAllADERDGPhases                = false;
 double exahype::solvers::Solver::FusedTimeSteppingRerunFactor     = 0.99;
 double exahype::solvers::Solver::FusedTimeSteppingDiffusionFactor = 0.99;

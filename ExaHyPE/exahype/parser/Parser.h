@@ -287,6 +287,18 @@ class exahype::parser::Parser {
   int  getSimulationTimeSteps() const;
 
   /**
+   * @return if static mesh refinement is used. Otherwise, or if not specified,
+   * it is assumed dynamic mesh refinement is used.
+   */
+  bool getStaticMeshRefinement() const;
+
+  /**
+   * @return if dynamic mesh refinement is used. Otherwise, or if not specified,
+   * it is assumed dynamic mesh refinement is used.
+   */
+  bool getStaticLimiting() const;
+
+  /**
    * @return Indicates if the user has chosen the ADER-DG time stepping variant
    * where all three phases are fused into one loop.
    *
