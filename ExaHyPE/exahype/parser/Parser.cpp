@@ -658,10 +658,6 @@ bool exahype::parser::Parser::getFuseAllAlgorithmicSteps() const {
   return getStringFromPath("/optimisation/fuse_algorithmic_steps", "none", isOptional).compare("all")==0;
 }
 
-bool exahype::parser::Parser::getFuseAllAlgorithmicSteps() const {
-  return getStringFromPath("/optimisation/fuse_algorithmic_steps", "none", isOptional).compare("all")==0;
-}
-
 bool exahype::parser::Parser::getFuseMostAlgorithmicSteps() const {
   return getStringFromPath("/optimisation/fuse_algorithmic_steps", "none", isOptional).compare("most")==0;
 }
