@@ -432,6 +432,16 @@
       "additionalProperties" : false,
       "old_format_prepend" : { "within_one_of_the_sections" : ["global-optimisation", "optimisation"] },
       "properties" : {
+        "limiting" : {
+          "type" : "string", 
+          "default" : "dynamic",
+          "enum" : ["dynamic","static"]
+        },
+        "mesh_refinement" : {
+          "type" : "string", 
+          "default" : "dynamic",
+          "enum" : ["dynamic","static"]
+        },
         "fuse_algorithmic_steps" : {
           "type" : "string", 
           "default" : "none",
@@ -447,8 +457,7 @@
         "fuse_algorithmic_steps_diffusion_factor" : {
           "type" : "number", 
           "title" : "Factor to estimate the next time step size. Adds numerical diffusion, the smaller it gets. Only used if all algorithmic phases are used and nonlinear PDEs are considered.",
-          "default" : 0.99,
-          "old_format" : { "token_after" : "fuse-algorithmic-steps-factor" }
+          "default" : 0.99
         },
         "spawn_predictor_as_background_thread" : {
           "type" : "boolean", 
