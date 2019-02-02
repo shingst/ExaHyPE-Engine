@@ -338,7 +338,7 @@ void {{project}}::{{abstractSolver}}::surfaceIntegral(double* const lduh,const d
 
 
 
-void {{project}}::{{abstractSolver}}::faceIntegral(double* const out,const double* const lFhbnd,const int direction, const int orientation,const tarch::la::Vector<DIMENSIONS-1,int>& subfaceIndex,const int levelDelta,const tarch::la::Vector<DIMENSIONS, double>& cellSize,const double dt,const bool addToUpdate) {
+void {{project}}::{{abstractSolver}}::faceIntegral(double* const out/*may be solution or update vector*/,const double* const lFhbnd,const int direction, const int orientation,const tarch::la::Vector<DIMENSIONS-1,int>& subfaceIndex,const int levelDelta,const tarch::la::Vector<DIMENSIONS, double>& cellSize,const double dt,const bool addToUpdate) {
 {% if enableProfiler %}
   _profiler->start("faceIntegral");
 {% endif %}
@@ -350,18 +350,9 @@ void {{project}}::{{abstractSolver}}::faceIntegral(double* const out,const doubl
     {{optNamespace}}::faceFluxRestriction(lFhbndCoarse,lFhbnd,&subfaceIndex[0],levelDelta);
     
     tarch::la::Vector<DIMENSIONS,double> coarseGridCellSize = tarch::la::aPowI(levelDelta,3) * 1.0 * cellSize;
-    if ( addToUpdate ) {
-      {{optNamespace}}::faceIntegral(out,lFhbndCoarse,direction,orientation,1./coarseGridCellSize[direction] /*inverseDxDirection*/);
-    } else {
-      double update[{{optNamespace}}::getUpdateSize()] __attribute__((aligned(ALIGNMENT)));
-      std::fill_n(update,{{optNamespace}}::getUpdateSize(),0.0);
-      {{optNamespace}}::faceIntegral(update,lFhbndCoarse,direction,orientation,1./coarseGridCellSize[direction] /*inverseDxDirection*/);
-      tarch::multicore::Lock lock(RestrictionSemaphore); // inherited
-      addUpdateToSolution(out,out,update,dt);
-      lock.free();
-    }
+    {{optNamespace}}::faceIntegral(out,lFhbndCoarse,direction,orientation,1./coarseGridCellSize[direction] /*inverseDxDirection*/);
   } else {
-    if ( addToUpdate ) {
+    if ( addToUpdate ) { // solution is only available in real cells, i.e. only here we can directly add the face integral result to the solution
       {{optNamespace}}::faceIntegral(out,lFhbnd,direction,orientation,1./cellSize[direction]);
     } else {
       double update[{{optNamespace}}::getUpdateSize()] __attribute__((aligned(ALIGNMENT)));

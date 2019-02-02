@@ -208,7 +208,7 @@ void {{project}}::{{abstractSolver}}::addUpdateToSolution(double* const luh,cons
 {% endif %}
 }
 
-void {{project}}::{{abstractSolver}}::faceIntegral(double* const out,const double* const lFhbnd,const int direction, const int orientation,const tarch::la::Vector<DIMENSIONS-1,int>& subfaceIndex,const int levelDelta,const tarch::la::Vector<DIMENSIONS, double>& cellSize,const double dt,const bool addToUpdate) {
+void {{project}}::{{abstractSolver}}::faceIntegral(double* const out/*may be solution or update vector*/,const double* const lFhbnd,const int direction, const int orientation,const tarch::la::Vector<DIMENSIONS-1,int>& subfaceIndex,const int levelDelta,const tarch::la::Vector<DIMENSIONS, double>& cellSize,const double dt,const bool addToUpdate) {
 {% if enableProfiler %}
   _profiler->start("faceIntegral");
 {% endif %}
@@ -225,19 +225,12 @@ void {{project}}::{{abstractSolver}}::faceIntegral(double* const out,const doubl
     double lFhbndCoarse[sizeFlux];
     kernels::aderdg::generic::{{language}}::faceUnknownsRestriction<NumberOfVariables,Order+1>(lFhbndCoarse,lFhbnd,subfaceIndex,levelDelta);
     tarch::la::Vector<DIMENSIONS,double> coarseGridCellSize = tarch::la::aPowI(levelDelta,3) * 1.0 * cellSize;
-    if ( addToUpdate ) {
-      kernels::aderdg::generic::{{language}}::faceIntegral{{linearOrNonlinear}}<NumberOfVariables, Order+1>(out,lFhbndCoarse,direction,orientation,coarseGridCellSize);
-    } else {
-      double lduh[sizeUpdate] = {0.0};                   // initialise with zeros
-      kernels::aderdg::generic::{{language}}::faceIntegral{{linearOrNonlinear}}<NumberOfVariables, Order+1>(lduh,lFhbndCoarse,direction,orientation,coarseGridCellSize);
-      tarch::multicore::Lock lock(RestrictionSemaphore); // inherited
-      addUpdateToSolution(out,out,lduh,dt);              // adds lduh to solution out
-      lock.free();
-    }
+    
+    kernels::aderdg::generic::{{language}}::faceIntegral{{linearOrNonlinear}}<NumberOfVariables, Order+1>(out,lFhbndCoarse,direction,orientation,coarseGridCellSize);
   } else {
     if ( addToUpdate ) {
       kernels::aderdg::generic::{{language}}::faceIntegral{{linearOrNonlinear}}<NumberOfVariables, Order+1>(out,lFhbnd,direction,orientation,cellSize);
-    } else {
+    } else { // solution is only available in real cells, i.e. only here we can directly add the face integral result to the solution
       double lduh[sizeUpdate] = {0.0};                   // initialise with zeros
       kernels::aderdg::generic::{{language}}::faceIntegral{{linearOrNonlinear}}<NumberOfVariables, Order+1>(lduh,lFhbnd,direction,orientation,cellSize);
       addUpdateToSolution(out,out,lduh,dt);

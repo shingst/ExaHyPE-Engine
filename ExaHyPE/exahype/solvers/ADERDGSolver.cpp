@@ -2024,7 +2024,6 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
         predictionTimeStamp, predictionTimeStepSize,
         false/*is uncompressed*/, isSkeletonCell, isLastTimeStepOfBatch/*addVolumeIntegralResultToUpdate*/ ) );
   } else {
-    const bool addVolumeIntegralResultToUpdate = isLastTimeStepOfBatch;
     predictionAndVolumeIntegralBody(
         cellDescription,
         predictionTimeStamp, predictionTimeStepSize,
@@ -2098,7 +2097,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::updateBod
   uncompress(cellDescription);
 
   UpdateResult result;
-  correction(cellDescription,neighbourMergePerformed,true,false/*effect: add surface integral result directly to solution*/);
+  correction(cellDescription,neighbourMergePerformed,true,false/*effect: add face integral result directly to solution*/);
   result._timeStepSize    = startNewTimeStep(cellDescription,true);
   cellDescription.setPreviousRefinementStatus(cellDescription.getRefinementStatus());
   result._meshUpdateEvent = evaluateRefinementCriteriaAfterSolutionUpdate(cellDescription,neighbourMergePerformed);
@@ -2130,7 +2129,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::updateOrR
         cellDescription.getType()==CellDescription::Type::Descendant &&
         cellDescription.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication
     ) {
-      restrictToTopMostParent(cellDescription,false/*effect: add surface integral result directly to solution*/);
+      restrictToTopMostParent(cellDescription,false/*effect: add face integral result directly to solution*/);
       cellDescription.setHasCompletedLastStep(true);
       return UpdateResult();
     }
@@ -2280,7 +2279,7 @@ void exahype::solvers::ADERDGSolver::predictionAndVolumeIntegral(
           std::get<0>(predictionTimeStepData),
           std::get<1>(predictionTimeStepData),
           true,isAtRemoteBoundary,
-          FuseAllADERDGPhases/*predictionAndVolumeIntegral*/);
+          FuseAllADERDGPhases/*addVolumeIntegralResultToUpdate*/);
     }
   }
 }
@@ -2685,11 +2684,6 @@ void exahype::solvers::ADERDGSolver::prolongateFaceDataToDescendant(
 
       faceUnknownsProlongation(lQhbndFine,lFhbndFine,lQhbndCoarse,lFhbndCoarse, levelCoarse, levelFine,
                                exahype::amr::getSubfaceIndex(subcellIndex,direction));
-
-      // TODO(LTS): Here, we need a time stamp and step size per face in order to track what fraction of a
-      // time step has already been finished in each direction.
-      cellDescription.setTimeStamp(parentCellDescription.getTimeStamp());
-      cellDescription.setTimeStepSize(parentCellDescription.getTimeStepSize());
     }
   }
 
@@ -2780,14 +2774,17 @@ void exahype::solvers::ADERDGSolver::restrictToTopMostParent(const CellDescripti
 
 
   // Perform the face integrals on fine grid cell
-  double* updateFine   = static_cast<double*>(cellDescription.getUpdate()); // TODO(Dominic): Can be temporary
+  double* updateFine = static_cast<double*>(cellDescription.getUpdate()); // TODO(Dominic): Can be temporary
+  std::fill_n(updateFine,getUpdateSize(),0.0);
+
   const int levelDelta = cellDescription.getLevel() - parentCellDescription.getLevel();
   const tarch::la::Vector<DIMENSIONS,int> subcellIndex =
       exahype::amr::computeSubcellIndex(
           cellDescription.getOffset(),cellDescription.getSize(),
           parentCellDescription.getOffset()); // TODO(Dominic): Maybe, I get can get rid of some variables again
+
   // gather contributions
-  double dt = cellDescription.getTimeStepSize();
+  double dt = parentCellDescription.getTimeStepSize();
   switch (getTimeStepping()) {
     case TimeStepping::Global:
     case TimeStepping::GlobalFixed:
@@ -2797,6 +2794,7 @@ void exahype::solvers::ADERDGSolver::restrictToTopMostParent(const CellDescripti
       logError("restrictToTopMostParent(...)","Time stepping scheme not supported.");
       break;
   }
+
   const int dofsPerFace = getBndFluxSize();
   for (int faceIndex=0; faceIndex<DIMENSIONS_TIMES_TWO; faceIndex++) {
     const int direction   = faceIndex / 2;
@@ -2834,7 +2832,6 @@ void exahype::solvers::ADERDGSolver::restrictToTopMostParent(const CellDescripti
     addUpdateToSolution(solutionCoarse,solutionCoarse,updateFine,dt);
     lock.free();
   }
-  std::fill_n(updateFine,getUpdateSize(),0.0);
 
   if ( getDMPObservables()>0 ) {
     restrictObservablesMinAndMax(cellDescription,parentCellDescription);

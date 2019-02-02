@@ -845,6 +845,9 @@ public:
   /**
    * Mostly identical but slightly different to the ADER-DG equivalent
    * as only non-troubled cells compute a predictor.
+   *
+   * Backs up solver and limiter solution if not all ADER-DG phases are fused.
+   * Adds volume integral result directly to solution if not all ADER-DG phases are fused.
    */
   void predictionAndVolumeIntegral(
       const int solverNumber,

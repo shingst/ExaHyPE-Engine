@@ -397,7 +397,7 @@ void exahype::State::wrapUpIteration(exahype::records::RepositoryState::Action a
     case exahype::records::RepositoryState::UseAdapterFusedTimeStep: {
       const bool endOfFusedTimeStep             = exahype::solvers::Solver::PredictionSweeps==1 || (currentBatchIteration % 2 == 1);
       const bool endOfFirstFusedTimeStepInBatch = currentBatchIteration == exahype::solvers::Solver::PredictionSweeps - 1;
-      if ( (currentBatchIteration==numberOfIterations-1) && endOfFusedTimeStep ) {
+      if ( endOfFusedTimeStep ) {
         for (auto* solver : solvers::RegisteredSolvers) {
           solver->wrapUpTimeStep(endOfFirstFusedTimeStepInBatch,currentBatchIteration==numberOfIterations-1);
         }

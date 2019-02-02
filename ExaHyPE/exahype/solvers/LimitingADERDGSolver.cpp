@@ -489,6 +489,22 @@ void exahype::solvers::LimitingADERDGSolver::predictionAndVolumeIntegral(
     const bool isSkeletonCell    = isAMRSkeletonCell || isAtRemoteBoundary;
     waitUntilCompletedLastStep(solverPatch,isSkeletonCell,false);
     if ( solverPatch.getType()==SolverPatch::Type::Cell ) {
+
+      const bool rollbacksPossible = !OnlyInitialMeshRefinement || !OnlyStaticLimiting;
+      if ( !FuseAllADERDGPhases && rollbacksPossible ) { // backup previous solution here as prediction already adds a contribution to solution if not all alg. phases are fused.
+        std::copy_n(
+            static_cast<double*>(solverPatch.getSolution()),_solver->getDataPerCell(),
+            static_cast<double*>(solverPatch.getPreviousSolution()));
+
+        if ( solverPatch.getRefinementStatus()>=_solver->getMinRefinementStatusForSeparationCell() ) {
+          LimiterPatch& limiterPatch = getLimiterPatch(solverPatch,cellInfo);
+          const int fullSizeOfPatch = _limiter->getDataPerPatch()+_limiter->getGhostDataPerPatch();
+          std::copy_n(
+              static_cast<double*>(limiterPatch.getSolution()),fullSizeOfPatch,
+              static_cast<double*>(limiterPatch.getPreviousSolution()));
+        }
+      }
+
       if ( solverPatch.getRefinementStatus()<_solver->getMinRefinementStatusForTroubledCell() ) { // only compute predictor for cells which need to communicate with ADER-DG neighbours
         const auto predictionTimeStepData = _solver->getPredictionTimeStepData(solverPatch,false); // this is either the fused scheme or a predictor recomputation
         _solver->predictionAndVolumeIntegral(
@@ -496,7 +512,7 @@ void exahype::solvers::LimitingADERDGSolver::predictionAndVolumeIntegral(
             std::get<0>(predictionTimeStepData),
             std::get<1>(predictionTimeStepData),
             true,isAtRemoteBoundary,
-            true/*predictionAndVolumeIntegral*/);
+            FuseAllADERDGPhases/*addVolumeIntegralResultToUpdate*/);
       }
     }
   }
@@ -511,7 +527,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::u
 
   // the actual computations
   UpdateResult result;
-  updateSolution(solverPatch,cellInfo,neighbourMergePerformed,true,true/*effect: add surface integral result to update*/);
+  updateSolution(solverPatch,cellInfo,neighbourMergePerformed,true,false/*effect: add surface integral result to solution*/);
   const bool isTroubled = checkIfCellIsTroubledAndDetermineMinAndMax(solverPatch,cellInfo);
   revisitSolverPatchesInBuffer(solverPatch,cellInfo,isTroubled,neighbourMergePerformed,true);
   result._timeStepSize    = startNewTimeStep(solverPatch,cellInfo,true); // uses DG solution to compute time step size; might be result of FV->DG projection
@@ -547,7 +563,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::u
           solverPatch.getType()==SolverPatch::Type::Descendant &&
           solverPatch.getCommunicationStatus()>=ADERDGSolver::MinimumCommunicationStatusForNeighbourCommunication
       ) {
-        _solver->restrictToTopMostParent(solverPatch,true/*effect: add surface integral result to update*/);
+        _solver->restrictToTopMostParent(solverPatch,false/*effect: add surface integral result to solution*/);
       }
       ensureNoLimiterPatchIsAllocatedOnHelperCell(solverPatch,cellInfo);
       _solver->updateRefinementStatus(solverPatch,solverPatch.getNeighbourMergePerformed());
