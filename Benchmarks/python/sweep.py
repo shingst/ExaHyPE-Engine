@@ -291,7 +291,7 @@ def build(buildOnlyMissing=False, skipMakeClean=False):
                         process.wait()
                        
                         # run toolkit
-                        toolkitCommand = "{0}/Toolkit/toolkit.sh -s {0}/{1}".format(exahypeRoot,buildSpecFilePath)
+                        toolkitCommand = "{0}/Toolkit/toolkit.sh --format=json -s {0}/{1}".format(exahypeRoot,buildSpecFilePath)
                         print(toolkitCommand,end="",flush=True)
                         process = subprocess.Popen([toolkitCommand], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
                         (output, toolkitErr) = process.communicate()
