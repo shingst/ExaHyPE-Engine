@@ -489,8 +489,6 @@ void exahype::solvers::LimitingADERDGSolver::predictionAndVolumeIntegral(
     const bool isSkeletonCell    = isAMRSkeletonCell || isAtRemoteBoundary;
     waitUntilCompletedLastStep(solverPatch,isSkeletonCell,false);
     if ( solverPatch.getType()==SolverPatch::Type::Cell ) {
-      const auto predictionTimeStepData = _solver->getPredictionTimeStepData(solverPatch,false); // this is either the fused scheme or a predictor recomputation
-
       const bool rollbacksPossible = !OnlyInitialMeshRefinement || !OnlyStaticLimiting;
       if ( !FuseAllADERDGPhases && rollbacksPossible ) { // backup previous solution here as prediction already adds a contribution to solution if not all alg. phases are fused.
         std::copy_n(
@@ -499,6 +497,7 @@ void exahype::solvers::LimitingADERDGSolver::predictionAndVolumeIntegral(
       }
 
       if ( solverPatch.getRefinementStatus()<_solver->getMinRefinementStatusForTroubledCell() ) { // only compute predictor for cells which need to communicate with ADER-DG neighbours
+        const auto predictionTimeStepData = _solver->getPredictionTimeStepData(solverPatch,false); // this is either the fused scheme or a predictor recomputation
         _solver->predictionAndVolumeIntegral(
             solverNumber,cellInfo,
             std::get<0>(predictionTimeStepData),
