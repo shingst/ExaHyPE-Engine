@@ -2264,8 +2264,9 @@ void exahype::solvers::ADERDGSolver::predictionAndVolumeIntegral(
     waitUntilCompletedLastStep(cellDescription,isSkeletonCell,false);
     if ( cellDescription.getType()==CellDescription::Type::Cell ) {
       const auto predictionTimeStepData = getPredictionTimeStepData(cellDescription,false); // this is either the fused scheme or a predictor recomputation
-      const bool rollbacksPossible      = OnlyInitialMeshRefinement && OnlyStaticLimiting;
-      if ( !FuseAllADERDGPhases && !rollbacksPossible ) { // backup previous solution here as prediction already adds a contribution to solution if not all alg. phases are fused.
+
+      const bool rollbacksPossible = !OnlyInitialMeshRefinement;
+      if ( !FuseAllADERDGPhases && rollbacksPossible ) { // backup previous solution here as prediction already adds a contribution to solution if not all alg. phases are fused.
         std::copy_n(
             static_cast<double*>(cellDescription.getSolution()),getDataPerCell(),
             static_cast<double*>(cellDescription.getPreviousSolution()));
@@ -2601,8 +2602,8 @@ void exahype::solvers::ADERDGSolver::swapSolutionAndPreviousSolution(CellDescrip
   assertion(cellDescription.getRefinementEvent()==CellDescription::None);
 
   // Simply swap the heap indices
-  const int previousSolutionIndex      = cellDescription.getPreviousSolutionIndex();
-  void* previousSolution = cellDescription.getPreviousSolution(); // pointer
+  const int previousSolutionIndex = cellDescription.getPreviousSolutionIndex();
+  void* previousSolution          = cellDescription.getPreviousSolution(); // pointer
   cellDescription.setPreviousSolutionIndex(cellDescription.getSolutionIndex());
   cellDescription.setPreviousSolution(cellDescription.getSolution());
   cellDescription.setSolutionIndex(previousSolutionIndex);

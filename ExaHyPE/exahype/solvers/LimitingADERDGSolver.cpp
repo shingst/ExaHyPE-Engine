@@ -476,16 +476,36 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
   return result;
 }
 
-void exahype::solvers::LimitingADERDGSolver::performPredictionAndVolumeIntegral(
+void exahype::solvers::LimitingADERDGSolver::predictionAndVolumeIntegral(
     const int solverNumber,
     CellInfo& cellInfo,
     const bool isAtRemoteBoundary) {
   const int element = cellInfo.indexOfADERDGCellDescription(solverNumber);
   if ( element != Solver::NotFound ) {
-    SolverPatch& cellDescription = cellInfo._ADERDGCellDescriptions[element];
+    SolverPatch& solverPatch = cellInfo._ADERDGCellDescriptions[element];
+    synchroniseTimeStepping(solverPatch,cellInfo);
 
-    if ( cellDescription.getRefinementStatus()<_solver->getMinRefinementStatusForTroubledCell() ) {
-      _solver->predictionAndVolumeIntegral(solverNumber,cellInfo,isAtRemoteBoundary);
+    const bool isAMRSkeletonCell = solverPatch.getHasVirtualChildren();
+    const bool isSkeletonCell    = isAMRSkeletonCell || isAtRemoteBoundary;
+    waitUntilCompletedLastStep(solverPatch,isSkeletonCell,false);
+    if ( solverPatch.getType()==SolverPatch::Type::Cell ) {
+      const auto predictionTimeStepData = _solver->getPredictionTimeStepData(solverPatch,false); // this is either the fused scheme or a predictor recomputation
+
+      const bool rollbacksPossible = !OnlyInitialMeshRefinement || !OnlyStaticLimiting;
+      if ( !FuseAllADERDGPhases && rollbacksPossible ) { // backup previous solution here as prediction already adds a contribution to solution if not all alg. phases are fused.
+        std::copy_n(
+            static_cast<double*>(solverPatch.getSolution()),_solver->getDataPerCell(),
+            static_cast<double*>(solverPatch.getPreviousSolution()));
+      }
+
+      if ( solverPatch.getRefinementStatus()<_solver->getMinRefinementStatusForTroubledCell() ) { // only compute predictor for cells which need to communicate with ADER-DG neighbours
+        _solver->predictionAndVolumeIntegral(
+            solverNumber,cellInfo,
+            std::get<0>(predictionTimeStepData),
+            std::get<1>(predictionTimeStepData),
+            true,isAtRemoteBoundary,
+            FuseAllADERDGPhases/*predictionAndVolumeIntegral*/);
+      }
     }
   }
 }
@@ -1123,9 +1143,9 @@ void exahype::solvers::LimitingADERDGSolver::recomputeSolutionLocally(SolverPatc
 }
 
 double exahype::solvers::LimitingADERDGSolver::recomputeSolutionLocally(
-    const int solverNumber,Solver::CellInfo& cellInfo,
-    const bool isAtRemoteBoundary,
-    const bool fusedTimeStepping) {
+    const int         solverNumber,
+    Solver::CellInfo& cellInfo,
+    const bool        isAtRemoteBoundary) {
   const int solverElement  = cellInfo.indexOfADERDGCellDescription(solverNumber);
   if ( solverElement!=NotFound ) {
     // 1. Perform the local recomputation
@@ -1135,7 +1155,7 @@ double exahype::solvers::LimitingADERDGSolver::recomputeSolutionLocally(
 
     // 2. Compute a new time step size; recompute the predictor in certain cells if the fused time stepping scheme is used.
     double admissibleTimeStepSize = std::numeric_limits<double>::infinity();
-    if ( fusedTimeStepping ) {
+    if ( FuseAllADERDGPhases ) {
       admissibleTimeStepSize = startNewTimeStep(solverPatch,cellInfo,true);
       if (
           solverPatch.getLevel()==getMaximumAdaptiveMeshLevel() &&

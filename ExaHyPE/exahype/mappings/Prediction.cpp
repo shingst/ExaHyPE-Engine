@@ -158,7 +158,7 @@ void exahype::mappings::Prediction::performPredictionOrProlongate(
             break;
           case solvers::Solver::Type::LimitingADERDG: {
             static_cast<solvers::LimitingADERDGSolver*>(solver)->
-              performPredictionAndVolumeIntegral(solverNumber,cellInfo,isAtRemoteBoundary);
+              predictionAndVolumeIntegral(solverNumber,cellInfo,isAtRemoteBoundary);
           }  break;
           case solvers::Solver::Type::FiniteVolumes:
             // do nothing

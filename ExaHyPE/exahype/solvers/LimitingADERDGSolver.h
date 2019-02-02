@@ -843,10 +843,10 @@ public:
   double updateTimeStepSize(const int solverNumber,CellInfo& cellInfo) final override;
 
   /**
-   * Just refers to the ADERDGSolver equivalent if
-   * the ADERDG cell description is not troubled.
+   * Mostly identical but slightly different to the ADER-DG equivalent
+   * as only non-troubled cells compute a predictor.
    */
-  void performPredictionAndVolumeIntegral(
+  void predictionAndVolumeIntegral(
       const int solverNumber,
       CellInfo& cellInfo,
       const bool isAtRemoteBoundary);
@@ -1052,8 +1052,7 @@ public:
   double recomputeSolutionLocally(
       const int solverNumber,
       Solver::CellInfo& cellInfo,
-      const bool isAtRemoteBoundary,
-      const bool fusedTimeStepping);
+      const bool isAtRemoteBoundary);
 
   ///////////////////////////////////
   // NEIGHBOUR

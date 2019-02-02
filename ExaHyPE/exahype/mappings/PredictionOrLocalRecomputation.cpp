@@ -145,7 +145,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::enterCell(
       if ( performLocalRecomputation( solver ) && exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
         auto* limitingADERDG = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
         double admissibleTimeStepSize =
-        limitingADERDG->recomputeSolutionLocally(solverNumber,cellInfo,isAtRemoteBoundary,solvers::Solver::FuseAllADERDGPhases);
+        limitingADERDG->recomputeSolutionLocally(solverNumber,cellInfo,isAtRemoteBoundary);
         solver->updateAdmissibleTimeStepSize(admissibleTimeStepSize);
 
         limitingADERDG->determineMinAndMax(solverNumber,cellInfo); // TODO(Dominic): Optimistation. Do it only in recomputed cells.
@@ -156,7 +156,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::enterCell(
             static_cast<solvers::ADERDGSolver*>(solver)->predictionAndVolumeIntegral(solverNumber,cellInfo,isAtRemoteBoundary);
             break;
           case solvers::Solver::Type::LimitingADERDG:
-            static_cast<solvers::LimitingADERDGSolver*>(solver)->getSolver()->predictionAndVolumeIntegral(solverNumber,cellInfo,isAtRemoteBoundary);
+            static_cast<solvers::LimitingADERDGSolver*>(solver)->predictionAndVolumeIntegral(solverNumber,cellInfo,isAtRemoteBoundary);
             break;
           case solvers::Solver::Type::FiniteVolumes:
             // insert code here

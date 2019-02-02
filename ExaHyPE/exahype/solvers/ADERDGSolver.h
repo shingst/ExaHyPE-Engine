@@ -2563,7 +2563,9 @@ protected:
       const int                                 coarseGridLevel,
       const int                                 fineGridLevel,
       const tarch::la::Vector<DIMENSIONS, int>& subcellIndex) = 0;
+  ///@}
 
+public:
   /**
    * A criterion determining if the degrees of freedoms of
    * the cell-wise solution are physically admissible.
@@ -2611,7 +2613,6 @@ protected:
   virtual void mapDiscreteMaximumPrincipleObservables(
       double* const       observables,
       const double* const Q) const = 0;
-  ///@}
 };
 
 #endif
