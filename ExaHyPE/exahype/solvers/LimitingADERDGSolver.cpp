@@ -489,13 +489,6 @@ void exahype::solvers::LimitingADERDGSolver::predictionAndVolumeIntegral(
     const bool isSkeletonCell    = isAMRSkeletonCell || isAtRemoteBoundary;
     waitUntilCompletedLastStep(solverPatch,isSkeletonCell,false);
     if ( solverPatch.getType()==SolverPatch::Type::Cell ) {
-      const bool rollbacksPossible = !OnlyInitialMeshRefinement || !OnlyStaticLimiting;
-      if ( !FuseAllADERDGPhases && rollbacksPossible ) { // backup previous solution here as prediction already adds a contribution to solution if not all alg. phases are fused.
-        std::copy_n(
-            static_cast<double*>(solverPatch.getSolution()),_solver->getDataPerCell(),
-            static_cast<double*>(solverPatch.getPreviousSolution()));
-      }
-
       if ( solverPatch.getRefinementStatus()<_solver->getMinRefinementStatusForTroubledCell() ) { // only compute predictor for cells which need to communicate with ADER-DG neighbours
         const auto predictionTimeStepData = _solver->getPredictionTimeStepData(solverPatch,false); // this is either the fused scheme or a predictor recomputation
         _solver->predictionAndVolumeIntegral(
@@ -503,7 +496,7 @@ void exahype::solvers::LimitingADERDGSolver::predictionAndVolumeIntegral(
             std::get<0>(predictionTimeStepData),
             std::get<1>(predictionTimeStepData),
             true,isAtRemoteBoundary,
-            FuseAllADERDGPhases/*predictionAndVolumeIntegral*/);
+            true/*predictionAndVolumeIntegral*/);
       }
     }
   }
@@ -518,7 +511,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::u
 
   // the actual computations
   UpdateResult result;
-  updateSolution(solverPatch,cellInfo,neighbourMergePerformed,true,false/*effect: add surface integral result to solution*/);
+  updateSolution(solverPatch,cellInfo,neighbourMergePerformed,true,true/*effect: add surface integral result to update*/);
   const bool isTroubled = checkIfCellIsTroubledAndDetermineMinAndMax(solverPatch,cellInfo);
   revisitSolverPatchesInBuffer(solverPatch,cellInfo,isTroubled,neighbourMergePerformed,true);
   result._timeStepSize    = startNewTimeStep(solverPatch,cellInfo,true); // uses DG solution to compute time step size; might be result of FV->DG projection
@@ -554,7 +547,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::u
           solverPatch.getType()==SolverPatch::Type::Descendant &&
           solverPatch.getCommunicationStatus()>=ADERDGSolver::MinimumCommunicationStatusForNeighbourCommunication
       ) {
-        _solver->restrictToTopMostParent(solverPatch,false/*effect: add surface integral result to solution*/);
+        _solver->restrictToTopMostParent(solverPatch,true/*effect: add surface integral result to update*/);
       }
       ensureNoLimiterPatchIsAllocatedOnHelperCell(solverPatch,cellInfo);
       _solver->updateRefinementStatus(solverPatch,solverPatch.getNeighbourMergePerformed());
@@ -651,8 +644,11 @@ void exahype::solvers::LimitingADERDGSolver::updateSolution(
       LimiterPatch& limiterPatch = getLimiterPatch(solverPatch,cellInfo);
 
       _limiter->updateSolution(limiterPatch,neighbourMergePerformed,cellInfo._cellDescriptionsIndex,isFirstTimeStep);
-      _solver->swapSolutionAndPreviousSolution(solverPatch);
-      projectFVSolutionOnDGSpace(solverPatch,limiterPatch); // TODO(Dominic): If we do static limiting, this is not necessary in troubled cells
+
+      if ( !OnlyStaticLimiting || mergedLimiterStatus == _solver->_minRefinementStatusForTroubledCell-1 ) {
+        _solver->swapSolutionAndPreviousSolution(solverPatch);
+        projectFVSolutionOnDGSpace(solverPatch,limiterPatch);
+      }
     }
     else {
       _solver->correction(solverPatch,neighbourMergePerformed,isFirstTimeStep,addSurfaceIntegralResultToSolution);
@@ -681,10 +677,14 @@ bool
 exahype::solvers::LimitingADERDGSolver::checkIfCellIsTroubledAndDetermineMinAndMax(
     SolverPatch& solverPatch,
     CellInfo&    cellInfo) {
+  if ( OnlyStaticLimiting ) {
+    return solverPatch.getRefinementStatus()>=_solver->_minRefinementStatusForTroubledCell;
+  }
+
   bool isTroubled =
       !evaluateDiscreteMaximumPrincipleAndDetermineMinAndMax(solverPatch) ||
       !evaluatePhysicalAdmissibilityCriterion(solverPatch,
-          solverPatch.getTimeStamp()+solverPatch.getTimeStepSize()); // after min and max was found
+                                              solverPatch.getTimeStamp()+solverPatch.getTimeStepSize()); // after min and max was found
 
   if ( // above call computes DG min and max on-the-fly. We use the FV min and max if the cell is troubled
       solverPatch.getLevel()==getMaximumAdaptiveMeshLevel() &&
@@ -732,6 +732,10 @@ exahype::solvers::LimitingADERDGSolver::determineRefinementStatusAfterSolutionUp
     const bool                                                 isTroubled,
     const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed) {
   assertion1(solverPatch.getType()==SolverPatch::Type::Cell,solverPatch.toString());
+
+  if ( OnlyInitialMeshRefinement && OnlyStaticLimiting ) {
+    return MeshUpdateEvent::None;
+  }
 
   // pre-update mesh update events
   MeshUpdateEvent meshUpdateEvent = MeshUpdateEvent::None;

@@ -1929,6 +1929,10 @@ exahype::solvers::ADERDGSolver::evaluateRefinementCriteriaAfterSolutionUpdate(
     CellDescription&                                           cellDescription,
     const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed
 ) {
+  if ( OnlyInitialMeshRefinement ) {
+    return MeshUpdateEvent::None;
+  }
+
   cellDescription.setRefinementFlag(false);
   if ( cellDescription.getType()==CellDescription::Type::Cell ) {
     const double* solution = static_cast<double*>(cellDescription.getSolution());
