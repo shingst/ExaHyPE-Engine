@@ -69,7 +69,7 @@ double {{Project}}::{{Solver}}::stableTimeStepSize(const double* const luh,const
 
 
 
-void {{Project}}::{{Solver}}::adjustSolution(double *luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,double dt) {
+void {{Project}}::{{Solver}}::adjustSolution(double* const luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,double dt) {
   // @todo Please implement/augment if required
 }
 

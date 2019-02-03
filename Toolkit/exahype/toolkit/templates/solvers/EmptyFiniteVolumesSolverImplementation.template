@@ -21,7 +21,7 @@ void {{Project}}::{{Solver}}::solutionUpdate(double* const luhNew,const double* 
   maxAdmissibleDt = std::numeric_limits<double>::max();
 }
 
-void {{Project}}::{{Solver}}::adjustSolution(double *luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,const double t,const double dt) {
+void {{Project}}::{{Solver}}::adjustSolution(double* const luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,const double t,const double dt) {
   // @todo Please implement/augment if required
 }
 
