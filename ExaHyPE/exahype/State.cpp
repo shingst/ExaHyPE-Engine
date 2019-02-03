@@ -418,8 +418,7 @@ void exahype::State::broadcastGlobalDataToWorker(
     solver->sendDataToWorker(worker,cellCentre,level);
   }
   for (auto& plotter : exahype::plotters::RegisteredPlotters) {
-    plotter->sendDataToWorker(
-        worker,cellCentre,level);
+    plotter->sendDataToWorker(worker,cellCentre,level);
   }
 }
 

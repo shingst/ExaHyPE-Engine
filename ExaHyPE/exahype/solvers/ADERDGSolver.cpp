@@ -4073,10 +4073,13 @@ void exahype::solvers::ADERDGSolver::sendDataToMaster(
 
 exahype::DataHeap::HeapEntries
 exahype::solvers::ADERDGSolver::compileMessageForMaster(const int capacity) const {
-  DataHeap::HeapEntries message(0,std::max(2,capacity));
+  DataHeap::HeapEntries message;
+  message.reserve(std::max(2,capacity));
+
   message.push_back(_admissibleTimeStepSize);
   message.push_back(convertToDouble(_meshUpdateEvent));
 
+  assertion1(message.size()==2,message.size());
   assertion1(std::isfinite(message[0]),message[0]);
   return message;
 }
@@ -4110,6 +4113,7 @@ void exahype::solvers::ADERDGSolver::mergeWithWorkerData(
              "message size="<<messageFromWorker.size());
    }
 
+  assertion1(messageFromWorker.size()==2,messageFromWorker.size());
   mergeWithWorkerData(messageFromWorker);
 
   if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
@@ -4130,7 +4134,8 @@ void exahype::solvers::ADERDGSolver::mergeWithWorkerData(const DataHeap::HeapEnt
 ///////////////////////////////////
 exahype::DataHeap::HeapEntries
 exahype::solvers::ADERDGSolver::compileMessageForWorker(const int capacity) const {
-  DataHeap::HeapEntries message(0,std::max(5,capacity));
+  DataHeap::HeapEntries message;
+  message.reserve(std::max(5,capacity));
 
   message.push_back(_minTimeStamp);
   message.push_back(_minTimeStepSize);
@@ -4138,6 +4143,7 @@ exahype::solvers::ADERDGSolver::compileMessageForWorker(const int capacity) cons
   message.push_back(convertToDouble(_meshUpdateEvent));
   message.push_back(_stabilityConditionWasViolated ? 1.0 : -1.0);
 
+  assertion1(message.size()==5,message.size());
   return message;
 }
 
