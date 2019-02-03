@@ -36,9 +36,11 @@ void {{project}}::{{solver}}::adjustSolution(double* const luh, const tarch::la:
   // @todo Please implement/augment if required
   if (tarch::la::equals(t,0.0)) {
     //initialise luh
-    constexpr int stride = NumberOfVariables+NumberOfParameters;
+    constexpr int sizeOfQ = NumberOfVariables+NumberOfParameters;
     dfor(i,Order+1) {
-      double* const Q = luh + iScalar * stride;
+      const int iLinearised = dLinearised(i,Order+1);
+      double* const Q = luh + iLinearised * sizeOfQ;  // pointwise state variables (plus parameters)
+      
       {% for i in range_0_nVarParam %}
       Q[{{i}}] = 0.0;
       {% endfor %} 
@@ -85,10 +87,11 @@ exahype::solvers::Solver::RefinementControl {{project}}::{{solver}}::refinementC
   
   //  Example: Loop over all pointwise state variables (plus parameters)
   //
-  //  constexpr int stride = NumberOfVariables+NumberOfParameters;
+  //  constexpr int sizeOfQ = NumberOfVariables+NumberOfParameters;
   //  dfor(i,Order+1) {
-  //    double* const Q = luh + iScalar * stride; // pointwise state variables (plus parameters)
-  //    // check Q
+  //    const int iLinearised = dLinearised(i,Order+1);
+  //    const double* const Q = luh + iLinearised * sizeOfQ; // pointwise state variables (plus parameters)
+  //    // use Q[0], Q[1], ... Q[sizeOfQ-1]
   //  }
   
   // @todo Please implement/augment if required
