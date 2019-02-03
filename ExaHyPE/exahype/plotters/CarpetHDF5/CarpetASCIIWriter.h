@@ -17,6 +17,7 @@
 #define _EXAHYPE_PLOTTERS_CARPET_ASCII_WRITER_
 
 #include "exahype/plotters/Plotter.h"
+#include "exahype/plotters/CarpetHDF5/CarpetWriter.h"
 #include "exahype/plotters/slicing/CartesianSlicer.h"
 #include "kernels/KernelUtils.h" // idx::kernels
 
@@ -31,7 +32,7 @@ namespace exahype {
 	struct Coord3D;
     }
 
-    namespace ascii { class CSVWriter; } // external forward decl, #include exahype/plotters/ascii/CSVWriter.h
+    namespace ascii { class CSVStackWriter; } // external forward decl, #include exahype/plotters/ascii/CSVWriter.h
   }
 }
 
@@ -47,6 +48,11 @@ class exahype::plotters::CarpetASCIIWriter : public exahype::plotters::CarpetWri
   tarch::logging::Log _log;
 
 public:
+  typedef tarch::la::Vector<DIMENSIONS, double> dvec;
+  typedef tarch::la::Vector<DIMENSIONS, bool> boolvec;
+  typedef tarch::la::Vector<DIMENSIONS, int> ivec;
+
+	
   bool fullCarpetCompatibility; ///< Generate all columns of carpet
 
 
@@ -69,30 +75,26 @@ public:
   virtual void flushFile(); ///< Flushs all file output buffers. Always flushs before.
   virtual void closeFile(); ///< Closes all files. Closes, deletes and nulls the file objects.
 
-  std::vector<exahype::plotters::ascii::CSVWriter> files; ///< List of pointers to H5Files. Has length 1 if allUnknownsInOneFile.
-  //H5::DataSpace       patch_space; ///< DataSpaces describing a component/patch: basisSize^D elements.
-  //H5::DataSpace       dtuple; ///< DataSpace describing a dim-dimensional tuple, ie dim numbers.
+  typedef exahype::plotters::ascii::CSVStackWriter  CSVWriterType;
+  std::vector<CSVWriterType> files; ///< List of pointers to H5Files. Has length 1 if allUnknownsInOneFile.
 
   void startPlotting(double time);
   void finishPlotting();
-
 
   // Default values for limiterStatus for plotPatch* functions, used for instance from
   // a pure FV solver which has no limiter status flag.
   constexpr static int nonLimitingLimiterStatus = -1;
 
-  /**
-   * This is 2D and 3D, allows several unknowns, named fields and all that.
-   * 
-   * Possible problem: Local timestepping / each patch *could* have its own time.
-   * Then the whole plotting approach of CarpetHDF5 fails and we have to collect
-   * cells belonging to the same time somehow. Or we have to keep track of the
-   * "iteration" number.
-   **/
   void plotPatch(
-      const dvec& offsetOfPatch, const dvec& sizeOfPatch, const dvec& dx,
+      const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
+      const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch,
+      const tarch::la::Vector<DIMENSIONS, double>& dx,
       double* mappedCell, double timeStamp, int limiterStatus=nonLimitingLimiterStatus);
   
+  void plotPatchForSingleUnknown(
+      const dvec& offsetOfPatch, const dvec& sizeOfPatch, const dvec& dx,
+      double* mappedCell, double timeStamp, int limiterStatus_data,
+      int writtenUnknown, CSVWriterType& target);
 }; // class
 
 #endif /* _EXAHYPE_PLOTTERS_CARPET_ASCII_WRITER_ */

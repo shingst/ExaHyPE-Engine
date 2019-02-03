@@ -19,6 +19,7 @@
 #include "exahype/plotters/Plotter.h"
 #include "exahype/plotters/slicing/CartesianSlicer.h"
 #include "kernels/KernelUtils.h" // idx::kernels
+#include "tarch/la/Vector.h"
 
 namespace exahype {
   namespace plotters {
@@ -40,6 +41,8 @@ class exahype::plotters::CarpetWriter {
 
 public:
   typedef tarch::la::Vector<DIMENSIONS, double> dvec;
+  typedef tarch::la::Vector<DIMENSIONS, bool> boolvec;
+  typedef tarch::la::Vector<DIMENSIONS, int> ivec;
 
   // information from the device::init() process
   const int           solverUnknowns; ///< The number of unknowns in the Solver (ie. number of PDEs)
@@ -109,7 +112,9 @@ public:
    * "iteration" number.
    **/
   void plotPatch(
-      const dvec& offsetOfPatch, const dvec& sizeOfPatch, const dvec& dx,
+      const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
+      const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch,
+      const tarch::la::Vector<DIMENSIONS, double>& dx,
       double* mappedCell, double timeStamp, int limiterStatus=nonLimitingLimiterStatus);
   
 }; // class

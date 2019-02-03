@@ -1,18 +1,20 @@
 #ifndef __EXAHYPE_PLOTTERS_ASCII__CSVWRITER__
 #define __EXAHYPE_PLOTTERS_ASCII__CSVWRITER__
 
-namespace exahype {
-  namespace plotters {
-    namespace ascii {
-      class CSVWriter;
-    }
-  }
-}
-
 #include <string>
 #include <vector>
 #include <fstream>
 #include <cstdint>
+
+namespace exahype {
+  namespace plotters {
+    namespace ascii {
+      class CSVWriter;
+      
+      std::string str_time(); ///< helper routine from CSVWriter.cpp
+    }
+  }
+}
 
 /**
  * CSVWriter is a semi-reflecting writer for ASCII/CSV files (most likely used in time series
@@ -40,11 +42,13 @@ struct exahype::plotters::ascii::CSVWriter {
 
 		enum class Type { INT, DOUBLE, BOOL, STRING, UNDEF } type;
 		uintptr_t offset; ///< Storage position in structure where it is read off
+		static uintptr_t size_of_type(Type type);
 		std::string get(voidptr lineStruct); ///< get value formatted as string, given a structure
 	};
 
 	std::vector<Column> columns; ///< Column specifications, go set them!
-	std::ofstream os; ///< The Stream you want to write to	
+	std::ofstream *ostream = nullptr; ///< The Stream you want to write to. This is a pointer to allow CSVWriter to be a POD
+	std::ofstream& os(); ///< Obtains the ostream reference or crashes
 	
 	std::string seperator = "\t"; ///< Column seperator
 	std::string newline = "\n"; ///< Newline character to use
@@ -52,19 +56,28 @@ struct exahype::plotters::ascii::CSVWriter {
 	bool rawcolumns = true; ///< Display the column names without a comment (=machine readable)
 	
 	void writeCommentLine(const std::string& line);
-	void writeHeader(); ///< Write a header block
+	virtual void writeHeader(); ///< Write a header block
 	
 	/**
 	 * Write an actual row. Here you should pass the pointer to your structure.
 	 **/
-	void writeRow(voidptr line);
+	virtual void writeRow(voidptr line);
 	
-	// Two helper routines if you want to delegate the file handling to this class:
+	// I/O helper routines if you want to delegate the file handling to this class:
 	
 	/// Compose a typical ExaHyPE output filename
 	static std::string combineFilename(std::string base, std::string suffix=".asc");
 	void openFile(std::string base, std::string suffix=".asc");
-
+	void closeFile();
+	void flushFile();
+	
+	/**
+	 * A helper routine for quickly add a similar class of columns (n times).
+	 * The base_name will be expanded as C-format string, i.e. "Q%d" yields "Q0","Q1",...
+	 * Note, if you want to set descriptions afterwards, you can always change the
+	 * columns, i.e. column[2].description="foo".
+	 **/
+	void add_similar_columns(int n, Column::Type type, std::string base_name, std::string format, uintptr_t base_offset=0);
 };
 
 
@@ -77,7 +90,6 @@ struct exahype::plotters::ascii::CSVWriter {
 		
 #define CSVWRITER_DOUBLE_COLUMN(userStructure, fieldName, description) \
 	{ #fieldName, "%e", description, exahype::plotters::ascii::CSVWriter::Column::Type::DOUBLE, offsetof(userStructure, fieldName) }
-		
 		
 #define CSVWRITER_WRITE_ROW(csvWriterInstance, userStructureInstance) \
 	(csvWriterInstance).writeRow( (exahype::plotters::ascii::CSVWriter::voidptr) &userStructureInstance )
