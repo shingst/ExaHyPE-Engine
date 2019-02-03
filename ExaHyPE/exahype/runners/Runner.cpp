@@ -757,8 +757,15 @@ int exahype::runners::Runner::run() {
       initHPCEnvironment();
 
     if ( _parser.isValid() ) {
+      // Tracing and performance analysis
       #ifdef Parallel
       MPI_Pcontrol(0);
+      #endif
+      #ifdef USE_ITAC_ALL
+      #define USE_ITAC 1
+      #endif
+      #if defined(USE_ITAC) and !defined(USE_ITAC_ALL)
+      VT_traceoff(); // turn ITAC tracing off during mesh refinement; is switched on again in mapping Prediction
       #endif
 
       if (tarch::parallel::Node::getInstance().isGlobalMaster()) {
