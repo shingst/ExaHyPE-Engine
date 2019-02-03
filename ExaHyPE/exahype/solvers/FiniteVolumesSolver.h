@@ -24,6 +24,10 @@
 #include "exahype/Cell.h"
 #include "exahype/Vertex.h"
 
+#ifdef USE_ITAC
+#include "VT.h"
+#endif
+
 namespace exahype {
 namespace solvers {
 class FiniteVolumesSolver;

@@ -856,7 +856,7 @@ void exahype::solvers::FiniteVolumesSolver::mergeNeighboursData(
     const tarch::la::Vector<DIMENSIONS, int>& pos1,
     const tarch::la::Vector<DIMENSIONS, int>& pos2) {
   #ifdef USE_ITAC
-  VT_begin(mergeNeighbours);
+  VT_begin(mergeNeighboursHandle);
   #endif
 
   const int element1 = cellInfo1.indexOfFiniteVolumesCellDescription(solverNumber);
@@ -910,7 +910,7 @@ void exahype::solvers::FiniteVolumesSolver::mergeNeighboursData(
   }
 
   #ifdef USE_ITAC
-  VT_end(mergeNeighbours);
+  VT_end(mergeNeighboursHandle);
   #endif
 }
 
@@ -920,7 +920,7 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithBoundaryData(
     const tarch::la::Vector<DIMENSIONS, int>& posCell,
     const tarch::la::Vector<DIMENSIONS, int>& posBoundary) {
   #ifdef USE_ITAC
-  VT_begin(mergeNeighbours);
+  VT_begin(mergeNeighboursHandle);
   #endif
 
   assertion2(tarch::la::countEqualEntries(posCell,posBoundary)==(DIMENSIONS-1),posCell.toString(),posBoundary.toString());
@@ -956,7 +956,7 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithBoundaryData(
   }
 
   #ifdef USE_ITAC
-  VT_end(mergeNeighbours);
+  VT_end(mergeNeighboursHandle);
   #endif
 }
 

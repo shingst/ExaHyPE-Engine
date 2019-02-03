@@ -24,6 +24,10 @@
 
 #include "exahype/profilers/simple/NoOpProfiler.h"
 
+#ifdef USE_ITAC
+#include "VT.h"
+#endif
+
 namespace exahype {
 namespace solvers {
 

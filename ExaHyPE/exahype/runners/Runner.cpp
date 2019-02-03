@@ -687,20 +687,21 @@ void exahype::runners::Runner::initHPCEnvironment() {
   // ================================================
   //
   #ifdef USE_ITAC
-  int ierr=VT_funcdef("ADERDGSolver::fusedTimeStepBodyHandle"              , VT_NOCLASS, &exahype::solvers::ADERDGSolver::fusedTimeStepBodyHandle             ); assertion(ierr==0);
-  int ierr=VT_funcdef("ADERDGSolver::predictorBodyHandle"                  , VT_NOCLASS, &exahype::solvers::ADERDGSolver::predictorBodyHandle                 ); assertion(ierr==0);
-  int ierr=VT_funcdef("ADERDGSolver::updateBodyHandle"                     , VT_NOCLASS, &exahype::solvers::ADERDGSolver::updateBodyHandle                    ); assertion(ierr==0);
-  int ierr=VT_funcdef("ADERDGSolver::mergeNeighboursHandle"                , VT_NOCLASS, &exahype::solvers::ADERDGSolver::mergeNeighboursHandle               ); assertion(ierr==0);
-  int ierr=VT_funcdef("ADERDGSolver::prolongateFaceDataToDescendantHandle" , VT_NOCLASS, &exahype::solvers::ADERDGSolver::prolongateFaceDataToDescendantHandle); assertion(ierr==0);
-  int ierr=VT_funcdef("ADERDGSolver::restrictToTopMostParentHandle"        , VT_NOCLASS, &exahype::solvers::ADERDGSolver::restrictToTopMostParentHandle       ); assertion(ierr==0);
-  int ierr=VT_funcdef("LimitingADERDGSolver::fusedTimeStepBodyHandle",       VT_NOCLASS, &exahype::solvers::LimitingADERDGSolver::fusedTimeStepBodyHandle     ); assertion(ierr==0);
-  int ierr=VT_funcdef("LimitingADERDGSolver::predictorBodyHandle"    ,       VT_NOCLASS, &exahype::solvers::LimitingADERDGSolver::predictorBodyHandle         ); assertion(ierr==0);
-  int ierr=VT_funcdef("LimitingADERDGSolver::updateBodyHandle"       ,       VT_NOCLASS, &exahype::solvers::LimitingADERDGSolver::updateBodyHandle            ); assertion(ierr==0);
-  int ierr=VT_funcdef("LimitingADERDGSolver::mergeNeighboursHandle"  ,       VT_NOCLASS, &exahype::solvers::LimitingADERDGSolver::mergeNeighboursHandle       ); assertion(ierr==0);
-  int ierr=VT_funcdef("FiniteVolumesSolver::fusedTimeStepBodyHandle",        VT_NOCLASS, &exahype::solvers::FiniteVolumesSolver::fusedTimeStepBodyHandle      ); assertion(ierr==0);
-  int ierr=VT_funcdef("FiniteVolumesSolver::predictorBodyHandle"    ,        VT_NOCLASS, &exahype::solvers::FiniteVolumesSolver::predictorBodyHandle          ); assertion(ierr==0);
-  int ierr=VT_funcdef("FiniteVolumesSolver::updateBodyHandle"       ,        VT_NOCLASS, &exahype::solvers::FiniteVolumesSolver::updateBodyHandle             ); assertion(ierr==0);
-  int ierr=VT_funcdef("FiniteVolumesSolver::mergeNeighboursHandle"  ,        VT_NOCLASS, &exahype::solvers::FiniteVolumesSolver::mergeNeighboursHandle        ); assertion(ierr==0);
+  int ierr=0;
+  ierr=VT_funcdef("ADERDGSolver::fusedTimeStepBodyHandle"             , VT_NOCLASS, &exahype::solvers::ADERDGSolver::fusedTimeStepBodyHandle             ); assertion(ierr==0);
+  ierr=VT_funcdef("ADERDGSolver::predictorBodyHandle"                 , VT_NOCLASS, &exahype::solvers::ADERDGSolver::predictorBodyHandle                 ); assertion(ierr==0);
+  ierr=VT_funcdef("ADERDGSolver::updateBodyHandle"                    , VT_NOCLASS, &exahype::solvers::ADERDGSolver::updateBodyHandle                    ); assertion(ierr==0);
+  ierr=VT_funcdef("ADERDGSolver::mergeNeighboursHandle"               , VT_NOCLASS, &exahype::solvers::ADERDGSolver::mergeNeighboursHandle               ); assertion(ierr==0);
+  ierr=VT_funcdef("ADERDGSolver::prolongateFaceDataToDescendantHandle", VT_NOCLASS, &exahype::solvers::ADERDGSolver::prolongateFaceDataToDescendantHandle); assertion(ierr==0);
+  ierr=VT_funcdef("ADERDGSolver::restrictToTopMostParentHandle"       , VT_NOCLASS, &exahype::solvers::ADERDGSolver::restrictToTopMostParentHandle       ); assertion(ierr==0);
+  ierr=VT_funcdef("LimitingADERDGSolver::fusedTimeStepBodyHandle",      VT_NOCLASS, &exahype::solvers::LimitingADERDGSolver::fusedTimeStepBodyHandle     ); assertion(ierr==0);
+  ierr=VT_funcdef("LimitingADERDGSolver::predictorBodyHandle"    ,      VT_NOCLASS, &exahype::solvers::LimitingADERDGSolver::predictorBodyHandle         ); assertion(ierr==0);
+  ierr=VT_funcdef("LimitingADERDGSolver::updateBodyHandle"       ,      VT_NOCLASS, &exahype::solvers::LimitingADERDGSolver::updateBodyHandle            ); assertion(ierr==0);
+  ierr=VT_funcdef("LimitingADERDGSolver::mergeNeighboursHandle"  ,      VT_NOCLASS, &exahype::solvers::LimitingADERDGSolver::mergeNeighboursHandle       ); assertion(ierr==0);
+  ierr=VT_funcdef("FiniteVolumesSolver::fusedTimeStepBodyHandle",       VT_NOCLASS, &exahype::solvers::FiniteVolumesSolver::fusedTimeStepBodyHandle      ); assertion(ierr==0);
+  ierr=VT_funcdef("FiniteVolumesSolver::predictorBodyHandle"    ,       VT_NOCLASS, &exahype::solvers::FiniteVolumesSolver::predictorBodyHandle          ); assertion(ierr==0);
+  ierr=VT_funcdef("FiniteVolumesSolver::updateBodyHandle"       ,       VT_NOCLASS, &exahype::solvers::FiniteVolumesSolver::updateBodyHandle             ); assertion(ierr==0);
+  ierr=VT_funcdef("FiniteVolumesSolver::mergeNeighboursHandle"  ,       VT_NOCLASS, &exahype::solvers::FiniteVolumesSolver::mergeNeighboursHandle        ); assertion(ierr==0);
   #endif
 }
 

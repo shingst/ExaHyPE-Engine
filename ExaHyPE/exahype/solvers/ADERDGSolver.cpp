@@ -2647,7 +2647,7 @@ void exahype::solvers::ADERDGSolver::prolongateFaceDataToDescendant(
     const CellDescription& parentCellDescription,
     const tarch::la::Vector<DIMENSIONS,int>& subcellIndex) {
   #ifdef USE_ITAC
-  VT_begin(prolongateFaceDataToDescendant);
+  VT_begin(prolongateFaceDataToDescendantHandle);
   #endif
 
   assertion(parentCellDescription.getSolverNumber() == cellDescription.getSolverNumber());
@@ -2708,7 +2708,7 @@ void exahype::solvers::ADERDGSolver::prolongateFaceDataToDescendant(
   cellDescription.setHasCompletedLastStep(true);
 
   #ifdef USE_ITAC
-  VT_end(prolongateFaceDataToDescendant);
+  VT_end(prolongateFaceDataToDescendantHandle);
   #endif
 }
 
@@ -2776,7 +2776,7 @@ void exahype::solvers::ADERDGSolver::restrictObservablesMinAndMax(
 
 void exahype::solvers::ADERDGSolver::restrictToTopMostParent(const CellDescription& cellDescription,const bool addToCoarseGridUpdate) {
   #ifdef USE_ITAC
-  VT_begin(restrictToTopMostParent);
+  VT_begin(restrictToTopMostParentHandle);
   #endif
 
   // validate and obtain parent
@@ -2860,7 +2860,7 @@ void exahype::solvers::ADERDGSolver::restrictToTopMostParent(const CellDescripti
   }
 
   #ifdef USE_ITAC
-  VT_end(restrictToTopMostParent);
+  VT_end(restrictToTopMostParentHandle);
   #endif
 }
 
@@ -3062,7 +3062,7 @@ void exahype::solvers::ADERDGSolver::mergeNeighboursData(
     const tarch::la::Vector<DIMENSIONS, int>& pos1,
     const tarch::la::Vector<DIMENSIONS, int>& pos2) {
   #ifdef USE_ITAC
-  VT_begin(mergeNeighbours);
+  VT_begin(mergeNeighboursHandle);
   #endif
 
   const int element1 = cellInfo1.indexOfADERDGCellDescription(solverNumber);
@@ -3113,7 +3113,7 @@ void exahype::solvers::ADERDGSolver::mergeNeighboursData(
   }
 
   #ifdef USE_ITAC
-  VT_end(mergeNeighbours);
+  VT_end(mergeNeighboursHandle);
   #endif
 }
 
@@ -3217,7 +3217,7 @@ void exahype::solvers::ADERDGSolver::mergeWithBoundaryData(
     const tarch::la::Vector<DIMENSIONS, int>& posCell,
     const tarch::la::Vector<DIMENSIONS, int>& posBoundary) {
   #ifdef USE_ITAC
-  VT_begin(mergeNeighbours);
+  VT_begin(mergeNeighboursHandle);
   #endif
 
   assertion2(tarch::la::countEqualEntries(posCell,posBoundary)==(DIMENSIONS-1),posCell.toString(),posBoundary.toString());
@@ -3243,7 +3243,7 @@ void exahype::solvers::ADERDGSolver::mergeWithBoundaryData(
   }
 
   #ifdef USE_ITAC
-  VT_end(mergeNeighbours);
+  VT_end(mergeNeighboursHandle);
   #endif
 }
 
