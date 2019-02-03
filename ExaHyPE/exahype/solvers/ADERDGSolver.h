@@ -2216,7 +2216,7 @@ public:
    * \see LimitingADERDGSolver::sendDataToMaster
    */
   DataHeap::HeapEntries
-  compileMessageForMaster(const int capacity=6) const;
+  compileMessageForMaster(const int capacity=2) const;
 
   void sendDataToMaster(
       const int masterRank,
@@ -2250,7 +2250,7 @@ public:
    * \see LimitingADERDGSolver::sendDataToWorker
    */
   DataHeap::HeapEntries
-  compileMessageForWorker(const int capacity=7) const;
+  compileMessageForWorker(const int capacity=5) const;
 
   void sendDataToWorker(
       const                                        int workerRank,

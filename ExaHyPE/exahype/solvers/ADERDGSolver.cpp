@@ -4058,10 +4058,6 @@ void exahype::solvers::ADERDGSolver::sendDataToMaster(
     logDebug("sendDataToMaster(...)","Sending data to master: " <<
         "data[0]=" << messageForMaster[0] << "," <<
         "data[1]=" << messageForMaster[1] << "," <<
-        "data[2]=" << messageForMaster[2] << "," <<
-        "data[3]=" << messageForMaster[3] << "," <<
-        "data[4]=" << messageForMaster[4] << "," <<
-        "data[5]=" << messageForMaster[5] << "," <<
         "to rank " << masterRank <<
         ", message size="<<messageForMaster.size()
     );
@@ -4077,12 +4073,12 @@ void exahype::solvers::ADERDGSolver::sendDataToMaster(
 
 exahype::DataHeap::HeapEntries
 exahype::solvers::ADERDGSolver::compileMessageForMaster(const int capacity) const {
-  DataHeap::HeapEntries messageForMaster(0,std::max(2,capacity));
-  messageForMaster.push_back(_admissibleTimeStepSize);
-  messageForMaster.push_back(convertToDouble(_meshUpdateEvent));
+  DataHeap::HeapEntries message(0,std::max(2,capacity));
+  message.push_back(_admissibleTimeStepSize);
+  message.push_back(convertToDouble(_meshUpdateEvent));
 
-  assertion1(std::isfinite(messageForMaster[0]),messageForMaster[0]);
-  return messageForMaster;
+  assertion1(std::isfinite(message[0]),message[0]);
+  return message;
 }
 
 /**
@@ -4134,15 +4130,15 @@ void exahype::solvers::ADERDGSolver::mergeWithWorkerData(const DataHeap::HeapEnt
 ///////////////////////////////////
 exahype::DataHeap::HeapEntries
 exahype::solvers::ADERDGSolver::compileMessageForWorker(const int capacity) const {
-  DataHeap::HeapEntries messageForWorker = compileMessageForMaster(std::max(5,capacity));
+  DataHeap::HeapEntries message(0,std::max(5,capacity));
 
-  messageForWorker.push_back(_minTimeStamp);
-  messageForWorker.push_back(_minTimeStepSize);
-  messageForWorker.push_back(_estimatedTimeStepSize);
-  messageForWorker.push_back(convertToDouble(_meshUpdateEvent));
-  messageForWorker.push_back(_stabilityConditionWasViolated ? 1.0 : -1.0);
+  message.push_back(_minTimeStamp);
+  message.push_back(_minTimeStepSize);
+  message.push_back(_estimatedTimeStepSize);
+  message.push_back(convertToDouble(_meshUpdateEvent));
+  message.push_back(_stabilityConditionWasViolated ? 1.0 : -1.0);
 
-  return messageForWorker;
+  return message;
 }
 
 void exahype::solvers::ADERDGSolver::sendDataToWorker(
