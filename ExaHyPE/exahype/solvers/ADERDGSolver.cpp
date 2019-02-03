@@ -4206,7 +4206,7 @@ void exahype::solvers::ADERDGSolver::mergeWithMasterData(
         "data[1]=" << messageFromMaster[1] << "," <<
         "data[2]=" << messageFromMaster[2] << "," <<
         "data[3]=" << messageFromMaster[3] << "," <<
-        "data[6]=" << messageFromMaster[4]);
+        "data[4]=" << messageFromMaster[4]);
   }
 }
 #endif
