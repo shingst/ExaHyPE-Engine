@@ -17,16 +17,21 @@
 
 namespace GRMHDb {
   class TecplotWriter;
-
+/*
   class GRMHDSolver_ADERDG;
   class GRMHDSolver_FV;
+  */
 }
 
+/*
+class GRMHDb::TecplotWriter : public exahype::plotters::ADERDG2UserDefined {
+*/
 class GRMHDb::TecplotWriter : public exahype::plotters::LimitingADERDG2UserDefined {
+
  public:
  static constexpr int nVar = GRMHDb::AbstractGRMHDbSolver_ADERDG::NumberOfVariables;
- static constexpr int order = GRMHDb::AbstractGRMHDbSolver_ADERDG::Order;
- static constexpr int basisSize = order + 1;
+ //static constexpr int order = GRMHDb::AbstractGRMHDbSolver_ADERDG::Order;
+ //static constexpr int basisSize = order + 1;
   /**
    * Constructor.
    * 
@@ -35,10 +40,11 @@ class GRMHDb::TecplotWriter : public exahype::plotters::LimitingADERDG2UserDefin
    * to declare and manage such member variables yourself. 
    */
   TecplotWriter();
-  //TecplotWriter(GRMHDb::GRMHDbSolver_FV& solver);
-  //TecplotWriter(GRMHDb::GRMHDbSolver_ADERDG& solver);
-  //TecplotWriter(exahype::solvers::LimitingADERDGSolver&  solver);
-
+/*
+  TecplotWriter(GRMHDb::GRMHDbSolver_FV& solver);
+  TecplotWriter(GRMHDb::GRMHDbSolver_ADERDG& solver);
+  TecplotWriter(exahype::solvers::LimitingADERDGSolver&  solver);
+*/
   /**
    * This method is invoked every time a cell 
    * is touched by the plotting plotter.
@@ -51,11 +57,12 @@ class GRMHDb::TecplotWriter : public exahype::plotters::LimitingADERDG2UserDefin
    * \param[in] sizeOfPatch the offset of the cell/patch.
    * \param[in] u the degrees of freedom "living" inside of the patch.
    */
-  /* void plotPatch(
+/*
+  void plotPatch(
 	  const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
 	  const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* u,
-	  double timeStamp) override;*/
-  void plotADERDGPatch(
+	  double timeStamp) override;
+*/  void plotADERDGPatch(
 	  const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
 	  const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* u,
 	  double timeStamp) override;

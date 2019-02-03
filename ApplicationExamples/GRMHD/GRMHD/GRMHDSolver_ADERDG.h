@@ -161,6 +161,12 @@ class GRMHD::GRMHDSolver_ADERDG : public GRMHD::AbstractGRMHDSolver_ADERDG {
       const tarch::la::Vector<DIMENSIONS,double>& dx,
       const double t) const override;
 
+   void mapDiscreteMaximumPrincipleObservables(
+       double* observables,const int NumberOfVariables,
+       const double* const Q) const override;
+
+
+
 /* multiplyMaterialParameterMatrix() not included, as requested in the specification file */
 };
 

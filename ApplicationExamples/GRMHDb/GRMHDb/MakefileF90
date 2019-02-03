@@ -1,0 +1,129 @@
+# *********************************************************************
+#
+#  Makefile for ADERDG3D 
+#  
+# *********************************************************************
+#
+.SUFFIXES : .o .f90 .f .c .F90
+.KEEP_STATE:
+#
+EXE  = ADERDG  
+# *********************************************************************
+
+F90 = mpif90
+CComp  = icc
+ 
+
+# OMP = -fopenmp 
+
+#------------------------------------------------------------------------------
+# LIBRARIES
+#------------------------------------------------------------------------------
+
+LIBDIR      = ./lib
+LTEC   = -ltecio
+#LTEC = 
+
+LFLAGS = $(LTEC) -cxxlib 
+
+# COMPILATION OPTIMIZATION FLAGS for ifort
+CFLAGS = -c -O3 -xCORE-AVX2 -qopt-prefetch=5 -cpp
+F90FLAGS = -c -O3 -xCORE-AVX2 -qopt-prefetch=3 -r8 -align array32byte -fpp   
+#VECFLAGS = -c -O3 -xCORE-AVX512 -vec-threshold0 -qoverride-limits  -qopt-report=5 -qopt-report-phase=vec -mtune=skylake -r8 -align -fpp  
+VECFLAGS = -c -O3 -xCORE-AVX2 -qopt-prefetch=3 -vec-threshold0 -qoverride-limits  -qopt-report=5 -qopt-report-phase=vec -r8 -align array32byte -fpp  
+
+# PREPROCESSOR DEFINITIONS 
+#FCFLAGS = -DEULER -DFLUX -DNOLIMITER -DNOIO -DPARALLEL -DRKDG               
+#FCFLAGS = -DGRMHD -DFLUX -DNOLIMITER -DSOURCE -DNONCONSERVATIVE -DNOIO -DPARALLEL -DRKDG               
+#FCFLAGS = -DCCZ4EINSTEIN -DNOFLUX -DNOLIMITER -DSOURCE -DNONCONSERVATIVE -DNOIO -DPARALLEL -DAVX256 -DRKDG -DFIXEDDT    
+#FCFLAGS = -DGRGPR -DRNSTOV -DC2PFF  -DNONLINEAR -DVISCOUS -DPRIMOUT -DNOLIMITER -DPARALLEL -DNoNOFLUX -DNoNOIO -DNONCONSERVATIVE -DSOURCE  -DFIXEDDT -DVECTOR -DAVX2 -DPROBES
+
+FCFLAGS = -DDim3
+#
+.SUFFIXES: .f90 .o .f77 .F90 .cpp
+
+CPP_OBJ = vsmm.o 
+
+
+# Fortran files with special vector optimization
+VEC_OPT_OBJ =  
+
+# Compiled object files
+
+F90_OBJ = gauleg.o                  \
+          Parameters.o                \
+          AstroMod.o                  \
+          EOS_par.o                  \
+          EOS.o                  \
+          GREOS_var.o             \
+          GREOS.o                  \
+          GRMHD_Mod.o                  \
+          NSTOV_modVar.o                  \
+          NSTOV_mod.o                  \
+          TECPLOTinterface.o            \
+          TECPLOTPLOTTER.o                  \
+          VSMM.o
+
+OBJS       = $(F90_OBJ) $(VEC_OPT_OBJ)  $(CPP_OBJ)
+FOR_FILES  = $(OBJS:.o=.f90)
+
+# Executable: $(EXE) $(F90_OBJ) $(VEC_OPT_OBJ) 
+
+$(EXE): Makefile $(OBJS) 
+	@echo "   "
+	@echo " Now Linking..."
+	@echo " --------------"
+	$(F90) $(OBJS)  -L$(LIBDIR) $(LFLAGS) ${OMP} -o $(EXE)
+	@echo "   "
+	@echo " Compiled ! "
+	@echo " ---------- "
+ 
+.f90.o:
+	@echo "   "
+	@echo " Compiling Source File: " $<
+	@echo " ---------------------- ===================="
+	$(F90) $(F90FLAGS) $(FCFLAGS) $(INCLUDES) $<
+
+.f.o:
+	@echo "   "
+	@echo " Compiling Source File: " $<
+	@echo " ---------------------- ===================="
+	$(F90) $(F90FLAGS) $(FCFLAGS) $(INCLUDES) $<
+
+
+PDE.o:
+	@echo "   "
+	@echo " Compiling Source File: PDE.f90 "
+	@echo " ---------------------- ===================="
+	$(F90) $(VECFLAGS) $(FCFLAGS) $(INCLUDES) PDE.f90
+                                
+#$(VEC_OPT_OBJ): 
+#	@echo "   "
+#	@echo " Compiling vector source File: " $@
+#	@echo " ---------------------- ===================="
+#	$(F90) $(VECFLAGS) $(FCFLAGS) $(INCLUDES) $(@:.o=.f90)
+
+.F90.o:
+	@echo "   "
+	@echo " Compiling Source File: " $<
+	@echo " ---------------------- ===================="
+	$(F90) $(F90FLAGS) $(FCFLAGS) $(INCLUDES) $<
+                                
+.f.o:
+	@echo "   "
+	@echo " Compiling Source File: " $<
+	@echo " ---------------------- ===================="
+	$(F90) $(F90FLAGS) $(FCFLAGS) $(INCLUDES) $<
+                                                                
+.cpp.o:
+	@echo "   "
+	@echo " Compiling Source File: " $<
+	@echo " ---------------------- ===================="
+	$(CComp) $(CFLAGS) $(FCFLAGS) $(INCLUDES) $<
+                                
+
+#
+clean:
+	rm -f core* *.M *.o $(EXE) *.kmo *.mod 
+
+

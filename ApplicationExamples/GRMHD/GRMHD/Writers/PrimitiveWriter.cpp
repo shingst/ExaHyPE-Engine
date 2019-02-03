@@ -2,26 +2,6 @@
 #include "Fortran/PDE.h"
 #include "GRMHDSolver_ADERDG_Variables.h"
 
-
-GRMHD::PrimitiveWriter::PrimitiveWriter(GRMHDSolver_FV&  solver) {
-  // @todo Please insert your code here
-}
-
-
-
-GRMHD::PrimitiveWriter::PrimitiveWriter(GRMHDSolver_ADERDG&  solver) {
-  // @todo Please insert your code here
-}
-
-
-GRMHD::PrimitiveWriter::PrimitiveWriter(exahype::solvers::LimitingADERDGSolver&  solver) {
-  // @todo Please insert your code here
-}
-
-GRMHD::PrimitiveWriter::~PrimitiveWriter() {
-  // @todo Please insert your code here
-}
-
 void GRMHD::PrimitiveWriter::writtenQuantitiesNames(char** outputfileNames) {
 	// also works in principle, but not as convenient
 	// GRMHD::AbstractGRMHDSolver_ADERDG::VariableNames specfileNames;
@@ -58,13 +38,8 @@ void GRMHD::PrimitiveWriter::startPlotting(double time) {
 
 
 void GRMHD::PrimitiveWriter::finishPlotting() {
-  if(numberOfC2PFailures > 0) {
-    static tarch::logging::Log _log("GRMHD::PrimitiveWriter");
-    logInfo("finishPlotting", "Counted " << numberOfC2PFailures << " Cons2Prim failures during plotting (" << (allConversions/numberOfC2PFailures*100) << "%)");
-  }
-  startPlotting(0);
+  // @TODO Please insert your code here.
 }
-
 
 void GRMHD::PrimitiveWriter::mapQuantities(
     const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
@@ -75,16 +50,8 @@ void GRMHD::PrimitiveWriter::mapQuantities(
     double* outputQuantities,
     double timeStamp
 ) {
-    int err;
-    pdecons2prim_(outputQuantities, Q, &err);
-    if(err != 0) {
-	    //printf("Cons2Prim Failure in PrimitiveWriter!!!");
-	    numberOfC2PFailures++;
-
-	    constexpr int c2pFailureIndicatingMagicNumberForDensity = -1;
-	    Q[0] = c2pFailureIndicatingMagicNumberForDensity;
-    }
-    allConversions++;
+  const int writtenUnknowns = 1;
+  for (int i=0; i<writtenUnknowns; i++){ 
+    outputQuantities[i] = Q[i];
+  }
 }
-
-

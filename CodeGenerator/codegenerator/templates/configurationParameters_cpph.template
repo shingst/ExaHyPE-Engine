@@ -20,6 +20,7 @@ namespace {{namespaceName}} {
   constexpr int getNumberOfVariablePadded()  {return {{nVarPad}};}
   
   constexpr int getNumberOfParameter()       {return {{nPar}};}
+  constexpr int getNumberOfParameterPadded() {return {{nParPad}};}
   
   constexpr int getNumberOfData()            {return {{nData}};}
   constexpr int getNumberOfDataPadded()      {return {{nDataPad}};}
@@ -39,57 +40,17 @@ namespace {{namespaceName}} {
   constexpr int getNumberOfObservable()      {return {{nObs}};}
 {% endif %}
 
-{% if isLinear %}
-  {% set lQiSize = nDataPad*(nDof**nDim)*(1+nDof) %}
-  {% set lFiSize = nVarPad*(nDof**(nDim+1))*(2*nDim+1) %}
-{% else %}
-  {% set lQiSize = nDataPad*(nDof**(nDim+1)) %}
-{% if useFlux %}
-  {% set lFiSize = nVarPad*(nDof**(nDim+1))*nDim %}
-{% else %}
-  {% set lFiSize = -1 %}
-{% endif %}
-{% endif %}
-{% if (not isLinear and useNCP) or useSource %}
-  {% set lSiSize = nVarPad*(nDof**(nDim+1)) %}
-{% else %}
-  {% set lSiSize = -1 %}
-{% endif %}
-{% if useNCP %}
-  {% set gradQSize = nVarPad*(nDof**nDim)*nDim %}
-{% else %}
-  {% set gradQSize = -1 %}
-{% endif %}
-  {% set lQhiSize = nDataPad*(nDof**nDim) %}
-{% if useFlux %}
-  {% set lFhiSize = nVarPad*(nDof**nDim)*nDim %}
-{% else %}
-  {% set lFhiSize = -1 %}
-{% endif %}
-{% if (not isLinear and useNCP) or useSource %}
-  {% set lShiSize = nVarPad*(nDof**nDim) %}
-{% else %}
-  {% set lShiSize = -1 %}
-{% endif %}
-{% if usePointSources %}
-  {% set PSiSize = (nDof+1)*(nDof**nDim)*nVarPad %}
-{% else%}
-  {% set PSiSize = -1 %}
-{% endif %}
-  {% set BndFaceSize = nDataPad*(nDof*nDof3D) %}
-  {% set BndFaceTotalSize = 2*nDim*nDataPad*(nDof*nDof3D) %}
-  {% set BndFluxSize = nVarPad*(nDof*nDof3D) %}
-  {% set BndFluxTotalSize = 2*nDim*nVarPad*(nDof*nDof3D) %}
-
   // Array sizes
-  constexpr int getlQiSize()   {return {{lQiSize}};}
-  constexpr int getlFiSize()   {return {{lFiSize}};} 
-  constexpr int getlSiSize()   {return {{lSiSize}};}
-  constexpr int getgradQSize() {return {{gradQSize}};}
-  constexpr int getlQhiSize()  {return {{lQhiSize}};}
-  constexpr int getlFhiSize()  {return {{lFhiSize}};}
-  constexpr int getlShiSize()  {return {{lShiSize}};}
-  constexpr int getPSiSize()   {return {{PSiSize}};}
+  constexpr int getlQiSize()     {return {{lQiSize}};}
+  constexpr int getlFiSize()     {return {{lFiSize}};} 
+  constexpr int getlSiSize()     {return {{lSiSize}};}
+  constexpr int getgradQSize()   {return {{gradQSize}};}
+  constexpr int getlQhiSize()    {return {{lQhiSize}};}
+  constexpr int getlFhiSize()    {return {{lFhiSize}};}
+  constexpr int getlShiSize()    {return {{lShiSize}};}
+  constexpr int getPSiSize()     {return {{PSiSize}};}
+  constexpr int getlPiSize()     {return {{lPiSize}};}
+  constexpr int getlQiNextSize() {return {{lQiNextSize}};}
 
   constexpr int getBndFaceSize()      {return {{BndFaceSize}};} // == QR/QL size
   constexpr int getBndFaceTotalSize() {return {{BndFaceTotalSize}};} // == lQhbnd size
@@ -102,38 +63,46 @@ namespace {{namespaceName}} {
 {% set shift = 0 %}
   constexpr int getlQiShift()   {return {{shift}};}
 {% set shift = shift+lQiSize %}
-{%- if useFlux %}
-  constexpr int getlFiShift()   {return {{shift}};}
-{% set shift = shift+lFiSize %}
-{%- endif %}
-{%- if (not isLinear and useNCP) or useSource %}
-  constexpr int getlSiShift()   {return {{shift}};}
-{% set shift = shift+lSiSize %}
-{%- endif %}
+{% if lPiSize > 0 %}
+  constexpr int getlPiShift()   {return {{shift}};}
+{% set shift = shift+lPiSize %}
+{% endif %}
+{% if lQiNextSize > 0 %}
+  constexpr int getlQiNextShift()   {return {{shift}};}
+{% set shift = shift+lQiNextSize %}
+{% endif %}
   constexpr int getlQhiShift()  {return {{shift}};}
 {% set shift = shift+lQhiSize %}
-{%- if useFlux %}
-  constexpr int getlFhiShift()  {return {{shift}};}
-{% set shift = shift+lFhiSize %}
-{%- endif %}
-{%- if (not isLinear and useNCP) or useSource %}
-  constexpr int getlShiShift()  {return {{shift}};}
-{% set shift = shift+lShiSize %}
-{%- endif %}
-{%- if useNCP %}
-  constexpr int getgradQShift() {return {{shift}};}
-{% set shift = shift+gradQSize %}
-{%- endif %}
-{%- if not isLinear %}
+{% if not isLinear %}
   constexpr int getrhsShift()   {return {{shift}};} //Same size as lQi
 {% set shift = shift+lQiSize %}
 {% endif %}
-{%- if usePointSources %}
+{% if gradQSize > 0 %}
+  constexpr int getgradQShift() {return {{shift}};}
+{% set shift = shift+gradQSize %}
+{% endif %}
+{% if lFiSize > 0 %}
+  constexpr int getlFiShift()   {return {{shift}};}
+{% set shift = shift+lFiSize %}
+{% endif %}
+{% if lFhiSize > 0 %}
+  constexpr int getlFhiShift()  {return {{shift}};}
+{% set shift = shift+lFhiSize %}
+{% endif %}
+{% if lSiSize > 0 %}
+  constexpr int getlSiShift()   {return {{shift}};}
+{% set shift = shift+lSiSize %}
+{% endif %}
+{% if lShiSize > 0 %}
+  constexpr int getlShiShift()  {return {{shift}};}
+{% set shift = shift+lShiSize %}
+{% endif %}
+{% if PSiSize > 0 %}
   constexpr int getPSiShift()   {return {{shift}};}
 {% set shift = shift+PSiSize %}
   constexpr int getPSderivativesShift() {return {{shift}};} //same size as PSi
 {% set shift = shift+PSiSize %}
-{%- endif %}
+{% endif %}
 
   constexpr int getFusedSTPVISize() {return {{shift}};}
   

@@ -125,7 +125,7 @@ class Elastic::MyElasticWaveSolver : public Elastic::AbstractMyElasticWaveSolver
      * \param[inout]  The vector BgradQ (extends nVar), already allocated. 
      *
      **/
-    void nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) final override;
+    void nonConservativeProduct(const double* const Q,const double* const * const gradQ, double** BgradQ) final override;
 
     /**
      * Compute a pointSource contribution.
@@ -135,7 +135,7 @@ class Elastic::MyElasticWaveSolver : public Elastic::AbstractMyElasticWaveSolver
     /**
      * @TODO LR : document
      */
-    void multiplyMaterialParameterMatrix(const double* const Q, double* rhs) final override;
+    void multiplyMaterialParameterMatrix(const double* const Q, double** rhs) final override;
     
     void extractTransformation(const double* const Q,
 			       double& q_x,double& q_y,double& q_z,

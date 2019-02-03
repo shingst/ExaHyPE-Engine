@@ -130,7 +130,7 @@ class Elastic::MyElasticWaveSolver : public Elastic::AbstractMyElasticWaveSolver
      * \param[inout]  The vector BgradQ (extends nVar), already allocated. 
      *
      **/
-    void nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) final override;
+    void nonConservativeProduct(const double* const Q,const double* const * const gradQ,double** BgradQ) final override;
 
     /**
      * Compute a pointSource contribution.
@@ -142,9 +142,9 @@ class Elastic::MyElasticWaveSolver : public Elastic::AbstractMyElasticWaveSolver
     /**
      * @TODO LR : document
      */
-    void multiplyMaterialParameterMatrix(const double* const Q, double* rhs) final override;
+    void multiplyMaterialParameterMatrix(const double* const Q, double** rhs) final override;
 
-    void riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double dt,const int direction, bool isBoundaryFace, int faceIndex) override;
+    void riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double t,const double dt,const int direction, bool isBoundaryFace, int faceIndex) override;
     void riemannSolver_Nodal(double v_p,double v_m, double sigma_p, double sigma_m, double z_p , double z_m, double& v_hat_p , double& v_hat_m, double& sigma_hat_p, double& sigma_hat_m);
     void riemannSolver_boundary(int faceIndex,double r, double vn , double vm , double vl, double Tn , double Tm ,double Tl , double zp, double zs,  double& vn_hat , double& vm_hat ,double& vl_hat , double& Tn_hat , double& Tm_hat ,double& Tl_hat);
     
@@ -161,6 +161,10 @@ class Elastic::MyElasticWaveSolver : public Elastic::AbstractMyElasticWaveSolver
     void extract_tractions_and_particle_velocity(double* n, const double* Q, double& Tx,double& Ty,double& Tz,double& vx,double& vy,double& vz );
 
 
+    // Vect PDE
+    void flux_vect(const double* const * const restrict Q, double* const * const * const restrict F, const int size);
+    void nonConservativeProduct_vect(const double* const * const Q,const double* const * const * const gradQ, double* const * const * const BgradQ, const int size);
+    void multiplyMaterialParameterMatrix_vect(const double* const * const Q, double* const * const * const rhs, const int size);
 };
 
 #endif // __MyElasticWaveSolver_CLASS_HEADER__

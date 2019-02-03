@@ -75,17 +75,22 @@ RECURSIVE SUBROUTINE PDESetup(myrank)
 		!    
 		CASE DEFAULT
 			continue
-	END SELECT
+    END SELECT
 	!
-	IF(myrank.eq.0) THEN
+	!IF(myrank.eq.0) THEN
+    PRINT *, "<<<<<<<<<<<<<<<<<<<<<<<<<<<------------------------------------"
 		PRINT *, 'EQN%gamma=',EQN%GAMMA, myrank, myrank_f90 
-	ENDIF
+    PRINT *, "<<<<<<<<<<<<<<<<<<<<<<<<<<<------------------------------------"
+	!ENDIF
     !
     ! 
     SELECT CASE(TRIM(ICTYPE))    ! 
     CASE('GRMHDTOV','CCZ4TOV','GRMHDTOV_perturbed') 
 #ifdef RNSTOV
+        IF(NSTOVVar%Computed.NE.12345) THEN
+            NSTOVVar%Computed=12345   
             CALL NSTOV_Main
+        ENDIF
 #endif  
 	CASE DEFAULT
 		continue
@@ -180,138 +185,6 @@ RECURSIVE SUBROUTINE PDEassurepositivity(limiter_value,xx,numberOfObservables, o
 	return
 	
 END SUBROUTINE PDEassurepositivity
-
-
-RECURSIVE SUBROUTINE MichelAccretionSpherical(x, t, Q)
-    USE, INTRINSIC :: ISO_C_BINDING
-	USE AstroMod
-    USE Parameters, ONLY : nVar,EQN, nDim,Exc_radius
-    IMPLICIT NONE 
-    ! Argument list 
-    REAL, INTENT(IN)               :: t
-    REAL, INTENT(IN)               :: x(nDim)        ! 
-    REAL, INTENT(OUT)              :: Q(nVar)        ! 
-
-	INTEGER	:: iErr,iNewton,i
-    REAL    :: up(nVar), Pi = ACOS(-1.0)
-	REAL   	:: xloc(3),r,LF,ut,vr,vtheta,vphi,VV(3),VV_cov(3),BV(3),BV_contr(3),rho,p
-	REAL	:: lapse,gp,gm,shift(3),Kex(3,3),g_cov(3,3),g_contr(3,3),gammaij(6)
-	REAL	:: ng,zz,urc,vc2,tc,pc,c1,c2,tt,urr,f,df,dt
-	REAL    :: tmp1,ICSphericalAccretionrhoc,ICSphericalAccretionrc 
-	INTEGER,PARAMETER :: MAXNEWTON = 15
-
-    ! Initialize parameters
-	ICSphericalAccretionrhoc =  1./16.
-	ICSphericalAccretionrc = 8.0  
-    xloc(1)=x(1)
-    xloc(2)=x(2)
-#if defined(Dim3)
-    xloc(3)=x(3)
-	PRINT *, 'YOU ARE in Dim3, MichelAccretionSpherical'
-	STOP
-#else
-    xloc(3)=0.0
-#endif
-        IF(xloc(1).LE.0.5*Exc_radius) THEN  ! RETURN
-            xloc(1)=0.5*Exc_radius
-        ENDIF
-       IF(xloc(1).EQ.2.0) THEN
-            xloc(1) = 2.0+1e-14              ! we are computing the solution at theta=pi/2
-       ENDIF 
-       ! METRIC
-       CALL METRIC_KSS( xloc, lapse, gp, gm, shift, Kex, g_cov, g_contr, tmp1)
-	   
-	   ! lapse = 1.0
-	   ! shift = 0.
-	   ! g_contr = 0.
-	   ! g_cov = 0.
-	   ! do i =1,3
-			! g_contr(i,i) = 1.0
-			! g_cov(i,i) = 1.0
-	   ! ENDDO
-	   ! 
-       ng     = 1.0/(EQN%gamma - 1.0)
-       ! The Following is for Kerr-Schild spherical coordinates
-       r      = xloc(1)
-       !
-       zz     = 2.0/r               ! we are computing the solution at theta=pi/2
-       !
-       urc = sqrt(1.0 / (2.0*ICSphericalAccretionrc))
-       vc2 = urc**2 / (1.0 - 3.0*urc**2)
-       tc  = ng*vc2 / ((1.0 + ng)*(1.0 - ng*vc2))
-       pc  = ICSphericalAccretionrhoc*tc
-       !
-       c1 = urc*tc**ng*ICSphericalAccretionrc**2
-       c2 = (1.0 + ( 1.0 + ng)*tc)**2*(1.0 - 2.0/ICSphericalAccretionrc+urc**2)
-       !
-       tt = tc
-       !
-       DO iNewton = 1, MAXNEWTON   
-          urr = c1 / (r**2*tt**ng)
-          f   = (1.0 + (1.0 + ng)*tt)**2*(1.0 - 2.0/r + urr**2) - c2
-          df  = 2.0 * (1.0 + ng)*(1.0 + (1.0 + ng)*tt)*(1.0 - 2.0/r + urr**2) - 2.0*ng*urr**2/tt*(1.0 + (1.0 + ng)*tt)**2
-          dt  = -f/df
-          IF(ABS(df).LT.1e-12) THEN
-              EXIT
-          ENDIF
-          IF (abs(dt) < 1.e-10) EXIT
-          tt = tt + dt
-       ENDDO
-       !
-       ut     = (-zz*urr + sqrt(urr**2 - zz + 1.0))/(zz - 1.0)
-       LF     = lapse*ut
-       vr     = ( urr / LF + shift(1) / lapse)
-       vtheta = 0.0
-       vphi   = 0.0
-       !
-       VV(1) = vr
-       VV(2) = vtheta
-       VV(3) = vphi
-       ! Convert to covariant velocities
-       VV_cov(1:3) = MATMUL(g_cov(1:3,1:3), VV(1:3))
-       !
-       rho = ICSphericalAccretionrhoc*(tt/tc)**ng
-       p   = rho*tt       
-       !
-	   DO i=1,3
-		   BV(i) = 0.
-		   BV_contr(i) = 0.
-	   ENDDO
-       !
-       gammaij(1) = g_cov(1,1)
-       gammaij(2) = g_cov(1,2)
-       gammaij(3) = g_cov(1,3)
-       gammaij(4) = g_cov(2,2)
-       gammaij(5) = g_cov(2,3)
-       gammaij(6) = g_cov(3,3) 
-       !
-       CALL MatrixInverse3x3(g_cov,g_contr,gp)
-       !  
-       up(1) = rho
-	   up(2) = VV_cov(1)
-	   up(3) = VV_cov(2)
-	   up(4) = VV_cov(3)
-	   up(5) = p
-	   up(6) = BV_contr(1)
-	   up(7) = BV_contr(2)
-	   up(8) = BV_contr(3)
-	   up(9) = 0.0
-	   up(10) = lapse
-	   up(11) = shift(1)
-	   up(12) = shift(2)
-	   up(13) = shift(3)
-	   up(14) = gammaij(1)
-	   up(15) = gammaij(2)
-	   up(16) = gammaij(3)
-	   up(17) = gammaij(4)
-	   up(18) = gammaij(5)
-	   up(19) = gammaij(6)
-       !
-       !
-       CALL PDEPrim2Cons(Q,up)
-	   !
-END SUBROUTINE MichelAccretionSpherical
-
 
 
 RECURSIVE SUBROUTINE InitialField(xGP,tGP,u0) 
@@ -517,6 +390,7 @@ RECURSIVE SUBROUTINE InitialField(xGP,tGP,u0)
             V0(13+i) = gammaij(i)
         ENDDO
         !
+        !V0(9)=exp(-(xGP(1)**2 + xGP(2)**2 + xGP(3)**2) / 8.0)*0.002
         !PRINT *,'V0=',V0
 #else
         PRINT *,' GRMHDTOV not implemented for your PDE'

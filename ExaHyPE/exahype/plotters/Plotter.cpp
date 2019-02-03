@@ -211,25 +211,32 @@ exahype::plotters::Plotter::Plotter(
             postProcessing,static_cast<exahype::solvers::LimitingADERDGSolver*>(
                 solvers::RegisteredSolvers[_solver])->getLimiter()->getGhostLayerWidth());
       }
-      
       if(equalsIgnoreCase(_type, LimitingADERDG2Tecplot::getIdentifier())) {
         _device = new LimitingADERDG2Tecplot(postProcessing,
 	        static_cast<exahype::solvers::LimitingADERDGSolver*>(
-                  solvers::RegisteredSolvers[_solver])->getLimiter()->getGhostLayerWidth()
-	);
+                  solvers::RegisteredSolvers[_solver])->getLimiter()->getGhostLayerWidth());
       }
-
       // plot only the FV subcells
-      if (equalsIgnoreCase( _type, LimitingADERDGSubcells2CartesianCellsVTKAscii::getIdentifier() )) {
-        _device = new LimitingADERDGSubcells2CartesianCellsVTKAscii(
-            postProcessing,static_cast<exahype::solvers::LimitingADERDGSolver*>(
-                solvers::RegisteredSolvers[_solver])->getLimiter()->getGhostLayerWidth());
-      }
-      if (equalsIgnoreCase( _type, LimitingADERDGSubcells2CartesianCellsVTKBinary::getIdentifier() )) {
-        _device = new LimitingADERDGSubcells2CartesianCellsVTKBinary(
-            postProcessing,static_cast<exahype::solvers::LimitingADERDGSolver*>(
-                solvers::RegisteredSolvers[_solver])->getLimiter()->getGhostLayerWidth());
-      }
+	  if (equalsIgnoreCase(_type, LimitingADERDGSubcells2CartesianCellsVTKAscii::getIdentifier())) {
+		  _device = new LimitingADERDGSubcells2CartesianCellsVTKAscii(
+			  postProcessing, static_cast<exahype::solvers::LimitingADERDGSolver*>(
+				  solvers::RegisteredSolvers[_solver])->getLimiter()->getGhostLayerWidth());
+	  }
+	  if (equalsIgnoreCase(_type, LimitingADERDGSubcells2CartesianCellsVTKBinary::getIdentifier())) {
+		  _device = new LimitingADERDGSubcells2CartesianCellsVTKBinary(
+			  postProcessing, static_cast<exahype::solvers::LimitingADERDGSolver*>(
+				  solvers::RegisteredSolvers[_solver])->getLimiter()->getGhostLayerWidth());
+	  }
+	  if (equalsIgnoreCase(_type, LimitingADERDGSubcells2CartesianCellsVTUAscii::getIdentifier())) {
+		  _device = new LimitingADERDGSubcells2CartesianCellsVTUAscii(
+			  postProcessing, static_cast<exahype::solvers::LimitingADERDGSolver*>(
+				  solvers::RegisteredSolvers[_solver])->getLimiter()->getGhostLayerWidth());
+	  }
+	  if (equalsIgnoreCase(_type, LimitingADERDGSubcells2CartesianCellsVTUBinary::getIdentifier())) {
+		  _device = new LimitingADERDGSubcells2CartesianCellsVTUBinary(
+			  postProcessing, static_cast<exahype::solvers::LimitingADERDGSolver*>(
+				  solvers::RegisteredSolvers[_solver])->getLimiter()->getGhostLayerWidth());
+	  }
 
     // by intention, no break here. Instead, all plotters for the ADERDG solver are also valid plotters for
     // any LimitedADERDG solver.
