@@ -33,6 +33,7 @@ class GRMHD::PrimitiveWriter: public exahype::plotters::Plotter::UserOnTheFlyPos
   virtual ~PrimitiveWriter();
   void startPlotting(double time) override;
   void finishPlotting() override;
+  void writtenQuantitiesNames(char** name) override;
   void mapQuantities(
     const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
     const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch,

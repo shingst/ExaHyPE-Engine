@@ -75,7 +75,6 @@ exahype-project GRMHD
 
 
 /*
-/*
     plot vtk::Cartesian::vertices::ascii ConservedWriter
       variables const = 19
       time      = 0.0
@@ -107,6 +106,7 @@ exahype-project GRMHD
       output    = ./vtk-output/primitive
     end plot
 */
+/*
     plot vtk::Cartesian::cells::ascii IntegralsWriter
        variables const = 0
        time = 0.0
@@ -122,6 +122,39 @@ exahype-project GRMHD
       output = ./output/timing-benchmarks
     end plot
 */
+
+    plot Carpet::Cartesian::Vertices::hdf5 PrimitiveWriter
+      variables const = 19
+      time = 0.0
+      repeat = 0.01
+      select = one_file_per_timestep:False,all_unknowns_in_one_file:False
+      output = ./hdf5-output/fv-prims3d
+    end plot
+
+
+    plot Carpet::Cartesian::Vertices::hdf5 H5Writer
+      variables const = 9
+      time = 0.0
+      repeat = 0.01
+      select = one_file_per_timestep:False,all_unknowns_in_one_file:False
+      output = ./hdf5-output/fv-demo3d
+    end plot
+    
+    plot Carpet::Cartesian::Vertices::hdf5 H5Writer
+      variables const = 9
+      time = 0.0
+      repeat = 0.01
+      select = z:0,one_file_per_timestep:False,all_unknowns_in_one_file:False
+      output = ./hdf5-output/fv-demo2d
+    end plot
+    
+    plot Carpet::Cartesian::Vertices::hdf5 H5Writer
+      variables const = 9
+      time = 0.0
+      repeat = 0.01
+      select = y:0,z:0,one_file_per_timestep:False,all_unknowns_in_one_file:False
+      output = ./hdf5-output/fv-demo1d
+    end plot
 
   end solver
 

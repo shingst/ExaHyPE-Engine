@@ -116,6 +116,54 @@ exahype-project GRMHD
       output = ./francescos-integrals
     end plot
 
+    plot Carpet::Cartesian::Vertices::hdf5 PrimitiveWriter
+      variables const = 19
+      time = 0.0
+      repeat = 0.01
+      select = y:0,z:0,one_file_per_timestep:False,all_unknowns_in_one_file:False
+      output = ./hdf5-output/prims1d
+    end plot
+
+    plot Carpet::Cartesian::Vertices::hdf5 PrimitiveWriter
+      variables const = 19
+      time = 0.0
+      repeat = 0.01
+      select = z:0,one_file_per_timestep:False,all_unknowns_in_one_file:False
+      output = ./hdf5-output/prims2d
+    end plot
+
+    plot Carpet::Cartesian::Vertices::hdf5 PrimitiveWriter
+      variables const = 19
+      time = 0.0
+      repeat = 0.01
+      select = one_file_per_timestep:False,all_unknowns_in_one_file:False
+      output = ./hdf5-output/prims3d
+    end plot
+    
+    plot Carpet::Cartesian::Vertices::hdf5 H5Writer
+      variables const = 9
+      time = 0.0
+      repeat = 0.01
+      select = y:0,z:0,one_file_per_timestep:False,all_unknowns_in_one_file:False
+      output = ./hdf5-output/demo1d
+    end plot
+
+    plot Carpet::Cartesian::Vertices::hdf5 H5Writer
+      variables const = 9
+      time = 0.0
+      repeat = 0.01
+      select = z:0,one_file_per_timestep:False,all_unknowns_in_one_file:False
+      output = ./hdf5-output/demo2d
+    end plot
+
+    plot Carpet::Cartesian::Vertices::hdf5 H5Writer
+      variables const = 9
+      time = 0.0
+      repeat = 0.01
+      select = one_file_per_timestep:False,all_unknowns_in_one_file:False
+      output = ./hdf5-output/demo3d
+    end plot
+
   end solver
 
 
