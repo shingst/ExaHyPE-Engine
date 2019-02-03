@@ -253,6 +253,15 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
 
     tarch::parallel::NodePool::getInstance().waitForAllNodesToBecomeIdle();
   }
+
+  //
+  // Configure ExaHyPE's own collective communication
+  // ================================================
+  //
+  exahype::solvers::Solver::MasterWorkerCommunicationTag   = tarch::parallel::Node::reserveFreeTag("solver[master<->worker]");
+  exahype::plotters::Plotter::MasterWorkerCommunicationTag = exahype::solvers::Solver::MasterWorkerCommunicationTag;
+  logInfo("Solver(...)","solver master worker communication uses tag " <<  exahype::solvers::Solver::MasterWorkerCommunicationTag);
+  logInfo("Solver(...)","plotter master worker communication uses tag " << exahype::plotters::Plotter::MasterWorkerCommunicationTag);
   #endif
 }
 

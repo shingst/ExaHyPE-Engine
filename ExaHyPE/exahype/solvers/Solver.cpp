@@ -84,7 +84,7 @@ double exahype::solvers::Solver::PipedCompressedBytes = 0;
 tarch::logging::Log exahype::solvers::Solver::_log( "exahype::solvers::Solver");
 
 #ifdef Parallel
-int exahype::solvers::Solver::MasterWorkerCommunicationTag = tarch::parallel::Node::reserveFreeTag("solver[master<->worker]");
+int exahype::solvers::Solver::MasterWorkerCommunicationTag = MPI_ANY_TAG;
 #endif
 
 bool exahype::solvers::Solver::ProfileUpdate = false;
@@ -214,11 +214,7 @@ exahype::solvers::Solver::Solver(
       _timeStepping(timeStepping),
       _coarsestMeshLevel(std::numeric_limits<int>::max()),
       _coarsestMeshSize(std::numeric_limits<double>::infinity()),
-      _profiler(std::move(profiler)) {
-  #ifdef Parallel
-  logInfo("Solver(...)","master worker communication tag is:" << MasterWorkerCommunicationTag);
-  #endif
-}
+      _profiler(std::move(profiler)) {}
 
 
 std::string exahype::solvers::Solver::getIdentifier() const {

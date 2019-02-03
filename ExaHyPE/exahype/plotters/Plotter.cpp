@@ -62,7 +62,7 @@ tarch::multicore::BooleanSemaphore exahype::plotters::SemaphoreForPlotting;
 tarch::logging::Log exahype::plotters::Plotter::_log( "exahype::plotters::Plotter" );
 
 #ifdef Parallel
-int exahype::plotters::Plotter::MasterWorkerCommunicationTag = tarch::parallel::Node::reserveFreeTag("plotter[master<->worker]");
+int exahype::plotters::Plotter::MasterWorkerCommunicationTag = MPI_ANY_TAG;
 #endif
 
 exahype::plotters::Plotter::Plotter(

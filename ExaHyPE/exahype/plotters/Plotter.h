@@ -58,16 +58,13 @@ namespace exahype {
  */
 class exahype::plotters::Plotter {
 
-protected:
-
+public:
   #ifdef Parallel
   /**
    * Tag used for master worker communication.
    */
   static int MasterWorkerCommunicationTag;
   #endif
-
- public:
 
   /**
    * Interface/abstract superclass for user-defined filtering and in-situ postprocessing
