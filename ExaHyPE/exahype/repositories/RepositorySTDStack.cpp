@@ -200,10 +200,19 @@ void exahype::repositories::RepositorySTDStack::iterate(int numberOfIterations, 
   if (tarch::parallel::Node::getInstance().isGlobalMaster()) {
     _repositoryState.setNumberOfIterations(numberOfIterations);
     _repositoryState.setExchangeBoundaryVertices(exchangeBoundaryVertices);
-    tarch::parallel::NodePool::getInstance().broadcastToWorkingNodes(
-      _repositoryState,
-      peano::parallel::SendReceiveBufferPool::getInstance().getIterationManagementTag()
-    );
+    // original:
+    //    tarch::parallel::NodePool::getInstance().broadcastToWorkingNodes(
+    //      _repositoryState,
+    //      peano::parallel::SendReceiveBufferPool::getInstance().getIterationManagementTag(),
+    //    );
+    // modified blocking send:
+    for (int rank=1; rank<tarch::parallel::Node::getInstance().getNumberOfNodes(); rank++) {
+      if (!(tarch::parallel::NodePool::getInstance().isIdleNode(rank))) {
+        _repositoryState.send(
+            rank,peano::parallel::SendReceiveBufferPool::getInstance().getIterationManagementTag(),
+            true,exahype::records::RepositoryState::ExchangeMode::Blocking);
+      }
+    }
   }
   else {
     assertionEquals( numberOfIterations, 1 );
@@ -354,7 +363,7 @@ void exahype::repositories::RepositorySTDStack::runGlobalStep() {
     intermediateStateForWorkingNodes,
     peano::parallel::SendReceiveBufferPool::getInstance().getIterationManagementTag()
   );
-  tarch::parallel::NodePool::getInstance().activateIdleNodes();
+  tarch::parallel::NodePool::getInstance().activateIdleNodes(); // Deadlock with non-blocking communication?
 }
 
 
@@ -371,7 +380,7 @@ exahype::repositories::RepositorySTDStack::ContinueCommand exahype::repositories
     int masterNode = tarch::parallel::Node::getInstance().getGlobalMasterRank();
     assertion( masterNode != -1 );
 
-    _repositoryState.receive( masterNode, peano::parallel::SendReceiveBufferPool::getInstance().getIterationManagementTag(), true, records::RepositoryState::ExchangeMode::NonblockingWithPollingLoopOverTests);
+    _repositoryState.receive( masterNode, peano::parallel::SendReceiveBufferPool::getInstance().getIterationManagementTag(), true, records::RepositoryState::ExchangeMode::Blocking);
 
     result = Continue;
     if (_repositoryState.getAction()==exahype::records::RepositoryState::Terminate) {
