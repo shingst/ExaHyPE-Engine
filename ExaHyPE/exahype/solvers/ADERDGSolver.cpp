@@ -67,10 +67,12 @@ namespace {
 }
 
 #ifdef USE_ITAC
-int exahype::solvers::ADERDGSolver::fusedTimeStepBodyHandle = 0;
-int exahype::solvers::ADERDGSolver::predictorBodyHandle     = 0;
-int exahype::solvers::ADERDGSolver::updateBodyHandle        = 0;
-int exahype::solvers::ADERDGSolver::mergeNeighboursHandle   = 0;
+int exahype::solvers::ADERDGSolver::fusedTimeStepBodyHandle              = 0;
+int exahype::solvers::ADERDGSolver::predictorBodyHandle                  = 0;
+int exahype::solvers::ADERDGSolver::updateBodyHandle                     = 0;
+int exahype::solvers::ADERDGSolver::mergeNeighboursHandle                = 0;
+int exahype::solvers::ADERDGSolver::prolongateFaceDataToDescendantHandle = 0;
+int exahype::solvers::ADERDGSolver::restrictToTopMostParentHandle        = 0;
 #endif
 
 tarch::logging::Log exahype::solvers::ADERDGSolver::_log( "exahype::solvers::ADERDGSolver");
