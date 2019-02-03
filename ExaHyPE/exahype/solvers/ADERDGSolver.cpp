@@ -66,6 +66,13 @@ namespace {
                              };
 }
 
+#ifdef USE_ITAC
+int exahype::solvers::ADERDGSolver::fusedTimeStepBodyHandle = 0;
+int exahype::solvers::ADERDGSolver::predictorBodyHandle     = 0;
+int exahype::solvers::ADERDGSolver::updateBodyHandle        = 0;
+int exahype::solvers::ADERDGSolver::mergeNeighboursHandle   = 0;
+#endif
+
 tarch::logging::Log exahype::solvers::ADERDGSolver::_log( "exahype::solvers::ADERDGSolver");
 
 // communication status
@@ -2000,12 +2007,9 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
     const bool                                                 isSkeletonCell,
     const bool                                                 mustBeDoneImmediately) {
   #ifdef USE_ITAC
-  static int handle = 0;
-  if ( handle == 0 ) {
-    int ierr=VT_funcdef("ADERDG::fusedTimeStepBody", VT_NOCLASS, &handle ); assertion(ierr==0);
-  }
-  VT_begin(handle);
+  VT_begin(fusedTimeStepBodyHandle);
   #endif
+
   correction(cellDescription,neighbourMergePerformed,isFirstTimeStepOfBatch,isFirstTimeStepOfBatch/*addSurfaceIntegralContributionToUpdate*/);
 
   UpdateResult result;
@@ -2029,8 +2033,9 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
         predictionTimeStamp, predictionTimeStepSize,
         false, isSkeletonCell, isLastTimeStepOfBatch/*addVolumeIntegralResultToUpdate*/);
   }
+
   #ifdef USE_ITAC
-  VT_end(handle);
+  VT_end(fusedTimeStepBodyHandle);
   #endif
   return result;
 }
@@ -2093,11 +2098,16 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::updateBod
     CellInfo&                                                  cellInfo,
     const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
     const bool                                                 isAtRemoteBoundary) {
+  #ifdef USE_ITAC
+  VT_begin(updateBodyHandle);
+  #endif
+
   assertion1(cellDescription.getType()==CellDescription::Type::Cell,cellDescription.toString());
   uncompress(cellDescription);
 
-  UpdateResult result;
   correction(cellDescription,neighbourMergePerformed,true,false/*effect: add face integral result directly to solution*/);
+
+  UpdateResult result;
   result._timeStepSize    = startNewTimeStep(cellDescription,true);
   cellDescription.setPreviousRefinementStatus(cellDescription.getRefinementStatus());
   result._meshUpdateEvent = evaluateRefinementCriteriaAfterSolutionUpdate(cellDescription,neighbourMergePerformed);
@@ -2105,6 +2115,10 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::updateBod
   compress(cellDescription,isAtRemoteBoundary);
 
   cellDescription.setHasCompletedLastStep(true); // required as prediction checks the flag too. Field should be renamed "setHasCompletedLastOperation(...)".
+
+  #ifdef USE_ITAC
+  VT_end(updateBodyHandle);
+  #endif
   return result;
 }
 
@@ -2165,11 +2179,7 @@ int exahype::solvers::ADERDGSolver::predictionAndVolumeIntegralBody(
     const bool   isSkeletonCell,
     const bool   addVolumeIntegralResultToUpdate) {
   #ifdef USE_ITAC
-  static int handle = 0;
-  if ( handle == 0 ) {
-    int ierr=VT_funcdef("ADERDG::predictorBody", VT_NOCLASS, &handle ); assertion(ierr==0);
-  }
-  VT_begin(handle);
+  VT_begin(predictorBodyHandle);
   #endif
   if (uncompressBefore) { uncompress(cellDescription); }
 
@@ -2214,7 +2224,7 @@ int exahype::solvers::ADERDGSolver::predictionAndVolumeIntegralBody(
 
   
   #ifdef USE_ITAC
-  VT_end(handle);
+  VT_end(predictorBodyHandle);
   #endif
 
   return numberOfPicardIterations;
@@ -2636,6 +2646,10 @@ void exahype::solvers::ADERDGSolver::prolongateFaceDataToDescendant(
     CellDescription& cellDescription,
     const CellDescription& parentCellDescription,
     const tarch::la::Vector<DIMENSIONS,int>& subcellIndex) {
+  #ifdef USE_ITAC
+  VT_begin(prolongateFaceDataToDescendant);
+  #endif
+
   assertion(parentCellDescription.getSolverNumber() == cellDescription.getSolverNumber());
   assertion(parentCellDescription.getType() == CellDescription::Type::Cell ||
             parentCellDescription.getType() == CellDescription::Type::Descendant);
@@ -2692,6 +2706,10 @@ void exahype::solvers::ADERDGSolver::prolongateFaceDataToDescendant(
   }
 
   cellDescription.setHasCompletedLastStep(true);
+
+  #ifdef USE_ITAC
+  VT_end(prolongateFaceDataToDescendant);
+  #endif
 }
 
 void exahype::solvers::ADERDGSolver::prolongateFaceData(
@@ -2757,6 +2775,10 @@ void exahype::solvers::ADERDGSolver::restrictObservablesMinAndMax(
 }
 
 void exahype::solvers::ADERDGSolver::restrictToTopMostParent(const CellDescription& cellDescription,const bool addToCoarseGridUpdate) {
+  #ifdef USE_ITAC
+  VT_begin(restrictToTopMostParent);
+  #endif
+
   // validate and obtain parent
   assertion1( cellDescription.getType()==CellDescription::Type::Descendant &&
               cellDescription.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication, cellDescription.toString() );
@@ -2836,6 +2858,10 @@ void exahype::solvers::ADERDGSolver::restrictToTopMostParent(const CellDescripti
   if ( getDMPObservables()>0 ) {
     restrictObservablesMinAndMax(cellDescription,parentCellDescription);
   }
+
+  #ifdef USE_ITAC
+  VT_end(restrictToTopMostParent);
+  #endif
 }
 
 void exahype::solvers::ADERDGSolver::disableCheckForNaNs() {
@@ -3035,6 +3061,10 @@ void exahype::solvers::ADERDGSolver::mergeNeighboursData(
     Solver::CellInfo&                         cellInfo2,
     const tarch::la::Vector<DIMENSIONS, int>& pos1,
     const tarch::la::Vector<DIMENSIONS, int>& pos2) {
+  #ifdef USE_ITAC
+  VT_begin(mergeNeighbours);
+  #endif
+
   const int element1 = cellInfo1.indexOfADERDGCellDescription(solverNumber);
   const int element2 = cellInfo2.indexOfADERDGCellDescription(solverNumber);
   if ( element1 != Solver::NotFound && element2 != Solver::NotFound ) {
@@ -3081,6 +3111,10 @@ void exahype::solvers::ADERDGSolver::mergeNeighboursData(
       solveRiemannProblemAtInterface(cellDescription1,cellDescription2,face);
     }
   }
+
+  #ifdef USE_ITAC
+  VT_end(mergeNeighbours);
+  #endif
 }
 
 std::string exahype::solvers::ADERDGSolver::riemannDataToString(
@@ -3182,6 +3216,10 @@ void exahype::solvers::ADERDGSolver::mergeWithBoundaryData(
     Solver::CellInfo&                         cellInfo,
     const tarch::la::Vector<DIMENSIONS, int>& posCell,
     const tarch::la::Vector<DIMENSIONS, int>& posBoundary) {
+  #ifdef USE_ITAC
+  VT_begin(mergeNeighbours);
+  #endif
+
   assertion2(tarch::la::countEqualEntries(posCell,posBoundary)==(DIMENSIONS-1),posCell.toString(),posBoundary.toString());
   Solver::BoundaryFaceInfo face(posCell,posBoundary);
 
@@ -3203,6 +3241,10 @@ void exahype::solvers::ADERDGSolver::mergeWithBoundaryData(
       mergeWithRefinementStatus(cellDescription,face._faceIndex,BoundaryStatus);
     }
   }
+
+  #ifdef USE_ITAC
+  VT_end(mergeNeighbours);
+  #endif
 }
 
 void exahype::solvers::ADERDGSolver::applyBoundaryConditions(CellDescription& p,Solver::BoundaryFaceInfo& face) {

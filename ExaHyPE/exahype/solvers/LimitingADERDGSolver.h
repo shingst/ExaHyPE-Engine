@@ -78,6 +78,17 @@ class LimitingADERDGSolver;
 
 class exahype::solvers::LimitingADERDGSolver : public exahype::solvers::Solver {
 
+public:
+  #ifdef USE_ITAC
+  /**
+   * These handles are used to trace solver events with Intel Trace Analyzer and Collector.
+   */
+  static int fusedTimeStepBodyHandle;
+  static int predictorBodyHandle;
+  static int updateBodyHandle;
+  static int mergeNeighboursHandle;
+  #endif
+
 protected:
   /**
    * The ADERDG solver.

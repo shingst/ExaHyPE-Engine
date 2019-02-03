@@ -30,6 +30,13 @@ namespace solvers {
 } /* namespace solvers */
 } /* namespace exahype */
 
+#ifdef USE_ITAC
+int exahype::solvers::LimitingADERDGSolver::fusedTimeStepBodyHandle = 0;
+int exahype::solvers::LimitingADERDGSolver::predictorBodyHandle     = 0;
+int exahype::solvers::LimitingADERDGSolver::updateBodyHandle        = 0;
+int exahype::solvers::LimitingADERDGSolver::mergeNeighboursHandle   = 0;
+#endif
+
 tarch::logging::Log exahype::solvers::LimitingADERDGSolver::_log("exahype::solvers::LimitingADERDGSolver");
 
 exahype::solvers::LimitingADERDGSolver::LimitingADERDGSolver(
@@ -440,6 +447,10 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
     const bool                                                 isLastTimeStepOfBatch,
     const bool                                                 isSkeletonCell,
     const bool                                                 mustBeDoneImmediately) {
+  #ifdef USE_ITAC
+  VT_begin(fusedTimeStepBodyHandle);
+  #endif
+
   UpdateResult result;
   updateSolution(solverPatch,cellInfo,neighbourMergePerformed,isFirstTimeStepOfBatch,isFirstTimeStepOfBatch/*addSurfaceIntegralContributionToUpdate*/);
 
@@ -473,6 +484,9 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
     solverPatch.setHasCompletedLastStep(true);
   }
 
+  #ifdef USE_ITAC
+  VT_end(fusedTimeStepBodyHandle);
+  #endif
   return result;
 }
 
@@ -523,6 +537,10 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::u
     CellInfo&                                                  cellInfo,
     const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
     const bool                                                 isAtRemoteBoundary){
+  #ifdef USE_ITAC
+  VT_begin(updateBodyHandle);
+  #endif
+
   if (CompressionAccuracy>0.0) { uncompress(solverPatch,cellInfo); }
 
   // the actual computations
@@ -536,6 +554,11 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::u
   if (CompressionAccuracy>0.0) { compress(solverPatch,cellInfo,isAtRemoteBoundary); }
 
   solverPatch.setHasCompletedLastStep(true); // required as prediction checks the flag too. Field should be renamed "setHasCompletedLastOperation(...)".
+
+  #ifdef USE_ITAC
+  VT_end(updateBodyHandle);
+  #endif
+
   return result;
 }
 
@@ -1265,6 +1288,10 @@ void exahype::solvers::LimitingADERDGSolver::mergeNeighboursData(
     Solver::CellInfo&                          cellInfo2,
     const tarch::la::Vector<DIMENSIONS, int>&  pos1,
     const tarch::la::Vector<DIMENSIONS, int>&  pos2) {
+  #ifdef USE_ITAC
+  VT_begin(mergeNeighbours);
+  #endif
+
   const int solverElement1 = cellInfo1.indexOfADERDGCellDescription(solverNumber);
   const int solverElement2 = cellInfo2.indexOfADERDGCellDescription(solverNumber);
 
@@ -1314,6 +1341,10 @@ void exahype::solvers::LimitingADERDGSolver::mergeNeighboursData(
       mergeSolutionMinMaxOnFace(solverPatch1,solverPatch2,face);
     }
   }
+
+  #ifdef USE_ITAC
+  VT_end(mergeNeighbours);
+  #endif
 }
 
 void exahype::solvers::LimitingADERDGSolver::mergeSolutionMinMaxOnFace(
@@ -1353,6 +1384,10 @@ void exahype::solvers::LimitingADERDGSolver::mergeWithBoundaryData(
     Solver::CellInfo&                         cellInfo,
     const tarch::la::Vector<DIMENSIONS, int>& posCell,
     const tarch::la::Vector<DIMENSIONS, int>& posBoundary) {
+  #ifdef USE_ITAC
+  VT_begin(mergeNeighbours);
+  #endif
+
   assertion2(tarch::la::countEqualEntries(posCell,posBoundary)==(DIMENSIONS-1),posCell.toString(),posBoundary.toString());
   Solver::BoundaryFaceInfo face(posCell,posBoundary);
 
@@ -1378,6 +1413,10 @@ void exahype::solvers::LimitingADERDGSolver::mergeWithBoundaryData(
       _limiter->mergeWithBoundaryData(solverNumber,cellInfo,posCell,posBoundary);
     }
   }
+
+  #ifdef USE_ITAC
+  VT_end(mergeNeighbours);
+  #endif
 }
 
 #ifdef Parallel

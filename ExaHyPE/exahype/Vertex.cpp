@@ -33,10 +33,6 @@
 
 #include "exahype/VertexOperations.h"
 
-#ifdef USE_ITAC
-#include "VT.h"
-#endif
-
 tarch::logging::Log exahype::Vertex::_log( "exahype::Vertex");
 
 exahype::Vertex::Vertex() : Base() {
@@ -432,14 +428,6 @@ void exahype::Vertex::mergeNeighboursLoopBody(
 void exahype::Vertex::mergeNeighbours(
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const tarch::la::Vector<DIMENSIONS, double>& h) const {
-  #ifdef USE_ITAC
-  static int handle = 0;
-  if ( handle == 0 ) {
-    int ierr=VT_funcdef("Vertex::mergeNeighbours", VT_NOCLASS, &handle ); assertion(ierr==0);
-  }
-  VT_begin(handle);
-  #endif
-
   if ( tarch::la::allSmallerEquals(h,exahype::solvers::Solver::getCoarsestMaximumMeshSizeOfAllSolvers()) ) {
     if ( SpawnNeighbourMergeAsThread ) {
       #if DIMENSIONS==2
@@ -467,9 +455,6 @@ void exahype::Vertex::mergeNeighbours(
      #endif
     }
   }
-  #ifdef USE_ITAC
-  VT_end(handle);
-  #endif
 }
 
 // PARALLEL

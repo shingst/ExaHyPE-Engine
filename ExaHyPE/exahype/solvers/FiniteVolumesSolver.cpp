@@ -42,6 +42,13 @@ namespace {
 constexpr const char* tags[]{"solutionUpdate", "stableTimeStepSize"};
 }  // namespace
 
+#ifdef USE_ITAC
+int exahype::solvers::FiniteVolumesSolver::fusedTimeStepBodyHandle = 0;
+int exahype::solvers::FiniteVolumesSolver::predictorBodyHandle     = 0;
+int exahype::solvers::FiniteVolumesSolver::updateBodyHandle        = 0;
+int exahype::solvers::FiniteVolumesSolver::mergeNeighboursHandle   = 0;
+#endif
+
 tarch::logging::Log exahype::solvers::FiniteVolumesSolver::_log( "exahype::solvers::FiniteVolumesSolver");
 
 void exahype::solvers::FiniteVolumesSolver::eraseCellDescriptions(const int cellDescriptionsIndex) {
@@ -659,6 +666,10 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::FiniteVolumesSolver::up
     const bool                                                 isLastTimeStepOfBatch,
     const bool                                                 isAtRemoteBoundary,
     const bool                                                 uncompressBefore) {
+  #ifdef USE_ITAC
+  VT_begin(updateBodyHandle);
+  #endif
+
   if ( uncompressBefore ) { uncompress(cellDescription); }
 
   updateSolution(cellDescription,neighbourMergePerformed,cellInfo._cellDescriptionsIndex,isFirstTimeStepOfBatch);
@@ -668,6 +679,10 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::FiniteVolumesSolver::up
   compress(cellDescription,isAtRemoteBoundary);
 
   cellDescription.setHasCompletedLastStep(true); // last step of the FV update
+
+  #ifdef USE_ITAC
+  VT_end(updateBodyHandle);
+  #endif
   return result;
 }
 
@@ -840,6 +855,10 @@ void exahype::solvers::FiniteVolumesSolver::mergeNeighboursData(
     Solver::CellInfo&                         cellInfo2,
     const tarch::la::Vector<DIMENSIONS, int>& pos1,
     const tarch::la::Vector<DIMENSIONS, int>& pos2) {
+  #ifdef USE_ITAC
+  VT_begin(mergeNeighbours);
+  #endif
+
   const int element1 = cellInfo1.indexOfFiniteVolumesCellDescription(solverNumber);
   const int element2 = cellInfo2.indexOfFiniteVolumesCellDescription(solverNumber);
   if ( element1 != Solver::NotFound && element2 != Solver::NotFound ) {
@@ -889,6 +908,10 @@ void exahype::solvers::FiniteVolumesSolver::mergeNeighboursData(
     ghostLayerFilling(solution1,solution2,pos2-pos1);
     ghostLayerFilling(solution2,solution1,pos1-pos2);
   }
+
+  #ifdef USE_ITAC
+  VT_end(mergeNeighbours);
+  #endif
 }
 
 void exahype::solvers::FiniteVolumesSolver::mergeWithBoundaryData(
@@ -896,6 +919,10 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithBoundaryData(
     Solver::CellInfo&                         cellInfo,
     const tarch::la::Vector<DIMENSIONS, int>& posCell,
     const tarch::la::Vector<DIMENSIONS, int>& posBoundary) {
+  #ifdef USE_ITAC
+  VT_begin(mergeNeighbours);
+  #endif
+
   assertion2(tarch::la::countEqualEntries(posCell,posBoundary)==(DIMENSIONS-1),posCell.toString(),posBoundary.toString());
 
   const int element = cellInfo.indexOfFiniteVolumesCellDescription(solverNumber);
@@ -927,6 +954,10 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithBoundaryData(
         cellDescription.getTimeStepSize(),
         posCell,posBoundary);
   }
+
+  #ifdef USE_ITAC
+  VT_end(mergeNeighbours);
+  #endif
 }
 
 #ifdef Parallel

@@ -110,6 +110,19 @@ namespace exahype {
 class exahype::solvers::ADERDGSolver : public exahype::solvers::Solver {
   friend class LimitingADERDGSolver;
 public:
+
+  #ifdef USE_ITAC
+  /**
+   * These handles are used to trace solver events with Intel Trace Analyzer and Collector.
+   */
+  static int fusedTimeStepBodyHandle;
+  static int predictorBodyHandle;
+  static int updateBodyHandle;
+  static int mergeNeighboursHandle;
+  static int prolongateFaceDataToDescendantHandle;
+  static int restrictToTopMostParentHandle;
+  #endif
+
   /**
    * The maximum helper status.
    * This value is assigned to cell descriptions
