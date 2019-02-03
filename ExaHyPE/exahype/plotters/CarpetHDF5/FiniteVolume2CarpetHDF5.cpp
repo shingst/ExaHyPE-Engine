@@ -91,9 +91,9 @@ void exahype::plotters::FiniteVolume2CarpetHDF5::init(const std::string& filenam
 	writer = new exahype::plotters::CarpetHDF5Writer(filename, basisSize, solverUnknowns, writtenUnknowns, plotterParameters,
 		writtenQuantitiesNames);	
 
-	if(writer->slicer && writer->slicer->getIdentifier() == "CartesianSlicer") {
-		throw std::domain_error("FiniteVolume2CarpetHDF5 currently does not support the CartesianSlicer.");
-	}
+	//if(writer->slicer && writer->slicer->getIdentifier() == "CartesianSlicer") {
+	//	throw std::domain_error("FiniteVolume2CarpetHDF5 currently does not support the CartesianSlicer.");
+	//}
 }
 
 void exahype::plotters::FiniteVolume2CarpetHDF5::plotPatch(const int solverNumber,solvers::Solver::CellInfo& cellInfo) {
@@ -201,7 +201,7 @@ void exahype::plotters::FiniteVolume2CarpetHDF5::interpolateVertexPatch(
 	delete[] vertexValue;
 }
 
-void exahype::plotters::FiniteVolume2CarpetHDF5::interpolateToSubmanifoldVertex(
+void exahype::plotters::FiniteVolume2CarpetHDF5::interpolateFVCellAtPoint(
 	const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
 	const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch,
 	const tarch::la::Vector<DIMENSIONS, double>& manifold_position,
@@ -216,8 +216,14 @@ void exahype::plotters::FiniteVolume2CarpetHDF5::interpolateToSubmanifoldVertex(
 	int neighbourCells = 0; // actual neighbour cells taken into account
 	std::fill_n(vertexValue, solverUnknowns, 0.0);
 	
-	// A dumb way to detect which FV cells to take into account, compare 1D algorithm
-	dfor(icell, numberOfCellsPerAxis) {
+	// A dumb way to detect which FV cells to take into account
+	dfor(icell, numberOfCellsPerAxis + 2*ghostLayerWidth) {
+		// if the target cell position in the patch is *not* in the ghost layers:
+		const bool cellTakenIntoAccount =
+		   tarch::la::allSmaller(icell,numberOfCellsPerAxis+ghostLayerWidth)
+		   &&  tarch::la::allGreater(icell,ghostLayerWidth-1);
+		if(!cellTakenIntoAccount) continue;
+			
 		dvec baryCenter = offsetOfPatch + icell.convertScalar<double>()*dx - dx(0)*ghostLayerWidth + dx/2.;
 		if(tarch::la::norm2(baryCenter - manifold_position) <= dx(0)) {
 			for (int unknown=0; unknown < solverUnknowns; unknown++) {
@@ -266,12 +272,12 @@ void exahype::plotters::FiniteVolume2CarpetHDF5::interpolateCartesianSlicedVerte
 	if(slicer.targetDim == 2) {
 		// Determine a position on the 2d plane
 		dvec plane = slicer.project(offsetOfPatch);
-		ivec i;
+		ivec i(0);
 		for(i(1)=0; i(1)<numberOfVerticesPerAxis; i(1)++)
 		for(i(0)=0; i(0)<numberOfVerticesPerAxis; i(0)++) {
 			dvec planePos = plane + slicer.project(i).convertScalar<double>() * dx;
 			double *outputValue = mappedCell + writer->writtenCellIdx->get(i(1),i(0),0);
-			interpolateToSubmanifoldVertex(offsetOfPatch, sizeOfPatch, planePos, i, u, vertexValue, outputValue, timeStamp);
+			interpolateFVCellAtPoint(offsetOfPatch, sizeOfPatch, planePos, i, u, vertexValue, outputValue, timeStamp);
 		}
 		
 		// project offset and size of 2D patch onto the plane
@@ -284,11 +290,11 @@ void exahype::plotters::FiniteVolume2CarpetHDF5::interpolateCartesianSlicedVerte
 	} else if(slicer.targetDim == 1) {
 		// Determine a position on the 1d line
 		dvec line = slicer.project(offsetOfPatch);
-		ivec i;
+		ivec i(0);
 		for(i(0)=0; i(0)<numberOfVerticesPerAxis; i(0)++) {
 			dvec linePos = line + slicer.project(i).convertScalar<double>() * dx;
 			double *outputValue = mappedCell + writer->writtenCellIdx->get(i(0));
-			interpolateToSubmanifoldVertex(offsetOfPatch, sizeOfPatch, linePos, i, u, vertexValue, outputValue, timeStamp);
+			interpolateFVCellAtPoint(offsetOfPatch, sizeOfPatch, linePos, i, u, vertexValue, outputValue, timeStamp);
 		}
 		
 		// project offset and size of 1D patch onto the plane
