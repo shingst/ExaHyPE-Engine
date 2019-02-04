@@ -205,7 +205,7 @@ void exahype::stealing::AggressiveCCPDistributor::updateLoadDistribution() {
 
   if(_totalTasksOffloaded>0) {
     if(_totalTasksOffloaded-_oldTotalTasksOffloaded>0)
-      _temperature = std::min(1.0, _temperature*1.1);
+      _temperature = std::min(1.1, _temperature*1.1);
     else
       _temperature = std::max(0.1, _temperature*0.9);
   }
@@ -268,7 +268,7 @@ void exahype::stealing::AggressiveCCPDistributor::updateLoadDistribution() {
          if(!exahype::stealing::StealingManager::getInstance().isBlacklisted(i)) {
           //logInfo("updateLoadDistribution", "tasks for victim "<<i<<" before recomputation:"<<_tasksToOffload[i]<< " ideal: "<<_idealTasksToOffload[i]<< " temp "<<_temperature);
           //logInfo("updateLoadDistribution", "first : "<<(1.0-_temperature)*_tasksToOffload[i]<<" second:"<<_temperature*_idealTasksToOffload[i]);
-          _tasksToOffload[i] = (1.0-_temperature)*_tasksToOffload[i] + _temperature*_idealTasksToOffload[i];
+          _tasksToOffload[i] = std::max((1.0-_temperature)*_tasksToOffload[i], 0.0) + std::max(1.0,_temperature*_idealTasksToOffload[i]);
 #ifdef DistributedStealingDisable
           _tasksToOffload[i] = 0;
 #endif

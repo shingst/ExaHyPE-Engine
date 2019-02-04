@@ -57,7 +57,7 @@
     {
       "type": "ADER-DG",
       "name": "MyElasticWaveSolver",
-      "order": 3,
+      "order": 7,
       "maximum_mesh_size": 0.66,
       "maximum_mesh_depth": 0,
       "time_stepping": "global",

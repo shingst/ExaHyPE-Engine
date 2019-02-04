@@ -99,7 +99,7 @@ void exahype::stealing::StealingAnalyser::updateZeroTresholdAndFilteredSnapshot(
     }
   }
   if(min < std::numeric_limits<int>::max()) {
-    int newThreshold = static_cast<int>(0.9*min+0.1*max);
+    int newThreshold = static_cast<int>(0.8*min+0.2*max);
     _currentZeroThreshold = newThreshold;
     logInfo("updateZeroTresholdAndFilteredSnapshot()", " zero treshold set to "<< newThreshold);
   }
@@ -161,8 +161,9 @@ void exahype::stealing::StealingAnalyser::endToReceiveDataFromWorker( int fromRa
     _waitForWorkerDataWatch.stopTimer();
     const double elapsedTime = _waitForWorkerDataWatch.getCalendarTime();
 
-    if(elapsedTime>_currentZeroThreshold) {
+    if(static_cast<int>(elapsedTime*10e6)>_currentZeroThreshold) {
       _currentAccumulatedWorkerTime += elapsedTime;
+      logInfo("endToReceiveDataFromWorker", " currentAccumulatedWorkerTime "<<elapsedTime);
       _waitForOtherRank[fromRank].setValue(_currentAccumulatedWorkerTime);
     }
     else {
