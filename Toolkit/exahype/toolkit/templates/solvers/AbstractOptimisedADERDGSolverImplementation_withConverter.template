@@ -162,11 +162,11 @@ if(useGeneric) {
 
 
 
-void {{project}}::{{abstractSolver}}::solutionUpdate(double* luh,const double* const lduh,const double dt) {
+void {{project}}::{{abstractSolver}}::solutionUpdate(double* luh,const double* const luhOld,const double* const lduh,const double dt) {
 {% if enableProfiler %}
   _profiler->start("solutionUpdate");
 {% endif %}
-  {{optNamespace}}::solutionUpdate( luh, lduh, dt );
+  {{optNamespace}}::solutionUpdate( luh, luhOld, lduh, dt );
 {% if enableProfiler %}
   _profiler->stop("solutionUpdate");
 {% endif %}
@@ -281,9 +281,9 @@ if(useGeneric) {
 
 
 
-void {{project}}::{{abstractSolver}}::riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double dt,const int normalNonZeroIndex,bool isBoundaryFace, int faceIndex) {
-  assertion2(normalNonZeroIndex>=0,dt,normalNonZeroIndex);
-  assertion2(normalNonZeroIndex<DIMENSIONS,dt,normalNonZeroIndex);
+void {{project}}::{{abstractSolver}}::riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double t,const double dt,const int direction,bool isBoundaryFace, int faceIndex) {
+  assertion2(direction>=0,dt,direction);
+  assertion2(direction<DIMENSIONS,dt,direction);
 {% if enableProfiler %}
   _profiler->start("riemannSolver");
 {% endif %}
@@ -302,9 +302,9 @@ if(useGeneric) {
   {{optNamespace}}::converter::QFace_optimised2generic(QL,QL_g);
   {{optNamespace}}::converter::QFace_optimised2generic(QR,QR_g);
 {% if isLinear %}
-  kernels::aderdg::generic::c::riemannSolverLinear<{{useFlux_s}},{{useNCP_s}},{{useMaterialParameters_s}},{{solver}}>(*static_cast<{{solver}}*>(this),FL_g,FR_g,QL_g,QR_g,dt,normalNonZeroIndex);
+  kernels::aderdg::generic::c::riemannSolverLinear<{{useFlux_s}},{{useNCP_s}},{{useMaterialParameters_s}},{{solver}}>(*static_cast<{{solver}}*>(this),FL_g,FR_g,QL_g,QR_g,t,dt,direction);
 {% else %}
-  kernels::aderdg::generic::c::riemannSolverNonlinear<{{useNCP_s}},{{solver}}>(*static_cast<{{solver}}*>(this),FL_g,FR_g,QL_g,QR_g,dt,normalNonZeroIndex);
+  kernels::aderdg::generic::c::riemannSolverNonlinear<{{useNCP_s}},{{solver}}>(*static_cast<{{solver}}*>(this),FL_g,FR_g,QL_g,QR_g,t,dt,direction);
 {% endif %}
   
   {{optNamespace}}::converter::FFace_generic2optimised(FL_g,FL);
@@ -317,7 +317,7 @@ if(useGeneric) {
     
 } else {
 
-  {{optNamespace}}::riemannSolver(*static_cast<{{solver}}*>(this), FL, FR, QL, QR, dt, normalNonZeroIndex);
+  {{optNamespace}}::riemannSolver(*static_cast<{{solver}}*>(this), FL, FR, QL, QR, t, dt, direction);
   
 }
 {% if enableProfiler %}

@@ -64,8 +64,11 @@ void exahype::mappings::LevelwiseAdjacencyBookkeeping::createHangingVertex(
   const tarch::la::Vector<DIMENSIONS,int>&                   fineGridPositionOfVertex
 ) {
   VertexOperations::writeCellDescriptionsIndex(
-      fineGridVertex,
-      multiscalelinkedcell::HangingVertexBookkeeper::createVertexLinkMapForNewVertex());
+      fineGridVertex,multiscalelinkedcell::HangingVertexBookkeeper::createVertexLinkMapForNewVertex());
+  VertexOperations::writeADERDGCellDescriptions(
+      fineGridVertex,static_cast<void*>(nullptr));
+  VertexOperations::writeFiniteVolumesCellDescriptions(
+        fineGridVertex,static_cast<void*>(nullptr));
 }
 
 
@@ -79,8 +82,11 @@ void exahype::mappings::LevelwiseAdjacencyBookkeeping::createInnerVertex(
   const tarch::la::Vector<DIMENSIONS,int>&                             fineGridPositionOfVertex
 ) {
   VertexOperations::writeCellDescriptionsIndex(
-      fineGridVertex,
-      multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
+      fineGridVertex,multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
+  VertexOperations::writeADERDGCellDescriptions(
+      fineGridVertex,static_cast<void*>(nullptr));
+  VertexOperations::writeFiniteVolumesCellDescriptions(
+      fineGridVertex,static_cast<void*>(nullptr));
 }
 
 
@@ -94,8 +100,11 @@ void exahype::mappings::LevelwiseAdjacencyBookkeeping::createBoundaryVertex(
   const tarch::la::Vector<DIMENSIONS,int>&                             fineGridPositionOfVertex
 ) {
   VertexOperations::writeCellDescriptionsIndex(
-      fineGridVertex,
-      multiscalelinkedcell::HangingVertexBookkeeper::DomainBoundaryAdjacencyIndex);
+      fineGridVertex,multiscalelinkedcell::HangingVertexBookkeeper::DomainBoundaryAdjacencyIndex);
+  VertexOperations::writeADERDGCellDescriptions(
+      fineGridVertex,static_cast<void*>(nullptr));
+  VertexOperations::writeFiniteVolumesCellDescriptions(
+      fineGridVertex,static_cast<void*>(nullptr));
 }
 
 void exahype::mappings::LevelwiseAdjacencyBookkeeping::createCell(
@@ -125,8 +134,13 @@ void exahype::mappings::LevelwiseAdjacencyBookkeeping::leaveCell(
   // Write cell's index into adjacent vertices
   dfor2(k)
     if ( !fineGridVertices[fineGridVerticesEnumerator(k) ].isHangingNode() ) {
+      const int index = TWO_POWER_D-kScalar-1;
       VertexOperations::writeCellDescriptionsIndex(
-          fineGridVertices[fineGridVerticesEnumerator(k)], TWO_POWER_D-kScalar-1, fineGridCell.getCellDescriptionsIndex());
+          fineGridVertices[fineGridVerticesEnumerator(k)], index, fineGridCell.getCellDescriptionsIndex());
+      VertexOperations::writeADERDGCellDescriptions(
+          fineGridVertices[fineGridVerticesEnumerator(k)], index, fineGridCell.getADERDGCellDescriptions());
+      VertexOperations::writeFiniteVolumesCellDescriptions(
+          fineGridVertices[fineGridVerticesEnumerator(k)], index, fineGridCell.getFiniteVolumesCellDescriptions());
     }
   enddforx
 
@@ -247,6 +261,14 @@ void exahype::mappings::LevelwiseAdjacencyBookkeeping::mergeWithRemoteDataDueToF
             localVertex,
             cScalar,
             multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
+        exahype::VertexOperations::writeADERDGCellDescriptions(
+            localVertex,
+            cScalar,
+            nullptr);
+        exahype::VertexOperations::writeFiniteVolumesCellDescriptions(
+            localVertex,
+            cScalar,
+            nullptr);
       }
     enddforx
   }
@@ -371,6 +393,10 @@ void exahype::mappings::LevelwiseAdjacencyBookkeeping::destroyCell(
       VertexOperations::writeCellDescriptionsIndex(
           fineGridVertices[fineGridVerticesEnumerator(k)], TWO_POWER_D-kScalar-1,
               multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
+      VertexOperations::writeADERDGCellDescriptions(
+          fineGridVertices[fineGridVerticesEnumerator(k)], TWO_POWER_D-kScalar-1,nullptr);
+      VertexOperations::writeFiniteVolumesCellDescriptions(
+          fineGridVertices[fineGridVerticesEnumerator(k)], TWO_POWER_D-kScalar-1,nullptr);
     }
   enddforx
 }

@@ -11,7 +11,6 @@
 #include <ostream>
 
 #include "exahype/solvers/FiniteVolumesSolver.h"
-#include "exahype/solvers/UserSolverInterface.h"
 {% if enableProfiler %}
 #include "exahype/profilers/Profiler.h"
 {% endif %}
@@ -26,7 +25,7 @@ namespace {{project}}{
   class {{solver}};
 }
 
-class {{project}}::{{abstractSolver}} : public exahype::solvers::FiniteVolumesSolver, public exahype::solvers::UserFiniteVolumesSolverInterface  {
+class {{project}}::{{abstractSolver}} : public exahype::solvers::FiniteVolumesSolver {
   public:
     static constexpr int NumberOfVariables         = {{numberOfVariables}};
     static constexpr int NumberOfParameters        = {{numberOfMaterialParameters}};
@@ -35,12 +34,12 @@ class {{project}}::{{abstractSolver}} : public exahype::solvers::FiniteVolumesSo
     static constexpr int GhostLayerWidth           = {{ghostLayerWidth}};
     static constexpr double CFL                    = 0.9;
     
-    // virtual getters for the constexpr's
-    int constexpr_getNumberOfVariables()  const override { return NumberOfVariables; };
-    int constexpr_getNumberOfParameters() const override { return NumberOfParameters; };
-    int constexpr_getPatchSize()          const override { return PatchSize; };
-    int constexpr_getGhostLayerWidth()    const override { return GhostLayerWidth; }
-    double constexpr_getCFLNumber()       const override { return CFL; };
+    // virtual getters for the constexpr's ; TODO(Dominic): Who uses these methods?
+    int constexpr_getNumberOfVariables()  const { return NumberOfVariables; };
+    int constexpr_getNumberOfParameters() const { return NumberOfParameters; };
+    int constexpr_getPatchSize()          const { return PatchSize; };
+    int constexpr_getGhostLayerWidth()    const { return GhostLayerWidth; }
+    double constexpr_getCFLNumber()       const { return CFL; };
   
     class VariableMetrics;
     class Variables;
@@ -58,7 +57,7 @@ class {{project}}::{{abstractSolver}} : public exahype::solvers::FiniteVolumesSo
         const exahype::solvers::Solver::TimeStepping timeStepping
         {% if enableProfiler %},std::unique_ptr<exahype::profilers::Profiler> profiler{% endif %});
     
-    void solutionUpdate(double* luhNew,const double* luh,const tarch::la::Vector<DIMENSIONS,double>& dx,const double dt,double& maxAdmissibleDt) override;
+    void solutionUpdate(double* luh,const tarch::la::Vector<DIMENSIONS,double>& dx,const double dt,double& maxAdmissibleDt) override;
     
     double stableTimeStepSize(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& dx) override;
     void adjustSolution(double* luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,double dt) override;
@@ -74,32 +73,115 @@ class {{project}}::{{abstractSolver}} : public exahype::solvers::FiniteVolumesSo
     static void constantsToString(std::ostream& os);
     static void abortWithMsg(const char* const msg);
     
-    //not used PDE terms
-    {% if not useNCP %}
-    void nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) final {}
-    {% endif %}
+    /**
+     * @defgroup User PDE kernels
+     */
+    ///@{
+    /**
+     * Compute the eigenvalues of the flux tensor per coordinate direction \p d.
+     *
+     * \param[in] Q  the conserved variables associated with a quadrature node
+     *               as C array (already allocated).
+     * \param[in] d  the column of the flux vector (d=0,1,...,DIMENSIONS).
+     * \param[inout] lambda the eigenvalues as C array (already allocated).
+     */
+    virtual void eigenvalues(const double* const Q,const int d,double* lambda) {}
+  
+    /**
+     * Impose boundary conditions at a point on a boundary face
+     * within the time interval [t,t+dt].
+     *
+     * \param[in]    x         the physical coordinate on the face.
+     * \param[in]    t         the start of the time interval.
+     * \param[in]    dt        the width of the time interval.
+     * \param[in]    faceIndex indexing of the face (0 -- {x[0]=xmin}, 1 -- {x[1]=xmax}, 2 -- {x[1]=ymin}, 3 -- {x[2]=ymax}, and so on,
+     *                         where xmin,xmax,ymin,ymax are the bounds of the cell containing point x.
+     * \param[in]    d         the coordinate direction the face normal is pointing to.
+     * \param[in]    QIn       the conserved variables at point x from inside of the domain
+     *                         and time-averaged (over [t,t+dt]) as C array (already allocated).
+     * \param[in]    FIn       the normal fluxes at point x from inside of the domain
+     *                         and time-averaged (over [t,t+dt]) as C array (already allocated).
+     * \param[inout] QOut      the conserved variables at point x from outside of the domain
+     *                         and time-averaged (over [t,t+dt]) as C array (already allocated).
+     * \param[inout] FOut      the normal fluxes at point x from outside of the domain
+     *                         and time-averaged (over [t,t+dt]) as C array (already allocated).
+     */
+    virtual void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double* const stateIn,double* stateOut) {}
+  
+    /**
+     * Compute a pointSource contribution.
+     * 
+     * @TODO: Document me, please.
+     **/
+     virtual void pointSource(const double* const Q,const double* const x,const double t,const double dt, double* forceVector,int n) {}
+  
+    /**
+     * Compute the Algebraic Sourceterms.
+     * 
+     * You may want to overwrite this with your PDE Source (algebraic RHS contributions).
+     * However, in all schemes we have so far, the source-type contributions are
+     * collected with non-conservative contributions into a fusedSource, see the
+     * fusedSource method. From the kernels given with ExaHyPE, only the fusedSource
+     * is called and there is a default implementation for the fusedSource calling
+     * again seperately the nonConservativeProduct function and the algebraicSource
+     * function.
+     *
+     * \param[in]    Q the conserved variables (and parameters) associated with a quadrature point
+     *                 as C array (already allocated).
+     * \param[inout] S the source point as C array (already allocated).
+     */
+    virtual void algebraicSource(const double* const Q,double* S) {}
     
-    {% if not useSource %}
-    void algebraicSource(const double* const Q,double* S)  final {}
-    {% endif %}
+    /**
+     * Compute the nonconservative term $B(Q) \nabla Q$.
+     * 
+     * This function shall return a vector BgradQ which holds the result
+     * of the full term. To do so, it gets the vector Q and the matrix
+     * gradQ which holds the derivative of Q in each spatial direction.
+     * Currently, the gradQ is a continous storage and users can use the
+     * kernels::idx2 class in order to compute the positions inside gradQ.
+     *
+     * @TODO: Check if the following is still right:
+     * 
+     * !!! Warning: BgradQ is a vector of size NumberOfVariables if you
+     * use the ADER-DG kernels for nonlinear PDEs. If you use
+     * the kernels for linear PDEs, it is a tensor with dimensions
+     * Dim x NumberOfVariables.
+     * 
+     * \param[in]   Q   the vector of unknowns at the given position
+     * \param[in]   gradQ   the gradients of the vector of unknowns,
+     *                  stored in a linearized array.
+     * \param[inout]  The vector BgradQ (extends nVar), already allocated. 
+     *
+     **/
+    virtual void nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) {}
     
-    {% if not useFlux or useViscousFlux %}
-    void flux(const double* const Q,double** F)  final {}
-    {% endif %}
+    /**
+     * Compute the conserved flux.
+     * 
+     * \param[in]  Q the conserved variabels (and parameters) associated with a
+     *               quadrature point as C array.
+     * \param[inout] F a C array with shape [nDim][nVars]. That is, this is an C list
+     *               holding pointers to actual lists. Thus, the storage may be noncontinous.
+     *               In any case, the storage has already been allocated.
+     **/
+    virtual void flux(const double* const Q,double** F) {}
+  
+    /**
+     * Compute the flux with diffusive component.
+     * 
+     * \param[in]  Q the conserved variabels (and parameters) associated with a
+     *               quadrature point as C array.
+     *             gradQ the gradient of the conserved variabels (and parameters) associated
+     *                   with a quadrature point as C array.
+     * \param[inout] F a C array with shape [nDim][nVars]. That is, this is an C list
+     *               holding pointers to actual lists. Thus, the storage may be noncontinous.
+     *               In any case, the storage has already been allocated.
+     **/
+    virtual void viscousFlux(const double* const Q, const double* const gradQ, double** F) {}
     
-    {% if not useViscousFlux %}
-    void viscousFlux(const double* const Q,const double* const gradQ, double** F)  final {}
-    virtual void viscousEigenvalues(const double* const Q,const int d,double* lambda) final {};
-    {% endif %}
-    
-    {% if not usePointSources  %}
-    void pointSource(const double* const Q,const double* const x,const double t,const double dt, double* forceVector,int n)  final {}
-    /* Please check if this is at the correct place: */
-    {% endif %}
-    
-    {% if not useMaterialParameters  %}
-    virtual void multiplyMaterialParameterMatrix(const double* const Q, double* rhs) final {}
-    {% endif %}
+    virtual void viscousEigenvalues(const double* const Q,const int d,double* lambda) {}
+    ///@}
 };
 
 

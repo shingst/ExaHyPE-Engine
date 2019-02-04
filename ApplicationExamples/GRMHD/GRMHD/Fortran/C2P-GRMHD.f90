@@ -131,7 +131,7 @@ RECURSIVE SUBROUTINE PDECons2Prim(V,Q,iErr)
 	REAL :: g_cov(3,3),g_contr(3,3),gammaij(6)
 	REAL :: vb,v2,e2,b2,s2,sb,sb2,e,x1,x2,eps,uem,LF,gamma1,gam,w,ww
 	REAL :: vx,vy,vz,den,dd
-	REAL, PARAMETER :: tol = 1.0e-12
+	REAL, PARAMETER :: tol = 1.0e-18
 	INTEGER :: i
     LOGICAL              :: FAILED
     !    

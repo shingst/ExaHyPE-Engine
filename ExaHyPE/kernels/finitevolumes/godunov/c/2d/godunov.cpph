@@ -30,10 +30,9 @@
  * new solution. 
  * Finally add the source terms.
  */
-template <bool useSource, bool useNCP, bool useFlux, typename SolverType>
+template <bool useSource, bool useNCP, bool useFlux, bool robustDiagonalLimiting, typename SolverType>
 double kernels::finitevolumes::godunov::c::solutionUpdate(
-    SolverType& solver,
-    double* luh_new, const double* luh,
+    SolverType& solver,double* luh,
     const tarch::la::Vector<DIMENSIONS, double>& dx,double dt) {  
   constexpr int numberOfVariables  = SolverType::NumberOfVariables;
   constexpr int numberOfParameters = SolverType::NumberOfParameters;
@@ -52,6 +51,11 @@ double kernels::finitevolumes::godunov::c::solutionUpdate(
 
   double dt_max_allowed = std::numeric_limits<double>::max();
   
+  // copy old solution into temporary variable
+  constexpr int sizeOfDataOnPatch = numberOfData*(patchSize+2*ghostLayerWidth)*(patchSize+2*ghostLayerWidth);
+  double luhOld[sizeOfDataOnPatch];
+  std::copy_n(luh,sizeOfDataOnPatch,luhOld);
+
   idx3 idx(patchSize+2*ghostLayerWidth,patchSize+2*ghostLayerWidth,numberOfData);
   // x faces
   for (int j = patchBegin; j < patchEnd; j++) {
@@ -59,8 +63,8 @@ double kernels::finitevolumes::godunov::c::solutionUpdate(
       double s_max_x = 
           solver.riemannSolver(
               fL, fR,
-              luh + idx(j, k, 0),
-              luh + idx(j, k+1, 0),
+              luhOld + idx(j, k, 0),
+              luhOld + idx(j, k+1, 0),
               0);
 
       // TODO(guera): Improve. I'm quite sure this is not the correct/best
@@ -69,8 +73,8 @@ double kernels::finitevolumes::godunov::c::solutionUpdate(
           dt_max_allowed, cflFactor / DIMENSIONS * cellSize[0] / s_max_x); // TODO(Dominic): Ignore this for a while
       
       for (int l=0; l<numberOfVariables; ++l) {
-        luh_new[idx(j, k, l)]   -= invCellSizeTimesDt[0] * fL[l];
-        luh_new[idx(j, k+1, l)] += invCellSizeTimesDt[0] * fR[l];
+        luh[idx(j, k, l)]   -= invCellSizeTimesDt[0] * fL[l];
+        luh[idx(j, k+1, l)] += invCellSizeTimesDt[0] * fR[l];
       }
     }
   }
@@ -81,15 +85,15 @@ double kernels::finitevolumes::godunov::c::solutionUpdate(
       double s_max_y =
           solver.riemannSolver(
           fL, fR,
-          luh + idx(j, k, 0),
-          luh + idx(j+1, k, 0),
+          luhOld + idx(j, k, 0),
+          luhOld + idx(j+1, k, 0),
           1);
       dt_max_allowed = std::min(
           dt_max_allowed, cflFactor / DIMENSIONS * cellSize[1] / s_max_y);
       
       for (int l=0; l<numberOfVariables; ++l) {
-        luh_new[idx(j, k, l)]   -= invCellSizeTimesDt[1] * fL[l];
-        luh_new[idx(j+1, k, l)] += invCellSizeTimesDt[1] * fR[l];
+        luh[idx(j, k, l)]   -= invCellSizeTimesDt[1] * fL[l];
+        luh[idx(j+1, k, l)] += invCellSizeTimesDt[1] * fR[l];
       }
     }
   }
@@ -101,14 +105,14 @@ double kernels::finitevolumes::godunov::c::solutionUpdate(
     for (int j = patchBegin; j < patchEnd; j++) {
       for (int k = patchBegin; k < patchEnd; k++) {
         // TODO: Probably call fusedSource here instead with gradQ=0.
-        solver.algebraicSource(luh + idx(j, k, 0), source);
+        solver.algebraicSource(luhOld + idx(j, k, 0), source);
 
         for (int l = 0; l < numberOfVariables; l++) {
           // in Godunov 1st order, we have piecewise constant data and thus
           // no contribution from BgradQ (solver.cnp) to the solution, cf.
           // http://dx.doi.org/10.1016/j.apnum.2016.02.001  (eq 36),
           // term \delta Q/\delta x is vanishing.
-          luh_new[idx(j, k, l)] += dt * source[l];
+          luh[idx(j, k, l)] += dt * source[l];
         }
       }
     }

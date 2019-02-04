@@ -44,8 +44,8 @@ void {{project}}::{{abstractSolver}}::abortWithMsg(const char* const msg) {
 	abort();
 }
 
-void {{project}}::{{abstractSolver}}::solutionUpdate(double* luhNew,const double* luh,const tarch::la::Vector<DIMENSIONS,double>& dx,const double dt,double& maxAdmissibleDt) {
-  maxAdmissibleDt = kernels::finitevolumes::{{finiteVolumesType}}::c::solutionUpdate<{{useSource_s}}, {{useNCP_s}}, {{useFlux_s}}, {{solver}}>(*static_cast<{{solver}}*>(this),luhNew,luh,dx,dt);
+void {{project}}::{{abstractSolver}}::solutionUpdate(double* luh,const tarch::la::Vector<DIMENSIONS,double>& dx,const double dt,double& maxAdmissibleDt) {
+  maxAdmissibleDt = kernels::finitevolumes::{{finiteVolumesType}}::c::solutionUpdate<{{useSource_s}}, {{useNCP_s}}, {{useFlux_s}}, {{useRobustDiagonalLimiting_s}}, {{solver}}>(*static_cast<{{solver}}*>(this),luh,dx,dt);
 }
 
 

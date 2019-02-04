@@ -1,0 +1,193 @@
+{
+  "project_name": "GRMHD",
+  "architecture": "{{architecture}}",
+  "paths": {
+    "exahype_path": "./ExaHyPE",
+    "output_directory": "./ApplicationExamples/GRMHD/GRMHD",
+    "peano_kernel_path": "./Peano",
+    "plotter_subdirectory": "Writers"
+  },
+  "computational_domain": {
+    "dimension": {{dimension}},
+    "time_steps": {{timeSteps}},
+    "offset": [
+      -15.0,
+      -15.0,
+      -15.0
+    ],
+    "width": [
+      30.0,
+      30.0,
+      30.0
+    ]
+  },
+  "optimisation": {
+    "fuse_algorithmic_steps": true,
+    "fuse_algorithmic_steps_factor": 0.99,
+    "spawn_predictor_as_background_thread": {{predictorJobs}},
+    "spawn_prolongation_as_background_thread": {{prolongationJobs}},
+    "spawn_update_as_background_thread": {{updateJobs}},
+    "spawn_amr_background_threads": {{amrJobs}},
+    "time_step_batch_factor": {{batchFactor}},
+    "disable_metadata_exchange_in_batched_time_steps": true,
+    "disable_vertex_exchange_in_time_steps": true,
+    "double_compression": 0.0,
+    "spawn_double_compression_as_background_thread": false
+  },
+  "distributed_memory": {
+    "buffer_size": 64,
+    "load_balancing_strategy": "hotspot",
+    "load_balancing_type": "static",
+    "node_pool_strategy": "fair",
+    "ranks_per_node": {{ranksPerNode}},
+    "timeout": 60
+  },
+  "shared_memory": {
+    "autotuning_strategy": "dummy",
+    "cores": {{coresPerRank}},
+    "background_job_consumers": {{consumerTasks}},
+    "high_priority_background_job_processing": "one_at_a_time",
+    "low_priority_background_job_processing": "run_always",
+    "thread_stack_size": 16777216,
+    "properties_file": "sharedmemory.properties"
+  },
+  "solvers": [
+    {
+      "aderdg_kernel": {
+        "implementation": "{{kernels}}",
+        "language": "C",
+        "nonlinear": true,
+	"allocate_temporary_arrays" : "stack",
+        "optimised_kernel_debugging": [],
+        "optimised_terms": [],
+        "space_time_predictor": {},
+        "terms": [
+          "flux",
+          "ncp"
+        ]
+      },
+      "fv_kernel": {
+        "implementation": "generic",
+        "language": "C",
+        "scheme": "{{limiterType}}",
+        "terms": [
+          "flux",
+          "ncp"
+        ]
+      },
+      "limiter": {
+        "dmp_difference_scaling": 0.001,
+        "dmp_observables": 2,
+        "dmp_relaxation_parameter": 0.01,
+        "implementation": "generic",
+        "steps_till_cured": 0
+      },
+      "maximum_mesh_depth": {{dl}},
+      "maximum_mesh_size": {{dx}},
+      "name": "GRMHDSolver",
+      "order": {{order}},
+      "point_sources": 0,
+      "time_stepping": "global",
+      "type": "Limiting-ADER-DG",
+      "variables": [
+        {
+          "multiplicity": 1,
+          "name": "rho"
+        },
+        {
+          "multiplicity": 3,
+          "name": "vel"
+        },
+        {
+          "multiplicity": 1,
+          "name": "E"
+        },
+        {
+          "multiplicity": 3,
+          "name": "B"
+        },
+        {
+          "multiplicity": 1,
+          "name": "psi"
+        },
+        {
+          "multiplicity": 1,
+          "name": "lapse"
+        },
+        {
+          "multiplicity": 3,
+          "name": "shift"
+        },
+        {
+          "multiplicity": 6,
+          "name": "gij"
+        }
+      ],
+      "plotters": [
+        {
+          "name": "ConservedWriter",
+          "output": "./vtk-output/conserved",
+          "repeat": 0.1,
+          "time": 0.0,
+          "type": "vtu::Legendre::vertices::ascii",
+          "variables": 1
+        },
+        {
+          "name": "ConservedWriter",
+          "output": "./vtk-output/primitive",
+          "repeat": 0.1,
+          "time": 0.0,
+          "type": "vtu::Legendre::vertices::ascii",
+          "variables": 1
+        },
+        {
+          "name": "ConservedWriter",
+          "output": "./vtk-output/limited",
+          "repeat": 0.1,
+          "time": 0.0,
+          "type": "vtu::Cartesian::vertices::limited::ascii",
+          "variables": 1
+        },
+        {
+          "name": "TimingStatistics_DG",
+          "output": "./output/timing-benchmarks",
+          "repeat": 0.05,
+          "time": 0.0,
+          "type": "user::defined",
+          "variables": 0
+        },
+        {
+          "name": "PrimitiveWriter",
+          "output": "./hdf5/primitives3d",
+          "repeat": 0.1,
+          "time": 0.0,
+          "type": "Carpet::Cartesian::Vertices::HDF5",
+          "variables": 19
+        },
+        {
+          "name": "PrimitiveWriter",
+          "output": "./hdf5/primitives2d",
+          "repeat": 0.1,
+          "select": {
+            "z": 0
+          },
+          "time": 0.0,
+          "type": "Carpet::Cartesian::Vertices::HDF5",
+          "variables": 19
+        },
+        {
+          "name": "PrimitiveWriter",
+          "output": "./hdf5/primitives1d",
+          "repeat": 0.1,
+          "select": {
+            "y": 0,
+            "z": 0
+          },
+          "time": 0.0,
+          "type": "Carpet::Cartesian::Vertices::HDF5",
+          "variables": 19
+        }
+      ]
+    }
+  ]
+}

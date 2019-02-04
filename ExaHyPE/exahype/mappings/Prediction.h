@@ -124,6 +124,8 @@ private:
    * to compute the normal fluxes/fluctuations at the cell boundary.
    *
    * \see enterCellSpecification()
+   *
+   * @param[in] issuePredictionJobs issue prediction jobs. Otherwise, perform the prolongation.
    */
   static void performPredictionOrProlongate(
       const exahype::Cell& fineGridCell,

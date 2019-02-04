@@ -87,7 +87,7 @@ int spaceTimePredictorNonlinear(
     const double dt);
 
 template <typename SolverType>
-void solutionUpdate(SolverType& solver, double* luh, const double* const lduh, const double dt);
+void solutionUpdate(SolverType& solver, double* luh, const double* const luhOld, const double* const lduh, const double dt);
 
 template <bool useSourceOrNCP, bool useFlux, int numberOfVariables, int basisSize>
 void volumeIntegralLinear(double* lduh, const double* const lFhi,
@@ -143,6 +143,7 @@ void riemannSolverNonlinear(
     SolverType& solver,
     double* FL, double* FR, const double* const QL,
     const double* const QR,
+    const double t,
     const double dt,
     const int direction);
 
@@ -372,6 +373,7 @@ void riemannSolverNonlinear(
     SolverType& solver,
     double* FL, double* FR, const double* const QL,
     const double* const QR,
+    const double t,
     const double dt,
     const int direction);
 
@@ -380,6 +382,7 @@ void riemannSolverLinear(
     SolverType& solver,
     double* FL, double* FR,
     const double* const QL, const double* const QR,
+    const double t,
     const double dt,
     const int direction);
 

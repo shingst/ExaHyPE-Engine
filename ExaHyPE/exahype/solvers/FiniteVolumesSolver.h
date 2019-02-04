@@ -110,10 +110,8 @@ private:
   MeshUpdateEvent _nextMeshUpdateEvent;
 
   /**
-   * Synchonises the cell description time stamps
-   * and time step sizes with the solver ones
-   * according to the time stepping mode that
-   * is switched on.
+   * Synchronises the cell description's time stepping data with
+   * the solver's time stepping data.
    */
   void synchroniseTimeStepping(CellDescription& cellDescription) const;
 
@@ -129,6 +127,31 @@ private:
   void adjustSolutionDuringMeshRefinementBody(
       CellDescription& cellDescription,
       const bool isInitialMeshRefinement);
+
+  /**
+   * This routine is called from the update(...) and
+   * fusedTimeStep(...) functions.
+   *
+   * @return a struct holding an admissible time step size for the next update
+   *
+   * @param cellDescription         a cell description
+   * @param cellInfo                links to all the cell descriptions associated with a cell
+   * @param neighbourMergePerformed per face a flag indicating if a neighbour merge has been performed
+   * @param isFirstTimeStepOfBatch  if the current time step is the first time step of a batch of time steps
+   * @param isLastTimeStepOfBatch   if the current time step is the last time step of a batch of time steps
+   * @param isAtRemoteBoundary      if the cell description is at a remote boundary.
+   * @param uncompressBefore        if the cell description should uncompress data before doing any PDE operations
+   *
+   * @note Might be called by background task. Do not synchronise time step data here.
+   */
+  UpdateResult updateBody(
+      CellDescription&                                           cellDescription,
+      CellInfo&                                                  cellInfo,
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
+      const bool                                                 isFirstTimeStepOfBatch,
+      const bool                                                 isLastTimeStepOfBatch,
+      const bool                                                 isAtRemoteBoundary,
+      const bool                                                 uncompressBefore);
 
 #ifdef Parallel
   /**
@@ -186,7 +209,7 @@ private:
   void putUnknownsIntoByteStream(CellDescription& cellDescription) const;
   void uncompress(CellDescription& cellDescription) const;
 
-  class CompressionJob {
+  class CompressionJob: public tarch::multicore::jobs::Job {
     private:
       const FiniteVolumesSolver& _solver;
       CellDescription&           _cellDescription;
@@ -197,39 +220,99 @@ private:
         CellDescription&           cellDescription,
         const bool                 isSkeletonJob);
 
-      bool operator()();
+      bool run() override;
   };
 
   /**
    * A job which performs the Finite Volumes solution update
    * and further updates the local time stamp associated with
    * the FV cell description.
-   *
-   * \note Spawning these operations as background job makes only sense if you
-   * do not plan to reduce the admissible time step size or refinement requests
-   * within a consequent reduction step.
    */
-  class FusedTimeStepJob {
+  class FusedTimeStepJob: public tarch::multicore::jobs::Job {
   private:
-    FiniteVolumesSolver&  _solver;
-    const int             _cellDescriptionsIndex;
-    const int             _element;
-    const bool            _isSkeletonJob;
+    FiniteVolumesSolver&                                      _solver;
+    CellDescription&                                          _cellDescription;
+    CellInfo                                                  _cellInfo; // copy
+    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> _neighbourMergePerformed; // copy
+    const bool                                                _isFirstTimeStepOfBatch;
+    const bool                                                _isLastTimeStepOfBatch;
+    const bool                                                _isSkeletonJob;
   public:
+  /**
+   * Construct a FusedTimeStepJob.
+   *
+   * @note Job is spawned as high priority job if spawned in the last time step.
+   * It further spawns a prediction job in this case in order
+   * to overlap work with the reduction of time step size
+   * and mesh update events.
+   *
+   * @note The state of the neighbourMergePerformed flags is used internally by
+   * some of the kernels, e.g. in order to determine where to perform a face integral.
+   * However, they have to be reset before the next iteration as they indicate on
+   * which face a Riemann solve has already been performed or not (their original usage).
+   * The flags are thus reset directly after spawning a FusedTimeStepJob.
+   * Therefore, we need to copy the neighbourMergePerformed flags when spawning
+   * a FusedTimeStep job.
+     *
+     * @param solver                 the spawning solver
+     * @param cellDescription        a cell description
+     * @param cellInfo               links to all cell descriptions associated with the cell
+     * @param isFirstTimeStepOfBatch if we currently run the first time step of a batch
+     * @param isLastTimeStepOfBatch  if we currently run the last time step of a batch
+     * @param isSkeletonJob          if the cell is a skeleton cell
+     */
     FusedTimeStepJob(
         FiniteVolumesSolver& solver,
-        const int            cellDescriptionsIndex,
-        const int            element,
+        CellDescription&     cellDescription,
+        CellInfo&            cellInfo,
+        const bool           isFirstTimeStepOfBatch,
+        const bool           isLastTimeStepOfBatch,
         const bool           isSkeletonJob
     );
 
-    bool operator()();
+    bool run() override;
+  };
+
+  /**
+   * A job which performs the solution update and computes a new time step size.
+   *
+   * \note Spawning these operations as background job makes only sense if you
+   * wait in endIteration(...) on the completion of the job.
+   * It further important to flag this job as high priority job to
+   * ensure completion before the next reduction.
+   */
+  class UpdateJob: public tarch::multicore::jobs::Job {
+  private:
+    FiniteVolumesSolver&                                      _solver; // TODO not const because of kernels
+    CellDescription&                                          _cellDescription;
+    CellInfo                                                  _cellInfo;
+    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> _neighbourMergePerformed; // copy
+    const bool                                                _isAtRemoteBoundary;
+  public:
+    /**
+     * Construct a UpdateJob.
+     *
+     * @note Job is always spawned as high priority job.
+     *
+     * @param solver                 the spawning solver
+     * @param cellDescription        a cell description
+     * @param cellInfo               links to all cell descriptions associated with the cell
+     * @param isSkeletonJob          if the cell is a skeleton cell
+     */
+    UpdateJob(
+        FiniteVolumesSolver&                                       solver,
+        CellDescription&                                           cellDescription,
+        CellInfo&                                                  cellInfo,
+        const bool                                                 isAtRemoteBoundary);
+
+    bool run() override;
+    void prefetchData() override;
   };
 
   /**
    * A job that calls adjustSolutionDuringMeshRefinementBody(...).
    */
-  class AdjustSolutionDuringMeshRefinementJob {
+  class AdjustSolutionDuringMeshRefinementJob: public tarch::multicore::jobs::Job {
   private:
     FiniteVolumesSolver& _solver;
     CellDescription&     _cellDescription;
@@ -240,7 +323,7 @@ private:
         CellDescription&     cellDescription,
         const bool           isInitialMeshRefinement);
 
-    bool operator()();
+    bool run() override;
   };
 
 public:
@@ -267,15 +350,24 @@ public:
      return Heap::getInstance().getData(cellDescriptionsIndex)[element];
    }
 
+
    /**
     * Push a new cell description to the back
-    * of the heap vector at \p cellDescriptionsIndex.
+    * of the Finite Volumes cell descriptions heap vector referenced
+    * in @p cellInfo.
     *
-    * \param TODO docu
+    * @param solverNumber    identification number of this solver
+    * @param cellInfo        references to the cell descriptions associated with a mesh cell.
+    * @param cellType        the cell type the new cell description should become
+    * @param refinementEvent the initial refinement event the new cell description should get
+    * @param level           the mesh level the new cell description is associated with
+    * @param parentIndex     the cell descriptions index of a parent cell
+    * @param cellSize        the size of the mesh cell the new cell description is associated with
+    * @param cellOffset      the offset of the mesh cell the new cell description is associated with
     */
    static void addNewCellDescription(
-       const int cellDescriptionsIndex,
        const int solverNumber,
+       CellInfo& cellInfo,
        const CellDescription::Type cellType,
        const CellDescription::RefinementEvent refinementEvent,
        const int level,
@@ -426,10 +518,16 @@ public:
    **/
   virtual double riemannSolver(double* fL, double *fR, const double* qL, const double* qR, int normalNonZero) = 0;
 
-  virtual void solutionUpdate(
-      double* luhNew,const double* luh,
-      const tarch::la::Vector<DIMENSIONS, double>& dx,
-      const double dt, double& maxAdmissibleDt) = 0;
+  /**
+   * Update the solution of all volumes on a patch.
+   *
+   * @param[inout] luh             the current (and then new) solution
+   * @param[in]    dx              the extends of the cell holding the FV patch
+   * @param[in]    dt              time step size the FV patch is marching with
+   * @param[inout] maxAdmissibleDt admissible time step size obtained from the Riemann solves
+   */
+  virtual void solutionUpdate(double* luh,const tarch::la::Vector<DIMENSIONS, double>& dx,
+                              const double dt, double& maxAdmissibleDt) = 0;
 
   /**
    * Adjust the conserved variables and parameters (together: Q) at a given time t at the (quadrature) point x.
@@ -542,21 +640,15 @@ public:
   bool isPerformingPrediction(const exahype::State::AlgorithmSection& section) const override;
   bool isMergingMetadata(const exahype::State::AlgorithmSection& section) const override;
 
-  void synchroniseTimeStepping(
-          const int cellDescriptionsIndex,
-          const int element) const override;
-
   void startNewTimeStep() override;
 
   void startNewTimeStepFused(
-      const bool isFirstIterationOfBatch,
-      const bool isLastIterationOfBatch) final override;
+      const bool isFirstTimeStepOfBatch,
+      const bool isLastTimeStepOfBatch) final override;
 
   void updateTimeStepSizesFused() override;
 
   void updateTimeStepSizes()      override;
-
-  void zeroTimeStepSizes() override;
 
   /**
    * Roll back the time step data to the
@@ -649,14 +741,8 @@ public:
       const int solverNumber) const override;
 
   void finaliseStateUpdates(
-      exahype::Cell& fineGridCell,
-      exahype::Vertex* const fineGridVertices,
-      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-      exahype::Cell& coarseGridCell,
-      exahype::Vertex* const coarseGridVertices,
-      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-      const int solverNumber) override;
+      const int solverNumber,
+      CellInfo& cellInfo) final override;
 
   ///////////////////////////////////
   // CELL-LOCAL
@@ -670,47 +756,49 @@ public:
    */
   double startNewTimeStepFused(
       CellDescription& cellDescription,
-      const bool isFirstIterationOfBatch,
-      const bool isLastIterationOfBatch);
+      const bool isFirstTimeStepOfBatch,
+      const bool isLastTimeStepOfBatch);
 
   double updateTimeStepSizes(
-        const int cellDescriptionsIndex,
-        const int element) override final;
-
-  double updateTimeStepSizesFused(
-          const int cellDescriptionsIndex,
-          const int element) override final;
-
-  void zeroTimeStepSizes(CellDescription& cellDescription) const;
+      const int solverNumber,
+      CellInfo& cellInfo,
+      const bool fused) override final;
 
   void rollbackToPreviousTimeStep(CellDescription& cellDescription) const;
 
   void rollbackToPreviousTimeStepFused(CellDescription& cellDescription) const;
 
-  /** @copydoc: exahype::solvers::Solver::fusedTimeStep
+  /** @copydoc: exahype::solvers::Solver::fusedTimeStepOrRestrict
    *
-   * The "hasCompletedTimeStep" flag must be only be unset when
+   * The "hasCompletedLastStep" flag must be only be unset when
    * a background job is spawned.
    */
-  UpdateResult fusedTimeStep(
-      const int cellDescriptionsIndex,
-      const int element,
-      const bool isFirstIterationOfBatch,
-      const bool isLastIterationOfBatch,
+  UpdateResult fusedTimeStepOrRestrict(
+      const int solverNumber,
+      CellInfo& cellInfo,
+      const bool isFirstTimeStepOfBatch,
+      const bool isLastTimeStepOfBatch,
       const bool isAtRemoteBoundary) final override;
 
-  UpdateResult update(
-        const int cellDescriptionsIndex,
-        const int element,
+  /**
+   *  TODO
+   *
+   * @param solverNumber
+   * @param cellInfo
+   * @param isAtRemoteBoundary
+   * @return
+   */
+  UpdateResult updateOrRestrict(
+        const int  solverNumber,
+        CellInfo&  cellInfo,
         const bool isAtRemoteBoundary) final override;
 
   void compress(
-      const int cellDescriptionsIndex,
-      const int element,
+      const int solverNumber,
+      CellInfo& cellInfo,
       const bool isAtRemoteBoundary) const final override;
 
-  void adjustSolutionDuringMeshRefinement(
-      const int cellDescriptionsIndex,const int element) final override;
+  void adjustSolutionDuringMeshRefinement(const int solverNumber,CellInfo& cellInfo) final override;
 
   /**
    * Update the solution of a cell description.
@@ -724,9 +812,10 @@ public:
    *                                   we overwrite it by the updated solution.
    */
   void updateSolution(
-      CellDescription& cellDescription,
-      const int cellDescriptionsIndex,
-      const bool backupPreviousSolution);
+      CellDescription&                                           cellDescription,
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
+      const int                                                  cellDescriptionsIndex,
+      const bool                                                 backupPreviousSolution);
 
   /**
    * TODO(Dominic): Update docu.
@@ -745,32 +834,28 @@ public:
    */
   void swapSolutionAndPreviousSolution(CellDescription& cellDescription) const;
 
-  void prolongateFaceData(
-      const int cellDescriptionsIndex,
-      const int element,
-      const bool isAtRemoteBoundary) override;
-
-  void restriction(
-        const int cellDescriptionsIndex,
-        const int element) override;
-
+  /**
+   * Does nothing as a FV solver should never do global rollbacks;
+   * no mesh refinement is performed by this solver type.
+   */
   void rollbackSolutionGlobally(
-      const int cellDescriptionsIndex, const int solverElement,
+      const int solverNumber,
+      CellInfo& cellInfo,
       const bool fusedTimeStepping) const final override;
 
   ///////////////////////////////////
   // NEIGHBOUR
   ///////////////////////////////////
   void mergeNeighboursData(
-      Heap::HeapEntries&                        cellDescriptions1,
-      Heap::HeapEntries&                        cellDescriptions2,
       const int                                 solverNumber,
+      Solver::CellInfo&                         context1,
+      Solver::CellInfo&                         context2,
       const tarch::la::Vector<DIMENSIONS, int>& pos1,
       const tarch::la::Vector<DIMENSIONS, int>& pos2);
 
   void mergeWithBoundaryData(
-      Heap::HeapEntries&                        cellDescriptions,
       const int                                 solverNumber,
+      Solver::CellInfo&                         context,
       const tarch::la::Vector<DIMENSIONS, int>& posCell,
       const tarch::la::Vector<DIMENSIONS, int>& posBoundary);
 #ifdef Parallel
@@ -859,43 +944,66 @@ public:
       const int cellDescriptionsIndex,
       const int solverNumber) const override;
 
-  void mergeWithNeighbourMetadata(
-      const exahype::MetadataHeap::HeapEntries& metadata,
-      const tarch::la::Vector<DIMENSIONS, int>& src,
-      const tarch::la::Vector<DIMENSIONS, int>& dest,
-      const int cellDescriptionsIndex,
-      const int element) const override;
-
+  /**
+   * Send boundary layers to a neighbouring rank.
+   *
+   * @note Assumes cell is initialised. Solver offers
+   * sendEmptyDataToNeighbour for other case.
+   *
+   * @param toRank       the adjacent rank we want to send to
+   * @param solverNumber identification number for the solver
+   * @param cellInfo     links to a cells data
+   * @param src          position of message source relative to vertex
+   * @param dest         position of message destination relative to vertex
+   * @param x            vertex' position
+   * @param level        vertex' level
+   */
   void sendDataToNeighbour(
       const int                                     toRank,
-      const int                                     cellDescriptionsIndex,
-      const int                                     elementIndex,
+      const int                                     solverNumber,
+      Solver::CellInfo&                             cellInfo,
       const tarch::la::Vector<DIMENSIONS, int>&     src,
       const tarch::la::Vector<DIMENSIONS, int>&     dest,
       const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) override;
+      const int                                     level);
 
+  /**
+   * Send zero-length message to a neighbouring rank.
+   *
+   * @param toRank       the adjacent rank we want to send to
+   * @param x            vertex' position
+   * @param level        vertex' level
+   */
   void sendEmptyDataToNeighbour(
       const int                                     toRank,
       const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const override;
+      const int                                     level) const;
 
+  /**
+   * Receive data and merge it if the face data exchange counter
+   * demands it. Otherwise, drop the data.
+   *
+   * @param fromRank       rank we expect to receive data from
+   * @param cellInfo       information about the cell for which we want to receive data
+   * @param solverNumber   identification number for this solver
+   * @param src            relative position of message source      to vertex.
+   * @param src            relative position of message destination to vertex.
+   * @param x              vertex' position
+   * @param level          vertex' level
+   */
   void mergeWithNeighbourData(
       const int                                    fromRank,
-      const int                                    cellDescriptionsIndex,
-      const int                                    element,
+      const int                                    solverNumber,
+      Solver::CellInfo&                            cellInfo,
       const tarch::la::Vector<DIMENSIONS, int>&    src,
       const tarch::la::Vector<DIMENSIONS, int>&    dest,
       const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) override;
-
+      const int                                    level);
 
   void dropNeighbourData(
       const int                                     fromRank,
-      const tarch::la::Vector<DIMENSIONS, int>&     src,
-      const tarch::la::Vector<DIMENSIONS, int>&     dest,
       const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const override;
+      const int                                     level) const;
 
   ///////////////////////
   // MASTER <=> WORKER
@@ -1021,6 +1129,12 @@ public:
   std::string toString() const override;
 
   void toString (std::ostream& out) const override;
+
+  ///////////////////////
+  // PROFILING
+  ///////////////////////
+
+  CellProcessingTimes measureCellProcessingTimes(const int numberOfRuns=100) override;
 };
 
 #endif

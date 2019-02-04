@@ -81,7 +81,8 @@ class Controller:
             "useFusedSourceVect"    : args["useFusedSourceVect"],
             "nPointSources"         : args["usePointSources"],
             "usePointSources"       : args["usePointSources"] >= 0,
-            "useMaterialParam"      : args["useMaterialParam"],
+            "useMaterialParam"      : (args["useMaterialParam"] or args["useMaterialParamVect"]),
+            "useMaterialParamVect"  : args["useMaterialParamVect"],
             "codeNamespace"         : args["namespace"],
             "pathToOutputDirectory" : os.path.join(Configuration.pathToExaHyPERoot, args["pathToApplication"], args["pathToOptKernel"]),
             "architecture"          : args["architecture"],
@@ -91,6 +92,7 @@ class Controller:
             "pathToLibxsmmGemmGenerator"  : Configuration.pathToLibxsmmGemmGenerator,
             "quadratureType"        : ("Gauss-Lobatto" if args["useGaussLobatto"] else "Gauss-Legendre"),
             "useCERKGuess"          : args["useCERKGuess"],
+            "useSplitCK"            : args["useSplitCK"],
             "tempVarsOnStack"       : args["tempVarsOnStack"],
             "useLibxsmm"            : Configuration.useLibxsmm,
             "runtimeDebug"          : Configuration.runtimeDebug #for debug

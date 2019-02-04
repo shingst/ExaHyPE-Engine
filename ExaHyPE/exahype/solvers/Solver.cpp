@@ -42,6 +42,7 @@ tarch::multicore::BooleanSemaphore exahype::BackgroundJobSemaphore;
 tarch::multicore::BooleanSemaphore exahype::HeapSemaphore;
 
 exahype::DataHeap::HeapEntries& exahype::getDataHeapEntries(const int index) {
+  assertion1(DataHeap::getInstance().isValidIndex(index),index);
   return DataHeap::getInstance().getData(index);
 }
 
@@ -82,7 +83,7 @@ double exahype::solvers::Solver::PipedCompressedBytes = 0;
 
 tarch::logging::Log exahype::solvers::Solver::_log( "exahype::solvers::Solver");
 
-bool exahype::solvers::Solver::ProfileUpdate = false;
+bool exahype::solvers::Solver::SwitchOffNeighbourMergePerformedCheck = false;
 
 bool exahype::solvers::Solver::FuseADERDGPhases           = false;
 double exahype::solvers::Solver::WeightForPredictionRerun = 0.99;
@@ -90,8 +91,13 @@ double exahype::solvers::Solver::WeightForPredictionRerun = 0.99;
 bool exahype::solvers::Solver::DisableMetaDataExchangeInBatchedTimeSteps = false;
 bool exahype::solvers::Solver::DisablePeanoNeighbourExchangeInTimeSteps = false;
 
+int exahype::solvers::Solver::MaxNumberOfRunningBackgroundJobConsumerTasksDuringTraversal = 0;
+
 bool exahype::solvers::Solver::SpawnPredictionAsBackgroundJob = false;
-int exahype::solvers::Solver::PredictionSweeps                = 1;
+
+bool exahype::solvers::Solver::SpawnUpdateAsBackgroundJob = false;
+
+int exahype::solvers::Solver::PredictionSweeps     = 1;
 
 bool exahype::solvers::Solver::SpawnProlongationAsBackgroundJob = false;
 
@@ -100,15 +106,17 @@ bool exahype::solvers::Solver::SpawnAMRBackgroundJobs = false;
 double exahype::solvers::Solver::CompressionAccuracy = 0.0;
 bool exahype::solvers::Solver::SpawnCompressionAsBackgroundJob = false;
 
-int exahype::solvers::Solver::NumberOfAMRBackgroundJobs = 0;
-int exahype::solvers::Solver::NumberOfEnclaveJobs = 0;
-int exahype::solvers::Solver::NumberOfSkeletonJobs = 0;
+std::atomic<int> exahype::solvers::Solver::NumberOfAMRBackgroundJobs(0);
+std::atomic<int> exahype::solvers::Solver::NumberOfReductionJobs(0);
+std::atomic<int> exahype::solvers::Solver::NumberOfEnclaveJobs(0);
+std::atomic<int> exahype::solvers::Solver::NumberOfSkeletonJobs(0);
 
 std::string exahype::solvers::Solver::toString(const JobType& jobType) {
   switch (jobType) {
-    case JobType::AMRJob:      return "AMRJob";
-    case JobType::EnclaveJob:  return "EnclaveJob";
-    case JobType::SkeletonJob: return "SkeletonJob";
+    case JobType::AMRJob:       return "AMRJob";
+    case JobType::ReductionJob: return "ReductionJob";
+    case JobType::EnclaveJob:   return "EnclaveJob";
+    case JobType::SkeletonJob:  return "SkeletonJob";
     default:
       logError("toString(const JobType&)","Job type not supported.");
       std::abort();
@@ -118,9 +126,10 @@ std::string exahype::solvers::Solver::toString(const JobType& jobType) {
 
 int exahype::solvers::Solver::getNumberOfQueuedJobs(const JobType& jobType) {
   switch (jobType) {
-    case JobType::AMRJob:     return NumberOfAMRBackgroundJobs;
-    case JobType::EnclaveJob: return NumberOfEnclaveJobs;
-    case JobType::SkeletonJob:return NumberOfSkeletonJobs;
+    case JobType::AMRJob:       return NumberOfAMRBackgroundJobs.load();
+    case JobType::ReductionJob: return NumberOfReductionJobs.load();
+    case JobType::EnclaveJob:   return NumberOfEnclaveJobs.load();
+    case JobType::SkeletonJob:  return NumberOfSkeletonJobs.load();
     default:
       logError("getNumberOfQueuedJobs(const JobType&)","Job type not supported.");
       std::abort();
@@ -129,35 +138,30 @@ int exahype::solvers::Solver::getNumberOfQueuedJobs(const JobType& jobType) {
 }
 
 void exahype::solvers::Solver::ensureAllJobsHaveTerminated(JobType jobType) {
-  bool finishedWait = false;
-
-  tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  const int queuedJobs = getNumberOfQueuedJobs(jobType);
-  lock.free();
-  finishedWait = queuedJobs == 0;
+  int queuedJobs = getNumberOfQueuedJobs(jobType);
+  bool finishedWait = queuedJobs == 0;
 
   if ( !finishedWait ) {
     #if defined(Asserts)
     logInfo("waitUntilAllBackgroundTasksHaveTerminated()",
       "waiting for " << queuedJobs << " background job(s) to complete (type=" << toString(jobType) << ").");
     #endif
-    if ( jobType != JobType::SkeletonJob ) {
-      peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
-    }
+    peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
   }
 
   while ( !finishedWait ) {
     // do some work myself
     tarch::parallel::Node::getInstance().receiveDanglingMessages();
-    if ( jobType == JobType::SkeletonJob ) { // TODO(Dominic): Use background job queue here as well
+    if (
+        jobType == JobType::SkeletonJob ||
+        jobType == JobType::ReductionJob
+    ) { // TODO(Dominic): Use background job queue here as well
        tarch::multicore::jobs::processHighPriorityJobs(1);
     } else {
       tarch::multicore::jobs::processBackgroundJobs(1);
     }
 
-    tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-    const int queuedJobs = getNumberOfQueuedJobs(jobType);
-    lock.free();
+    queuedJobs = getNumberOfQueuedJobs(jobType);
     finishedWait = queuedJobs == 0;
   }
 }
@@ -597,13 +601,13 @@ int exahype::solvers::Solver::getMaxRefinementStatus() {
         result =
             std::max(result,
                 static_cast<exahype::solvers::ADERDGSolver*>(solver)->
-                getMinimumRefinementStatusForTroubledCell());
+                getMinRefinementStatusForTroubledCell());
         break;
       case Type::LimitingADERDG:
         result =
             std::max(result,
                 static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getSolver()->
-                getMinimumRefinementStatusForTroubledCell());
+                getMinRefinementStatusForTroubledCell());
         break;
       default:
         break;
@@ -699,9 +703,6 @@ void exahype::solvers::Solver::reinitialiseTimeStepDataIfLastPredictorTimeStepSi
 }
 
 void exahype::solvers::Solver::startNewTimeStepForAllSolvers(
-      const std::vector<double>& minTimeStepSizes,
-      const std::vector<int>& maxLevels,
-      const std::vector<exahype::solvers::Solver::MeshUpdateEvent>& meshUpdateEvents,
       const bool isFirstIterationOfBatchOrNoBatch,
       const bool isLastIterationOfBatchOrNoBatch,
       const bool fusedTimeStepping) {
@@ -712,17 +713,9 @@ void exahype::solvers::Solver::startNewTimeStepForAllSolvers(
      * Update reduced quantities (over multiple batch iterations)
      */
     // mesh refinement events
-    solver->updateNextMeshUpdateEvent(meshUpdateEvents[solverNumber]);
     if ( isLastIterationOfBatchOrNoBatch ) { // set the next as current event
       solver->setNextMeshUpdateEvent();
     }
-    // cell sizes (for AMR)
-    solver->updateNextMaxLevel(maxLevels[solverNumber]);
-
-    // time
-    assertion1(std::isfinite(minTimeStepSizes[solverNumber]),minTimeStepSizes[solverNumber]);
-    assertion1(minTimeStepSizes[solverNumber]>0.0,minTimeStepSizes[solverNumber]);
-    solver->updateMinNextTimeStepSize(minTimeStepSizes[solverNumber]);
 
     // time
     // only update the time step size in last iteration; just advance with old time step size otherwise
@@ -825,24 +818,18 @@ void exahype::solvers::Solver::toString(std::ostream& out) const {
 // Neighbours TODO(Dominic): Move in exahype::Vertex
 
 exahype::MetadataHeap::HeapEntries exahype::gatherNeighbourCommunicationMetadata(
-    int cellDescriptionsIndex,
+    const int cellDescriptionsIndex,
     const tarch::la::Vector<DIMENSIONS,int>& src,
     const tarch::la::Vector<DIMENSIONS,int>& dest) {
-  assertion1(exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(cellDescriptionsIndex),cellDescriptionsIndex);
-
-  const int length =
-      exahype::solvers::RegisteredSolvers.size()*exahype::NeighbourCommunicationMetadataPerSolver;
-  exahype::MetadataHeap::HeapEntries encodedMetaData;
+  const int length = solvers::RegisteredSolvers.size()*exahype::NeighbourCommunicationMetadataPerSolver;
+  MetadataHeap::HeapEntries encodedMetaData;
   encodedMetaData.reserve(length);
 
-  for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
-    auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
+  for (unsigned int solverNumber = 0; solverNumber < solvers::RegisteredSolvers.size(); ++solverNumber) {
+    auto* solver = solvers::RegisteredSolvers[solverNumber];
 
     solver->appendNeighbourCommunicationMetadata(
-        encodedMetaData,
-        src,dest,
-        cellDescriptionsIndex,
-        solverNumber);
+        encodedMetaData,src,dest,cellDescriptionsIndex,solverNumber);
   }
   assertion2(static_cast<int>(encodedMetaData.size())==length,encodedMetaData.size(),length);
   return encodedMetaData;
@@ -888,8 +875,7 @@ exahype::receiveNeighbourCommunicationMetadata(
     const int                                   fromRank,
     const tarch::la::Vector<DIMENSIONS,double>& x,
     const int                                   level) {
-  const unsigned int length =
-      exahype::NeighbourCommunicationMetadataPerSolver*exahype::solvers::RegisteredSolvers.size();
+  const size_t length = NeighbourCommunicationMetadataPerSolver*solvers::RegisteredSolvers.size();
   buffer.reserve(length);
   buffer.clear();
   assertion(buffer.size()==0);
@@ -899,6 +885,7 @@ exahype::receiveNeighbourCommunicationMetadata(
       MetadataHeap::getInstance().receiveData(
           fromRank, x, level,peano::heap::MessageType::NeighbourCommunication);
   assertion(receivedMessage.size()==0 || receivedMessage.size()==length);
+
   buffer.insert(buffer.begin(),receivedMessage.begin(),receivedMessage.end());
   if ( buffer.size()==0 ) {
     buffer.assign(length,InvalidMetadataEntry);

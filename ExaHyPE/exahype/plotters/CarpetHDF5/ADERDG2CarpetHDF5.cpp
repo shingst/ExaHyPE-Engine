@@ -44,8 +44,10 @@ void exahype::plotters::ADERDG2CarpetHDF5::init(const std::string& filename, int
 	logError("init()", "Compile with -DHDF5, otherwise you cannot use the HDF5 plotter. There will be no output going to " << filename << " today.");
 	logError("init()", "Will fail gracefully. If you want to stop the program in such a case, please set the environment variable EXAHYPE_STRICT=\"Yes\".");
 }
-void exahype::plotters::ADERDG2CarpetHDF5::plotPatch(const int cellDescriptionsIndex, const int element) {}
+
+void exahype::plotters::ADERDG2CarpetHDF5::plotPatch(const int solverNumber,solvers::Solver::CellInfo& cellInfo) {}
 void exahype::plotters::ADERDG2CarpetHDF5::plotPatch(const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* u,double timeStamp,int limiterStatus) {}
+
 void exahype::plotters::ADERDG2CarpetHDF5::startPlotting(double time) {
 	logError("startPlotting()", "Skipping HDF5 output due to missing support.");
 }
@@ -93,26 +95,18 @@ exahype::plotters::ADERDG2CarpetHDF5::~ADERDG2CarpetHDF5() {
 }
 
 void exahype::plotters::ADERDG2CarpetHDF5::init(const std::string& filename, int basisSize, int solverUnknowns, int writtenUnknowns, exahype::parser::ParserView  plotterParameters) {
-	bool oneFilePerTimestep = true;
-	bool allUnknownsInOneFile = true;
-
 	// Determine names of output fields
 	char **writtenQuantitiesNames = new char*[writtenUnknowns];
 	std::fill_n(writtenQuantitiesNames, writtenUnknowns, nullptr);
 	_postProcessing->writtenQuantitiesNames(writtenQuantitiesNames);
 	
 	writer = new exahype::plotters::CarpetHDF5Writer(filename, basisSize, solverUnknowns, writtenUnknowns, plotterParameters,
-		writtenQuantitiesNames, oneFilePerTimestep, allUnknownsInOneFile);	
-
-	if(writer->slicer) {
-		logInfo("init", "Plotting plotterParametersion "<<writer->slicer->toString()<<" to Files "<<filename);
-	}
+		writtenQuantitiesNames);
 }
 
-void exahype::plotters::ADERDG2CarpetHDF5::plotPatch(
-        const int cellDescriptionsIndex,
-        const int element) {
-  auto& aderdgCellDescription = exahype::solvers::ADERDGSolver::getCellDescription(cellDescriptionsIndex,element);
+void exahype::plotters::ADERDG2CarpetHDF5::plotPatch(const int solverNumber,solvers::Solver::CellInfo& cellInfo) {
+  const int element = cellInfo.indexOfADERDGCellDescription(solverNumber);
+  auto& aderdgCellDescription  = cellInfo._ADERDGCellDescriptions[element];
 
   if (aderdgCellDescription.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Cell) {
     double* solverSolution = static_cast<double*>(aderdgCellDescription.getSolution());
@@ -127,9 +121,7 @@ void exahype::plotters::ADERDG2CarpetHDF5::plotPatch(
 }
 
 void exahype::plotters::ADERDG2CarpetHDF5::plotPatch(const dvec& offsetOfPatch, const dvec& sizeOfPatch, double* u, double timeStamp, int limiterStatus) {
-    if(writer->slicer && !writer->slicer->isPatchActive(offsetOfPatch, sizeOfPatch)) {
-	return;
-    }
+    if(writer->slicer && !writer->slicer->isPatchActive(offsetOfPatch, sizeOfPatch)) return;
 
     const int basisSize = writer->basisSize;
     const int order     = basisSize - 1;
@@ -259,7 +251,7 @@ void exahype::plotters::ADERDG2CarpetHDF5::interpolateCartesianSlicedPatch(const
 	dvec line = slicer.project(offsetOfPatch);
 	ivec i;
 	for(i(0)=0; i(0)<basisSize; i(0)++) {
-		dvec pos = line + (i.convertScalar<double>())* (sizeOfPatch(0)/(order));
+		dvec pos = line + slicer.project(i).convertScalar<double>() * (sizeOfPatch(0)/(order));
 		
 		for (int unknown=0; unknown < solverUnknowns; unknown++) {
 			interpoland[unknown] = kernels::interpolate(

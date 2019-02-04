@@ -25,6 +25,7 @@ void {{codeNamespace}}::riemannSolver(
                           {{solverName}}& solver,
                           double* restrict FL, double* restrict FR,
                           const double* const restrict QL, const double* const restrict QR,
+                          const double t,
                           const double dt,
                           const int direction
 ) {
@@ -51,7 +52,7 @@ void {{codeNamespace}}::riemannSolver(
   double QavR[{{nDataPad}}] __attribute__((aligned(ALIGNMENT))) = {0.0};
 
   for (int ij = 0; ij < {{nDof*nDof3D}}; ij++) {
-    #pragma simd
+    #pragma omp simd aligned(QavL,QavR,QL,QR:ALIGNMENT)
     for (int n = 0; n < {{nDataPad}}; n++) {
       QavL[n] += weights2[ij] * QL[ij*{{nDataPad}}+n];
       QavR[n] += weights2[ij] * QR[ij*{{nDataPad}}+n];
@@ -76,7 +77,7 @@ void {{codeNamespace}}::riemannSolver(
   }
 
   double Qavg[{{nDataPad}}] __attribute__((aligned(ALIGNMENT)));
-  #pragma simd
+  #pragma omp simd aligned(Qavg,QavR,QavL:ALIGNMENT)
   for (int n = 0; n < {{nDataPad}}; n++) {
     Qavg[n] = 0.5 *  (QavR[n] + QavL[n]);
   }
@@ -90,32 +91,23 @@ void {{codeNamespace}}::riemannSolver(
 {% endif %}
   
 {% if useNCP %}
-  double ncp[{{nVar*nDim}}] __attribute__((aligned(ALIGNMENT))); //no pad for function call
-  double gradQ[{{nVar*nDim}}] __attribute__((aligned(ALIGNMENT))); //no pad for function call
+  double ncp_vec[{{nVar*nDim}}] __attribute__((aligned(ALIGNMENT))) = {0.};
+  double* ncp[{{nDim}}] __attribute__((aligned(ALIGNMENT))) = { ncp_vec, ncp_vec+{{nVarPad}}{{', ncp_vec+'~2*nVarPad if nDim==3 else ''}} };
+  double* gradQ[{{nDim}}] __attribute__((aligned(ALIGNMENT))) = {Qdiff, Qdiff{{', Qdiff' if nDim==3 else ''}} }; //readonly, 2/3 time Qdiff
 {% endif %}
 {% if useFlux %}
-  double flux_vec[{{nVar*nDim}}] __attribute__((aligned(ALIGNMENT))); ////no pad for function call MaterialParam
-  double* flux[{{nDim}}];
-  flux[0] = &flux_vec[0];
-  flux[1] = &flux_vec[{{nVar}}];
-{% if nDim==3 %}
-  flux[2] = &flux_vec[{{nVar*2}}];
-{% endif %}
+  double flux_vec[{{nVarPad*nDim}}] __attribute__((aligned(ALIGNMENT))) = {0.};
+  double* flux[{{nDim}}] __attribute__((aligned(ALIGNMENT))) { flux_vec, flux_vec+{{nVarPad}}{{', flux_vec+'~2*nVarPad if nDim==3 else ''}} };
 {% endif %}
   
   for (int ij = 0; ij < {{nDof*nDof3D}}; ij++) {
-    #pragma simd
+    #pragma omp simd aligned(Qdiff,QR,QL:ALIGNMENT)
     for (int n = 0 ; n < {{nVar}} ; n++){ 
       Qdiff[n] = 0.5 * (QR[ij*{{nDataPad}}+n] - QL[ij*{{nDataPad}}+n]);
     }
 
 {% if useNCP %}
     //NCP
-    std::copy_n(Qdiff,{{nVar}},gradQ);
-    std::copy_n(Qdiff,{{nVar}},gradQ+{{nVar}});
-{% if nDim==3 %}
-    std::copy_n(Qdiff,{{nVar}},gradQ+{{2*nVar}});
-{% endif %}
 #ifdef USE_IPO
     #pragma forceinline recursive
 #endif
@@ -126,9 +118,9 @@ void {{codeNamespace}}::riemannSolver(
 #endif
     solver.{{solverName}}::multiplyMaterialParameterMatrix(Qavg, ncp);
 {% endif %}{# useMaterialParam #}
-    #pragma simd
-    for (int n = 0; n < {{nVar}}; n++) {
-      FL[ij*{{nVarPad}}+n] += ncp[direction*{{nVar}}+n]; 
+    #pragma omp simd aligned(FL,ncp_vec:ALIGNMENT)
+    for (int n = 0; n < {{nVarPad}}; n++) {
+      FL[ij*{{nVarPad}}+n] += ncp_vec[direction*{{nVarPad}}+n]; 
     }
 {% endif %}{# useNCP #}
     
@@ -142,15 +134,15 @@ void {{codeNamespace}}::riemannSolver(
 #ifdef USE_IPO
     #pragma forceinline recursive
 #endif
-    solver.{{solverName}}::multiplyMaterialParameterMatrix(Qavg, flux_vec);
+    solver.{{solverName}}::multiplyMaterialParameterMatrix(Qavg, flux);
 {% endif %}{# useMaterialParam #}
-    #pragma simd
+    #pragma omp simd aligned(FL,flux_vec:ALIGNMENT)
     for (int n = 0; n < {{nVar}}; n++) {
-      FL[ij*{{nVarPad}}+n] += flux_vec[direction*{{nVar}}+n];
+      FL[ij*{{nVarPad}}+n] += flux_vec[direction*{{nVarPad}}+n];
     }
 {% endif %}{# useFlux #}
 
-    #pragma simd
+    #pragma omp simd aligned(FR,FL,Qdiff:ALIGNMENT)
     for (int n = 0; n < {{nVar}}; n++) {
       FR[ij*{{nVarPad}}+n] = FL[ij*{{nVarPad}}+n] + smax*Qdiff[n];
       FL[ij*{{nVarPad}}+n] -= smax*Qdiff[n];

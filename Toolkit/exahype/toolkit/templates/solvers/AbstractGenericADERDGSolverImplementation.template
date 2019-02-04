@@ -185,11 +185,11 @@ const int picardIterations = 1;
   return picardIterations;
 }
 
-void {{project}}::{{abstractSolver}}::solutionUpdate(double* luh,const double* const lduh,const double dt) {
+void {{project}}::{{abstractSolver}}::solutionUpdate(double* luh,const double* const luhOld,const double* const lduh,const double dt) {
 {% if enableProfiler %}
   _profiler->start("solutionUpdate");
 {% endif %}
-  kernels::aderdg::generic::{{language}}::solutionUpdate<{{solver}}>(*static_cast<{{solver}}*>(this),luh,lduh,dt);
+  kernels::aderdg::generic::{{language}}::solutionUpdate<{{solver}}>(*static_cast<{{solver}}*>(this),luh,luhOld,lduh,dt);
 {% if enableProfiler %}
   _profiler->stop("solutionUpdate");
 {% endif %}
@@ -227,19 +227,19 @@ void {{project}}::{{abstractSolver}}::faceIntegral(double* const lduh,const doub
 {% endif %}
 }
 
-void {{project}}::{{abstractSolver}}::riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double dt,const int direction,bool isBoundaryFace, int faceIndex) {
+void {{project}}::{{abstractSolver}}::riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double t,const double dt,const int direction,bool isBoundaryFace, int faceIndex) {
   assertion2(direction>=0,dt,direction);
   assertion2(direction<DIMENSIONS,dt,direction);
 {% if enableProfiler %}
   _profiler->start("riemannSolver");
 {% endif %}
 {% if isFortran %}
-  kernels::aderdg::generic::fortran::riemannSolver{{linearOrNonlinear}}<{{solver}}>(*static_cast<{{solver}}*>(this),FL,FR,QL,QR,dt,direction);
+  kernels::aderdg::generic::fortran::riemannSolver{{linearOrNonlinear}}<{{solver}}>(*static_cast<{{solver}}*>(this),FL,FR,QL,QR,t,dt,direction);
 {% else %}
   {% if isLinear %}
-    kernels::aderdg::generic::c::riemannSolverLinear<{{useFlux_s}},{{useNCP_s}},{{useMaterialParameters_s}},{{solver}}>(*static_cast<{{solver}}*>(this),FL,FR,QL,QR,dt,direction);
+    kernels::aderdg::generic::c::riemannSolverLinear<{{useFlux_s}},{{useNCP_s}},{{useMaterialParameters_s}},{{solver}}>(*static_cast<{{solver}}*>(this),FL,FR,QL,QR,t,dt,direction);
   {% else %}
-    kernels::aderdg::generic::c::riemannSolverNonlinear<{{useNCP_s}},{{solver}}>(*static_cast<{{solver}}*>(this),FL,FR,QL,QR,dt,direction);
+    kernels::aderdg::generic::c::riemannSolverNonlinear<{{useNCP_s}},{{solver}}>(*static_cast<{{solver}}*>(this),FL,FR,QL,QR,t,dt,direction);
   {% endif %}
 {% endif %}
 {% if enableProfiler %}
@@ -277,13 +277,13 @@ void {{project}}::{{abstractSolver}}::boundaryConditions(double* const fluxIn,co
     double* FL = fluxOut; const double* const QL = stateOut;
     double* FR = fluxIn;  const double* const QR = stateIn;
   
-    riemannSolver(FL,FR,QL,QR,dt,direction,true,faceIndex);
+    riemannSolver(FL,FR,QL,QR,t,dt,direction,true,faceIndex);
   }
   else {
     double* FL = fluxIn;  const double* const QL = stateIn;
     double* FR = fluxOut; const double* const QR = stateOut;
 
-    riemannSolver(FL,FR,QL,QR,dt,direction,true,faceIndex);
+    riemannSolver(FL,FR,QL,QR,t,dt,direction,true,faceIndex);
   }
 {%if tempVarsOnStack==False %}
   delete[] block;
@@ -361,9 +361,17 @@ void {{project}}::{{abstractSolver}}::viscousEigenvalues(const double* const Q,c
 void {{project}}::{{abstractSolver}}::algebraicSource(const double* const Q,double* S) {
       abortWithMsg("algebraicSource: If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
 }
-        
-void {{project}}::{{abstractSolver}}::nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) {
+
+{% if isLinear %}
+    void {{project}}::{{abstractSolver}}::nonConservativeProduct(const double* const Q,const double* const * const gradQ,double** BgradQ) {
+{% else %}
+    void {{project}}::{{abstractSolver}}::nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) {
+{% endif %}
       abortWithMsg("nonConservativeProduct: If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
+}
+
+void {{project}}::{{abstractSolver}}::multiplyMaterialParameterMatrix(const double* const Q, double** rhs) {
+      abortWithMsg("multiplyMaterialParameterMatrix: If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
 }
 
 void {{project}}::{{abstractSolver}}::pointSource(const double* const Q,const double* const x,const double t,const double dt, double* forceVector,int n) {

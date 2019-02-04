@@ -22,36 +22,40 @@ exahype-project GRMHD
   peano-kernel-path const          = ./Peano
   exahype-path const               = ./ExaHyPE
   output-directory const           = ./ApplicationExamples/GRMHD/GRMHD
-  architecture const               = noarch
+  architecture const               = hsw
   log-file                         = whatever.log
   plotter-subdirectory const = Writers
 
   computational-domain
-     dimension const                = 3
-     width                          = 20.0, 20.0, 20.0
-     offset                         = -10., -10., -10.0
-     end-time                       = 1.00001 
+    dimension const                = 3
+//    width                          = 30.0, 30.0, 30.0
+//    offset                         = -15., -15., -15. 
+   width                          = 10.0, 10.0, 10.0
+   offset                         = -5.0, -5.0, -5.0
+  end-time                       = 10.01
   end computational-domain
   
   shared-memory
     identifier               = dummy
-    configure                = {}
-    cores                    = 8
+    configure                = {background-tasks:3}
+    cores                    = 4
     properties-file          = sharedmemory.properties
+    thread-stack-size        = 8000000
   end shared-memory  
   
   distributed-memory
     identifier       = static_load_balancing
-    configure        = {hotspot,fair,ranks-per-node:8}
-    buffer-size      = 640000
-    timeout          = 600
+    configure        = {hotspot,fair,ranks-per-node:6}
+    buffer-size      = 64000
+    timeout          = 3600
   end distributed-memory
 
   global-optimisation
     fuse-algorithmic-steps          = on
     fuse-algorithmic-steps-factor   = 0.99
-    spawn-predictor-as-background-thread = off
-    spawn-amr-background-threads         = off
+    spawn-predictor-as-background-thread = on
+    spawn-update-as-background-thread = on
+    spawn-amr-background-threads         = on
     disable-vertex-exchange-in-time-steps = on
     time-step-batch-factor           = 0.0
     disable-metadata-exchange-in-batched-time-steps = off
@@ -63,50 +67,34 @@ exahype-project GRMHD
     /* gamma is actually parts of a matrix... */
     variables const                = rho:1,vel:3,E:1,B:3,psi:1,lapse:1,shift:3,gij:6
     order const                    = 3
-    maximum-mesh-size              = 3.333
+    maximum-mesh-size              = 0.373738
     maximum-mesh-depth             = 0
     time-stepping                  = global
     type const = nonlinear
     terms const = flux,ncp
-    optimisation const = generic
-
-/*
-    plot Carpet::Cartesian::Vertices::HDF5 ConservedWriter
-           variables const = 19
-           time = 0.0
-           repeat = 0.01
-           output = ./hdf5/conserved
-           select = y:0,z:0
-         end plot
+ 	  optimisation const = optimised
 
 
-    plot vtu::Legendre::vertices::ascii ConservedWriter
-      variables const = 19
-      time      = 0.0
-      repeat    = 0.50
-      output    = ./vtk-output/conserved
-    end plot
 
-    plot vtu::Legendre::vertices::ascii Michel
-      variables const = 4 
-      time      = 0.0
-      repeat    = 0.50
-      output    = ./vtk-output/michel
-    end plot
-*/
+    plot vtk::Cartesian::cells::ascii IntegralsWriter
+       variables const = 0
+       time = 0.0
+       repeat = 0.10
+       output = ./output/global-integrals
+     end plot 
 
-    plot vtu::Legendre::vertices::ascii PrimitiveWriter
-      variables const = 19
-      time      = 0.0
-      repeat    = 0.50
-      output    = ./vtk-output/primitive
-    end plot 
-
-    plot vtk::Legendre::vertices::ascii IntegralsWriter
+    plot user::defined TimingStatistics_DG
       variables const = 0
       time = 0.0
-      repeat = 0.50
-      output = ./global-integrals
+      repeat = 0.10
+      output = ./output/timing-benchmarks
+    end plot
+
+    plot vtu::Cartesian::vertices::ascii ConservedWriter
+         variables const = 1
+         time      = 0.0
+         repeat    = 0.5
+         output    = ./vtk-output/primitive
     end plot
 
   end solver

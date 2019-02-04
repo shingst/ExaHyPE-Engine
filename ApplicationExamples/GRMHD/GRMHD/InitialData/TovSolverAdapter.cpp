@@ -19,7 +19,7 @@ TovSolverAdapter::TovSolverAdapter() {
 	tov->TOV_Num_Radial     = 40000000    ;
 	tov->TOV_dr[0]          = 0.00001     ;
 	tov->Perturb[0]         = false       ;
-	tov->Perturb_Pressure[0]   = true     ;
+	tov->Perturb_Pressure[0]   = false    ;
 	tov->Pert_Press_Amplitude[0] = 0.01   ;
 
 	tov->Setup();
@@ -67,5 +67,6 @@ void TovSolverAdapter::Interpolate(const double* x, double t, double* Q) {
 	
 	pdeprim2cons_(Q, V);
 
+  delete params;
 
 }

@@ -38,7 +38,7 @@
         "space_time_predictor" : { "cerkguess" : true },
         "optimised_kernel_debugging": ["flops"],
         "terms": [ "flux" ],
-        "optimised_terms": ["fluxvect"],
+        "optimised_terms": ["flux_vect"],
         "language" : "C",
         "nonlinear"  : true,
         "basis" : "Legendre"

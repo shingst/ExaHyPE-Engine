@@ -25,10 +25,12 @@ class Configuration:
     
     alignmentPerArchitectures  = {
         "noarch" : 16,
+        "wsm"    : 16,
         "snb"    : 32, 
         "hsw"    : 32, 
         "knc"    : 64, 
-        "knl"    : 64
+        "knl"    : 64,
+        "skx"    : 64,
     }
 
 

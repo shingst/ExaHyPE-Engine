@@ -49,7 +49,7 @@ bool CCZ4::CCZ4Solver_ADERDG::isPhysicallyAdmissible(
       const bool wasTroubledInPreviousTimeStep,
       const tarch::la::Vector<DIMENSIONS,double>& center,
       const tarch::la::Vector<DIMENSIONS,double>& dx,
-      const double t, const double dt) const {
+      const double t) const {
 	// lower left, uppe right radius of cell
 	double l = tarch::la::norm2(center - dx/2.0);
 	double r = tarch::la::norm2(center + dx/2.0);

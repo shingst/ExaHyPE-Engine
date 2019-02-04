@@ -16,9 +16,11 @@
 #include "exahype/plotters/VTK/ADERDG2CartesianVTK.h"
 #include "exahype/plotters/VTK/ADERDG2LegendreVTK.h"
 #include "exahype/plotters/VTK/ADERDG2LobattoVTK.h"
-#include "exahype/plotters/CSV/ADERDG2LegendreCSV.h"
 #include "exahype/plotters/VTK/ADERDG2LegendreDivergenceVTK.h"
 #include "exahype/plotters/ADERDG2ProbeAscii.h"
+
+#include "exahype/plotters/CSV/ADERDG2LegendreCSV.h"
+#include "exahype/plotters/CSV/Patch2CSV.h"
 
 #include "exahype/plotters/CarpetHDF5/ADERDG2CarpetHDF5.h"
 #include "exahype/plotters/CarpetHDF5/FiniteVolume2CarpetHDF5.h"
@@ -29,6 +31,7 @@
 #include "exahype/plotters/VTK/LimitingADERDG2CartesianVTK.h"
 #include "exahype/plotters/VTK/LimitingADERDGSubcells2CartesianVTK.h"
 #include "exahype/plotters/VTK/Patch2VTK.h"
+#include "exahype/plotters/FiniteVolumes2ProbeAscii.h"
 
 #include "exahype/plotters/PeanoFileFormat/ADERDG2CartesianPeanoPatchFileFormat.h"
 #include "exahype/plotters/PeanoFileFormat/ADERDG2LegendrePeanoPatchFileFormat.h"
@@ -208,25 +211,32 @@ exahype::plotters::Plotter::Plotter(
             postProcessing,static_cast<exahype::solvers::LimitingADERDGSolver*>(
                 solvers::RegisteredSolvers[_solver])->getLimiter()->getGhostLayerWidth());
       }
-      
       if(equalsIgnoreCase(_type, LimitingADERDG2Tecplot::getIdentifier())) {
         _device = new LimitingADERDG2Tecplot(postProcessing,
 	        static_cast<exahype::solvers::LimitingADERDGSolver*>(
-                  solvers::RegisteredSolvers[_solver])->getLimiter()->getGhostLayerWidth()
-	);
+                  solvers::RegisteredSolvers[_solver])->getLimiter()->getGhostLayerWidth());
       }
-
       // plot only the FV subcells
-      if (equalsIgnoreCase( _type, LimitingADERDGSubcells2CartesianCellsVTKAscii::getIdentifier() )) {
-        _device = new LimitingADERDGSubcells2CartesianCellsVTKAscii(
-            postProcessing,static_cast<exahype::solvers::LimitingADERDGSolver*>(
-                solvers::RegisteredSolvers[_solver])->getLimiter()->getGhostLayerWidth());
-      }
-      if (equalsIgnoreCase( _type, LimitingADERDGSubcells2CartesianCellsVTKBinary::getIdentifier() )) {
-        _device = new LimitingADERDGSubcells2CartesianCellsVTKBinary(
-            postProcessing,static_cast<exahype::solvers::LimitingADERDGSolver*>(
-                solvers::RegisteredSolvers[_solver])->getLimiter()->getGhostLayerWidth());
-      }
+	  if (equalsIgnoreCase(_type, LimitingADERDGSubcells2CartesianCellsVTKAscii::getIdentifier())) {
+		  _device = new LimitingADERDGSubcells2CartesianCellsVTKAscii(
+			  postProcessing, static_cast<exahype::solvers::LimitingADERDGSolver*>(
+				  solvers::RegisteredSolvers[_solver])->getLimiter()->getGhostLayerWidth());
+	  }
+	  if (equalsIgnoreCase(_type, LimitingADERDGSubcells2CartesianCellsVTKBinary::getIdentifier())) {
+		  _device = new LimitingADERDGSubcells2CartesianCellsVTKBinary(
+			  postProcessing, static_cast<exahype::solvers::LimitingADERDGSolver*>(
+				  solvers::RegisteredSolvers[_solver])->getLimiter()->getGhostLayerWidth());
+	  }
+	  if (equalsIgnoreCase(_type, LimitingADERDGSubcells2CartesianCellsVTUAscii::getIdentifier())) {
+		  _device = new LimitingADERDGSubcells2CartesianCellsVTUAscii(
+			  postProcessing, static_cast<exahype::solvers::LimitingADERDGSolver*>(
+				  solvers::RegisteredSolvers[_solver])->getLimiter()->getGhostLayerWidth());
+	  }
+	  if (equalsIgnoreCase(_type, LimitingADERDGSubcells2CartesianCellsVTUBinary::getIdentifier())) {
+		  _device = new LimitingADERDGSubcells2CartesianCellsVTUBinary(
+			  postProcessing, static_cast<exahype::solvers::LimitingADERDGSolver*>(
+				  solvers::RegisteredSolvers[_solver])->getLimiter()->getGhostLayerWidth());
+	  }
 
     // by intention, no break here. Instead, all plotters for the ADERDG solver are also valid plotters for
     // any LimitedADERDG solver.
@@ -279,7 +289,7 @@ exahype::plotters::Plotter::Plotter(
         _device = new ADERDG2LegendreVerticesVTKAscii(postProcessing);
       }
       if (equalsIgnoreCase(_type, ADERDG2LobattoVerticesVTKAscii::getIdentifier())) {
-	_device = new ADERDG2LobattoVerticesVTKAscii(postProcessing);
+        _device = new ADERDG2LobattoVerticesVTKAscii(postProcessing);
       }
       if (equalsIgnoreCase(_type, ADERDG2LegendreVerticesVTKBinary::getIdentifier())) {
         _device = new ADERDG2LegendreVerticesVTKBinary(postProcessing);
@@ -343,6 +353,10 @@ exahype::plotters::Plotter::Plotter(
       }
       if (equalsIgnoreCase(_type, ADERDG2FlashHDF5::getIdentifier())) {
         _device = new ADERDG2FlashHDF5(postProcessing);
+      }
+
+      if(equalsIgnoreCase(_type, Patch2CSV::getIdentifier())) {
+        _device = new Patch2CSV(postProcessing, solvertype);
       }
 
       if(equalsIgnoreCase(_type, Patch2VTKBoxesAscii::getIdentifier())) {
@@ -464,6 +478,15 @@ exahype::plotters::Plotter::Plotter(
         _device = new FiniteVolumes2Tecplot(postProcessing,
 	     static_cast<exahype::solvers::FiniteVolumesSolver*>(
                 solvers::RegisteredSolvers[_solver])->getGhostLayerWidth());
+      }
+      if (equalsIgnoreCase(_type, FiniteVolumes2ProbeAscii::getIdentifier())) {
+        _device = new FiniteVolumes2ProbeAscii(postProcessing,
+             static_cast<exahype::solvers::FiniteVolumesSolver*>(
+                solvers::RegisteredSolvers[_solver])->getGhostLayerWidth());
+      }
+
+      if(equalsIgnoreCase(_type, Patch2CSV::getIdentifier())) {
+        _device = new Patch2CSV(postProcessing, solvertype);
       }
 
     break;
@@ -592,11 +615,11 @@ bool exahype::plotters::Plotter::plotDataFromSolver(int solver) const {
 
 
 void exahype::plotters::Plotter::plotPatch(
-  const int cellDescriptionsIndex,
-  const int element) {
+  const int solverNumber,
+  solvers::Solver::CellInfo& cellInfo) {
   assertion(_device != nullptr);
   if (_device!=nullptr) {
-    _device->plotPatch(cellDescriptionsIndex,element);
+    _device->plotPatch(solverNumber,cellInfo);
   }
 }
 
@@ -617,13 +640,14 @@ void exahype::plotters::Plotter::finishedPlotting() {
 
 void exahype::plotters::plotPatchIfAPlotterIsActive(
     const int solverNumber,
-    const int cellDescriptionsIndex,
-    const int element) {
-  for (auto* plotter : exahype::plotters::RegisteredPlotters) {
-    if (plotter->plotDataFromSolver(solverNumber)) {
-      tarch::multicore::Lock lock(exahype::plotters::SemaphoreForPlotting);
-      plotter->plotPatch(cellDescriptionsIndex,element);
-      lock.free();
+    solvers::Solver::CellInfo& cellInfo) {
+  if ( cellInfo.foundCellDescriptionForSolver(solverNumber) ) {
+    for (auto* plotter : exahype::plotters::RegisteredPlotters) {
+      if (plotter->plotDataFromSolver(solverNumber)) {
+        tarch::multicore::Lock lock(exahype::plotters::SemaphoreForPlotting);
+        plotter->plotPatch(solverNumber,cellInfo);
+        lock.free();
+      }
     }
   }
 }

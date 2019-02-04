@@ -14,7 +14,7 @@
 template<int nVar, int leadingDimSize>
 inline void AoS2SoA(const double* const restrict AoS, double* restrict SoA) {
   for(int n=0; n<nVar; n++) {
-    #pragma vector aligned
+    #pragma omp simd aligned(SoA,AoS:ALIGNMENT)
     for(int p=0; p<{{vectSize}}; p++) {
       SoA[p+{{vectSize}}*n] = AoS[n+leadingDimSize*p];
     }
@@ -24,7 +24,7 @@ inline void AoS2SoA(const double* const restrict AoS, double* restrict SoA) {
 template<int nVar, int leadingDimSize>
 inline void SoA2AoS(const double* const restrict SoA, double* restrict AoS) {
   for(int p=0; p<{{vectSize}}; p++) {
-    #pragma vector aligned
+    #pragma omp simd aligned(SoA,AoS:ALIGNMENT)
     for(int n=0; n<nVar; n++) {
       AoS[n+leadingDimSize*p] = SoA[p+{{vectSize}}*n];
     }
@@ -34,7 +34,7 @@ inline void SoA2AoS(const double* const restrict SoA, double* restrict AoS) {
 template<int nVar, int leadingDimSize, int restSize>
 inline void AoS2SoA_rest(const double* const restrict AoS, double* restrict SoA) {
   for(int n=0; n<nVar; n++) {
-    #pragma vector aligned
+    #pragma omp simd aligned(SoA,AoS:ALIGNMENT)
     for(int p=0; p<restSize; p++) {
       SoA[p+{{vectSize}}*n] = AoS[n+leadingDimSize*p];
     }
@@ -47,7 +47,7 @@ inline void AoS2SoA_rest(const double* const restrict AoS, double* restrict SoA)
 template<int nVar, int leadingDimSize, int restSize>
 inline void SoA2AoS_rest(const double* const restrict SoA, double* restrict AoS) {
   for(int p=0; p<restSize; p++) { //ignore the padding
-    #pragma vector aligned
+    #pragma omp simd aligned(SoA,AoS:ALIGNMENT)
     for(int n=0; n<nVar; n++) {
       AoS[n+leadingDimSize*p] = SoA[p+{{vectSize}}*n];
     }

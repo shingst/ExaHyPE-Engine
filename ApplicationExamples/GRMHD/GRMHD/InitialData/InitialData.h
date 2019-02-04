@@ -8,7 +8,10 @@ struct idobj {
 	virtual void Interpolate(const double* x, double t, double* Q) = 0;
 };
 
+/* note this is never deleted, so it is a memory leak, but it's only 
+created once, so that's okay right? */
 extern idobj *id; // a global accessible pointer
+
 
 /**
  *a function in InitialData.cpp which prepares the ID, both accessible

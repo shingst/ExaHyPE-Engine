@@ -26,6 +26,7 @@ void {{codeNamespace}}::riemannSolver(
   {{solverName}}& solver,
   double* restrict FL, double* restrict FR,
   const double* restrict const QL, const double* restrict const QR,
+  const double t,
   const double dt,
   const int direction
 {% if useDeepProfiler %}
@@ -46,7 +47,7 @@ void {{codeNamespace}}::riemannSolver(
   double QavR[{{nDataPad}}] __attribute__((aligned(ALIGNMENT))) = {0.0};
   
   for (int xy = 0; xy < {{nDof*nDof3D}}; xy++) { //xy = 1 or 2 spatial dim (1 in 2D, 2 in 3D)
-    #pragma simd
+    #pragma omp simd aligned(QavL,QavR,QL,QR:ALIGNMENT)
     for (int n = 0; n < {{nDataPad}}; n++) {
       QavL[n] += weights2[xy] * QL[xy*{{nDataPad}}+n];
       QavR[n] += weights2[xy] * QR[xy*{{nDataPad}}+n];
@@ -70,13 +71,13 @@ void {{codeNamespace}}::riemannSolver(
   }
   
   for (int xy = 0; xy < {{nDof*nDof3D}}; xy++){
-    #pragma simd
+    #pragma omp simd aligned(tmp_bnd,QL,QR:ALIGNMENT)
     for (int n = 0; n < {{nVar}}; n++) { //skip parameters
       tmp_bnd[xy*{{nVarPad}}+n] = smax * (QL[xy*{{nVarPad}}+n]-QR[xy*{{nVarPad}}+n]);
     }
   }
   
-  #pragma simd
+  #pragma omp simd aligned(FL,FR,tmp_bnd:ALIGNMENT)
   for (int xyn = 0; xyn < {{nVarPad*nDof*nDof3D}}; xyn++) {
     FL[xyn] = 0.5 * (FL[xyn] + FR[xyn] + tmp_bnd[xyn]);
   }
@@ -137,7 +138,7 @@ void {{codeNamespace}}::riemannSolver(
   double gradQ[{{nDim*nVar}}] __attribute__((aligned(ALIGNMENT))) = {0.0};
   double ncp[{{nVarPad}}] __attribute__((aligned(ALIGNMENT))) = {0.0};
   for (int xy = 0; xy < {{nDof*nDof3D}}; xy++) {
-    #pragma simd
+    #pragma omp simd aligned(Qavg,QL,QR,gradQ:ALIGNMENT)
     for (int n = 0; n < {{nVar}}; n++) {
        Qavg[n] = 0.5 * (QL[xy*{{nDataPad}}+n] + QR[xy*{{nDataPad}}+n]);
        gradQ[direction*{{nVar}}+n] = QR[xy*{{nDataPad}}+n] - QL[xy*{{nDataPad}}+n];
@@ -146,7 +147,7 @@ void {{codeNamespace}}::riemannSolver(
     #pragma forceinline recursive
 #endif
     solver.{{solverName}}::nonConservativeProduct(Qavg, gradQ, ncp);
-    #pragma simd
+    #pragma omp simd aligned(FL,FR,ncp:ALIGNMENT)
     for (int n = 0; n < {{nVarPad}}; n++) {
       FR[xy*{{nVarPad}}+n] -= 0.5*ncp[n];
       FL[xy*{{nVarPad}}+n] += 0.5*ncp[n];

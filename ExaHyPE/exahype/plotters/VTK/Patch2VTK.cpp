@@ -23,7 +23,6 @@
 #include "tarch/plotter/griddata/unstructured/vtk/VTUTextFileWriter.h"
 #include "tarch/plotter/griddata/unstructured/vtk/VTUBinaryFileWriter.h"
 
-
 // @todo 16/05/03:Dominic Etienne Charreir Plotter depends now on kernels.
 // Should thus be placed in kernel module or the solver
 // should provide a function that computes solution values
@@ -137,8 +136,6 @@ exahype::plotters::Patch2VTUGapsBinary::Patch2VTUGapsBinary(
 std::string exahype::plotters::Patch2VTUGapsBinary::getIdentifier() {
   return "vtk::patches::gaps::binary";
 }
-
-
 
 exahype::plotters::Patch2VTK::Patch2VTK(
     exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing,
@@ -347,20 +344,22 @@ std::pair<int,int> exahype::plotters::Patch2VTK::plotCellBoundary(
 }
 
 // just a local shorthand
-void plotInt(tarch::plotter::griddata::Writer::CellDataWriter *writer, int cellIndex, int data) {
+inline void plotInt(tarch::plotter::griddata::Writer::CellDataWriter *writer, int cellIndex, int data) {
 	writer->plotCell(cellIndex, static_cast<double>(data));
 }
 
-void exahype::plotters::Patch2VTK::plotPatch(const int cellDescriptionsIndex, const int element) {
+void exahype::plotters::Patch2VTK::plotPatch(const int solverNumber,solvers::Solver::CellInfo& cellInfo) {
 	double *solution=nullptr, timeStamp=-1;
 	int RefinementStatus=-1, previousRefinementStatus=-1, level=-1;
 	tarch::la::Vector<DIMENSIONS, double> offsetOfPatch, sizeOfPatch;
 	
+	int element = -1;
 	// we need this code doubling as we have different C++ types. Could probably use templates instead.
 	switch(_solverType) {
 		case exahype::solvers::Solver::Type::LimitingADERDG:
 		case exahype::solvers::Solver::Type::ADERDG: { // scope for variables
-			auto& solverPatch = exahype::solvers::ADERDGSolver::getCellDescription(cellDescriptionsIndex,element);
+			element = cellInfo.indexOfADERDGCellDescription(solverNumber);
+			auto& solverPatch  = cellInfo._ADERDGCellDescriptions[element];
 			if(solverPatch.getType()!=exahype::solvers::ADERDGSolver::CellDescription::Type::Cell)
 				return; // plot only cells
 			solution = static_cast<double*>(solverPatch.getSolution());
@@ -386,7 +385,8 @@ void exahype::plotters::Patch2VTK::plotPatch(const int cellDescriptionsIndex, co
 			break;
 		}
 		case exahype::solvers::Solver::Type::FiniteVolumes: {
-			auto& solverPatch = exahype::solvers::FiniteVolumesSolver::getCellDescription(cellDescriptionsIndex,element);
+			element = cellInfo.indexOfFiniteVolumesCellDescription(solverNumber);
+			auto& solverPatch  = cellInfo._FiniteVolumesCellDescriptions[element];
 			if(solverPatch.getType()!=exahype::solvers::FiniteVolumesSolver::CellDescription::Type::Cell)
 				return; // plot only cells
 			solution = static_cast<double*>(solverPatch.getSolution());
@@ -403,7 +403,7 @@ void exahype::plotters::Patch2VTK::plotPatch(const int cellDescriptionsIndex, co
 		const int cellIndex = vertexAndCellIndex.second; // we only need the cellIndex in the following code
 		
 		// plot generic data about cell
-		plotInt(_cellDescriptionIndexWriter, cellIndex, cellDescriptionsIndex);
+		plotInt(_cellDescriptionIndexWriter, cellIndex, cellInfo._cellDescriptionsIndex);
 		plotInt(_cellElementWriter, cellIndex, element);
 		plotInt(_cellLevelWriter, cellIndex, level);
 

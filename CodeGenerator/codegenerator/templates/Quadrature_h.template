@@ -27,6 +27,7 @@ extern double *nodes;
 extern double *weights1;
 extern double *weights2;
 extern double *weights3;
+extern double *iweights3;
 
 {% if useLimiter %}
 extern double* uh2lob;

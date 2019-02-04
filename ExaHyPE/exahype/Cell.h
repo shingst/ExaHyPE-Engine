@@ -93,19 +93,26 @@ class exahype::Cell : public peano::grid::Cell<exahype::records::Cell> {
 
   /**
    * Here we reset helper variables that play a role in
-   * the neighbour merge methods.
-   * These are the cell description attributes
-   * neighbourMergePerformed[DIMENSIONS_TIMES_TWO], and
+   * the neighbour data exchange.
+   * These are the cell description fields
+   * neighbourMergePerformed[DIMENSIONS_TIMES_TWO] and
    * faceDataExchangeCounter[DIMENSIONS_TIMES_TWO].
    *
-   * <h2>Shared Memory</h2>
-   * The flag neighbourMergePerformed
-   * indicates for every thread that touches a
-   * face of a cell description if a Riemann Solve
-   * was already performed for this face.
+   * Neighbour Merge Performed Flags
+   * -------------------------------
+   * If desired, this routine resets the neighbour
+   * merge flags for all found cell descriptions.
    *
-   * <h2>MPI</h2>
-   * This method resets face data exchange counters:
+   * @note This must not ne done in the UpdateAndReduce and FusedTimeStep
+   * mappings as these spawns jobs which internally rely on the
+   * information with which neighbour a merge has been performed.
+   * The spawned jobs reset the flags after they do not require
+   * the information anymore.
+   *
+   * Face Data Exchange Counters
+   * ---------------------------
+   *
+   * This routine resets the face data exchange counters:
    * To this end, we count the listings of a remote rank on each
    * of the faces surrounding a cell description.
    *
@@ -116,8 +123,8 @@ class exahype::Cell : public peano::grid::Cell<exahype::records::Cell> {
    * 4^{d-2} - full face connection where cell is inside and face vertices are all inside:
    * send at time of 2^{d-2}-th touch of face.
    */
-  static void resetNeighbourMergeFlags(
-      const int cellDescriptionsIndex,
+  static void resetNeighbourMergePerformedFlags(
+      const solvers::Solver::CellInfo& cellInfo,
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator);
 
@@ -190,6 +197,21 @@ class exahype::Cell : public peano::grid::Cell<exahype::records::Cell> {
   int getCellDescriptionsIndex() const;
 
   /**
+   * @return pointer to vector of ADERDGSolverCellDescription instanes (or nullptr).
+   */
+  peano::heap::RLEHeap<exahype::records::ADERDGCellDescription>::HeapEntries* getADERDGCellDescriptions() const;
+
+  /**
+   * @return pointer to vector of ADERDGSolverCellDescriptions instances (or nullptr).
+   */
+  peano::heap::RLEHeap<exahype::records::FiniteVolumesCellDescription>::HeapEntries* getFiniteVolumesCellDescriptions() const;
+
+  /**
+   * @return a cell info object linking to cell descriptions associated with the cell.
+   */
+  exahype::solvers::Solver::CellInfo createCellInfo() const;
+
+  /**
    * TODO(Dominic): Add docu.
    */
   void setCellDescriptionsIndex(int cellDescriptionsIndex);
@@ -237,14 +259,14 @@ class exahype::Cell : public peano::grid::Cell<exahype::records::Cell> {
   bool isEmpty() const;
 
   /**
-   * Add a new ADER-DG cell description to the heap array maintained
-   * by this cell.
+   * Add a new ADER-DG cell description to the heap array associated with this cell.
    *
-   * \note setupMetaData() is called if cell hasn't been properly initialised before.
+   * @note setupMetaData() is called if cell hasn't been properly initialised before.
    *
-   * \note Operation is thread-safe.
+   * @note Operation is thread-safe.
+   * @return a solvers::Solver::CellInfo object
    */
-  void addNewCellDescription(
+  exahype::solvers::Solver::CellInfo addNewCellDescription(
       const int solverNumber,
       const exahype::records::ADERDGCellDescription::Type cellType,
       const exahype::records::ADERDGCellDescription::RefinementEvent refinementEvent,
@@ -254,11 +276,14 @@ class exahype::Cell : public peano::grid::Cell<exahype::records::Cell> {
       const tarch::la::Vector<DIMENSIONS, double>& cellOffset);
 
   /**
-    * TODO(Dominic): Docu.
+    * Add a new Finite Volumes cell description to the heap array associated with this cell.
     *
-    *  \note Operation is thread-safe.
+    * @note setupMetaData() is called if cell hasn't been properly initialised before.
+    *
+    * @note Operation is thread-safe.
+    * @return a solvers::Solver::CellInfo object
     */
-  void addNewCellDescription(
+  exahype::solvers::Solver::CellInfo addNewCellDescription(
       const int solverNumber,
       const exahype::records::FiniteVolumesCellDescription::Type cellType,
       const exahype::records::FiniteVolumesCellDescription::RefinementEvent refinementEvent,

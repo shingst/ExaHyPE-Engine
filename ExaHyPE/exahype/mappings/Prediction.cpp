@@ -35,9 +35,16 @@
 #endif
 
 peano::MappingSpecification exahype::mappings::Prediction::determineEnterLeaveCellSpecification(int level) {
-  return peano::MappingSpecification(
-      peano::MappingSpecification::WholeTree,
-      peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
+  const int coarsestSolverLevel = solvers::Solver::getCoarsestMeshLevelOfAllSolvers();
+  if ( std::abs(level)>=coarsestSolverLevel-1 ) {
+    return peano::MappingSpecification(
+          peano::MappingSpecification::WholeTree,
+          peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
+  } else {
+    return peano::MappingSpecification(
+          peano::MappingSpecification::Nop,
+          peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
+  }
 }
 
 peano::CommunicationSpecification
@@ -158,36 +165,59 @@ void exahype::mappings::Prediction::performPredictionOrProlongate(
     const exahype::State::AlgorithmSection& algorithmSection,
     const bool performPrediction) {
   if ( fineGridCell.isInitialised() ) {
-    exahype::Cell::resetNeighbourMergeFlags(
-        fineGridCell.getCellDescriptionsIndex(),
-        fineGridVertices,fineGridVerticesEnumerator);
+    solvers::Solver::CellInfo cellInfo = fineGridCell.createCellInfo();
 
-    const int numberOfSolvers = exahype::solvers::RegisteredSolvers.size();
-    auto grainSize = peano::datatraversal::autotuning::Oracle::getInstance().parallelise(numberOfSolvers, peano::datatraversal::autotuning::MethodTrace::UserDefined14);
-    for (int solverNumber=0; solverNumber<numberOfSolvers; solverNumber++) {
+    exahype::Cell::resetNeighbourMergePerformedFlags(cellInfo,fineGridVertices,fineGridVerticesEnumerator);
+    const bool isAtRemoteBoundary = exahype::Cell::isAtRemoteBoundary(fineGridVertices,fineGridVerticesEnumerator);
+    for (unsigned int solverNumber=0; solverNumber<solvers::RegisteredSolvers.size(); solverNumber++) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-      const int element = solver->tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
       if (
+          cellInfo.foundCellDescriptionForSolver(solverNumber) &&
           solver->isPerformingPrediction(algorithmSection) &&
-          element!=exahype::solvers::Solver::NotFound
+          performPrediction
       ) {
-        if ( performPrediction ) {
-          // this operates only on compute cells
-          exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
-              solver,fineGridCell.getCellDescriptionsIndex(),element,
-              exahype::Cell::isAtRemoteBoundary(
-                  fineGridVertices,fineGridVerticesEnumerator)
-          );
+        switch (solver->getType()) {
+          case exahype::solvers::Solver::Type::ADERDG:
+            static_cast<solvers::ADERDGSolver*>(solver)->
+              performPredictionAndVolumeIntegral(solverNumber,cellInfo,isAtRemoteBoundary);
+            break;
+          case solvers::Solver::Type::LimitingADERDG: {
+            static_cast<solvers::LimitingADERDGSolver*>(solver)->
+              performPredictionAndVolumeIntegral(solverNumber,cellInfo,isAtRemoteBoundary);
+          }  break;
+          case solvers::Solver::Type::FiniteVolumes:
+            // do nothing
+            break;
+          default:
+            assertionMsg(false,"Unrecognised solver type: "<<solvers::Solver::toString(solver->getType()));
+            logError("performPredictionOrProlongate(...)","Unrecognised solver type: "<<solvers::Solver::toString(solver->getType()));
+            std::abort();
+            break;
         }
-        else { // we are sure here that the skeleton STPs have finished
-          // this operates only on helper cells
-          solver->prolongateFaceData(
-              fineGridCell.getCellDescriptionsIndex(),element,
-              exahype::Cell::isAtRemoteBoundary(
-                  fineGridVertices,fineGridVerticesEnumerator));
+      } else if (
+          cellInfo.foundCellDescriptionForSolver(solverNumber) &&
+          solver->isPerformingPrediction(algorithmSection) &&
+          !performPrediction // prolongate instead
+      ) { // we are sure here that the skeleton STPs have finished
+        switch (solver->getType()) {
+          case exahype::solvers::Solver::Type::ADERDG:
+            static_cast<exahype::solvers::ADERDGSolver*>(solver)->
+              prolongateFaceData(solverNumber,cellInfo,isAtRemoteBoundary);
+            break;
+          case exahype::solvers::Solver::Type::LimitingADERDG:
+            static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getSolver()->
+              prolongateFaceData(solverNumber,cellInfo,isAtRemoteBoundary);
+            break;
+          case exahype::solvers::Solver::Type::FiniteVolumes:
+            // do nothing
+            break;
+          default:
+            assertionMsg(false,"Unrecognised solver type: "<<solvers::Solver::toString(solver->getType()));
+            logError("performPredictionOrProlongate(...)","Unrecognised solver type: "<<solvers::Solver::toString(solver->getType()));
+            std::abort();
+            break;
         }
       }
-      grainSize.parallelSectionHasTerminated();
     }
   }
 }
@@ -221,7 +251,7 @@ void exahype::mappings::Prediction::prepareSendToNeighbour(
   logTraceInWith5Arguments( "prepareSendToNeighbour(...)", vertex, toRank, x, h, level );
 
   if ( _stateCopy.isLastIterationOfBatchOrNoBatch() ) {
-    vertex.sendToNeighbour(toRank,true,x,level);
+    vertex.sendToNeighbour(toRank,true,x,h,level);
   }
 
   logTraceOut( "prepareSendToNeighbour(...)" );

@@ -20,7 +20,7 @@
 #
 # export variable  |  default-value  |  further values         |  description
 #----------------------------------------------------------------------------------------------
-# ARCHITECTURE        CPU               Phi, KNL, HSW              Hardware-plattfrom
+# ARCHITECTURE        CPU               Phi, KNL, HSW, SKX         Hardware-plattfrom
 # COMPILER            Intel             GNU, Manual                Used compiler (and linker)
 # MODE                Release           Debug,                     Verbosity and Debug level
 #                                       Asserts,PeanoProfile,Profile          
@@ -182,8 +182,8 @@ ifeq ($(call tolower,$(COMPILER)),intel)
 	# Note, check out these ifort compiler flags:
 	#   -reentrance  -recursive
 	
-	FCOMPILER_CFLAGS  += -r8 -cpp -auto
-	COMPILER_CFLAGS   += -restrict -std=$(CPP_STANDARD) -pedantic -Wall
+	FCOMPILER_CFLAGS  += -r8 -cpp -auto -qopenmp-simd
+	COMPILER_CFLAGS   += -restrict -std=$(CPP_STANDARD) -pedantic -Wall -qopenmp-simd
 	#COMPILER_LFLAGS   +=
 	
 	
@@ -216,21 +216,26 @@ ifeq ($(call tolower,$(COMPILER)),intel)
 	ifeq ($(call tolower,$(ARCHITECTURE)),phi)
 		COMPILER_CFLAGS += -mmic
 		COMPILER_LFLAGS += -mmic
-	else ifeq ($(call tolower,$(ARCHITECTURE)),sky)
-		COMPILER_CFLAGS += -xCORE-AVX512 -fma
-		COMPILER_LFLAGS += -xCORE-AVX512 -fma
-	else ifeq ($(call tolower,$(ARCHITECTURE)),knl)
-		COMPILER_CFLAGS += -xMIC-AVX512 -fma
-		FCOMPILER_CFLAGS += -xMIC-AVX512 -fma
-		COMPILER_LFLAGS += -xMIC-AVX512 -fma
+	else ifeq ($(call tolower,$(ARCHITECTURE)),wsm)
+		COMPILER_CFLAGS  += -xSSE4.2
+		FCOMPILER_CFLAGS += -xSSE4.2
+		COMPILER_LFLAGS  += -xSSE4.2
 	else ifeq ($(call tolower,$(ARCHITECTURE)),snb)
-		COMPILER_CFLAGS += -xAVX
+		COMPILER_CFLAGS  += -xAVX
 		FCOMPILER_CFLAGS += -xAVX
-		COMPILER_LFLAGS += -xAVX
+		COMPILER_LFLAGS  += -xAVX
 	else ifeq ($(call tolower,$(ARCHITECTURE)),hsw)
-		COMPILER_CFLAGS += -xCORE-AVX2 -fma
+		COMPILER_CFLAGS  += -xCORE-AVX2 -fma
 		FCOMPILER_CFLAGS += -xCORE-AVX2 -fma
-		COMPILER_LFLAGS += -xCORE-AVX2 -fma
+		COMPILER_LFLAGS  += -xCORE-AVX2 -fma
+	else ifeq ($(call tolower,$(ARCHITECTURE)),knl)
+		COMPILER_CFLAGS  += -xMIC-AVX512 -fma
+		FCOMPILER_CFLAGS += -xMIC-AVX512 -fma
+		COMPILER_LFLAGS  += -xMIC-AVX512 -fma
+	else ifeq ($(call tolower,$(ARCHITECTURE)),skx)
+		COMPILER_CFLAGS  += -xCORE-AVX512 -fma
+		FCOMPILER_CFLAGS += -xCORE-AVX512 -fma
+		COMPILER_LFLAGS  += -xCORE-AVX512 -fma
 	else ifneq ($(call tolower,$(ARCHITECTURE)),cpu)
         $(error Unknown option for variable [ARCHITECTURE])
 	endif
@@ -257,11 +262,11 @@ else ifeq ($(call tolower,$(COMPILER)),gnu)
 		FC=$(EXAHYPE_FC)
 	endif
 	
-	FCOMPILER_CFLAGS  += -fdefault-real-8 -fdefault-double-8 -ffree-line-length-none -cpp -Wall -Wno-tabs -Wno-unused-variable
+	FCOMPILER_CFLAGS  += -fdefault-real-8 -fdefault-double-8 -ffree-line-length-none -cpp -Wall -Wno-tabs -Wno-unused-variable -fopenmp-simd
 	# REMOVING "-O3"  as it creates compiler bugs!
 	LINK_FORTRAN	  += -lgfortran
 
-	COMPILER_CFLAGS   += -std=$(CPP_STANDARD) -pedantic -Wall -Drestrict=__restrict__ -pipe -D__assume_aligned=__builtin_assume_aligned -Wstrict-aliasing
+	COMPILER_CFLAGS   += -std=$(CPP_STANDARD) -pedantic -Wall -Drestrict=__restrict__ -pipe -D__assume_aligned=__builtin_assume_aligned -Wstrict-aliasing -fopenmp-simd
 	COMPILER_LFLAGS   += -lm -lstdc++
 	
 	ifeq ($(call tolower,$(MODE)),debug)
@@ -293,7 +298,7 @@ else ifeq ($(call tolower,$(COMPILER)),gnu)
 	ifeq ($(call tolower,$(ARCHITECTURE)),knl)
 		COMPILER_CFLAGS  += -march=knl
 		COMPILER_LFLAGS  += -march=knl
-	else ifeq ($(call tolower,$(ARCHITECTURE)),sky)
+	else ifeq ($(call tolower,$(ARCHITECTURE)),skx)
 		COMPILER_CFLAGS  += -march=skylake-avx512
 		COMPILER_LFLAGS  += -march=skylake-avx512
     else ifeq ($(call tolower,$(ARCHITECTURE)),snb)
@@ -302,6 +307,9 @@ else ifeq ($(call tolower,$(COMPILER)),gnu)
 	else ifeq ($(call tolower,$(ARCHITECTURE)),hsw)
 		COMPILER_CFLAGS  += -march=haswell
 		COMPILER_LFLAGS  += -march=haswell
+	else ifeq ($(call tolower,$(ARCHITECTURE)),wsm)
+		COMPILER_CFLAGS  += -march=westmere
+		COMPILER_LFLAGS  += -march=westmere
 	else ifneq ($(call tolower,$(ARCHITECTURE)),cpu)
 		$(error Unknown option for variable [ARCHITECTURE])
 	endif
@@ -566,7 +574,7 @@ header:
 	@echo mode nevertheless.
 	@echo
 	@echo The compiler variant does set various compiler and linker flags. 
-	@echo You cann supplement you own by setting the variables 
+	@echo You can supplement you own by setting the variables 
 	@echo COMPILER_CFLAGS, COMPILER_LFLAGS, FCOMPILER_CFLAGS and FCOMPILER_LFLAGS prior 
 	@echo running make.
 	@echo
@@ -575,7 +583,7 @@ header:
 	@echo you have to specify through EXAHYPE_CC which compiler to use.
 
 build:  $(FOBJECTS) mergeipoobjects $(COBJECTS)
-	$(LL) $(COBJECTS) $(FOBJECTS) $(SOLVERKERNELS_IPO_OBJ) $(PROJECT_LINK) $(LINK_FORTRAN) $(PROJECT_LFLAGS) $(COMPILER_LFLAGS) $(NO_IPO_FLAG) $(SYSTEM_LFLAGS) -o $(EXECUTABLE)
+	$(LL) $(COBJECTS) $(FOBJECTS) $(SOLVERKERNELS_IPO_OBJ) $(PROJECT_LINK) $(LINK_FORTRAN) $(COMPILER_LFLAGS) $(NO_IPO_FLAG) $(SYSTEM_LFLAGS) $(PROJECT_LFLAGS) -o $(EXECUTABLE)
 	@echo
 	@echo build of ExaHyPE successful
 	@echo run code with ./$(EXECUTABLE) and pass config file as argument
@@ -592,6 +600,7 @@ ifeq ($(call tolower,$(USE_IPO_INTERN)),on)
 endif
 	rm -f cipofiles.mk
 	rm -f buildinfo.h
+	rm -f *.mod   # Delete also all Fortran modules
 
 # peano.a: Useful for quickly setting up external applications which use the ExaHyPE
 #          code base as a library.
@@ -601,10 +610,10 @@ peano.a: $(FOBJECTS) $(COBJECTS)
 	ar r peano.a  $(COBJECTS) $(FOBJECTS)
 
 $(COBJECTS): %.o : %.cpp
-	$(CC) $(PROJECT_CFLAGS) $(COMPILER_CFLAGS) $(NO_IPO_FLAG) $(SYSTEM_CFLAGS) -I$(PEANO_KERNEL_PEANO_PATH)/../ -I$(PEANO_KERNEL_TARCH_PATH)/../ -I$(PROJECT_PATH) -I$(PEANO_TOOLBOX_MPI_BLANCING_PATH)/../ -I$(PEANO_TOOLBOX_SHAREDMEMORY_ORACLES_PATH)/../ -I$(PEANO_TOOLBOX_MULTISCALELINKEDCELL_PATH)/../ -I$(EXAHYPE_PATH) -I$(PROJECT_PATH)  -c $< -o $@
+	$(CC) $(COMPILER_CFLAGS) $(NO_IPO_FLAG) $(SYSTEM_CFLAGS) $(PROJECT_CFLAGS) -I$(PEANO_KERNEL_PEANO_PATH)/../ -I$(PEANO_KERNEL_TARCH_PATH)/../ -I$(PROJECT_PATH) -I$(PEANO_TOOLBOX_MPI_BLANCING_PATH)/../ -I$(PEANO_TOOLBOX_SHAREDMEMORY_ORACLES_PATH)/../ -I$(PEANO_TOOLBOX_MULTISCALELINKEDCELL_PATH)/../ -I$(EXAHYPE_PATH) -I$(PROJECT_PATH)  -c $< -o $@
 
 $(CIPOOBJECTS): %.o : %.cpp
-	$(CC) $(PROJECT_CFLAGS) $(COMPILER_CFLAGS) $(IPO_FLAG) -DUSE_IPO $(IPO_UNSAFE_FLAG) $(SYSTEM_CFLAGS) -I$(PEANO_KERNEL_PEANO_PATH)/../ -I$(PEANO_KERNEL_TARCH_PATH)/../  -I$(PROJECT_PATH) -I$(PEANO_TOOLBOX_MPI_BLANCING_PATH)/../ -I$(PEANO_TOOLBOX_SHAREDMEMORY_ORACLES_PATH)/../ -I$(PEANO_TOOLBOX_MULTISCALELINKEDCELL_PATH)/../ -I$(EXAHYPE_PATH) -I$(PROJECT_PATH)  -c $< -o $@
+	$(CC) $(COMPILER_CFLAGS) $(IPO_FLAG) -DUSE_IPO $(IPO_UNSAFE_FLAG) $(SYSTEM_CFLAGS) $(PROJECT_CFLAGS) -I$(PEANO_KERNEL_PEANO_PATH)/../ -I$(PEANO_KERNEL_TARCH_PATH)/../  -I$(PROJECT_PATH) -I$(PEANO_TOOLBOX_MPI_BLANCING_PATH)/../ -I$(PEANO_TOOLBOX_SHAREDMEMORY_ORACLES_PATH)/../ -I$(PEANO_TOOLBOX_MULTISCALELINKEDCELL_PATH)/../ -I$(EXAHYPE_PATH) -I$(PROJECT_PATH)  -c $< -o $@
 
 $(FOBJECTS): %.o : %.f90
-	$(FC) $(PROJECT_CFLAGS) $(FCOMPILER_CFLAGS) -I$(PROJECT_PATH) -c $< -o $@
+	$(FC) $(FCOMPILER_CFLAGS) $(PROJECT_CFLAGS) -I$(PROJECT_PATH) -c $< -o $@

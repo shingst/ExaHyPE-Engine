@@ -19,9 +19,22 @@ namespace kernels {
 namespace finitevolumes {
 namespace godunov {
 namespace c {
-  template <bool useSource, bool useNCP, bool useFlux, class SolverType>
+
+
+  /**
+   * The classic unsplit first-order (in terms of local truncation error) Godunov Finite Volumes scheme.
+   *
+   * @note robustDiagonalLimiting has no effect on the algorithm.
+   *
+   * @param solver a user solver implementing the PDE kernels
+   * @param luh     the current (and then new) solution
+   * @param dx      the dimensions of a cell
+   * @param dt      the used time step size
+   * @return the actual admissible time step size obtained from the Riemann solves.
+   */
+  template <bool useSource, bool useNCP, bool useFlux, bool robustDiagonalLimiting, typename SolverType>
   double solutionUpdate(
-      SolverType& solver,double* luh_new, const double* luh,
+      SolverType& solver,double* luh,
       const tarch::la::Vector<DIMENSIONS, double>& dx,double dt);
 }  // namespace c
 }  // namespace godunov

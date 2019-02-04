@@ -28,15 +28,22 @@
 peano::CommunicationSpecification exahype::mappings::BroadcastAndDropNeighbourMessages::communicationSpecification() const {
   return peano::CommunicationSpecification(
       peano::CommunicationSpecification::ExchangeMasterWorkerData::SendDataAndStateBeforeFirstTouchVertexFirstTime,
-      peano::CommunicationSpecification::ExchangeWorkerMasterData::MaskOutWorkerMasterDataAndStateExchange,
+      peano::CommunicationSpecification::ExchangeWorkerMasterData::SendDataAndStateAfterLastTouchVertexLastTime,
       true);
 }
 
 peano::MappingSpecification
 exahype::mappings::BroadcastAndDropNeighbourMessages::enterCellSpecification(int level) const {
-  return peano::MappingSpecification(
-      peano::MappingSpecification::WholeTree,
-      peano::MappingSpecification::Serial,false); // it's not worth it to run this operation in parallel.
+  const int coarsestSolverLevel = solvers::Solver::getCoarsestMeshLevelOfAllSolvers();
+  if ( std::abs(level)>=coarsestSolverLevel ) {
+    return peano::MappingSpecification(
+          peano::MappingSpecification::WholeTree,
+          peano::MappingSpecification::Serial,true); // performs reduction
+  } else {
+    return peano::MappingSpecification(
+          peano::MappingSpecification::Nop,
+          peano::MappingSpecification::Serial,false);
+  }
 }
 
 /* All specifications below are nop. */
@@ -78,12 +85,6 @@ void exahype::mappings::BroadcastAndDropNeighbourMessages::beginIteration(
     exahype::State& solverState) {
   logTraceInWith1Argument("beginIteration(State)", solverState);
 
-  if ( exahype::solvers::Solver::SpawnPredictionAsBackgroundJob ) {
-    // background threads
-    exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::SkeletonJob);
-    exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::EnclaveJob);
-  }
-
   exahype::mappings::RefinementStatusSpreading::IsFirstIteration = true;
 
   logTraceOutWith1Argument("beginIteration(State)", solverState);
@@ -97,9 +98,24 @@ void exahype::mappings::BroadcastAndDropNeighbourMessages::enterCell(
     exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
   if ( fineGridCell.isInitialised() ) {
-    exahype::Cell::resetNeighbourMergeFlags(
-        fineGridCell.getCellDescriptionsIndex(),
-        fineGridVertices,fineGridVerticesEnumerator);
+    solvers::Solver::CellInfo cellInfo = fineGridCell.createCellInfo();
+
+    // wait for completion of jobs
+    if ( exahype::solvers::Solver::SpawnPredictionAsBackgroundJob ) {
+      const bool isAtRemoteBoundary = Cell::isAtRemoteBoundary(fineGridVertices,fineGridVerticesEnumerator);
+      // ADER-DG
+      for (auto& p : cellInfo._ADERDGCellDescriptions) {
+        const bool waitForHighPriorityJob = isAtRemoteBoundary || p.getHasVirtualChildren();
+        solvers::RegisteredSolvers[p.getSolverNumber()]->waitUntilCompletedLastStep(p,waitForHighPriorityJob,false);
+      }
+      // // FV - fused time step jobs are only spawned within batches
+      // for (auto& p : cellInfo._FiniteVolumesCellDescriptions) {
+      //   const bool waitForHighPriorityJob = isAtRemoteBoundary;
+      //   solvers::Solver::waitUntilCompletedTimeStep(p,waitForHighPriorityJob,false);
+      // }
+    }
+
+    Cell::resetNeighbourMergePerformedFlags(cellInfo,fineGridVertices,fineGridVerticesEnumerator);
   }
 }
 
@@ -114,7 +130,7 @@ void exahype::mappings::BroadcastAndDropNeighbourMessages::mergeWithNeighbour(
   if ( exahype::solvers::Solver::FuseADERDGPhases ) {
   vertex.receiveNeighbourData(
       fromRank,false /*no merge*/,true /*no batch*/,
-      fineGridX,level);
+      fineGridX,fineGridH,level);
   }
 }
 

@@ -83,7 +83,7 @@ peano::MappingSpecification   exahype::mappings::LoadBalancing::descendSpecifica
  */
 peano::MappingSpecification   exahype::mappings::LoadBalancing::enterCellSpecification(int level) const {
   #ifdef Parallel
-  return peano::MappingSpecification(peano::MappingSpecification::WholeTree,peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
+  return peano::MappingSpecification(peano::MappingSpecification::WholeTree,peano::MappingSpecification::RunConcurrentlyOnFineGrid,true); // count cells on coarse grid, too
   #else
   return peano::MappingSpecification(peano::MappingSpecification::Nop,peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
   #endif
@@ -211,7 +211,8 @@ void exahype::mappings::LoadBalancing::endIteration(
 //   NOP
 // =======
 //
-exahype::mappings::LoadBalancing::LoadBalancing() {
+exahype::mappings::LoadBalancing::LoadBalancing()
+  : _numberOfLocalCells(0) {
   // do nothing
 }
 

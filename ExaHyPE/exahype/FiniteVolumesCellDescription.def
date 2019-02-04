@@ -26,9 +26,10 @@ class exahype::records::FiniteVolumesCellDescription {
   parallelise persistent signed char neighbourMergePerformed[DIMENSIONS_TIMES_TWO];
   
   /**
-   * Flag indicating if this cell description is processed by a background job.
-   */
-  persistent packed bool hasCompletedTimeStep;
+     * Flag indicating if the last operation was completed for this cell description
+     * and its data can be used for the next operations.
+     */
+    persistent packed bool hasCompletedLastStep;
 
   /**
   * The time step size this cell description is working with.
@@ -126,28 +127,6 @@ class exahype::records::FiniteVolumesCellDescription {
    */
   parallelise persistent double size[DIMENSIONS];
   ///@}
-  
-  #ifdef Parallel  
-  /**
-   * If a neighbouring cell belonging to another rank
-   * functions as a compute cell for the same solver (Type::Cell)
-   * that this cell description is associated with and this
-   * cell description is further a helper cell description (Type::Ancestor/EmptyAncestor/
-   * Descendant/EmptyDescendany), this helper cell description needs to store face data.
-   * This flag is used to indicate these scenarios.
-   *
-   * \note This flag should be only set in MarkingForAugmentation::mergeWithNeighbour(...).
-   * It should be read and be reseted afterwards in MarkingForAugmentation::enterCell(...).
-   */
-  parallelise persistent bool oneRemoteBoundaryNeighbourIsOfTypeCell; 
-  /**
-   * Face data exchange in ExaHyPE is realised in vertices: each vertex checks
-   * whether one of its adjacent faces should go to another rank. As a result, 
-   * a face might be exchanged up to 2^{d-1} times. We use this flag to avoid 
-   * this. See prepareSendToNeighbour() in SpaceTimePredictor.
-   */
-  parallelise persistent int faceDataExchangeCounter[DIMENSIONS_TIMES_TWO];
-  #endif
   
   /**
    * Type of a cell description.

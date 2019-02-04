@@ -31,6 +31,8 @@
 tarch::logging::Log exahype::mappings::FusedTimeStep::_log(
     "exahype::mappings::FusedTimeStep");
 
+tarch::multicore::BooleanSemaphore exahype::mappings::FusedTimeStep::Semaphore;
+
 bool exahype::mappings::FusedTimeStep::issuePredictionJobsInThisIteration() const {
   return
       exahype::solvers::Solver::PredictionSweeps==1 ||
@@ -42,20 +44,6 @@ bool exahype::mappings::FusedTimeStep::sendOutRiemannDataInThisIteration() const
       exahype::solvers::Solver::PredictionSweeps==1     ||
       _stateCopy.isLastIterationOfBatchOrNoBatch() || // covers the NoBatch case
       _batchIteration % 2 != 0;
-}
-
-
-void exahype::mappings::FusedTimeStep::initialiseLocalVariables(){
-  const unsigned int numberOfSolvers = exahype::solvers::RegisteredSolvers.size();
-  _minTimeStepSizes.resize(numberOfSolvers);
-  _maxLevels.resize(numberOfSolvers);
-  _meshUpdateEvents.resize(numberOfSolvers);
-
-  for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
-    _minTimeStepSizes[solverNumber] = std::numeric_limits<double>::max();
-    _maxLevels[solverNumber]        = -std::numeric_limits<int>::max(); // "-", min
-    _meshUpdateEvents[solverNumber] = exahype::solvers::Solver::MeshUpdateEvent::None;
-  }
 }
 
 peano::CommunicationSpecification
@@ -90,22 +78,69 @@ exahype::mappings::FusedTimeStep::communicationSpecification() const {
 }
 
 peano::MappingSpecification
-exahype::mappings::FusedTimeStep::enterCellSpecification(int level) const {
+exahype::mappings::FusedTimeStep::enterCellSpecification(int level) {
+  #ifdef Parallel
   return peano::MappingSpecification(
       peano::MappingSpecification::WholeTree,
-      peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
+      peano::MappingSpecification::RunConcurrentlyOnFineGrid,true); // counter
+  #else
+  updateBatchIterationCounter(false); // comes after beginIteration in first iteration -> never init counter
+  
+  const int coarsestSolverLevel = solvers::Solver::getCoarsestMeshLevelOfAllSolvers();
+  if ( std::abs(level)>=coarsestSolverLevel && sendOutRiemannDataInThisIteration() ) {
+    return peano::MappingSpecification(
+          peano::MappingSpecification::WholeTree,
+          peano::MappingSpecification::RunConcurrentlyOnFineGrid,true); // counter
+  } else {
+    return peano::MappingSpecification(
+          peano::MappingSpecification::Nop,
+          peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
+  }
+  #endif
 }
 
 peano::MappingSpecification
-exahype::mappings::FusedTimeStep::leaveCellSpecification(int level) const {
-  return exahype::mappings::Prediction::determineEnterLeaveCellSpecification(level);
-}
-
-peano::MappingSpecification
-exahype::mappings::FusedTimeStep::touchVertexFirstTimeSpecification(int level) const {
+exahype::mappings::FusedTimeStep::leaveCellSpecification(int level) {
+  #ifdef Parallel
   return peano::MappingSpecification(
-        peano::MappingSpecification::WholeTree,
-        peano::MappingSpecification::AvoidFineGridRaces,true);
+      peano::MappingSpecification::WholeTree,
+      peano::MappingSpecification::RunConcurrentlyOnFineGrid,true); // counter
+  #else
+  updateBatchIterationCounter(false); // comes after beginIteration in first iteration -> never init counter
+  
+  const int coarsestSolverLevel = solvers::Solver::getCoarsestMeshLevelOfAllSolvers();
+  if ( std::abs(level)>=coarsestSolverLevel && issuePredictionJobsInThisIteration() ) {
+    return peano::MappingSpecification(
+          peano::MappingSpecification::WholeTree,
+          peano::MappingSpecification::RunConcurrentlyOnFineGrid,true); // performs reductions
+  } else {
+    return peano::MappingSpecification(
+          peano::MappingSpecification::Nop,
+          peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
+  }
+  #endif
+}
+
+peano::MappingSpecification
+exahype::mappings::FusedTimeStep::touchVertexFirstTimeSpecification(int level) {
+  #ifdef Parallel
+  return peano::MappingSpecification(
+      peano::MappingSpecification::WholeTree,
+      peano::MappingSpecification::RunConcurrentlyOnFineGrid,true); // counter
+  #else
+  updateBatchIterationCounter(false); // comes after beginIteration in first iteration -> never init counter
+
+  const int coarsestSolverLevel = solvers::Solver::getCoarsestMeshLevelOfAllSolvers();
+  if ( std::abs(level)>=coarsestSolverLevel && issuePredictionJobsInThisIteration() ) {
+    return peano::MappingSpecification(
+          peano::MappingSpecification::WholeTree,
+          peano::MappingSpecification::RunConcurrentlyOnFineGrid,true); // counter
+  } else {
+    return peano::MappingSpecification(
+          peano::MappingSpecification::Nop,
+          peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
+  }
+  #endif
 }
 
 /**
@@ -165,8 +200,6 @@ void exahype::mappings::FusedTimeStep::beginIteration(
     for (auto* solver : exahype::solvers::RegisteredSolvers) {
       solver->setNextMeshUpdateEvent();
     }
-
-    initialiseLocalVariables();
   }
 
   logTraceOutWith1Argument("beginIteration(State)", solverState);
@@ -184,10 +217,13 @@ void exahype::mappings::FusedTimeStep::endIteration(
           _stateCopy.isFirstIterationOfBatchOrNoBatch() : 
           _stateCopy.isSecondIterationOfBatchOrNoBatch();
 
+    if ( _stateCopy.isLastIterationOfBatchOrNoBatch() ) {
+      // background threads
+      exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::ReductionJob);
+    }
+
     exahype::solvers::Solver::startNewTimeStepForAllSolvers(
-        _minTimeStepSizes,_maxLevels,_meshUpdateEvents,
-        isFirstTimeStep,
-        _stateCopy.isLastIterationOfBatchOrNoBatch(),
+        isFirstTimeStep,_stateCopy.isLastIterationOfBatchOrNoBatch(),
         true);
   }
 
@@ -224,16 +260,12 @@ exahype::mappings::FusedTimeStep::FusedTimeStep(
   _stateCopy(masterThread._stateCopy), 
   _batchIterationCounterUpdated(masterThread._batchIterationCounterUpdated),
   _batchIteration(masterThread._batchIteration) {
-  initialiseLocalVariables();
+  // do nothing
 }
 // Merge over threads
 void exahype::mappings::FusedTimeStep::mergeWithWorkerThread(
     const FusedTimeStep& workerThread) {
-  for (int i = 0; i < static_cast<int>(exahype::solvers::RegisteredSolvers.size()); i++) {
-    _meshUpdateEvents[i] = exahype::solvers::Solver::mergeMeshUpdateEvents ( _meshUpdateEvents[i], workerThread._meshUpdateEvents[i] );
-    _minTimeStepSizes[i] = std::min(_minTimeStepSizes[i], workerThread._minTimeStepSizes[i]);
-    _maxLevels[i]        = std::max(_maxLevels[i], workerThread._maxLevels[i]);
-  }
+  // do nothing
 }
 #endif
 
@@ -272,15 +304,26 @@ void exahype::mappings::FusedTimeStep::enterCell(
       fineGridCell.isInitialised() &&
       sendOutRiemannDataInThisIteration()
    ) {
-     const int numberOfSolvers = exahype::solvers::RegisteredSolvers.size();
-     for (int solverNumber=0; solverNumber<numberOfSolvers; solverNumber++) {
+     solvers::Solver::CellInfo cellInfo = fineGridCell.createCellInfo();
+     const bool isAtRemoteBoundary = exahype::Cell::isAtRemoteBoundary(fineGridVertices,fineGridVerticesEnumerator);
+
+     for (int solverNumber=0; solverNumber<static_cast<int>(solvers::RegisteredSolvers.size()); solverNumber++) {
        auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-       const int element = solver->tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
-       if (element!=exahype::solvers::Solver::NotFound) {
-         solver->prolongateFaceData(
-             fineGridCell.getCellDescriptionsIndex(),element,
-             exahype::Cell::isAtRemoteBoundary(
-                 fineGridVertices,fineGridVerticesEnumerator)); // this operates only on virtual helper cells (pull from below)
+       switch ( solver->getType() ) {
+         case solvers::Solver::Type::ADERDG:
+           static_cast<solvers::ADERDGSolver*>(solver)->prolongateFaceData(solverNumber,cellInfo,isAtRemoteBoundary);
+           break;
+         case solvers::Solver::Type::LimitingADERDG:
+           static_cast<solvers::LimitingADERDGSolver*>(solver)->getSolver()->prolongateFaceData(solverNumber,cellInfo,isAtRemoteBoundary);
+           break;
+         case solvers::Solver::Type::FiniteVolumes:
+           // insert code here
+           break;
+         default:
+           assertionMsg(false,"Unrecognised solver type: "<<solvers::Solver::toString(solver->getType()));
+           logError("mergeWithBoundaryDataIfNotDoneYet(...)","Unrecognised solver type: "<<solvers::Solver::toString(solver->getType()));
+           std::abort();
+           break;
        }
      }
   }
@@ -300,44 +343,56 @@ void exahype::mappings::FusedTimeStep::leaveCell(
   logTraceInWith4Arguments("leaveCell(...)", fineGridCell,fineGridVerticesEnumerator.toString(),coarseGridCell, fineGridPositionOfCell);
 
   if (
-      fineGridCell.isInitialised() &&
-      issuePredictionJobsInThisIteration()
+      issuePredictionJobsInThisIteration() &&
+      fineGridCell.isInitialised()
   ) {
-    const int numberOfSolvers = exahype::solvers::RegisteredSolvers.size();
-    for (int solverNumber=0; solverNumber<numberOfSolvers; solverNumber++) {
+    solvers::Solver::CellInfo cellInfo = fineGridCell.createCellInfo();
+    const bool isAtRemoteBoundary = exahype::Cell::isAtRemoteBoundary(fineGridVertices,fineGridVerticesEnumerator);
+    const int isLastTimeStep =
+        ( exahype::solvers::Solver::PredictionSweeps==1 ) ?
+            _stateCopy.isLastIterationOfBatchOrNoBatch() :
+            _stateCopy.isSecondToLastIterationOfBatchOrNoBatch(); // PredictionSweeps==2
+
+    for (int solverNumber=0; solverNumber<static_cast<int>(solvers::RegisteredSolvers.size()); solverNumber++) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-      const int element = solver->tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
-      if (element!=exahype::solvers::Solver::NotFound) {
-        // this operates only on compute cells
-        exahype::plotters::plotPatchIfAPlotterIsActive(
-            solverNumber,fineGridCell.getCellDescriptionsIndex(),element); // TODO(Dominic) potential for IO overlap?
 
-        const int isLastTimeStep = 
-               ( exahype::solvers::Solver::PredictionSweeps==1 ) ? 
-               _stateCopy.isLastIterationOfBatchOrNoBatch() : 
-               _stateCopy.isSecondToLastIterationOfBatchOrNoBatch();
+      // this operates only on compute cells
+      plotters::plotPatchIfAPlotterIsActive(solverNumber,cellInfo); // TODO(Dominic) potential for IO overlap?
 
-        // TODO(LTS): Merge these two functions
-        exahype::solvers::Solver::UpdateResult result =
-            solver->fusedTimeStep(
-                fineGridCell.getCellDescriptionsIndex(),element,
-                _stateCopy.isFirstIterationOfBatchOrNoBatch(),
-                isLastTimeStep,
-                exahype::Cell::isAtRemoteBoundary(
-                    fineGridVertices,fineGridVerticesEnumerator)
-            );
-        solver->restriction(fineGridCell.getCellDescriptionsIndex(),element);
-
-        _meshUpdateEvents  [solverNumber] = exahype::solvers::Solver::mergeMeshUpdateEvents( _meshUpdateEvents[solverNumber], result._meshUpdateEvent );
-        _minTimeStepSizes[solverNumber]   = std::min( result._timeStepSize,                 _minTimeStepSizes[solverNumber]);
-        _maxLevels       [solverNumber]   = std::min( fineGridVerticesEnumerator.getLevel(),_maxLevels       [solverNumber]);
+      solvers::Solver::UpdateResult result;
+      switch ( solver->getType() ) {
+        case solvers::Solver::Type::ADERDG:
+          result = static_cast<solvers::ADERDGSolver*>(solver)->fusedTimeStepOrRestrict(
+              solverNumber,cellInfo,_stateCopy.isFirstIterationOfBatchOrNoBatch(),isLastTimeStep,isAtRemoteBoundary);
+          break;
+        case solvers::Solver::Type::LimitingADERDG:
+          result = static_cast<solvers::LimitingADERDGSolver*>(solver)->fusedTimeStepOrRestrict(
+              solverNumber,cellInfo,_stateCopy.isFirstIterationOfBatchOrNoBatch(),isLastTimeStep,isAtRemoteBoundary);
+          break;
+        case solvers::Solver::Type::FiniteVolumes:
+          result = static_cast<solvers::FiniteVolumesSolver*>(solver)->fusedTimeStepOrRestrict(
+              solverNumber,cellInfo,_stateCopy.isFirstIterationOfBatchOrNoBatch(),isLastTimeStep,isAtRemoteBoundary);
+          break;
+        default:
+          assertionMsg(false,"Unrecognised solver type: "<<solvers::Solver::toString(solver->getType()));
+          logError("mergeWithBoundaryDataIfNotDoneYet(...)","Unrecognised solver type: "<<solvers::Solver::toString(solver->getType()));
+          std::abort();
+          break;
+      }
+      // mesh refinement events, cell sizes (for AMR), time
+      if ( isLastTimeStep ) {
+        tarch::multicore::Lock lock(Semaphore);
+        {
+          solver->updateNextMeshUpdateEvent(result._meshUpdateEvent);
+          solver->updateNextMaxLevel(fineGridVerticesEnumerator.getLevel());
+          solver->updateMinNextTimeStepSize(result._timeStepSize);
+        }
+        lock.free();
       }
     }
 
     // Must be performed for all cell descriptions
-    exahype::Cell::resetNeighbourMergeFlags(
-        fineGridCell.getCellDescriptionsIndex(),
-        fineGridVertices,fineGridVerticesEnumerator);
+    Cell::resetNeighbourMergePerformedFlags(cellInfo,fineGridVertices,fineGridVerticesEnumerator);
   }
 
   logTraceOutWith1Argument("leaveCell(...)", fineGridCell);
@@ -355,7 +410,7 @@ void exahype::mappings::FusedTimeStep::mergeWithNeighbour(
   if ( issuePredictionJobsInThisIteration() ) {
     vertex.receiveNeighbourData(
         fromRank, true/*merge with data*/,_stateCopy.isFirstIterationOfBatchOrNoBatch(),
-        fineGridX,level);
+        fineGridX,fineGridH,level);
   }
 
   logTraceOut( "mergeWithNeighbour(...)" );
@@ -368,7 +423,7 @@ void exahype::mappings::FusedTimeStep::prepareSendToNeighbour(
   logTraceInWith5Arguments( "prepareSendToNeighbour(...)", vertex, toRank, x, h, level );
 
   if ( sendOutRiemannDataInThisIteration() ) {
-    vertex.sendToNeighbour(toRank,_stateCopy.isLastIterationOfBatchOrNoBatch(),x,level);
+    vertex.sendToNeighbour(toRank,_stateCopy.isLastIterationOfBatchOrNoBatch(),x,h,level);
   }
 
   logTraceOut( "prepareSendToNeighbour(...)" );

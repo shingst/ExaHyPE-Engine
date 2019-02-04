@@ -161,6 +161,21 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
     }
   }
 
+  // load balancing type
+  switch (_parser.getMPILoadBalancingType()) {
+    case parser::Parser::MPILoadBalancingType::Static:
+      mappings::MeshRefinement::DynamicLoadBalancing = false;
+      break;
+    case parser::Parser::MPILoadBalancingType::Dynamic:
+      mappings::MeshRefinement::DynamicLoadBalancing = true;
+      break;
+    default:
+      logError("initDistributedMemoryConfiguration()", "no valid load balancing type specified");
+      _parser.invalidate();
+      break;
+  }
+
+  // load balancing strategy
   // basically a switch-case
   if ( _parser.compareMPILoadBalancingStrategy( "greedy-naive" )) {
     exahype::mappings::LoadBalancing::setLoadBalancingAnalysis( exahype::mappings::LoadBalancing::LoadBalancingAnalysis::Greedy );
@@ -278,7 +293,8 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
   exahype::Vertex::SpawnNeighbourMergeAsThread = _parser.getSpawnNeighbourMergeAsThread();
 
   // background jobs
-  tarch::multicore::jobs::Job::setMaxNumberOfRunningBackgroundThreads(_parser.getNumberOfBackgroundJobConsumerTasks());
+  solvers::Solver::MaxNumberOfRunningBackgroundJobConsumerTasksDuringTraversal = _parser.getNumberOfBackgroundJobConsumerTasks();
+  tarch::multicore::jobs::Job::setMaxNumberOfRunningBackgroundThreads(solvers::Solver::MaxNumberOfRunningBackgroundJobConsumerTasksDuringTraversal);
 
   #if defined(SharedTBB)
   tarch::multicore::jobs::setMinMaxNumberOfJobsToConsumeInOneRush(
@@ -315,6 +331,9 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
     }
   }
   #endif
+
+  // NOTE: Adjusting the grain size might hurt the intermixing of compute-heavy background jobs, e.g. the PredictionJobs,
+  // with bandwith-bound ones, e.g. Riemann solves.
 
   switch (_parser.getMulticoreOracleType()) {
   case exahype::parser::Parser::MulticoreOracleType::Dummy:
@@ -651,7 +670,7 @@ void exahype::runners::Runner::shutdownHeaps() {
 void exahype::runners::Runner::initHPCEnvironment() {
   peano::performanceanalysis::Analysis::getInstance().enable(false);
 
-  solvers::Solver::ProfileUpdate = _parser.getProfilingTarget()==parser::Parser::ProfilingTarget::Update;
+  solvers::Solver::SwitchOffNeighbourMergePerformedCheck = _parser.getProfilingTarget()==parser::Parser::ProfilingTarget::Update;
 }
 
 void exahype::runners::Runner::initOptimisations() const {
@@ -661,6 +680,9 @@ void exahype::runners::Runner::initOptimisations() const {
   exahype::solvers::Solver::configurePredictionPhase(
       _parser.getSpawnPredictionAsBackgroundThread(),
       _parser.getSpawnProlongationAsBackgroundThread());
+
+  exahype::solvers::Solver::SpawnUpdateAsBackgroundJob =
+      _parser.getSpawnUpdateAsBackgroundThread();
 
   exahype::solvers::Solver::SpawnAMRBackgroundJobs =
       _parser.getSpawnAMRBackgroundThreads();
@@ -672,11 +694,13 @@ void exahype::runners::Runner::initOptimisations() const {
 
   if ( tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getGlobalMasterRank() ) {
     logInfo("parseOptimisations()","use the following global optimisations:");
-      logInfo("parseOptimisations()","\tfuse-algorithmic-steps="        << (exahype::solvers::Solver::FuseADERDGPhases ? "on" : "off"));
-      logInfo("parseOptimisations()","\tfuse-algorithmic-steps-factor=" << exahype::solvers::Solver::WeightForPredictionRerun);
-      logInfo("parseOptimisations()","\tspawn-predictor-as-background-thread="<< (exahype::solvers::Solver::SpawnPredictionAsBackgroundJob ? "on" : "off"));
-      logInfo("parseOptimisations()","\tspawn-amr-background-threads="  << (exahype::solvers::Solver::SpawnAMRBackgroundJobs ? "on" : "off"));
-      logInfo("parseOptimisations()","\tdisable-vertex-exchange-in-time-steps="     << (exahype::solvers::Solver::DisablePeanoNeighbourExchangeInTimeSteps ? "on" : "off"));
+      logInfo("parseOptimisations()","\tfuse-algorithmic-steps="                  << (exahype::solvers::Solver::FuseADERDGPhases ? "on" : "off"));
+      logInfo("parseOptimisations()","\tfuse-algorithmic-steps-factor="           << exahype::solvers::Solver::WeightForPredictionRerun);
+      logInfo("parseOptimisations()","\tspawn-predictor-as-background-thread="    << (exahype::solvers::Solver::SpawnPredictionAsBackgroundJob ? "on" : "off"));
+      logInfo("parseOptimisations()","\tspawn-prolongation-as-background-thread=" << (exahype::solvers::Solver::SpawnProlongationAsBackgroundJob ? "on" : "off"));
+      logInfo("parseOptimisations()","\tspawn-update-as-background-thread="       << (exahype::solvers::Solver::SpawnUpdateAsBackgroundJob ? "on" : "off"));
+      logInfo("parseOptimisations()","\tspawn-amr-background-threads="            << (exahype::solvers::Solver::SpawnAMRBackgroundJobs ? "on" : "off"));
+      logInfo("parseOptimisations()","\tdisable-vertex-exchange-in-time-steps="   << (exahype::solvers::Solver::DisablePeanoNeighbourExchangeInTimeSteps ? "on" : "off"));
       logInfo("parseOptimisations()","\tbatching enabled="<<
           ( _parser.getSkipReductionInBatchedTimeSteps() &&
               exahype::solvers::Solver::allSolversUseTimeSteppingScheme(exahype::solvers::Solver::TimeStepping::GlobalFixed)
@@ -705,6 +729,10 @@ int exahype::runners::Runner::run() {
     auto* repository = createRepository();
     // must come after repository creation
     initSolvers();
+
+    if (_parser.isValid() && _parser.getMeasureCellProcessingTimes() ) {
+      measureCellProcessingTimes();
+    }
 
     if ( _parser.isValid() )
       initDistributedMemoryConfiguration();
@@ -750,6 +778,26 @@ void exahype::runners::Runner::initSolvers() const {
       0.0,_domainOffset,_domainSize,_boundingBoxSize,
       _cmdlineargs,_parser.createParserView(solverNumber)
     );
+  }
+
+  // profiling functionality
+  if ( _parser.getMeasureCellProcessingTimes() ) {
+
+  }
+}
+
+void exahype::runners::Runner::measureCellProcessingTimes() const {
+  int solverNumber = 0;
+  for ( auto* solver : solvers::RegisteredSolvers ) {
+    solvers::Solver::CellProcessingTimes result =
+        solver->measureCellProcessingTimes(_parser.getMeasureCellProcessingTimesIterations());
+
+    std::ostringstream stringstr;
+    stringstr << "cell processing times for solver "<<solverNumber<<":"<<std::endl;
+    result.toString(stringstr,1e6,3,"\u00B5s","\t\t");
+    logInfo("measureCellProcessingTimes()",stringstr.str());
+
+    solverNumber++;
   }
 }
 
@@ -809,11 +857,9 @@ bool exahype::runners::Runner::createMesh(exahype::repositories::Repository& rep
   bool meshUpdate = false;
 
   int meshSetupIterations = 0;
-  tarch::multicore::jobs::Job::setMaxNumberOfRunningBackgroundThreads(0); // during the traversal only have zero/one consumer thread running
   repository.switchToMeshRefinement();
 
   repository.getState().setMeshRefinementHasConverged(false);
-  peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(true);
   while ( repository.getState().continueToConstructGrid() ) {
     repository.iterate(1,true);
     meshSetupIterations++;
@@ -838,8 +884,6 @@ bool exahype::runners::Runner::createMesh(exahype::repositories::Repository& rep
     //  assertion( tarch::parallel::NodePool::getInstance().getNumberOfIdleNodes()==0 );
     //  #endif
   }
-
-  tarch::multicore::jobs::Job::setMaxNumberOfRunningBackgroundThreads(_parser.getNumberOfBackgroundJobConsumerTasks()); // reset the number of running consumer threads
 
   return meshUpdate;
 }
@@ -879,7 +923,7 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
     int timeStep = 0;
     while (
         tarch::la::greater(solvers::Solver::getMinTimeStepSizeOfAllSolvers(), 0.0) &&
-        solvers::Solver::getMinTimeStampOfAllSolvers() < simulationEndTime &&
+        solvers::Solver::getMinTimeStampOfAllSolvers() < simulationEndTime         &&
         timeStep < simulationTimeSteps
     ) {
       bool plot = exahype::plotters::checkWhetherPlotterBecomesActive(
@@ -1198,7 +1242,7 @@ void exahype::runners::Runner::postProcessTimeStepInSharedMemoryEnvironment() {
 
 void exahype::runners::Runner::updateStatistics() {
   _localRecomputations  +=  (exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalRecomputation()) ? 1 : 0;
-  _meshRefinements +=  (exahype::solvers::LimitingADERDGSolver::oneSolverRequestedGlobalRecomputation()) ? 1 : 0;
+  _meshRefinements      +=  (exahype::solvers::LimitingADERDGSolver::oneSolverRequestedGlobalRecomputation()) ? 1 : 0;
   _predictorReruns      +=  (exahype::solvers::Solver::oneSolverViolatedStabilityCondition()) ? 1 : 0;
 }
 
@@ -1291,7 +1335,6 @@ void exahype::runners::Runner::initialiseMesh(exahype::repositories::Repository&
 void exahype::runners::Runner::updateMeshOrLimiterDomain(
     exahype::repositories::Repository& repository, const bool fusedTimeStepping) {
   // 1. All solvers drop their MPI messages and broadcast time step data
-  peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(false);
   repository.switchToBroadcastAndDropNeighbourMessages();
   repository.iterate(1,false);
 
@@ -1299,7 +1342,6 @@ void exahype::runners::Runner::updateMeshOrLimiterDomain(
   if ( exahype::solvers::Solver::oneSolverRequestedRefinementStatusSpreading() ) {
     logInfo("updateMeshAndSubdomains(...)","pre-spreading of limiter status");
     repository.switchToRefinementStatusSpreading();
-    peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(false);
     repository.iterate(
         exahype::solvers::Solver::getMaxRefinementStatus()+1,false);
   }
@@ -1314,7 +1356,6 @@ void exahype::runners::Runner::updateMeshOrLimiterDomain(
   // Further reinitialse solvers that reported an irregular limiter domain change
   logInfo("updateMeshAndSubdomains(...)","finalise mesh refinement (if applicable)");
   logInfo("updateMeshAndSubdomains(...)","reinitialise cells and send data to neigbours (if applicable)");
-  peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(false);
   repository.switchToFinaliseMeshRefinementOrLocalRollback();
   repository.iterate(1,false);
 
@@ -1329,7 +1370,6 @@ void exahype::runners::Runner::updateMeshOrLimiterDomain(
   if (fusedTimeStepping ||
       exahype::solvers::Solver::oneSolverRequestedLocalRecomputation()) {
     logInfo("updateMeshAndSubdomains(...)","recompute solution locally (if applicable) and compute new time step size");
-    peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(false);
     repository.switchToPredictionOrLocalRecomputation(); // do not roll forward here if global recomp.; we want to stay at the old time step
     const int sweeps = (exahype::solvers::Solver::FuseADERDGPhases) ? exahype::solvers::Solver::PredictionSweeps : 1;
     repository.iterate( sweeps ,false ); // local recomputation: has now recomputed predictor in interface cells
@@ -1453,8 +1493,6 @@ void exahype::runners::Runner::runTimeStepsWithFusedAlgorithmicSteps(
 
   bool communicatePeanoVertices =
       !exahype::solvers::Solver::DisablePeanoNeighbourExchangeInTimeSteps;
-
-  peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(false);
   repository.switchToFusedTimeStep();
   if (numberOfStepsToRun==0) {
     repository.iterate( exahype::solvers::Solver::PredictionSweeps,communicatePeanoVertices );
@@ -1476,7 +1514,6 @@ void exahype::runners::Runner::runTimeStepsWithFusedAlgorithmicSteps(
 
   if (exahype::solvers::Solver::oneSolverViolatedStabilityCondition()) {
     logInfo("runTimeStepsWithFusedAlgorithmicSteps(...)", "\t\t recompute space-time predictor");
-    peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(false);
     repository.switchToPredictionRerun();
     repository.iterate( exahype::solvers::Solver::PredictionSweeps, communicatePeanoVertices );
   }
@@ -1490,12 +1527,8 @@ void exahype::runners::Runner::runOneTimeStepWithThreeSeparateAlgorithmicSteps(
   // Only one time step (predictor vs. corrector) is used in this case.
   bool communicatePeanoVertices =
         !exahype::solvers::Solver::DisablePeanoNeighbourExchangeInTimeSteps;
-
-  peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(false);
   repository.switchToMergeNeighbours();  // Riemann -> face2face
   repository.iterate( 1, communicatePeanoVertices );
-
-  peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(false);
   repository.switchToUpdateAndReduce();  // Face to cell + Inside cell
   repository.iterate( 1, communicatePeanoVertices );
 
@@ -1512,8 +1545,6 @@ void exahype::runners::Runner::runOneTimeStepWithThreeSeparateAlgorithmicSteps(
   }
 
   printTimeStepInfo(1,repository);
-
-  peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(false);
   repository.switchToPrediction(); // Cell onto faces
   repository.iterate( exahype::solvers::Solver::PredictionSweeps, communicatePeanoVertices );
 

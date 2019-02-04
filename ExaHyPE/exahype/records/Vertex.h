@@ -34,7 +34,7 @@ namespace exahype {
     *
     * 		   build date: 09-02-2014 14:40
     *
-    * @date   31/10/2018 18:11
+    * @date   15/11/2018 18:02
     */
    class exahype::records::Vertex { 
       
@@ -55,6 +55,16 @@ namespace exahype {
             tarch::la::Vector<TWO_POWER_D,int> _CellDescriptionsIndex __attribute__((aligned(VectorisationAlignment)));
             #else
             tarch::la::Vector<TWO_POWER_D,int> _CellDescriptionsIndex;
+            #endif
+            #ifdef UseManualAlignment
+            tarch::la::Vector<TWO_POWER_D,void*> _ADERDGCellDescriptions __attribute__((aligned(VectorisationAlignment)));
+            #else
+            tarch::la::Vector<TWO_POWER_D,void*> _ADERDGCellDescriptions;
+            #endif
+            #ifdef UseManualAlignment
+            tarch::la::Vector<TWO_POWER_D,void*> _FiniteVolumesCellDescriptions __attribute__((aligned(VectorisationAlignment)));
+            #else
+            tarch::la::Vector<TWO_POWER_D,void*> _FiniteVolumesCellDescriptions;
             #endif
             bool _isHangingNode;
             RefinementControl _refinementControl;
@@ -82,7 +92,7 @@ namespace exahype {
             /**
              * Generated
              */
-            PersistentRecords(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
+            PersistentRecords(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, tarch::la::Vector<TWO_POWER_D,void*> ADERDGCellDescriptions, tarch::la::Vector<TWO_POWER_D,void*> FiniteVolumesCellDescriptions, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
             
             
             /**
@@ -139,6 +149,122 @@ namespace exahype {
  #endif 
  {
                _CellDescriptionsIndex = (CellDescriptionsIndex);
+            }
+            
+            
+            
+            /**
+             * Generated and optimized
+             * 
+             * If you realise a for loop using exclusively arrays (vectors) and compile 
+             * with -DUseManualAlignment you may add 
+             * \code
+             #pragma vector aligned
+             #pragma simd
+             \endcode to this for loop to enforce your compiler to use SSE/AVX.
+             * 
+             * The alignment is tied to the unpacked records, i.e. for packed class
+             * variants the machine's natural alignment is switched off to recude the  
+             * memory footprint. Do not use any SSE/AVX operations or 
+             * vectorisation on the result for the packed variants, as the data is misaligned. 
+             * If you rely on vectorisation, convert the underlying record 
+             * into the unpacked version first. 
+             * 
+             * @see convert()
+             */
+            inline tarch::la::Vector<TWO_POWER_D,void*> getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _ADERDGCellDescriptions;
+            }
+            
+            
+            
+            /**
+             * Generated and optimized
+             * 
+             * If you realise a for loop using exclusively arrays (vectors) and compile 
+             * with -DUseManualAlignment you may add 
+             * \code
+             #pragma vector aligned
+             #pragma simd
+             \endcode to this for loop to enforce your compiler to use SSE/AVX.
+             * 
+             * The alignment is tied to the unpacked records, i.e. for packed class
+             * variants the machine's natural alignment is switched off to recude the  
+             * memory footprint. Do not use any SSE/AVX operations or 
+             * vectorisation on the result for the packed variants, as the data is misaligned. 
+             * If you rely on vectorisation, convert the underlying record 
+             * into the unpacked version first. 
+             * 
+             * @see convert()
+             */
+            inline void setADERDGCellDescriptions(const tarch::la::Vector<TWO_POWER_D,void*>& ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _ADERDGCellDescriptions = (ADERDGCellDescriptions);
+            }
+            
+            
+            
+            /**
+             * Generated and optimized
+             * 
+             * If you realise a for loop using exclusively arrays (vectors) and compile 
+             * with -DUseManualAlignment you may add 
+             * \code
+             #pragma vector aligned
+             #pragma simd
+             \endcode to this for loop to enforce your compiler to use SSE/AVX.
+             * 
+             * The alignment is tied to the unpacked records, i.e. for packed class
+             * variants the machine's natural alignment is switched off to recude the  
+             * memory footprint. Do not use any SSE/AVX operations or 
+             * vectorisation on the result for the packed variants, as the data is misaligned. 
+             * If you rely on vectorisation, convert the underlying record 
+             * into the unpacked version first. 
+             * 
+             * @see convert()
+             */
+            inline tarch::la::Vector<TWO_POWER_D,void*> getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _FiniteVolumesCellDescriptions;
+            }
+            
+            
+            
+            /**
+             * Generated and optimized
+             * 
+             * If you realise a for loop using exclusively arrays (vectors) and compile 
+             * with -DUseManualAlignment you may add 
+             * \code
+             #pragma vector aligned
+             #pragma simd
+             \endcode to this for loop to enforce your compiler to use SSE/AVX.
+             * 
+             * The alignment is tied to the unpacked records, i.e. for packed class
+             * variants the machine's natural alignment is switched off to recude the  
+             * memory footprint. Do not use any SSE/AVX operations or 
+             * vectorisation on the result for the packed variants, as the data is misaligned. 
+             * If you rely on vectorisation, convert the underlying record 
+             * into the unpacked version first. 
+             * 
+             * @see convert()
+             */
+            inline void setFiniteVolumesCellDescriptions(const tarch::la::Vector<TWO_POWER_D,void*>& FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _FiniteVolumesCellDescriptions = (FiniteVolumesCellDescriptions);
             }
             
             
@@ -439,12 +565,12 @@ namespace exahype {
             /**
              * Generated
              */
-            Vertex(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
+            Vertex(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, tarch::la::Vector<TWO_POWER_D,void*> ADERDGCellDescriptions, tarch::la::Vector<TWO_POWER_D,void*> FiniteVolumesCellDescriptions, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
             
             /**
              * Generated
              */
-            Vertex(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const int& adjacentCellsHeightOfPreviousIteration, const int& numberOfAdjacentRefinedCells, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
+            Vertex(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, tarch::la::Vector<TWO_POWER_D,void*> ADERDGCellDescriptions, tarch::la::Vector<TWO_POWER_D,void*> FiniteVolumesCellDescriptions, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const int& adjacentCellsHeightOfPreviousIteration, const int& numberOfAdjacentRefinedCells, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
             
             /**
              * Generated
@@ -531,6 +657,174 @@ namespace exahype {
                assertion(elementIndex>=0);
                assertion(elementIndex<TWO_POWER_D);
                _persistentRecords._CellDescriptionsIndex[elementIndex]= CellDescriptionsIndex;
+               
+            }
+            
+            
+            
+            /**
+             * Generated and optimized
+             * 
+             * If you realise a for loop using exclusively arrays (vectors) and compile 
+             * with -DUseManualAlignment you may add 
+             * \code
+             #pragma vector aligned
+             #pragma simd
+             \endcode to this for loop to enforce your compiler to use SSE/AVX.
+             * 
+             * The alignment is tied to the unpacked records, i.e. for packed class
+             * variants the machine's natural alignment is switched off to recude the  
+             * memory footprint. Do not use any SSE/AVX operations or 
+             * vectorisation on the result for the packed variants, as the data is misaligned. 
+             * If you rely on vectorisation, convert the underlying record 
+             * into the unpacked version first. 
+             * 
+             * @see convert()
+             */
+            inline tarch::la::Vector<TWO_POWER_D,void*> getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _persistentRecords._ADERDGCellDescriptions;
+            }
+            
+            
+            
+            /**
+             * Generated and optimized
+             * 
+             * If you realise a for loop using exclusively arrays (vectors) and compile 
+             * with -DUseManualAlignment you may add 
+             * \code
+             #pragma vector aligned
+             #pragma simd
+             \endcode to this for loop to enforce your compiler to use SSE/AVX.
+             * 
+             * The alignment is tied to the unpacked records, i.e. for packed class
+             * variants the machine's natural alignment is switched off to recude the  
+             * memory footprint. Do not use any SSE/AVX operations or 
+             * vectorisation on the result for the packed variants, as the data is misaligned. 
+             * If you rely on vectorisation, convert the underlying record 
+             * into the unpacked version first. 
+             * 
+             * @see convert()
+             */
+            inline void setADERDGCellDescriptions(const tarch::la::Vector<TWO_POWER_D,void*>& ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _persistentRecords._ADERDGCellDescriptions = (ADERDGCellDescriptions);
+            }
+            
+            
+            
+            inline void* getADERDGCellDescriptions(int elementIndex) const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               assertion(elementIndex>=0);
+               assertion(elementIndex<TWO_POWER_D);
+               return _persistentRecords._ADERDGCellDescriptions[elementIndex];
+               
+            }
+            
+            
+            
+            inline void setADERDGCellDescriptions(int elementIndex, void*& ADERDGCellDescriptions)
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               assertion(elementIndex>=0);
+               assertion(elementIndex<TWO_POWER_D);
+               _persistentRecords._ADERDGCellDescriptions[elementIndex]= ADERDGCellDescriptions;
+               
+            }
+            
+            
+            
+            /**
+             * Generated and optimized
+             * 
+             * If you realise a for loop using exclusively arrays (vectors) and compile 
+             * with -DUseManualAlignment you may add 
+             * \code
+             #pragma vector aligned
+             #pragma simd
+             \endcode to this for loop to enforce your compiler to use SSE/AVX.
+             * 
+             * The alignment is tied to the unpacked records, i.e. for packed class
+             * variants the machine's natural alignment is switched off to recude the  
+             * memory footprint. Do not use any SSE/AVX operations or 
+             * vectorisation on the result for the packed variants, as the data is misaligned. 
+             * If you rely on vectorisation, convert the underlying record 
+             * into the unpacked version first. 
+             * 
+             * @see convert()
+             */
+            inline tarch::la::Vector<TWO_POWER_D,void*> getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _persistentRecords._FiniteVolumesCellDescriptions;
+            }
+            
+            
+            
+            /**
+             * Generated and optimized
+             * 
+             * If you realise a for loop using exclusively arrays (vectors) and compile 
+             * with -DUseManualAlignment you may add 
+             * \code
+             #pragma vector aligned
+             #pragma simd
+             \endcode to this for loop to enforce your compiler to use SSE/AVX.
+             * 
+             * The alignment is tied to the unpacked records, i.e. for packed class
+             * variants the machine's natural alignment is switched off to recude the  
+             * memory footprint. Do not use any SSE/AVX operations or 
+             * vectorisation on the result for the packed variants, as the data is misaligned. 
+             * If you rely on vectorisation, convert the underlying record 
+             * into the unpacked version first. 
+             * 
+             * @see convert()
+             */
+            inline void setFiniteVolumesCellDescriptions(const tarch::la::Vector<TWO_POWER_D,void*>& FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _persistentRecords._FiniteVolumesCellDescriptions = (FiniteVolumesCellDescriptions);
+            }
+            
+            
+            
+            inline void* getFiniteVolumesCellDescriptions(int elementIndex) const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               assertion(elementIndex>=0);
+               assertion(elementIndex<TWO_POWER_D);
+               return _persistentRecords._FiniteVolumesCellDescriptions[elementIndex];
+               
+            }
+            
+            
+            
+            inline void setFiniteVolumesCellDescriptions(int elementIndex, void*& FiniteVolumesCellDescriptions)
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               assertion(elementIndex>=0);
+               assertion(elementIndex<TWO_POWER_D);
+               _persistentRecords._FiniteVolumesCellDescriptions[elementIndex]= FiniteVolumesCellDescriptions;
                
             }
             
@@ -996,7 +1290,7 @@ namespace exahype {
     *
     * 		   build date: 09-02-2014 14:40
     *
-    * @date   31/10/2018 18:11
+    * @date   15/11/2018 18:02
     */
    class exahype::records::VertexPacked { 
       
@@ -1008,6 +1302,8 @@ namespace exahype {
          
          struct PersistentRecords {
             tarch::la::Vector<TWO_POWER_D,int> _CellDescriptionsIndex;
+            tarch::la::Vector<TWO_POWER_D,void*> _ADERDGCellDescriptions;
+            tarch::la::Vector<TWO_POWER_D,void*> _FiniteVolumesCellDescriptions;
             int _adjacentCellsHeight;
             tarch::la::Vector<DIMENSIONS,double> _x;
             int _level;
@@ -1032,7 +1328,7 @@ namespace exahype {
             /**
              * Generated
              */
-            PersistentRecords(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
+            PersistentRecords(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, tarch::la::Vector<TWO_POWER_D,void*> ADERDGCellDescriptions, tarch::la::Vector<TWO_POWER_D,void*> FiniteVolumesCellDescriptions, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
             
             
             /**
@@ -1089,6 +1385,122 @@ namespace exahype {
  #endif 
  {
                _CellDescriptionsIndex = (CellDescriptionsIndex);
+            }
+            
+            
+            
+            /**
+             * Generated and optimized
+             * 
+             * If you realise a for loop using exclusively arrays (vectors) and compile 
+             * with -DUseManualAlignment you may add 
+             * \code
+             #pragma vector aligned
+             #pragma simd
+             \endcode to this for loop to enforce your compiler to use SSE/AVX.
+             * 
+             * The alignment is tied to the unpacked records, i.e. for packed class
+             * variants the machine's natural alignment is switched off to recude the  
+             * memory footprint. Do not use any SSE/AVX operations or 
+             * vectorisation on the result for the packed variants, as the data is misaligned. 
+             * If you rely on vectorisation, convert the underlying record 
+             * into the unpacked version first. 
+             * 
+             * @see convert()
+             */
+            inline tarch::la::Vector<TWO_POWER_D,void*> getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _ADERDGCellDescriptions;
+            }
+            
+            
+            
+            /**
+             * Generated and optimized
+             * 
+             * If you realise a for loop using exclusively arrays (vectors) and compile 
+             * with -DUseManualAlignment you may add 
+             * \code
+             #pragma vector aligned
+             #pragma simd
+             \endcode to this for loop to enforce your compiler to use SSE/AVX.
+             * 
+             * The alignment is tied to the unpacked records, i.e. for packed class
+             * variants the machine's natural alignment is switched off to recude the  
+             * memory footprint. Do not use any SSE/AVX operations or 
+             * vectorisation on the result for the packed variants, as the data is misaligned. 
+             * If you rely on vectorisation, convert the underlying record 
+             * into the unpacked version first. 
+             * 
+             * @see convert()
+             */
+            inline void setADERDGCellDescriptions(const tarch::la::Vector<TWO_POWER_D,void*>& ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _ADERDGCellDescriptions = (ADERDGCellDescriptions);
+            }
+            
+            
+            
+            /**
+             * Generated and optimized
+             * 
+             * If you realise a for loop using exclusively arrays (vectors) and compile 
+             * with -DUseManualAlignment you may add 
+             * \code
+             #pragma vector aligned
+             #pragma simd
+             \endcode to this for loop to enforce your compiler to use SSE/AVX.
+             * 
+             * The alignment is tied to the unpacked records, i.e. for packed class
+             * variants the machine's natural alignment is switched off to recude the  
+             * memory footprint. Do not use any SSE/AVX operations or 
+             * vectorisation on the result for the packed variants, as the data is misaligned. 
+             * If you rely on vectorisation, convert the underlying record 
+             * into the unpacked version first. 
+             * 
+             * @see convert()
+             */
+            inline tarch::la::Vector<TWO_POWER_D,void*> getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _FiniteVolumesCellDescriptions;
+            }
+            
+            
+            
+            /**
+             * Generated and optimized
+             * 
+             * If you realise a for loop using exclusively arrays (vectors) and compile 
+             * with -DUseManualAlignment you may add 
+             * \code
+             #pragma vector aligned
+             #pragma simd
+             \endcode to this for loop to enforce your compiler to use SSE/AVX.
+             * 
+             * The alignment is tied to the unpacked records, i.e. for packed class
+             * variants the machine's natural alignment is switched off to recude the  
+             * memory footprint. Do not use any SSE/AVX operations or 
+             * vectorisation on the result for the packed variants, as the data is misaligned. 
+             * If you rely on vectorisation, convert the underlying record 
+             * into the unpacked version first. 
+             * 
+             * @see convert()
+             */
+            inline void setFiniteVolumesCellDescriptions(const tarch::la::Vector<TWO_POWER_D,void*>& FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _FiniteVolumesCellDescriptions = (FiniteVolumesCellDescriptions);
             }
             
             
@@ -1419,12 +1831,12 @@ namespace exahype {
             /**
              * Generated
              */
-            VertexPacked(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
+            VertexPacked(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, tarch::la::Vector<TWO_POWER_D,void*> ADERDGCellDescriptions, tarch::la::Vector<TWO_POWER_D,void*> FiniteVolumesCellDescriptions, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
             
             /**
              * Generated
              */
-            VertexPacked(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const int& adjacentCellsHeightOfPreviousIteration, const int& numberOfAdjacentRefinedCells, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
+            VertexPacked(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, tarch::la::Vector<TWO_POWER_D,void*> ADERDGCellDescriptions, tarch::la::Vector<TWO_POWER_D,void*> FiniteVolumesCellDescriptions, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const int& adjacentCellsHeightOfPreviousIteration, const int& numberOfAdjacentRefinedCells, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
             
             /**
              * Generated
@@ -1511,6 +1923,174 @@ namespace exahype {
                assertion(elementIndex>=0);
                assertion(elementIndex<TWO_POWER_D);
                _persistentRecords._CellDescriptionsIndex[elementIndex]= CellDescriptionsIndex;
+               
+            }
+            
+            
+            
+            /**
+             * Generated and optimized
+             * 
+             * If you realise a for loop using exclusively arrays (vectors) and compile 
+             * with -DUseManualAlignment you may add 
+             * \code
+             #pragma vector aligned
+             #pragma simd
+             \endcode to this for loop to enforce your compiler to use SSE/AVX.
+             * 
+             * The alignment is tied to the unpacked records, i.e. for packed class
+             * variants the machine's natural alignment is switched off to recude the  
+             * memory footprint. Do not use any SSE/AVX operations or 
+             * vectorisation on the result for the packed variants, as the data is misaligned. 
+             * If you rely on vectorisation, convert the underlying record 
+             * into the unpacked version first. 
+             * 
+             * @see convert()
+             */
+            inline tarch::la::Vector<TWO_POWER_D,void*> getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _persistentRecords._ADERDGCellDescriptions;
+            }
+            
+            
+            
+            /**
+             * Generated and optimized
+             * 
+             * If you realise a for loop using exclusively arrays (vectors) and compile 
+             * with -DUseManualAlignment you may add 
+             * \code
+             #pragma vector aligned
+             #pragma simd
+             \endcode to this for loop to enforce your compiler to use SSE/AVX.
+             * 
+             * The alignment is tied to the unpacked records, i.e. for packed class
+             * variants the machine's natural alignment is switched off to recude the  
+             * memory footprint. Do not use any SSE/AVX operations or 
+             * vectorisation on the result for the packed variants, as the data is misaligned. 
+             * If you rely on vectorisation, convert the underlying record 
+             * into the unpacked version first. 
+             * 
+             * @see convert()
+             */
+            inline void setADERDGCellDescriptions(const tarch::la::Vector<TWO_POWER_D,void*>& ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _persistentRecords._ADERDGCellDescriptions = (ADERDGCellDescriptions);
+            }
+            
+            
+            
+            inline void* getADERDGCellDescriptions(int elementIndex) const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               assertion(elementIndex>=0);
+               assertion(elementIndex<TWO_POWER_D);
+               return _persistentRecords._ADERDGCellDescriptions[elementIndex];
+               
+            }
+            
+            
+            
+            inline void setADERDGCellDescriptions(int elementIndex, void*& ADERDGCellDescriptions)
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               assertion(elementIndex>=0);
+               assertion(elementIndex<TWO_POWER_D);
+               _persistentRecords._ADERDGCellDescriptions[elementIndex]= ADERDGCellDescriptions;
+               
+            }
+            
+            
+            
+            /**
+             * Generated and optimized
+             * 
+             * If you realise a for loop using exclusively arrays (vectors) and compile 
+             * with -DUseManualAlignment you may add 
+             * \code
+             #pragma vector aligned
+             #pragma simd
+             \endcode to this for loop to enforce your compiler to use SSE/AVX.
+             * 
+             * The alignment is tied to the unpacked records, i.e. for packed class
+             * variants the machine's natural alignment is switched off to recude the  
+             * memory footprint. Do not use any SSE/AVX operations or 
+             * vectorisation on the result for the packed variants, as the data is misaligned. 
+             * If you rely on vectorisation, convert the underlying record 
+             * into the unpacked version first. 
+             * 
+             * @see convert()
+             */
+            inline tarch::la::Vector<TWO_POWER_D,void*> getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _persistentRecords._FiniteVolumesCellDescriptions;
+            }
+            
+            
+            
+            /**
+             * Generated and optimized
+             * 
+             * If you realise a for loop using exclusively arrays (vectors) and compile 
+             * with -DUseManualAlignment you may add 
+             * \code
+             #pragma vector aligned
+             #pragma simd
+             \endcode to this for loop to enforce your compiler to use SSE/AVX.
+             * 
+             * The alignment is tied to the unpacked records, i.e. for packed class
+             * variants the machine's natural alignment is switched off to recude the  
+             * memory footprint. Do not use any SSE/AVX operations or 
+             * vectorisation on the result for the packed variants, as the data is misaligned. 
+             * If you rely on vectorisation, convert the underlying record 
+             * into the unpacked version first. 
+             * 
+             * @see convert()
+             */
+            inline void setFiniteVolumesCellDescriptions(const tarch::la::Vector<TWO_POWER_D,void*>& FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _persistentRecords._FiniteVolumesCellDescriptions = (FiniteVolumesCellDescriptions);
+            }
+            
+            
+            
+            inline void* getFiniteVolumesCellDescriptions(int elementIndex) const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               assertion(elementIndex>=0);
+               assertion(elementIndex<TWO_POWER_D);
+               return _persistentRecords._FiniteVolumesCellDescriptions[elementIndex];
+               
+            }
+            
+            
+            
+            inline void setFiniteVolumesCellDescriptions(int elementIndex, void*& FiniteVolumesCellDescriptions)
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               assertion(elementIndex>=0);
+               assertion(elementIndex<TWO_POWER_D);
+               _persistentRecords._FiniteVolumesCellDescriptions[elementIndex]= FiniteVolumesCellDescriptions;
                
             }
             
@@ -2002,7 +2582,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   31/10/2018 18:11
+       * @date   15/11/2018 18:02
        */
       class exahype::records::Vertex { 
          
@@ -2024,6 +2604,16 @@ namespace exahype {
                #else
                tarch::la::Vector<TWO_POWER_D,int> _CellDescriptionsIndex;
                #endif
+               #ifdef UseManualAlignment
+               tarch::la::Vector<TWO_POWER_D,void*> _ADERDGCellDescriptions __attribute__((aligned(VectorisationAlignment)));
+               #else
+               tarch::la::Vector<TWO_POWER_D,void*> _ADERDGCellDescriptions;
+               #endif
+               #ifdef UseManualAlignment
+               tarch::la::Vector<TWO_POWER_D,void*> _FiniteVolumesCellDescriptions __attribute__((aligned(VectorisationAlignment)));
+               #else
+               tarch::la::Vector<TWO_POWER_D,void*> _FiniteVolumesCellDescriptions;
+               #endif
                bool _isHangingNode;
                RefinementControl _refinementControl;
                int _adjacentCellsHeight;
@@ -2044,7 +2634,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
+               PersistentRecords(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, tarch::la::Vector<TWO_POWER_D,void*> ADERDGCellDescriptions, tarch::la::Vector<TWO_POWER_D,void*> FiniteVolumesCellDescriptions, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
                
                
                /**
@@ -2101,6 +2691,122 @@ namespace exahype {
  #endif 
  {
                   _CellDescriptionsIndex = (CellDescriptionsIndex);
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<TWO_POWER_D,void*> getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _ADERDGCellDescriptions;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setADERDGCellDescriptions(const tarch::la::Vector<TWO_POWER_D,void*>& ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _ADERDGCellDescriptions = (ADERDGCellDescriptions);
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<TWO_POWER_D,void*> getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setFiniteVolumesCellDescriptions(const tarch::la::Vector<TWO_POWER_D,void*>& FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _FiniteVolumesCellDescriptions = (FiniteVolumesCellDescriptions);
                }
                
                
@@ -2323,12 +3029,12 @@ namespace exahype {
                /**
                 * Generated
                 */
-               Vertex(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
+               Vertex(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, tarch::la::Vector<TWO_POWER_D,void*> ADERDGCellDescriptions, tarch::la::Vector<TWO_POWER_D,void*> FiniteVolumesCellDescriptions, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
                
                /**
                 * Generated
                 */
-               Vertex(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const int& adjacentCellsHeightOfPreviousIteration, const int& numberOfAdjacentRefinedCells, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
+               Vertex(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, tarch::la::Vector<TWO_POWER_D,void*> ADERDGCellDescriptions, tarch::la::Vector<TWO_POWER_D,void*> FiniteVolumesCellDescriptions, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const int& adjacentCellsHeightOfPreviousIteration, const int& numberOfAdjacentRefinedCells, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
                
                /**
                 * Generated
@@ -2415,6 +3121,174 @@ namespace exahype {
                   assertion(elementIndex>=0);
                   assertion(elementIndex<TWO_POWER_D);
                   _persistentRecords._CellDescriptionsIndex[elementIndex]= CellDescriptionsIndex;
+                  
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<TWO_POWER_D,void*> getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._ADERDGCellDescriptions;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setADERDGCellDescriptions(const tarch::la::Vector<TWO_POWER_D,void*>& ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._ADERDGCellDescriptions = (ADERDGCellDescriptions);
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions(int elementIndex) const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<TWO_POWER_D);
+                  return _persistentRecords._ADERDGCellDescriptions[elementIndex];
+                  
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(int elementIndex, void*& ADERDGCellDescriptions)
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<TWO_POWER_D);
+                  _persistentRecords._ADERDGCellDescriptions[elementIndex]= ADERDGCellDescriptions;
+                  
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<TWO_POWER_D,void*> getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setFiniteVolumesCellDescriptions(const tarch::la::Vector<TWO_POWER_D,void*>& FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._FiniteVolumesCellDescriptions = (FiniteVolumesCellDescriptions);
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions(int elementIndex) const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<TWO_POWER_D);
+                  return _persistentRecords._FiniteVolumesCellDescriptions[elementIndex];
+                  
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(int elementIndex, void*& FiniteVolumesCellDescriptions)
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<TWO_POWER_D);
+                  _persistentRecords._FiniteVolumesCellDescriptions[elementIndex]= FiniteVolumesCellDescriptions;
                   
                }
                
@@ -2776,7 +3650,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   31/10/2018 18:11
+       * @date   15/11/2018 18:02
        */
       class exahype::records::VertexPacked { 
          
@@ -2788,6 +3662,8 @@ namespace exahype {
             
             struct PersistentRecords {
                tarch::la::Vector<TWO_POWER_D,int> _CellDescriptionsIndex;
+               tarch::la::Vector<TWO_POWER_D,void*> _ADERDGCellDescriptions;
+               tarch::la::Vector<TWO_POWER_D,void*> _FiniteVolumesCellDescriptions;
                int _adjacentCellsHeight;
                tarch::la::Vector<DIMENSIONS,double> _x;
                int _level;
@@ -2810,7 +3686,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
+               PersistentRecords(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, tarch::la::Vector<TWO_POWER_D,void*> ADERDGCellDescriptions, tarch::la::Vector<TWO_POWER_D,void*> FiniteVolumesCellDescriptions, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
                
                
                /**
@@ -2867,6 +3743,122 @@ namespace exahype {
  #endif 
  {
                   _CellDescriptionsIndex = (CellDescriptionsIndex);
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<TWO_POWER_D,void*> getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _ADERDGCellDescriptions;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setADERDGCellDescriptions(const tarch::la::Vector<TWO_POWER_D,void*>& ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _ADERDGCellDescriptions = (ADERDGCellDescriptions);
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<TWO_POWER_D,void*> getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setFiniteVolumesCellDescriptions(const tarch::la::Vector<TWO_POWER_D,void*>& FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _FiniteVolumesCellDescriptions = (FiniteVolumesCellDescriptions);
                }
                
                
@@ -3116,12 +4108,12 @@ namespace exahype {
                /**
                 * Generated
                 */
-               VertexPacked(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
+               VertexPacked(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, tarch::la::Vector<TWO_POWER_D,void*> ADERDGCellDescriptions, tarch::la::Vector<TWO_POWER_D,void*> FiniteVolumesCellDescriptions, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
                
                /**
                 * Generated
                 */
-               VertexPacked(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const int& adjacentCellsHeightOfPreviousIteration, const int& numberOfAdjacentRefinedCells, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
+               VertexPacked(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, tarch::la::Vector<TWO_POWER_D,void*> ADERDGCellDescriptions, tarch::la::Vector<TWO_POWER_D,void*> FiniteVolumesCellDescriptions, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const int& adjacentCellsHeightOfPreviousIteration, const int& numberOfAdjacentRefinedCells, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
                
                /**
                 * Generated
@@ -3208,6 +4200,174 @@ namespace exahype {
                   assertion(elementIndex>=0);
                   assertion(elementIndex<TWO_POWER_D);
                   _persistentRecords._CellDescriptionsIndex[elementIndex]= CellDescriptionsIndex;
+                  
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<TWO_POWER_D,void*> getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._ADERDGCellDescriptions;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setADERDGCellDescriptions(const tarch::la::Vector<TWO_POWER_D,void*>& ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._ADERDGCellDescriptions = (ADERDGCellDescriptions);
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions(int elementIndex) const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<TWO_POWER_D);
+                  return _persistentRecords._ADERDGCellDescriptions[elementIndex];
+                  
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(int elementIndex, void*& ADERDGCellDescriptions)
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<TWO_POWER_D);
+                  _persistentRecords._ADERDGCellDescriptions[elementIndex]= ADERDGCellDescriptions;
+                  
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<TWO_POWER_D,void*> getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setFiniteVolumesCellDescriptions(const tarch::la::Vector<TWO_POWER_D,void*>& FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._FiniteVolumesCellDescriptions = (FiniteVolumesCellDescriptions);
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions(int elementIndex) const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<TWO_POWER_D);
+                  return _persistentRecords._FiniteVolumesCellDescriptions[elementIndex];
+                  
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(int elementIndex, void*& FiniteVolumesCellDescriptions)
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<TWO_POWER_D);
+                  _persistentRecords._FiniteVolumesCellDescriptions[elementIndex]= FiniteVolumesCellDescriptions;
                   
                }
                
@@ -3593,7 +4753,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   31/10/2018 18:11
+       * @date   15/11/2018 18:02
        */
       class exahype::records::Vertex { 
          
@@ -3614,6 +4774,16 @@ namespace exahype {
                tarch::la::Vector<TWO_POWER_D,int> _CellDescriptionsIndex __attribute__((aligned(VectorisationAlignment)));
                #else
                tarch::la::Vector<TWO_POWER_D,int> _CellDescriptionsIndex;
+               #endif
+               #ifdef UseManualAlignment
+               tarch::la::Vector<TWO_POWER_D,void*> _ADERDGCellDescriptions __attribute__((aligned(VectorisationAlignment)));
+               #else
+               tarch::la::Vector<TWO_POWER_D,void*> _ADERDGCellDescriptions;
+               #endif
+               #ifdef UseManualAlignment
+               tarch::la::Vector<TWO_POWER_D,void*> _FiniteVolumesCellDescriptions __attribute__((aligned(VectorisationAlignment)));
+               #else
+               tarch::la::Vector<TWO_POWER_D,void*> _FiniteVolumesCellDescriptions;
                #endif
                bool _isHangingNode;
                RefinementControl _refinementControl;
@@ -3639,7 +4809,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank);
+               PersistentRecords(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, tarch::la::Vector<TWO_POWER_D,void*> ADERDGCellDescriptions, tarch::la::Vector<TWO_POWER_D,void*> FiniteVolumesCellDescriptions, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank);
                
                
                /**
@@ -3696,6 +4866,122 @@ namespace exahype {
  #endif 
  {
                   _CellDescriptionsIndex = (CellDescriptionsIndex);
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<TWO_POWER_D,void*> getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _ADERDGCellDescriptions;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setADERDGCellDescriptions(const tarch::la::Vector<TWO_POWER_D,void*>& ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _ADERDGCellDescriptions = (ADERDGCellDescriptions);
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<TWO_POWER_D,void*> getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setFiniteVolumesCellDescriptions(const tarch::la::Vector<TWO_POWER_D,void*>& FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _FiniteVolumesCellDescriptions = (FiniteVolumesCellDescriptions);
                }
                
                
@@ -3956,12 +5242,12 @@ namespace exahype {
                /**
                 * Generated
                 */
-               Vertex(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank);
+               Vertex(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, tarch::la::Vector<TWO_POWER_D,void*> ADERDGCellDescriptions, tarch::la::Vector<TWO_POWER_D,void*> FiniteVolumesCellDescriptions, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank);
                
                /**
                 * Generated
                 */
-               Vertex(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const int& adjacentCellsHeightOfPreviousIteration, const int& numberOfAdjacentRefinedCells, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank);
+               Vertex(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, tarch::la::Vector<TWO_POWER_D,void*> ADERDGCellDescriptions, tarch::la::Vector<TWO_POWER_D,void*> FiniteVolumesCellDescriptions, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const int& adjacentCellsHeightOfPreviousIteration, const int& numberOfAdjacentRefinedCells, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank);
                
                /**
                 * Generated
@@ -4048,6 +5334,174 @@ namespace exahype {
                   assertion(elementIndex>=0);
                   assertion(elementIndex<TWO_POWER_D);
                   _persistentRecords._CellDescriptionsIndex[elementIndex]= CellDescriptionsIndex;
+                  
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<TWO_POWER_D,void*> getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._ADERDGCellDescriptions;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setADERDGCellDescriptions(const tarch::la::Vector<TWO_POWER_D,void*>& ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._ADERDGCellDescriptions = (ADERDGCellDescriptions);
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions(int elementIndex) const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<TWO_POWER_D);
+                  return _persistentRecords._ADERDGCellDescriptions[elementIndex];
+                  
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(int elementIndex, void*& ADERDGCellDescriptions)
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<TWO_POWER_D);
+                  _persistentRecords._ADERDGCellDescriptions[elementIndex]= ADERDGCellDescriptions;
+                  
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<TWO_POWER_D,void*> getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setFiniteVolumesCellDescriptions(const tarch::la::Vector<TWO_POWER_D,void*>& FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._FiniteVolumesCellDescriptions = (FiniteVolumesCellDescriptions);
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions(int elementIndex) const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<TWO_POWER_D);
+                  return _persistentRecords._FiniteVolumesCellDescriptions[elementIndex];
+                  
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(int elementIndex, void*& FiniteVolumesCellDescriptions)
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<TWO_POWER_D);
+                  _persistentRecords._FiniteVolumesCellDescriptions[elementIndex]= FiniteVolumesCellDescriptions;
                   
                }
                
@@ -4473,7 +5927,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   31/10/2018 18:11
+       * @date   15/11/2018 18:02
        */
       class exahype::records::VertexPacked { 
          
@@ -4485,6 +5939,8 @@ namespace exahype {
             
             struct PersistentRecords {
                tarch::la::Vector<TWO_POWER_D,int> _CellDescriptionsIndex;
+               tarch::la::Vector<TWO_POWER_D,void*> _ADERDGCellDescriptions;
+               tarch::la::Vector<TWO_POWER_D,void*> _FiniteVolumesCellDescriptions;
                int _adjacentCellsHeight;
                tarch::la::Vector<DIMENSIONS,double> _x;
                int _level;
@@ -4507,7 +5963,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank);
+               PersistentRecords(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, tarch::la::Vector<TWO_POWER_D,void*> ADERDGCellDescriptions, tarch::la::Vector<TWO_POWER_D,void*> FiniteVolumesCellDescriptions, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank);
                
                
                /**
@@ -4564,6 +6020,122 @@ namespace exahype {
  #endif 
  {
                   _CellDescriptionsIndex = (CellDescriptionsIndex);
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<TWO_POWER_D,void*> getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _ADERDGCellDescriptions;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setADERDGCellDescriptions(const tarch::la::Vector<TWO_POWER_D,void*>& ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _ADERDGCellDescriptions = (ADERDGCellDescriptions);
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<TWO_POWER_D,void*> getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setFiniteVolumesCellDescriptions(const tarch::la::Vector<TWO_POWER_D,void*>& FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _FiniteVolumesCellDescriptions = (FiniteVolumesCellDescriptions);
                }
                
                
@@ -4848,12 +6420,12 @@ namespace exahype {
                /**
                 * Generated
                 */
-               VertexPacked(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank);
+               VertexPacked(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, tarch::la::Vector<TWO_POWER_D,void*> ADERDGCellDescriptions, tarch::la::Vector<TWO_POWER_D,void*> FiniteVolumesCellDescriptions, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank);
                
                /**
                 * Generated
                 */
-               VertexPacked(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const int& adjacentCellsHeightOfPreviousIteration, const int& numberOfAdjacentRefinedCells, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank);
+               VertexPacked(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, tarch::la::Vector<TWO_POWER_D,void*> ADERDGCellDescriptions, tarch::la::Vector<TWO_POWER_D,void*> FiniteVolumesCellDescriptions, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const int& adjacentCellsHeightOfPreviousIteration, const int& numberOfAdjacentRefinedCells, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank);
                
                /**
                 * Generated
@@ -4940,6 +6512,174 @@ namespace exahype {
                   assertion(elementIndex>=0);
                   assertion(elementIndex<TWO_POWER_D);
                   _persistentRecords._CellDescriptionsIndex[elementIndex]= CellDescriptionsIndex;
+                  
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<TWO_POWER_D,void*> getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._ADERDGCellDescriptions;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setADERDGCellDescriptions(const tarch::la::Vector<TWO_POWER_D,void*>& ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._ADERDGCellDescriptions = (ADERDGCellDescriptions);
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions(int elementIndex) const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<TWO_POWER_D);
+                  return _persistentRecords._ADERDGCellDescriptions[elementIndex];
+                  
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(int elementIndex, void*& ADERDGCellDescriptions)
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<TWO_POWER_D);
+                  _persistentRecords._ADERDGCellDescriptions[elementIndex]= ADERDGCellDescriptions;
+                  
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<TWO_POWER_D,void*> getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setFiniteVolumesCellDescriptions(const tarch::la::Vector<TWO_POWER_D,void*>& FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._FiniteVolumesCellDescriptions = (FiniteVolumesCellDescriptions);
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions(int elementIndex) const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<TWO_POWER_D);
+                  return _persistentRecords._FiniteVolumesCellDescriptions[elementIndex];
+                  
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(int elementIndex, void*& FiniteVolumesCellDescriptions)
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<TWO_POWER_D);
+                  _persistentRecords._FiniteVolumesCellDescriptions[elementIndex]= FiniteVolumesCellDescriptions;
                   
                }
                
@@ -5386,7 +7126,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   31/10/2018 18:11
+       * @date   15/11/2018 18:02
        */
       class exahype::records::Vertex { 
          
@@ -5408,6 +7148,16 @@ namespace exahype {
                #else
                tarch::la::Vector<TWO_POWER_D,int> _CellDescriptionsIndex;
                #endif
+               #ifdef UseManualAlignment
+               tarch::la::Vector<TWO_POWER_D,void*> _ADERDGCellDescriptions __attribute__((aligned(VectorisationAlignment)));
+               #else
+               tarch::la::Vector<TWO_POWER_D,void*> _ADERDGCellDescriptions;
+               #endif
+               #ifdef UseManualAlignment
+               tarch::la::Vector<TWO_POWER_D,void*> _FiniteVolumesCellDescriptions __attribute__((aligned(VectorisationAlignment)));
+               #else
+               tarch::la::Vector<TWO_POWER_D,void*> _FiniteVolumesCellDescriptions;
+               #endif
                bool _isHangingNode;
                RefinementControl _refinementControl;
                int _adjacentCellsHeight;
@@ -5428,7 +7178,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
+               PersistentRecords(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, tarch::la::Vector<TWO_POWER_D,void*> ADERDGCellDescriptions, tarch::la::Vector<TWO_POWER_D,void*> FiniteVolumesCellDescriptions, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
                
                
                /**
@@ -5485,6 +7235,122 @@ namespace exahype {
  #endif 
  {
                   _CellDescriptionsIndex = (CellDescriptionsIndex);
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<TWO_POWER_D,void*> getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _ADERDGCellDescriptions;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setADERDGCellDescriptions(const tarch::la::Vector<TWO_POWER_D,void*>& ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _ADERDGCellDescriptions = (ADERDGCellDescriptions);
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<TWO_POWER_D,void*> getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setFiniteVolumesCellDescriptions(const tarch::la::Vector<TWO_POWER_D,void*>& FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _FiniteVolumesCellDescriptions = (FiniteVolumesCellDescriptions);
                }
                
                
@@ -5707,12 +7573,12 @@ namespace exahype {
                /**
                 * Generated
                 */
-               Vertex(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
+               Vertex(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, tarch::la::Vector<TWO_POWER_D,void*> ADERDGCellDescriptions, tarch::la::Vector<TWO_POWER_D,void*> FiniteVolumesCellDescriptions, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
                
                /**
                 * Generated
                 */
-               Vertex(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const int& adjacentCellsHeightOfPreviousIteration, const int& numberOfAdjacentRefinedCells, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
+               Vertex(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, tarch::la::Vector<TWO_POWER_D,void*> ADERDGCellDescriptions, tarch::la::Vector<TWO_POWER_D,void*> FiniteVolumesCellDescriptions, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const int& adjacentCellsHeightOfPreviousIteration, const int& numberOfAdjacentRefinedCells, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
                
                /**
                 * Generated
@@ -5799,6 +7665,174 @@ namespace exahype {
                   assertion(elementIndex>=0);
                   assertion(elementIndex<TWO_POWER_D);
                   _persistentRecords._CellDescriptionsIndex[elementIndex]= CellDescriptionsIndex;
+                  
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<TWO_POWER_D,void*> getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._ADERDGCellDescriptions;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setADERDGCellDescriptions(const tarch::la::Vector<TWO_POWER_D,void*>& ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._ADERDGCellDescriptions = (ADERDGCellDescriptions);
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions(int elementIndex) const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<TWO_POWER_D);
+                  return _persistentRecords._ADERDGCellDescriptions[elementIndex];
+                  
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(int elementIndex, void*& ADERDGCellDescriptions)
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<TWO_POWER_D);
+                  _persistentRecords._ADERDGCellDescriptions[elementIndex]= ADERDGCellDescriptions;
+                  
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<TWO_POWER_D,void*> getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setFiniteVolumesCellDescriptions(const tarch::la::Vector<TWO_POWER_D,void*>& FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._FiniteVolumesCellDescriptions = (FiniteVolumesCellDescriptions);
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions(int elementIndex) const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<TWO_POWER_D);
+                  return _persistentRecords._FiniteVolumesCellDescriptions[elementIndex];
+                  
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(int elementIndex, void*& FiniteVolumesCellDescriptions)
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<TWO_POWER_D);
+                  _persistentRecords._FiniteVolumesCellDescriptions[elementIndex]= FiniteVolumesCellDescriptions;
                   
                }
                
@@ -6160,7 +8194,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   31/10/2018 18:11
+       * @date   15/11/2018 18:02
        */
       class exahype::records::VertexPacked { 
          
@@ -6172,6 +8206,8 @@ namespace exahype {
             
             struct PersistentRecords {
                tarch::la::Vector<TWO_POWER_D,int> _CellDescriptionsIndex;
+               tarch::la::Vector<TWO_POWER_D,void*> _ADERDGCellDescriptions;
+               tarch::la::Vector<TWO_POWER_D,void*> _FiniteVolumesCellDescriptions;
                int _adjacentCellsHeight;
                tarch::la::Vector<TWO_POWER_D,int> _adjacentRanks;
                
@@ -6194,7 +8230,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
+               PersistentRecords(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, tarch::la::Vector<TWO_POWER_D,void*> ADERDGCellDescriptions, tarch::la::Vector<TWO_POWER_D,void*> FiniteVolumesCellDescriptions, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
                
                
                /**
@@ -6251,6 +8287,122 @@ namespace exahype {
  #endif 
  {
                   _CellDescriptionsIndex = (CellDescriptionsIndex);
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<TWO_POWER_D,void*> getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _ADERDGCellDescriptions;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setADERDGCellDescriptions(const tarch::la::Vector<TWO_POWER_D,void*>& ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _ADERDGCellDescriptions = (ADERDGCellDescriptions);
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<TWO_POWER_D,void*> getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setFiniteVolumesCellDescriptions(const tarch::la::Vector<TWO_POWER_D,void*>& FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _FiniteVolumesCellDescriptions = (FiniteVolumesCellDescriptions);
                }
                
                
@@ -6503,12 +8655,12 @@ namespace exahype {
                /**
                 * Generated
                 */
-               VertexPacked(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
+               VertexPacked(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, tarch::la::Vector<TWO_POWER_D,void*> ADERDGCellDescriptions, tarch::la::Vector<TWO_POWER_D,void*> FiniteVolumesCellDescriptions, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
                
                /**
                 * Generated
                 */
-               VertexPacked(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const int& adjacentCellsHeightOfPreviousIteration, const int& numberOfAdjacentRefinedCells, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
+               VertexPacked(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, tarch::la::Vector<TWO_POWER_D,void*> ADERDGCellDescriptions, tarch::la::Vector<TWO_POWER_D,void*> FiniteVolumesCellDescriptions, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const int& adjacentCellsHeightOfPreviousIteration, const int& numberOfAdjacentRefinedCells, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
                
                /**
                 * Generated
@@ -6595,6 +8747,174 @@ namespace exahype {
                   assertion(elementIndex>=0);
                   assertion(elementIndex<TWO_POWER_D);
                   _persistentRecords._CellDescriptionsIndex[elementIndex]= CellDescriptionsIndex;
+                  
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<TWO_POWER_D,void*> getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._ADERDGCellDescriptions;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setADERDGCellDescriptions(const tarch::la::Vector<TWO_POWER_D,void*>& ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._ADERDGCellDescriptions = (ADERDGCellDescriptions);
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions(int elementIndex) const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<TWO_POWER_D);
+                  return _persistentRecords._ADERDGCellDescriptions[elementIndex];
+                  
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(int elementIndex, void*& ADERDGCellDescriptions)
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<TWO_POWER_D);
+                  _persistentRecords._ADERDGCellDescriptions[elementIndex]= ADERDGCellDescriptions;
+                  
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<TWO_POWER_D,void*> getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setFiniteVolumesCellDescriptions(const tarch::la::Vector<TWO_POWER_D,void*>& FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._FiniteVolumesCellDescriptions = (FiniteVolumesCellDescriptions);
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions(int elementIndex) const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<TWO_POWER_D);
+                  return _persistentRecords._FiniteVolumesCellDescriptions[elementIndex];
+                  
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(int elementIndex, void*& FiniteVolumesCellDescriptions)
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<TWO_POWER_D);
+                  _persistentRecords._FiniteVolumesCellDescriptions[elementIndex]= FiniteVolumesCellDescriptions;
                   
                }
                
@@ -6983,7 +9303,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   31/10/2018 18:11
+       * @date   15/11/2018 18:02
        */
       class exahype::records::Vertex { 
          
@@ -7005,6 +9325,16 @@ namespace exahype {
                #else
                tarch::la::Vector<TWO_POWER_D,int> _CellDescriptionsIndex;
                #endif
+               #ifdef UseManualAlignment
+               tarch::la::Vector<TWO_POWER_D,void*> _ADERDGCellDescriptions __attribute__((aligned(VectorisationAlignment)));
+               #else
+               tarch::la::Vector<TWO_POWER_D,void*> _ADERDGCellDescriptions;
+               #endif
+               #ifdef UseManualAlignment
+               tarch::la::Vector<TWO_POWER_D,void*> _FiniteVolumesCellDescriptions __attribute__((aligned(VectorisationAlignment)));
+               #else
+               tarch::la::Vector<TWO_POWER_D,void*> _FiniteVolumesCellDescriptions;
+               #endif
                bool _isHangingNode;
                RefinementControl _refinementControl;
                int _adjacentCellsHeight;
@@ -7019,7 +9349,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
+               PersistentRecords(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, tarch::la::Vector<TWO_POWER_D,void*> ADERDGCellDescriptions, tarch::la::Vector<TWO_POWER_D,void*> FiniteVolumesCellDescriptions, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
                
                
                /**
@@ -7076,6 +9406,122 @@ namespace exahype {
  #endif 
  {
                   _CellDescriptionsIndex = (CellDescriptionsIndex);
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<TWO_POWER_D,void*> getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _ADERDGCellDescriptions;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setADERDGCellDescriptions(const tarch::la::Vector<TWO_POWER_D,void*>& ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _ADERDGCellDescriptions = (ADERDGCellDescriptions);
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<TWO_POWER_D,void*> getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setFiniteVolumesCellDescriptions(const tarch::la::Vector<TWO_POWER_D,void*>& FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _FiniteVolumesCellDescriptions = (FiniteVolumesCellDescriptions);
                }
                
                
@@ -7220,12 +9666,12 @@ namespace exahype {
                /**
                 * Generated
                 */
-               Vertex(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
+               Vertex(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, tarch::la::Vector<TWO_POWER_D,void*> ADERDGCellDescriptions, tarch::la::Vector<TWO_POWER_D,void*> FiniteVolumesCellDescriptions, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
                
                /**
                 * Generated
                 */
-               Vertex(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const int& adjacentCellsHeightOfPreviousIteration, const int& numberOfAdjacentRefinedCells, const InsideOutsideDomain& insideOutsideDomain, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
+               Vertex(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, tarch::la::Vector<TWO_POWER_D,void*> ADERDGCellDescriptions, tarch::la::Vector<TWO_POWER_D,void*> FiniteVolumesCellDescriptions, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const int& adjacentCellsHeightOfPreviousIteration, const int& numberOfAdjacentRefinedCells, const InsideOutsideDomain& insideOutsideDomain, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
                
                /**
                 * Generated
@@ -7312,6 +9758,174 @@ namespace exahype {
                   assertion(elementIndex>=0);
                   assertion(elementIndex<TWO_POWER_D);
                   _persistentRecords._CellDescriptionsIndex[elementIndex]= CellDescriptionsIndex;
+                  
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<TWO_POWER_D,void*> getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._ADERDGCellDescriptions;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setADERDGCellDescriptions(const tarch::la::Vector<TWO_POWER_D,void*>& ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._ADERDGCellDescriptions = (ADERDGCellDescriptions);
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions(int elementIndex) const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<TWO_POWER_D);
+                  return _persistentRecords._ADERDGCellDescriptions[elementIndex];
+                  
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(int elementIndex, void*& ADERDGCellDescriptions)
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<TWO_POWER_D);
+                  _persistentRecords._ADERDGCellDescriptions[elementIndex]= ADERDGCellDescriptions;
+                  
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<TWO_POWER_D,void*> getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setFiniteVolumesCellDescriptions(const tarch::la::Vector<TWO_POWER_D,void*>& FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._FiniteVolumesCellDescriptions = (FiniteVolumesCellDescriptions);
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions(int elementIndex) const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<TWO_POWER_D);
+                  return _persistentRecords._FiniteVolumesCellDescriptions[elementIndex];
+                  
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(int elementIndex, void*& FiniteVolumesCellDescriptions)
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<TWO_POWER_D);
+                  _persistentRecords._FiniteVolumesCellDescriptions[elementIndex]= FiniteVolumesCellDescriptions;
                   
                }
                
@@ -7569,7 +10183,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   31/10/2018 18:11
+       * @date   15/11/2018 18:02
        */
       class exahype::records::VertexPacked { 
          
@@ -7581,6 +10195,8 @@ namespace exahype {
             
             struct PersistentRecords {
                tarch::la::Vector<TWO_POWER_D,int> _CellDescriptionsIndex;
+               tarch::la::Vector<TWO_POWER_D,void*> _ADERDGCellDescriptions;
+               tarch::la::Vector<TWO_POWER_D,void*> _FiniteVolumesCellDescriptions;
                int _adjacentCellsHeight;
                
                /** mapping of records:
@@ -7601,7 +10217,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
+               PersistentRecords(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, tarch::la::Vector<TWO_POWER_D,void*> ADERDGCellDescriptions, tarch::la::Vector<TWO_POWER_D,void*> FiniteVolumesCellDescriptions, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
                
                
                /**
@@ -7658,6 +10274,122 @@ namespace exahype {
  #endif 
  {
                   _CellDescriptionsIndex = (CellDescriptionsIndex);
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<TWO_POWER_D,void*> getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _ADERDGCellDescriptions;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setADERDGCellDescriptions(const tarch::la::Vector<TWO_POWER_D,void*>& ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _ADERDGCellDescriptions = (ADERDGCellDescriptions);
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<TWO_POWER_D,void*> getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setFiniteVolumesCellDescriptions(const tarch::la::Vector<TWO_POWER_D,void*>& FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _FiniteVolumesCellDescriptions = (FiniteVolumesCellDescriptions);
                }
                
                
@@ -7829,12 +10561,12 @@ namespace exahype {
                /**
                 * Generated
                 */
-               VertexPacked(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
+               VertexPacked(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, tarch::la::Vector<TWO_POWER_D,void*> ADERDGCellDescriptions, tarch::la::Vector<TWO_POWER_D,void*> FiniteVolumesCellDescriptions, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
                
                /**
                 * Generated
                 */
-               VertexPacked(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const int& adjacentCellsHeightOfPreviousIteration, const int& numberOfAdjacentRefinedCells, const InsideOutsideDomain& insideOutsideDomain, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
+               VertexPacked(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, tarch::la::Vector<TWO_POWER_D,void*> ADERDGCellDescriptions, tarch::la::Vector<TWO_POWER_D,void*> FiniteVolumesCellDescriptions, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const int& adjacentCellsHeightOfPreviousIteration, const int& numberOfAdjacentRefinedCells, const InsideOutsideDomain& insideOutsideDomain, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
                
                /**
                 * Generated
@@ -7921,6 +10653,174 @@ namespace exahype {
                   assertion(elementIndex>=0);
                   assertion(elementIndex<TWO_POWER_D);
                   _persistentRecords._CellDescriptionsIndex[elementIndex]= CellDescriptionsIndex;
+                  
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<TWO_POWER_D,void*> getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._ADERDGCellDescriptions;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setADERDGCellDescriptions(const tarch::la::Vector<TWO_POWER_D,void*>& ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._ADERDGCellDescriptions = (ADERDGCellDescriptions);
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions(int elementIndex) const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<TWO_POWER_D);
+                  return _persistentRecords._ADERDGCellDescriptions[elementIndex];
+                  
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(int elementIndex, void*& ADERDGCellDescriptions)
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<TWO_POWER_D);
+                  _persistentRecords._ADERDGCellDescriptions[elementIndex]= ADERDGCellDescriptions;
+                  
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<TWO_POWER_D,void*> getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setFiniteVolumesCellDescriptions(const tarch::la::Vector<TWO_POWER_D,void*>& FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._FiniteVolumesCellDescriptions = (FiniteVolumesCellDescriptions);
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions(int elementIndex) const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<TWO_POWER_D);
+                  return _persistentRecords._FiniteVolumesCellDescriptions[elementIndex];
+                  
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(int elementIndex, void*& FiniteVolumesCellDescriptions)
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<TWO_POWER_D);
+                  _persistentRecords._FiniteVolumesCellDescriptions[elementIndex]= FiniteVolumesCellDescriptions;
                   
                }
                
@@ -8202,7 +11102,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   31/10/2018 18:11
+       * @date   15/11/2018 18:02
        */
       class exahype::records::Vertex { 
          
@@ -8224,6 +11124,16 @@ namespace exahype {
                #else
                tarch::la::Vector<TWO_POWER_D,int> _CellDescriptionsIndex;
                #endif
+               #ifdef UseManualAlignment
+               tarch::la::Vector<TWO_POWER_D,void*> _ADERDGCellDescriptions __attribute__((aligned(VectorisationAlignment)));
+               #else
+               tarch::la::Vector<TWO_POWER_D,void*> _ADERDGCellDescriptions;
+               #endif
+               #ifdef UseManualAlignment
+               tarch::la::Vector<TWO_POWER_D,void*> _FiniteVolumesCellDescriptions __attribute__((aligned(VectorisationAlignment)));
+               #else
+               tarch::la::Vector<TWO_POWER_D,void*> _FiniteVolumesCellDescriptions;
+               #endif
                bool _isHangingNode;
                RefinementControl _refinementControl;
                int _adjacentCellsHeight;
@@ -8242,7 +11152,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank);
+               PersistentRecords(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, tarch::la::Vector<TWO_POWER_D,void*> ADERDGCellDescriptions, tarch::la::Vector<TWO_POWER_D,void*> FiniteVolumesCellDescriptions, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank);
                
                
                /**
@@ -8299,6 +11209,122 @@ namespace exahype {
  #endif 
  {
                   _CellDescriptionsIndex = (CellDescriptionsIndex);
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<TWO_POWER_D,void*> getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _ADERDGCellDescriptions;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setADERDGCellDescriptions(const tarch::la::Vector<TWO_POWER_D,void*>& ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _ADERDGCellDescriptions = (ADERDGCellDescriptions);
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<TWO_POWER_D,void*> getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setFiniteVolumesCellDescriptions(const tarch::la::Vector<TWO_POWER_D,void*>& FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _FiniteVolumesCellDescriptions = (FiniteVolumesCellDescriptions);
                }
                
                
@@ -8481,12 +11507,12 @@ namespace exahype {
                /**
                 * Generated
                 */
-               Vertex(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank);
+               Vertex(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, tarch::la::Vector<TWO_POWER_D,void*> ADERDGCellDescriptions, tarch::la::Vector<TWO_POWER_D,void*> FiniteVolumesCellDescriptions, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank);
                
                /**
                 * Generated
                 */
-               Vertex(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const int& adjacentCellsHeightOfPreviousIteration, const int& numberOfAdjacentRefinedCells, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank);
+               Vertex(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, tarch::la::Vector<TWO_POWER_D,void*> ADERDGCellDescriptions, tarch::la::Vector<TWO_POWER_D,void*> FiniteVolumesCellDescriptions, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const int& adjacentCellsHeightOfPreviousIteration, const int& numberOfAdjacentRefinedCells, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank);
                
                /**
                 * Generated
@@ -8573,6 +11599,174 @@ namespace exahype {
                   assertion(elementIndex>=0);
                   assertion(elementIndex<TWO_POWER_D);
                   _persistentRecords._CellDescriptionsIndex[elementIndex]= CellDescriptionsIndex;
+                  
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<TWO_POWER_D,void*> getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._ADERDGCellDescriptions;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setADERDGCellDescriptions(const tarch::la::Vector<TWO_POWER_D,void*>& ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._ADERDGCellDescriptions = (ADERDGCellDescriptions);
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions(int elementIndex) const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<TWO_POWER_D);
+                  return _persistentRecords._ADERDGCellDescriptions[elementIndex];
+                  
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(int elementIndex, void*& ADERDGCellDescriptions)
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<TWO_POWER_D);
+                  _persistentRecords._ADERDGCellDescriptions[elementIndex]= ADERDGCellDescriptions;
+                  
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<TWO_POWER_D,void*> getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setFiniteVolumesCellDescriptions(const tarch::la::Vector<TWO_POWER_D,void*>& FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._FiniteVolumesCellDescriptions = (FiniteVolumesCellDescriptions);
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions(int elementIndex) const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<TWO_POWER_D);
+                  return _persistentRecords._FiniteVolumesCellDescriptions[elementIndex];
+                  
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(int elementIndex, void*& FiniteVolumesCellDescriptions)
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<TWO_POWER_D);
+                  _persistentRecords._FiniteVolumesCellDescriptions[elementIndex]= FiniteVolumesCellDescriptions;
                   
                }
                
@@ -8894,7 +12088,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   31/10/2018 18:11
+       * @date   15/11/2018 18:02
        */
       class exahype::records::VertexPacked { 
          
@@ -8906,6 +12100,8 @@ namespace exahype {
             
             struct PersistentRecords {
                tarch::la::Vector<TWO_POWER_D,int> _CellDescriptionsIndex;
+               tarch::la::Vector<TWO_POWER_D,void*> _ADERDGCellDescriptions;
+               tarch::la::Vector<TWO_POWER_D,void*> _FiniteVolumesCellDescriptions;
                int _adjacentCellsHeight;
                tarch::la::Vector<TWO_POWER_D,int> _adjacentRanks;
                
@@ -8926,7 +12122,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank);
+               PersistentRecords(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, tarch::la::Vector<TWO_POWER_D,void*> ADERDGCellDescriptions, tarch::la::Vector<TWO_POWER_D,void*> FiniteVolumesCellDescriptions, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank);
                
                
                /**
@@ -8983,6 +12179,122 @@ namespace exahype {
  #endif 
  {
                   _CellDescriptionsIndex = (CellDescriptionsIndex);
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<TWO_POWER_D,void*> getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _ADERDGCellDescriptions;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setADERDGCellDescriptions(const tarch::la::Vector<TWO_POWER_D,void*>& ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _ADERDGCellDescriptions = (ADERDGCellDescriptions);
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<TWO_POWER_D,void*> getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setFiniteVolumesCellDescriptions(const tarch::la::Vector<TWO_POWER_D,void*>& FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _FiniteVolumesCellDescriptions = (FiniteVolumesCellDescriptions);
                }
                
                
@@ -9189,12 +12501,12 @@ namespace exahype {
                /**
                 * Generated
                 */
-               VertexPacked(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank);
+               VertexPacked(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, tarch::la::Vector<TWO_POWER_D,void*> ADERDGCellDescriptions, tarch::la::Vector<TWO_POWER_D,void*> FiniteVolumesCellDescriptions, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank);
                
                /**
                 * Generated
                 */
-               VertexPacked(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const int& adjacentCellsHeightOfPreviousIteration, const int& numberOfAdjacentRefinedCells, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank);
+               VertexPacked(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, tarch::la::Vector<TWO_POWER_D,void*> ADERDGCellDescriptions, tarch::la::Vector<TWO_POWER_D,void*> FiniteVolumesCellDescriptions, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const int& adjacentCellsHeightOfPreviousIteration, const int& numberOfAdjacentRefinedCells, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank);
                
                /**
                 * Generated
@@ -9281,6 +12593,174 @@ namespace exahype {
                   assertion(elementIndex>=0);
                   assertion(elementIndex<TWO_POWER_D);
                   _persistentRecords._CellDescriptionsIndex[elementIndex]= CellDescriptionsIndex;
+                  
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<TWO_POWER_D,void*> getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._ADERDGCellDescriptions;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setADERDGCellDescriptions(const tarch::la::Vector<TWO_POWER_D,void*>& ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._ADERDGCellDescriptions = (ADERDGCellDescriptions);
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions(int elementIndex) const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<TWO_POWER_D);
+                  return _persistentRecords._ADERDGCellDescriptions[elementIndex];
+                  
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(int elementIndex, void*& ADERDGCellDescriptions)
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<TWO_POWER_D);
+                  _persistentRecords._ADERDGCellDescriptions[elementIndex]= ADERDGCellDescriptions;
+                  
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<TWO_POWER_D,void*> getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setFiniteVolumesCellDescriptions(const tarch::la::Vector<TWO_POWER_D,void*>& FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._FiniteVolumesCellDescriptions = (FiniteVolumesCellDescriptions);
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions(int elementIndex) const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<TWO_POWER_D);
+                  return _persistentRecords._FiniteVolumesCellDescriptions[elementIndex];
+                  
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(int elementIndex, void*& FiniteVolumesCellDescriptions)
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<TWO_POWER_D);
+                  _persistentRecords._FiniteVolumesCellDescriptions[elementIndex]= FiniteVolumesCellDescriptions;
                   
                }
                
@@ -9623,7 +13103,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   31/10/2018 18:11
+       * @date   15/11/2018 18:02
        */
       class exahype::records::Vertex { 
          
@@ -9645,6 +13125,16 @@ namespace exahype {
                #else
                tarch::la::Vector<TWO_POWER_D,int> _CellDescriptionsIndex;
                #endif
+               #ifdef UseManualAlignment
+               tarch::la::Vector<TWO_POWER_D,void*> _ADERDGCellDescriptions __attribute__((aligned(VectorisationAlignment)));
+               #else
+               tarch::la::Vector<TWO_POWER_D,void*> _ADERDGCellDescriptions;
+               #endif
+               #ifdef UseManualAlignment
+               tarch::la::Vector<TWO_POWER_D,void*> _FiniteVolumesCellDescriptions __attribute__((aligned(VectorisationAlignment)));
+               #else
+               tarch::la::Vector<TWO_POWER_D,void*> _FiniteVolumesCellDescriptions;
+               #endif
                bool _isHangingNode;
                RefinementControl _refinementControl;
                int _adjacentCellsHeight;
@@ -9663,7 +13153,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level);
+               PersistentRecords(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, tarch::la::Vector<TWO_POWER_D,void*> ADERDGCellDescriptions, tarch::la::Vector<TWO_POWER_D,void*> FiniteVolumesCellDescriptions, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level);
                
                
                /**
@@ -9720,6 +13210,122 @@ namespace exahype {
  #endif 
  {
                   _CellDescriptionsIndex = (CellDescriptionsIndex);
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<TWO_POWER_D,void*> getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _ADERDGCellDescriptions;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setADERDGCellDescriptions(const tarch::la::Vector<TWO_POWER_D,void*>& ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _ADERDGCellDescriptions = (ADERDGCellDescriptions);
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<TWO_POWER_D,void*> getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setFiniteVolumesCellDescriptions(const tarch::la::Vector<TWO_POWER_D,void*>& FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _FiniteVolumesCellDescriptions = (FiniteVolumesCellDescriptions);
                }
                
                
@@ -9902,12 +13508,12 @@ namespace exahype {
                /**
                 * Generated
                 */
-               Vertex(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level);
+               Vertex(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, tarch::la::Vector<TWO_POWER_D,void*> ADERDGCellDescriptions, tarch::la::Vector<TWO_POWER_D,void*> FiniteVolumesCellDescriptions, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level);
                
                /**
                 * Generated
                 */
-               Vertex(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const int& adjacentCellsHeightOfPreviousIteration, const int& numberOfAdjacentRefinedCells, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level);
+               Vertex(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, tarch::la::Vector<TWO_POWER_D,void*> ADERDGCellDescriptions, tarch::la::Vector<TWO_POWER_D,void*> FiniteVolumesCellDescriptions, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const int& adjacentCellsHeightOfPreviousIteration, const int& numberOfAdjacentRefinedCells, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level);
                
                /**
                 * Generated
@@ -9994,6 +13600,174 @@ namespace exahype {
                   assertion(elementIndex>=0);
                   assertion(elementIndex<TWO_POWER_D);
                   _persistentRecords._CellDescriptionsIndex[elementIndex]= CellDescriptionsIndex;
+                  
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<TWO_POWER_D,void*> getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._ADERDGCellDescriptions;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setADERDGCellDescriptions(const tarch::la::Vector<TWO_POWER_D,void*>& ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._ADERDGCellDescriptions = (ADERDGCellDescriptions);
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions(int elementIndex) const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<TWO_POWER_D);
+                  return _persistentRecords._ADERDGCellDescriptions[elementIndex];
+                  
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(int elementIndex, void*& ADERDGCellDescriptions)
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<TWO_POWER_D);
+                  _persistentRecords._ADERDGCellDescriptions[elementIndex]= ADERDGCellDescriptions;
+                  
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<TWO_POWER_D,void*> getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setFiniteVolumesCellDescriptions(const tarch::la::Vector<TWO_POWER_D,void*>& FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._FiniteVolumesCellDescriptions = (FiniteVolumesCellDescriptions);
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions(int elementIndex) const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<TWO_POWER_D);
+                  return _persistentRecords._FiniteVolumesCellDescriptions[elementIndex];
+                  
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(int elementIndex, void*& FiniteVolumesCellDescriptions)
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<TWO_POWER_D);
+                  _persistentRecords._FiniteVolumesCellDescriptions[elementIndex]= FiniteVolumesCellDescriptions;
                   
                }
                
@@ -10315,7 +14089,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   31/10/2018 18:11
+       * @date   15/11/2018 18:02
        */
       class exahype::records::VertexPacked { 
          
@@ -10327,6 +14101,8 @@ namespace exahype {
             
             struct PersistentRecords {
                tarch::la::Vector<TWO_POWER_D,int> _CellDescriptionsIndex;
+               tarch::la::Vector<TWO_POWER_D,void*> _ADERDGCellDescriptions;
+               tarch::la::Vector<TWO_POWER_D,void*> _FiniteVolumesCellDescriptions;
                int _adjacentCellsHeight;
                tarch::la::Vector<DIMENSIONS,double> _x;
                int _level;
@@ -10347,7 +14123,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level);
+               PersistentRecords(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, tarch::la::Vector<TWO_POWER_D,void*> ADERDGCellDescriptions, tarch::la::Vector<TWO_POWER_D,void*> FiniteVolumesCellDescriptions, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level);
                
                
                /**
@@ -10404,6 +14180,122 @@ namespace exahype {
  #endif 
  {
                   _CellDescriptionsIndex = (CellDescriptionsIndex);
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<TWO_POWER_D,void*> getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _ADERDGCellDescriptions;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setADERDGCellDescriptions(const tarch::la::Vector<TWO_POWER_D,void*>& ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _ADERDGCellDescriptions = (ADERDGCellDescriptions);
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<TWO_POWER_D,void*> getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setFiniteVolumesCellDescriptions(const tarch::la::Vector<TWO_POWER_D,void*>& FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _FiniteVolumesCellDescriptions = (FiniteVolumesCellDescriptions);
                }
                
                
@@ -10607,12 +14499,12 @@ namespace exahype {
                /**
                 * Generated
                 */
-               VertexPacked(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level);
+               VertexPacked(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, tarch::la::Vector<TWO_POWER_D,void*> ADERDGCellDescriptions, tarch::la::Vector<TWO_POWER_D,void*> FiniteVolumesCellDescriptions, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level);
                
                /**
                 * Generated
                 */
-               VertexPacked(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const int& adjacentCellsHeightOfPreviousIteration, const int& numberOfAdjacentRefinedCells, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level);
+               VertexPacked(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, tarch::la::Vector<TWO_POWER_D,void*> ADERDGCellDescriptions, tarch::la::Vector<TWO_POWER_D,void*> FiniteVolumesCellDescriptions, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const int& adjacentCellsHeightOfPreviousIteration, const int& numberOfAdjacentRefinedCells, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level);
                
                /**
                 * Generated
@@ -10699,6 +14591,174 @@ namespace exahype {
                   assertion(elementIndex>=0);
                   assertion(elementIndex<TWO_POWER_D);
                   _persistentRecords._CellDescriptionsIndex[elementIndex]= CellDescriptionsIndex;
+                  
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<TWO_POWER_D,void*> getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._ADERDGCellDescriptions;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setADERDGCellDescriptions(const tarch::la::Vector<TWO_POWER_D,void*>& ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._ADERDGCellDescriptions = (ADERDGCellDescriptions);
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions(int elementIndex) const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<TWO_POWER_D);
+                  return _persistentRecords._ADERDGCellDescriptions[elementIndex];
+                  
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(int elementIndex, void*& ADERDGCellDescriptions)
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<TWO_POWER_D);
+                  _persistentRecords._ADERDGCellDescriptions[elementIndex]= ADERDGCellDescriptions;
+                  
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<TWO_POWER_D,void*> getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setFiniteVolumesCellDescriptions(const tarch::la::Vector<TWO_POWER_D,void*>& FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._FiniteVolumesCellDescriptions = (FiniteVolumesCellDescriptions);
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions(int elementIndex) const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<TWO_POWER_D);
+                  return _persistentRecords._FiniteVolumesCellDescriptions[elementIndex];
+                  
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(int elementIndex, void*& FiniteVolumesCellDescriptions)
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<TWO_POWER_D);
+                  _persistentRecords._FiniteVolumesCellDescriptions[elementIndex]= FiniteVolumesCellDescriptions;
                   
                }
                
@@ -11038,7 +15098,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   31/10/2018 18:11
+       * @date   15/11/2018 18:02
        */
       class exahype::records::Vertex { 
          
@@ -11060,6 +15120,16 @@ namespace exahype {
                #else
                tarch::la::Vector<TWO_POWER_D,int> _CellDescriptionsIndex;
                #endif
+               #ifdef UseManualAlignment
+               tarch::la::Vector<TWO_POWER_D,void*> _ADERDGCellDescriptions __attribute__((aligned(VectorisationAlignment)));
+               #else
+               tarch::la::Vector<TWO_POWER_D,void*> _ADERDGCellDescriptions;
+               #endif
+               #ifdef UseManualAlignment
+               tarch::la::Vector<TWO_POWER_D,void*> _FiniteVolumesCellDescriptions __attribute__((aligned(VectorisationAlignment)));
+               #else
+               tarch::la::Vector<TWO_POWER_D,void*> _FiniteVolumesCellDescriptions;
+               #endif
                bool _isHangingNode;
                RefinementControl _refinementControl;
                int _adjacentCellsHeight;
@@ -11072,7 +15142,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain);
+               PersistentRecords(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, tarch::la::Vector<TWO_POWER_D,void*> ADERDGCellDescriptions, tarch::la::Vector<TWO_POWER_D,void*> FiniteVolumesCellDescriptions, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain);
                
                
                /**
@@ -11129,6 +15199,122 @@ namespace exahype {
  #endif 
  {
                   _CellDescriptionsIndex = (CellDescriptionsIndex);
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<TWO_POWER_D,void*> getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _ADERDGCellDescriptions;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setADERDGCellDescriptions(const tarch::la::Vector<TWO_POWER_D,void*>& ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _ADERDGCellDescriptions = (ADERDGCellDescriptions);
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<TWO_POWER_D,void*> getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setFiniteVolumesCellDescriptions(const tarch::la::Vector<TWO_POWER_D,void*>& FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _FiniteVolumesCellDescriptions = (FiniteVolumesCellDescriptions);
                }
                
                
@@ -11233,12 +15419,12 @@ namespace exahype {
                /**
                 * Generated
                 */
-               Vertex(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain);
+               Vertex(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, tarch::la::Vector<TWO_POWER_D,void*> ADERDGCellDescriptions, tarch::la::Vector<TWO_POWER_D,void*> FiniteVolumesCellDescriptions, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain);
                
                /**
                 * Generated
                 */
-               Vertex(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const int& adjacentCellsHeightOfPreviousIteration, const int& numberOfAdjacentRefinedCells, const InsideOutsideDomain& insideOutsideDomain);
+               Vertex(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, tarch::la::Vector<TWO_POWER_D,void*> ADERDGCellDescriptions, tarch::la::Vector<TWO_POWER_D,void*> FiniteVolumesCellDescriptions, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const int& adjacentCellsHeightOfPreviousIteration, const int& numberOfAdjacentRefinedCells, const InsideOutsideDomain& insideOutsideDomain);
                
                /**
                 * Generated
@@ -11325,6 +15511,174 @@ namespace exahype {
                   assertion(elementIndex>=0);
                   assertion(elementIndex<TWO_POWER_D);
                   _persistentRecords._CellDescriptionsIndex[elementIndex]= CellDescriptionsIndex;
+                  
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<TWO_POWER_D,void*> getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._ADERDGCellDescriptions;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setADERDGCellDescriptions(const tarch::la::Vector<TWO_POWER_D,void*>& ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._ADERDGCellDescriptions = (ADERDGCellDescriptions);
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions(int elementIndex) const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<TWO_POWER_D);
+                  return _persistentRecords._ADERDGCellDescriptions[elementIndex];
+                  
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(int elementIndex, void*& ADERDGCellDescriptions)
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<TWO_POWER_D);
+                  _persistentRecords._ADERDGCellDescriptions[elementIndex]= ADERDGCellDescriptions;
+                  
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<TWO_POWER_D,void*> getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setFiniteVolumesCellDescriptions(const tarch::la::Vector<TWO_POWER_D,void*>& FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._FiniteVolumesCellDescriptions = (FiniteVolumesCellDescriptions);
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions(int elementIndex) const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<TWO_POWER_D);
+                  return _persistentRecords._FiniteVolumesCellDescriptions[elementIndex];
+                  
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(int elementIndex, void*& FiniteVolumesCellDescriptions)
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<TWO_POWER_D);
+                  _persistentRecords._FiniteVolumesCellDescriptions[elementIndex]= FiniteVolumesCellDescriptions;
                   
                }
                
@@ -11542,7 +15896,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   31/10/2018 18:11
+       * @date   15/11/2018 18:02
        */
       class exahype::records::VertexPacked { 
          
@@ -11554,6 +15908,8 @@ namespace exahype {
             
             struct PersistentRecords {
                tarch::la::Vector<TWO_POWER_D,int> _CellDescriptionsIndex;
+               tarch::la::Vector<TWO_POWER_D,void*> _ADERDGCellDescriptions;
+               tarch::la::Vector<TWO_POWER_D,void*> _FiniteVolumesCellDescriptions;
                int _adjacentCellsHeight;
                
                /** mapping of records:
@@ -11572,7 +15928,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain);
+               PersistentRecords(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, tarch::la::Vector<TWO_POWER_D,void*> ADERDGCellDescriptions, tarch::la::Vector<TWO_POWER_D,void*> FiniteVolumesCellDescriptions, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain);
                
                
                /**
@@ -11629,6 +15985,122 @@ namespace exahype {
  #endif 
  {
                   _CellDescriptionsIndex = (CellDescriptionsIndex);
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<TWO_POWER_D,void*> getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _ADERDGCellDescriptions;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setADERDGCellDescriptions(const tarch::la::Vector<TWO_POWER_D,void*>& ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _ADERDGCellDescriptions = (ADERDGCellDescriptions);
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<TWO_POWER_D,void*> getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setFiniteVolumesCellDescriptions(const tarch::la::Vector<TWO_POWER_D,void*>& FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _FiniteVolumesCellDescriptions = (FiniteVolumesCellDescriptions);
                }
                
                
@@ -11754,12 +16226,12 @@ namespace exahype {
                /**
                 * Generated
                 */
-               VertexPacked(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain);
+               VertexPacked(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, tarch::la::Vector<TWO_POWER_D,void*> ADERDGCellDescriptions, tarch::la::Vector<TWO_POWER_D,void*> FiniteVolumesCellDescriptions, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain);
                
                /**
                 * Generated
                 */
-               VertexPacked(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const int& adjacentCellsHeightOfPreviousIteration, const int& numberOfAdjacentRefinedCells, const InsideOutsideDomain& insideOutsideDomain);
+               VertexPacked(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, tarch::la::Vector<TWO_POWER_D,void*> ADERDGCellDescriptions, tarch::la::Vector<TWO_POWER_D,void*> FiniteVolumesCellDescriptions, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const int& adjacentCellsHeightOfPreviousIteration, const int& numberOfAdjacentRefinedCells, const InsideOutsideDomain& insideOutsideDomain);
                
                /**
                 * Generated
@@ -11846,6 +16318,174 @@ namespace exahype {
                   assertion(elementIndex>=0);
                   assertion(elementIndex<TWO_POWER_D);
                   _persistentRecords._CellDescriptionsIndex[elementIndex]= CellDescriptionsIndex;
+                  
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<TWO_POWER_D,void*> getADERDGCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._ADERDGCellDescriptions;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setADERDGCellDescriptions(const tarch::la::Vector<TWO_POWER_D,void*>& ADERDGCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._ADERDGCellDescriptions = (ADERDGCellDescriptions);
+               }
+               
+               
+               
+               inline void* getADERDGCellDescriptions(int elementIndex) const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<TWO_POWER_D);
+                  return _persistentRecords._ADERDGCellDescriptions[elementIndex];
+                  
+               }
+               
+               
+               
+               inline void setADERDGCellDescriptions(int elementIndex, void*& ADERDGCellDescriptions)
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<TWO_POWER_D);
+                  _persistentRecords._ADERDGCellDescriptions[elementIndex]= ADERDGCellDescriptions;
+                  
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<TWO_POWER_D,void*> getFiniteVolumesCellDescriptions() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._FiniteVolumesCellDescriptions;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setFiniteVolumesCellDescriptions(const tarch::la::Vector<TWO_POWER_D,void*>& FiniteVolumesCellDescriptions) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._FiniteVolumesCellDescriptions = (FiniteVolumesCellDescriptions);
+               }
+               
+               
+               
+               inline void* getFiniteVolumesCellDescriptions(int elementIndex) const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<TWO_POWER_D);
+                  return _persistentRecords._FiniteVolumesCellDescriptions[elementIndex];
+                  
+               }
+               
+               
+               
+               inline void setFiniteVolumesCellDescriptions(int elementIndex, void*& FiniteVolumesCellDescriptions)
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<TWO_POWER_D);
+                  _persistentRecords._FiniteVolumesCellDescriptions[elementIndex]= FiniteVolumesCellDescriptions;
                   
                }
                

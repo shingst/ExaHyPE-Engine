@@ -186,7 +186,7 @@ bool SWE::MySWESolver_ADERDG::isPhysicallyAdmissible(
       const bool wasTroubledInPreviousTimeStep,
       const tarch::la::Vector<DIMENSIONS,double>& center,
       const tarch::la::Vector<DIMENSIONS,double>& dx,
-      const double t, const double dt) const {
+      const double t) const {
 
   double hMin;
   double hMax;

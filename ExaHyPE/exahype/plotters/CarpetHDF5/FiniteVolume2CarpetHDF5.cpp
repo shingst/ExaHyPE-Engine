@@ -51,7 +51,7 @@ exahype::plotters::FiniteVolume2CarpetHDF5::FiniteVolume2CarpetHDF5(
 // all other methods are stubs
 exahype::plotters::FiniteVolume2CarpetHDF5::~FiniteVolume2CarpetHDF5() {}
 void exahype::plotters::FiniteVolume2CarpetHDF5::init(const std::string& filename, int orderPlusOne, int solverUnknowns, int writtenUnknowns, exahype::parser::ParserView plotterParameters) {}
-void exahype::plotters::FiniteVolume2CarpetHDF5::plotPatch(const int cellDescriptionsIndex, const int element) {}
+void exahype::plotters::FiniteVolume2CarpetHDF5::plotPatch(const int solverNumber,solvers::Solver::CellInfo& cellInfo) {}
 void exahype::plotters::FiniteVolume2CarpetHDF5::plotPatch(const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* u,double timeStamp) {}
 void exahype::plotters::FiniteVolume2CarpetHDF5::startPlotting(double time) {}
 void exahype::plotters::FiniteVolume2CarpetHDF5::finishPlotting() {}
@@ -78,9 +78,6 @@ exahype::plotters::FiniteVolume2CarpetHDF5::~FiniteVolume2CarpetHDF5() {
 }
 
 void exahype::plotters::FiniteVolume2CarpetHDF5::init(const std::string& filename, int _numberOfCellsPerAxis, int _solverUnknowns, int writtenUnknowns, exahype::parser::ParserView  plotterParameters) {
-	bool oneFilePerTimestep = false;
-	bool allUnknownsInOneFile = false;
-
 	// Determine names of output fields
 	char **writtenQuantitiesNames = new char*[writtenUnknowns];
 	std::fill_n(writtenQuantitiesNames, writtenUnknowns, nullptr);
@@ -92,44 +89,47 @@ void exahype::plotters::FiniteVolume2CarpetHDF5::init(const std::string& filenam
 
 	const int basisSize = numberOfVerticesPerAxis;
 	writer = new exahype::plotters::CarpetHDF5Writer(filename, basisSize, solverUnknowns, writtenUnknowns, plotterParameters,
-		writtenQuantitiesNames, oneFilePerTimestep, allUnknownsInOneFile);	
+		writtenQuantitiesNames);	
 
 	if(writer->slicer && writer->slicer->getIdentifier() == "CartesianSlicer") {
 		throw std::domain_error("FiniteVolume2CarpetHDF5 currently does not support the CartesianSlicer.");
 	}
-	// another nice to have: allow oneFilePerTimestep as a specfile parameter...
+}
+
+void exahype::plotters::FiniteVolume2CarpetHDF5::plotPatch(const int solverNumber,solvers::Solver::CellInfo& cellInfo) {
+  const int element = cellInfo.indexOfFiniteVolumesCellDescription(solverNumber);
+  auto& cellDescription  = cellInfo._FiniteVolumesCellDescriptions[element];
+	if (cellDescription.getType()==exahype::solvers::FiniteVolumesSolver::CellDescription::Type::Cell) {
+		double* solution = static_cast<double*>(cellDescription.getSolution());
+
+		plotPatch(
+			cellDescription.getOffset(),
+			cellDescription.getSize(), solution,
+			cellDescription.getTimeStamp());
+	}
 }
 
 void exahype::plotters::FiniteVolume2CarpetHDF5::plotPatch(
-        const int cellDescriptionsIndex,
-        const int element) {
-  auto& cellDescription =  exahype::solvers::FiniteVolumesSolver::getCellDescription(cellDescriptionsIndex,element);
+  const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
+  const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch,
+  double* u, /* unknown */
+  double timeStamp) {
 
-  if (cellDescription.getType()==exahype::solvers::FiniteVolumesSolver::CellDescription::Type::Cell) {
-    double* solution = static_cast<double*>(cellDescription.getSolution());
+	if(writer->slicer && !writer->slicer->isPatchActive(offsetOfPatch, sizeOfPatch)) return;
+	
+	double* mappedCell;
 
-    plotPatch(
-        cellDescription.getOffset(),
-        cellDescription.getSize(), solution,
-        cellDescription.getTimeStamp());
-  }
+	if(writer->slicer && writer->slicer->getIdentifier() == "CartesianSlicer") {
+		mappedCell = new double[writer->writtenFieldsSize];
+		
+		interpolateCartesianSlicedVertexPatch(offsetOfPatch, sizeOfPatch, u, mappedCell, timeStamp,
+			static_cast<exahype::plotters::CartesianSlicer&>(*writer->slicer));
+	} else {
+		mappedCell  = new double[writer->patchFieldsSize];
+		interpolateVertexPatch(offsetOfPatch, sizeOfPatch, u, mappedCell, timeStamp);
+	}
+	delete[] mappedCell;
 }
-
-void exahype::plotters::FiniteVolume2CarpetHDF5::plotPatch(
-    const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
-    const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch,
-    double* u, /* unknown */
-    double timeStamp) {
-
-    double* mappedCell  = new double[writer->patchFieldsSize];
-    dvec dx = 1./numberOfCellsPerAxis * sizeOfPatch;
-
-    interpolateVertexPatch(offsetOfPatch, sizeOfPatch, u, mappedCell, timeStamp);
-    writer->plotPatch(offsetOfPatch, sizeOfPatch, dx, mappedCell, timeStamp);
-
-    delete[] mappedCell;
-}
-
 
 void exahype::plotters::FiniteVolume2CarpetHDF5::interpolateVertexPatch(
     const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
@@ -138,65 +138,79 @@ void exahype::plotters::FiniteVolume2CarpetHDF5::interpolateVertexPatch(
     double *mappedCell, /* outgoing mapped cell, size writtenUnknowns^DIMENSIONS */
     double timeStamp) {
 
-    double* vertexValue = new double[solverUnknowns];
+	double* vertexValue = new double[solverUnknowns];
 
-    // the following assumes quadratic cells.
-    assertion(sizeOfPatch(0)==sizeOfPatch(1));
-    kernels::dindex patchPos(numberOfCellsPerAxis + 2*ghostLayerWidth); // including ghost zones
+	// the following assumes quadratic cells.
+	assertion(sizeOfPatch(0)==sizeOfPatch(1));
+	kernels::dindex patchPos(numberOfCellsPerAxis + 2*ghostLayerWidth); // including ghost zones
 
-    dfor(ivertex, numberOfVerticesPerAxis) {
-        // We do no smearing, so we only take into account the 2 nearest neighbours.
-        constexpr int neighbourCellsPerAxis = 2;
-	//constexpr int neighbourCellsMax = std::pow(neighbourCellsPerAxis, DIMENSIONS); // maximum possible cells (ie. 4 in 2D)
-        std::fill_n(vertexValue, solverUnknowns, 0.0);
-	int neighbourCells = 0; // actual neighbour cells taken into account
-	dfor(icells, neighbourCellsPerAxis) {
-		ivec icell = ghostLayerWidth + ivertex + (icells - neighbourCellsPerAxis / 2);
-		
-		// if the target cell position in the patch is *not* in the ghost layers:
-		if (tarch::la::allSmaller(icell,numberOfCellsPerAxis+ghostLayerWidth)
-		 && tarch::la::allGreater(icell,ghostLayerWidth-1)) {
-			double *cell = u + patchPos.rowMajor(icell)*solverUnknowns;
-			for (int unknown=0; unknown < solverUnknowns; unknown++) {
-				vertexValue[unknown] += cell[unknown];
+	dfor(ivertex, numberOfVerticesPerAxis) {
+		// We do no smearing, so we only take into account the 2 nearest neighbours.
+		constexpr int neighbourCellsPerAxis = 2;
+		//constexpr int neighbourCellsMax = std::pow(neighbourCellsPerAxis, DIMENSIONS); // maximum possible cells (ie. 4 in 2D)
+		std::fill_n(vertexValue, solverUnknowns, 0.0);
+		int neighbourCells = 0; // actual neighbour cells taken into account
+		dfor(icells, neighbourCellsPerAxis) {
+			ivec icell = ghostLayerWidth + ivertex + (icells - neighbourCellsPerAxis / 2);
+			
+			// if the target cell position in the patch is *not* in the ghost layers:
+			if (tarch::la::allSmaller(icell,numberOfCellsPerAxis+ghostLayerWidth)
+			&& tarch::la::allGreater(icell,ghostLayerWidth-1)) {
+				double *cell = u + patchPos.rowMajor(icell)*solverUnknowns;
+				for (int unknown=0; unknown < solverUnknowns; unknown++) {
+					vertexValue[unknown] += cell[unknown];
+				}
+				neighbourCells++;
 			}
-			neighbourCells++;
 		}
+
+		// normalize value
+		for (int unknown=0; unknown < solverUnknowns; unknown++) {
+			vertexValue[unknown] = vertexValue[unknown] / neighbourCells;
+		}
+		
+		/*
+		// The following code could be used instead of the neighbour contributions as
+		// above and was used for the start. Just one  cell.
+		// This works and shows how badly it is if we rely on ghost zones.
+		double *cell = u + patchPos.rowMajor(ghostLayerWidth + ivertex)*solverUnknowns;
+		for (int unknown=0; unknown < solverUnknowns; unknown++) {
+			vertexValue[unknown] = 42; // cell[unknown];
+		}
+		*/
+		
+
+		double *outputValue = mappedCell + (DIMENSIONS == 3 ?
+			writer->writtenCellIdx->get(ivertex(2),ivertex(1),ivertex(0),0) :
+			writer->writtenCellIdx->get(ivertex(1),ivertex(0),0));
+		_postProcessing->mapQuantities(
+		offsetOfPatch,
+		sizeOfPatch,
+		offsetOfPatch + ivertex.convertScalar<double>()* (sizeOfPatch(0)/(numberOfVerticesPerAxis)), // coordinate of vertex
+		ivertex,
+		vertexValue,
+		outputValue,
+		timeStamp
+		);
 	}
 
-	// normalize value
-	for (int unknown=0; unknown < solverUnknowns; unknown++) {
-		vertexValue[unknown] = vertexValue[unknown] / neighbourCells;
-	}
+	delete[] vertexValue;
 	
-	/*
-	// The following code could be used instead of the neighbour contributions as
-	// above and was used for the start. Just one  cell.
-	// This works and shows how badly it is if we rely on ghost zones.
-	double *cell = u + patchPos.rowMajor(ghostLayerWidth + ivertex)*solverUnknowns;
-	for (int unknown=0; unknown < solverUnknowns; unknown++) {
-		vertexValue[unknown] = 42; // cell[unknown];
-	}
-	*/
-	
-
-	double *outputValue = mappedCell + (DIMENSIONS == 3 ?
-		writer->writtenCellIdx->get(ivertex(2),ivertex(1),ivertex(0),0) :
-		writer->writtenCellIdx->get(ivertex(1),ivertex(0),0));
-        _postProcessing->mapQuantities(
-          offsetOfPatch,
-          sizeOfPatch,
-          offsetOfPatch + ivertex.convertScalar<double>()* (sizeOfPatch(0)/(numberOfVerticesPerAxis)), // coordinate of vertex
-          ivertex,
-          vertexValue,
-          outputValue,
-          timeStamp
-        );
-    }
-
-    delete[] vertexValue;
+	dvec dx = 1./numberOfCellsPerAxis * sizeOfPatch;
+	writer->plotPatch(offsetOfPatch, sizeOfPatch, dx, mappedCell, timeStamp);
 }
 
+void exahype::plotters::FiniteVolume2CarpetHDF5::interpolateCartesianSlicedVertexPatch(
+  const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
+  const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch,
+  double *u,
+  double *mappedCell,
+  double timeStamp,
+  const exahype::plotters::CartesianSlicer& slicer) {
+	
+	
+	
+}
 
 void exahype::plotters::FiniteVolume2CarpetHDF5::startPlotting(double time) {
 	_postProcessing->startPlotting(time);
