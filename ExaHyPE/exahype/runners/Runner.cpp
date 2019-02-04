@@ -785,7 +785,7 @@ int exahype::runners::Runner::run() {
       #ifdef Parallel
       MPI_Pcontrol(0);
       #endif
-      #ifdef USE_ITAC_ALL and !defined(USE_ITAC)
+      #if defined(USE_ITAC_ALL) and !defined(USE_ITAC)
       #define USE_ITAC 1
       #endif
       #if defined(USE_ITAC) and !defined(USE_ITAC_ALL)
