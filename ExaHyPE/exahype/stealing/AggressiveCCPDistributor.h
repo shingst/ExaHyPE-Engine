@@ -26,7 +26,7 @@ class exahype::stealing::AggressiveCCPDistributor {
     static tarch::logging::Log _log;
     AggressiveCCPDistributor();
 
-    int _zeroThreshold;
+    //int _zeroThreshold;
 
     double _temperature;
 

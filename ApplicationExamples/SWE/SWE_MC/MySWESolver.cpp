@@ -31,10 +31,10 @@ void SWE::MySWESolver::init(const std::vector<std::string>& cmdlineargs,const ex
             a[(nelem+1)*i+j] = distribution(generator);
         }
     }
-    writeCsv("Input/bathymetry.csv", a);
+    writeCsv("Input/parameters.csv", a);
 
-    std::vector<double> a_param = {3.0,6.0,4.0,-1.0,-3.0,-6.0,18.0,1.0,-4.0,15.0,9.0,12.0,17.0,-18.0,24.0,6.0};
-    writeCsv("Input/parameters.csv", a_param);
+    std::vector<double> a_bath = {3.0,6.0,4.0,-1.0,-3.0,-6.0,18.0,1.0,-4.0,15.0,9.0,12.0,17.0,-18.0,24.0,6.0};
+    writeCsv("Input/bathymetry.csv", a_bath);
 
     std::vector<std::vector<double>> a_measurements(4);
     a_measurements[0] = {0.3,0.6};

@@ -36,12 +36,23 @@ class exahype::stealing::StealingAnalyser: public peano::performanceanalysis::An
     tarch::timing::GlidingAverageMeasurement     _traversalMeasurement;
     std::vector<tarch::timing::GlidingAverageMeasurement>    _waitForOtherRank;
 
-    double _currentMaxWaitTime;
+    int _currentZeroThreshold;
     int _iterationCounter;
+    double _currentAccumulatedWorkerTime;
+
+    int *_currentFilteredWaitingTimesSnapshot;
+
+    void updateZeroTresholdAndFilteredSnapshot();
 
   public:
     StealingAnalyser();
     virtual ~StealingAnalyser();
+
+    const int* getFilteredWaitingTimesSnapshot();
+
+    static StealingAnalyser& getInstance();
+
+    int getZeroThreshold();
 
     virtual void beginIteration();
 
