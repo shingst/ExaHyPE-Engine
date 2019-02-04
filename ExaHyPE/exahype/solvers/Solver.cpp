@@ -31,6 +31,11 @@
 #include "ADERDGSolver.h"
 #include "FiniteVolumesSolver.h"
 
+#ifdef USE_ITAC
+int exahype::solvers::Solver::waitUntilCompletedLastStepHandle  = 0;
+int exahype::solvers::Solver::ensureAllJobsHaveTerminatedHandle = 0;
+#endif
+
 std::vector<exahype::solvers::Solver*> exahype::solvers::RegisteredSolvers;
 
 #ifdef Parallel
@@ -113,11 +118,6 @@ bool exahype::solvers::Solver::SpawnAMRBackgroundJobs = false;
 
 double exahype::solvers::Solver::CompressionAccuracy = 0.0;
 bool exahype::solvers::Solver::SpawnCompressionAsBackgroundJob = false;
-
-#ifdef USE_ITAC
-int exahype::solvers::Solver::waitUntilCompletedLastStepHandle  = 0;
-int exahype::solvers::Solver::ensureAllJobsHaveTerminatedHandle = 0;
-#endif
 
 std::atomic<int> exahype::solvers::Solver::NumberOfAMRBackgroundJobs(0);
 std::atomic<int> exahype::solvers::Solver::NumberOfReductionJobs(0);
