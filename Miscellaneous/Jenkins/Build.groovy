@@ -9,7 +9,7 @@ def build(config, workspace) {
 			     script: "dirname ${config.exahypeFile}"
 	    ).trim()
 	    echo "Directory is $directory"
-util.slurmBatch '''
+sh '''
 set -x
 IFS=$'\n\t'
 pwd

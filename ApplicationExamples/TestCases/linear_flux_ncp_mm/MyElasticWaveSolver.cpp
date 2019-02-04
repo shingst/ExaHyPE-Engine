@@ -284,7 +284,6 @@ void Elastic::MyElasticWaveSolver::multiplyMaterialParameterMatrix(const double*
 
 
 void Elastic::MyElasticWaveSolver::riemannSolver(double* const FL_,double* const FR_,const double* const QL_,const double* const QR_,const double dt,const int normalNonZeroIndex, bool isBoundaryFace, int faceIndex){
-
 #ifdef OPT_KERNELS
   double FL[converter::getFFaceGenArraySize()];
   double FR[converter::getFFaceGenArraySize()];
