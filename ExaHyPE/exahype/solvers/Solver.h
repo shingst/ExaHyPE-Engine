@@ -58,6 +58,10 @@
 #include <tbb/cache_aligned_allocator.h> // prevents false sharing
 #endif
 
+#ifdef USE_ITAC
+#include "VT.h"
+#endif
+
 // Some helpers
 constexpr int power(int basis, int exp) {
   return (exp == 0) ? 1 : basis * power(basis, exp - 1);
@@ -388,6 +392,15 @@ class exahype::solvers::Solver {
   void glueTogether(int numberOfEntries, int normalHeapIndex, int compressedHeapIndex, int bytesForMantissa) const;
 
  public:
+  #ifdef USE_ITAC
+  /**
+   * These handles are used to trace solver events with Intel Trace Analyzer and Collector.
+   */
+  static int waitUntilCompletedLastStepHandle;
+  static int ensureAllJobsHaveTerminatedHandle;
+  #endif
+
+
   #ifdef Parallel
   /**
    * Tag used for master worker communication.
@@ -1097,6 +1110,10 @@ class exahype::solvers::Solver {
  template <typename CellDescription>
  void waitUntilCompletedLastStep(
      const CellDescription& cellDescription,const bool waitForHighPriorityJob,const bool receiveDanglingMessages) {
+  #ifdef USE_ITAC
+  VT_begin(waitUntilCompletedLastStepHandle);
+  #endif
+
    if ( !cellDescription.getHasCompletedLastStep() ) {
      peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
    }
@@ -1111,6 +1128,10 @@ class exahype::solvers::Solver {
        tarch::multicore::jobs::processBackgroundJobs(1);
      }
    }
+
+  #ifdef USE_ITAC
+  VT_end(waitUntilCompletedLastStepHandle);
+  #endif
  }
 
  /**

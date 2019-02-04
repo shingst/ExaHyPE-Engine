@@ -114,6 +114,11 @@ bool exahype::solvers::Solver::SpawnAMRBackgroundJobs = false;
 double exahype::solvers::Solver::CompressionAccuracy = 0.0;
 bool exahype::solvers::Solver::SpawnCompressionAsBackgroundJob = false;
 
+#ifdef USE_ITAC
+int exahype::solvers::Solver::waitUntilCompletedLastStepHandle  = 0;
+int exahype::solvers::Solver::ensureAllJobsHaveTerminatedHandle = 0;
+#endif
+
 std::atomic<int> exahype::solvers::Solver::NumberOfAMRBackgroundJobs(0);
 std::atomic<int> exahype::solvers::Solver::NumberOfReductionJobs(0);
 std::atomic<int> exahype::solvers::Solver::NumberOfEnclaveJobs(0);
@@ -146,6 +151,10 @@ int exahype::solvers::Solver::getNumberOfQueuedJobs(const JobType& jobType) {
 }
 
 void exahype::solvers::Solver::ensureAllJobsHaveTerminated(JobType jobType) {
+  #ifdef USE_ITAC
+  VT_begin(ensureAllJobsHaveTerminatedHandle);
+  #endif
+
   int queuedJobs = getNumberOfQueuedJobs(jobType);
   bool finishedWait = queuedJobs == 0;
 
@@ -172,6 +181,10 @@ void exahype::solvers::Solver::ensureAllJobsHaveTerminated(JobType jobType) {
     queuedJobs = getNumberOfQueuedJobs(jobType);
     finishedWait = queuedJobs == 0;
   }
+
+  #ifdef USE_ITAC
+  VT_end(ensureAllJobsHaveTerminatedHandle);
+  #endif
 }
 
 void exahype::solvers::Solver::configurePredictionPhase(const bool usePredictionBackgroundJobs, bool useProlongationBackgroundJobs) {
