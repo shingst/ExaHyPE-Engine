@@ -31,7 +31,8 @@ exahype::stealing::StealingAnalyser::StealingAnalyser():
   _waitForMasterDataWatch("exahype::stealing::StealingAnalyser", "-", false,false),
   _waitForOtherRank(tarch::parallel::Node::getInstance().getNumberOfNodes()),
   _currentZeroThreshold(20000),
-  _iterationCounter(0)
+  _iterationCounter(0),
+  _currentAccumulatedWorkerTime(0)
 {
   enable(true);
 #ifdef USE_ITAC
@@ -42,13 +43,20 @@ exahype::stealing::StealingAnalyser::StealingAnalyser():
   std::fill(&_currentFilteredWaitingTimesSnapshot[0], &_currentFilteredWaitingTimesSnapshot[nnodes*nnodes], 0);
 }
 
+
 exahype::stealing::StealingAnalyser& exahype::stealing::StealingAnalyser::getInstance() {
-  static StealingAnalyser analyser;
-  return analyser;
+  static StealingAnalyser* analyser = nullptr;
+
+  if(analyser==nullptr) {
+    analyser = new StealingAnalyser();
+  }  
+
+
+  return *analyser;
 }
 
 exahype::stealing::StealingAnalyser::~StealingAnalyser() {
-  delete[] _currentFilteredWaitingTimesSnapshot;
+    delete[] _currentFilteredWaitingTimesSnapshot;
 }
 
 
@@ -72,17 +80,22 @@ void exahype::stealing::StealingAnalyser::updateZeroTresholdAndFilteredSnapshot(
   min = std::numeric_limits<int>::max();
   max = std::numeric_limits<int>::min();
 
+
   for(int i=0; i<nnodes; i++) {
     for(int j=0; j<nnodes; j++) {
       int currentWaitingTime = currentWaitingTimesSnapshot[i*nnodes+j];
-      // logInfo("updateZeroTresholdAndFilteredSnapshot()","rank "<<i<<" waiting for "<<currentWaitingTime<<" for rank "<<j);
+      if(currentWaitingTime>0)
+        logInfo("updateZeroTresholdAndFilteredSnapshot()","rank "<<i<<" waiting for "<<currentWaitingTime<<" for rank "<<j);
       if(currentWaitingTime>max) {
 	 max = currentWaitingTime;
       }
       else if(currentWaitingTime>0 && currentWaitingTime<min) {
         min = currentWaitingTime;
       }
-      _currentFilteredWaitingTimesSnapshot[i*nnodes+j] = (currentWaitingTime < _currentZeroThreshold) ? 0 : currentWaitingTime;
+
+      if(currentWaitingTime > _currentZeroThreshold) {
+         _currentFilteredWaitingTimesSnapshot[i*nnodes+j] = currentWaitingTime;
+      }
     }
   }
   if(min < std::numeric_limits<int>::max()) {
@@ -106,7 +119,8 @@ void exahype::stealing::StealingAnalyser::endIteration(double numberOfInnerLeafC
      _iterationCounter++; 
      return;
   }
-
+  _currentAccumulatedWorkerTime = 0;
+ 
   for(int i=0; i<_waitForOtherRank.size(); i++) {
     if(i != tarch::parallel::Node::getInstance().getRank()) {
       logInfo("endIteration()", "wait for rank "<<i<<_waitForOtherRank[i].toString());
@@ -147,7 +161,13 @@ void exahype::stealing::StealingAnalyser::endToReceiveDataFromWorker( int fromRa
     _waitForWorkerDataWatch.stopTimer();
     const double elapsedTime = _waitForWorkerDataWatch.getCalendarTime();
 
-    _waitForOtherRank[fromRank].setValue(elapsedTime);
+    if(elapsedTime>_currentZeroThreshold) {
+      _currentAccumulatedWorkerTime += elapsedTime;
+      _waitForOtherRank[fromRank].setValue(_currentAccumulatedWorkerTime);
+    }
+    else {
+      _waitForOtherRank[fromRank].setValue(elapsedTime);
+    }
 
     double currentAvg = _waitForOtherRank[fromRank].getValue();
     
@@ -179,6 +199,7 @@ void exahype::stealing::StealingAnalyser::endToReceiveDataFromMaster() {
     const double elapsedTime = _waitForMasterDataWatch.getCalendarTime();
     int myMaster = tarch::parallel::NodePool::getInstance().getMasterRank();
     
+    //TODO: ignore for now as it makes accumulation for worker ranks difficult, do we need this?
     _waitForOtherRank[myMaster].setValue(elapsedTime);
 
     double currentAvg = _waitForOtherRank[myMaster].getValue();

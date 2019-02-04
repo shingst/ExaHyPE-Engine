@@ -38,6 +38,7 @@ class exahype::stealing::StealingAnalyser: public peano::performanceanalysis::An
 
     int _currentZeroThreshold;
     int _iterationCounter;
+    double _currentAccumulatedWorkerTime;
 
     int *_currentFilteredWaitingTimesSnapshot;
 
