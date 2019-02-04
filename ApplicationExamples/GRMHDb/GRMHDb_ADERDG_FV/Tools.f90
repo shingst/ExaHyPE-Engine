@@ -12,6 +12,19 @@ END SUBROUTINE InitTECPLOT
     
     
 
+RECURSIVE SUBROUTINE PDECons2PrimFix(V,Q,iErr) 
+  USE Parameters, ONLY: nVar  
+  IMPLICIT NONE     
+  REAL :: V(nVar)
+  REAL, INTENT(IN) :: Q(nVar)
+  INTEGER          :: iErr
+  REAL :: Qaux(nVar)
+  Qaux(1:nVar) = Q(1:nVar)
+  CALL PDECons2Prim(V,Qaux,iErr)
+  !
+END SUBROUTINE PDECons2PrimFix
+    
+
 RECURSIVE SUBROUTINE getNumericalSolution(V,Q) 
   USE Parameters, ONLY: nVar  
   IMPLICIT NONE     
@@ -22,7 +35,7 @@ RECURSIVE SUBROUTINE getNumericalSolution(V,Q)
   !
 END SUBROUTINE getNumericalSolution
 
-RECURSIVE SUBROUTINE getExactSolution(V,x, timeStamp) 
+RECURSIVE SUBROUTINE getExactSolution(x,timeStamp,V) 
   USE Parameters, ONLY: nAux,nVar,nDim
   USE GRMHD_Mod  
   IMPLICIT NONE     
