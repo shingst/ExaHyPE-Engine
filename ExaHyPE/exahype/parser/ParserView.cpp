@@ -39,7 +39,7 @@ std::string exahype::parser::ParserView::getPath(const std::string& key) const {
 }
 
 bool exahype::parser::ParserView::isEmpty() const {
-  return _parser!=nullptr;
+  return _parser==nullptr;
   // TODO: Actually this check should check wether the _basePath exists and, if so,
   //       check wether it holds an empty dictionary, cf. empty() call on
   //       https://nlohmann.github.io/json/ -- however, such an API has to be exposed

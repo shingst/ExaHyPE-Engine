@@ -26,9 +26,10 @@
 #include "tarch/plotter/griddata/unstructured/vtk/VTUBinaryFileWriter.h"
 
 #include "exahype/plotters/slicing/Slicer.h"
-#include "exahype/solvers/ADERDGSolver.h"
+#include "exahype/solvers/LimitingADERDGSolver.h"
 
 #include "kernels/aderdg/generic/c/computeGradients.cpph" // derivatives
+#include "kernels/aderdg/generic/Kernels.h" // prolongation
 
 tarch::logging::Log exahype::plotters::ADERDG2LegendreVTK::_log("exahype::plotters::ADERDG2LegendreVTK");
 
@@ -132,13 +133,26 @@ void exahype::plotters::ADERDG2LegendreVTK::init(
   _filename          = filename;
   _order             = orderPlusOne-1;
   _solverUnknowns    = unknowns;
-  _plotterParameters            = plotterParameters;
+  _plotterParameters = plotterParameters;
   _writtenUnknowns   = writtenUnknowns;
 
-  slicer = Slicer::bestFromSelectionQuery(plotterParameters);
+  _slicer = Slicer::bestFromSelectionQuery(plotterParameters);
 
-  if(slicer) {
-    logInfo("init", "Plotting selection "<<slicer->toString()<<" to Files "<<filename);
+  unsigned int nodes = (DIMENSIONS == 3 ? _order  : 0 ) + 1;
+  nodes *= (_order + 1) * (_order + 1);
+  _tempSolution.resize(_solverUnknowns * nodes);
+  _tempGradient.resize(DIMENSIONS * _solverUnknowns * nodes);
+  assertion(_tempSolution.size()== _solverUnknowns * nodes);
+  assertion(_tempGradient.size()==DIMENSIONS * _solverUnknowns * nodes);
+
+  _resolution = 0;
+  if (_plotterParameters.hasKey("resolution")) {
+    _resolution = _plotterParameters.getValueAsIntOrDefault("resolution",0);
+  }
+  logInfo("init", "Plotting with resolution "<<_resolution);
+
+  if(_slicer) {
+    logInfo("init", "Plotting selection "<<_slicer->toString()<<" to Files "<<filename);
   }
 }
 
@@ -478,16 +492,46 @@ void exahype::plotters::ADERDG2LegendreVTK::plotCellData(
 }
 
 void exahype::plotters::ADERDG2LegendreVTK::plotPatch(const int solverNumber,solvers::Solver::CellInfo& cellInfo) {
+  // look up ADER-DG solver
+  solvers::ADERDGSolver* aderdgSolver = nullptr;
+  switch ( solvers::RegisteredSolvers[solverNumber]->getType() ) {
+  case solvers::Solver::Type::ADERDG:
+    aderdgSolver = static_cast<solvers::ADERDGSolver*>( solvers::RegisteredSolvers[solverNumber] );
+    break;
+  case solvers::Solver::Type::LimitingADERDG:
+    aderdgSolver = static_cast<solvers::LimitingADERDGSolver*>( solvers::RegisteredSolvers[solverNumber] )->getSolver().get();
+    break;
+  default:
+    logError("plotPatch(...)","Encountered unexpected solver type: "<<solvers::Solver::toString(solvers::RegisteredSolvers[solverNumber]->getType()));
+    std::abort();
+    break;
+  }
+
   const int element = cellInfo.indexOfADERDGCellDescription(solverNumber);
   auto& aderdgCellDescription  = cellInfo._ADERDGCellDescriptions[element];
 
   if (aderdgCellDescription.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Cell) {
-    double* solverSolution = static_cast<double*>(aderdgCellDescription.getSolution());
+    double* solution = static_cast<double*>(aderdgCellDescription.getSolution());
+    const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch = aderdgCellDescription.getOffset();
 
-    plotPatch(
-        aderdgCellDescription.getOffset(),
-        aderdgCellDescription.getSize(), solverSolution,
-        aderdgCellDescription.getTimeStamp());
+    const int subcellsPerDim = tarch::la::aPowI(_resolution,3);
+    const tarch::la::Vector<DIMENSIONS, double>& subcellSize = aderdgCellDescription.getSize() / static_cast<double>(subcellsPerDim);
+
+    dfor(subcellIndex,subcellsPerDim) {
+      tarch::la::Vector<DIMENSIONS, double> subcellOffset = offsetOfPatch;
+      double* u = solution;
+      if ( subcellsPerDim > 1 ) {
+        u = _tempSolution.data();
+        for (int d=0; d<DIMENSIONS; d++) {
+          subcellOffset[d] = offsetOfPatch[d] + subcellSize[d] * subcellIndex[d];
+        }
+        aderdgSolver->volumeUnknownsProlongation(u,solution,0,_resolution,subcellIndex);
+      }
+
+      plotPatch(
+          subcellOffset,subcellSize,u,
+          aderdgCellDescription.getTimeStamp());
+    }
   }
 }
 
@@ -496,7 +540,7 @@ void exahype::plotters::ADERDG2LegendreVTK::plotPatch(
     const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch,
     double* u,
     double timeStamp) {
-  if (!slicer || slicer->isPatchActive(offsetOfPatch, sizeOfPatch)) {
+  if (!_slicer || _slicer->isPatchActive(offsetOfPatch, sizeOfPatch)) {
     assertion( _writtenUnknowns==0 || ( _vertexWriter && _cellWriter && _gridWriter ));
     assertion( _writtenUnknowns==0 || (_plotCells && _cellTimeStampDataWriter!=nullptr) || (!_plotCells && _vertexTimeStampDataWriter!=nullptr ));
     assertion(sizeOfPatch(0)==sizeOfPatch(1));
@@ -505,14 +549,9 @@ void exahype::plotters::ADERDG2LegendreVTK::plotPatch(
 
     writeTimeStampDataToPatch( timeStamp, vertexAndCellIndex.first, vertexAndCellIndex.second );
 
-    // this should go to the header or similar
-    const int basisX = _order + 1;
-    const int basisY = _order + 1;
-    const int basisZ = (DIMENSIONS == 3 ? _order  : 0 ) + 1;
-
     double *gradU = nullptr;
     if(_postProcessing->mapWithDerivatives()) {
-      gradU = new double[basisZ*basisY*basisX * DIMENSIONS * _solverUnknowns];
+      gradU = _tempGradient.data();
       kernels::aderdg::generic::c::computeGradQ(gradU, u, sizeOfPatch, _solverUnknowns, _order);
     }
 
@@ -522,8 +561,6 @@ void exahype::plotters::ADERDG2LegendreVTK::plotPatch(
     else {
       plotVertexData( vertexAndCellIndex.first, offsetOfPatch, sizeOfPatch, u, gradU, timeStamp );
     }
-
-    if(gradU!=nullptr) delete[] gradU;
   } // if slicer
 }
 

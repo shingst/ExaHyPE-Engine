@@ -224,6 +224,8 @@ public:
     /**
      * Configure the plotter device. Is invoked directly after the constructor is
      * called.
+     *
+     * @note Assumes that the solution is not padded. Otherwise, the striding done by the plotters will be wrong.
      */
     virtual void init(const std::string& filename, int order, int unknowns, int writtenUnknowns, const exahype::parser::ParserView plotterParameters) = 0;
 

@@ -131,11 +131,24 @@ void exahype::plotters::LimitingADERDG2CartesianVTK::init(
   _filename          = filename;
   _order             = orderPlusOne-1;
   _solverUnknowns    = unknowns;
-  _plotterParameters            = plotterParameters;
+  _plotterParameters = plotterParameters;
   _patchWriter       = nullptr;
   _writtenUnknowns   = writtenUnknowns;
 
   _slicer = Slicer::bestFromSelectionQuery(plotterParameters);
+
+  unsigned int nodes = (DIMENSIONS == 3 ? _order  : 0 ) + 1;
+  nodes *= (_order + 1) * (_order + 1);
+  _tempSolution.resize(_solverUnknowns * nodes);
+  _tempGradient.resize(DIMENSIONS * _solverUnknowns * nodes);
+  assertion(_tempSolution.size()== _solverUnknowns * nodes);
+  assertion(_tempGradient.size()==DIMENSIONS * _solverUnknowns * nodes);
+
+  _resolution = 0;
+  if (_plotterParameters.hasKey("resolution")) {
+    _resolution = _plotterParameters.getValueAsIntOrDefault("resolution",0);
+  }
+  logInfo("init", "Plotting with resolution "<<_resolution);
 
   if(_slicer) {
     logInfo("init", "Plotting selection "<<_slicer->toString()<<" to Files "<<filename);
@@ -177,8 +190,8 @@ void exahype::plotters::LimitingADERDG2CartesianVTK::startPlotting( double time 
       _cellDataWriter            = _patchWriter->createCellDataWriter("Q", _writtenUnknowns);
       _vertexDataWriter          = nullptr;
 
-      _cellRefinementStatusWriter   = _patchWriter->createCellDataWriter("RefinementStatus", 1);
-      _vertexRefinementStatusWriter = nullptr;
+      _cellRefinementStatusWriter           = _patchWriter->createCellDataWriter("RefinementStatus", 1);
+      _vertexRefinementStatusWriter         = nullptr;
       _cellPreviousRefinementStatusWriter   = _patchWriter->createCellDataWriter("PreviousRefinementStatus", 1);
       _vertexPreviousRefinementStatusWriter = nullptr;
     }
@@ -401,6 +414,21 @@ void exahype::plotters::LimitingADERDG2CartesianVTK::plotCellData(
 }
 
 void exahype::plotters::LimitingADERDG2CartesianVTK::plotPatch(const int solverNumber,solvers::Solver::CellInfo& cellInfo) {
+  // look up ADER-DG solver
+  solvers::ADERDGSolver* aderdgSolver = nullptr;
+  switch ( solvers::RegisteredSolvers[solverNumber]->getType() ) {
+  case solvers::Solver::Type::ADERDG:
+    aderdgSolver = static_cast<solvers::ADERDGSolver*>( solvers::RegisteredSolvers[solverNumber] );
+    break;
+  case solvers::Solver::Type::LimitingADERDG:
+    aderdgSolver = static_cast<solvers::LimitingADERDGSolver*>( solvers::RegisteredSolvers[solverNumber] )->getSolver().get();
+    break;
+  default:
+    logError("plotPatch(...)","Encountered unexpected solver type: "<<solvers::Solver::toString(solvers::RegisteredSolvers[solverNumber]->getType()));
+    std::abort();
+    break;
+  }
+
   const int element = cellInfo.indexOfADERDGCellDescription(solverNumber);
   auto& solverPatch  = cellInfo._ADERDGCellDescriptions[element];
 
@@ -415,15 +443,32 @@ void exahype::plotters::LimitingADERDG2CartesianVTK::plotPatch(const int solverN
       previousRefinementStatus = 0;
     }
 
-    if(refinementStatus>=-1) {  // TODO(Dominic): Plot FVM solution instead if <MinimumRefinementStatusForActiveFVPatch
-      double* solverSolution = static_cast<double*>(solverPatch.getSolution());
+    if(true) {  // TODO(Dominic): Plot FVM solution instead if < Troubled-1
+      double* solution = static_cast<double*>(solverPatch.getSolution());
+      const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch = solverPatch.getOffset();
 
-      plotADERDGPatch(
-          solverPatch.getOffset(),
-          solverPatch.getSize(), solverSolution,
-          solverPatch.getTimeStamp(),
-          refinementStatus,
-          previousRefinementStatus);
+      const int subcellsPerDim = tarch::la::aPowI(_resolution,3);
+      const tarch::la::Vector<DIMENSIONS, double>& subcellSize = solverPatch.getSize() / static_cast<double>(subcellsPerDim);
+
+      dfor(subcellIndex,subcellsPerDim) {
+        tarch::la::Vector<DIMENSIONS, double> subcellOffset = offsetOfPatch;
+        double* u = solution;
+        if ( subcellsPerDim > 1 ) {
+          u = _tempSolution.data();
+          for (int d=0; d<DIMENSIONS; d++) {
+            subcellOffset[d] = offsetOfPatch[d] + subcellSize[d] * subcellIndex[d];
+          }
+          aderdgSolver->volumeUnknownsProlongation(u,solution,0,_resolution,subcellIndex);
+        }
+
+        plotADERDGPatch(
+            subcellOffset,
+            subcellSize,
+            u,
+            solverPatch.getTimeStamp(),
+            refinementStatus,
+            previousRefinementStatus);
+      }
     }
   }
 }

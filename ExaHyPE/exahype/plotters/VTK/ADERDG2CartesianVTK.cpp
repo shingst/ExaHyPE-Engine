@@ -22,7 +22,7 @@
 #include "peano/utils/Loop.h"
 
 #include "exahype/plotters/slicing/Slicer.h"
-#include "exahype/solvers/ADERDGSolver.h"
+#include "exahype/solvers/LimitingADERDGSolver.h"
 
 #include "tarch/plotter/griddata/unstructured/vtk/VTKTextFileWriter.h"
 #include "tarch/plotter/griddata/unstructured/vtk/VTKBinaryFileWriter.h"
@@ -31,6 +31,7 @@
 
 
 #include "kernels/DGBasisFunctions.h"
+#include "kernels/aderdg/generic/Kernels.h" // prolongation
 
 tarch::logging::Log exahype::plotters::ADERDG2CartesianVTK::_log("exahype::plotters::ADERDG2CartesianVTK");
 
@@ -144,6 +145,19 @@ void exahype::plotters::ADERDG2CartesianVTK::init(
   _writtenUnknowns   = writtenUnknowns;
 
   _slicer = Slicer::bestFromSelectionQuery(plotterParameters);
+
+  unsigned int nodes = (DIMENSIONS == 3 ? _order  : 0 ) + 1;
+  nodes *= (_order + 1) * (_order + 1);
+  _tempSolution.resize(_solverUnknowns * nodes);
+  _tempGradient.resize(DIMENSIONS * _solverUnknowns * nodes);
+  assertion(_tempSolution.size()== _solverUnknowns * nodes);
+  assertion(_tempGradient.size()==DIMENSIONS * _solverUnknowns * nodes);
+
+  _resolution = 0;
+  if (_plotterParameters.hasKey("resolution")) {
+    _resolution = _plotterParameters.getValueAsIntOrDefault("resolution",0);
+  }
+  logInfo("init", "Plotting with resolution "<<_resolution);
 
   if(_slicer) {
     logInfo("init", "Plotting selection "<<_slicer->toString()<<" to Files "<<filename);
@@ -376,16 +390,46 @@ void exahype::plotters::ADERDG2CartesianVTK::plotCellData(
 }
 
 void exahype::plotters::ADERDG2CartesianVTK::plotPatch(const int solverNumber,solvers::Solver::CellInfo& cellInfo) {
+  // look up ADER-DG solver
+  solvers::ADERDGSolver* aderdgSolver = nullptr;
+  switch ( solvers::RegisteredSolvers[solverNumber]->getType() ) {
+  case solvers::Solver::Type::ADERDG:
+    aderdgSolver = static_cast<solvers::ADERDGSolver*>( solvers::RegisteredSolvers[solverNumber] );
+    break;
+  case solvers::Solver::Type::LimitingADERDG:
+    aderdgSolver = static_cast<solvers::LimitingADERDGSolver*>( solvers::RegisteredSolvers[solverNumber] )->getSolver().get();
+    break;
+  default:
+    logError("plotPatch(...)","Encountered unexpected solver type: "<<solvers::Solver::toString(solvers::RegisteredSolvers[solverNumber]->getType()));
+    std::abort();
+    break;
+  }
+
   const int element = cellInfo.indexOfADERDGCellDescription(solverNumber);
-  auto& aderdgCellDescription = cellInfo._ADERDGCellDescriptions[element];
+  auto& aderdgCellDescription  = cellInfo._ADERDGCellDescriptions[element];
 
   if (aderdgCellDescription.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Cell) {
-    double* solverSolution = static_cast<double*>(aderdgCellDescription.getSolution());
+    double* solution = static_cast<double*>(aderdgCellDescription.getSolution());
+    const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch = aderdgCellDescription.getOffset();
 
-    plotPatch(
-        aderdgCellDescription.getOffset(),
-        aderdgCellDescription.getSize(), solverSolution,
-        aderdgCellDescription.getTimeStamp());
+    const int subcellsPerDim = tarch::la::aPowI(_resolution,3);
+    const tarch::la::Vector<DIMENSIONS, double>& subcellSize = aderdgCellDescription.getSize() / static_cast<double>(subcellsPerDim);
+
+    dfor(subcellIndex,subcellsPerDim) {
+      tarch::la::Vector<DIMENSIONS, double> subcellOffset = offsetOfPatch;
+      double* u = solution;
+      if ( subcellsPerDim > 1 ) {
+        u = _tempSolution.data();
+        for (int d=0; d<DIMENSIONS; d++) {
+          subcellOffset[d] = offsetOfPatch[d] + subcellSize[d] * subcellIndex[d];
+        }
+        aderdgSolver->volumeUnknownsProlongation(u,solution,0,_resolution,subcellIndex);
+      }
+
+      plotPatch(
+          subcellOffset,subcellSize,u,
+          aderdgCellDescription.getTimeStamp());
+    }
   }
 }
 
