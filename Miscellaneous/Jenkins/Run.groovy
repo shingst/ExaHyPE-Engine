@@ -3,7 +3,7 @@ util = load "Miscellaneous/Jenkins/Util.groovy"
 
 def run(config, workspace) {
     node ('Linux-Cluster') {
-	ws(adjust_ws("${env.JOB_NAME}-${config.name}-run")) {
+	ws(util.adjust_ws("${env.JOB_NAME}-${config.name}-run")) {
 	    unstash "exahype-${config.name}"
 	    util.slurmBatch '''
 set -x
