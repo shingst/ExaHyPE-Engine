@@ -134,8 +134,7 @@ o     *
      * \param[inout]  The vector BgradQ (extends nVar), already allocated. 
      *
      **/
-    void nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) final override;
-
+    void nonConservativeProduct(const double* const Q,const double* const * const gradQ, double** BgradQ) final override;
 
     /**
      * Initialise the locations of point sources
@@ -166,7 +165,7 @@ o     *
     /**
      * @TODO LR : document
      */
-    void multiplyMaterialParameterMatrix(const double* const Q, double* rhs) final override;
+    void multiplyMaterialParameterMatrix(const double* const Q, double** rhs) final override;
 
 
     void extractTransformation(const double* const Q,
