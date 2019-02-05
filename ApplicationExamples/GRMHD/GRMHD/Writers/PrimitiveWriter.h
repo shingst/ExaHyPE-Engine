@@ -11,12 +11,18 @@
 
 namespace GRMHD {
   class GRMHDSolver;
+  class GRMHDSolver_ADERDG;
+  class GRMHDSolver_FV;
   class PrimitiveWriter;
 }
 
 class GRMHD::PrimitiveWriter : public exahype::plotters::Plotter::UserOnTheFlyPostProcessing {
 public:
-  PrimitiveWriter(GRMHD::GRMHDSolver& solver);
+  int numberOfC2PFailures, allConversions;
+	
+  PrimitiveWriter(GRMHD::GRMHDSolver& solver) {}
+  PrimitiveWriter(GRMHD::GRMHDSolver_ADERDG& solver) {}
+  PrimitiveWriter(GRMHD::GRMHDSolver_FV& solver) {}
   virtual ~PrimitiveWriter();
 
   void startPlotting(double time) override;

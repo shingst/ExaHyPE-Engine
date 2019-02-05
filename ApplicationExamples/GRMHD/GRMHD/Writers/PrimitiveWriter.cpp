@@ -2,6 +2,8 @@
 #include "Fortran/PDE.h"
 #include "GRMHDSolver_ADERDG_Variables.h"
 
+GRMHD::PrimitiveWriter::~PrimitiveWriter() {}
+
 void GRMHD::PrimitiveWriter::writtenQuantitiesNames(char** outputfileNames) {
 	// also works in principle, but not as convenient
 	// GRMHD::AbstractGRMHDSolver_ADERDG::VariableNames specfileNames;
