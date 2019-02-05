@@ -291,6 +291,8 @@ private:
       const SolverPatch&  solverPatch,CellInfo& cellInfo) const;
 
   /**
+   * TODO(Dominic): Update docu.
+   *
    * Revisits the cells in the buffer layers which compute the solution with
    * the main solver based on the maximum refinement status in the solver patch's neighbourhood.
    *
@@ -306,7 +308,7 @@ private:
    * @param neighbourMergePerformed per face a flag indicating if a neighbour/boundary merge has been performed
    * @param backupPreviousSolution  if the previous solution should be backed up.
    */
-  void revisitSolverPatchesInBuffer(
+  void revisitSolverPatchesAfterLimiterChecks(
       SolverPatch&                                               solverPatch,
       CellInfo&                                                  cellInfo,
       const bool                                                 isTroubled,
