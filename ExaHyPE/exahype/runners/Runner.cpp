@@ -226,7 +226,7 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
         peano::parallel::loadbalancing::Oracle::getInstance().setOracle(
             new mpibalancing::HotspotBalancing(
                 false,getFinestUniformGridLevelForLoadBalancing(_boundingBoxSize), /*boundary regularity*/
-                tarch::parallel::Node::getInstance().getNumberOfNodes()/THREE_POWER_D
+                0                                         /*tarch::parallel::Node::getInstance().getNumberOfNodes()/THREE_POWER_D*/
           )
         );
         break;

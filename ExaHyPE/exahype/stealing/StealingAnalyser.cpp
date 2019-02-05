@@ -163,7 +163,7 @@ void exahype::stealing::StealingAnalyser::endToReceiveDataFromWorker( int fromRa
 
     if(static_cast<int>(elapsedTime*10e6)>_currentZeroThreshold) {
       _currentAccumulatedWorkerTime += elapsedTime;
-      logInfo("endToReceiveDataFromWorker", " currentAccumulatedWorkerTime "<<elapsedTime);
+      logInfo("endToReceiveDataFromWorker", "elapsed "<<elapsedTime<<" accumulated "<<_currentAccumulatedWorkerTime);
       _waitForOtherRank[fromRank].setValue(_currentAccumulatedWorkerTime);
     }
     else {
