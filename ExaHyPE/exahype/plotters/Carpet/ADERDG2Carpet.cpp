@@ -26,21 +26,10 @@ std::string exahype::plotters::ADERDG2CarpetASCII::getIdentifier() {
 }
 
 
-// my small C++11 to_string-independent workaround.
-template <typename T> std::string toString( T Number ) {
-	std::ostringstream ss; ss << Number; return ss.str();
-}
-
 typedef tarch::la::Vector<DIMENSIONS, double> dvec;
 typedef tarch::la::Vector<DIMENSIONS, int> ivec;
 
 tarch::logging::Log exahype::plotters::ADERDG2Carpet::_log("exahype::plotters::ADERDG2Carpet");
-
-
-
-/*************************************************************************************************
- * ADERDG2Carpet non-dummy implementation
- *************************************************************************************************/
 
 exahype::plotters::ADERDG2Carpet::ADERDG2Carpet(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing, exahype::plotters::CarpetWriter::FileFormat format) :
     Device(postProcessing), format(format) { writer = nullptr; }
@@ -55,8 +44,7 @@ void exahype::plotters::ADERDG2Carpet::init(const std::string& filename, int bas
 	std::fill_n(writtenQuantitiesNames, writtenUnknowns, nullptr);
 	_postProcessing->writtenQuantitiesNames(writtenQuantitiesNames);
 	
-	writer = new exahype::plotters::CarpetHDF5Writer(filename, basisSize, solverUnknowns, writtenUnknowns, plotterParameters,
-		writtenQuantitiesNames);
+	writer = exahype::plotters::CarpetWriter::newCarpetWriterFor(format, filename, basisSize, solverUnknowns, writtenUnknowns, plotterParameters, writtenQuantitiesNames);
 }
 
 void exahype::plotters::ADERDG2Carpet::plotPatch(const int solverNumber,solvers::Solver::CellInfo& cellInfo) {

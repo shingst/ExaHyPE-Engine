@@ -37,8 +37,6 @@ namespace exahype {
  *
  **/
 class exahype::plotters::CarpetWriter {
-  //tarch::logging::Log _log;
-
 public:
   typedef tarch::la::Vector<DIMENSIONS, double> dvec;
   typedef tarch::la::Vector<DIMENSIONS, bool> boolvec;
@@ -73,11 +71,6 @@ public:
   char**              writtenQuantitiesNames; // not const as we check for good names in constructor
   std::vector<std::string> qualifiedWrittenQuantitiesNames; // in CarpetHDF5, the field name *must* contain a "::"; ///< The same as writtenQuantitiesNames but with prefix
 
-  // HDF5 specific data types
-  //std::vector<H5::H5File*> files; ///< List of pointers to H5Files. Has length 1 if allUnknownsInOneFile.
-  //H5::DataSpace       patch_space; ///< DataSpaces describing a component/patch: basisSize^D elements.
-  //H5::DataSpace       dtuple; ///< DataSpace describing a dim-dimensional tuple, ie dim numbers.
-
   /**
    * cf. also the documentation in the ADERDG2CarpetHDF5.h
    * 
@@ -90,15 +83,23 @@ public:
    *     as structure of arrays is to write each unknown in its own file (ie. one file per physical field).
    *
    **/
-  CarpetWriter(const std::string& _filename, int _basisSize, int _solverUnknowns, int _writtenUnknowns, exahype::parser::ParserView _plotterParameters,
-		   char** writtenQuantitiesNames, bool oneFilePerTimestep_=false, bool allUnknownsInOneFile_=false);
+  CarpetWriter(const std::string& _filename, int _basisSize, int _solverUnknowns, int _writtenUnknowns, exahype::parser::ParserView _plotterParameters, char** writtenQuantitiesNames);
+
+  /**
+   * A helper method as class factory.
+   * Will return a new CarpetWriterASCII or CarpetWriterHDF5 instance, based on the value of the given FileFormat.
+   **/
+  static CarpetWriter* newCarpetWriterFor(FileFormat format,
+	const std::string& _filename, int _basisSize, int _solverUnknowns, int _writtenUnknowns, exahype::parser::ParserView _plotterParameters, char** writtenQuantitiesNames);
+
+  virtual ~CarpetWriter();
 
   virtual void openFile() = 0; ///< Opens or switchs the currently active file or the list of files. Closes if neccessary.
   virtual void flushFile() = 0; ///< Flushs all file output buffers. Always flushs before.
   virtual void closeFile() = 0; ///< Closes all files. Closes, deletes and nulls the file objects.
 
-  void startPlotting(double time);
-  void finishPlotting();
+  virtual void startPlotting(double time) = 0;
+  virtual void finishPlotting() = 0;
 
 
   // Default values for limiterStatus for plotPatch* functions, used for instance from
@@ -113,12 +114,11 @@ public:
    * cells belonging to the same time somehow. Or we have to keep track of the
    * "iteration" number.
    **/
-  void plotPatch(
+  virtual void plotPatch(
       const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
       const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch,
       const tarch::la::Vector<DIMENSIONS, double>& dx,
-      double* mappedCell, double timeStamp, int limiterStatus=nonLimitingLimiterStatus);
-  
+      double* mappedCell, double timeStamp, int limiterStatus=nonLimitingLimiterStatus) = 0;
 }; // class
 
 #endif /* _EXAHYPE_PLOTTERS_CARPET_ABSTRACT_WRITER_ */

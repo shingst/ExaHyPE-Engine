@@ -68,18 +68,19 @@ public:
    *     as structure of arrays is to write each unknown in its own file (ie. one file per physical field).
    *
    **/
-  CarpetASCIIWriter(const std::string& _filename, int _basisSize, int _solverUnknowns, int _writtenUnknowns, exahype::parser::ParserView _plotterParameters,
-		   char** writtenQuantitiesNames, bool oneFilePerTimestep_=false, bool allUnknownsInOneFile_=false);
+  CarpetASCIIWriter(const std::string& _filename, int _basisSize, int _solverUnknowns, int _writtenUnknowns, exahype::parser::ParserView _plotterParameters, char** writtenQuantitiesNames);
+  
+  virtual ~CarpetASCIIWriter();
 
-  virtual void openFile(); ///< Opens or switchs the currently active file or the list of files. Closes if neccessary.
-  virtual void flushFile(); ///< Flushs all file output buffers. Always flushs before.
-  virtual void closeFile(); ///< Closes all files. Closes, deletes and nulls the file objects.
+  void openFile() override;
+  void flushFile() override;
+  void closeFile() override;
 
   typedef exahype::plotters::ascii::CSVStackWriter  CSVWriterType;
   std::vector<CSVWriterType> files; ///< List of pointers to H5Files. Has length 1 if allUnknownsInOneFile.
 
-  void startPlotting(double time);
-  void finishPlotting();
+  void startPlotting(double time) override;
+  void finishPlotting() override;
 
   // Default values for limiterStatus for plotPatch* functions, used for instance from
   // a pure FV solver which has no limiter status flag.
@@ -89,7 +90,7 @@ public:
       const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
       const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch,
       const tarch::la::Vector<DIMENSIONS, double>& dx,
-      double* mappedCell, double timeStamp, int limiterStatus=nonLimitingLimiterStatus);
+      double* mappedCell, double timeStamp, int limiterStatus=nonLimitingLimiterStatus) override;
   
   void plotPatchForSingleUnknown(
       const dvec& offsetOfPatch, const dvec& sizeOfPatch, const dvec& dx,

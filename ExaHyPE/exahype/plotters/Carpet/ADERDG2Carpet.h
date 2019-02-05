@@ -45,11 +45,7 @@ class exahype::plotters::ADERDG2Carpet : public exahype::plotters::Plotter::Devi
  public:
   typedef tarch::la::Vector<DIMENSIONS, double> dvec;
 
-  /**
-   * Pimpl idiom: In order to avoid any HDF5 dependency all HDF5 logic is hidden inside this
-   * class (instance).
-   **/
-  CarpetHDF5Writer* writer;
+  CarpetWriter* writer;
   exahype::plotters::CarpetWriter::FileFormat format;
   static tarch::logging::Log _log;
 

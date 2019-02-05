@@ -43,6 +43,23 @@ static std::vector<exahype::plotters::ascii::CSVWriter::Column> carpet_writer_co
 	CSVWRITER_DOUBLE_COLUMN(Coord3D, z, "Coordinate of vertex")
 };
 
+exahype::plotters::CarpetASCIIWriter::~CarpetASCIIWriter() {}
+exahype::plotters::CarpetASCIIWriter::CarpetASCIIWriter(
+	const std::string& _filename,
+	int _basisSize,
+	int _solverUnknowns,
+	int _writtenUnknowns,
+	exahype::parser::ParserView  _plotterParameters,
+	char** _writtenQuantitiesNames)
+	:
+	CarpetWriter(_filename, _basisSize, _solverUnknowns, _writtenUnknowns, _plotterParameters, _writtenQuantitiesNames),
+	_log("exahype::plotters::CarpetASCIIWriter"),
+	fullCarpetCompatibility(_plotterParameters.getValueAsBoolOrDefault("select/full_carpet_compat", true))
+	{
+	// open file(s) initially, if neccessary
+	if(!oneFilePerTimestep) openFile();
+}
+
 
 /**
  * Opens or switchs the currently active H5 file or the list of H5 files.
@@ -130,6 +147,18 @@ void exahype::plotters::CarpetASCIIWriter::flushFile() {
 	}
 }
 
+
+void exahype::plotters::CarpetASCIIWriter::startPlotting(double time) {
+	component = 0; // Carpet in general wants the components start with 0.
+	if(oneFilePerTimestep) openFile();
+}
+  
+void exahype::plotters::CarpetASCIIWriter::finishPlotting() {
+	if(oneFilePerTimestep) closeFile();
+	else flushFile();
+	iteration++;
+}
+
 /**
  * This is 2D and 3D, allows several unknowns, named fields and all that.
  **/
@@ -195,7 +224,7 @@ void exahype::plotters::CarpetASCIIWriter::plotPatchForSingleUnknown(
 		}
 		
 		int writtenUnknownOffset = requestedWrittenUnknown < 0 ? 0 : requestedWrittenUnknown;
-		int writtenUnkownLength = requestedWrittenUnknown < 0 ? writtenUnknowns : 1;
+		//int writtenUnkownLength = requestedWrittenUnknown < 0 ? writtenUnknowns : 1; // unused
 		double* fieldValues;
 		
 		switch(dim) {

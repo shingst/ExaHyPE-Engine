@@ -13,16 +13,19 @@
  * @authors: Sven Koeppel
  **/
  
-#ifndef _EXAHYPE_PLOTTERS_FV_2_CARPETHDF5_H_
-#define _EXAHYPE_PLOTTERS_FV_2_CARPETHDF5_H_
+#ifndef _EXAHYPE_PLOTTERS_FV_2_CARPET_H_
+#define _EXAHYPE_PLOTTERS_FV_2_CARPET_H_
 
 #include "exahype/plotters/Plotter.h"
 #include "exahype/plotters/slicing/CartesianSlicer.h"
+#include "exahype/plotters/Carpet/CarpetWriter.h"
 
 namespace exahype {
   namespace plotters {
+    class FiniteVolume2Carpet;
     class FiniteVolume2CarpetHDF5;
-    class CarpetHDF5Writer;
+    class FiniteVolume2CarpetASCII;
+    class CarpetWriter;
   }
 }
 
@@ -31,32 +34,31 @@ namespace kernels {
 }
 
 /**
- * <h2>Writing CarpetHDF5 files from FiniteVolume solvers</h2>
+ * <h2>Writing Carpet files from FiniteVolume solvers</h2>
  * 
- * This plotter is a hack. It tries to map the finite volume solutions onto the CarpetHDF5
+ * This plotter is a hack. It tries to map the finite volume solutions onto the Carpet
  * finite differencing data representation. Currently, the mapping is very poor but at least
  * there are data.
  * 
  **/
-class exahype::plotters::FiniteVolume2CarpetHDF5 : public exahype::plotters::Plotter::Device {
+class exahype::plotters::FiniteVolume2Carpet : public exahype::plotters::Plotter::Device {
  public:
   /**
-   * Pimpl idiom: In order to avoid any HDF5 dependency all HDF5 logic is hidden inside this
+   * Pimpl idiom: In order to avoid any  dependency all  logic is hidden inside this
    * class (instance).
    **/
-  CarpetHDF5Writer* writer;
+  CarpetWriter* writer;
   const int ghostLayerWidth;
-  
+  exahype::plotters::CarpetWriter::FileFormat format;
+
   // set at init(...) time
   int numberOfCellsPerAxis; //< what is called nodesPerCoordinatesAxis in the (FV) Solver
   int numberOfVerticesPerAxis;
   int solverUnknowns;
 
-  static std::string getIdentifier();
+  FiniteVolume2Carpet(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing, const int ghostLayerWidth, exahype::plotters::CarpetWriter::FileFormat format);
 
-  FiniteVolume2CarpetHDF5(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing, const int ghostLayerWidth);
-
-  virtual ~FiniteVolume2CarpetHDF5();
+  virtual ~FiniteVolume2Carpet();
 
   virtual void init(const std::string& filename, int basisSize, int solverUnknowns, int writtenUnknowns, exahype::parser::ParserView  plotterParameters);
 
@@ -100,4 +102,19 @@ class exahype::plotters::FiniteVolume2CarpetHDF5 : public exahype::plotters::Plo
   );
 };
 
-#endif/* _EXAHYPE_PLOTTERS_ADERDG_2_CARPETHDF5_H_ */
+
+class exahype::plotters::FiniteVolume2CarpetHDF5 : public exahype::plotters::FiniteVolume2Carpet {
+  public:
+    static std::string getIdentifier();
+    FiniteVolume2CarpetHDF5(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing, const int ghostLayerWidth)
+       : FiniteVolume2Carpet(postProcessing, ghostLayerWidth, exahype::plotters::CarpetWriter::FileFormat::FileFormatHDF5) {}
+};
+
+class exahype::plotters::FiniteVolume2CarpetASCII : public exahype::plotters::FiniteVolume2Carpet {
+  public:
+    static std::string getIdentifier();
+    FiniteVolume2CarpetASCII(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing, const int ghostLayerWidth)
+       : FiniteVolume2Carpet(postProcessing, ghostLayerWidth, exahype::plotters::CarpetWriter::FileFormat::FileFormatASCII) {}
+};
+
+#endif/* _EXAHYPE_PLOTTERS_FiniteVolume_2_CARPET_H_ */

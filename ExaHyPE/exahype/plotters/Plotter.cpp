@@ -443,6 +443,11 @@ exahype::plotters::Plotter::Plotter(
 	              postProcessing,static_cast<exahype::solvers::FiniteVolumesSolver*>(
                 solvers::RegisteredSolvers[_solver])->getGhostLayerWidth());
       }
+      if (equalsIgnoreCase(_type, FiniteVolume2CarpetASCII::getIdentifier())) {
+        _device = new FiniteVolume2CarpetASCII(
+	              postProcessing,static_cast<exahype::solvers::FiniteVolumesSolver*>(
+                solvers::RegisteredSolvers[_solver])->getGhostLayerWidth());
+      }
       if (equalsIgnoreCase(_type, FiniteVolumes2PeanoPatchFileFormatAscii::getIdentifier())) {
         _device = new FiniteVolumes2PeanoPatchFileFormatAscii(
                 postProcessing,static_cast<exahype::solvers::FiniteVolumesSolver*>(

@@ -21,42 +21,6 @@
 #include <sstream>
 #include <memory>
 
-typedef tarch::la::Vector<DIMENSIONS,int> ivec;
-
-
-std::string exahype::plotters::FiniteVolume2CarpetHDF5::getIdentifier() {
-	return std::string("Carpet::Cartesian::Vertices::HDF5");
-}
-
-
-// my small C++11 to_string-independent workaround.
-template <typename T> std::string toString( T Number ) {
-	std::ostringstream ss; ss << Number; return ss.str();
-}
-
-typedef tarch::la::Vector<DIMENSIONS, double> dvec;
-
-#ifndef HDF5
-/*************************************************************************************************
- * FiniteVolume2CarpetHDF5 Dummy implementation in case HDF5 support is skipped.
- *************************************************************************************************/
-
-exahype::plotters::FiniteVolume2CarpetHDF5::FiniteVolume2CarpetHDF5(
-  exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing,
-  const int _ghostLayerWidth) : Device(postProcessing), ghostLayerWidth(_ghostLayerWidth) {
-	printf("ERROR: Compile with HDF5, otherwise you cannot use the HDF5 plotter.\n");
-	abort();
-}
-
-// all other methods are stubs
-exahype::plotters::FiniteVolume2CarpetHDF5::~FiniteVolume2CarpetHDF5() {}
-void exahype::plotters::FiniteVolume2CarpetHDF5::init(const std::string& filename, int orderPlusOne, int solverUnknowns, int writtenUnknowns, exahype::parser::ParserView plotterParameters) {}
-void exahype::plotters::FiniteVolume2CarpetHDF5::plotPatch(const int solverNumber,solvers::Solver::CellInfo& cellInfo) {}
-void exahype::plotters::FiniteVolume2CarpetHDF5::plotPatch(const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* u,double timeStamp) {}
-void exahype::plotters::FiniteVolume2CarpetHDF5::startPlotting(double time) {}
-void exahype::plotters::FiniteVolume2CarpetHDF5::finishPlotting() {}
-
-#else
 #include "exahype/plotters/Carpet/CarpetHDF5Writer.h"
 #include "kernels/KernelUtils.h" // indexing
 #include "peano/utils/Loop.h" // dfor
@@ -66,18 +30,35 @@ void exahype::plotters::FiniteVolume2CarpetHDF5::finishPlotting() {}
 #include "tarch/logging/Log.h"
 #include <sstream>
 
-/*************************************************************************************************
- * FiniteVolume2CarpetHDF5 non-dummy implementation
- *************************************************************************************************/
+typedef tarch::la::Vector<DIMENSIONS,int> ivec;
 
-exahype::plotters::FiniteVolume2CarpetHDF5::FiniteVolume2CarpetHDF5(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing,
-  const int _ghostLayerWidth) :  Device(postProcessing), ghostLayerWidth(_ghostLayerWidth) { writer = nullptr; }
 
-exahype::plotters::FiniteVolume2CarpetHDF5::~FiniteVolume2CarpetHDF5() {
+std::string exahype::plotters::FiniteVolume2CarpetHDF5::getIdentifier() {
+	return std::string("Carpet::Cartesian::Vertices::HDF5");
+}
+
+std::string exahype::plotters::FiniteVolume2CarpetASCII::getIdentifier() {
+	return std::string("Carpet::Cartesian::Vertices::ASCII");
+}
+
+
+// my small C++11 to_string-independent workaround.
+template <typename T> inline std::string toString( T Number ) {
+	std::ostringstream ss; ss << Number; return ss.str();
+}
+
+typedef tarch::la::Vector<DIMENSIONS, double> dvec;
+
+exahype::plotters::FiniteVolume2Carpet::FiniteVolume2Carpet(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing,
+  const int _ghostLayerWidth, exahype::plotters::CarpetWriter::FileFormat format)
+	: Device(postProcessing), ghostLayerWidth(_ghostLayerWidth), format(format)
+	{ writer = nullptr; }
+
+exahype::plotters::FiniteVolume2Carpet::~FiniteVolume2Carpet() {
 	if(writer) delete writer;
 }
 
-void exahype::plotters::FiniteVolume2CarpetHDF5::init(const std::string& filename, int _numberOfCellsPerAxis, int _solverUnknowns, int writtenUnknowns, exahype::parser::ParserView  plotterParameters) {
+void exahype::plotters::FiniteVolume2Carpet::init(const std::string& filename, int _numberOfCellsPerAxis, int _solverUnknowns, int writtenUnknowns, exahype::parser::ParserView  plotterParameters) {
 	// Determine names of output fields
 	char **writtenQuantitiesNames = new char*[writtenUnknowns];
 	std::fill_n(writtenQuantitiesNames, writtenUnknowns, nullptr);
@@ -92,11 +73,11 @@ void exahype::plotters::FiniteVolume2CarpetHDF5::init(const std::string& filenam
 		writtenQuantitiesNames);	
 
 	//if(writer->slicer && writer->slicer->getIdentifier() == "CartesianSlicer") {
-	//	throw std::domain_error("FiniteVolume2CarpetHDF5 currently does not support the CartesianSlicer.");
+	//	throw std::domain_error("FiniteVolume2Carpet currently does not support the CartesianSlicer.");
 	//}
 }
 
-void exahype::plotters::FiniteVolume2CarpetHDF5::plotPatch(const int solverNumber,solvers::Solver::CellInfo& cellInfo) {
+void exahype::plotters::FiniteVolume2Carpet::plotPatch(const int solverNumber,solvers::Solver::CellInfo& cellInfo) {
   const int element = cellInfo.indexOfFiniteVolumesCellDescription(solverNumber);
   auto& cellDescription  = cellInfo._FiniteVolumesCellDescriptions[element];
 	if (cellDescription.getType()==exahype::solvers::FiniteVolumesSolver::CellDescription::Type::Cell) {
@@ -109,7 +90,7 @@ void exahype::plotters::FiniteVolume2CarpetHDF5::plotPatch(const int solverNumbe
 	}
 }
 
-void exahype::plotters::FiniteVolume2CarpetHDF5::plotPatch(
+void exahype::plotters::FiniteVolume2Carpet::plotPatch(
   const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
   const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch,
   double* u, /* unknown */
@@ -133,7 +114,7 @@ void exahype::plotters::FiniteVolume2CarpetHDF5::plotPatch(
 	delete[] mappedCell;
 }
 
-void exahype::plotters::FiniteVolume2CarpetHDF5::interpolateVertexPatch(
+void exahype::plotters::FiniteVolume2Carpet::interpolateVertexPatch(
     const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
     const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch,
     double* u, /* ingoing unknowns in cell, size numberOfCellsPerAxis^DIMENSIONS */
@@ -201,7 +182,7 @@ void exahype::plotters::FiniteVolume2CarpetHDF5::interpolateVertexPatch(
 	delete[] vertexValue;
 }
 
-void exahype::plotters::FiniteVolume2CarpetHDF5::interpolateFVCellAtPoint(
+void exahype::plotters::FiniteVolume2Carpet::interpolateFVCellAtPoint(
 	const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
 	const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch,
 	const tarch::la::Vector<DIMENSIONS, double>& manifold_position,
@@ -250,7 +231,7 @@ void exahype::plotters::FiniteVolume2CarpetHDF5::interpolateFVCellAtPoint(
 	);
 }
 
-void exahype::plotters::FiniteVolume2CarpetHDF5::interpolateCartesianSlicedVertexPatch(
+void exahype::plotters::FiniteVolume2Carpet::interpolateCartesianSlicedVertexPatch(
   const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
   const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch,
   double* u, /* ingoing unknowns in cell, size numberOfCellsPerAxis^DIMENSIONS */
@@ -311,14 +292,12 @@ void exahype::plotters::FiniteVolume2CarpetHDF5::interpolateCartesianSlicedVerte
 	delete[] vertexValue;
 }
 
-void exahype::plotters::FiniteVolume2CarpetHDF5::startPlotting(double time) {
+void exahype::plotters::FiniteVolume2Carpet::startPlotting(double time) {
 	_postProcessing->startPlotting(time);
 	writer->startPlotting(time);
 }
 
-void exahype::plotters::FiniteVolume2CarpetHDF5::finishPlotting() {
+void exahype::plotters::FiniteVolume2Carpet::finishPlotting() {
 	_postProcessing->finishPlotting();
 	writer->finishPlotting();
 }
-
-#endif /* HDF5 */
