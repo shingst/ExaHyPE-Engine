@@ -30,7 +30,7 @@ exahype-project  Elastic
     dimension const          = 3
     width                    = 1.0, 1.0, 1.0
     offset                   = 0.0, 0.0, 0.0
-    end-time                 = 10.0
+    time-steps               = 100
   end computational-domain
 
   shared-memory
