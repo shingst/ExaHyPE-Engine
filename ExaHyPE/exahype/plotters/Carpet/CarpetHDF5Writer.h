@@ -31,10 +31,11 @@ namespace exahype {
   }
 }
 
-#ifdef HDF5 // Only if H5 is present
-
-// HDF5 library, only available if HDF5 is on the path
-#include "H5Cpp.h"
+// Forward declaration for H5Cpp.h
+namespace H5 {
+  class H5File;
+  class DataSpace;
+}
 
 /**
  * <h2>Writing CarpetHDF5 files which are compatible to Cactus/EinsteinToolkit</h2>
@@ -153,8 +154,8 @@ public:
 
   // HDF5 specific data types
   std::vector<H5::H5File*> files; ///< List of pointers to H5Files. Has length 1 if allUnknownsInOneFile.
-  H5::DataSpace       patch_space; ///< DataSpaces describing a component/patch: basisSize^D elements.
-  H5::DataSpace       dtuple; ///< DataSpace describing a dim-dimensional tuple, ie dim numbers.
+  H5::DataSpace*      patch_space; ///< DataSpaces describing a component/patch: basisSize^D elements.
+  H5::DataSpace*      dtuple; ///< DataSpace describing a dim-dimensional tuple, ie dim numbers.
 
   /**
    * cf. also the documentation in the ADERDG2CarpetHDF5.h
@@ -205,7 +206,4 @@ public:
 }; // class ADERDG2CarpetHDF5Impl
 
 
-
-
-#endif /* H5 */
 #endif /* _EXAHYPE_PLOTTERS_CARPET_HDF5_WRITER_ */

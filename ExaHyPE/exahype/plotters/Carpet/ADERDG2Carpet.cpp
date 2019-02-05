@@ -6,6 +6,16 @@
 #include <memory>
 #include <limits> // signaling_NaN
 
+#include "exahype/plotters/Carpet/CarpetHDF5Writer.h"
+
+#include "kernels/KernelUtils.h" // indexing
+#include "peano/utils/Loop.h" // dfor
+#include "kernels/DGMatrices.h"
+#include "exahype/solvers/ADERDGSolver.h"
+#include "kernels/DGBasisFunctions.h"
+#include "tarch/logging/Log.h"
+#include <sstream>
+
 
 std::string exahype::plotters::ADERDG2CarpetHDF5::getIdentifier() {
 	return std::string("Carpet::Cartesian::Vertices::HDF5");
@@ -27,67 +37,6 @@ typedef tarch::la::Vector<DIMENSIONS, int> ivec;
 tarch::logging::Log exahype::plotters::ADERDG2Carpet::_log("exahype::plotters::ADERDG2Carpet");
 
 
-#ifndef HDF5
-/*************************************************************************************************
- * ADERDG2Carpet Dummy implementation in case HDF5 support is skipped.
- * Probably such a section is (except the constructor) not neccessary as the methods are never
- * referenced/called.
- *************************************************************************************************/
-
-exahype::plotters::ADERDG2Carpet::ADERDG2Carpet(
-  exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing,
-  exahype::plotters::CarpetWriter::FileFormat format
-) : Device(postProcessing) {
-	if(std::getenv("EXAHYPE_STRICT")) {
-		logError("ADERDG2Carpet()", "ERROR: Compile with HDF5, otherwise you cannot use the HDF5 plotter.");
-		abort();
-	}
-}
-
-// all other methods are stubs
-exahype::plotters::ADERDG2Carpet::~ADERDG2Carpet() {}
-void exahype::plotters::ADERDG2Carpet::init(const std::string& filename, int orderPlusOne, int solverUnknowns, int writtenUnknowns, exahype::parser::ParserView  plotterParameters) {
-	logError("init()", "Compile with -DHDF5, otherwise you cannot use the HDF5 plotter. There will be no output going to " << filename << " today.");
-	logError("init()", "Will fail gracefully. If you want to stop the program in such a case, please set the environment variable EXAHYPE_STRICT=\"Yes\".");
-}
-
-void exahype::plotters::ADERDG2Carpet::plotPatch(const int solverNumber,solvers::Solver::CellInfo& cellInfo) {}
-void exahype::plotters::ADERDG2Carpet::plotPatch(const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* u,double timeStamp,int limiterStatus) {}
-
-void exahype::plotters::ADERDG2Carpet::startPlotting(double time) {
-	logError("startPlotting()", "Skipping HDF5 output due to missing support.");
-}
-void exahype::plotters::ADERDG2Carpet::finishPlotting() {}
-
-void exahype::plotters::ADERDG2Carpet::interpolateCartesianPatch(
-    const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
-    const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch,
-    const tarch::la::Vector<DIMENSIONS, double>& dx,
-    double *u,
-    double *mappedCell,
-    double timeStamp,
-    int limiterStatus
-  ) {}
-
-void exahype::plotters::ADERDG2Carpet::interpolateCartesianSlicedPatch(
-    const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
-    const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch,
-    const tarch::la::Vector<DIMENSIONS, double>& dx,
-    double *u,
-    double *mappedCell,
-    double timeStamp, int limiterStatus,
-    const exahype::plotters::CartesianSlicer& slicer
-  ) {}
-
-#else
-#include "exahype/plotters/Carpet/CarpetHDF5Writer.h"
-#include "kernels/KernelUtils.h" // indexing
-#include "peano/utils/Loop.h" // dfor
-#include "kernels/DGMatrices.h"
-#include "exahype/solvers/ADERDGSolver.h"
-#include "kernels/DGBasisFunctions.h"
-#include "tarch/logging/Log.h"
-#include <sstream>
 
 /*************************************************************************************************
  * ADERDG2Carpet non-dummy implementation
@@ -298,6 +247,3 @@ void exahype::plotters::ADERDG2Carpet::interpolateCartesianSlicedPatch(const dve
   delete[] interpoland;
 }
 
-
-
-#endif /* HDF5 */

@@ -1,7 +1,3 @@
-// If HDF5 support is not enabled, there will be no implementation of CarpetHDF5Writer
-// in the compiled binary.
-#ifdef HDF5
-
 #include "exahype/plotters/Carpet/CarpetHDF5Writer.h"
 #include "peano/utils/Loop.h" // dfor
 #include "tarch/parallel/Node.h" // for basic MPI rank determination only
@@ -12,6 +8,40 @@ typedef tarch::la::Vector<DIMENSIONS, double> dvec;
 typedef tarch::la::Vector<DIMENSIONS, bool> boolvec;
 typedef tarch::la::Vector<DIMENSIONS, int> ivec;
 
+
+#ifndef HDF5
+  // CarpetHDF5Writer Dummy implementation in case HDF5 libraries are not available.
+
+  exahype::plotters::CarpetHDF5Writer::CarpetHDF5Writer(const std::string& _filename, int _basisSize, int _solverUnknowns, int _writtenUnknowns, exahype::parser::ParserView _plotterParameters, char** writtenQuantitiesNames)
+    : _log("exahype::plotters::CarpetHDF5Writer") {
+	logError("CarpetHDF5Writer()", "Compile with -DHDF5, otherwise you cannot use the CarpetHDF5Writer. There will be no output going to " << _filename << " today.");
+      	if(std::getenv("EXAHYPE_STRICT")) {
+		logError("CarpetHDF5Writer()", "Aborting since EXAHYPE_STRICT is given.");
+		abort();
+	} else {
+		logError("CarpetHDF5Writer()", "Will fail gracefully. If you want to stop the program in such a case, please set the environment variable EXAHYPE_STRICT=\"Yes\".");
+	}
+  }
+  void exahype::plotters::CarpetHDF5Writer::writeBasicGroup(H5::H5File* file, int writtenUnknown=-1);
+  void exahype::plotters::CarpetHDF5Writer::openH5() {}
+  void exahype::plotters::CarpetHDF5Writer::flushH5() {}
+  void exahype::plotters::CarpetHDF5Writer::closeH5() {}
+  void exahype::plotters::CarpetHDF5Writer::startPlotting(double time) {
+	logError("startPlotting()", "Skipping HDF5 output due to missing support.");
+  }
+  void exahype::plotters::CarpetHDF5Writer::finishPlotting() {}
+  void exahype::plotters::CarpetHDF5Writer::plotPatch(
+      const dvec& offsetOfPatch, const dvec& sizeOfPatch, const dvec& dx,
+      double* mappedCell, double timeStamp, int limiterStatus=nonLimitingLimiterStatus) {}
+  void exahype::plotters::CarpetHDF5Writer::plotPatchForSingleUnknown(
+      const dvec& offsetOfPatch, const dvec& sizeOfPatch, const dvec& dx,
+      double* mappedCell, double timeStamp, int limiterStatus,
+      int writtenUnknown, H5::H5File* target) {}
+
+#else /* HDF5 support in ExaHyPE is active */
+
+// HDF5 library, only available if HDF5 is on the path
+#include "H5Cpp.h"
 using namespace H5;
 
 // my small C++11 to_string-independent workaround.
@@ -123,13 +153,13 @@ exahype::plotters::CarpetHDF5Writer::CarpetHDF5Writer(
 	// this is the dataspace describing how to write a patch/cell/component
 	hsize_t *dims = new hsize_t[dim];
 	std::fill_n(dims, dim, basisSize);
-	patch_space = DataSpace(dim, dims);
+	patch_space = new DataSpace(dim, dims);
 	
 	// this is just a vector of rank 1 with dim entries
 	const int tupleDim_rank = 1;
 	hsize_t tupleDim_len[tupleDim_rank];
 	std::fill_n(tupleDim_len, tupleDim_rank, dim);
-	dtuple = DataSpace(tupleDim_rank, tupleDim_len);
+	dtuple = new DataSpace(tupleDim_rank, tupleDim_len);
 	
 	// open file(s) initially, if neccessary
 	if(!oneFilePerTimestep) openH5();
@@ -316,18 +346,18 @@ void exahype::plotters::CarpetHDF5Writer::plotPatchForSingleUnknown(
 		}
 	}
 	
-	DataSet table = target->createDataSet(component_name.str(), PredType::NATIVE_FLOAT, patch_space);
+	DataSet table = target->createDataSet(component_name.str(), PredType::NATIVE_FLOAT, *patch_space);
 	table.write(componentPatch, PredType::NATIVE_DOUBLE);
 	
 	delete[] componentPatch;
 	
 	// write all meta information about the table
 
-	Attribute origin = table.createAttribute("origin", PredType::NATIVE_DOUBLE, dtuple);
+	Attribute origin = table.createAttribute("origin", PredType::NATIVE_DOUBLE, *dtuple);
 	origin.write(PredType::NATIVE_DOUBLE, offsetOfPatch.data());
 	
 	dvec iorigin_data = 0.0;
-	Attribute iorigin = table.createAttribute("iorigin", PredType::NATIVE_INT, dtuple);
+	Attribute iorigin = table.createAttribute("iorigin", PredType::NATIVE_INT, *dtuple);
 	iorigin.write(PredType::NATIVE_INT, iorigin_data.data());
 	
 	int level_data = 0; // TODO: Read out real (AMR) cell level (needs to be passed from ADERDG2CarpetHDF5 class, for instance)
@@ -346,7 +376,7 @@ void exahype::plotters::CarpetHDF5Writer::plotPatchForSingleUnknown(
 	time.write(PredType::NATIVE_DOUBLE, &timeStamp);
 
 	// dx in terms of Cactus: Real seperation from each value
-	Attribute delta = table.createAttribute("delta", PredType::NATIVE_FLOAT, dtuple);
+	Attribute delta = table.createAttribute("delta", PredType::NATIVE_FLOAT, *dtuple);
 	delta.write(PredType::NATIVE_DOUBLE, dx.data()); // issue: conversion from double to float
 	
 	StrType t_str = H5::StrType(H5::PredType::C_S1, name.size()+1); // Todo: not sure about +1 for \0
