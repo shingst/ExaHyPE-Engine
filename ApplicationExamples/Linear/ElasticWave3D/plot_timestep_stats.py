@@ -1,1 +1,1 @@
-/home/hpc/pr48ma/di57zoh2/ExaHyPE-Engine-merge/ExaHyPE/exahype/stealing/plot_timestep_stats.py
+../../../ExaHyPE/exahype/stealing/plot_timestep_stats.py

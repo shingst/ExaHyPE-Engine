@@ -150,7 +150,7 @@ void exahype::stealing::AggressiveCCPDistributor::computeIdealLoadDistribution(i
   std::string str="ideal load distribution ";
   for(int i=0;i<nnodes;i++) str=str+" , "+std::to_string(newLoadDist[i]);
   logInfo("aggressive distributor", str);
-  str="tasks to offload ";
+  str="ideal tasks to offload ";
   for(int i=0;i<nnodes;i++) str=str+" , "+std::to_string(_idealTasksToOffload[i]);
   logInfo("aggressive distributor", str);
 
@@ -284,9 +284,16 @@ void exahype::stealing::AggressiveCCPDistributor::updateLoadDistribution() {
 
   _totalTasksOffloaded = 0;
   for(int i=0; i<nnodes; i++) {
+#ifdef DistributedStealingDisable
+          assert(_tasksToOffload[i]==0);
+#endif
     _tasksToOffload[i] = _tasksToOffload[i]-_emergenciesPerRank[i];
     _emergenciesPerRank[i] = 0;
     _totalTasksOffloaded += _tasksToOffload[i];
+
+#ifdef DistributedStealingDisable
+          assert(_tasksToOffload[i]==0);
+#endif
   }
 
   resetRemainingTasksToOffload();
