@@ -1,4 +1,4 @@
-#include "exahype/plotters/CarpetHDF5/CarpetASCIIWriter.h"
+#include "exahype/plotters/Carpet/CarpetASCIIWriter.h"
 #include "exahype/plotters/ascii/CSVStackWriter.h"
 #include "peano/utils/Loop.h" // dfor
 #include "tarch/parallel/Node.h" // for basic MPI rank determination only

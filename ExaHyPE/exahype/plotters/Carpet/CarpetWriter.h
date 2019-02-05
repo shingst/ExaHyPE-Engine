@@ -44,6 +44,8 @@ public:
   typedef tarch::la::Vector<DIMENSIONS, bool> boolvec;
   typedef tarch::la::Vector<DIMENSIONS, int> ivec;
 
+  enum class FileFormat { FileFormatHDF5, FileFormatASCII }; // mind that "HDF5" is a macro (-DHDF5) in ExaHyPE
+
   // information from the device::init() process
   const int           solverUnknowns; ///< The number of unknowns in the Solver (ie. number of PDEs)
   const int           writtenUnknowns; ///< The number of written out quantities.

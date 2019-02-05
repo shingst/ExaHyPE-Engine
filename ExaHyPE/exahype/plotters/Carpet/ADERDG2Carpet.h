@@ -17,12 +17,15 @@
 #define _EXAHYPE_PLOTTERS_ADERDG_2_CARPETHDF5_H_
 
 #include "exahype/plotters/Plotter.h"
+#include "CarpetWriter.h"
 
 namespace exahype {
   namespace plotters {
     class ADERDG2CarpetHDF5;
+    class ADERDG2CarpetASCII;
+    class ADERDG2Carpet;
+
     class CarpetHDF5Writer;
-    
     class CartesianSlicer; // forward decl
   }
 }
@@ -38,7 +41,7 @@ namespace kernels {
  * onto a regular grid which is written out using the CarpetHDF5Writer.
  * 
  */
-class exahype::plotters::ADERDG2CarpetHDF5 : public exahype::plotters::Plotter::Device {
+class exahype::plotters::ADERDG2Carpet : public exahype::plotters::Plotter::Device {
  public:
   typedef tarch::la::Vector<DIMENSIONS, double> dvec;
 
@@ -47,13 +50,12 @@ class exahype::plotters::ADERDG2CarpetHDF5 : public exahype::plotters::Plotter::
    * class (instance).
    **/
   CarpetHDF5Writer* writer;
+  exahype::plotters::CarpetWriter::FileFormat format;
   static tarch::logging::Log _log;
 
-  static std::string getIdentifier();
+  ADERDG2Carpet(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing, exahype::plotters::CarpetWriter::FileFormat format);
 
-  ADERDG2CarpetHDF5(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing);
-
-  virtual ~ADERDG2CarpetHDF5();
+  virtual ~ADERDG2Carpet();
 
   virtual void init(const std::string& filename, int orderPlusOne, int solverUnknowns, int writtenUnknowns, exahype::parser::ParserView plotterParameters);
 
@@ -88,6 +90,20 @@ class exahype::plotters::ADERDG2CarpetHDF5 : public exahype::plotters::Plotter::
     int limiterStatus,
     const exahype::plotters::CartesianSlicer& slicer
   );
+};
+
+class exahype::plotters::ADERDG2CarpetHDF5 : public exahype::plotters::ADERDG2Carpet {
+  public:
+    static std::string getIdentifier();
+    ADERDG2CarpetHDF5(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing)
+       : ADERDG2Carpet(postProcessing, exahype::plotters::CarpetWriter::FileFormat::FileFormatHDF5) {}
+};
+
+class exahype::plotters::ADERDG2CarpetASCII : public exahype::plotters::ADERDG2Carpet {
+  public:
+    static std::string getIdentifier();
+    ADERDG2CarpetASCII(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing)
+       : ADERDG2Carpet(postProcessing, exahype::plotters::CarpetWriter::FileFormat::FileFormatASCII) {}
 };
 
 #endif/* _EXAHYPE_PLOTTERS_ADERDG_2_CARPETHDF5_H_ */

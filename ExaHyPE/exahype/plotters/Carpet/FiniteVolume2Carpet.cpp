@@ -13,7 +13,7 @@
  * @authors: Sven Koeppel
  **/
 
-#include "exahype/plotters/CarpetHDF5/FiniteVolume2CarpetHDF5.h"
+#include "exahype/plotters/Carpet/FiniteVolume2Carpet.h"
 #include "exahype/solvers/FiniteVolumesSolver.h"
 
 #include <cstdlib>
@@ -57,7 +57,7 @@ void exahype::plotters::FiniteVolume2CarpetHDF5::startPlotting(double time) {}
 void exahype::plotters::FiniteVolume2CarpetHDF5::finishPlotting() {}
 
 #else
-#include "exahype/plotters/CarpetHDF5/CarpetHDF5Writer.h"
+#include "exahype/plotters/Carpet/CarpetHDF5Writer.h"
 #include "kernels/KernelUtils.h" // indexing
 #include "peano/utils/Loop.h" // dfor
 #include "kernels/DGMatrices.h"

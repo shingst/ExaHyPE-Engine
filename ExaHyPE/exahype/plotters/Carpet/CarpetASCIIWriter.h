@@ -17,7 +17,7 @@
 #define _EXAHYPE_PLOTTERS_CARPET_ASCII_WRITER_
 
 #include "exahype/plotters/Plotter.h"
-#include "exahype/plotters/CarpetHDF5/CarpetWriter.h"
+#include "exahype/plotters/Carpet/CarpetWriter.h"
 #include "exahype/plotters/slicing/CartesianSlicer.h"
 #include "kernels/KernelUtils.h" // idx::kernels
 

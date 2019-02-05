@@ -2,7 +2,7 @@
 // in the compiled binary.
 #ifdef HDF5
 
-#include "exahype/plotters/CarpetHDF5/CarpetHDF5Writer.h"
+#include "exahype/plotters/Carpet/CarpetHDF5Writer.h"
 #include "peano/utils/Loop.h" // dfor
 #include "tarch/parallel/Node.h" // for basic MPI rank determination only
 #include <sstream>
