@@ -11,7 +11,7 @@
 
 
 #include "exahype/plotters/ADERDG2UserDefined.h"
-#include "exahype/plotters/ascii/MultipleReductionsWriter.h"
+#include "exahype/plotters/ascii/MultipleReductionsWriter.h" 
 #include "GRMHDbSolver_ADERDG.h"
 namespace GRMHDb {
   class ErrorWriter;
@@ -89,6 +89,10 @@ class GRMHDb::ErrorWriter : public exahype::plotters::LimitingADERDG2UserDefined
    * or to increment file counters
    */
   void finishPlotting() override;
+private:  
+	void getPrimitive(double* uPrim, const double* uCons, int iErr);
+	void getExactSolution(double* x, double timeStamp, double* u);
+
 };
 
 #endif /* ErrorWriter_CLASS_HEADER_ */

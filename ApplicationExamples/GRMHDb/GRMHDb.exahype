@@ -28,21 +28,21 @@ exahype-project GRMHDb
      dimension const                = 3
      //width                        = 27.0, 27.0, 27.0 
      //offset                       = 3., 3., 3.		 
-     width                          = 8.0 , 8.0, 8.0	 
-     offset                         = -4.0, -4.0, -4.0 
+     width                          = 10.0 , 10.0, 10.0	 
+     offset                         = -5.0, -5.0, -5.0 
      end-time                       = 1000.0000001 
   end computational-domain
   
   shared-memory
     identifier               = dummy
-    configure                = {background-tasks:1}
-    cores                    = 1
+    configure                = {background-tasks:14}
+    cores                    = 28
     properties-file          = sharedmemory.properties
   end shared-memory  
   
   distributed-memory
     identifier       = static_load_balancing
-    configure        = {hotspot,fair,ranks-per-node:28}
+    configure        = {hotspot,fair,ranks-per-node:1}
     buffer-size      = 6400
     timeout          = 6000
   end distributed-memory
@@ -66,7 +66,8 @@ exahype-project GRMHDb
     order const                    = 3
     //maximum-mesh-size              = 1.0								 
     //maximum-mesh-size              = 0.88888888888888888888888888888889	 
-    maximum-mesh-size              = 0.2962962962962962962962962962963
+    //maximum-mesh-size              = 0.2962962962962962962962962962963
+    maximum-mesh-size              = 1.11111111111111112
     maximum-mesh-depth             = 0
     time-stepping                  = global
     type const = nonlinear
@@ -98,14 +99,25 @@ exahype-project GRMHDb
     end plot
 */
 
-  /*  plot vtu::Legendre::vertices::ascii PrimitiveWriter
+/*   plot vtu::Legendre::vertices::ascii PrimitiveWriter
       variables const = 19
       time      = 0.0
       repeat    = 0.50
       output    = ./vtk-output/primitive
     end plot 
+*/
 
-    plot vtk::Legendre::vertices::ascii IntegralsWriter
+
+    plot vtu::Cartesian::vertices::ascii PrimitiveWriter
+      // abserrorl1percell[nvar],q[nvar],qanalytical[nvar]
+      variables const = 19
+      time            = 0.0
+      repeat          = 10.0
+      output          = ./output/vtk
+    end plot
+
+ /*
+   plot vtk::Legendre::vertices::ascii IntegralsWriter
       variables const = 0
       time = 0.0
       repeat = 0.50
@@ -115,14 +127,14 @@ exahype-project GRMHDb
    */
    
 
-
+/*
    plot user::defined ErrorWriter
        variables const = 19
        time            = 0.0 
        repeat          = 10.0
        output          = ./output/errors
     end plot
- 
+ */
 /*
     plot vtk::Cartesian::vertices::ascii ErrorPlotter
       // abserrorl1percell[nvar],q[nvar],qanalytical[nvar]
@@ -133,14 +145,14 @@ exahype-project GRMHDb
     end plot
 */
 	 
- 
+ /*
     plot user::defined TecplotWriter
        variables const = 19
        time            = 0.0
        repeat          = 10.0
        output          = ./output/tecplot
      end plot
-
+*/
 
   end solver
 

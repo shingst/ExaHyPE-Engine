@@ -624,7 +624,7 @@
                 "properties" : {
                   "notimeavg" : {
                     "type" : "boolean",
-                    "available-for" : ["optimised","generic"],
+                    "available-for" : ["generic"],
                     "title" : "I have no clue, but generic kernels support it."
                   },
                   "maxpicarditer" : {
@@ -636,6 +636,11 @@
                     "type" : "boolean",
                     "available-for" : ["optimised"],
                     "title" : "Use the continous extrapolated Runge Kutta initial guess for the space time predictor"
+                  },
+                  "split_ck" : {
+                    "type" : "boolean",
+                    "available-for" : ["optimised"],
+                    "title" : "Use a split Cauchy–Kowalevski for the space time predictor (linear only)"
                   }
                 }
               },
@@ -661,7 +666,7 @@
                 "title" : "Only optimised kernels: For which PDE terms should be code generated",
                 "items" : {
                   "type" : "string",
-                  "enum" : ["fusedsource", "fluxvect", "fusedsourcevect", "ncpvect"]
+                  "enum" : ["fusedsource", "flux_vect", "fusedsource_vect", "ncp_vect", "material_parameters_vect"]
                 }
               },
               "language" : {

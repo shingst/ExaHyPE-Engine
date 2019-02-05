@@ -2753,8 +2753,8 @@ RECURSIVE SUBROUTINE PDECons2PrimGRMHD(V,Q,iErr)
 	iErr = 0     
     tol = 1.0e-18
     !
-	!V = Q
-	!RETURN
+	V = Q
+	RETURN
 	!V=0.
 	psi = Q(9)
 	lapse = Q(10)
@@ -3067,8 +3067,8 @@ RECURSIVE SUBROUTINE PDEPrim2ConsGRMHD(Q,V)
   INTEGER :: i
   !
   REAL :: Dd,gam,sb2,s_cov(3),s_contr(3),e,s2,f(3),df(3,3),x(3)
-	!Q=V
-	!RETURN
+	Q=V
+	RETURN
   rho     = V(1)
   v_cov  = V(2:4)
   p       = V(5)

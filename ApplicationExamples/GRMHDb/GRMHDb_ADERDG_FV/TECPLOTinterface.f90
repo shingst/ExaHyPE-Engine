@@ -1,6 +1,7 @@
 RECURSIVE SUBROUTINE ElementCallTECPLOTPLOTTER(wh,lx0,ldx,limiter)
-	USE TECPLOTPLOTTERmod
-	!USE Parameters, only : nVar, nDim
+	USE, INTRINSIC :: ISO_C_BINDING
+	USE TECPLOTPLOTTERmod !, only : ElementTECPLOTPLOTTER,nDOFm
+	USE Parameters, only : nVar, nDim
 	implicit none
 	REAL, INTENT(IN) :: wh(nVar,nDOFm),lx0(nDim),ldx(nDim)
 	real :: lx0_3(3),ldx_3(3)
@@ -11,8 +12,9 @@ RECURSIVE SUBROUTINE ElementCallTECPLOTPLOTTER(wh,lx0,ldx,limiter)
 END SUBROUTINE ElementCallTECPLOTPLOTTER
 
 RECURSIVE SUBROUTINE ElementCallTECPLOTADERDGPLOTTER(wh,lx0,ldx,limiter)
-	USE TECPLOTPLOTTERmod
-	!USE Parameters, only : nVar, nDim
+	USE, INTRINSIC :: ISO_C_BINDING
+	USE TECPLOTPLOTTERmod !, only : ElementTECPLOTPLOTTER_ADERDG,nDOFm
+	USE Parameters, only : nVar, nDim
 	implicit none
 	REAL, INTENT(IN) :: wh(nVar,nDOFm),lx0(nDim),ldx(nDim)
 	real :: lx0_3(3),ldx_3(3)
@@ -23,8 +25,9 @@ RECURSIVE SUBROUTINE ElementCallTECPLOTADERDGPLOTTER(wh,lx0,ldx,limiter)
  END SUBROUTINE ElementCallTECPLOTADERDGPLOTTER
 
 RECURSIVE SUBROUTINE ElementCallTECPLOTFVPLOTTER(wh,lx0,ldx,limiter)
-	USE TECPLOTPLOTTERmod
-	!USE Parameters, only : nVar, nDim
+	USE, INTRINSIC :: ISO_C_BINDING
+	USE TECPLOTPLOTTERmod !, only : ElementTECPLOTPLOTTER_FV,nSubLim,nSubLim_GL
+	USE Parameters, only : nVar, nDim
 	implicit none
 	REAL, INTENT(IN) :: wh(nVar,(nSubLim+2*nSubLim_GL)**nDIM),lx0(nDim),ldx(nDim)
 	real :: lx0_3(3),ldx_3(3)
@@ -67,15 +70,21 @@ RECURSIVE SUBROUTINE ElementCallTECPLOTFVPLOTTER(wh,lx0,ldx,limiter)
 END SUBROUTINE ElementCallTECPLOTFVPLOTTER
 
 RECURSIVE SUBROUTINE InitializeTECPLOTPLOTTER(time)
-	USE TECPLOTPLOTTERmod
+	USE, INTRINSIC :: ISO_C_BINDING
+	USE TECPLOTPLOTTERmod !, ONLY: InitTECPLOTPLOTTER
 	implicit none
 	real :: time
 	CALL InitTECPLOTPLOTTER(time)
 END SUBROUTINE InitializeTECPLOTPLOTTER
 
 RECURSIVE SUBROUTINE FinishTECPLOTPLOTTER(Myrank)
-	USE TECPLOTPLOTTERmod
+	USE, INTRINSIC :: ISO_C_BINDING
+	USE TECPLOTPLOTTERmod !, ONLY: FinalizeTECPLOTPLOTTER
 	implicit none
+    !INTERFACE RECURSIVE SUBROUTINEFinalizeTECPLOTPLOTTER(Myrank)
+    !integer :: Myrank
+    !END INTERFACE
+    !
 	integer :: Myrank
 	CALL FinalizeTECPLOTPLOTTER(Myrank)
    ! PRINT *, "FINALIZETECPLOTPLOTTER : done!"

@@ -8,7 +8,7 @@
 #include "ErrorWriter.h"
 #include "Tools.h"
 #include "PDE.h"
-#include "GRMHDbSolver_ADERDG.h"
+//#include "GRMHDbSolver_ADERDG.h"
 #include "GRMHDbSolver_FV.h"
 #include "kernels/GaussLegendreQuadrature.h"
 #include "kernels/KernelUtils.h"
@@ -39,44 +39,51 @@ GRMHDb::ErrorWriter::ErrorWriter() : exahype::plotters::LimitingADERDG2UserDefin
   // @TODO Please insert your code here.
 }
 
-
 void GRMHDb::ErrorWriter::plotADERDGPatch(
-    const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
-    const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* u,
-    double timeStamp) {
+  const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
+  const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* u,
+  double timeStamp) {
   // @TODO Please insert your code here.
   constexpr int numberOfVariables  = AbstractGRMHDbSolver_ADERDG::NumberOfVariables;
-  constexpr int numberOfParameters = AbstractGRMHDbSolver_ADERDG::NumberOfParameters;
-  constexpr int numberOfData       = numberOfVariables+numberOfParameters;
+  //constexpr int numberOfParameters = AbstractGRMHDbSolver_ADERDG::NumberOfParameters;
+  //constexpr int numberOfData       = numberOfVariables+numberOfParameters;
   constexpr int basisSize          = AbstractGRMHDbSolver_ADERDG::Order+1;
   constexpr int order              = basisSize-1;
 
   double x[DIMENSIONS];
 
-  kernels::idx4 idx(basisSize,basisSize,basisSize,numberOfData);
+  printf("\n########## GRMHDb::ErrorWriter::plotADERDGPatch ##########");
+  //kernels::idx4 idx(basisSize,basisSize,basisSize,numberOfData);
+  kernels::idx4 idx(basisSize,basisSize,basisSize,numberOfVariables);
   dfor(i,basisSize) {
-     double w_dV = 1.0;
+	 double w_dV = 1.0;
      for (int d=0; d<DIMENSIONS; d++) {
        x[d]  = offsetOfPatch[d] + sizeOfPatch[d] * kernels::gaussLegendreNodes[order][i(d)];
        w_dV *= sizeOfPatch[d] * kernels::gaussLegendreWeights[order][i(d)];
-}
+     }
 
-     double uAna[numberOfVariables];
-     GRMHDbSolver_ADERDG::referenceSolution(x,timeStamp,uAna);
-
+	 double uAna[numberOfVariables];
+	 //GRMHDbSolver_FV::referenceSolution(x,timeStamp,uAna);
+	 getExactSolution(x, timeStamp, uAna); // (exact, pos, timeStamp);
+	 
      const double* uNum = u + idx ( (DIMENSIONS==3) ? i(2) : 0, i(1), i(0), 0);
 
-     for (int v=0; v<numberOfVariables; v++) {
-        const double uDiff = std::abs(uNum[v]-uAna[v]);
-        errorL2[v]   += uDiff*uDiff * w_dV;
-        errorL1[v]   += uDiff * w_dV;
-        errorLInf[v]  = std::max( errorLInf[v], uDiff );
+	 int iErr = 0;
+	 double uPrim[numberOfVariables];
+	 getPrimitive(uPrim, uNum, iErr);
 
-        normL1Ana[v]  += std::abs(uAna[v]) * w_dV;
-        normL2Ana[v]  += uAna[v] * uAna[v] * w_dV;
-        normLInfAna[v] = std::max( normLInfAna[v], std::abs(uAna[v]) );
+     for (int v=0; v<numberOfVariables; v++) {
+         const double uDiff = std::abs(uPrim[v]-uAna[v]);
+         errorL2[v]   += uDiff*uDiff * w_dV;
+         errorL1[v]   += uDiff * w_dV;
+         errorLInf[v]  = std::max( errorLInf[v], uDiff );
+		 
+         normL1Ana[v]  += std::abs(uAna[v]) * w_dV;
+         normL2Ana[v]  += uAna[v] * uAna[v] * w_dV;
+         normLInfAna[v] = std::max( normLInfAna[v], std::abs(uAna[v]) );
      }
   }
+  printf("\n########## GRMHDb::ErrorWriter::plotADERDGPatch ##########  .... DONE!\n");
 }
 
 
@@ -86,48 +93,78 @@ void GRMHDb::ErrorWriter::plotFiniteVolumesPatch(
     const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* u,
     double timeStamp) {
   // @TODO Please insert your code here.
+	printf("\n########## GRMHDb::ErrorWriter::plotFiniteVolumesPatch ##########");
   constexpr int numberOfVariables  = AbstractGRMHDbSolver_FV::NumberOfVariables;
   constexpr int numberOfParameters = AbstractGRMHDbSolver_FV::NumberOfParameters;
   constexpr int numberOfData       = numberOfVariables+numberOfParameters;
   constexpr int basisSize          = AbstractGRMHDbSolver_FV::PatchSize;
   constexpr int ghostLayerWidth   = AbstractGRMHDbSolver_FV::GhostLayerWidth;
-  constexpr int order              = basisSize-1;
+  //constexpr int order              = basisSize-1;
 
   double x[DIMENSIONS];
   //double cellSize;
 
   //kernels::idx4 idx(basisSize,basisSize,basisSize,numberOfData);
   kernels::idx4 idx(basisSize+2*ghostLayerWidth,basisSize+2*ghostLayerWidth,basisSize+2*ghostLayerWidth,numberOfData);
+
+  //printf("\n########## dfor(i,basisSize) ##########");
+  //printf("\n numberOfVariables, numberOfParameters, numberOfData: %d %d %d", numberOfVariables, numberOfParameters, numberOfData);
+  //printf("\n basisSize, ghostLayerWidth: %d %d", basisSize, ghostLayerWidth);
+  int counter = 0;
   dfor(i,basisSize) {
-     double w_dV = 1.0;
+	  counter++;
+	 // printf("\n counter = %d", counter);
+	 // printf("\n i(0), i(1), i(2) = %d %d %d", i(0), i(1), i(2));
+	 double w_dV = 1.0;
      for (int d=0; d<DIMENSIONS; d++) {
        const double cellSize = sizeOfPatch[d] / basisSize;
        x[d]  = offsetOfPatch[d] + cellSize * (i(d)+0.5);
        w_dV *= cellSize;
-		}
+	 }
 
-     double uAna[numberOfVariables];
-     GRMHDbSolver_FV::referenceSolution(x,timeStamp,uAna);
+	 double uAna[numberOfVariables];
+     //GRMHDbSolver_FV::referenceSolution(x,timeStamp,uAna);
+	 getExactSolution(x, timeStamp, uAna); // (exact, pos, timeStamp);
 
+
+	 //printf("\n timestamp = %f", timeStamp);
      const double* uNum = u + idx ( (DIMENSIONS==3) ? i(2)+ghostLayerWidth : 0, i(1)+ghostLayerWidth, i(0)+ghostLayerWidth, 0);
 
+	 int iErr = 0;
+	 double uPrim[numberOfVariables];
+	 getPrimitive(uPrim,uNum,iErr);
+
+	 //double uCons[numberOfVariables];
+	 //for (int v = 0; v < numberOfVariables; v++) {
+	 // uCons[v] = uNum[v];  // uNum is const.
+	 //}
+	 ////printf("\n ouble uCons[numberOfVariables]");
+	 //int iErr = 0;
+	 //double uPrim[numberOfVariables];
+	 //pdecons2prim_(&uPrim[0], &uCons[0], &iErr);
+	 ////printf("\n ouble pdecons2prim");
      for (int v=0; v<numberOfVariables; v++) {
-        const double uDiff = std::abs(uNum[v]-uAna[v]);
+		 const double uDiff = std::abs(uPrim[v] - uAna[v]);
+		 //const double uDiff = std::abs(uNum[v] - uAna[v]);
+		errorL1[v] += uDiff * w_dV;
         errorL2[v]   += uDiff*uDiff * w_dV;
-        errorL1[v]   += uDiff * w_dV;
         errorLInf[v]  = std::max( errorLInf[v], uDiff );
 
         normL1Ana[v]  += std::abs(uAna[v]) * w_dV;
         normL2Ana[v]  += uAna[v] * uAna[v] * w_dV;
         normLInfAna[v] = std::max( normLInfAna[v], std::abs(uAna[v]) );
+		//printf("\n normL1Ana[v], normL2Ana[v], normLInfAna[v] = %f %f %f ", normL1Ana[v], normL2Ana[v], normLInfAna[v]);
+		//printf("\n errorL1[v], errorL2[v], errorLInf[v] = %f %f %f ", errorL1[v], errorL2[v], errorLInf[v]);
      }
   }
+  printf("\n########## GRMHDb::ErrorWriter::plotFiniteVolumesPatch ##########  .... DONE!\n");
 }
 
 void GRMHDb::ErrorWriter::startPlotting( double time) {
   // @TODO Please insert your code here.
   _timeStamp = time;
-
+  printf("\n########## GRMHDb::ErrorWriter::startPlotting ##########");
+  
   std::fill_n(errorL1,  AbstractGRMHDbSolver_ADERDG::NumberOfVariables, 0.0);
   std::fill_n(errorL2,  AbstractGRMHDbSolver_ADERDG::NumberOfVariables, 0.0);
   std::fill_n(errorLInf,AbstractGRMHDbSolver_ADERDG::NumberOfVariables, 0.0);
@@ -140,10 +177,11 @@ void GRMHDb::ErrorWriter::startPlotting( double time) {
 void GRMHDb::ErrorWriter::finishPlotting() {
   constexpr int numberOfVariables = AbstractGRMHDbSolver_ADERDG::NumberOfVariables;
   ofstream myfile;
+  printf("\n########## GRMHDb::ErrorWriter::finishPlotting ##########");
   int mpirank = tarch::parallel::Node::getInstance().getRank();
   const int myMessageTagUseForTheReduction = tarch::parallel::Node::getInstance().reserveFreeTag("GRMHDb::ErrorWriter::finishPlotting()");
 
-
+  
 //#define Parallel
 #ifdef Parallel 
   //int NumberOfNodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
@@ -276,4 +314,18 @@ void GRMHDb::ErrorWriter::finishPlotting() {
 		 
 		myfile.close();  
 	}
+  printf("\n########## GRMHDb::ErrorWriter::finishPlotting ##########  .... DONE!\n");
 }
+
+
+
+
+void GRMHDb::ErrorWriter::getPrimitive(double* uPrim, const double* uCons,int iErr) {
+	pdecons2primfix_(uPrim,uCons,&iErr);
+}
+
+void GRMHDb::ErrorWriter::getExactSolution(double* x, double timeStamp, double* u) {
+	getexactsolution_(x, &timeStamp, u);
+}
+
+

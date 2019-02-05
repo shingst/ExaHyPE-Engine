@@ -118,7 +118,10 @@ exahype::plotters::ADERDG2CartesianCellsVTUBinary::ADERDG2CartesianCellsVTUBinar
 
 
 
-exahype::plotters::ADERDG2CartesianVTK::ADERDG2CartesianVTK(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing, PlotterType plotterType, bool plotCells):
+exahype::plotters::ADERDG2CartesianVTK::ADERDG2CartesianVTK(
+	exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing, 
+	PlotterType plotterType, 
+	bool plotCells):
   Device(postProcessing),
   _plotterType(plotterType),
   _plotCells(plotCells)

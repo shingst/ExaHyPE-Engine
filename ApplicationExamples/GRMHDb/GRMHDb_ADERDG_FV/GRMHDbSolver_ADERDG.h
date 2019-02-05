@@ -151,23 +151,25 @@ class GRMHDb::GRMHDbSolver_ADERDG : public GRMHDb::AbstractGRMHDbSolver_ADERDG {
      * \param[inout]  The vector BgradQ (extends nVar), already allocated. 
      *
      **/
+	void mapDiscreteMaximumPrincipleObservables(
+		double* observables, const int numberOfObservables,
+		const double* const Q) const override;
+
+
+	bool isPhysicallyAdmissible(
+		const double* const solution,
+		const double* const observablesMin, const double* const observablesMax,
+		const bool wasTroubledInPreviousTimeStep,
+		const tarch::la::Vector<DIMENSIONS, double>& center,
+		const tarch::la::Vector<DIMENSIONS, double>& dx,
+		const double t) const override;
     void nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) final override;
+
+
 
 /* pointSource() function not included, as requested in the specification file */
 
 /* multiplyMaterialParameterMatrix() not included, as requested in the specification file */
-
-    void mapDiscreteMaximumPrincipleObservables(
-        double* observables,const int numberOfObservables,
-        const double* const Q) const override;
-
-    bool isPhysicallyAdmissible(
-      const double* const solution,
-      const double* const observablesMin,const double* const observablesMax,
-      const bool wasTroubledInPreviousTimeStep,
-      const tarch::la::Vector<DIMENSIONS,double>& center,
-      const tarch::la::Vector<DIMENSIONS,double>& dx,
-      const double t) const override;
 };
 
 #endif // __GRMHDbSolver_ADERDG_CLASS_HEADER__

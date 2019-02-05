@@ -37,7 +37,7 @@ void GRMHD::GRMHDSolver_FV::init(const std::vector<std::string>& cmdlineargs,con
 //  std::string bc_default = "left:exact,right:exact,top:exact,bottom:exact,front:exact,back:exact";
 
  std::string id_default = "TOVSolver";
-  std::string bc_default = "left:exact,right:exact,top:exact,bottom:exact,front:exact,back:exact";
+ std::string bc_default = "left:exact,right:exact,top:exact,bottom:exact,front:exact,back:exact";
 
 
   // alternatives:
@@ -82,6 +82,16 @@ void GRMHD::GRMHDSolver_FV::init(const std::vector<std::string>& cmdlineargs,con
 
 }
 
+void __attribute__((optimize("O0"))) initialData_FV(const double* const x,const double t,const double dt,double* Q) {
+  id->Interpolate(x, t, Q);
+  //printf("Interpoalted at x=[%f,%f,%f], t=%f, Q0=%f\n", x[0],x[1],x[2], t, Q[0]);
+  for(int i=0; i<nVar; i++) {
+    if(!std::isfinite(Q[i])) {
+      printf("NAN in i=%d at t=%f, x=[%f,%f,%f], Q[%d]=%f\n", i, t, x[0],x[1],x[2], i, Q[i]);
+    }
+  }
+
+}
 
 void GRMHD::GRMHDSolver_FV::adjustSolution(const double* const x,const double t,const double dt, double* Q) {
   using namespace tarch::la;
@@ -130,9 +140,23 @@ void GRMHD::GRMHDSolver_FV::boundaryValues(
     const int d,
     const double* const stateIn,
     double* stateOut) {
-	fvbc->apply(FV_BOUNDARY_CALL);
-	// Use for the time being: Exact BC
-	//id->Interpolate(x, t, stateOut);
+  //	fvbc->apply(FV_BOUNDARY_CALL);
+  // Use for the time being: Exact BC
+  //id->Interpolate(x, t, stateOut);
+
+  double Qgp[nVar];
+
+  for(int m=0;m<nVar;m++) {
+    stateOut[m] = stateIn[m];
+  }
+
+  double ti = t + 0.5 * dt;
+  initialData_FV(x, ti, dt, Qgp);
+  for(int m=0; m < nVar; m++) {
+    stateOut[m] = Qgp[m];
+  }
+
+
 }
 
 

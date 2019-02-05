@@ -34,7 +34,8 @@
     ! Ideal EOS:
     ! 4/3 used in ADERDG3D-SRMHD-Z4 by MD, 01.Nov2016
     ! 2.0 used for TOV stars
-    REAL, PARAMETER                :: gamma = 4.0/3.0
+    !REAL, PARAMETER                :: gamma = 4.0/3.0
+    REAL, PARAMETER                :: gamma = 2.0
     REAL, PARAMETER                :: igamma = 1.0/gamma ! 4.0/3.0
     !
     ! Divergence cleaning:

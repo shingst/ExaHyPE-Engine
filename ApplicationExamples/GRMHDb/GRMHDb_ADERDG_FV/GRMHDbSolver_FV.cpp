@@ -4,10 +4,10 @@
 
 
 // User defined calls
-#include "Tools.h"
+//#include "Tools.h"
 #include "PDE.h"
 #include "InitialData.h"
-#include "TECPLOTinterface.h"
+//#include "TECPLOTinterface.h"
 #include "tarch/parallel/Node.h"
 #include "tarch/la/MatrixVectorOperations.h"
 
@@ -26,64 +26,114 @@
 
 #include "GRMHDbSolver_ADERDG.h"
 
+
+#include "tarch/multicore/BooleanSemaphore.h"
+
+#include "tarch/multicore/Lock.h"
+
 tarch::logging::Log GRMHDb::GRMHDbSolver_FV::_log( "GRMHDb::GRMHDbSolver_FV" );
 
 void GRMHDb::GRMHDbSolver_FV::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
   // @todo Please implement/augment if required
 
-    const int order = GRMHDb::AbstractGRMHDbSolver_ADERDG::Order;
-	constexpr int basisSize = AbstractGRMHDbSolver_FV::PatchSize;
-	constexpr int Ghostlayers = AbstractGRMHDbSolver_FV::GhostLayerWidth;
-
-    int mpirank = tarch::parallel::Node::getInstance().getRank();
+    //const int order = GRMHDb::AbstractGRMHDbSolver_ADERDG::Order;
+	//constexpr int basisSize = AbstractGRMHDbSolver_FV::PatchSize;
+	//constexpr int Ghostlayers = AbstractGRMHDbSolver_FV::GhostLayerWidth;
+    //int mpirank = tarch::parallel::Node::getInstance().getRank();
+	//
+	//
+	///**************************************************************************/
+	//static tarch::multicore::BooleanSemaphore initialDataSemaphore;
+	//tarch::multicore::Lock lock(initialDataSemaphore);
+	///***************************************************/
+	//// everything in here is thread-safe w.r.t. the lock
+	//// call Fortran routines
+	///***********************/
+	//
+	////printf("\n******************************************************************");
+	////printf("\n**************<<<  INIT TECPLOT    >>>****************************");
+	////printf("\n******************************************************************");
+    ////inittecplot_(&order,&order,&basisSize,&Ghostlayers);
 	//printf("\n******************************************************************");
-	//printf("\n**************<<<  INIT TECPLOT    >>>****************************");
+	//printf("\n**************<<<  INIT PDE SETUP  >>>****************************");
 	//printf("\n******************************************************************");
-    //inittecplot_(&order,&order,&basisSize,&Ghostlayers);
-	printf("\n******************************************************************");
-	printf("\n**************<<<  INIT PDE SETUP  >>>****************************");
-	printf("\n******************************************************************");
-    pdesetup_(&mpirank);
-	printf("\n******************************************************************");
-	printf("\n**************<<<       DONE       >>>****************************");
-	printf("\n******************************************************************");
-    fflush(stdout);
-
+    ////pdesetup_(&mpirank);
+	//printf("\n******************************************************************");
+	//printf("\n**************<<<       DONE       >>>****************************");
+	//printf("\n******************************************************************");
+    ////fflush(stdout);
+	//
+	//
+	//
+	///************/
+	//lock.free();
+	//// everything afterwards is not thread-safe anymore w.r.t. the lock
+	///**************************************************************************/
 }
 
 void GRMHDb::GRMHDbSolver_FV::adjustSolution(const double* const x, const double t, const double dt, double* Q) {
-  // Dimensions             = 3
-  // Number of variables    = 19 + #parameters
-  
-  // @todo Please implement/augment if required
+	// Dimensions             = 3
+	// Number of variables    = 19 + #parameters
+
+	// @todo Please implement/augment if required
   if (tarch::la::equals(t,0.0)) {
-  Q[0] = 0.0;
-  Q[1] = 0.0;
-  Q[2] = 0.0;
-  Q[3] = 0.0;
-  Q[4] = 0.0;
-  Q[5] = 0.0;
-  Q[6] = 0.0;
-  Q[7] = 0.0;
-  Q[8] = 0.0;
-  Q[9] = 0.0;
-  Q[10] = 0.0;
-  Q[11] = 0.0;
-  Q[12] = 0.0;
-  Q[13] = 0.0;
-  Q[14] = 0.0;
-  Q[15] = 0.0;
-  Q[16] = 0.0;
-  Q[17] = 0.0;
-  Q[18] = 0.0;
-  initialdata_(x, &t, Q);
-  }
+	  const int nVar = GRMHDb::AbstractGRMHDbSolver_ADERDG::NumberOfVariables;
+		Q[0] = 0.0;
+		Q[1] = 0.0;
+		Q[2] = 0.0;
+		Q[3] = 0.0;
+		Q[4] = 0.0;
+		Q[5] = 0.0;
+		Q[6] = 0.0;
+		Q[7] = 0.0;
+		Q[8] = 0.0;
+		Q[9] = 0.0;
+		Q[10] = 0.0;
+		Q[11] = 0.0;
+		Q[12] = 0.0;
+		Q[13] = 0.0;
+		Q[14] = 0.0;
+		Q[15] = 0.0;
+		Q[16] = 0.0;
+		Q[17] = 0.0;
+		Q[18] = 0.0;
+		/**************************************************************************/
+		static tarch::multicore::BooleanSemaphore initialDataSemaphore;
+		tarch::multicore::Lock lock(initialDataSemaphore);
+		/***************************************************/
+		// everything in here is thread-safe w.r.t. the lock
+		// call Fortran routines
+		/***********************/
+
+                initialdata_(x, &t, Q);
+
+		/************/
+		lock.free();
+		// everything afterwards is not thread-safe anymore w.r.t. the lock
+		/**************************************************************************/
+
+		/*Q[0] = exp(-(x[0] * x[0] + x[1] * x[1] + x[2] * x[2]) / 8.0);
+		Q[1] = sin(x[1])*sin(x[0]);
+		Q[2] = sin(x[2]);
+		for (int i = 3; i < nVar; i++) {
+			Q[i] = cos(x[0]);
+		}*/
+	}
 }
 
 
 void GRMHDb::GRMHDbSolver_FV::referenceSolution(const double* const x, double t, double* Q) {
-
-	initialdata_(x, &t, Q);
+	const int nVar = GRMHDb::AbstractGRMHDbSolver_ADERDG::NumberOfVariables;
+	int iErr = 0;
+	double* Qcons;
+	initialdata_(x, &t, Qcons);
+	/*Q[0] = exp(-(x[0] * x[0] + x[1] * x[1] + x[2] * x[2]) / 8.0);
+	Q[1] = sin(x[1])*sin(x[0]);
+	Q[2] = sin(x[2]);
+	for (int i = 3; i < nVar; i++) {
+		Q[i] = cos(x[0]);
+	}*/
+	pdecons2prim_(Q, Qcons, &iErr);
 }
 
 
@@ -115,6 +165,7 @@ void GRMHDb::GRMHDbSolver_FV::eigenvalues(const double* const Q, const int dInde
   nv[dIndex] = 1;
   pdeeigenvalues_(lambda, Q, nv);
 }
+
 void GRMHDb::GRMHDbSolver_FV::boundaryValues(
     const double* const x,
     const double t,const double dt,
@@ -122,12 +173,11 @@ void GRMHDb::GRMHDbSolver_FV::boundaryValues(
     const int d,
     const double* const stateInside,
     double* stateOutside) {
-	const int nVar = GRMHDb::AbstractGRMHDbSolver_FV::NumberOfVariables;	
-	double Qgp[nVar];
   // Dimensions             = 3
-  // Number of variables    = 19 + #parameters
-
+  // Number of variables    = 19 + #parameters 
   // @todo Please implement/augment if required
+	const int nVar = GRMHDb::AbstractGRMHDbSolver_FV::NumberOfVariables;
+	double Qgp[nVar];
   stateOutside[0] = stateInside[0];
   stateOutside[1] = stateInside[1];
   stateOutside[2] = stateInside[2];
@@ -147,12 +197,21 @@ void GRMHDb::GRMHDbSolver_FV::boundaryValues(
   stateOutside[16] = stateInside[16];
   stateOutside[17] = stateInside[17];
   stateOutside[18] = stateInside[18];
-	
+
   double ti = t + 0.5 * dt;
-  initialdata_(x, &ti, Qgp);
+  initialdata_(x, &ti, &Qgp[0]);
   for(int m=0; m < nVar; m++) {
         stateOutside[m] = Qgp[m];
   }
+
+
+  /*stateOutside[0] = exp(-(x[0] * x[0] + x[1] * x[1] + x[2] * x[2]) / 8.0);
+  stateOutside[1] = sin(x[1])*sin(x[0]);
+  stateOutside[2] = sin(x[2]);
+  for (int i = 3; i < nVar; i++) {
+	  stateOutside[i] = cos(x[0]);
+  }*/
+
 }
 
 //***********************************************************
