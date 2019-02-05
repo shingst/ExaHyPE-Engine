@@ -94,4 +94,8 @@ module list
 '''
 }
 
+def adjust_ws(dir){
+    return dir.replaceAll('%2F','_')
+}
+
 return this
