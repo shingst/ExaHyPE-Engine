@@ -67,6 +67,7 @@ namespace {
 }
 
 #ifdef USE_ITAC
+int exahype::solvers::ADERDGSolver::adjustSolutionHandle                 = 0;
 int exahype::solvers::ADERDGSolver::fusedTimeStepBodyHandle              = 0;
 int exahype::solvers::ADERDGSolver::predictorBodyHandle                  = 0;
 int exahype::solvers::ADERDGSolver::updateBodyHandle                     = 0;
@@ -2377,6 +2378,10 @@ void exahype::solvers::ADERDGSolver::adjustSolutionDuringMeshRefinement(
 void exahype::solvers::ADERDGSolver::adjustSolutionDuringMeshRefinementBody(
     CellDescription& cellDescription,
     const bool isInitialMeshRefinement) {
+  #ifdef USE_ITAC
+  VT_begin(adjustSolutionHandle);
+  #endif
+
   if ( cellDescription.getType()==CellDescription::Type::Cell ) {
     assertion1(
         cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::None ||
@@ -2393,6 +2398,10 @@ void exahype::solvers::ADERDGSolver::adjustSolutionDuringMeshRefinementBody(
   }
 
   cellDescription.setHasCompletedLastStep(true);
+
+  #ifdef USE_ITAC
+  VT_end(adjustSolutionHandle);
+  #endif
 }
 
 void exahype::solvers::ADERDGSolver::adjustSolution(CellDescription& cellDescription) {

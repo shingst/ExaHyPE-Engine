@@ -43,6 +43,7 @@ constexpr const char* tags[]{"solutionUpdate", "stableTimeStepSize"};
 }  // namespace
 
 #ifdef USE_ITAC
+int exahype::solvers::FiniteVolumesSolver::adjustSolutionHandle    = 0;
 int exahype::solvers::FiniteVolumesSolver::fusedTimeStepBodyHandle = 0;
 int exahype::solvers::FiniteVolumesSolver::predictorBodyHandle     = 0;
 int exahype::solvers::FiniteVolumesSolver::updateBodyHandle        = 0;
@@ -627,11 +628,19 @@ void exahype::solvers::FiniteVolumesSolver::rollbackToPreviousTimeStep(CellDescr
 void exahype::solvers::FiniteVolumesSolver::adjustSolutionDuringMeshRefinementBody(
     CellDescription& cellDescription,
     const bool isInitialMeshRefinement) {
+  #ifdef USE_ITAC
+  VT_begin(adjustSolutionHandle);
+  #endif
+
   assertion(cellDescription.getType()==CellDescription::Cell);
 
   adjustSolution(cellDescription);
 
   cellDescription.setHasCompletedLastStep(true);
+
+  #ifdef USE_ITAC
+  VT_end(adjustSolutionHandle);
+  #endif
 }
 
 void exahype::solvers::FiniteVolumesSolver::adjustSolution(CellDescription& cellDescription) {

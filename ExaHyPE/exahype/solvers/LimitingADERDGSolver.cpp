@@ -31,6 +31,7 @@ namespace solvers {
 } /* namespace exahype */
 
 #ifdef USE_ITAC
+int exahype::solvers::LimitingADERDGSolver::adjustSolutionHandle    = 0;
 int exahype::solvers::LimitingADERDGSolver::fusedTimeStepBodyHandle = 0;
 int exahype::solvers::LimitingADERDGSolver::predictorBodyHandle     = 0;
 int exahype::solvers::LimitingADERDGSolver::updateBodyHandle        = 0;
@@ -332,6 +333,10 @@ void exahype::solvers::LimitingADERDGSolver::adjustSolutionDuringMeshRefinementB
     SolverPatch& solverPatch,
     CellInfo& cellInfo,
     const bool isInitialMeshRefinement) {
+  #ifdef USE_ITAC
+  VT_begin(adjustSolutionHandle);
+  #endif
+
   if ( solverPatch.getType()==SolverPatch::Type::Cell ) {
     if (solverPatch.getRefinementEvent()==SolverPatch::RefinementEvent::Prolongating) {
       _solver->prolongateVolumeData(solverPatch,isInitialMeshRefinement);
@@ -349,6 +354,10 @@ void exahype::solvers::LimitingADERDGSolver::adjustSolutionDuringMeshRefinementB
   }
 
   solverPatch.setHasCompletedLastStep(true);
+
+  #ifdef USE_ITAC
+  VT_end(adjustSolutionHandle);
+  #endif
 }
 
 void exahype::solvers::LimitingADERDGSolver::ensureLimiterPatchTimeStepDataIsConsistent(
@@ -685,7 +694,12 @@ void exahype::solvers::LimitingADERDGSolver::updateSolution(
 
     _limiter->updateSolution(limiterPatch,neighbourMergePerformed,cellInfo._cellDescriptionsIndex,isFirstTimeStep);
 
-    if ( !OnlyStaticLimiting || !OnlyInitialMeshRefinement ) { // only if both are deactivated, no rollbacks are performed
+    // always perform the projection in neighbours of troubled cells as these couple the dg and fv domain.
+    // only if both are deactivated, no rollbacks are performed and the troubled cells can skip the projection.
+    const bool isNeighourOfTroubledOrRollbacksRequired =
+        !(OnlyStaticLimiting && OnlyInitialMeshRefinement) ||
+        mergedLimiterStatus >= _solver->_minRefinementStatusForTroubledCell-1;
+    if ( isNeighourOfTroubledOrRollbacksRequired ) {
       _solver->swapSolutionAndPreviousSolution(solverPatch);
       projectFVSolutionOnDGSpace(solverPatch,limiterPatch);
     }

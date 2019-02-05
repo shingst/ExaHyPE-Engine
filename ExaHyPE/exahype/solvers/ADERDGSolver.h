@@ -115,6 +115,7 @@ public:
   /**
    * These handles are used to trace solver events with Intel Trace Analyzer and Collector.
    */
+  static int adjustSolutionHandle;
   static int fusedTimeStepBodyHandle;
   static int predictorBodyHandle;
   static int updateBodyHandle;
@@ -2547,22 +2548,6 @@ protected:
       const tarch::la::Vector<DIMENSIONS - 1, int>& subfaceIndex) = 0;
 
   /**
-   * Project coarse grid face unknowns
-   * on level @p coarseGridLevel down to level @p fineGridLevel
-   * and writes them to the fine grid unknowns
-   *
-   * @note For the considered AMR concept, the difference in levels is always
-   * equal to one. The vector @p subcellIndex does contain values in the range
-   * \f$0,1,2\f$.
-   */
-  virtual void volumeUnknownsProlongation(
-      double* const                             luhFine,
-      const double* const                       luhCoarse,
-      const int                                 coarseGridLevel,
-      const int                                 fineGridLevel,
-      const tarch::la::Vector<DIMENSIONS, int>& subcellIndex) = 0;
-
-  /**
    *         s fine grid volume unknowns on level @p fineGridLevel
    * up to level @p coarseGridLevel and adds them to the coarse grid unknowns.
    *
@@ -2573,6 +2558,25 @@ protected:
   virtual void volumeUnknownsRestriction(
       double* const                             luhCoarse,
       const double* const                       luhFine,
+      const int                                 coarseGridLevel,
+      const int                                 fineGridLevel,
+      const tarch::la::Vector<DIMENSIONS, int>& subcellIndex) = 0;
+
+public:
+  /**
+   * Project coarse grid face unknowns
+   * on level @p coarseGridLevel down to level @p fineGridLevel
+   * and writes them to the fine grid unknowns
+   *
+   * @note For the considered AMR concept, the difference in levels is always
+   * equal to one. The vector @p subcellIndex does contain values in the range
+   * \f$0,1,2\f$.
+   *
+   * @note Is public because it is used by the plotters.
+   */
+  virtual void volumeUnknownsProlongation(
+      double* const                             luhFine,
+      const double* const                       luhCoarse,
       const int                                 coarseGridLevel,
       const int                                 fineGridLevel,
       const tarch::la::Vector<DIMENSIONS, int>& subcellIndex) = 0;
