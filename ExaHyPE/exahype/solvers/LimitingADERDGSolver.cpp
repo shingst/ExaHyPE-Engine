@@ -685,8 +685,7 @@ void exahype::solvers::LimitingADERDGSolver::updateSolution(
 
     _limiter->updateSolution(limiterPatch,neighbourMergePerformed,cellInfo._cellDescriptionsIndex,isFirstTimeStep);
 
-    if ( !(OnlyStaticLimiting && OnlyInitialMeshRefinement) && // only if both are deactivated, no rollbacks are performed
-         mergedLimiterStatus == _solver->_minRefinementStatusForTroubledCell-1 ) {
+    if ( !OnlyStaticLimiting || !OnlyInitialMeshRefinement ) { // only if both are deactivated, no rollbacks are performed
       _solver->swapSolutionAndPreviousSolution(solverPatch);
       projectFVSolutionOnDGSpace(solverPatch,limiterPatch);
     }
