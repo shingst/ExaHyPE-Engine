@@ -37,16 +37,18 @@ namespace kernels {
  * <h2>Writing Carpet files from FiniteVolume solvers</h2>
  * 
  * This plotter is a hack. It tries to map the finite volume solutions onto the Carpet
- * finite differencing data representation. Currently, the mapping is very poor but at least
+ * finite differencing data representation. Currently, the mapping is poor but at least
  * there are data.
+ * 
+ * In detail, the "problematic" thing is that we map cell-average data to nodal vertex data.
+ * This interpolation is known to be poor on a coarse resolution. This decision is made to
+ * allow for plotting components which have no gaps. Of course we could define the
+ * components in a shifted way that this interpolation is not neccessary, but then
+ * plotting artifacts might be visible because the components no more touch.
  * 
  **/
 class exahype::plotters::FiniteVolume2Carpet : public exahype::plotters::Plotter::Device {
  public:
-  /**
-   * Pimpl idiom: In order to avoid any  dependency all  logic is hidden inside this
-   * class (instance).
-   **/
   CarpetWriter* writer;
   const int ghostLayerWidth;
   exahype::plotters::CarpetWriter::FileFormat format;
@@ -56,6 +58,7 @@ class exahype::plotters::FiniteVolume2Carpet : public exahype::plotters::Plotter
   int numberOfVerticesPerAxis;
   int solverUnknowns;
 
+  /// See parent class for documentation
   FiniteVolume2Carpet(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing, const int ghostLayerWidth, exahype::plotters::CarpetWriter::FileFormat format);
 
   virtual ~FiniteVolume2Carpet();

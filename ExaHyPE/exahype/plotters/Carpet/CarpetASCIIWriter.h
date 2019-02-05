@@ -37,9 +37,12 @@ namespace exahype {
 }
 
 /**
- * <h2>Writing CarpetHDF5 files which are compatible to Cactus/EinsteinToolkit</h2>
+ * <h2>Writing ASCII/CSV files which are compatible to Cactus/Carpet/EinsteinToolkit</h2>
  * 
- * This writer allows you to write Carpet ASCII files, you don't need HDF5 to use it.
+ * This writer allows you to write Carpet ASCII files, you don't need HDF5 support to use it.
+ * Using this class, you can generate Carpet-compatible files (which can be read with various
+ * tools or directly gnuplotted). In higher dimensions (2D,3D) these files can get quite large.
+ * In 1D however, this format is quite useful.
  * 
  * @author Sven Köppel
  *
@@ -55,19 +58,7 @@ public:
 	
   bool fullCarpetCompatibility; ///< Generate all columns of carpet
 
-
-  /**
-   * cf. also the documentation in the ADERDG2CarpetHDF5.h
-   * 
-   * oneFilePerTimestep: You might want to have this to view the result during computation
-   *     as HDF5 is very lazy at writing. Note that writing out data this form is not compilant
-   *     with most CarpetHDF5 readers (ie. the visit reader). You must join seperate HDF5 files afterwards
-   *     manually.
-   * 
-   * allUnknownsInOneFile: Write different fields in a single H5 combined file. Typically for Cactus
-   *     as structure of arrays is to write each unknown in its own file (ie. one file per physical field).
-   *
-   **/
+  /// See superclass for documentation of arguments
   CarpetASCIIWriter(const std::string& _filename, int _basisSize, int _solverUnknowns, int _writtenUnknowns, exahype::parser::ParserView _plotterParameters, char** writtenQuantitiesNames);
   
   virtual ~CarpetASCIIWriter();

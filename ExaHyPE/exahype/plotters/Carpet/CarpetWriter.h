@@ -28,10 +28,12 @@ namespace exahype {
 }
 
 /**
- * <h2>Writing CarpetHDF5 files which are compatible to Cactus/EinsteinToolkit</h2>
+ * <h2>Writing output files which are compatible to the ones produced by Cactus/EinsteinToolkit/Carpet</h2>
  * 
  * This is an abstract writer. See CarpetHDF5Writer for details about the well-known
- * format, while CarpetASCIIWriter does not go too far to mimic the format.
+ * HDF5-based file format format, while CarpetASCIIWriter resembles the CSV format.
+ * 
+ * In general, the H5 format was implemented first and has the more verbose documentation.
  * 
  * @author Sven Köppel
  *
@@ -72,16 +74,30 @@ public:
   std::vector<std::string> qualifiedWrittenQuantitiesNames; // in CarpetHDF5, the field name *must* contain a "::"; ///< The same as writtenQuantitiesNames but with prefix
 
   /**
-   * cf. also the documentation in the ADERDG2CarpetHDF5.h
+   * Construct a new CarpetWriter.
+   * 
+   * @arg _filename   Basis filename template to use for constructing output
+   *                  filenames. This should be without extension or slicing
+   *                  information (suffix like "it4-rank3.xyz.h5" will be added).
+   * @arg _basisSize  The number of nodes to write. Note, the CarpetWriter is agnostic
+   *                  for the underlying scheme. It always writes vertex data.
+   * @arg _solverUnknowns  State vector length in the solver (stored for setting up the correct striping)
+   * @arg _writtenUnknowns Output vector length
+   * @arg _plotterParameters  View on the specfile, allows for runtime parameter estimation
+   * @arg writtenQuantitiesNames   Can be provided by postProcessing
+   * 
+   * The following settings are extracted from the plotterParameters:
    * 
    * oneFilePerTimestep: You might want to have this to view the result during computation
    *     as HDF5 is very lazy at writing. Note that writing out data this form is not compilant
-   *     with most CarpetHDF5 readers (ie. the visit reader). You must join seperate HDF5 files afterwards
+   *     with most CarpetHDF5 readers (ie. the visit reader). You must join seperate files afterwards
    *     manually.
    * 
-   * allUnknownsInOneFile: Write different fields in a single H5 combined file. Typically for Cactus
+   * allUnknownsInOneFile: Write different fields in a single combined file. Typically for Cactus
    *     as structure of arrays is to write each unknown in its own file (ie. one file per physical field).
    *
+   * For most comments, see also the documentation in the ADERDG2Carpet.h. Note that
+   * the ASCII writer was written after the HDF5 writer and is more a hack.
    **/
   CarpetWriter(const std::string& _filename, int _basisSize, int _solverUnknowns, int _writtenUnknowns, exahype::parser::ParserView _plotterParameters, char** writtenQuantitiesNames);
 

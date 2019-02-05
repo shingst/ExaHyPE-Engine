@@ -35,10 +35,10 @@ namespace kernels {
 }
 
 /**
- * <h2>Projecting ADERDG data onto the CarpetHDF5 file format</h2>
+ * <h2>Projecting ADERDG data onto the Carpet file format</h2>
  * 
  * This plotter is very similar to the CartesianVTK format, it projects the ADERDG DOF
- * onto a regular grid which is written out using the CarpetHDF5Writer.
+ * onto a regular grid which is written out using the CarpetWriter (either HDF5 or ASCII).
  * 
  */
 class exahype::plotters::ADERDG2Carpet : public exahype::plotters::Plotter::Device {
