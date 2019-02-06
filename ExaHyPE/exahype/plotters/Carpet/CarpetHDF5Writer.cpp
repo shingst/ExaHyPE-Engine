@@ -13,7 +13,7 @@ exahype::plotters::CarpetHDF5Writer::~CarpetHDF5Writer() {}
 #ifndef HDF5
   // CarpetHDF5Writer Dummy implementation in case HDF5 libraries are not available.
 
-  exahype::plotters::CarpetHDF5Writer::CarpetHDF5Writer(const std::string& _filename, int _basisSize, int _solverUnknowns, int _writtenUnknowns, exahype::parser::ParserView _plotterParameters, char** writtenQuantitiesNames)
+  exahype::plotters::CarpetHDF5Writer::CarpetHDF5Writer(const std::string& _filename, int _basisSize, int _solverUnknowns, int _writtenUnknowns, exahype::parser::ParserView _plotterParameters, char** _writtenQuantitiesNames)
     : CarpetWriter(_filename, _basisSize, _solverUnknowns, _writtenUnknowns, _plotterParameters, _writtenQuantitiesNames),
       _log("exahype::plotters::CarpetHDF5Writer")
     {
@@ -25,7 +25,7 @@ exahype::plotters::CarpetHDF5Writer::~CarpetHDF5Writer() {}
 		logError("CarpetHDF5Writer()", "Will fail gracefully. If you want to stop the program in such a case, please set the environment variable EXAHYPE_STRICT=\"Yes\".");
 	}
   }
-  void exahype::plotters::CarpetHDF5Writer::writeBasicGroup(H5::H5File* file, int writtenUnknown=-1) {}
+  void exahype::plotters::CarpetHDF5Writer::writeBasicGroup(H5::H5File* file, int writtenUnknown) {}
   void exahype::plotters::CarpetHDF5Writer::openFile() {}
   void exahype::plotters::CarpetHDF5Writer::flushFile() {}
   void exahype::plotters::CarpetHDF5Writer::closeFile() {}
