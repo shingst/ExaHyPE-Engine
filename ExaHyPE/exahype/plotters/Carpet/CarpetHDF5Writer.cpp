@@ -14,7 +14,9 @@ exahype::plotters::CarpetHDF5Writer::~CarpetHDF5Writer() {}
   // CarpetHDF5Writer Dummy implementation in case HDF5 libraries are not available.
 
   exahype::plotters::CarpetHDF5Writer::CarpetHDF5Writer(const std::string& _filename, int _basisSize, int _solverUnknowns, int _writtenUnknowns, exahype::parser::ParserView _plotterParameters, char** writtenQuantitiesNames)
-    : _log("exahype::plotters::CarpetHDF5Writer") {
+    : CarpetWriter(_filename, _basisSize, _solverUnknowns, _writtenUnknowns, _plotterParameters, _writtenQuantitiesNames),
+      _log("exahype::plotters::CarpetHDF5Writer")
+    {
 	logError("CarpetHDF5Writer()", "Compile with -DHDF5, otherwise you cannot use the CarpetHDF5Writer. There will be no output going to " << _filename << " today.");
       	if(std::getenv("EXAHYPE_STRICT")) {
 		logError("CarpetHDF5Writer()", "Aborting since EXAHYPE_STRICT is given.");
@@ -23,7 +25,7 @@ exahype::plotters::CarpetHDF5Writer::~CarpetHDF5Writer() {}
 		logError("CarpetHDF5Writer()", "Will fail gracefully. If you want to stop the program in such a case, please set the environment variable EXAHYPE_STRICT=\"Yes\".");
 	}
   }
-  void exahype::plotters::CarpetHDF5Writer::writeBasicGroup(H5::H5File* file, int writtenUnknown=-1);
+  void exahype::plotters::CarpetHDF5Writer::writeBasicGroup(H5::H5File* file, int writtenUnknown=-1) {}
   void exahype::plotters::CarpetHDF5Writer::openFile() {}
   void exahype::plotters::CarpetHDF5Writer::flushFile() {}
   void exahype::plotters::CarpetHDF5Writer::closeFile() {}
@@ -33,7 +35,7 @@ exahype::plotters::CarpetHDF5Writer::~CarpetHDF5Writer() {}
   void exahype::plotters::CarpetHDF5Writer::finishPlotting() {}
   void exahype::plotters::CarpetHDF5Writer::plotPatch(
       const dvec& offsetOfPatch, const dvec& sizeOfPatch, const dvec& dx,
-      double* mappedCell, double timeStamp, int limiterStatus=nonLimitingLimiterStatus) {}
+      double* mappedCell, double timeStamp, int limiterStatus) {}
   void exahype::plotters::CarpetHDF5Writer::plotPatchForSingleUnknown(
       const dvec& offsetOfPatch, const dvec& sizeOfPatch, const dvec& dx,
       double* mappedCell, double timeStamp, int limiterStatus,
