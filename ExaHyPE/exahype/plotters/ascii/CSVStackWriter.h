@@ -33,6 +33,9 @@ struct exahype::plotters::ascii::CSVStackWriter : public exahype::plotters::asci
 	
 	void writeHeader() override; ///< Write a header block
 	
+	void openFile(std::string base, std::string suffix=".asc") override;
+	void closeFile() override;
+	
 	/**
 	 * Writing a row goes like (for convenience)
 	 *    writeColumnSet(a);
@@ -50,7 +53,7 @@ struct exahype::plotters::ascii::CSVStackWriter : public exahype::plotters::asci
 // syntactic sugar
 
 #define CSV_STACK_WRITER_WRITE_COLUMNS(csvStackWriterInstance, userStructureInstance) \
-	(csvStackWriterInstance).writeRow( (exahype::plotters::ascii::CSVWriter::voidptr) &userStructureInstance )
+	(csvStackWriterInstance).writeColumns( (exahype::plotters::ascii::CSVWriter::voidptr) &userStructureInstance )
 
 
 #endif /* __EXAHYPE_PLOTTERS_ASCII__CSVWRITER__STACK__ */

@@ -67,9 +67,9 @@ struct exahype::plotters::ascii::CSVWriter {
 	
 	/// Compose a typical ExaHyPE output filename
 	static std::string combineFilename(std::string base, std::string suffix=".asc");
-	void openFile(std::string base, std::string suffix=".asc");
-	void closeFile();
-	void flushFile();
+	virtual void openFile(std::string base, std::string suffix=".asc");
+	virtual void closeFile();
+	virtual void flushFile();
 	
 	/**
 	 * A helper routine for quickly add a similar class of columns (n times).

@@ -198,16 +198,18 @@ void exahype::plotters::ascii::CSVWriter::flushFile() {
 
 void exahype::plotters::ascii::CSVWriter::closeFile() {
 	os().close();
+	delete ostream;
 }
 
 void exahype::plotters::ascii::CSVWriter::openFile(std::string filename, std::string suffix) {
 	filename = combineFilename(filename, suffix);
 	bool master = tarch::parallel::Node::getInstance().isGlobalMaster();
 
+	if(ostream) delete ostream; // close old file if present
 	if (master) logInfo("openFile()", "Opening CSV file '"<< filename << "'");
 	
-	os().open(filename, std::ofstream::out);
-	if(os().fail()) {
+	ostream = new std::ofstream(filename, std::ofstream::out);
+	if(os().fail() || !os().is_open()) {
 		logError("openFile()", "Cannot open ASCII file at '" << filename << "': " << std::strerror(errno));
 		throw std::runtime_error("CSVWriter failed to open a file.");
 	}

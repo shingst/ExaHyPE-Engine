@@ -1,6 +1,16 @@
 #include "CSVStackWriter.h"
 #include <exception>
 
+void exahype::plotters::ascii::CSVStackWriter::openFile(std::string base, std::string suffix) {
+	exahype::plotters::ascii::CSVWriter::openFile(base,suffix); // sets ostream / os()
+	for(auto& writer : writers) writer.ostream = ostream; // links all writers
+}
+
+void exahype::plotters::ascii::CSVStackWriter::closeFile() {
+	delete ostream;
+	for(auto& writer : writers) delete writer.ostream;
+}
+
 void exahype::plotters::ascii::CSVStackWriter::writeHeader() {
 	// Writes a header block which goes at the top of the file
 	writeCommentLine("exahype::plotters::ascii::CSVStackWriter ASCII output");
@@ -27,11 +37,12 @@ void exahype::plotters::ascii::CSVStackWriter::writeHeader() {
 			<< col.description
 			<< newline;
 		}
-		os() << newline;
+		//os() << newline;
 	}
 	writeCommentLine("");
 	
-	// Columns list
+	// Columns list in a single line
+	auto &last_writer = *(--writers.end());
 	for(auto& writer : writers) {
 		if(!rawcolumns) os() << commentIntro;
 		auto &last = *(--writer.columns.end());
@@ -39,15 +50,20 @@ void exahype::plotters::ascii::CSVStackWriter::writeHeader() {
 			os() << col.name;
 			if(&col != &last) os() << seperator;
 		}
+		if(&writer != &last_writer) os() << seperator;
 		if(!rawcolumns) os() << newline;
 	}
 	os() << newline;
 }
 
 void exahype::plotters::ascii::CSVStackWriter::writeColumns(voidptr line) {
-	auto& writer = writers[numberOfWrittenCSVWritersInCurrentLine++];
-	writer.newline = ""; // to be safe, do it every time
+	auto& writer = writers[numberOfWrittenCSVWritersInCurrentLine];
+	// to be safe, set this every time
+	writer.newline = "";
 	writer.writeRow(line);
+	if(numberOfWrittenCSVWritersInCurrentLine < writers.size()-1)
+		os() << seperator;
+	numberOfWrittenCSVWritersInCurrentLine++;
 }
 
 
