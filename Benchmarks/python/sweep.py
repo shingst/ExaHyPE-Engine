@@ -301,7 +301,7 @@ def build(buildOnlyMissing=False, skipMakeClean=False):
                             print(" [FAILED]")
                             print("toolkit output=\n"+output.decode('UTF-8'),file=sys.stderr)
                             print("toolkit errors/warnings=\n"+toolkitErr.decode('UTF-8'),file=sys.stderr)
-                            sys.exit()
+                            sys.exit("Toolkit failed")
                         
                         if firstIteration and not skipMakeClean:
                             command = "make clean"
