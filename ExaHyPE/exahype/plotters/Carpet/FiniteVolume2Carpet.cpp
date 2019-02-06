@@ -69,12 +69,7 @@ void exahype::plotters::FiniteVolume2Carpet::init(const std::string& filename, i
 	solverUnknowns = _solverUnknowns;
 
 	const int basisSize = numberOfVerticesPerAxis;
-	writer = new exahype::plotters::CarpetHDF5Writer(filename, basisSize, solverUnknowns, writtenUnknowns, plotterParameters,
-		writtenQuantitiesNames);	
-
-	//if(writer->slicer && writer->slicer->getIdentifier() == "CartesianSlicer") {
-	//	throw std::domain_error("FiniteVolume2Carpet currently does not support the CartesianSlicer.");
-	//}
+	writer = exahype::plotters::CarpetWriter::newCarpetWriterFor(format, filename, basisSize, solverUnknowns, writtenUnknowns, plotterParameters, writtenQuantitiesNames);
 }
 
 void exahype::plotters::FiniteVolume2Carpet::plotPatch(const int solverNumber,solvers::Solver::CellInfo& cellInfo) {
@@ -249,6 +244,10 @@ void exahype::plotters::FiniteVolume2Carpet::interpolateCartesianSlicedVertexPat
 	double empty_slot = std::numeric_limits<double>::signaling_NaN();
 	
 	double* vertexValue = new double[solverUnknowns];
+	
+	// Known bug:
+	//   The 2D data seems to be wrongly striped. I cannot tell why, but this makes of course the 2d output unusable.
+	//   In 1D, this effect do not occur (while probably still there).
 	
 	if(slicer.targetDim == 2) {
 		// Determine a position on the 2d plane

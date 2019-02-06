@@ -235,20 +235,26 @@ void exahype::plotters::CarpetHDF5Writer::plotPatchForSingleUnknown(
 	// 1) Compose a continous storage which is suitable.
 	// TODO: I'm sure HDF5 provides a more performant way to interpret the different data layout.
 	double *componentPatch = new double[singleFieldIdx->size];
-	dfor(i,basisSize) {
-		switch(dim) {
-			case 3:
+	ivec i(0);
+	// dfor(i,basisSize)  // replacing with proper loops
+	switch(dim) {
+		case 3:
+		for(i(0)=0; i(0)<basisSize; i(0)++)
+		for(i(1)=0; i(1)<basisSize; i(1)++)
+		for(i(2)=0; i(2)<basisSize; i(2)++)
 			componentPatch[singleFieldIdx->get(i(2),i(1),i(0))] = mappedCell[writtenCellIdx->get(i(2),i(1),i(0),writtenUnknown)];
-			break;
+		break;
 
-			case 2:
+		case 2:
+		for(i(0)=0; i(0)<basisSize; i(0)++)
+		for(i(1)=0; i(1)<basisSize; i(1)++)
 			componentPatch[singleFieldIdx->get(i(1),i(0))] = mappedCell[writtenCellIdx->get(i(1),i(0),writtenUnknown)];
-			break;
-			
-			case 1:
+		break;
+		
+		case 1:
+		for(i(0)=0; i(0)<basisSize; i(0)++)
 			componentPatch[singleFieldIdx->get(i(0))] = mappedCell[writtenCellIdx->get(i(0),writtenUnknown)];
-			break;
-		}
+		break;
 	}
 	
 	DataSet table = target->createDataSet(component_name.str(), PredType::NATIVE_FLOAT, *patch_space);
