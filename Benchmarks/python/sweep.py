@@ -322,11 +322,11 @@ def build(buildOnlyMissing=False, skipMakeClean=False):
                         else:
                             print(" [FAILED]",file=sys.stderr)
                             print("make errors/warnings=\n"+makeErr.decode('UTF-8'),file=sys.stderr)
-                            sys.exit()
+                            sys.exit("Build failed")
 
                         if not os.path.exists(oldExecutable):
                             print("ERROR: could not find built executable '"+oldExecutable+"'. The parameter 'project' in your configuration file is probably wrong." ,file=sys.stderr)
-                            sys.exit()
+                            sys.exit("Build failed")
                         try:
                             os.rename(oldExecutable,executable)
                         except OSError:
