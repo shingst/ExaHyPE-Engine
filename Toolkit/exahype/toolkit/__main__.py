@@ -12,7 +12,10 @@ def main():
     # import as module
     from toolkit import Controller
     control = Controller()
-    control.run()
+    try:
+        control.run()
+    except Exception as e:
+        sys.exit(str(e))
 
 def memoryUsageResource():
     """
