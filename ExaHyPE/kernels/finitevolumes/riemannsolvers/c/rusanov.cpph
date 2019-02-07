@@ -24,7 +24,7 @@
 template <bool useNCP, bool useFlux, bool useViscousFlux, typename SolverType>
 double kernels::finitevolumes::riemannsolvers::c::rusanov(
     SolverType& solver,
-    double* fnL, double *fnR, const double* qL, const double* qR, int normalNonZero) { // TODO(Dominic): I need four of those
+    double* fnL, double *fnR, const double* qL, const double* qR, int normalNonZero) {
   constexpr int numberOfVariables  = SolverType::NumberOfVariables;
   constexpr int numberOfParameters = SolverType::NumberOfParameters;
   constexpr int numberOfData       = numberOfVariables + numberOfParameters;
@@ -108,7 +108,7 @@ double kernels::finitevolumes::riemannsolvers::c::rusanov(
 //          void PDEFlux(const double* const Q, double** F)>
 template <bool useNCP, bool useFlux,bool useViscousFlux, typename SolverType>
 double kernels::finitevolumes::riemannsolvers::c::rusanov(SolverType& solver, double* fnL, double *fnR, const double* qL, const double* qR,
-                     int normalNonZero) { // TODO(Dominic): I need four of those
+                     int normalNonZero) {
   constexpr int numberOfVariables  = SolverType::NumberOfVariables;
   constexpr int numberOfParameters = SolverType::NumberOfParameters;
   constexpr int numberOfData       = numberOfVariables+numberOfParameters;
