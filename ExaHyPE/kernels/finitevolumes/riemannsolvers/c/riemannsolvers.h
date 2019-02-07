@@ -16,6 +16,9 @@
 #include "kernels/KernelUtils.h"
 #include "kernels/GaussLegendreQuadrature.h"
 
+#include <iostream>
+#include <algorithm> // copy_n
+
 namespace kernels {
 namespace finitevolumes {
 namespace riemannsolvers {

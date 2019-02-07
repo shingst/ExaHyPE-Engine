@@ -5,6 +5,8 @@
 #include "EulerSolver_FV.h"
 #include "EulerSolver_FV_Variables.h"
 
+#include "kernels/finitevolumes/riemannsolvers/c/riemannsolvers.h"
+
 tarch::logging::Log Euler::EulerSolver_FV::_log("Euler::EulerSolver_FV");
 
 Euler::EulerSolver_FV::Reference Euler::EulerSolver_FV::ReferenceChoice = Euler::EulerSolver_FV::Reference::EntropyWave;
@@ -91,9 +93,62 @@ void Euler::EulerSolver_FV::flux(const double* const Q, double** F) {
   #endif
 }
 
-void Euler::EulerSolver_FV::eigenvalues(const double* const Q,
-    const int direction,
-    double* lambda) {
+/**
+ * Use generalised Osher Solomon flux.
+ */
+double Euler::EulerSolver_FV::riemannSolver(double* const fL, double *fR, const double* const qL, const double* const qR, int direction) {
+  return kernels::finitevolumes::riemannsolvers::c::generalisedOsherSolomon<false, true, false, 3, EulerSolver_FV>(*static_cast<EulerSolver_FV*>(this), fL,fR,qL,qR,direction);
+  //return kernels::finitevolumes::riemannsolvers::c::rusanov<false, true, false, EulerSolver_FV>(*static_cast<EulerSolver_FV*>(this), fL,fR,qL,qR,direction);
+}
+
+void Euler::EulerSolver_FV::jacobianMatrix(const double* const Q,double (&A)[NumberOfVariables][NumberOfVariables]) {
+  // see: https://www3.nd.edu/~dbalsara/Numerical-PDE-Course/Appendix_LesHouches/LesHouches_Lecture_5_Approx_RS.pdf
+  const double irho = 1./Q[0];
+  const double vx = Q[1]*irho; // jx/rho
+  const double vy = Q[2]*irho; // jy/rho
+  const double vz = Q[3]*irho; // jz/rho
+  const double v2 = vx*vx  + vy*vy + vz*vz; // jx/rho
+
+  const double gamma = 1.4;      // adjabatic constant
+  const double gm1   = gamma-1;
+  const double p = gm1 * (Q[4] - 0.5 * Q[0] * v2); // pressure
+
+  const double e = p / gm1;
+  const double H = irho*(e + p + 0.5*Q[0]*v2); // enthalpy
+
+  // row 1
+  A[0][0] = 0.0;
+  A[0][1] = 1.0;
+  A[0][2] = 0.0;
+  A[0][3] = 0.0;
+  A[0][4] = 0.0;
+  // row 2
+  A[1][0] = -vx*vx + gm1/2*v2;
+  A[1][1] = 2*vx - gm1*vx;
+  A[1][2] = -gm1*vy;
+  A[1][3] = -gm1*vz;
+  A[1][4] = gm1;
+  // row 3
+  A[2][0] = -vx*vy;
+  A[2][1] = vy;
+  A[2][2] = vx;
+  A[2][3] = 0.0;
+  A[2][4] = 0.0;
+  // row 4
+  A[3][0] = -vx*vz;
+  A[3][1] = vz;
+  A[3][2] = 0.0;
+  A[3][3] = vx;
+  A[3][4] = 0.0;
+  // row 5
+  A[4][0] = -vx*H + gm1/2*vx*v2;
+  A[4][1] = H - gm1*vx*vx;
+  A[4][2] = -gm1*vx*vy;
+  A[4][3] = -gm1*vx*vz;
+  A[4][4] = gamma*vx;
+}
+
+void Euler::EulerSolver_FV::eigenvalues(const double* const Q,const int direction,double* lambda) {
   #ifdef SymbolicVariables
   ReadOnlyVariables vars(Q);
   Variables eigs(lambda);

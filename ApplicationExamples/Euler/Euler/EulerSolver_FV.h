@@ -132,6 +132,21 @@ public:
   void adjustSolution(const double* const x,const double t,const double dt, double* Q) override;
 
   /**
+   * Use generalised Osher Solomon flux.
+   */
+  double riemannSolver(double* const fL, double *fR, const double* const qL, const double* const qR, int direction)  final override;
+
+  /**
+   * Compute jacobian matrix for the Euler equations.
+   *
+   * see: https://www3.nd.edu/~dbalsara/Numerical-PDE-Course/Appendix_LesHouches/LesHouches_Lecture_5_Approx_RS.pdf
+   *
+   * @param Q[in]    state variables and parameters; range: [0,nVar+nData].
+   * @param A[inout] the J; range: [0,nVar+nData].
+   */
+  void jacobianMatrix(const double* const Q,double (&A)[NumberOfVariables][NumberOfVariables]);
+
+  /**
    * Compute the flux tensor.
    *
    * \param[in]    Q the conserved variables (and parameters) associated with a quadrature point
