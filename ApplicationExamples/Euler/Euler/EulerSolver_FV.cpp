@@ -101,93 +101,83 @@ double Euler::EulerSolver_FV::riemannSolver(double* const fL, double *fR, const 
   //return kernels::finitevolumes::riemannsolvers::c::rusanov<false, true, false, EulerSolver_FV>(*static_cast<EulerSolver_FV*>(this), fL,fR,qL,qR,direction);
 }
 
-void Euler::EulerSolver_FV::jacobianMatrix(const double* const Q,const int direction, double (&A)[NumberOfVariables][NumberOfVariables]) {
+void Euler::EulerSolver_FV::eigenvectors(const double* const Q,const int  direction,double (&RM)[NumberOfVariables][NumberOfVariables],double (&iRM)[NumberOfVariables][NumberOfVariables]) {
   // see: https://www3.nd.edu/~dbalsara/Numerical-PDE-Course/Appendix_LesHouches/LesHouches_Lecture_5_Approx_RS.pdf
   const double gamma = 1.4;
 
+  const double rho  = Q[0];
   const double irho = 1./Q[0];
   const double j2   = Q[1]*Q[1] + Q[2]*Q[2] + Q[3]*Q[3];
   const double p    = (gamma-1) * (Q[4] - 0.5 * irho * j2);
 
-  if ( direction==0 ) {
-    A[0][0]=0;
-    A[0][1]=1;
-    A[0][2]=0;
-    A[0][3]=0;
-    A[0][4]=0;
-    A[1][0]=-Q[1]*Q[1]*irho*irho + 0.5*irho*irho*j2*(gamma - 1);
-    A[1][1]=-1.0*Q[1]*irho*(gamma - 1) + 2*Q[1]*irho;
-    A[1][2]=-1.0*Q[2]*irho*(gamma - 1);
-    A[1][3]=-1.0*Q[3]*irho*(gamma - 1);
-    A[1][4]=gamma - 1;
-    A[2][0]=-Q[1]*Q[2]*irho*irho;
-    A[2][1]=Q[2]*irho;
-    A[2][2]=Q[1]*irho;
-    A[2][3]=0;
-    A[2][4]=0;
-    A[3][0]=-Q[1]*Q[3]*irho*irho;
-    A[3][1]=Q[3]*irho;
-    A[3][2]=0;
-    A[3][3]=Q[1]*irho;
-    A[3][4]=0;
-    A[4][0]=0.5*Q[1]*irho*irho*irho*j2*(gamma - 1) - Q[1]*irho*irho*(Q[4] + p);
-    A[4][1]=-1.0*Q[1]*Q[1]*irho*irho*(gamma - 1) + irho*(Q[4] + p);
-    A[4][2]=-1.0*Q[1]*Q[2]*irho*irho*(gamma - 1);
-    A[4][3]=-1.0*Q[1]*Q[3]*irho*irho*(gamma - 1);
-    A[4][4]=Q[1]*gamma*irho;
-  } else if ( direction==1 ) {
-    A[0][0]=0;
-    A[0][1]=0;
-    A[0][2]=1;
-    A[0][3]=0;
-    A[0][4]=0;
-    A[1][0]=-Q[1]*Q[2]*irho*irho;
-    A[1][1]=Q[2]*irho;
-    A[1][2]=Q[1]*irho;
-    A[1][3]=0;
-    A[1][4]=0;
-    A[2][0]=-Q[2]*Q[2]*irho*irho + 0.5*irho*irho*j2*(gamma - 1);
-    A[2][1]=-1.0*Q[1]*irho*(gamma - 1);
-    A[2][2]=-1.0*Q[2]*irho*(gamma - 1) + 2*Q[2]*irho;
-    A[2][3]=-1.0*Q[3]*irho*(gamma - 1);
-    A[2][4]=gamma - 1;
-    A[3][0]=-Q[2]*Q[3]*irho*irho;
-    A[3][1]=0;
-    A[3][2]=Q[3]*irho;
-    A[3][3]=Q[2]*irho;
-    A[3][4]=0;
-    A[4][0]=0.5*Q[2]*irho*irho*irho*j2*(gamma - 1) - Q[2]*irho*irho*(Q[4] + p);
-    A[4][1]=-1.0*Q[1]*Q[2]*irho*irho*(gamma - 1);
-    A[4][2]=-1.0*Q[2]*Q[2]*irho*irho*(gamma - 1) + irho*(Q[4] + p);
-    A[4][3]=-1.0*Q[2]*Q[3]*irho*irho*(gamma - 1);
-    A[4][4]=Q[2]*gamma*irho;
-  } else if ( direction==2 ) {
-    A[0][0]=0;
-    A[0][1]=0;
-    A[0][2]=0;
-    A[0][3]=1;
-    A[0][4]=0;
-    A[1][0]=-Q[1]*Q[3]*irho*irho;
-    A[1][1]=Q[3]*irho;
-    A[1][2]=0;
-    A[1][3]=Q[1]*irho;
-    A[1][4]=0;
-    A[2][0]=-Q[2]*Q[3]*irho*irho;
-    A[2][1]=0;
-    A[2][2]=Q[3]*irho;
-    A[2][3]=Q[2]*irho;
-    A[2][4]=0;
-    A[3][0]=-Q[3]*Q[3]*irho*irho + 0.5*irho*irho*j2*(gamma - 1);
-    A[3][1]=-1.0*Q[1]*irho*(gamma - 1);
-    A[3][2]=-1.0*Q[2]*irho*(gamma - 1);
-    A[3][3]=-1.0*Q[3]*irho*(gamma - 1) + 2*Q[3]*irho;
-    A[3][4]=gamma - 1;
-    A[4][0]=0.5*Q[3]*irho*irho*irho*j2*(gamma - 1) - Q[3]*irho*irho*(Q[4] + p);
-    A[4][1]=-1.0*Q[1]*Q[3]*irho*irho*(gamma - 1);
-    A[4][2]=-1.0*Q[2]*Q[3]*irho*irho*(gamma - 1);
-    A[4][3]=-1.0*Q[3]*Q[3]*irho*irho*(gamma - 1) + irho*(Q[4] + p);
-    A[4][4]=Q[3]*gamma*irho;
+  const double c   = std::sqrt(gamma*p/rho);
+  const double H   = (Q[4]+p)/rho;
+  const double v2  = j2*irho*irho;
+  const double M   = std::sqrt(v2)/c;
+  const double r2c = rho/2./c;
+
+  double u = Q[1]; // direction == 0
+  double v = Q[2];
+  double w = Q[3];
+  if ( direction == 1 ) {
+     v = Q[1]; u = Q[2]; w = Q[3];
+  } else if ( direction == 2 ) {
+     v = Q[1]; w = Q[2]; u = Q[3];
   }
+
+  // Right eigenvector matrix
+  RM[0][0]=1.;
+  RM[0][1]=0.;
+  RM[0][2]=0.;
+  RM[0][3]=r2c;
+  RM[0][4]=r2c;
+  RM[1][0]=u;
+  RM[1][1]=0.;
+  RM[1][2]=0.;
+  RM[1][3]=r2c*(u+c);
+  RM[1][4]=r2c*(u-c);
+  RM[2][0]=v;
+  RM[2][1]=0.;
+  RM[2][2]=-rho;
+  RM[2][3]=r2c*v;
+  RM[2][4]=r2c*v;
+  RM[3][0]=w;
+  RM[3][1]=rho;
+  RM[3][2]=0.;
+  RM[3][3]=r2c*w;
+  RM[3][4]=r2c*w;
+  RM[4][0]=0.5*v2;
+  RM[4][1]=rho*w;
+  RM[4][2]=-rho*v;
+  RM[4][3]=r2c*(H+c*u);
+  RM[4][4]=r2c*(H-c*u);
+
+  // Left eigenvector matrix (inverse of RM)
+  iRM[0][0]=1.-(gamma-1.)/2.*M*M;
+  iRM[0][1]=   (gamma-1.)*u/c/c;
+  iRM[0][2]=   (gamma-1.)*v/c/c;
+  iRM[0][3]=   (gamma-1.)*w/c/c;
+  iRM[0][4]=  -(gamma-1.)/c/c;
+  iRM[1][0]=-w/rho;
+  iRM[1][1]=0.;
+  iRM[1][2]=0.;
+  iRM[1][3]=1./rho;
+  iRM[1][4]=0.;
+  iRM[2][0]=v/rho;
+  iRM[2][1]=0.;
+  iRM[2][2]=-1./rho;
+  iRM[2][3]=0.;
+  iRM[2][4]=0.;
+  iRM[3][0]=c/rho*(0.5*(gamma-1.)*M*M-u/c);
+  iRM[3][1]=1./rho*( 1.-(gamma-1.)*u/c);
+  iRM[3][2]=1./rho*(   -(gamma-1.)*v/c);
+  iRM[3][3]=1./rho*(   -(gamma-1.)*w/c);
+  iRM[3][4]=(gamma-1.)/rho/c;
+  iRM[4][0]=c/rho*(0.5*(gamma-1.)*M*M+u/c);
+  iRM[4][1]=1./rho*(-1.-(gamma-1.)*u/c);
+  iRM[4][2]=1./rho*(   -(gamma-1.)*v/c);
+  iRM[4][3]=1./rho*(   -(gamma-1.)*w/c);
+  iRM[4][4]=(gamma-1.)/rho/c;
 }
 
 void Euler::EulerSolver_FV::eigenvalues(const double* const Q,const int direction,double* lambda) {

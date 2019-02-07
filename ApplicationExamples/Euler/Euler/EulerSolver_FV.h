@@ -137,15 +137,28 @@ public:
   double riemannSolver(double* const fL, double *fR, const double* const qL, const double* const qR, int direction)  final override;
 
   /**
-   * Compute jacobian matrix for the Euler equations.
+   * Compute the eigenvectors of the jacobian matrix (coefficient matrix of derivative in direction @direction).
+   *
+   * You may have to rotate vectors according to the normal @p direction parameter,
+   * e.g. for a velocity Q[1],Q[2],Q[3], you would write
+   *
+   * double u = Q[1]; // direction == 0
+   * double v = Q[2];
+   * double w = Q[3];
+   * if ( direction == 1 ) {
+   *    v = Q[1]; u = Q[2]; w = Q[3];
+   * } else if ( direction == 2 ) {
+   *    v = Q[1]; w = Q[2]; u = Q[3];
+   * }
    *
    * see: https://www3.nd.edu/~dbalsara/Numerical-PDE-Course/Appendix_LesHouches/LesHouches_Lecture_5_Approx_RS.pdf
    *
    * @param Q[in]         state variables and parameters; range: [0,nVar+nData].
-   * @param direction[in] the normal direction of the face.
-   * @param A[inout]      the Jacobian; range: [nVar,nVar].
+   * @param direction     the coordinate direction (0,1,2). Required to compute the
+   * @param RM[inout]     the right eigenvectors (each column stores an eigenvector): [nVar,nVar].
+   * @param iRM[inout]    the left eigenvectors (inverse of RM): [nVar,nVar].
    */
-  void jacobianMatrix(const double* const Q,const int direction,double (&A)[NumberOfVariables][NumberOfVariables]);
+  void eigenvectors(const double* const Q,const int direction,double (&Rm)[NumberOfVariables][NumberOfVariables],double (&iRm)[NumberOfVariables][NumberOfVariables]);
 
   /**
    * Compute the flux tensor.

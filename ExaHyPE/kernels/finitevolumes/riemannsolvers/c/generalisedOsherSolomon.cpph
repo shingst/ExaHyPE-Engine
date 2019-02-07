@@ -28,39 +28,43 @@ double kernels::finitevolumes::riemannsolvers::c::generalisedOsherSolomon(
   for(int i=0; i<numQuadPoints; i++) {
     const double si  = kernels::gaussLegendreNodes[numQuadPoints-1][i];
     double Qs[numberOfData];
-    for(int k=0; k < numberOfData; k++) {
-      Qs[k] = qL[k] + si * (qR[k] - qL[k]);
+    for(int j=0; j < numberOfVariables; j++) {
+      Qs[j] = qL[j] + si * (qR[j] - qL[j]);
     }
+  
+    double Ls[numberOfVariables];
+    solver.eigenvalues(Qs, direction, Ls);
+    double Rs[numberOfVariables][numberOfVariables];
+    double iRs[numberOfVariables][numberOfVariables];
+    solver.eigenvectors(Qs/*in*/,direction,Rs/*inout*/,iRs/*inout*/);    // user solver can work internally with eigen system or eigen solvers; cast rep
     
-    double jacobian[numberOfVariables][numberOfVariables];
-    solver.jacobianMatrix(Qs/*in*/, direction, jacobian/*inout*/);    // user solver can work internally with eigen system or eigen solvers; cast rep 
+  //  #ifdef Asserts 
+    double sumOfEntries = 0;
+    for(int j=0; j < numberOfVariables; j++) {
+      for(int k=0; k < numberOfVariables; k++) {
+        for(int a=0; a < numberOfVariables; a++) {
+          sumOfEntries += iRs[j][a] * Rs[a][k];
+        }
+      }
+    }
+    if ( sumOfEntries < numberOfVariables - 1e-12 || sumOfEntries > numberOfVariables + 1e-12 ) {
+      std::cerr << "Error: Left eigenvector matrix is not an inverse of the right one as sum of entries="<<sumOfEntries << "; direction="<<direction << std::endl;
+      std::terminate();
+    }
+   // #endif
+    
     // compute Osher matrix
     const double wi = kernels::gaussLegendreWeights[numQuadPoints-1][i];
-    
-    std::cout << "osherMatrix[pre]=" <<std::endl;
     for(int j=0; j < numberOfVariables; j++) {
       for(int k=0; k < numberOfVariables; k++) {
-        std::cout << std::setprecision(3) << osherMatrix[j][k] << ",";
-        if ( k == numberOfVariables -1 ) { std::cout << std::endl; }
-      }
-    }
-    
-    for(int j=0; j < numberOfVariables; j++) {
-      for(int k=0; k < numberOfVariables; k++) {
-        osherMatrix[j][k] += wi * std::abs(jacobian[j][k]);
-      }
-    }
-    
-    std::cout << "osherMatrix[post]=" <<std::endl;
-    for(int j=0; j < numberOfVariables; j++) {
-      for(int k=0; k < numberOfVariables; k++) {
-        std::cout << std::setprecision(3) << osherMatrix[j][k] << ",";
-        if ( k == numberOfVariables -1 ) { std::cout << std::endl; }
+        for(int a=0; a < numberOfVariables; a++) {
+          osherMatrix[j][k] += wi * iRs[j][a]*std::abs(Ls[a])*Rs[a][k];
+        }
       }
     }
   }
   
-
+  
   
   // TODO(Dominic): Debug
   double sL[numberOfVariables];
@@ -79,8 +83,13 @@ double kernels::finitevolumes::riemannsolvers::c::generalisedOsherSolomon(
   
   double FL2[DIMENSIONS][numberOfVariables] = {0.0}; // Q: Can we skip this memset?
   double FR2[DIMENSIONS][numberOfVariables] = {0.0};
+  #if DIMENSIONS==3
+  double* FL[DIMENSIONS]={FL2[0], FL2[1], FL2[2]};
+  double* FR[DIMENSIONS]={FR2[0], FR2[1], FR2[2]};
+  #else
   double* FL[DIMENSIONS]={FL2[0], FL2[1]};
   double* FR[DIMENSIONS]={FR2[0], FR2[1]};
+  #endif
   if (useFlux && !useViscousFlux) {
     solver.flux(qR, FR);
     solver.flux(qL, FL);
@@ -91,8 +100,7 @@ double kernels::finitevolumes::riemannsolvers::c::generalisedOsherSolomon(
     for(int j=0; j < numberOfVariables; j++) {
       fnR[i] -= 0.5 * osherMatrix[i][j] * ( qR[j] - qL[j] );
     }
-    // fnR[i] -= 0.5 * s_max * ( qR[i] - qL[i] );
     fnL[i] = fnR[i];
   }
-  return s_max; // to not trigger any assertions
+  return s_max;
 }

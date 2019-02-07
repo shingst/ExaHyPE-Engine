@@ -16,6 +16,7 @@
 #include "kernels/KernelUtils.h"
 #include "kernels/GaussLegendreQuadrature.h"
 
+#include <iomanip>
 #include <iostream>
 #include <algorithm> // copy_n
 
