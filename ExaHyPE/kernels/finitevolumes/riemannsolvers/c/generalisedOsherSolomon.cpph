@@ -13,7 +13,7 @@
 template <bool useNCP, bool useFlux, bool useViscousFlux, int numQuadPoints, typename SolverType>
 double kernels::finitevolumes::riemannsolvers::c::generalisedOsherSolomon(
     SolverType& solver,
-    double* fnL, double *fnR, const double* qL, const double* qR, int normalNonZero) {
+    double* fnL, double *fnR, const double* qL, const double* qR, int direction) {
   if ( useNCP || useViscousFlux ) {
     std::cerr << "Only implemented for flux(+jacobianMatrix) only PDEs." << std::endl;
     std::terminate();
@@ -33,7 +33,7 @@ double kernels::finitevolumes::riemannsolvers::c::generalisedOsherSolomon(
     }
     
     double jacobian[numberOfVariables][numberOfVariables];
-    solver.jacobianMatrix(Qs/*in*/, jacobian/*inout*/);    // user solver can work internally with eigen system or eigen solvers; cast rep 
+    solver.jacobianMatrix(Qs/*in*/, direction, jacobian/*inout*/);    // user solver can work internally with eigen system or eigen solvers; cast rep 
     // compute Osher matrix
     const double wi = kernels::gaussLegendreWeights[numQuadPoints-1][i];
     for(int j=0; j < numberOfVariables; j++) {
@@ -54,8 +54,8 @@ double kernels::finitevolumes::riemannsolvers::c::generalisedOsherSolomon(
   // TODO(Dominic): Debug
   double sL[numberOfVariables];
   double sR[numberOfVariables];
-  solver.eigenvalues(qL, normalNonZero, sL);
-  solver.eigenvalues(qR, normalNonZero, sR);
+  solver.eigenvalues(qL, direction, sL);
+  solver.eigenvalues(qR, direction, sR);
   double s_max = -1.0;
   for (int i = 0; i < numberOfVariables; i++) {
     const double abs_sL_i = std::abs(sL[i]);
@@ -76,14 +76,11 @@ double kernels::finitevolumes::riemannsolvers::c::generalisedOsherSolomon(
   }
   // fnR[j] = fnR[j] - 0.5 * ( osherMatrix[jk] ) * (qR[k] - qL[k])
   for(int j=0; j < numberOfVariables; j++) {
-    fnR[j] = 0.5 * (FR2[normalNonZero][j] + FL2[normalNonZero][j]);
-    //fnR[j] -= 0.5 * s_max * ( qR[j] - qL[j] );
-    double osherMax = 0;
+    fnR[j] = 0.5 * (FR2[direction][j] + FL2[direction][j]);
     for(int k=0; k < numberOfVariables; k++) {
-      //osherMax += osherMatrix[j][k];
       fnR[j] -= 0.5 * osherMatrix[j][k] * ( qR[k] - qL[k] );
     }
-//    std::cout << "osher_max="<< std::setprecision(3) << osherMax << "," << "s_max=" << std::setprecision(3) << s_max << std::endl;
+    // fnR[j] -= 0.5 * s_max * ( qR[j] - qL[j] );
     fnL[j] = fnR[j];
   }
   return 1e-11; // to not trigger any assertions

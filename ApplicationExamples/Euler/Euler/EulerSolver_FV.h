@@ -141,10 +141,11 @@ public:
    *
    * see: https://www3.nd.edu/~dbalsara/Numerical-PDE-Course/Appendix_LesHouches/LesHouches_Lecture_5_Approx_RS.pdf
    *
-   * @param Q[in]    state variables and parameters; range: [0,nVar+nData].
-   * @param A[inout] the J; range: [0,nVar+nData].
+   * @param Q[in]         state variables and parameters; range: [0,nVar+nData].
+   * @param direction[in] the normal direction of the face.
+   * @param A[inout]      the Jacobian; range: [nVar,nVar].
    */
-  void jacobianMatrix(const double* const Q,double (&A)[NumberOfVariables][NumberOfVariables]);
+  void jacobianMatrix(const double* const Q,const int direction,double (&A)[NumberOfVariables][NumberOfVariables]);
 
   /**
    * Compute the flux tensor.

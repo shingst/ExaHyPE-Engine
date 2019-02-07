@@ -101,51 +101,93 @@ double Euler::EulerSolver_FV::riemannSolver(double* const fL, double *fR, const 
   //return kernels::finitevolumes::riemannsolvers::c::rusanov<false, true, false, EulerSolver_FV>(*static_cast<EulerSolver_FV*>(this), fL,fR,qL,qR,direction);
 }
 
-void Euler::EulerSolver_FV::jacobianMatrix(const double* const Q,double (&A)[NumberOfVariables][NumberOfVariables]) {
+void Euler::EulerSolver_FV::jacobianMatrix(const double* const Q,const int direction, double (&A)[NumberOfVariables][NumberOfVariables]) {
   // see: https://www3.nd.edu/~dbalsara/Numerical-PDE-Course/Appendix_LesHouches/LesHouches_Lecture_5_Approx_RS.pdf
+  const double gamma = 1.4;
+
   const double irho = 1./Q[0];
-  const double vx = Q[1]*irho; // jx/rho
-  const double vy = Q[2]*irho; // jy/rho
-  const double vz = Q[3]*irho; // jz/rho
-  const double v2 = vx*vx  + vy*vy + vz*vz; // jx/rho
+  const double j2   = Q[1]*Q[1] + Q[2]*Q[2] + Q[3]*Q[3];
+  const double p    = (gamma-1) * (Q[4] - 0.5 * irho * j2);
 
-  const double gamma = 1.4;      // adjabatic constant
-  const double gm1   = gamma-1;
-  const double p = gm1 * (Q[4] - 0.5 * Q[0] * v2); // pressure
-
-  const double e = p / gm1;
-  const double H = irho*(e + p + 0.5*Q[0]*v2); // enthalpy
-
-  // row 1
-  A[0][0] = 0.0;
-  A[0][1] = 1.0;
-  A[0][2] = 0.0;
-  A[0][3] = 0.0;
-  A[0][4] = 0.0;
-  // row 2
-  A[1][0] = -vx*vx + gm1/2*v2;
-  A[1][1] = 2*vx - gm1*vx;
-  A[1][2] = -gm1*vy;
-  A[1][3] = -gm1*vz;
-  A[1][4] = gm1;
-  // row 3
-  A[2][0] = -vx*vy;
-  A[2][1] = vy;
-  A[2][2] = vx;
-  A[2][3] = 0.0;
-  A[2][4] = 0.0;
-  // row 4
-  A[3][0] = -vx*vz;
-  A[3][1] = vz;
-  A[3][2] = 0.0;
-  A[3][3] = vx;
-  A[3][4] = 0.0;
-  // row 5
-  A[4][0] = -vx*H + gm1/2*vx*v2;
-  A[4][1] = H - gm1*vx*vx;
-  A[4][2] = -gm1*vx*vy;
-  A[4][3] = -gm1*vx*vz;
-  A[4][4] = gamma*vx;
+  if ( direction==0 ) {
+    A[0][0]=0;
+    A[0][1]=1;
+    A[0][2]=0;
+    A[0][3]=0;
+    A[0][4]=0;
+    A[1][0]=-Q[1]*Q[1]*irho*irho + 0.5*irho*irho*j2*(gamma - 1);
+    A[1][1]=-1.0*Q[1]*irho*(gamma - 1) + 2*Q[1]*irho;
+    A[1][2]=-1.0*Q[2]*irho*(gamma - 1);
+    A[1][3]=-1.0*Q[3]*irho*(gamma - 1);
+    A[1][4]=gamma - 1;
+    A[2][0]=-Q[1]*Q[2]*irho*irho;
+    A[2][1]=Q[2]*irho;
+    A[2][2]=Q[1]*irho;
+    A[2][3]=0;
+    A[2][4]=0;
+    A[3][0]=-Q[1]*Q[3]*irho*irho;
+    A[3][1]=Q[3]*irho;
+    A[3][2]=0;
+    A[3][3]=Q[1]*irho;
+    A[3][4]=0;
+    A[4][0]=0.5*Q[1]*irho*irho*irho*j2*(gamma - 1) - Q[1]*irho*irho*(Q[4] + p);
+    A[4][1]=-1.0*Q[1]*Q[1]*irho*irho*(gamma - 1) + irho*(Q[4] + p);
+    A[4][2]=-1.0*Q[1]*Q[2]*irho*irho*(gamma - 1);
+    A[4][3]=-1.0*Q[1]*Q[3]*irho*irho*(gamma - 1);
+    A[4][4]=Q[1]*gamma*irho;
+  } else if ( direction==1 ) {
+    A[0][0]=0;
+    A[0][1]=0;
+    A[0][2]=1;
+    A[0][3]=0;
+    A[0][4]=0;
+    A[1][0]=-Q[1]*Q[2]*irho*irho;
+    A[1][1]=Q[2]*irho;
+    A[1][2]=Q[1]*irho;
+    A[1][3]=0;
+    A[1][4]=0;
+    A[2][0]=-Q[2]*Q[2]*irho*irho + 0.5*irho*irho*j2*(gamma - 1);
+    A[2][1]=-1.0*Q[1]*irho*(gamma - 1);
+    A[2][2]=-1.0*Q[2]*irho*(gamma - 1) + 2*Q[2]*irho;
+    A[2][3]=-1.0*Q[3]*irho*(gamma - 1);
+    A[2][4]=gamma - 1;
+    A[3][0]=-Q[2]*Q[3]*irho*irho;
+    A[3][1]=0;
+    A[3][2]=Q[3]*irho;
+    A[3][3]=Q[2]*irho;
+    A[3][4]=0;
+    A[4][0]=0.5*Q[2]*irho*irho*irho*j2*(gamma - 1) - Q[2]*irho*irho*(Q[4] + p);
+    A[4][1]=-1.0*Q[1]*Q[2]*irho*irho*(gamma - 1);
+    A[4][2]=-1.0*Q[2]*Q[2]*irho*irho*(gamma - 1) + irho*(Q[4] + p);
+    A[4][3]=-1.0*Q[2]*Q[3]*irho*irho*(gamma - 1);
+    A[4][4]=Q[2]*gamma*irho;
+  } else if ( direction==2 ) {
+    A[0][0]=0;
+    A[0][1]=0;
+    A[0][2]=0;
+    A[0][3]=1;
+    A[0][4]=0;
+    A[1][0]=-Q[1]*Q[3]*irho*irho;
+    A[1][1]=Q[3]*irho;
+    A[1][2]=0;
+    A[1][3]=Q[1]*irho;
+    A[1][4]=0;
+    A[2][0]=-Q[2]*Q[3]*irho*irho;
+    A[2][1]=0;
+    A[2][2]=Q[3]*irho;
+    A[2][3]=Q[2]*irho;
+    A[2][4]=0;
+    A[3][0]=-Q[3]*Q[3]*irho*irho + 0.5*irho*irho*j2*(gamma - 1);
+    A[3][1]=-1.0*Q[1]*irho*(gamma - 1);
+    A[3][2]=-1.0*Q[2]*irho*(gamma - 1);
+    A[3][3]=-1.0*Q[3]*irho*(gamma - 1) + 2*Q[3]*irho;
+    A[3][4]=gamma - 1;
+    A[4][0]=0.5*Q[3]*irho*irho*irho*j2*(gamma - 1) - Q[3]*irho*irho*(Q[4] + p);
+    A[4][1]=-1.0*Q[1]*Q[3]*irho*irho*(gamma - 1);
+    A[4][2]=-1.0*Q[2]*Q[3]*irho*irho*(gamma - 1);
+    A[4][3]=-1.0*Q[3]*Q[3]*irho*irho*(gamma - 1) + irho*(Q[4] + p);
+    A[4][4]=Q[3]*gamma*irho;
+  }
 }
 
 void Euler::EulerSolver_FV::eigenvalues(const double* const Q,const int direction,double* lambda) {
