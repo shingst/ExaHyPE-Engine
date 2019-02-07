@@ -5,6 +5,8 @@
 #include "EulerSolver_FV.h"
 #include "EulerSolver_FV_Variables.h"
 
+#include "kernels/finitevolumes/riemannsolvers/c/riemannsolvers.h"
+
 tarch::logging::Log Euler::EulerSolver_FV::_log("Euler::EulerSolver_FV");
 
 Euler::EulerSolver_FV::Reference Euler::EulerSolver_FV::ReferenceChoice = Euler::EulerSolver_FV::Reference::EntropyWave;
@@ -24,6 +26,9 @@ void Euler::EulerSolver_FV::init(const std::vector<std::string>& cmdlineargs,con
     }
     else if (reference.compare("explosion")==0){
       ReferenceChoice = Reference::SphericalExplosion;
+    }
+    else if (reference.compare("shuosher")==0){
+      ReferenceChoice = Reference::ShuOsher;
     }
     else {
       logError("init(...)","do not recognise value '"<<reference<<"' for constant 'reference'. Use either 'entropywave', "
@@ -88,9 +93,104 @@ void Euler::EulerSolver_FV::flux(const double* const Q, double** F) {
   #endif
 }
 
-void Euler::EulerSolver_FV::eigenvalues(const double* const Q,
-    const int direction,
-    double* lambda) {
+/**
+ * Use generalised Osher Solomon flux.
+ */
+double Euler::EulerSolver_FV::riemannSolver(double* const fL, double *fR, const double* const qL, const double* const qR, int direction) {
+  return kernels::finitevolumes::riemannsolvers::c::generalisedOsherSolomon<false, true, false, 3, EulerSolver_FV>(*static_cast<EulerSolver_FV*>(this), fL,fR,qL,qR,direction);
+  //return kernels::finitevolumes::riemannsolvers::c::rusanov<false, true, false, EulerSolver_FV>(*static_cast<EulerSolver_FV*>(this), fL,fR,qL,qR,direction);
+}
+
+void Euler::EulerSolver_FV::jacobianMatrix(const double* const Q,const int direction, double (&A)[NumberOfVariables][NumberOfVariables]) {
+  // see: https://www3.nd.edu/~dbalsara/Numerical-PDE-Course/Appendix_LesHouches/LesHouches_Lecture_5_Approx_RS.pdf
+  const double gamma = 1.4;
+
+  const double irho = 1./Q[0];
+  const double j2   = Q[1]*Q[1] + Q[2]*Q[2] + Q[3]*Q[3];
+  const double p    = (gamma-1) * (Q[4] - 0.5 * irho * j2);
+
+  if ( direction==0 ) {
+    A[0][0]=0;
+    A[0][1]=1;
+    A[0][2]=0;
+    A[0][3]=0;
+    A[0][4]=0;
+    A[1][0]=-Q[1]*Q[1]*irho*irho + 0.5*irho*irho*j2*(gamma - 1);
+    A[1][1]=-1.0*Q[1]*irho*(gamma - 1) + 2*Q[1]*irho;
+    A[1][2]=-1.0*Q[2]*irho*(gamma - 1);
+    A[1][3]=-1.0*Q[3]*irho*(gamma - 1);
+    A[1][4]=gamma - 1;
+    A[2][0]=-Q[1]*Q[2]*irho*irho;
+    A[2][1]=Q[2]*irho;
+    A[2][2]=Q[1]*irho;
+    A[2][3]=0;
+    A[2][4]=0;
+    A[3][0]=-Q[1]*Q[3]*irho*irho;
+    A[3][1]=Q[3]*irho;
+    A[3][2]=0;
+    A[3][3]=Q[1]*irho;
+    A[3][4]=0;
+    A[4][0]=0.5*Q[1]*irho*irho*irho*j2*(gamma - 1) - Q[1]*irho*irho*(Q[4] + p);
+    A[4][1]=-1.0*Q[1]*Q[1]*irho*irho*(gamma - 1) + irho*(Q[4] + p);
+    A[4][2]=-1.0*Q[1]*Q[2]*irho*irho*(gamma - 1);
+    A[4][3]=-1.0*Q[1]*Q[3]*irho*irho*(gamma - 1);
+    A[4][4]=Q[1]*gamma*irho;
+  } else if ( direction==1 ) {
+    A[0][0]=0;
+    A[0][1]=0;
+    A[0][2]=1;
+    A[0][3]=0;
+    A[0][4]=0;
+    A[1][0]=-Q[1]*Q[2]*irho*irho;
+    A[1][1]=Q[2]*irho;
+    A[1][2]=Q[1]*irho;
+    A[1][3]=0;
+    A[1][4]=0;
+    A[2][0]=-Q[2]*Q[2]*irho*irho + 0.5*irho*irho*j2*(gamma - 1);
+    A[2][1]=-1.0*Q[1]*irho*(gamma - 1);
+    A[2][2]=-1.0*Q[2]*irho*(gamma - 1) + 2*Q[2]*irho;
+    A[2][3]=-1.0*Q[3]*irho*(gamma - 1);
+    A[2][4]=gamma - 1;
+    A[3][0]=-Q[2]*Q[3]*irho*irho;
+    A[3][1]=0;
+    A[3][2]=Q[3]*irho;
+    A[3][3]=Q[2]*irho;
+    A[3][4]=0;
+    A[4][0]=0.5*Q[2]*irho*irho*irho*j2*(gamma - 1) - Q[2]*irho*irho*(Q[4] + p);
+    A[4][1]=-1.0*Q[1]*Q[2]*irho*irho*(gamma - 1);
+    A[4][2]=-1.0*Q[2]*Q[2]*irho*irho*(gamma - 1) + irho*(Q[4] + p);
+    A[4][3]=-1.0*Q[2]*Q[3]*irho*irho*(gamma - 1);
+    A[4][4]=Q[2]*gamma*irho;
+  } else if ( direction==2 ) {
+    A[0][0]=0;
+    A[0][1]=0;
+    A[0][2]=0;
+    A[0][3]=1;
+    A[0][4]=0;
+    A[1][0]=-Q[1]*Q[3]*irho*irho;
+    A[1][1]=Q[3]*irho;
+    A[1][2]=0;
+    A[1][3]=Q[1]*irho;
+    A[1][4]=0;
+    A[2][0]=-Q[2]*Q[3]*irho*irho;
+    A[2][1]=0;
+    A[2][2]=Q[3]*irho;
+    A[2][3]=Q[2]*irho;
+    A[2][4]=0;
+    A[3][0]=-Q[3]*Q[3]*irho*irho + 0.5*irho*irho*j2*(gamma - 1);
+    A[3][1]=-1.0*Q[1]*irho*(gamma - 1);
+    A[3][2]=-1.0*Q[2]*irho*(gamma - 1);
+    A[3][3]=-1.0*Q[3]*irho*(gamma - 1) + 2*Q[3]*irho;
+    A[3][4]=gamma - 1;
+    A[4][0]=0.5*Q[3]*irho*irho*irho*j2*(gamma - 1) - Q[3]*irho*irho*(Q[4] + p);
+    A[4][1]=-1.0*Q[1]*Q[3]*irho*irho*(gamma - 1);
+    A[4][2]=-1.0*Q[2]*Q[3]*irho*irho*(gamma - 1);
+    A[4][3]=-1.0*Q[3]*Q[3]*irho*irho*(gamma - 1) + irho*(Q[4] + p);
+    A[4][4]=Q[3]*gamma*irho;
+  }
+}
+
+void Euler::EulerSolver_FV::eigenvalues(const double* const Q,const int direction,double* lambda) {
   #ifdef SymbolicVariables
   ReadOnlyVariables vars(Q);
   Variables eigs(lambda);
@@ -228,6 +328,27 @@ void Euler::EulerSolver_FV::sodShockTube(const double* const x, const double t, 
   }
 }
 
+void Euler::EulerSolver_FV::shuOsher(const double* const x, double t, double* Q) {
+  double p = 1.0; 
+  if ( x[0] < -4 ) {
+    Q[0]=3.8571; 
+    Q[1]=Q[0]*2.6294; 
+    Q[2]=0.0; 
+    Q[3]=0.0;
+    p=10.333;
+  } else {
+    Q[0]=1.0+0.2*std::sin(5*x[0]);
+    Q[1]=0.0; 
+    Q[2]=0.0; 
+    Q[3]=0.0;
+    p=1.0;
+  }
+  
+  // total energy = internal energy + kinetic energy
+  const double gamma = 1.4;
+  Q[4] = p/(gamma-1) + 0.5 / Q[0] * (Q[1]*Q[1]); // j*j, j=rho*v !!! ; assumes: Q[1+i]=0, i=1,2.
+}
+
 void Euler::EulerSolver_FV::sphericalExplosion(const double* const x,double t, double* Q) { 
    constexpr double x0[3]   = {0.5, 0.5, 0.5};
    constexpr double radius  = 0.25;
@@ -301,6 +422,9 @@ void Euler::EulerSolver_FV::referenceSolution(const double* const x,double t, do
   case Reference::RarefactionWave:
     rarefactionWave(x,t,Q);
     break;
+  case Reference::ShuOsher:
+    shuOsher(x,t,Q);
+    break;
   }
 }
 
@@ -329,6 +453,14 @@ void Euler::EulerSolver_FV::boundaryValues(
     break;
   case Reference::EntropyWave: // Dirichlet conditons
     referenceSolution(x,t,stateOutside);
+    break;
+  case Reference::ShuOsher:
+    if ( direction==0 ) {
+      referenceSolution(x,t,stateOutside);
+    } else {
+      std::copy_n(stateInside, NumberOfVariables, stateOutside);
+      stateOutside[1+direction] =  -stateOutside[1+direction]; 
+    }
     break;
   }
 }

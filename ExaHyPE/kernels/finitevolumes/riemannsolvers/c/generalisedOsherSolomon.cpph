@@ -13,12 +13,12 @@
 template <bool useNCP, bool useFlux, bool useViscousFlux, int numQuadPoints, typename SolverType>
 double kernels::finitevolumes::riemannsolvers::c::generalisedOsherSolomon(
     SolverType& solver,
-    double* fnL, double *fnR, const double* qL, const double* qR, int direction) {
+    double* fnL, double *fnR, const double* qL, 
+    const double* qR, int direction) {
   if ( useNCP || useViscousFlux ) {
     std::cerr << "Only implemented for flux(+jacobianMatrix) only PDEs." << std::endl;
     std::terminate();
   }
-  
   constexpr int numberOfVariables  = SolverType::NumberOfVariables;
   constexpr int numberOfParameters = SolverType::NumberOfParameters;
   constexpr int numberOfData       = numberOfVariables + numberOfParameters;
@@ -36,20 +36,31 @@ double kernels::finitevolumes::riemannsolvers::c::generalisedOsherSolomon(
     solver.jacobianMatrix(Qs/*in*/, direction, jacobian/*inout*/);    // user solver can work internally with eigen system or eigen solvers; cast rep 
     // compute Osher matrix
     const double wi = kernels::gaussLegendreWeights[numQuadPoints-1][i];
+    
+    std::cout << "osherMatrix[pre]=" <<std::endl;
+    for(int j=0; j < numberOfVariables; j++) {
+      for(int k=0; k < numberOfVariables; k++) {
+        std::cout << std::setprecision(3) << osherMatrix[j][k] << ",";
+        if ( k == numberOfVariables -1 ) { std::cout << std::endl; }
+      }
+    }
+    
     for(int j=0; j < numberOfVariables; j++) {
       for(int k=0; k < numberOfVariables; k++) {
         osherMatrix[j][k] += wi * std::abs(jacobian[j][k]);
       }
     }
+    
+    std::cout << "osherMatrix[post]=" <<std::endl;
+    for(int j=0; j < numberOfVariables; j++) {
+      for(int k=0; k < numberOfVariables; k++) {
+        std::cout << std::setprecision(3) << osherMatrix[j][k] << ",";
+        if ( k == numberOfVariables -1 ) { std::cout << std::endl; }
+      }
+    }
   }
   
-  //std::cout << "osherMatrix=" <<std::endl;
-  //for(int j=0; j < numberOfVariables; j++) {
-  //  for(int k=0; k < numberOfVariables; k++) {
-  //    std::cout << std::setprecision(3) << osherMatrix[j][k] << ",";
-  //    if ( k == numberOfVariables -1 ) { std::cout << std::endl; }
-  //  }
-  //}
+
   
   // TODO(Dominic): Debug
   double sL[numberOfVariables];
@@ -75,13 +86,13 @@ double kernels::finitevolumes::riemannsolvers::c::generalisedOsherSolomon(
     solver.flux(qL, FL);
   }
   // fnR[j] = fnR[j] - 0.5 * ( osherMatrix[jk] ) * (qR[k] - qL[k])
-  for(int j=0; j < numberOfVariables; j++) {
-    fnR[j] = 0.5 * (FR2[direction][j] + FL2[direction][j]);
-    for(int k=0; k < numberOfVariables; k++) {
-      fnR[j] -= 0.5 * osherMatrix[j][k] * ( qR[k] - qL[k] );
+  for(int i=0; i < numberOfVariables; i++) {
+    fnR[i] = 0.5 * (FR2[direction][i] + FL2[direction][i]);
+    for(int j=0; j < numberOfVariables; j++) {
+      fnR[i] -= 0.5 * osherMatrix[i][j] * ( qR[j] - qL[j] );
     }
-    // fnR[j] -= 0.5 * s_max * ( qR[j] - qL[j] );
-    fnL[j] = fnR[j];
+    // fnR[i] -= 0.5 * s_max * ( qR[i] - qL[i] );
+    fnL[i] = fnR[i];
   }
-  return 1e-11; // to not trigger any assertions
+  return s_max; // to not trigger any assertions
 }
