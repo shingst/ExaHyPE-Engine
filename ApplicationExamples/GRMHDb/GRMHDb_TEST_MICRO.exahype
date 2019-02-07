@@ -92,7 +92,7 @@ exahype-project GRMHDb
     //limiter-type const         = musclhancock
     limiter-optimisation const = generic
     limiter-language const     = C
-    dmp-observables  const         =5
+    dmp-observables  const         =1
 	dmp-relaxation-parameter = 1e4
 	dmp-difference-scaling = 1e3 
     //steps-till-cured           = 8
