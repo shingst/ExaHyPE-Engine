@@ -1,6 +1,11 @@
 #include "CSVStackWriter.h"
 #include <exception>
 
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <stdexcept>
+
 void exahype::plotters::ascii::CSVStackWriter::openFile(std::string base, std::string suffix) {
 	exahype::plotters::ascii::CSVWriter::openFile(base,suffix); // sets ostream / os()
 	for(auto& writer : writers) writer.ostream = ostream; // links all writers
