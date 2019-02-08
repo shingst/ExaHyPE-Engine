@@ -201,7 +201,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
       for (int z = 0; z < {{nDof3D}}; z++) {
         for (int y = 0; y < {{nDof}}; y++) {
 {% if useFlux %}
-          {{ m.matmul('rhs_x', 'lFi', 'coeffRhsX', 'rhs', '((t*'~nDof3D~'+z)*'~nDof~'+y)*'~nVarPad*nDof, '0', '((t*'~nDof3D~'+z)*'~nDof~'+y)*'~nVarPad*nDof, trueB='Kxi', trueAlpha='- weights3[t*'~nDof*nDof3D~'~+z*'~nDof~'+y] * dtBydx') | indent(10) }}{##}
+          {{ m.matmul('rhs_x', 'lFi', 'coeffRhsX', 'rhs', '((t*'~nDof3D~'+z)*'~nDof~'+y)*'~nVarPad*nDof, '0', '((t*'~nDof3D~'+z)*'~nDof~'+y)*'~nVarPad*nDof, trueB='Kxi', trueAlpha='- weights3[t*'~nDof*nDof3D~'+z*'~nDof~'+y] * dtBydx') | indent(10) }}{##}
 {% endif %}{# useFlux #}
 {% if useNCP %}
           {{ m.matmul('gradQ_x', 'lQi', 'dudxT_by_dx', 'gradQ', '((t*'~nDof3D~'+z)*'~nDof~'+y)*'~nDof*nDataPad, '0', '(z*'~nDof~'+y)*'~nVarPad*nDof) | indent(10) }}{##}
@@ -213,7 +213,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
       for (int z = 0; z < {{nDof3D}}; z++) {
         for (int x = 0; x < {{nDof}}; x++) {
 {% if useFlux %}
-          {{ m.matmul('rhs_y', 'lFi', 'coeffRhsY', 'rhs', '((t*'~nDof3D~'+z)*'~nDof*nDof~'+x)*'~nVarPad~'+'~1*(nDof**nDim)*nDof*nVarPad, '0', '((t*'~nDof3D~'+z)*'~nDof*nDof~'+x)*'~nVarPad, trueB='Kxi', trueAlpha='- weights3[t*'~nDof*nDof3D~'~+z*'~nDof~'+x] * dtBydx') | indent(10) }}{##}
+          {{ m.matmul('rhs_y', 'lFi', 'coeffRhsY', 'rhs', '((t*'~nDof3D~'+z)*'~nDof*nDof~'+x)*'~nVarPad~'+'~1*(nDof**nDim)*nDof*nVarPad, '0', '((t*'~nDof3D~'+z)*'~nDof*nDof~'+x)*'~nVarPad, trueB='Kxi', trueAlpha='- weights3[t*'~nDof*nDof3D~'+z*'~nDof~'+x] * dtBydx') | indent(10) }}{##}
 {% endif %}{# useFlux #}
 {% if useNCP %}
           {{ m.matmul('gradQ_y', 'lQi', 'dudxT_by_dx', 'gradQ', '((t*'~nDof3D~'+z)*'~nDof*nDof~'+x)*'~nDataPad, '0', '(z*'~nDof*nDof~'+x)*'~nVarPad~'+'~nVarPad*(nDof**nDim)) | indent(10) }}{##}
@@ -226,7 +226,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
       for (int y = 0; y < {{nDof}}; y++) {
         for (int x = 0; x < {{nDof}}; x++) {
 {% if useFlux %}
-          {{ m.matmul('rhs_z', 'lFi','coeffRhsZ', 'rhs', '((t*'~nDof*nDof~'+y)*'~nDof~'+x)*'~nVarPad~'+'~2*(nDof**nDim)*nDof*nVarPad, '0', '((t*'~nDof*nDof~'+y)*'~nDof~'+x)*'~nVarPad, trueB='Kxi', trueAlpha='- weights3[t*'~nDof*nDof3D~'~+y*'~nDof~'+x] * dtBydx') | indent(10) }}{##}
+          {{ m.matmul('rhs_z', 'lFi','coeffRhsZ', 'rhs', '((t*'~nDof*nDof~'+y)*'~nDof~'+x)*'~nVarPad~'+'~2*(nDof**nDim)*nDof*nVarPad, '0', '((t*'~nDof*nDof~'+y)*'~nDof~'+x)*'~nVarPad, trueB='Kxi', trueAlpha='- weights3[t*'~nDof*nDof3D~'+y*'~nDof~'+x] * dtBydx') | indent(10) }}{##}
 {% endif %}{# useFlux #}
 {% if useNCP %}
           {{ m.matmul('gradQ_z', 'lQi', 'dudxT_by_dx', 'gradQ', '((t*'~nDof3D*nDof~'+y)*'~nDof~'+x)*'~nDataPad, '0', '(y*'~nDof~'+x)*'~nVarPad~'+'~2*nVarPad*(nDof**nDim)) | indent(10) }}{##}
