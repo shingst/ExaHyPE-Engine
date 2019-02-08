@@ -101,7 +101,9 @@ double Euler::EulerSolver_FV::riemannSolver(double* const fL, double *fR, const 
   //return kernels::finitevolumes::riemannsolvers::c::rusanov<false, true, false, EulerSolver_FV>(*static_cast<EulerSolver_FV*>(this), fL,fR,qL,qR,direction);
 }
 
-void Euler::EulerSolver_FV::eigenvectors(const double* const Q,const int  direction,double (&RM)[NumberOfVariables][NumberOfVariables],double (&iRM)[NumberOfVariables][NumberOfVariables]) {
+void Euler::EulerSolver_FV::eigenvectors(
+    const double* const Q,const int  direction,
+    double (&R)[NumberOfVariables][NumberOfVariables],double (&eigvals)[NumberOfVariables], double (&iR)[NumberOfVariables][NumberOfVariables]) {
   // see: https://www3.nd.edu/~dbalsara/Numerical-PDE-Course/Appendix_LesHouches/LesHouches_Lecture_5_Approx_RS.pdf
   const double gamma = 1.4;
 
@@ -110,26 +112,32 @@ void Euler::EulerSolver_FV::eigenvectors(const double* const Q,const int  direct
   const double j2   = Q[1]*Q[1] + Q[2]*Q[2] + Q[3]*Q[3];
   const double p    = (gamma-1) * (Q[4] - 0.5 * irho * j2);
 
-  const double vx = Q[1]*irho;
-  const double vy = Q[2]*irho;
-  const double vz = Q[3]*irho;
-
   const double c   = std::sqrt(gamma*p/rho);
   const double H   = (Q[4]+p)/rho;
   const double v2  = j2*irho*irho;
   const double M   = std::sqrt(v2)/c;
   const double r2c = rho/2./c;
 
-  double u = vx; // direction == 0
-  double v = vy;
-  double w = vz;
+  eigenvalues(Q,direction,eigvals);
+
+  // rotate into reference frame
+  int iu = 0; // direction == 0
+  int iv = 1;
+  int iw = 2;
   if ( direction == 1 ) {
-     v = vx; u = vy; w = vz;
+     iu=1; iv=0; iw=2; 
+     // v = vx; u = vy; w = vz;
   } else if ( direction == 2 ) {
-     v = vx; w = vy; u = vz;
+     iu=2; iv=0; iw=1;  
+     //v = vx; w = vy; u = vz;
   }
+  double u = Q[iu+1]*irho; 
+  double v = Q[iv+1]*irho;
+  double w = Q[iw+1]*irho;
 
   // Right eigenvector matrix
+  constexpr int nVar = 5;
+  double RM[nVar][nVar] = {0.0};
   RM[0][0]=1.;
   RM[0][1]=0.;
   RM[0][2]=0.;
@@ -161,6 +169,7 @@ void Euler::EulerSolver_FV::eigenvectors(const double* const Q,const int  direct
   RM[4][4]=r2c*(H-c*u);
 
   // Left eigenvector matrix (inverse of RM)
+  double iRM[nVar][nVar] = {0.0};
   iRM[0][0]=1.-(gamma-1.)/2.*M*M;
   iRM[0][1]=   (gamma-1.)*u/c/c;
   iRM[0][2]=   (gamma-1.)*v/c/c;
@@ -190,6 +199,30 @@ void Euler::EulerSolver_FV::eigenvectors(const double* const Q,const int  direct
   iRM[4][2]=1./rho*(   -(gamma-1.)*v/c);
   iRM[4][3]=1./rho*(   -(gamma-1.)*w/c);
   iRM[4][4]=(gamma-1.)/rho/c;
+
+  // rotate backwards
+  double TM[nVar][nVar] = {0.0}; // transformation matrix
+  TM[0][0] = 1.; // rho
+  TM[4][4] = 1.; // energy
+  TM[1+iu][1] = 1.; // velocities
+  TM[1+iv][2] = 1.;
+  TM[1+iw][3] = 1.;
+
+  // Final Matrices including the rotation (MATMULTs)
+  for (int i=0; i<nVar; i++) {
+    for (int j=0; j<nVar; j++) {
+      for (int a=0; a<nVar; a++) {
+        R[i][j] += TM[i][a] * RM[a][j];
+      }
+    }
+  }
+  for (int i=0; i<nVar; i++) {
+    for (int j=0; j<nVar; j++) {
+      for (int a=0; a<nVar; a++) {
+        iR[i][j] += iRM[i][a] * TM[a][j];
+      }
+    }
+  }
 }
 
 void Euler::EulerSolver_FV::eigenvalues(const double* const Q,const int direction,double* lambda) {

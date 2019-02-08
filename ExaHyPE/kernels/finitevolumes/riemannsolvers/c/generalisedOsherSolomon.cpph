@@ -24,6 +24,7 @@ double kernels::finitevolumes::riemannsolvers::c::generalisedOsherSolomon(
   constexpr int numberOfData       = numberOfVariables + numberOfParameters;
 
   // integrate the Jacobian over the phase space (QL -> QR)
+  double s_max = -1.0;
   double osherMatrix[numberOfVariables][numberOfVariables] = {0.0}; // fill with zeroes
   for(int i=0; i<numQuadPoints; i++) {
     const double si  = kernels::gaussLegendreNodes[numQuadPoints-1][i];
@@ -32,12 +33,16 @@ double kernels::finitevolumes::riemannsolvers::c::generalisedOsherSolomon(
       Qs[j] = qL[j] + si * (qR[j] - qL[j]);
     }
 
-    // eigenvectors
-    double Rs[numberOfVariables][numberOfVariables];
-    double iRs[numberOfVariables][numberOfVariables];
-    solver.eigenvectors(Qs/*in*/,direction,Rs/*inout*/,iRs/*inout*/);    // user solver can work internally with eigen system or eigen solvers; cast rep
+    // eigenstructure
+    double Ls[numberOfVariables];                            // all eigenvalues need to be set by user
+    double Rs[numberOfVariables][numberOfVariables] = {0.0}; // fill with zeros as user typically performs rotation via matrix product
+    double iRs[numberOfVariables][numberOfVariables]= {0.0};
+    solver.eigenvectors(Qs/*in*/,direction,Rs/*inout*/,Ls/*inout*/,iRs/*inout*/);    // user solver can work internally with eigen system or eigen solvers;
+    for (int j = 0; j < numberOfVariables; j++) {
+      s_max = std::max( std::abs(Ls[j]), s_max );
+    }
     
-  //  #ifdef Asserts 
+    #ifdef Asserts
     double sumOfEntries = 0;
     for(int j=0; j < numberOfVariables; j++) {
       for(int k=0; k < numberOfVariables; k++) {
@@ -50,48 +55,18 @@ double kernels::finitevolumes::riemannsolvers::c::generalisedOsherSolomon(
       std::cerr << "Error: Left eigenvector matrix is not an inverse of the right one as sum of entries="<<sumOfEntries << "; direction="<<direction << std::endl;
       std::terminate();
     }
-   // #endif
-    
-    
-    double Ls[numberOfVariables];
-    solver.eigenvalues(Qs, direction, Ls);
-    double absL[numberOfVariables][numberOfVariables] = {0.0};
-    for(int j=0; j<numberOfVariables; j++) {
-      absL[j][j] = std::abs(Ls[j]);
-    }
+    #endif
     
     // compute Osher matrix
-    double tmpMat[numberOfVariables][numberOfVariables] = {0.0}; // fill with zeros
-    for(int j=0; j < numberOfVariables; j++) {
-      for(int k=0; k < numberOfVariables; k++) {
-        for(int a=0; a < numberOfVariables; a++) {
-          tmpMat[j][k] += absL[j][a]*iRs[a][k];
-        }
-      }
-    }
+    // scale column vectors: (|L1|*col1,|L2|*col2,...)
     const double wi = kernels::gaussLegendreWeights[numQuadPoints-1][i];
     for(int j=0; j < numberOfVariables; j++) {
       for(int k=0; k < numberOfVariables; k++) {
         for(int a=0; a < numberOfVariables; a++) {
-          osherMatrix[j][k] += wi * Rs[j][a] * tmpMat[a][k];
+          osherMatrix[j][k] += wi * Rs[j][a]*std::abs(Ls[a])*iRs[a][k];
         }
       }
     }
-  }
-  
-  // TODO(Dominic): Debug
-  double sL[numberOfVariables];
-  double sR[numberOfVariables];
-  solver.eigenvalues(qL, direction, sL);
-  solver.eigenvalues(qR, direction, sR);
-  double s_max = -1.0;
-  for (int i = 0; i < numberOfVariables; i++) {
-    const double abs_sL_i = std::abs(sL[i]);
-    s_max = std::max( abs_sL_i, s_max );
-  }
-  for (int i = 0; i < numberOfVariables; i++) {
-    const double abs_sR_i = std::abs(sR[i]);
-    s_max = std::max( abs_sR_i, s_max );
   }
   
   double FL2[DIMENSIONS][numberOfVariables] = {0.0}; // Q: Can we skip this memset?
