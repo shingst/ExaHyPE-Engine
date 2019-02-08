@@ -48,9 +48,17 @@ pipeline {
 		}
 	    }
 	}
-
-    }
-
+        when { branch "jenkins" }
+          stage ('Deploy'){
+            steps{
+              sh "git checkout release"
+              sh "git pull"
+              sh "git merge master"
+              sh 'git commit -ma merged master to release branch'
+              sh "git push origin master"
+            }
+          }
+        }
     post {
 	always {
 	    cleanWs()
