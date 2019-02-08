@@ -110,19 +110,23 @@ void Euler::EulerSolver_FV::eigenvectors(const double* const Q,const int  direct
   const double j2   = Q[1]*Q[1] + Q[2]*Q[2] + Q[3]*Q[3];
   const double p    = (gamma-1) * (Q[4] - 0.5 * irho * j2);
 
+  const double vx = Q[1]*irho;
+  const double vy = Q[2]*irho;
+  const double vz = Q[3]*irho;
+
   const double c   = std::sqrt(gamma*p/rho);
   const double H   = (Q[4]+p)/rho;
   const double v2  = j2*irho*irho;
   const double M   = std::sqrt(v2)/c;
   const double r2c = rho/2./c;
 
-  double u = Q[1]; // direction == 0
-  double v = Q[2];
-  double w = Q[3];
+  double u = vx; // direction == 0
+  double v = vy;
+  double w = vz;
   if ( direction == 1 ) {
-     v = Q[1]; u = Q[2]; w = Q[3];
+     v = vx; u = vy; w = vz;
   } else if ( direction == 2 ) {
-     v = Q[1]; w = Q[2]; u = Q[3];
+     v = vx; w = vy; u = vz;
   }
 
   // Right eigenvector matrix
@@ -131,21 +135,25 @@ void Euler::EulerSolver_FV::eigenvectors(const double* const Q,const int  direct
   RM[0][2]=0.;
   RM[0][3]=r2c;
   RM[0][4]=r2c;
+
   RM[1][0]=u;
   RM[1][1]=0.;
   RM[1][2]=0.;
   RM[1][3]=r2c*(u+c);
   RM[1][4]=r2c*(u-c);
+
   RM[2][0]=v;
   RM[2][1]=0.;
   RM[2][2]=-rho;
   RM[2][3]=r2c*v;
   RM[2][4]=r2c*v;
+
   RM[3][0]=w;
   RM[3][1]=rho;
   RM[3][2]=0.;
   RM[3][3]=r2c*w;
   RM[3][4]=r2c*w;
+
   RM[4][0]=0.5*v2;
   RM[4][1]=rho*w;
   RM[4][2]=-rho*v;
@@ -158,21 +166,25 @@ void Euler::EulerSolver_FV::eigenvectors(const double* const Q,const int  direct
   iRM[0][2]=   (gamma-1.)*v/c/c;
   iRM[0][3]=   (gamma-1.)*w/c/c;
   iRM[0][4]=  -(gamma-1.)/c/c;
+
   iRM[1][0]=-w/rho;
   iRM[1][1]=0.;
   iRM[1][2]=0.;
   iRM[1][3]=1./rho;
   iRM[1][4]=0.;
+
   iRM[2][0]=v/rho;
   iRM[2][1]=0.;
   iRM[2][2]=-1./rho;
   iRM[2][3]=0.;
   iRM[2][4]=0.;
+
   iRM[3][0]=c/rho*(0.5*(gamma-1.)*M*M-u/c);
   iRM[3][1]=1./rho*( 1.-(gamma-1.)*u/c);
   iRM[3][2]=1./rho*(   -(gamma-1.)*v/c);
   iRM[3][3]=1./rho*(   -(gamma-1.)*w/c);
   iRM[3][4]=(gamma-1.)/rho/c;
+
   iRM[4][0]=c/rho*(0.5*(gamma-1.)*M*M+u/c);
   iRM[4][1]=1./rho*(-1.-(gamma-1.)*u/c);
   iRM[4][2]=1./rho*(   -(gamma-1.)*v/c);
@@ -208,9 +220,16 @@ void Euler::EulerSolver_FV::eigenvalues(const double* const Q,const int directio
   const double u_n = Q[direction + 1] * irho;
   const double c   = std::sqrt(gamma * p * irho);
 
+//  ! Eigenvalues
+//  L(1,1) = u
+//  L(2,2) = u
+//  L(3,3) = u
+//  L(4,4) = u+c
+//  L(5,5) = u-c
+
   std::fill_n(lambda,5,u_n);
-  lambda[0] -= c;
-  lambda[4] += c;
+  lambda[3] += c;
+  lambda[4] -= c;
   #endif
 }
 

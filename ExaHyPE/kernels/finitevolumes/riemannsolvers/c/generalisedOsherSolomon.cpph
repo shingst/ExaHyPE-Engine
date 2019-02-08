@@ -31,9 +31,8 @@ double kernels::finitevolumes::riemannsolvers::c::generalisedOsherSolomon(
     for(int j=0; j < numberOfVariables; j++) {
       Qs[j] = qL[j] + si * (qR[j] - qL[j]);
     }
-  
-    double Ls[numberOfVariables];
-    solver.eigenvalues(Qs, direction, Ls);
+
+    // eigenvectors
     double Rs[numberOfVariables][numberOfVariables];
     double iRs[numberOfVariables][numberOfVariables];
     solver.eigenvectors(Qs/*in*/,direction,Rs/*inout*/,iRs/*inout*/);    // user solver can work internally with eigen system or eigen solvers; cast rep
@@ -53,18 +52,32 @@ double kernels::finitevolumes::riemannsolvers::c::generalisedOsherSolomon(
     }
    // #endif
     
+    
+    double Ls[numberOfVariables];
+    solver.eigenvalues(Qs, direction, Ls);
+    double absL[numberOfVariables][numberOfVariables] = {0.0};
+    for(int j=0; j<numberOfVariables; j++) {
+      absL[j][j] = std::abs(Ls[j]);
+    }
+    
     // compute Osher matrix
+    double tmpMat[numberOfVariables][numberOfVariables] = {0.0}; // fill with zeros
+    for(int j=0; j < numberOfVariables; j++) {
+      for(int k=0; k < numberOfVariables; k++) {
+        for(int a=0; a < numberOfVariables; a++) {
+          tmpMat[j][k] += absL[j][a]*iRs[a][k];
+        }
+      }
+    }
     const double wi = kernels::gaussLegendreWeights[numQuadPoints-1][i];
     for(int j=0; j < numberOfVariables; j++) {
       for(int k=0; k < numberOfVariables; k++) {
         for(int a=0; a < numberOfVariables; a++) {
-          osherMatrix[j][k] += wi * iRs[j][a]*std::abs(Ls[a])*Rs[a][k];
+          osherMatrix[j][k] += wi * Rs[j][a] * tmpMat[a][k];
         }
       }
     }
   }
-  
-  
   
   // TODO(Dominic): Debug
   double sL[numberOfVariables];
