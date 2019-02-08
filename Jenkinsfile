@@ -51,6 +51,8 @@ pipeline {
         stage ('Deploy'){
           when { branch "jenkins" }     
             steps{
+              sh "git checkout jenkins"
+              sh "git pull jenkins"
               sh "git checkout release"
               sh "git pull"
               sh "git merge jenkins"
