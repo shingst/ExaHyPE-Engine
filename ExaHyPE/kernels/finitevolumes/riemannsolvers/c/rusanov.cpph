@@ -160,8 +160,6 @@ double kernels::finitevolumes::riemannsolvers::c::rusanov(SolverType& solver, do
     solver.viscousFlux(qR,gradQ_, FR);
   }
 
-
-
   for (int i = 0; i < numberOfVariables; i++) {
     fnL[i] = 0.5 * s_max * (qL[i] - qR[i]);
     if(useFlux) {

@@ -102,7 +102,7 @@ double Euler::EulerSolver_FV::riemannSolver(double* const fL, double *fR, const 
 }
 
 void Euler::EulerSolver_FV::eigenvectors(
-    const double* const Q,const int  direction,
+    const double* const Q,const int in, const int is, const int it,
     double (&R)[NumberOfVariables][NumberOfVariables],double (&eigvals)[NumberOfVariables], double (&iR)[NumberOfVariables][NumberOfVariables]) {
   // see: https://www3.nd.edu/~dbalsara/Numerical-PDE-Course/Appendix_LesHouches/LesHouches_Lecture_5_Approx_RS.pdf
   const double gamma = 1.4;
@@ -118,22 +118,12 @@ void Euler::EulerSolver_FV::eigenvectors(
   const double M   = std::sqrt(v2)/c;
   const double r2c = rho/2./c;
 
-  eigenvalues(Q,direction,eigvals);
+  eigenvalues(Q,in,eigvals);
 
-  // rotate into reference frame
-  int iu = 0; // direction == 0
-  int iv = 1;
-  int iw = 2;
-  if ( direction == 1 ) {
-     iu=1; iv=0; iw=2; 
-     // v = vx; u = vy; w = vz;
-  } else if ( direction == 2 ) {
-     iu=2; iv=0; iw=1;  
-     //v = vx; w = vy; u = vz;
-  }
-  double u = Q[iu+1]*irho; 
-  double v = Q[iv+1]*irho;
-  double w = Q[iw+1]*irho;
+  // forward rotation into reference frame
+  double u = Q[in+1]*irho; 
+  double v = Q[is+1]*irho;
+  double w = Q[it+1]*irho;
 
   // Right eigenvector matrix
   constexpr int nVar = 5;
@@ -200,15 +190,15 @@ void Euler::EulerSolver_FV::eigenvectors(
   iRM[4][3]=1./rho*(   -(gamma-1.)*w/c);
   iRM[4][4]=(gamma-1.)/rho/c;
 
-  // rotate backwards
-  double TM[nVar][nVar] = {0.0}; // transformation matrix
+  // transformation matrix for backwards rotation
+  double TM[nVar][nVar] = {0.0}; 
   TM[0][0] = 1.; // rho
   TM[4][4] = 1.; // energy
-  TM[1+iu][1] = 1.; // velocities
-  TM[1+iv][2] = 1.;
-  TM[1+iw][3] = 1.;
+  TM[1+in][1] = 1.; // this can be externalised if we know where physical vectors are.
+  TM[1+is][2] = 1.;
+  TM[1+it][3] = 1.;
 
-  // Final Matrices including the rotation (MATMULTs)
+  // Final Matrices including the rotation (matrix products)
   for (int i=0; i<nVar; i++) {
     for (int j=0; j<nVar; j++) {
       for (int a=0; a<nVar; a++) {
