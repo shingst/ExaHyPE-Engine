@@ -139,26 +139,20 @@ public:
   /**
    * Compute the eigenvectors of the jacobian matrix (coefficient matrix of derivative in direction @direction).
    *
-   * You may have to rotate vectors according to the normal @p direction parameter,
-   * e.g. for a velocity Q[1],Q[2],Q[3], you would write
-   *
-   * double u = Q[1]; // direction == 0
-   * double v = Q[2];
-   * double w = Q[3];
-   * if ( direction == 1 ) {
-   *    v = Q[1]; u = Q[2]; w = Q[3];
-   * } else if ( direction == 2 ) {
-   *    v = Q[1]; w = Q[2]; u = Q[3];
-   * }
+   * This function also returns eigenvalues as numerical packages often compute eigenvalues and 
+   * eigenvectors together. 
    *
    * see: https://www3.nd.edu/~dbalsara/Numerical-PDE-Course/Appendix_LesHouches/LesHouches_Lecture_5_Approx_RS.pdf
    *
-   * @param Q[in]         state variables and parameters; range: [0,nVar+nData].
-   * @param direction     the coordinate direction (0,1,2). Required to compute the
-   * @param RM[inout]     the right eigenvectors (each column stores an eigenvector): [nVar,nVar].
-   * @param iRM[inout]    the left eigenvectors (inverse of RM): [nVar,nVar].
+   * @param[in]    Q       state variables and parameters; range: [0,nVar+nData].
+   * @param[in]    in      the normal direction; index of the x-axis in reference space.
+   * @param[in]    is      index of the y-axis in reference space.
+   * @param[in]    it      index of the z-axis in reference space.
+   * @param[inout] R       the right eigenvectors (each column stores an eigenvector); initialised to zero; range: [0,nVar]^2.
+   * @param[inout] eigvals the right eigenvectors (each column stores an eigenvector); range: [0,nVar].
+   * @param[inout] iR      the left eigenvectors  (inverse of RM); initialised to zero; range: [0,nVar]^2.
    */
-  void eigenvectors(const double* const Q,const int direction,double (&Rm)[NumberOfVariables][NumberOfVariables],double (&iRm)[NumberOfVariables][NumberOfVariables]);
+   void eigenvectors(const double* const Q,const int in,const int is,const int it,double (&RM)[NumberOfVariables][NumberOfVariables],double (&eigvals)[NumberOfVariables], double (&iRM)[NumberOfVariables][NumberOfVariables]);
 
   /**
    * Compute the flux tensor.
