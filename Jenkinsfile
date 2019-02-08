@@ -48,8 +48,8 @@ pipeline {
 		}
 	    }
 	}
-        when { branch "jenkins" }
-          stage ('Deploy'){
+        stage ('Deploy'){
+          when { branch "jenkins" }     
             steps{
               sh "git checkout release"
               sh "git pull"
