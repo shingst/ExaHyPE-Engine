@@ -137,7 +137,7 @@ void exahype::plotters::FiniteVolumes2ProbeAscii::plotPatch(
   double timeStamp
 ) {
   if (
-    tarch::la::allSmaller(offsetOfPatch,_x)
+    tarch::la::allSmallerEquals(offsetOfPatch,_x)
     &&
     tarch::la::allGreater(offsetOfPatch+sizeOfPatch,_x)
   ) {
