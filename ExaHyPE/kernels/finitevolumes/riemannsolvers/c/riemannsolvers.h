@@ -37,13 +37,17 @@ double rusanov(SolverType& solver, double* fL, double *fR, const double* qL, con
                int normalNonZero);
 
 /**
- * Implements a generalised osher type flux that requires @p solver to implement
- * a jacobian function which returns the Jacobian of the
- * conservative flux.
+ * Implements a generalised osher type flux.
+ *
+ * @note Requires @p solver to implement a nonconservative product and an eigenvectors function which returns the
+ * eigenvalues and eigenvectors. The kernel supplies the solver with reference coordinate indices.
+ *
+ * References:
  *
  * [1] M. Dumbser and E. F. Toro, “On Universal Osher-Type Schemes for General Nonlinear Hyperbolic Conservation Laws,” Communications in Computational Physics, vol. 10, no. 03, pp. 635–671, Sep. 2011.
+ * [2] M. Dumbser and E. F. Toro, “A Simple Extension of the Osher Riemann Solver to Non-conservative Hyperbolic Systems,” Journal of Scientific Computing, vol. 48, no. 1–3, pp. 70–88, Jul. 2011.
  *
- * @note Currently, the flux only supports PDEs with conservative flux.
+ * @note Currently, no viscous flux is supported.
  *
  * @tparam numQuadPoints the number of quadrature points the Legendre quadrature should use. 3 is chosen in paper [1].
  */
