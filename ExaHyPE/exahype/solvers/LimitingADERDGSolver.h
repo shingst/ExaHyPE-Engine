@@ -292,31 +292,6 @@ private:
       const SolverPatch&  solverPatch,CellInfo& cellInfo) const;
 
   /**
-   * TODO(Dominic): Update docu.
-   *
-   * Revisits the cells in the buffer layers which compute the solution with
-   * the main solver based on the maximum refinement status in the solver patch's neighbourhood.
-   *
-   * However, the so computed solution may be found troubled after the update. In this case,
-   * the solution must be recomputed with the limiter solver.
-   *
-   * If the solution is not troubled,
-   * it is safe to project the main solver solution onto the limiter solution.
-   *
-   * @param solverPatch             a solver patch
-   * @param cellInfo                a struct referring to all cell descriptions associatd with a cell
-   * @param isTroubled              if the main solver solution is troubled
-   * @param neighbourMergePerformed per face a flag indicating if a neighbour/boundary merge has been performed
-   * @param backupPreviousSolution  if the previous solution should be backed up.
-   */
-  void revisitSolverPatchesAfterLimiterChecks(
-      SolverPatch&                                               solverPatch,
-      CellInfo&                                                  cellInfo,
-      const bool                                                 isTroubled,
-      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
-      const bool                                                 backupPreviousSolution);
-
-  /**
    * Update the limiter status based on the cell-local solution values.
    *
    * \return MeshUpdateEvent::IrregularLimiterDomainChange if the limiter domain changes irregularly on the finest grid level, i.e.,

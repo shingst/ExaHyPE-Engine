@@ -589,9 +589,7 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
      _refineOrKeepOnFineGrid(1+haloCells),
      _limiterHelperLayers(limiterHelperLayers),
      _DMPObservables(DMPObservables),
-     _minRefinementStatusForSeparationCell(_refineOrKeepOnFineGrid+1),
-     _minRefinementStatusForBufferCell    (_minRefinementStatusForSeparationCell+2),
-     _minRefinementStatusForTroubledCell  (limiterHelperLayers+_minRefinementStatusForBufferCell),
+     _minRefinementStatusForTroubledCell(_refineOrKeepOnFineGrid+3),
      _checkForNaNs(true),
      _meshUpdateEvent(MeshUpdateEvent::None)
 {
@@ -655,14 +653,6 @@ int exahype::solvers::ADERDGSolver::getSpaceTimeDataPerCell() const {
 
 int exahype::solvers::ADERDGSolver::getDMPObservables() const {
   return _DMPObservables;
-}
-
-int exahype::solvers::ADERDGSolver::getMinRefinementStatusForSeparationCell() const {
-  return _minRefinementStatusForSeparationCell;
-}
-
-int exahype::solvers::ADERDGSolver::getMinRefinementStatusForBufferCell() const {
-  return _minRefinementStatusForBufferCell;
 }
 
 int exahype::solvers::ADERDGSolver::getMinRefinementStatusForTroubledCell() const {
