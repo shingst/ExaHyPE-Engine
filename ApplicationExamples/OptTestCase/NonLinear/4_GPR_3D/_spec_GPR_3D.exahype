@@ -77,7 +77,6 @@ exahype-project GPR
     dmp-observables const          = 1
     dmp-relaxation-parameter       = 1e-3 
     dmp-difference-scaling         = 1e-4 
-    steps-till-cured           = 5
     // helper-layers              = 2
 
     plot vtu::Cartesian::vertices::ascii PrimitiveWriter

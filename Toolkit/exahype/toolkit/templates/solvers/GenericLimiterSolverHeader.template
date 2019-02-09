@@ -33,11 +33,9 @@ class {{project}}::{{solver}}: public exahype::solvers::LimitingADERDGSolver {
         const int haloCells,
         const int regularisedFineGridLevels,
         const exahype::solvers::Solver::TimeStepping timeStepping,
-        const int limiterHelperLayers,
         const int DMPObservables,
         const double DMPRelaxationParameter,
-        const double DMPDifferenceScaling,
-        const int iterationsToCureTroubledCell
+        const double DMPDifferenceScaling
         {% if enableProfiler %}, std::unique_ptr<exahype::profilers::Profiler> profiler{% endif %});
     
     void projectOnFVLimiterSpace(const double* const luh, double* const lim) const override;

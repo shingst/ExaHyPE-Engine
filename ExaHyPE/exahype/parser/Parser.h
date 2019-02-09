@@ -497,30 +497,6 @@ class exahype::parser::Parser {
   int getDMPObservables(int solverNumber) const;
 
   /**
-   * @return The minimum number of steps we keep a cell troubled after it has been
-   * considered as cured by the discrete maximum principle (DMP) and the
-   * physical admissibility detection (PAD).
-   *
-   * @note This value can only be read in if the solver \p solverNumber is
-   * a limiting ADER-DG solver.
-   */
-  int getStepsTillCured(int solverNumber) const;
-
-  /**
-   * @return the number of Limiter/FV helper layers
-   * surrounding a troubled cell.
-   *
-   * The helper layers of the the ADER-DG solver have
-   * the same cardinality.
-   * We thus have a total number of helper layers
-   * which is twice the returned value.
-   *
-   * @note This value can only be read in if the solver \p solverNumber is
-   * a limiting ADER-DG solver.
-   */
-  int getLimiterHelperLayers(int solverNumber) const;
-
-  /**
    * In the ExaHyPE specification file, a plotter configuration has
    * the following signature:
    *

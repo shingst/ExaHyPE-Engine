@@ -18,21 +18,18 @@
         const int haloCells,
         const int regularisedFineGridLevels,
         const exahype::solvers::Solver::TimeStepping timeStepping,
-        const int limiterHelperLayers,
         const int DMPObservables,
         const double DMPRelaxationParameter,
-        const double DMPDifferenceScaling,
-        const int iterationsToCureTroubledCell 
+        const double DMPDifferenceScaling
         {% if enableProfiler %}, std::unique_ptr<exahype::profilers::Profiler> profiler{% endif %}) :
   exahype::solvers::LimitingADERDGSolver::LimitingADERDGSolver(
       "{{solver}}",
     new {{project}}::{{ADERDGSolver}}(
-      maximumMeshSize,maximumMeshDepth,haloCells,regularisedFineGridLevels,timeStepping,limiterHelperLayers,DMPObservables),
+      maximumMeshSize,maximumMeshDepth,haloCells,regularisedFineGridLevels,timeStepping,DMPObservables),
     new {{project}}::{{FVSolver}}(
       maximumMeshSize, timeStepping),
     DMPRelaxationParameter,
-    DMPDifferenceScaling,
-    iterationsToCureTroubledCell) {}
+    DMPDifferenceScaling) {}
 
 void {{project}}::{{solver}}::projectOnFVLimiterSpace(const double* const luh, double* const lim) const {
   kernels::limiter::generic::c::projectOnFVLimiterSpace<Order+1,NumberOfVariables+NumberOfParameters,GhostLayerWidth>(luh, lim);

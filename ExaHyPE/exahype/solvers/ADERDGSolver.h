@@ -265,11 +265,6 @@ private:
   int _refineOrKeepOnFineGrid; // can be configured by the user
 
   /**
-   * Number of limiter helper layers in each
-   * helper cell subdomain around a troubled cell.
-   */
-  const int _limiterHelperLayers;
-  /**
    * !!! LimitingADERDGSolver functionality !!!
    *
    * The number of observables
@@ -1229,7 +1224,6 @@ public:
       const int haloCells,
       const int regularisedFineGridLevels,
       const exahype::solvers::Solver::TimeStepping timeStepping,
-      const int limiterHelperLayers,
       const int DMPObservables,
       std::unique_ptr<profilers::Profiler> profiler =
           std::unique_ptr<profilers::Profiler>(

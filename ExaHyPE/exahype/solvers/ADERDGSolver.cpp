@@ -573,7 +573,6 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
     const int haloCells,
     const int regularisedFineGridLevels,
     const exahype::solvers::Solver::TimeStepping timeStepping,
-    const int limiterHelperLayers,
     const int DMPObservables,
     std::unique_ptr<profilers::Profiler> profiler)
     : Solver(identifier, Solver::Type::ADERDG, numberOfVariables,
@@ -587,7 +586,6 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
      _estimatedTimeStepSize( std::numeric_limits<double>::infinity() ),
      _stabilityConditionWasViolated( false ),
      _refineOrKeepOnFineGrid(1+haloCells),
-     _limiterHelperLayers(limiterHelperLayers),
      _DMPObservables(DMPObservables),
      _minRefinementStatusForTroubledCell(_refineOrKeepOnFineGrid+3),
      _checkForNaNs(true),

@@ -967,25 +967,6 @@ int exahype::parser::Parser::getDMPObservables(int solverNumber) const {
   return result;
 }
 
-int exahype::parser::Parser::getStepsTillCured(int solverNumber) const {
-  const int default_value = 0;
-  int result = getIntFromPath(sformat("/solvers/%d/limiter/steps_till_cured", solverNumber), default_value, isOptional);
-
-  if (result < 0) {
-    logError("getStepsTillCured()",
-              "'" << getIdentifier(solverNumber)
-              << "': 'steps-till-cured': Value must be integral and not negative.");
-    invalidate();
-  }
-
-  logDebug("getStepsTillCured()", "found steps-till-cured " << result);
-  return result;
-}
-
-int exahype::parser::Parser::getLimiterHelperLayers(int solverNumber) const {
-  return getIntFromPath(sformat("/solvers/%d/limiter/helper_layers", solverNumber), 1, isOptional);
-}
-
 std::string exahype::parser::Parser::getTypeForPlotter(int solverNumber,int plotterNumber) const {
   return getStringFromPath(sformat("/solvers/%d/plotters/%d/type", solverNumber, plotterNumber));
 }

@@ -36,9 +36,7 @@ class GRMHD::GRMHDSolver_ADERDG : public GRMHD::AbstractGRMHDSolver_ADERDG {
         const int maximumMeshDepth,
         const int haloCells,
         const int regularisedFineGridLevels,
-        const exahype::solvers::Solver::TimeStepping timeStepping,
-        const int limiterHelperLayers,
-        const int DMPObservables
+        const exahype::solvers::Solver::TimeStepping timeStepping,const int DMPObservables
 );
 
     /**

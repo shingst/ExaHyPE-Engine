@@ -84,7 +84,6 @@ exahype-project GRMHDb
     dmp-observables  const         = 10
 	dmp-relaxation-parameter = 1e4
 	dmp-difference-scaling = 1e3 
-    //steps-till-cured           = 8
      helper-layers              = 1
 
    plot user::defined ErrorWriter

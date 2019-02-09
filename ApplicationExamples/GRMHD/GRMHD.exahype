@@ -77,7 +77,6 @@ exahype-project GRMHD
     dmp-observables const          = 2
     dmp-relaxation-parameter       = 1e-2 
     dmp-difference-scaling         = 1e-3 
-    steps-till-cured               = 0
 
     //constants  = foo:bar,blo:dez
 

@@ -42,15 +42,15 @@
 #include <stdio.h>
 
 // We define the constructor of the actual solver here in order to regenerate it easily.
-{{project}}::{{solver}}::{{solver}}(double maximumMeshSize,int maximumMeshDepth,int DMPObservables,int limiterHelperLayers,exahype::solvers::Solver::TimeStepping timeStepping {% if enableProfiler %}, std::unique_ptr<exahype::profilers::Profiler> profiler{% endif %}{% if hasConstants %}):
-  {{abstractSolver}}::{{abstractSolver}}(maximumMeshSize,maximumMeshDepth,DMPObservables,limiterHelperLayers,timeStepping {% if enableProfiler %}, std::move(profiler) {% endif %}) {
+{{project}}::{{solver}}::{{solver}}(double maximumMeshSize,int maximumMeshDepth,int DMPObservables,exahype::solvers::Solver::TimeStepping timeStepping {% if enableProfiler %}, std::unique_ptr<exahype::profilers::Profiler> profiler{% endif %}{% if hasConstants %}):
+  {{abstractSolver}}::{{abstractSolver}}(maximumMeshSize,maximumMeshDepth,DMPObservables,timeStepping {% if enableProfiler %}, std::move(profiler) {% endif %}) {
 }
 
 
 
-{{project}}::{{abstractSolver}}::{{abstractSolver}}(double maximumMeshSize,int maximumMeshDepth,int DMPObservables,int limiterHelperLayers,exahype::solvers::Solver::TimeStepping timeStepping {% if enableProfiler %}, std::unique_ptr<exahype::profilers::Profiler> profiler {% endif %} ):
+{{project}}::{{abstractSolver}}::{{abstractSolver}}(double maximumMeshSize,int maximumMeshDepth,int DMPObservables,exahype::solvers::Solver::TimeStepping timeStepping {% if enableProfiler %}, std::unique_ptr<exahype::profilers::Profiler> profiler {% endif %} ):
   exahype::solvers::ADERDGSolver("{{solver}}",{{optNamespace}}::getNumberOfVariable(),{{optNamespace}}::getNumberOfParameter(),{{optNamespace}}::getBasisSize(),
-                                 maximumMeshSize,maximumMeshDepth,DMPObservables,limiterHelperLayers,timeStepping {% if enableProfiler %}, std::move(profiler){% endif %}) {
+                                 maximumMeshSize,maximumMeshDepth,DMPObservables,timeStepping {% if enableProfiler %}, std::move(profiler){% endif %}) {
 }
 
 

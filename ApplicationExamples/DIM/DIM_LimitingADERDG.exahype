@@ -72,11 +72,9 @@ exahype-project DIM
     limiter-type const         = musclhancock
     limiter-optimisation const = generic
     limiter-language const     = C
-    dmp-observables  const         = 1
-    dmp-relaxation-parameter       = 1e-2 
-    dmp-difference-scaling         = 1e-3 
-    steps-till-cured           = 5
-    helper-layers              = 2
+    dmp-observables  const     = 1
+    dmp-relaxation-parameter   = 1e-2 
+    dmp-difference-scaling     = 1e-3
 
     plot vtu::Cartesian::vertices::ascii PrimitiveWriter
       variables const = 14

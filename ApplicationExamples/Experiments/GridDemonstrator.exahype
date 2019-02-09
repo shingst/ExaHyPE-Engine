@@ -76,7 +76,6 @@ exahype-project  GridDemonstrator
     dmp-observables                = 0
     dmp-relaxation-parameter       = 1e-2 
     dmp-difference-scaling         = 1e-3 
-    steps-till-cured               = 0
 
     plot vtk::Legendre::cells::ascii Writer
       variables const = 1

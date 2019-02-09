@@ -71,7 +71,6 @@ exahype-project SRHD
     limiter-language const         = C
     dmp-relaxation-parameter = 0.0001
     dmp-difference-scaling   = 0.001
-    steps-till-cured   = 0
 
     plot vtk::Cartesian::vertices::ascii
       variables const = 5

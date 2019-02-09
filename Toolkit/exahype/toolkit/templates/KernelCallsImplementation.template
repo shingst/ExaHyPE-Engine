@@ -57,7 +57,6 @@ void kernels::registerSolvers(exahype::parser::Parser& parser) {
           parser.getHaloCells({{loop.index0}}),
           parser.getRegularisedFineGridLevels({{loop.index0}}),
           parser.getTimeStepping({{loop.index0}}),
-          0,
           0
       )
     );
@@ -69,11 +68,9 @@ void kernels::registerSolvers(exahype::parser::Parser& parser) {
           parser.getHaloCells({{loop.index0}}),
           parser.getRegularisedFineGridLevels({{loop.index0}}),
           parser.getTimeStepping({{loop.index0}}),
-          parser.getLimiterHelperLayers({{loop.index0}}),
           parser.getDMPObservables({{loop.index0}}),
           parser.getDMPRelaxationParameter({{loop.index0}}),
-          parser.getDMPDifferenceScaling({{loop.index0}}),
-          parser.getStepsTillCured({{loop.index0}})
+          parser.getDMPDifferenceScaling({{loop.index0}})
       )
     );
 {% elif solver.type == "Finite-Volumes" %}
