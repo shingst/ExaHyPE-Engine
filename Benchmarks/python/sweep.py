@@ -20,6 +20,7 @@ def haveToPrintHelpMessage(argv):
     """
     result = parseArgument(argv,2) not in subprograms or \
              parseArgument(argv,1)==None
+    result = result and parseArgument(argv,1) not in ["iniTemplate","jobTemplate"]
     for arg in argv:
         result = result or ( arg=="-help" or arg=="-h" )
     return result
@@ -926,7 +927,7 @@ It must further contain at least one of the following sections:
     
     # print out templates
     if optionsFile == "iniTemplate":
-        sweep_options.printOptionsFileTemplate
+        sweep_options.printOptionsFileTemplate()
         sys.exit()
     elif optionsFile == "jobTemplate":
         machine = parseArgument(sys.argv,2)

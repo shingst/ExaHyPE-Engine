@@ -282,7 +282,7 @@ export MP_TASK_AFFINITY=core:{{coresPerTask}}
 {{body}}"""
         print(template)
     elif machine=="hamilton":
-       template="""#!/bin/bash
+        template="""#!/bin/bash
 # Mandatory parameters are:
 # time, ranks, nodes,
 # job_name, output_file, error_file, 
@@ -315,9 +315,9 @@ export TBB_SHLIB="-L/ddn/apps/Cluster-Apps/intel/xe_2017.2/tbb/lib/intel64/gcc4.
 export I_MPI_FABRICS="tmi"
 
 {{body}}"""
-    print(template)
-else:
-
+        print(template)
+    else:
+        print("ERROR: No job template found for machine {}. Available options: '{}'".format(machine,"','".join(["supermuc","hamilton"])),file=sys.stderr)
 
 def printOptionsFileTemplate():
     template="""[general]
@@ -376,6 +376,5 @@ param0       = PARAM0
 
 [parameters_grouped]
 ;<ALL BELOW OPTIONAL>
-param0 = PARAM0
-"""
+param0 = PARAM0"""
     print(template)
