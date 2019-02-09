@@ -151,6 +151,7 @@ double kernels::finitevolumes::riemannsolvers::c::rusanov(
   }
 
   double s_max = maxEigenvalue;
+  double s_max_dt = maxEigenvalue;
 
   if (useViscousFlux) {
     double maxViscousEigenvalue = 0.0;
@@ -172,7 +173,8 @@ double kernels::finitevolumes::riemannsolvers::c::rusanov(
     const auto pi = std::acos(-1); // not constexpr for intel compilers
     const auto factor = std::sqrt(0.5 * pi);
 
-    s_max += 2 * maxViscousEigenvalue / (cellSize[normalNonZero] * factor);
+    s_max += 2 * factor * maxViscousEigenvalue / (cellSize[normalNonZero] * factor);
+    s_max_dt += 2 * maxViscousEigenvalue / (cellSize[normalNonZero]);
   }
 
 
@@ -214,6 +216,6 @@ double kernels::finitevolumes::riemannsolvers::c::rusanov(
     }
   }
 
-  return s_max;  // TODO(guera): Use to check if dt was okay in surfaceIntegral
+  return s_max_dt;  // TODO(guera): Use to check if dt was okay in surfaceIntegral
 }
 #endif

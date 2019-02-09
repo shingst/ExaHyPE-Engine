@@ -859,7 +859,8 @@ void exahype::solvers::FiniteVolumesSolver::updateSolution(
   assertion1(cellDescription.getTimeStepSize()<std::numeric_limits<double>::max(),cellDescription.toString());
   double admissibleTimeStepSize=0;
   if (cellDescription.getTimeStepSize()>0) {
-    solutionUpdate(solution,cellDescription.getSize(),cellDescription.getTimeStepSize(),admissibleTimeStepSize);
+    solutionUpdate(solution,cellDescription.getOffset()+0.5*cellDescription.getSize(),
+            cellDescription.getSize(),cellDescription.getTimeStepSize(),admissibleTimeStepSize);
   }
 
   // cellDescription.getTimeStepSize() = 0 is an initial condition
