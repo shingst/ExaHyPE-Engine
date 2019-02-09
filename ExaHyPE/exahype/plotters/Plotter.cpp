@@ -22,8 +22,9 @@
 #include "exahype/plotters/CSV/ADERDG2LegendreCSV.h"
 #include "exahype/plotters/CSV/Patch2CSV.h"
 
-#include "exahype/plotters/CarpetHDF5/ADERDG2CarpetHDF5.h"
-#include "exahype/plotters/CarpetHDF5/FiniteVolume2CarpetHDF5.h"
+#include "exahype/plotters/Carpet/ADERDG2Carpet.h"
+#include "exahype/plotters/Carpet/FiniteVolume2Carpet.h"
+
 #include "exahype/plotters/FlashHDF5/ADERDG2FlashHDF5.h"
 #include "exahype/plotters/Tecplot/ExaHyPE2Tecplot.h"
 
@@ -355,6 +356,9 @@ exahype::plotters::Plotter::Plotter(
       if (equalsIgnoreCase(_type, ADERDG2CarpetHDF5::getIdentifier())) {
         _device = new ADERDG2CarpetHDF5(postProcessing);
       }
+      if (equalsIgnoreCase(_type, ADERDG2CarpetASCII::getIdentifier())) {
+        _device = new ADERDG2CarpetASCII(postProcessing);
+      }
       if (equalsIgnoreCase(_type, ADERDG2FlashHDF5::getIdentifier())) {
         _device = new ADERDG2FlashHDF5(postProcessing);
       }
@@ -440,6 +444,11 @@ exahype::plotters::Plotter::Plotter(
       }
       if (equalsIgnoreCase(_type, FiniteVolume2CarpetHDF5::getIdentifier())) {
         _device = new FiniteVolume2CarpetHDF5(
+	              postProcessing,static_cast<exahype::solvers::FiniteVolumesSolver*>(
+                solvers::RegisteredSolvers[_solver])->getGhostLayerWidth());
+      }
+      if (equalsIgnoreCase(_type, FiniteVolume2CarpetASCII::getIdentifier())) {
+        _device = new FiniteVolume2CarpetASCII(
 	              postProcessing,static_cast<exahype::solvers::FiniteVolumesSolver*>(
                 solvers::RegisteredSolvers[_solver])->getGhostLayerWidth());
       }

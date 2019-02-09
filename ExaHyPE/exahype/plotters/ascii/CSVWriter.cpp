@@ -110,8 +110,22 @@ std::string exahype::plotters::ascii::CSVWriter::Column::get(voidptr lineStruct)
 	}
 }
 
+uintptr_t exahype::plotters::ascii::CSVWriter::Column::size_of_type(
+	exahype::plotters::ascii::CSVWriter::Column::Type type) {
+	
+	switch(type) {
+		case CSVWriter::Column::Type::INT: return sizeof(int);
+		case CSVWriter::Column::Type::DOUBLE: return sizeof(double);
+		case CSVWriter::Column::Type::BOOL: return sizeof(bool);
+		case CSVWriter::Column::Type::STRING: return sizeof(std::string*); // i.e. void pointer
+		case CSVWriter::Column::Type::UNDEF:
+		default:
+			throw std::domain_error("Undefined type");
+	}
+}
+
 void exahype::plotters::ascii::CSVWriter::writeCommentLine(const std::string& line) {
-	os << commentIntro << line << newline;
+	os() << commentIntro << line << newline;
 }
 
 void exahype::plotters::ascii::CSVWriter::writeHeader() {
@@ -119,7 +133,7 @@ void exahype::plotters::ascii::CSVWriter::writeHeader() {
 	
 	writeCommentLine("exahype::plotters::ascii::CSVWriter ASCII output");
 	#ifdef PARALLEL
-	os << commentIntro <<
+	os() << commentIntro <<
 	"MPI Rank "
 	tarch::parallel::Node::getInstance()::getRank()
 	<< " of " <<
@@ -128,13 +142,13 @@ void exahype::plotters::ascii::CSVWriter::writeHeader() {
 	#else
 	writeCommentLine("No MPI Setup -- single rank here.");
 	#endif
-	os << commentIntro << "Created on " << str_time() << newline;
+	os() << commentIntro << "Created on " << str_time() << newline;
 	
 	// Human readable column list including description, in a format
 	// suitable for gnuplotting (kind of similar to CarpetASCII)
 	writeCommentLine(""); int c=1;
 	for(auto&& col : columns) {
-		os << commentIntro
+		os() << commentIntro
 		   << c++ << ":" << col.name
 		   << " -- "
 		   << col.description
@@ -143,23 +157,23 @@ void exahype::plotters::ascii::CSVWriter::writeHeader() {
 	writeCommentLine("");
 	
 	// Columns list
-	if(!rawcolumns) os << commentIntro;
+	if(!rawcolumns) os() << commentIntro;
 	auto &last = *(--columns.end());
 	for(auto&& col : columns) {
-		os << col.name;
-		if(&col != &last) os << seperator;
+		os() << col.name;
+		if(&col != &last) os() << seperator;
 	}
-	os << newline;
+	os() << newline;
 }
 
 void exahype::plotters::ascii::CSVWriter::writeRow(voidptr lineStruct) {
 	auto &last = *(--columns.end());
 	for(auto&& col : columns) {
-		os << col.get(lineStruct);
-		if(&col != &last) os << seperator;
+		os() << col.get(lineStruct);
+		if(&col != &last) os() << seperator;
         }
-        os << newline;
-	os.flush(); // important
+        os() << newline;
+	os().flush(); // important
 }
 
 std::string exahype::plotters::ascii::CSVWriter::combineFilename(std::string filename, std::string suffix) {
@@ -173,15 +187,40 @@ std::string exahype::plotters::ascii::CSVWriter::combineFilename(std::string fil
 	return filename;
 }
 
+std::ofstream& exahype::plotters::ascii::CSVWriter::os() {
+	if(!ostream) throw std::runtime_error("Trying to write to a null output stream in CSVWriter.");
+	return *ostream;
+}
+
+void exahype::plotters::ascii::CSVWriter::flushFile() {
+	os().flush();
+}
+
+void exahype::plotters::ascii::CSVWriter::closeFile() {
+	os().close();
+	delete ostream;
+}
+
 void exahype::plotters::ascii::CSVWriter::openFile(std::string filename, std::string suffix) {
 	filename = combineFilename(filename, suffix);
 	bool master = tarch::parallel::Node::getInstance().isGlobalMaster();
 
+	if(ostream) delete ostream; // close old file if present
 	if (master) logInfo("openFile()", "Opening CSV file '"<< filename << "'");
 	
-	os.open(filename, std::ofstream::out);
-	if(os.fail()) {
+	ostream = new std::ofstream(filename, std::ofstream::out);
+	if(os().fail() || !os().is_open()) {
 		logError("openFile()", "Cannot open ASCII file at '" << filename << "': " << std::strerror(errno));
 		throw std::runtime_error("CSVWriter failed to open a file.");
 	}
 }
+
+void exahype::plotters::ascii::CSVWriter::add_similar_columns(int n, exahype::plotters::ascii::CSVWriter::Column::Type type, std::string base_name, std::string format, uintptr_t base_offset) {
+	std::string description = "";
+	uintptr_t diff = Column::size_of_type(type);
+	for(int i=0; i<n; i++) {
+		Column col { sformat(base_name, i), format, description, type, base_offset + i*diff };
+		columns.push_back(col);
+	}
+}
+
