@@ -80,7 +80,7 @@ void GRMHD::GRMHDSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(double* o
 	// observables[3] = prim.VelVel;
 }
 
-bool pointwiseIsPhysicallyAdmissible(const double* const Q) {
+bool pointwiseisPhysicallyAdmissible(const double* const Q) {
 	// pre-C2P plausibility check on the conserved quantities
 	// This is *probably* already caught by the DMP.
 	if(Q[0]<0) return false;
@@ -97,7 +97,7 @@ bool GRMHD::GRMHDSolver_ADERDG::isPhysicallyAdmissible(
       const bool wasTroubledInPreviousTimeStep,
       const tarch::la::Vector<DIMENSIONS,double>& center,
       const tarch::la::Vector<DIMENSIONS,double>& dx,
-      const double t, const double dt) const {
+      const double t) const {
 
 	// Q: Do we have to check the observables{Min,Max} whether they are useful?
 

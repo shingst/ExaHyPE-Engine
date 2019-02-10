@@ -358,7 +358,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::mergeNeighboursDataDurin
         auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
         if ( performLocalRecomputation(solver) ) {
           static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->
-              mergeNeighboursData(solverNumber,cellInfo1,cellInfo2,pos1,pos2,true/* isRecomputation */);
+              mergeNeighboursDataDuringLocalRecomputation(solverNumber,cellInfo1,cellInfo2,pos1,pos2);
         }
       }
     }
@@ -385,7 +385,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::mergeNeighboursDataDurin
         auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
         if ( performLocalRecomputation(solver) ) {
           static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->
-              mergeWithBoundaryData(solverNumber,cellInfo,posCell,posBoundary,true);
+              mergeWithBoundaryDataDuringLocalRecomputation(solverNumber,cellInfo,posCell,posBoundary);
         }
       }
     }
@@ -407,9 +407,11 @@ void exahype::mappings::PredictionOrLocalRecomputation::touchVertexFirstTime(
       _stateCopy.isFirstIterationOfBatchOrNoBatch() &&
       OneSolverRequestedLocalRecomputation
   ) {
-    for (int i=0; i<2*(DIMENSIONS-1)*(DIMENSIONS); i++) {
-      mergeNeighboursDataDuringLocalRecomputationLoopBody(Vertex::pos1Scalar[i],Vertex::pos2Scalar[i],vertex,x,h);
-    }
+    mergeNeighboursDataDuringLocalRecomputationLoopBody(0,1,vertex,x,h);
+    mergeNeighboursDataDuringLocalRecomputationLoopBody(0,2,vertex,x,h);
+    #if DIMENSIONS==3
+    mergeNeighboursDataDuringLocalRecomputationLoopBody(0,4,vertex,x,h);
+    #endif
   }
 
   logTraceOutWith1Argument( "touchVertexFirstTime(...)", vertex );
@@ -462,12 +464,14 @@ void exahype::mappings::PredictionOrLocalRecomputation::receiveNeighbourDataLoop
       solvers::Solver::CellInfo         cellInfo = vertex.createCellInfo(destScalar);
       solvers::Solver::BoundaryFaceInfo face(dest,src); // dest and src are swapped
 
-      for(unsigned int solverNumber = solvers::RegisteredSolvers.size(); solverNumber-- > 0;) {
-        auto* solver = solvers::RegisteredSolvers[solverNumber];
-        if ( performLocalRecomputation( solver ) ) {
-          assertion1( solver->getType()==solvers::Solver::Type::LimitingADERDG, solver->toString() );
-          static_cast<solvers::LimitingADERDGSolver*>(solver)->
-              mergeWithNeighbourDataBasedOnLimiterStatus(fromRank,solverNumber,cellInfo,src,dest,true/*isRecomputation*/,x,level);
+      if ( vertex.hasToMergeAtFace(cellInfo,face._faceIndex,false/*prefetchADERDGFaceData*/) ) {
+        for(unsigned int solverNumber = solvers::RegisteredSolvers.size(); solverNumber-- > 0;) {
+          auto* solver = solvers::RegisteredSolvers[solverNumber];
+          if ( performLocalRecomputation( solver ) ) {
+            assertion1( solver->getType()==solvers::Solver::Type::LimitingADERDG, solver->toString() );
+            static_cast<solvers::LimitingADERDGSolver*>(solver)->
+                mergeWithNeighbourDataDuringLocalRecomputation(fromRank,solverNumber,cellInfo,src,dest,x,level);
+          }
         }
       }
     }

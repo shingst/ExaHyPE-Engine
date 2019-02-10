@@ -16,6 +16,7 @@
 #ifndef _EXAHYPE_PLOTTERS_CARPET_HDF5_WRITER_
 #define _EXAHYPE_PLOTTERS_CARPET_HDF5_WRITER_
 
+#include "exahype/plotters/Carpet/CarpetWriter.h"
 #include "exahype/plotters/Plotter.h"
 #include "exahype/plotters/slicing/CartesianSlicer.h"
 #include "kernels/KernelUtils.h" // idx::kernels
@@ -31,10 +32,11 @@ namespace exahype {
   }
 }
 
-#ifdef HDF5 // Only if H5 is present
-
-// HDF5 library, only available if HDF5 is on the path
-#include "H5Cpp.h"
+// Forward declaration for H5Cpp.h
+namespace H5 {
+  class H5File;
+  class DataSpace;
+}
 
 /**
  * <h2>Writing CarpetHDF5 files which are compatible to Cactus/EinsteinToolkit</h2>
@@ -118,67 +120,30 @@ namespace exahype {
  * @author Sven Köppel
  *
  **/
-class exahype::plotters::CarpetHDF5Writer {
+class exahype::plotters::CarpetHDF5Writer : public exahype::plotters::CarpetWriter {
   typedef tarch::la::Vector<DIMENSIONS, double> dvec;
   tarch::logging::Log _log;
 
-
 public:
-  // information from the device::init() process
-  const int           solverUnknowns; ///< The number of unknowns in the Solver (ie. number of PDEs)
-  const int           writtenUnknowns; ///< The number of written out quantities.
-  const std::string   basisFilename; ///< The filename prefix as it is common in ExaHyPE plotters
-  const int           basisSize; ///< this is _orderPlusOne in ADERDG context and _numberOfCellsPerAxis-2*ghostZones in FV context
-  const exahype::parser::ParserView plotterParameters; ///< A plotterParametersion string for passing further parameters throught the ExaHyPE specification file.
-
-  const bool          oneFilePerTimestep; ///< Constant deciding whether to write one file (or series of files) per timestep
-  const bool          allUnknownsInOneFile; ///< Constant deciding whether all unknowns should go into a single file or split files instead.
-
-  // set up during construction: Dimensional reduction
-  int                 dim; ///< Dimension of the output generated. Do not change this. Setup by constructor.
-  exahype::plotters::Slicer   *slicer; ///< Subslice, if present. Otherwise nullptr.
-  kernels::index     *patchCellIdx; ///< Regular patch indexer as in ExaHyPE
-  kernels::index     *writtenCellIdx; ///< Index of a whole cell as in ExaHyPE
-  kernels::index     *singleFieldIdx; ///< index of a whole component as in Carpet: Only one value per point
-  int                 patchFieldsSize;  ///< as a service: basisSize^DIMENSIONS * writtenUnkowns, ie. the written without dimensional reduction
-  int                 writtenFieldsSize; ///< basisSize^dim * writtenUnknowns, ie the really written incl. dimensional reduction
-  int                 singleFieldSize; ///< just basisSize^DIM
-  std::string         dimextension; ///< A file extension reflecting good Cactus standards, like "xyz", "xy" or "x" before ".h5"
-
-  // Things to be counted by this instance
-  int                 component; ///< An internal counter of the components (=patches) written out in one plot cycle
-  int                 iteration; ///< An internal counter of the number of plot cycle runned. It is kind of global.
-  char**              writtenQuantitiesNames; // not const as we check for good names in constructor
-  std::vector<std::string> qualifiedWrittenQuantitiesNames; // in CarpetHDF5, the field name *must* contain a "::"; ///< The same as writtenQuantitiesNames but with prefix
 
   // HDF5 specific data types
   std::vector<H5::H5File*> files; ///< List of pointers to H5Files. Has length 1 if allUnknownsInOneFile.
-  H5::DataSpace       patch_space; ///< DataSpaces describing a component/patch: basisSize^D elements.
-  H5::DataSpace       dtuple; ///< DataSpace describing a dim-dimensional tuple, ie dim numbers.
+  H5::DataSpace*      patch_space; ///< DataSpaces describing a component/patch: basisSize^D elements.
+  H5::DataSpace*      dtuple; ///< DataSpace describing a dim-dimensional tuple, ie dim numbers.
 
-  /**
-   * cf. also the documentation in the ADERDG2CarpetHDF5.h
-   * 
-   * oneFilePerTimestep: You might want to have this to view the result during computation
-   *     as HDF5 is very lazy at writing. Note that writing out data this form is not compilant
-   *     with most CarpetHDF5 readers (ie. the visit reader). You must join seperate HDF5 files afterwards
-   *     manually.
-   * 
-   * allUnknownsInOneFile: Write different fields in a single H5 combined file. Typically for Cactus
-   *     as structure of arrays is to write each unknown in its own file (ie. one file per physical field).
-   *
-   **/
   CarpetHDF5Writer(const std::string& _filename, int _basisSize, int _solverUnknowns, int _writtenUnknowns, exahype::parser::ParserView _plotterParameters,
-		   char** writtenQuantitiesNames, bool oneFilePerTimestep_=false, bool allUnknownsInOneFile_=false);
-
-  void writeBasicGroup(H5::H5File* file);
+		   char** writtenQuantitiesNames);
   
-  void openH5(); ///< Opens or switchs the currently active H5 file or the list of H5 files. Closes if neccessary.
-  void flushH5(); ///< Flushs all HDF5 file output buffers. Always flushs before.
-  void closeH5(); ///< Closes all HDF5 files. Closes, deletes and nulls the H5 objects.
+  virtual ~CarpetHDF5Writer();
 
-  void startPlotting(double time);
-  void finishPlotting();
+  void writeBasicGroup(H5::H5File* file, int writtenUnknown=-1);
+  
+  void openFile() override; // was openH5
+  void flushFile() override; // was flushH5
+  void closeFile() override; // was closeH5
+
+  void startPlotting(double time) override;
+  void finishPlotting() override;
 
 
   // Default values for limiterStatus for plotPatch* functions, used for instance from
@@ -195,7 +160,8 @@ public:
    **/
   void plotPatch(
       const dvec& offsetOfPatch, const dvec& sizeOfPatch, const dvec& dx,
-      double* mappedCell, double timeStamp, int limiterStatus=nonLimitingLimiterStatus);
+      double* mappedCell, double timeStamp,
+      int limiterStatus=nonLimitingLimiterStatus) override;
   
   void plotPatchForSingleUnknown(
       const dvec& offsetOfPatch, const dvec& sizeOfPatch, const dvec& dx,
@@ -205,7 +171,4 @@ public:
 }; // class ADERDG2CarpetHDF5Impl
 
 
-
-
-#endif /* H5 */
 #endif /* _EXAHYPE_PLOTTERS_CARPET_HDF5_WRITER_ */

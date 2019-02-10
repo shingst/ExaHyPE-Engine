@@ -76,7 +76,7 @@ class GenericEulerKernelTest : public tarch::tests::TestCase {
 
   static void viscousFlux(const double* const Q, double* gradQ, double** F);
 
-  static void multiplyMaterialParameterMatrix(const double *Q, double *rhs){return;}
+  static void multiplyMaterialParameterMatrix(const double *Q, double **rhs){return;}
 
   const double eps = 1.0e-10;  // for quick adaption of the test cases (say,
                                // switch to single precision)

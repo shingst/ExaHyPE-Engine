@@ -1,0 +1,173 @@
+{
+  "project_name": "GRMHDb",
+  "paths": {
+    "peano_kernel_path": "./Peano",
+    "exahype_path": "./ExaHyPE",
+    "output_directory": "./ApplicationExamples/GRMHDb/GRMHDb_TEST",
+    "log_file": "whatever.log"
+  },
+  "architecture": "hsw",
+  "computational_domain": {
+    "dimension": 3,
+    "time_steps": 100,
+    "offset": [
+      -5.0,
+      -5.0,
+      -5.0
+    ],
+    "width": [
+      10.0,
+      10.0,
+      10.0
+    ]
+  },
+  "shared_memory": {
+    "cores": 28,
+    "properties_file": "sharedmemory.properties",
+    "autotuning_strategy": "dummy",
+    "background_job_consumers": 14,
+    "manual_pinning": true
+  },
+  "distributed_memory": {
+    "timeout": 6000,
+    "load_balancing_type": "static",
+    "buffer_size": 6400,
+    "load_balancing_strategy": "hotspot",
+    "node_pool_strategy": "fair",
+    "ranks_per_node": 1
+  },
+  "optimisation": {
+    "fuse_algorithmic_steps": true,
+    "fuse_algorithmic_steps_factor": 0.99,
+    "spawn_predictor_as_background_thread": true,
+    "spawn_amr_background_threads": true,
+    "disable_vertex_exchange_in_time_steps": true,
+    "time_step_batch_factor": 0.0,
+    "disable_metadata_exchange_in_batched_time_steps": false,
+    "double_compression": 0.0,
+    "spawn_double_compression_as_background_thread": false
+  },
+  "solvers": [
+    {
+      "type": "Limiting-ADER-DG",
+      "name": "GRMHDbSolver",
+      "order": 3,
+      "maximum_mesh_size": 1.1111111111111112,
+      "maximum_mesh_depth": 0,
+      "time_stepping": "global",
+      "aderdg_kernel": {
+        "language": "C",
+        "nonlinear": true,
+        "terms": [
+          "flux",
+          "ncp"
+        ],
+        "space_time_predictor": {},
+        "optimised_terms": [],
+        "optimised_kernel_debugging": [],
+        "implementation": "generic"
+      },
+      "point_sources": 0,
+      "limiter": {
+        "dmp_observables": 10,
+        "dmp_relaxation_parameter": 10000.0,
+        "dmp_difference_scaling": 1000.0,
+        "helper_layers": 1,
+        "implementation": "generic"
+      },
+      "fv_kernel": {
+        "language": "C",
+        "terms": [
+          "flux",
+          "ncp"
+        ],
+        "scheme": "musclhancock",
+        "implementation": "generic"
+      },
+      "variables": [
+        {
+          "name": "rho",
+          "multiplicity": 1
+        },
+        {
+          "name": "vel",
+          "multiplicity": 3
+        },
+        {
+          "name": "p",
+          "multiplicity": 1
+        },
+        {
+          "name": "B",
+          "multiplicity": 3
+        },
+        {
+          "name": "psi",
+          "multiplicity": 1
+        },
+        {
+          "name": "lapse",
+          "multiplicity": 1
+        },
+        {
+          "name": "shift",
+          "multiplicity": 3
+        },
+        {
+          "name": "gamma",
+          "multiplicity": 6
+        }
+      ],
+      "plotters": [
+        {
+          "type": "user::defined",
+          "name": "ErrorWriter",
+          "time": 0.0,
+          "repeat": 0.1,
+          "output": "./output/errors",
+          "variables": 19
+        },
+        {
+          "type": "vtu::Cartesian::vertices::ascii",
+          "name": "PrimitiveWriter",
+          "time": 0.0,
+          "repeat": 0.5,
+          "output": "./vtu/vtu",
+          "variables": 19
+        },
+        {
+          "type": "vtk::Cartesian::vertices::ascii",
+          "name": "PrimitiveWriterVTK",
+          "time": 0.0,
+          "repeat": 0.5,
+          "output": "./vtk/vtk",
+          "variables": 19
+        },
+        {
+          "type": "vtu::Cartesian::subcells::limited::ascii",
+          "name": "PrimitiveWriterSubcell",
+          "time": 0.0,
+          "repeat": 0.5,
+          "output": "./vtusub/vtusub",
+          "variables": 19
+        },
+        {
+          "type": "vtk::Cartesian::subcells::limited::ascii",
+          "name": "PrimitiveWriterSubcellVTK",
+          "time": 0.0,
+          "repeat": 0.5,
+          "output": "./vtksub/vtksub",
+          "variables": 19
+        },
+        {
+          "type": "user::defined",
+          "name": "TecplotWriter",
+          "time": 0.0,
+          "repeat": 0.5,
+          "output": "./output/tecplot",
+          "variables": 19
+        }
+      ]
+    }
+  ]
+}

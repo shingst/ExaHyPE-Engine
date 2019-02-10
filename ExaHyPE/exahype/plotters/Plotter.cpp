@@ -16,12 +16,15 @@
 #include "exahype/plotters/VTK/ADERDG2CartesianVTK.h"
 #include "exahype/plotters/VTK/ADERDG2LegendreVTK.h"
 #include "exahype/plotters/VTK/ADERDG2LobattoVTK.h"
-#include "exahype/plotters/CSV/ADERDG2LegendreCSV.h"
 #include "exahype/plotters/VTK/ADERDG2LegendreDivergenceVTK.h"
 #include "exahype/plotters/ADERDG2ProbeAscii.h"
 
-#include "exahype/plotters/CarpetHDF5/ADERDG2CarpetHDF5.h"
-#include "exahype/plotters/CarpetHDF5/FiniteVolume2CarpetHDF5.h"
+#include "exahype/plotters/CSV/ADERDG2LegendreCSV.h"
+#include "exahype/plotters/CSV/Patch2CSV.h"
+
+#include "exahype/plotters/Carpet/ADERDG2Carpet.h"
+#include "exahype/plotters/Carpet/FiniteVolume2Carpet.h"
+
 #include "exahype/plotters/FlashHDF5/ADERDG2FlashHDF5.h"
 #include "exahype/plotters/Tecplot/ExaHyPE2Tecplot.h"
 
@@ -209,25 +212,32 @@ exahype::plotters::Plotter::Plotter(
             postProcessing,static_cast<exahype::solvers::LimitingADERDGSolver*>(
                 solvers::RegisteredSolvers[_solver])->getLimiter()->getGhostLayerWidth());
       }
-      
       if(equalsIgnoreCase(_type, LimitingADERDG2Tecplot::getIdentifier())) {
         _device = new LimitingADERDG2Tecplot(postProcessing,
 	        static_cast<exahype::solvers::LimitingADERDGSolver*>(
-                  solvers::RegisteredSolvers[_solver])->getLimiter()->getGhostLayerWidth()
-	);
+                  solvers::RegisteredSolvers[_solver])->getLimiter()->getGhostLayerWidth());
       }
-
       // plot only the FV subcells
-      if (equalsIgnoreCase( _type, LimitingADERDGSubcells2CartesianCellsVTKAscii::getIdentifier() )) {
-        _device = new LimitingADERDGSubcells2CartesianCellsVTKAscii(
-            postProcessing,static_cast<exahype::solvers::LimitingADERDGSolver*>(
-                solvers::RegisteredSolvers[_solver])->getLimiter()->getGhostLayerWidth());
-      }
-      if (equalsIgnoreCase( _type, LimitingADERDGSubcells2CartesianCellsVTKBinary::getIdentifier() )) {
-        _device = new LimitingADERDGSubcells2CartesianCellsVTKBinary(
-            postProcessing,static_cast<exahype::solvers::LimitingADERDGSolver*>(
-                solvers::RegisteredSolvers[_solver])->getLimiter()->getGhostLayerWidth());
-      }
+	  if (equalsIgnoreCase(_type, LimitingADERDGSubcells2CartesianCellsVTKAscii::getIdentifier())) {
+		  _device = new LimitingADERDGSubcells2CartesianCellsVTKAscii(
+			  postProcessing, static_cast<exahype::solvers::LimitingADERDGSolver*>(
+				  solvers::RegisteredSolvers[_solver])->getLimiter()->getGhostLayerWidth());
+	  }
+	  if (equalsIgnoreCase(_type, LimitingADERDGSubcells2CartesianCellsVTKBinary::getIdentifier())) {
+		  _device = new LimitingADERDGSubcells2CartesianCellsVTKBinary(
+			  postProcessing, static_cast<exahype::solvers::LimitingADERDGSolver*>(
+				  solvers::RegisteredSolvers[_solver])->getLimiter()->getGhostLayerWidth());
+	  }
+	  if (equalsIgnoreCase(_type, LimitingADERDGSubcells2CartesianCellsVTUAscii::getIdentifier())) {
+		  _device = new LimitingADERDGSubcells2CartesianCellsVTUAscii(
+			  postProcessing, static_cast<exahype::solvers::LimitingADERDGSolver*>(
+				  solvers::RegisteredSolvers[_solver])->getLimiter()->getGhostLayerWidth());
+	  }
+	  if (equalsIgnoreCase(_type, LimitingADERDGSubcells2CartesianCellsVTUBinary::getIdentifier())) {
+		  _device = new LimitingADERDGSubcells2CartesianCellsVTUBinary(
+			  postProcessing, static_cast<exahype::solvers::LimitingADERDGSolver*>(
+				  solvers::RegisteredSolvers[_solver])->getLimiter()->getGhostLayerWidth());
+	  }
 
     // by intention, no break here. Instead, all plotters for the ADERDG solver are also valid plotters for
     // any LimitedADERDG solver.
@@ -342,8 +352,15 @@ exahype::plotters::Plotter::Plotter(
       if (equalsIgnoreCase(_type, ADERDG2CarpetHDF5::getIdentifier())) {
         _device = new ADERDG2CarpetHDF5(postProcessing);
       }
+      if (equalsIgnoreCase(_type, ADERDG2CarpetASCII::getIdentifier())) {
+        _device = new ADERDG2CarpetASCII(postProcessing);
+      }
       if (equalsIgnoreCase(_type, ADERDG2FlashHDF5::getIdentifier())) {
         _device = new ADERDG2FlashHDF5(postProcessing);
+      }
+
+      if(equalsIgnoreCase(_type, Patch2CSV::getIdentifier())) {
+        _device = new Patch2CSV(postProcessing, solvertype);
       }
 
       if(equalsIgnoreCase(_type, Patch2VTKBoxesAscii::getIdentifier())) {
@@ -426,6 +443,11 @@ exahype::plotters::Plotter::Plotter(
 	              postProcessing,static_cast<exahype::solvers::FiniteVolumesSolver*>(
                 solvers::RegisteredSolvers[_solver])->getGhostLayerWidth());
       }
+      if (equalsIgnoreCase(_type, FiniteVolume2CarpetASCII::getIdentifier())) {
+        _device = new FiniteVolume2CarpetASCII(
+	              postProcessing,static_cast<exahype::solvers::FiniteVolumesSolver*>(
+                solvers::RegisteredSolvers[_solver])->getGhostLayerWidth());
+      }
       if (equalsIgnoreCase(_type, FiniteVolumes2PeanoPatchFileFormatAscii::getIdentifier())) {
         _device = new FiniteVolumes2PeanoPatchFileFormatAscii(
                 postProcessing,static_cast<exahype::solvers::FiniteVolumesSolver*>(
@@ -472,6 +494,9 @@ exahype::plotters::Plotter::Plotter(
                 solvers::RegisteredSolvers[_solver])->getGhostLayerWidth());
       }
 
+      if(equalsIgnoreCase(_type, Patch2CSV::getIdentifier())) {
+        _device = new Patch2CSV(postProcessing, solvertype);
+      }
 
     break;
   }

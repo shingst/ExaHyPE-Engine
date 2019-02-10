@@ -9,22 +9,13 @@ exahype::solvers::ADERDGSolver::AdjustSolutionDuringMeshRefinementJob::AdjustSol
   _cellDescription(cellDescription),
   _isInitialMeshRefinement(isInitialMeshRefinement)
 {
-  tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  {
-    NumberOfAMRBackgroundJobs++;
-  }
-  lock.free();
+  NumberOfAMRBackgroundJobs.fetch_add(1);
 }
 
 bool exahype::solvers::ADERDGSolver::AdjustSolutionDuringMeshRefinementJob::run() {
   _solver.ensureNecessaryMemoryIsAllocated(_cellDescription);
   _solver.adjustSolutionDuringMeshRefinementBody(_cellDescription,_isInitialMeshRefinement);
-
-  tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  {
-    NumberOfAMRBackgroundJobs--;
-    assertion( NumberOfAMRBackgroundJobs>=0 );
-  }
-  lock.free();
+  NumberOfAMRBackgroundJobs.fetch_sub(1);
+  assertion( NumberOfAMRBackgroundJobs.load()>=0 );
   return false;
 }

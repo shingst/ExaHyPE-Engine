@@ -1,7 +1,7 @@
 ! GRMHDb Initial Data
 
 #define GRMHD
-
+#define RNSTOV
 
 RECURSIVE SUBROUTINE PDESetup(myrank)
 	USE, INTRINSIC :: ISO_C_BINDING
@@ -15,10 +15,19 @@ RECURSIVE SUBROUTINE PDESetup(myrank)
 #endif
     IMPLICIT NONE
 	INTEGER, INTENT(IN)            :: myrank
-#ifndef RNSTOV   
-    NSTOV_rho_atmo = 1e-10
-    NSTOV_p_atmo = 1e-10 
-#endif  
+!#ifndef RNSTOV   
+    SELECT CASE(TRIM(ICTYPE))    ! 
+    CASE('GRMHDTOV','CCZ4TOV','GRMHDTOV_perturbed') 
+        !
+        continue
+        !
+        CASE DEFAULT 
+            NSTOV_rho_atmo = 1e-10
+            NSTOV_p_atmo = 1e-10 
+            !
+    END SELECT
+    !
+!#endif  
     !
 #ifdef GEOS
     !
@@ -66,17 +75,21 @@ RECURSIVE SUBROUTINE PDESetup(myrank)
 		!    
 		CASE DEFAULT
 			continue
-	END SELECT
+    END SELECT
 	!
-	IF(myrank.eq.0) THEN
+	!IF(myrank.eq.0) THEN
+    PRINT *, "<<<<<<<<<<<<<<<<<<<<<<<<<<<------------------------------------"
 		PRINT *, 'EQN%gamma=',EQN%GAMMA, myrank, myrank_f90 
-	ENDIF
+    PRINT *, "<<<<<<<<<<<<<<<<<<<<<<<<<<<------------------------------------"
+	!ENDIF
     !
     ! 
     SELECT CASE(TRIM(ICTYPE))    ! 
     CASE('GRMHDTOV','CCZ4TOV','GRMHDTOV_perturbed') 
 #ifdef RNSTOV
+        IF(NSTOVVar%Computed.NE.12345) THEN
             CALL NSTOV_Main
+        ENDIF
 #endif  
 	CASE DEFAULT
 		continue
@@ -412,7 +425,11 @@ RECURSIVE SUBROUTINE InitialField(xGP,tGP,u0)
         CALL NSTOV_x(r,NSTOVVar%qloc)
 #elif CYLINDRICAL
         PRINT *, 'CYLINDRICAL COORDINATES NOT TESTED FOR RNSTOV'
-#else  
+#else   
+        IF(r.LT.0.) THEN
+            PRINT *, 'FATAL ERROR: negative radius, R=',r
+        ENDIF
+        !
         CALL NSTOV_rbar(r,NSTOVVar%qloc)
 #endif
         !
@@ -504,6 +521,7 @@ RECURSIVE SUBROUTINE InitialField(xGP,tGP,u0)
             V0(13+i) = gammaij(i)
         ENDDO
         !
+        !PRINT *,'V0=',V0
 #else
         PRINT *,' GRMHDTOV not implemented for your PDE'
         STOP

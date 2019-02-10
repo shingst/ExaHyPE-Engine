@@ -12,6 +12,22 @@
   // @TODO Please insert your code here.
 }
 
+{% if solverType == "Limiting-ADER-DG" %}
+void {{project}}::{{plotter}}::plotADERDGPatch(
+    const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
+    const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* u,
+    double timeStamp) {
+  // @TODO Please insert your code here.
+}
+
+void {{project}}::{{plotter}}::plotFiniteVolumesPatch(
+    const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
+    const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* u,
+    double timeStamp) {
+  // @TODO Please insert your code here.
+}
+
+{% else -%}
 
 void {{project}}::{{plotter}}::plotPatch(
     const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
@@ -20,6 +36,7 @@ void {{project}}::{{plotter}}::plotPatch(
   // @TODO Please insert your code here.
 }
 
+{%- endif %}
 
 void {{project}}::{{plotter}}::startPlotting( double time) {
   // @TODO Please insert your code here.

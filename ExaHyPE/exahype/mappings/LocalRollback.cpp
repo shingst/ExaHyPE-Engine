@@ -230,8 +230,7 @@ void exahype::mappings::LocalRollback::sendDataToNeighbourLoopBody(
             break;
           case solvers::Solver::Type::LimitingADERDG:
             static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->
-            sendDataToNeighbourBasedOnLimiterStatus(
-                toRank,solverNumber,cellInfo,src,dest,true, /* isRecomputation */x,level);
+              sendDataToNeighbourDuringLocalRecomputation(toRank,solverNumber,cellInfo,src,dest,x,level);
             break;
           case solvers::Solver::Type::FiniteVolumes:
             // insert code here

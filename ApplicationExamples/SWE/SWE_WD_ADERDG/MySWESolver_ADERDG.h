@@ -152,7 +152,7 @@ class SWE::MySWESolver_ADERDG : public SWE::AbstractMySWESolver_ADERDG {
       const bool wasTroubledInPreviousTimeStep,
       const tarch::la::Vector<DIMENSIONS,double>& center,
       const tarch::la::Vector<DIMENSIONS,double>& dx,
-      const double t, const double dt) const override;
+      const double t) const override;
 };
 
 #endif // __MySWESolver_ADERDG_CLASS_HEADER__

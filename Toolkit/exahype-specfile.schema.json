@@ -52,8 +52,6 @@
   ],
   "additionalProperties" : false,
   "properties" : {
-    "_shared_memory" : {},
-    "_distributed_memory" : {},
     "project_name" : {
       "type" : "string",
       "title" : "The name of the application or PDE, will get a C++ namespace",
@@ -148,7 +146,22 @@
           "scope" : "run-time",
           "default": "whole_code",
           "enum" : [ "whole_code", "neighbour_merge", "predictor", "update" ]
+        },
+        "measure_cell_processing_times" : {
+          "type" : "boolean", 
+          "title" : "Measure the times the solvers require to perform updates and predictor computations", 
+          "scope" : "run-time"
+        },
+        "measure_cell_processing_times_iter" : {
+          "type" : "integer", 
+          "title" : "Number of measurements to perform when measuring cell processing times. The results are averaged over the number of measurements", 
+          "scope" : "run-time",
+          "minimum" : 1,
+          "exclusiveMinimum" : false
         }
+      },
+      "dependencies" : {
+        "measure_cell_processing_times_iter" : ["measure_cell_processing_times"]
       }
     },
     "architecture" : {
@@ -167,6 +180,22 @@
         "skx"
       ]
     }, 
+    "_compiler_flags" : {},
+    "compiler_flags" : {
+      "type" : "string",
+      "title" : "Additional compiler flags",
+      "default" : "",
+      "scope" : "compile-time",
+      "used-by" : "toolkit"
+    },
+    "_linker_flags" : {},
+    "linker_flags" : {
+      "type" : "string",
+      "title" : "Additional linker flags",
+      "default" : "",
+      "scope" : "compile-time",
+      "used-by" : "toolkit"
+    },
     "computational_domain" : {
       "type" : "object",
       "oneOf" : [
@@ -228,6 +257,7 @@
         }
       }
     }, 
+    "_shared_memory" : {},
     "shared_memory" : {
       "type" : "object", 
       "used-by" : "toolkit",
@@ -263,7 +293,7 @@
           "enum" : [ "all_in_a_rush", "one_at_a_time", "spawn_as_a_task" ],
           "default" : "all_in_a_rush" 
         },
-		"min_background_jobs_in_one_rush" : {
+        "min_background_jobs_in_one_rush" : {
           "type" : "integer", 
           "title" : "Minimum number of background jobs a consumer grabs from the queue in a single rush (default: 1).", 
           "minimum" : 1,
@@ -310,6 +340,7 @@
         }
       }
     }, 
+    "_distributed_memory" : {},
     "distributed_memory" : {
       "type" : "object", 
       "used-by" : "toolkit",
@@ -581,7 +612,7 @@
                 "properties" : {
                   "notimeavg" : {
                     "type" : "boolean",
-                    "available-for" : ["optimised","generic"],
+                    "available-for" : ["generic"],
                     "title" : "I have no clue, but generic kernels support it."
                   },
                   "maxpicarditer" : {
@@ -593,6 +624,11 @@
                     "type" : "boolean",
                     "available-for" : ["optimised"],
                     "title" : "Use the continous extrapolated Runge Kutta initial guess for the space time predictor"
+                  },
+                  "split_ck" : {
+                    "type" : "boolean",
+                    "available-for" : ["optimised"],
+                    "title" : "Use a split Cauchy–Kowalevski for the space time predictor (linear only)"
                   }
                 }
               },
@@ -618,7 +654,7 @@
                 "title" : "Only optimised kernels: For which PDE terms should be code generated",
                 "items" : {
                   "type" : "string",
-                  "enum" : ["fusedsource", "fluxvect", "fusedsourcevect", "ncpvect"]
+                  "enum" : ["fusedsource", "flux_vect", "fusedsource_vect", "ncp_vect", "material_parameters_vect"]
                 }
               },
               "language" : {
@@ -823,6 +859,7 @@
             "scope" : "run-time",
             "old_format" : { "token_after" : "time-stepping" }
           },
+          "_plotters" : {},
           "plotters" : {
             "$comment" : "Each solver has an ordered list of plotters assigned. The order and name of plotters is a compile time constant",
             "type" : "array",

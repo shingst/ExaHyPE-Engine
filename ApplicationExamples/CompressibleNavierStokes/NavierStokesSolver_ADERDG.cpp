@@ -151,7 +151,6 @@ void NavierStokes::NavierStokesSolver_ADERDG::boundaryValues(const double* const
     }
   }
 
-  gradStateOut[idxGradQ(normalNonZero,4)] = 0.0;
   if (scenario->getBoundaryType(faceIndex) == BoundaryType::movingWall) {
     // Wall speed after Riemann solve
     const auto wallSpeed = 1.0;
@@ -211,7 +210,7 @@ bool NavierStokes::NavierStokesSolver_ADERDG::isPhysicallyAdmissible(
       const bool wasTroubledInPreviousTimeStep,
       const tarch::la::Vector<DIMENSIONS,double>& center,
       const tarch::la::Vector<DIMENSIONS,double>& dx,
-      const double t, const double dt) const {
+      const double t) const {
     // We now need to do a pointwise check for the primitive variables
     // pressure and Z.
     // TODO(Lukas) At least refactor this. And 3D!
@@ -304,16 +303,6 @@ exahype::solvers::Solver::RefinementControl NavierStokes::NavierStokesSolver_ADE
 
   const auto hi = meanGlobal + factorRefine * stdGlobal;
   const auto lo = meanGlobal + factorCoarse * stdGlobal;
-
-  /*
-  auto& coarseTime = Q[NumberOfVariables+NumberOfParameters-1];
-  const bool alreadyErased = std::abs(coarseTime - t) <= 10e-6;
-  if (alreadyErased) {
-  //if (coarseTime >= 0.0) {
-    std::cout << "Cell at " << center << "at t = " << t << std::endl;
-    return exahype::solvers::Solver::RefinementControl::Keep;
-  }
-  */
 
   if (curTv > hi) {
     return exahype::solvers::Solver::RefinementControl::Refine;

@@ -7,23 +7,26 @@
 #ifndef TecplotWriter_CLASS_HEADER_
 #define TecplotWriter_CLASS_HEADER_
 
+//#include "exahype/plotters/LimitingADERDG2UserDefined.h"
 #include "exahype/plotters/ADERDG2UserDefined.h"
-// #include "exahype/solvers/LimitingADERDGSolver.h"
+#include "exahype/plotters/ascii/MultipleReductionsWriter.h"
+//#include "exahype/solvers/LimitingADERDGSolver.h"
 #include "GRMHDbSolver_ADERDG_Variables.h"
 #include "GRMHDbSolver_ADERDG.h"
-//#include "GPRSolver_FV.h"
+//#include "GRMHDbSolver_FV.h"
 
 namespace GRMHDb {
   class TecplotWriter;
-  //class GRMHDbSolver_ADERDG;
-  // class GRMHDSolver_FV;
+
+  //class GRMHDSolver_ADERDG;
+  //class GRMHDSolver_FV;
 }
 
 class GRMHDb::TecplotWriter : public exahype::plotters::ADERDG2UserDefined {
  public:
  static constexpr int nVar = GRMHDb::AbstractGRMHDbSolver_ADERDG::NumberOfVariables;
- static constexpr int order = GRMHDb::AbstractGRMHDbSolver_ADERDG::Order;
- static constexpr int basisSize = order + 1;
+ //static constexpr int order = GRMHDb::AbstractGRMHDbSolver_ADERDG::Order;
+ //static constexpr int basisSize = order + 1;
   /**
    * Constructor.
    * 
@@ -32,7 +35,7 @@ class GRMHDb::TecplotWriter : public exahype::plotters::ADERDG2UserDefined {
    * to declare and manage such member variables yourself. 
    */
   TecplotWriter();
-  //TecplotWriter(GPR::GPRSolver_FV& solver);
+  //TecplotWriter(GRMHDb::GRMHDbSolver_FV& solver);
   //TecplotWriter(GRMHDb::GRMHDbSolver_ADERDG& solver);
   //TecplotWriter(exahype::solvers::LimitingADERDGSolver&  solver);
 
@@ -48,11 +51,20 @@ class GRMHDb::TecplotWriter : public exahype::plotters::ADERDG2UserDefined {
    * \param[in] sizeOfPatch the offset of the cell/patch.
    * \param[in] u the degrees of freedom "living" inside of the patch.
    */
-  void plotPatch(
-      const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
-      const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* u,
-      double timeStamp) override;
-
+   void plotPatch(
+	  const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
+	  const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* u,
+	  double timeStamp) override;
+	  /*
+  void plotADERDGPatch(
+	  const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
+	  const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* u,
+	  double timeStamp) override;
+  void plotFiniteVolumesPatch(
+	  const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
+	  const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* u,
+	  double timeStamp) override;
+*/
   /** 
    * This method is called at the beginning of the plotting.
    * You can use it to reset member variables, e.g., those
@@ -69,8 +81,13 @@ class GRMHDb::TecplotWriter : public exahype::plotters::ADERDG2UserDefined {
    * or to increment file counters
    */
   void finishPlotting() override;
-  private:
-	int plotForADERSolver;
+
+ private:
+  int plotForADERSolver;
+  int plotForFVSolver;
+  int mpirank;
+  //int counterloc;
+  //int counterloc2;
 
 };
 

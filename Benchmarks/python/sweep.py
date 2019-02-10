@@ -97,7 +97,7 @@ def renderSpecFile(templateBody,parameterDict,ranksPerNode,coresPerRank,consumer
                 print("ERROR: specification file template parameter '{{"+key+"}}' not defined in sweep options file!",file=sys.stderr)
         if not consistent:
             print("ERROR: subprogram aborted as specification file template and sweep options file are inconsistent.",file=sys.stderr)
-            sys.exit()
+            sys.exit("Inconsistent Specification and Sweep options")
         createdFirstSpecFile = True
     
     for key,value in context.items():
@@ -144,15 +144,15 @@ def verifyEnvironmentIsCorrect(justWarn=False):
     if not justWarn and not environmentIsCorrect:
         print("ERROR: subprogram failed as environment variables are not chosen setup correctly. Please adopt your options file according to the error messages.\n" + \
               "       Then rerun the subprogram.",file=sys.stderr)
-        sys.exit()
+        sys.exit("Environment setup not chosen correctly")
 
 def verifyAllRequiredParametersAreGiven(specFileTemplate):
     if "dimension" not in parameterSpace:
         print("ERROR: 'dimension' not found in section 'parameters' or section 'parameters_grouped'.",file=sys.stderr)
-        sys.exit()
+        sys.exit("Dimensions not found")
     elif "architecture" not in parameterSpace:
         print("ERROR: 'architecture' not found in section 'parameters' or section 'parameters_grouped'.",file=sys.stderr)
-        sys.exit()
+        sys.exit("Architecture not found")
 
 def unlink():
     """
@@ -301,7 +301,7 @@ def build(buildOnlyMissing=False, skipMakeClean=False):
                             print(" [FAILED]")
                             print("toolkit output=\n"+output.decode('UTF-8'),file=sys.stderr)
                             print("toolkit errors/warnings=\n"+toolkitErr.decode('UTF-8'),file=sys.stderr)
-                            sys.exit()
+                            sys.exit("Toolkit failed")
                         
                         if firstIteration and not skipMakeClean:
                             command = "make clean"
@@ -322,12 +322,18 @@ def build(buildOnlyMissing=False, skipMakeClean=False):
                         else:
                             print(" [FAILED]",file=sys.stderr)
                             print("make errors/warnings=\n"+makeErr.decode('UTF-8'),file=sys.stderr)
-                            sys.exit()
+                            sys.exit("Build failed")
 
                         if not os.path.exists(oldExecutable):
                             print("ERROR: could not find built executable '"+oldExecutable+"'. The parameter 'project' in your configuration file is probably wrong." ,file=sys.stderr)
-                            sys.exit()
-                        os.rename(oldExecutable,executable)
+                            sys.exit("Build failed")
+                        try:
+                            os.rename(oldExecutable,executable)
+                        except OSError:
+                            import shutil
+                            shutil.copy(oldExecutable,executable)
+                            os.remove(oldExecutable)
+                        
                         print("created executable:"+executable)
                          
                         print("SUCCESS!")
@@ -390,7 +396,7 @@ def renderJobScript(jobScriptTemplate,jobScriptBody,jobs,
                 print("ERROR: job script template parameter '{{"+key+"}}' not defined in sweep options file!",file=sys.stderr)
         if not consistent:
             print("ERROR: subprogram aborted as job script template and sweep options file are inconsistent.",file=sys.stderr)
-            sys.exit()
+            sys.exit("Inconsistent Specification and Sweep options")
     
     context["body"] = jobScriptBody 
  
@@ -412,7 +418,7 @@ def verifyAllExecutablesExist(justWarn=False):
     
     if not justWarn and not os.path.exists(buildFolderPath):
         print("ERROR: build folder '"+buildFolderPath+"' doesn't exist! Please run subprogram 'build' beforehand.",file=sys.stderr)
-        sys.exit()
+        sys.exit("Build folder doesn't exists'")
     
     allExecutablesExist = True
     for environmentDict in dictProduct(environmentSpace):
@@ -432,7 +438,7 @@ def verifyAllExecutablesExist(justWarn=False):
     if not justWarn and not allExecutablesExist:
         print("ERROR: subprogram failed as not all executables exist. Please adopt your options file according to the error messages.\n" + \
               "       Then rerun the 'build' subprogram.",file=sys.stderr)
-        sys.exit()
+        sys.exit("Not all executables exists")
 
 def verifySweepAgreesWithHistoricalExperiments():
     """
@@ -455,7 +461,7 @@ def verifySweepAgreesWithHistoricalExperiments():
                 print("ERROR: subprogram failed as environment variables differ from previous experiments found in the output folder.",file=sys.stderr)
                 print("environment variables found for CURRENT experiment: " + ", ".join(sorted(environmentSpace.keys())))
                 print("environment variables used in PREVIOUS experiment:  " + ", ".join(sorted(otherEnvironmentSpace.keys())))
-                sys.exit()
+                sys.exit("Environment variables differ")
             if len(set(parameterSpace.keys()))!=len(parameterSpaceIntersection):
                 print("ERROR: subprogram failed as parameters differ from previous experiments found in the output folder.",file=sys.stderr)
                 print("parameters found for CURRENT experiment: "+ ", ".join(sorted(parameterSpace.keys())))
@@ -948,7 +954,7 @@ It must further contain at least one of the following sections:
             specFileTemplate=specFileTemplateFile.read()
     except IOError:
         print("ERROR: couldn\'t open specification file template file: "+specFileTemplatePath,file=sys.stderr)
-        sys.exit()
+        sys.exit("Specification file missing")
         
     jobScriptTemplatePath = exahypeRoot+"/"+general["job_template"]    
     jobScriptTemplate = None
@@ -957,7 +963,7 @@ It must further contain at least one of the following sections:
             jobScriptTemplate=jobScriptTemplateFile.read()
     except IOError:
         print("ERROR: couldn\'t open job script template file: "+jobScriptTemplatePath,file=sys.stderr)
-        sys.exit()
+        sys.exit("Job Template missing")
     
     # TODO move into options?
     verifyAllRequiredParametersAreGiven(specFileTemplate)

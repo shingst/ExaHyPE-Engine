@@ -1,0 +1,174 @@
+/**
+ * This file is part of the ExaHyPE project.
+ * Copyright (c) 2016  http://exahype.eu
+ * All rights reserved.
+ *
+ * The project has received funding from the European Union's Horizon 
+ * 2020 research and innovation programme under grant agreement
+ * No 671698. For copyrights and licensing, please consult the webpage.
+ *
+ * Released under the BSD 3 Open Source License.
+ * For the full license text, see LICENSE.txt
+ **/
+ 
+/**
+
+ GRMHD, General Relativistic Magneto HydroDynamics
+
+ */
+exahype-project GRMHDb 
+  
+  peano-kernel-path const          = ./Peano
+  exahype-path const               = ./ExaHyPE
+  output-directory const           = ./ApplicationExamples/GRMHDb/GRMHDb_TEST
+  architecture const               = hsw
+  log-file                         = whatever.log
+  
+  computational-domain
+     dimension const                = 3
+     //width                        = 27.0, 27.0, 27.0 
+     //offset                       = 3., 3., 3.		 
+     width                          = 30.0 , 30.0, 30.0	 
+     offset                         = -15.0, -15.0, -15.0 
+     //width                          = 24.0 , 24.0, 24.0
+     //offset                         = -12.0, -12.0, -12.0
+     end-time                       = 100.0
+     //1000.0000001 
+     //time-steps                     = 100		
+  end computational-domain
+  
+  shared-memory
+    identifier               = dummy
+    configure                = {background-tasks:2,manual-pinning}
+    cores                    = 4
+    properties-file          = sharedmemory.properties
+  end shared-memory  
+  
+  distributed-memory
+    identifier       = static_load_balancing
+    configure        = {hotspot,fair,ranks-per-node:7}
+    buffer-size      = 6400
+    timeout          = 6000
+  end distributed-memory
+
+  global-optimisation
+    fuse-algorithmic-steps          = on
+    fuse-algorithmic-steps-factor   = 0.99
+    //fuse-algorithmic-steps-rerun-factor   = 0.99
+    //fuse-algorithmic-steps-diffusion-factor   = 0.99
+    spawn-predictor-as-background-thread = on
+    // spawn-predictor-as-background-thread = off
+    spawn-amr-background-threads         = on
+    //spawn-update-background-threads         = on
+    /* 0.0 und 0.8 sind schon mal zwei Faktoren */
+    disable-vertex-exchange-in-time-steps = on
+    time-step-batch-factor           = 0.0
+    disable-metadata-exchange-in-batched-time-steps = off
+    double-compression = 0.0
+    spawn-double-compression-as-background-thread = off
+  end global-optimisation
+
+  solver Limiting-ADER-DG GRMHDbSolver
+    /* gamma is actually parts of a matrix... */
+    variables const                = rho:1,vel:3,p:1,B:3,psi:1,lapse:1,shift:3,gamma:6
+    //variables const                = rho:1,vel:3,p:1,B:3,psi:1
+    //parameters const               = lapse:1,shift:3,gamma:6
+    order const                    = 3
+    //maximum-mesh-size              = 1.0
+    //maximum-mesh-size              = 0.88888888888888888888888888888889
+    //maximum-mesh-size              = 0.2962962962962962962962962962963
+    // maximum-mesh-size              = 3.3333333333333333333334
+     maximum-mesh-size              = 1.1111111111111111112
+    maximum-mesh-depth             = 0
+    time-stepping                  = global
+    type const = nonlinear
+    terms const = flux,ncp
+    optimisation const = optimised, maxpicarditer:5
+    //optimisation const = generic, maxpicarditer:5
+    //optimisation const = generic
+    //optimisation const = optimised
+    language const                 = C
+    limiter-type const         = robustmusclhancock
+    //limiter-type const         = musclhancock
+    limiter-optimisation const = generic
+    limiter-language const     = C
+    dmp-observables  const         =5
+	dmp-relaxation-parameter = 1e4
+	dmp-difference-scaling = 1e3 
+    //steps-till-cured           = 8
+     helper-layers              = 1
+
+   plot user::defined ErrorWriter
+       variables const = 19
+       time            = 0.0 
+       repeat          = 0.5  
+       output          = ./output/errors
+     end plot
+
+/*
+
+    plot vtk::Cartesian::vertices::ascii PrimitiveWriter
+      // abserrorl1percell[nvar],q[nvar],qanalytical[nvar]
+      variables const = 19 
+      time            = 0.0
+      repeat          = 10.0
+      output          = ./output/vtk
+    end plot
+
+*/
+
+
+
+    plot vtu::Cartesian::vertices::ascii PrimitiveWriter
+      // abserrorl1percell[nvar],q[nvar],qanalytical[nvar]
+      variables const = 19
+      time            = 0.0
+      repeat          = 2.0
+      output          = ./vtu/vtu
+    end plot
+/*
+    plot vtk::Cartesian::vertices::ascii PrimitiveWriterVTK
+      // abserrorl1percell[nvar],q[nvar],qanalytical[nvar]
+      variables const = 19
+      time            = 0.0
+      repeat          = 0.02
+      output          = ./vtk/vtk
+    end plot
+*/
+
+    plot vtu::Cartesian::subcells::limited::ascii PrimitiveWriterSubcell
+      variables const = 19
+      time            = 0.0
+      repeat          = 2.0
+      output          = ./vtusub/vtusub
+    end plot
+
+/*
+    plot vtk::Cartesian::subcells::limited::ascii PrimitiveWriterSubcellVTK
+      variables const = 19
+      time            = 0.0
+      repeat          = 1.0
+      output          = ./vtksub/vtksub
+    end plot
+*/
+
+    plot user::defined TecplotWriter
+       variables const = 19
+       time            = 0.0
+       repeat          = 2.0
+       output          = ./output/tecplot
+     end plot
+
+
+   plot probe::ascii ProbeWriter_0
+      variables const = 19
+      time            = 0.0
+      repeat          = 0.02
+      output          = ./output/rhoc
+      select          = x:0.000000000000001,y:0.000000000000001,z:0.000000000000001
+    end plot
+
+  end solver
+
+
+end exahype-project

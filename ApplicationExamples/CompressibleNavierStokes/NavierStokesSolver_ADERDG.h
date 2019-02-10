@@ -124,7 +124,7 @@ class NavierStokes::NavierStokesSolver_ADERDG : public NavierStokes::AbstractNav
      const bool wasTroubledInPreviousTimeStep,
      const tarch::la::Vector<DIMENSIONS,double>& center,
      const tarch::la::Vector<DIMENSIONS,double>& dx,
-     const double t, const double dt) const override;
+     const double t) const override;
 
     /**
      * Evaluate the refinement criterion within a cell.

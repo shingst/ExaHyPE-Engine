@@ -16,11 +16,7 @@ exahype::solvers::LimitingADERDGSolver::UpdateJob::UpdateJob(
   _cellInfo(cellInfo),
   _neighbourMergePerformed(solverPatch.getNeighbourMergePerformed()),
   _isAtRemoteBoundary(isAtRemoteBoundary) {
-  tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  {
-    NumberOfReductionJobs++;
-  }
-  lock.free();
+  NumberOfReductionJobs.fetch_add(1);
 }
 
 bool exahype::solvers::LimitingADERDGSolver::UpdateJob::run() {
@@ -30,11 +26,13 @@ bool exahype::solvers::LimitingADERDGSolver::UpdateJob::run() {
   {
     _solver.updateNextMeshUpdateEvent(result._meshUpdateEvent);
     _solver.updateMinNextTimeStepSize(result._timeStepSize);
-
-    NumberOfReductionJobs--;
-    assertion( NumberOfReductionJobs>=0 );
   }
   lock.free();
+
+
+  NumberOfReductionJobs.fetch_sub(1);
+  assertion( NumberOfReductionJobs.load()>=0 );
+
   return false;
 }
 

@@ -125,7 +125,7 @@ class GridDemonstrator::GridDemonstrator_ADERDG : public GridDemonstrator::Abstr
       const bool wasTroubledInPreviousTimeStep,
       const tarch::la::Vector<DIMENSIONS,double>& center,
       const tarch::la::Vector<DIMENSIONS,double>& dx,
-      const double t, const double dt) const override;
+      const double t) const override;
 
 
 };

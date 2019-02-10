@@ -14,23 +14,15 @@ exahype::solvers::ADERDGSolver::ProlongationJob::ProlongationJob(
   _cellDescription(cellDescription),
   _parentCellDescription(parentCellDescription),
   _subcellIndex(subcellIndex) {
-  tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  {
-    NumberOfEnclaveJobs++; // TODO(Dominic): Not sure yet which queue is optimal
-  }
-  lock.free();
+  NumberOfEnclaveJobs.fetch_add(1); // TODO(Dominic): Not sure yet which queue is optimal
 }
 
 bool exahype::solvers::ADERDGSolver::ProlongationJob::run() {
   _solver.prolongateFaceDataToDescendant(
       _cellDescription,_parentCellDescription,_subcellIndex);
 
-  tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  {
-    NumberOfEnclaveJobs--;
-    assertion( NumberOfEnclaveJobs>=0 );
-  }
-  lock.free();
+  NumberOfEnclaveJobs.fetch_sub(1);
+  assertion( NumberOfEnclaveJobs>=0 );
   return false;
 }
 

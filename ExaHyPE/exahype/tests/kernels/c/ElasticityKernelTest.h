@@ -59,14 +59,14 @@ class ElasticityKernelTest : public tarch::tests::TestCase {
 
   void algebraicSource(const double* Q, double* S);
 
-  void multiplyMaterialParameterMatrix(const double *Q, double *rhs);
+  void multiplyMaterialParameterMatrix(const double *Q, double **rhs);
 
   void eigenvalues(const double* const Q,const int normalNonZeroIndex, double* lambda);
 
   /**
    * BgradQ is a matrix for the linear kernels.
    */
-  void nonConservativeProduct(const double* const Q, const double* const gradQ, double* BgradQ);
+  void nonConservativeProduct(const double* const Q, const double* const *const gradQ, double** BgradQ);
 
   void coefficientMatrix(const double* const Q, const int normalNonZero, double* Bn);
 

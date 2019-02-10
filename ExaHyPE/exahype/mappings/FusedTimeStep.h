@@ -67,39 +67,13 @@ private:
    * This semaphore is used for locking the plotters'
    * plotPatch function which is usually not thread-safe.
    */
-  static tarch::multicore::BooleanSemaphore SemaphoreForPlotting;
+  static tarch::multicore::BooleanSemaphore Semaphore;
 
   /**
    * A local copy of the state set
    * in beginIteration(...).
    */
   exahype::State _stateCopy;
-
-  /**
-   * A minimum time step size for each solver.
-   */
-  std::vector<double> _minTimeStepSizes;
-  /**
-   * The maximum level occupied by cells of a solver.
-   */
-  std::vector<int> _maxLevels;
-  /**
-   * Per solver a flag, indicating if has requested
-   * a mesh update request or a limiter domain change.
-   */
-
-   /**
-   * A vector of reduced global observables for each solver.
-   */
-  std::vector<std::vector<double>> _reducedGlobalObservables;
-
-  std::vector<exahype::solvers::Solver::MeshUpdateEvent> _meshUpdateEvents;
-
-  /**
-   * Prepare the vectors _minTimeStepSizes, _maxLevels,
-   * _meshUpdateRequests, _limiterDomainChanges.
-   */
-  void initialiseLocalVariables();
 
   /**
    * Indicates that the background tasks have terminated.

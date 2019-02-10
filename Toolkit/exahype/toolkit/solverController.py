@@ -170,6 +170,7 @@ class SolverController:
         context["linearOrNonlinear"]       = "Linear" if context["isLinear"] else "Nonlinear"
         context["isFortran"]               = kernel.get("language",False)=="Fortran" 
         context["useCERK"]                 = kernel.get("space_time_predictor",{}).get("cerkguess",False)
+        context["useSplitCK"]              = kernel.get("space_time_predictor",{}).get("split_ck",False)
         context["noTimeAveraging"]         = kernel.get("space_time_predictor",{}).get("notimeavg",False)
         context["noTimeAveraging_s"]       = "true" if kernel.get("space_time_predictor",{}).get("notimeavg",False) else "false"
         context.update(self.buildKernelTermsContext(kernel["terms"]))
@@ -226,13 +227,14 @@ class SolverController:
     def buildKernelOptimizationContext(self, kernel, solverContext):
         optimizations = kernel.get("optimised_kernel_debugging",[]) + kernel.get("optimised_terms",[])
         context = {}
-        context["useConverter"]       = "converter"       in optimizations
-        context["countFlops"]         = "flops"           in optimizations
-        context["useFluxVect"]        = "fluxvect"        in optimizations
-        context["useFusedSource"]     = "fusedsource"     in optimizations
-        context["useFusedSourceVect"] = "fusedsourcevect" in optimizations
-        context["useSourceVect"]      = "sourcevect"      in optimizations
-        context["useNCPVect"]         = "ncpvect"         in optimizations
+        context["useConverter"]       = "converter"        in optimizations
+        context["countFlops"]         = "flops"            in optimizations
+        context["useFluxVect"]        = "flux_vect"        in optimizations
+        context["useFusedSource"]     = "fusedsource"      in optimizations
+        context["useFusedSourceVect"] = "fusedsource_vect" in optimizations
+        context["useSourceVect"]      = "source_vect"      in optimizations
+        context["useNCPVect"]         = "ncp_vect"         in optimizations
+        context["useMaterialParametersVect"] = "material_parameters_vect" in optimizations
         
         return context
         

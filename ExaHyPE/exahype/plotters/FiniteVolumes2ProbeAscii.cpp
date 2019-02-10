@@ -54,14 +54,14 @@ void exahype::plotters::FiniteVolumes2ProbeAscii::init(const std::string& filena
   _plotterParameters    = plotterParameters;
   _filename             = filename;
 
-  if (!plotterParameters.isValueValidDouble("x") || !plotterParameters.isValueValidDouble("y") || ( DIMENSIONS==3 &&!plotterParameters.isValueValidDouble("z"))) {
+  if (!plotterParameters.isValueValidDouble("select/x") || !plotterParameters.isValueValidDouble("select/y") || ( DIMENSIONS==3 &&!plotterParameters.isValueValidDouble("select/z"))) {
     logError("init()", "Probe location is invalid. Require x,y,z values. Have " << plotterParameters.dump());
   }
   
-  _x(0) = plotterParameters.getValueAsDouble("x");
-  _x(1) = plotterParameters.getValueAsDouble("y");
+  _x(0) = plotterParameters.getValueAsDouble("select/x");
+  _x(1) = plotterParameters.getValueAsDouble("select/y");
   #if DIMENSIONS==3
-  _x(2) = plotterParameters.getValueAsDouble("z");
+  _x(2) = plotterParameters.getValueAsDouble("select/z");
   #endif
 
   logDebug( "init(...)", "probe at location " << _x << "(plotterParameters=\"" << plotterParameters.dump() << "\")");
@@ -137,7 +137,7 @@ void exahype::plotters::FiniteVolumes2ProbeAscii::plotPatch(
   double timeStamp
 ) {
   if (
-    tarch::la::allSmaller(offsetOfPatch,_x)
+    tarch::la::allSmallerEquals(offsetOfPatch,_x)
     &&
     tarch::la::allGreater(offsetOfPatch+sizeOfPatch,_x)
   ) {
