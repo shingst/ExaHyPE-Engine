@@ -164,12 +164,12 @@ void averageRiemannInputs(
     }
   }
   #else
-  idx3 idx_Q(basisSize, numberOfData);
+  idx3 idx_Q(basisSize, basisSize, numberOfData);
   for (int i = 0; i < basisSize; i++) {
     for (int j = 0; j < basisSize; j++) {
       const double wij = weights1D[order][i]*weights1D[order][j];
       for (int k = 0; k < numberOfData; k++) {
-        Qav[k] += wij[j] * Q[idx_Q(j, k)];
+        Qav[k] += wij[j] * Q[idx_Q(i,j, k)];
       }
     }
   }

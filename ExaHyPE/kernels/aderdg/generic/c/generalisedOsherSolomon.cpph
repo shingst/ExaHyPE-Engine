@@ -36,7 +36,7 @@ namespace c {
 * We don't need to consider material parameters
 * in FL,FR.
 */
-template <bool useFlux, bool useNCP, int numQuadPoints, typename SolverType>
+template <bool useNCP, bool useFlux, int numQuadPoints, typename SolverType>
 void generalisedOsherSolomon(
     SolverType&         solver,
     double* const       FL,
