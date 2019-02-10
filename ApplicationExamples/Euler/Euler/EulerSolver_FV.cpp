@@ -97,8 +97,11 @@ void Euler::EulerSolver_FV::flux(const double* const Q, double** F) {
  * Use generalised Osher Solomon flux.
  */
 double Euler::EulerSolver_FV::riemannSolver(double* const fL, double *fR, const double* const qL, const double* const qR, int direction) {
-  return kernels::finitevolumes::riemannsolvers::c::generalisedOsherSolomon<false, true, false, 3, EulerSolver_FV>(*static_cast<EulerSolver_FV*>(this), fL,fR,qL,qR,direction);
-  //return kernels::finitevolumes::riemannsolvers::c::rusanov<false, true, false, EulerSolver_FV>(*static_cast<EulerSolver_FV*>(this), fL,fR,qL,qR,direction);
+  if ( direction==0 ) {
+    return kernels::finitevolumes::riemannsolvers::c::generalisedOsherSolomon<false, true, false, 3, EulerSolver_FV>(*static_cast<EulerSolver_FV*>(this), fL,fR,qL,qR,direction);
+  } else {
+    return kernels::finitevolumes::riemannsolvers::c::rusanov<false, true, false, EulerSolver_FV>(*static_cast<EulerSolver_FV*>(this), fL,fR,qL,qR,direction);
+  }
 }
 
 void Euler::EulerSolver_FV::eigenvectors(
@@ -243,16 +246,9 @@ void Euler::EulerSolver_FV::eigenvalues(const double* const Q,const int directio
   const double u_n = Q[direction + 1] * irho;
   const double c   = std::sqrt(gamma * p * irho);
 
-//  ! Eigenvalues
-//  L(1,1) = u
-//  L(2,2) = u
-//  L(3,3) = u
-//  L(4,4) = u+c
-//  L(5,5) = u-c
-
   std::fill_n(lambda,5,u_n);
-  lambda[3] += c;
-  lambda[4] -= c;
+  lambda[0] -= c;
+  lambda[4] += c;
   #endif
 }
 

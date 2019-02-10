@@ -14,11 +14,10 @@
 #define KERNELS_FINITEVOLUMES_RIEMANNSOLVERS_C_RIEMANNSOLVERS_H_
 
 #include "kernels/KernelUtils.h"
-#include "kernels/GaussLegendreQuadrature.h"
-
 #include <iomanip>
 #include <iostream>
 #include <algorithm> // copy_n
+#include "../../../RiemannSolverUtils.h"
 
 namespace kernels {
 namespace finitevolumes {
@@ -33,8 +32,13 @@ namespace c {
  * It is not a good Riemann solver for the Shallow Water Equations (SWE) e.g.
  */
 template <bool useNCP, bool useFlux, bool useViscousFlux, typename SolverType>
-double rusanov(SolverType& solver, double* fL, double *fR, const double* qL, const double* qR,
-               int normalNonZero);
+double rusanov(
+    SolverType&         solver,
+    double* const       fnL,
+    double* const       fnR,
+    const double* const qL,
+    const double* const qR,
+    const int           direction);
 
 /**
  * Implements a generalised osher type flux.
@@ -52,8 +56,13 @@ double rusanov(SolverType& solver, double* fL, double *fR, const double* qL, con
  * @tparam numQuadPoints the number of quadrature points the Legendre quadrature should use. 3 is chosen in paper [1].
  */
 template <bool useNCP, bool useFlux, bool useViscousFlux, int numQuadPoints, typename SolverType>
-double generalisedOsherSolomon(SolverType& solver, double* fL, double *fR, const double* qL, const double* qR,int normalNonZero);
-
+double generalisedOsherSolomon(
+    SolverType&         solver,
+    double* const       fnL,
+    double* const       fnR,
+    const double* const qL,
+    const double* const qR,
+    const int           direction);
 } // namespace c
 } // namespace riemansolvers
 } // namespace finitevolumes

@@ -50,17 +50,10 @@ void riemannSolverNonlinear(SolverType& solver, double* FL, double* FR,
   // Compute the average variables and parameters from the left and the right
   double QavL[numberOfData] = {0.0}; // ~(numberOfVariables+numberOfParameters)
   double QavR[numberOfData] = {0.0}; // ~(numberOfVariables+numberOfParameters)
-  {
-    idx2 idx_QLR(basisSize, numberOfData);
-    for (int j = 0; j < basisSize; j++) {
-      const double weight = kernels::gaussLegendreWeights[order][j];
-
-      for (int k = 0; k < numberOfData; k++) {
-        QavL[k] += weight * QL[idx_QLR(j, k)];
-        QavR[k] += weight * QR[idx_QLR(j, k)];
-      }
-    }
-  }
+  kernels::riemannsolvers::util::averageRiemannInputs<basisSize,numberOfData>(
+      QL,kernels::gaussLegendreWeights,QavL);
+  kernels::riemannsolvers::util::averageRiemannInputs<basisSize,numberOfData>(
+      QR,kernels::gaussLegendreWeights,QavR);
 
   double LL[numberOfVariables] = {0.0}; // do not need to store material parameters
   double LR[numberOfVariables] = {0.0};

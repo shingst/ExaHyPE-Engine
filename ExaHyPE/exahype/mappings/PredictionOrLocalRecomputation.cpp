@@ -120,7 +120,8 @@ void exahype::mappings::PredictionOrLocalRecomputation::endIteration(
     exahype::State& state) {
   logTraceInWith1Argument("endIteration(State)", state);
 
-
+  // background threads
+  exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::ReductionJob);
 
   logTraceOutWith1Argument("endIteration(State)", state);
 }

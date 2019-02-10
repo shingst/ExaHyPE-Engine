@@ -1127,7 +1127,7 @@ void exahype::solvers::LimitingADERDGSolver::localRecomputation(
     LimiterPatch& limiterPatch = getLimiterPatch(solverPatch,cellInfo);
 
     _limiter->rollbackToPreviousTimeStep(limiterPatch);
-    _limiter->updateSolution(limiterPatch,limiterPatch.getNeighbourMergePerformed(),cellInfo._cellDescriptionsIndex,true);
+    _limiter->updateSolution(limiterPatch,limiterNeighbourMergePerformed,cellInfo._cellDescriptionsIndex,true);
     copyTimeStepDataFromSolverPatch(solverPatch,limiterPatch);
     projectFVSolutionOnDGSpace(solverPatch,limiterPatch);
   }
@@ -1193,8 +1193,7 @@ double exahype::solvers::LimitingADERDGSolver::localRecomputation(
         solverPatch.getRefinementStatus() >= _solver->_minRefinementStatusForTroubledCell-2
     ) {
       LimiterPatch& limiterPatch = getLimiterPatch(solverPatch,cellInfo);
-      if ( SpawnUpdateAsBackgroundJob
-      ) {
+      if ( SpawnUpdateAsBackgroundJob ) {
         peano::datatraversal::TaskSet( new LocalRecomputationJob(
             *this, solverPatch,cellInfo,limiterPatch.getNeighbourMergePerformed(),isAtRemoteBoundary ) );
         return std::numeric_limits<double>::infinity();

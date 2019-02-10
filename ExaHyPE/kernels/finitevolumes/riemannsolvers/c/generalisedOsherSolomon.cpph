@@ -12,112 +12,58 @@
  **/
 template <bool useNCP, bool useFlux, bool useViscousFlux, int numQuadPoints, typename SolverType>
 double kernels::finitevolumes::riemannsolvers::c::generalisedOsherSolomon(
-    SolverType& solver,double* fnL, double *fnR, const double* qL, const double* qR, int direction) {
+    SolverType&         solver,
+    double* const       fnL, 
+    double* const       fnR, 
+    const double* const qL, 
+    const double* const qR,
+    const int           direction) {
   if ( useViscousFlux ) {
     std::cerr << "Only implemented for PDEs with non-viscous conservative flux and/or NCP." << std::endl;
     std::terminate();
   }
   constexpr int numberOfVariables  = SolverType::NumberOfVariables;
   constexpr int numberOfParameters = SolverType::NumberOfParameters;
-  constexpr int numberOfData       = numberOfVariables + numberOfParameters;
 
-  // reference coordinates
-  int in = 0; // direction == 0
-  int is = 1;
-  int it = 2;
-  if ( direction == 1 ) {
-     in=1; is=0; it=2;
-  } else if ( direction == 2 ) {
-     in=2; is=0; it=1;
-  }
-
-  // integrate the Jacobian over the phase space (QL -> QR)
-  double s_max = -1.0;
   double osherMatrix[numberOfVariables][numberOfVariables] = {0.0}; // fill with zeroes
-  double osherNCP[numberOfVariables] = {0.0}; // fill with zeroes
-  for(int i=0; i<numQuadPoints; i++) {
-    const double& si  = kernels::gaussLegendreNodes[numQuadPoints-1][i];
-    double Qs[numberOfData];
-    for(int j=0; j < numberOfVariables; j++) {
-      Qs[j] = qL[j] + si * (qR[j] - qL[j]);
-    }
-
-    if (useFlux) {
-      // eigenstructure
-      double Ls[numberOfVariables];                            // all eigenvalues need to be set by user
-      double Rs[numberOfVariables][numberOfVariables] = {0.0}; // fill with zeros as user typically performs rotation via matrix product
-      double iRs[numberOfVariables][numberOfVariables]= {0.0};
-      solver.eigenvectors(Qs/*in*/,in,is,it,Rs/*inout*/,Ls/*inout*/,iRs/*inout*/);    // user solver can work internally with eigen system or eigen solvers;
-      for (int j = 0; j < numberOfVariables; j++) {
-        s_max = std::max( std::abs(Ls[j]), s_max );
-      }
-
-      #ifdef Asserts
-      double sumOfEntries = 0;
-      for(int j=0; j < numberOfVariables; j++) {
-        for(int k=0; k < numberOfVariables; k++) {
-          for(int a=0; a < numberOfVariables; a++) {
-            sumOfEntries += iRs[j][a] * Rs[a][k];
-          }
-        }
-      }
-      if ( sumOfEntries < numberOfVariables - 1e-12 || sumOfEntries > numberOfVariables + 1e-12 ) {
-        std::cerr << "Error: Left eigenvector matrix is not an inverse of the right one as sum of entries="<<sumOfEntries << "; direction="<<direction << std::endl;
-        std::terminate();
-      }
-      #endif
-
-      // compute Osher matrix
-      // scale column vectors: (|L1|*col1,|L2|*col2,...)
-      const double& wi = kernels::gaussLegendreWeights[numQuadPoints-1][i];
-      for(int j=0; j < numberOfVariables; j++) {
-        for(int k=0; k < numberOfVariables; k++) {
-          for(int a=0; a < numberOfVariables; a++) {
-            osherMatrix[j][k] += wi * Rs[j][a]*std::abs(Ls[a])*iRs[a][k];
-          }
-        }
-      }
-    }
-
-    if (useNCP) { // we directly compute the nonconservative product instead of computing the jacobian matrix
-      const double& wi = kernels::gaussLegendreWeights[numQuadPoints-1][i];
-      double gradQs[DIMENSIONS][numberOfData] = {0.0};
-      for(int j=0; j < numberOfData; j++) {
-        gradQs[DIMENSIONS][j] = qR[j] - qL[j];
-      }
-      double ncp[numberOfData] = {0.0};
-      solver.nonConservativeProduct(Qs, gradQs[in], ncp);
-      for(int j=0; j < numberOfData; j++) {
-        osherNCP[j] += wi * ncp[j];
-      }
-    }
-  }
-  
-  double FL2[DIMENSIONS][numberOfVariables] = {0.0}; // Q: Can we skip this memset?
-  double FR2[DIMENSIONS][numberOfVariables] = {0.0};
-  #if DIMENSIONS==3
-  double* FL[DIMENSIONS]={FL2[0], FL2[1], FL2[2]};
-  double* FR[DIMENSIONS]={FR2[0], FR2[1], FR2[2]};
-  #else
-  double* FL[DIMENSIONS]={FL2[0], FL2[1]};
-  double* FR[DIMENSIONS]={FR2[0], FR2[1]};
-  #endif
+  double osherNCP[numberOfVariables] = {0.0};                       // fill with zeroes
+  double s_max = kernels::riemannsolvers::util::computeOsherMatrix<useNCP,
+      useFlux,numberOfVariables,numberOfParameters,numQuadPoints,SolverType>(
+          solver,qL,qR,direction,osherMatrix,osherNCP);
+   
   if (useFlux && !useViscousFlux) {
+    double FL2[DIMENSIONS][numberOfVariables] = {0.0}; // Q: Can we skip this memset?
+    double FR2[DIMENSIONS][numberOfVariables] = {0.0};
+    
+    #if DIMENSIONS==3
+    double* FL[DIMENSIONS]={FL2[0], FL2[1], FL2[2]};
+    double* FR[DIMENSIONS]={FR2[0], FR2[1], FR2[2]};
+    #else
+    double* FL[DIMENSIONS]={FL2[0], FL2[1]};
+    double* FR[DIMENSIONS]={FR2[0], FR2[1]};
+    #endif
     solver.flux(qR, FR);
     solver.flux(qL, FL);
+    
+    for(int i=0; i < numberOfVariables; i++) {
+      fnL[i] = 0.5 * (FR2[direction][i] + FL2[direction][i]);
+      for(int a=0; a < numberOfVariables; a++) {
+        fnL[i] -= 0.5 * osherMatrix[i][a] * ( qR[a] - qL[a] );
+      }
+    }
+  } else {
+    std::fill_n(fnL,numberOfVariables,0);
   }
 
-  for(int i=0; i < numberOfVariables; i++) {
-    fnL[i] = 0.5 * (FR2[direction][i] + FL2[direction][i]);
-    for(int j=0; j < numberOfVariables; j++) {
-      fnL[i] -= 0.5 * osherMatrix[i][j] * ( qR[j] - qL[j] );
-    }
-    if(useNCP) {
+  if(useNCP) {
+    for(int i=0; i < numberOfVariables; i++) {
       fnR[i] = fnL[i] - 0.5 * osherNCP[i];
-      fnL[i] = fnL[i] + 0.5 * osherNCP[i];
-    } else {
-      fnR[i] = fnL[i];
     }
+    for(int i=0; i < numberOfVariables; i++) {
+      fnL[i] = fnL[i] + 0.5 * osherNCP[i];
+    }
+  } else {
+    std::copy_n(fnL,numberOfVariables,fnR);  
   }
   return s_max;
 }

@@ -144,6 +144,30 @@ public:
    */
   virtual void flux(const double* const Q,double** F);
 
+
+  /**
+   * Use the generalised Osher Solomon flux
+   */
+  void riemannSolver(double* const FL,double* const FR,const double* const QL,const double* const QR,const double t,const double dt,const int direction, bool isBoundaryFace, int faceIndex) override;
+
+  /**
+   * Compute the eigenvectors of the jacobian matrix (coefficient matrix of derivative in direction @direction).
+   *
+   * This function also returns eigenvalues as numerical packages often compute eigenvalues and
+   * eigenvectors together.
+   *
+   * see: https://www3.nd.edu/~dbalsara/Numerical-PDE-Course/Appendix_LesHouches/LesHouches_Lecture_5_Approx_RS.pdf
+   *
+   * @param[in]    Q       state variables and parameters; range: [0,nVar+nData].
+   * @param[in]    in      the normal direction; index of the x-axis in reference space.
+   * @param[in]    is      index of the y-axis in reference space.
+   * @param[in]    it      index of the z-axis in reference space.
+   * @param[inout] R       the right eigenvectors (each column stores an eigenvector); initialised to zero; range: [0,nVar]^2.
+   * @param[inout] eigvals the right eigenvectors (each column stores an eigenvector); range: [0,nVar].
+   * @param[inout] iR      the left eigenvectors  (inverse of RM); initialised to zero; range: [0,nVar]^2.
+   */
+  void eigenvectors(const double* const Q,const int in,const int is,const int it,double (&RM)[NumberOfVariables][NumberOfVariables],double (&eigvals)[NumberOfVariables], double (&iRM)[NumberOfVariables][NumberOfVariables]);
+
   /**
    * Compute the eigenvalues of the flux tensor per coordinate direction \p d.
    *
