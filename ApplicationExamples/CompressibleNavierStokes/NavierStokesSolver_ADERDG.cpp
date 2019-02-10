@@ -51,6 +51,7 @@ void NavierStokes::NavierStokesSolver_ADERDG::adjustPointSolution(const double* 
     for (int i = 0; i < vars.variables(); ++i) {
       assertion2(std::isfinite(Q[i]), i, Q[i]);
     }
+    //Q[NumberOfVariables+NumberOfParameters-1] = -1;
   }
 
 }
@@ -150,6 +151,7 @@ void NavierStokes::NavierStokesSolver_ADERDG::boundaryValues(const double* const
     }
   }
 
+  gradStateOut[idxGradQ(normalNonZero,4)] = 0.0;
   if (scenario->getBoundaryType(faceIndex) == BoundaryType::movingWall) {
     // Wall speed after Riemann solve
     const auto wallSpeed = 1.0;
@@ -159,7 +161,6 @@ void NavierStokes::NavierStokesSolver_ADERDG::boundaryValues(const double* const
       gradStateOut[idxGradQ(i, 0)] += 2 * wallSpeed;
     }
   }
-
 
   // We deal with heat conduction by computing the flux at the boundary without heat conduction,
   // To do this, we reconstruct the incoming flux using the extrapolated/time-averaged state/gradient.
@@ -196,9 +197,8 @@ void NavierStokes::NavierStokesSolver_ADERDG::boundaryValues(const double* const
     // Use no viscous effects and use equilibrium temperature gradient.
     ns.evaluateFlux(stateOut, gradStateOut.data(), F, false, true, equilibriumTemperatureGradient);
   } else {
-    // No viscous flux at wall boundary.
-    // TODO(Lukas) Maybe only for free-slip?
-    ns.evaluateFlux(stateOut, gradStateOut.data(), F, false, true, 0.0);
+    //ns.evaluateFlux(stateOut, gradStateOut.data(), F);
+    ns.evaluateFlux(stateOut, gradStateOut.data(), F);
   }
 
   std::copy_n(F[normalNonZero], NumberOfVariables, fluxOut);
@@ -212,12 +212,6 @@ bool NavierStokes::NavierStokesSolver_ADERDG::isPhysicallyAdmissible(
       const tarch::la::Vector<DIMENSIONS,double>& center,
       const tarch::la::Vector<DIMENSIONS,double>& dx,
       const double t, const double dt) const {
-    // First perform a quick sanity check.
-    auto varsMin = ReadOnlyVariables{observablesMin};
-    if (varsMin.rho() <= 0.0 || varsMin.E() < 0.0) {
-      return false;
-    }
-
     // We now need to do a pointwise check for the primitive variables
     // pressure and Z.
     // TODO(Lukas) At least refactor this. And 3D!
@@ -259,7 +253,20 @@ bool NavierStokes::NavierStokesSolver_ADERDG::isPhysicallyAdmissible(
 
 void NavierStokes::NavierStokesSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(double* observables,const int numberOfObservables,const double* const Q) const {
   if (numberOfObservables>0) {
-    std::copy_n(Q,numberOfObservables,observables);
+    // TODO(Lukas) Remove this.
+    //std::copy_n(Q,numberOfObservables,observables);
+    std::fill_n(observables, numberOfObservables, 0.0);
+    assert(numberOfObservables >= 2);
+    observables[0] = Q[0];
+    const auto vars = ReadOnlyVariables{Q};
+    observables[1] = ns.evaluatePressure(vars.E(),
+                                         vars.rho(),
+                                         vars.j(),
+                                         ns.getZ(Q),
+                                         ns.getHeight(Q));
+    if (ns.useAdvection) {
+      observables[2] = ns.getZ(Q) / Q[0];
+    }
   }
 }
 
@@ -270,7 +277,7 @@ exahype::solvers::Solver::RefinementControl NavierStokes::NavierStokesSolver_ADE
     const tarch::la::Vector<DIMENSIONS, double>& dx,
     const double t,
     const int level) {
-
+  double* Q = const_cast<double*>(luh);
   if (!amrSettings.useAMR) {
     // Default: Delete cells.
     // This is useful when one wants to use limiting-guided refinement
@@ -288,7 +295,6 @@ exahype::solvers::Solver::RefinementControl NavierStokes::NavierStokesSolver_ADE
 
   const auto countGlobal = _globalObservables[2];
   const auto meanGlobal = _globalObservables[0];
-
   // Merging computes sample variance (Bessel's correction), we need population variance.
   const auto varianceGlobal = ((countGlobal - 1)/countGlobal) * _globalObservables[1];
   const auto stdGlobal = std::sqrt(varianceGlobal);
@@ -299,13 +305,25 @@ exahype::solvers::Solver::RefinementControl NavierStokes::NavierStokesSolver_ADE
   const auto hi = meanGlobal + factorRefine * stdGlobal;
   const auto lo = meanGlobal + factorCoarse * stdGlobal;
 
+  /*
+  auto& coarseTime = Q[NumberOfVariables+NumberOfParameters-1];
+  const bool alreadyErased = std::abs(coarseTime - t) <= 10e-6;
+  if (alreadyErased) {
+  //if (coarseTime >= 0.0) {
+    std::cout << "Cell at " << center << "at t = " << t << std::endl;
+    return exahype::solvers::Solver::RefinementControl::Keep;
+  }
+  */
+
   if (curTv > hi) {
     return exahype::solvers::Solver::RefinementControl::Refine;
   }
 
   if (curTv < lo) {
+    //if (curTv < lo && refineTime != t) {
     return exahype::solvers::Solver::RefinementControl::Erase;
   }
+
 
   return exahype::solvers::Solver::RefinementControl::Keep;
 }
@@ -336,7 +354,6 @@ double NavierStokes::NavierStokesSolver_ADERDG::stableTimeStepSize(const double*
 void NavierStokes::NavierStokesSolver_ADERDG::riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double t, const double dt,const tarch::la::Vector<DIMENSIONS, double>& dx, const int direction, bool isBoundaryFace, int faceIndex) {
   assertion2(direction>=0,dt,direction);
   assertion2(direction<DIMENSIONS,dt,direction);
-  //riemannSolverNonlinear<false,NavierStokesSolver_ADERDG>(*static_cast<NavierStokesSolver_ADERDG*>(this),FL,FR,QL,QR,dx, dt,direction);
   kernels::aderdg::generic::c::riemannSolverNonlinear<false,true, NavierStokesSolver_ADERDG>(*static_cast<NavierStokesSolver_ADERDG*>(this),FL,FR,QL,QR,t,dt,dx,direction);
 }
 
@@ -375,12 +392,14 @@ void NavierStokes::NavierStokesSolver_ADERDG::boundaryConditions( double* const 
   }
 
   if (scenario->getBoundaryType(faceIndex) == NavierStokes::BoundaryType::wall ||
-      scenario->getBoundaryType(faceIndex) == NavierStokes::BoundaryType::freeSlipWall) {
+      scenario->getBoundaryType(faceIndex) == NavierStokes::BoundaryType::freeSlipWall ||
+      scenario->getBoundaryType(faceIndex) == NavierStokes::BoundaryType::movingWall) {
 #if DIMENSIONS == 2
     kernels::idx2 idx_F(Order + 1, NumberOfVariables);
     for (int i = 0; i < (Order + 1); ++i) {
       // Set energy flux to zero!
       fluxIn[idx_F(i, NavierStokesSolver_ADERDG_Variables::shortcuts::E)] = 0.0;
+      //ns.setZ(fluxIn + idx_F(i, 0), 0.0);
     }
 #else
    // TODO(Lukas) Is this correct for 3D? Untested!

@@ -7,7 +7,7 @@
   },
   "computational_domain": {
     "dimension": 2,
-    "end_time": 600,
+    "end_time": 800,
     "offset": [
       0.0,
       0.0
@@ -17,18 +17,18 @@
       1000.0
     ]
   },
- "distributed_memory": {
-      "ranks_per_node": 1,
-      "load_balancing_strategy": "hotspot",
-      "load_balancing_type": "dynamic",
-      "node_pool_strategy": "fair",
-      "timeout": 6000,
-      "buffer_size": 1600
-  },
   "shared_memory": {
     "cores": 16,
     "properties_file": "sharedmemory.properties",
     "autotuning_strategy": "dummy"
+  },
+ "distributed_memory": {
+      "ranks_per_node": 1,
+      "load_balancing_strategy": "greedy_naive",
+      "load_balancing_type": "static",
+      "node_pool_strategy": "fair",
+      "timeout": 6000,
+      "buffer_size": 1600
   },
   "optimisation": {
     "fuse_algorithmic_steps": true,
@@ -36,18 +36,18 @@
     "spawn_predictor_as_background_thread": true,
     "spawn_amr_background_threads": true,
     "disable_vertex_exchange_in_time_steps": true,
-    "time_step_batch_factor": 1.0,
+    "time_step_batch_factor": 0.99,
     "disable_metadata_exchange_in_batched_time_steps": true,
     "double_compression": 0.0,
-    "spawn_double_compression_as_background_thread": true
+    "spawn_double_compression_as_background_thread": false
   },
   "solvers": [
     {
       "type": "ADER-DG",
       "name": "NavierStokesSolver_ADERDG",
-      "order": 3,
-      "maximum_mesh_size": 112,
-      "maximum_mesh_depth": 1,
+      "order": 4,
+      "maximum_mesh_size": 38.0,
+      "maximum_mesh_depth": 0,
       "time_stepping": "global",
       "halo_cells": 0,
       "aderdg_kernel": {
@@ -64,12 +64,6 @@
         "implementation": "generic"
       },
       "point_sources": 0,
-      "global_observables": [
-        {
-          "name": "gobs",
-	  "multiplicity": 3
-        }
-      ],
       "variables": [
         {
           "name": "rho",
@@ -94,23 +88,30 @@
           "multiplicity": 2
         }
       ],      
+      "global_observables": [
+        {
+          "name": "gobs",
+	  "multiplicity": 3
+        }
+      ],
       "parameters": {
-	"use-gravity": false,
-	"use-background-state": false,
+	"use-gravity": true,
+	"use-background-state": true,
         "viscosity": 0.1,
-        "scenario": "two-bubbles",
+        "scenario": "cosine-bubble",
 	"use-amr": true,
 	"use-tv-amr": true,
-	"amr-indicator": "pressure",
-	"amr-factor-refine": 1.5,
+	"use-tv-volume-correction": true,
+	"amr-indicator": "potential-temperature",
+	"amr-factor-refine": 2.5,
 	"amr-factor-erase": 0.5
       },
       "plotters": [
         {
-          "type": "vtu::Legendre::vertices::ascii",
+          "type": "vtu::Cartesian::vertices::ascii",
           "name": "Plotter",
           "time": 0.000001,
-          "repeat": 2.5,
+          "repeat": 30.0,
           "output": "./results/solution",
           "variables": 5
         }

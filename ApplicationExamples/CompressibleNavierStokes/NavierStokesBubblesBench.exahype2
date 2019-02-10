@@ -7,7 +7,7 @@
   },
   "computational_domain": {
     "dimension": 2,
-    "end_time": 0.11,
+    "end_time": 0.6,
     "offset": [
       0.0,
       0.0
@@ -18,8 +18,8 @@
     ]
   },
   "shared_memory": {
-    "cores": 16,
-    "background_job_consumers": $consumers,  
+    "cores": 8,
+    "background_job_consumers": 4,  
     "properties_file": "sharedmemory.properties",
     "autotuning_strategy": "dummy"
   },
@@ -30,7 +30,7 @@
     "spawn_amr_background_threads": true,
     "spawn_update_as_background_thread": true,
     "disable_vertex_exchange_in_time_steps": true,
-    "time_step_batch_factor": 1.0,
+    "time_step_batch_factor": 0.9,
     "disable_metadata_exchange_in_batched_time_steps": true,
     "double_compression": 0.0,
     "spawn_double_compression_as_background_thread": false
@@ -104,7 +104,7 @@
         {
           "type": "vtu::Cartesian::vertices::ascii",
           "name": "Plotter",
-          "time": $time,
+          "time": 0.00001,
           "repeat": 60,
           "output": "./results/solution_cartesian",
           "variables": 5
@@ -112,16 +112,16 @@
         {
           "type": "vtu::Legendre::vertices::ascii",
           "name": "Plotter",
-          "time": $time,
-          "repeat": 30,
+          "time": 0.00001,
+          "repeat": 0.1,
           "output": "./results/solution",
           "variables": 5
         },
 	{
 	  "type": "user::defined ErrorWriter",
           "name": "ErrorWriter",
-          "time": 0.0,
-          "repeat": $repeat,
+          "time": 0.5,
+          "repeat": 0.5,
           "output": "./results/solution",
           "variables": 0
         }

@@ -8,6 +8,7 @@ class SmoothWave : public Scenario {
 public:
   void initialValues(const double *const x, const PDE &ns,
                      Variables &vars) final override;
+  BoundaryType getBoundaryType(int faceId) override;
 };
 }  // namespace NavierStokes
 

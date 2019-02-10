@@ -70,7 +70,8 @@ void NavierStokes::NavierStokesSolver_FV::boundaryValues(
   // Rho/E extrapolated, velocity mirrored.
   std::copy_n(stateIn, NumberOfVariables, stateOut);
 
-  if (scenario->getBoundaryType(faceIndex) == BoundaryType::freeSlipWall) {
+  if (scenario->getBoundaryType(faceIndex) == BoundaryType::hydrostaticWall ||
+      scenario->getBoundaryType(faceIndex) == BoundaryType::freeSlipWall) {
     // Normal velocity zero after Riemann.
     varsOut.j(normalNonZero) = -varsIn.j(normalNonZero);
   } else {
@@ -102,15 +103,17 @@ void NavierStokes::NavierStokesSolver_FV::boundaryValues(
     // TODO(Lukas) What should we do in case of an advection-scenarios?
 
     // TODO(Lukas) Is background state necessary here?
-    ns.setBackgroundState(stateOut, rho, pressure);
     auto E = -1;
     if (ns.useGravity) {
       E = ns.evaluateEnergy(rho, pressure, varsOut.j(), ns.getZ(stateIn), x[DIMENSIONS - 1]);
     } else {
       E = ns.evaluateEnergy(rho, pressure, varsOut.j(), ns.getZ(stateIn));
     }
-    varsOut.E() = E;
-    varsOut.rho() = rho;
+    varsOut.E() = varsIn.E();//E;
+    varsOut.rho() = varsIn.rho();// rho;
+    ns.setBackgroundState(stateOut, varsOut.rho(), ns.evaluatePressure(
+            varsOut.E(), varsOut.rho(), varsOut.j(), 0.0, ns.getHeight(stateOut)
+            ));
   }
 }
 

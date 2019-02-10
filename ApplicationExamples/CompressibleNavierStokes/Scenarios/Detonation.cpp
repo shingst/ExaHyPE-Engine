@@ -100,6 +100,5 @@ bool NavierStokes::Detonation::getUseAdvection() const {
 }
 
 NavierStokes::BoundaryType NavierStokes::Detonation::getBoundaryType(int faceId) {
-  // TODO(Lukas) Use free-slip for Euler and no-slip for NS?
   return BoundaryType::wall;
 }

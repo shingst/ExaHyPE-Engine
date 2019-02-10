@@ -109,7 +109,6 @@ NavierStokes::BoundaryType NavierStokes::DensityCurrent::getBoundaryType(int fac
     return BoundaryType::hydrostaticWall;
   }
   return BoundaryType::hydrostaticWall;
-  // TODO(Lukas) Reconsider!
-  return BoundaryType::wall;
+  //return BoundaryType::wall;
 
 }

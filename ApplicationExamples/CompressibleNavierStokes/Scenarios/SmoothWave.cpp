@@ -14,3 +14,8 @@ void NavierStokes::SmoothWave::initialValues(const double* const x,
 
   vars.E() = ns.evaluateEnergy(vars.rho(), pressure, vars.j());
 }
+
+NavierStokes::BoundaryType NavierStokes::SmoothWave::getBoundaryType(int faceId) {
+  return BoundaryType::freeSlipWall;
+}
+
