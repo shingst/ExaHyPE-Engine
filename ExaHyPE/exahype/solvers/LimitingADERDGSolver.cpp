@@ -1111,14 +1111,17 @@ void exahype::solvers::LimitingADERDGSolver::projectFVSolutionOnDGSpace(
   projectOnDGSpace(limiterSolution, solverSolution);
 }
 
-void exahype::solvers::LimitingADERDGSolver::recomputeSolutionLocally(SolverPatch& solverPatch,CellInfo& cellInfo) {
-  const bool fineGridCellInvolvedInLocalRecomputation =
+void exahype::solvers::LimitingADERDGSolver::localRecomputation(
+    SolverPatch&                                               solverPatch,
+    CellInfo&                                                  cellInfo,
+    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& limiterNeighbourMergePerformed) {
+  const bool isInvolvedInLocalRecomputation =
       solverPatch.getType()==SolverPatch::Type::Cell        &&
       solverPatch.getLevel()==getMaximumAdaptiveMeshLevel() &&
       solverPatch.getRefinementStatus()>=_solver->_minRefinementStatusForTroubledCell-2;
 
   if (
-      fineGridCellInvolvedInLocalRecomputation &&
+      isInvolvedInLocalRecomputation &&
       solverPatch.getRefinementStatus()>=_solver->_minRefinementStatusForTroubledCell-1
   ) { // these guys are recomputing with the limiter
     LimiterPatch& limiterPatch = getLimiterPatch(solverPatch,cellInfo);
@@ -1128,23 +1131,56 @@ void exahype::solvers::LimitingADERDGSolver::recomputeSolutionLocally(SolverPatc
     copyTimeStepDataFromSolverPatch(solverPatch,limiterPatch);
     projectFVSolutionOnDGSpace(solverPatch,limiterPatch);
   }
-  else if ( fineGridCellInvolvedInLocalRecomputation ) { // these guys are just swapping and projecting
+  else if ( isInvolvedInLocalRecomputation ) { // these guys are just swapping and projecting
     LimiterPatch& limiterPatch = getLimiterPatch(solverPatch,cellInfo);
     _solver->swapSolutionAndPreviousSolution(solverPatch);
     _limiter->swapSolutionAndPreviousSolution(limiterPatch);
     projectDGSolutionOnFVSpace(solverPatch,limiterPatch);
   }
-
-  // limiterStatus==0 or cell is not on finest level
-  #if defined(Asserts)
-  const int limiterElement = cellInfo.indexOfFiniteVolumesCellDescription(solverPatch.getSolverNumber());
-  assertion1(
-      solverPatch.getLevel()==getMaximumAdaptiveMeshLevel() || limiterElement==Solver::NotFound,
-      solverPatch.toString());
-  #endif
 }
 
-double exahype::solvers::LimitingADERDGSolver::recomputeSolutionLocally(
+double exahype::solvers::LimitingADERDGSolver::localRecomputationBody(
+    SolverPatch&                                               solverPatch,
+    Solver::CellInfo&                                          cellInfo,
+    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& limiterNeighbourMergePerformed,
+    const bool                                                 isAtRemoteBoundary) {
+  // 1. Perform the local recomputation
+  localRecomputation(solverPatch,cellInfo,limiterNeighbourMergePerformed);
+
+  // 2. Compute a new time step size;
+  double admissibleTimeStepSize = startNewTimeStep(solverPatch,cellInfo,true);
+
+  // 3. Recompute the predictor in certain cells if fused time stepping is used.
+  const bool isNeigbourOfTroubledOrWasPreviouslyTroubled =
+      solverPatch.getLevel()==getMaximumAdaptiveMeshLevel() &&
+      solverPatch.getType()==SolverPatch::Type::Cell &&
+      solverPatch.getRefinementStatus() < _solver->_minRefinementStatusForTroubledCell &&
+      (solverPatch.getRefinementStatus()        == _solver->_minRefinementStatusForTroubledCell-1 ||
+      solverPatch.getPreviousRefinementStatus() >= _solver->_minRefinementStatusForTroubledCell);
+  if (
+      FuseAllADERDGPhases &&
+      isNeigbourOfTroubledOrWasPreviouslyTroubled
+  ) {
+    const auto predictionTimeStepData = _solver->getPredictionTimeStepData(solverPatch,true/*duringFusedTimeStep*/);
+    _solver->predictionAndVolumeIntegral(
+        solverPatch.getSolverNumber(),cellInfo,
+        std::get<0>(predictionTimeStepData),
+        std::get<1>(predictionTimeStepData),
+        false/*already uncompressed*/,isAtRemoteBoundary,true/*addVolumeIntegralResultToUpdate*/);
+  }
+
+  // 4. Determine min and max in recomputed cells
+  if ( solverPatch.getRefinementStatus() >= _solver->_minRefinementStatusForTroubledCell-1 ) {
+    determineMinAndMax(solverPatch.getSolverNumber(),cellInfo);
+  }
+
+  // 5. Set the previous limiter status to the current one
+  solverPatch.setPreviousRefinementStatus(solverPatch.getRefinementStatus());
+  return admissibleTimeStepSize;
+}
+
+
+double exahype::solvers::LimitingADERDGSolver::localRecomputation(
     const int         solverNumber,
     Solver::CellInfo& cellInfo,
     const bool        isAtRemoteBoundary) {
@@ -1152,37 +1188,22 @@ double exahype::solvers::LimitingADERDGSolver::recomputeSolutionLocally(
   if ( solverElement!=NotFound ) {
     // 1. Perform the local recomputation
     SolverPatch& solverPatch = cellInfo._ADERDGCellDescriptions[solverElement];
-
-    recomputeSolutionLocally(solverPatch,cellInfo);
-
-    // 2. Compute a new time step size; recompute the predictor in certain cells if the fused time stepping scheme is used.
-    double admissibleTimeStepSize = std::numeric_limits<double>::infinity();
-    if ( FuseAllADERDGPhases ) {
-      admissibleTimeStepSize = startNewTimeStep(solverPatch,cellInfo,true);
-      if (
-          solverPatch.getLevel()==getMaximumAdaptiveMeshLevel() &&
-          solverPatch.getType()==SolverPatch::Type::Cell
-          &&
-          solverPatch.getRefinementStatus() < _solver->_minRefinementStatusForTroubledCell
-          &&                                                                                                  // is not troubled and
-          (solverPatch.getRefinementStatus()        == _solver->_minRefinementStatusForTroubledCell-1 ||  // holds an active FV patch                                                                                                 // or
-          solverPatch.getPreviousRefinementStatus() >= _solver->_minRefinementStatusForTroubledCell)      // was previously troubled but is no more
+    if (
+        solverPatch.getType()==SolverPatch::Cell &&
+        solverPatch.getRefinementStatus() >= _solver->_minRefinementStatusForTroubledCell-2
+    ) {
+      LimiterPatch& limiterPatch = getLimiterPatch(solverPatch,cellInfo);
+      if ( SpawnUpdateAsBackgroundJob
       ) {
-        const auto predictionTimeStepData = _solver->getPredictionTimeStepData(solverPatch,true/*duringFusedTimeStep*/);
-        _solver->predictionAndVolumeIntegral(
-            solverNumber,cellInfo,
-            std::get<0>(predictionTimeStepData),
-            std::get<1>(predictionTimeStepData),
-            false/*already uncompressed*/,isAtRemoteBoundary,true/*addVolumeIntegralResultToUpdate*/);
+        peano::datatraversal::TaskSet( new LocalRecomputationJob(
+            *this, solverPatch,cellInfo,limiterPatch.getNeighbourMergePerformed(),isAtRemoteBoundary ) );
+        return std::numeric_limits<double>::infinity();
+      } else {
+        return localRecomputationBody(solverPatch,cellInfo,limiterPatch.getNeighbourMergePerformed(),isAtRemoteBoundary);
       }
     } else {
-      admissibleTimeStepSize = startNewTimeStep(solverPatch,cellInfo,true);
+      return std::numeric_limits<double>::infinity();
     }
-
-    // 3. Set the previous limiter status to the current one
-    solverPatch.setPreviousRefinementStatus(solverPatch.getRefinementStatus());
-
-    return admissibleTimeStepSize;
   } else {
     return std::numeric_limits<double>::infinity();
   }
