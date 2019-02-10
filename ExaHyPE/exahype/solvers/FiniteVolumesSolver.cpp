@@ -860,7 +860,7 @@ void exahype::solvers::FiniteVolumesSolver::updateSolution(
   double admissibleTimeStepSize=0;
   if (cellDescription.getTimeStepSize()>0) {
     solutionUpdate(solution,cellDescription.getOffset()+0.5*cellDescription.getSize(),
-            cellDescription.getSize(),cellDescription.getTimeStepSize(),admissibleTimeStepSize);
+            cellDescription.getSize(),cellDescription.getTimeStamp(),cellDescription.getTimeStepSize(),admissibleTimeStepSize);
   }
 
   // cellDescription.getTimeStepSize() = 0 is an initial condition

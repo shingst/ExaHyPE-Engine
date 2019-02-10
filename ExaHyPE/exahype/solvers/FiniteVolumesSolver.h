@@ -532,11 +532,13 @@ public:
    * @param[inout] luh             the current (and then new) solution
    * @param[in]    cellCentre    cell centre.
    * @param[in]    dx              the extends of the cell holding the FV patch
+   * \param[in]    t         the start of the time interval.
    * @param[in]    dt              time step size the FV patch is marching with
    * @param[inout] maxAdmissibleDt admissible time step size obtained from the Riemann solves
    */
-  virtual void solutionUpdate(double* luh,const tarch::la::Vector<DIMENSIONS,double>& center,
+  virtual void solutionUpdate(double* luh,const tarch::la::Vector<DIMENSIONS,double>& cellCenter,
                               const tarch::la::Vector<DIMENSIONS, double>& dx,
+                              const double t,
                               const double dt, double& maxAdmissibleDt) = 0;
 
   /**
