@@ -433,6 +433,20 @@ private:
       const bool isInitialMeshRefinement);
 
   /**
+   * @return if the given solver patch is involved in a local
+   * recomputation. (Makes only sense to call this function if
+   * one is currently ongoing.)
+   *
+   * @param solverPatch a solver patch.
+   */
+  bool isInvolvedInLocalRecomputation(const SolverPatch& solverPatch) const {
+    return
+        solverPatch.getType()==SolverPatch::Type::Cell &&
+        solverPatch.getLevel()==getMaximumAdaptiveMeshLevel() &&
+        solverPatch.getRefinementStatus()>=_solver->_minRefinementStatusForTroubledCell-2;
+  }
+
+  /**
    * Recompute the FV solution in cells that have been subject to a limiter status change
    *
    * We perform the following actions based on the new limiter status:

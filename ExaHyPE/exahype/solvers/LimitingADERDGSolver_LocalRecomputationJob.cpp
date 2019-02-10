@@ -38,11 +38,16 @@ bool exahype::solvers::LimitingADERDGSolver::LocalRecomputationJob::run() {
 //
 void exahype::solvers::LimitingADERDGSolver::LocalRecomputationJob::prefetchData() {
   #if defined(SharedTBB) && !defined(noTBBPrefetchesJobData)
-  LimiterPatch& limiterPatch = _solver.getLimiterPatch(_solverPatch,_cellInfo);
-  double* luh    = static_cast<double*>(limiterPatch.getSolution());
-  double* luhOld = static_cast<double*>(limiterPatch.getPreviousSolution());
+  if (
+      _solver.isInvolvedInLocalRecomputation(_solverPatch) &&
+      _solverPatch.getRefinementStatus()>=_solver._solver->_minRefinementStatusForTroubledCell-1
+  ) {
+    LimiterPatch& limiterPatch = _solver.getLimiterPatch(_solverPatch,_cellInfo);
+    double* luh    = static_cast<double*>(limiterPatch.getSolution());
+    double* luhOld = static_cast<double*>(limiterPatch.getPreviousSolution());
 
-  _mm_prefetch(luh,    _MM_HINT_NTA);
-  _mm_prefetch(luhOld, _MM_HINT_NTA);
+    _mm_prefetch(luh,    _MM_HINT_NTA);
+    _mm_prefetch(luhOld, _MM_HINT_NTA);
+  }
   #endif
 }
