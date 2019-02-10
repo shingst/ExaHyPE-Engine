@@ -1188,10 +1188,11 @@ double exahype::solvers::LimitingADERDGSolver::localRecomputation(
   if ( solverElement!=NotFound ) {
     // 1. Perform the local recomputation
     SolverPatch& solverPatch = cellInfo._ADERDGCellDescriptions[solverElement];
-    if (
-        solverPatch.getType()==SolverPatch::Cell &&
-        solverPatch.getRefinementStatus() >= _solver->_minRefinementStatusForTroubledCell-2
-    ) {
+    const bool isInvolvedInLocalRecomputation =
+        solverPatch.getType()==SolverPatch::Cell              &&
+        solverPatch.getLevel()==getMaximumAdaptiveMeshLevel() &&
+        solverPatch.getRefinementStatus() >= _solver->_minRefinementStatusForTroubledCell-2;
+    if ( isInvolvedInLocalRecomputation ) {
       LimiterPatch& limiterPatch = getLimiterPatch(solverPatch,cellInfo);
       if ( SpawnUpdateAsBackgroundJob ) {
         peano::datatraversal::TaskSet( new LocalRecomputationJob(
