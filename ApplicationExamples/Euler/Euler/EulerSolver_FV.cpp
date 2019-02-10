@@ -97,10 +97,14 @@ void Euler::EulerSolver_FV::flux(const double* const Q, double** F) {
  * Use generalised Osher Solomon flux.
  */
 double Euler::EulerSolver_FV::riemannSolver(double* const fL, double *fR, const double* const qL, const double* const qR, int direction) {
-  if ( direction==0 ) {
-    return kernels::finitevolumes::riemannsolvers::c::generalisedOsherSolomon<false, true, false, 3, EulerSolver_FV>(*static_cast<EulerSolver_FV*>(this), fL,fR,qL,qR,direction);
-  } else {
+  if ( 
+      (ReferenceChoice == Reference::ShuOsher ||
+      ReferenceChoice  == Reference::SodShockTube) &&
+      direction!=0 
+  ) {
     return kernels::finitevolumes::riemannsolvers::c::rusanov<false, true, false, EulerSolver_FV>(*static_cast<EulerSolver_FV*>(this), fL,fR,qL,qR,direction);
+  } else {
+    return kernels::finitevolumes::riemannsolvers::c::generalisedOsherSolomon<false, true, false, 3, EulerSolver_FV>(*static_cast<EulerSolver_FV*>(this), fL,fR,qL,qR,direction);
   }
 }
 
