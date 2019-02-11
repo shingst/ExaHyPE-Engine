@@ -40,6 +40,8 @@ class exahype::stealing::AggressiveHybridDistributor {
     int *_notOffloaded;
     bool _isEnabled;
 
+    bool _useCCP;
+
     void updateLoadDistributionCCP();
     void updateLoadDistributionDiffusive();
 
