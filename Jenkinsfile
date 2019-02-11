@@ -56,7 +56,7 @@ pipeline {
               sh "git checkout release"
               sh "git pull"
               sh "git merge jenkins"
-              sh 'git commit -ma "Jenkins: Deployed master to release branch"'
+//              sh 'git commit -ma "Jenkins: Deployed master to release branch"'
               sh "git push origin release"
             }
           }
