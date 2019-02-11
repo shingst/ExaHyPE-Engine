@@ -16,6 +16,7 @@
 #include "exahype/stealing/DiffusiveDistributor.h"
 #include "exahype/stealing/AggressiveDistributor.h"
 #include "exahype/stealing/AggressiveCCPDistributor.h"
+#include "exahype/stealing/AggressiveHybridDistributor.h"
 #include "exahype/stealing/PerformanceMonitor.h"
 
 #ifdef USE_ITAC
@@ -428,6 +429,8 @@ void exahype::stealing::StealingManager::triggerEmergencyForRank(int rank) {
   exahype::stealing::AggressiveDistributor::getInstance().handleEmergencyOnRank(rank);
 #elif StealingStrategyAggressiveCCP
   exahype::stealing::AggressiveCCPDistributor::getInstance().handleEmergencyOnRank(rank);
+#elif StealingStrategyAggressiveHybrid
+  exahype::stealing::AggressiveHybridDistributor::getInstance().handleEmergencyOnRank(rank);
 #elif StealingStrategyDiffusive
   exahype::stealing::DiffusiveDistributor::getInstance().handleEmergencyOnRank(rank);
 #endif
@@ -474,6 +477,8 @@ bool exahype::stealing::StealingManager::selectVictimRank(int& victim) {
     return exahype::stealing::AggressiveDistributor::getInstance().selectVictimRank(victim);
 #elif defined(StealingStrategyAggressiveCCP)
     return exahype::stealing::AggressiveCCPDistributor::getInstance().selectVictimRank(victim);
+#elif defined(StealingStrategyAggressiveHybrid)
+    return exahype::stealing::AggressiveHybridDistributor::getInstance().selectVictimRank(victim);
 #else
   double remainingLoadRatio = static_cast<double> (exahype::stealing::PerformanceMonitor::getInstance().getRemainingLocalLoad())
 		  	  	  	  	  	  /

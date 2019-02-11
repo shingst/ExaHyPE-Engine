@@ -31,6 +31,7 @@
 #include "exahype/stealing/StaticDistributor.h"
 #include "exahype/stealing/AggressiveDistributor.h"
 #include "exahype/stealing/AggressiveCCPDistributor.h"
+#include "exahype/stealing/AggressiveHybridDistributor.h"
 #include "exahype/stealing/StealingManager.h"
 #endif
 
@@ -148,6 +149,13 @@ void exahype::runners::Runner::runGlobalStep() {
           "running global step "<<exahype::mappings::FinaliseMeshRefinement::NumberOfEnclaveCells<<
       ", "<<exahype::mappings::FinaliseMeshRefinement::NumberOfSkeletonCells );
   exahype::stealing::AggressiveCCPDistributor::getInstance().computeIdealLoadDistribution(
+      exahype::mappings::FinaliseMeshRefinement::NumberOfEnclaveCells,
+    exahype::mappings::FinaliseMeshRefinement::NumberOfSkeletonCells);
+#elif defined(StealingStrategyAggressiveHybrid)
+  logInfo("runner(...)",
+          "running global step "<<exahype::mappings::FinaliseMeshRefinement::NumberOfEnclaveCells<<
+      ", "<<exahype::mappings::FinaliseMeshRefinement::NumberOfSkeletonCells );
+  exahype::stealing::AggressiveHybridDistributor::getInstance().computeIdealLoadDistribution(
       exahype::mappings::FinaliseMeshRefinement::NumberOfEnclaveCells,
     exahype::mappings::FinaliseMeshRefinement::NumberOfSkeletonCells);
 #endif 

@@ -32,6 +32,7 @@
 #ifdef DistributedStealing
 #include "exahype/stealing/AggressiveDistributor.h"
 #include "exahype/stealing/AggressiveCCPDistributor.h"
+#include "exahype/stealing/AggressiveHybridDistributor.h"
 #endif
 
 int exahype::mappings::FinaliseMeshRefinement::NumberOfEnclaveCells = 0;
@@ -261,6 +262,8 @@ void exahype::mappings::FinaliseMeshRefinement::endIteration(
   exahype::stealing::AggressiveDistributor::getInstance().enable();
 #elif defined(StealingStrategyAggressiveCCP)
   exahype::stealing::AggressiveCCPDistributor::getInstance().enable();
+#elif defined(StealingStrategyAggressiveHybrid)
+  exahype::stealing::AggressiveHybridDistributor::getInstance().enable();
 #endif
 
 #endif

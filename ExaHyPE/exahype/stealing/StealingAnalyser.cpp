@@ -15,6 +15,7 @@
 #include "exahype/stealing/DiffusiveDistributor.h"
 #include "exahype/stealing/AggressiveDistributor.h"
 #include "exahype/stealing/AggressiveCCPDistributor.h"
+#include "exahype/stealing/AggressiveHybridDistributor.h"
 #include "exahype/stealing/StealingManager.h"
 
 tarch::logging::Log  exahype::stealing::StealingAnalyser::_log( "exahype::stealing::StealingAnalyser" );
@@ -137,6 +138,9 @@ void exahype::stealing::StealingAnalyser::endIteration(double numberOfInnerLeafC
 #elif defined(StealingStrategyAggressiveCCP)
   exahype::stealing::AggressiveCCPDistributor::getInstance().printOffloadingStatistics();
   exahype::stealing::AggressiveCCPDistributor::getInstance().updateLoadDistribution();
+#elif defined(StealingStrategyAggressiveHybrid)
+  exahype::stealing::AggressiveHybridDistributor::getInstance().printOffloadingStatistics();
+  exahype::stealing::AggressiveHybridDistributor::getInstance().updateLoadDistribution();
 #endif
 
   _iterationCounter++;
