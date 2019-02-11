@@ -198,6 +198,8 @@ void exahype::stealing::AggressiveHybridDistributor::handleEmergencyOnRank(int r
 }
 
 void exahype::stealing::AggressiveHybridDistributor::updateLoadDistribution() {
+  static bool isFirstBalancingStep = true;
+  int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
 
   if(!_isEnabled) {
     return;
@@ -213,6 +215,32 @@ void exahype::stealing::AggressiveHybridDistributor::updateLoadDistribution() {
 
   _oldTotalTasksOffloaded = _totalTasksOffloaded;
 
+  if(isFirstBalancingStep) {
+    updateLoadDistributionCCP();
+    isFirstBalancingStep = false;
+  }
+  else
+    updateLoadDistributionDiffusive();
+
+  _totalTasksOffloaded = 0;
+  for(int i=0; i<nnodes; i++) {
+#ifdef DistributedStealingDisable
+          assert(_tasksToOffload[i]==0);
+#endif
+    _tasksToOffload[i] = _tasksToOffload[i]-_emergenciesPerRank[i];
+    _emergenciesPerRank[i] = 0;
+    _totalTasksOffloaded += _tasksToOffload[i];
+
+#ifdef DistributedStealingDisable
+          assert(_tasksToOffload[i]==0);
+#endif
+  }
+
+  resetRemainingTasksToOffload();
+
+}
+
+void exahype::stealing::AggressiveHybridDistributor::updateLoadDistributionCCP() {
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
   int myRank = tarch::parallel::Node::getInstance().getRank();
 
@@ -281,19 +309,88 @@ void exahype::stealing::AggressiveHybridDistributor::updateLoadDistribution() {
   else if(_tasksToOffload[criticalRank]>0) {
     _tasksToOffload[criticalRank]--;
   }
+ 
+  delete[] isWaitingForSomeone;
+  delete[] waitingRanks;
+  delete[] waitingTimesSnapshot;
 
-  _totalTasksOffloaded = 0;
+}
+
+void exahype::stealing::AggressiveHybridDistributor::updateLoadDistributionDiffusive() {
+  int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
+  int myRank = tarch::parallel::Node::getInstance().getRank();
+
+  int *waitingTimesSnapshot = new int[nnodes*nnodes];
+  const int* currentWaitingTimesSnapshot = exahype::stealing::StealingAnalyser::getInstance().getFilteredWaitingTimesSnapshot();
+  std::copy(&currentWaitingTimesSnapshot[0], &currentWaitingTimesSnapshot[nnodes*nnodes], waitingTimesSnapshot);
+
+  //determine who is the fastest rank which is not blacklisted and who is a critical rank
+  int *waitingRanks = new int[nnodes];
+  bool *isWaitingForSomeone = new bool[nnodes];
+  std::fill(waitingRanks, waitingRanks+nnodes, 0);
+
+  int currentLongestWaitTimeVictim = -1;
+  int currentOptimalVictim = -1;
+  int currentLongestWaitTimeCritical = -1;
+  int currentCriticalRank = -1;
+  int k = 0;
+
   for(int i=0; i<nnodes; i++) {
-#ifdef DistributedStealingDisable
-          assert(_tasksToOffload[i]==0);
-#endif
-    _tasksToOffload[i] = _tasksToOffload[i]-_emergenciesPerRank[i];
-    _emergenciesPerRank[i] = 0;
-    _totalTasksOffloaded += _tasksToOffload[i];
+    bool waitingForSomeone = false;
+    for(int j=0; j<nnodes; j++) {
+//      if(waitingTimesSnapshot[k+j]>0)
+//        logInfo("updateLoadDistribution()","rank "<<i<<" waiting for "<<waitingTimesSnapshot[k+j]<<" for rank "<<j);
+//      if(waitingTimesSnapshot[k+j]>currentLongestWaitTime && !exahype::stealing::StealingManager::getInstance().isBlacklisted(i)) {
+//        currentLongestWaitTime = waitingTimesSnapshot[k+j];
+//        currentOptimalVictim = i;
+//      }
+      if(waitingTimesSnapshot[k+j]> exahype::stealing::StealingAnalyser::getInstance().getZeroThreshold()) {
+        waitingRanks[j]++;   
+        waitingForSomeone = true;
+      }
+    }
+    isWaitingForSomeone[i]= waitingForSomeone;
+    k+= nnodes;
+  }
 
-#ifdef DistributedStealingDisable
-          assert(_tasksToOffload[i]==0);
-#endif
+  k = 0;
+  for(int i=0; i<nnodes; i++) {
+    for(int j=0; j<nnodes; j++) {
+      if(waitingTimesSnapshot[k+j]> exahype::stealing::StealingAnalyser::getInstance().getZeroThreshold()) {
+         if(waitingTimesSnapshot[k+j]>currentLongestWaitTimeVictim 
+           && !exahype::stealing::StealingManager::getInstance().isBlacklisted(i)
+           && waitingRanks[i]==0) {
+             currentOptimalVictim = i;
+             currentLongestWaitTimeVictim = waitingTimesSnapshot[k+j];
+         }
+         if(waitingTimesSnapshot[k+j]>currentLongestWaitTimeCritical
+           && !isWaitingForSomeone[j]
+           && waitingRanks[j]>0) {
+             currentCriticalRank = j;
+             currentLongestWaitTimeCritical = waitingTimesSnapshot[k+j];
+         } 
+      }
+    }
+    k+= nnodes;
+  }
+
+  logInfo("updateLoadDistributionCCP()", "optimal victim: "<<currentOptimalVictim<<" critical rank:"<<currentCriticalRank);
+
+  bool isVictim = exahype::stealing::StealingManager::getInstance().isVictim();
+  if(myRank == currentCriticalRank && currentCriticalRank!=currentOptimalVictim) {
+    if(!isVictim) {
+      int currentTasksCritical = _initialLoadPerRank[currentCriticalRank];
+      for(int i=0; i<nnodes; i++) {
+        currentTasksCritical -= _tasksToOffload[i];
+      }
+      int currentTasksOptimal = _initialLoadPerRank[currentOptimalVictim]+_tasksToOffload[currentOptimalVictim];
+
+      _tasksToOffload[currentOptimalVictim] += 0.5*(currentTasksCritical-currentTasksOptimal); // TODO:: include temperature here
+     }
+  }
+  else if(_tasksToOffload[currentCriticalRank]>0) {
+    _tasksToOffload[currentCriticalRank]--;
+    //logInfo("updateLoadDistribution()", "decrement, send "<<_tasksToOffload[criticalRank]<<" to rank "<<criticalRank );
   }
 
   resetRemainingTasksToOffload();
@@ -301,7 +398,6 @@ void exahype::stealing::AggressiveHybridDistributor::updateLoadDistribution() {
   delete[] isWaitingForSomeone;
   delete[] waitingRanks;
   delete[] waitingTimesSnapshot;
-
 }
 
 bool exahype::stealing::AggressiveHybridDistributor::selectVictimRank(int& victim) {
