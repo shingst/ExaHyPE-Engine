@@ -21,7 +21,8 @@ exahype::stealing::AggressiveHybridDistributor::AggressiveHybridDistributor() :
   _isEnabled(false),
   _temperature(0.5),
   _totalTasksOffloaded(0),
-  _oldTotalTasksOffloaded(0)
+  _oldTotalTasksOffloaded(0),
+  _useCCP(true)
 {
 
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
@@ -198,7 +199,6 @@ void exahype::stealing::AggressiveHybridDistributor::handleEmergencyOnRank(int r
 }
 
 void exahype::stealing::AggressiveHybridDistributor::updateLoadDistribution() {
-  static bool isFirstBalancingStep = true;
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
 
   if(!_isEnabled) {
@@ -215,9 +215,8 @@ void exahype::stealing::AggressiveHybridDistributor::updateLoadDistribution() {
 
   _oldTotalTasksOffloaded = _totalTasksOffloaded;
 
-  if(isFirstBalancingStep) {
+  if(_useCCP) {
     updateLoadDistributionCCP();
-    isFirstBalancingStep = false;
   }
   else
     updateLoadDistributionDiffusive();
@@ -291,6 +290,7 @@ void exahype::stealing::AggressiveHybridDistributor::updateLoadDistributionCCP()
   
   bool isVictim = exahype::stealing::StealingManager::getInstance().isVictim();
   if(myRank == criticalRank && !isVictim) {
+     _useCCP = false;
      for(int i=0; i<nnodes; i++) {
        if(_idealTasksToOffload[i]>0) {
          //we have a potential victim rank
@@ -374,7 +374,7 @@ void exahype::stealing::AggressiveHybridDistributor::updateLoadDistributionDiffu
     k+= nnodes;
   }
 
-  logInfo("updateLoadDistributionCCP()", "optimal victim: "<<currentOptimalVictim<<" critical rank:"<<currentCriticalRank);
+  logInfo("updateLoadDistributionDiffusive()", "optimal victim: "<<currentOptimalVictim<<" critical rank:"<<currentCriticalRank);
 
   bool isVictim = exahype::stealing::StealingManager::getInstance().isVictim();
   if(myRank == currentCriticalRank && currentCriticalRank!=currentOptimalVictim) {
