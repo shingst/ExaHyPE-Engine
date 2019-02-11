@@ -30,6 +30,8 @@
 #include "tarch/logging/Log.h"
 #include <sstream>
 
+#include <fenv.h> // NAN tracker
+
 typedef tarch::la::Vector<DIMENSIONS,int> ivec;
 
 
@@ -191,39 +193,68 @@ void exahype::plotters::FiniteVolume2Carpet::interpolateFVCellAtPoint(
 	const kernels::dindex patchPos(numberOfCellsPerAxis + 2*ghostLayerWidth); // including ghost zones
 	int neighbourCells = 0; // actual neighbour cells taken into account
 	std::fill_n(vertexValue, solverUnknowns, 0.0);
+	bool DebugDoNaNcheck = false;
 	
 	// A dumb way to detect which FV cells to take into account
+	std::vector<double> dist, dist2, bari[3];
 	dfor(icell, numberOfCellsPerAxis + 2*ghostLayerWidth) {
 		// if the target cell position in the patch is *not* in the ghost layers:
-		const bool cellTakenIntoAccount =
-		   tarch::la::allSmaller(icell,numberOfCellsPerAxis+ghostLayerWidth)
-		   &&  tarch::la::allGreater(icell,ghostLayerWidth-1);
-		if(!cellTakenIntoAccount) continue;
+		bool isNotInAnyGhostLayer = tarch::la::allSmaller(icell,numberOfCellsPerAxis+ghostLayerWidth) &&  tarch::la::allGreater(icell,ghostLayerWidth-1);
+		// Alternatively, allow the exchanged ghost layers but not the corner ones.
+		// (This statement is not fully correct, excludes only 2 of 6 corners)
+		bool isNotInCornerGhostLayer = !(tarch::la::allSmaller(icell, ghostLayerWidth) || tarch::la::allGreater(icell, numberOfCellsPerAxis+ghostLayerWidth));
+		// For the time being, we just ignore the problem ;-)
+		bool justIgnoreTheCornerProblem = true;
+		if(true) {
+			// Determine the baryCenter of a FV cell.
+			// Also, attention: Peano seems to compute ivec.convertScalar<double>()*dvec  wrongly.
+			dvec baryCenter = offsetOfPatch + (icell - ghostLayerWidth).convertScalar<double>() * dx(0) + 0.5*dx(0);
 			
-		dvec baryCenter = offsetOfPatch + icell.convertScalar<double>()*dx - dx(0)*ghostLayerWidth + dx/2.;
-		if(tarch::la::norm2(baryCenter - manifold_position) <= dx(0)) {
-			for (int unknown=0; unknown < solverUnknowns; unknown++) {
-				double *cell = u + patchPos.rowMajor(icell)*solverUnknowns;
-				vertexValue[unknown] += cell[unknown];
+			for(int zz=0;zz<3;zz++) bari[zz].push_back(baryCenter(zz));
+			dist.push_back( tarch::la::norm2(baryCenter - manifold_position) );
+			dist2.push_back( tarch::la::norm2(manifold_position - baryCenter) );
+			
+			if(std::pow(tarch::la::norm2(baryCenter - manifold_position), 2) <= dx(0)) {
+				for (int unknown=0; unknown < solverUnknowns; unknown++) {
+					double *cell = u + patchPos.rowMajor(icell)*solverUnknowns;
+					if(DebugDoNaNcheck && cell[unknown] != cell[unknown]) {
+						throw std::runtime_error("interpolateFVCellAtPoint: Adding NaN to interpolated value");
+					}
+					vertexValue[unknown] += cell[unknown];
+				}
+				neighbourCells++;
 			}
-			neighbourCells++;
 		}
 	}
-
+	
+	if(neighbourCells == 0) {
+		throw std::runtime_error("interpolateFVCellAtPoint: Logical flaw: No interpolation points found but slicer told this patch is active.");
+	}
+	
 	// normalize value
 	for (int unknown=0; unknown < solverUnknowns; unknown++) {
+		// Mind that a division by neighbourCells==0 will give a NaN.
 		vertexValue[unknown] = vertexValue[unknown] / neighbourCells;
+		if(DebugDoNaNcheck && vertexValue[unknown] != vertexValue[unknown]) {
+			throw std::runtime_error("FV2Carpet::interpolateFVCellAtPoint; before Mapping the interpolation gave NaN");
+		}
 	}
 	
 	_postProcessing->mapQuantities(
 		offsetOfPatch,
 		sizeOfPatch,
 		manifold_position,
-		cell_index,
+		cell_index, // this value does not have the real meaning as we call the mapper off-FV-grid anyway
 		vertexValue,
 		outputWrittenQuantities,
 		timeStamp
 	);
+	
+	for (int unknown=0; unknown < solverUnknowns; unknown++) {
+		if(DebugDoNaNcheck && outputWrittenQuantities[unknown] != outputWrittenQuantities[unknown]) {
+			throw std::runtime_error("FV2Carpet::interpolateFVCellAtPoint; after Mapping the interpolation gave NaN");
+		}
+	}
 }
 
 void exahype::plotters::FiniteVolume2Carpet::interpolateCartesianSlicedVertexPatch(
@@ -244,18 +275,14 @@ void exahype::plotters::FiniteVolume2Carpet::interpolateCartesianSlicedVertexPat
 	double empty_slot = std::numeric_limits<double>::signaling_NaN();
 	
 	double* vertexValue = new double[solverUnknowns];
-	
-	// Known bug:
-	//   The 2D data seems to be wrongly striped. I cannot tell why, but this makes of course the 2d output unusable.
-	//   In 1D, this effect do not occur (while probably still there).
-	
 	if(slicer.targetDim == 2) {
 		// Determine a position on the 2d plane
 		dvec plane = slicer.project(offsetOfPatch);
 		ivec i(0);
 		for(i(1)=0; i(1)<numberOfVerticesPerAxis; i(1)++)
 		for(i(0)=0; i(0)<numberOfVerticesPerAxis; i(0)++) {
-			dvec planePos = plane + slicer.project(i).convertScalar<double>() * dx;
+			// mind the Peano non-working ivec.convertScalar<double>()*dvec!
+			dvec planePos = plane + slicer.project(i).convertScalar<double>() * dx(0);
 			double *outputValue = mappedCell + writer->writtenCellIdx->get(i(1),i(0),0);
 			interpolateFVCellAtPoint(offsetOfPatch, sizeOfPatch, planePos, i, u, vertexValue, outputValue, timeStamp);
 		}
@@ -272,7 +299,7 @@ void exahype::plotters::FiniteVolume2Carpet::interpolateCartesianSlicedVertexPat
 		dvec line = slicer.project(offsetOfPatch);
 		ivec i(0);
 		for(i(0)=0; i(0)<numberOfVerticesPerAxis; i(0)++) {
-			dvec linePos = line + slicer.project(i).convertScalar<double>() * dx;
+			dvec linePos = line + slicer.project(i).convertScalar<double>() * dx(0);
 			double *outputValue = mappedCell + writer->writtenCellIdx->get(i(0));
 			interpolateFVCellAtPoint(offsetOfPatch, sizeOfPatch, linePos, i, u, vertexValue, outputValue, timeStamp);
 		}
@@ -294,6 +321,7 @@ void exahype::plotters::FiniteVolume2Carpet::interpolateCartesianSlicedVertexPat
 void exahype::plotters::FiniteVolume2Carpet::startPlotting(double time) {
 	_postProcessing->startPlotting(time);
 	writer->startPlotting(time);
+	//feenableexcept(FE_INVALID | FE_OVERFLOW);
 }
 
 void exahype::plotters::FiniteVolume2Carpet::finishPlotting() {
