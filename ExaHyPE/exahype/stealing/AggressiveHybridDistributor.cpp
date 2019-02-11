@@ -338,8 +338,8 @@ void exahype::stealing::AggressiveHybridDistributor::updateLoadDistributionDiffu
   for(int i=0; i<nnodes; i++) {
     bool waitingForSomeone = false;
     for(int j=0; j<nnodes; j++) {
-//      if(waitingTimesSnapshot[k+j]>0)
-//        logInfo("updateLoadDistribution()","rank "<<i<<" waiting for "<<waitingTimesSnapshot[k+j]<<" for rank "<<j);
+      if(waitingTimesSnapshot[k+j]>0)
+        logInfo("updateLoadDistribution()","rank "<<i<<" waiting for "<<waitingTimesSnapshot[k+j]<<" for rank "<<j);
 //      if(waitingTimesSnapshot[k+j]>currentLongestWaitTime && !exahype::stealing::StealingManager::getInstance().isBlacklisted(i)) {
 //        currentLongestWaitTime = waitingTimesSnapshot[k+j];
 //        currentOptimalVictim = i;

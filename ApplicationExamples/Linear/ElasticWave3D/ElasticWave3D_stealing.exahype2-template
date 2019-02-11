@@ -16,17 +16,13 @@
     ],
     "width": [
       24.0,
-      24.0,
+      {{ywidth}},
       24.0
     ]
   },
   "shared_memory": {
     "cores": {{coresPerRank}},
     "background_job_consumers": {{consumerTasks}},
-    "high_priority_background_job_processing" : "{{highPrioJobProcessing}}",
-    "low_priority_background_job_processing" : "{{lowPrioJobProcessing}}",
-    "min_background_jobs_in_one_rush" : {{minJobsPerRush}},
-    "max_background_jobs_in_one_rush" : {{maxJobsPerRush}},
     "properties_file": "sharedmemory.properties",
     "autotuning_strategy": "dummy"
   },

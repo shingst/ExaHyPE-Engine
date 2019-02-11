@@ -97,6 +97,8 @@ void exahype::stealing::StealingAnalyser::updateZeroTresholdAndFilteredSnapshot(
       if(currentWaitingTime > _currentZeroThreshold) {
          _currentFilteredWaitingTimesSnapshot[i*nnodes+j] = currentWaitingTime;
       }
+      else
+        _currentFilteredWaitingTimesSnapshot[i*nnodes+j] = 0;
     }
   }
   if(min < std::numeric_limits<int>::max()) {
@@ -204,7 +206,6 @@ void exahype::stealing::StealingAnalyser::endToReceiveDataFromMaster() {
     const double elapsedTime = _waitForMasterDataWatch.getCalendarTime();
     int myMaster = tarch::parallel::NodePool::getInstance().getMasterRank();
     
-    //TODO: ignore for now as it makes accumulation for worker ranks difficult, do we need this?
     _waitForOtherRank[myMaster].setValue(elapsedTime);
 
     double currentAvg = _waitForOtherRank[myMaster].getValue();
