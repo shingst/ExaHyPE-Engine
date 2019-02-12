@@ -12,6 +12,7 @@
 #include <unistd.h> // POSIX pipes
 #include <stdio.h>
 #include <string>
+#include <sys/wait.h> // WEXITSTATUS
 {% if strictJSON %}
 #include <fstream> // read file
 #include <streambuf> // read file
