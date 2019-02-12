@@ -299,7 +299,7 @@ void exahype::stealing::AggressiveHybridDistributor::updateLoadDistributionCCP()
   _incrementCurrent = 0;
   
   bool isVictim = exahype::stealing::StealingManager::getInstance().isVictim();
-  if(myRank == currentCriticalRank && !isVictim) {
+  if(myRank == currentCriticalRank) {
      _useCCP = false;
      for(int i=0; i<nnodes; i++) {
        if(_idealTasksToOffload[i]>0) {
@@ -318,7 +318,7 @@ void exahype::stealing::AggressiveHybridDistributor::updateLoadDistributionCCP()
      }
   }
   else if(_tasksToOffload[currentCriticalRank]>0) {
-    _tasksToOffload[currentCriticalRank]--;
+    _tasksToOffload[currentCriticalRank] = (1-_temperature)*_tasksToOffload[currentCriticalRank];
   }
  
   delete[] isWaitingForSomeone;
@@ -404,7 +404,7 @@ void exahype::stealing::AggressiveHybridDistributor::updateLoadDistributionDiffu
      }
   }
   else if(_tasksToOffload[currentCriticalRank]>0) {
-    _tasksToOffload[currentCriticalRank]--;
+    _tasksToOffload[currentCriticalRank] = (1-_temperature)*_tasksToOffload[currentCriticalRank];
     //logInfo("updateLoadDistribution()", "decrement, send "<<_tasksToOffload[criticalRank]<<" to rank "<<criticalRank );
   }
 

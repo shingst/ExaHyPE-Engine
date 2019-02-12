@@ -18,7 +18,7 @@ temperature_pattern = re.compile(".*rank:([0-9]+).*printOffloadingStatistics.* t
 blacklist_pattern = re.compile(".*blacklist value for rank ([0-9]+):([0-9]+\.[0-9]+)")
 waiting_times_pattern = re.compile(".*rank:0.*updateLoadDistribution\(\) rank ([0-9]+) waiting for ([0-9]+) for rank ([0-9]+)")
 critical_rank_pattern = re.compile(".*rank:([0-9]+).*updateLoadDistribution\(\).*optimal victim: ([0-9]+) critical rank:([0-9]+)")
-critical_rank_pattern2 = re.compile(".*rank:([0-9]+).*updateLoadDistribution\(\).*critical rank:([0-9]+)")
+critical_rank_pattern2 = re.compile(".*rank:([0-9]+).*updateLoadDistribution\(\).*current critical rank:([0-9]+)")
 
 
 animate = sys.argv[3].lower() in ("yes", "true", "t", "1")
@@ -83,7 +83,7 @@ for line in file:
     printing_rank = int(m.group(1)) 
     optimal_victim = int(m.group(2))
     critical_rank = int(m.group(3))
-    if(printing_rank==critical_rank and critical_rank!=optimal_victim):
+    if(printing_rank==critical_rank):
       n=dot.get_node(critical_rank)
       n.attr['style']='filled'
       n.attr['fillcolor']='red'
@@ -92,7 +92,7 @@ for line in file:
       opt.attr['fillcolor']='green'
   m = critical_rank_pattern2.match(line)
   if m:
-    #print (line)
+    print (line)
     printing_rank = int(m.group(1)) 
     critical_rank = int(m.group(2))
     if(printing_rank==critical_rank):

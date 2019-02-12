@@ -95,5 +95,5 @@ ax2.plot(tasksoffloaded_arr, 'r-x')
 ax2.set_ylabel('number of tasks offloaded', color='r')
 
 fig.tight_layout()
-plt.show()
+plt.savefig("timestepstats.pdf")
 file.close()
