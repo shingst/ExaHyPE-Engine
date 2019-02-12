@@ -2,12 +2,12 @@
 
 
 
-RECURSIVE SUBROUTINE InitTECPLOT(N_in,M_in,SubLim_in,Ghostlayers_in)
+RECURSIVE SUBROUTINE InitTECPLOT(N_in,SubLim_in,Ghostlayers_in)
 	USE, INTRINSIC :: ISO_C_BINDING
 	USE TECPLOTPLOTTERmod !, only : SetMainParameters
 	implicit none
-	INTEGER :: N_in,M_in,SubLim_in,Ghostlayers_in
-	CALL SetMainParameters(N_in,M_in,SubLim_in,Ghostlayers_in)
+	INTEGER :: N_in,SubLim_in,Ghostlayers_in
+	CALL SetMainParameters(N_in,SubLim_in,Ghostlayers_in)
 END SUBROUTINE InitTECPLOT
     
     

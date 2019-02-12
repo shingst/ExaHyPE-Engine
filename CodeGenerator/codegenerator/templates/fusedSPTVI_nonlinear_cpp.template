@@ -88,7 +88,6 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
 
   double new_lQi_slice[{{nDof*nVarPad}}] __attribute__((aligned(ALIGNMENT))); //for step 4 (computing new lQi value), doesn't update parameters
   const double dtBydx = inverseDx * dt; //Assume dx[0] == dx[1] == dx[2]
-  int ijk_; //helper counter
 {% if useNCP or (useFlux and useCERKGuess) %}
   double dudxT_by_dx[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
   
@@ -106,9 +105,9 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
 
 {% if not useCERKGuess %}{# fallback trivial guess #}
   // 1. Trivial initial guess
-  for (int ijk = 0; ijk < {{nDof**nDim}}; ijk++) {
-    for (int l = 0; l < {{nDof}}; l++) {
-      std::copy_n(&luh[{{nData}}*ijk], {{nData}}, &lQi[{{nDataPad}}*(l+{{nDof}}*ijk)]);
+  for (int t = 0; t < {{nDof}}; t++) {
+    for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {
+      std::copy_n(&luh[{{nData}}*xyz], {{nData}}, &lQi[{{nDataPad}}*(xyz+{{nDof**nDim}}*t)]);
     }
   }
 {% else %}{# useCERKGuess #}
@@ -136,13 +135,13 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
 {% endwith %}
     
     // K2
-    for (int ijk = 0; ijk < {{nDof**nDim}}; ijk++) {
+    for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {
       for (int n = 0; n < {{nVar}}; n++) {
-        lwh[n+{{nData}}*ijk] = luh[n+{{nData}}*ijk] - dt * K1[n+{{nVarPad}}*ijk];
+        lwh[n+{{nData}}*xyz] = luh[n+{{nData}}*xyz] - dt * K1[n+{{nVarPad}}*xyz];
       }
 {% if nPar != 0 %}
       for (int n = {{nVar}}; n < {{nData}}; n++) { //copy parameters
-        lwh[n+{{nData}}*ijk] = luh[n+{{nData}}*ijk];
+        lwh[n+{{nData}}*xyz] = luh[n+{{nData}}*xyz];
       }
 {% endif %}
     }
@@ -151,14 +150,14 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
 {% endwith %}
 
     // Set initial guess using CERK
-    for (int ijk = 0; ijk < {{nDof**nDim}}; ijk++) {
-      for (int l = 0; l < {{nDof}}; l++) {
+    for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {
+      for (int t = 0; t < {{nDof}}; t++) {
         for (int n = 0; n < {{nVar}}; n++) {
-          lQi[n+{{nDataPad}}*(l+{{nDof}}*ijk)] = luh[n+{{nData}}*ijk] - (dt * nodes[l] * K1[n+{{nVarPad}}*ijk]) - (0.5*dt*nodes[l]*nodes[l]* (K2[n+{{nVarPad}}*ijk]-K1[n+{{nVarPad}}*ijk]));
+          lQi[n+{{nDataPad}}*(xyz+{{nDof**nDim}}*t)] = luh[n+{{nData}}*xyz] - (dt * nodes[t] * K1[n+{{nVarPad}}*xyz]) - (0.5*dt*nodes[t]*nodes[t]* (K2[n+{{nVarPad}}*xyz]-K1[n+{{nVarPad}}*xyz]));
         }
 {% if nPar != 0 %}
         for (int n = {{nVar}}; n < {{nData}}; n++) { // copy parameters
-          lQi[n+{{nDataPad}}*(l+{{nDof}}*ijk)] = luh[n+{{nData}}*ijk];
+          lQi[n+{{nDataPad}}*(xyz+{{nDof**nDim}}*t)] = luh[n+{{nData}}*xyz];
         }
 {% endif %}
       }
@@ -172,23 +171,23 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
   
   int iter = 0;
   for (; iter < MaxIterations; iter++) {
-    for (int i = 0; i < {{nDof}}; i++) {  // time DOF
+    for (int t = 0; t < {{nDof}}; t++) {  // time DOF
 
 {% if useFlux %}
 {# *************************************************
    **** call to flux function over lQi into lFi ****
    ************************************************* #}
-{% with inputQ='lQi', inputQ_dataSize=nDataPad, outputF='lFi', timeInterleaved=True, time_var='i' %}
+{% with inputQ='lQi', inputQ_dataSize=nDataPad, outputF='lFi', timeInterleaved=False, time_var='t' %}
 {% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/flux_PDE_over_xyz.template' %}{% endfilter %}
 {% endwith %}
 {% endif %}{# useFlux #}
 
       // Compute the contribution of the initial condition uh to the right-hand side (rhs)
-      for (int jkl = 0; jkl < {{nDof**nDim}}; jkl++) {
-        const double weight = weights3[jkl] * FLCoeff[i];
+      for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {
+        const double weight = weights3[xyz] * FLCoeff[t];
         #pragma omp simd aligned(rhs,luh:ALIGNMENT)
         for (int n = 0; n < {{nVar}}; n++) {
-          rhs[n+{{nVarPad}}*(jkl+{{nDof**nDim}}*i)] = weight * luh[n+{{nData}}*jkl];
+          rhs[n+{{nVarPad}}*(xyz+{{nDof**nDim}}*t)] = weight * luh[n+{{nData}}*xyz];
         }
       }
       
@@ -199,45 +198,39 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
       
       // Compute the "derivatives" (contributions of the stiffness matrix)      
       // x direction (independent from the y and z derivatives)
-      ijk_=i*{{nDof*nDof3D}};
-      for (int j = 0; j < {{nDof3D}}; j++) {
-        for (int k = 0; k < {{nDof}}; k++) {
+      for (int z = 0; z < {{nDof3D}}; z++) {
+        for (int y = 0; y < {{nDof}}; y++) {
 {% if useFlux %}
-          {{ m.matmul('rhs_x', 'lFi', 'coeffRhsX', 'rhs', '((i*'~nDof3D~'+j)*'~nDof~'+k)*'~nVarPad*nDof, '0', '((i*'~nDof3D~'+j)*'~nDof~'+k)*'~nVarPad*nDof, trueB='Kxi', trueAlpha='- weights3[ijk_] * dtBydx') | indent(10) }}{##}
+          {{ m.matmul('rhs_x', 'lFi', 'coeffRhsX', 'rhs', '((t*'~nDof3D~'+z)*'~nDof~'+y)*'~nVarPad*nDof, '0', '((t*'~nDof3D~'+z)*'~nDof~'+y)*'~nVarPad*nDof, trueB='Kxi', trueAlpha='- weights3[t*'~nDof*nDof3D~'+z*'~nDof~'+y] * dtBydx') | indent(10) }}{##}
 {% endif %}{# useFlux #}
 {% if useNCP %}
-          {{ m.matmul('gradQ_x', 'lQi', 'dudxT_by_dx', 'gradQ', '((j*'~nDof~'+k)*'~nDof*nDof~'+i)*'~nDataPad, '0', '(j*'~nDof~'+k)*'~nVarPad*nDof) | indent(10) }}{##}
+          {{ m.matmul('gradQ_x', 'lQi', 'dudxT_by_dx', 'gradQ', '((t*'~nDof3D~'+z)*'~nDof~'+y)*'~nDof*nDataPad, '0', '(z*'~nDof~'+y)*'~nVarPad*nDof) | indent(10) }}{##}
 {% endif %}
-          ijk_++;
         }
       }
       
       // y direction (independent from the x and z derivatives)
-      ijk_=i*{{nDof*nDof3D}};
-      for (int j = 0; j < {{nDof3D}}; j++) {
-        for (int k = 0; k < {{nDof}}; k++) {
+      for (int z = 0; z < {{nDof3D}}; z++) {
+        for (int x = 0; x < {{nDof}}; x++) {
 {% if useFlux %}
-          {{ m.matmul('rhs_y', 'lFi', 'coeffRhsY', 'rhs', '((i*'~nDof3D~'+j)*'~nDof*nDof~'+k)*'~nVarPad~'+'~1*(nDof**nDim)*nDof*nVarPad, '0', '((i*'~nDof3D~'+j)*'~nDof*nDof~'+k)*'~nVarPad, trueB='Kxi', trueAlpha='- weights3[ijk_] * dtBydx') | indent(10) }}{##}
+          {{ m.matmul('rhs_y', 'lFi', 'coeffRhsY', 'rhs', '((t*'~nDof3D~'+z)*'~nDof*nDof~'+x)*'~nVarPad~'+'~1*(nDof**nDim)*nDof*nVarPad, '0', '((t*'~nDof3D~'+z)*'~nDof*nDof~'+x)*'~nVarPad, trueB='Kxi', trueAlpha='- weights3[t*'~nDof*nDof3D~'+z*'~nDof~'+x] * dtBydx') | indent(10) }}{##}
 {% endif %}{# useFlux #}
 {% if useNCP %}
-          {{ m.matmul('gradQ_y', 'lQi', 'dudxT_by_dx', 'gradQ', '((j*'~nDof*nDof~'+k)*'~nDof~'+i)*'~nDataPad, '0', '(j*'~nDof*nDof~'+k)*'~nVarPad~'+'~nVarPad*(nDof**nDim)) | indent(10) }}{##}
+          {{ m.matmul('gradQ_y', 'lQi', 'dudxT_by_dx', 'gradQ', '((t*'~nDof3D~'+z)*'~nDof*nDof~'+x)*'~nDataPad, '0', '(z*'~nDof*nDof~'+x)*'~nVarPad~'+'~nVarPad*(nDof**nDim)) | indent(10) }}{##}
 {% endif %}
-          ijk_++;
         }
       }
        
 {% if nDim==3 %}
       // z direction (independent from the x and y derivatives)
-      ijk_=i*{{nDof*nDof}};
-      for (int j = 0; j < {{nDof}}; j++) {
-        for (int k = 0; k < {{nDof}}; k++) {
+      for (int y = 0; y < {{nDof}}; y++) {
+        for (int x = 0; x < {{nDof}}; x++) {
 {% if useFlux %}
-          {{ m.matmul('rhs_z', 'lFi','coeffRhsZ', 'rhs', '((i*'~nDof*nDof~'+j)*'~nDof~'+k)*'~nVarPad~'+'~2*(nDof**nDim)*nDof*nVarPad, '0', '((i*'~nDof*nDof~'+j)*'~nDof~'+k)*'~nVarPad, trueB='Kxi', trueAlpha='- weights3[ijk_] * dtBydx') | indent(10) }}{##}
+          {{ m.matmul('rhs_z', 'lFi','coeffRhsZ', 'rhs', '((t*'~nDof*nDof~'+y)*'~nDof~'+x)*'~nVarPad~'+'~2*(nDof**nDim)*nDof*nVarPad, '0', '((t*'~nDof*nDof~'+y)*'~nDof~'+x)*'~nVarPad, trueB='Kxi', trueAlpha='- weights3[t*'~nDof*nDof3D~'+y*'~nDof~'+x] * dtBydx') | indent(10) }}{##}
 {% endif %}{# useFlux #}
 {% if useNCP %}
-          {{ m.matmul('gradQ_z', 'lQi', 'dudxT_by_dx', 'gradQ', '((j*'~nDof~'+k)*'~nDof~'+i)*'~nDataPad, '0', '(j*'~nDof~'+k)*'~nVarPad~'+'~2*nVarPad*(nDof**nDim)) | indent(10) }}{##}
+          {{ m.matmul('gradQ_z', 'lQi', 'dudxT_by_dx', 'gradQ', '((t*'~nDof3D*nDof~'+y)*'~nDof~'+x)*'~nDataPad, '0', '(y*'~nDof~'+x)*'~nVarPad~'+'~2*nVarPad*(nDof**nDim)) | indent(10) }}{##}
 {% endif %}
-          ijk_++;
         }
       }
 {% endif %}
@@ -246,7 +239,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
 {# ***********************************************************
    **** call to Source and NCP (or FusedSource) functions ****
    *********************************************************** #}
-{% with time_var='i', inputQ='lQi', output='rhs', inputQ_dataSize=nDataPad %}
+{% with time_var='t', inputQ='lQi', output='rhs', inputQ_dataSize=nDataPad, timeInterleaved=False %}
 {% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/source_ncp_PDE_over_xyz.template' %}{% endfilter %}
 {% endwith %}
 {% endif %}
@@ -256,12 +249,12 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
     // 3. Multiply with (K1)^(-1) to get the discrete time integral of the
     // discrete Picard iteration
     double sq_res = 0.0;
-    for (int ijk = 0; ijk < {{nDof**nDim}}; ijk++) {
-      {{ m.matmul('lqi', 'rhs', 's_m_QSlice', 'new_lQi_slice',nVarPad~'*ijk', '0', '0', trueB='iK1_T', trueAlpha='iweights3[ijk]') | indent(6) }}{##}
-      for(int l = 0; l < {{nDof}}; l++) {
+    for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {
+      {{ m.matmul('lqi', 'rhs', 's_m_QSlice', 'new_lQi_slice',nVarPad~'*xyz', '0', '0', trueB='iK1_T', trueAlpha='iweights3[xyz]') | indent(6) }}{##}
+      for(int t = 0; t < {{nDof}}; t++) {
         for(int n=0; n<{{nVar}}; n++) { //only copy and change the variables, skip parameters
-          sq_res += (new_lQi_slice[n+{{nVarPad}}*l] - lQi[n+{{nDataPad}}*(l+{{nDof}}*ijk)]) * (new_lQi_slice[n+{{nVarPad}}*l] - lQi[n+{{nDataPad}}*(l+{{nDof}}*ijk)]);
-          lQi[n+{{nDataPad}}*(l+{{nDof}}*ijk)] = new_lQi_slice[n+{{nVarPad}}*l];
+          sq_res += (new_lQi_slice[n+{{nVarPad}}*t] - lQi[n+{{nDataPad}}*(xyz+{{nDof**nDim}}*t)]) * (new_lQi_slice[n+{{nVarPad}}*t] - lQi[n+{{nDataPad}}*(xyz+{{nDof**nDim}}*t)]);
+          lQi[n+{{nDataPad}}*(xyz+{{nDof**nDim}}*t)] = new_lQi_slice[n+{{nVarPad}}*t];
         }
       }
     }
@@ -304,32 +297,32 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
       for (int x=0; x<{{nDof}}; x++) {
         
         // Matrix-Vector Products
-        for (int m=0; m<{{nDof}}; m++) {
+        for (int t=0; t<{{nDof}}; t++) {
           #pragma omp simd aligned(lQhi,lQi:ALIGNMENT)
           for (int n=0; n<{{nDataPad}}; n++) {
             // Fortran: lQhi(:,x,y,z) = lQi(:,:,x,y,z) * wGPN(:)
-            lQhi[((z*{{nDof}}+y)*{{nDof}}+x)*{{nDataPad}}+n] += weights1[m] *
-                lQi[(((z*{{nDof3D}}+y)*{{nDof}}+x)*{{nDof}}+m)*{{nDataPad}}+n];
+            lQhi[((z*{{nDof}}+y)*{{nDof}}+x)*{{nDataPad}}+n] += weights1[t] *
+                lQi[(((t*{{nDof3D}}+z)*{{nDof}}+y)*{{nDof}}+x)*{{nDataPad}}+n];
           }
 {% if useFlux %}
           #pragma omp simd aligned(lFhi,lFi:ALIGNMENT)
           for (int n=0; n<{{nVarPad}}; n++) {
             // Fortran: lFhi_x(:,x,y,z) = lFh(:,1,x,y,z,:) * wGPN(:)
-            lFhi[((z*{{nDof}}+y)*{{nDof}}+x)*{{nVarPad}}+n+{{0*nVarPad*(nDof**nDim)}}] += weights1[m] *
-                lFi[(((m*{{nDof3D}}+z)*{{nDof}}+y)*{{nDof}}+x)*{{nVarPad}}+n+{{0*(nDof**nDim)*nDof*nVarPad}}];
+            lFhi[((z*{{nDof}}+y)*{{nDof}}+x)*{{nVarPad}}+n+{{0*nVarPad*(nDof**nDim)}}] += weights1[t] *
+                lFi[(((t*{{nDof3D}}+z)*{{nDof}}+y)*{{nDof}}+x)*{{nVarPad}}+n+{{0*(nDof**nDim)*nDof*nVarPad}}];
           }  
           #pragma omp simd aligned(lFhi,lFi:ALIGNMENT)
           for (int n=0; n<{{nVarPad}}; n++) {
             // Fortran: lFhi_y(:,y,x,z) = lFh(:,2,:x,y,z,:) * wGPN(:)
-            lFhi[((z*{{nDof}}+x)*{{nDof}}+y)*{{nVarPad}}+n+{{1*nVarPad*(nDof**nDim)}}] += weights1[m] *
-                lFi[(((m*{{nDof3D}}+z)*{{nDof}}+y)*{{nDof}}+x)*{{nVarPad}}+n+{{1*(nDof**nDim)*nDof*nVarPad}}];
+            lFhi[((z*{{nDof}}+x)*{{nDof}}+y)*{{nVarPad}}+n+{{1*nVarPad*(nDof**nDim)}}] += weights1[t] *
+                lFi[(((t*{{nDof3D}}+z)*{{nDof}}+y)*{{nDof}}+x)*{{nVarPad}}+n+{{1*(nDof**nDim)*nDof*nVarPad}}];
           }  
 {% if nDim == 3%}
           #pragma omp simd aligned(lFhi,lFi:ALIGNMENT)
           for (int n=0; n<{{nVarPad}}; n++) {
             // Fortran: lFhi_z(:,z,x,y) = lFh(:,3,x,y,z,:) * wGPN(:)
-            lFhi[((y*{{nDof}}+x)*{{nDof}}+z)*{{nVarPad}}+n+{{2*nVarPad*(nDof**nDim)}}] += weights1[m] *
-                lFi[(((m*{{nDof3D}}+z)*{{nDof}}+y)*{{nDof}}+x)*{{nVarPad}}+n+{{2*(nDof**nDim)*nDof*nVarPad}}];
+            lFhi[((y*{{nDof}}+x)*{{nDof}}+z)*{{nVarPad}}+n+{{2*nVarPad*(nDof**nDim)}}] += weights1[t] *
+                lFi[(((t*{{nDof3D}}+z)*{{nDof}}+y)*{{nDof}}+x)*{{nVarPad}}+n+{{2*(nDof**nDim)*nDof*nVarPad}}];
           }
 {% endif %}
 {% endif %}{# useFlux #}
@@ -338,8 +331,8 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
           #pragma omp simd aligned(lShi,lSi:ALIGNMENT)
           for (int n=0; n<{{nVarPad}}; n++) {
             // Fortran: lFhi_S(:,x,y,z) = lSh(:,x,y,z,:) * wGPN(:)
-            lShi[((z*{{nDof}}+y)*{{nDof}}+x)*{{nVarPad}}+n] += weights1[m] *
-              lSi[(((m*{{nDof3D}}+z)*{{nDof}}+y)*{{nDof}}+x)*{{nVarPad}}+n];
+            lShi[((z*{{nDof}}+y)*{{nDof}}+x)*{{nVarPad}}+n] += weights1[t] *
+              lSi[(((t*{{nDof3D}}+z)*{{nDof}}+y)*{{nDof}}+x)*{{nVarPad}}+n];
           }
 {% endif %}
         }
