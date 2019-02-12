@@ -37,6 +37,9 @@ class exahype::stealing::AggressiveHybridDistributor {
     int _totalTasksOffloaded;
     int _oldTotalTasksOffloaded;
 
+    int _incrementCurrent;
+    int _incrementPrevious;
+
     int *_notOffloaded;
     bool _isEnabled;
 

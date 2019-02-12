@@ -22,7 +22,9 @@ exahype::stealing::AggressiveHybridDistributor::AggressiveHybridDistributor() :
   _temperature(0.5),
   _totalTasksOffloaded(0),
   _oldTotalTasksOffloaded(0),
-  _useCCP(true)
+  _useCCP(true),
+  _incrementCurrent(0),
+  _incrementPrevious(0)
 {
 
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
@@ -205,15 +207,18 @@ void exahype::stealing::AggressiveHybridDistributor::updateLoadDistribution() {
     return;
   }
   logInfo("updateLoadDistribution()","total offloaded: "<<_totalTasksOffloaded<<" previous: "<<_oldTotalTasksOffloaded);
+  logInfo("updateLoadDistribution()","increment current "<<_incrementCurrent<<" previous: "<<_incrementPrevious);
 
-  if(_totalTasksOffloaded>0) {
-    if(_totalTasksOffloaded-_oldTotalTasksOffloaded>0)
+
+  if(_incrementPrevious>0 && _incrementCurrent>0) {
+    if((_incrementCurrent*1.0f/_incrementPrevious)>1)
       _temperature = std::min(1.1, _temperature*1.1);
-    else if(_totalTasksOffloaded-_oldTotalTasksOffloaded<0)
+    else 
       _temperature = std::max(0.1, _temperature*0.9);
   }
 
   _oldTotalTasksOffloaded = _totalTasksOffloaded;
+  _incrementPrevious = _incrementCurrent;
 
   if(_useCCP) {
     updateLoadDistributionCCP();
@@ -290,6 +295,8 @@ void exahype::stealing::AggressiveHybridDistributor::updateLoadDistributionCCP()
   }
 
   logInfo("updateLoadDistribution()", " current critical rank:"<<currentCriticalRank);
+ 
+  _incrementCurrent = 0;
   
   bool isVictim = exahype::stealing::StealingManager::getInstance().isVictim();
   if(myRank == currentCriticalRank && !isVictim) {
@@ -300,6 +307,7 @@ void exahype::stealing::AggressiveHybridDistributor::updateLoadDistributionCCP()
          if(!exahype::stealing::StealingManager::getInstance().isBlacklisted(i)) {
           //logInfo("updateLoadDistribution", "tasks for victim "<<i<<" before recomputation:"<<_tasksToOffload[i]<< " ideal: "<<_idealTasksToOffload[i]<< " temp "<<_temperature);
           //logInfo("updateLoadDistribution", "first : "<<(1.0-_temperature)*_tasksToOffload[i]<<" second:"<<_temperature*_idealTasksToOffload[i]);
+          _incrementCurrent += _idealTasksToOffload[i]-_tasksToOffload[i];
           _tasksToOffload[i] = std::ceil(std::max((1.0-_temperature), 0.0)*_tasksToOffload[i] + _temperature*_idealTasksToOffload[i]);
 #ifdef DistributedStealingDisable
           _tasksToOffload[i] = 0;
@@ -379,6 +387,8 @@ void exahype::stealing::AggressiveHybridDistributor::updateLoadDistributionDiffu
 
   logInfo("updateLoadDistributionDiffusive()", "optimal victim: "<<currentOptimalVictim<<" critical rank:"<<currentCriticalRank);
 
+  _incrementCurrent = 0;
+
   bool isVictim = exahype::stealing::StealingManager::getInstance().isVictim();
   if(myRank == currentCriticalRank && currentCriticalRank!=currentOptimalVictim) {
     if(!isVictim) {
@@ -388,7 +398,9 @@ void exahype::stealing::AggressiveHybridDistributor::updateLoadDistributionDiffu
       }
       int currentTasksOptimal = _initialLoadPerRank[currentOptimalVictim]+_tasksToOffload[currentOptimalVictim];
 
-      _tasksToOffload[currentOptimalVictim] += _temperature*0.5*(currentTasksCritical-currentTasksOptimal);
+      _incrementCurrent +=  0.5*(currentTasksCritical-currentTasksOptimal)-_tasksToOffload[currentOptimalVictim];
+      _tasksToOffload[currentOptimalVictim] = (1-_temperature)*_tasksToOffload[currentOptimalVictim] 
+                                             + _temperature*0.5*(currentTasksCritical-currentTasksOptimal);
      }
   }
   else if(_tasksToOffload[currentCriticalRank]>0) {
