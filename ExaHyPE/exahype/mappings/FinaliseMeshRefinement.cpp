@@ -258,13 +258,6 @@ void exahype::mappings::FinaliseMeshRefinement::endIteration(
 #ifdef DistributedStealing
   exahype::stealing::PerformanceMonitor::getInstance().setTasksPerTimestep(_numberOfEnclaveCells + _numberOfSkeletonCells);
 
-#if defined(StealingStrategyAggressive)
-  exahype::stealing::AggressiveDistributor::getInstance().enable();
-#elif defined(StealingStrategyAggressiveCCP)
-  exahype::stealing::AggressiveCCPDistributor::getInstance().enable();
-#elif defined(StealingStrategyAggressiveHybrid)
-  exahype::stealing::AggressiveHybridDistributor::getInstance().enable();
-#endif
 
 #endif
 

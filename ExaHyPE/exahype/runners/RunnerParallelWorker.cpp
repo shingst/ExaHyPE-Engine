@@ -160,6 +160,15 @@ void exahype::runners::Runner::runGlobalStep() {
     exahype::mappings::FinaliseMeshRefinement::NumberOfSkeletonCells);
 #endif 
 
+
+#if defined(StealingStrategyAggressive)
+  exahype::stealing::AggressiveDistributor::getInstance().enable();
+#elif defined(StealingStrategyAggressiveCCP)
+  exahype::stealing::AggressiveCCPDistributor::getInstance().enable();
+#elif defined(StealingStrategyAggressiveHybrid)
+  exahype::stealing::AggressiveHybridDistributor::getInstance().enable();
+#endif
+
 #endif
 
 }
