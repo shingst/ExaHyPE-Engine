@@ -12,7 +12,6 @@
 #include <unistd.h> // POSIX pipes
 #include <stdio.h>
 #include <string>
-#include <sys/wait.h> // WEXITSTATUS
 {% if strictJSON %}
 #include <fstream> // read file
 #include <streambuf> // read file
@@ -235,7 +234,7 @@ std::string kernels::readSpecificationFileToJSON(const std::string& filename) {
         json += buffer.data();
 
   // Check exist code of 
-  int exit_status = WEXITSTATUS(pclose(pipe));
+  int exit_status = pclose(pipe)/256; // the proper way is to use the WEXITSTATUS macro, but some Intel compilers on some clusters refuse to compile it.
   if(exit_status != 0) {
      logError("readSpecificationFileToJSON()", "The toolkit call from ExaHyPE returned a non-zero exit value ("<< exit_status <<"). That means it certainly did not produce proper JSON. The output is given below.");
      std::cerr << "Output from toolkit:\n" << json << "\n";
