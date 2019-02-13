@@ -34,6 +34,11 @@
   "distributed_memory": {
     "stealing": "aggressiveHybrid",
     "stealing_input_file" : "test_input.txt",
+    "stealing_CCP_temperature" : 1,
+    "stealing_diffusion_temperature" : 0.5,
+    "stealing_CCP_frequency" : 0,
+    "stealing_CCP_steps" : 5,
+    "stealing_update_temperature" : true,
     "timeout": 6000,
     "load_balancing_type": "static",
     "buffer_size": 1600,

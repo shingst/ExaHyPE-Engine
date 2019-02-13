@@ -422,7 +422,32 @@
           "enum"  : ["none", "static", "dynamic", "hybrid", "static_hardcoded", "dynamic_diffusive", "aggressive_diffusive", "aggressiveCCP_diffusive", "aggressiveHybrid"],
           "default" : "none",
           "old_format" : { "token_after" : "stealing" }
-	    },
+	 },
+        "stealing_CCP_temperature" : {
+              "type" : "number",
+              "title" : "The initial temperature for CCP.",
+              "default" : 1.0
+        },
+        "stealing_diffusion_temperature" : {
+              "type" : "number",
+              "title" : "The initial temperature for diffusion.",
+              "default" : 0.5
+        },
+        "stealing_CCP_frequency" : {
+              "type" : "integer",
+              "title" : "Frequency after how many steps CCP is restarted.",
+              "default" : 0
+        },
+        "stealing_CCP_steps" : {
+              "type" : "integer",
+              "title" : "Number of CCP steps conducted per CCP phase.",
+              "default" : 5
+        },
+        "stealing_update_temperature": {
+              "type" : "boolean",
+              "title" : "If false, then temperature is fixed.",
+              "default" : true
+        },
         "stealing_input_file" : {
           "type" : "string",
           "title" : "Path to file that specifies stealing rules",
