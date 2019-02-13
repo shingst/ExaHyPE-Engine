@@ -317,7 +317,8 @@ void exahype::stealing::AggressiveHybridDistributor::handleEmergencyOnRank(int r
 
 void exahype::stealing::AggressiveHybridDistributor::updateLoadDistribution() {
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
-  static bool isFirst = true;
+  static int iterationCounter = 0;
+  static int remainingCCPSteps = 0;
 
   if(!_isEnabled) {
     return;
@@ -332,10 +333,22 @@ void exahype::stealing::AggressiveHybridDistributor::updateLoadDistribution() {
 
   double *temperature;
 
-  if(isFirst) {
+  bool useCCP = false;
+  if(_CCPFrequency==0) {
+    useCCP = false;
+  } 
+  else if(remainingCCPSteps>0) {
+    useCCP = true;
+  }
+  else if(iterationCounter%_CCPFrequency==0) {
+    useCCP = true;
+    remainingCCPSteps = _CCPStepsPerPhase;
+  }
+
+  if(useCCP) {
     temperature = &_temperatureCCP;
     updateLoadDistributionCCP();
-    isFirst = false;
+    remainingCCPSteps--;
   }
   else {
     temperature = &_temperatureDiffusion;
@@ -354,13 +367,14 @@ void exahype::stealing::AggressiveHybridDistributor::updateLoadDistribution() {
 
   resetRemainingTasksToOffload();
 
+  iterationCounter++;
 }
 
 void exahype::stealing::AggressiveHybridDistributor::updateLoadDistributionCCP() {
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
   int myRank = tarch::parallel::Node::getInstance().getRank();
 
-  if(_incrementPrevious>0 && _incrementCurrent>0) {
+  if(_incrementPrevious>0 && _incrementCurrent>0 && _adaptTemperature) {
     if((_incrementCurrent*1.0f/_incrementPrevious)>1)
       _temperatureCCP = std::min(1.1, _temperatureCCP*1.1);
     else 
@@ -389,7 +403,7 @@ void exahype::stealing::AggressiveHybridDistributor::updateLoadDistributionDiffu
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
   int myRank = tarch::parallel::Node::getInstance().getRank();
 
-  if(_incrementPrevious>0 && _incrementCurrent>0) {
+  if(_incrementPrevious>0 && _incrementCurrent>0 && _adaptTemperature) {
     if((_incrementCurrent*1.0f/_incrementPrevious)>1)
       _temperatureDiffusion = std::min(1.1, _temperatureDiffusion*1.1);
     else 
