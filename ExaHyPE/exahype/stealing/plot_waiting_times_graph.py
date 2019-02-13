@@ -16,9 +16,9 @@ timestep_pattern = re.compile(".([0-9]+\.[0-9]+).*step ([0-9]+).*t_min.*")
 task_offload_pattern = re.compile(".*rank:([0-9]+).*printOffloadingStatistics.* target tasks to rank ([0-9]+) ntasks ([0-9]+) not offloaded ([0-9]+).*")
 temperature_pattern = re.compile(".*rank:([0-9]+).*printOffloadingStatistics.* temperature value ([0-9]+\.[0-9]+).*")
 blacklist_pattern = re.compile(".*blacklist value for rank ([0-9]+):([0-9]+\.[0-9]+)")
-waiting_times_pattern = re.compile(".*rank:0.*updateLoadDistribution\(\) rank ([0-9]+) waiting for ([0-9]+) for rank ([0-9]+)")
-critical_rank_pattern = re.compile(".*rank:([0-9]+).*updateLoadDistribution.*\(\).*optimal victim: ([0-9]+) critical rank:([0-9]+)")
-critical_rank_pattern2 = re.compile(".*rank:([0-9]+).*updateLoadDistribution\(\).*current critical rank:([0-9]+)")
+waiting_times_pattern = re.compile(".*rank:0.*printWaitingTimes\(\) rank ([0-9]+) waiting for ([0-9]+) for rank ([0-9]+)")
+critical_rank_pattern = re.compile(".*rank:([0-9]+).*updateLoadDistributionDiffusive\(\).*optimal victim: ([0-9]+) critical rank:([0-9]+)")
+critical_rank_pattern2 = re.compile(".*rank:([0-9]+).*updateLoadDistributionCCP(\).*current critical rank:([0-9]+)")
 
 
 animate = sys.argv[3].lower() in ("yes", "true", "t", "1")
