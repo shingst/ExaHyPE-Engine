@@ -47,7 +47,7 @@ void TovSolverAdapter::Interpolate(const double* x, double t, double* Q) {
 	// Floor atmosphere
   
 	if(V[rho] < params->atmo_rho) V[rho] = params->atmo_rho;
-	if(V[E] < params->atmo_rho) V[E] = params->atmo_press;
+	if(V[E] < params->atmo_press) V[E] = params->atmo_press;
 //	if(V[rho] < TOV::Parameters.atmo_rho) V[rho] = TOV::Parameters.atmo_rho;
 //	if(V[E] < TOV::Parameters.atmo_press) V[E] = TOV::Parameters.atmo_press;
 	
