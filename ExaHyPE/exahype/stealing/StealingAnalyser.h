@@ -33,8 +33,9 @@ class exahype::stealing::StealingAnalyser: public peano::performanceanalysis::An
     tarch::timing::Watch           _waitForWorkerDataWatch;
     tarch::timing::Watch           _waitForMasterDataWatch;
 
-    tarch::timing::GlidingAverageMeasurement     _traversalMeasurement;
     std::vector<tarch::timing::GlidingAverageMeasurement>    _waitForOtherRank;
+
+    tarch::timing::GlidingAverageMeasurement     _timePerStealablePredictionJob;
 
     int _currentZeroThreshold;
     int _iterationCounter;
@@ -53,6 +54,9 @@ class exahype::stealing::StealingAnalyser: public peano::performanceanalysis::An
     static StealingAnalyser& getInstance();
 
     int getZeroThreshold();
+
+    void setTimePerSTP(double timePerSTP);
+    double getTimePerSTP();
 
     virtual void beginIteration();
 

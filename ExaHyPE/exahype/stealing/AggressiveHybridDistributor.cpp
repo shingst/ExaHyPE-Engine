@@ -204,7 +204,6 @@ void exahype::stealing::AggressiveHybridDistributor::updateLoadDistribution() {
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
   static bool isFirst = true;
 
-
   if(!_isEnabled) {
     return;
   }

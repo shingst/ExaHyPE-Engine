@@ -53,6 +53,7 @@
 #include "exahype/stealing/StaticDistributor.h"
 #include "exahype/stealing/DiffusiveDistributor.h"
 #include "exahype/stealing/StealingManager.h"
+#include "exahype/stealing/StealingAnalyser.h"
 #endif
 #include "exahype/stealing/StealingProfiler.h"
 
@@ -116,6 +117,8 @@ tarch::multicore::BooleanSemaphore exahype::solvers::ADERDGSolver::CoarseGridSem
 tarch::multicore::BooleanSemaphore exahype::solvers::ADERDGSolver::StealingSemaphore;
 
 std::atomic<int> exahype::solvers::ADERDGSolver::MaxIprobesInStealingProgress = std::numeric_limits<int>::max();
+
+std::atomic<int> exahype::solvers::ADERDGSolver::StealablePredictionJob::JobCounter = 0;
 #endif
 
 
@@ -5304,7 +5307,19 @@ bool exahype::solvers::ADERDGSolver::StealablePredictionJob::operator()() {
 #ifdef USE_ITAC
       VT_begin(event_stp);
 #endif
-      handleLocalExecution();
+     int curr = std::atomic_fetch_add(&JobCounter, 1);
+
+     if(curr%1000==0) {
+       tarch::timing::Watch watch("exahype::StealablePredictionJob::", "-", false,false);
+       watch.startTimer();
+       handleLocalExecution();
+       watch.stopTimer();
+
+       exahype::stealing::StealingAnalyser::getInstance().setTimePerSTP(watch.getCalendarTime());
+     }
+     else
+       handleLocalExecution();
+    
 #ifdef USE_ITAC
       VT_end(event_stp);
 #endif

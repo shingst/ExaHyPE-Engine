@@ -933,6 +933,8 @@ private:
       double                        _center[DIMENSIONS];
       double                        _dx[DIMENSIONS];
 
+      static std::atomic<int> JobCounter;
+
       // actual execution of a STP job
       bool handleLocalExecution();
     public:

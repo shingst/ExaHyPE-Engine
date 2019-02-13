@@ -73,6 +73,15 @@ int  exahype::stealing::StealingAnalyser::getZeroThreshold() {
   return _currentZeroThreshold;
 }
 
+void exahype::stealing::StealingAnalyser::setTimePerSTP(double timePerSTP) {
+  _timePerStealablePredictionJob.setValue(timePerSTP);
+  logInfo("setTimePerSTP()", "submitted new STP measurement, current time per stp: "<<getTimePerSTP());
+}
+
+double exahype::stealing::StealingAnalyser::getTimePerSTP() {
+  return _timePerStealablePredictionJob.getValue();
+}
+
 void exahype::stealing::StealingAnalyser::updateZeroTresholdAndFilteredSnapshot() {
   const int* currentWaitingTimesSnapshot = exahype::stealing::PerformanceMonitor::getInstance().getWaitingTimesSnapshot();
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
