@@ -21,9 +21,8 @@ class exahype::stealing::AggressiveHybridDistributor {
     static tarch::logging::Log _log;
     AggressiveHybridDistributor();
 
-    //int _zeroThreshold;
-
-    double _temperature;
+    double _temperatureDiffusion;
+    double _temperatureCCP;
 
     int *_initialLoadPerRank;
     int *_newLoadDistribution;
@@ -33,6 +32,7 @@ class exahype::stealing::AggressiveHybridDistributor {
     // stores how many tasks still need to be offloaded in the current time step
     std::atomic<int> *_remainingTasksToOffload;
     int *_emergenciesPerRank;
+    int *_notOffloaded;
 
     int _totalTasksOffloaded;
     int _oldTotalTasksOffloaded;
@@ -40,13 +40,13 @@ class exahype::stealing::AggressiveHybridDistributor {
     int _incrementCurrent;
     int _incrementPrevious;
 
-    int *_notOffloaded;
     bool _isEnabled;
-
-    bool _useCCP;
 
     void updateLoadDistributionCCP();
     void updateLoadDistributionDiffusive();
+
+    int determineCriticalRank();
+    void determineOptimalVictim(int &optimalVictim, int &waitingTimeOptimalVictim);
 
   public:
     static AggressiveHybridDistributor& getInstance();
@@ -64,6 +64,7 @@ class exahype::stealing::AggressiveHybridDistributor {
 
     void resetRemainingTasksToOffload();
     void printOffloadingStatistics();
+    void printWaitingTimes();
     // return next victim rank
     bool selectVictimRank(int& victim);
  
