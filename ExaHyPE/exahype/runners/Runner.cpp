@@ -86,7 +86,10 @@
 
 #if defined(StealingStrategyStaticHardcoded)
 #include "exahype/stealing/StaticDistributor.h"
+#elif defined(StealingStrategyAggressiveHybrid)
+#include "exahype/stealing/AggressiveHybridDistributor.h"
 #endif
+
 #include "exahype/stealing/StealingProfiler.h"
 #endif
 
@@ -267,6 +270,14 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
 
 #if defined(StealingStrategyStaticHardcoded)
     exahype::stealing::StaticDistributor::getInstance().loadDistributionFromFile(_parser.getStealingInputFile());
+#elif defined(StealingStrategyAggressiveHybrid)
+    exahype::stealing::AggressiveHybridDistributor::getInstance().configure(
+       _parser.getDoubleFromPath("/distributed_memory/stealing_CCP_temperature"),
+       _parser.getDoubleFromPath("/distributed_memory/stealing_diffusion_temperature"),
+       _parser.getIntFromPath("/distributed_memory/stealing_CCP_frequency"),
+       _parser.getIntFromPath("/distributed_memory/stealing_CCP_steps"),
+       _parser.getBoolFromPath("/distributed_memory/stealing_update_temperature")
+    );
 #endif
 
 #endif

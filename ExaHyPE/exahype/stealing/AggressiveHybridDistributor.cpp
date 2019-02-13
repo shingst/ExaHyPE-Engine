@@ -252,6 +252,24 @@ exahype::stealing::AggressiveHybridDistributor& exahype::stealing::AggressiveHyb
   return aggressiveDist;
 }
 
+void exahype::stealing::AggressiveHybridDistributor::configure(
+                   double startTempCCP, double startTempDiffusion,
+                   int CCPFrequency, int CCPStepsPerPhase,
+                   bool adaptTemperature) {
+
+  logInfo("configure", "start temp CCP: "<<startTempCCP<<
+                       " start temp diffusion: "<<startTempDiffusion<<
+                       " CCP frequency: "<<CCPFrequency<<
+                       " CCP steps per phase: "<<CCPStepsPerPhase<<
+                       " adapt temperature: "<<adaptTemperature );
+
+  _temperatureCCP = startTempCCP;
+  _temperatureDiffusion = startTempDiffusion;
+  _adaptTemperature = adaptTemperature;
+  _CCPFrequency = CCPFrequency;
+  _CCPStepsPerPhase = CCPStepsPerPhase;
+}
+
 void exahype::stealing::AggressiveHybridDistributor::printOffloadingStatistics() {
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
   int myRank = tarch::parallel::Node::getInstance().getRank();

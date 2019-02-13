@@ -24,6 +24,10 @@ class exahype::stealing::AggressiveHybridDistributor {
     double _temperatureDiffusion;
     double _temperatureCCP;
 
+    bool _adaptTemperature;
+
+    int _CCPFrequency, _CCPStepsPerPhase;
+
     int *_initialLoadPerRank;
     int *_newLoadDistribution;
     int *_idealTasksToOffload;
@@ -51,6 +55,10 @@ class exahype::stealing::AggressiveHybridDistributor {
   public:
     static AggressiveHybridDistributor& getInstance();
     virtual ~AggressiveHybridDistributor();
+
+    void configure(double startTempCCP, double startTempDiffusion,
+                   int CCPFrequency, int CCPStepsPerPhase,
+                   bool adaptTemperature);
 
     /*
      *  This operation computes a new unique load distribution (and accordingly, distribution rules)
