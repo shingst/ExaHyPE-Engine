@@ -9,7 +9,7 @@
   "architecture": "hsw",
   "computational_domain": {
     "dimension": 3,
-    "time_steps": 10,
+    "time_steps": 20,
     "offset": [
       -12.0,
       0.0,
@@ -17,7 +17,7 @@
     ],
     "width": [
       24.0,
-      24.0,
+      60.0,
       24.0
     ]
   },
@@ -37,7 +37,7 @@
     "stealing_CCP_temperature" : 1,
     "stealing_diffusion_temperature" : 0.5,
     "stealing_CCP_frequency" : 0,
-    "stealing_CCP_steps" : 5,
+    "stealing_CCP_steps" : 0,
     "stealing_update_temperature" : true,
     "timeout": 6000,
     "load_balancing_type": "static",

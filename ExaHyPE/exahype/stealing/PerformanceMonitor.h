@@ -10,16 +10,8 @@
 namespace exahype {
   namespace stealing {
     class PerformanceMonitor;
-    enum class PerformanceMetric;
   }
 }
-
-enum class exahype::stealing::PerformanceMetric {
-  CurrentTasks,
-  RemainingTasks,
-  TasksPerTimestep,
-  CurrentWaitingTime
-};
 
 /*
  * The PerformanceMonitor stores and distributes on-line live performance
@@ -37,6 +29,11 @@ class exahype::stealing::PerformanceMonitor {
     int *_currentWaitingTimesReceiveBuffer; //length nrank*nranks
     int *_currentWaitingTimesSendBuffer; //length nrank
     int *_currentWaitingTimes; //lenght nrank
+
+    double *_currentBlacklistSnapshot;
+    double *_currentBlacklistReceiveBuffer;
+    double *_currentBlacklistSendBuffer;
+    double *_currentBlacklist;
 
     // here, current global view on the load information is stored
     int *_currentTasksSnapshot;
@@ -65,6 +62,7 @@ class exahype::stealing::PerformanceMonitor {
     // the current gather requests
     MPI_Request _gatherTasksRequest;
     MPI_Request _gatherWaitingTimesRequest;
+    MPI_Request _allreduceBlacklistRequest;
 
     tarch::multicore::BooleanSemaphore _semaphore;
 
@@ -75,12 +73,17 @@ class exahype::stealing::PerformanceMonitor {
 
     void postGatherWaitingTimes();
 
+    void postAllreduceBlacklist();
+
   public:
     // signals that a rank has finished computing any local work
     void stop();
 
     void submitWaitingTimeForRank(int waitingTime, int rank);
     const int *getWaitingTimesSnapshot();
+
+    void submitBlacklistValueForRank(double bval, int rank);
+    const double *getBlacklistSnapshot();
 
     void setCurrentTasks(int numTasks);
     // increases the current load, to be called when a new task

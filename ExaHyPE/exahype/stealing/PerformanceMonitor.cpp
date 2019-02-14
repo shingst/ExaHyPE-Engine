@@ -22,6 +22,7 @@ exahype::stealing::PerformanceMonitor::PerformanceMonitor() :
     _isStarted(true),
     _gatherTasksRequest(MPI_REQUEST_NULL),
     _gatherWaitingTimesRequest(MPI_REQUEST_NULL),
+    _allreduceBlacklistRequest(MPI_REQUEST_NULL),
     _currentTasks(0),
     _currentTasksSendBuffer(0),
     _remainingTasks(0),
@@ -37,6 +38,11 @@ exahype::stealing::PerformanceMonitor::PerformanceMonitor() :
   _currentWaitingTimesSendBuffer = new int[nnodes];
   _currentWaitingTimes = new int[nnodes];
 
+  _currentBlacklistSnapshot = new double[nnodes*nnodes];
+  _currentBlacklistReceiveBuffer = new double[nnodes*nnodes];
+  _currentBlacklistSendBuffer = new double[nnodes];
+  _currentBlacklist = new double[nnodes];
+
   std::fill(_currentTasksSnapshot, _currentTasksSnapshot+nnodes, 0);
   std::fill(_currentTasksReceiveBuffer, _currentTasksReceiveBuffer+nnodes, 0);
 
@@ -44,6 +50,11 @@ exahype::stealing::PerformanceMonitor::PerformanceMonitor() :
   std::fill(_currentWaitingTimesReceiveBuffer, _currentWaitingTimesReceiveBuffer+nnodes*nnodes, 0);
   std::fill(_currentWaitingTimesSendBuffer, _currentWaitingTimesSendBuffer+nnodes, 0);
   std::fill(_currentWaitingTimes, _currentWaitingTimes+nnodes, 0);
+
+  std::fill(_currentBlacklistSnapshot, _currentBlacklistSnapshot+nnodes, 0);
+  std::fill(_currentBlacklistReceiveBuffer, _currentBlacklistReceiveBuffer+nnodes, 0);
+  std::fill(_currentBlacklistSendBuffer, _currentBlacklistSendBuffer+nnodes, 0);
+  std::fill(_currentBlacklist, _currentBlacklist+nnodes, 0);
 
 }
 
@@ -65,6 +76,15 @@ void exahype::stealing::PerformanceMonitor::submitWaitingTimeForRank(int waiting
 
 const int *exahype::stealing::PerformanceMonitor::getWaitingTimesSnapshot() {
   return _currentWaitingTimesSnapshot;
+}
+
+void exahype::stealing::PerformanceMonitor::submitBlacklistValueForRank(double bval, int rank) {
+  logInfo("submitBlacklistValue", "new value "<<bval<<" for "<<rank);
+  _currentBlacklist[rank] = bval;
+}
+
+const double *exahype::stealing::PerformanceMonitor::getBlacklistSnapshot() {
+  return _currentBlacklistSnapshot;
 }
 
 void exahype::stealing::PerformanceMonitor::setTasksPerTimestep(int load) {
@@ -139,6 +159,7 @@ void exahype::stealing::PerformanceMonitor::progressGather() {
 
   int completed_tasks = 0;
   int completed_waiting_times = 0;
+  int completed_blacklist = 0;
 #if defined(PerformanceAnalysisStealing)
   double timeSinceLastGather=0;
   static std::atomic<double> lastGather = 0;
@@ -184,10 +205,14 @@ void exahype::stealing::PerformanceMonitor::progressGather() {
 //    double time = - MPI_Wtime();
 //    exahype::stealing::StealingProfiler::getInstance().beginCommunication();
     //logInfo("performance monitoŕ()","progressing waiting times");
-   int err= MPI_Test(&_gatherWaitingTimesRequest, &completed_waiting_times, MPI_STATUS_IGNORE);
+    int err= MPI_Test(&_gatherWaitingTimesRequest, &completed_waiting_times, MPI_STATUS_IGNORE);
    //assert(err==MPI_SUCCESS);
 //    time += MPI_Wtime();_currentTasksSendBuffer
  
+  }
+
+  if( !isGloballyTerminated() && _allreduceBlacklistRequest!=MPI_REQUEST_NULL) {
+     int err= MPI_Test(&_allreduceBlacklistRequest, &completed_blacklist, MPI_STATUS_IGNORE);
   }
 
 #if defined(PerformanceAnalysisStealing)
@@ -282,6 +307,18 @@ void exahype::stealing::PerformanceMonitor::progressGather() {
     watch.startTimer();
 #endif
   }
+
+  if(completed_blacklist) {
+    std::copy(&_currentBlacklistReceiveBuffer[0], &_currentBlacklistReceiveBuffer[nnodes], &_currentBlacklistSnapshot[0]);
+    _allreduceBlacklistRequest = MPI_REQUEST_NULL;
+      
+  }
+
+  if(_allreduceBlacklistRequest==MPI_REQUEST_NULL && !isGloballyTerminated()) {
+    postAllreduceBlacklist();
+  }
+
+
   lock.free();
 }
 
@@ -314,6 +351,15 @@ void exahype::stealing::PerformanceMonitor::postGatherWaitingTimes() {
 
   //nposted++;
   //logInfo("postGatherWaitingTimes", "nposted "<<nposted<< " request "<<_gatherWaitingTimesRequest);
+}
+
+void exahype::stealing::PerformanceMonitor::postAllreduceBlacklist() {
+  int nnodes  = tarch::parallel::Node::getInstance().getNumberOfNodes();
+  std::copy(&_currentBlacklist[0], &_currentBlacklist[nnodes], &_currentBlacklistSendBuffer[0]);
+
+  assert(_allreduceBlacklistRequest==MPI_REQUEST_NULL);
+  int err = MPI_Iallreduce(&_currentBlacklistSendBuffer[0], &_currentBlacklistReceiveBuffer[0], nnodes, MPI_DOUBLE, MPI_SUM,
+             exahype::stealing::StealingManager::getInstance().getMPICommunicator(), &_allreduceBlacklistRequest);
 }
 
 bool exahype::stealing::PerformanceMonitor::isGloballyTerminated() {

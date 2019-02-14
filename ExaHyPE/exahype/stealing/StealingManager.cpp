@@ -435,6 +435,7 @@ void exahype::stealing::StealingManager::triggerEmergencyForRank(int rank) {
   exahype::stealing::DiffusiveDistributor::getInstance().handleEmergencyOnRank(rank);
 #endif
   _emergencyHeatMap[rank]++;
+  exahype::stealing::PerformanceMonitor::getInstance().submitBlacklistValueForRank(_emergencyHeatMap[rank], rank);
   logInfo("triggerEmergencyForRank()","blacklist value for rank "<<rank<<":"<<_emergencyHeatMap[rank]);
 }
 
@@ -443,14 +444,28 @@ void exahype::stealing::StealingManager::decreaseHeat() {
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
   for(int i=0; i<nnodes;i++) {
     _emergencyHeatMap[i]*= 0.9;
-    if(_emergencyHeatMap[i]>0.4) {
-      logInfo("decreaseHeat()","blacklist value for rank "<<i<<":"<<_emergencyHeatMap[i]);
-    }
+    if(_emergencyHeatMap[i]>0)
+      exahype::stealing::PerformanceMonitor::getInstance().submitBlacklistValueForRank(_emergencyHeatMap[i], i);
+    //if(_emergencyHeatMap[i]>0.5) {
+    //  logInfo("decreaseHeat()","blacklist value for rank "<<i<<":"<<_emergencyHeatMap[i]);
+    //}
   }
 } 
 
 bool exahype::stealing::StealingManager::isBlacklisted(int rank) { 
-  return _emergencyHeatMap[rank]>0.5;
+  //return _emergencyHeatMap[rank]>0.5;
+  const double* globalHeatMap = exahype::stealing::PerformanceMonitor::getInstance().getBlacklistSnapshot();
+  return globalHeatMap[rank]>0.5;
+}
+
+void exahype::stealing::StealingManager::printBlacklist() {
+  int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
+  const double* globalHeatMap = exahype::stealing::PerformanceMonitor::getInstance().getBlacklistSnapshot();
+
+  for(int i=0; i<nnodes; i++) {
+    if(globalHeatMap[i]>0.5)
+      logInfo("printBlacklist", "blacklist value for rank "<<i<<":"<<globalHeatMap[i]);
+  }
 }
 
 bool exahype::stealing::StealingManager::isEmergencyTriggered() {

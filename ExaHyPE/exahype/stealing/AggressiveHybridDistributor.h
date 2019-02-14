@@ -31,6 +31,7 @@ class exahype::stealing::AggressiveHybridDistributor {
     int *_initialLoadPerRank;
     int *_newLoadDistribution;
     int *_idealTasksToOffload;
+    int *_optimalTasksPerRank;
     // stores how many tasks should be offloaded in every time step
     int *_tasksToOffload;
     // stores how many tasks still need to be offloaded in the current time step

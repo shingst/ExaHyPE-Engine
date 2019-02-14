@@ -136,7 +136,8 @@ void exahype::stealing::StealingAnalyser::endIteration(double numberOfInnerLeafC
   for(int i=0; i<_waitForOtherRank.size(); i++) {
     if(i != tarch::parallel::Node::getInstance().getRank()) {
       logInfo("endIteration()", "wait for rank "<<i<<_waitForOtherRank[i].toString());
-      exahype::stealing::PerformanceMonitor::getInstance().submitWaitingTimeForRank(static_cast<int>(_waitForOtherRank[i].getValue()*1e06), i);
+      if(_waitForOtherRank[i].isAccurateValue())
+       exahype::stealing::PerformanceMonitor::getInstance().submitWaitingTimeForRank(static_cast<int>(_waitForOtherRank[i].getValue()*1e06), i);
     }     
   }
 
@@ -153,6 +154,7 @@ void exahype::stealing::StealingAnalyser::endIteration(double numberOfInnerLeafC
   exahype::stealing::AggressiveHybridDistributor::getInstance().printOffloadingStatistics();
   exahype::stealing::AggressiveHybridDistributor::getInstance().updateLoadDistribution();
 #endif
+  exahype::stealing::StealingManager::getInstance().printBlacklist();
 
   _iterationCounter++;
 }

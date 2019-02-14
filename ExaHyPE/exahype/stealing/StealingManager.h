@@ -178,6 +178,7 @@ class exahype::stealing::StealingManager {
     //void resetEmergency();
 
     void decreaseHeat();
+    void printBlacklist();
 
     static StealingManager& getInstance();
     virtual ~StealingManager();
