@@ -96,11 +96,17 @@ void __attribute__((optimize("O0"))) initialData_FV(const double* const x,const 
 void GRMHD::GRMHDSolver_FV::adjustSolution(const double* const x,const double t,const double dt, double* Q) {
   using namespace tarch::la;
   // Do excision only in 3D.
-  //bool insideExcisionBall = norm2(x) < excision_radius;
-  bool insideExcisionBall = false;
-  bool useAdjustSolution = equals(t,0.0) || insideExcisionBall;
 
-  if(useAdjustSolution) id->Interpolate(x, t, Q);
+  if(equals(t,0.0)) {
+    initialData_FV(x, t, dt, Q);
+
+    if( (x[1] > -1.e-10) && (x[1]  < 1.e-10)) {
+      if( (x[2] > -1.e-10) && (x[2]  < 1.e-10)) {
+//        std::cout << "adjusting FV at : " <<   x[0]  << " t = " << t <<  " Q[0] = " << Q[0] << std::endl;
+        printf("adjusting FV at : %.5e , %.5e\n",x[0],Q[0]);
+      }
+    }
+  }
 }
 
 void GRMHD::GRMHDSolver_FV::eigenvalues(const double* const Q, const int dIndex, double* lambda) {
@@ -140,7 +146,7 @@ void GRMHD::GRMHDSolver_FV::boundaryValues(
     const int d,
     const double* const stateIn,
     double* stateOut) {
-  //	fvbc->apply(FV_BOUNDARY_CALL);
+  //  fvbc->apply(FV_BOUNDARY_CALL);
   // Use for the time being: Exact BC
   //id->Interpolate(x, t, stateOut);
 
@@ -154,10 +160,9 @@ void GRMHD::GRMHDSolver_FV::boundaryValues(
   initialData_FV(x, ti, dt, Qgp);
   for(int m=0; m < nVar; m++) {
     stateOut[m] = Qgp[m];
-  }
-
-
+  } 
 }
+
 
 
 void GRMHD::GRMHDSolver_FV::nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) {

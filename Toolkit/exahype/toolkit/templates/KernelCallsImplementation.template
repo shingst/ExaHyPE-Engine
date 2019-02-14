@@ -213,18 +213,30 @@ std::string kernels::readSpecificationFileToJSON(const std::string& filename) {
   // anywhere on the same computer/cluster. If you encounter problems, you
   // can change them here (note that KernelCalls.cpp is overwritten by every
   // toolkit run.
-  std::string command = "{{externalParserCommand}} " + filename;
+  std::string command = "{{externalParserCommand}} " + filename + " 2>&1";
+  // Note that we pass stderr to stdout so in case of problems, 
   
   logInfo("readSpecificationFileToJSON()", "Invoking external command: " << command);
 
   std::array<char, buffer_size> buffer;
   std::string json;
-  std::shared_ptr<FILE> pipe(popen(command.c_str(), "r"), pclose);
-  if (!pipe) throw std::runtime_error(std::string("Could not call external command with popen(") + command + ").");
+  FILE* pipe = popen(command.c_str(), "r");
+  if (!pipe) {
+    logError("readSpecificationFileToJSON()", "Could not call external command with popen: " << strerror(errno) << " --- The command I tried to invoke  was: " << command);
+    throw std::runtime_error("Could not call ExaHyPE toolkit.");
+  }
 
-  while (!feof(pipe.get()))
-    if (fgets(buffer.data(), buffer_size, pipe.get()) != nullptr)
+  while (!feof(pipe))
+    if (fgets(buffer.data(), buffer_size, pipe) != nullptr)
         json += buffer.data();
+
+  // Check exist code of 
+  int exit_status = pclose(pipe)/256; // the proper way is to use the WEXITSTATUS macro, but some Intel compilers on some clusters refuse to compile it.
+  if(exit_status != 0) {
+     logError("readSpecificationFileToJSON()", "The toolkit call from ExaHyPE returned a non-zero exit value ("<< exit_status <<"). That means it certainly did not produce proper JSON. The output is given below.");
+     std::cerr << "Output from toolkit:\n" << json << "\n";
+     throw std::runtime_error("Could not properly call toolkit from ExaHyPE.");
+  }
 {% endif %}
 
   return json;
