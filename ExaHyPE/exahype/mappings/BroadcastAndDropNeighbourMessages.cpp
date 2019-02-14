@@ -27,8 +27,8 @@
 
 peano::CommunicationSpecification exahype::mappings::BroadcastAndDropNeighbourMessages::communicationSpecification() const {
   return peano::CommunicationSpecification(
-      peano::CommunicationSpecification::ExchangeMasterWorkerData::MaskOutMasterWorkerDataAndStateExchange,
-      peano::CommunicationSpecification::ExchangeWorkerMasterData::MaskOutWorkerMasterDataAndStateExchange,true);
+        peano::CommunicationSpecification::ExchangeMasterWorkerData::MaskOutMasterWorkerDataAndStateExchange,
+        peano::CommunicationSpecification::ExchangeWorkerMasterData::SendDataAndStateAfterLastTouchVertexLastTime,true);
 }
 
 peano::MappingSpecification
@@ -82,7 +82,8 @@ tarch::logging::Log exahype::mappings::BroadcastAndDropNeighbourMessages::_log(
 
 void exahype::mappings::BroadcastAndDropNeighbourMessages::beginIteration(
     exahype::State& solverState) {
-  // do nothing
+  // hack to enforce reductions
+  solverState.setReduceStateAndCell(true);
 }
 
 void exahype::mappings::BroadcastAndDropNeighbourMessages::enterCell(
@@ -129,11 +130,6 @@ void exahype::mappings::BroadcastAndDropNeighbourMessages::mergeWithNeighbour(
   }
 }
 
-//
-// Below all methods are nop.
-//
-// ====================================
-
 bool exahype::mappings::BroadcastAndDropNeighbourMessages::prepareSendToWorker(
     exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
@@ -142,8 +138,13 @@ bool exahype::mappings::BroadcastAndDropNeighbourMessages::prepareSendToWorker(
     exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
     int worker) {
-  return false;
+  return true; // tells master this worker wants to reduce; we reduce to create a barrier
 }
+
+//
+// Below all methods are nop.
+//
+// ====================================
 
 void exahype::mappings::BroadcastAndDropNeighbourMessages::receiveDataFromMaster(
     exahype::Cell& receivedCell, exahype::Vertex* receivedVertices,

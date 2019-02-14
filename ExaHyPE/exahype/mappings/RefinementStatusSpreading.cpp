@@ -34,7 +34,7 @@ peano::CommunicationSpecification
 exahype::mappings::RefinementStatusSpreading::communicationSpecification() const {
   return peano::CommunicationSpecification(
       peano::CommunicationSpecification::ExchangeMasterWorkerData::MaskOutMasterWorkerDataAndStateExchange,
-      peano::CommunicationSpecification::ExchangeWorkerMasterData::MaskOutWorkerMasterDataAndStateExchange,true);
+      peano::CommunicationSpecification::ExchangeWorkerMasterData::SendDataAndStateAfterLastTouchVertexLastTime,true);
 }
 
 // Switched on.
@@ -76,48 +76,15 @@ exahype::mappings::RefinementStatusSpreading::descendSpecification(int level) co
       peano::MappingSpecification::AvoidCoarseGridRaces,false);
 }
 
-#if defined(SharedMemoryParallelisation)
-exahype::mappings::RefinementStatusSpreading::RefinementStatusSpreading(
-    const RefinementStatusSpreading& masterThread) {
-  // do nothing
-}
-#endif
-
-exahype::mappings::RefinementStatusSpreading::~RefinementStatusSpreading() {
-  // do nothing
-}
-
-#if defined(SharedMemoryParallelisation)
-void exahype::mappings::RefinementStatusSpreading::mergeWithWorkerThread(
-    const RefinementStatusSpreading& workerThread) {
-  // do nothing
-}
-#endif
 
 bool exahype::mappings::RefinementStatusSpreading::spreadRefinementStatus(exahype::solvers::Solver* solver) {
   return
       solver->getMeshUpdateEvent()!=exahype::solvers::Solver::MeshUpdateEvent::None;
 }
 
-void exahype::mappings::RefinementStatusSpreading::beginIteration(
-  exahype::State& solverState
-) {
-  // do nothing
-}
-
-void exahype::mappings::RefinementStatusSpreading::endIteration(exahype::State& solverState) {
-  // do nothing
-}
-
-void exahype::mappings::RefinementStatusSpreading::createHangingVertex(
-    exahype::Vertex& fineGridVertex,
-    const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
-    const tarch::la::Vector<DIMENSIONS, double>& fineGridH,
-    exahype::Vertex* const coarseGridVertices,
-    const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-    exahype::Cell& coarseGridCell,
-    const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfVertex) {
-  // do nothing
+void exahype::mappings::RefinementStatusSpreading::beginIteration(exahype::State& solverState) {
+  // hack to enforce reductions
+  solverState.setReduceStateAndCell(true);
 }
 
 void exahype::mappings::RefinementStatusSpreading::touchVertexFirstTime(
@@ -186,19 +153,6 @@ void exahype::mappings::RefinementStatusSpreading::enterCell(
 }
 
 #ifdef Parallel
-bool exahype::mappings::RefinementStatusSpreading::prepareSendToWorker(
-    exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
-    const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-    exahype::Vertex* const coarseGridVertices,
-    const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-    exahype::Cell& coarseGridCell,
-    const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-    int worker) {
-  logTraceIn( "prepareSendToWorker(...)" );
-  logTraceOutWith1Argument( "prepareSendToWorker(...)", true );
-  return true;
-}
-
 void exahype::mappings::RefinementStatusSpreading::mergeWithNeighbour(
     exahype::Vertex& vertex, const exahype::Vertex& neighbour, int fromRank,
     const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
@@ -229,6 +183,20 @@ void exahype::mappings::RefinementStatusSpreading::prepareSendToNeighbour(
   logTraceOut("prepareSendToNeighbour(...)");
 }
 
+bool exahype::mappings::RefinementStatusSpreading::prepareSendToWorker(
+    exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
+    const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
+    exahype::Vertex* const coarseGridVertices,
+    const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
+    exahype::Cell& coarseGridCell,
+    const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
+    int worker) {
+  logTraceIn( "prepareSendToWorker(...)" );
+  logTraceOutWith1Argument( "prepareSendToWorker(...)", true );
+  return exahype::State::isLastIterationOfBatchOrNoBatch(); // tells master this worker wants to reduce
+}
+
+
 //
 // All methods below are nop,
 //
@@ -241,7 +209,14 @@ void exahype::mappings::RefinementStatusSpreading::prepareSendToMaster(
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
     const exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
-  // do nothing
+  if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
+    const int masterRank = tarch::parallel::NodePool::getInstance().getMasterRank();
+    for (auto* solver : exahype::solvers::RegisteredSolvers) {
+      if ( solver->getMeshUpdateEvent()!=exahype::solvers::Solver::MeshUpdateEvent::None ) {
+        solver->sendMeshUpdateEventToMaster(masterRank,0.0,0);
+      }
+    }
+  }
 }
 
 void exahype::mappings::RefinementStatusSpreading::mergeWithMaster(
@@ -254,9 +229,15 @@ void exahype::mappings::RefinementStatusSpreading::mergeWithMaster(
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
     exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-    int worker, const exahype::State& workerState,
+    int workerRank, const exahype::State& workerState,
     exahype::State& masterState) {
-  // do nothing
+  if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
+    for (auto* solver : exahype::solvers::RegisteredSolvers) {
+      if ( solver->getMeshUpdateEvent()!=exahype::solvers::Solver::MeshUpdateEvent::None ) {
+        solver->mergeWithWorkerMeshUpdateEvent(workerRank,0.0,0);
+      }
+    }
+  }
 }
 
 void exahype::mappings::RefinementStatusSpreading::prepareCopyToRemoteNode(
@@ -314,6 +295,37 @@ void exahype::mappings::RefinementStatusSpreading::mergeWithWorker(
   // do nothing
 }
 #endif
+
+
+#if defined(SharedMemoryParallelisation)
+exahype::mappings::RefinementStatusSpreading::RefinementStatusSpreading(
+    const RefinementStatusSpreading& masterThread) {
+  // do nothing
+}
+void exahype::mappings::RefinementStatusSpreading::mergeWithWorkerThread(
+    const RefinementStatusSpreading& workerThread) {
+  // do nothing
+}
+#endif
+
+exahype::mappings::RefinementStatusSpreading::~RefinementStatusSpreading() {
+  // do nothing
+}
+
+void exahype::mappings::RefinementStatusSpreading::endIteration(exahype::State& solverState) {
+  // do nothing
+}
+
+void exahype::mappings::RefinementStatusSpreading::createHangingVertex(
+    exahype::Vertex& fineGridVertex,
+    const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
+    const tarch::la::Vector<DIMENSIONS, double>& fineGridH,
+    exahype::Vertex* const coarseGridVertices,
+    const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
+    exahype::Cell& coarseGridCell,
+    const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfVertex) {
+  // do nothing
+}
 
 exahype::mappings::RefinementStatusSpreading::RefinementStatusSpreading() {
   // do nothing

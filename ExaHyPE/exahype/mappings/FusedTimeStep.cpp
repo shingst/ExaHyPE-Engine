@@ -1,4 +1,4 @@
-/**
+/*tru
  * This file is part of the ExaHyPE project.
  * Copyright (c) 2016  http://exahype.eu
  * All rights reserved.
@@ -45,12 +45,10 @@ bool exahype::mappings::FusedTimeStep::sendOutRiemannDataInThisIteration() {
 
 peano::CommunicationSpecification
 exahype::mappings::FusedTimeStep::communicationSpecification() const {
- // return peano::CommunicationSpecification(
- //     peano::CommunicationSpecification::ExchangeMasterWorkerData::MaskOutMasterWorkerDataAndStateExchange,
- //     peano::CommunicationSpecification::ExchangeWorkerMasterData::SendDataAndStateAfterLastTouchVertexLastTime,true); // TODO
   return peano::CommunicationSpecification(
       peano::CommunicationSpecification::ExchangeMasterWorkerData::MaskOutMasterWorkerDataAndStateExchange,
-      peano::CommunicationSpecification::ExchangeWorkerMasterData::SendDataAndStateAfterLastTouchVertexLastTime,false); // TODO
+      peano::CommunicationSpecification::ExchangeWorkerMasterData::SendDataAndStateAfterLastTouchVertexLastTime,
+      exahype::solvers::Solver::PredictionSweeps==1);
 }
 
 peano::MappingSpecification
@@ -150,6 +148,15 @@ void exahype::mappings::FusedTimeStep::beginIteration(
         solvers::Solver::getMinTimeStampOfAllSolvers());
   }
 
+  // important
+  if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
+    solverState.setReduceStateAndCell(true);
+  }
+
+  if ( issuePredictionJobsInThisIteration() && exahype::solvers::Solver::PredictionSweeps==2 ) {
+    peano::heap::AbstractHeap::allHeapsStartToSendBoundaryData(solverState.isTraversalInverted());
+  }
+
   logTraceOutWith1Argument("beginIteration(State)", solverState);
 }
 
@@ -159,13 +166,26 @@ void exahype::mappings::FusedTimeStep::endIteration(
 
   if ( sendOutRiemannDataInThisIteration() ) {
     exahype::plotters::finishedPlotting();
-    
+
+    if ( exahype::solvers::Solver::PredictionSweeps==2 ) {
+      peano::heap::AbstractHeap::allHeapsFinishedToSendBoundaryData( !state.isTraversalInverted() );
+    }  // not sure why traversal inverted state needs to be toggled
+
     if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
       // background threads
       exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::ReductionJob);
     }
-  }
 
+    if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+      const int& currentBatchIteration = exahype::State::CurrentBatchIteration;
+      const int& numberOfIterations    = exahype::State::NumberOfBatchIterations;
+      const bool endOfFirstFusedTimeStepInBatch =
+          currentBatchIteration == exahype::solvers::Solver::PredictionSweeps - 1;
+      for (auto* solver : solvers::RegisteredSolvers) {
+        solver->wrapUpTimeStep(endOfFirstFusedTimeStepInBatch,currentBatchIteration==numberOfIterations-1);
+      }
+    }
+  }
   logTraceOutWith1Argument("endIteration(State)", state);
 }
 
@@ -279,7 +299,7 @@ void exahype::mappings::FusedTimeStep::leaveCell(
       }
 
       // mesh refinement events, cell sizes (for AMR), time
-      if ( isLastTimeStep ) {
+      if ( isLastTimeStep && !exahype::solvers::Solver::SpawnUpdateAsBackgroundJob ) {
         solver->updateMeshUpdateEvent(result._meshUpdateEvent);
         solver->updateAdmissibleTimeStepSize(result._timeStepSize);
       }
@@ -321,12 +341,7 @@ void exahype::mappings::FusedTimeStep::prepareSendToNeighbour(
   logTraceOut( "prepareSendToNeighbour(...)" );
 }
 
-
-//
-// Below all methods are nop.
-//
-//=====================================
-
+// WORKER->MASTER
 bool exahype::mappings::FusedTimeStep::prepareSendToWorker(
     exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
@@ -337,31 +352,8 @@ bool exahype::mappings::FusedTimeStep::prepareSendToWorker(
     int worker) {
   // master has to be notified about planned reduction of worker
   // has to notify worker too via message
-  return exahype::State::isFirstIterationOfBatchOrNoBatch() ||
-         exahype::State::isLastIterationOfBatchOrNoBatch();
+  return exahype::State::isLastIterationOfBatchOrNoBatch();
 }
-
-void exahype::mappings::FusedTimeStep::receiveDataFromMaster(
-    exahype::Cell& receivedCell, exahype::Vertex* receivedVertices,
-    const peano::grid::VertexEnumerator& receivedVerticesEnumerator,
-    exahype::Vertex* const receivedCoarseGridVertices,
-    const peano::grid::VertexEnumerator& receivedCoarseGridVerticesEnumerator,
-    exahype::Cell& receivedCoarseGridCell,
-    exahype::Vertex* const workersCoarseGridVertices,
-    const peano::grid::VertexEnumerator& workersCoarseGridVerticesEnumerator,
-    exahype::Cell& workersCoarseGridCell,
-    const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
-  // do nothing
-}
-
-void exahype::mappings::FusedTimeStep::mergeWithWorker(
-    exahype::Cell& localCell, const exahype::Cell& receivedMasterCell,
-    const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
-    const tarch::la::Vector<DIMENSIONS, double>& cellSize, int level) {
-  // do nothing
-}
-
-// WORKER->MASTER
 
 void exahype::mappings::FusedTimeStep::prepareSendToMaster(
     exahype::Cell& localCell, exahype::Vertex* vertices,
@@ -391,6 +383,31 @@ void exahype::mappings::FusedTimeStep::mergeWithMaster(
   if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
     exahype::State::mergeWithGlobalDataFromWorker(workerRank,0.0,0);
   }
+}
+
+//
+// Below all methods are nop.
+//
+//=====================================
+
+void exahype::mappings::FusedTimeStep::receiveDataFromMaster(
+    exahype::Cell& receivedCell, exahype::Vertex* receivedVertices,
+    const peano::grid::VertexEnumerator& receivedVerticesEnumerator,
+    exahype::Vertex* const receivedCoarseGridVertices,
+    const peano::grid::VertexEnumerator& receivedCoarseGridVerticesEnumerator,
+    exahype::Cell& receivedCoarseGridCell,
+    exahype::Vertex* const workersCoarseGridVertices,
+    const peano::grid::VertexEnumerator& workersCoarseGridVerticesEnumerator,
+    exahype::Cell& workersCoarseGridCell,
+    const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
+  // do nothing
+}
+
+void exahype::mappings::FusedTimeStep::mergeWithWorker(
+    exahype::Cell& localCell, const exahype::Cell& receivedMasterCell,
+    const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
+    const tarch::la::Vector<DIMENSIONS, double>& cellSize, int level) {
+  // do nothing
 }
 
 void exahype::mappings::FusedTimeStep::prepareCopyToRemoteNode(

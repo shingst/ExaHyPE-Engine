@@ -145,8 +145,11 @@ private:
   peano::MappingSpecification descendSpecification(int level) const;
 
   /**
-   * Broadcast global solver data such as time step sizes at the beginning of the traversal.
-   * Do not reduce anything.
+   * Do not broadcast and reduce anything.
+   *
+   * If only one prediction sweep is used, delegate heap data exchange to
+   * Peano. Otherwise, start and stop it in begin/endIteration(...).
+   * Stretch the start/stop window over two sweeps.
    */
   peano::CommunicationSpecification communicationSpecification() const;
 

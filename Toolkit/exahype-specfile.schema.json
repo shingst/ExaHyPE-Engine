@@ -408,7 +408,7 @@
           "title" : "Scale the bounding box to remove some communication",
           "$comment" : "The bounding box is scaled such that at least one cell is placed outside of the domain at each boundary. This option was previously known as 'virtually-expand-domain'.",
           "old_format" : { "token_after" : "configure" },
-          "default" : false
+          "default" : true
         },        
         "timeout" : {
           "type" : "number", 

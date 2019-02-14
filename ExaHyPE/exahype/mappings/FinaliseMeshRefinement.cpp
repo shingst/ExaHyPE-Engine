@@ -31,7 +31,7 @@ peano::CommunicationSpecification
 exahype::mappings::FinaliseMeshRefinement::communicationSpecification() const {
   return peano::CommunicationSpecification(
       peano::CommunicationSpecification::ExchangeMasterWorkerData::MaskOutMasterWorkerDataAndStateExchange,
-      peano::CommunicationSpecification::ExchangeWorkerMasterData::MaskOutWorkerMasterDataAndStateExchange,true);
+      peano::CommunicationSpecification::ExchangeWorkerMasterData::SendDataAndStateAfterLastTouchVertexLastTime,true);
 }
 
 
@@ -119,6 +119,9 @@ void exahype::mappings::FinaliseMeshRefinement::beginIteration(exahype::State& s
 
   exahype::mappings::MeshRefinement::IsFirstIteration = true;
 
+  // hack to enforce reductions
+  solverState.setReduceStateAndCell(true);
+
   logTraceOutWith1Argument("beginIteration(State)", solverState);
 }
 
@@ -174,6 +177,14 @@ void exahype::mappings::FinaliseMeshRefinement::endIteration(
     };
     exahype::mappings::MeshRefinement::IsInitialMeshRefinement = false;
     exahype::mappings::MeshRefinement::IsFirstIteration        = true;
+
+    if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+      for (auto* solver : solvers::RegisteredSolvers) {
+        if ( solver->hasRequestedAnyMeshRefinement() ) {
+          solver->updateTimeStepSize();
+        }
+      }
+    }
   }
 
   _backgroundJobsHaveTerminated = false;
@@ -200,7 +211,7 @@ bool exahype::mappings::FinaliseMeshRefinement::prepareSendToWorker(
     exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
     int worker) {
-  return true;
+  return true; // tells master this worker wants to reduce
 }
 
 void exahype::mappings::FinaliseMeshRefinement::prepareSendToMaster(
@@ -210,7 +221,12 @@ void exahype::mappings::FinaliseMeshRefinement::prepareSendToMaster(
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
     const exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
-  // do nothing
+    const int masterRank = tarch::parallel::NodePool::getInstance().getMasterRank();
+  for (auto* solver : exahype::solvers::RegisteredSolvers) {
+    if ( solver->hasRequestedAnyMeshRefinement() ) {
+      solver->sendDataToMaster(masterRank,0.0,0);
+    }
+  }
 }
 
 void exahype::mappings::FinaliseMeshRefinement::mergeWithMaster(
@@ -223,9 +239,13 @@ void exahype::mappings::FinaliseMeshRefinement::mergeWithMaster(
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
     exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-    int worker, const exahype::State& workerState,
+    int workerRank, const exahype::State& workerState,
     exahype::State& masterState) {
-  // do nothing
+  for (auto* solver : exahype::solvers::RegisteredSolvers) {
+    if ( solver->hasRequestedAnyMeshRefinement() ) {
+      solver->mergeWithWorkerData(workerRank,0.0,0);
+    }
+  }
 }
 
 //

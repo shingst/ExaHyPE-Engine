@@ -38,7 +38,8 @@ peano::CommunicationSpecification
 exahype::mappings::PredictionOrLocalRecomputation::communicationSpecification() const {
   return peano::CommunicationSpecification(
       peano::CommunicationSpecification::ExchangeMasterWorkerData::MaskOutMasterWorkerDataAndStateExchange,
-      peano::CommunicationSpecification::ExchangeWorkerMasterData::MaskOutWorkerMasterDataAndStateExchange,true);
+      peano::CommunicationSpecification::ExchangeWorkerMasterData::SendDataAndStateAfterLastTouchVertexLastTime,
+      exahype::solvers::Solver::PredictionSweeps==1);
 }
 
 peano::MappingSpecification exahype::mappings::PredictionOrLocalRecomputation::enterCellSpecification(int level) const {
@@ -89,9 +90,14 @@ void exahype::mappings::PredictionOrLocalRecomputation::beginIteration(
     exahype::State& solverState) {
   logTraceInWith1Argument("beginIteration(State)", solverState);
 
-  if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
-    OneSolverRequestedLocalRecomputation =
-        exahype::solvers::Solver::oneSolverRequestedLocalRecomputation();
+  if (
+      exahype::State::isFirstIterationOfBatchOrNoBatch()
+  ) {
+    OneSolverRequestedLocalRecomputation = exahype::solvers::Solver::oneSolverRequestedLocalRecomputation();
+
+    if ( exahype::solvers::Solver::PredictionSweeps==2 ) {
+      peano::heap::AbstractHeap::allHeapsStartToSendBoundaryData(solverState.isTraversalInverted());
+    }
   }
 
   if (
@@ -120,8 +126,14 @@ void exahype::mappings::PredictionOrLocalRecomputation::endIteration(
     exahype::State& state) {
   logTraceInWith1Argument("endIteration(State)", state);
 
-  // background threads
-  exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::ReductionJob);
+  if ( state.isLastIterationOfBatchOrNoBatch() ) {
+    // background threads
+    exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::ReductionJob);
+
+    if ( exahype::solvers::Solver::PredictionSweeps==2 ) {
+      peano::heap::AbstractHeap::allHeapsFinishedToSendBoundaryData( !state.isTraversalInverted() );
+    }  // not sure why traversal inverted state needs to be toggled
+  }
 
   logTraceOutWith1Argument("endIteration(State)", state);
 }
@@ -368,11 +380,6 @@ void exahype::mappings::PredictionOrLocalRecomputation::prepareSendToNeighbour(
   logTraceOut( "prepareSendToNeighbour(...)" );
 }
 
-//
-// Below all methods are nop.
-//
-//=====================================
-
 bool exahype::mappings::PredictionOrLocalRecomputation::prepareSendToWorker(
     exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
@@ -381,21 +388,7 @@ bool exahype::mappings::PredictionOrLocalRecomputation::prepareSendToWorker(
     exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
     int worker) {
-  // do nothing
-  return false;
-}
-
-void exahype::mappings::PredictionOrLocalRecomputation::receiveDataFromMaster(
-    exahype::Cell& receivedCell, exahype::Vertex* receivedVertices,
-    const peano::grid::VertexEnumerator& receivedVerticesEnumerator,
-    exahype::Vertex* const receivedCoarseGridVertices,
-    const peano::grid::VertexEnumerator& receivedCoarseGridVerticesEnumerator,
-    exahype::Cell& receivedCoarseGridCell,
-    exahype::Vertex* const workersCoarseGridVertices,
-    const peano::grid::VertexEnumerator& workersCoarseGridVerticesEnumerator,
-    exahype::Cell& workersCoarseGridCell,
-    const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
-  // do nothing
+  return exahype::State::isLastIterationOfBatchOrNoBatch(); // notifies master this worker wants to perform reduction
 }
 
 void exahype::mappings::PredictionOrLocalRecomputation::prepareSendToMaster(
@@ -405,8 +398,15 @@ void exahype::mappings::PredictionOrLocalRecomputation::prepareSendToMaster(
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
     const exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
-  // do nothing
-}
+  if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
+    const int masterRank = tarch::parallel::NodePool::getInstance().getMasterRank();
+    for (auto* solver : exahype::solvers::RegisteredSolvers) {
+      if ( solver->getMeshUpdateEvent()==exahype::solvers::Solver::MeshUpdateEvent::IrregularLimiterDomainChange ) {
+        solver->sendDataToMaster(masterRank,0.0,0);
+      }
+    }
+  }
+ }
 
 void exahype::mappings::PredictionOrLocalRecomputation::mergeWithMaster(
     const exahype::Cell& workerGridCell,
@@ -418,8 +418,32 @@ void exahype::mappings::PredictionOrLocalRecomputation::mergeWithMaster(
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
     exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-    int worker, const exahype::State& workerState,
+    int workerRank, const exahype::State& workerState,
     exahype::State& masterState) {
+  if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
+    for (auto* solver : exahype::solvers::RegisteredSolvers) {
+      if ( solver->getMeshUpdateEvent()==exahype::solvers::Solver::MeshUpdateEvent::IrregularLimiterDomainChange ) {
+        solver->mergeWithWorkerData(workerRank,0.0,0);
+      }
+    }
+  }
+}
+
+//
+// Below all methods are nop.
+//
+//=====================================
+
+void exahype::mappings::PredictionOrLocalRecomputation::receiveDataFromMaster(
+    exahype::Cell& receivedCell, exahype::Vertex* receivedVertices,
+    const peano::grid::VertexEnumerator& receivedVerticesEnumerator,
+    exahype::Vertex* const receivedCoarseGridVertices,
+    const peano::grid::VertexEnumerator& receivedCoarseGridVerticesEnumerator,
+    exahype::Cell& receivedCoarseGridCell,
+    exahype::Vertex* const workersCoarseGridVertices,
+    const peano::grid::VertexEnumerator& workersCoarseGridVerticesEnumerator,
+    exahype::Cell& workersCoarseGridCell,
+    const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
   // do nothing
 }
 

@@ -266,6 +266,19 @@ class exahype::parser::Parser {
    */
   bool compareMPILoadBalancingStrategy(const std::string& strategy) const;
 
+  /**
+   * @return if the bounding box should be scaled
+   * such that exactly two cells lie outside of the domain in
+   * each coordinate direction.
+   *
+   * @note It is important to scale the bounding box if MPI
+   * experiments are run as this prevents communication
+   * with rank 0 and it further prevents that the
+   * global master traverses its subtree. This will
+   * post-phone all broadcasts.
+   *
+   * @note We scale the bounding box by default.
+   */
   bool getScaleBoundingBox() const;
 
   int getMPIBufferSize() const;

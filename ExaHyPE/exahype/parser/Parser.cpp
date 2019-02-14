@@ -643,7 +643,7 @@ int exahype::parser::Parser::getSimulationTimeSteps() const {
 }
 
 bool exahype::parser::Parser::getScaleBoundingBox() const {
-  return getBoolFromPath("/distributed_memory/scale_bounding_box", false, isOptional);
+  return getBoolFromPath("/distributed_memory/scale_bounding_box", true, isOptional);
 }
 
 bool exahype::parser::Parser::getStaticMeshRefinement() const {

@@ -34,7 +34,7 @@ peano::CommunicationSpecification
 exahype::mappings::UpdateAndReduce::communicationSpecification() const {
   return peano::CommunicationSpecification(
       peano::CommunicationSpecification::ExchangeMasterWorkerData::MaskOutMasterWorkerDataAndStateExchange,
-      peano::CommunicationSpecification::ExchangeWorkerMasterData::MaskOutWorkerMasterDataAndStateExchange,false);
+      peano::CommunicationSpecification::ExchangeWorkerMasterData::SendDataAndStateAfterLastTouchVertexLastTime,false);
 }
 
 peano::MappingSpecification
@@ -87,12 +87,19 @@ exahype::mappings::UpdateAndReduce::descendSpecification(int level) const {
 
 void exahype::mappings::UpdateAndReduce::beginIteration(
     exahype::State& solverState) {
-  // do nothing
+  // hack to enforce reductions
+  solverState.setReduceStateAndCell(true);
 }
 
 void exahype::mappings::UpdateAndReduce::endIteration(
     exahype::State& state) {
   logTraceInWith1Argument("endIteration(State)", state);
+
+  if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+    for (auto* solver : solvers::RegisteredSolvers) {
+      solver->wrapUpTimeStep(true,true);
+    }
+  }
 
   // background threads
   exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::ReductionJob);
@@ -134,19 +141,16 @@ void exahype::mappings::UpdateAndReduce::leaveCell(
           break;
       }
 
-      solver->updateMeshUpdateEvent(result._meshUpdateEvent);
-      solver->updateAdmissibleTimeStepSize(result._timeStepSize);
+      if ( !exahype::solvers::Solver::SpawnUpdateAsBackgroundJob ) {
+        solver->updateMeshUpdateEvent(result._meshUpdateEvent);
+        solver->updateAdmissibleTimeStepSize(result._timeStepSize);
+      }
     }
 
     Cell::resetNeighbourMergePerformedFlags(cellInfo,fineGridVertices,fineGridVerticesEnumerator);
   }
   logTraceOutWith1Argument("leaveCell(...)", fineGridCell);
 }
-
-//
-// Below all methods are nop.
-//
-//=====================================
 
 #ifdef Parallel
 void exahype::mappings::UpdateAndReduce::prepareSendToMaster(
@@ -156,7 +160,10 @@ void exahype::mappings::UpdateAndReduce::prepareSendToMaster(
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
     const exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
-  // do nothing
+  if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
+    const int masterRank = tarch::parallel::NodePool::getInstance().getMasterRank();
+    exahype::State::reduceGlobalDataToMaster(masterRank,0.0,0);
+  }
 }
 
 void exahype::mappings::UpdateAndReduce::mergeWithMaster(
@@ -169,10 +176,18 @@ void exahype::mappings::UpdateAndReduce::mergeWithMaster(
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
     exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-    int worker, const exahype::State& workerState,
+    int workerRank, const exahype::State& workerState,
     exahype::State& masterState) {
-  // do nothing
+  if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
+    exahype::State::mergeWithGlobalDataFromWorker(workerRank,0.0,0);
+  }
 }
+
+//
+// Below all methods are nop.
+//
+//=====================================
+
 
 bool exahype::mappings::UpdateAndReduce::prepareSendToWorker(
     exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
@@ -182,7 +197,7 @@ bool exahype::mappings::UpdateAndReduce::prepareSendToWorker(
     exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
     int worker) {
-  return true;
+  return true; // perform reduction
 }
 
 void exahype::mappings::UpdateAndReduce::mergeWithNeighbour(

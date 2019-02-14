@@ -143,7 +143,12 @@ private:
   peano::MappingSpecification descendSpecification(int level) const;
 
   /**
-   * No data needs to be synchronised between masters and workers.
+   * Reduce solver data in the last time step of the batch.
+   * Do not broadcast anything.
+   *
+   * If only one prediction sweep is used, delegate heap data exchange to
+   * Peano. Otherwise, start and stop it in begin/endIteration(...).
+   * Stretch the start/stop window over two sweeps.
    */
   peano::CommunicationSpecification communicationSpecification() const;
 
