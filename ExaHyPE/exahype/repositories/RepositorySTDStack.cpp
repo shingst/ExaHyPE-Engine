@@ -234,7 +234,7 @@ void exahype::repositories::RepositorySTDStack::iterate(int numberOfIterations, 
   for (int i=0; i<numberOfIterations; i++) {
     _solverState.setBatchState(numberOfIterations, i );
  
-    exahype::State::broadcast(_repositoryState,_solverState,i);
+    exahype::State::kickOffIteration(_repositoryState,_solverState,i);
 
     #ifdef USE_ITAC 
     static int handle = 0;
@@ -280,8 +280,6 @@ void exahype::repositories::RepositorySTDStack::iterate(int numberOfIterations, 
     #ifdef USE_ITAC 
     VT_end(handle);
     #endif
-
-    exahype::State::globalReduction(_repositoryState,_solverState,i);
 
     #ifdef Parallel
     if ( switchedLoadBalancingTemporarilyOff && i==numberOfIterations-1) {

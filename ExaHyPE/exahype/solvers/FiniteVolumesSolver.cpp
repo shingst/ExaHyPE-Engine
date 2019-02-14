@@ -297,9 +297,8 @@ bool exahype::solvers::FiniteVolumesSolver::progressMeshRefinementInEnterCell(
   const int fineGridCellElement =
       tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
   if (
-      fineGridCellElement==exahype::solvers::Solver::NotFound &&
-      tarch::la::allSmallerEquals(fineGridVerticesEnumerator.getCellSize(),getMaximumMeshSize()) &&
-      tarch::la::allGreater(coarseGridVerticesEnumerator.getCellSize(),getMaximumMeshSize())
+    fineGridCellElement==exahype::solvers::Solver::NotFound &&
+    fineGridVerticesEnumerator.getLevel()==_coarsestMeshLevel
   ) {
     addNewCell(fineGridCell,fineGridVertices,fineGridVerticesEnumerator,
                multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex,
@@ -561,7 +560,7 @@ exahype::solvers::FiniteVolumesSolver::eraseOrRefineAdjacentVertices(
         const tarch::la::Vector<DIMENSIONS, double>& cellOffset,
         const tarch::la::Vector<DIMENSIONS, double>& cellSize,
         const bool checkThoroughly) const {
-  if ( tarch::la::oneGreater(cellSize,_maximumMeshSize) ) {
+  if ( tarch::la::oneGreater(cellSize,_coarsestMeshSize) ) {
     return RefinementControl::Refine;
   } else {
     return RefinementControl::Erase;

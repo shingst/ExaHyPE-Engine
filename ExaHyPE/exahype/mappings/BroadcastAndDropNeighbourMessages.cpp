@@ -82,8 +82,10 @@ tarch::logging::Log exahype::mappings::BroadcastAndDropNeighbourMessages::_log(
 
 void exahype::mappings::BroadcastAndDropNeighbourMessages::beginIteration(
     exahype::State& solverState) {
+  #ifdef Parallel
   // hack to enforce reductions
   solverState.setReduceStateAndCell(true);
+  #endif
 }
 
 void exahype::mappings::BroadcastAndDropNeighbourMessages::enterCell(

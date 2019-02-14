@@ -83,8 +83,10 @@ bool exahype::mappings::RefinementStatusSpreading::spreadRefinementStatus(exahyp
 }
 
 void exahype::mappings::RefinementStatusSpreading::beginIteration(exahype::State& solverState) {
+  #ifdef Parallel
   // hack to enforce reductions
   solverState.setReduceStateAndCell(true);
+  #endif
 }
 
 void exahype::mappings::RefinementStatusSpreading::touchVertexFirstTime(

@@ -585,15 +585,14 @@ exahype::repositories::Repository* exahype::runners::Runner::createRepository() 
   int boundingBoxMeshLevel = coarsestUserMeshLevel;
   tarch::la::Vector<DIMENSIONS,double> boundingBoxOffset = _domainOffset;
 
-  #ifdef Parallel
-  if (exahype::State::VirtuallyExpandBoundingBox) {
+  if (exahype::State::ScaleBoundingBox) {
     const double coarsestUserMeshSpacing =
         exahype::solvers::Solver::getCoarsestMaximumMeshSizeOfAllSolvers();
     const double maxDomainExtent = tarch::la::max(_domainSize);
 
-    double boundingBoxScaling         = 0;
-    double boundingBoxExtent          = 0;
-    double boundingBoxMeshSpacing     = std::numeric_limits<double>::infinity();
+    double boundingBoxScaling     = 0;
+    double boundingBoxExtent      = 0;
+    double boundingBoxMeshSpacing = std::numeric_limits<double>::infinity();
 
     int level = coarsestUserMeshLevel; // level=1 means a single cell
     while (boundingBoxMeshSpacing > coarsestUserMeshSpacing) {
@@ -611,7 +610,6 @@ exahype::repositories::Repository* exahype::runners::Runner::createRepository() 
     _boundingBoxSize    *= boundingBoxScaling;
     boundingBoxOffset   -= boundingBoxMeshSpacing;
   }
-  #endif
 
   const double coarsestUserMeshSize = exahype::solvers::Solver::getCoarsestMaximumMeshSizeOfAllSolvers();
   const double coarsestMeshSize     = determineCoarsestMeshSize(_boundingBoxSize);
@@ -768,9 +766,7 @@ int exahype::runners::Runner::run() {
 
     initHeaps();
 
-    #ifdef Parallel
-    exahype::State::VirtuallyExpandBoundingBox =_parser.getScaleBoundingBox();
-    #endif
+    exahype::State::ScaleBoundingBox =_parser.getScaleBoundingBox();
 
     auto* repository = createRepository();
     // must come after repository creation

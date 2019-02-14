@@ -87,8 +87,10 @@ exahype::mappings::UpdateAndReduce::descendSpecification(int level) const {
 
 void exahype::mappings::UpdateAndReduce::beginIteration(
     exahype::State& solverState) {
+  #ifdef Parallel
   // hack to enforce reductions
   solverState.setReduceStateAndCell(true);
+  #endif
 }
 
 void exahype::mappings::UpdateAndReduce::endIteration(

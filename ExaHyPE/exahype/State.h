@@ -37,8 +37,6 @@ namespace exahype {
   }
 }
 
-
-
 /**
  * Blueprint for solver state.
  *
@@ -76,15 +74,6 @@ class exahype::State : public peano::grid::State<exahype::records::State> {
   static void kickOffIteration(exahype::records::RepositoryState::Action action,const int currentBatchIteration,const int numberOfIterations);
 
   /**
-   * Wrap up an iterations, i.e. make use of values that are reduced over the cells (and MPI ranks).
-   *
-   * @param action                  repository action indicating what time step (fused vs non-fused) is run
-   * @param currentBatchIteration   the current batch iteration
-   * @param numberOfBatchIterations the total number of batch iterations.
-   */
-  static void wrapUpIteration(exahype::records::RepositoryState::Action action,const int currentBatchIteration,const int numberOfIterations);
-
-  /**
    * Static callback to perform global broadcasts between working nodes.
    *
    * @todo have a tree-based algorithm. Problem: NodePool does not reveal worker nodes
@@ -94,19 +83,29 @@ class exahype::State : public peano::grid::State<exahype::records::State> {
    * @param repositoryState         Contains information about the currently run adapter and the number of batch iterations.
    * @param currentBatchIteration   the current batch iteration.
    */
-  static void globalBroadcast(exahype::records::RepositoryState& repositoryState, exahype::State& solverState, const int currentBatchIteration);
+  static void kickOffIteration(exahype::records::RepositoryState& repositoryState, exahype::State& solverState, const int currentBatchIteration);
 
-  /**
-   * Static callback to perform global reductions between working nodes.
-   *
-   * @todo have a tree-based algorithm. Problem: NodePool does not reveal worker nodes
-   *
-   * @note private scope since we are friends with the Repositories.
-   *
-   * @param repositoryState         Contains information about the currently run adapter and the number of batch iterations.
-   * @param currentBatchIteration   the current batch iteration.
-   */
-  static void globalReduction(exahype::records::RepositoryState& repositoryState, exahype::State& solverState, const int currentBatchIteration);
+
+// /**                                                                                                                                        //
+//  * Wrap up an iterations, i.e. make use of values that are reduced over the cells (and MPI ranks).                                         //
+//  *                                                                                                                                         //
+//  * @param action                  repository action indicating what time step (fused vs non-fused) is run                                  //
+//  * @param currentBatchIteration   the current batch iteration                                                                              //
+//  * @param numberOfBatchIterations the total number of batch iterations.                                                                    //
+//  */                                                                                                                                        //
+// static void wrapUpIteration(exahype::records::RepositoryState::Action action,const int currentBatchIteration,const int numberOfIterations);//
+
+//  /**
+//   * Static callback to perform global reductions between working nodes.
+//   *
+//   * @todo have a tree-based algorithm. Problem: NodePool does not reveal worker nodes
+//   *
+//   * @note private scope since we are friends with the Repositories.
+//   *
+//   * @param repositoryState         Contains information about the currently run adapter and the number of batch iterations.
+//   * @param currentBatchIteration   the current batch iteration.
+//   */
+//  static void globalReduction(exahype::records::RepositoryState& repositoryState, exahype::State& solverState, const int currentBatchIteration);
 
  public:
   /**
@@ -171,7 +170,7 @@ class exahype::State : public peano::grid::State<exahype::records::State> {
    *
    * TODO(Dominic): Make private and hide in init function
    */
-  static bool VirtuallyExpandBoundingBox;
+  static bool ScaleBoundingBox;
 
   /**
    * Default Constructor

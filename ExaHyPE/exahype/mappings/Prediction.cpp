@@ -125,8 +125,7 @@ void exahype::mappings::Prediction::beginIteration(
       exahype::State::isFirstIterationOfBatchOrNoBatch() &&
       exahype::solvers::Solver::PredictionSweeps==2
   ) {
-      peano::heap::AbstractHeap::allHeapsStartToSendBoundaryData(solverState.isTraversalInverted());
-    }
+    peano::heap::AbstractHeap::allHeapsStartToSendBoundaryData(solverState.isTraversalInverted());
   }
 
   logTraceOutWith1Argument("beginIteration(State)", solverState);
@@ -145,7 +144,7 @@ void exahype::mappings::Prediction::endIteration(
       exahype::solvers::Solver::PredictionSweeps==2 &&
       solverState.isLastIterationOfBatchOrNoBatch()
   ) {
-    peano::heap::AbstractHeap::allHeapsFinishedToSendBoundaryData( !state.isTraversalInverted() );
+    peano::heap::AbstractHeap::allHeapsFinishedToSendBoundaryData( !solverState.isTraversalInverted() );
   }  // not sure why traversal inverted state needs to be toggled
 }
 

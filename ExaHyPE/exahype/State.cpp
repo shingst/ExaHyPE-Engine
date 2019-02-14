@@ -29,7 +29,7 @@ tarch::logging::Log exahype::State::_log("exahype::State");
 int exahype::State::CurrentBatchIteration   = 0;
 int exahype::State::NumberOfBatchIterations = 1;
 
-bool exahype::State::VirtuallyExpandBoundingBox = false;
+bool exahype::State::ScaleBoundingBox = false;
 
 exahype::State::State() : Base() {
   // @todo Guidebook
@@ -255,7 +255,7 @@ void exahype::State::kickOffIteration(exahype::records::RepositoryState::Action 
   }
 }
 
-void exahype::State::globalBroadcast(exahype::records::RepositoryState& repositoryState, exahype::State& solverState,  const int currentBatchIteration) {
+void exahype::State::kickOffIteration(exahype::records::RepositoryState& repositoryState, exahype::State& solverState,  const int currentBatchIteration) {
   CurrentBatchIteration   = currentBatchIteration;
   NumberOfBatchIterations = repositoryState.getNumberOfIterations();
 
@@ -286,16 +286,16 @@ void exahype::State::globalBroadcast(exahype::records::RepositoryState& reposito
         break;
     }
   }
-  // TODO
-//  if ( currentBatchIteration % 2 == 0
-//       && repositoryState.getAction() == exahype::records::RepositoryState::UseAdapterFusedTimeStep ) {
-//    peano::heap::AbstractHeap::allHeapsStartToSendBoundaryData(solverState.isTraversalInverted());
-//  }
+  // old code; keep for reference
+  //  if ( currentBatchIteration % 2 == 0
+  //       && repositoryState.getAction() == exahype::records::RepositoryState::UseAdapterFusedTimeStep ) {
+  //    peano::heap::AbstractHeap::allHeapsStartToSendBoundaryData(solverState.isTraversalInverted());
+  //  }
   #endif
 }
 
-void exahype::State::globalReduction(exahype::records::RepositoryState& repositoryState, exahype::State& solverState, const int currentBatchIteration) {
-  // TODO(Dominic): 
+// old code; keep for reference
+//void exahype::State::globalReduction(exahype::records::RepositoryState& repositoryState, exahype::State& solverState, const int currentBatchIteration) {
 //  if ( currentBatchIteration % 2 == 1
 //       && repositoryState.getAction() == exahype::records::RepositoryState::UseAdapterFusedTimeStep ) {
 //    peano::heap::AbstractHeap::allHeapsFinishedToSendBoundaryData( !solverState.isTraversalInverted() );
@@ -385,9 +385,9 @@ void exahype::State::globalReduction(exahype::records::RepositoryState& reposito
 //  #endif
 //
 //  wrapUpIteration(repositoryState.getAction(),currentBatchIteration,repositoryState.getNumberOfIterations());
-}
+//}
 
-void exahype::State::wrapUpIteration(exahype::records::RepositoryState::Action action,const int currentBatchIteration,const int numberOfIterations) {
+//void exahype::State::wrapUpIteration(exahype::records::RepositoryState::Action action,const int currentBatchIteration,const int numberOfIterations) {
 //  if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
 //    switch ( action ) {
 //    case exahype::records::RepositoryState::UseAdapterFinaliseMeshRefinement:
@@ -417,7 +417,7 @@ void exahype::State::wrapUpIteration(exahype::records::RepositoryState::Action a
 //      break;
 //    }
 //  }
-}
+//}
 
 #ifdef Parallel
 void exahype::State::broadcastGlobalDataToWorker(

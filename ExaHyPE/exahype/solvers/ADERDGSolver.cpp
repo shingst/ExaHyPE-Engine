@@ -848,6 +848,9 @@ void exahype::solvers::ADERDGSolver::initSolver(
   _coarsestMeshSize  = coarsestMeshInfo.first;
   _coarsestMeshLevel = coarsestMeshInfo.second;
 
+  logInfo("initSolver","coarsestMeshSize="<<_coarsestMeshSize);
+  logInfo("initSolver","coarsestMeshLevel="<<_coarsestMeshLevel);
+
   _previousMinTimeStamp = timeStamp;
   _minTimeStamp         = timeStamp;
 
@@ -858,6 +861,8 @@ void exahype::solvers::ADERDGSolver::initSolver(
   _admissibleTimeStepSize  = std::numeric_limits<double>::infinity();
 
   _meshUpdateEvent = MeshUpdateEvent::InitialRefinementRequested;
+
+
 
   init(cmdlineargs,parserView); // call user define initalisiation
 }
@@ -940,8 +945,7 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInEnterCell(
       tryGetElement(coarseGridCell.getCellDescriptionsIndex(),solverNumber);
   if (
       fineGridElement==exahype::solvers::Solver::NotFound &&
-      tarch::la::allSmallerEquals(fineGridVerticesEnumerator.getCellSize(),getMaximumMeshSize()) &&
-      tarch::la::oneGreater(coarseGridVerticesEnumerator.getCellSize(),getMaximumMeshSize())
+      fineGridVerticesEnumerator.getLevel()==_coarsestMeshLevel
   ) {
     logDebug("progressMeshRefinementInEnterCell(...)","Add new uniform grid cell at centre="<<fineGridVerticesEnumerator.getCellCenter() <<", level="<<fineGridVerticesEnumerator.getLevel()
         << " for solver=" << solverNumber);
@@ -1501,7 +1505,7 @@ exahype::solvers::ADERDGSolver::eraseOrRefineAdjacentVertices(
     const tarch::la::Vector<DIMENSIONS, double>& cellOffset,
     const tarch::la::Vector<DIMENSIONS, double>& cellSize,
     const bool checkThoroughly) const {
-  if ( tarch::la::oneGreater(cellSize,_maximumMeshSize) ) {
+  if ( tarch::la::oneGreater(cellSize,_coarsestMeshSize) ) {
      return RefinementControl::Refine;
   } else {
     const int isValidIndex =

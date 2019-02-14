@@ -119,8 +119,10 @@ void exahype::mappings::FinaliseMeshRefinement::beginIteration(exahype::State& s
 
   exahype::mappings::MeshRefinement::IsFirstIteration = true;
 
+  #ifdef Parallel
   // hack to enforce reductions
   solverState.setReduceStateAndCell(true);
+  #endif
 
   logTraceOutWith1Argument("beginIteration(State)", solverState);
 }

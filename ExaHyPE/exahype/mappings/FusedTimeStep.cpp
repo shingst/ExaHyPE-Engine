@@ -148,10 +148,12 @@ void exahype::mappings::FusedTimeStep::beginIteration(
         solvers::Solver::getMinTimeStampOfAllSolvers());
   }
 
-  // important
+  #ifdef Parallel
   if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
+    // hack to enforce reductions
     solverState.setReduceStateAndCell(true);
   }
+  #endif
 
   if ( issuePredictionJobsInThisIteration() && exahype::solvers::Solver::PredictionSweeps==2 ) {
     peano::heap::AbstractHeap::allHeapsStartToSendBoundaryData(solverState.isTraversalInverted());
@@ -177,12 +179,12 @@ void exahype::mappings::FusedTimeStep::endIteration(
     }
 
     if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
-      const int& currentBatchIteration = exahype::State::CurrentBatchIteration;
-      const int& numberOfIterations    = exahype::State::NumberOfBatchIterations;
       const bool endOfFirstFusedTimeStepInBatch =
-          currentBatchIteration == exahype::solvers::Solver::PredictionSweeps - 1;
+          ( exahype::solvers::Solver::PredictionSweeps == 1 ) ?
+              state.isFirstIterationOfBatchOrNoBatch() :
+              state.isSecondIterationOfBatchOrNoBatch();
       for (auto* solver : solvers::RegisteredSolvers) {
-        solver->wrapUpTimeStep(endOfFirstFusedTimeStepInBatch,currentBatchIteration==numberOfIterations-1);
+        solver->wrapUpTimeStep(endOfFirstFusedTimeStepInBatch,state.isLastIterationOfBatchOrNoBatch());
       }
     }
   }
