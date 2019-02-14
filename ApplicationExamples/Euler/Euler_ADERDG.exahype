@@ -47,7 +47,7 @@ exahype-project Euler
   end distributed-memory
 
   global-optimisation
-    fuse-algorithmic-steps          = all
+    fuse-algorithmic-steps          = none
     fuse-algorithmic-steps-rerun-factor   = 0.99
     fuse-algorithmic-steps-diffusion-factor   = 0.99
     spawn-predictor-as-background-thread = off
@@ -61,7 +61,7 @@ exahype-project Euler
 
   solver ADER-DG EulerSolver_ADERDG
     variables const    = rho:1,j:3,E:1
-    order const        = 3
+    order const        = 9
     /* 27 points: 0.05, 9 points: 0.15 */
     maximum-mesh-size  = 0.05
     time-stepping      = globalfixed
@@ -84,7 +84,7 @@ exahype-project Euler
     plot vtk::Cartesian::vertices::ascii ErrorPlotter
       // abserrorl1percell[nvar],q[nvar],qanalytical[nvar]
       variables const = 15 
-      time            = 10.0
+      time            = 0.0
       repeat          = 1e-2
       output          = ./errors
     end plot

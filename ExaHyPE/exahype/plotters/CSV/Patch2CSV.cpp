@@ -142,7 +142,7 @@ void exahype::plotters::Patch2CSV::startPlotting( double time ) {
 
 void exahype::plotters::Patch2CSV::finishPlotting() {
 	_postProcessing->finishPlotting();
-	if(_one_file_per_timestep) _writer->os.close();
+	if(_one_file_per_timestep) _writer->closeFile();
 }
 
 exahype::plotters::Patch2CSV::~Patch2CSV() {}

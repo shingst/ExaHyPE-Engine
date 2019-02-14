@@ -265,11 +265,6 @@ private:
   int _refineOrKeepOnFineGrid; // can be configured by the user
 
   /**
-   * Number of limiter helper layers in each
-   * helper cell subdomain around a troubled cell.
-   */
-  const int _limiterHelperLayers;
-  /**
    * !!! LimitingADERDGSolver functionality !!!
    *
    * The number of observables
@@ -277,23 +272,6 @@ private:
    * is applied to.
    */
   const int _DMPObservables;
-
-  /**
-   * Cells placed in the separation layers around a troubled cells either project the DG solution
-   * onto an FV patch or compute with FV and project onto a DG polynomial depending on
-   * if they neighbour a well-behaved or troubled cell, respectively.
-   * If a cell in the separation layer becomes troubled, a local recomputation
-   * must be performed.
-   */
-  const int _minRefinementStatusForSeparationCell;
-
-  /**
-   * Cells placed in the buffer layers around a troubled cell either project the DG solution
-   * onto an FV patch or compute with FV and project onto a DG polynomial depending on
-   * if they neighbour a well-behaved or troubled cell, respectively.
-   * If a cell in the buffer layer becomes troubled, no local recomputation must be performed
-   */
-  const int _minRefinementStatusForBufferCell;
 
   /**
    * Minimum limiter status a troubled cell can have.
@@ -1246,7 +1224,6 @@ public:
       const int haloCells,
       const int regularisedFineGridLevels,
       const exahype::solvers::Solver::TimeStepping timeStepping,
-      const int limiterHelperLayers,
       const int DMPObservables,
       std::unique_ptr<profilers::Profiler> profiler =
           std::unique_ptr<profilers::Profiler>(
@@ -1340,18 +1317,6 @@ public:
    * is applied to.
    */
   int getDMPObservables() const;
-
-  /**
-   * !!! LimitingADERDGSolver functionality !!!
-   *
-   */
-  int getMinRefinementStatusForSeparationCell() const;
-
-  /**
-   * !!! LimitingADERDGSolver functionality !!!
-   *
-   */
-  int getMinRefinementStatusForBufferCell() const;
 
   /**
    * !!! LimitingADERDGSolver functionality !!!

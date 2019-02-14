@@ -23,7 +23,6 @@
   const int haloCells,
   const int regularisedFineGridLevels,
   const exahype::solvers::Solver::TimeStepping timeStepping,
-  const int limiterHelperLayers,
   const int DMPObservables
   {% if enableProfiler %},std::unique_ptr<exahype::profilers::Profiler> profiler{% endif %})
   :
@@ -33,7 +32,6 @@
       haloCells,
       regularisedFineGridLevels,
       timeStepping,
-      limiterHelperLayers,
       DMPObservables
       {% if enableProfiler %},std::move(profiler){% endif %}) {
 }
@@ -45,7 +43,6 @@
     const int haloCells,
     const int regularisedFineGridLevels,
     const exahype::solvers::Solver::TimeStepping timeStepping,
-    const int limiterHelperLayers,
     const int DMPObservables
     {% if enableProfiler %},std::unique_ptr<exahype::profilers::Profiler> profiler{% endif %})
   :
@@ -59,7 +56,6 @@
       haloCells,
       regularisedFineGridLevels,
       timeStepping,
-      limiterHelperLayers,
       DMPObservables
       {% if enableProfiler %},std::move(profiler){% endif %}) {
 }

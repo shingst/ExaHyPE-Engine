@@ -218,7 +218,7 @@ private:
    * of the ADER-DG solver is
    * a physically admissible one (true).
    *
-   * \note This method assumes the (previous) refinement status
+   * @note This method assumes the (previous) refinement status
    * was not modified yet by another routine.
    */
   bool evaluatePhysicalAdmissibilityCriterion(SolverPatch& solverPatch,const double t);
@@ -244,7 +244,7 @@ private:
   /**
    * Deallocates a limiter patch.
    *
-   * \note Thread-safe.
+   * @note Thread-safe.
    */
   void deallocateLimiterPatch(const SolverPatch& solverPatch,CellInfo& cellInfo) const;
 
@@ -260,7 +260,7 @@ private:
    * \return The index of the patch in the heap
    * vector at address \p cellDescriptionsIndex.
    *
-   * \note Thread-safe.
+   * @note Thread-safe.
    *
    * TODO(Dominic): A few lines are candidates for
    * being run as background job.
@@ -290,31 +290,6 @@ private:
    */
   void ensureNoUnrequiredLimiterPatchIsAllocatedOnComputeCell(
       const SolverPatch&  solverPatch,CellInfo& cellInfo) const;
-
-  /**
-   * TODO(Dominic): Update docu.
-   *
-   * Revisits the cells in the buffer layers which compute the solution with
-   * the main solver based on the maximum refinement status in the solver patch's neighbourhood.
-   *
-   * However, the so computed solution may be found troubled after the update. In this case,
-   * the solution must be recomputed with the limiter solver.
-   *
-   * If the solution is not troubled,
-   * it is safe to project the main solver solution onto the limiter solution.
-   *
-   * @param solverPatch             a solver patch
-   * @param cellInfo                a struct referring to all cell descriptions associatd with a cell
-   * @param isTroubled              if the main solver solution is troubled
-   * @param neighbourMergePerformed per face a flag indicating if a neighbour/boundary merge has been performed
-   * @param backupPreviousSolution  if the previous solution should be backed up.
-   */
-  void revisitSolverPatchesAfterLimiterChecks(
-      SolverPatch&                                               solverPatch,
-      CellInfo&                                                  cellInfo,
-      const bool                                                 isTroubled,
-      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
-      const bool                                                 backupPreviousSolution);
 
   /**
    * Update the limiter status based on the cell-local solution values.
@@ -457,6 +432,51 @@ private:
       CellInfo& cellInfo,
       const bool isInitialMeshRefinement);
 
+  /**
+   * @return if the given solver patch is involved in a local
+   * recomputation. (Makes only sense to call this function if
+   * one is currently ongoing.)
+   *
+   * @param solverPatch a solver patch.
+   */
+  bool isInvolvedInLocalRecomputation(const SolverPatch& solverPatch) const {
+    return
+        solverPatch.getType()==SolverPatch::Type::Cell &&
+        solverPatch.getLevel()==getMaximumAdaptiveMeshLevel() &&
+        solverPatch.getRefinementStatus()>=_solver->_minRefinementStatusForTroubledCell-2;
+  }
+
+  /**
+   * Recompute the FV solution in cells that have been subject to a limiter status change
+   *
+   * We perform the following actions based on the new limiter status:
+   *
+   * |New Status | Action                                                                                                                                      |
+   * ----------------------------------------------------------------------------------------------------------------------------------------------------------|
+   * |O          | Do nothing. Solver solution has been evolved correctly before.
+   * |T/NT       | Evolve limiter. Project result onto the ADER-DG space. Recompute the space-time predictor in NT cells if fused scheme is used.
+   * |NNT        | Rollback solver and project result onto limiter solution
+   *
+   * Legend: O: Ok (ADER-DG cells), T: Troubled (FV cells), NT: FV->DG cells, NNT: DG->FV cells
+   *
+   * @param solverPatch                    a solver patch
+   * @param cellInfo                       struct referring to all cell description associated with a cell
+   * @param limiterNeighbourMergePerformed flags indicating in which direction the limiter has performed a neighbour merge.
+   */
+  void localRecomputation(
+      SolverPatch&                                               solverPatch,
+      CellInfo&                                                  cellInfo,
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& limiterNeighbourMergePerformed);
+
+  /**
+   * Function Body for public recomputeSolutionLocally function.
+   */
+  double localRecomputationBody(
+      SolverPatch&                                               solverPatch,
+      Solver::CellInfo&                                          cellInfo,
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& limiterNeighbourMergePerformed,
+      const bool                                                 isAtRemoteBoundary);
+
 #ifdef Parallel
 
   /**
@@ -518,6 +538,14 @@ private:
    *
    * TODO(Dominic): Minimise time step sizes and refinement requests per patch
    * (->transpose the typical minimisation order)
+   *
+   * @note The state of the neighbourMergePerformed flags is used internally by
+   * some of the kernels, e.g. in order to determine where to perform a face integral.
+   * However, they have to be reset before the next iteration as they indicate on
+   * which face a Riemann solve has already been performed or not (their original usage).
+   * The flags are thus reset directly after spawning a FusedTimeStepJob.
+   * Therefore, we need to copy the neighbourMergePerformed flags when spawning
+   * a FusedTimeStep job.
    */
   class FusedTimeStepJob: public tarch::multicore::jobs::Job {
   private:
@@ -537,14 +565,6 @@ private:
    * It further spawns a prediction job in this case in order
    * to overlap work with the reduction of time step size
    * and mesh update events.
-   *
-   * @note The state of the neighbourMergePerformed flags is used internally by
-   * some of the kernels, e.g. in order to determine where to perform a face integral.
-   * However, they have to be reset before the next iteration as they indicate on
-   * which face a Riemann solve has already been performed or not (their original usage).
-   * The flags are thus reset directly after spawning a FusedTimeStepJob.
-   * Therefore, we need to copy the neighbourMergePerformed flags when spawning
-   * a FusedTimeStep job.
    *
    * @param solver                 the solver the patch is associated with
    * @param solverPatch            solver patch linking to the data
@@ -571,10 +591,17 @@ private:
   /**
    * A job which performs the solution update and computes a new time step size.
    *
-   * \note Spawning these operations as background job makes only sense if you
+   * @note Spawning these operations as background job makes only sense if you
    * wait in endIteration(...) on the completion of the job.
    * It further important to flag this job as high priority job to
    * ensure completion before the next reduction.
+   *
+   * @note The state of the neighbourMergePerformed flags is used internally by
+   * some of the kernels, e.g. in order to determine where to perform a face integral.
+   * However, they have to be reset before the next iteration as they indicate on
+   * which face a Riemann solve has already been performed or not (their original usage).
+   * The flags are thus reset directly after spawning the job.
+   * Therefore, we need to copy the neighbourMergePerformed flags them.
    */
   class UpdateJob: public tarch::multicore::jobs::Job {
     private:
@@ -602,6 +629,51 @@ private:
 
       bool run() override;
       void prefetchData() override;
+  };
+
+  /**
+   * A job which performs the local recomputation and computes a new time step size.
+   *
+   * @note Spawning these operations as background job makes only sense if you
+   * wait in endIteration(...) on the completion of the job.
+   * It further important to flag this job as high priority job to
+   * ensure completion before the next reduction.
+   *
+   * @note The state of the neighbourMergePerformed flags is used internally by
+   * some of the kernels, e.g. in order to determine where to perform a face integral.
+   * However, they have to be reset before the next iteration as they indicate on
+   * which face a Riemann solve has already been performed or not (their original usage).
+   * The flags are thus reset directly after spawning the job.
+   * Therefore, we need to copy the neighbourMergePerformed flags them.
+   */
+  class LocalRecomputationJob: public tarch::multicore::jobs::Job {
+  private:
+    LimitingADERDGSolver&                                     _solver; // TODO not const because of kernels
+    SolverPatch&                                              _solverPatch;
+    CellInfo                                                  _cellInfo;
+    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> _limiterNeighbourMergePerformed; // copy
+    const bool                                                _isAtRemoteBoundary;
+  public:
+    /**
+     * Construct an LocalRecomputationJob.
+     *
+     * @note Job is always spawned as high priority job.
+     *
+     * @param solver                         the spawning solver
+     * @param solverPatch                    a cell description
+     * @param cellInfo                       links to all cell descriptions associated with the cell
+     * @param limiterNeighbourMergePerformed flags indicating in which direction the limiter has performed a neighbour merge.
+     * @param isAtRemoteBoundary             if the cell is at boundary to a remote rank
+     */
+    LocalRecomputationJob(
+        LimitingADERDGSolver&                                      solver,
+        SolverPatch&                                               solverPatch,
+        CellInfo&                                                  cellInfo,
+        const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& limiterNeighbourMergePerformed,
+        const bool                                                 isAtRemoteBoundary);
+
+    bool run() override;
+    void prefetchData() override;
   };
 
   /**
@@ -770,7 +842,7 @@ public:
    * | T/NT       | Descendant                  | Set RefinementRequested event if current event is None or AugmentingRequested                    |
    * | T/NT       | Else                        | Do nothing                                                                                       |
    *
-   * \note Currently we assume that the problem and load-balancing is so well-behaved that
+   * @note Currently we assume that the problem and load-balancing is so well-behaved that
    * we always find a Cell as parent of a Descendant on the same MPI rank. We further do not
    * consider Master-Worker boundaries in the lookup of the parent.
    *
@@ -795,11 +867,11 @@ public:
    * one of the next limiter status spreading or
    * mesh refinement iterations.
    *
-   * \note We overwrite the facewise limiter status values with the new value
+   * @note We overwrite the facewise limiter status values with the new value
    * in order to use the updateLimiterStatusAfterSetInitialConditions function
    * afterwards which calls determineLimiterStatus(...) again.
    *
-   * \note calls synchroniseTimeStepping
+   * @note calls synchroniseTimeStepping
    *
    * returns true if a new limiter patch was allocated.
    */
@@ -918,7 +990,7 @@ public:
    *
    * \see determineLimiterStatusAfterRefinementStatusSpreading(...)
    *
-   * \note Has no const modifier since kernels are not const functions yet.
+   * @note Has no const modifier since kernels are not const functions yet.
    *
    * @param[in] backupPreviousSolution            Set to true if the solution should be backed up before
    *                                              we overwrite it by the updated solution.
@@ -963,7 +1035,7 @@ public:
    * It is safe to use this method during
    * the mesh refinement iterations.
    *
-   * \note Thread-safe.
+   * @note Thread-safe.
    */
    void ensureNoLimiterPatchIsAllocatedOnHelperCell(
        const SolverPatch& solverPatch,CellInfo& cellInfo) const;
@@ -1037,31 +1109,8 @@ public:
       const bool fusedTimeStepping) const;
 
   /**
-   * Recompute the solution in cells that have been subject to a limiter status change
+   * Invoke ::localRecomputationBody(...)
    *
-   * This method is invoked after the solver reinitialisation
-   * (see exahype::solvers::LimitingADERDGSolver::reinitialiseSolvers).
-   *
-   * It evolves the solution of the solver and limiter in the reinitialised cells to the
-   * correct time stamp.
-   *
-   * We perform the following actions based on the
-   * new limiter status:
-   *
-   * |New Status | Action                                                                                                                                      |
-   * ----------------------------------------------------------------------------------------------------------------------------------------------------------|
-   * |O          | Do nothing. Solver solution has been evolved correctly before. DG solution is correct.                                                                             |
-   * |T/NT       | Evolve FV solver. Project result onto the ADER-DG space. Recompute the space-time predictor if not initial recomputation.                                                                                  |
-   * |NNT        | Evolve solver and project its solution onto the limiter solution space. (We had to do a rollback beforehand in the reinitialisation phase.) |
-   *
-   * Legend: O: Ok (ADER-DG cells), T: Troubled (FV cells), NT: FV->DG cells, NNT: DG->FV cells
-   *
-   * @see rollbackSolutionLocally (which is run on iteration before).
-   */
-  void recomputeSolutionLocally(SolverPatch& solverPatch,CellInfo& cellInfo);
-
-  /**
-   * Invoke ::recomputeSolution(SolverPatch&)
    * \return a time step size computed with the new solution.
    *
    * Fused Time Stepping
@@ -1070,10 +1119,10 @@ public:
    * Recomputes a new predictor as well if necessary.
    * Further see ::fusedTimeBody regarding order of operations.
    */
-  double recomputeSolutionLocally(
-      const int solverNumber,
+  double localRecomputation(
+      const int         solverNumber,
       Solver::CellInfo& cellInfo,
-      const bool isAtRemoteBoundary);
+      const bool        isAtRemoteBoundary);
 
   ///////////////////////////////////
   // NEIGHBOUR
@@ -1151,7 +1200,7 @@ public:
    * We thus do not need to merge these patches with neighbour data
    * in the recomputation phase.
    *
-   * \note Limiting is only performed on the finest level
+   * @note Limiting is only performed on the finest level
    * of the mesh. The other levels work only with the ADER-DG
    * solver.
    *
@@ -1354,7 +1403,7 @@ public:
    * notify the worker about some coarse grid operations only
    * the master knows.
    *
-   * \note This function sends out MPI messages.
+   * @note This function sends out MPI messages.
    */
   void progressMeshRefinementInPrepareSendToWorker(
       const int workerRank,

@@ -6,9 +6,9 @@ MODULE TECPLOTPLOTTERmod
     ! ---------------------------------------------
     !PRIVATE
     ! ---------------------------------------------
-    INTEGER :: MC, M,N
+    INTEGER :: M,nSub_DG  !
     INTEGER :: FVbasisSize,FVGhostLayerWidth
-    INTEGER :: nGPMC
+    !INTEGER :: nGPMC
     INTEGER :: nSubLimV(3),nSubLimV_GL(3)
     INTEGER :: nGPM, nGPVM(3)
     INTEGER :: nFace, nVertex
@@ -30,7 +30,7 @@ MODULE TECPLOTPLOTTERmod
     INTEGER*4	, POINTER 	:: NData(:,:),NData_max(:,:)
     REAL(td)	, POINTER  	:: DataArray(:,:), DataArray_max(:,:)
     INTEGER, ALLOCATABLE    :: subtri(:,:)
-    REAL, ALLOCATABLE       :: allsubxi(:,:),allsubxi_GL(:,:)
+    REAL, ALLOCATABLE       :: allsubxi(:,:) !,allsubxi_GL(:,:)
     INTEGER :: Element_c,Element_c_ADERDG,Element_c_FV !, Element_nc 
     INTEGER :: PlotIndex
     REAL	:: PLOT_TIME
@@ -426,13 +426,13 @@ RECURSIVE SUBROUTINE ElementTECPLOTPLOTTER(wh,lx0,ldx,limiter)
 	IMPLICIT NONE
 	REAL, INTENT(IN) :: wh(nVar,nDOFm)
 	INTEGER :: nSubNodes,J,i
-	REAL    :: LocNode(nVar,(M+1)**nDim),xvec(3),lx0(3),ldx(3)
+	REAL    :: LocNode(nVar,(nSub_DG+1)**nDim),xvec(3),lx0(3),ldx(3)
 	REAL	:: VN(nVar),QN(nVar),AuxNode(nAux)
 	integer :: limiter,iErr,iloc,triloc
 
 	nPlotElem = nPlotElem + 1
-	nSubPlotElem = nSubPlotElem + M**nDim  
-	nSubNodes = (M+1)**nDim  
+	nSubPlotElem = nSubPlotElem + nSub_DG**nDim  
+	nSubNodes = (nSub_DG+1)**nDim  
 	nRealNodes = nRealNodes + nSubNodes
 	
 	Element_c = Element_c + 1
@@ -440,16 +440,16 @@ RECURSIVE SUBROUTINE ElementTECPLOTPLOTTER(wh,lx0,ldx,limiter)
 	!print *,'Element,',nPlotElem, '->', lx0(1:nDim),'dx=',ldx(1:nDim)
 	!print *, 'nVar = ', nVar
 	!print *, 'nDim = ', nDim 
-    iloc=(Element_c-1)*M**nDim
-    triloc=(Element_c-1)*(M+1)**nDim
-	DO j = 1, M**nDim
+    iloc=(Element_c-1)*nSub_DG**nDim
+    triloc=(Element_c-1)*(nSub_DG+1)**nDim
+	DO j = 1, nSub_DG**nDim
 		NData_max(1:nVertex,iloc+j) = triloc + subtri(1:nVertex,j)
 	END DO
-	LocNode = MATMUL( wh(:,1:nDOFm), SubOutputMatrix(1:nDOFm,1:(M+1)**nDim) )
+	LocNode = MATMUL( wh(:,1:nDOFm), SubOutputMatrix(1:nDOFm,1:(nSub_DG+1)**nDim) )
 	!print *, wh(:,1)
 	!stop
 	
-	DO j = 1, (M+1)**nDim  
+	DO j = 1, (nSub_DG+1)**nDim  
 	   QN(:) = LocNode(:,j)
 	   xvec = lx0 + allsubxi(:,j)*ldx
 	   CALL PDECons2Prim(VN,QN,iErr)
@@ -457,7 +457,7 @@ RECURSIVE SUBROUTINE ElementTECPLOTPLOTTER(wh,lx0,ldx,limiter)
 	   !AuxNode=0.
 	   !print *, 'Node of elem=',Element_c,'=', xvec(1:nDim)
 	     
-       iloc=(Element_c-1)*(M+1)**nDim+j
+       iloc=(Element_c-1)*(nSub_DG+1)**nDim+j
 		if(nAux>0) then
 			DataArray_max(iloc,:) = (/ xvec(1:nDim), VN, AuxNode, REAL(nPlotElem), REAL(limiter) /) 
         else
@@ -469,14 +469,14 @@ RECURSIVE SUBROUTINE ElementTECPLOTPLOTTER(wh,lx0,ldx,limiter)
             ENDDO
 			DataArray_max(iloc,nDim+nVar+1) = REAL(nPlotElem)
 			DataArray_max(iloc,nDim+nVar+1+1) = REAL(limiter) 
-            !print *, DataArray_max((Element_c-1)*(M+1)**nDim+j,:)
-			!DataArray_max((Element_c-1)*(M+1)**nDim+j,:) = (/ xvec(1:nDim), VN, REAL(nPlotElem), REAL(limiter) /)  
+            !print *, DataArray_max((Element_c-1)*(nSub_DG+1)**nDim+j,:)
+			!DataArray_max((Element_c-1)*(nSub_DG+1)**nDim+j,:) = (/ xvec(1:nDim), VN, REAL(nPlotElem), REAL(limiter) /)  
         end if
         !limiter=limiter+1
 	   !DataArray_max(Element_c,:) = (/ xvec(1:nDim), VN /) 	   
 	END DO
 	!
-	!!Element_nc = Element_nc + (M+1)**nDim
+	!!Element_nc = Element_nc + (nSub_DG+1)**nDim
 END SUBROUTINE ElementTECPLOTPLOTTER
 
 
@@ -485,16 +485,16 @@ RECURSIVE SUBROUTINE ElementTECPLOTPLOTTER_ADERDG(wh,lx0,ldx,limiter)
 	IMPLICIT NONE
 	REAL, INTENT(IN) :: wh(nVar,nDOFm)
 	INTEGER :: nSubNodes,J,i
-	REAL :: Vh(nVar,nDOFm)
-	REAL    :: LocNode(nVar,(M+1)**nDim),xvec(3),lx0(3),ldx(3)
+	!REAL :: Vh(nVar,nDOFm)
+	REAL    :: LocNode(nVar,(nSub_DG+1)**nDim),xvec(3),lx0(3),ldx(3)
 	REAL	:: VN(nVar),QN(nVar),AuxNode(nAux)
 	integer :: limiter,iErr,iloc,triloc
  
  
         ! ADER-DG TECPLOT PLOTTER:
 	    nPlotElem = nPlotElem + 1
-	    nSubPlotElem = nSubPlotElem + M**nDim  
-	    nSubNodes = (M+1)**nDim  
+	    nSubPlotElem = nSubPlotElem + nSub_DG**nDim  
+	    nSubNodes = (nSub_DG+1)**nDim  
 	    nRealNodes = nRealNodes + nSubNodes
 	    
 	    Element_c = Element_c + 1
@@ -504,46 +504,46 @@ RECURSIVE SUBROUTINE ElementTECPLOTPLOTTER_ADERDG(wh,lx0,ldx,limiter)
 	    !print *,'ADERDG - Element,',nPlotElem, '->', lx0(1:nDim),'dx=',ldx(1:nDim)
 	    !print *, 'nVar = ', nVar
 	    !print *, 'nDim = ', nDim 
-        !iloc=(Element_c-1)*M**nDim
-        !triloc=(Element_c-1)*(M+1)**nDim
-        iloc=Element_c_ADERDG*M**nDim + Element_c_FV*nSubLim**nDim - M**nDim
-        triloc=Element_c_ADERDG*(M+1)**nDim + Element_c_FV*(nSubLim+1)**nDim - (M+1)**nDim
-	    DO j = 1, M**nDim
+        !iloc=(Element_c-1)*nSub_DG**nDim
+        !triloc=(Element_c-1)*(nSub_DG+1)**nDim
+        iloc=Element_c_ADERDG*nSub_DG**nDim + Element_c_FV*nSubLim**nDim - nSub_DG**nDim
+        triloc=Element_c_ADERDG*(nSub_DG+1)**nDim + Element_c_FV*(nSubLim+1)**nDim - (nSub_DG+1)**nDim
+	    DO j = 1, nSub_DG**nDim
 	    	NData_max(1:nVertex,iloc+j) = triloc + subtri(1:nVertex,j)
 	    END DO
-	   ! LocNode(1:nVar,1:(M+1)**nDim) = MATMUL( wh(1:nVar,1:nDOFm), SubOutputMatrix(1:nDOFm,1:(M+1)**nDim) )
-	    DO j = 1, nDOFm
-            QN(:) = wh(:,j)
-	        xvec(1:3) = lx0(1:3) + allsubxi_GL(1:3,j)*ldx(1:3)
-	    	CALL PDECons2Prim(Vh(:,j), QN(:),iErr)
-            CALL InitialField(xvec,0.0,QN(:))
-	    	CALL PDECons2Prim(VN(:), QN(:),iErr)
-            Vh(2,j)=VN(1)
-            Vh(4,j) = xvec(2)
-            Vh(5,j) = lx0(2)
-	    END DO
-	    LocNode = MATMUL(Vh(:,1:nDOFm), SubOutputMatrix(1:nDOFm,1:(M+1)**nDim) )
+	    LocNode(1:nVar,1:(nSub_DG+1)**nDim) = MATMUL( wh(1:nVar,1:nDOFm), SubOutputMatrix(1:nDOFm,1:(nSub_DG+1)**nDim) )
+	    !DO j = 1, nDOFm
+        !    QN(:) = wh(:,j)
+	    !    xvec(1:3) = lx0(1:3) + allsubxi_GL(1:3,j)*ldx(1:3)
+	    !	CALL PDECons2Prim(Vh(:,j), QN(:),iErr)
+        !    CALL InitialField(xvec,0.0,QN(:))
+	    !	CALL PDECons2Prim(VN(:), QN(:),iErr)
+        !    !Vh(2,j)=VN(1)
+        !    !Vh(4,j) = xvec(2)
+        !    !Vh(5,j) = lx0(2)
+	    !END DO
+	    !LocNode = MATMUL(Vh(:,1:nDOFm), SubOutputMatrix(1:nDOFm,1:(nSub_DG+1)**nDim) )
 	    !print *, wh(:,1)
 	    !stop
 	    
-	    DO j = 1, (M+1)**nDim  
-	       VN(:) = LocNode(:,j)
-	       xvec = lx0 + allsubxi(:,j)*ldx
-           CALL InitialField(xvec,0.0,QN(:))
-           CALL PDECons2Prim(Vh(:,1), QN(:),iErr)
-           VN(3)=Vh(1,1)
-           VN(4) = VN(4) - xvec(2)
-           VN(5) = VN(5) - lx0(2)
-           !
-	       !QN(:) = LocNode(:,j)
+	    DO j = 1, (nSub_DG+1)**nDim  
+	       !VN(:) = LocNode(:,j)
 	       !xvec = lx0 + allsubxi(:,j)*ldx
-	       !CALL PDECons2Prim(VN,QN,iErr)
-	       !CALL PDEAuxVar(AuxNode,QN,xvec)
+           !CALL InitialField(xvec,0.0,QN(:))
+           !CALL PDECons2Prim(Vh(:,1), QN(:),iErr)
+           !VN(3)=Vh(1,1)
+           !VN(4) = VN(4) - xvec(2)
+           !VN(5) = VN(5) - lx0(2)
+           !
+	       QN(:) = LocNode(:,j)
+	       xvec = lx0 + allsubxi(:,j)*ldx
+	       CALL PDECons2Prim(VN,QN,iErr)
+	       CALL PDEAuxVar(AuxNode,QN,xvec)
 	       !AuxNode=0.
 	       !print *, 'Node of elem=',Element_c,'=', xvec(1:nDim)
 	         
-           !iloc=(Element_c-1)*(M+1)**nDim+j
-            iloc=Element_c_ADERDG*(M+1)**nDim + Element_c_FV*(nSubLim+1)**nDim - (M+1)**nDim + j
+           !iloc=(Element_c-1)*(nSub_DG+1)**nDim+j
+            iloc=Element_c_ADERDG*(nSub_DG+1)**nDim + Element_c_FV*(nSubLim+1)**nDim - (nSub_DG+1)**nDim + j
 	    	if(nAux>0) then
 	    		DataArray_max(iloc,:) = (/ xvec(1:nDim), VN, AuxNode, REAL(nPlotElem), REAL(limiter) /) 
             else
@@ -555,8 +555,8 @@ RECURSIVE SUBROUTINE ElementTECPLOTPLOTTER_ADERDG(wh,lx0,ldx,limiter)
                 ENDDO
 	    		DataArray_max(iloc,nDim+nVar+1) = REAL(nPlotElem)
 	    		DataArray_max(iloc,nDim+nVar+1+1) = REAL(limiter) 
-                !print *, DataArray_max((Element_c-1)*(M+1)**nDim+j,:)
-	    		!DataArray_max((Element_c-1)*(M+1)**nDim+j,:) = (/ xvec(1:nDim), VN, REAL(nPlotElem), REAL(limiter) /)  
+                !print *, DataArray_max((Element_c-1)*(nSub_DG+1)**nDim+j,:)
+	    		!DataArray_max((Element_c-1)*(nSub_DG+1)**nDim+j,:) = (/ xvec(1:nDim), VN, REAL(nPlotElem), REAL(limiter) /)  
             end if
             !limiter=limiter+1
 	       !DataArray_max(Element_c,:) = (/ xvec(1:nDim), VN /) 	   
@@ -588,14 +588,14 @@ RECURSIVE SUBROUTINE ElementTECPLOTPLOTTER_FV(wh,lx0,ldx,limiter)
 	    !print *,'Element,',nPlotElem, '->', lx0(1:nDim),'dx=',ldx(1:nDim)
 	    !print *, 'nVar = ', nVar
 	    !print *, 'nDim = ', nDim 
-        !iloc=(Element_c-1)*M**nDim
-        !triloc=(Element_c-1)*(M+1)**nDim
-        iloc=Element_c_ADERDG*M**nDim + Element_c_FV*nSubLim**nDim - nSubLim**nDim
-        triloc=Element_c_ADERDG*(M+1)**nDim + Element_c_FV*(nSubLim+1)**nDim - (nSubLim+1)**nDim
+        !iloc=(Element_c-1)*nSub_DG**nDim
+        !triloc=(Element_c-1)*(nSub_DG+1)**nDim
+        iloc=Element_c_ADERDG*nSub_DG**nDim + Element_c_FV*nSubLim**nDim - nSubLim**nDim
+        triloc=Element_c_ADERDG*(nSub_DG+1)**nDim + Element_c_FV*(nSubLim+1)**nDim - (nSubLim+1)**nDim
 	    DO j = 1, nSubLim**nDim
 	    	NData_max(1:nVertex,iloc+j) = triloc + subtri_lim(1:nVertex,j)
         END DO
-	    !LocNode = MATMUL( wh(:,1:nDOFm), SubOutputMatrix(1:nDOFm,1:(M+1)**nDim) )
+	    !LocNode = MATMUL( wh(:,1:nDOFm), SubOutputMatrix(1:nDOFm,1:(nSub_DG+1)**nDim) )
 	    !print *, wh(:,1)
 	    !stop
         CALL GetSubcell_wh(LocNode,wh)
@@ -611,8 +611,8 @@ RECURSIVE SUBROUTINE ElementTECPLOTPLOTTER_FV(wh,lx0,ldx,limiter)
 	       !AuxNode=0.
 	       !print *, 'Node of elem=',Element_c,'=', xvec(1:nDim)
 	         
-           !iloc=(Element_c-1)*(M+1)**nDim+j
-            iloc=Element_c_ADERDG*(M+1)**nDim + Element_c_FV*(nSubLim+1)**nDim - (nSubLim+1)**nDim + j
+           !iloc=(Element_c-1)*(nSub_DG+1)**nDim+j
+            iloc=Element_c_ADERDG*(nSub_DG+1)**nDim + Element_c_FV*(nSubLim+1)**nDim - (nSubLim+1)**nDim + j
 	    	if(nAux>0) then
 	    		DataArray_max(iloc,:) = (/ xvec(1:nDim), VN, AuxNode, REAL(nPlotElem), REAL(limiter) /) 
             else
@@ -624,8 +624,8 @@ RECURSIVE SUBROUTINE ElementTECPLOTPLOTTER_FV(wh,lx0,ldx,limiter)
                 ENDDO
 	    		DataArray_max(iloc,nDim+nVar+1) = REAL(nPlotElem)
 	    		DataArray_max(iloc,nDim+nVar+1+1) = REAL(limiter) 
-                !print *, DataArray_max((Element_c-1)*(M+1)**nDim+j,:)
-	    		!DataArray_max((Element_c-1)*(M+1)**nDim+j,:) = (/ xvec(1:nDim), VN, REAL(nPlotElem), REAL(limiter) /)  
+                !print *, DataArray_max((Element_c-1)*(nSub_DG+1)**nDim+j,:)
+	    		!DataArray_max((Element_c-1)*(nSub_DG+1)**nDim+j,:) = (/ xvec(1:nDim), VN, REAL(nPlotElem), REAL(limiter) /)  
             end if
             !limiter=limiter+1
 	       !DataArray_max(Element_c,:) = (/ xvec(1:nDim), VN /) 	   
@@ -771,7 +771,7 @@ RECURSIVE SUBROUTINE FinalizeTECPLOTPLOTTER(Myrank)
 	!
 	WRITE(cmyrank,'(I5.5)') myrank
 	BaseFile=trim("./output/TECPLOT")
-	WRITE(FileName,'(a,a2,i1.1,a1,i1.1,a1,i8.8,a1,a,a)') TRIM(BaseFile),'-P',N,'P',M,'-',PlotIndex,'-',TRIM(cmyrank),'.plt'
+	WRITE(FileName,'(a,a2,i1.1,a1,i8.8,a1,a,a)') TRIM(BaseFile),'-P',M,'-',PlotIndex,'-',TRIM(cmyrank),'.plt'
     !FileName=trim("./output/TECPLOTtest.plt")
     !return
 	!NullPtr = 0 
@@ -917,20 +917,23 @@ RECURSIVE SUBROUTINE FinalizeTECPLOTPLOTTER(Myrank)
 END SUBROUTINE FinalizeTECPLOTPLOTTER
 
 
-RECURSIVE SUBROUTINE SetMainParameters(N_in,M_in,basisSize,Ghostlayers)
+RECURSIVE SUBROUTINE SetMainParameters(N_in,basisSize,Ghostlayers)
 	!USE Parameters, ONLY: nDim, nElem_max
 	IMPLICIT NONE
-	INTEGER,INTENT(IN)	:: N_in,M_in,basisSize,Ghostlayers
+	INTEGER,INTENT(IN)	:: N_in,basisSize,Ghostlayers
 	
-	M=M_in
-	N=N_in
+    M=N_in
+    !
+	nSub_DG=M+1    ! I want to plot (N+1)^nDim subelements for an unlimited DG element.
+	!nSubnodes_DG=nSub_DG+1  
     FVbasisSize = basisSize
     FVGhostLayerWidth = Ghostlayers
-	MC = M+1
-	nGPMC = MC + 1
+	! 
+	! 
+	!nDOF = M+1
 	nDOFm = (M+1)**nDim
-	nSubLim = FVbasisSize !2*N+1
-	nSubLim_GL = FVGhostLayerWidth !2*N+1
+	nSubLim = FVbasisSize !2*M+1
+	nSubLim_GL = FVGhostLayerWidth !2*M+1
 	nGPM  = M + 1
     PRINT *, ' zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz'
     PRINT *, '     SET MAIN PARAMETERS '
@@ -1004,7 +1007,7 @@ RECURSIVE SUBROUTINE SetMainParameters(N_in,M_in,basisSize,Ghostlayers)
 	nSubPlotElem_max=nElem_max*nSubLim**nDim
 	nRealNodes_max=nElem_max*(nSubLim+1)**nDim
 	! Initialize matries and gauss points
-	ALLOCATE(MPoly1D(0:MC,MC+1))
+	ALLOCATE(MPoly1D(0:nGPM,nGPM+1))
     !PRINT *, ' MPoly1D = DONE' 
 	
 	ALLOCATE(xiGPM(nGPM), wGPM(nGPM) )
@@ -1023,7 +1026,7 @@ RECURSIVE SUBROUTINE SetMainParameters(N_in,M_in,basisSize,Ghostlayers)
 	!print *, "***********************************************************"
 	!print *, "************ SetMainParameters DONE ***********************"
 	!print *, "***********************************************************"
-	!PRINT *, "N,M=",N,M
+	!PRINT *, "M=",M
 	!print *, "(nElem,nSubPlotElem,nRealNodes)_MAX=",nElem_max,nSubPlotElem_max,nRealNodes_max
 	!print *, "***********************************************************"
 END SUBROUTINE SetMainParameters
@@ -1033,15 +1036,15 @@ RECURSIVE SUBROUTINE ComputeOutputMatrices
 	!USE Parameters, ONLY: nDim
 	IMPLICIT NONE
 	! Local variables
-	real :: psi_i(nGPM),psi_j(nGPM),psi_k(nGPM),psi_xi(nGPM),psi_xj(nGPM),psi_xk(nGPM),subxi(MC)
+	real :: psi_i(nGPM),psi_j(nGPM),psi_k(nGPM),psi_xi(nGPM),psi_xj(nGPM),psi_xk(nGPM),subxi(nSub_DG+1)
 	integer :: cnt,i,j,k,kk, jj, ii, counter,c
 	real	:: aux(3)
 	integer, allocatable :: idxn(:,:,:)
 	
-	ALLOCATE(SubOutputMatrix((M+1)**3,(M+1)**3), SubGradOutputMatrix((M+1)**3,(M+1)**3,3)) ! First allocate the Outputmatrices
+	ALLOCATE(SubOutputMatrix(nGPM**3,(nSub_DG+1)**3), SubGradOutputMatrix(nGPM**3,(nSub_DG+1)**3,3)) ! First allocate the Outputmatrices
 	
-	DO i = 1, M+1 
-		subxi(i) = REAL(i-1)/REAL(M) 
+	DO i = 1, nSub_DG+1 
+		subxi(i) = REAL(i-1)/REAL(nSub_DG) 
     ENDDO
 	!print *, subxi
 	!stop
@@ -1051,9 +1054,9 @@ RECURSIVE SUBROUTINE ComputeOutputMatrices
     !                =  A_ml*p_l           => A_ml    = { phi_l(x_m) }^T
     !                = p_l*{A^T}_lm        =>{A^T}_lm =   phi_l(x_m)  
 	cnt = 0
-     DO k = 1, M+1
-        DO j = 1, M+1 
-           DO i = 1, M+1  
+     DO k = 1, nSub_DG+1
+        DO j = 1, nSub_DG+1 
+           DO i = 1, nSub_DG+1  
               cnt = cnt + 1 
               CALL MBaseFunc1D(psi_i,psi_xi,subxi(i))
               CALL MBaseFunc1D(psi_j,psi_xj,subxi(j))
@@ -1091,21 +1094,18 @@ RECURSIVE SUBROUTINE ComputeOutputMatrices
 
 	
 	! Compute subtri
-	ALLOCATE( idxn(M+1,M+1,M+1),subtri(8,M**3),allsubxi(3,(M+1)**3),allsubxi_GL(3,(M+1)**3) )
+	ALLOCATE( idxn(nSub_DG+1,nSub_DG+1,nSub_DG+1),subtri(8,nSub_DG**3),allsubxi(3,(nSub_DG+1)**3)) !,allsubxi_GL(3,(M+1)**3) )
      idxn = 0 
-     allsubxi_GL=0.
+     !allsubxi_GL=0.
      c = 0 
-     DO k = 1, M+1
-        DO j = 1, M+1 
-           DO i = 1, M+1 
+     DO k = 1, nSub_DG+1
+        DO j = 1, nSub_DG+1 
+           DO i = 1, nSub_DG+1 
               c = c + 1 
               idxn(i,j,k) = c
-			  allsubxi(1,c) = REAL(i-1)/REAL(M)
-			  allsubxi(2,c) = REAL(j-1)/REAL(M)
-			  allsubxi(3,c) = REAL(k-1)/REAL(M)		
-			  allsubxi_GL(1,c) = xiGPM(i) 
-			  allsubxi_GL(2,c) = xiGPM(j) 
-			  allsubxi_GL(3,c) = xiGPM(k)		  
+			  allsubxi(1,c) = REAL(i-1)/REAL(nSub_DG)
+			  allsubxi(2,c) = REAL(j-1)/REAL(nSub_DG)
+			  allsubxi(3,c) = REAL(k-1)/REAL(nSub_DG)		
            ENDDO
         ENDDO
      ENDDO
@@ -1126,9 +1126,9 @@ RECURSIVE SUBROUTINE ComputeOutputMatrices
      ENDDO
 
      c = 0 
-     DO k = 1, M 
-        DO j = 1, M
-           DO i = 1, M 
+     DO k = 1, nSub_DG 
+        DO j = 1, nSub_DG
+           DO i = 1, nSub_DG 
               c = c + 1 
 			  subtri(1,c) =idxn(i,j,k)
 			  subtri(2,c) =idxn(i+1,j,k)
@@ -1407,7 +1407,7 @@ RECURSIVE SUBROUTINE gauleg(x1,x2,x,w,n)
   INTEGER     ::  n
   REAL        :: x1,x2,x(n),w(n)
   REAL        :: EPS
-  INTEGER     :: i,j,m
+  INTEGER     :: i,j,mym
   REAL        :: p1,p2,p3,pp,xl,xm,z,z1
   !--------------------------------------------------------------------------
   INTENT(IN)  :: x1,x2,n
@@ -1416,11 +1416,11 @@ RECURSIVE SUBROUTINE gauleg(x1,x2,x,w,n)
   PARAMETER (EPS=3.E-14)
   !--------------------------------------------------------------------------
 
-  m  = (n+1)/2
+  mym  = (n+1)/2
   xm = 0.5*(x2+x1)
   xl = 0.5*(x2-x1)
 
-  DO i=1,m
+  DO i=1,mym
      z = COS(3.141592654*(i-.25)/(n+.5))
 1 CONTINUE
      p1 = 1.

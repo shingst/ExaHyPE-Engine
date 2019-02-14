@@ -854,18 +854,6 @@
                 "title" : "The discrete maximum principle relaxation parameter (only Limiting-ADER-DG solver)",
                 "scope" : "run-time",
                 "default" : 1e-4
-              },
-              "helper_layers" : {
-                "type" : "integer", 
-                "title" : "Number of limiter helper layers (only Limiting-ADER-DG solver)",
-                "scope" : "run-time",
-                "default" : 1
-              },
-              "steps_till_cured" : {
-                "type" : "integer", 
-                "title" : "Number of iterations to wait until a cured cell loses the 'troubled' flag (only Limiting-ADER-DG solver)",
-                "scope" : "run-time",
-                "default" : 0
               }
             }
           },

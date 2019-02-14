@@ -80,7 +80,6 @@ exahype-project  Euler
     dmp-observables          = 2
     dmp-relaxation-parameter = 1e-4
     dmp-difference-scaling   = 1e-3
-    steps-till-cured         = 2
 
     plot vtu::Cartesian::vertices::ascii VTUPlotter
       variables const = 5

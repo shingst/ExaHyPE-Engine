@@ -56,7 +56,6 @@ exahype-project GRMHD
     dmp-observables                = 2
     dmp-relaxation-parameter       = 0.01
     dmp-difference-scaling         = 0.001
-    steps-till-cured               = 0
     
 
     constants          = mexa/ref:/exahype/solvers/solver/constants,

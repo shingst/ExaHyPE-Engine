@@ -93,7 +93,6 @@ exahype-project GRMHD
     dmp-difference-scaling         = 1e-3 
 //    dmp-relaxation-parameter       = 1e14 
 //    dmp-difference-scaling         = 1e13 
-    steps-till-cured               = 0
 
   plot vtu::Legendre::vertices::ascii ConservedWriter
       variables const = 1

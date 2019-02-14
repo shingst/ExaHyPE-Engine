@@ -14,6 +14,7 @@
 #include <algorithm>
 
 #include "../../../../KernelUtils.h"
+#include "../../../../RiemannSolverUtils.h"
 
 namespace kernels {
 namespace aderdg {
@@ -43,22 +44,14 @@ void riemannSolverLinear(SolverType& solver, double* FL, double* FR,
   constexpr int numberOfParameters = SolverType::NumberOfParameters;
   constexpr int numberOfData       = numberOfVariables+numberOfParameters;
   constexpr int basisSize          = SolverType::Order+1;
-  constexpr int order              = basisSize - 1;
-
   
   // Compute the average variables and parameters from the left and the right
   double QavL[numberOfData] = {0.0}; // size: numberOfVariables+numberOfParameters
   double QavR[numberOfData] = {0.0}; // size: numberOfVariables+numberOfParameters
-  {
-    idx2 idx_QLR(basisSize, numberOfData);
-    for (int j = 0; j < basisSize; j++) {
-      const double weight = kernels::gaussLegendreWeights[order][j];
-      for (int k = 0; k < numberOfData; k++) {
-        QavL[k] += weight * QL[idx_QLR(j, k)];
-        QavR[k] += weight * QR[idx_QLR(j, k)];
-      }
-    }
-  }
+  kernels::riemannsolvers::util::averageRiemannInputs<basisSize,numberOfData>(
+      QL,kernels::gaussLegendreWeights,QavL);
+  kernels::riemannsolvers::util::averageRiemannInputs<basisSize,numberOfData>(
+      QR,kernels::gaussLegendreWeights,QavR);
 
   //get abs max eigenvalue
   double LL[numberOfVariables] = {0.0}; 
@@ -69,7 +62,7 @@ void riemannSolverLinear(SolverType& solver, double* FL, double* FR,
   std::transform(LR, LR + numberOfVariables, LR, std::abs<double>);
   const double* smax_L = std::max_element(LL, LL + numberOfVariables);
   const double* smax_R = std::max_element(LR, LR + numberOfVariables);
-  const double smax    = std::max(*smax_L, *smax_R);
+  const double  smax   = std::max(*smax_L, *smax_R);
 
   double Qdiff[numberOfData] = {0.0};
   double Qavg[numberOfData] = {0.0};

@@ -120,7 +120,8 @@ void exahype::mappings::PredictionOrLocalRecomputation::endIteration(
     exahype::State& state) {
   logTraceInWith1Argument("endIteration(State)", state);
 
-
+  // background threads
+  exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::ReductionJob);
 
   logTraceOutWith1Argument("endIteration(State)", state);
 }
@@ -145,10 +146,8 @@ void exahype::mappings::PredictionOrLocalRecomputation::enterCell(
       if ( performLocalRecomputation( solver ) && exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
         auto* limitingADERDG = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
         double admissibleTimeStepSize =
-        limitingADERDG->recomputeSolutionLocally(solverNumber,cellInfo,isAtRemoteBoundary);
+            limitingADERDG->localRecomputation(solverNumber,cellInfo,isAtRemoteBoundary);
         solver->updateAdmissibleTimeStepSize(admissibleTimeStepSize);
-
-        limitingADERDG->determineMinAndMax(solverNumber,cellInfo); // TODO(Dominic): Optimistation. Do it only in recomputed cells.
       }
       else if ( performPrediction(solver) && exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
         switch ( solver->getType() ) {

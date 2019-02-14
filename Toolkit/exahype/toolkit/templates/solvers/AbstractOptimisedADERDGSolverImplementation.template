@@ -83,7 +83,6 @@ std::atomic_ulong {{project}}::{{abstractSolver}}::volumeUnknownsRestriction_c =
     const int haloCells,
     const int regularisedFineGridLevels,
     const exahype::solvers::Solver::TimeStepping timeStepping,
-    const int limiterHelperLayers,
     const int DMPObservables
     {% if enableProfiler %}, std::unique_ptr<exahype::profilers::Profiler> profiler{% endif %}):
   {{abstractSolver}}::{{abstractSolver}}(
@@ -92,7 +91,6 @@ std::atomic_ulong {{project}}::{{abstractSolver}}::volumeUnknownsRestriction_c =
       haloCells,
       regularisedFineGridLevels,
       timeStepping,
-      limiterHelperLayers,
       DMPObservables
       {% if enableProfiler %},std::move(profiler) {% endif %}) {}
 
@@ -102,7 +100,6 @@ std::atomic_ulong {{project}}::{{abstractSolver}}::volumeUnknownsRestriction_c =
     const int haloCells,
     const int regularisedFineGridLevels,
     const exahype::solvers::Solver::TimeStepping timeStepping,
-    const int limiterHelperLayers,
     const int DMPObservables
     {% if enableProfiler %},std::unique_ptr<exahype::profilers::Profiler> profiler{% endif %})
   :
@@ -116,7 +113,6 @@ std::atomic_ulong {{project}}::{{abstractSolver}}::volumeUnknownsRestriction_c =
       haloCells,
       regularisedFineGridLevels,
       timeStepping,
-      limiterHelperLayers,
       DMPObservables
       {% if enableProfiler %}, std::move(profiler){% endif %}) {}
 

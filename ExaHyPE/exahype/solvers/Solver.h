@@ -825,6 +825,7 @@ class exahype::solvers::Solver {
     InitialRefinementRequested = 3
   };
 
+
   /**
    * \return String representation of the meshUpdateEvent.
    */
@@ -924,6 +925,13 @@ class exahype::solvers::Solver {
      */
      Default = 3
   };
+
+  /**
+   * @return if dynamic mesh refinement or limiting is used.
+   */
+  static bool areRollbacksPossible() {
+    return !OnlyInitialMeshRefinement || !OnlyStaticLimiting;
+  }
 
   /**
    * Checks if one of the solvers is of a certain

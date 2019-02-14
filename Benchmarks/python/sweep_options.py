@@ -243,3 +243,138 @@ def parseOptionsFile(optionsFile,ignoreMetadata=False):
     )
     
     return options
+
+def printJobTemplate(machine):
+    if machine=="supermuc":
+        template="""#!/bin/bash
+# Mandatory parameters are:
+# time, ranks, nodes,
+# job_name, output_file, error_file, 
+# body
+# 
+# Optional parameters are:
+# tasks, coresPerTask, mail
+
+#@ job_type     = parallel
+#@ class        = {{class}}
+#@ total_tasks  = {{ranks}}
+#@ node         = {{nodes}}
+#@ island_count = {{islands}}
+#@ network.MPI = sn_all,not_shared,us 
+#@ energy_policy_tag = ExaHyPE_Euler_energy_tag
+#@ minimize_time_to_solution = yes
+#@ wall_clock_limit = {{time}}
+#@ job_name = {{job_name}}
+#@ error  =  {{error_file}}
+#@ output =  {{output_file}}
+#@ notification=complete
+#@ notify_user={{mail}}
+#@ queue
+. /etc/profile
+. /etc/profile.d/modules.sh
+module switch intel/18.0
+module switch tbb/2018
+module switch gcc/5
+
+export OMP_NUM_THREADS={{coresPerTask}}
+export MP_TASK_AFFINITY=core:{{coresPerTask}}
+
+{{body}}"""
+        print(template)
+    elif machine=="hamilton":
+        template="""#!/bin/bash
+# Mandatory parameters are:
+# time, ranks, nodes,
+# job_name, output_file, error_file, 
+# body
+# 
+# Optional parameters are:
+# tasks, coresPerTask, mail
+
+#SBATCH --job-name={{job_name}}
+#SBATCH -o {{output_file}}
+#SBATCH -e {{error_file}}
+#SBATCH -t {{time}}
+#SBATCH --exclusive
+#SBATCH -p par7.q
+#SBATCH --mem=MaxMemPerNode
+#SBATCH --ntasks={{ranks}}
+#SBATCH --nodes={{nodes}}
+#SBATCH --cpus-per-task={{coresPerTask}}
+#SBATCH --mail-user={{mail}}
+#SBATCH --mail-type=END
+module purge
+module load slurm
+module load intel/xe_2017.2
+module load intelmpi/intel/2017.2
+module load gcc
+module load likwid
+
+export TBB_SHLIB="-L/ddn/apps/Cluster-Apps/intel/xe_2017.2/tbb/lib/intel64/gcc4.7 -ltbb"
+
+export I_MPI_FABRICS="tmi"
+
+{{body}}"""
+        print(template)
+    else:
+        print("ERROR: No job template found for machine {}. Available options: '{}'".format(machine,"','".join(["supermuc","hamilton"])),file=sys.stderr)
+
+def printOptionsFileTemplate():
+    template="""[general]
+exahype_root   = EXAHYPE_ROOT
+project_name   = PROJECT
+project_path   = PROJECT_PATH
+
+spec_template    = %(project_path)s/SPEC_TEMPLATE.exahype2-template 
+job_template     = %(project_path)s/JOB_TEMPLATE.job-template
+
+output_path      = %(project_path)s/OUTPUT_PATH
+make_threads     = MAKE_THREADS
+
+run_command      = mpiexec|poe
+
+likwid           = LIKWID<OPTIONAL>
+
+job_submission   = llsubmit|sbatch
+job_cancellation = llcancel|scancel
+
+compile_time_parameters = COMPILE_TIME_PARAMETERS
+
+[jobs]
+time = TIME
+mail = EMAIL
+
+num_cpus = NUM_CPUS
+
+class             = CLASS<OPTIONAL>
+islands           = ISLANDS<OPTIONAL>
+
+ranks_nodes_cores = RANKSxNODESx{CORES:BACKGROUND_THREADS},
+                    1x1x{1:1},
+                    ...
+
+run  = RUN<OPTION1>
+run_grouped = RUN_GROUPED<OPTION2>
+
+[environment]
+;<ALL OPTIONAL>
+EXAHYPE_CC      = mpiCC
+EXAHYPE_FC      = mpif90
+COMPILER        = Intel
+MODE            = RELEASE
+DISTRIBUTEDMEM  = MPI
+SHAREDMEM       = TBB
+USE_IPO         = on
+COMPILER_CFLAGS = ""
+
+[parameters]
+;<ALL BELOW MAY BE MOVED TO parameters_grouped or vice versaL>
+architecture = ARCHITECTURE
+dimension    = DIMENSION
+;<ALL BELOW OPTIONAL>
+param0       = PARAM0
+
+[parameters_grouped]
+;<ALL BELOW OPTIONAL>
+param0 = PARAM0"""
+    print(template)

@@ -15,6 +15,7 @@ namespace GRMHD{
    * Forward declaration
    */
   class GRMHDSolver_FV;
+  class GRMHDSolver_ADERDG;
 }
 
 
@@ -23,6 +24,7 @@ namespace GRMHD{
 class GRMHD::H5Writer: public exahype::plotters::Plotter::UserOnTheFlyPostProcessing{
   public:
   H5Writer(GRMHDSolver_FV&  solver);
+  H5Writer(GRMHDSolver_ADERDG&  solver);
   virtual ~H5Writer();
   void startPlotting(double time) override;
   void finishPlotting() override;

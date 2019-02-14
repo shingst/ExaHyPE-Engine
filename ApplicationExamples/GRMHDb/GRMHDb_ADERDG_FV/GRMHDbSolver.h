@@ -32,9 +32,7 @@ class GRMHDb::GRMHDbSolver: public exahype::solvers::LimitingADERDGSolver {
         const int maximumMeshDepth,
         const int haloCells,
         const int regularisedFineGridLevels,
-        const exahype::solvers::Solver::TimeStepping timeStepping,
-        const int limiterHelperLayers,
-        const int DMPObservables,
+        const exahype::solvers::Solver::TimeStepping timeStepping,const int DMPObservables,
         const double DMPRelaxationParameter,
         const double DMPDifferenceScaling,
         const int iterationsToCureTroubledCell

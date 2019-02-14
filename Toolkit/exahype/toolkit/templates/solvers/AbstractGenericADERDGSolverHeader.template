@@ -67,7 +67,6 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver {
       const int haloCells,
       const int regularisedFineGridLevels,
       const exahype::solvers::Solver::TimeStepping timeStepping,
-      const int limiterHelperLayers,
       const int DMPObservables
     {% if enableProfiler %},std::unique_ptr<exahype::profilers::Profiler> profiler{% endif %});
     

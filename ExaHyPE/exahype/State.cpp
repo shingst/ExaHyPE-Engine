@@ -229,7 +229,8 @@ void exahype::State::kickOffIteration(exahype::records::RepositoryState::Action 
         solver->rollbackToPreviousTimeStep();
       }
       if ( solver->getMeshUpdateEvent() != solvers::Solver::MeshUpdateEvent::None ) {
-        solver->resetAdmissibleTimeStepSize();
+        solver->resetAdmissibleTimeStepSize(); // If a local re-computation is performed (IrregularLimiterDomainChange), we also
+                                               // compute a new adm. time step size as the current minimum might stem from troubled cells
       }
     }
     break;

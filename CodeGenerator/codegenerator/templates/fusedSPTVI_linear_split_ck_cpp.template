@@ -169,13 +169,11 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
 
 {% if usePointSources %}
   // Add average PS to zero time derviative and lQh
-  for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {
-    for (int t = 0; t < {{nDof}}; t++) {
-      #pragma omp simd aligned(lQi,lQhi,PSi,weights1:ALIGNMENT)
-      for (int n = 0; n < {{nVar}}; n++) { //skip parameters //TODO JMG test pad
-        lQi [xyz*{{nVarPad}}+n] += dt*weights1[t]*PSi[(t*{{nDof**nDim}}+xyz)*{{nVarPad}}+n];
-        lQhi[xyz*{{nVarPad}}+n] += dt*weights1[t]*PSi[(t*{{nDof**nDim}}+xyz)*{{nVarPad}}+n];
-      }
+  for (int t = 0; t < {{nDof}}; t++) {
+    #pragma omp simd aligned(lQi,lQhi,PSi,weights1:ALIGNMENT)
+    for (int it = 0; it < {{(nDof**nDim)*nVarPad}}; it++) {
+      lQi [it] += dt*weights1[t]*PSi[t*{{(nDof**nDim)*nVarPad}}+it];
+      lQhi[it] += dt*weights1[t]*PSi[t*{{(nDof**nDim)*nVarPad}}+it];
     }
   }
   //Initialize PS derivation operator

@@ -65,7 +65,6 @@ exahype-project MHD
     limiter-language         = C
     dmp-relaxation-parameter = 0.0001
     dmp-difference-scaling   = 0.001
-    steps-till-cured   = 0
     constants                = {initialdata:@ExaInitialData@}
 
     plot vtk::Cartesian::vertices::ascii ConservedWriter
