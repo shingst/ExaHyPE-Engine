@@ -191,11 +191,8 @@ void exahype::solvers::Solver::configurePredictionPhase(const bool usePrediction
   exahype::solvers::Solver::SpawnPredictionAsBackgroundJob   = usePredictionBackgroundJobs;
   exahype::solvers::Solver::SpawnProlongationAsBackgroundJob = useProlongationBackgroundJobs;
 
-  #ifdef PredictionSweeps
-  exahype::solvers::Solver::PredictionSweeps = PredictionSweeps;
-  #if PredictionSweeps < 1 or PredictionSweeps > 2
-  #error PredictionSweeps must be set to 1 or 2.
-  #endif
+  #ifdef OnePredictionSweep
+  exahype::solvers::Solver::PredictionSweeps = 1;
   #else
   exahype::solvers::Solver::PredictionSweeps = ( 
          !allSolversPerformOnlyUniformRefinement() || // prolongations are done in second sweep

@@ -58,6 +58,9 @@
 #include <tbb/cache_aligned_allocator.h> // prevents false sharing
 #endif
 
+#if defined(USE_ITAC_ALL) and !defined(USE_ITAC)
+#define USE_ITAC 1
+#endif
 #ifdef USE_ITAC
 #include "VT.h"
 #endif

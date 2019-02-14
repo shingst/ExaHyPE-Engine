@@ -45,9 +45,12 @@ bool exahype::mappings::FusedTimeStep::sendOutRiemannDataInThisIteration() {
 
 peano::CommunicationSpecification
 exahype::mappings::FusedTimeStep::communicationSpecification() const {
+ // return peano::CommunicationSpecification(
+ //     peano::CommunicationSpecification::ExchangeMasterWorkerData::MaskOutMasterWorkerDataAndStateExchange,
+ //     peano::CommunicationSpecification::ExchangeWorkerMasterData::SendDataAndStateAfterLastTouchVertexLastTime,true); // TODO
   return peano::CommunicationSpecification(
       peano::CommunicationSpecification::ExchangeMasterWorkerData::MaskOutMasterWorkerDataAndStateExchange,
-      peano::CommunicationSpecification::ExchangeWorkerMasterData::MaskOutWorkerMasterDataAndStateExchange,true);
+      peano::CommunicationSpecification::ExchangeWorkerMasterData::SendDataAndStateAfterLastTouchVertexLastTime,false); // TODO
 }
 
 peano::MappingSpecification
@@ -332,7 +335,10 @@ bool exahype::mappings::FusedTimeStep::prepareSendToWorker(
     exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
     int worker) {
-  return false;
+  // master has to be notified about planned reduction of worker
+  // has to notify worker too via message
+  return exahype::State::isFirstIterationOfBatchOrNoBatch() ||
+         exahype::State::isLastIterationOfBatchOrNoBatch();
 }
 
 void exahype::mappings::FusedTimeStep::receiveDataFromMaster(
@@ -364,7 +370,10 @@ void exahype::mappings::FusedTimeStep::prepareSendToMaster(
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
     const exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
-  // do nothing
+  if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
+    const int masterRank = tarch::parallel::NodePool::getInstance().getMasterRank();
+    exahype::State::reduceGlobalDataToMaster(masterRank,0.0,0);
+  }
 }
 
 void exahype::mappings::FusedTimeStep::mergeWithMaster(
@@ -377,9 +386,11 @@ void exahype::mappings::FusedTimeStep::mergeWithMaster(
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
     exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-    int worker, const exahype::State& workerState,
+    int workerRank, const exahype::State& workerState,
     exahype::State& masterState) {
-  // do nothing
+  if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
+    exahype::State::mergeWithGlobalDataFromWorker(workerRank,0.0,0);
+  }
 }
 
 void exahype::mappings::FusedTimeStep::prepareCopyToRemoteNode(

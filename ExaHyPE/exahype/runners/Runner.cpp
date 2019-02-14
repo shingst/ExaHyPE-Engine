@@ -81,6 +81,13 @@
 #include "shminvade/SHMMultipleRanksPerNodeStrategy.h"
 #endif
 
+#if defined(USE_ITAC_ALL) and !defined(USE_ITAC)
+#define USE_ITAC 1
+#endif
+
+#if defined(USE_ITAC)
+#include "VT.h"
+#endif
 
 tarch::logging::Log exahype::runners::Runner::_log("exahype::runners::Runner");
 
@@ -218,7 +225,7 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
         peano::parallel::loadbalancing::Oracle::getInstance().setOracle(
             new mpibalancing::HotspotBalancing(
                 false,getFinestUniformGridLevelForLoadBalancing(_boundingBoxSize), /*boundary regularity*/
-                tarch::parallel::Node::getInstance().getNumberOfNodes()/THREE_POWER_D
+                0 /* 0 means no admistrative ranks; previous: tarch::parallel::Node::getInstance().getNumberOfNodes()/THREE_POWER_D */
           )
         );
         break;
@@ -787,9 +794,6 @@ int exahype::runners::Runner::run() {
       // Tracing and performance analysis
       #ifdef Parallel
       MPI_Pcontrol(0);
-      #endif
-      #if defined(USE_ITAC_ALL) and !defined(USE_ITAC)
-      #define USE_ITAC 1
       #endif
       #if defined(USE_ITAC) and !defined(USE_ITAC_ALL)
       VT_traceoff(); // turn ITAC tracing off during mesh refinement; is switched on again in mapping Prediction

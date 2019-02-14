@@ -269,15 +269,14 @@ void exahype::State::globalBroadcast(exahype::records::RepositoryState& reposito
       case exahype::records::RepositoryState::UseAdapterInitialPrediction:
       case exahype::records::RepositoryState::UseAdapterPrediction:
       case exahype::records::RepositoryState::UseAdapterPredictionRerun:
-      case exahype::records::RepositoryState::UseAdapterPredictionOrLocalRecomputation:
-      case exahype::records::RepositoryState::UseAdapterFusedTimeStep:
+      //case exahype::records::RepositoryState::UseAdapterFusedTimeStep:
       case exahype::records::RepositoryState::UseAdapterBroadcastAndDropNeighbourMessages: {
         if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) { // TODO scalability bottleneck; use tree-based approach
-          for (int workerRank=1; workerRank<tarch::parallel::Node::getInstance().getNumberOfNodes(); workerRank++) {
-            if (!(tarch::parallel::NodePool::getInstance().isIdleNode(workerRank))) { // TODO scalability bottleneck; use tree-based approach
-              exahype::State::broadcastGlobalDataToWorker(workerRank,0.0,0);
+            for (int workerRank=1; workerRank<tarch::parallel::Node::getInstance().getNumberOfNodes(); workerRank++) {
+              if (!(tarch::parallel::NodePool::getInstance().isIdleNode(workerRank))) { // TODO scalability bottleneck; use tree-based approach
+                exahype::State::broadcastGlobalDataToWorker(workerRank,0.0,0);
+              }
             }
-          }
         } else {
           exahype::State::mergeWithGlobalDataFromMaster(masterRank,0.0,0);
         }
@@ -286,20 +285,30 @@ void exahype::State::globalBroadcast(exahype::records::RepositoryState& reposito
         break;
     }
   }
+  // TODO
+  if ( currentBatchIteration % 2 == 0
+       && repositoryState.getAction() == exahype::records::RepositoryState::UseAdapterFusedTimeStep ) {
+    peano::heap::AbstractHeap::allHeapsStartToSendBoundaryData(solverState.isTraversalInverted());
+  }
   #endif
 }
 
 void exahype::State::globalReduction(exahype::records::RepositoryState& repositoryState, exahype::State& solverState, const int currentBatchIteration) {
+  // TODO(Dominic): 
+  if ( currentBatchIteration % 2 == 1 
+       && repositoryState.getAction() == exahype::records::RepositoryState::UseAdapterFusedTimeStep ) {
+    peano::heap::AbstractHeap::allHeapsFinishedToSendBoundaryData( !solverState.isTraversalInverted() );  
+  }
   #ifdef Parallel
-  if ( currentBatchIteration==repositoryState.getNumberOfIterations()-1 ) {
+  if ( currentBatchIteration==repositoryState.getNumberOfIterations()-1  ) {
     // reductions
     assertionEquals(tarch::parallel::Node::getGlobalMasterRank(),0);
     const int masterRank = tarch::parallel::Node::getInstance().getGlobalMasterRank();
     switch ( repositoryState.getAction() ) {
-      case exahype::records::RepositoryState::UseAdapterBroadcastAndDropNeighbourMessages: // we do a reduction to sychronise the ranks.
+      case exahype::records::RepositoryState::UseAdapterBroadcastAndDropNeighbourMessages: // to synchronise before writing out the end message
+      //case exahype::records::RepositoryState::UseAdapterFusedTimeStep:
       case exahype::records::RepositoryState::UseAdapterUpdateAndReduce:
-      case exahype::records::RepositoryState::UseAdapterCorrection:
-      case exahype::records::RepositoryState::UseAdapterFusedTimeStep: {
+      case exahype::records::RepositoryState::UseAdapterCorrection: {
         if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
           for (int workerRank=1; workerRank<tarch::parallel::Node::getInstance().getNumberOfNodes(); workerRank++) {
             if (!(tarch::parallel::NodePool::getInstance().isIdleNode(workerRank))) { // TODO scalability bottleneck; use tree-based approach

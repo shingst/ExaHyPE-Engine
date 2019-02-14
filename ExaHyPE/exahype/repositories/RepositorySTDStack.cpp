@@ -23,6 +23,9 @@
 #include "peano/grid/Grid.cpph"
 #endif
 
+#ifdef USE_ITAC
+#include "VT.h"
+#endif
 
 tarch::logging::Log exahype::repositories::RepositorySTDStack::_log( "exahype::repositories::RepositorySTDStack" );
 
@@ -195,24 +198,15 @@ void exahype::repositories::RepositorySTDStack::iterate(int numberOfIterations, 
   SCOREP_USER_REGION( (std::string("exahype::repositories::RepositorySTDStack::iterate() - ") + _repositoryState.toString( _repositoryState.getAction() )).c_str(), SCOREP_USER_REGION_TYPE_FUNCTION)
 
   tarch::timing::Watch watch( "exahype::repositories::RepositorySTDStack", "iterate(bool)", false);
-  
+ 
   #ifdef Parallel
   if (tarch::parallel::Node::getInstance().isGlobalMaster()) {
     _repositoryState.setNumberOfIterations(numberOfIterations);
     _repositoryState.setExchangeBoundaryVertices(exchangeBoundaryVertices);
-    // original:
-    //    tarch::parallel::NodePool::getInstance().broadcastToWorkingNodes(
-    //      _repositoryState,
-    //      peano::parallel::SendReceiveBufferPool::getInstance().getIterationManagementTag(),
-    //    );
-    // modified blocking send:
-    for (int rank=1; rank<tarch::parallel::Node::getInstance().getNumberOfNodes(); rank++) {
-      if (!(tarch::parallel::NodePool::getInstance().isIdleNode(rank))) {
-        _repositoryState.send(
-            rank,peano::parallel::SendReceiveBufferPool::getInstance().getIterationManagementTag(),
-            true,exahype::records::RepositoryState::ExchangeMode::Blocking);
-      }
-    }
+    tarch::parallel::NodePool::getInstance().broadcastToWorkingNodes(
+      _repositoryState,
+      peano::parallel::SendReceiveBufferPool::getInstance().getIterationManagementTag()
+    );
   }
   else {
     assertionEquals( numberOfIterations, 1 );
@@ -237,11 +231,18 @@ void exahype::repositories::RepositorySTDStack::iterate(int numberOfIterations, 
   _repositoryState.setNumberOfIterations(numberOfIterations);
   peano::datatraversal::autotuning::Oracle::getInstance().switchToOracle(_repositoryState.getAction());
   #endif
-  
   for (int i=0; i<numberOfIterations; i++) {
     _solverState.setBatchState(numberOfIterations, i );
+ 
+    exahype::State::broadcast(_repositoryState,_solverState,i);
 
-    exahype::State::globalBroadcast(_repositoryState,_solverState,i);
+    #ifdef USE_ITAC 
+    static int handle = 0;
+    if ( handle == 0 ) {
+      int ierr=VT_funcdef("RepositorySTDStack::iterateAdapter", VT_NOCLASS, &handle ); assertion(ierr==0);
+    }
+    VT_begin(handle);
+    #endif
 
     switch ( _repositoryState.getAction()) {
       case exahype::records::RepositoryState::UseAdapterMeshRefinement: watch.startTimer(); _gridWithMeshRefinement.iterate(); watch.stopTimer(); _measureMeshRefinementCPUTime.setValue( watch.getCPUTime() ); _measureMeshRefinementCalendarTime.setValue( watch.getCalendarTime() ); break;
@@ -275,6 +276,10 @@ void exahype::repositories::RepositorySTDStack::iterate(int numberOfIterations, 
         assertionMsg( false, "not implemented yet" );
         break;
     }
+   
+    #ifdef USE_ITAC 
+    VT_end(handle);
+    #endif
 
     exahype::State::globalReduction(_repositoryState,_solverState,i);
 
@@ -380,7 +385,7 @@ exahype::repositories::RepositorySTDStack::ContinueCommand exahype::repositories
     int masterNode = tarch::parallel::Node::getInstance().getGlobalMasterRank();
     assertion( masterNode != -1 );
 
-    _repositoryState.receive( masterNode, peano::parallel::SendReceiveBufferPool::getInstance().getIterationManagementTag(), true, records::RepositoryState::ExchangeMode::Blocking);
+    _repositoryState.receive( masterNode, peano::parallel::SendReceiveBufferPool::getInstance().getIterationManagementTag(), true, records::RepositoryState::ExchangeMode::NonblockingWithPollingLoopOverTests);
 
     result = Continue;
     if (_repositoryState.getAction()==exahype::records::RepositoryState::Terminate) {
