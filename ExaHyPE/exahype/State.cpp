@@ -262,7 +262,7 @@ void exahype::State::kickOffIteration(exahype::records::RepositoryState& reposit
   kickOffIteration(repositoryState.getAction(),currentBatchIteration,repositoryState.getNumberOfIterations());
 
   #ifdef Parallel
-  if ( currentBatchIteration==0 ) {
+  if ( currentBatchIteration % 2 ==0 ) { // synchronises the ranks before every time step
     // broadcast
     assertionEquals(tarch::parallel::Node::getGlobalMasterRank(),0);
     const int masterRank = tarch::parallel::Node::getInstance().getGlobalMasterRank();
