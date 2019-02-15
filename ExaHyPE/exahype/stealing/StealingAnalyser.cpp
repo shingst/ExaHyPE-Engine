@@ -40,7 +40,7 @@ exahype::stealing::StealingAnalyser::StealingAnalyser():
   VT_funcdef(event_name_waitForWorker, VT_NOCLASS, &event_waitForWorker ); assertion(ierr==0)
 #endif
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
-  _currentFilteredWaitingTimesSnapshot = new int[nnodes*nnodes];
+  _currentFilteredWaitingTimesSnapshot = new double[nnodes*nnodes];
   std::fill(&_currentFilteredWaitingTimesSnapshot[0], &_currentFilteredWaitingTimesSnapshot[nnodes*nnodes], 0);
 }
 
@@ -65,17 +65,17 @@ void exahype::stealing::StealingAnalyser::enable(bool value) {
   _isSwitchedOn=value;
 }
 
-const int* exahype::stealing::StealingAnalyser::getFilteredWaitingTimesSnapshot() {
+const double* exahype::stealing::StealingAnalyser::getFilteredWaitingTimesSnapshot() {
   return _currentFilteredWaitingTimesSnapshot;
 }
 
-int  exahype::stealing::StealingAnalyser::getZeroThreshold() {
+double exahype::stealing::StealingAnalyser::getZeroThreshold() {
   return _currentZeroThreshold;
 }
 
 void exahype::stealing::StealingAnalyser::setTimePerSTP(double timePerSTP) {
   _timePerStealablePredictionJob.setValue(timePerSTP);
-  logInfo("setTimePerSTP()", "submitted new STP measurement, current time per stp: "<<getTimePerSTP());
+  //logInfo("setTimePerSTP()", "submitted new STP measurement, current time per stp: "<<getTimePerSTP());
 }
 
 double exahype::stealing::StealingAnalyser::getTimePerSTP() {
@@ -83,23 +83,23 @@ double exahype::stealing::StealingAnalyser::getTimePerSTP() {
 }
 
 void exahype::stealing::StealingAnalyser::updateZeroTresholdAndFilteredSnapshot() {
-  const int* currentWaitingTimesSnapshot = exahype::stealing::PerformanceMonitor::getInstance().getWaitingTimesSnapshot();
+  const double* currentWaitingTimesSnapshot = exahype::stealing::PerformanceMonitor::getInstance().getWaitingTimesSnapshot();
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
   
-  int min, max;
-  min = std::numeric_limits<int>::max();
-  max = std::numeric_limits<int>::min();
+  double min, max;
+  min = std::numeric_limits<double>::max();
+  max = std::numeric_limits<double>::min();
 
 
   for(int i=0; i<nnodes; i++) {
     for(int j=0; j<nnodes; j++) {
-      int currentWaitingTime = currentWaitingTimesSnapshot[i*nnodes+j];
-      if(currentWaitingTime>0)
-        logInfo("updateZeroTresholdAndFilteredSnapshot()","rank "<<i<<" waiting for "<<currentWaitingTime<<" for rank "<<j);
+      double currentWaitingTime = currentWaitingTimesSnapshot[i*nnodes+j];
+      //if(currentWaitingTime>0)
+      //  logInfo("updateZeroTresholdAndFilteredSnapshot()","rank "<<i<<" waiting for "<<currentWaitingTime<<" for rank "<<j);
       if(currentWaitingTime>max) {
 	 max = currentWaitingTime;
       }
-      else if(currentWaitingTime>0 && currentWaitingTime<min) {
+      if(currentWaitingTime>0 && currentWaitingTime<min) {
         min = currentWaitingTime;
       }
 
@@ -110,10 +110,10 @@ void exahype::stealing::StealingAnalyser::updateZeroTresholdAndFilteredSnapshot(
         _currentFilteredWaitingTimesSnapshot[i*nnodes+j] = 0;
     }
   }
-  if(min < std::numeric_limits<int>::max()) {
-    int newThreshold = static_cast<int>(0.8*min+0.2*max);
+  if(min < std::numeric_limits<double>::max()) {
+    double newThreshold = 0.8*min+0.2*max;
     _currentZeroThreshold = newThreshold;
-    logInfo("updateZeroTresholdAndFilteredSnapshot()", " zero treshold set to "<< newThreshold);
+    logInfo("updateZeroTresholdAndFilteredSnapshot()", " zero threshold set to "<< newThreshold);
   }
 
 }
@@ -126,7 +126,9 @@ void exahype::stealing::StealingAnalyser::beginIteration() {
 }
 
 
-void exahype::stealing::StealingAnalyser::endIteration(double numberOfInnerLeafCells, double numberOfOuterLeafCells, double numberOfInnerCells, double numberOfOuterCells, double numberOfLocalCells, double numberOfLocalVertices) {
+void exahype::stealing::StealingAnalyser::endIteration(double numberOfInnerLeafCells, double numberOfOuterLeafCells,
+                                                       double numberOfInnerCells, double numberOfOuterCells, 
+                                                       double numberOfLocalCells, double numberOfLocalVertices) {
   if(_iterationCounter%2 !=0) {
      _iterationCounter++; 
      return;
@@ -137,7 +139,7 @@ void exahype::stealing::StealingAnalyser::endIteration(double numberOfInnerLeafC
     if(i != tarch::parallel::Node::getInstance().getRank()) {
       logInfo("endIteration()", "wait for rank "<<i<<_waitForOtherRank[i].toString());
       if(_waitForOtherRank[i].isAccurateValue())
-       exahype::stealing::PerformanceMonitor::getInstance().submitWaitingTimeForRank(static_cast<int>(_waitForOtherRank[i].getValue()*1e06), i);
+       exahype::stealing::PerformanceMonitor::getInstance().submitWaitingTimeForRank(_waitForOtherRank[i].getValue(), i);
     }     
   }
 
@@ -178,7 +180,7 @@ void exahype::stealing::StealingAnalyser::endToReceiveDataFromWorker( int fromRa
     _waitForWorkerDataWatch.stopTimer();
     const double elapsedTime = _waitForWorkerDataWatch.getCalendarTime();
 
-    if(static_cast<int>(elapsedTime*10e6)>_currentZeroThreshold) {
+    if(elapsedTime>_currentZeroThreshold) {
       _currentAccumulatedWorkerTime += elapsedTime;
       logInfo("endToReceiveDataFromWorker", "elapsed "<<elapsedTime<<" accumulated "<<_currentAccumulatedWorkerTime);
       _waitForOtherRank[fromRank].setValue(_currentAccumulatedWorkerTime);

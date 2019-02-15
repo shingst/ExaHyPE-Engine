@@ -40,8 +40,8 @@ void exahype::stealing::DiffusiveDistributor::updateLoadDistribution() {
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
   int myRank = tarch::parallel::Node::getInstance().getRank();
 
-  int *waitingTimesSnapshot = new int[nnodes*nnodes];
-  const int* currentWaitingTimesSnapshot = exahype::stealing::PerformanceMonitor::getInstance().getWaitingTimesSnapshot();
+  double *waitingTimesSnapshot = new double[nnodes*nnodes];
+  const double* currentWaitingTimesSnapshot = exahype::stealing::PerformanceMonitor::getInstance().getWaitingTimesSnapshot();
   std::copy(&currentWaitingTimesSnapshot[0], &currentWaitingTimesSnapshot[nnodes*nnodes], waitingTimesSnapshot);
 
   //waitingTimesSnapshot[myRank] = waitingTime;
@@ -56,7 +56,7 @@ void exahype::stealing::DiffusiveDistributor::updateLoadDistribution() {
   bool *isWaitingForSomeone = new bool[nnodes];
   std::fill(waitingRanks, waitingRanks+nnodes, 0);
 
-  int currentLongestWaitTime = -1;
+  double currentLongestWaitTime = -1;
   int currentOptimalVictim = -1;
   int k = 0;
 

@@ -37,11 +37,11 @@ class exahype::stealing::StealingAnalyser: public peano::performanceanalysis::An
 
     tarch::timing::GlidingAverageMeasurement     _timePerStealablePredictionJob;
 
-    int _currentZeroThreshold;
+    double _currentZeroThreshold;
     int _iterationCounter;
     double _currentAccumulatedWorkerTime;
 
-    int *_currentFilteredWaitingTimesSnapshot;
+    double *_currentFilteredWaitingTimesSnapshot;
 
     void updateZeroTresholdAndFilteredSnapshot();
 
@@ -49,11 +49,11 @@ class exahype::stealing::StealingAnalyser: public peano::performanceanalysis::An
     StealingAnalyser();
     virtual ~StealingAnalyser();
 
-    const int* getFilteredWaitingTimesSnapshot();
+    const double* getFilteredWaitingTimesSnapshot();
 
     static StealingAnalyser& getInstance();
 
-    int getZeroThreshold();
+    double getZeroThreshold();
 
     void setTimePerSTP(double timePerSTP);
     double getTimePerSTP();

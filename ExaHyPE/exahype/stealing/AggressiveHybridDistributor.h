@@ -51,7 +51,7 @@ class exahype::stealing::AggressiveHybridDistributor {
     void updateLoadDistributionDiffusive();
 
     int determineCriticalRank();
-    void determineOptimalVictim(int &optimalVictim, int &waitingTimeOptimalVictim);
+    void determineOptimalVictim(int& optimalVictim, double& waitingTimeOptimalVictim);
 
   public:
     static AggressiveHybridDistributor& getInstance();

@@ -25,15 +25,18 @@ class exahype::stealing::PerformanceMonitor {
     // status flag, if false then a rank has terminated locally
     bool _isStarted;
 
-    int *_currentWaitingTimesSnapshot; //length nranks*nranks
-    int *_currentWaitingTimesReceiveBuffer; //length nrank*nranks
-    int *_currentWaitingTimesSendBuffer; //length nrank
-    int *_currentWaitingTimes; //lenght nrank
+    double *_currentWaitingTimesSnapshot; //length nranks*nranks
+    //int *_currentWaitingTimesReceiveBuffer; //length nrank*nranks
+    //int *_currentWaitingTimesSendBuffer; //length nranks
+    double *_currentWaitingTimes; //lenght nranks
 
     double *_currentBlacklistSnapshot;
-    double *_currentBlacklistReceiveBuffer;
-    double *_currentBlacklistSendBuffer;
+    //double *_currentBlacklistReceiveBuffer;
+    //double *_currentBlacklistSendBuffer;
     double *_currentBlacklist;
+
+    double *_currentFusedDataReceiveBuffer;
+    double *_currentFusedDataSendBuffer;
 
     // here, current global view on the load information is stored
     int *_currentTasksSnapshot;
@@ -63,6 +66,7 @@ class exahype::stealing::PerformanceMonitor {
     MPI_Request _gatherTasksRequest;
     MPI_Request _gatherWaitingTimesRequest;
     MPI_Request _allreduceBlacklistRequest;
+    MPI_Request _fusedGatherRequest;
 
     tarch::multicore::BooleanSemaphore _semaphore;
 
@@ -75,12 +79,14 @@ class exahype::stealing::PerformanceMonitor {
 
     void postAllreduceBlacklist();
 
+    void postFusedRequest();
+
   public:
     // signals that a rank has finished computing any local work
     void stop();
 
-    void submitWaitingTimeForRank(int waitingTime, int rank);
-    const int *getWaitingTimesSnapshot();
+    void submitWaitingTimeForRank(double waitingTime, int rank);
+    const double *getWaitingTimesSnapshot();
 
     void submitBlacklistValueForRank(double bval, int rank);
     const double *getBlacklistSnapshot();
