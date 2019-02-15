@@ -199,6 +199,12 @@ void exahype::solvers::Solver::configurePredictionPhase(const bool usePrediction
          usePredictionBackgroundJobs ) ? 
          2 : 1;
   #endif
+
+  if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+    logInfo("configurePredictionPhase()","prediction sweeps                   ="<<exahype::solvers::Solver::PredictionSweeps);
+    logInfo("configurePredictionPhase()","spawn prediction as background job  ="<<exahype::solvers::Solver::SpawnPredictionAsBackgroundJob);
+    logInfo("configurePredictionPhase()","spawn prolongation as background job="<<exahype::solvers::Solver::SpawnProlongationAsBackgroundJob);
+  }
 }
 
 

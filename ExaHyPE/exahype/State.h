@@ -74,17 +74,23 @@ class exahype::State : public peano::grid::State<exahype::records::State> {
   static void kickOffIteration(exahype::records::RepositoryState::Action action,const int currentBatchIteration,const int numberOfIterations);
 
   /**
-   * Static callback to perform global broadcasts between working nodes.
+   * Static callback to kick off and iteration and perform global broadcasts between working nodes.
+   * Calls the other method with same name and then performs a global broadcast.
    *
-   * @todo have a tree-based algorithm. Problem: NodePool does not reveal worker nodes
+   * @note We decided to plug ExaHyPE's iteration kickoff into the RepositorySTDStack as we can then ensure that
+   * (i)  master ranks do not delay their workers.
+   * (ii) boundary data exchange is started in every even sweep (0,2,...) and
+   *      finished in every odd sweep if enclave tasking is used.
+   *
+   * @todo have a tree-based algorithm. Problem: NodePool does not reveal worker nodes.
    *
    * @note private scope since we are friends with the Repositories.
    *
-   * @param repositoryState         Contains information about the currently run adapter and the number of batch iterations.
+   * @param repositoryState         Stores information about the currently run adapter and the number of batch iterations.
+   * @param solverState             Stores information about the grid.
    * @param currentBatchIteration   the current batch iteration.
    */
   static void kickOffIteration(exahype::records::RepositoryState& repositoryState, exahype::State& solverState, const int currentBatchIteration);
-
 
 // /**                                                                                                                                        //
 //  * Wrap up an iterations, i.e. make use of values that are reduced over the cells (and MPI ranks).                                         //
@@ -95,17 +101,23 @@ class exahype::State : public peano::grid::State<exahype::records::State> {
 //  */                                                                                                                                        //
 // static void wrapUpIteration(exahype::records::RepositoryState::Action action,const int currentBatchIteration,const int numberOfIterations);//
 
-//  /**
-//   * Static callback to perform global reductions between working nodes.
-//   *
-//   * @todo have a tree-based algorithm. Problem: NodePool does not reveal worker nodes
-//   *
-//   * @note private scope since we are friends with the Repositories.
-//   *
-//   * @param repositoryState         Contains information about the currently run adapter and the number of batch iterations.
-//   * @param currentBatchIteration   the current batch iteration.
-//   */
-//  static void globalReduction(exahype::records::RepositoryState& repositoryState, exahype::State& solverState, const int currentBatchIteration);
+  /**
+   * Static callback to wrap up an iteration.
+   *
+   * @note We decided to plug ExaHyPE's iteration wrap up into the RepositorySTDStack as we can then ensure that
+   * boundary data exchange is started in every even sweep (0,2,...) and
+   * finished in every odd sweep if enclave tasking is used.
+   *
+   * @note Reductions are still performed in the respective mappings via
+   * Peano's prepareSendToMaster/Worker, mergeWithMaster methods.
+   *
+   * @note private scope since we are friends with the Repositories.
+   *
+   * @param repositoryState         Stores information about the currently run adapter and the number of batch iterations.
+   * @param solverState             Stores information about the grid.
+   * @param currentBatchIteration   the current batch iteration.
+   */
+  static void wrapUpIteration(exahype::records::RepositoryState& repositoryState, exahype::State& solverState, const int currentBatchIteration);
 
  public:
   /**

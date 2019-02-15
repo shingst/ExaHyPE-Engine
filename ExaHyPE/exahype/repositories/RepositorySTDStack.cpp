@@ -234,6 +234,7 @@ void exahype::repositories::RepositorySTDStack::iterate(int numberOfIterations, 
   for (int i=0; i<numberOfIterations; i++) {
     _solverState.setBatchState(numberOfIterations, i );
  
+    // NOT GENERATED. Manual modification. Be careful when you rerun the PDT.
     exahype::State::kickOffIteration(_repositoryState,_solverState,i);
 
     #ifdef USE_ITAC 
@@ -276,7 +277,7 @@ void exahype::repositories::RepositorySTDStack::iterate(int numberOfIterations, 
         assertionMsg( false, "not implemented yet" );
         break;
     }
-   
+
     #ifdef USE_ITAC 
     VT_end(handle);
     #endif

@@ -740,9 +740,10 @@ void exahype::runners::Runner::initOptimisations() const {
 
   if ( tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getGlobalMasterRank() ) {
     logInfo("parseOptimisations()","use the following global optimisations:");
-      logInfo("parseOptimisations()","\tfuse-algorithmic-steps="                  << (exahype::solvers::Solver::FuseAllADERDGPhases ? "on" : "off"));
-      logInfo("parseOptimisations()","\tfuse-algorithmic-steps-factor="           << exahype::solvers::Solver::FusedTimeSteppingRerunFactor);
-      logInfo("parseOptimisations()","\tspawn-predictor-as-background-thread="    << (exahype::solvers::Solver::SpawnPredictionAsBackgroundJob ? "on" : "off"));
+      logInfo("parseOptimisations()","\tfuse-algorithmic-steps                  =" << (exahype::solvers::Solver::FuseAllADERDGPhases ? "on" : "off"));
+      logInfo("parseOptimisations()","\tfuse-algorithmic-steps-rerun-actor      =" << exahype::solvers::Solver::FusedTimeSteppingRerunFactor);
+      logInfo("parseOptimisations()","\tfuse-algorithmic-steps-diffusion-factor =" << exahype::solvers::Solver::FusedTimeSteppingDiffusionFactor);
+      logInfo("parseOptimisations()","\tspawn-predictor-as-background-thread ="    << (exahype::solvers::Solver::SpawnPredictionAsBackgroundJob ? "on" : "off"));
       logInfo("parseOptimisations()","\tspawn-prolongation-as-background-thread=" << (exahype::solvers::Solver::SpawnProlongationAsBackgroundJob ? "on" : "off"));
       logInfo("parseOptimisations()","\tspawn-update-as-background-thread="       << (exahype::solvers::Solver::SpawnUpdateAsBackgroundJob ? "on" : "off"));
       logInfo("parseOptimisations()","\tspawn-amr-background-threads="            << (exahype::solvers::Solver::SpawnAMRBackgroundJobs ? "on" : "off"));

@@ -38,8 +38,7 @@ peano::CommunicationSpecification
 exahype::mappings::PredictionOrLocalRecomputation::communicationSpecification() const {
   return peano::CommunicationSpecification(
       peano::CommunicationSpecification::ExchangeMasterWorkerData::MaskOutMasterWorkerDataAndStateExchange,
-      peano::CommunicationSpecification::ExchangeWorkerMasterData::SendDataAndStateAfterLastTouchVertexLastTime,
-      true);
+      peano::CommunicationSpecification::ExchangeWorkerMasterData::SendDataAndStateAfterLastTouchVertexLastTime,true);
 }
 
 peano::MappingSpecification exahype::mappings::PredictionOrLocalRecomputation::enterCellSpecification(int level) const {
@@ -132,13 +131,6 @@ void exahype::mappings::PredictionOrLocalRecomputation::endIteration(
   if ( state.isLastIterationOfBatchOrNoBatch() ) {
     // background threads
     exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::ReductionJob);
-  }
-
-  if ( state.isLastIterationOfBatchOrNoBatch() ) { // start to send is called in State::kickOffIteration
-    const bool traversalInvertedDuringCallOfStart =
-        (exahype::solvers::Solver::PredictionSweeps % 2 == 0) ?
-            !state.isTraversalInverted() : state.isTraversalInverted();
-    peano::heap::AbstractHeap::allHeapsFinishedToSendBoundaryData( traversalInvertedDuringCallOfStart );
   }
 
   logTraceOutWith1Argument("endIteration(State)", state);

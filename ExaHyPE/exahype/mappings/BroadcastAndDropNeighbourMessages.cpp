@@ -126,9 +126,9 @@ void exahype::mappings::BroadcastAndDropNeighbourMessages::mergeWithNeighbour(
     const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
     const tarch::la::Vector<DIMENSIONS, double>& fineGridH, int level) {
   if ( exahype::solvers::Solver::FuseAllADERDGPhases ) {
-  vertex.receiveNeighbourData(
-      fromRank,false /*no merge*/,true /*no batch*/,
-      fineGridX,fineGridH,level);
+    vertex.receiveNeighbourData(
+        fromRank,false /*no merge*/,true /*no batch*/,
+        fineGridX,fineGridH,level);
   }
 }
 

@@ -848,9 +848,6 @@ void exahype::solvers::ADERDGSolver::initSolver(
   _coarsestMeshSize  = coarsestMeshInfo.first;
   _coarsestMeshLevel = coarsestMeshInfo.second;
 
-  logInfo("initSolver","coarsestMeshSize="<<_coarsestMeshSize);
-  logInfo("initSolver","coarsestMeshLevel="<<_coarsestMeshLevel);
-
   _previousMinTimeStamp = timeStamp;
   _minTimeStamp         = timeStamp;
 
@@ -1506,7 +1503,7 @@ exahype::solvers::ADERDGSolver::eraseOrRefineAdjacentVertices(
     const tarch::la::Vector<DIMENSIONS, double>& cellSize,
     const int level,
     const bool checkThoroughly) const {
-  if ( level>_coarsestMeshLevel ) {
+  if ( level < _coarsestMeshLevel ) {
      return RefinementControl::Refine;
   } else {
     const int isValidIndex =
@@ -3973,7 +3970,6 @@ void exahype::solvers::ADERDGSolver::mergeWithNeighbourData(
   if ( element != NotFound ) {
     Solver::BoundaryFaceInfo face(dest,src);
     CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[element];
-//    synchroniseTimeStepping(cellDescription);
 
     if( communicateWithNeighbour(cellDescription,face._faceIndex) ) {
       // Send order: lQhbnd,lFhbnd

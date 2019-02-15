@@ -259,17 +259,7 @@ void exahype::State::kickOffIteration(exahype::records::RepositoryState& reposit
   CurrentBatchIteration   = currentBatchIteration;
   NumberOfBatchIterations = repositoryState.getNumberOfIterations();
 
-  if (
-      currentBatchIteration % exahype::solvers::Solver::PredictionSweeps == 0
-      &&
-      (repositoryState.getAction() == exahype::records::RepositoryState::UseAdapterInitialPrediction ||
-       repositoryState.getAction() == exahype::records::RepositoryState::UseAdapterPrediction        ||
-       repositoryState.getAction() == exahype::records::RepositoryState::UseAdapterPredictionRerun   ||
-       repositoryState.getAction() == exahype::records::RepositoryState::UseAdapterFusedTimeStep)
-  ) {
-    peano::heap::AbstractHeap::allHeapsStartToSendBoundaryData(solverState.isTraversalInverted());
-  }
-
+  // the following must come after the global batch iteration variables are set
   kickOffIteration(repositoryState.getAction(),currentBatchIteration,repositoryState.getNumberOfIterations());
 
   #ifdef Parallel
@@ -300,8 +290,9 @@ void exahype::State::kickOffIteration(exahype::records::RepositoryState& reposit
   #endif
 }
 
+
+void exahype::State::wrapUpIteration(exahype::records::RepositoryState& repositoryState, exahype::State& solverState, const int currentBatchIteration) {
 // old code; keep for reference
-//void exahype::State::globalReduction(exahype::records::RepositoryState& repositoryState, exahype::State& solverState, const int currentBatchIteration) {
 //  if ( currentBatchIteration % 2 == 1
 //       && repositoryState.getAction() == exahype::records::RepositoryState::UseAdapterFusedTimeStep ) {
 //    peano::heap::AbstractHeap::allHeapsFinishedToSendBoundaryData( !solverState.isTraversalInverted() );
@@ -391,7 +382,7 @@ void exahype::State::kickOffIteration(exahype::records::RepositoryState& reposit
 //  #endif
 //
 //  wrapUpIteration(repositoryState.getAction(),currentBatchIteration,repositoryState.getNumberOfIterations());
-//}
+}
 
 //void exahype::State::wrapUpIteration(exahype::records::RepositoryState::Action action,const int currentBatchIteration,const int numberOfIterations) {
 //  if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {

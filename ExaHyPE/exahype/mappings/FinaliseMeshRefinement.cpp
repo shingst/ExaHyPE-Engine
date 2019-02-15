@@ -200,7 +200,9 @@ void exahype::mappings::FinaliseMeshRefinement::mergeWithNeighbour(
   logTraceInWith6Arguments("mergeWithNeighbour(...)", vertex, neighbour,
                            fromRank, fineGridX, fineGridH, level);
 
-  vertex.dropNeighbourMetadata(fromRank,fineGridX,fineGridH,level);
+  if ( exahype::solvers::Solver::oneSolverRequestedMeshRefinement() ) {
+    vertex.dropNeighbourMetadata(fromRank,fineGridX,fineGridH,level);
+  }
 
   logTraceOut("mergeWithNeighbour(...)");
 }

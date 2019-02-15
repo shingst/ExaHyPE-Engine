@@ -561,7 +561,7 @@ exahype::solvers::FiniteVolumesSolver::eraseOrRefineAdjacentVertices(
         const tarch::la::Vector<DIMENSIONS, double>& cellSize,
         const int level,
         const bool checkThoroughly) const {
-  if ( level > _coarsestMeshLevel ) {
+  if ( level < _coarsestMeshLevel ) {
     return RefinementControl::Refine;
   } else {
     return RefinementControl::Erase;

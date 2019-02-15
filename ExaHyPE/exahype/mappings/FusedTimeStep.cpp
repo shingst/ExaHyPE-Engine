@@ -47,8 +47,7 @@ peano::CommunicationSpecification
 exahype::mappings::FusedTimeStep::communicationSpecification() const {
   return peano::CommunicationSpecification(
       peano::CommunicationSpecification::ExchangeMasterWorkerData::MaskOutMasterWorkerDataAndStateExchange,
-      peano::CommunicationSpecification::ExchangeWorkerMasterData::SendDataAndStateAfterLastTouchVertexLastTime,
-      false);
+      peano::CommunicationSpecification::ExchangeWorkerMasterData::SendDataAndStateAfterLastTouchVertexLastTime,true);
 }
 
 peano::MappingSpecification
@@ -164,13 +163,6 @@ void exahype::mappings::FusedTimeStep::endIteration(
 
   if ( sendOutRiemannDataInThisIteration() ) {
     exahype::plotters::finishedPlotting();
-
-    if ( state.isLastIterationOfBatchOrNoBatch() ) { // start to send is called in State::kickOffIteration
-      const bool traversalInvertedDuringCallOfStart =
-          (exahype::solvers::Solver::PredictionSweeps % 2 == 0) ?
-              !state.isTraversalInverted() : state.isTraversalInverted();
-      peano::heap::AbstractHeap::allHeapsFinishedToSendBoundaryData( traversalInvertedDuringCallOfStart );
-    }
 
     if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
       // background threads

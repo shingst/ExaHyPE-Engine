@@ -1455,7 +1455,7 @@ void exahype::solvers::LimitingADERDGSolver::mergeWithNeighbourDataDuringLocalRe
       solverElement != NotFound &&
       ADERDGSolver::communicateWithNeighbour(cellInfo._ADERDGCellDescriptions[solverElement],face._faceIndex)
   ) {
-    logDebug("sendDataToNeighbourBasedOnLimiterStatus(...)", "send data for solver " << _identifier << " to rank="<<fromRank<<",x="<<x<<",level="<<level);
+    logDebug("mergeWithNeighbourDataDuringLocalRecomputation(...)", "receive data for solver " << _identifier << " to rank="<<fromRank<<",x="<<x<<",level="<<level);
 
     SolverPatch& solverPatch = cellInfo._ADERDGCellDescriptions[solverElement];
 
@@ -1502,20 +1502,17 @@ void exahype::solvers::LimitingADERDGSolver::sendMinAndMaxToNeighbour(
   const int numberOfObservables = _solver->getDMPObservables();
   BoundaryFaceInfo face(src,dest);
   if ( numberOfObservables>0 && ADERDGSolver::communicateWithNeighbour(solverPatch,face._faceIndex) ) {
-    Solver::BoundaryFaceInfo face(src,dest);
-    if( ADERDGSolver::communicateWithNeighbour(solverPatch,face._faceIndex) ){
-      assertion(DataHeap::getInstance().isValidIndex(solverPatch.getSolutionMinIndex()));
-      assertion(DataHeap::getInstance().isValidIndex(solverPatch.getSolutionMaxIndex()));
-      const double* observablesMin = static_cast<double*>(solverPatch.getSolutionMin()) + (face._faceIndex * numberOfObservables);
-      const double* observablesMax = static_cast<double*>(solverPatch.getSolutionMax()) + (face._faceIndex * numberOfObservables);
+    assertion(DataHeap::getInstance().isValidIndex(solverPatch.getSolutionMinIndex()));
+    assertion(DataHeap::getInstance().isValidIndex(solverPatch.getSolutionMaxIndex()));
+    const double* observablesMin = static_cast<double*>(solverPatch.getSolutionMin()) + (face._faceIndex * numberOfObservables);
+    const double* observablesMax = static_cast<double*>(solverPatch.getSolutionMax()) + (face._faceIndex * numberOfObservables);
 
-      DataHeap::getInstance().sendData(
-          observablesMin, numberOfObservables, toRank, x, level,
-          peano::heap::MessageType::NeighbourCommunication);
-      DataHeap::getInstance().sendData(
-          observablesMax, numberOfObservables, toRank, x, level,
-          peano::heap::MessageType::NeighbourCommunication);
-    }
+    DataHeap::getInstance().sendData(
+        observablesMin, numberOfObservables, toRank, x, level,
+        peano::heap::MessageType::NeighbourCommunication);
+    DataHeap::getInstance().sendData(
+        observablesMax, numberOfObservables, toRank, x, level,
+        peano::heap::MessageType::NeighbourCommunication);
   }
 }
 
