@@ -252,9 +252,10 @@ exahype::solvers::LimitingADERDGSolver::eraseOrRefineAdjacentVertices(
         const int solverNumber,
         const tarch::la::Vector<DIMENSIONS, double>& cellOffset,
         const tarch::la::Vector<DIMENSIONS, double>& cellSize,
+        const int level,
         const bool checkThoroughly) const {
   return _solver->eraseOrRefineAdjacentVertices(
-             cellDescriptionsIndex,solverNumber,cellOffset,cellSize,checkThoroughly);
+             cellDescriptionsIndex,solverNumber,cellOffset,cellSize,level,checkThoroughly);
 }
 
 bool exahype::solvers::LimitingADERDGSolver::attainedStableState(
@@ -1112,7 +1113,7 @@ void exahype::solvers::LimitingADERDGSolver::localRecomputation(
     SolverPatch&                                               solverPatch,
     CellInfo&                                                  cellInfo,
     const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& limiterNeighbourMergePerformed) {
-  assertion1(isInvolvedInLocalRecomputation(solverPatch),solverPatch);
+  assertion1(isInvolvedInLocalRecomputation(solverPatch),solverPatch.toString());
   if ( solverPatch.getRefinementStatus()>=_solver->_minRefinementStatusForTroubledCell-1 ) {
     // these guys are recomputing with the limiter
     LimiterPatch& limiterPatch = getLimiterPatch(solverPatch,cellInfo);

@@ -52,7 +52,7 @@ exahype::mappings::Prediction::communicationSpecification() const {
   return peano::CommunicationSpecification(
       peano::CommunicationSpecification::ExchangeMasterWorkerData::MaskOutMasterWorkerDataAndStateExchange,
       peano::CommunicationSpecification::ExchangeWorkerMasterData::MaskOutWorkerMasterDataAndStateExchange,
-      exahype::solvers::Solver::PredictionSweeps==1);
+      false);
 }
 
 peano::MappingSpecification
@@ -121,13 +121,6 @@ void exahype::mappings::Prediction::beginIteration(
         solvers::Solver::getMinTimeStampOfAllSolvers());
   }
 
-  if (
-      exahype::State::isFirstIterationOfBatchOrNoBatch() &&
-      exahype::solvers::Solver::PredictionSweeps==2
-  ) {
-    peano::heap::AbstractHeap::allHeapsStartToSendBoundaryData(solverState.isTraversalInverted());
-  }
-
   logTraceOutWith1Argument("beginIteration(State)", solverState);
 }
 
@@ -140,12 +133,12 @@ void exahype::mappings::Prediction::endIteration(
     exahype::plotters::finishedPlotting();
   }
 
-  if (
-      exahype::solvers::Solver::PredictionSweeps==2 &&
-      solverState.isLastIterationOfBatchOrNoBatch()
-  ) {
-    peano::heap::AbstractHeap::allHeapsFinishedToSendBoundaryData( !solverState.isTraversalInverted() );
-  }  // not sure why traversal inverted state needs to be toggled
+  if ( solverState.isLastIterationOfBatchOrNoBatch() ) { // start to send is called in State::kickOffIteration
+    const bool traversalInvertedDuringCallOfStart =
+        (exahype::solvers::Solver::PredictionSweeps % 2 == 0) ?
+            !solverState.isTraversalInverted() : solverState.isTraversalInverted();
+    peano::heap::AbstractHeap::allHeapsFinishedToSendBoundaryData( traversalInvertedDuringCallOfStart );
+  }
 }
 
 void exahype::mappings::Prediction::performPredictionOrProlongate(

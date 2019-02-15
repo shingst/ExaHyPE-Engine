@@ -39,7 +39,7 @@ exahype::mappings::PredictionOrLocalRecomputation::communicationSpecification() 
   return peano::CommunicationSpecification(
       peano::CommunicationSpecification::ExchangeMasterWorkerData::MaskOutMasterWorkerDataAndStateExchange,
       peano::CommunicationSpecification::ExchangeWorkerMasterData::SendDataAndStateAfterLastTouchVertexLastTime,
-      exahype::solvers::Solver::PredictionSweeps==1);
+      true);
 }
 
 peano::MappingSpecification exahype::mappings::PredictionOrLocalRecomputation::enterCellSpecification(int level) const {
@@ -90,14 +90,17 @@ void exahype::mappings::PredictionOrLocalRecomputation::beginIteration(
     exahype::State& solverState) {
   logTraceInWith1Argument("beginIteration(State)", solverState);
 
+  #ifdef Parallel
+  if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
+    // ensure reductions are inititated from worker side
+    solverState.setReduceStateAndCell(true);
+  }
+  #endif
+
   if (
       exahype::State::isFirstIterationOfBatchOrNoBatch()
   ) {
     OneSolverRequestedLocalRecomputation = exahype::solvers::Solver::oneSolverRequestedLocalRecomputation();
-
-    if ( exahype::solvers::Solver::PredictionSweeps==2 ) {
-      peano::heap::AbstractHeap::allHeapsStartToSendBoundaryData(solverState.isTraversalInverted());
-    }
   }
 
   if (
@@ -129,10 +132,13 @@ void exahype::mappings::PredictionOrLocalRecomputation::endIteration(
   if ( state.isLastIterationOfBatchOrNoBatch() ) {
     // background threads
     exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::ReductionJob);
+  }
 
-    if ( exahype::solvers::Solver::PredictionSweeps==2 ) {
-      peano::heap::AbstractHeap::allHeapsFinishedToSendBoundaryData( !state.isTraversalInverted() );
-    }  // not sure why traversal inverted state needs to be toggled
+  if ( state.isLastIterationOfBatchOrNoBatch() ) { // start to send is called in State::kickOffIteration
+    const bool traversalInvertedDuringCallOfStart =
+        (exahype::solvers::Solver::PredictionSweeps % 2 == 0) ?
+            !state.isTraversalInverted() : state.isTraversalInverted();
+    peano::heap::AbstractHeap::allHeapsFinishedToSendBoundaryData( traversalInvertedDuringCallOfStart );
   }
 
   logTraceOutWith1Argument("endIteration(State)", state);

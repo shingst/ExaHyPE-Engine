@@ -1481,6 +1481,7 @@ public:
         const int solverNumber,
         const tarch::la::Vector<DIMENSIONS, double>& cellOffset,
         const tarch::la::Vector<DIMENSIONS, double>& cellSize,
+        const int level,
         const bool checkThoroughly) const final override;
 
   /**\copydoc Solver::attainedStableState

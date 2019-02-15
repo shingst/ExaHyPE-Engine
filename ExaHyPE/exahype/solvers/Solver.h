@@ -1575,6 +1575,7 @@ class exahype::solvers::Solver {
       const int solverNumber,
       const tarch::la::Vector<DIMENSIONS, double>& cellOffset,
       const tarch::la::Vector<DIMENSIONS, double>& cellSize,
+      const int level,
       const bool checkThoroughly) const = 0;
 
   /**

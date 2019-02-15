@@ -259,6 +259,17 @@ void exahype::State::kickOffIteration(exahype::records::RepositoryState& reposit
   CurrentBatchIteration   = currentBatchIteration;
   NumberOfBatchIterations = repositoryState.getNumberOfIterations();
 
+  if (
+      currentBatchIteration % exahype::solvers::Solver::PredictionSweeps == 0
+      &&
+      (repositoryState.getAction() == exahype::records::RepositoryState::UseAdapterInitialPrediction ||
+       repositoryState.getAction() == exahype::records::RepositoryState::UseAdapterPrediction        ||
+       repositoryState.getAction() == exahype::records::RepositoryState::UseAdapterPredictionRerun   ||
+       repositoryState.getAction() == exahype::records::RepositoryState::UseAdapterFusedTimeStep)
+  ) {
+    peano::heap::AbstractHeap::allHeapsStartToSendBoundaryData(solverState.isTraversalInverted());
+  }
+
   kickOffIteration(repositoryState.getAction(),currentBatchIteration,repositoryState.getNumberOfIterations());
 
   #ifdef Parallel
@@ -286,11 +297,6 @@ void exahype::State::kickOffIteration(exahype::records::RepositoryState& reposit
         break;
     }
   }
-  // old code; keep for reference
-  //  if ( currentBatchIteration % 2 == 0
-  //       && repositoryState.getAction() == exahype::records::RepositoryState::UseAdapterFusedTimeStep ) {
-  //    peano::heap::AbstractHeap::allHeapsStartToSendBoundaryData(solverState.isTraversalInverted());
-  //  }
   #endif
 }
 
