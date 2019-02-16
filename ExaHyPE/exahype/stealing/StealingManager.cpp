@@ -463,7 +463,7 @@ void exahype::stealing::StealingManager::printBlacklist() {
   const double* globalHeatMap = exahype::stealing::PerformanceMonitor::getInstance().getBlacklistSnapshot();
 
   for(int i=0; i<nnodes; i++) {
-    //if(globalHeatMap[i]>0.5)
+    if(globalHeatMap[i]>0)
       logInfo("printBlacklist", "blacklist value for rank "<<i<<":"<<globalHeatMap[i]);
   }
 }

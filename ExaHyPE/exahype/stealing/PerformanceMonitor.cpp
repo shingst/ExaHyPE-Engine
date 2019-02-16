@@ -88,11 +88,17 @@ const double *exahype::stealing::PerformanceMonitor::getWaitingTimesSnapshot() {
 }
 
 void exahype::stealing::PerformanceMonitor::submitBlacklistValueForRank(double bval, int rank) {
+
   logInfo("submitBlacklistValue", "new value "<<bval<<" for "<<rank);
   _currentBlacklist[rank] = bval;
 }
 
 const double *exahype::stealing::PerformanceMonitor::getBlacklistSnapshot() {
+  int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
+
+  for(int j=0; j<nnodes; j++) 
+    logInfo("getBlacklistSnapshot()"," val "<<_currentBlacklistSnapshot[j]<< " for "<< j);
+
   return _currentBlacklistSnapshot;
 }
 
@@ -333,7 +339,8 @@ void exahype::stealing::PerformanceMonitor::progressGather() {
     int err = MPI_Test(&_fusedGatherRequest, &completed_fused, MPI_STATUS_IGNORE);
   }
  
-  std::fill(&_currentBlacklistSnapshot[0], &_currentBlacklistSnapshot[nnodes], 0);
+  double *newSnapshot = new double[nnodes];
+  std::fill(&newSnapshot[0], &newSnapshot[nnodes], 0);
   if(completed_fused) {
     logInfo("progressGather", " got new fused result" );
     for(int i=0; i<nnodes; i++) {
@@ -346,9 +353,15 @@ void exahype::stealing::PerformanceMonitor::progressGather() {
        for(int j=0; j<nnodes; j++) {
          if(_currentFusedDataReceiveBuffer[offsetBlacklistValues+j]>0)
            logInfo("reduceBVal()"," val "<<_currentFusedDataReceiveBuffer[offsetBlacklistValues+j]<< " for "<< j);
-         _currentBlacklistSnapshot[j] += _currentFusedDataReceiveBuffer[offsetBlacklistValues+j];
+         newSnapshot[j] += _currentFusedDataReceiveBuffer[offsetBlacklistValues+j];
        }
     }
+
+    for(int j=0; j<nnodes; j++) {
+       _currentBlacklistSnapshot[j] = newSnapshot[j];
+       logInfo("afterReduction()"," val "<<_currentBlacklistSnapshot[j]<< " for "<< j);
+    }
+
     _fusedGatherRequest = MPI_REQUEST_NULL;
   }
 
@@ -400,12 +413,16 @@ void exahype::stealing::PerformanceMonitor::progressGather() {
 //}
 
 void exahype::stealing::PerformanceMonitor::postFusedRequest() {
-  //logInfo("postFusedRequest()", "performance monitor posted fused request");
+  logInfo("postFusedRequest()", "performance monitor posted fused request");
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
   std::copy(&_currentWaitingTimes[0], &_currentWaitingTimes[nnodes], &_currentFusedDataSendBuffer[0]);
   std::copy(&_currentBlacklist[0], &_currentBlacklist[nnodes], &_currentFusedDataSendBuffer[nnodes]);
 
   assert(_fusedGatherRequest==MPI_REQUEST_NULL);
+ 
+  for(int i=0; i< nnodes*2;i++)
+    logInfo("postFusedrequest()", "send buffer "<<_currentFusedDataSendBuffer[i]);
+
   int err = MPI_Iallgather(&_currentFusedDataSendBuffer[0], 2*nnodes, MPI_DOUBLE, &_currentFusedDataReceiveBuffer[0],
                    2*nnodes, MPI_DOUBLE, exahype::stealing::StealingManager::getInstance().getMPICommunicator(),
                    &_fusedGatherRequest);// assert(err==MPI_SUCCESS);
