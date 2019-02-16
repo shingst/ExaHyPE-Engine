@@ -339,9 +339,9 @@ void exahype::stealing::PerformanceMonitor::progressGather() {
     int err = MPI_Test(&_fusedGatherRequest, &completed_fused, MPI_STATUS_IGNORE);
   }
  
-  double *newSnapshot = new double[nnodes];
-  std::fill(&newSnapshot[0], &newSnapshot[nnodes], 0);
   if(completed_fused) {
+    double *newSnapshot = new double[nnodes];
+    std::fill(&newSnapshot[0], &newSnapshot[nnodes], 0);
     logInfo("progressGather", " got new fused result" );
     for(int i=0; i<nnodes; i++) {
        //copy waiting times
@@ -363,7 +363,9 @@ void exahype::stealing::PerformanceMonitor::progressGather() {
     }
 
     _fusedGatherRequest = MPI_REQUEST_NULL;
+    delete[] newSnapshot;
   }
+
 
   if(_fusedGatherRequest==MPI_REQUEST_NULL) {
     postFusedRequest();
