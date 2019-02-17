@@ -67,7 +67,7 @@ void {{project}}::{{abstractSolver}}::constantsToString(std::ostream& os) {
 
 
 
-void {{project}}::{{abstractSolver}}::spaceTimePredictor(double* const lQhbnd,double* const lFhbnd,double** tempSpaceTimeUnknowns,double** tempSpaceTimeFluxUnknowns,double* tempUnknowns,double* tempFluxUnknowns,const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& inverseDx,const double dt, double** tempPointForceSources) {
+void {{project}}::{{abstractSolver}}::spaceTimePredictor(double* const lQhbnd,double* const lFhbnd,double** const tempSpaceTimeUnknowns,double** const tempSpaceTimeFluxUnknowns,double* const tempUnknowns,double* const tempFluxUnknowns,const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& inverseDx,const double dt, double** const tempPointForceSources) {
 {% if enableProfiler %}
   _profiler->start("spaceTimePredictor");
 {% endif %}
@@ -327,7 +327,7 @@ if(useGeneric) {
 
 
 
-void {{project}}::{{abstractSolver}}::boundaryConditions(double* const fluxOut,double* stateOut,const double* const fluxIn,const double* const stateIn,const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const int faceIndex,const int normalNonZero) {
+void {{project}}::{{abstractSolver}}::boundaryConditions(double* const fluxOut,double* const stateOut,const double* const fluxIn,const double* const stateIn,const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const int faceIndex,const int normalNonZero) {
 {% if enableProfiler %}
   _profiler->start("boundaryConditions");
 {% endif %}
@@ -365,7 +365,7 @@ void {{project}}::{{abstractSolver}}::adjustSolution(double* const luh,const tar
 {% endif %}
 
 
-void {{project}}::{{abstractSolver}}::deltaDistribution(const double t,const double dt, const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx, double** tempPointForceSources) {
+void {{project}}::{{abstractSolver}}::deltaDistribution(const double t,const double dt, const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx, double** const tempPointForceSources) {
 {% if usePointSources %}
 {% if enableProfiler %}
   _profiler->start("deltaDistribution");
@@ -449,15 +449,15 @@ void {{project}}::{{abstractSolver}}::abortWithMsg(const char* const msg) {
 	abort();
 }
 
-void {{project}}::{{abstractSolver}}::flux(const double* const Q,double** F) {
+void {{project}}::{{abstractSolver}}::flux(const double* const Q,double** const F) {
   abortWithMsg("If this operation is entered (flux), you have activated the corresponding guard. Then you have to re-implement this routine, too." );
 }
 
-void {{project}}::{{abstractSolver}}::algebraicSource(const double* const Q,double* S) {
+void {{project}}::{{abstractSolver}}::algebraicSource(const double* const Q,double* const S) {
   abortWithMsg("If this operation is entered (algebraicSource), you have activated the corresponding guard. Then you have to re-implement this routine, too." );
 }
         
-void {{project}}::{{abstractSolver}}::nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) {
+void {{project}}::{{abstractSolver}}::nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ) {
   abortWithMsg("If this operation is entered (nonConservativeProduct), you have activated the corresponding guard. Then you have to re-implement this routine, too." );
 }
 

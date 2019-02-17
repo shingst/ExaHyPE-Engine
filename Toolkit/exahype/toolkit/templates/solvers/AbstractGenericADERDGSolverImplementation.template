@@ -357,31 +357,31 @@ void {{project}}::{{abstractSolver}}::volumeUnknownsRestriction(double* const lu
 {% endif %}
 }
 
-void {{project}}::{{abstractSolver}}::flux(const double* const Q,double** F) {
+void {{project}}::{{abstractSolver}}::flux(const double* const Q,double** const F) {
       abortWithMsg("flux: If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
 }
 
-void {{project}}::{{abstractSolver}}::viscousFlux(const double* const Q,const double* const gradQ, double** F) {
+void {{project}}::{{abstractSolver}}::viscousFlux(const double* const Q,const double* const gradQ, double** const F) {
       abortWithMsg("viscous flux: If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
 }
 
-void {{project}}::{{abstractSolver}}::viscousEigenvalues(const double* const Q,const int d,double* lambda) {
+void {{project}}::{{abstractSolver}}::viscousEigenvalues(const double* const Q,const int d,double* const lambda) {
       abortWithMsg("viscous eigenvalues: If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
 }
 
-void {{project}}::{{abstractSolver}}::algebraicSource(const double* const Q,double* S) {
+void {{project}}::{{abstractSolver}}::algebraicSource(const double* const Q,double* const S) {
       abortWithMsg("algebraicSource: If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
 }
 
 {% if isLinear %}
-    void {{project}}::{{abstractSolver}}::nonConservativeProduct(const double* const Q,const double* const * const gradQ,double** BgradQ) {
+    void {{project}}::{{abstractSolver}}::nonConservativeProduct(const double* const Q,const double* const * const gradQ,double** const BgradQ) {
 {% else %}
-    void {{project}}::{{abstractSolver}}::nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) {
+    void {{project}}::{{abstractSolver}}::nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ) {
 {% endif %}
       abortWithMsg("nonConservativeProduct: If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
 }
 
-void {{project}}::{{abstractSolver}}::multiplyMaterialParameterMatrix(const double* const Q, double** rhs) {
+void {{project}}::{{abstractSolver}}::multiplyMaterialParameterMatrix(const double* const Q, double** const rhs) {
       abortWithMsg("multiplyMaterialParameterMatrix: If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
 }
 

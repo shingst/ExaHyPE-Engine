@@ -39,7 +39,7 @@ void {{project}}::{{solver}}::projectOnDGSpace(const double* const lim, double* 
   kernels::limiter::generic::c::projectOnDGSpace<Order+1,NumberOfVariables+NumberOfParameters,GhostLayerWidth>(lim, luh);
 }
 
-bool {{project}}::{{solver}}::discreteMaximumPrincipleAndMinAndMaxSearch(const double* const luh, double* const boundaryMinPerVariables, double* boundaryMaxPerVariables) {
+bool {{project}}::{{solver}}::discreteMaximumPrincipleAndMinAndMaxSearch(const double* const luh, double* const boundaryMinPerVariables, double* const boundaryMaxPerVariables) {
   return kernels::limiter::generic::c::discreteMaximumPrincipleAndMinAndMaxSearch<{{ADERDGAbstractSolver}}, NumberOfDMPObservables, GhostLayerWidth>(luh, *static_cast<{{ADERDGAbstractSolver}}*>(_solver.get()), _DMPMaximumRelaxationParameter, _DMPDifferenceScaling, boundaryMinPerVariables, boundaryMaxPerVariables);
 }
 

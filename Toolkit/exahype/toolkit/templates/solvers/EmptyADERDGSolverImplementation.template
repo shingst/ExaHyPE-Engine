@@ -24,7 +24,7 @@
 
 
 
-void {{Project}}::{{Solver}}::spaceTimePredictor(double* const lQhbnd,double* const lFhbnd,double** tempSpaceTimeUnknowns,double** tempSpaceTimeFluxUnknowns,double* const  tempUnknowns,double* const  tempFluxUnknowns,const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& dx,const double dt) {
+void {{Project}}::{{Solver}}::spaceTimePredictor(double* const lQhbnd,double* const lFhbnd,double** const tempSpaceTimeUnknowns,double** const tempSpaceTimeFluxUnknowns,double* const  tempUnknowns,double* const  tempFluxUnknowns,const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& dx,const double dt) {
   // @todo Please implement/augment if required
 }
 
@@ -48,7 +48,7 @@ void {{Project}}::{{Solver}}::surfaceIntegral(double* const lduh, const double* 
 
 
 
-void {{Project}}::{{Solver}}::riemannSolver(double* const FL, double* const FR, const double* const QL, const double* const QR, double* tempFaceUnknownsArray, double** tempStateSizedVectors, double** tempStateSizedSquareMatrices, const double t, const double dt, const int direction) {
+void {{Project}}::{{Solver}}::riemannSolver(double* const FL, double* const FR, const double* const QL, const double* const QR, double* const tempFaceUnknownsArray, double** const tempStateSizedVectors, double** const tempStateSizedSquareMatrices, const double t, const double dt, const int direction) {
   assertion2(direction>=0,dt,direction);
   assertion2(direction<DIMENSIONS,dt,direction);
   // @todo Please implement/augment if required
@@ -56,7 +56,7 @@ void {{Project}}::{{Solver}}::riemannSolver(double* const FL, double* const FR, 
 
 
 
-void {{Project}}::{{Solver}}::boundaryConditions(double* const fluxOut,double* stateOut,const double* const fluxIn,const double* const stateIn,const tarch::la::Vector<DIMENSIONS, double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const int faceIndex,const int normalNonZero) {
+void {{Project}}::{{Solver}}::boundaryConditions(double* const fluxOut,double* const stateOut,const double* const fluxIn,const double* const stateIn,const tarch::la::Vector<DIMENSIONS, double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const int faceIndex,const int normalNonZero) {
   // @todo Please implement/augment if required
 }
 

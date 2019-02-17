@@ -72,7 +72,7 @@ class {{project}}::{{solver}} : public {{project}}::{{abstractSolver}} {
      * @param[inout] lambda     eigenvalues as C array;
      *                          range: [0,nVar-1], already allocated.
      */
-    void eigenvalues(const double* const Q,const int d,double* lambda) override;
+    void eigenvalues(const double* const Q,const int d,double* const lambda) override;
         
     /**
      * Impose boundary conditions at a point on a boundary face
@@ -93,7 +93,7 @@ class {{project}}::{{solver}} : public {{project}}::{{abstractSolver}} {
      * makes it easier to implement certain boundary conditions where a velocity, e.g., 
      * needs to change its sign compared to the inside state.
      */
-    void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int direction,const double* const QIn,double* QOut) override;
+    void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int direction,const double* const QIn,double* const QOut) override;
     
     {% if useFlux and not useViscousFlux %}
     /**
@@ -106,7 +106,7 @@ class {{project}}::{{solver}} : public {{project}}::{{abstractSolver}} {
      *                 range[outer->inner]: [0,nDim-1]x[0,nVar-1], 
      *                 already allocated.
      */
-    void flux(const double* const Q,double** F) override;
+    void flux(const double* const Q,double** const F) override;
     {% else %}
     /* flux() function not included, as requested in the specification file */
     {% endif %}
@@ -127,8 +127,8 @@ class {{project}}::{{solver}} : public {{project}}::{{abstractSolver}} {
      *                     range[outer->inner]: [0,nDim-1]x[0,nVar-1], 
      *                     already allocated.
      */
-    void viscousFlux(const double* const Q,const double* const gradQ, double** F) override;
-    void viscousEigenvalues(const double* const Q,const int d,double* lambda) override;
+    void viscousFlux(const double* const Q,const double* const gradQ, double** const F) override;
+    void viscousEigenvalues(const double* const Q,const int d,double* const lambda) override;
     {% else %}
     /* viscousFlux() function not included, as requested in the specification file */
     {% endif %}
@@ -150,7 +150,7 @@ class {{project}}::{{solver}} : public {{project}}::{{abstractSolver}} {
     *                 parameters); range: [0,nVar+nPar-1], already allocated.
     * @param[inout] S source term; range: [0,nVar-1], already allocated.
     */
-    void algebraicSource(const double* const Q,double* S) override;
+    void algebraicSource(const double* const Q,double* const S) override;
     {% else %}
     /* algebraicSource() function not included, as requested by the specification file */
     {% endif %}
@@ -172,7 +172,7 @@ class {{project}}::{{solver}} : public {{project}}::{{abstractSolver}} {
      * @param[inout] BgradQ the nonconservative product (extends nVar), 
      *                      already allocated. 
      */
-    void nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) override;
+    void nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ) override;
     {% else %}
     /* nonConservativeProduct() function is not included, as requested in the specification file */
     {% endif %}
@@ -196,7 +196,7 @@ class {{project}}::{{solver}} : public {{project}}::{{abstractSolver}} {
      * @todo LR: Is dt really needed?
      * @todo LR: specify size of forceVector
      */
-    void pointSource(const double* const x,const double t,const double dt, double* const forceVector, double* x0) override; 
+    void pointSource(const double* const x,const double t,const double dt, double* const forceVector, double* const x0) override; 
     {% else %}
     /* pointSource() function not included, as requested in the specification file */
     {% endif %}

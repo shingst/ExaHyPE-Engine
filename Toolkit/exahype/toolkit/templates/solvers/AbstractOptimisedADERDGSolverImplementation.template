@@ -602,23 +602,23 @@ void {{project}}::{{abstractSolver}}::abortWithMsg(const char* const msg) {
   abort();
 }
 
-void {{project}}::{{abstractSolver}}::flux(const double* const Q,double** F) {
+void {{project}}::{{abstractSolver}}::flux(const double* const Q,double** const F) {
   abortWithMsg("If this operation is entered (flux), you have activated the corresponding guard. Then you have to re-implement this routine, too." );
 }
 
-void {{project}}::{{abstractSolver}}::algebraicSource(const double* const Q,double* S) {
+void {{project}}::{{abstractSolver}}::algebraicSource(const double* const Q,double* const S) {
   abortWithMsg("If this operation is entered (algebraicSource), you have activated the corresponding guard. Then you have to re-implement this routine, too." );
 }
 
 {% if isLinear %}
-    void {{project}}::{{abstractSolver}}::nonConservativeProduct(const double* const Q,const double* const * const gradQ,double** BgradQ) {
+    void {{project}}::{{abstractSolver}}::nonConservativeProduct(const double* const Q,const double* const * const gradQ,double** const BgradQ) {
 {% else %}
-    void {{project}}::{{abstractSolver}}::nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) {
+    void {{project}}::{{abstractSolver}}::nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ) {
 {% endif %}
   abortWithMsg("If this operation is entered (nonConservativeProduct), you have activated the corresponding guard. Then you have to re-implement this routine, too." );
 }
 
-void {{project}}::{{abstractSolver}}::multiplyMaterialParameterMatrix(const double* const Q, double** rhs) {
+void {{project}}::{{abstractSolver}}::multiplyMaterialParameterMatrix(const double* const Q, double** const rhs) {
       abortWithMsg("multiplyMaterialParameterMatrix: If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
 }
 
@@ -626,10 +626,10 @@ void {{project}}::{{abstractSolver}}::pointSource(const double* const Q,const do
   abortWithMsg("If this operation is entered (pointSource), you have activated the corresponding guard. Then you have to re-implement this routine, too." );
 }
 
-void {{project}}::{{abstractSolver}}::viscousFlux(const double* const Q,const double* const gradQ, double** F) {
+void {{project}}::{{abstractSolver}}::viscousFlux(const double* const Q,const double* const gradQ, double** const F) {
       abortWithMsg("viscous flux: If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
 }
 
-void {{project}}::{{abstractSolver}}::viscousEigenvalues(const double* const Q,const int d,double* lambda) {
+void {{project}}::{{abstractSolver}}::viscousEigenvalues(const double* const Q,const int d,double* const lambda) {
       abortWithMsg("viscous eigenvalues: If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
 }

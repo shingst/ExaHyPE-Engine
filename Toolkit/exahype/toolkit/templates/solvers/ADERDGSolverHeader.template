@@ -72,7 +72,7 @@ class {{project}}::{{solver}} : public {{project}}::{{abstractSolver}} {
      * @param[in]    Q   vector of state variables (plus parameters); 
      *                   range: [0,nVar+nPar-1], already allocated.
      */
-    void adjustPointSolution(const double* const x,const double t,const double dt,double* Q) final override;
+    void adjustPointSolution(const double* const x,const double t,const double dt,double* const Q) final override;
 {% endif %}
 
     /**
@@ -84,7 +84,7 @@ class {{project}}::{{solver}} : public {{project}}::{{abstractSolver}} {
      * @param[inout] lambda     eigenvalues as C array;
      *                          range: [0,nVar-1], already allocated.
      */
-    void eigenvalues(const double* const Q,const int d,double* lambda) final override;
+    void eigenvalues(const double* const Q,const int d,double* const lambda) final override;
     
 {% if useViscousFlux %}
     /**
@@ -96,7 +96,7 @@ class {{project}}::{{solver}} : public {{project}}::{{abstractSolver}} {
      * @param[inout] lambda     eigenvalues as C array;
      *                          range: [0,nVar-1], already allocated.
      */    
-    void viscousEigenvalues(const double* const Q,const int direction,double* lambda) final override;
+    void viscousEigenvalues(const double* const Q,const int direction,double* const lambda) final override;
 {% endif %}
 
     /**
@@ -124,7 +124,7 @@ class {{project}}::{{solver}} : public {{project}}::{{abstractSolver}} {
      * @param[inout] FOut      the normal fluxes at point x from outside of the domain;
      *                         range: [0,nVar-1], already allocated.
      */
-    void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int direction,const double * const fluxIn,const double* const stateIn,double *fluxOut,double* stateOut) final override;
+    void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int direction,const double* const fluxIn,const double* const stateIn,double* const fluxOut,double* const stateOut) final override;
     
     /**
      * Evaluate the refinement criterion within a cell.
@@ -160,7 +160,7 @@ class {{project}}::{{solver}} : public {{project}}::{{abstractSolver}} {
      *                 range[outer->inner]: [0,nDim-1]x[0,nVar-1], 
      *                 already allocated.
      */
-    void flux(const double* const Q,double** F) final override;
+    void flux(const double* const Q,double** const F) final override;
 {% else %}
 /* flux() function not included, as requested in the specification file */
 {% endif %}
@@ -180,7 +180,7 @@ class {{project}}::{{solver}} : public {{project}}::{{abstractSolver}} {
      *                     range[outer->inner]: [0,nDim-1]x[0,nVar-1], 
      *                     already allocated.
      */
-    void viscousFlux(const double* const Q,const double* const gradQ, double** F) final override;
+    void viscousFlux(const double* const Q,const double* const gradQ, double** const F) final override;
 {% else %}
 /* viscousFlux() function not included, as requested in the specification file */
 {% endif %}
@@ -203,7 +203,7 @@ class {{project}}::{{solver}} : public {{project}}::{{abstractSolver}} {
      *                 parameters); range: [0,nVar+nPar-1], already allocated.
      * @param[inout] S source term; range: [0,nVar-1], already allocated.
      */
-    void algebraicSource(const double* const Q,double* S) final override;
+    void algebraicSource(const double* const Q,double* const S) final override;
 {% else %}
 /* algebraicSource() function not included, as requested by the specification file */
 {% endif %}
@@ -232,7 +232,7 @@ class {{project}}::{{solver}} : public {{project}}::{{abstractSolver}} {
      * @param[inout] BgradQ the nonconservative product (extends nVar), 
      *                      already allocated. 
      */
-    void nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) final override;
+    void nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ) final override;
 {% else %}
 /* nonConservativeProduct() function is not included, as requested in the specification file */
 {% endif %}
@@ -281,7 +281,7 @@ class {{project}}::{{solver}} : public {{project}}::{{abstractSolver}} {
      * @param[inout] rhs the right-hand side associated with Q; 
      *                   range: [0,nVar-1], already allocated.
      */
-    void multiplyMaterialParameterMatrix(const double* const Q, double* rhs) final override;
+    void multiplyMaterialParameterMatrix(const double* const Q, double* const rhs) final override;
 {% else %}
 /* multiplyMaterialParameterMatrix() not included, as requested in the specification file */
 {% endif %}
