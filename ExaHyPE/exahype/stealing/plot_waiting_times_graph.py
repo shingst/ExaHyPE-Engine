@@ -14,11 +14,12 @@ file = open(sys.argv[1], 'r')
 ranks = int(sys.argv[2])
 timestep_pattern = re.compile(".([0-9]+\.[0-9]+).*step ([0-9]+).*t_min.*")
 task_offload_pattern = re.compile(".*rank:([0-9]+).*printOffloadingStatistics.* target tasks to rank ([0-9]+) ntasks ([0-9]+) not offloaded ([0-9]+).*")
-temperature_pattern = re.compile(".*rank:([0-9]+).*printOffloadingStatistics.* temperature value ([0-9]+\.[0-9]+).*")
+temperatureCCP_pattern = re.compile(".*rank:([0-9]+).*printOffloadingStatistics.* temperature value CCP ([0-9]+\.[0-9]+).*")
+temperatureDiffusion_pattern = re.compile(".*rank:([0-9]+).*printOffloadingStatistics.* temperature value diffusion ([0-9]+\.[0-9]+).*")
 blacklist_pattern = re.compile(".*blacklist value for rank ([0-9]+):([0-9]+\.[0-9]+)")
-waiting_times_pattern = re.compile(".*rank:0.*printWaitingTimes\(\) rank ([0-9]+) waiting for ([0-9]+) for rank ([0-9]+)")
-critical_rank_pattern = re.compile(".*rank:([0-9]+).*updateLoadDistributionDiffusive\(\).*optimal victim: ([0-9]+) critical rank:([0-9]+)")
-critical_rank_pattern2 = re.compile(".*rank:([0-9]+).*updateLoadDistributionCCP(\).*current critical rank:([0-9]+)")
+waiting_times_pattern = re.compile(".*rank:0.*printWaitingTimes\(\) rank ([0-9]+) waiting for ([0-9]+\.[0-9]+) for rank ([0-9]+)")
+critical_rank_pattern = re.compile(".*rank:([0-9]+).*updateLoadDistribution.*\(\).*optimal victim: ([0-9]+) critical rank:([0-9]+)")
+critical_rank_pattern2 = re.compile(".*rank:([0-9]+).*updateLoadDistribution\(\).*current critical rank:([0-9]+)")
 
 
 animate = sys.argv[3].lower() in ("yes", "true", "t", "1")
@@ -73,9 +74,9 @@ for line in file:
   if m:
     src = int(m.group(1))
     dest = int(m.group(3))
-    time = int(m.group(2))*1.0/1000000
+    time = float(m.group(2))
     if time>zero_threshold:
-     current_waiting_times[int(m.group(1))][int(m.group(3))]= int(m.group(2))
+     current_waiting_times[int(m.group(1))][int(m.group(3))]= float(m.group(2))
      dot.add_edge(src, dest, label=str(time),fontcolor="red", color="red")
   m = critical_rank_pattern.match(line)
   if m:
@@ -108,13 +109,20 @@ for line in file:
     n.attr['fillcolor'] = 'grey'
     n.attr['style'] = 'filled'
     #cur_blacklist_values[int(m.group(1))]=float(m.group(2))
-  m=temperature_pattern.match(line)
+  m=temperatureCCP_pattern.match(line)
   if m and current_step>0:
     n = dot.get_node(int(m.group(1)))
     if(n.attr['label'] ==None):
       n.attr['label']=m.group(1)
-    print (str(n.attr['label'])+" temp="+m.group(2))
-    n.attr['label']= str(n.attr['label'])+ " temp="+m.group(2)
+    print (str(n.attr['label'])+" tempCCP="+m.group(2))
+    n.attr['label']= str(n.attr['label'])+ " tempCCP="+m.group(2)
+  m=temperatureDiffusion_pattern.match(line)
+  if m and current_step>0:
+    n = dot.get_node(int(m.group(1)))
+    if(n.attr['label'] ==None):
+      n.attr['label']=m.group(1)
+    print (str(n.attr['label'])+" tempDif="+m.group(2))
+    n.attr['label']= str(n.attr['label'])+ " tempDif="+m.group(2)
 
 if animate:
     ani = animation.ArtistAnimation(fig, ims, interval=5000, blit=True, repeat_delay=1000)
