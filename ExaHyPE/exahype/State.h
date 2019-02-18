@@ -169,22 +169,6 @@ class exahype::State : public peano::grid::State<exahype::records::State> {
   };
 
   /**
-   * A flag indicating that the bounding box
-   * has been virtually expanded (or not).
-   *
-   * \note In case the bounding box has been expanded,
-   * the computational domain usually shrinks
-   * since only those cells are considered
-   * as inside which have only inside or
-   * boundary vertices.
-   * A cell is considered as outside
-   * if it has at least one(!) outside vertex.
-   *
-   * TODO(Dominic): Make private and hide in init function
-   */
-  static bool ScaleBoundingBox;
-
-  /**
    * Default Constructor
    *
    * This constructor is required by the framework's data container. Do not

@@ -926,7 +926,7 @@ public:
 
   void printFiniteVolumesSolution(CellDescription& cellDescription) const;
 
-  void printFiniteVolumesBoundaryLayer(const double* luhbnd)  const;
+  void printFiniteVolumesBoundaryLayer(const double* const luhbnd)  const;
 
   std::string toString() const override;
 

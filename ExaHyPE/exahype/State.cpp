@@ -29,8 +29,6 @@ tarch::logging::Log exahype::State::_log("exahype::State");
 int exahype::State::CurrentBatchIteration   = 0;
 int exahype::State::NumberOfBatchIterations = 1;
 
-bool exahype::State::ScaleBoundingBox = false;
-
 exahype::State::State() : Base() {
   // @todo Guidebook
 

@@ -273,9 +273,10 @@ class exahype::parser::Parser {
    *
    * @note It is important to scale the bounding box if MPI
    * experiments are run as this prevents communication
-   * with rank 0 and it further prevents that the
-   * global master traverses its subtree. This will
-   * post-phone all broadcasts.
+   * with rank 0. More importantly, it prevents that the
+   * global master traverses its outside cells.
+   *
+   * If the global master has too many outside cells
    *
    * @note We scale the bounding box by default.
    */

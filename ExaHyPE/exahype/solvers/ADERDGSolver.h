@@ -790,7 +790,7 @@ private:
       CellDescription& cellDescription,
       Solver::BoundaryFaceInfo& face,
       const double* const lQhbnd,
-      const double* lFhbnd,
+      const double* const lFhbnd,
       const int fromRank);
 
   /**

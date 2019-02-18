@@ -1549,7 +1549,7 @@ void exahype::solvers::FiniteVolumesSolver::printFiniteVolumesSolution(
   #endif
 }
 
-void exahype::solvers::FiniteVolumesSolver::printFiniteVolumesBoundaryLayer(const double* luhbnd)  const {
+void exahype::solvers::FiniteVolumesSolver::printFiniteVolumesBoundaryLayer(const double* const luhbnd)  const {
   #if DIMENSIONS==2
   for (int unknown=0; unknown < _numberOfVariables; unknown++) {
     std::cout <<  "unknown=" << unknown << std::endl;

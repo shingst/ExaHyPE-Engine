@@ -3997,7 +3997,7 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
     CellDescription& cellDescription,
     Solver::BoundaryFaceInfo& face,
     const double* const lQhbnd,
-    const double* lFhbnd,
+    const double* const lFhbnd,
     const int fromRank) {
   logDebug("solveRiemannProblemAtInterface(...)",
       "cell-description=" << cellDescription.toString());

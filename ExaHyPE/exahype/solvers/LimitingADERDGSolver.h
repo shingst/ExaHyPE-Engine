@@ -186,7 +186,7 @@ private:
    * @return True if the new min and max values fit into the restricted min
    *   max solutions. Return false if we seem to run into oscillations.
    */
-  //  void setSolutionMinMax(double* min, double* max) const;
+  //  void setSolutionMinMax(double* const min, double* const max) const;
 
   /**
    * Merge the solution min and max values on a face between two cell

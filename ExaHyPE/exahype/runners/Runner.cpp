@@ -577,15 +577,15 @@ tarch::la::Vector<DIMENSIONS, double> exahype::runners::Runner::determineBoundin
 
 exahype::repositories::Repository* exahype::runners::Runner::createRepository() {
   // Geometry is static as we need it to survive the whole simulation time.
-  _domainOffset = _parser.getOffset();
-  _domainSize   = _parser.getDomainSize();
+  _domainOffset     = _parser.getOffset();
+  _domainSize       = _parser.getDomainSize();
   _boundingBoxSize  = determineBoundingBoxSize(_domainSize);
 
   const int coarsestUserMeshLevel = getCoarsestGridLevelOfAllSolvers(_boundingBoxSize);
   int boundingBoxMeshLevel = coarsestUserMeshLevel;
   tarch::la::Vector<DIMENSIONS,double> boundingBoxOffset = _domainOffset;
 
-  if (exahype::State::ScaleBoundingBox) {
+  if ( _parser.getScaleBoundingBox() ) {
     const double coarsestUserMeshSpacing =
         exahype::solvers::Solver::getCoarsestMaximumMeshSizeOfAllSolvers();
     const double maxDomainExtent = tarch::la::max(_domainSize);
@@ -594,19 +594,20 @@ exahype::repositories::Repository* exahype::runners::Runner::createRepository() 
     double boundingBoxExtent      = 0;
     double boundingBoxMeshSpacing = std::numeric_limits<double>::infinity();
 
+    const int cellsPushedOutside = ( coarsestUserMeshLevel <= 3 ) ? 1 : 2;
     int level = coarsestUserMeshLevel; // level=1 means a single cell
     while (boundingBoxMeshSpacing > coarsestUserMeshSpacing) {
       const double boundingBoxMeshCells = std::pow(3,level-1);
-      boundingBoxScaling                = boundingBoxMeshCells / ( boundingBoxMeshCells - 2 );
+      boundingBoxScaling                = boundingBoxMeshCells / ( boundingBoxMeshCells - 2*cellsPushedOutside );
       boundingBoxExtent                 = boundingBoxScaling * maxDomainExtent;
       boundingBoxMeshSpacing            = boundingBoxExtent/boundingBoxMeshCells;
       level++;
     }
     level--; // decrement result since boundingBox was computed using level-1
+    boundingBoxMeshLevel = level;
 
     assertion6(boundingBoxScaling>=1.0,boundingBoxScaling,boundingBoxExtent,boundingBoxMeshSpacing,boundingBoxMeshLevel,coarsestUserMeshSpacing,maxDomainExtent);
 
-    boundingBoxMeshLevel = level;
     _boundingBoxSize    *= boundingBoxScaling;
     boundingBoxOffset   -= boundingBoxMeshSpacing;
   }
@@ -766,8 +767,6 @@ int exahype::runners::Runner::run() {
     initOptimisations();
 
     initHeaps();
-
-    exahype::State::ScaleBoundingBox =_parser.getScaleBoundingBox();
 
     auto* repository = createRepository();
     // must come after repository creation
