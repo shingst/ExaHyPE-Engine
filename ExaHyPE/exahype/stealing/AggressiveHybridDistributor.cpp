@@ -396,8 +396,6 @@ void exahype::stealing::AggressiveHybridDistributor::updateLoadDistributionCCP()
     else 
       _temperatureCCP = std::max(0.1, _temperatureCCP*0.9);
   }
-
-  _incrementCurrent = _incrementPrevious;
   
   for(int i=0; i<nnodes; i++) {
     if(_idealTasksToOffload[i]>0) {
