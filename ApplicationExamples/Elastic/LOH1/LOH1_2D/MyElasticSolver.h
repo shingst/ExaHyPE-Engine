@@ -39,7 +39,7 @@ class Elastic::MyElasticSolver : public exahype::solvers::ADERDGSolver {
                      const double* const QR, const double dt,
                      const int normalNonZeroIndex) override;
   void boundaryConditions(
-      double* const fluxOut, double* stateOut, const double* const fluxIn,
+      double* const fluxOut, double* const stateOut, const double* const fluxIn,
       const double* const stateIn,
       const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
       const tarch::la::Vector<DIMENSIONS, double>& cellSize, const double t,
@@ -80,17 +80,17 @@ class Elastic::MyElasticSolver : public exahype::solvers::ADERDGSolver {
  private:
   void init();
   static void eigenvalues(const double* const Q, const int normalNonZeroIndex,
-                          double* lambda);
-  static void flux(const double* const Q, double** F);
-  static void source(const double* const Q, double* S);
+                          double* const lambda);
+  static void flux(const double* const Q, double** const F);
+  static void source(const double* const Q, double* const S);
   static void boundaryValues(const double* const x, const double t,
                              const int faceIndex, const int normalNonZero,
                              const double* const fluxIn,
                              const double* const stateIn, double* const fluxOut,
-                             double* stateOut);
+                             double* const stateOut);
   static void adjustedSolutionValues(const double* const x, const double w,
                                      const double t, const double dt,
-                                     double* Q);
+                                     double* const Q);
   static void pointSources(double* const luh,
                            const tarch::la::Vector<DIMENSIONS, double>& center,
                            const tarch::la::Vector<DIMENSIONS, double>& dx,

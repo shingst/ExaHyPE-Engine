@@ -71,7 +71,7 @@ void GRMHDb::GRMHDbSolver_FV::init(const std::vector<std::string>& cmdlineargs,c
 	///**************************************************************************/
 }
 
-void GRMHDb::GRMHDbSolver_FV::adjustSolution(const double* const x, const double t, const double dt, double* Q) {
+void GRMHDb::GRMHDbSolver_FV::adjustSolution(const double* const x, const double t, const double dt, double* const Q) {
 	// Dimensions             = 3
 	// Number of variables    = 19 + #parameters
 
@@ -122,7 +122,7 @@ void GRMHDb::GRMHDbSolver_FV::adjustSolution(const double* const x, const double
 }
 
 
-void GRMHDb::GRMHDbSolver_FV::referenceSolution(const double* const x, double t, double* Q) {
+void GRMHDb::GRMHDbSolver_FV::referenceSolution(const double* const x, double t, double* const Q) {
 	const int nVar = GRMHDb::AbstractGRMHDbSolver_ADERDG::NumberOfVariables;
 	int iErr = 0;
 	double* Qcons;
@@ -137,7 +137,7 @@ void GRMHDb::GRMHDbSolver_FV::referenceSolution(const double* const x, double t,
 }
 
 
-void GRMHDb::GRMHDbSolver_FV::eigenvalues(const double* const Q, const int dIndex, double* lambda) {
+void GRMHDb::GRMHDbSolver_FV::eigenvalues(const double* const Q, const int dIndex, double* const lambda) {
   // Dimensions             = 3
   // Number of variables    = 19 + #parameters
   
@@ -172,7 +172,7 @@ void GRMHDb::GRMHDbSolver_FV::boundaryValues(
     const int faceIndex,
     const int d,
     const double* const stateInside,
-    double* stateOutside) {
+    double* const stateOutside) {
   // Dimensions             = 3
   // Number of variables    = 19 + #parameters 
   // @todo Please implement/augment if required
@@ -221,7 +221,7 @@ void GRMHDb::GRMHDbSolver_FV::boundaryValues(
 //to add new PDEs specify them in the specification file, delete this file and its header and rerun the toolkit
 
 
-void GRMHDb::GRMHDbSolver_FV::flux(const double* const Q,double** F) {
+void GRMHDb::GRMHDbSolver_FV::flux(const double* const Q,double** const F) {
   // Dimensions                        = 3
   // Number of variables + parameters  = 19 + 0
   
@@ -298,7 +298,7 @@ void GRMHDb::GRMHDbSolver_FV::flux(const double* const Q,double** F) {
 
 
 
-void  GRMHDb::GRMHDbSolver_FV::nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) {
+void  GRMHDb::GRMHDbSolver_FV::nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ) {
   // @todo Please implement/augment if required
   BgradQ[0] = 0.0;
   BgradQ[1] = 0.0;

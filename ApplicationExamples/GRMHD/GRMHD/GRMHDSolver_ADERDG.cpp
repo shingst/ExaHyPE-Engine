@@ -60,7 +60,7 @@ void GRMHD::GRMHDSolver_ADERDG::init(const std::vector<std::string>& cmdlineargs
   }
 }
 
-void __attribute__((optimize("O0"))) initialData(const double* const x,const double t,const double dt,double* Q) {
+void __attribute__((optimize("O0"))) initialData(const double* const x,const double t,const double dt,double* const Q) {
   id->Interpolate(x, t, Q);
   //printf("Interpoalted at x=[%f,%f,%f], t=%f, Q0=%f\n", x[0],x[1],x[2], t, Q[0]);
   for(int i=0; i<nVar; i++) {
@@ -71,34 +71,34 @@ void __attribute__((optimize("O0"))) initialData(const double* const x,const dou
 }
 
 
-void __attribute__((optimize("O0"))) GRMHD::GRMHDSolver_ADERDG::adjustPointSolution(const double* const x,const double t,const double dt,double* Q) {
+void __attribute__((optimize("O0"))) GRMHD::GRMHDSolver_ADERDG::adjustPointSolution(const double* const x,const double t,const double dt,double* const Q) {
   bool insideExcisionBall = false;
   bool hastoadjust = tarch::la::equals(t,0.0) || insideExcisionBall;
 
   if (hastoadjust) initialData(x,t,dt,Q);
 }
 
-void __attribute__((optimize("O0"))) GRMHD::GRMHDSolver_ADERDG::eigenvalues(const double* const Q,const int d,double* lambda) {
+void __attribute__((optimize("O0"))) GRMHD::GRMHDSolver_ADERDG::eigenvalues(const double* const Q,const int d,double* const lambda) {
   double nv[3] = {0.};
   nv[d] = 1;
   pdeeigenvalues_(lambda, Q, nv);
 }
 
 
-void GRMHD::GRMHDSolver_ADERDG::flux(const double* const Q,double** F) {
+void GRMHD::GRMHDSolver_ADERDG::flux(const double* const Q,double** const F) {
   pdeflux_(F[0], F[1], (DIMENSIONS==3)?F[2]:nullptr, Q);
 }
 
 // Source is zero
 /*
-void __attribute__((optimize("O0"))) GRMHD::GRMHDSolver_ADERDG::algebraicSource(const double* const Q,double* S) {
+void __attribute__((optimize("O0"))) GRMHD::GRMHDSolver_ADERDG::algebraicSource(const double* const Q,double* const S) {
   pdesource_(S, Q);
 }
 */
 
 
 void GRMHD::GRMHDSolver_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int d,
-  const double * const fluxIn,const double* const stateIn, double *fluxOut,double* stateOut) {
+  const double * const fluxIn,const double* const stateIn, double* const fluxOut,double* const stateOut) {
 	 // for debugging, to make sure BC are set correctly
 	double snan = std::numeric_limits<double>::signaling_NaN();
 	double weird_number = -1.234567;
@@ -153,7 +153,7 @@ bool isInRefinementZone(const tarch::la::Vector<DIMENSIONS,double>& center){
 }
 
 
-exahype::solvers::Solver::RefinementControl GRMHD::GRMHDSolver_ADERDG::refinementCriterion(const double* luh,
+exahype::solvers::Solver::RefinementControl GRMHD::GRMHDSolver_ADERDG::refinementCriterion(const double* const luh,
         const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
     // @todo Please implement/augment if required
 
@@ -164,7 +164,7 @@ exahype::solvers::Solver::RefinementControl GRMHD::GRMHDSolver_ADERDG::refinemen
 
 // only evaluated in Limiting context
 /*
-void GRMHD::GRMHDSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(double* observables, const double* const Q) const {
+void GRMHD::GRMHDSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(double* const observables, const double* const Q) const {
   assertion(NumberOfDMPObservables==2);
 
   observables[0] = Q[0]; // rho
@@ -173,7 +173,7 @@ void GRMHD::GRMHDSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(double* o
 */
 
 void GRMHD::GRMHDSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(
-  double* observables, const int NumberOfVariables,
+  double* const observables, const int NumberOfVariables,
   const double* const Q) const {
   for (int i = 0; i < NumberOfVariables; ++i) {
     observables[i] = Q[i];
@@ -222,7 +222,7 @@ bool GRMHD::GRMHDSolver_ADERDG::isPhysicallyAdmissible(
 
 
 
-void __attribute__((optimize("O0"))) GRMHD::GRMHDSolver_ADERDG::nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) {
+void __attribute__((optimize("O0"))) GRMHD::GRMHDSolver_ADERDG::nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ) {
   pdencp_(BgradQ, Q, gradQ);
   
   for(int i=0; i<NumberOfVariables; i++) {
@@ -237,7 +237,7 @@ void __attribute__((optimize("O0"))) GRMHD::GRMHDSolver_ADERDG::nonConservativeP
 }
 
 /*
-void GRMHD::GRMHDSolver_ADERDG::coefficientMatrix(const double* const Q,const int d,double* Bn) {
+void GRMHD::GRMHDSolver_ADERDG::coefficientMatrix(const double* const Q,const int d,double* const Bn) {
   // new scheme has no coefficient matrix
   static tarch::logging::Log _log("GRMHDSolver");
   logError("coefficientMatrix()", "ADERDG Coefficient Matrix invoked");

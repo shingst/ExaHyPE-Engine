@@ -27,7 +27,7 @@ void Euler::MyEulerSolver::init(const std::vector<std::string>& cmdlineargs,cons
     printf("%i. %s\n", i, cmdlineargs[i].c_str());
 }
 
-void Euler::MyEulerSolver::flux(const double* const Q, double** F) {
+void Euler::MyEulerSolver::flux(const double* const Q, double** const F) {
   // Dimensions             = 2/3
   // Number of variables    = 5 (#unknowns + #parameters)
 
@@ -75,7 +75,7 @@ void Euler::MyEulerSolver::flux(const double* const Q, double** F) {
 #endif
 }
 
-void Euler::MyEulerSolver::algebraicSource(const double* const Q, double* S) {
+void Euler::MyEulerSolver::algebraicSource(const double* const Q, double* const S) {
   S[0] = 0.0;
   S[1] = 0.0;
   S[2] = 0.0;
@@ -85,7 +85,7 @@ void Euler::MyEulerSolver::algebraicSource(const double* const Q, double* S) {
 
 void Euler::MyEulerSolver::eigenvalues(const double* const Q,
                                        const int normalNonZeroIndex,
-                                       double* lambda) {
+                                       double* const lambda) {
   // Dimensions             = 2/3
   // Number of variables    = 5 (#unknowns + #parameters)
   const double GAMMA = 1.4;
@@ -124,7 +124,7 @@ bool Euler::MyEulerSolver::hasToAdjustSolution(
 void Euler::MyEulerSolver::adjustedSolutionValues(const double* const x,
                                                   const double w,
                                                   const double t,
-                                                  const double dt, double* Q) {
+                                                  const double dt, double* const Q) {
   // Dimensions             = 2
   // Number of variables    = 5 (#unknowns + #parameters)
   // @todo Please implement
@@ -149,7 +149,7 @@ void Euler::MyEulerSolver::boundaryValues(const double* const x, const double t,
                                           const int normalNonZero,
                                           const double* const fluxIn,
                                           const double* const stateIn,
-                                          double* const fluxOut, double* stateOut) {
+                                          double* const fluxOut, double* const stateOut) {
   // Dimensions             = 2
   // Number of variables    = 5 (#unknowns + #parameters)
 
@@ -203,11 +203,11 @@ void Euler::MyEulerSolver::boundaryValues(const double* const x, const double t,
   */
 }
 
-void Euler::MyEulerSolver::nonConservativeProduct(const double* const Q, const double* const gradQ, double* BgradQ) {
+void Euler::MyEulerSolver::nonConservativeProduct(const double* const Q, const double* const gradQ, double* const BgradQ) {
 	std::memset(BgradQ, 0, nVar * sizeof(double));
 }
 
-void Euler::MyEulerSolver::coefficientMatrix(const double* const Q, const int normalNonZero, double* Bn) {
+void Euler::MyEulerSolver::coefficientMatrix(const double* const Q, const int normalNonZero, double* const Bn) {
 	std::memset(Bn, 0, nVar * sizeof(double));
 }
 

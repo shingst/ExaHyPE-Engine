@@ -48,18 +48,18 @@ class GRMHD::AbstractGRMHDSolver_FV : public exahype::solvers::FiniteVolumesSolv
     
     AbstractGRMHDSolver_FV(const double maximumMeshSize,const exahype::solvers::Solver::TimeStepping timeStepping);
     
-    void solutionUpdate(double* luhNew,const double* luh,const tarch::la::Vector<DIMENSIONS,double>& dx,const double dt,double& maxAdmissibleDt) override;
+    void solutionUpdate(double* const luhNew,const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& dx,const double dt,double& maxAdmissibleDt) override;
     
     double stableTimeStepSize(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& dx) override;
-    void adjustSolution(double* luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,double dt) override;
+    void adjustSolution(double* const luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,double dt) override;
     
-    void ghostLayerFilling(double* luh,const double* luhNeighbour,const tarch::la::Vector<DIMENSIONS,int>& neighbourPosition) override;
-    void ghostLayerFillingAtBoundary(double* luh,const double* luhbnd,const tarch::la::Vector<DIMENSIONS,int>& boundaryPosition) override;
-    void boundaryLayerExtraction(double* luhbnd,const double* luh,const tarch::la::Vector<DIMENSIONS,int>& boundaryPosition) override;
-    void boundaryConditions(double* luh,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const tarch::la::Vector<DIMENSIONS, int>& posCell,const tarch::la::Vector<DIMENSIONS, int>& posBoundary) override;
+    void ghostLayerFilling(double* const luh,const double* const luhNeighbour,const tarch::la::Vector<DIMENSIONS,int>& neighbourPosition) override;
+    void ghostLayerFillingAtBoundary(double* const luh,const double* const luhbnd,const tarch::la::Vector<DIMENSIONS,int>& boundaryPosition) override;
+    void boundaryLayerExtraction(double* const luhbnd,const double* const luh,const tarch::la::Vector<DIMENSIONS,int>& boundaryPosition) override;
+    void boundaryConditions(double* const luh,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const tarch::la::Vector<DIMENSIONS, int>& posCell,const tarch::la::Vector<DIMENSIONS, int>& posBoundary) override;
 
     /// Apr 18, Coding Week: Riemann Solvers in FV. Hopefully inlined as evaluated point wise.
-    double riemannSolver(double* fL, double *fR, const double* qL, const double* qR, int direction) override;
+    double riemannSolver(double* const fL, double* const fR, const double* const qL, const double* const qR, int direction) override;
 
     static void constantsToString(std::ostream& os);
     static void abortWithMsg(const char* const msg);
@@ -67,9 +67,9 @@ class GRMHD::AbstractGRMHDSolver_FV : public exahype::solvers::FiniteVolumesSolv
     
     
     
-    void pointSource(const double* const Q,const double* const x,const double t,const double dt, double* forceVector,int n)  final {}
+    void pointSource(const double* const Q,const double* const x,const double t,const double dt, double* const forceVector,int n)  final {}
     /* Please check if this is at the correct place: */
-    virtual void multiplyMaterialParameterMatrix(const double* const Q, double* rhs) final {}
+    virtual void multiplyMaterialParameterMatrix(const double* const Q, double* const rhs) final {}
 
     
 };

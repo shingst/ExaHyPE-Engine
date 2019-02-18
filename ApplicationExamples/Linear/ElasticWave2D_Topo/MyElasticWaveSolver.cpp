@@ -12,7 +12,7 @@ void Elastic::MyElasticWaveSolver::init(const std::vector<std::string>& cmdlinea
   // @todo Please implement/augment if required
 }
 
-void Elastic::MyElasticWaveSolver::adjustSolution(double *luh, const tarch::la::Vector<DIMENSIONS,double>& center, const tarch::la::Vector<DIMENSIONS,double>& dx,double t,double dt) {
+void Elastic::MyElasticWaveSolver::adjustSolution(double* const luh, const tarch::la::Vector<DIMENSIONS,double>& center, const tarch::la::Vector<DIMENSIONS,double>& dx,double t,double dt) {
   // Dimensions                        = 2
   // Number of variables + parameters  = 5 + 10
   // @todo Please implement/augment if required
@@ -165,7 +165,7 @@ void Elastic::MyElasticWaveSolver::adjustSolution(double *luh, const tarch::la::
 
 void Elastic::MyElasticWaveSolver::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,
   const double * const fluxIn,const double* const stateIn,
-  double *fluxOut,double* stateOut) {
+  double* const fluxOut,double* const stateOut) {
   // Dimensions                        = 2
   // Number of variables + parameters  = 5 + 10
 
@@ -195,7 +195,7 @@ exahype::solvers::Solver::RefinementControl Elastic::MyElasticWaveSolver::refine
 //*****************************************************************************
 
 
-void Elastic::MyElasticWaveSolver::eigenvalues(const double* const Q,const int d,double* lambda) {
+void Elastic::MyElasticWaveSolver::eigenvalues(const double* const Q,const int d,double* const lambda) {
   // Dimensions                        = 2
   // Number of variables + parameters  = 5 + 10
   
@@ -217,7 +217,7 @@ void Elastic::MyElasticWaveSolver::eigenvalues(const double* const Q,const int d
 }
 
 
-void Elastic::MyElasticWaveSolver::flux(const double* const Q,double** F) {
+void Elastic::MyElasticWaveSolver::flux(const double* const Q,double** const F) {
   // Dimensions                        = 2
   // Number of variables + parameters  = 5 + 10
   
@@ -248,7 +248,7 @@ void Elastic::MyElasticWaveSolver::flux(const double* const Q,double** F) {
 
 
 
-void  Elastic::MyElasticWaveSolver::nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) {
+void  Elastic::MyElasticWaveSolver::nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ) {
   
   double q_x;
   double q_y;
@@ -330,7 +330,7 @@ void  Elastic::MyElasticWaveSolver::pointSource(const double* const x,const doub
     /**
      * @TODO LR : document
      */
-void Elastic::MyElasticWaveSolver::multiplyMaterialParameterMatrix(const double* const Q, double* rhs) {
+void Elastic::MyElasticWaveSolver::multiplyMaterialParameterMatrix(const double* const Q, double* const rhs) {
   const double rho  = Q[5];   // km/s
   const double cp   = Q[6];   // km/s
   const double cs   = Q[7];   // km/s
@@ -494,7 +494,7 @@ void Elastic::MyElasticWaveSolver::riemannSolver(double* const FL,double* const 
 }
 
 
-void Elastic::MyElasticWaveSolver::extract_tractions_and_particle_velocity(double* n,const double* Q, double& Tx,double& Ty,double& vx,double& vy){
+void Elastic::MyElasticWaveSolver::extract_tractions_and_particle_velocity(double* const n,const double* const Q, double& Tx,double& Ty,double& vx,double& vy){
 
   double sigma_xx = Q[2];
   double sigma_yy = Q[3];
@@ -508,12 +508,12 @@ void Elastic::MyElasticWaveSolver::extract_tractions_and_particle_velocity(doubl
   vy = Q[1];   
 }
 
-void Elastic::MyElasticWaveSolver::rotate_into_orthogonal_basis(double* n,double* m, double Tx,double Ty, double& Tn, double& Tm){
+void Elastic::MyElasticWaveSolver::rotate_into_orthogonal_basis(double* const n,double* const m, double Tx,double Ty, double& Tn, double& Tm){
     Tn= Tx*n[0] + Ty*n[1];
     Tm= Tx*m[0] + Ty*m[1];
 }
 
-void Elastic::MyElasticWaveSolver::rotate_into_physical_basis(double* n,double* m, double Fn,double Fm, double& Fx, double& Fy){
+void Elastic::MyElasticWaveSolver::rotate_into_physical_basis(double* const n,double* const m, double Fn,double Fm, double& Fx, double& Fy){
 
   Fx = n[0]*Fn + m[0]*Fm;
   Fy = n[1]*Fn + m[1]*Fm;
@@ -603,7 +603,7 @@ void Elastic::MyElasticWaveSolver::riemannSolver_Nodal(double v_p,double v_m, do
 }
 
 
-void Elastic::MyElasticWaveSolver::localBasis(double* n, double * m){
+void Elastic::MyElasticWaveSolver::localBasis(double* const n, double* const m){
   m[0] = n[1];
   m[1] = -n[0];
 }
@@ -615,7 +615,7 @@ void Elastic::MyElasticWaveSolver::extractTransformation(const double* const Q, 
   r_y     =Q[12];
 }
 
-void Elastic::MyElasticWaveSolver::get_normals(int normalNonZeroIndex,double& norm, double* n,const double* Q){
+void Elastic::MyElasticWaveSolver::get_normals(int normalNonZeroIndex,double& norm, double* const n,const double* const Q){
   double q_x;
   double q_y;
   double r_x;

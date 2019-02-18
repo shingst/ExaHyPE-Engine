@@ -7,7 +7,7 @@ void Euler::FirstEulerSolver::init() {
   // @todo Please implement/augment if required.
 }
 
-void Euler::FirstEulerSolver::flux(const double* const Q, double** F) {
+void Euler::FirstEulerSolver::flux(const double* const Q, double** const F) {
   // Dimensions             = 2
   // Number of variables    = 5 (#unknowns + #parameters)
   const double GAMMA = 1.4;
@@ -37,7 +37,7 @@ void Euler::FirstEulerSolver::flux(const double* const Q, double** F) {
 
 
 
-void Euler::FirstEulerSolver::algebraicSource(const double* const Q, double* S) {
+void Euler::FirstEulerSolver::algebraicSource(const double* const Q, double* const S) {
   // Number of variables = 5 + 0
   // @todo Please implement
   S[0] = 0.0;
@@ -49,7 +49,7 @@ void Euler::FirstEulerSolver::algebraicSource(const double* const Q, double* S) 
 
 
 
-void Euler::FirstEulerSolver::boundaryValues(const double* const x,const double t, const int faceIndex, const int normalNonZero, const double * const fluxIn, const double* const stateIn, double *fluxOut, double* stateOut) {
+void Euler::FirstEulerSolver::boundaryValues(const double* const x,const double t, const int faceIndex, const int normalNonZero, const double * const fluxIn, const double* const stateIn, double* const fluxOut, double* const stateOut) {
   // Dimensions             = 2
   // Number of variables    = 5 (#unknowns + #parameters)
 
@@ -72,7 +72,7 @@ void Euler::FirstEulerSolver::boundaryValues(const double* const x,const double 
 
 
 
-void Euler::FirstEulerSolver::eigenvalues(const double* const Q, const int normalNonZeroIndex, double* lambda) {
+void Euler::FirstEulerSolver::eigenvalues(const double* const Q, const int normalNonZeroIndex, double* const lambda) {
   // Dimensions             = 2
   // Number of variables    = 5 (#unknowns + #parameters)
   const double GAMMA = 1.4;
@@ -101,7 +101,7 @@ bool Euler::FirstEulerSolver::hasToAdjustSolution(const tarch::la::Vector<DIMENS
 
 
 
-void Euler::FirstEulerSolver::adjustedSolutionValues(const double* const x,const double w,const double t,const double dt,double* Q) {
+void Euler::FirstEulerSolver::adjustedSolutionValues(const double* const x,const double w,const double t,const double dt,double* const Q) {
   if (tarch::la::equals(t, 0.0)) {
     // Dimensions             = 2
     // Number of variables    = 5 (#unknowns + #parameters)

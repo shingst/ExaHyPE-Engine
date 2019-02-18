@@ -12,7 +12,7 @@ void EulerFV::MyEulerSolver::init(const std::vector<std::string>& cmdlineargs,co
   // @todo Please implement/augment if required
 }
 
-void EulerFV::MyEulerSolver::adjustSolution(const double* const x,const double t,const double dt, double* Q) {
+void EulerFV::MyEulerSolver::adjustSolution(const double* const x,const double t,const double dt, double* const Q) {
   if ( tarch::la::equals( t,0.0 ) ) {
   Variables vars(Q);
   
@@ -37,7 +37,7 @@ void EulerFV::MyEulerSolver::adjustSolution(const double* const x,const double t
 }
 
 
-void EulerFV::MyEulerSolver::eigenvalues(const double* const Q, const int normalNonZeroIndex, double* lambda) {
+void EulerFV::MyEulerSolver::eigenvalues(const double* const Q, const int normalNonZeroIndex, double* const lambda) {
   ReadOnlyVariables vars(Q);
   Variables eigs(lambda);
 
@@ -54,7 +54,7 @@ void EulerFV::MyEulerSolver::eigenvalues(const double* const Q, const int normal
 }
 
 
-void EulerFV::MyEulerSolver::flux(const double* const Q, double** F) {
+void EulerFV::MyEulerSolver::flux(const double* const Q, double** const F) {
   ReadOnlyVariables vars(Q);
   Fluxes fluxes(F);
 
@@ -79,7 +79,7 @@ void EulerFV::MyEulerSolver::boundaryValues(
     const int faceIndex,
     const int normalNonZero,
     const double* const stateInside,
-    double* stateOutside) {
+    double* const stateOutside) {
   ReadOnlyVariables varsInside(stateInside);
   Variables         varsOutside(stateOutside);
 

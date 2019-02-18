@@ -14,7 +14,7 @@ bool PotentialHydro::PotentialEulerSolver::useAdjustSolution(const tarch::la::Ve
   return tarch::la::equals(t,0.0);
 }
 
-void PotentialHydro::PotentialEulerSolver::adjustSolution(const double* const x,const double w,const double t,const double dt, double* Q) {
+void PotentialHydro::PotentialEulerSolver::adjustSolution(const double* const x,const double w,const double t,const double dt, double* const Q) {
   // initial data: stable matter clumb  
   using namespace tarch::la;
   typedef Vector<DIMENSIONS,double> vec;
@@ -41,14 +41,14 @@ exahype::solvers::Solver::RefinementControl PotentialHydro::PotentialEulerSolver
 }
 
 
-void PotentialHydro::PotentialEulerSolver::eigenvalues(const double* const Q, const int dIndex, double* lambda) {
+void PotentialHydro::PotentialEulerSolver::eigenvalues(const double* const Q, const int dIndex, double* const lambda) {
   /*** Ordinary EulerSolver eigenvalues ***/
   // For the time being, set all eigenvalues to one. Is pessmistic but okay.
   for(int i=0; i<numberOfVariables; i++)
     lambda[i] = 1.0;
 }
 
-void PotentialHydro::PotentialEulerSolver::flux(const double* const Q, double** F) {
+void PotentialHydro::PotentialEulerSolver::flux(const double* const Q, double** const F) {
   /* Ordinary EulerSolver flux */
   ReadOnlyVariables vars(Q);
   Fluxes f(F);
@@ -77,7 +77,7 @@ void PotentialHydro::PotentialEulerSolver::boundaryValues(
     const int faceIndex,
     const int d,
     const double* const stateInside,
-    double* stateOutside) {
+    double* const stateOutside) {
   // Dimensions             = 2
   // Number of variables    = 5 + #parameters
 
@@ -87,9 +87,9 @@ void PotentialHydro::PotentialEulerSolver::boundaryValues(
 }
 
 
-//void PotentialHydro::algebraicSource(const double* const Q, double* S) {}
+//void PotentialHydro::algebraicSource(const double* const Q, double* const S) {}
 
-void PotentialHydro::PotentialEulerSolver::nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) {
+void PotentialHydro::PotentialEulerSolver::nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ) {
   // for testing, first set it to zero
   for(int i=0; i<numberOfVariables; i++)
     BgradQ[i] = 0;

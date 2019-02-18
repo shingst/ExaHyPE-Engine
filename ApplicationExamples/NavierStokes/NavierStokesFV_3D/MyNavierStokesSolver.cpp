@@ -17,7 +17,7 @@ void NavierStokesFV::MyNavierStokesSolver::init(const std::vector<std::string>& 
 
 
 
-void NavierStokesFV::MyNavierStokesSolver::adjustSolution(const double* const x,const double t,const double dt, double* Q) {
+void NavierStokesFV::MyNavierStokesSolver::adjustSolution(const double* const x,const double t,const double dt, double* const Q) {
   // Dimensions             = 2
   // Number of variables    = 5 + #parameters
       
@@ -32,7 +32,7 @@ void NavierStokesFV::MyNavierStokesSolver::adjustSolution(const double* const x,
 
 }
 
-void NavierStokesFV::MyNavierStokesSolver::eigenvalues(const double* const Q, const int dIndex, double* lambda) {
+void NavierStokesFV::MyNavierStokesSolver::eigenvalues(const double* const Q, const int dIndex, double* const lambda) {
   // Dimensions             = 2
   // Number of variables    = 5 + #parameters
   ReadOnlyVariables vars(Q);
@@ -50,7 +50,7 @@ void NavierStokesFV::MyNavierStokesSolver::eigenvalues(const double* const Q, co
   eigs.E()  =u_n + c;
 }
 
-void NavierStokesFV::MyNavierStokesSolver::viscousEigenvalues(const double* const Q, const int dIndex, double* lambda) {
+void NavierStokesFV::MyNavierStokesSolver::viscousEigenvalues(const double* const Q, const int dIndex, double* const lambda) {
     // Dimensions             = 2
     // Number of variables    = 5 + #parameters
     ReadOnlyVariables vars(Q);
@@ -71,7 +71,7 @@ void NavierStokesFV::MyNavierStokesSolver::boundaryValues(
     const int faceIndex,
     const int d,
     const double* const stateInside,
-    double* stateOutside) {
+    double* const stateOutside) {
   // Dimensions             = 2
   // Number of variables    = 5 + #parameters
   ReadOnlyVariables varsInside(stateInside);
@@ -84,7 +84,7 @@ void NavierStokesFV::MyNavierStokesSolver::boundaryValues(
 //*********************** PDE *******************************
 //***********************************************************
 
-void NavierStokesFV::MyNavierStokesSolver::viscousFlux(const double* const Q, const double* const gradQ, double** F) {
+void NavierStokesFV::MyNavierStokesSolver::viscousFlux(const double* const Q, const double* const gradQ, double** const F) {
   // Dimensions                        = 2
   // Number of variables + parameters  = 5 + 0
   ReadOnlyVariables vars(Q);

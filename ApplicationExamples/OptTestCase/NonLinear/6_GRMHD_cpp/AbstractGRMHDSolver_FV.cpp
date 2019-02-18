@@ -44,7 +44,7 @@ void GRMHD::AbstractGRMHDSolver_FV::abortWithMsg(const char* const msg) {
 	abort();
 }
 
-void GRMHD::AbstractGRMHDSolver_FV::solutionUpdate(double* luhNew,const double* luh,const tarch::la::Vector<DIMENSIONS,double>& dx,const double dt,double& maxAdmissibleDt) {
+void GRMHD::AbstractGRMHDSolver_FV::solutionUpdate(double* const luhNew,const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& dx,const double dt,double& maxAdmissibleDt) {
   maxAdmissibleDt = kernels::finitevolumes::godunov::c::solutionUpdate<true, true, true, GRMHDSolver_FV>(*static_cast<GRMHDSolver_FV*>(this),luhNew,luh,dx,dt);
 }
 
@@ -54,11 +54,11 @@ double GRMHD::AbstractGRMHDSolver_FV::stableTimeStepSize(const double* const luh
   return maxAdmissibleDt;
 }
 
-void GRMHD::AbstractGRMHDSolver_FV::adjustSolution(double *luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,const double t,const double dt) {
+void GRMHD::AbstractGRMHDSolver_FV::adjustSolution(double* const luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,const double t,const double dt) {
   kernels::finitevolumes::commons::c::solutionAdjustment<GRMHDSolver_FV>(*static_cast<GRMHDSolver_FV*>(this),luh,center,dx,t,dt);
 }
 
-void GRMHD::AbstractGRMHDSolver_FV::boundaryConditions(double* luh,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const tarch::la::Vector<DIMENSIONS, int>& posCell,const tarch::la::Vector<DIMENSIONS, int>& posBoundary) {
+void GRMHD::AbstractGRMHDSolver_FV::boundaryConditions(double* const luh,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const tarch::la::Vector<DIMENSIONS, int>& posCell,const tarch::la::Vector<DIMENSIONS, int>& posBoundary) {
   constexpr int cellsPerFace = PatchSize*PatchSize*GhostLayerWidth;
   constexpr int sizeLuhbnd = (NumberOfVariables+NumberOfParameters)*cellsPerFace;
   
@@ -82,20 +82,20 @@ void GRMHD::AbstractGRMHDSolver_FV::boundaryConditions(double* luh,const tarch::
 }
 
 
-void GRMHD::AbstractGRMHDSolver_FV::ghostLayerFilling(double* luh,const double* luhNeighbour,const tarch::la::Vector<DIMENSIONS,int>& neighbourPosition) {
+void GRMHD::AbstractGRMHDSolver_FV::ghostLayerFilling(double* const luh,const double* const luhNeighbour,const tarch::la::Vector<DIMENSIONS,int>& neighbourPosition) {
   kernels::finitevolumes::commons::c::ghostLayerFilling<GRMHDSolver_FV>(*static_cast<GRMHDSolver_FV*>(this),luh,luhNeighbour,neighbourPosition);
 }
 
-void GRMHD::AbstractGRMHDSolver_FV::ghostLayerFillingAtBoundary(double* luh,const double* luhbnd,const tarch::la::Vector<DIMENSIONS,int>& boundaryPosition) {
+void GRMHD::AbstractGRMHDSolver_FV::ghostLayerFillingAtBoundary(double* const luh,const double* const luhbnd,const tarch::la::Vector<DIMENSIONS,int>& boundaryPosition) {
   kernels::finitevolumes::commons::c::ghostLayerFillingAtBoundary<GRMHDSolver_FV>(*static_cast<GRMHDSolver_FV*>(this),luh,luhbnd,boundaryPosition);
 }
 
-void GRMHD::AbstractGRMHDSolver_FV::boundaryLayerExtraction(double* luhbnd,const double* luh,const tarch::la::Vector<DIMENSIONS,int>& boundaryPosition) {
+void GRMHD::AbstractGRMHDSolver_FV::boundaryLayerExtraction(double* const luhbnd,const double* const luh,const tarch::la::Vector<DIMENSIONS,int>& boundaryPosition) {
   kernels::finitevolumes::commons::c::boundaryLayerExtraction<GRMHDSolver_FV>(*static_cast<GRMHDSolver_FV*>(this),luhbnd,luh,boundaryPosition);
 }
 
 
-double GRMHD::AbstractGRMHDSolver_FV::riemannSolver(double* fL, double *fR, const double* qL, const double* qR, int direction) {
+double GRMHD::AbstractGRMHDSolver_FV::riemannSolver(double* const fL, double* const fR, const double* const qL, const double* const qR, int direction) {
   // Default FV Riemann Solver
   return kernels::finitevolumes::riemannsolvers::c::rusanov<true, true, GRMHDSolver_FV>(*static_cast<GRMHDSolver_FV*>(this), fL,fR,qL,qR,direction);
 }

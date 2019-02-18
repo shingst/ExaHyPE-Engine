@@ -49,7 +49,7 @@ void GRMHD::GRMHDSolver_ADERDG::init(const std::vector<std::string>& cmdlineargs
  * ExaHyPE and instead do this patching here.
  **/
 #include "kernels/aderdg/generic/Kernels.h"
-void GRMHD::GRMHDSolver_ADERDG::riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double dt,const int normalNonZeroIndex,bool isBoundaryFace, int faceIndex) {
+void GRMHD::GRMHDSolver_ADERDG::riemannSolver(double* const FL,double* const FR,const double* const QL,const double* const QR,const double dt,const int normalNonZeroIndex,bool isBoundaryFace, int faceIndex) {
 	kernels::aderdg::generic::c::riemannSolverNonlinear<true,GRMHDSolver_ADERDG>(*static_cast<GRMHDSolver_ADERDG*>(this),FL,FR,QL,QR,dt,normalNonZeroIndex);
 	
 	#if DIMENSIONS == 3
@@ -68,7 +68,7 @@ void GRMHD::GRMHDSolver_ADERDG::riemannSolver(double* FL,double* FR,const double
 	#endif
 }
 
-void GRMHD::GRMHDSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(double* observables, const double* const Q) const {
+void GRMHD::GRMHDSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(double* const observables, const double* const Q) const {
 	// ensure NumberOfDMPObservables == 2
 	observables[0] = Q[0]; // conserved density
 	observables[1] = Q[4]; // conserved tau
@@ -118,7 +118,7 @@ bool GRMHD::GRMHDSolver_ADERDG::isPhysicallyAdmissible(
 }
 
 
-void GRMHD::GRMHDSolver_ADERDG::adjustPointSolution(const double* const x,const double t,const double dt,double* Q) {
+void GRMHD::GRMHDSolver_ADERDG::adjustPointSolution(const double* const x,const double t,const double dt,double* const Q) {
   if (tarch::la::equals(t,0.0)) {
     InitialData(x,t,Q);
   } else {
@@ -129,7 +129,7 @@ void GRMHD::GRMHDSolver_ADERDG::adjustPointSolution(const double* const x,const 
   }
 }
 
-void GRMHD::GRMHDSolver_ADERDG::eigenvalues(const double* const Q,const int d,double* lambda) {
+void GRMHD::GRMHDSolver_ADERDG::eigenvalues(const double* const Q,const int d,double* const lambda) {
 	// Provide NVARS eigenvalues
 	//PDE::eigenvalues(Q, d, lambda);
 	
@@ -138,7 +138,7 @@ void GRMHD::GRMHDSolver_ADERDG::eigenvalues(const double* const Q,const int d,do
 }
 
 
-void GRMHD::GRMHDSolver_ADERDG::flux(const double* const Q,double** F) {
+void GRMHD::GRMHDSolver_ADERDG::flux(const double* const Q,double** const F) {
 	
 	// as TDIM is 3 and DIMENSIONS is 2, come up with this dirty wrapper:
 	#if DIMENSIONS == 2
@@ -168,7 +168,7 @@ void GRMHD::GRMHDSolver_ADERDG::flux(const double* const Q,double** F) {
 
 void GRMHD::GRMHDSolver_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int d,
   const double * const fluxIn,const double* const stateIn,
-  double *fluxOut,double* stateOut) {
+  double* const fluxOut,double* const stateOut) {
 	// for debugging, to make sure BC are set correctly
 	/*
 	double snan = std::numeric_limits<double>::signaling_NaN();
@@ -222,7 +222,7 @@ void GRMHD::GRMHDSolver_ADERDG::boundaryValues(const double* const x,const doubl
 }
 
 //#include "kernels/aderdg/generic/c/computeGradients.cpph"
-exahype::solvers::Solver::RefinementControl GRMHD::GRMHDSolver_ADERDG::refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
+exahype::solvers::Solver::RefinementControl GRMHD::GRMHDSolver_ADERDG::refinementCriterion(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
 	/*
 	// TODO: Continue here.
 	// Compute the gradient of the Density
@@ -240,7 +240,7 @@ exahype::solvers::Solver::RefinementControl GRMHD::GRMHDSolver_ADERDG::refinemen
 	return exahype::solvers::Solver::RefinementControl::Keep;
 }
 
-void GRMHD::GRMHDSolver_ADERDG::algebraicSource(const double* const Q,double* S) {
+void GRMHD::GRMHDSolver_ADERDG::algebraicSource(const double* const Q,double* const S) {
 	// No algebraic source
 	for(int i=0;i<nVar;i++) S[i] = 0;
 	
@@ -250,7 +250,7 @@ void GRMHD::GRMHDSolver_ADERDG::algebraicSource(const double* const Q,double* S)
 	//zero2Din3D(S_);
 }
 
-void GRMHD::GRMHDSolver_ADERDG::nonConservativeProduct(const double* const Q,const double* const gradQ, double* BgradQ) {
+void GRMHD::GRMHDSolver_ADERDG::nonConservativeProduct(const double* const Q,const double* const gradQ, double* const BgradQ) {
 	// debugging: set BgradQ initially to zero:
 	NVARS(i) BgradQ[i] = 0;
 	
@@ -284,7 +284,7 @@ void GRMHD::GRMHDSolver_ADERDG::nonConservativeProduct(const double* const Q,con
 
 // The optimized fusedSource
 /*
-void GRMHD::GRMHDSolver_ADERDG::fusedSource(const double* const Q, const double* const gradQ, double* S_) {
+void GRMHD::GRMHDSolver_ADERDG::fusedSource(const double* const Q, const double* const gradQ, double* const S_) {
 	PDE::Source S(S_);
 	PDE pde(Q);
 	GRMHD::AbstractGRMHDSolver_ADERDG::ReadOnlyVariables var(Q);

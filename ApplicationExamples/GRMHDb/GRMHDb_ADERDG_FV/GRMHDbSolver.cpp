@@ -18,7 +18,6 @@ GRMHDb::GRMHDbSolver::GRMHDbSolver(
         const int haloCells,
         const int regularisedFineGridLevels,
         const exahype::solvers::Solver::TimeStepping timeStepping,
-        const int limiterHelperLayers,
         const int DMPObservables,
         const double DMPRelaxationParameter,
         const double DMPDifferenceScaling,
@@ -27,7 +26,7 @@ GRMHDb::GRMHDbSolver::GRMHDbSolver(
   exahype::solvers::LimitingADERDGSolver::LimitingADERDGSolver(
       "GRMHDbSolver",
     new GRMHDb::GRMHDbSolver_ADERDG(
-      maximumMeshSize,maximumMeshDepth,haloCells,regularisedFineGridLevels,timeStepping,limiterHelperLayers,DMPObservables),
+      maximumMeshSize,maximumMeshDepth,haloCells,regularisedFineGridLevels,timeStepping,DMPObservables),
     new GRMHDb::GRMHDbSolver_FV(
       maximumMeshSize, timeStepping),
     DMPRelaxationParameter,
@@ -42,7 +41,7 @@ void GRMHDb::GRMHDbSolver::projectOnDGSpace(const double* const lim, double* con
   kernels::limiter::generic::c::projectOnDGSpace<Order+1,NumberOfVariables+NumberOfParameters,GhostLayerWidth>(lim, luh);
 }
 
-bool GRMHDb::GRMHDbSolver::discreteMaximumPrincipleAndMinAndMaxSearch(const double* const luh, double* boundaryMinPerVariables, double* boundaryMaxPerVariables) {
+bool GRMHDb::GRMHDbSolver::discreteMaximumPrincipleAndMinAndMaxSearch(const double* const luh, double* const boundaryMinPerVariables, double* const boundaryMaxPerVariables) {
   return kernels::limiter::generic::c::discreteMaximumPrincipleAndMinAndMaxSearch<AbstractGRMHDbSolver_ADERDG, NumberOfDMPObservables, GhostLayerWidth>(luh, *static_cast<AbstractGRMHDbSolver_ADERDG*>(_solver.get()), _DMPMaximumRelaxationParameter, _DMPDifferenceScaling, boundaryMinPerVariables, boundaryMaxPerVariables);
 }
 

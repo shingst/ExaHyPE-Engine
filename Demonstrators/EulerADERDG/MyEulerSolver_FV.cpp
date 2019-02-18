@@ -11,7 +11,7 @@ void EulerADERDG::MyEulerSolver_FV::init(const std::vector<std::string>& cmdline
   // @todo Please implement/augment if required
 }
 
-void EulerADERDG::MyEulerSolver_FV::adjustSolution(const double* const x,const double t,const double dt, double* Q) {
+void EulerADERDG::MyEulerSolver_FV::adjustSolution(const double* const x,const double t,const double dt, double* const Q) {
   Variables vars(Q);
  
   if ( tarch::la::equals( t,0.0 ) ) {
@@ -28,7 +28,7 @@ void EulerADERDG::MyEulerSolver_FV::adjustSolution(const double* const x,const d
   vars.rho() = density;
 }
 
-void EulerADERDG::MyEulerSolver_FV::eigenvalues(const double* const Q, const int normalNonZeroIndex, double* lambda) {
+void EulerADERDG::MyEulerSolver_FV::eigenvalues(const double* const Q, const int normalNonZeroIndex, double* const lambda) {
   ReadOnlyVariables vars(Q);
   Variables eigs(lambda);
 
@@ -50,7 +50,7 @@ void EulerADERDG::MyEulerSolver_FV::boundaryValues(
     const int faceIndex,
     const int d,
     const double* const stateInside,
-    double* stateOutside) {
+    double* const stateOutside) {
 /*
   ReadOnlyVariables varsInside(stateInside);
   Variables         varsOutside(stateOutside);
@@ -68,7 +68,7 @@ void EulerADERDG::MyEulerSolver_FV::boundaryValues(
 //to add new PDEs specify them in the specification file, delete this file and its header and rerun the toolkit
 
 
-void EulerADERDG::MyEulerSolver_FV::flux(const double* const Q,double** F) {
+void EulerADERDG::MyEulerSolver_FV::flux(const double* const Q,double** const F) {
   ReadOnlyVariables vars(Q);
   Fluxes fluxes(F);
 

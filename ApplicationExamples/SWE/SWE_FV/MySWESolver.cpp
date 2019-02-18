@@ -20,7 +20,7 @@ void SWE::MySWESolver::init(const std::vector<std::string>& cmdlineargs,const ex
   }
 }
 
-void SWE::MySWESolver::adjustSolution(const double* const x,const double t,const double dt, double* Q) {
+void SWE::MySWESolver::adjustSolution(const double* const x,const double t,const double dt, double* const Q) {
   // Dimensions             = 2
   // Number of variables    = 4 + #parameters
 
@@ -29,7 +29,7 @@ void SWE::MySWESolver::adjustSolution(const double* const x,const double t,const
   }
 }
 
-void SWE::MySWESolver::eigenvalues(const double* const Q, const int dIndex, double* lambda) {
+void SWE::MySWESolver::eigenvalues(const double* const Q, const int dIndex, double* const lambda) {
   // Dimensions             = 2
   // Number of variables    = 4 + #parameters
 
@@ -52,7 +52,7 @@ void SWE::MySWESolver::boundaryValues(
     const int faceIndex,
     const int d,
     const double* const stateInside,
-    double* stateOutside) {
+    double* const stateOutside) {
   // Dimensions             = 2
   // Number of variables    = 4 + #parameters
 
@@ -75,7 +75,7 @@ void SWE::MySWESolver::boundaryValues(
 //to add new PDEs specify them in the specification file, delete this file and its header and rerun the toolkit
 
 
-void SWE::MySWESolver::flux(const double* const Q,double** F) {
+void SWE::MySWESolver::flux(const double* const Q,double** const F) {
   // Dimensions                        = 2
   // Number of variables + parameters  = 4 + 0
 
@@ -100,7 +100,7 @@ void SWE::MySWESolver::flux(const double* const Q,double** F) {
 
 
 
-void  SWE::MySWESolver::nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) {
+void  SWE::MySWESolver::nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ) {
   idx2 idx_gradQ(DIMENSIONS,NumberOfVariables);
 
   BgradQ[0] = 0.0;

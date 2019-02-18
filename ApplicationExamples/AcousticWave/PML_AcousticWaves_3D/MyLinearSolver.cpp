@@ -17,7 +17,7 @@ exahype::solvers::ADERDGSolver::AdjustSolutionValue Linear::MyLinearSolver::useA
   return tarch::la::equals(t,0.0) ? exahype::solvers::ADERDGSolver::AdjustSolutionValue::PointWisely : exahype::solvers::ADERDGSolver::AdjustSolutionValue::No;
 }
 
-void Linear::MyLinearSolver::adjustPointSolution(const double* const x,const double w,const double t,const double dt,double* Q) {
+void Linear::MyLinearSolver::adjustPointSolution(const double* const x,const double w,const double t,const double dt,double* const Q) {
   // Dimensions             = 3
   // Number of variables    = 11 + #parameters
   
@@ -97,7 +97,7 @@ void Linear::MyLinearSolver::adjustPointSolution(const double* const x,const dou
    
 }
 
-void Linear::MyLinearSolver::eigenvalues(const double* const Q,const int d,double* lambda) {
+void Linear::MyLinearSolver::eigenvalues(const double* const Q,const int d,double* const lambda) {
   // Dimensions             = 3
   // Number of variables    = 11 + #parameters
   
@@ -113,7 +113,7 @@ void Linear::MyLinearSolver::eigenvalues(const double* const Q,const int d,doubl
 }
 
 
-void Linear::MyLinearSolver::flux(const double* const Q,double** F) {
+void Linear::MyLinearSolver::flux(const double* const Q,double** const F) {
   // Dimensions             = 3
   // Number of variables    = 11 + #parameters
   
@@ -145,7 +145,7 @@ void Linear::MyLinearSolver::flux(const double* const Q,double** F) {
 }
 
 
-void Linear::MyLinearSolver::nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) {
+void Linear::MyLinearSolver::nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ) {
 
   double d_x = Q[8];
   double d_y = Q[9];
@@ -195,7 +195,7 @@ void Linear::MyLinearSolver::nonConservativeProduct(const double* const Q,const 
 
 void Linear::MyLinearSolver::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,
   const double * const fluxIn,const double* const stateIn,
-  double *fluxOut,double* stateOut) {
+  double* const fluxOut,double* const stateOut) {
   // Dimensions             = 3
   // Number of variables    = 11 + #parameters
 
@@ -216,7 +216,7 @@ void Linear::MyLinearSolver::boundaryValues(const double* const x,const double t
 }
 
 
-void Linear::MyLinearSolver::coefficientMatrix(const double* const Q,const int d,double* Bn){
+void Linear::MyLinearSolver::coefficientMatrix(const double* const Q,const int d,double* const Bn){
 
   double d_x = Q[8];
   double d_y = Q[9];
@@ -258,7 +258,7 @@ void Linear::MyLinearSolver::coefficientMatrix(const double* const Q,const int d
 }
 
 
-void Linear::MyLinearSolver::algebraicSource(const double* const Q,double* S) {
+void Linear::MyLinearSolver::algebraicSource(const double* const Q,double* const S) {
 
   double p = Q[0];
   double u = Q[1];
@@ -286,7 +286,7 @@ void Linear::MyLinearSolver::algebraicSource(const double* const Q,double* S) {
   
 }
 
-void Linear::MyLinearSolver::pointSource(const double* const x,const double t,const double dt, double* const forceVector, double* x0){
+void Linear::MyLinearSolver::pointSource(const double* const x,const double t,const double dt, double* const forceVector, double* const x0){
 
   double pi = 3.14159265359;
   double sigma = 0.1149;
@@ -314,7 +314,7 @@ void Linear::MyLinearSolver::pointSource(const double* const x,const double t,co
 
 }
 
-void Linear::MyLinearSolver::multiplyMaterialParameterMatrix(const double* const Q, double* rhs){
+void Linear::MyLinearSolver::multiplyMaterialParameterMatrix(const double* const Q, double* const rhs){
 
   double rho = Q[6];  
   double c   = Q[7];
@@ -351,7 +351,7 @@ void Linear::MyLinearSolver::multiplyMaterialParameterMatrix(const double* const
   
 }
 
-void Linear::MyLinearSolver::riemannSolver(double* const FL,double* const FR,const double* const QL,const double* const QR,double* tempFaceUnknownsArray,double** tempStateSizedVectors,double** tempStateSizedSquareMatrices,const double dt,const int normalNonZeroIndex,bool isBoundaryFace, int faceIndex){
+void Linear::MyLinearSolver::riemannSolver(double* const FL,double* const FR,const double* const QL,const double* const QR,double* const tempFaceUnknownsArray,double** const tempStateSizedVectors,double** const tempStateSizedSquareMatrices,const double dt,const int normalNonZeroIndex,bool isBoundaryFace, int faceIndex){
 
   constexpr int numberOfVariables  = MyLinearSolver::NumberOfVariables;
   constexpr int numberOfVariables2 = numberOfVariables*numberOfVariables;
@@ -522,7 +522,7 @@ void Linear::MyLinearSolver::riemannSolver(double* const FL,double* const FR,con
 
 
 
-void Linear::MyLinearSolver::Gram_Schmidt(double* y, double* z){
+void Linear::MyLinearSolver::Gram_Schmidt(double* const y, double* const z){
   //Gram Schmidt orthonormalization
  
   double  a_yz = y[0]*z[0] + y[1]*z[1] + y[2]*z[2];
@@ -534,7 +534,7 @@ void Linear::MyLinearSolver::Gram_Schmidt(double* y, double* z){
 
 }
 
-void Linear::MyLinearSolver::localBasis(double* n, double * m, double* l, int d){
+void Linear::MyLinearSolver::localBasis(double* const n, double* const m, double* const l, int d){
 
   if (d == 2)
     {

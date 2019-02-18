@@ -7,7 +7,7 @@ elasticwaves3d::MyElasticSolver::init() {
   // @todo Please implement/augment if required
 }
 
-void elasticwaves3d::MyElasticSolver::flux(const double* const Q, double** F) {
+void elasticwaves3d::MyElasticSolver::flux(const double* const Q, double** const F) {
   // Dimensions             = 3
   // Number of variables    = 9 (#unknowns + #parameters)
 
@@ -53,7 +53,7 @@ void elasticwaves3d::MyElasticSolver::flux(const double* const Q, double** F) {
 void elasticwaves3d::MyElasticSolver::boundaryConditions(
     const double* const x, const double t, const int faceIndex,
     const int normalNonZero, const double* const fluxIn,
-    const double* const stateIn, double* const fluxOut, double* stateOut) {
+    const double* const stateIn, double* const fluxOut, double* const stateOut) {
   // Dimensions             = 3
   // Number of variables    = 9 (#unknowns + #parameters)
 
@@ -83,7 +83,7 @@ void elasticwaves3d::MyElasticSolver::boundaryConditions(
 
 void elasticwaves3d::MyElasticSolver::eigenvalues(const double* const Q,
                                                   const int normalNonZeroIndex,
-                                                  double* lambda) {
+                                                  double* const lambda) {
   // Dimensions             = 3
   // Number of variables    = 9 (#unknowns + #parameters)
   // @todo Please implement
@@ -107,7 +107,7 @@ bool elasticwaves3d::MyElasticSolver::hasToAdjustSolution(
 
 void elasticwaves3d::MyElasticSolver::adjustedSolutionValues(
     const double* const x, const double w, const double t, const double dt,
-    double* Q) {
+    double* const Q) {
   // Dimensions             = 3
   // Number of variables    = 9 (#unknowns + #parameters)
   // @todo Please implement
@@ -133,7 +133,7 @@ elasticwaves3d::MyElasticSolver::refinementCriterion(
 
 void elasticwaves3d::MyElasticSolver::nonConservativeProduct(const double* const Q,
                                           const double* const gradQ,
-                                          double* BgradQ) {
+                                          double* const BgradQ) {
   // Dimensions             = 3
   // Number of variables    = 9 (#unknowns + #parameters)
   // @todo Please implement
@@ -168,7 +168,7 @@ void elasticwaves3d::MyElasticSolver::nonConservativeProduct(const double* const
 
 void elasticwaves3d::MyElasticSolver::coefficientMatrix(const double* const Q,
                                               const int normalNonZero,
-                                              double* Bn) {
+                                              double* const Bn) {
   // Number of variables    = 9 (#unknowns + #parameters)
   // @todo Please implement
   Bn[0] = 0.0;

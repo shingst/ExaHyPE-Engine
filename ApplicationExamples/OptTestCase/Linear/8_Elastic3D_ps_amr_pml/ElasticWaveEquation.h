@@ -39,7 +39,7 @@ class ElasticWaveEquation3D::ElasticWaveEquation : public ElasticWaveEquation3D:
 #endif    
     
   public:
-    ElasticWaveEquation(double maximumMeshSize,int maximumAdaptiveMeshDepth,int DMPObservables,int limiterHelperLayers,exahype::solvers::Solver::TimeStepping timeStepping,std::vector<std::string>& cmdlineargs);
+    ElasticWaveEquation(double maximumMeshSize,int maximumAdaptiveMeshDepth,int DMPObservables,exahype::solvers::Solver::TimeStepping timeStepping,std::vector<std::string>& cmdlineargs);
 
     /**
      * Initialise the solver.

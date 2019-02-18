@@ -12,7 +12,7 @@ bool AcousticWave::MyAcousticWaveSolver::hasToAdjustSolution(const tarch::la::Ve
    false;
 }
 
-void AcousticWave::MyAcousticWaveSolver::adjustedSolutionValues(const double* const x,const double w,const double t,const double dt,double* Q) {
+void AcousticWave::MyAcousticWaveSolver::adjustedSolutionValues(const double* const x,const double w,const double t,const double dt,double* const Q) {
   // Dimensions             = 3
   // Number of variables    = 4 (#unknowns + #parameters)
   
@@ -32,7 +32,7 @@ exahype::solvers::Solver::RefinementControl AcousticWave::MyAcousticWaveSolver::
 }
 
 
-void AcousticWave::MyAcousticWaveSolver::eigenvalues(const double* const Q,const int normalNonZeroIndex,double* lambda) {
+void AcousticWave::MyAcousticWaveSolver::eigenvalues(const double* const Q,const int normalNonZeroIndex,double* const lambda) {
   // Dimensions             = 3
   // Number of variables    = 4 (#unknowns + #parameters)
   
@@ -43,7 +43,7 @@ void AcousticWave::MyAcousticWaveSolver::eigenvalues(const double* const Q,const
   lambda[3] = 0.0;
 }
 
-void AcousticWave::MyAcousticWaveSolver::flux(const double* const Q,double** F) {
+void AcousticWave::MyAcousticWaveSolver::flux(const double* const Q,double** const F) {
   // Dimensions             = 3
   // Number of variables    = 4 (#unknowns + #parameters)
   
@@ -65,7 +65,7 @@ void AcousticWave::MyAcousticWaveSolver::flux(const double* const Q,double** F) 
 }
 
 
-void AcousticWave::MyAcousticWaveSolver::algebraicSource(const double* const Q,double* S) {
+void AcousticWave::MyAcousticWaveSolver::algebraicSource(const double* const Q,double* const S) {
   // Dimensions             = 3
   // Number of variables    = 4 (#unknowns + #parameters)
   
@@ -79,7 +79,7 @@ void AcousticWave::MyAcousticWaveSolver::algebraicSource(const double* const Q,d
 
 void AcousticWave::MyAcousticWaveSolver::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,
   const double * const fluxIn,const double* const stateIn,
-  double *fluxOut,double* stateOut) {
+  double* const fluxOut,double* const stateOut) {
   // Dimensions             = 3
   // Number of variables    = 4 (#unknowns + #parameters)
 
@@ -96,7 +96,7 @@ void AcousticWave::MyAcousticWaveSolver::boundaryValues(const double* const x,co
 }
 
 
-void AcousticWave::MyAcousticWaveSolver::nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) {
+void AcousticWave::MyAcousticWaveSolver::nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ) {
   // Dimensions             = 3
   // Number of variables    = 4 (#unknowns + #parameters)
 
@@ -198,7 +198,7 @@ void AcousticWave::MyAcousticWaveSolver::nonConservativeProduct(const double* co
 }
 
     
-void AcousticWave::MyAcousticWaveSolver::coefficientMatrix(const double* const Q,const int normalNonZero,double* Bn) {
+void AcousticWave::MyAcousticWaveSolver::coefficientMatrix(const double* const Q,const int normalNonZero,double* const Bn) {
   // Dimensions             = 3
   // Number of variables    = 4 (#unknowns + #parameters)
   

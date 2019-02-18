@@ -20,7 +20,7 @@ void SRMHD::MHDSolver::init(std::vector<std::string>& cmdargs){ //, exahype::par
   // constants = &_constants;
 }
 
-void SRMHD::MHDSolver::flux(const double* const Q, double** F) {
+void SRMHD::MHDSolver::flux(const double* const Q, double** const F) {
   // Caveats: Fortran accepts a uniform array of size (nVar*nDim), however C passes an array of pointers.
   // This Fortran interface works only if F is a continous array and F[1]==F[nDim+1] etc!
   
@@ -32,14 +32,14 @@ void SRMHD::MHDSolver::flux(const double* const Q, double** F) {
 
 
 
-void SRMHD::MHDSolver::eigenvalues(const double* const Q, const int normalNonZeroIndex, double* lambda) {
+void SRMHD::MHDSolver::eigenvalues(const double* const Q, const int normalNonZeroIndex, double* const lambda) {
   double nv[3] = {0.};
   nv[normalNonZeroIndex] = 1;
   pdeeigenvalues_(lambda, Q, nv);
 }
 
 
-void SRMHD::MHDSolver::adjustPointSolution(const double* const x,const double t,const double dt,double* Q) {
+void SRMHD::MHDSolver::adjustPointSolution(const double* const x,const double t,const double dt,double* const Q) {
   // Fortran call:
   //printf("adjustedSolutionValues at t=%e\n", t);
   if (tarch::la::equals(t,0.0)) {
@@ -47,7 +47,7 @@ void SRMHD::MHDSolver::adjustPointSolution(const double* const x,const double t,
   }
 }
 
-void SRMHD::MHDSolver::algebraicSource(const double* const Q, double* S) {
+void SRMHD::MHDSolver::algebraicSource(const double* const Q, double* const S) {
   //pdesource_(S, Q);
   const int nVar = SRMHD::AbstractMHDSolver::NumberOfVariables;
   std::memset(S, 0, nVar * sizeof(double)); //no source
@@ -61,7 +61,7 @@ exahype::solvers::Solver::RefinementControl SRMHD::MHDSolver::refinementCriterio
   return exahype::solvers::Solver::RefinementControl::Keep;
 }
 
-void SRMHD::MHDSolver::boundaryValues(const double* const x,const double t, const double dt, const int faceIndex, const int normalNonZero, const double * const fluxIn, const double* const stateIn, double *fluxOut, double* stateOut) {
+void SRMHD::MHDSolver::boundaryValues(const double* const x,const double t, const double dt, const int faceIndex, const int normalNonZero, const double * const fluxIn, const double* const stateIn, double* const fluxOut, double* const stateOut) {
 /*  
   // These are the no-boundary conditions:
   for(int i=0; i < SRMHD::MHDSolver::numberOfVariables; i++) {
@@ -115,12 +115,12 @@ void SRMHD::MHDSolver::boundaryValues(const double* const x,const double t, cons
 }
 
 /*
-void SRMHD::MHDSolver::nonConservativeProduct(const double* const Q, const double* const gradQ, double* BgradQ) {
+void SRMHD::MHDSolver::nonConservativeProduct(const double* const Q, const double* const gradQ, double* const BgradQ) {
   const int nVar = SRMHD::AbstractMHDSolver::NumberOfVariables;
   std::memset(BgradQ, 0, nVar * sizeof(double));
 }
 
-void SRMHD::MHDSolver::coefficientMatrix(const double* const Q, const int normalNonZero, double* Bn) {
+void SRMHD::MHDSolver::coefficientMatrix(const double* const Q, const int normalNonZero, double* const Bn) {
   const int nVar = SRMHD::AbstractMHDSolver::NumberOfVariables;
   std::memset(Bn, 0, nVar * nVar * sizeof(double));
 }

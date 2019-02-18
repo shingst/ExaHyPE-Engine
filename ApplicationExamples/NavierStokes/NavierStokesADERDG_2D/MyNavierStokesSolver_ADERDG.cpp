@@ -26,7 +26,7 @@ void NavierStokesADERDG::MyNavierStokesSolver_ADERDG::init(const std::vector<std
 
 }
 
-void NavierStokesADERDG::MyNavierStokesSolver_ADERDG::adjustPointSolution(const double* const x,const double t,const double dt,double* Q) {
+void NavierStokesADERDG::MyNavierStokesSolver_ADERDG::adjustPointSolution(const double* const x,const double t,const double dt,double* const Q) {
   // Dimensions                        = 2
   // Number of variables + parameters  = 5 + 0
     if ( tarch::la::equals( t,0.0 ) ) {
@@ -42,7 +42,7 @@ void NavierStokesADERDG::MyNavierStokesSolver_ADERDG::adjustPointSolution(const 
 
 void NavierStokesADERDG::MyNavierStokesSolver_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,
   const double * const fluxIn,const double* const stateIn,
-  double *fluxOut,double* stateOut) {
+  double* const fluxOut,double* const stateOut) {
   // Dimensions                        = 2
   // Number of variables + parameters  = 5 + 0
   ReadOnlyVariables varsInside(stateIn);
@@ -64,7 +64,7 @@ void NavierStokesADERDG::MyNavierStokesSolver_ADERDG::boundaryValues(const doubl
   }
 }
 
-exahype::solvers::Solver::RefinementControl NavierStokesADERDG::MyNavierStokesSolver_ADERDG::refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
+exahype::solvers::Solver::RefinementControl NavierStokesADERDG::MyNavierStokesSolver_ADERDG::refinementCriterion(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
   // @todo Please implement/augment if required
   return exahype::solvers::Solver::RefinementControl::Keep;
 }
@@ -76,7 +76,7 @@ exahype::solvers::Solver::RefinementControl NavierStokesADERDG::MyNavierStokesSo
 //*****************************************************************************
 
 
-void NavierStokesADERDG::MyNavierStokesSolver_ADERDG::eigenvalues(const double* const Q,const int d,double* lambda) {
+void NavierStokesADERDG::MyNavierStokesSolver_ADERDG::eigenvalues(const double* const Q,const int d,double* const lambda) {
   // Dimensions                        = 2
   // Number of variables + parameters  = 5 + 0
   ReadOnlyVariables vars(Q);
@@ -93,7 +93,7 @@ void NavierStokesADERDG::MyNavierStokesSolver_ADERDG::eigenvalues(const double* 
   eigs.E()  = u_n + c;
 }
 
-void NavierStokesADERDG::MyNavierStokesSolver_ADERDG::viscousEigenvalues(const double* const Q,const int d,double* lambda) {
+void NavierStokesADERDG::MyNavierStokesSolver_ADERDG::viscousEigenvalues(const double* const Q,const int d,double* const lambda) {
     // Dimensions                        = 2
     // Number of variables + parameters  = 5 + 0
     ReadOnlyVariables vars(Q);
@@ -108,7 +108,7 @@ void NavierStokesADERDG::MyNavierStokesSolver_ADERDG::viscousEigenvalues(const d
 }
 
 
-void NavierStokesADERDG::MyNavierStokesSolver_ADERDG::viscousFlux(const double* const Q,const double* const gradQ,double** F) {
+void NavierStokesADERDG::MyNavierStokesSolver_ADERDG::viscousFlux(const double* const Q,const double* const gradQ,double** const F) {
   // Dimensions                        = 2
   // Number of variables + parameters  = 5 + 0
  ReadOnlyVariables vars(Q);

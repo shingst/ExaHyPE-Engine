@@ -49,7 +49,7 @@ class Euler::MyEulerSolver_Plotter1: public exahype::plotters::Plotter::UserOnTh
     const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const tarch::la::Vector<DIMENSIONS, int>&    pos,
-    double* Q,
-    double* outputQuantities,
+    double* const Q,
+    double* const outputQuantities,
   double timeStamp);
 };

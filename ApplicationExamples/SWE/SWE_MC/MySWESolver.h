@@ -52,7 +52,7 @@ class SWE::MySWESolver : public SWE::AbstractMySWESolver {
      * Patchwise adjust
      * @TODO LR : Document
      */
-    void adjustSolution(double *luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,double dt) final override;
+    void adjustSolution(double* const luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,double dt) final override;
 
     /**
      * Compute the eigenvalues of the flux tensor per coordinate direction \p d.
@@ -62,7 +62,7 @@ class SWE::MySWESolver : public SWE::AbstractMySWESolver {
      * \param[in] d  the column of the flux vector (d=0,1,...,DIMENSIONS).
      * \param[inout] lambda the eigenvalues as C array (already allocated).
      */
-    void eigenvalues(const double* const Q,const int d,double* lambda) final override;
+    void eigenvalues(const double* const Q,const int d,double* const lambda) final override;
     
 
     /**
@@ -84,7 +84,7 @@ class SWE::MySWESolver : public SWE::AbstractMySWESolver {
      * \param[inout] FOut      the normal fluxes at point x from outside of the domain
      *                         and time-averaged (over [t,t+dt]) as C array (already allocated).
      */
-    void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double * const fluxIn,const double* const stateIn,double *fluxOut,double* stateOut) final override;
+    void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double * const fluxIn,const double* const stateIn,double* const fluxOut,double* const stateOut) final override;
     
     /**
      * Evaluate the refinement criterion within a cell.
@@ -111,7 +111,7 @@ class SWE::MySWESolver : public SWE::AbstractMySWESolver {
      *                 as C array (already allocated).
      * \param[inout] F the fluxes at that point as C array (already allocated).
      */
-    void flux(const double* const Q,double** F) final override;
+    void flux(const double* const Q,double** const F) final override;
 
 /* viscousFlux() function not included, as requested in the specification file */
 
@@ -141,7 +141,7 @@ class SWE::MySWESolver : public SWE::AbstractMySWESolver {
      * \param[inout]  The vector BgradQ (extends nVar), already allocated. 
      *
      **/
-    void nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) final override;
+    void nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ) final override;
 
 /* pointSource() function not included, as requested in the specification file */
 

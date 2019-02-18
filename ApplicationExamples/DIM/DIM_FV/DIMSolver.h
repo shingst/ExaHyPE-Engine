@@ -50,7 +50,7 @@ class DIM::DIMSolver : public DIM::AbstractDIMSolver {
     /**
      * @see FiniteVolumesSolver
      */    
-    void adjustSolution(const double* const x,const double w,const double t,const double dt, double* Q) override; 
+    void adjustSolution(const double* const x,const double w,const double t,const double dt, double* const Q) override; 
     
     /**
      * Compute the flux tensor.
@@ -59,7 +59,7 @@ class DIM::DIMSolver : public DIM::AbstractDIMSolver {
      *                 as C array (already allocated).
      * \param[inout] F the fluxes at that point as C array (already allocated).
      */
-    // void flux(const double* const Q,double** F);
+    // void flux(const double* const Q,double** const F);
     
     /**
      * Compute the eigenvalues of the flux tensor per coordinate direction \p d.
@@ -69,7 +69,7 @@ class DIM::DIMSolver : public DIM::AbstractDIMSolver {
      * \param[in] d  the column of the flux vector (d=0,1,...,DIMENSIONS).
      * \param[inout] lambda the eigenvalues as C array (already allocated).
      */
-    void eigenvalues(const double* const Q,const int d,double* lambda);
+    void eigenvalues(const double* const Q,const int d,double* const lambda);
         
     /**
      * Impose boundary conditions at a point on a boundary face
@@ -87,16 +87,16 @@ class DIM::DIMSolver : public DIM::AbstractDIMSolver {
      *                         and time-averaged (over [t,t+dt]) as C array (already allocated).
      */
         
-    void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double* const stateIn,double* stateOut);
+    void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double* const stateIn,double* const stateOut);
 
 
     
     /** Has currently no effect for the Finite Volumes Solver. */
     exahype::solvers::Solver::RefinementControl refinementCriterion(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) override; 
 
-    void nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) override;
-    void coefficientMatrix(const double* const Q,const int d,double* Bn) override;
-    void algebraicSource(const double* const Q,double* S) override; 
+    void nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ) override;
+    void coefficientMatrix(const double* const Q,const int d,double* const Bn) override;
+    void algebraicSource(const double* const Q,double* const S) override; 
 
 
 };

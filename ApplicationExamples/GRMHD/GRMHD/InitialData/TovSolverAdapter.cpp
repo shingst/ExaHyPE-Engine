@@ -25,7 +25,7 @@ TovSolverAdapter::TovSolverAdapter() {
 	tov->Setup();
 }
 	
-void TovSolverAdapter::Interpolate(const double* x, double t, double* Q) {
+void TovSolverAdapter::Interpolate(const double* const x, double t, double* const Q) {
 	double V[nVar];
 	
 	TOV::idvars id;

@@ -68,7 +68,7 @@ void Euler::MyEulerSolver::init(const std::vector<std::string>& cmdlineargs,cons
 //   idfunc = MovingGauss; //  TODO(Dominic): Use this function for the dyn amr test.
 }
 
-void Euler::MyEulerSolver::flux(const double* const Q, double** F) {
+void Euler::MyEulerSolver::flux(const double* const Q, double** const F) {
   ReadOnlyVariables vars(Q);
   Fluxes f(F);
 
@@ -88,7 +88,7 @@ void Euler::MyEulerSolver::flux(const double* const Q, double** F) {
 
 void Euler::MyEulerSolver::eigenvalues(const double* const Q,
                                        const int normalNonZeroIndex,
-                                       double* lambda) {
+                                       double* const lambda) {
   ReadOnlyVariables vars(Q);
   Variables eigs(lambda);
 
@@ -105,7 +105,7 @@ void Euler::MyEulerSolver::eigenvalues(const double* const Q,
 }
 
 
-void Euler::MyEulerSolver::adjustPointSolution(const double* const x,const double t,const double dt,double* Q) {
+void Euler::MyEulerSolver::adjustPointSolution(const double* const x,const double t,const double dt,double* const Q) {
   // Dimensions             = 2
   // Number of variables    = 5 (#unknowns + #parameters)
   // @todo Please implement
@@ -150,7 +150,7 @@ Euler::MyEulerSolver::refinementCriterion(
 void Euler::MyEulerSolver::boundaryValues(const double* const x, const double t,const double dt,
                                           const int faceIndex,const int normalNonZero,
                                           const double* const fluxIn,const double* const stateIn,
-                                          double* const fluxOut, double* stateOut) {
+                                          double* const fluxOut, double* const stateOut) {
   // Dimensions             = 2
   // Number of variables    = 5 (#unknowns + #parameters)
 

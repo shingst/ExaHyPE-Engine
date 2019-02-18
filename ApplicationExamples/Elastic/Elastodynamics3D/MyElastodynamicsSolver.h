@@ -55,7 +55,7 @@ class Elastodynamics::MyElastodynamicsSolver: public Elastodynamics::AbstractMyE
      * \param[inout] Q         the conserved variables (and parameters) associated with a quadrature point
      *                         as C array (already allocated).
      */
-    void adjustPointSolution(const double* const x,const double t,const double dt,double* Q) override;
+    void adjustPointSolution(const double* const x,const double t,const double dt,double* const Q) override;
     
     /**
      * Compute the flux tensor.
@@ -64,7 +64,7 @@ class Elastodynamics::MyElastodynamicsSolver: public Elastodynamics::AbstractMyE
      *                 as C array (already allocated).
      * \param[inout] F the fluxes at that point as C array (already allocated).
      */
-    virtual void flux(const double* const Q,double** F);
+    virtual void flux(const double* const Q,double** const F);
     
     /**
      * Compute the eigenvalues of the flux tensor per coordinate direction \p d.
@@ -74,7 +74,7 @@ class Elastodynamics::MyElastodynamicsSolver: public Elastodynamics::AbstractMyE
      * \param[in] d  the column of the flux vector (d=0,1,...,DIMENSIONS).
      * \param[inout] lambda the eigenvalues as C array (already allocated).
      */
-    void eigenvalues(const double* const Q,const int d,double* lambda);
+    void eigenvalues(const double* const Q,const int d,double* const lambda);
     
     /**
      * Impose boundary conditions at a point on a boundary face
@@ -95,7 +95,7 @@ class Elastodynamics::MyElastodynamicsSolver: public Elastodynamics::AbstractMyE
      * \param[inout] FOut      the normal fluxes at point x from outside of the domain
      *                         and time-averaged (over [t,t+dt]) as C array (already allocated).
      */
-    void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double * const fluxIn,const double* const stateIn,double *fluxOut,double* stateOut);
+    void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double * const fluxIn,const double* const stateIn,double* const fluxOut,double* const stateOut);
     
     /**
      * Evaluate the refinement criterion within a cell.
@@ -113,16 +113,16 @@ class Elastodynamics::MyElastodynamicsSolver: public Elastodynamics::AbstractMyE
      */
     exahype::solvers::Solver::RefinementControl refinementCriterion(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& centre,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) override;
 
-     virtual void nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ);
+     virtual void nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ);
 
-    virtual void coefficientMatrix(const double* const Q,const int d,double* Bn);
-    virtual void pointSource(const double* const x,const double t,const double dt, double* const forceVector, double* x0);
+    virtual void coefficientMatrix(const double* const Q,const int d,double* const Bn);
+    virtual void pointSource(const double* const x,const double t,const double dt, double* const forceVector, double* const x0);
 
-    void riemannSolver(double* const FL,double* const FR,const double* const QL,const double* const QR,double* tempFaceUnknownsArray,double** tempStateSizedVectors,double** tempStateSizedSquareMatrices,const double dt,const int normalNonZeroIndex) override;
+    void riemannSolver(double* const FL,double* const FR,const double* const QL,const double* const QR,double* const tempFaceUnknownsArray,double** const tempStateSizedVectors,double** const tempStateSizedSquareMatrices,const double dt,const int normalNonZeroIndex) override;
 
     void riemannSolver_Nodal(double v_p,double v_m, double sigma_p, double sigma_m, double z_p , double z_m, double& v_hat_p , double& v_hat_m, double& sigma_hat_p, double& sigma_hat_m);
-    void localBasis(double* n, double * m, double* l, int d);
-    void Gram_Schmidt(double* y, double* z);
+    void localBasis(double* const n, double* const m, double* const l, int d);
+    void Gram_Schmidt(double* const y, double* const z);
     void riemannSolver_BC0(double v, double sigma, double z, double r, double& v_hat, double& sigma_hat);
     void riemannSolver_BCn(double v, double sigma, double z, double r, double& v_hat, double& sigma_hat);
 };

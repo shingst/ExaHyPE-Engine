@@ -42,7 +42,7 @@ class Linear::MyLinearWaveSolver : public Linear::AbstractMyLinearWaveSolver {
      * Patchwise adjust
      * @TODO LR : Document
      */
-    void adjustSolution(double *luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,double dt) final override;
+    void adjustSolution(double* const luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,double dt) final override;
 
     /**
      * Compute the eigenvalues of the flux tensor per coordinate direction \p d.
@@ -52,7 +52,7 @@ class Linear::MyLinearWaveSolver : public Linear::AbstractMyLinearWaveSolver {
      * \param[in] d  the column of the flux vector (d=0,1,...,DIMENSIONS).
      * \param[inout] lambda the eigenvalues as C array (already allocated).
      */
-    void eigenvalues(const double* const Q,const int d,double* lambda) final override;
+    void eigenvalues(const double* const Q,const int d,double* const lambda) final override;
     
     /**
      * Impose boundary conditions at a point on a boundary face
@@ -73,7 +73,7 @@ class Linear::MyLinearWaveSolver : public Linear::AbstractMyLinearWaveSolver {
      * \param[inout] FOut      the normal fluxes at point x from outside of the domain
      *                         and time-averaged (over [t,t+dt]) as C array (already allocated).
      */
-    void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double * const fluxIn,const double* const stateIn,double *fluxOut,double* stateOut) final override;
+    void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double * const fluxIn,const double* const stateIn,double* const fluxOut,double* const stateOut) final override;
     
     /**
      * Evaluate the refinement criterion within a cell.
@@ -100,7 +100,7 @@ class Linear::MyLinearWaveSolver : public Linear::AbstractMyLinearWaveSolver {
      *                 as C array (already allocated).
      * \param[inout] F the fluxes at that point as C array (already allocated).
      */
-    void flux(const double* const Q,double** F) final override;
+    void flux(const double* const Q,double** const F) final override;
 
 
     /**
@@ -125,8 +125,8 @@ class Linear::MyLinearWaveSolver : public Linear::AbstractMyLinearWaveSolver {
      * \param[inout]  The vector BgradQ (extends nVar), already allocated. 
      *
      **/
-    void nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) final override;
-    void coefficientMatrix(const double* const Q,const int d,double* Bn);
+    void nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ) final override;
+    void coefficientMatrix(const double* const Q,const int d,double* const Bn);
 
     void pointSource(const double* const x,const double t,const double dt, double* const forceVector, double* const x0, int n) final override;
     //    void riemannSolver(double* const FL,double* const FR,const double* const QL,const double* const QR,const double dt,const int normalNonZeroIndex, bool isBoundaryFace, int faceIndex) override; 
@@ -135,7 +135,7 @@ class Linear::MyLinearWaveSolver : public Linear::AbstractMyLinearWaveSolver {
     /**
      * @TODO LR : document
      */
-    void multiplyMaterialParameterMatrix(const double* const Q, double* rhs) final override;
+    void multiplyMaterialParameterMatrix(const double* const Q, double* const rhs) final override;
 
     /* implement user defined numerical boundary procedures*/
     void riemannSolver_BC0(double v, double sigma, double z,  double r, double& v_hat, double& sigma_hat);

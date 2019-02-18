@@ -21,7 +21,7 @@ exahype::solvers::ADERDGSolver::AdjustSolutionValue Elastodynamics::MyElastodyna
   return tarch::la::equals(t,0.0) ? exahype::solvers::ADERDGSolver::AdjustSolutionValue::PointWisely : exahype::solvers::ADERDGSolver::AdjustSolutionValue::No;
 }
 
-void Elastodynamics::MyElastodynamicsSolver::adjustPointSolution(const double* const x,const double t,const double dt,double* Q) {
+void Elastodynamics::MyElastodynamicsSolver::adjustPointSolution(const double* const x,const double t,const double dt,double* const Q) {
   // Dimensions             = 2
   // Number of variables    = 5 + #parameters
   
@@ -41,7 +41,7 @@ void Elastodynamics::MyElastodynamicsSolver::adjustPointSolution(const double* c
   }
 }
 
-void Elastodynamics::MyElastodynamicsSolver::eigenvalues(const double* const Q,const int d,double* lambda) {
+void Elastodynamics::MyElastodynamicsSolver::eigenvalues(const double* const Q,const int d,double* const lambda) {
   // Dimensions             = 2
   // Number of variables    = 5 + #parameters
   
@@ -57,7 +57,7 @@ void Elastodynamics::MyElastodynamicsSolver::eigenvalues(const double* const Q,c
 }
 
 
-void Elastodynamics::MyElastodynamicsSolver::flux(const double* const Q,double** F) {
+void Elastodynamics::MyElastodynamicsSolver::flux(const double* const Q,double** const F) {
   // Dimensions             = 2
   // Number of variables    = 5 + #parameters
   
@@ -78,7 +78,7 @@ void Elastodynamics::MyElastodynamicsSolver::flux(const double* const Q,double**
 
 void Elastodynamics::MyElastodynamicsSolver::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,
   const double * const fluxIn,const double* const stateIn,
-  double *fluxOut,double* stateOut) {
+  double* const fluxOut,double* const stateOut) {
   // Dimensions             = 2
   // Number of variables    = 5 + #parameters
 
@@ -303,7 +303,7 @@ exahype::solvers::Solver::RefinementControl Elastodynamics::MyElastodynamicsSolv
 }
 
 
-void Elastodynamics::MyElastodynamicsSolver::nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ){
+void Elastodynamics::MyElastodynamicsSolver::nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ){
   kernels::idx2 idx(DIMENSIONS, NumberOfVariables);
 
   static tarch::logging::Log _log("Elastodynamics::MyElastodynamicsSolver::nonConservativeProduct");
@@ -336,7 +336,7 @@ void Elastodynamics::MyElastodynamicsSolver::nonConservativeProduct(const double
 
 
 
-void Elastodynamics::MyElastodynamicsSolver::coefficientMatrix(const double* const Q,const int d,double* Bn){
+void Elastodynamics::MyElastodynamicsSolver::coefficientMatrix(const double* const Q,const int d,double* const Bn){
   static tarch::logging::Log _log("MyElastodynamicsSolver::coefficientMatrix");
 
   double cp = 6.0;
@@ -381,7 +381,7 @@ void Elastodynamics::MyElastodynamicsSolver::coefficientMatrix(const double* con
 }
 
 
-void Elastodynamics::MyElastodynamicsSolver::riemannSolver(double* const FL,double* const FR,const double* const QL,const double* const QR,double* tempFaceUnknownsArray,double** tempStateSizedVectors,double** tempStateSizedSquareMatrices,const double dt,const int normalNonZeroIndex){
+void Elastodynamics::MyElastodynamicsSolver::riemannSolver(double* const FL,double* const FR,const double* const QL,const double* const QR,double* const tempFaceUnknownsArray,double** const tempStateSizedVectors,double** const tempStateSizedSquareMatrices,const double dt,const int normalNonZeroIndex){
 
   constexpr int numberOfVariables  = MyElastodynamicsSolver::NumberOfVariables;
   constexpr int numberOfVariables2 = numberOfVariables*numberOfVariables;
@@ -531,7 +531,7 @@ void Elastodynamics::MyElastodynamicsSolver::riemannSolver(double* const FL,doub
 }
 
 
-void Elastodynamics::MyElastodynamicsSolver::pointSource(const double* const x,const double t,const double dt, double* const forceVector, double* x0){
+void Elastodynamics::MyElastodynamicsSolver::pointSource(const double* const x,const double t,const double dt, double* const forceVector, double* const x0){
      double pi = 3.14159265359;
   double sigma = 0.1149;
   double t0 = 0.7;
@@ -580,7 +580,7 @@ void Elastodynamics::MyElastodynamicsSolver::riemannSolver_Nodal(double v_p,doub
  }
 
 
-void Elastodynamics::MyElastodynamicsSolver::Gram_Schmidt(double* y, double* z){
+void Elastodynamics::MyElastodynamicsSolver::Gram_Schmidt(double* const y, double* const z){
   //Gram Schmidt orthonormalization
  
   double  a_yz = y[0]*z[0] + y[1]*z[1] + y[2]*z[2];
@@ -592,7 +592,7 @@ void Elastodynamics::MyElastodynamicsSolver::Gram_Schmidt(double* y, double* z){
 
 }
 
-void Elastodynamics::MyElastodynamicsSolver::localBasis(double* n, double * m, double* l, int d){
+void Elastodynamics::MyElastodynamicsSolver::localBasis(double* const n, double* const m, double* const l, int d){
 
   if (d == 2)
     {

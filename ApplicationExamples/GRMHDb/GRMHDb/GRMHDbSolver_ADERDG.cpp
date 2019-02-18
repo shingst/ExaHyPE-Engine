@@ -54,7 +54,7 @@ void GRMHDb::GRMHDbSolver_ADERDG::init(const std::vector<std::string>& cmdlinear
 
 }
 
-void GRMHDb::GRMHDbSolver_ADERDG::adjustPointSolution(const double* const x,const double t,const double dt,double* Q) {
+void GRMHDb::GRMHDbSolver_ADERDG::adjustPointSolution(const double* const x,const double t,const double dt,double* const Q) {
 	// Dimensions                        = 3
 	// Number of variables + parameters  = 19 + 0
 	// @todo Please implement/augment if required
@@ -89,7 +89,7 @@ void GRMHDb::GRMHDbSolver_ADERDG::boundaryValues(
 		const int normalNonZero,
 		const double * const fluxIn,
 		const double* const stateIn,
-		double *fluxOut,double* stateOut) {
+		double* const fluxOut,double* const stateOut) {
 	const int nVar = GRMHDb::AbstractGRMHDbSolver_ADERDG::NumberOfVariables;
 	const int order = GRMHDb::AbstractGRMHDbSolver_ADERDG::Order;
 	const int basisSize = order + 1;
@@ -164,7 +164,7 @@ void GRMHDb::GRMHDbSolver_ADERDG::boundaryValues(
 	 */
 }
 
-exahype::solvers::Solver::RefinementControl GRMHDb::GRMHDbSolver_ADERDG::refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
+exahype::solvers::Solver::RefinementControl GRMHDb::GRMHDbSolver_ADERDG::refinementCriterion(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
 	// @todo Please implement/augment if required
 	return exahype::solvers::Solver::RefinementControl::Keep;
 }
@@ -176,7 +176,7 @@ exahype::solvers::Solver::RefinementControl GRMHDb::GRMHDbSolver_ADERDG::refinem
 //*****************************************************************************
 
 
-void GRMHDb::GRMHDbSolver_ADERDG::eigenvalues(const double* const Q,const int d,double* lambda) {
+void GRMHDb::GRMHDbSolver_ADERDG::eigenvalues(const double* const Q,const int d,double* const lambda) {
 	// Dimensions                        = 3
 	// Number of variables + parameters  = 19 + 0
 
@@ -207,13 +207,13 @@ void GRMHDb::GRMHDbSolver_ADERDG::eigenvalues(const double* const Q,const int d,
 
 
 
-void GRMHDb::GRMHDbSolver_ADERDG::referenceSolution(const double* const x,double t, double* Q) { 
+void GRMHDb::GRMHDbSolver_ADERDG::referenceSolution(const double* const x,double t, double* const Q) { 
 
 	initialdata_(x, &t, Q);
 }
 
 
-void GRMHDb::GRMHDbSolver_ADERDG::flux(const double* const Q,double** F) {
+void GRMHDb::GRMHDbSolver_ADERDG::flux(const double* const Q,double** const F) {
 	// Dimensions                        = 3
 	// Number of variables + parameters  = 19 + 0
 
@@ -290,7 +290,7 @@ void GRMHDb::GRMHDbSolver_ADERDG::flux(const double* const Q,double** F) {
 
 
 
-void  GRMHDb::GRMHDbSolver_ADERDG::nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) {
+void  GRMHDb::GRMHDbSolver_ADERDG::nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ) {
 	// @todo Please implement/augment if required
 	BgradQ[0] = 0.0;
 	BgradQ[1] = 0.0;
@@ -315,7 +315,7 @@ void  GRMHDb::GRMHDbSolver_ADERDG::nonConservativeProduct(const double* const Q,
 }
 
 void GRMHDb::GRMHDbSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(
-		double* observables, const int NumberOfVariables,
+		double* const observables, const int NumberOfVariables,
 		const double* const Q) const {
 	for (int i = 0; i < NumberOfVariables; ++i) {
 		observables[i] = Q[i];

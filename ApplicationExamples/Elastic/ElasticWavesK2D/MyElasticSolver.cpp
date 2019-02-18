@@ -14,7 +14,7 @@ bool Elastic::MyElasticSolver::hasToAdjustSolution(const tarch::la::Vector<DIMEN
    return false;
 }
 
-void Elastic::MyElasticSolver::adjustedSolutionValues(const double* const x,const double w,const double t,const double dt,double* Q) {
+void Elastic::MyElasticSolver::adjustedSolutionValues(const double* const x,const double w,const double t,const double dt,double* const Q) {
   // Dimensions             = 2
   // Number of variables    = 5 (#unknowns + #parameters)
   
@@ -33,7 +33,7 @@ exahype::solvers::Solver::RefinementControl Elastic::MyElasticSolver::refinement
 }
 
 
-void Elastic::MyElasticSolver::eigenvalues(const double* const Q,const int normalNonZeroIndex,double* lambda) {
+void Elastic::MyElasticSolver::eigenvalues(const double* const Q,const int normalNonZeroIndex,double* const lambda) {
   // Dimensions             = 2
   // Number of variables    = 5 (#unknowns + #parameters)
   
@@ -48,7 +48,7 @@ void Elastic::MyElasticSolver::eigenvalues(const double* const Q,const int norma
   lambda[4] = cp;
 }
 
-void Elastic::MyElasticSolver::flux(const double* const Q,double** F) {
+void Elastic::MyElasticSolver::flux(const double* const Q,double** const F) {
   // Dimensions             = 2
   // Number of variables    = 5 (#unknowns + #parameters)
   
@@ -67,7 +67,7 @@ void Elastic::MyElasticSolver::flux(const double* const Q,double** F) {
 }
 
 
-void Elastic::MyElasticSolver::algebraicSource(const double* const Q,double* S) {
+void Elastic::MyElasticSolver::algebraicSource(const double* const Q,double* const S) {
   // Dimensions             = 2
   // Number of variables    = 5 (#unknowns + #parameters)
   
@@ -82,7 +82,7 @@ void Elastic::MyElasticSolver::algebraicSource(const double* const Q,double* S) 
 
 void Elastic::MyElasticSolver::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,
   const double * const fluxIn,const double* const stateIn,
-  double *fluxOut,double* stateOut) {
+  double* const fluxOut,double* const stateOut) {
   // Dimensions             = 2
   // Number of variables    = 5 (#unknowns + #parameters)
 
@@ -101,7 +101,7 @@ void Elastic::MyElasticSolver::boundaryValues(const double* const x,const double
 }
 
 
-void Elastic::MyElasticSolver::nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) {
+void Elastic::MyElasticSolver::nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ) {
   // Dimensions             = 2
   // Number of variables    = 5 (#unknowns + #parameters)
 
@@ -156,7 +156,7 @@ void Elastic::MyElasticSolver::nonConservativeProduct(const double* const Q,cons
 }
 
     
-void Elastic::MyElasticSolver::coefficientMatrix(const double* const Q,const int normalNonZero,double* Bn) {
+void Elastic::MyElasticSolver::coefficientMatrix(const double* const Q,const int normalNonZero,double* const Bn) {
   // Dimensions             = 2
   // Number of variables    = 5 (#unknowns + #parameters)
   
@@ -255,7 +255,7 @@ void Elastic::MyElasticSolver::coefficientMatrix(const double* const Q,const int
 }
 
 //TODO KD
-void Elastic::MyElasticSolver::pointSource(const double* const x,const double t,const double dt, double* const forceVector, double* x0) {
+void Elastic::MyElasticSolver::pointSource(const double* const x,const double t,const double dt, double* const forceVector, double* const x0) {
   //TODO KD // @todo Please implement/augment if required and set bool function
 
    double pi = 3.14159265359;

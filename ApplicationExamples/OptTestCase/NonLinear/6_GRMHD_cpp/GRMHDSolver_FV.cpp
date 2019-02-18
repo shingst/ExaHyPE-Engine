@@ -30,7 +30,7 @@ void GRMHD::GRMHDSolver_FV::init(const std::vector<std::string>& cmdlineargs,con
 	GlobalBoundaryConditions::getInstance().initializeFV(this).readParameters(mf("boundaries"));
 }
 
-void GRMHD::GRMHDSolver_FV::adjustSolution(const double* const x,const double t,const double dt, double* Q) {
+void GRMHD::GRMHDSolver_FV::adjustSolution(const double* const x,const double t,const double dt, double* const Q) {
 	// Set the 9 SRMHD variables (D,S_j,tau,B^j) and the 10 [11] ADM material parameters (N^i,g_ij,[detg])
 	if(tarch::la::equals(t,0.0)) {
 		InitialData(x,t,Q);
@@ -63,7 +63,7 @@ void GRMHD::GRMHDSolver_FV::adjustSolution(const double* const x,const double t,
 
 #include "kernels/finitevolumes/riemannsolvers/c/riemannsolvers.h"
 
-double GRMHD::GRMHDSolver_FV::riemannSolver(double* fL, double *fR, const double* qL, const double* qR, int normalNonZero) {
+double GRMHD::GRMHDSolver_FV::riemannSolver(double* const fL, double* const fR, const double* const qL, const double* const qR, int normalNonZero) {
 
   // Default FV Riemann Solver
   // TODO: We could write an optimized one here which does not ask for the eigenvalues.
@@ -76,7 +76,7 @@ double GRMHD::GRMHDSolver_FV::riemannSolver(double* fL, double *fR, const double
 
 
 
-void GRMHD::GRMHDSolver_FV::eigenvalues(const double* const Q, const int dIndex, double* lambda) {
+void GRMHD::GRMHDSolver_FV::eigenvalues(const double* const Q, const int dIndex, double* const lambda) {
 	// Provide eigenvalues for the 9 SRMHD variables (D,S_j,tau,B^j),
 	// we split off the 11 ADM material parameters (N^i,g_ij,detg)
 	
@@ -90,7 +90,7 @@ void GRMHD::GRMHDSolver_FV::eigenvalues(const double* const Q, const int dIndex,
 }
 
 
-void GRMHD::GRMHDSolver_FV::flux(const double* const Q, double** F) {
+void GRMHD::GRMHDSolver_FV::flux(const double* const Q, double** const F) {
 	// Provide fluxes for the 9 SRMHD variables (D,S_j,tau,B^j),
 	// we split off the 11 ADM material parameters (N^i,g_ij,detg)
 	//PDE(Q).flux(F);
@@ -125,7 +125,7 @@ void GRMHD::GRMHDSolver_FV::boundaryValues(
     const int faceIndex,
     const int d,
     const double* const stateIn,
-    double* stateOut) {
+    double* const stateOut) {
 	// SET BV for all 9 variables + 11 parameters.
 	
 	// Let it be managed by user parameters
@@ -138,7 +138,7 @@ void GRMHD::GRMHDSolver_FV::boundaryValues(
 	// setNeutronStarBoundaryConditions(faceIndex, d, stateIn, stateOut);
 }
 
-void GRMHD::GRMHDSolver_FV::algebraicSource(const double* const Q,double* S) {
+void GRMHD::GRMHDSolver_FV::algebraicSource(const double* const Q,double* const S) {
 	// set source to zero
 	NVARS(i) S[i] = 0;
 	return;
@@ -156,7 +156,7 @@ void GRMHD::GRMHDSolver_FV::algebraicSource(const double* const Q,double* S) {
 	ExaGRMHD::algebraicSource(Q,S).zero_adm();
 }
 
-void GRMHD::GRMHDSolver_FV::nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) {
+void GRMHD::GRMHDSolver_FV::nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ) {
 	// set ncp to zero
 	//NVARS(i) BgradQ[i] = 0;
 	//return;
@@ -182,7 +182,7 @@ void GRMHD::GRMHDSolver_FV::nonConservativeProduct(const double* const Q,const d
 
 // Formerly optimized fusedSource
 /*
-void GRMHD::GRMHDSolver_FV::fusedSource(const double* const Q, const double* const gradQ, double* S_) {
+void GRMHD::GRMHDSolver_FV::fusedSource(const double* const Q, const double* const gradQ, double* const S_) {
 	
 	// ExaHyPE workaround:
 	// if the input are zeros everywhere, complain

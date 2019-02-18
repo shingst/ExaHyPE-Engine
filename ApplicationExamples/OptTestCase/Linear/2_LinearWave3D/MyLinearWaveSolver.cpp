@@ -30,7 +30,7 @@ void Linear::MyLinearWaveSolver::init(const std::vector<std::string>& cmdlinearg
   pointSourceLocation[3][2] = 5.;
 }
 
-void Linear::MyLinearWaveSolver::adjustSolution(double *luh, const tarch::la::Vector<DIMENSIONS,double>& center, const tarch::la::Vector<DIMENSIONS,double>& dx,double t,double dt) {
+void Linear::MyLinearWaveSolver::adjustSolution(double* const luh, const tarch::la::Vector<DIMENSIONS,double>& center, const tarch::la::Vector<DIMENSIONS,double>& dx,double t,double dt) {
   // Dimensions                        = 3
   // Number of variables + parameters  = 4 + 2
   // @todo Please implement/augment if required
@@ -88,7 +88,7 @@ void Linear::MyLinearWaveSolver::adjustSolution(double *luh, const tarch::la::Ve
 
 void Linear::MyLinearWaveSolver::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,
 						const double * const fluxIn,const double* const stateIn,
-						double *fluxOut,double* stateOut) {
+						double* const fluxOut,double* const stateOut) {
   // Dimensions                        = 3
   // Number of variables + parameters  = 4 + 2
 
@@ -121,7 +121,7 @@ exahype::solvers::Solver::RefinementControl Linear::MyLinearWaveSolver::refineme
 //*****************************************************************************
 
 
-void Linear::MyLinearWaveSolver::eigenvalues(const double* const Q,const int d,double* lambda) {
+void Linear::MyLinearWaveSolver::eigenvalues(const double* const Q,const int d,double* const lambda) {
   // Dimensions                        = 3
   // Number of variables + parameters  = 4 + 2
   
@@ -137,7 +137,7 @@ void Linear::MyLinearWaveSolver::eigenvalues(const double* const Q,const int d,d
 }
 
 
-void Linear::MyLinearWaveSolver::flux(const double* const Q,double** F) {
+void Linear::MyLinearWaveSolver::flux(const double* const Q,double** const F) {
   // Dimensions                        = 3
   // Number of variables + parameters  = 4 + 2
   
@@ -167,7 +167,7 @@ void Linear::MyLinearWaveSolver::flux(const double* const Q,double** F) {
 
 
 
-void  Linear::MyLinearWaveSolver::nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) {
+void  Linear::MyLinearWaveSolver::nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ) {
   // @todo Please implement/augment if required
 
   double p_x = gradQ[0];
@@ -209,7 +209,7 @@ void  Linear::MyLinearWaveSolver::nonConservativeProduct(const double* const Q,c
 /**
  * @TODO LR : document
  */
-void Linear::MyLinearWaveSolver::multiplyMaterialParameterMatrix(const double* const Q, double* rhs) {
+void Linear::MyLinearWaveSolver::multiplyMaterialParameterMatrix(const double* const Q, double* const rhs) {
   // @todo Please implement/augment if required
 
   double cp = Q[5];
@@ -233,7 +233,7 @@ void Linear::MyLinearWaveSolver::multiplyMaterialParameterMatrix(const double* c
 }
 
 
-void Linear::MyLinearWaveSolver::coefficientMatrix(const double* const Q,const int d,double* Bn){
+void Linear::MyLinearWaveSolver::coefficientMatrix(const double* const Q,const int d,double* const Bn){
   static tarch::logging::Log _log("MyLinearSolver::coefficientMatrix");
 
   double cp = Q[5];

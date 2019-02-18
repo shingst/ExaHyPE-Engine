@@ -30,7 +30,7 @@ void Linear::MyLinearSolver::adjustPatchSolution(
       const tarch::la::Vector<DIMENSIONS, double>& dx,
       const double t,
       const double dt,
-      double* luh) {
+      double* const luh) {
 
   constexpr int basisSize = MyLinearSolver::Order+1;
   int num_nodes = basisSize;
@@ -107,7 +107,7 @@ void Linear::MyLinearSolver::adjustPatchSolution(
   
 }
 
-void Linear::MyLinearSolver::adjustPointSolution(const double* const x,const double w,const double t,const double dt,double* Q) {
+void Linear::MyLinearSolver::adjustPointSolution(const double* const x,const double w,const double t,const double dt,double* const Q) {
   // Dimensions             = 2
   // Number of variables    = 3 + #parameters
   
@@ -179,7 +179,7 @@ void Linear::MyLinearSolver::adjustPointSolution(const double* const x,const dou
  // std::exit(-1);
 }
 
-void Linear::MyLinearSolver::eigenvalues(const double* const Q,const int d,double* lambda) {
+void Linear::MyLinearSolver::eigenvalues(const double* const Q,const int d,double* const lambda) {
   // Dimensions             = 2
   // Number of variables    = 3 + #parameters
   
@@ -195,7 +195,7 @@ void Linear::MyLinearSolver::eigenvalues(const double* const Q,const int d,doubl
 }
 
 
-void Linear::MyLinearSolver::flux(const double* const Q,double** F) {
+void Linear::MyLinearSolver::flux(const double* const Q,double** const F) {
   // Dimensions             = 2
   // Number of variables    = 3 + #parameters
   
@@ -233,7 +233,7 @@ void Linear::MyLinearSolver::flux(const double* const Q,double** F) {
 
 void Linear::MyLinearSolver::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,
 					      const double * const fluxIn,const double* const stateIn,
-					      double *fluxOut,double* stateOut) {
+					      double* const fluxOut,double* const stateOut) {
   // Dimensions             = 2
   // Number of variables    = 3 + #parameters
 
@@ -419,7 +419,7 @@ exahype::solvers::Solver::RefinementControl Linear::MyLinearSolver::refinementCr
   return exahype::solvers::Solver::RefinementControl::Keep;
 }
 
-void Linear::MyLinearSolver::nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ){
+void Linear::MyLinearSolver::nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ){
   kernels::idx2 idx(DIMENSIONS, NumberOfVariables);
 
   static tarch::logging::Log _log("MyLinearSolver::nonConservativeProduct");
@@ -507,7 +507,7 @@ void Linear::MyLinearSolver::nonConservativeProduct(const double* const Q,const 
 }
 
 
-void Linear::MyLinearSolver::coefficientMatrix(const double* const Q,const int d,double* Bn){
+void Linear::MyLinearSolver::coefficientMatrix(const double* const Q,const int d,double* const Bn){
   static tarch::logging::Log _log("MyLinearSolver::coefficientMatrix");
 
   double cp = 6.0;
@@ -542,7 +542,7 @@ void Linear::MyLinearSolver::coefficientMatrix(const double* const Q,const int d
 }
 
 
-void Linear::MyLinearSolver::riemannSolver(double* const FL,double* const FR,const double* const QL,const double* const QR,double* tempFaceUnknownsArray,double** tempStateSizedVectors,double** tempStateSizedSquareMatrices,const double dt,const int normalNonZeroIndex,bool isBoundaryFace, int faceIndex){
+void Linear::MyLinearSolver::riemannSolver(double* const FL,double* const FR,const double* const QL,const double* const QR,double* const tempFaceUnknownsArray,double** const tempStateSizedVectors,double** const tempStateSizedSquareMatrices,const double dt,const int normalNonZeroIndex,bool isBoundaryFace, int faceIndex){
 
   constexpr int numberOfVariables  = MyLinearSolver::NumberOfVariables;
   constexpr int numberOfVariables2 = numberOfVariables*numberOfVariables;
@@ -598,7 +598,7 @@ void Linear::MyLinearSolver::riemannSolver(double* const FL,double* const FR,con
 
 
 
-void Linear::MyLinearSolver::pointSource(const double* const x,const double t,const double dt, double* const forceVector, double* x0){
+void Linear::MyLinearSolver::pointSource(const double* const x,const double t,const double dt, double* const forceVector, double* const x0){
      double pi = 3.14159265359;
   double sigma = 0.1149;
   double t0 = 0.7;
@@ -666,7 +666,7 @@ void Linear::MyLinearSolver::riemannSolver_BCn(double v,double sigma, double z, 
 }
 
 
-void Linear::MyLinearSolver::multiplyMaterialParameterMatrix(const double* const Q, double* rhs){
+void Linear::MyLinearSolver::multiplyMaterialParameterMatrix(const double* const Q, double* const rhs){
 
   double jacobian= Q[4];
   double cp=6.0;

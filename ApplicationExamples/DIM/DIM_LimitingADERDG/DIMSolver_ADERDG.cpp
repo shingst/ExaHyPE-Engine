@@ -18,7 +18,7 @@ void DIM::DIMSolver_ADERDG::init(const std::vector<std::string>& cmdlineargs,con
   // @todo Please implement/augment if required
 }
 
-void DIM::DIMSolver_ADERDG::adjustPointSolution(const double* const x,const double t,const double dt,double* Q) {
+void DIM::DIMSolver_ADERDG::adjustPointSolution(const double* const x,const double t,const double dt,double* const Q) {
   // Dimensions                        = 2
   // Number of variables + parameters  = 14 + 0
   // @todo Please implement/augment if required
@@ -30,7 +30,7 @@ void DIM::DIMSolver_ADERDG::adjustPointSolution(const double* const x,const doub
 
 void DIM::DIMSolver_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,
   const double * const fluxIn,const double* const stateIn,
-  double *fluxOut,double* stateOut) {
+  double* const fluxOut,double* const stateOut) {
   // Dimensions                        = 2
   // Number of variables + parameters  = 14 + 0
 
@@ -60,7 +60,7 @@ void DIM::DIMSolver_ADERDG::boundaryValues(const double* const x,const double t,
   }
 }
 
-exahype::solvers::Solver::RefinementControl DIM::DIMSolver_ADERDG::refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
+exahype::solvers::Solver::RefinementControl DIM::DIMSolver_ADERDG::refinementCriterion(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
   // @todo Please implement/augment if required
   return exahype::solvers::Solver::RefinementControl::Keep;
 }
@@ -72,13 +72,13 @@ exahype::solvers::Solver::RefinementControl DIM::DIMSolver_ADERDG::refinementCri
 //*****************************************************************************
 
 
-void DIM::DIMSolver_ADERDG::eigenvalues(const double* const Q,const int d,double* lambda) {
+void DIM::DIMSolver_ADERDG::eigenvalues(const double* const Q,const int d,double* const lambda) {
   double nv[3] = {0.};
   nv[d] = 1;
   pdeeigenvalues_(lambda, Q, nv);
 }
 
-void DIM::DIMSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(double* observables, const double* const Q) const {
+void DIM::DIMSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(double* const observables, const double* const Q) const {
   assertion(NumberOfDMPObservables==1);
   observables[0]=Q[12]; //extract alpha
 }
@@ -129,7 +129,7 @@ bool DIM::DIMSolver_ADERDG::isPhysicallyAdmissible(
 }
 
 
-void  DIM::DIMSolver_ADERDG::nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) {
+void  DIM::DIMSolver_ADERDG::nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ) {
   pdencp_(BgradQ, Q, gradQ);
 }
 

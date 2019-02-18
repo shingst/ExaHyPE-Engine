@@ -13,7 +13,7 @@ bool ScalarWave::MyScalarWaveSolver::hasToAdjustSolution(const tarch::la::Vector
  
 }
 
-void ScalarWave::MyScalarWaveSolver::adjustedSolutionValues(const double* const x,const double w,const double t,const double dt,double* Q) {
+void ScalarWave::MyScalarWaveSolver::adjustedSolutionValues(const double* const x,const double w,const double t,const double dt,double* const Q) {
   // Dimensions             = 3
   // Number of variables    = 1 (#unknowns + #parameters)
   
@@ -32,7 +32,7 @@ exahype::solvers::Solver::RefinementControl ScalarWave::MyScalarWaveSolver::refi
 }
 
 
-// void ScalarWave::MyScalarWaveSolver::eigenvalues(const double* const Q,const int normalNonZeroIndex,double* lambda) {
+// void ScalarWave::MyScalarWaveSolver::eigenvalues(const double* const Q,const int normalNonZeroIndex,double* const lambda) {
 //   // Dimensions             = 3
 //   // Number of variables    = 1 (#unknowns + #parameters)
   
@@ -40,7 +40,7 @@ exahype::solvers::Solver::RefinementControl ScalarWave::MyScalarWaveSolver::refi
 //   lambda[0] = 0.0;
 // }
 
-// void ScalarWave::MyScalarWaveSolver::flux(const double* const Q,double** F) {
+// void ScalarWave::MyScalarWaveSolver::flux(const double* const Q,double** const F) {
 //   // Dimensions             = 3
 //   // Number of variables    = 1 (#unknowns + #parameters)
   
@@ -53,7 +53,7 @@ exahype::solvers::Solver::RefinementControl ScalarWave::MyScalarWaveSolver::refi
 // }
 
 
-// void ScalarWave::MyScalarWaveSolver::algebraicSource(const double* const Q,double* S) {
+// void ScalarWave::MyScalarWaveSolver::algebraicSource(const double* const Q,double* const S) {
 //   // Dimensions             = 3
 //   // Number of variables    = 1 (#unknowns + #parameters)
   
@@ -64,7 +64,7 @@ exahype::solvers::Solver::RefinementControl ScalarWave::MyScalarWaveSolver::refi
 
 void ScalarWave::MyScalarWaveSolver::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,
   const double * const fluxIn,const double* const stateIn,
-  double *fluxOut,double* stateOut) {
+  double* const fluxOut,double* const stateOut) {
   // Dimensions             = 3
   // Number of variables    = 1 (#unknowns + #parameters)
 
@@ -75,7 +75,7 @@ void ScalarWave::MyScalarWaveSolver::boundaryValues(const double* const x,const 
 }
 
 
-// void ScalarWave::MyScalarWaveSolver::nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) {
+// void ScalarWave::MyScalarWaveSolver::nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ) {
 //   // Dimensions             = 3
 //   // Number of variables    = 1 (#unknowns + #parameters)
 
@@ -84,7 +84,7 @@ void ScalarWave::MyScalarWaveSolver::boundaryValues(const double* const x,const 
 // }
 
     
-// void ScalarWave::MyScalarWaveSolver::coefficientMatrix(const double* const Q,const int normalNonZero,double* Bn) {
+// void ScalarWave::MyScalarWaveSolver::coefficientMatrix(const double* const Q,const int normalNonZero,double* const Bn) {
 //   // Dimensions             = 3
 //   // Number of variables    = 1 (#unknowns + #parameters)
   

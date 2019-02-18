@@ -30,7 +30,7 @@ tarch::logging::Log Euler::EulerSolver_ADERDG::_log("Euler::EulerSolver_ADERDG")
 void Euler::EulerSolver_ADERDG::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {}
 
 // required for boundary condition
-void Euler::EulerSolver_ADERDG::flux(const double* const Q, double** F) {
+void Euler::EulerSolver_ADERDG::flux(const double* const Q, double** const F) {
   constexpr double gamma = 1.4;
   const double irho = 1./Q[0];
   #if DIMENSIONS==3
@@ -183,7 +183,7 @@ void Euler::EulerSolver_ADERDG::flux_vect(const double* const * const restrict Q
   */
 }
 
-void Euler::EulerSolver_ADERDG::eigenvalues(const double* const Q, const int direction, double* lambda) {
+void Euler::EulerSolver_ADERDG::eigenvalues(const double* const Q, const int direction, double* const lambda) {
   constexpr double gamma = 1.4;
   const double irho = 1./Q[0];
   #if DIMENSIONS==3
@@ -201,11 +201,11 @@ void Euler::EulerSolver_ADERDG::eigenvalues(const double* const Q, const int dir
   lambda[4] += c;
 }
 
-void Euler::EulerSolver_ADERDG::eigenvalues_vect(const double* const * const Q, const int direction, double** lambda, int size) {
+void Euler::EulerSolver_ADERDG::eigenvalues_vect(const double* const * const Q, const int direction, double** const lambda, int size) {
   
 }
 
-void Euler::EulerSolver_ADERDG::entropyWave(const double* const x,double t, double* Q) {
+void Euler::EulerSolver_ADERDG::entropyWave(const double* const x,double t, double* const Q) {
   const double gamma     = 1.4;
   constexpr double width = 1.0;
 
@@ -231,7 +231,7 @@ void Euler::EulerSolver_ADERDG::entropyWave(const double* const x,double t, doub
 }
 
 
-void Euler::EulerSolver_ADERDG::adjustPointSolution(const double* const x,const double t,const double dt, double* Q) {
+void Euler::EulerSolver_ADERDG::adjustPointSolution(const double* const x,const double t,const double dt, double* const Q) {
   if (tarch::la::equals(t, 0.0)) {
     entropyWave(x,0.0,Q);
   }
@@ -239,7 +239,7 @@ void Euler::EulerSolver_ADERDG::adjustPointSolution(const double* const x,const 
 
 exahype::solvers::Solver::RefinementControl
 Euler::EulerSolver_ADERDG::refinementCriterion(
-    const double* luh, const tarch::la::Vector<DIMENSIONS, double>& center,
+    const double* const luh, const tarch::la::Vector<DIMENSIONS, double>& center,
     const tarch::la::Vector<DIMENSIONS, double>& dx, double t,
     const int level) {
   return exahype::solvers::Solver::RefinementControl::Keep;
@@ -248,7 +248,7 @@ Euler::EulerSolver_ADERDG::refinementCriterion(
 void Euler::EulerSolver_ADERDG::boundaryValues(const double* const x, const double t,const double dt,
     const int faceIndex,const int direction,
     const double* const fluxIn,const double* const stateIn,
-    double* fluxOut, double* stateOut) 
+    double* const fluxOut, double* const stateOut) 
 {
   // Dirichlet conditions
   double Q[NumberOfVariables]     = {0.0};
@@ -270,7 +270,7 @@ void Euler::EulerSolver_ADERDG::boundaryValues(const double* const x, const doub
   
 }
 
-void Euler::EulerSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(double* observables, const double* const Q) const {
+void Euler::EulerSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(double* const observables, const double* const Q) const {
     std::copy_n(Q, NumberOfVariables, observables);
 }
 

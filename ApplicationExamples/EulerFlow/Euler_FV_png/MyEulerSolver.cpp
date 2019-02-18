@@ -27,7 +27,7 @@ bool Euler::MyEulerSolver::useAdjustSolution(const tarch::la::Vector<DIMENSIONS,
   return tarch::la::equals(t,0.0);
 }
 
-void Euler::MyEulerSolver::adjustSolution(const double* const x,const double w,const double t,const double dt, double* Q) {
+void Euler::MyEulerSolver::adjustSolution(const double* const x,const double w,const double t,const double dt, double* const Q) {
   Variables vars(Q);
   
   tarch::la::Vector<DIMENSIONS,double> myX( x[0], 1.0-x[1] );
@@ -63,7 +63,7 @@ exahype::solvers::Solver::RefinementControl Euler::MyEulerSolver::refinementCrit
 }
 
 
-void Euler::MyEulerSolver::eigenvalues(const double* const Q, const int dIndex, double* lambda) {
+void Euler::MyEulerSolver::eigenvalues(const double* const Q, const int dIndex, double* const lambda) {
   ReadOnlyVariables vars(Q);
   Variables eigs(lambda);
 
@@ -79,7 +79,7 @@ void Euler::MyEulerSolver::eigenvalues(const double* const Q, const int dIndex, 
   eigs.j(u_n,u_n,u_n);
 }
 
-void Euler::MyEulerSolver::flux(const double* const Q, double** F) {
+void Euler::MyEulerSolver::flux(const double* const Q, double** const F) {
   ReadOnlyVariables vars(Q);
   Fluxes fluxes(F);
 
@@ -105,7 +105,7 @@ void Euler::MyEulerSolver::boundaryValues(
     const int faceIndex,
     const int d,
     const double* const stateInside,
-    double* stateOutside) {
+    double* const stateOutside) {
   ReadOnlyVariables varsInside(stateInside);
   Variables         varsOutside(stateOutside);
 

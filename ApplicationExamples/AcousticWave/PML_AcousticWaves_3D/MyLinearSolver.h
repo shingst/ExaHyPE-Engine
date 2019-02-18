@@ -68,7 +68,7 @@ class Linear::MyLinearSolver: public Linear::AbstractMyLinearSolver {
      * \param[inout] Q         the conserved variables (and parameters) associated with a quadrature point
      *                         as C array (already allocated).
      */
-    void adjustPointSolution(const double* const x,const double w,const double t,const double dt,double* Q) override;
+    void adjustPointSolution(const double* const x,const double w,const double t,const double dt,double* const Q) override;
     
     /**
      * Compute the flux tensor.
@@ -77,13 +77,13 @@ class Linear::MyLinearSolver: public Linear::AbstractMyLinearSolver {
      *                 as C array (already allocated).
      * \param[inout] F the fluxes at that point as C array (already allocated).
      */
-    virtual void flux(const double* const Q,double** F);
+    virtual void flux(const double* const Q,double** const F);
 
-    void nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) override;
-    void coefficientMatrix(const double* const Q,const int d,double* Bn) override;
-    void algebraicSource(const double* const Q,double* S) override;
-    void multiplyMaterialParameterMatrix(const double* const Q, double* rhs) override;
-    void pointSource(const double* const x,const double t,const double dt, double* const forceVector, double* x0) override;
+    void nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ) override;
+    void coefficientMatrix(const double* const Q,const int d,double* const Bn) override;
+    void algebraicSource(const double* const Q,double* const S) override;
+    void multiplyMaterialParameterMatrix(const double* const Q, double* const rhs) override;
+    void pointSource(const double* const x,const double t,const double dt, double* const forceVector, double* const x0) override;
 
 
     
@@ -102,7 +102,7 @@ class Linear::MyLinearSolver: public Linear::AbstractMyLinearSolver {
      * \param[in] d  the column of the flux vector (d=0,1,...,DIMENSIONS).
      * \param[inout] lambda the eigenvalues as C array (already allocated).
      */
-    void eigenvalues(const double* const Q,const int d,double* lambda);
+    void eigenvalues(const double* const Q,const int d,double* const lambda);
     
     /**
      * Impose boundary conditions at a point on a boundary face
@@ -123,18 +123,18 @@ class Linear::MyLinearSolver: public Linear::AbstractMyLinearSolver {
      * \param[inout] FOut      the normal fluxes at point x from outside of the domain
      *                         and time-averaged (over [t,t+dt]) as C array (already allocated).
      */
-    void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double * const fluxIn,const double* const stateIn,double *fluxOut,double* stateOut);
+    void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double * const fluxIn,const double* const stateIn,double* const fluxOut,double* const stateOut);
 
 
-    void riemannSolver(double* const FL,double* const FR,const double* const QL,const double* const QR,double* tempFaceUnknownsArray,double** tempStateSizedVectors,double** tempStateSizedSquareMatrices,const double dt,const int normalNonZeroIndex,bool isBoundaryFace, int faceIndex) override;
+    void riemannSolver(double* const FL,double* const FR,const double* const QL,const double* const QR,double* const tempFaceUnknownsArray,double** const tempStateSizedVectors,double** const tempStateSizedSquareMatrices,const double dt,const int normalNonZeroIndex,bool isBoundaryFace, int faceIndex) override;
 
     void riemannSolver_Nodal(double v_p,double v_m, double sigma_p, double sigma_m, double z_p , double z_m, double& v_hat_p , double& v_hat_m, double& sigma_hat_p, double& sigma_hat_m);
 
     void riemannSolver_BC0(double v, double sigma, double z,  double r, double& v_hat, double& sigma_hat);
     void riemannSolver_BCn(double v, double sigma, double z,  double r, double& v_hat, double& sigma_hat);
 
-    void localBasis(double* n, double * m, double* l, int d);
-    void Gram_Schmidt(double* y, double* z);
+    void localBasis(double* const n, double* const m, double* const l, int d);
+    void Gram_Schmidt(double* const y, double* const z);
 
 
     

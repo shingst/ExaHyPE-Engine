@@ -53,7 +53,7 @@ class GRGPR::GPRSolver_ADERDG : public GRGPR::AbstractGPRSolver_ADERDG {
      * \param[inout] Q         the conserved variables (and parameters) associated with a quadrature point
      *                         as C array (already allocated).
      */
-    void adjustPointSolution(const double* const x,const double t,const double dt,double* Q) final override;
+    void adjustPointSolution(const double* const x,const double t,const double dt,double* const Q) final override;
 
     /**
      * Compute the eigenvalues of the flux tensor per coordinate direction \p d.
@@ -63,7 +63,7 @@ class GRGPR::GPRSolver_ADERDG : public GRGPR::AbstractGPRSolver_ADERDG {
      * \param[in] d  the column of the flux vector (d=0,1,...,DIMENSIONS).
      * \param[inout] lambda the eigenvalues as C array (already allocated).
      */
-    void eigenvalues(const double* const Q,const int d,double* lambda) final override;
+    void eigenvalues(const double* const Q,const int d,double* const lambda) final override;
     
     /**
      * Impose boundary conditions at a point on a boundary face
@@ -84,7 +84,7 @@ class GRGPR::GPRSolver_ADERDG : public GRGPR::AbstractGPRSolver_ADERDG {
      * \param[inout] FOut      the normal fluxes at point x from outside of the domain
      *                         and time-averaged (over [t,t+dt]) as C array (already allocated).
      */
-    void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double * const fluxIn,const double* const stateIn,double *fluxOut,double* stateOut) final override;
+    void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double * const fluxIn,const double* const stateIn,double* const fluxOut,double* const stateOut) final override;
     
     /**
      * Evaluate the refinement criterion within a cell.
@@ -100,7 +100,7 @@ class GRGPR::GPRSolver_ADERDG : public GRGPR::AbstractGPRSolver_ADERDG {
      * \param[in]    dt        the width of the time interval.
      * \return One of exahype::solvers::Solver::RefinementControl::{Erase,Keep,Refine}.
      */
-    exahype::solvers::Solver::RefinementControl refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& centre,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) override;
+    exahype::solvers::Solver::RefinementControl refinementCriterion(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& centre,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) override;
     
     //PDE
 
@@ -111,7 +111,7 @@ class GRGPR::GPRSolver_ADERDG : public GRGPR::AbstractGPRSolver_ADERDG {
      *                 as C array (already allocated).
      * \param[inout] F the fluxes at that point as C array (already allocated).
      */
-    void flux(const double* const Q,double** F) final override;
+    void flux(const double* const Q,double** const F) final override;
 
      /**
      * Compute the Algebraic Sourceterms.
@@ -128,7 +128,7 @@ class GRGPR::GPRSolver_ADERDG : public GRGPR::AbstractGPRSolver_ADERDG {
      *                 as C array (already allocated).
      * \param[inout] S the source point as C array (already allocated).
      */
-    void algebraicSource(const double* const Q,double* S) final override;
+    void algebraicSource(const double* const Q,double* const S) final override;
 
     /**
      * Compute the nonconservative term $B(Q) \nabla Q$.
@@ -152,10 +152,10 @@ class GRGPR::GPRSolver_ADERDG : public GRGPR::AbstractGPRSolver_ADERDG {
      * \param[inout]  The vector BgradQ (extends nVar), already allocated. 
      *
      **/
-    void nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) final override;
+    void nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ) final override;
 
 	
-    void mapDiscreteMaximumPrincipleObservables(double* observables, const double* const Q) const override;
+    void mapDiscreteMaximumPrincipleObservables(double* const observables, const double* const Q) const override;
 
     bool isPhysicallyAdmissible(
       const double* const solution,

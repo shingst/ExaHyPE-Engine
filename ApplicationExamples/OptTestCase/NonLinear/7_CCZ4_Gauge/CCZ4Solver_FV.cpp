@@ -31,32 +31,32 @@ void CCZ4::CCZ4Solver_FV::init(const std::vector<std::string>& cmdlineargs,const
 	//GlobalBoundaryConditions::getInstance().initializeDG(this).readParameters(mf("boundaries"));
 }
 
-void CCZ4::CCZ4Solver_FV::adjustSolution(const double* const x,const double t,const double dt, double* Q) {
+void CCZ4::CCZ4Solver_FV::adjustSolution(const double* const x,const double t,const double dt, double* const Q) {
 	AdjustPointSolution(x,t,dt,Q);
 }
 
-void CCZ4::CCZ4Solver_FV::eigenvalues(const double* const Q, const int dIndex, double* lambda) {
+void CCZ4::CCZ4Solver_FV::eigenvalues(const double* const Q, const int dIndex, double* const lambda) {
 	PDE::eigenvalues(Q, dIndex, lambda);
 }
 
-void CCZ4::CCZ4Solver_FV::boundaryValues(const double* const x,  const double t,const double dt, const int faceIndex, const int d, const double* const stateInside, double* stateOutside) {
+void CCZ4::CCZ4Solver_FV::boundaryValues(const double* const x,  const double t,const double dt, const int faceIndex, const int d, const double* const stateInside, double* const stateOutside) {
 	// exact BC without integration
 	InitialData(x, t, stateOutside);
 }
 
 // if you want to use fluxes...
 /*
-void CCZ4::CCZ4Solver_FV::flux(const double* const Q,double** F) {
+void CCZ4::CCZ4Solver_FV::flux(const double* const Q,double** const F) {
   pdeflux_(F[0], F[1], DIMENSIONS==3 ? F[2] : nullptr, Q);
 }
 */
 
 
-void CCZ4::CCZ4Solver_FV::algebraicSource(const double* const Q,double* S) {
+void CCZ4::CCZ4Solver_FV::algebraicSource(const double* const Q,double* const S) {
 	PDE::algebraicSource(Q, S);
 }
 
-void  CCZ4::CCZ4Solver_FV::nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) {
+void  CCZ4::CCZ4Solver_FV::nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ) {
 	PDE::nonConservativeProduct(Q, gradQ, BgradQ);
 }
 

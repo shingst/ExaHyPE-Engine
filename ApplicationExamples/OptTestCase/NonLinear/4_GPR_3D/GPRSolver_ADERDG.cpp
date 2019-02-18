@@ -18,7 +18,7 @@ void GPR::GPRSolver_ADERDG::init(const std::vector<std::string>& cmdlineargs,con
   // @todo Please implement/augment if required
 }
 
-void GPR::GPRSolver_ADERDG::adjustPointSolution(const double* const x,const double t,const double dt,double* Q) {
+void GPR::GPRSolver_ADERDG::adjustPointSolution(const double* const x,const double t,const double dt,double* const Q) {
   // Dimensions                        = 3
   // Number of variables + parameters  = 17 + 0
   // @todo Please implement/augment if required
@@ -29,7 +29,7 @@ void GPR::GPRSolver_ADERDG::adjustPointSolution(const double* const x,const doub
 
 void GPR::GPRSolver_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,
   const double * const fluxIn,const double* const stateIn,
-  double *fluxOut,double* stateOut) {
+  double* const fluxOut,double* const stateOut) {
 const int nVar = GPR::AbstractGPRSolver_ADERDG::NumberOfVariables;
   const int order = GPR::AbstractGPRSolver_ADERDG::Order;
   const int basisSize = order + 1;
@@ -63,7 +63,7 @@ const int nVar = GPR::AbstractGPRSolver_ADERDG::NumberOfVariables;
 	*/
 }
 
-exahype::solvers::Solver::RefinementControl GPR::GPRSolver_ADERDG::refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
+exahype::solvers::Solver::RefinementControl GPR::GPRSolver_ADERDG::refinementCriterion(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
   // @todo Please implement/augment if required
   return exahype::solvers::Solver::RefinementControl::Keep;
 }
@@ -75,7 +75,7 @@ exahype::solvers::Solver::RefinementControl GPR::GPRSolver_ADERDG::refinementCri
 //*****************************************************************************
 
 
-void GPR::GPRSolver_ADERDG::eigenvalues(const double* const Q,const int d,double* lambda) {
+void GPR::GPRSolver_ADERDG::eigenvalues(const double* const Q,const int d,double* const lambda) {
   // Dimensions                        = 3
   // Number of variables + parameters  = 17 + 0
   
@@ -86,7 +86,7 @@ void GPR::GPRSolver_ADERDG::eigenvalues(const double* const Q,const int d,double
 }
 
 
-void GPR::GPRSolver_ADERDG::flux(const double* const Q,double** F) {
+void GPR::GPRSolver_ADERDG::flux(const double* const Q,double** const F) {
 	const int nVar = GPR::AbstractGPRSolver_ADERDG::NumberOfVariables;
   // Dimensions                        = 3
   // Number of variables + parameters  = 17 + 0
@@ -105,17 +105,17 @@ void GPR::GPRSolver_ADERDG::flux(const double* const Q,double** F) {
 
 
 //You can either implement this method or modify fusedSource
-void GPR::GPRSolver_ADERDG::algebraicSource(const double* const Q,double* S) {
+void GPR::GPRSolver_ADERDG::algebraicSource(const double* const Q,double* const S) {
   // @todo Please implement/augment if required
   pdesource_(S, Q);
 }
 
-void  GPR::GPRSolver_ADERDG::nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) {
+void  GPR::GPRSolver_ADERDG::nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ) {
   // @todo Please implement/augment if required
   pdencp_(BgradQ, Q, gradQ);
 }
 
-void GPR::GPRSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(double* observables, const double* const Q) const {
+void GPR::GPRSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(double* const observables, const double* const Q) const {
   assertion(NumberOfDMPObservables==1);
   ReadOnlyVariables vars(Q);
 

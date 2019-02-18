@@ -15,7 +15,7 @@
 
 tarch::logging::Log Maxwell::MaxwellSolver::_log( "Maxwell::MaxwellSolver" );
 
-void cavityProblem(double* Q, const double* x, const double t){
+void cavityProblem(double* const Q, const double* const x, const double t){
     //epsilon and mu
     Q[6] = 1.0;
     Q[7] = 1.0;
@@ -34,7 +34,7 @@ void cavityProblem(double* Q, const double* x, const double t){
 void Maxwell::MaxwellSolver::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
 }
 
-void Maxwell::MaxwellSolver::adjustPointSolution(const double* const x,const double t,const double dt,double* Q) {
+void Maxwell::MaxwellSolver::adjustPointSolution(const double* const x,const double t,const double dt,double* const Q) {
   // Dimensions                        = 3
   // Number of variables + parameters  = 6 + 0
   // @todo Please implement/augment if required
@@ -45,7 +45,7 @@ void Maxwell::MaxwellSolver::adjustPointSolution(const double* const x,const dou
 
 void Maxwell::MaxwellSolver::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,
   const double * const fluxIn,const double* const stateIn,
-  double *fluxOut,double* stateOut) {
+  double* const fluxOut,double* const stateOut) {
   // Dimensions                        = 3
   // Number of variables + parameters  = 6 + 0
     constexpr int nVar = Maxwell::AbstractMaxwellSolver::NumberOfVariables;
@@ -87,7 +87,7 @@ exahype::solvers::Solver::RefinementControl Maxwell::MaxwellSolver::refinementCr
 //*****************************************************************************
 
 
-void Maxwell::MaxwellSolver::eigenvalues(const double* const Q,const int d,double* lambda) {
+void Maxwell::MaxwellSolver::eigenvalues(const double* const Q,const int d,double* const lambda) {
   // Dimensions                        = 3
   // Number of variables + parameters  = 6 + 0
   lambda[0] =  std::sqrt(Q[6]*Q[7]);
@@ -102,7 +102,7 @@ void Maxwell::MaxwellSolver::eigenvalues(const double* const Q,const int d,doubl
 
 
 
-void Maxwell::MaxwellSolver::flux(const double* const Q,double** F) {
+void Maxwell::MaxwellSolver::flux(const double* const Q,double** const F) {
   // Dimensions                        = 3
   // Number of variables + parameters  = 6 + 0
   double Hx = Q[0];
@@ -142,7 +142,7 @@ void Maxwell::MaxwellSolver::flux(const double* const Q,double** F) {
 }
 
 
-void Maxwell::MaxwellSolver::multiplyMaterialParameterMatrix(const double* const Q, double* rhs){
+void Maxwell::MaxwellSolver::multiplyMaterialParameterMatrix(const double* const Q, double* const rhs){
     //identity for now
     //later multiply with mu and epsilon
     double epsilon = Q[6];
