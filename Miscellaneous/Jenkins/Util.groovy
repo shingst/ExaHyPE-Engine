@@ -7,6 +7,9 @@ IFS=$'\n\t'
 # Kill all called processes when script finishes!
 trap "kill 0" SIGINT
 
+#REMARK: required until SCRATCH env got fixed by LRZ
+export SCRATCH="/gpfs/scratch/pr63so/di57wuf"
+
 mkdir -p ${SCRATCH}/jenkins/exahype/tmp
 tmpfile=$(mktemp $SCRATCH/jenkins/exahype/tmp/slurm-XXXXX.sh)
 
