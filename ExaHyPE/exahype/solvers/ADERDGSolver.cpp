@@ -3274,6 +3274,17 @@ void exahype::solvers::ADERDGSolver::applyBoundaryConditions(CellDescription& p,
   std::string inputData = riemannDataToString(QIn,FIn,"In");
   #endif
 
+  #ifdef Asserts
+  assertion4(std::isfinite(p.getTimeStamp()),p.toString(),face._faceIndex,face._direction,p.getTimeStamp());
+  assertion4(std::isfinite(p.getTimeStepSize()),p.toString(),face._faceIndex,face._direction,p.getTimeStepSize());
+  assertion4(p.getTimeStepSize()>=0.0, p.toString(),face._faceIndex,face._direction,p.getTimeStepSize());
+  if ( _checkForNaNs ) {
+    for(int i=0; i<dofsPerFace; ++i) {
+      assertion6(tarch::la::equals(p.getTimeStepSize(),0.0) || std::isfinite(FIn[i]),p.toString(),face._faceIndex,face._direction,i,FIn[i],inputData);
+    }
+  }
+  #endif
+
   // TODO(Dominic): Hand in space-time volume data. Time integrate it afterwards
 
   std::tuple<double,double> timeStepData = getRiemannSolverTimeStepData(p,p);
