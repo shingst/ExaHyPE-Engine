@@ -225,7 +225,7 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
         peano::parallel::loadbalancing::Oracle::getInstance().setOracle(
             new mpibalancing::HotspotBalancing(
                 false,
-                1, // getFinestUniformGridLevelForLoadBalancing(_boundingBoxSize), /*boundary regularity*/
+                getFinestUniformGridLevelForLoadBalancing(_boundingBoxSize), /*boundary regularity*/
                 0 /* 0 means no admistrative ranks; previous: tarch::parallel::Node::getInstance().getNumberOfNodes()/THREE_POWER_D */
           )
         );
@@ -529,12 +529,16 @@ int exahype::runners::Runner::getCoarsestGridLevelForLoadBalancing(
 
 int exahype::runners::Runner::getFinestUniformGridLevelOfAllSolvers(
     tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize) const {
-  double hMax = exahype::solvers::Solver::getFinestMaximumMeshSizeOfAllSolvers();
+  if ( _parser.getScaleBoundingBox() ) {
+    return std::numeric_limits<int>::max();
+  } else { 
+    double hMax = exahype::solvers::Solver::getFinestMaximumMeshSizeOfAllSolvers();
 
-  const int peanoLevel = exahype::solvers::Solver::computeCoarsestMeshSizeAndLevel(hMax,boundingBoxSize[0]).second;
+    const int peanoLevel = exahype::solvers::Solver::computeCoarsestMeshSizeAndLevel(hMax,boundingBoxSize[0]).second;
 
-  logDebug( "getCoarsestGridLevelOfAllSolvers()", "regular grid depth of " << peanoLevel << " (1 means a single cell)");
-  return peanoLevel;
+    logDebug( "getCoarsestGridLevelOfAllSolvers()", "regular grid depth of " << peanoLevel << " (1 means a single cell)");
+    return peanoLevel;
+  }
 }
 
 int exahype::runners::Runner::getFinestUniformGridLevelForLoadBalancing(
@@ -595,11 +599,10 @@ exahype::repositories::Repository* exahype::runners::Runner::createRepository() 
     double boundingBoxExtent      = 0;
     double boundingBoxMeshSpacing = std::numeric_limits<double>::infinity();
 
-    const int cellsPushedOutside = ( coarsestUserMeshLevel <= 3 ) ? 1 : 2;
     int level = coarsestUserMeshLevel; // level=1 means a single cell
     while (boundingBoxMeshSpacing > coarsestUserMeshSpacing) {
       const double boundingBoxMeshCells = std::pow(3,level-1);
-      boundingBoxScaling                = boundingBoxMeshCells / ( boundingBoxMeshCells - 2*cellsPushedOutside );
+      boundingBoxScaling                = boundingBoxMeshCells / ( boundingBoxMeshCells - 2*2 ); // two cells are removed on each side
       boundingBoxExtent                 = boundingBoxScaling * maxDomainExtent;
       boundingBoxMeshSpacing            = boundingBoxExtent/boundingBoxMeshCells;
       level++;
