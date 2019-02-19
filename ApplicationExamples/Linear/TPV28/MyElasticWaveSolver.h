@@ -32,15 +32,13 @@ class Elastic::MyElasticWaveSolver : public Elastic::AbstractMyElasticWaveSolver
     static tarch::logging::Log _log;
     CurvilinearTransformation* transformation;
   public:
-    //MyElasticWaveSolver(double maximumMeshSize,int maximumAdaptiveMeshDepth,int DMPObservables,int limiterHelperLayers,exahype::solvers::Solver::TimeStepping timeStepping);
+    //MyElasticWaveSolver(double maximumMeshSize,int maximumAdaptiveMeshDepth,int DMPObservables,exahype::solvers::Solver::TimeStepping timeStepping);
     MyElasticWaveSolver(
 			const double maximumMeshSize,
 			const int maximumMeshDepth,
 			const int haloCells,
 			const int regularisedFineGridLevels,
-			const exahype::solvers::Solver::TimeStepping timeStepping,
-			const int limiterHelperLayers,
-			const int DMPObservables
+			const exahype::solvers::Solver::TimeStepping timeStepping,const int DMPObservables
 			);
 
     /**
@@ -54,7 +52,7 @@ class Elastic::MyElasticWaveSolver : public Elastic::AbstractMyElasticWaveSolver
      * Patchwise adjust
      * @TODO LR : Document
      */
-    void adjustSolution(double *luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,double dt) final override;
+    void adjustSolution(double* const luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,double dt) final override;
 
     /**
      * Compute the eigenvalues of the flux tensor per coordinate direction \p d.
@@ -64,7 +62,7 @@ class Elastic::MyElasticWaveSolver : public Elastic::AbstractMyElasticWaveSolver
      * \param[in] d  the column of the flux vector (d=0,1,...,DIMENSIONS).
      * \param[inout] lambda the eigenvalues as C array (already allocated).
      */
-    void eigenvalues(const double* const Q,const int d,double* lambda) final override;
+    void eigenvalues(const double* const Q,const int d,double* const lambda) final override;
     
     /**
      * Impose boundary conditions at a point on a boundary face
@@ -85,7 +83,7 @@ class Elastic::MyElasticWaveSolver : public Elastic::AbstractMyElasticWaveSolver
      * \param[inout] FOut      the normal fluxes at point x from outside of the domain
      *                         and time-averaged (over [t,t+dt]) as C array (already allocated).
      */
-    void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double * const fluxIn,const double* const stateIn,double *fluxOut,double* stateOut) final override;
+    void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double * const fluxIn,const double* const stateIn,double* const fluxOut,double* const stateOut) final override;
     
     /**
      * Evaluate the refinement criterion within a cell.
@@ -101,7 +99,7 @@ class Elastic::MyElasticWaveSolver : public Elastic::AbstractMyElasticWaveSolver
      * \param[in]    dt        the width of the time interval.
      * \return One of exahype::solvers::Solver::RefinementControl::{Erase,Keep,Refine}.
      */
-    exahype::solvers::Solver::RefinementControl refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& centre,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) override;
+    exahype::solvers::Solver::RefinementControl refinementCriterion(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& centre,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) override;
     
     //PDE
 
@@ -112,7 +110,7 @@ class Elastic::MyElasticWaveSolver : public Elastic::AbstractMyElasticWaveSolver
      *                 as C array (already allocated).
      * \param[inout] F the fluxes at that point as C array (already allocated).
      */
-    void flux(const double* const Q,double** F) final override;
+    void flux(const double* const Q,double** const F) final override;
 
 
     /**
@@ -137,8 +135,8 @@ class Elastic::MyElasticWaveSolver : public Elastic::AbstractMyElasticWaveSolver
      * \param[inout]  The vector BgradQ (extends nVar), already allocated. 
      *
      **/
-    void nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) final override;
-    void algebraicSource(const double* const Q,double* S) final override;
+    void nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ) final override;
+    void algebraicSource(const double* const Q,double* const S) final override;
 
     /**
      * Compute a pointSource contribution.
@@ -146,45 +144,45 @@ class Elastic::MyElasticWaveSolver : public Elastic::AbstractMyElasticWaveSolver
      * @TODO: Document me, please.
     **/
     void initPointSourceLocations();
-    void pointSource(const double* const Q,const double* const x,const double t,const double dt, double* forceVector,int n) override;
+    void pointSource(const double* const Q,const double* const x,const double t,const double dt, double* const forceVector,int n) override;
 
     /**
      * @TODO LR : document
      */
-    void multiplyMaterialParameterMatrix(const double* const Q, double* rhs) final override;
+    void multiplyMaterialParameterMatrix(const double* const Q, double* const rhs) final override;
     
     void extractTransformation(const double* const Q,
 			       double& q_x,double& q_y,double& q_z,
 			       double& r_x,double& r_y,double& r_z,
 			       double& s_x,double& s_y,double& s_z);
-    void riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double dt,const int normalNonZeroIndex, bool isBoundaryFace, int faceIndex) override;
+    void riemannSolver(double* const FL,double* const FR,const double* const QL,const double* const QR,const double dt,const int normalNonZeroIndex, bool isBoundaryFace, int faceIndex) override;
     void riemannSolver_Nodal(double v_p,double v_m, double sigma_p, double sigma_m, double z_p , double z_m, double& v_hat_p , double& v_hat_m, double& sigma_hat_p, double& sigma_hat_m);
     void riemannSolver_boundary(int faceIndex,double r, double vn , double vm , double vl, double Tn , double Tm ,double Tl , double zp, double zs,  double& vn_hat , double& vm_hat ,double& vl_hat , double& Tn_hat , double& Tm_hat ,double& Tl_hat);
     
     void riemannSolver_BC0(double v, double sigma, double z,  double r, double& v_hat, double& sigma_hat);
     void riemannSolver_BCn(double v, double sigma, double z,  double r, double& v_hat, double& sigma_hat);
 
-    void localBasis(double* n, double * m, double* l, int d);
-    void Gram_Schmidt(double* y, double* z);
+    void localBasis(double* const n, double* const m, double* const l, int d);
+    void Gram_Schmidt(double* const y, double* const z);
     
     void generate_fluctuations_right(double z,  double T,double T_hat,double v, double v_hat, double& F);
     void generate_fluctuations_left(double z,  double T,double T_hat,double v, double v_hat, double& F);
-    void rotate_into_physical_basis(double* n,double* m,double* l, double Fn,double Fm,double Fl, double& Fx, double& Fy, double& Fz);
-    void rotate_into_orthogonal_basis(double* n,double* m,double* l, double Tx,double Ty,double Tz, double& Tn, double& Tm, double& Tl);
-    void extract_tractions_and_particle_velocity(double* n, const double* Q, double& Tx,double& Ty,double& Tz,double& vx,double& vy,double& vz );
-    void get_normals(int normalNonZeroIndex,double& norm, double* n,const double* Q);
-    void extract_tractions(double sxx, double syy, double szz, double sxy, double sxz, double syz, double* n, double& Tx,double& Ty,double& Tz);
-    void initialstresstensor(double& sxx, double& syy, double& szz, double& sxy, double& sxz, double& syz, double* x);
+    void rotate_into_physical_basis(double* const n,double* const m,double* const l, double Fn,double Fm,double Fl, double& Fx, double& Fy, double& Fz);
+    void rotate_into_orthogonal_basis(double* const n,double* const m,double* const l, double Tx,double Ty,double Tz, double& Tn, double& Tm, double& Tl);
+    void extract_tractions_and_particle_velocity(double* const n, const double* const Q, double& Tx,double& Ty,double& Tz,double& vx,double& vy,double& vz );
+    void get_normals(int normalNonZeroIndex,double& norm, double* const n,const double* const Q);
+    void extract_tractions(double sxx, double syy, double szz, double sxy, double sxz, double syz, double* const n, double& Tx,double& Ty,double& Tz);
+    void initialstresstensor(double& sxx, double& syy, double& szz, double& sxy, double& sxz, double& syz, double* const x);
 
 
     //rupture Dynamics
 
-    void prestress(double& T0_n, double& T0_m, double& T0_l, double* x, double t, double* l, double* m, double* n);
+    void prestress(double& T0_n, double& T0_m, double& T0_l, double* const x, double t, double* const l, double* const m, double* const n);
     double boxcar(double& f, double x, double w);
-    void TauStrength(double& tau_str, double sigma_n, double S, double* x, double t);
+    void TauStrength(double& tau_str, double sigma_n, double S, double* const x, double t);
     void slip_weakening(double& v1, double& v2, double& Vel, double& tau1, double& tau2,
 			double phi_1, double phi_2, double eta, double tau_str, double sigma_n);
-    void SlipWeakeningFriction(double vn_p,double vn_m, double Tn_p, double Tn_m, double zp_p , double zp_m, double& vn_hat_p , double& vn_hat_m, double& Tn_hat_p, double& Tn_hat_m, double vm_p,double vm_m, double Tm_p, double Tm_m, double zl_p , double zl_m, double& vm_hat_p , double& vm_hat_m, double& Tm_hat_p, double& Tm_hat_m, double vl_p,double vl_m, double Tl_p, double Tl_m, double zm_p , double zm_m, double& vl_hat_p , double& vl_hat_m, double& Tl_hat_p, double& Tl_hat_m, double* l, double* m, double* n, double* x, double S);
+    void SlipWeakeningFriction(double vn_p,double vn_m, double Tn_p, double Tn_m, double zp_p , double zp_m, double& vn_hat_p , double& vn_hat_m, double& Tn_hat_p, double& Tn_hat_m, double vm_p,double vm_m, double Tm_p, double Tm_m, double zl_p , double zl_m, double& vm_hat_p , double& vm_hat_m, double& Tm_hat_p, double& Tm_hat_m, double vl_p,double vl_m, double Tl_p, double Tl_m, double zm_p , double zm_m, double& vl_hat_p , double& vl_hat_m, double& Tl_hat_p, double& Tl_hat_m, double* const l, double* const m, double* const n, double* const x, double S);
     void fault(double& fault_surface, double y, double z);
 };
 

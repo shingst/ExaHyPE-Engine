@@ -45,7 +45,7 @@ class NavierStokesFV::MyNavierStokesSolver : public NavierStokesFV::AbstractMyNa
     /**
      * @see FiniteVolumesSolver
      */    
-    void adjustSolution(const double* const x,const double t,const double dt, double* Q) override; 
+    void adjustSolution(const double* const x,const double t,const double dt, double* const Q) override; 
     
     /**
      * Compute the eigenvalues of the flux tensor per coordinate direction \p d.
@@ -55,7 +55,7 @@ class NavierStokesFV::MyNavierStokesSolver : public NavierStokesFV::AbstractMyNa
      * \param[in] d  the column of the flux vector (d=0,1,...,DIMENSIONS).
      * \param[inout] lambda the eigenvalues as C array (already allocated).
      */
-    void eigenvalues(const double* const Q,const int d,double* lambda) override;
+    void eigenvalues(const double* const Q,const int d,double* const lambda) override;
         
     /**
      * Impose boundary conditions at a point on a boundary face
@@ -72,7 +72,7 @@ class NavierStokesFV::MyNavierStokesSolver : public NavierStokesFV::AbstractMyNa
      * \param[inout] QOut      the conserved variables at point x from outside of the domain
      *                         and time-averaged (over [t,t+dt]) as C array (already allocated).
      */
-    void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double* const stateIn,double* stateOut) override;
+    void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double* const stateIn,double* const stateOut) override;
     
     /* flux() function not included, as requested in the specification file */
 
@@ -85,8 +85,8 @@ class NavierStokesFV::MyNavierStokesSolver : public NavierStokesFV::AbstractMyNa
      *                     as C array (already allocated).
      * \param[inout] F the fluxes at that point as C array (already allocated).
      */
-    void viscousFlux(const double* const Q,const double* const gradQ, double** F) override;
-    void viscousEigenvalues(const double* const Q,const int d,double* lambda) override;
+    void viscousFlux(const double* const Q,const double* const gradQ, double** const F) override;
+    void viscousEigenvalues(const double* const Q,const int d,double* const lambda) override;
 
     /* algebraicSource() function not included, as requested by the specification file */
 

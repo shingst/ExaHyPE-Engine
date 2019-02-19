@@ -266,6 +266,20 @@ class exahype::parser::Parser {
    */
   bool compareMPILoadBalancingStrategy(const std::string& strategy) const;
 
+  /**
+   * @return if the bounding box should be scaled
+   * such that exactly two cells lie outside of the domain in
+   * each coordinate direction.
+   *
+   * @note It is important to scale the bounding box if MPI
+   * experiments are run as this prevents communication
+   * with rank 0. More importantly, it prevents that the
+   * global master traverses its outside cells.
+   *
+   * If the global master has too many outside cells
+   *
+   * @note We scale the bounding box by default.
+   */
   bool getScaleBoundingBox() const;
 
   int getMPIBufferSize() const;
@@ -287,19 +301,50 @@ class exahype::parser::Parser {
   int  getSimulationTimeSteps() const;
 
   /**
-   * @return Indicates if the user has chosen the fused ADER-DG time stepping
-   * variant.
+   * @return if static mesh refinement is used. Otherwise, or if not specified,
+   * it is assumed dynamic mesh refinement is used.
+   */
+  bool getStaticMeshRefinement() const;
+
+  /**
+   * @return if dynamic mesh refinement is used. Otherwise, or if not specified,
+   * it is assumed dynamic mesh refinement is used.
+   */
+  bool getStaticLimiting() const;
+
+  /**
+   * @return Indicates if the user has chosen the ADER-DG time stepping variant
+   * where all three phases are fused into one loop.
    *
    * If the parser returns _noTokenFound, we may not issue an error as this is
    * an optional entry in the spec file.
    */
-  bool getFuseAlgorithmicSteps() const;
+  bool getFuseAllAlgorithmicSteps() const;
 
   /**
-   * @return Time step size underestimation factor for the fused ADER-DG time
-   * stepping variant.
+   * @return Indicates if the user has chosen the ADER-DG time stepping variant
+   * where the corrector and update loop are fused into one loop.
+   *
+   * If the parser returns _noTokenFound, we may not issue an error as this is
+   * an optional entry in the spec file.
    */
-  double getFuseAlgorithmicStepsFactor() const;
+  bool getFuseMostAlgorithmicSteps() const;
+
+  /**
+   * @return Time step size factor for the fused ADER-DG time stepping for nonlinear PDEs
+   * used when a rerun is performed.
+   *
+   * @note is only used if a nonlinear PDE is solved and all algorithmic phases are fused.
+   */
+  double getFuseAlgorithmicStepsRerunFactor() const;
+
+  /**
+   * @return Time step size factor for the fused ADER-DG time stepping for nonlinear PDEs
+   * used when a rerun is performed.
+   *
+   * @note is only used if a nonlinear PDE is solved and all algorithmic phases are fused.
+   */
+  double getFuseAlgorithmicStepsDiffusionFactor() const;
 
   /**
    * @return if the predictor and the first and intermediate fused time steps should be
@@ -464,30 +509,6 @@ class exahype::parser::Parser {
    * a limiting ADER-DG solver.
    */
   int getDMPObservables(int solverNumber) const;
-
-  /**
-   * @return The minimum number of steps we keep a cell troubled after it has been
-   * considered as cured by the discrete maximum principle (DMP) and the
-   * physical admissibility detection (PAD).
-   *
-   * @note This value can only be read in if the solver \p solverNumber is
-   * a limiting ADER-DG solver.
-   */
-  int getStepsTillCured(int solverNumber) const;
-
-  /**
-   * @return the number of Limiter/FV helper layers
-   * surrounding a troubled cell.
-   *
-   * The helper layers of the the ADER-DG solver have
-   * the same cardinality.
-   * We thus have a total number of helper layers
-   * which is twice the returned value.
-   *
-   * @note This value can only be read in if the solver \p solverNumber is
-   * a limiting ADER-DG solver.
-   */
-  int getLimiterHelperLayers(int solverNumber) const;
 
   /**
    * In the ExaHyPE specification file, a plotter configuration has

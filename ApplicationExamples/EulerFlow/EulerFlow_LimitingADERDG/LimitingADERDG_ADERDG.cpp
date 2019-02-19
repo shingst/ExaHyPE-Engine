@@ -42,9 +42,7 @@ exahype::solvers::Solver::RefinementControl Euler::LimitingADERDG_ADERDG::refine
 }
 
 
-void Euler::LimitingADERDG_ADERDG::mapDiscreteMaximumPrincipleObservables(
-    double* observables,const int numberOfObservables,
-    const double* const Q) const {
+void Euler::LimitingADERDG_ADERDG::mapDiscreteMaximumPrincipleObservables(double* observables, const double* const Q) const {
   assertion(numberOfObservables==2);
   ReadOnlyVariables vars(Q);
 

@@ -28,7 +28,7 @@ void MHD::MHDSolver::init(const std::vector<std::string>& cmdlineargs,const exah
   // constants = &_constants;
 }
 
-void MHD::MHDSolver::adjustPointSolution(const double* const x,const double t,const double dt,double* Q) {
+void MHD::MHDSolver::adjustPointSolution(const double* const x,const double t,const double dt,double* const Q) {
   // Dimensions                        = 2
   // Number of variables + parameters  = 9 + 0
   // @todo Please implement/augment if required
@@ -39,7 +39,7 @@ void MHD::MHDSolver::adjustPointSolution(const double* const x,const double t,co
 
 void MHD::MHDSolver::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,
   const double * const fluxIn,const double* const stateIn,
-  double *fluxOut,double* stateOut) {
+  double* const fluxOut,double* const stateOut) {
   // Dimensions                        = 2
   // Number of variables + parameters  = 9 + 0
 
@@ -70,7 +70,7 @@ void MHD::MHDSolver::boundaryValues(const double* const x,const double t,const d
   }
 }
 
-exahype::solvers::Solver::RefinementControl MHD::MHDSolver::refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
+exahype::solvers::Solver::RefinementControl MHD::MHDSolver::refinementCriterion(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
   // @todo Please implement/augment if required
   return exahype::solvers::Solver::RefinementControl::Keep;
 }
@@ -82,7 +82,7 @@ exahype::solvers::Solver::RefinementControl MHD::MHDSolver::refinementCriterion(
 //*****************************************************************************
 
 
-void MHD::MHDSolver::eigenvalues(const double* const Q,const int d,double* lambda) {
+void MHD::MHDSolver::eigenvalues(const double* const Q,const int d,double* const lambda) {
   // Dimensions                        = 2
   // Number of variables + parameters  = 9 + 0
   double nv[3] = {0.};
@@ -94,7 +94,7 @@ void MHD::MHDSolver::eigenvalues(const double* const Q,const int d,double* lambd
 
 
 
-void MHD::MHDSolver::flux(const double* const Q,double** F) {
+void MHD::MHDSolver::flux(const double* const Q,double** const F) {
   // Dimensions                        = 2
   // Number of variables + parameters  = 9 + 0
   // Caveats: Fortran accepts a uniform array of size (nVar*nDim), however C passes an array of pointers.

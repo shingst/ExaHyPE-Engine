@@ -27,7 +27,7 @@
 peano::CommunicationSpecification
 exahype::mappings::LocalRollback::communicationSpecification() const {
   return peano::CommunicationSpecification(
-      peano::CommunicationSpecification::ExchangeMasterWorkerData::SendDataAndStateBeforeFirstTouchVertexFirstTime,
+      peano::CommunicationSpecification::ExchangeMasterWorkerData::MaskOutMasterWorkerDataAndStateExchange,
       peano::CommunicationSpecification::ExchangeWorkerMasterData::MaskOutWorkerMasterDataAndStateExchange,
       true);
 }
@@ -118,21 +118,7 @@ bool exahype::mappings::LocalRollback::performLocalRecomputation(
 
 void exahype::mappings::LocalRollback::endIteration(
     exahype::State& solverState) {
-  if ( OneSolverRequestedLocalRecomputation ) {
-    for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
-      auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-      if (
-          performLocalRecomputation(solver) &&
-          exahype::solvers::Solver::FuseADERDGPhases
-      ) {
-        static_cast<solvers::LimitingADERDGSolver*>(solver)->rollbackToPreviousTimeStepFused();
-      } else if (
-          performLocalRecomputation(solver)
-      ) {
-        static_cast<solvers::LimitingADERDGSolver*>(solver)->rollbackToPreviousTimeStep();
-      }
-    }
-  }
+  // do nothing
 }
 
 void exahype::mappings::LocalRollback::enterCell(
@@ -160,7 +146,7 @@ void exahype::mappings::LocalRollback::enterCell(
             break;
           case solvers::Solver::Type::LimitingADERDG:
             static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->
-              rollbackSolutionLocally(solverNumber,cellInfo,exahype::solvers::Solver::FuseADERDGPhases);
+              rollbackSolutionLocally(solverNumber,cellInfo,exahype::solvers::Solver::FuseAllADERDGPhases);
             break;
           case solvers::Solver::Type::FiniteVolumes:
             // do nothing

@@ -22,8 +22,9 @@
 #include "exahype/plotters/CSV/ADERDG2LegendreCSV.h"
 #include "exahype/plotters/CSV/Patch2CSV.h"
 
-#include "exahype/plotters/CarpetHDF5/ADERDG2CarpetHDF5.h"
-#include "exahype/plotters/CarpetHDF5/FiniteVolume2CarpetHDF5.h"
+#include "exahype/plotters/Carpet/ADERDG2Carpet.h"
+#include "exahype/plotters/Carpet/FiniteVolume2Carpet.h"
+
 #include "exahype/plotters/FlashHDF5/ADERDG2FlashHDF5.h"
 #include "exahype/plotters/Tecplot/ExaHyPE2Tecplot.h"
 
@@ -61,6 +62,10 @@ tarch::multicore::BooleanSemaphore exahype::plotters::SemaphoreForPlotting;
 
 tarch::logging::Log exahype::plotters::Plotter::_log( "exahype::plotters::Plotter" );
 
+#ifdef Parallel
+int exahype::plotters::Plotter::MasterWorkerCommunicationTag = MPI_ANY_TAG;
+#endif
+
 exahype::plotters::Plotter::Plotter(
         const int solverConfig,const int plotterConfig,
         const exahype::parser::Parser& parser,
@@ -69,7 +74,7 @@ exahype::plotters::Plotter::Plotter(
         _type(parser.getTypeForPlotter(solverConfig, plotterConfig)),
         _writtenUnknowns(parser.getUnknownsForPlotter(solverConfig, plotterConfig)),
         _time(parser.getFirstSnapshotTimeForPlotter(solverConfig, plotterConfig)),
-        _solverTimeStamp(-std::numeric_limits<double>::max()),
+        _solverTimeStamp(-std::numeric_limits<double>::infinity()),
         _repeat(parser.getRepeatTimeForPlotter(solverConfig, plotterConfig)),
         _filename(parser.getFilenameForPlotter(solverConfig, plotterConfig)),
         _plotterParameters(parser.getParametersForPlotter(solverConfig, plotterConfig)),
@@ -133,7 +138,7 @@ exahype::plotters::Plotter::Plotter(
       _type(parser.getTypeForPlotter(solverConfig, plotterConfig)),
       _writtenUnknowns(parser.getUnknownsForPlotter(solverConfig, plotterConfig)),
       _time(parser.getFirstSnapshotTimeForPlotter(solverConfig, plotterConfig)),
-      _solverTimeStamp(-std::numeric_limits<double>::max()),
+      _solverTimeStamp(-std::numeric_limits<double>::infinity()),
       _repeat(parser.getRepeatTimeForPlotter(solverConfig, plotterConfig)),
       _filename(parser.getFilenameForPlotter(solverConfig, plotterConfig)),
       _plotterParameters(parser.getParametersForPlotter(solverConfig, plotterConfig)),
@@ -351,6 +356,9 @@ exahype::plotters::Plotter::Plotter(
       if (equalsIgnoreCase(_type, ADERDG2CarpetHDF5::getIdentifier())) {
         _device = new ADERDG2CarpetHDF5(postProcessing);
       }
+      if (equalsIgnoreCase(_type, ADERDG2CarpetASCII::getIdentifier())) {
+        _device = new ADERDG2CarpetASCII(postProcessing);
+      }
       if (equalsIgnoreCase(_type, ADERDG2FlashHDF5::getIdentifier())) {
         _device = new ADERDG2FlashHDF5(postProcessing);
       }
@@ -436,6 +444,11 @@ exahype::plotters::Plotter::Plotter(
       }
       if (equalsIgnoreCase(_type, FiniteVolume2CarpetHDF5::getIdentifier())) {
         _device = new FiniteVolume2CarpetHDF5(
+	              postProcessing,static_cast<exahype::solvers::FiniteVolumesSolver*>(
+                solvers::RegisteredSolvers[_solver])->getGhostLayerWidth());
+      }
+      if (equalsIgnoreCase(_type, FiniteVolume2CarpetASCII::getIdentifier())) {
+        _device = new FiniteVolume2CarpetASCII(
 	              postProcessing,static_cast<exahype::solvers::FiniteVolumesSolver*>(
                 solvers::RegisteredSolvers[_solver])->getGhostLayerWidth());
       }
@@ -529,8 +542,6 @@ exahype::plotters::Plotter::Plotter(
   _solver   = solverDataSource;
   _filename = _filename + "_" + std::to_string(solverDataSource);
 
-  // TODO(Dominic): Looks like a hack. Clean.
-
   if (_device!=nullptr) {
     _device->init(
         _filename,
@@ -588,7 +599,7 @@ bool exahype::plotters::Plotter::checkWetherPlotterBecomesActiveAndStartPlotting
       _device->startPlotting(currentTimeStamp);
     }
   } else {
-    _solverTimeStamp = -std::numeric_limits<double>::max();
+    _solverTimeStamp = -std::numeric_limits<double>::infinity();
   }
 
   logDebug(
@@ -672,7 +683,7 @@ bool exahype::plotters::checkWhetherPlotterBecomesActive(double currentTimeStamp
 }
 
 double exahype::plotters::getTimeOfNextPlot() {
-  double result = std::numeric_limits<double>::max();
+  double result = std::numeric_limits<double>::infinity();
   for (const auto& p : RegisteredPlotters) {
     result = std::min(result,p->getNextPlotTime());
   }
@@ -703,17 +714,18 @@ void exahype::plotters::Plotter::sendDataToWorker(
   assertion1(plotterDataToSend.size()==1,plotterDataToSend.size());
   assertion1(std::isfinite(plotterDataToSend[0]),plotterDataToSend[0]);
 
-  if (tarch::parallel::Node::getInstance().getRank()==
-      tarch::parallel::Node::getInstance().getGlobalMasterRank()) {
+  if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
     logDebug("sendDataToWorker(...)","Broadcasting plotter data: " <<
         " data[0]=" << plotterDataToSend[0]);
     logDebug("sendDataWorker(...)","_time="<<_time);
   }
 
-  DataHeap::getInstance().sendData(
+  MPI_Send(
       plotterDataToSend.data(), plotterDataToSend.size(),
-      workerRank, x, level,
-      peano::heap::MessageType::MasterWorkerCommunication);
+      MPI_DOUBLE,
+      workerRank,
+      MasterWorkerCommunicationTag,
+      tarch::parallel::Node::getInstance().getCommunicator());
 }
 
 void exahype::plotters::Plotter::mergeWithMasterData(
@@ -721,13 +733,17 @@ void exahype::plotters::Plotter::mergeWithMasterData(
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const int                                    level) {
   std::vector<double> receivedPlotterData(1);
-  DataHeap::getInstance().receiveData(
-      receivedPlotterData.data(),receivedPlotterData.size(),masterRank, x, level,
-      peano::heap::MessageType::MasterWorkerCommunication);
+
+  MPI_Recv(
+      receivedPlotterData.data(), receivedPlotterData.size(),
+      MPI_DOUBLE,
+      masterRank,
+      MasterWorkerCommunicationTag,
+      tarch::parallel::Node::getInstance().getCommunicator(),MPI_STATUS_IGNORE);
+
   assertion1(receivedPlotterData.size()==1,receivedPlotterData.size());
 
-  if (tarch::parallel::Node::getInstance().getRank()!=
-      tarch::parallel::Node::getInstance().getGlobalMasterRank()) {
+  if ( !tarch::parallel::Node::getInstance().isGlobalMaster() ) {
     logDebug("mergeWithMasterData(...)","Received plotter data: " <<
         "data[0]="  << receivedPlotterData[0]);
   }

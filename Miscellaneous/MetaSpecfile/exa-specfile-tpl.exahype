@@ -115,7 +115,6 @@ exahype-project {{ project.project_name }}
     dmp-observables const          = {{ solver.limiter.dmp_observables }}
     dmp-relaxation-parameter       = {{ solver.limiter.dmp_relaxation_parameter }}
     dmp-difference-scaling         = {{ solver.limiter.dmp_difference_scaling }}
-    steps-till-cured               = {{ solver.limiter.steps_till_cured }}
     {% endif -%}
     {# #}
 

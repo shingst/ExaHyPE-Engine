@@ -18,16 +18,17 @@ exahype-project Euler
 
   computational-domain
     dimension const         = 2
-    width                   = 1.0, 1.0, 1.0
-    offset                  = 0.0, 0.0, 0.0
-    end-time                = 0.2
+    width                   = 10.0, 3.3, 1.0
+    offset                  = -5.0, 0.0, 0.0
+    end-time                = 1.81
   end computational-domain
   
   shared-memory
-    identifier               = dummy
-    configure                = {}
-    cores                    = 4
-    properties-file          = sharedmemory.properties
+    identifier      = dummy
+    configure       = {}
+    cores           = 4
+    properties-file = sharedmemory.properties
+    thread-stack-size = 16000000
   end shared-memory  
   
   distributed-memory
@@ -38,9 +39,10 @@ exahype-project Euler
   end distributed-memory
   
   global-optimisation
-    fuse-algorithmic-steps          = off
-    fuse-algorithmic-steps-factor   = 0.99
-    spawn-predictor-as-background-thread = off
+    fuse-algorithmic-steps          = all
+    fuse-algorithmic-steps-rerun-factor   = 0.99
+    fuse-algorithmic-steps-diffusion-factor   = 0.99
+    spawn-predictor-as-background-thread = on
     spawn-amr-background-threads = off
     /* 0.0 und 0.8 sind schon mal zwei Faktoren */
     disable-vertex-exchange-in-time-steps = on
@@ -52,40 +54,47 @@ exahype-project Euler
  
   solver Limiting-ADER-DG EulerSolver
     variables const            = rho:1,j:3,E:1
-    order const                = 6
-    maximum-mesh-size          = 0.4
-    maximum-mesh-depth         = 3
+    order const                = 9 
+    maximum-mesh-size          = 1.2
+    maximum-mesh-depth         = 0
     time-stepping              = global
     type const                 = nonlinear
     terms const                = flux
-    optimisation const         = generic 
+    optimisation const         = optimised, usestack
     language const             = C
     limiter-type const         = musclhancock
     limiter-optimisation const = generic
     limiter-language const     = C
     dmp-observables  const     = 2
-    dmp-relaxation-parameter   = 1e-2
+    dmp-relaxation-parameter   = 1e-3
     dmp-difference-scaling     = 1e-2
-    helper-layers              = 1
+    helper-layers              = 2
     // reference either: sod,entropywave,explosion,rarefactionwave
-    constants                  = reference:explosion
+    constants                  = reference:shuosher
     
     // works only properly for single-node runs
     /*
     plot user::defined ErrorWriter
       variables const = 5
       time            = 0.0
-      repeat          = 1e-2
+      repeat          = 1e-1
       output          = not-available
     end plot
     */
     
-    plot vtu::Cartesian::vertices::limited::ascii ErrorPlotter
+    plot vtu::Legendre::vertices::ascii ErrorPlotter
       // absErrorL1perCell[nvar],Q[nvar],QAnalytical[nvar]
       variables const = 15 
       time            = 0.0
-      repeat          = 1e-2
+      repeat          = 1e-1
       output          = ./errors
+    end plot
+    
+    plot vtk::Cartesian::subcells::limited::ascii EulerSubcellsWriter
+      variables const = 5
+      time            = 0.0
+      repeat          = 1e-1
+      output          = ./subcells
     end plot
 
   end solver

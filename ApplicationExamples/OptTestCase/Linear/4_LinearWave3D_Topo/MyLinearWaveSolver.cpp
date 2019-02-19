@@ -37,7 +37,7 @@ void Linear::MyLinearWaveSolver::init(const std::vector<std::string>& cmdlinearg
   pointSourceLocation[0][2] = fault_ref_z;
 }
 
-void Linear::MyLinearWaveSolver::adjustSolution(double *luh, const tarch::la::Vector<DIMENSIONS,double>& center, const tarch::la::Vector<DIMENSIONS,double>& dx,double t,double dt) {
+void Linear::MyLinearWaveSolver::adjustSolution(double* const luh, const tarch::la::Vector<DIMENSIONS,double>& center, const tarch::la::Vector<DIMENSIONS,double>& dx,double t,double dt) {
   // Dimensions                        = 3
   // Number of variables + parameters  = 4 + 15
   // @todo Please implement/augment if required
@@ -330,7 +330,7 @@ void Linear::MyLinearWaveSolver::adjustSolution(double *luh, const tarch::la::Ve
 
 void Linear::MyLinearWaveSolver::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,
   const double * const fluxIn,const double* const stateIn,
-  double *fluxOut,double* stateOut) {
+  double* const fluxOut,double* const stateOut) {
   // Dimensions                        = 3
   // Number of variables + parameters  = 4 + 15
 
@@ -351,7 +351,7 @@ void Linear::MyLinearWaveSolver::boundaryValues(const double* const x,const doub
  
 }
 
-exahype::solvers::Solver::RefinementControl Linear::MyLinearWaveSolver::refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
+exahype::solvers::Solver::RefinementControl Linear::MyLinearWaveSolver::refinementCriterion(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
   // @todo Please implement/augment if required
   return exahype::solvers::Solver::RefinementControl::Keep;
 }
@@ -363,7 +363,7 @@ exahype::solvers::Solver::RefinementControl Linear::MyLinearWaveSolver::refineme
 //*****************************************************************************
 
 
-void Linear::MyLinearWaveSolver::eigenvalues(const double* const Q,const int d,double* lambda) {
+void Linear::MyLinearWaveSolver::eigenvalues(const double* const Q,const int d,double* const lambda) {
   // Dimensions                        = 3
   // Number of variables + parameters  = 4 + 15
   
@@ -389,7 +389,7 @@ void Linear::MyLinearWaveSolver::eigenvalues(const double* const Q,const int d,d
 }
 
 
-void Linear::MyLinearWaveSolver::flux(const double* const Q,double** F) {
+void Linear::MyLinearWaveSolver::flux(const double* const Q,double** const F) {
   // Dimensions                        = 3
   // Number of variables + parameters  = 4 + 15
   
@@ -434,7 +434,7 @@ void Linear::MyLinearWaveSolver::flux(const double* const Q,double** F) {
 
 
 
-void  Linear::MyLinearWaveSolver::nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) {
+void  Linear::MyLinearWaveSolver::nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ) {
   // @todo Please implement/augment if required
   double p_q = gradQ[0];  
   double u_q = gradQ[1];
@@ -483,7 +483,7 @@ void  Linear::MyLinearWaveSolver::nonConservativeProduct(const double* const Q,c
   
 }
 
-void Linear::MyLinearWaveSolver::coefficientMatrix(const double* const Q,const int d,double* Bn){
+void Linear::MyLinearWaveSolver::coefficientMatrix(const double* const Q,const int d,double* const Bn){
   double n[3]={0.0,0.0,0.0};
   n[d]=1.0;
 
@@ -517,7 +517,7 @@ void Linear::MyLinearWaveSolver::coefficientMatrix(const double* const Q,const i
   }
 }
 
-void  Linear::MyLinearWaveSolver::pointSource(const double* const Q,const double* const x,const double t,const double dt, double* forceVector,int n) {
+void  Linear::MyLinearWaveSolver::pointSource(const double* const Q,const double* const x,const double t,const double dt, double* const forceVector,int n) {
   // @todo Please implement/augment if required
 
   static tarch::logging::Log _log("MyLinearWaveSolver::pointSource");
@@ -542,7 +542,7 @@ void  Linear::MyLinearWaveSolver::pointSource(const double* const Q,const double
     /**
      * @TODO LR : document
      */
-void Linear::MyLinearWaveSolver::multiplyMaterialParameterMatrix(const double* const Q, double* rhs) {
+void Linear::MyLinearWaveSolver::multiplyMaterialParameterMatrix(const double* const Q, double* const rhs) {
   // @todo Please implement/augment if required
   double rho = Q[4];  
   double c   = Q[5];
@@ -565,7 +565,7 @@ void Linear::MyLinearWaveSolver::multiplyMaterialParameterMatrix(const double* c
   rhs[11]=1/rho * rhs[11];
 }
 
-void Linear::MyLinearWaveSolver::riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double dt,const int normalNonZeroIndex, bool isBoundaryFace, int faceIndex){
+void Linear::MyLinearWaveSolver::riemannSolver(double* const FL,double* const FR,const double* const QL,const double* const QR,const double dt,const int normalNonZeroIndex, bool isBoundaryFace, int faceIndex){
   
   constexpr int numberOfVariables  = MyLinearWaveSolver::NumberOfVariables;
   constexpr int numberOfVariables2 = numberOfVariables*numberOfVariables;
@@ -713,7 +713,7 @@ void Linear::MyLinearWaveSolver::riemannSolver_Nodal(double v_p,double v_m, doub
 
  }
 
- void Linear::MyLinearWaveSolver::Gram_Schmidt(double* y, double* z){
+ void Linear::MyLinearWaveSolver::Gram_Schmidt(double* const y, double* const z){
   //Gram Schmidt orthonormalization
  
   double  a_yz = y[0]*z[0] + y[1]*z[1] + y[2]*z[2];
@@ -731,7 +731,7 @@ void Linear::MyLinearWaveSolver::riemannSolver_Nodal(double v_p,double v_m, doub
 
 }
 
-void Linear::MyLinearWaveSolver::localBasis(double* n, double * m, double* l, int d){
+void Linear::MyLinearWaveSolver::localBasis(double* const n, double* const m, double* const l, int d){
 
   if (d == 2)
     {
@@ -778,7 +778,7 @@ void Linear::MyLinearWaveSolver::localBasis(double* n, double * m, double* l, in
   
 }
 
-void Linear::MyLinearWaveSolver::get_normals(int normalNonZeroIndex,double& norm, double* n,const double* Q)
+void Linear::MyLinearWaveSolver::get_normals(int normalNonZeroIndex,double& norm, double* const n,const double* const Q)
 
 {
 

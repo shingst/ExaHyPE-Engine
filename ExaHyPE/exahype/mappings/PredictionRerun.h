@@ -54,12 +54,6 @@ private:
    */
   static tarch::logging::Log _log;
 
-  /**
-   * A local copy of the state set
-   * in beginIteration(...).
-   */
-  exahype::State _stateCopy;
-
  public:
   /**
    * Level for which we ask what to do. This value is negative
@@ -149,31 +143,8 @@ private:
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
 
 #ifdef Parallel
-  /** \copydoc exahype::mappings::Prediction::prepareSendToNeighbour
-   */
-   bool prepareSendToWorker(
-       exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
-       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-       exahype::Vertex* const coarseGridVertices,
-       const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-       exahype::Cell& coarseGridCell,
-       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-       int worker);
 
-   /** \copydoc exahype::mappings::Prediction::prepareSendToNeighbour
-    */
-   void receiveDataFromMaster(
-       exahype::Cell& receivedCell, exahype::Vertex* receivedVertices,
-       const peano::grid::VertexEnumerator& receivedVerticesEnumerator,
-       exahype::Vertex* const receivedCoarseGridVertices,
-       const peano::grid::VertexEnumerator& receivedCoarseGridVerticesEnumerator,
-       exahype::Cell& receivedCoarseGridCell,
-       exahype::Vertex* const workersCoarseGridVertices,
-       const peano::grid::VertexEnumerator& workersCoarseGridVerticesEnumerator,
-       exahype::Cell& workersCoarseGridCell,
-       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
-
-   /** \copydoc exahype::mappings::Prediction::prepareSendToNeighbour
+   /** Send out data for all(!) solvers.
     */
    void prepareSendToNeighbour(exahype::Vertex& vertex, int toRank,
                                const tarch::la::Vector<DIMENSIONS, double>& x,
@@ -188,7 +159,13 @@ private:
                            const tarch::la::Vector<DIMENSIONS, double>& h,
                            int level);
 
-   /** \copydoc exahype::mappings::Prediction::prepareSendToMaster
+  //
+  // Below all methods are nop.
+  //
+  //===================================
+
+   /**
+    * Nop.
     */
    void prepareSendToMaster(
        exahype::Cell& localCell, exahype::Vertex* vertices,
@@ -198,7 +175,8 @@ private:
        const exahype::Cell& coarseGridCell,
        const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
 
-   /** \copydoc exahype::mappings::Prediction::mergeWithWorker
+   /**
+    * Nop.
     */
    void mergeWithWorker(exahype::Cell& localCell,
                         const exahype::Cell& receivedMasterCell,
@@ -206,11 +184,31 @@ private:
                         const tarch::la::Vector<DIMENSIONS, double>& cellSize,
                         int level);
 
-  //
-  // Below all methods are nop.
-  //
-  //===================================
+   /**
+    * Nop.
+    */
+   bool prepareSendToWorker(
+       exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
+       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
+       exahype::Vertex* const coarseGridVertices,
+       const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
+       exahype::Cell& coarseGridCell,
+       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
+       int worker);
 
+   /**
+    * Nop.
+    */
+   void receiveDataFromMaster(
+       exahype::Cell& receivedCell, exahype::Vertex* receivedVertices,
+       const peano::grid::VertexEnumerator& receivedVerticesEnumerator,
+       exahype::Vertex* const receivedCoarseGridVertices,
+       const peano::grid::VertexEnumerator& receivedCoarseGridVerticesEnumerator,
+       exahype::Cell& receivedCoarseGridCell,
+       exahype::Vertex* const workersCoarseGridVertices,
+       const peano::grid::VertexEnumerator& workersCoarseGridVerticesEnumerator,
+       exahype::Cell& workersCoarseGridCell,
+       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
 
   /**
    * Nop

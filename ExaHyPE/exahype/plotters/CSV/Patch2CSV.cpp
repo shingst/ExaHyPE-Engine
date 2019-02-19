@@ -142,7 +142,7 @@ void exahype::plotters::Patch2CSV::startPlotting( double time ) {
 
 void exahype::plotters::Patch2CSV::finishPlotting() {
 	_postProcessing->finishPlotting();
-	if(_one_file_per_timestep) _writer->os.close();
+	if(_one_file_per_timestep) _writer->closeFile();
 }
 
 exahype::plotters::Patch2CSV::~Patch2CSV() {}
@@ -163,7 +163,7 @@ void exahype::plotters::Patch2CSV::plotPatch(const int solverNumber,solvers::Sol
 			if(solverPatch.getType()!=exahype::solvers::ADERDGSolver::CellDescription::Type::Cell)
 				return; // plot only cells
 			//double* solution = static_cast<double*>(solverPatch.getSolution());
-			data.timeStamp = solverPatch.getCorrectorTimeStamp();
+			data.timeStamp = solverPatch.getTimeStamp();
 			offsetOfPatch = solverPatch.getOffset(),
 			sizeOfPatch = solverPatch.getSize();
 			data.level = solverPatch.getLevel();

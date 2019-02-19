@@ -159,6 +159,7 @@ class SolverController:
         context["language"]                = kernel.get("language","C").lower()
         context["basis"]                   = kernel.get("basis","Legendre").lower()
         context["isLinear"]                = not kernel.get("nonlinear",True)
+        context["isLinear_s"]              = "true" if not kernel.get("nonlinear",True) else "false"
         context["isNonlinear"]             = kernel.get("nonlinear",True)
         context["linearOrNonlinear"]       = "Linear" if context["isLinear"] else "Nonlinear"
         context["isFortran"]               = kernel.get("language",False)=="Fortran" 

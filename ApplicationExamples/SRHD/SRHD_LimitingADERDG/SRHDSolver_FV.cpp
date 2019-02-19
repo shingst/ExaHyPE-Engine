@@ -6,14 +6,14 @@ using std::endl;
 using std::cout;
 
 extern "C" {
-void hastoadjustsolution_(double* time, bool* refine);
-void adjustedsolutionvalues_(const double* const x,const double* w,const double* t,const double* dt,double* Q);
-void pdeflux_(double* F, const double* const Q);
-void pdeeigenvalues_(double* lambda, const double* const Q, const double* nv);
+void hastoadjustsolution_(double* const time, bool* refine);
+void adjustedsolutionvalues_(const double* const x,const double* const w,const double* const t,const double* const dt,double* const Q);
+void pdeflux_(double* const F, const double* const Q);
+void pdeeigenvalues_(double* const lambda, const double* const Q, const double* const nv);
 }
 
 
-void SRHD::SRHDSolver_FV::adjustedSolutionValues(const double* const x,const double w,const double t,const double dt,double* Q) {
+void SRHD::SRHDSolver_FV::adjustedSolutionValues(const double* const x,const double w,const double t,const double dt,double* const Q) {
   if ( tarch::la::equals(t,0.0) ) {
   // @todo Please implement and set initial conditions
     adjustedsolutionvalues_(x, &w, &t, &dt, Q);
@@ -35,13 +35,13 @@ bool SRHD::SRHDSolver_FV::hasToAdjustSolution(const tarch::la::Vector<DIMENSIONS
 }
 
 
-exahype::solvers::Solver::RefinementControl SRHD::SRHDSolver_FV::refinementCriterion(const double* luh, const tarch::la::Vector<DIMENSIONS, double>& center,const tarch::la::Vector<DIMENSIONS, double>& dx, double t,const int level) {
+exahype::solvers::Solver::RefinementControl SRHD::SRHDSolver_FV::refinementCriterion(const double* const luh, const tarch::la::Vector<DIMENSIONS, double>& center,const tarch::la::Vector<DIMENSIONS, double>& dx, double t,const int level) {
   // @todo Please implement
   return exahype::solvers::Solver::RefinementControl::Keep;
 }
 
 
-void SRHD::SRHDSolver_FV::eigenvalues(const double* const Q, const int normalNonZeroIndex, double* lambda) {
+void SRHD::SRHDSolver_FV::eigenvalues(const double* const Q, const int normalNonZeroIndex, double* const lambda) {
   // @todo Please implement
   double nv[3] = {0.};
   nv[normalNonZeroIndex] = 1;
@@ -49,13 +49,13 @@ void SRHD::SRHDSolver_FV::eigenvalues(const double* const Q, const int normalNon
 }
 
 
-void SRHD::SRHDSolver_FV::flux(const double* const Q, double** F) {
+void SRHD::SRHDSolver_FV::flux(const double* const Q, double** const F) {
   // @todo Please implement
   pdeflux_(F[0], Q);
 }
 
 
-void SRHD::SRHDSolver_FV::algebraicSource(const double* const Q, double* S) {
+void SRHD::SRHDSolver_FV::algebraicSource(const double* const Q, double* const S) {
   S[0] = 0.;
   S[1] = 0.;
   S[2] = 0.;
@@ -69,7 +69,7 @@ void SRHD::SRHDSolver_FV::boundaryValues(
     const int faceIndex,
     const int normalNonZero,
     const double* const stateIn,
-    double* stateOut) {
+    double* const stateOut) {
 
   // The problem with these definitions is that in a simulation
   // with a global nonzero velocity (as in MovingGauss2D), errnous

@@ -1,1 +1,0 @@
-../../../Benchmarks/python/sweep.py

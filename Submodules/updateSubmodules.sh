@@ -46,6 +46,8 @@ update_Peano() {
 			cd "$scriptDir" #move back
 		fi
 	fi
+
+  cp peano-boundary-exchange-fix/* Peano/src/peano/grid/nodes/loops
 }
 
 update_others() {

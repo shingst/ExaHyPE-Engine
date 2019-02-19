@@ -17,6 +17,7 @@
 
 #include "../../../Peano/mpibalancing/HotspotBalancing.h"
 
+#include "exahype/records/RepositoryState.h"
 #include "exahype/repositories/Repository.h"
 #include "exahype/repositories/RepositoryFactory.h"
 #include "exahype/mappings/LoadBalancing.h"
@@ -78,6 +79,14 @@
 #include "shminvade/SHMSharedMemoryBetweenTasks.h"
 #include "shminvade/SHMOccupyAllCoresStrategy.h"
 #include "shminvade/SHMMultipleRanksPerNodeStrategy.h"
+#endif
+
+#if defined(USE_ITAC_ALL) and !defined(USE_ITAC)
+#define USE_ITAC 1
+#endif
+
+#if defined(USE_ITAC)
+#include "VT.h"
 #endif
 
 #if defined(DistributedStealing) 
@@ -228,8 +237,9 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
         logInfo("initDistributedMemoryConfiguration()", "use global hotspot elimination without joins (mpibalancing/StaticBalancing)");
         peano::parallel::loadbalancing::Oracle::getInstance().setOracle(
             new mpibalancing::HotspotBalancing(
-                false,getFinestUniformGridLevelForLoadBalancing(_boundingBoxSize), /*boundary regularity*/
-                0                                         /*tarch::parallel::Node::getInstance().getNumberOfNodes()/THREE_POWER_D*/
+                false,
+                1, // getFinestUniformGridLevelForLoadBalancing(_boundingBoxSize), /*boundary regularity*/
+                0 /* 0 means no admistrative ranks; previous: tarch::parallel::Node::getInstance().getNumberOfNodes()/THREE_POWER_D */
           )
         );
         break;
@@ -284,6 +294,15 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
 
     tarch::parallel::NodePool::getInstance().waitForAllNodesToBecomeIdle();
   }
+
+  //
+  // Configure ExaHyPE's own collective communication
+  // ================================================
+  //
+  exahype::solvers::Solver::MasterWorkerCommunicationTag   = tarch::parallel::Node::reserveFreeTag("solver[master<->worker]");
+  exahype::plotters::Plotter::MasterWorkerCommunicationTag = exahype::solvers::Solver::MasterWorkerCommunicationTag;
+  logInfo("Solver(...)","solver master worker communication uses tag " <<  exahype::solvers::Solver::MasterWorkerCommunicationTag);
+  logInfo("Solver(...)","plotter master worker communication uses tag " << exahype::plotters::Plotter::MasterWorkerCommunicationTag);
   #endif
 }
 
@@ -618,41 +637,40 @@ tarch::la::Vector<DIMENSIONS, double> exahype::runners::Runner::determineBoundin
 
 exahype::repositories::Repository* exahype::runners::Runner::createRepository() {
   // Geometry is static as we need it to survive the whole simulation time.
-  _domainOffset = _parser.getOffset();
-  _domainSize   = _parser.getDomainSize();
+  _domainOffset     = _parser.getOffset();
+  _domainSize       = _parser.getDomainSize();
   _boundingBoxSize  = determineBoundingBoxSize(_domainSize);
 
   const int coarsestUserMeshLevel = getCoarsestGridLevelOfAllSolvers(_boundingBoxSize);
   int boundingBoxMeshLevel = coarsestUserMeshLevel;
   tarch::la::Vector<DIMENSIONS,double> boundingBoxOffset = _domainOffset;
 
-  #ifdef Parallel
-  if (exahype::State::VirtuallyExpandBoundingBox) {
+  if ( _parser.getScaleBoundingBox() ) {
     const double coarsestUserMeshSpacing =
         exahype::solvers::Solver::getCoarsestMaximumMeshSizeOfAllSolvers();
     const double maxDomainExtent = tarch::la::max(_domainSize);
 
-    double boundingBoxScaling         = 0;
-    double boundingBoxExtent          = 0;
-    double boundingBoxMeshSpacing     = std::numeric_limits<double>::max();
+    double boundingBoxScaling     = 0;
+    double boundingBoxExtent      = 0;
+    double boundingBoxMeshSpacing = std::numeric_limits<double>::infinity();
 
+    const int cellsPushedOutside = ( coarsestUserMeshLevel <= 3 ) ? 1 : 2;
     int level = coarsestUserMeshLevel; // level=1 means a single cell
     while (boundingBoxMeshSpacing > coarsestUserMeshSpacing) {
       const double boundingBoxMeshCells = std::pow(3,level-1);
-      boundingBoxScaling                = boundingBoxMeshCells / ( boundingBoxMeshCells - 2 );
+      boundingBoxScaling                = boundingBoxMeshCells / ( boundingBoxMeshCells - 2*cellsPushedOutside );
       boundingBoxExtent                 = boundingBoxScaling * maxDomainExtent;
       boundingBoxMeshSpacing            = boundingBoxExtent/boundingBoxMeshCells;
       level++;
     }
     level--; // decrement result since boundingBox was computed using level-1
+    boundingBoxMeshLevel = level;
 
     assertion6(boundingBoxScaling>=1.0,boundingBoxScaling,boundingBoxExtent,boundingBoxMeshSpacing,boundingBoxMeshLevel,coarsestUserMeshSpacing,maxDomainExtent);
 
-    boundingBoxMeshLevel = level;
     _boundingBoxSize    *= boundingBoxScaling;
     boundingBoxOffset   -= boundingBoxMeshSpacing;
   }
-  #endif
 
   const double coarsestUserMeshSize = exahype::solvers::Solver::getCoarsestMaximumMeshSizeOfAllSolvers();
   const double coarsestMeshSize     = determineCoarsestMeshSize(_boundingBoxSize);
@@ -728,12 +746,43 @@ void exahype::runners::Runner::shutdownHeaps() {
 void exahype::runners::Runner::initHPCEnvironment() {
   peano::performanceanalysis::Analysis::getInstance().enable(false);
 
-  solvers::Solver::SwitchOffNeighbourMergePerformedCheck = _parser.getProfilingTarget()==parser::Parser::ProfilingTarget::Update;
+  solvers::Solver::ProfileUpdate = _parser.getProfilingTarget()==parser::Parser::ProfilingTarget::Update;
+
+  //
+  // Configure ITAC profiling
+  // ================================================
+  //
+  #ifdef USE_ITAC
+  int ierr=0;
+  ierr=VT_funcdef("Solver::waitUntilCompletedLastStepHandle"          , VT_NOCLASS, &exahype::solvers::Solver::waitUntilCompletedLastStepHandle          ); assertion(ierr==0);
+  ierr=VT_funcdef("Solver::ensureAllJobsHaveTerminatedHandle"         , VT_NOCLASS, &exahype::solvers::Solver::ensureAllJobsHaveTerminatedHandle         ); assertion(ierr==0);
+  ierr=VT_funcdef("ADERDGSolver::adjustSolutionHandle"                , VT_NOCLASS, &exahype::solvers::ADERDGSolver::adjustSolutionHandle                ); assertion(ierr==0);
+  ierr=VT_funcdef("ADERDGSolver::fusedTimeStepBodyHandle"             , VT_NOCLASS, &exahype::solvers::ADERDGSolver::fusedTimeStepBodyHandle             ); assertion(ierr==0);
+  ierr=VT_funcdef("ADERDGSolver::predictorBodyHandle"                 , VT_NOCLASS, &exahype::solvers::ADERDGSolver::predictorBodyHandle                 ); assertion(ierr==0);
+  ierr=VT_funcdef("ADERDGSolver::updateBodyHandle"                    , VT_NOCLASS, &exahype::solvers::ADERDGSolver::updateBodyHandle                    ); assertion(ierr==0);
+  ierr=VT_funcdef("ADERDGSolver::mergeNeighboursHandle"               , VT_NOCLASS, &exahype::solvers::ADERDGSolver::mergeNeighboursHandle               ); assertion(ierr==0);
+  ierr=VT_funcdef("ADERDGSolver::prolongateFaceDataToDescendantHandle", VT_NOCLASS, &exahype::solvers::ADERDGSolver::prolongateFaceDataToDescendantHandle); assertion(ierr==0);
+  ierr=VT_funcdef("ADERDGSolver::restrictToTopMostParentHandle"       , VT_NOCLASS, &exahype::solvers::ADERDGSolver::restrictToTopMostParentHandle       ); assertion(ierr==0);
+  ierr=VT_funcdef("LimitingADERDGSolver::adjustSolutionHandle"        , VT_NOCLASS, &exahype::solvers::LimitingADERDGSolver::adjustSolutionHandle        ); assertion(ierr==0);
+  ierr=VT_funcdef("LimitingADERDGSolver::fusedTimeStepBodyHandle"     , VT_NOCLASS, &exahype::solvers::LimitingADERDGSolver::fusedTimeStepBodyHandle     ); assertion(ierr==0);
+  ierr=VT_funcdef("LimitingADERDGSolver::predictorBodyHandle"         , VT_NOCLASS, &exahype::solvers::LimitingADERDGSolver::predictorBodyHandle         ); assertion(ierr==0);
+  ierr=VT_funcdef("LimitingADERDGSolver::updateBodyHandle"            , VT_NOCLASS, &exahype::solvers::LimitingADERDGSolver::updateBodyHandle            ); assertion(ierr==0);
+  ierr=VT_funcdef("LimitingADERDGSolver::mergeNeighboursHandle"       , VT_NOCLASS, &exahype::solvers::LimitingADERDGSolver::mergeNeighboursHandle       ); assertion(ierr==0);
+  ierr=VT_funcdef("FiniteVolumesSolver::adjustSolutionHandle"         , VT_NOCLASS, &exahype::solvers::FiniteVolumesSolver::adjustSolutionHandle         ); assertion(ierr==0);
+  ierr=VT_funcdef("FiniteVolumesSolver::fusedTimeStepBodyHandle"      , VT_NOCLASS, &exahype::solvers::FiniteVolumesSolver::fusedTimeStepBodyHandle      ); assertion(ierr==0);
+  ierr=VT_funcdef("FiniteVolumesSolver::predictorBodyHandle"          , VT_NOCLASS, &exahype::solvers::FiniteVolumesSolver::predictorBodyHandle          ); assertion(ierr==0);
+  ierr=VT_funcdef("FiniteVolumesSolver::updateBodyHandle"             , VT_NOCLASS, &exahype::solvers::FiniteVolumesSolver::updateBodyHandle             ); assertion(ierr==0);
+  ierr=VT_funcdef("FiniteVolumesSolver::mergeNeighboursHandle"        , VT_NOCLASS, &exahype::solvers::FiniteVolumesSolver::mergeNeighboursHandle        ); assertion(ierr==0);
+  #endif
 }
 
 void exahype::runners::Runner::initOptimisations() const {
-  exahype::solvers::Solver::FuseADERDGPhases         = _parser.getFuseAlgorithmicSteps();
-  exahype::solvers::Solver::WeightForPredictionRerun = _parser.getFuseAlgorithmicStepsFactor();
+  exahype::solvers::Solver::OnlyInitialMeshRefinement = _parser.getStaticMeshRefinement();
+  exahype::solvers::Solver::OnlyStaticLimiting        = _parser.getStaticLimiting();
+
+  exahype::solvers::Solver::FuseAllADERDGPhases              = _parser.getFuseAllAlgorithmicSteps();
+  exahype::solvers::Solver::FusedTimeSteppingRerunFactor     = _parser.getFuseAlgorithmicStepsRerunFactor();
+  exahype::solvers::Solver::FusedTimeSteppingDiffusionFactor = _parser.getFuseAlgorithmicStepsDiffusionFactor();
 
   exahype::solvers::Solver::configurePredictionPhase(
       _parser.getSpawnPredictionAsBackgroundThread(),
@@ -752,9 +801,10 @@ void exahype::runners::Runner::initOptimisations() const {
 
   if ( tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getGlobalMasterRank() ) {
     logInfo("parseOptimisations()","use the following global optimisations:");
-      logInfo("parseOptimisations()","\tfuse-algorithmic-steps="                  << (exahype::solvers::Solver::FuseADERDGPhases ? "on" : "off"));
-      logInfo("parseOptimisations()","\tfuse-algorithmic-steps-factor="           << exahype::solvers::Solver::WeightForPredictionRerun);
-      logInfo("parseOptimisations()","\tspawn-predictor-as-background-thread="    << (exahype::solvers::Solver::SpawnPredictionAsBackgroundJob ? "on" : "off"));
+      logInfo("parseOptimisations()","\tfuse-algorithmic-steps                  =" << (exahype::solvers::Solver::FuseAllADERDGPhases ? "on" : "off"));
+      logInfo("parseOptimisations()","\tfuse-algorithmic-steps-rerun-actor      =" << exahype::solvers::Solver::FusedTimeSteppingRerunFactor);
+      logInfo("parseOptimisations()","\tfuse-algorithmic-steps-diffusion-factor =" << exahype::solvers::Solver::FusedTimeSteppingDiffusionFactor);
+      logInfo("parseOptimisations()","\tspawn-predictor-as-background-thread ="    << (exahype::solvers::Solver::SpawnPredictionAsBackgroundJob ? "on" : "off"));
       logInfo("parseOptimisations()","\tspawn-prolongation-as-background-thread=" << (exahype::solvers::Solver::SpawnProlongationAsBackgroundJob ? "on" : "off"));
       logInfo("parseOptimisations()","\tspawn-update-as-background-thread="       << (exahype::solvers::Solver::SpawnUpdateAsBackgroundJob ? "on" : "off"));
       logInfo("parseOptimisations()","\tspawn-amr-background-threads="            << (exahype::solvers::Solver::SpawnAMRBackgroundJobs ? "on" : "off"));
@@ -778,14 +828,9 @@ int exahype::runners::Runner::run() {
 
     initHeaps();
 
-    #ifdef Parallel
-    exahype::State::VirtuallyExpandBoundingBox =_parser.getScaleBoundingBox();
-    exahype::State::BroadcastInThisIteration   = true;
-    exahype::State::ReduceInThisIteration      = false;
-    #endif
-
     auto* repository = createRepository();
     // must come after repository creation
+
     initSolvers();
 
     if (_parser.isValid() && _parser.getMeasureCellProcessingTimes() ) {
@@ -794,7 +839,6 @@ int exahype::runners::Runner::run() {
 
     if ( _parser.isValid() )
       initDistributedMemoryConfiguration();
-
     if ( _parser.isValid() )
       initSharedMemoryConfiguration();
 
@@ -815,6 +859,14 @@ int exahype::runners::Runner::run() {
       initHPCEnvironment();
 
     if ( _parser.isValid() ) {
+      // Tracing and performance analysis
+      #ifdef Parallel
+      MPI_Pcontrol(0);
+      #endif
+      #if defined(USE_ITAC) and !defined(USE_ITAC_ALL)
+      VT_traceoff(); // turn ITAC tracing off during mesh refinement; is switched on again in mapping Prediction
+      #endif
+
       if (tarch::parallel::Node::getInstance().isGlobalMaster()) {
         result = runAsMaster(*repository);
       }
@@ -976,25 +1028,27 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
 
     bool communicatePeanoVertices =
         !exahype::solvers::Solver::DisablePeanoNeighbourExchangeInTimeSteps;
-
     repository.switchToInitialPrediction();
     repository.iterate( exahype::solvers::Solver::PredictionSweeps, communicatePeanoVertices );
     logInfo("runAsMaster(...)","computed first predictor (number of predictor sweeps: "<<exahype::solvers::Solver::PredictionSweeps<<")");
 
-    printTimeStepInfo(-1,repository);
-    validateInitialSolverTimeStepData(exahype::solvers::Solver::FuseADERDGPhases);
-
-    double simulationEndTime   = std::numeric_limits<double>::max();
-    int simulationTimeSteps = std::numeric_limits<int>::max();
+    // configure time stepping loop
+    double simulationEndTime = std::numeric_limits<double>::infinity();
+    int simulationTimeSteps  = std::numeric_limits<int>::max();
     if (_parser.foundSimulationEndTime()) {
       simulationEndTime = _parser.getSimulationEndTime();
     } else {
       simulationTimeSteps = _parser.getSimulationTimeSteps();
     }
+    parser::Parser::ProfilingTarget profilingTarget = _parser.getProfilingTarget();
+    if ( profilingTarget==parser::Parser::ProfilingTarget::WholeCode ) {
+      printTimeStepInfo(-1,repository);
+      validateInitialSolverTimeStepData(exahype::solvers::Solver::FuseAllADERDGPhases);
+    }
+    const bool skipReductionInBatchedTimeSteps  = _parser.getSkipReductionInBatchedTimeSteps();
+    const bool fuseMostADERDGPhases             = _parser.getFuseMostAlgorithmicSteps();
 
-    logDebug("runAsMaster(...)","min solver time stamp: "     << solvers::Solver::getMinTimeStampOfAllSolvers());
-    logDebug("runAsMaster(...)","min solver time step size: " << solvers::Solver::getMinTimeStepSizeOfAllSolvers());
-
+    // run time stepping loop
     int timeStep = 0;
     while (
         tarch::la::greater(solvers::Solver::getMinTimeStepSizeOfAllSolvers(), 0.0) &&
@@ -1006,13 +1060,14 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
 
       preProcessTimeStepInSharedMemoryEnvironment();
 
+      // fused time stepping
       int numberOfStepsToRun = 1;
-      if (exahype::solvers::Solver::FuseADERDGPhases) {
+      if ( profilingTarget==parser::Parser::ProfilingTarget::WholeCode && exahype::solvers::Solver::FuseAllADERDGPhases  ) {
         if (plot) {
           numberOfStepsToRun = 0;
         }
         else if (
-            _parser.getSkipReductionInBatchedTimeSteps() &&
+            skipReductionInBatchedTimeSteps &&
             solvers::Solver::allSolversUseTimeSteppingScheme(solvers::Solver::TimeStepping::GlobalFixed) &&
             repository.getState().getVerticalExchangeOfSolverDataRequired()==false // known after mesh update
         ) {
@@ -1021,8 +1076,29 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
 
         runTimeStepsWithFusedAlgorithmicSteps(repository,numberOfStepsToRun);
         printTimeStepInfo(numberOfStepsToRun,repository);
-      } else {
-        runOneTimeStepWithThreeSeparateAlgorithmicSteps(repository, plot);
+      // straightforward realisation
+      } else if ( profilingTarget==parser::Parser::ProfilingTarget::WholeCode ) {
+        if ( fuseMostADERDGPhases ) {
+          runOneTimeStepWithTwoSeparateAlgorithmicSteps(repository, plot);
+        } else {
+          runOneTimeStepWithThreeSeparateAlgorithmicSteps(repository, plot);
+        }
+      }
+      // profiling of isolated adapters
+      else if ( profilingTarget==parser::Parser::ProfilingTarget::Prediction ) {
+        logInfo("runAsMaster(...)","step " << timeStep << "\t\trun "<<solvers::Solver::PredictionSweeps<<" iteration with PredictionRerun adapter");
+        printGridStatistics(repository);
+        runPredictionInIsolation(repository);
+      } else if ( profilingTarget==parser::Parser::ProfilingTarget::NeigbhourMerge ) {
+        logInfo("runAsMaster(...)","step " << timeStep << "\t\trun one iteration with MergeNeighours adapter");
+        printGridStatistics(repository);
+        repository.switchToMergeNeighbours();
+        repository.iterate(1,false);
+      } else if ( profilingTarget==parser::Parser::ProfilingTarget::Update ) {
+        logInfo("runAsMaster(...)","step " << timeStep << "\t\trun one iteration with UpdateAndReduce adapter");
+        printGridStatistics(repository);
+        repository.switchToUpdateAndReduce();
+        repository.iterate(1,false);
       }
 
       postProcessTimeStepInSharedMemoryEnvironment();
@@ -1057,7 +1133,7 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
 int exahype::runners::Runner::determineNumberOfBatchedTimeSteps(const int& currentTimeStep) {
   int batchSize = 0;
 
-  double simulationEndTime   = std::numeric_limits<double>::max();
+  double simulationEndTime   = std::numeric_limits<double>::infinity();
   int simulationTimeSteps = std::numeric_limits<int>::max();
   if (_parser.foundSimulationEndTime()) {
     simulationEndTime = _parser.getSimulationEndTime();
@@ -1068,7 +1144,7 @@ int exahype::runners::Runner::determineNumberOfBatchedTimeSteps(const int& curre
   const double minTimeStepSize          = solvers::Solver::getMinTimeStepSizeOfAllSolvers();
   const double maxTimeStamp             = solvers::Solver::getMaxTimeStampOfAllSolvers();
   const double timeIntervalTillNextPlot = exahype::plotters::getTimeOfNextPlot() - maxTimeStamp;
-  const bool   haveActivePlotters       = exahype::plotters::getTimeOfNextPlot() < std::numeric_limits<double>::max();
+  const bool   haveActivePlotters       = exahype::plotters::getTimeOfNextPlot() < std::numeric_limits<double>::infinity();
 
   if (_parser.foundSimulationEndTime()) {
     const double timeIntervalTillEndTime = simulationEndTime - maxTimeStamp;
@@ -1318,7 +1394,7 @@ void exahype::runners::Runner::validateInitialSolverTimeStepData(const bool fuse
 
     switch(solver->getTimeStepping()) {
       case exahype::solvers::Solver::TimeStepping::Global:
-        assertionEquals(solver->getMinNextTimeStepSize(),std::numeric_limits<double>::max());
+        assertionEquals(solver->getAdmissibleTimeStepSize(),std::numeric_limits<double>::infinity());
         break;
       case exahype::solvers::Solver::TimeStepping::GlobalFixed:
         break;
@@ -1326,51 +1402,23 @@ void exahype::runners::Runner::validateInitialSolverTimeStepData(const bool fuse
     switch (solver->getType()) {
       case exahype::solvers::Solver::Type::ADERDG: {
         auto* aderdgSolver = static_cast<exahype::solvers::ADERDGSolver*>(solver);
-        if (!exahype::solvers::Solver::FuseADERDGPhases) {
-          assertionEquals(aderdgSolver->getPreviousMinCorrectorTimeStepSize(),0.0); // TOOD(Dominic): Revision
+        if (!exahype::solvers::Solver::FuseAllADERDGPhases) {
+          assertionEquals(aderdgSolver->getPreviousMinTimeStepSize(),0.0); // TOOD(Dominic): Revision
         }
-        assertion1(std::isfinite(aderdgSolver->getMinPredictorTimeStepSize()),aderdgSolver->getMinPredictorTimeStepSize());
-        assertion1(std::isfinite(aderdgSolver->getMinCorrectorTimeStepSize()),aderdgSolver->getMinPredictorTimeStepSize());
-        assertionEquals(aderdgSolver->getMinCorrectorTimeStamp(),0.0);
-        if (fuseADERDGPhases) {
-          assertionEquals(aderdgSolver->getMinPredictorTimeStamp(),aderdgSolver->getMinPredictorTimeStepSize());
-        } else {
-          assertionEquals(aderdgSolver->getMinPredictorTimeStamp(),0.0);
-        }
-        switch(solver->getTimeStepping()) {
-          case exahype::solvers::Solver::TimeStepping::Global:
-            assertionEquals(aderdgSolver->getMinNextPredictorTimeStepSize(),std::numeric_limits<double>::max());
-            break;
-          case exahype::solvers::Solver::TimeStepping::GlobalFixed:
-            break;
-        }
+        assertionEquals(aderdgSolver->getMinTimeStamp(),0.0);
       }
       break;
       case exahype::solvers::Solver::Type::LimitingADERDG: {
         // ADER-DG
         auto* aderdgSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getSolver().get();
-        if (!exahype::solvers::Solver::FuseADERDGPhases) {
-          assertionEquals(aderdgSolver->getPreviousMinCorrectorTimeStepSize(),0.0); // TODO(Dominic): Revision
+        if (!exahype::solvers::Solver::FuseAllADERDGPhases) {
+          assertionEquals(aderdgSolver->getPreviousMinTimeStepSize(),0.0); // TODO(Dominic): Revision
         }
-        assertion1(std::isfinite(aderdgSolver->getMinPredictorTimeStepSize()),aderdgSolver->getMinPredictorTimeStepSize());
-        assertion1(std::isfinite(aderdgSolver->getMinCorrectorTimeStepSize()),aderdgSolver->getMinPredictorTimeStepSize());
-        assertionEquals(aderdgSolver->getMinCorrectorTimeStamp(),0.0);
-        if (fuseADERDGPhases) {
-          assertionEquals(aderdgSolver->getMinPredictorTimeStamp(),aderdgSolver->getMinPredictorTimeStepSize());
-        } else {
-          assertionEquals(aderdgSolver->getMinPredictorTimeStamp(),0.0);
-        }
-        switch(solver->getTimeStepping()) {
-          case exahype::solvers::Solver::TimeStepping::Global:
-            assertionEquals(aderdgSolver->getMinNextPredictorTimeStepSize(),std::numeric_limits<double>::max());
-            break;
-          case exahype::solvers::Solver::TimeStepping::GlobalFixed:
-            break;
-        }
+        assertionEquals(aderdgSolver->getMinTimeStamp(),0.0);
       } break;
       case exahype::solvers::Solver::Type::FiniteVolumes:
         auto* finiteVolumesSolver = static_cast<exahype::solvers::FiniteVolumesSolver*>(solver);
-        if (!exahype::solvers::Solver::FuseADERDGPhases) {
+        if (!exahype::solvers::Solver::FuseAllADERDGPhases) {
           assertionEquals(finiteVolumesSolver->getPreviousMinTimeStepSize(),0.0);
         }
         break;
@@ -1433,15 +1481,15 @@ void exahype::runners::Runner::updateMeshOrLimiterDomain(
       exahype::solvers::Solver::oneSolverRequestedLocalRecomputation()) {
     logInfo("updateMeshAndSubdomains(...)","recompute solution locally (if applicable) and compute new time step size");
     repository.switchToPredictionOrLocalRecomputation(); // do not roll forward here if global recomp.; we want to stay at the old time step
-    const int sweeps = (exahype::solvers::Solver::FuseADERDGPhases) ? exahype::solvers::Solver::PredictionSweeps : 1;
+    const int sweeps = (exahype::solvers::Solver::FuseAllADERDGPhases) ? exahype::solvers::Solver::PredictionSweeps : 1;
     repository.iterate( sweeps ,false ); // local recomputation: has now recomputed predictor in interface cells
   }
 }
 
 void exahype::runners::Runner::printTimeStepInfo(int numberOfStepsRanSinceLastCall, const exahype::repositories::Repository& repository) {
-  double currentMinTimeStamp    = std::numeric_limits<double>::max();
-  double currentMinTimeStepSize = std::numeric_limits<double>::max();
-  double nextMinTimeStepSize    = std::numeric_limits<double>::max();
+  double currentMinTimeStamp    = std::numeric_limits<double>::infinity();
+  double currentMinTimeStepSize = std::numeric_limits<double>::infinity();
+  double nextMinTimeStepSize    = std::numeric_limits<double>::infinity();
 
   static int n = 0;
   if (numberOfStepsRanSinceLastCall==0) {
@@ -1457,35 +1505,43 @@ void exahype::runners::Runner::printTimeStepInfo(int numberOfStepsRanSinceLastCa
     currentMinTimeStepSize =
         std::min(currentMinTimeStepSize, p->getMinTimeStepSize());
     nextMinTimeStepSize =
-        std::min(nextMinTimeStepSize, p->getMinNextTimeStepSize());
+        std::min(nextMinTimeStepSize, p->getAdmissibleTimeStepSize());
 
     #if defined(Debug) || defined(Asserts)
     switch(p->getType()) {
       case exahype::solvers::Solver::Type::ADERDG:
         logInfo("startNewTimeStep(...)",
-                "\tADER-DG correction: t_min         =" << static_cast<exahype::solvers::ADERDGSolver*>(p)->getMinCorrectorTimeStamp());
+            "\tADER-DG:  t_pre  =" << static_cast<exahype::solvers::ADERDGSolver*>(p)->getPreviousMinTimeStamp());
         logInfo("startNewTimeStep(...)",
-                "\tADER-DG correction: dt_min         =" << static_cast<exahype::solvers::ADERDGSolver*>(p)->getMinCorrectorTimeStepSize());
+            "\tADER-DG: dt_pre  =" << static_cast<exahype::solvers::ADERDGSolver*>(p)->getPreviousMinTimeStepSize());
         logInfo("startNewTimeStep(...)",
-                "\tADER-DG prediction: t_min         =" << static_cast<exahype::solvers::ADERDGSolver*>(p)->getMinPredictorTimeStamp());
+             "\tADER-DG:  t_min =" << static_cast<exahype::solvers::ADERDGSolver*>(p)->getMinTimeStamp());
         logInfo("startNewTimeStep(...)",
-                "\tADER-DG prediction: dt_min         =" << static_cast<exahype::solvers::ADERDGSolver*>(p)->getMinPredictorTimeStepSize());
+             "\tADER-DG: dt_min =" << static_cast<exahype::solvers::ADERDGSolver*>(p)->getMinTimeStepSize());
+        logInfo("startNewTimeStep(...)",
+             "\tADER-DG: dt_est =" << static_cast<exahype::solvers::ADERDGSolver*>(p)->getEstimatedTimeStepSize());
+        logInfo("startNewTimeStep(...)",
+            "\tADER-DG: dt_adm =" << static_cast<exahype::solvers::ADERDGSolver*>(p)->getAdmissibleTimeStepSize());
         break;
       case exahype::solvers::Solver::Type::LimitingADERDG:
         logInfo("startNewTimeStep(...)",
-                 "\tADER-DG prev correction*:  t_min   =" << static_cast<exahype::solvers::LimitingADERDGSolver*>(p)->getSolver()->getPreviousMinCorrectorTimeStamp());
+             "\tLimiting-ADER-DG:  t_pre =" << static_cast<exahype::solvers::LimitingADERDGSolver*>(p)->getSolver()->getPreviousMinTimeStamp());
         logInfo("startNewTimeStep(...)",
-                "\tADER-DG prev correction*:  dt_min  =" << static_cast<exahype::solvers::LimitingADERDGSolver*>(p)->getSolver()->getPreviousMinCorrectorTimeStepSize());
+             "\tLimiting-ADER-DG: dt_pre =" << static_cast<exahype::solvers::LimitingADERDGSolver*>(p)->getSolver()->getPreviousMinTimeStepSize());
         logInfo("startNewTimeStep(...)",
-                "\tADER-DG correction: t_min         =" << static_cast<exahype::solvers::LimitingADERDGSolver*>(p)->getSolver()->getMinCorrectorTimeStamp());
+             "\tLimiting-ADER-DG:  t_min =" << static_cast<exahype::solvers::LimitingADERDGSolver*>(p)->getSolver()->getMinTimeStamp());
         logInfo("startNewTimeStep(...)",
-                "\tADER-DG correction: dt_min        =" << static_cast<exahype::solvers::LimitingADERDGSolver*>(p)->getSolver()->getMinCorrectorTimeStepSize());
+             "\tLimiting-ADER-DG: dt_min =" << static_cast<exahype::solvers::LimitingADERDGSolver*>(p)->getSolver()->getMinTimeStepSize());
         logInfo("startNewTimeStep(...)",
-                "\tADER-DG prediction: t_min         =" << static_cast<exahype::solvers::LimitingADERDGSolver*>(p)->getSolver()->getMinPredictorTimeStamp());
+             "\tLimiting-ADER-DG: dt_est =" << static_cast<exahype::solvers::LimitingADERDGSolver*>(p)->getSolver()->getEstimatedTimeStepSize());
         logInfo("startNewTimeStep(...)",
-                "\tADER-DG prediction: dt_min        =" << static_cast<exahype::solvers::LimitingADERDGSolver*>(p)->getSolver()->getMinPredictorTimeStepSize());
+             "\tLimiting-ADER-DG: dt_adm =" << static_cast<exahype::solvers::LimitingADERDGSolver*>(p)->getSolver()->getAdmissibleTimeStepSize());
         break;
       case exahype::solvers::Solver::Type::FiniteVolumes:
+        logInfo("startNewTimeStep(...)",
+             "\tFinite-Volumes:  t_min =" << static_cast<exahype::solvers::ADERDGSolver*>(p)->getMinTimeStamp());
+        logInfo("startNewTimeStep(...)",
+             "\tFinite-Volumes: dt_min =" << static_cast<exahype::solvers::ADERDGSolver*>(p)->getMinTimeStepSize());
         break;
     }
     #endif
@@ -1533,7 +1589,7 @@ void exahype::runners::Runner::printTimeStepInfo(int numberOfStepsRanSinceLastCa
   }
   #endif
 
-  if (solvers::Solver::getMinTimeStampOfAllSolvers()>std::numeric_limits<double>::max()/100.0) {
+  if (solvers::Solver::getMinTimeStampOfAllSolvers()>std::numeric_limits<double>::infinity()/100.0) {
     logError("runAsMaster(...)","quit simulation as solver seems to explode" );
     exit(-1);
   }
@@ -1584,6 +1640,38 @@ void exahype::runners::Runner::runTimeStepsWithFusedAlgorithmicSteps(
   // ---- reduction/broadcast barrier ----
 }
 
+void exahype::runners::Runner::runOneTimeStepWithTwoSeparateAlgorithmicSteps(
+    exahype::repositories::Repository& repository, bool plot) {
+  // Only one time step (predictor vs. corrector) is used in this case.
+  bool communicatePeanoVertices =
+        !exahype::solvers::Solver::DisablePeanoNeighbourExchangeInTimeSteps;
+  repository.switchToCorrection();  // Riemann -> face2face, Face to cell + Inside cell
+  repository.iterate( 1, communicatePeanoVertices );
+
+  if (exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalRecomputation()) {
+    logInfo("runOneTimeStepWithThreeSeparateAlgorithmicSteps(...)","local recomputation requested by at least one solver");
+  }
+  if (exahype::solvers::Solver::oneSolverRequestedMeshRefinement()) {
+    logInfo("runOneTimeStepWithThreeSeparateAlgorithmicSteps(...)","mesh update requested by at least one solver");
+  }
+
+  if (exahype::solvers::Solver::oneSolverRequestedMeshRefinement() ||
+      exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalRecomputation()) {
+    updateMeshOrLimiterDomain(repository,false);
+  }
+
+  printTimeStepInfo(1,repository);
+
+  updateStatistics();
+
+  if ( plot ) {
+    logInfo("runOneTimeStepWithTwoSeparateAlgorithmicSteps(...)","plot");
+  }
+
+  repository.switchToPrediction(); // Cell onto faces
+  repository.iterate( exahype::solvers::Solver::PredictionSweeps, communicatePeanoVertices );
+}
+
 void exahype::runners::Runner::runOneTimeStepWithThreeSeparateAlgorithmicSteps(
     exahype::repositories::Repository& repository, bool plot) {
   // Only one time step (predictor vs. corrector) is used in this case.
@@ -1607,10 +1695,15 @@ void exahype::runners::Runner::runOneTimeStepWithThreeSeparateAlgorithmicSteps(
   }
 
   printTimeStepInfo(1,repository);
-  repository.switchToPrediction(); // Cell onto faces
-  repository.iterate( exahype::solvers::Solver::PredictionSweeps, communicatePeanoVertices );
 
   updateStatistics();
+
+  if ( plot ) {
+    logInfo("runOneTimeStepWithThreeSeparateAlgorithmicSteps(...)","plot");
+  }
+
+  repository.switchToPrediction(); // Cell onto faces
+  repository.iterate( exahype::solvers::Solver::PredictionSweeps, communicatePeanoVertices );
 }
 
 void exahype::runners::Runner::printGridStatistics(repositories::Repository& repository) {
@@ -1638,11 +1731,11 @@ void exahype::runners::Runner::runPredictionInIsolation(repositories::Repository
     switch (solver->getType()) {
       case solvers::Solver::Type::ADERDG:
         static_cast<solvers::ADERDGSolver*>(solver)->setStabilityConditionWasViolated(true);
-        static_cast<solvers::ADERDGSolver*>(solver)->setNextMeshUpdateEvent(); // reset
+        static_cast<solvers::ADERDGSolver*>(solver)->resetMeshUpdateEvent(); // reset
         break;
       case solvers::Solver::Type::LimitingADERDG:
         static_cast<solvers::LimitingADERDGSolver*>(solver)->getSolver().get()->setStabilityConditionWasViolated(true);
-        static_cast<solvers::LimitingADERDGSolver*>(solver)->getSolver().get()->setNextMeshUpdateEvent(); // reset
+        static_cast<solvers::LimitingADERDGSolver*>(solver)->getSolver().get()->resetMeshUpdateEvent(); // reset
         break;
       case solvers::Solver::Type::FiniteVolumes:
         // do nothing
@@ -1651,73 +1744,4 @@ void exahype::runners::Runner::runPredictionInIsolation(repositories::Repository
   }
   repository.switchToPredictionRerun(); // This one waits for background job termination
   repository.iterate(exahype::solvers::Solver::PredictionSweeps,false);
-}
-
-void exahype::runners::Runner::validateSolverTimeStepDataForThreeAlgorithmicPhases(const bool fuseADERDGPhases) const {
-  #ifdef Asserts
-  for (auto* solver : exahype::solvers::RegisteredSolvers) {
-    assertionEquals(solver->getMinTimeStamp(),0.0);
-    assertion1(std::isfinite(solver->getMinTimeStepSize()),solver->getMinTimeStepSize());
-    assertion1(solver->getMinTimeStepSize()>0,solver->getMinTimeStepSize());
-
-    switch(solver->getTimeStepping()) {
-      case exahype::solvers::Solver::TimeStepping::Global:
-        assertionEquals(solver->getMinNextTimeStepSize(),std::numeric_limits<double>::max());
-        break;
-      case exahype::solvers::Solver::TimeStepping::GlobalFixed:
-        break;
-    }
-    switch (solver->getType()) {
-      case exahype::solvers::Solver::Type::ADERDG: {
-        auto* aderdgSolver = static_cast<exahype::solvers::ADERDGSolver*>(solver);
-        assertion1(std::isfinite(aderdgSolver->getMinPredictorTimeStepSize()),aderdgSolver->getMinPredictorTimeStepSize());
-        assertion1(std::isfinite(aderdgSolver->getMinCorrectorTimeStepSize()),aderdgSolver->getMinPredictorTimeStepSize());
-        assertion1(aderdgSolver->getMinCorrectorTimeStamp() > 0.0,aderdgSolver->getMinCorrectorTimeStamp());
-        if (!fuseADERDGPhases) {
-          assertionEquals(aderdgSolver->getMinPredictorTimeStamp(),aderdgSolver->getMinCorrectorTimeStamp());
-        }
-        switch(solver->getTimeStepping()) {
-          case exahype::solvers::Solver::TimeStepping::Global:
-            assertionEquals(aderdgSolver->getMinNextPredictorTimeStepSize(),std::numeric_limits<double>::max());
-            break;
-          case exahype::solvers::Solver::TimeStepping::GlobalFixed:
-            break;
-        }
-
-      }  break;
-      case exahype::solvers::Solver::Type::LimitingADERDG: {
-        // ADER-DG
-        auto* aderdgSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getSolver().get();
-        assertion1(std::isfinite(aderdgSolver->getMinPredictorTimeStepSize()),aderdgSolver->getMinPredictorTimeStepSize());
-        assertion1(std::isfinite(aderdgSolver->getMinCorrectorTimeStepSize()),aderdgSolver->getMinPredictorTimeStepSize());
-        assertion1(aderdgSolver->getMinCorrectorTimeStamp() > 0.0,aderdgSolver->getMinCorrectorTimeStamp());
-        if (!fuseADERDGPhases) {
-          assertionEquals(aderdgSolver->getMinPredictorTimeStamp(),aderdgSolver->getMinCorrectorTimeStamp());
-        }
-        switch(solver->getTimeStepping()) {
-          case exahype::solvers::Solver::TimeStepping::Global:
-            assertionEquals(aderdgSolver->getMinNextPredictorTimeStepSize(),std::numeric_limits<double>::max());
-            break;
-          case exahype::solvers::Solver::TimeStepping::GlobalFixed:
-            break;
-        }
-
-        // Finite Volumes
-        auto* finiteVolumesSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getLimiter().get();
-        assertionEquals(finiteVolumesSolver->getMinTimeStamp(),0.0);
-        assertion1(std::isfinite(finiteVolumesSolver->getMinTimeStepSize()),finiteVolumesSolver->getMinTimeStepSize());
-        assertion1(finiteVolumesSolver->getMinTimeStepSize()>0,finiteVolumesSolver->getMinTimeStepSize());
-        switch(solver->getTimeStepping()) {
-          case exahype::solvers::Solver::TimeStepping::Global:
-            assertionEquals(finiteVolumesSolver->getMinNextTimeStepSize(),std::numeric_limits<double>::max());
-            break;
-          case exahype::solvers::Solver::TimeStepping::GlobalFixed:
-            break;
-        }
-      } break;
-      case exahype::solvers::Solver::Type::FiniteVolumes:
-        break;
-    }
-  }
-  #endif
 }

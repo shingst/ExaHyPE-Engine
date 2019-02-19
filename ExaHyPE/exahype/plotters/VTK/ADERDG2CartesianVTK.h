@@ -60,6 +60,22 @@ class exahype::plotters::ADERDG2CartesianVTK: public exahype::plotters::Plotter:
   exahype::parser::ParserView   _plotterParameters ;
 
   /**
+   * To resolve features of a high order polynomial solution
+   * in a VTK compatible way, we apply the volume interpolation operator
+   * to the DG solution polynomial.
+   *
+   * @return number of times the prolongation operators should be applied.
+   */
+  int                          _resolution = 0;
+
+  /**
+   * Temporary solution and gradient arrays used for interpolating the solution
+   * onto finer grids.
+   */
+  std::vector<double>          _tempSolution;
+  std::vector<double>          _tempGradient;
+
+  /**
    * Is obviously only used if we use vtu instead of the vtk legacy format.
    */
   tarch::plotter::griddata::VTUTimeSeriesWriter _timeSeriesWriter;

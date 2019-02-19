@@ -44,7 +44,7 @@ void CCZ4::AbstractCCZ4Solver_FV::abortWithMsg(const char* const msg) {
 	abort();
 }
 
-void CCZ4::AbstractCCZ4Solver_FV::solutionUpdate(double* luhNew,const double* luh,const tarch::la::Vector<DIMENSIONS,double>& dx,const double dt,double& maxAdmissibleDt) {
+void CCZ4::AbstractCCZ4Solver_FV::solutionUpdate(double* const luhNew,const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& dx,const double dt,double& maxAdmissibleDt) {
   maxAdmissibleDt = kernels::finitevolumes::musclhancock::c::solutionUpdate<true, true, false, CCZ4Solver_FV>(*static_cast<CCZ4Solver_FV*>(this),luhNew,luh,dx,dt);
 }
 
@@ -54,11 +54,11 @@ double CCZ4::AbstractCCZ4Solver_FV::stableTimeStepSize(const double* const luh,c
   return maxAdmissibleDt;
 }
 
-void CCZ4::AbstractCCZ4Solver_FV::adjustSolution(double *luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,const double t,const double dt) {
+void CCZ4::AbstractCCZ4Solver_FV::adjustSolution(double* const luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,const double t,const double dt) {
   kernels::finitevolumes::commons::c::solutionAdjustment<CCZ4Solver_FV>(*static_cast<CCZ4Solver_FV*>(this),luh,center,dx,t,dt);
 }
 
-void CCZ4::AbstractCCZ4Solver_FV::boundaryConditions(double* luh,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const tarch::la::Vector<DIMENSIONS, int>& posCell,const tarch::la::Vector<DIMENSIONS, int>& posBoundary) {
+void CCZ4::AbstractCCZ4Solver_FV::boundaryConditions(double* const luh,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const tarch::la::Vector<DIMENSIONS, int>& posCell,const tarch::la::Vector<DIMENSIONS, int>& posBoundary) {
   constexpr int cellsPerFace = PatchSize*PatchSize*GhostLayerWidth;
   constexpr int sizeLuhbnd = (NumberOfVariables+NumberOfParameters)*cellsPerFace;
   
@@ -82,20 +82,20 @@ void CCZ4::AbstractCCZ4Solver_FV::boundaryConditions(double* luh,const tarch::la
 }
 
 
-void CCZ4::AbstractCCZ4Solver_FV::ghostLayerFilling(double* luh,const double* luhNeighbour,const tarch::la::Vector<DIMENSIONS,int>& neighbourPosition) {
+void CCZ4::AbstractCCZ4Solver_FV::ghostLayerFilling(double* const luh,const double* const luhNeighbour,const tarch::la::Vector<DIMENSIONS,int>& neighbourPosition) {
   kernels::finitevolumes::commons::c::ghostLayerFilling<CCZ4Solver_FV>(*static_cast<CCZ4Solver_FV*>(this),luh,luhNeighbour,neighbourPosition);
 }
 
-void CCZ4::AbstractCCZ4Solver_FV::ghostLayerFillingAtBoundary(double* luh,const double* luhbnd,const tarch::la::Vector<DIMENSIONS,int>& boundaryPosition) {
+void CCZ4::AbstractCCZ4Solver_FV::ghostLayerFillingAtBoundary(double* const luh,const double* const luhbnd,const tarch::la::Vector<DIMENSIONS,int>& boundaryPosition) {
   kernels::finitevolumes::commons::c::ghostLayerFillingAtBoundary<CCZ4Solver_FV>(*static_cast<CCZ4Solver_FV*>(this),luh,luhbnd,boundaryPosition);
 }
 
-void CCZ4::AbstractCCZ4Solver_FV::boundaryLayerExtraction(double* luhbnd,const double* luh,const tarch::la::Vector<DIMENSIONS,int>& boundaryPosition) {
+void CCZ4::AbstractCCZ4Solver_FV::boundaryLayerExtraction(double* const luhbnd,const double* const luh,const tarch::la::Vector<DIMENSIONS,int>& boundaryPosition) {
   kernels::finitevolumes::commons::c::boundaryLayerExtraction<CCZ4Solver_FV>(*static_cast<CCZ4Solver_FV*>(this),luhbnd,luh,boundaryPosition);
 }
 
 
-double CCZ4::AbstractCCZ4Solver_FV::riemannSolver(double* fL, double *fR, const double* qL, const double* qR, int direction) {
+double CCZ4::AbstractCCZ4Solver_FV::riemannSolver(double* const fL, double* const fR, const double* const qL, const double* const qR, int direction) {
   // Default FV Riemann Solver
   return kernels::finitevolumes::riemannsolvers::c::rusanov<true, false, CCZ4Solver_FV>(*static_cast<CCZ4Solver_FV*>(this), fL,fR,qL,qR,direction);
 }

@@ -29,7 +29,7 @@ private:
    *
    * See also chapter 7.13.2 in "I do like CFD, VOL.1" by Katate Masatsuka.
    */
-  static void entropyWave(const double* const x,double t, double* Q);
+  static void entropyWave(const double* const x,double t, double* const Q);
 
   /**
    * Log device
@@ -37,7 +37,7 @@ private:
   static tarch::logging::Log _log;
 
 public:
-  //EulerSolver_ADERDG(double maximumMeshSize,int maximumAdaptiveMeshDepth,int DMPObservables,int limiterHelperLayers,exahype::solvers::Solver::TimeStepping timeStepping);
+  //EulerSolver_ADERDG(double maximumMeshSize,int maximumAdaptiveMeshDepth,int DMPObservables,exahype::solvers::Solver::TimeStepping timeStepping);
   EulerSolver_ADERDG(
     const double maximumMeshSize,
     const int maximumMeshDepth,
@@ -67,7 +67,7 @@ public:
    * \param[inout] Q         the conserved variables (and parameters) associated with a quadrature point
    *                         as C array (already allocated).
    */
-  void adjustPointSolution(const double* const x,const double t,const double dt,double* Q) override;
+  void adjustPointSolution(const double* const x,const double t,const double dt,double* const Q) override;
 
   /**
    * Compute the flux tensor.
@@ -76,7 +76,7 @@ public:
    *                 as C array (already allocated).
    * \param[inout] F the fluxes at that point as C array (already allocated).
    */
-  void flux(const double* const Q,double** F) final;
+  void flux(const double* const Q,double** const F) final;
   
   void flux_vect(const double* const * const restrict Q, double* const * const * const restrict F, int size);
 
@@ -88,9 +88,9 @@ public:
    * \param[in] d  the column of the flux vector (d=0,1,...,DIMENSIONS).
    * \param[inout] lambda the eigenvalues as C array (already allocated).
    */
-  void eigenvalues(const double* const Q,const int d,double* lambda) override;
+  void eigenvalues(const double* const Q,const int d,double* const lambda) override;
 
-  void eigenvalues_vect(const double* const * const Q, const int direction, double** lambda, int size);
+  void eigenvalues_vect(const double* const * const Q, const int direction, double** const lambda, int size);
   
   /**
    * Impose boundary conditions at a point on a boundary face
@@ -111,7 +111,7 @@ public:
    * \param[inout] FOut      the normal fluxes at point x from outside of the domain
    *                         and time-averaged (over [t,t+dt]) as C array (already allocated).
    */
-  void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double * const fluxIn,const double* const stateIn,double *fluxOut,double* stateOut);
+  void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double * const fluxIn,const double* const stateIn,double* const fluxOut,double* const stateOut);
 
   /**
    * Evaluate the refinement criterion within a cell.
@@ -127,11 +127,9 @@ public:
    * \param[in]    dt        the width of the time interval.
    * \return One of exahype::solvers::Solver::RefinementControl::{Erase,Keep,Refine}.
    */
-  exahype::solvers::Solver::RefinementControl refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& centre,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) override;
+  exahype::solvers::Solver::RefinementControl refinementCriterion(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& centre,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) override;
 
-  void mapDiscreteMaximumPrincipleObservables(
-      double* observables,const int numberOfObservables,
-      const double* const Q) const override;
+  void mapDiscreteMaximumPrincipleObservables(double* const observables, const double* const Q) const override;
 
       bool isPhysicallyAdmissible(
       const double* const solution,

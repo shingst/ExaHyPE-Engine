@@ -254,6 +254,8 @@ void exahype::mappings::MeshRefinement::touchVertexLastTime(
       !StillInRefiningMode);
 
   if (
+      refineOnThisRankAndLevel(coarseGridVerticesEnumerator.getLevel()+1)
+      &&
       _stableIterationsInARow <= 3 // Found experimentally
       &&
       refinementControl==exahype::solvers::Solver::RefinementControl::Refine
@@ -290,6 +292,8 @@ void exahype::mappings::MeshRefinement::createBoundaryVertex(
                            coarseGridCell, fineGridPositionOfVertex);
 
   if (
+      refineOnThisRankAndLevel(coarseGridVerticesEnumerator.getLevel()+1)
+      &&
       fineGridVertex.evaluateRefinementCriterion(
           fineGridX,
           coarseGridVerticesEnumerator.getLevel()+1,
@@ -316,6 +320,8 @@ void exahype::mappings::MeshRefinement::createInnerVertex(
                            fineGridH, coarseGridVerticesEnumerator.toString(),
                            coarseGridCell, fineGridPositionOfVertex);
   if (
+      refineOnThisRankAndLevel(coarseGridVerticesEnumerator.getLevel()+1)
+      &&
       fineGridVertex.evaluateRefinementCriterion(
           fineGridX,
           coarseGridVerticesEnumerator.getLevel()+1,
@@ -382,6 +388,8 @@ void exahype::mappings::MeshRefinement::ensureRegularityAlongBoundary(
     exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator) const {
   if (
+      refineOnThisRankAndLevel(fineGridVerticesEnumerator.getLevel())
+      &&
       !StillInRefiningMode
       &&
       peano::grid::aspects::VertexStateAnalysis::isOneVertexBoundary(
@@ -473,7 +481,7 @@ void exahype::mappings::MeshRefinement::enterCell(
 
   for (unsigned int solverNumber=0; solverNumber<exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-    if ( solver->hasRequestedMeshRefinement() ) {
+    if ( solver->hasRequestedAnyMeshRefinement() ) {
       const bool newComputeCell =
           !firstMeshRefinementIteration && // skip in first iteration
           solver->progressMeshRefinementInEnterCell(
@@ -521,7 +529,7 @@ void exahype::mappings::MeshRefinement::leaveCell(
  
   for (unsigned int solverNumber=0; solverNumber<exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-    if ( solver->hasRequestedMeshRefinement() ) {
+    if ( solver->hasRequestedAnyMeshRefinement() ) {
       solver->progressMeshRefinementInLeaveCell(
           fineGridCell,
           fineGridVertices,
@@ -565,7 +573,7 @@ void exahype::mappings::MeshRefinement::mergeWithNeighbour(
   logTraceInWith6Arguments("mergeWithNeighbour(...)", vertex, neighbour,
                            fromRank, fineGridX, fineGridH, level);
 
-  if ( !IsInitialMeshRefinement || !IsFirstIteration ) {
+  if ( !IsFirstIteration ) {
     vertex.mergeOnlyWithNeighbourMetadata(fromRank,fineGridX,fineGridH,level,exahype::State::AlgorithmSection::MeshRefinement,true);
   }
 

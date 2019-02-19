@@ -18,7 +18,7 @@
 //  constants = &_constants;
 //}
 
-void MHDSolver::MHDSolver::flux(const double* const Q, double** F) {
+void MHDSolver::MHDSolver::flux(const double* const Q, double** const F) {
   // Caveats: Fortran accepts a uniform array of size (nVar*nDim), however C passes an array of pointers.
   // This Fortran interface works only if F is a continous array and F[1]==F[nDim+1] etc!
   pdeflux_(F[0], Q);
@@ -26,7 +26,7 @@ void MHDSolver::MHDSolver::flux(const double* const Q, double** F) {
 
 
 
-void MHDSolver::MHDSolver::eigenvalues(const double* const Q, const int normalNonZeroIndex, double* lambda) {
+void MHDSolver::MHDSolver::eigenvalues(const double* const Q, const int normalNonZeroIndex, double* const lambda) {
   double nv[3] = {0.};
   nv[normalNonZeroIndex] = 1;
   pdeeigenvalues_(lambda, Q, nv);
@@ -40,23 +40,23 @@ bool MHDSolver::MHDSolver::hasToAdjustSolution(const tarch::la::Vector<DIMENSION
 
 
 
-void MHDSolver::MHDSolver::adjustedSolutionValues(const double* const x,const double w,const double t,const double dt,double* Q) {
+void MHDSolver::MHDSolver::adjustedSolutionValues(const double* const x,const double w,const double t,const double dt,double* const Q) {
   // Fortran call:
   adjustedsolutionvalues_(x, &w, &t, &dt, Q);
 }
 
-void MHDSolver::MHDSolver::algebraicSource(const double* const Q, double* S) {
+void MHDSolver::MHDSolver::algebraicSource(const double* const Q, double* const S) {
   pdesource_(S, Q);
 }
 
 
 
-exahype::solvers::Solver::RefinementControl MHDSolver::MHDSolver::refinementCriterion(const double* luh, const tarch::la::Vector<DIMENSIONS, double>& center, const tarch::la::Vector<DIMENSIONS, double>& dx, double t, const int level) {
+exahype::solvers::Solver::RefinementControl MHDSolver::MHDSolver::refinementCriterion(const double* const luh, const tarch::la::Vector<DIMENSIONS, double>& center, const tarch::la::Vector<DIMENSIONS, double>& dx, double t, const int level) {
   // @todo Please implement
   return exahype::solvers::Solver::RefinementControl::Keep;
 }
 
-void MHDSolver::MHDSolver::boundaryValues(const double* const x,const double t, const double dt, const int faceIndex, const int normalNonZero, const double* const stateIn, double* stateOut) {
+void MHDSolver::MHDSolver::boundaryValues(const double* const x,const double t, const double dt, const int faceIndex, const int normalNonZero, const double* const stateIn, double* const stateOut) {
 
 //  std::cout << "boundary=" << faceIndex <<  ", t=" << t <<  ", x2D={"<< x[0] << "," << x[1] << "}" << std::endl;
     
@@ -91,11 +91,11 @@ void MHDSolver::MHDSolver::boundaryValues(const double* const x,const double t, 
 }
 
 
-//void MHDSolver::MHDSolver::nonConservativeProduct(const double* const Q, const double* const gradQ, double* BgradQ) {
+//void MHDSolver::MHDSolver::nonConservativeProduct(const double* const Q, const double* const gradQ, double* const BgradQ) {
 //	std::memset(BgradQ, 0, nVar * sizeof(double));
 //}
 //
-//void MHDSolver::MHDSolver::coefficientMatrix(const double* const Q, const int normalNonZero, double* Bn) {
+//void MHDSolver::MHDSolver::coefficientMatrix(const double* const Q, const int normalNonZero, double* const Bn) {
 // std::memset(Bn, 0, nVar * nVar * sizeof(double));
 //}
 

@@ -36,9 +36,7 @@ class GRMHD::GRMHDSolver_ADERDG : public GRMHD::AbstractGRMHDSolver_ADERDG {
         const int maximumMeshDepth,
         const int haloCells,
         const int regularisedFineGridLevels,
-        const exahype::solvers::Solver::TimeStepping timeStepping,
-        const int limiterHelperLayers,
-        const int DMPObservables
+        const exahype::solvers::Solver::TimeStepping timeStepping,const int DMPObservables
 );
 
     /**
@@ -61,7 +59,7 @@ class GRMHD::GRMHDSolver_ADERDG : public GRMHD::AbstractGRMHDSolver_ADERDG {
      * \param[inout] Q         the conserved variables (and parameters) associated with a quadrature point
      *                         as C array (already allocated).
      */
-    void adjustPointSolution(const double* const x,const double t,const double dt,double* Q) final override;
+    void adjustPointSolution(const double* const x,const double t,const double dt,double* const Q) final override;
 
     /**
      * Compute the eigenvalues of the flux tensor per coordinate direction \p d.
@@ -71,7 +69,7 @@ class GRMHD::GRMHDSolver_ADERDG : public GRMHD::AbstractGRMHDSolver_ADERDG {
      * \param[in] d  the column of the flux vector (d=0,1,...,DIMENSIONS).
      * \param[inout] lambda the eigenvalues as C array (already allocated).
      */
-    void eigenvalues(const double* const Q,const int d,double* lambda) final override;
+    void eigenvalues(const double* const Q,const int d,double* const lambda) final override;
     
 
     /**
@@ -93,7 +91,7 @@ class GRMHD::GRMHDSolver_ADERDG : public GRMHD::AbstractGRMHDSolver_ADERDG {
      * \param[inout] FOut      the normal fluxes at point x from outside of the domain
      *                         and time-averaged (over [t,t+dt]) as C array (already allocated).
      */
-    void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double * const fluxIn,const double* const stateIn,double *fluxOut,double* stateOut) final override;
+    void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double * const fluxIn,const double* const stateIn,double* const fluxOut,double* const stateOut) final override;
     
     /**
      * Evaluate the refinement criterion within a cell.
@@ -109,7 +107,7 @@ class GRMHD::GRMHDSolver_ADERDG : public GRMHD::AbstractGRMHDSolver_ADERDG {
      * \param[in]    dt        the width of the time interval.
      * \return One of exahype::solvers::Solver::RefinementControl::{Erase,Keep,Refine}.
      */
-    exahype::solvers::Solver::RefinementControl refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& centre,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) override;
+    exahype::solvers::Solver::RefinementControl refinementCriterion(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& centre,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) override;
     
     //PDE
     
@@ -120,7 +118,7 @@ class GRMHD::GRMHDSolver_ADERDG : public GRMHD::AbstractGRMHDSolver_ADERDG {
      *                 as C array (already allocated).
      * \param[inout] F the fluxes at that point as C array (already allocated).
      */
-    void flux(const double* const Q,double** F) final override;
+    void flux(const double* const Q,double** const F) final override;
 
 /* viscousFlux() function not included, as requested in the specification file */
 
@@ -150,7 +148,7 @@ class GRMHD::GRMHDSolver_ADERDG : public GRMHD::AbstractGRMHDSolver_ADERDG {
      * \param[inout]  The vector BgradQ (extends nVar), already allocated. 
      *
      **/
-    void nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) final override;
+    void nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ) final override;
 
 /* pointSource() function not included, as requested in the specification file */
     bool isPhysicallyAdmissible(
@@ -162,7 +160,7 @@ class GRMHD::GRMHDSolver_ADERDG : public GRMHD::AbstractGRMHDSolver_ADERDG {
       const double t) const override;
 
    void mapDiscreteMaximumPrincipleObservables(
-       double* observables,const int NumberOfVariables,
+       double* const observables,const int NumberOfVariables,
        const double* const Q) const override;
 
 

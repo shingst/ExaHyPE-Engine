@@ -45,7 +45,7 @@ class SWE::MySWESolver : public SWE::AbstractMySWESolver {
     /**
      * @see FiniteVolumesSolver
      */    
-    void adjustSolution(const double* const x,const double t,const double dt, double* Q) override; 
+    void adjustSolution(const double* const x,const double t,const double dt, double* const Q) override; 
     
     /**
      * Compute the eigenvalues of the flux tensor per coordinate direction \p d.
@@ -55,7 +55,7 @@ class SWE::MySWESolver : public SWE::AbstractMySWESolver {
      * \param[in] d  the column of the flux vector (d=0,1,...,DIMENSIONS).
      * \param[inout] lambda the eigenvalues as C array (already allocated).
      */
-    void eigenvalues(const double* const Q,const int d,double* lambda) override;
+    void eigenvalues(const double* const Q,const int d,double* const lambda) override;
         
     /**
      * Impose boundary conditions at a point on a boundary face
@@ -72,7 +72,7 @@ class SWE::MySWESolver : public SWE::AbstractMySWESolver {
      * \param[inout] QOut      the conserved variables at point x from outside of the domain
      *                         and time-averaged (over [t,t+dt]) as C array (already allocated).
      */
-    void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double* const stateIn,double* stateOut) override;
+    void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double* const stateIn,double* const stateOut) override;
     
     /**
      * Compute the flux tensor.
@@ -81,7 +81,7 @@ class SWE::MySWESolver : public SWE::AbstractMySWESolver {
      *                 as C array (already allocated).
      * \param[inout] F the fluxes at that point as C array (already allocated).
      */
-    void flux(const double* const Q,double** F) override;
+    void flux(const double* const Q,double** const F) override;
 
 
     /* algebraicSource() function not included, as requested by the specification file */
@@ -95,7 +95,7 @@ class SWE::MySWESolver : public SWE::AbstractMySWESolver {
      * \param[out]  BgradQ  The nonconservative product (already allocated, same shape as Q).
      *
      **/
-    void nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) override;
+    void nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ) override;
     
     /* pointSource() function not included, as requested in the specification file */
 };

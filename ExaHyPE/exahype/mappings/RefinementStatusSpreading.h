@@ -55,29 +55,18 @@ private:
   static tarch::logging::Log _log;
 
   /**
-   * Per solver a flag, indicating if has requested
-   * a mesh update request or a limiter domain change.
-   */
-  std::vector<exahype::solvers::Solver::MeshUpdateEvent> _meshUpdateEvents;
-
-  /**
-   * Initialise the vectors _meshUpdateRequests, _limiterDomainChanges.
-   */
-  void initialiseLocalVariables();
-
-  /**
    *
    * \return true if we need to perform limiter status spreading
    * for this solver.
    */
   static bool spreadRefinementStatus(exahype::solvers::Solver* solver);
 
-public:
   /**
-   * Is set to true in BroadcastAndDropNeighbourMessages::beginIteration(...),
-   * is unset in endIteration(...) of this mapping.
+   * Semaphore for locking the mesh update event updates.
    */
-  static bool IsFirstIteration;
+  static tarch::multicore::BooleanSemaphore Semaphore;
+
+public:
 
   /**
    * Reduce data from the worker to the master.

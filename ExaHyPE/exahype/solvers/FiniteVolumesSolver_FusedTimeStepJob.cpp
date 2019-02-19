@@ -36,12 +36,8 @@ bool exahype::solvers::FiniteVolumesSolver::FusedTimeStepJob::run() {
           _isSkeletonJob,false/*uncompressBefore*/);
 
   if (_isLastTimeStepOfBatch) {
-    tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-    {
-      _solver.updateNextMeshUpdateEvent(result._meshUpdateEvent);
-      _solver.updateMinNextTimeStepSize(result._timeStepSize);
-    }
-    lock.free();
+    _solver.updateMeshUpdateEvent(result._meshUpdateEvent);
+    _solver.updateAdmissibleTimeStepSize(result._timeStepSize);
   }
 
   NumberOfReductionJobs.fetch_sub(1);

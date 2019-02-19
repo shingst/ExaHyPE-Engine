@@ -408,7 +408,7 @@
           "title" : "Scale the bounding box to remove some communication",
           "$comment" : "The bounding box is scaled such that at least one cell is placed outside of the domain at each boundary. This option was previously known as 'virtually-expand-domain'.",
           "old_format" : { "token_after" : "configure" },
-          "default" : false
+          "default" : true
         },        
         "timeout" : {
           "type" : "number", 
@@ -469,20 +469,36 @@
       "additionalProperties" : false,
       "old_format_prepend" : { "within_one_of_the_sections" : ["global-optimisation", "optimisation"] },
       "properties" : {
+        "limiting" : {
+          "type" : "string", 
+          "default" : "dynamic",
+          "enum" : ["dynamic","static"]
+        },
+        "mesh_refinement" : {
+          "type" : "string", 
+          "default" : "dynamic",
+          "enum" : ["dynamic","static"]
+        },
         "fuse_algorithmic_steps" : {
-          "type" : "boolean", 
-          "default" : false,
+          "type" : "string", 
+          "default" : "none",
+          "enum" : ["none","most","all"],
           "old_format" : { "token_after" : "fuse-algorithmic-steps" }
         }, 
-        "fuse_algorithmic_steps_factor" : {
+        "fuse_algorithmic_steps_rerun_factor" : {
           "type" : "number", 
-          "title" : "The weight used for estimating the next time step size",
+          "title" : "Factor used for resetting the time step size if the last estimate was not stable according to the CFL condition. Only used if all algorithmic phases are used and nonlinear PDEs are considered.",
           "default" : 0.99,
           "old_format" : { "token_after" : "fuse-algorithmic-steps-factor" }
         },
+        "fuse_algorithmic_steps_diffusion_factor" : {
+          "type" : "number", 
+          "title" : "Factor to estimate the next time step size. Adds numerical diffusion, the smaller it gets. Only used if all algorithmic phases are used and nonlinear PDEs are considered.",
+          "default" : 0.99
+        },
         "spawn_predictor_as_background_thread" : {
           "type" : "boolean", 
-          "title" : "Wether to spawn the predictor or the first and intermediate fused time steps as background jobs.",
+          "title" : "Whether to spawn the predictor or the first and intermediate fused time steps as background jobs.",
           "default" : false,
           "old_format" : { "token_after" : "spawn-predictor-as-background-thread" }
         },
@@ -540,7 +556,8 @@
       },
       "dependencies" : {
         "spawn_double_compression_as_background_thread" : ["double_compression"],
-        "fuse_algorithmic_steps_factor" : ["fuse_algorithmic_steps"],
+        "fuse_algorithmic_steps_rerun_factor" : ["fuse_algorithmic_steps"],
+        "fuse_algorithmic_steps_diffusion_factor" : ["fuse_algorithmic_steps"],
         "disable_metadata_exchange_in_batched_time_steps" : ["time_step_batch_factor"]
       }
     }, 
@@ -665,7 +682,7 @@
                   "split_ck" : {
                     "type" : "boolean",
                     "available-for" : ["optimised"],
-                    "title" : "Use a split Cauchy–Kowalevski for the space time predictor (linear only)"
+                    "title" : "Use a split Cauchy-Kowalevski for the space time predictor (linear only)"
                   }
                 }
               },
@@ -874,18 +891,6 @@
                 "title" : "The discrete maximum principle relaxation parameter (only Limiting-ADER-DG solver)",
                 "scope" : "run-time",
                 "default" : 1e-4
-              },
-              "helper_layers" : {
-                "type" : "integer", 
-                "title" : "Number of limiter helper layers (only Limiting-ADER-DG solver)",
-                "scope" : "run-time",
-                "default" : 1
-              },
-              "steps_till_cured" : {
-                "type" : "integer", 
-                "title" : "Number of iterations to wait until a cured cell loses the 'troubled' flag (only Limiting-ADER-DG solver)",
-                "scope" : "run-time",
-                "default" : 0
               }
             }
           },

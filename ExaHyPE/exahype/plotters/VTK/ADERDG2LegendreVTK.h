@@ -64,6 +64,22 @@ private:
   exahype::parser::ParserView  _plotterParameters;
 
   /**
+   * To resolve features of a high order polynomial solution
+   * in a VTK compatible way, we apply the volume interpolation operator
+   * to the DG solution polynomial.
+   *
+   * @return number of times the prolongation operators should be applied.
+   */
+  int                          _resolution = 0;
+
+  /**
+   * Temporary solution and gradient arrays used for interpolating the solution
+   * onto finer grids.
+   */
+  DataHeap::HeapEntries _tempSolution;
+  DataHeap::HeapEntries _tempGradient;
+
+  /**
    * Is obviously only used if we use vtu instead of the vtk legacy format.
    */
   tarch::plotter::griddata::VTUTimeSeriesWriter _timeSeriesWriter;
@@ -73,7 +89,7 @@ private:
    */
   double _time = 0;
 
-  exahype::plotters::Slicer *slicer = nullptr;
+  exahype::plotters::Slicer *_slicer = nullptr;
   static tarch::logging::Log _log;
 
   tarch::plotter::griddata::unstructured::UnstructuredGridWriter*               _gridWriter = nullptr;
@@ -118,7 +134,8 @@ public:
 
   void plotPatch(
       const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
-      const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* u,
+      const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch,
+      double* u,
       double timeStamp);
 
   virtual void startPlotting( double time );

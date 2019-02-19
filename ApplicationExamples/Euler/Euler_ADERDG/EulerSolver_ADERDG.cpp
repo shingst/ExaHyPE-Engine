@@ -58,7 +58,7 @@ void Euler::EulerSolver_ADERDG::init(const std::vector<std::string>& cmdlineargs
   }
 }
 
-void Euler::EulerSolver_ADERDG::flux(const double* const Q, double** F) {
+void Euler::EulerSolver_ADERDG::flux(const double* const Q, double** const F) {
   #ifdef SymbolicVariables
   ReadOnlyVariables vars(Q);
   Fluxes f(F);
@@ -112,7 +112,7 @@ void Euler::EulerSolver_ADERDG::flux(const double* const Q, double** F) {
 
 void Euler::EulerSolver_ADERDG::eigenvalues(const double* const Q,
     const int direction,
-    double* lambda) {
+    double* const lambda) {
   #ifdef SymbolicVariables
   ReadOnlyVariables vars(Q);
   Variables eigs(lambda);
@@ -146,7 +146,7 @@ void Euler::EulerSolver_ADERDG::eigenvalues(const double* const Q,
   #endif
 }
 
-void Euler::EulerSolver_ADERDG::entropyWave(const double* const x,double t, double* Q) {
+void Euler::EulerSolver_ADERDG::entropyWave(const double* const x,double t, double* const Q) {
   const double gamma         = 1.4;
   constexpr double width     = 0.3;
   constexpr double amplitude = 0.3;
@@ -171,7 +171,7 @@ void Euler::EulerSolver_ADERDG::entropyWave(const double* const x,double t, doub
   Q[4] = p / (gamma-1)  +  0.5*Q[0] * (v0[0]*v0[0]+v0[1]*v0[1]); // v*v; assumes: v0[2]=0
 }
 
-void Euler::EulerSolver_ADERDG::sodShockTube(const double* const x, const double t, double* Q) {
+void Euler::EulerSolver_ADERDG::sodShockTube(const double* const x, const double t, double* const Q) {
   // Initial data
   constexpr double gamma     =1.39999999999999991118;
   constexpr double x_0       =0.50000000000000000000;
@@ -251,7 +251,7 @@ void Euler::EulerSolver_ADERDG::sodShockTube(const double* const x, const double
   }
 }
 
-void Euler::EulerSolver_ADERDG::sphericalExplosion(const double* const x,double t, double* Q) {
+void Euler::EulerSolver_ADERDG::sphericalExplosion(const double* const x,double t, double* const Q) {
   constexpr double x0[3]   = {0.5, 0.5, 0.5};
   constexpr double radius  = 0.25;
   constexpr double radius2 = radius*radius;
@@ -286,7 +286,7 @@ void Euler::EulerSolver_ADERDG::sphericalExplosion(const double* const x,double 
   }
 }
 
-void Euler::EulerSolver_ADERDG::rarefactionWave(const double* const x,double t, double* Q) {
+void Euler::EulerSolver_ADERDG::rarefactionWave(const double* const x,double t, double* const Q) {
   constexpr double gamma = 1.4;
   constexpr double width = 0.25;
   constexpr double x0[3] = { 0.5, 0.5, 0.5 };
@@ -310,7 +310,7 @@ void Euler::EulerSolver_ADERDG::rarefactionWave(const double* const x,double t, 
   }
 }
 
-void Euler::EulerSolver_ADERDG::referenceSolution(const double* const x,double t, double* Q) {
+void Euler::EulerSolver_ADERDG::referenceSolution(const double* const x,double t, double* const Q) {
   switch (ReferenceChoice) {
   case Reference::SodShockTube:
     sodShockTube(x,t,Q);
@@ -327,7 +327,7 @@ void Euler::EulerSolver_ADERDG::referenceSolution(const double* const x,double t
   }
 }
 
-void Euler::EulerSolver_ADERDG::adjustPointSolution(const double* const x,const double t,const double dt, double* Q) {
+void Euler::EulerSolver_ADERDG::adjustPointSolution(const double* const x,const double t,const double dt, double* const Q) {
   if (tarch::la::equals(t, 0.0)) {
     referenceSolution(x,0.0,Q);
   }
@@ -335,7 +335,7 @@ void Euler::EulerSolver_ADERDG::adjustPointSolution(const double* const x,const 
 
 exahype::solvers::Solver::RefinementControl
 Euler::EulerSolver_ADERDG::refinementCriterion(
-    const double* luh, const tarch::la::Vector<DIMENSIONS, double>& center,
+    const double* const luh, const tarch::la::Vector<DIMENSIONS, double>& center,
     const tarch::la::Vector<DIMENSIONS, double>& dx, double t,
     const int level) {
   double largestRho   = -std::numeric_limits<double>::max();
@@ -366,7 +366,7 @@ Euler::EulerSolver_ADERDG::refinementCriterion(
 void Euler::EulerSolver_ADERDG::boundaryValues(const double* const x, const double t,const double dt,
     const int faceIndex,const int direction,
     const double* const fluxIn,const double* const stateIn,
-    double* fluxOut, double* stateOut) {
+    double* const fluxOut, double* const stateOut) {
   switch (ReferenceChoice) {
   case Reference::SphericalExplosion:
   case Reference::RarefactionWave:
@@ -399,9 +399,7 @@ void Euler::EulerSolver_ADERDG::boundaryValues(const double* const x, const doub
   }
 }
 
-void Euler::EulerSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(
-    double* observables,const int numberOfObservables,
-    const double* const Q) const {
+void Euler::EulerSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(double* const observables, const double* const Q) const {
     std::copy_n(Q, NumberOfVariables, observables);
 }
 

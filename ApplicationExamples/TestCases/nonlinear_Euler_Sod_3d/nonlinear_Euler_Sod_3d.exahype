@@ -58,7 +58,6 @@ exahype-project Euler
     dmp-observables  const     = 2
     dmp-relaxation-parameter   = 1e-2
     dmp-difference-scaling     = 1e-2
-    helper-layers              = 1
     // reference either: sod,entropywave,explosion,rarefactionwave
     constants                  = reference:sod
     

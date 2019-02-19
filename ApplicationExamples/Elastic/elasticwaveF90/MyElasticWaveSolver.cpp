@@ -12,7 +12,7 @@ bool ElasticWave::MyElasticWaveSolver::hasToAdjustSolution(const tarch::la::Vect
   return false;
 }
 
-void ElasticWave::MyElasticWaveSolver::adjustedSolutionValues(const double* const x,const double w,const double t,const double dt,double* Q) {
+void ElasticWave::MyElasticWaveSolver::adjustedSolutionValues(const double* const x,const double w,const double t,const double dt,double* const Q) {
   // Dimensions             = 3
   // Number of variables    = 9 (#unknowns + #parameters)
   
@@ -35,13 +35,13 @@ void ElasticWave::MyElasticWaveSolver::adjustedSolutionValues(const double* cons
   Q[8] = 0.0;
 }
 
-exahype::solvers::Solver::RefinementControl ElasticWave::MyElasticWaveSolver::refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
+exahype::solvers::Solver::RefinementControl ElasticWave::MyElasticWaveSolver::refinementCriterion(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
   // @todo Please implement/augment if required
   return exahype::solvers::Solver::RefinementControl::Keep;
 }
 
 
-// void ElasticWave::MyElasticWaveSolver::eigenvalues(const double* const Q,const int normalNonZeroIndex,double* lambda) {
+// void ElasticWave::MyElasticWaveSolver::eigenvalues(const double* const Q,const int normalNonZeroIndex,double* const lambda) {
 //   // Dimensions             = 3
 //   // Number of variables    = 9 (#unknowns + #parameters)
   
@@ -57,7 +57,7 @@ exahype::solvers::Solver::RefinementControl ElasticWave::MyElasticWaveSolver::re
 //   lambda[8] = 0.0;
 // }
 
-// void ElasticWave::MyElasticWaveSolver::flux(const double* const Q,double** F) {
+// void ElasticWave::MyElasticWaveSolver::flux(const double* const Q,double** const F) {
 //   // Dimensions             = 3
 //   // Number of variables    = 9 (#unknowns + #parameters)
   
@@ -94,7 +94,7 @@ exahype::solvers::Solver::RefinementControl ElasticWave::MyElasticWaveSolver::re
 // }
 
 
-// void ElasticWave::MyElasticWaveSolver::algebraicSource(const double* const Q,double* S) {
+// void ElasticWave::MyElasticWaveSolver::algebraicSource(const double* const Q,double* const S) {
 //   // Dimensions             = 3
 //   // Number of variables    = 9 (#unknowns + #parameters)
   
@@ -113,7 +113,7 @@ exahype::solvers::Solver::RefinementControl ElasticWave::MyElasticWaveSolver::re
 
 void ElasticWave::MyElasticWaveSolver::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,
   const double * const fluxIn,const double* const stateIn,
-  double *fluxOut,double* stateOut) {
+  double* const fluxOut,double* const stateOut) {
   // Dimensions             = 3
   // Number of variables    = 9 (#unknowns + #parameters)
 
@@ -140,7 +140,7 @@ void ElasticWave::MyElasticWaveSolver::boundaryValues(const double* const x,cons
 }
 
 
-// void ElasticWave::MyElasticWaveSolver::nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) {
+// void ElasticWave::MyElasticWaveSolver::nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ) {
 //   // Dimensions             = 3
 //   // Number of variables    = 9 (#unknowns + #parameters)
 
@@ -157,7 +157,7 @@ void ElasticWave::MyElasticWaveSolver::boundaryValues(const double* const x,cons
 // }
 
     
-// void ElasticWave::MyElasticWaveSolver::coefficientMatrix(const double* const Q,const int normalNonZero,double* Bn) {
+// void ElasticWave::MyElasticWaveSolver::coefficientMatrix(const double* const Q,const int normalNonZero,double* const Bn) {
 //   // Dimensions             = 3
 //   // Number of variables    = 9 (#unknowns + #parameters)
   

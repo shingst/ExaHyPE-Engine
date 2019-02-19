@@ -27,7 +27,7 @@ void GPRDIM::DIMSolver_FV::init(const std::vector<std::string>& cmdlineargs,cons
 	std::cout << md << std::endl;
 }
 
-void GPRDIM::DIMSolver_FV::adjustSolution(const double* const x,const double t,const double dt, double* Q) {
+void GPRDIM::DIMSolver_FV::adjustSolution(const double* const x,const double t,const double dt, double* const Q) {
   // Dimensions             = 2
   // Number of variables    = 24 + #parameters
   
@@ -42,7 +42,7 @@ void GPRDIM::DIMSolver_FV::adjustSolution(const double* const x,const double t,c
   // Place here the code for the dynamic rupture
 }
 
-void GPRDIM::DIMSolver_FV::eigenvalues(const double* const Q, const int dIndex, double* lambda) {
+void GPRDIM::DIMSolver_FV::eigenvalues(const double* const Q, const int dIndex, double* const lambda) {
   // Dimensions             = 2
   // Number of variables    = 24 + #parameters
   
@@ -58,7 +58,7 @@ void GPRDIM::DIMSolver_FV::boundaryValues(
     const int faceIndex,
     const int d,
     const double* const stateInside,
-    double* stateOutside) {
+    double* const stateOutside) {
 	// Local variables
 	const int nVar = GPRDIM::AbstractDIMSolver_FV::NumberOfVariables;	
 	double Qgp[nVar];
@@ -82,7 +82,7 @@ void GPRDIM::DIMSolver_FV::boundaryValues(
 //to add new PDEs specify them in the specification file, delete this file and its header and rerun the toolkit
 
 
-void GPRDIM::DIMSolver_FV::flux(const double* const Q,double** F) {
+void GPRDIM::DIMSolver_FV::flux(const double* const Q,double** const F) {
 	const int nVar = GPRDIM::AbstractDIMSolver_FV::NumberOfVariables;
 	if(DIMENSIONS == 2){
 		double F_3[nVar];
@@ -95,7 +95,7 @@ void GPRDIM::DIMSolver_FV::flux(const double* const Q,double** F) {
 
 
 //You can either implement this method or modify fusedSource
-void GPRDIM::DIMSolver_FV::algebraicSource(const double* const Q,double* S) {
+void GPRDIM::DIMSolver_FV::algebraicSource(const double* const Q,double* const S) {
 	//S[0] = 0.0;
 	//S[1] = 0.0;
 	//S[2] = 0.0;
@@ -123,11 +123,11 @@ void GPRDIM::DIMSolver_FV::algebraicSource(const double* const Q,double* S) {
 	pdesource_(S, Q);
 }
 
-void  GPRDIM::DIMSolver_FV::nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) {
+void  GPRDIM::DIMSolver_FV::nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ) {
 	pdencp_(BgradQ, Q, gradQ);
 }
 
-double GPRDIM::DIMSolver_FV::riemannSolver(double* fL, double *fR, const double* qL, const double* qR, int direction) {
+double GPRDIM::DIMSolver_FV::riemannSolver(double* const fL, double* const fR, const double* const qL, const double* const qR, int direction) {
   const int numberOfVariables  = GPRDIM::AbstractDIMSolver_FV::NumberOfVariables;
   const int numberOfParameters = GPRDIM::AbstractDIMSolver_FV::NumberOfParameters;
   const int numberOfData       = numberOfVariables+numberOfParameters;

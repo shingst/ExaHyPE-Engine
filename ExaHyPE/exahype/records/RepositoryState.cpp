@@ -50,13 +50,14 @@ std::string exahype::records::RepositoryState::toString(const Action& param) {
       case UseAdapterMergeNeighbours: return "UseAdapterMergeNeighbours";
       case UseAdapterUpdateAndReduce: return "UseAdapterUpdateAndReduce";
       case UseAdapterPrediction: return "UseAdapterPrediction";
+      case UseAdapterCorrection: return "UseAdapterCorrection";
       case NumberOfAdapters: return "NumberOfAdapters";
    }
    return "undefined";
 }
 
 std::string exahype::records::RepositoryState::getActionMapping() {
-   return "Action(WriteCheckpoint=0,ReadCheckpoint=1,Terminate=2,RunOnAllNodes=3,UseAdapterMeshRefinement=4,UseAdapterMeshRefinementAndPlotTree=5,UseAdapterFinaliseMeshRefinement=6,UseAdapterFinaliseMeshRefinementOrLocalRollback=7,UseAdapterInitialPrediction=8,UseAdapterFusedTimeStep=9,UseAdapterPredictionRerun=10,UseAdapterBroadcastAndDropNeighbourMessages=11,UseAdapterRefinementStatusSpreading=12,UseAdapterPredictionOrLocalRecomputation=13,UseAdapterMergeNeighbours=14,UseAdapterUpdateAndReduce=15,UseAdapterPrediction=16,NumberOfAdapters=17)";
+   return "Action(WriteCheckpoint=0,ReadCheckpoint=1,Terminate=2,RunOnAllNodes=3,UseAdapterMeshRefinement=4,UseAdapterMeshRefinementAndPlotTree=5,UseAdapterFinaliseMeshRefinement=6,UseAdapterFinaliseMeshRefinementOrLocalRollback=7,UseAdapterInitialPrediction=8,UseAdapterFusedTimeStep=9,UseAdapterPredictionRerun=10,UseAdapterBroadcastAndDropNeighbourMessages=11,UseAdapterRefinementStatusSpreading=12,UseAdapterPredictionOrLocalRecomputation=13,UseAdapterMergeNeighbours=14,UseAdapterUpdateAndReduce=15,UseAdapterPrediction=16,UseAdapterCorrection=17,NumberOfAdapters=18)";
 }
 
 

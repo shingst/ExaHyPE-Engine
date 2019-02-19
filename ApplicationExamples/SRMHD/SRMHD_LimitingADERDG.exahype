@@ -46,8 +46,9 @@ exahype-project MHD
   end distributed-memory
 
   global-optimisation
-    fuse-algorithmic-steps          = off
-    fuse-algorithmic-steps-factor   = 0.99
+    fuse-algorithmic-steps          = none
+    fuse-algorithmic-steps-rerun-factor   = 0.99
+    fuse-algorithmic-steps-diffusion-factor   = 0.99
     spawn-predictor-as-background-thread = off
     spawn-amr-background-threads         = off
     /* 0.0 und 0.8 sind schon mal zwei Faktoren */
@@ -73,7 +74,6 @@ exahype-project MHD
     dmp-observables                = 2
     dmp-relaxation-parameter       = 1e-4
     dmp-difference-scaling         = 1e-3
-    steps-till-cured               = 2
 
     plot vtk::Cartesian::vertices::ascii ConservedWriter
       variables const = 9

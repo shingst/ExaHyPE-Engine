@@ -15,6 +15,7 @@
 #define _EXAHYPE_STATE_H_
 
 #include "exahype/records/State.h"
+#include "exahype/records/RepositoryState.h"
 #include "peano/grid/State.h"
 
 #include <vector>
@@ -22,28 +23,19 @@
 
 #include "peano/grid/Checkpoint.h"
 
+/**
+ * Forward declaration
+ */
 namespace exahype {
-class State;
+  class State;
+  class Vertex;
+  class Cell;
 
-/**
- * Forward declaration
- */
-class Vertex;
-/**
- * Forward declaration
- */
-class Cell;
-
-namespace repositories {
-  /**
-   * Forward declaration
-   */
-  class RepositoryArrayStack;
+  namespace repositories {
+    class RepositoryArrayStack;
     class RepositorySTDStack;
   }
 }
-
-
 
 /**
  * Blueprint for solver state.
@@ -54,6 +46,11 @@ namespace repositories {
  */
 class exahype::State : public peano::grid::State<exahype::records::State> {
  private:
+  static tarch::logging::Log _log;
+
+  static int CurrentBatchIteration;
+  static int NumberOfBatchIterations;
+
   typedef class peano::grid::State<exahype::records::State> Base;
 
   /**
@@ -66,6 +63,61 @@ class exahype::State : public peano::grid::State<exahype::records::State> {
       peano::grid::Checkpoint<Vertex, Cell>& checkpoint) const;
   void readFromCheckpoint(
       const peano::grid::Checkpoint<Vertex, Cell>& checkpoint);
+
+  /**
+   * Kick off an iteration, i.e. reset values that are reduced over the cells (and MPI ranks).
+   *
+   * @param action                  repository action indicating what time step (fused vs non-fused) is run
+   * @param currentBatchIteration   the current batch iteration
+   * @param numberOfBatchIterations the total number of batch iterations.
+   */
+  static void kickOffIteration(exahype::records::RepositoryState::Action action,const int currentBatchIteration,const int numberOfIterations);
+
+  /**
+   * Static callback to kick off and iteration and perform global broadcasts between working nodes.
+   * Calls the other method with same name and then performs a global broadcast.
+   *
+   * @note We decided to plug ExaHyPE's iteration kickoff into the RepositorySTDStack as we can then ensure that
+   * (i)  master ranks do not delay their workers.
+   * (ii) boundary data exchange is started in every even sweep (0,2,...) and
+   *      finished in every odd sweep if enclave tasking is used.
+   *
+   * @todo have a tree-based algorithm. Problem: NodePool does not reveal worker nodes.
+   *
+   * @note private scope since we are friends with the Repositories.
+   *
+   * @param repositoryState         Stores information about the currently run adapter and the number of batch iterations.
+   * @param solverState             Stores information about the grid.
+   * @param currentBatchIteration   the current batch iteration.
+   */
+  static void kickOffIteration(exahype::records::RepositoryState& repositoryState, exahype::State& solverState, const int currentBatchIteration);
+
+// /**                                                                                                                                        //
+//  * Wrap up an iterations, i.e. make use of values that are reduced over the cells (and MPI ranks).                                         //
+//  *                                                                                                                                         //
+//  * @param action                  repository action indicating what time step (fused vs non-fused) is run                                  //
+//  * @param currentBatchIteration   the current batch iteration                                                                              //
+//  * @param numberOfBatchIterations the total number of batch iterations.                                                                    //
+//  */                                                                                                                                        //
+// static void wrapUpIteration(exahype::records::RepositoryState::Action action,const int currentBatchIteration,const int numberOfIterations);//
+
+  /**
+   * Static callback to wrap up an iteration.
+   *
+   * @note We decided to plug ExaHyPE's iteration wrap up into the RepositorySTDStack as we can then ensure that
+   * boundary data exchange is started in every even sweep (0,2,...) and
+   * finished in every odd sweep if enclave tasking is used.
+   *
+   * @note Reductions are still performed in the respective mappings via
+   * Peano's prepareSendToMaster/Worker, mergeWithMaster methods.
+   *
+   * @note private scope since we are friends with the Repositories.
+   *
+   * @param repositoryState         Stores information about the currently run adapter and the number of batch iterations.
+   * @param solverState             Stores information about the grid.
+   * @param currentBatchIteration   the current batch iteration.
+   */
+  static void wrapUpIteration(exahype::records::RepositoryState& repositoryState, exahype::State& solverState, const int currentBatchIteration);
 
  public:
   /**
@@ -115,74 +167,6 @@ class exahype::State : public peano::grid::State<exahype::records::State> {
      */
     PredictionRerunAllSend
   };
-
-  /**
-   * A flag indicating that the bounding box
-   * has been virtually expanded (or not).
-   *
-   * \note In case the bounding box has been expanded,
-   * the computational domain usually shrinks
-   * since only those cells are considered
-   * as inside which have only inside or
-   * boundary vertices.
-   * A cell is considered as outside
-   * if it has at least one(!) outside vertex.
-   *
-   * TODO(Dominic): Make private and hide in init function
-   */
-  static bool VirtuallyExpandBoundingBox;
-
-  #ifdef Parallel //TODO Dominic fix, had to comment for single core to compile (JMG)
-  /**
-   * Toggle switches used by the Prediction* and FusedTimeStep
-   * mappings where we turn broadcasts and reduction on and
-   * off in certain batch iterations.
-   *
-   * \note Use this switches only
-   */
-  static bool BroadcastInThisIteration;
-  static bool ReduceInThisIteration;
-  #endif
-
-  /**
-   * \return true if we run no batch or if
-   * we are in the first iteration of a batch (iteration: 0).
-   *
-   * \note It makes only sense to query the batch state from
-   * within a mapping.
-   */
-  bool isFirstIterationOfBatchOrNoBatch() const;
-  
-
-  /**
-   * \return true if we run no batch or if
-   * we are in the second iteration of a batch (iteration: 1).
-   *
-   * \note It makes only sense to query the batch state from
-   * within a mapping.
-   */
-  bool isSecondIterationOfBatchOrNoBatch() const;
-
-  /**
-   * \return true if we run no batch or if
-   * we are in the last iteration of a batch (iteration: #iterations-1)
-   *
-   * \note It makes only sense to query the batch state from
-   * within a mapping.
-   */
-  bool isLastIterationOfBatchOrNoBatch() const;
-
-  /**
-   * \return true if we run no batch or if
-   * we are in the second to last iteration of a batch (iteration: #iterations-2)
-   *
-   * \note It makes only sense to query the batch state from
-   * within a mapping.
-   *
-   * \note This function takes the role of isLastIterationOfBatchOrNoBatch() when we use
-   * two Prediction or FusedTimeStep sweeps.
-   */
-  bool isSecondToLastIterationOfBatchOrNoBatch() const;
 
   /**
    * Default Constructor
@@ -267,6 +251,89 @@ class exahype::State : public peano::grid::State<exahype::records::State> {
    * Please consult Peano guidebook Section 6.3.2 for details.
    */
   bool continueToConstructGrid() const;
+
+  /**
+   * @return if we are in an even batch iterations, i.e.
+   * CurrentBatchIteration % 2 == 0.
+   */
+  static bool isEvenBatchIteration();
+
+  /**
+   * \return true if we run no batch or if
+   * we are in the first iteration of a batch (iteration: 0).
+   *
+   * \note It makes only sense to query the batch state from
+   * within a mapping.
+   */
+  static bool isFirstIterationOfBatchOrNoBatch();
+
+  /**
+   * \return true if we run no batch or if
+   * we are in the second iteration of a batch (iteration: 1).
+   *
+   * \note It makes only sense to query the batch state from
+   * within a mapping.
+   */
+  static bool isSecondIterationOfBatchOrNoBatch();
+
+  /**
+   * \return true if we run no batch or if
+   * we are in the last iteration of a batch (iteration: #iterations-1)
+   *
+   * \note It makes only sense to query the batch state from
+   * within a mapping.
+   */
+  static bool isLastIterationOfBatchOrNoBatch();
+
+  /**
+   * \return true if we run no batch or if
+   * we are in the second to last iteration of a batch (iteration: #iterations-2)
+   *
+   * \note It makes only sense to query the batch state from
+   * within a mapping.
+   *
+   * \note This function takes the role of isLastIterationOfBatchOrNoBatch() when we use
+   * two Prediction or FusedTimeStep sweeps.
+   */
+  static bool isSecondToLastIterationOfBatchOrNoBatch();
+
+  #ifdef Parallel
+  /*!
+   * Send data such global solver and plotter
+   * time step data down to a worker.
+   */
+  static void broadcastGlobalDataToWorker(
+      const int                                   worker,
+      const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+      const int                                   level);
+
+  /*!
+   * Merge with global data, such as global solver and plotter
+   * time step data, sent down from the master.
+   */
+  static void mergeWithGlobalDataFromMaster(
+      const int                                   master,
+      const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+      const int                                   level);
+
+  /*!
+   * Send data such global solver
+   * time step data up to the master.
+   */
+  static void reduceGlobalDataToMaster(
+    const int                                   master,
+    const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+    const int                                   level);
+
+  /*!
+   * Merge with global data, such as global solver
+   * time step data, sent up from the master.
+   */
+  static void mergeWithGlobalDataFromWorker(
+      const int                                   worker,
+      const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+      const int                                   level);
+  #endif
 };
 
 #endif

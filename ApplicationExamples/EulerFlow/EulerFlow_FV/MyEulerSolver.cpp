@@ -20,19 +20,19 @@ bool Euler::MyEulerSolver::useAdjustSolution(
 
 void Euler::MyEulerSolver::adjustSolution(const double* const x,
                                                const double t,
-                                               const double dt, double* Q) {
+                                               const double dt, double* const Q) {
   if (tarch::la::equals(t, 0.0)) {
     initialData(x,Q);
   } 
 }
 
-exahype::solvers::Solver::RefinementControl Euler::MyEulerSolver::refinementCriterion(const double* luh, const tarch::la::Vector<DIMENSIONS, double>& center,const tarch::la::Vector<DIMENSIONS, double>& dx, double t,const int level) {
+exahype::solvers::Solver::RefinementControl Euler::MyEulerSolver::refinementCriterion(const double* const luh, const tarch::la::Vector<DIMENSIONS, double>& center,const tarch::la::Vector<DIMENSIONS, double>& dx, double t,const int level) {
   // @todo Please implement
   return exahype::solvers::Solver::RefinementControl::Keep;
 }
 
 
-void Euler::MyEulerSolver::eigenvalues(const double* const Q, const int normalNonZeroIndex, double* lambda) {
+void Euler::MyEulerSolver::eigenvalues(const double* const Q, const int normalNonZeroIndex, double* const lambda) {
   ReadOnlyVariables vars(Q);
   Variables eigs(lambda);
 
@@ -48,7 +48,7 @@ void Euler::MyEulerSolver::eigenvalues(const double* const Q, const int normalNo
   eigs.j(u_n,u_n,u_n);
 }
 
-void Euler::MyEulerSolver::flux(const double* const Q, double** F) {
+void Euler::MyEulerSolver::flux(const double* const Q, double** const F) {
   ReadOnlyVariables vars(Q);
   Fluxes f(F);
 
@@ -73,7 +73,7 @@ void Euler::MyEulerSolver::boundaryValues(
     const int faceIndex,
     const int normalNonZero,
     const double* const stateIn,
-    double* stateOut) {
+    double* const stateOut) {
 
   // Compute boundary state.
   for (int i=0; i<NumberOfVariables+NumberOfParameters; i++) {

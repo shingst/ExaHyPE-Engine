@@ -163,9 +163,11 @@ void exahype::mappings::MergeNeighbours::mergeWithNeighbour(
   logTraceOut( "mergeWithNeighbour(...)" );
 }
 
-///////////////////////////////////////
-// MASTER->WORKER
-///////////////////////////////////////
+//
+// Below all methods are nop.
+//
+// ====================================
+
 bool exahype::mappings::MergeNeighbours::prepareSendToWorker(
     exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
@@ -174,16 +176,7 @@ bool exahype::mappings::MergeNeighbours::prepareSendToWorker(
     exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
     int worker) {
-  logTraceIn( "prepareSendToWorker(...)" );
-
-  exahype::Cell::broadcastGlobalDataToWorker(
-        worker,
-        fineGridVerticesEnumerator.getCellCenter(),
-        fineGridVerticesEnumerator.getLevel());
-
-  logTraceOutWith1Argument( "prepareSendToWorker(...)", true );
-
-  return true; // see docu
+  return false;
 }
 
 void exahype::mappings::MergeNeighbours::receiveDataFromMaster(
@@ -196,16 +189,8 @@ void exahype::mappings::MergeNeighbours::receiveDataFromMaster(
     const peano::grid::VertexEnumerator& workersCoarseGridVerticesEnumerator,
     exahype::Cell& workersCoarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
-  logTraceIn( "receiveDataFromMaster(...)" );
-
-  exahype::Cell::mergeWithGlobalDataFromMaster(
-      tarch::parallel::NodePool::getInstance().getMasterRank(),
-      receivedVerticesEnumerator.getCellCenter(),
-      receivedVerticesEnumerator.getLevel());
-
-  logTraceOut( "receiveDataFromMaster(...)" );
+  // do nothing
 }
-
 
 void exahype::mappings::MergeNeighbours::mergeWithWorker(
     exahype::Cell& localCell, const exahype::Cell& receivedMasterCell,
@@ -213,11 +198,6 @@ void exahype::mappings::MergeNeighbours::mergeWithWorker(
     const tarch::la::Vector<DIMENSIONS, double>& cellSize, int level) {
   // do nothing
 }
-
-//
-// Below all methods are nop.
-//
-// ====================================
 
 void exahype::mappings::MergeNeighbours::mergeWithRemoteDataDueToForkOrJoin(
     exahype::Vertex& localVertex, const exahype::Vertex& masterOrWorkerVertex,

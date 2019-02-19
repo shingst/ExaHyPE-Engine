@@ -54,8 +54,9 @@ exahype-project GRMHD
   end distributed-memory
 
   global-optimisation
-    fuse-algorithmic-steps          = on
-    fuse-algorithmic-steps-factor   = 0.99
+    fuse-algorithmic-steps          = all
+    fuse-algorithmic-steps-rerun-factor   = 0.99
+    fuse-algorithmic-steps-diffusion-factor   = 0.99
     spawn-predictor-as-background-thread = on
     spawn-update-as-background-thread = on
     spawn-amr-background-threads         = on
@@ -78,6 +79,39 @@ exahype-project GRMHD
     language const                 = C
 
 
+/*
+    plot vtk::Cartesian::vertices::ascii ConservedWriter
+      variables const = 19
+      time      = 0.0
+      repeat    = 0.00590278
+      output    = ./vtk-output/conserved
+    end plot
+    plot vtk::Cartesian::vertices::ascii ConservedWriter
+      variables const = 19
+      time      = 10000.0
+      repeat    = 0.00590278
+      output    = ./vtk-output/cartesian-2d
+      select    = z:0.0
+    end plot
+
+*/
+
+   plot vtk::Cartesian::cells::ascii Density
+      variables const = 2
+      time      = 0.0001
+      repeat    = 0.5
+      output    = ./vtk-output/density
+    end plot
+
+/*
+    plot vtk::Cartesian::cells::ascii PrimitiveWriter
+      variables const = 19
+      time      = 0.0
+      repeat    = 0.1
+      output    = ./vtk-output/primitive
+    end plot
+*/
+
     plot vtk::Cartesian::cells::ascii IntegralsWriter
        variables const = 0
        time = 0.0
@@ -99,6 +133,39 @@ exahype-project GRMHD
          output    = ./vtk-output/primitive
     end plot
 
+
+    plot Carpet::Cartesian::Vertices::hdf5 PrimitiveWriter
+      variables const = 19
+      time = 0.0
+      repeat = 0.01
+      select = one_file_per_timestep:False,all_unknowns_in_one_file:False
+      output = ./hdf5-output/fv-prims3d
+    end plot
+
+
+    plot Carpet::Cartesian::Vertices::hdf5 H5Writer
+      variables const = 9
+      time = 0.0
+      repeat = 0.01
+      select = one_file_per_timestep:False,all_unknowns_in_one_file:False
+      output = ./hdf5-output/fv-demo3d
+    end plot
+    
+    plot Carpet::Cartesian::Vertices::hdf5 H5Writer
+      variables const = 9
+      time = 0.0
+      repeat = 0.01
+      select = z:0,one_file_per_timestep:False,all_unknowns_in_one_file:False
+      output = ./hdf5-output/fv-demo2d
+    end plot
+    
+    plot Carpet::Cartesian::Vertices::hdf5 H5Writer
+      variables const = 9
+      time = 0.0
+      repeat = 0.01
+      select = y:0,z:0,one_file_per_timestep:False,all_unknowns_in_one_file:False
+      output = ./hdf5-output/fv-demo1d
+    end plot
 
   end solver
 

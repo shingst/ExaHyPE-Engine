@@ -19,7 +19,7 @@ void EulerADERDG::MyEulerSolver::init(const std::vector<std::string>& cmdlinearg
 
 
 
-void EulerADERDG::MyEulerSolver::flux(const double* const Q,double** F) {
+void EulerADERDG::MyEulerSolver::flux(const double* const Q,double** const F) {
   ReadOnlyVariables vars(Q);
   Fluxes f(F);
 
@@ -38,7 +38,7 @@ void EulerADERDG::MyEulerSolver::flux(const double* const Q,double** F) {
 }
 
 
-void EulerADERDG::MyEulerSolver::eigenvalues(const double* const Q,const int d,double* lambda) {
+void EulerADERDG::MyEulerSolver::eigenvalues(const double* const Q,const int d,double* const lambda) {
   ReadOnlyVariables vars(Q);
   Variables eigs(lambda);
 
@@ -78,7 +78,7 @@ double EulerADERDG::MyEulerSolver::getInitialProfile(const double* const x) {
   else return 1.0;
 }
 
-void EulerADERDG::MyEulerSolver::adjustPointSolution(const double* const x,const double t,const double dt,double* Q) {
+void EulerADERDG::MyEulerSolver::adjustPointSolution(const double* const x,const double t,const double dt,double* const Q) {
   Variables vars(Q);
   if ( tarch::la::equals( t,0.0 ) ) {
     vars.rho() = 1.0;
@@ -90,7 +90,7 @@ void EulerADERDG::MyEulerSolver::adjustPointSolution(const double* const x,const
 
 void EulerADERDG::MyEulerSolver::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,
   const double * const fluxIn,const double* const stateIn,
-  double *fluxOut,double* stateOut) {
+  double* const fluxOut,double* const stateOut) {
   std::copy_n(stateIn, NumberOfVariables, stateOut);
   stateOut[1+normalNonZero] =  -stateOut[1+normalNonZero];
   double _F[3][NumberOfVariables]={0.0};
@@ -100,7 +100,7 @@ void EulerADERDG::MyEulerSolver::boundaryValues(const double* const x,const doub
 }
 
 
-exahype::solvers::Solver::RefinementControl EulerADERDG::MyEulerSolver::refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
+exahype::solvers::Solver::RefinementControl EulerADERDG::MyEulerSolver::refinementCriterion(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
   double largestE   = -std::numeric_limits<double>::max();
   double smallestE  = +std::numeric_limits<double>::max();
 

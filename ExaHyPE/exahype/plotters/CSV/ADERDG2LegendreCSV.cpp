@@ -177,7 +177,7 @@ void exahype::plotters::ADERDG2LegendreCSV::plotPatch(const int solverNumber,sol
     plotPatch(
         aderdgCellDescription.getOffset(),
         aderdgCellDescription.getSize(), solverSolution,
-        aderdgCellDescription.getCorrectorTimeStamp());
+        aderdgCellDescription.getTimeStamp());
   }
 } // plotPatch(cellDescription)
 

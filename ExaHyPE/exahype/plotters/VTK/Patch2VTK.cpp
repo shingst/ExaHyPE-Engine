@@ -363,7 +363,7 @@ void exahype::plotters::Patch2VTK::plotPatch(const int solverNumber,solvers::Sol
 			if(solverPatch.getType()!=exahype::solvers::ADERDGSolver::CellDescription::Type::Cell)
 				return; // plot only cells
 			solution = static_cast<double*>(solverPatch.getSolution());
-			timeStamp = solverPatch.getCorrectorTimeStamp();
+			timeStamp = solverPatch.getTimeStamp();
 			offsetOfPatch = solverPatch.getOffset(),
 			sizeOfPatch = solverPatch.getSize();
 			level = solverPatch.getLevel();
