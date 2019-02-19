@@ -196,7 +196,8 @@ void exahype::solvers::Solver::ensureAllJobsHaveTerminated(JobType jobType) {
       waitingForRemoteJobs = true;
       logInfo("waitUntilAllBackgroundTasksHaveTerminated()",
           "there are still " << NumberOfRemoteJobs << " remote background job(s) to complete!");
-
+    }
+  }
   #ifdef USE_ITAC
   VT_end(ensureAllJobsHaveTerminatedHandle);
   #endif

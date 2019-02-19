@@ -604,7 +604,6 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
     const int haloCells,
     const int regularisedFineGridLevels,
     const exahype::solvers::Solver::TimeStepping timeStepping,
-    const int limiterHelperLayers,
     const int DMPObservables,
     std::unique_ptr<profilers::Profiler> profiler)
     : Solver(identifier, Solver::Type::ADERDG, numberOfVariables,
@@ -621,7 +620,7 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
      _DMPObservables(DMPObservables),
      _minRefinementStatusForTroubledCell(_refineOrKeepOnFineGrid+3),
      _checkForNaNs(true),
-     _meshUpdateEvent(MeshUpdateEvent::None), 
+     _meshUpdateEvent(MeshUpdateEvent::None) 
 #if defined(DistributedStealing)
         ,_stealingManagerJob(nullptr)
 #endif
@@ -2082,9 +2081,9 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
     if (isSkeletonCell) {
       peano::datatraversal::TaskSet( new PredictionJob(
         *this, cellDescription, cellInfo._cellDescriptionsIndex, element,
-        cellDescription.getCorrectorTimeStamp(),  // corrector time step data is correct; see docu
-        cellDescription.getCorrectorTimeStepSize(),
-        false/*is uncompressed*/, isSkeletonCell ));
+        predictionTimeStamp,  // corrector time step data is correct; see docu
+        predictionTimeStepSize,
+        false/*is uncompressed*/, isSkeletonCell, isLastTimeStepOfBatch ));
       exahype::stealing::StealingProfiler::getInstance().notifySpawnedTask();
     }
     else {
@@ -2108,6 +2107,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
         *this, cellDescription, cellInfo._cellDescriptionsIndex,element,
         predictionTimeStamp, predictionTimeStepSize,
         false/*is uncompressed*/, isSkeletonCell, isLastTimeStepOfBatch/*addVolumeIntegralResultToUpdate*/ ) );
+#endif
   } else {
     predictionAndVolumeIntegralBody(
         cellDescription,

@@ -59,7 +59,6 @@ class exahype::mappings::FinaliseMeshRefinement {
    */
   static bool OneSolverRequestedMeshUpdate;
 
-  /**
   int _numberOfEnclaveCells;
   int _numberOfSkeletonCells;
 
