@@ -2347,8 +2347,8 @@ void exahype::solvers::ADERDGSolver::predictionAndVolumeIntegral(
 #endif
         StealablePredictionJob *stealablePredictionJob = new StealablePredictionJob(*this,
           cellInfo._cellDescriptionsIndex, element,
-          cellDescription.getCorrectorTimeStamp(),
-          cellDescription.getCorrectorTimeStepSize());
+          predictorTimeStamp,
+          predictorTimeStepSize);
         submitOrSendStealablePredictionJob(stealablePredictionJob);
         exahype::stealing::StealingProfiler::getInstance().notifySpawnedTask();
 #ifdef USE_ITAC
@@ -4480,9 +4480,7 @@ void exahype::solvers::ADERDGSolver::submitOrSendStealablePredictionJob(Stealabl
 //         exahype::solvers::ADERDGSolver::StealablePredictionJob::receiveBackHandler,
 //	    exahype::stealing::RequestType::receiveBack, this);
 
-     tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
      NumberOfRemoteJobs++;
-     lock.free();
 
      exahype::stealing::StealingProfiler::getInstance().notifyOffloadedTask(destRank);
      exahype::stealing::PerformanceMonitor::getInstance().decCurrentTasks();
@@ -5087,9 +5085,7 @@ exahype::solvers::ADERDGSolver::StealablePredictionJob::StealablePredictionJob(
         _tag(-1),
         _luh(nullptr),_lduh(nullptr),_lQhbnd(nullptr), _lFhbnd(nullptr)
 {
-  tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
   NumberOfEnclaveJobs++;
-  lock.free();
   exahype::stealing::PerformanceMonitor::getInstance().incCurrentTasks();
 };
 
@@ -5121,13 +5117,11 @@ exahype::solvers::ADERDGSolver::StealablePredictionJob::StealablePredictionJob(
     _dx[i] = dx[i];
   }
 
-  tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
   if(_originRank!=tarch::parallel::Node::getInstance().getRank()) {
     NumberOfStolenJobs++;
   }
   else
-  NumberOfEnclaveJobs++;
-  lock.free();
+    NumberOfEnclaveJobs++;
   exahype::stealing::PerformanceMonitor::getInstance().incCurrentTasks();
 };
 
@@ -5185,7 +5179,8 @@ bool exahype::solvers::ADERDGSolver::StealablePredictionJob::handleLocalExecutio
         cellDescription.getOffset()+0.5*cellDescription.getSize(),
         cellDescription.getSize(),
         _predictorTimeStamp,
-        _predictorTimeStepSize);
+        _predictorTimeStepSize,
+       true);
     cellDescription.setHasCompletedLastStep(true);
 
     exahype::stealing::PerformanceMonitor::getInstance().decRemainingTasks();
@@ -5197,7 +5192,8 @@ bool exahype::solvers::ADERDGSolver::StealablePredictionJob::handleLocalExecutio
         _center,
         _dx,
         _predictorTimeStamp,
-        _predictorTimeStepSize);
+        _predictorTimeStepSize,
+       true);
   }
   exahype::stealing::PerformanceMonitor::getInstance().decCurrentTasks();
 #if defined(StealingUseProfiler)
@@ -5250,10 +5246,8 @@ bool exahype::solvers::ADERDGSolver::StealablePredictionJob::handleLocalExecutio
 #if defined(PerformanceAnalysisStealing)
     watch.startTimer();
 #endif
-    tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
     NumberOfEnclaveJobs--;
     assertion( NumberOfEnclaveJobs>=0 );
-    lock.free();
   }
   return result;
 }
@@ -5296,7 +5290,6 @@ void exahype::solvers::ADERDGSolver::StealablePredictionJob::receiveBackHandler(
   static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapCellDescToTagRank.erase(a_cellDescToTagRank);
   a_cellDescToTagRank.release();
 
-  tarch::multicore::Lock lock2(exahype::BackgroundJobSemaphore);
   NumberOfEnclaveJobs--;
   NumberOfRemoteJobs--;
 
@@ -5310,7 +5303,6 @@ void exahype::solvers::ADERDGSolver::StealablePredictionJob::receiveBackHandler(
 
   assertion( NumberOfEnclaveJobs>=0 );
   assertion( NumberOfRemoteJobs>=0 );
-  lock2.free();
 }
 
 void exahype::solvers::ADERDGSolver::StealablePredictionJob::sendBackHandler(exahype::solvers::Solver* solver, int tag, int remoteRank) {
@@ -5327,10 +5319,8 @@ void exahype::solvers::ADERDGSolver::StealablePredictionJob::sendBackHandler(exa
   delete data;
   static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagRankToStolenData.erase(std::make_pair(remoteRank, tag));
 
-  tarch::multicore::Lock lock2(exahype::BackgroundJobSemaphore);
   NumberOfStolenJobs--;
   assertion( NumberOfStolenJobs>=0 );
-  lock2.free();
 }
 
 void exahype::solvers::ADERDGSolver::StealablePredictionJob::sendHandler(exahype::solvers::Solver* solver, int tag, int remoteRank) {

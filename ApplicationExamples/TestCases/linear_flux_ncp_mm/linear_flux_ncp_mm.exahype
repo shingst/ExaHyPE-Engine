@@ -41,13 +41,14 @@ exahype-project  Elastic
   end shared-memory
  
 
-//   distributed-memory
-//     identifier               = static_load_balancing
-//     configure                = {greedy-naive,FCFS}
-// //    configure                = {hotspot,fair,ranks-per-node:4}
-//     buffer-size              = 64
-//     timeout                  = 60
-//   end distributed-memory
+   distributed-memory
+     identifier               = static_load_balancing
+     configure                = {greedy-naive,FCFS}
+/ //    configure                = {hotspot,fair,ranks-per-node:4}
+     buffer-size              = 64
+     timeout                  = 60
+     stealing                 = none
+   end distributed-memory
 
   global-optimisation
     fuse-algorithmic-steps          = all
