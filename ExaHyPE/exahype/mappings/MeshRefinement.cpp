@@ -259,10 +259,6 @@ void exahype::mappings::MeshRefinement::touchVertexLastTime(
       &&
       refinementControl==exahype::solvers::Solver::RefinementControl::Refine
   ) {
-    if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
-      logInfo("touchVertexLastTime(...)","Create vertex on level="<<coarseGridVerticesEnumerator.getLevel()+1);
-    }
-
     refineSafely(fineGridVertex,fineGridH,coarseGridVerticesEnumerator.getLevel()+1,false);
   } else if (
       refinementControl==exahype::solvers::Solver::RefinementControl::Erase
