@@ -20,8 +20,7 @@ GRMHDb::GRMHDbSolver::GRMHDbSolver(
         const exahype::solvers::Solver::TimeStepping timeStepping,
         const int DMPObservables,
         const double DMPRelaxationParameter,
-        const double DMPDifferenceScaling,
-        const int iterationsToCureTroubledCell 
+        const double DMPDifferenceScaling
 ) :
   exahype::solvers::LimitingADERDGSolver::LimitingADERDGSolver(
       "GRMHDbSolver",
@@ -30,8 +29,7 @@ GRMHDb::GRMHDbSolver::GRMHDbSolver(
     new GRMHDb::GRMHDbSolver_FV(
       maximumMeshSize, timeStepping),
     DMPRelaxationParameter,
-    DMPDifferenceScaling,
-    iterationsToCureTroubledCell) {}
+    DMPDifferenceScaling) {}
 
 void GRMHDb::GRMHDbSolver::projectOnFVLimiterSpace(const double* const luh, double* const lim) const {
   kernels::limiter::generic::c::projectOnFVLimiterSpace<Order+1,NumberOfVariables+NumberOfParameters,GhostLayerWidth>(luh, lim);

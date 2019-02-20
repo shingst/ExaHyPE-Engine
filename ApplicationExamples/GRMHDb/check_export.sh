@@ -2,6 +2,8 @@ echo "COMPILER:" $COMPILER
 echo "MODE:" $MODE
 echo "SHAREDMEM:" $SHAREDMEM
 echo "DISTRIBUTEDMEM:" $DISTRIBUTEDMEM
+echo "USE_IPO:" $USE_IPO
+
 
 echo "OMP_NUM_THREADS:" $OMP_NUM_THREADS
 # this is for IBM mpi: 

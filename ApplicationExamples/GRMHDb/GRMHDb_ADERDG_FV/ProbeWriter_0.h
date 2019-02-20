@@ -4,20 +4,20 @@
 // ========================
 //   www.exahype.eu
 // ========================
-#ifndef POSTPROCESSING_PrimitiveWriterSubcellVTK_CLASS_HEADER_
-#define POSTPROCESSING_PrimitiveWriterSubcellVTK_CLASS_HEADER_
+#ifndef POSTPROCESSING_ProbeWriter_0_CLASS_HEADER_
+#define POSTPROCESSING_ProbeWriter_0_CLASS_HEADER_
 
 #include "exahype/plotters/Plotter.h"
 
 namespace GRMHDb {
   class GRMHDbSolver;
-  class PrimitiveWriterSubcellVTK;
+  class ProbeWriter_0;
 }
 
-class GRMHDb::PrimitiveWriterSubcellVTK : public exahype::plotters::Plotter::UserOnTheFlyPostProcessing {
+class GRMHDb::ProbeWriter_0 : public exahype::plotters::Plotter::UserOnTheFlyPostProcessing {
 public:
-  PrimitiveWriterSubcellVTK(GRMHDb::GRMHDbSolver& solver);
-  virtual ~PrimitiveWriterSubcellVTK();
+  ProbeWriter_0(GRMHDb::GRMHDbSolver& solver);
+  virtual ~ProbeWriter_0();
 
   void startPlotting(double time) override;
   void finishPlotting() override;
@@ -31,4 +31,4 @@ public:
     double timeStamp) override;
 };
 
-#endif /* POSTPROCESSING_PrimitiveWriterSubcellVTK_CLASS_HEADER_ */
+#endif /* POSTPROCESSING_ProbeWriter_0_CLASS_HEADER_ */
