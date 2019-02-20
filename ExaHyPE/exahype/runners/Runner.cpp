@@ -564,7 +564,7 @@ exahype::runners::Runner::determineScaledDomainSize(
   tarch::la::Vector<DIMENSIONS, double> scaledDomainSize =
       domainSize / meshSize;
   for(int i=0; i<DIMENSIONS; i++) {
-    scaledDomainSize[i] = std::ceil(scaledDomainSize[i]) * meshSize;
+    scaledDomainSize[i] = std::ceil(scaledDomainSize[i] - 1e-11) * meshSize;
   }
   return scaledDomainSize;
 }
@@ -590,20 +590,20 @@ exahype::repositories::Repository* exahype::runners::Runner::createRepository() 
   int boundingBoxMeshLevel = coarsestUserMeshLevel;
   tarch::la::Vector<DIMENSIONS,double> boundingBoxOffset = _domainOffset;
 
+  double boundingBoxMeshSpacing = -1;
   if ( _parser.getScaleBoundingBox() ) {
+    const int cellsOutside = 2*(2+3*_parser.getScaleBoundingBoxMultiplier());
+
     const double coarsestUserMeshSpacing =
         exahype::solvers::Solver::getCoarsestMaximumMeshSizeOfAllSolvers();
     const double maxDomainExtent = tarch::la::max(_domainSize);
 
     double boundingBoxScaling     = 0;
     double boundingBoxExtent      = 0;
-    double boundingBoxMeshSpacing = std::numeric_limits<double>::infinity();
-
     int level = coarsestUserMeshLevel; // level=1 means a single cell
-    const int multiplier = _parser.getScaleBoundingBoxMultiplier();
-    while (boundingBoxMeshSpacing > coarsestUserMeshSpacing) {
+    while (boundingBoxMeshSpacing < 0 || boundingBoxMeshSpacing > coarsestUserMeshSpacing) {
       const double boundingBoxMeshCells = std::pow(3,level-1);
-      boundingBoxScaling                = boundingBoxMeshCells / ( boundingBoxMeshCells - 2*(2+3*multiplier) ); // two cells are removed on each side
+      boundingBoxScaling                = boundingBoxMeshCells / ( boundingBoxMeshCells - cellsOutside ); // two cells are removed on each side
       boundingBoxExtent                 = boundingBoxScaling * maxDomainExtent;
       boundingBoxMeshSpacing            = boundingBoxExtent/boundingBoxMeshCells;
       level++;
@@ -614,13 +614,14 @@ exahype::repositories::Repository* exahype::runners::Runner::createRepository() 
     assertion6(boundingBoxScaling>=1.0,boundingBoxScaling,boundingBoxExtent,boundingBoxMeshSpacing,boundingBoxMeshLevel,coarsestUserMeshSpacing,maxDomainExtent);
 
     _boundingBoxSize    *= boundingBoxScaling;
-    boundingBoxOffset   -= boundingBoxMeshSpacing;
+    boundingBoxOffset   -= 0.5*cellsOutside*boundingBoxMeshSpacing;
+  } else {
+    boundingBoxMeshSpacing = determineCoarsestMeshSize(_domainSize);
   }
 
   const double coarsestUserMeshSize = exahype::solvers::Solver::getCoarsestMaximumMeshSizeOfAllSolvers();
-  const double coarsestMeshSize     = determineCoarsestMeshSize(_boundingBoxSize);
   tarch::la::Vector<DIMENSIONS,double> scaledDomainSize =
-      determineScaledDomainSize(_domainSize,coarsestMeshSize);
+      determineScaledDomainSize(_domainSize,boundingBoxMeshSpacing);
 
   if ( tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getGlobalMasterRank() ) {
     if (!tarch::la::equals(_domainSize,scaledDomainSize)) {
@@ -629,7 +630,7 @@ exahype::repositories::Repository* exahype::runners::Runner::createRepository() 
           << _domainSize << " since non-cubic domain was specified");
     }
     logInfo("createRepository(...)",
-        "coarsest mesh size was chosen as " << coarsestMeshSize << " based on user's maximum mesh size "<<
+        "coarsest mesh size was chosen as " << boundingBoxMeshSpacing << " based on user's maximum mesh size "<<
         coarsestUserMeshSize << " and length of longest edge of domain " << tarch::la::max(scaledDomainSize));
     if (boundingBoxMeshLevel!=coarsestUserMeshLevel) {
       logInfo("createRepository(...)",
