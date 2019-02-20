@@ -316,12 +316,18 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
 
   if ( _parser.useManualPinning() ) {
     #if defined(TBBInvade)
-    logWarning("initSharedMemoryConfiguration()", "TBBInvade always pins threads automatically, i.e. manual pinning is ignored" );
+    if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+      logWarning("initSharedMemoryConfiguration()", "TBBInvade always pins threads automatically, i.e. manual pinning is ignored" );
+    }
     #elif defined(SharedTBB) || defined(SharedCPP)
-    logInfo("initSharedMemoryConfiguration()", "manual pinning switched on" );
+    if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+      logInfo("initSharedMemoryConfiguration()", "manual pinning switched on" );
+    }
     tarch::multicore::Core::getInstance().pinThreads( true );
     #else
-    logWarning("initSharedMemoryConfiguration()", "manual pinning only supported for TBB" );
+    if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+      logWarning("initSharedMemoryConfiguration()", "manual pinning only supported for TBB" );
+    }
     #endif
   }
 
@@ -346,8 +352,10 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
     }
   } else if ( _parser.getSpawnHighPriorityBackgroundJobsAsATask() ) {
     if ( _parser.getRunLowPriorityJobsOnlyIfNoHighPriorityJobIsLeft() ) { // low priority behaviour
-      logWarning("initSharedMemoryConfiguration()","There exists no high priority job queue if we spawn high priority jobs directly as TBB tasks. "<<
-                  "Fall back to 'run_always' low priority job processing strategy.");
+      if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+        logWarning("initSharedMemoryConfiguration()","There exists no high priority job queue if we spawn high priority jobs directly as TBB tasks. "<<
+                   "Fall back to 'run_always' low priority job processing strategy.");
+      }
     }
     if ( _parser.getSpawnLowPriorityBackgroundJobsAsATask() ){
       tarch::multicore::jobs::setHighPriorityJobBehaviour(
@@ -373,8 +381,10 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
 
   switch (_parser.getMulticoreOracleType()) {
   case exahype::parser::Parser::MulticoreOracleType::Dummy:
-    logInfo("initSharedMemoryConfiguration()",
-        "use dummy shared memory oracle");
+    if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+      logInfo("initSharedMemoryConfiguration()",
+              "use dummy shared memory oracle");
+    }
     peano::datatraversal::autotuning::Oracle::getInstance().setOracle(
       new peano::datatraversal::autotuning::OracleForOnePhaseDummy(
          true,  //   bool useMultithreading                  = true,
