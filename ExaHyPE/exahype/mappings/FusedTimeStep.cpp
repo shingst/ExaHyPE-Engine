@@ -384,7 +384,7 @@ void exahype::mappings::FusedTimeStep::mergeWithMaster(
       tarch::parallel::Node::getInstance().isGlobalMaster() &&
       tarch::parallel::Node::getInstance().getNumberOfNodes()>1
   ) {
-    logInfo("beginIteration(...)","end traversal on global master (before reduction).");
+    logInfo("mergeWithMaster(...)","end traversal on global master (before reduction).");
   }
 
   if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
