@@ -147,6 +147,10 @@ class GRMHDb::GRMHDbSolver_ADERDG : public GRMHDb::AbstractGRMHDbSolver_ADERDG {
      * \param[inout]  The vector BgradQ (extends nVar), already allocated. 
      *
      **/
+
+
+	void nonConservativeProduct(const double* const Q, const double* const gradQ, double* BgradQ) final override;
+
   void mapDiscreteMaximumPrincipleObservables(double* const observables, const double* const Q) const override;
   
   bool isPhysicallyAdmissible(
