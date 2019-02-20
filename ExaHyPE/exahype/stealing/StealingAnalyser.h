@@ -3,8 +3,6 @@
 #ifndef _EXAHYPE_STEALING_STEALINGANALYSER_H_
 #define _EXAHYPE_STEALING_STEALINGANALYSER_H_
 
-#include "peano/performanceanalysis/Analyser.h"
-
 #include "tarch/logging/Log.h"
 #include "tarch/timing/Watch.h"
 #include "tarch/timing/GlidingAverageMeasurement.h"
@@ -23,7 +21,7 @@ namespace exahype {
   }
 }
 
-class exahype::stealing::StealingAnalyser: public peano::performanceanalysis::Analyser {
+class exahype::stealing::StealingAnalyser {
   private:
     static tarch::logging::Log     _log;
 
@@ -32,6 +30,7 @@ class exahype::stealing::StealingAnalyser: public peano::performanceanalysis::An
 
     tarch::timing::Watch           _waitForWorkerDataWatch;
     tarch::timing::Watch           _waitForMasterDataWatch;
+    tarch::timing::Watch           _waitForGlobalMasterDataWatch;
 
     std::vector<tarch::timing::GlidingAverageMeasurement>    _waitForOtherRank;
 
@@ -60,7 +59,7 @@ class exahype::stealing::StealingAnalyser: public peano::performanceanalysis::An
 
     virtual void beginIteration();
 
-    virtual void endIteration(double numberOfInnerLeafCells, double numberOfOuterLeafCells, double numberOfInnerCells, double numberOfOuterCells, double numberOfLocalCells, double numberOfLocalVertices);
+    virtual void endIteration();
 
     virtual void enterCentralElementOfEnclosingSpacetree();
     virtual void leaveCentralElementOfEnclosingSpacetree();
@@ -75,10 +74,17 @@ class exahype::stealing::StealingAnalyser: public peano::performanceanalysis::An
       int                                 level
     );
 
+
+    virtual void beginToSendDataToWorker();
+    virtual void endToSendDataToWorker(int worker);
+    virtual void beginToSendDataToMaster();
+    virtual void endToSendDataToMaster();
     virtual void beginToReceiveDataFromWorker();
     virtual void endToReceiveDataFromWorker( int fromRank );
     virtual void beginToReceiveDataFromMaster();
     virtual void endToReceiveDataFromMaster();
+    virtual void beginToReceiveDataFromGlobalMaster();
+    virtual void endToReceiveDataFromGlobalMaster();
 
     virtual void dataWasNotReceivedInBackground( int fromRank, int tag, int cardinality, int pageSize );
 

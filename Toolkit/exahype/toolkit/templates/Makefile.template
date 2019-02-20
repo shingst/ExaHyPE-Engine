@@ -76,13 +76,13 @@ PROJECT_CFLAGS += -DDistributedStealing -DStealingStrategyStatic
 {% elif stealing=="dynamic" %}
 PROJECT_CFLAGS += -DDistributedStealing -DStealingStrategyDynamic
 {% elif stealing=="dynamic_diffusive" %}
-PROJECT_CFLAGS += -DDistributedStealing -DStealingStrategyDiffusive -DPerformanceAnalysis
+PROJECT_CFLAGS += -DDistributedStealing -DStealingStrategyDiffusive 
 {% elif stealing=="aggressive_diffusive" %}
-PROJECT_CFLAGS += -DDistributedStealing -DStealingStrategyAggressive -DPerformanceAnalysis
+PROJECT_CFLAGS += -DDistributedStealing -DStealingStrategyAggressive 
 {% elif stealing=="aggressiveCCP_diffusive" %}
-PROJECT_CFLAGS += -DDistributedStealing -DStealingStrategyAggressiveCCP -DPerformanceAnalysis
+PROJECT_CFLAGS += -DDistributedStealing -DStealingStrategyAggressiveCCP 
 {% elif stealing=="aggressiveHybrid" %}
-PROJECT_CFLAGS += -DDistributedStealing -DStealingStrategyAggressiveHybrid -DPerformanceAnalysis
+PROJECT_CFLAGS += -DDistributedStealing -DStealingStrategyAggressiveHybrid 
 {% elif stealing=="hybrid" %}
 PROJECT_CFLAGS += -DDistributedStealing -DStealingStrategyHybrid
 {% elif stealing=="static_hardcoded" %}

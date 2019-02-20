@@ -32,6 +32,7 @@
 #include "exahype/stealing/PerformanceMonitor.h"
 #include "exahype/stealing/StaticDistributor.h"
 #include "exahype/stealing/DiffusiveDistributor.h"
+#include "exahype/stealing/StealingAnalyser.h"
 #endif
 
 tarch::logging::Log exahype::mappings::FusedTimeStep::_log("exahype::mappings::FusedTimeStep");
@@ -147,59 +148,31 @@ exahype::mappings::FusedTimeStep::FusedTimeStep() {
 void exahype::mappings::FusedTimeStep::beginIteration(
     exahype::State& solverState) {
   logTraceInWith1Argument("beginIteration(State)", solverState);
-  static bool isFirst = true;
 
   if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
     exahype::plotters::startPlottingIfAPlotterIsActive(
         solvers::Solver::getMinTimeStampOfAllSolvers());
   }
 
-  #ifdef Parallel
-  if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
-    // ensure reductions are inititated from worker side
-    solverState.setReduceStateAndCell(true);
-  }
-  #endif
+#ifdef Parallel
 
 #ifdef DistributedStealing
-
-#ifdef StealingStrategyDiffusive
-  //if(issuePredictionJobsInThisIteration()) {
-  //  if(isFirst) {
-  //    exahype::stealing::DiffusiveDistributor::getInstance()._iterationTimer.startTimer(); 
-  //  }
-  //  else {
-  //    exahype::stealing::DiffusiveDistributor::getInstance()._iterationTimer.stopTimer();
-  //    int elapsed = static_cast<int> (exahype::stealing::DiffusiveDistributor::getInstance()._iterationTimer.getCalendarTime()*1e06);
-  //    exahype::stealing::PerformanceMonitor::getInstance().setCurrentLoad(elapsed);
-  //    exahype::stealing::DiffusiveDistributor::getInstance().updateLoadDistribution(elapsed);
-  //    exahype::stealing::DiffusiveDistributor::getInstance().resetVictimFlag();
-  //    exahype::stealing::DiffusiveDistributor::getInstance()._iterationTimer.startTimer();
-  //  }
-  //}
-#endif
-
-  // enable stealing manager job right at the beginning of the very first time step
-//  if(isFirst) {
-//    for (auto* solver : exahype::solvers::RegisteredSolvers) {
-//      // currently only for ADERDG solver supported
-//      if (solver->getType()==exahype::solvers::Solver::Type::ADERDG) {
-//        static_cast<exahype::solvers::ADERDGSolver*>(solver)->startStealingManager();
-//        isFirst=false;
-//      }
-//      if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
-//        static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->startStealingManager();
-//        isFirst=false;
-//      }
-//    }
-//  }
+    static bool isFirst = true;
     isFirst = false;
 
 #if defined(StealingStrategyStatic) || defined(StealingStrategyStaticHardcoded)
   if(issuePredictionJobsInThisIteration()) {
     exahype::stealing::StaticDistributor::getInstance().resetRemainingTasksToOffload();
   }
+#elif defined(StealingStrategyAggressive) || defined(StealingStrategyAggressiveHybrid) || defined(StealingStrategyAggressiveDiffusive)
+  exahype::stealing::StealingAnalyser::getInstance().beginIteration();
+#endif 
 #endif
+
+  if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
+    // ensure reductions are inititated from worker side
+    solverState.setReduceStateAndCell(true);
+  }
 
 #endif
   logTraceOutWith1Argument("beginIteration(State)", solverState);
@@ -227,6 +200,13 @@ void exahype::mappings::FusedTimeStep::endIteration(
       }
     }
   }
+
+#if defined(Parallel) && defined(DistributedStealing)
+#if defined(StealingStrategyAggressive) || defined(StealingStrategyAggressiveHybrid) || defined(StealingStrategyAggressiveDiffusive)
+  exahype::stealing::StealingAnalyser::getInstance().endIteration();
+#endif 
+#endif
+
   logTraceOutWith1Argument("endIteration(State)", state);
 }
 
