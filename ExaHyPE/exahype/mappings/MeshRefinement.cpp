@@ -251,8 +251,8 @@ void exahype::mappings::MeshRefinement::touchVertexLastTime(
       !StillInRefiningMode);
 
   if ( // TODO(Dominic): This is not completely figured out yet.
-      //!tarch::parallel::Node::getInstance().isGlobalMaster()
-      //&&
+      !fineGridVertex.isOutside()
+      &&
       _stableIterationsInARow <= 3 // Found experimentally
       &&
       refinementControl==exahype::solvers::Solver::RefinementControl::Refine
