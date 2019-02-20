@@ -120,26 +120,6 @@ private:
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator) const;
 
-  /**
-   * @return if this ranks should refine on this level.
-   *
-   * @note We have to stop the refinement of rank 0
-   * at some point when more than one ranks are employed.
-   *
-   * @note This routine is mostly important for the non-creational
-   * event such touchVertexLastTime and ensureRegularityAlongBoundary.
-   */
-  static bool refineOnThisRankAndLevel(const int level) {
-    #ifdef Parallel
-    return
-        tarch::parallel::Node::getInstance().getNumberOfNodes()==1 ||
-        !tarch::parallel::Node::getInstance().isGlobalMaster() ||
-        level < 2;
-    #else
-    return true;
-    #endif
-  }
-
 public:
 
   /**

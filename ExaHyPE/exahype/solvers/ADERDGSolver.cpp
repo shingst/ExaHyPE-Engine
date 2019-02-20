@@ -1416,7 +1416,6 @@ bool exahype::solvers::ADERDGSolver::attainedStableState(
       }
     }
  
-    // TODO(Dominic): Debugging
     bool stable =
       flaggingHasConverged
       &&
@@ -1431,16 +1430,20 @@ bool exahype::solvers::ADERDGSolver::attainedStableState(
       cellDescription.getLevel() != getMaximumAdaptiveMeshLevel() ||
       cellDescription.getRefinementStatus()<=0);
 
-//    if (!stable) {
-//      logInfo("attainedStableState(...)",">flaggingHasConverged="<<flaggingHasConverged);
-//      logInfo("attainedStableState(...)","type="<<cellDescription.toString(cellDescription.getType()));
-//      logInfo("attainedStableState(...)","x="<<cellDescription.getOffset());
-//      logInfo("attainedStableState(...)","level="<<cellDescription.getLevel());
-//      logInfo("attainedStableState(...)","refinementStatus="<<cellDescription.getRefinementStatus());
-//      logInfo("attainedStableState(...)","getFacewiseAugmentationStatus="<<cellDescription.getFacewiseAugmentationStatus());
-//      logInfo("attainedStableState(...)","getFacewiseCommunicationStatus="<<cellDescription.getFacewiseCommunicationStatus());
-//      logInfo("attainedStableState(...)","getFacewiseRefinementStatus="<<cellDescription.getFacewiseRefinementStatus());
-//    }
+      #ifdef MonitorMeshRefinement
+      if (!stable) {
+        logInfo("attainedStableState(...)","cell has not attained stable state (yet):");
+        logInfo("attainedStableState(...)","type="<<cellDescription.toString(cellDescription.getType()));
+        logInfo("attainedStableState(...)","x="<<cellDescription.getOffset());
+        logInfo("attainedStableState(...)","level="<<cellDescription.getLevel());
+        logInfo("attainedStableState(...)","flaggingHasConverged="<<flaggingHasConverged);
+        logInfo("attainedStableState(...)","refinementEvent="<<cellDescription.toString(cellDescription.getRefinementEvent()));
+        logInfo("attainedStableState(...)","refinementStatus="<<cellDescription.getRefinementStatus());
+        logInfo("attainedStableState(...)","getFacewiseAugmentationStatus="<<cellDescription.getFacewiseAugmentationStatus());
+        logInfo("attainedStableState(...)","getFacewiseCommunicationStatus="<<cellDescription.getFacewiseCommunicationStatus());
+        logInfo("attainedStableState(...)","getFacewiseRefinementStatus="<<cellDescription.getFacewiseRefinementStatus());
+      }
+      #endif
 
     return stable;
   } else {
