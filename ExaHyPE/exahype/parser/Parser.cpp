@@ -646,6 +646,10 @@ bool exahype::parser::Parser::getScaleBoundingBox() const {
   return getBoolFromPath("/distributed_memory/scale_bounding_box", true, isOptional);
 }
 
+int exahype::parser::Parser::getScaleBoundingBoxMultiplier() const {
+  return getIntFromPath("/distributed_memory/scale_bounding_box_multiplier", 0, isOptional);
+}
+
 bool exahype::parser::Parser::getStaticMeshRefinement() const {
   return getStringFromPath("/optimisation/mesh_refinement", "dynamic", isOptional).compare("static")==0;
 }

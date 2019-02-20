@@ -600,9 +600,10 @@ exahype::repositories::Repository* exahype::runners::Runner::createRepository() 
     double boundingBoxMeshSpacing = std::numeric_limits<double>::infinity();
 
     int level = coarsestUserMeshLevel; // level=1 means a single cell
+    const int multiplier = _parser.getScaleBoundingBoxMultiplier();
     while (boundingBoxMeshSpacing > coarsestUserMeshSpacing) {
       const double boundingBoxMeshCells = std::pow(3,level-1);
-      boundingBoxScaling                = boundingBoxMeshCells / ( boundingBoxMeshCells - 2*2 ); // two cells are removed on each side
+      boundingBoxScaling                = boundingBoxMeshCells / ( boundingBoxMeshCells - 2*(2+3*multiplier) ); // two cells are removed on each side
       boundingBoxExtent                 = boundingBoxScaling * maxDomainExtent;
       boundingBoxMeshSpacing            = boundingBoxExtent/boundingBoxMeshCells;
       level++;
