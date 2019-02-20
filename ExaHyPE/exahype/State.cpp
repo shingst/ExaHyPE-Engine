@@ -266,6 +266,7 @@ void exahype::State::kickOffIteration(exahype::records::RepositoryState& reposit
       case exahype::records::RepositoryState::UseAdapterPredictionRerun:
       case exahype::records::RepositoryState::UseAdapterFusedTimeStep:
       case exahype::records::RepositoryState::UseAdapterBroadcastAndDropNeighbourMessages: {
+        peano::heap::AbstractHeap::allHeapsStartToSendSynchronousData(); // can be called multiple times
         if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) { // TODO scalability bottleneck; use tree-based approach
             for (int workerRank=1; workerRank<tarch::parallel::Node::getInstance().getNumberOfNodes(); workerRank++) {
               if (!(tarch::parallel::NodePool::getInstance().isIdleNode(workerRank))) { // TODO scalability bottleneck; use tree-based approach
@@ -275,6 +276,7 @@ void exahype::State::kickOffIteration(exahype::records::RepositoryState& reposit
         } else {
           exahype::State::mergeWithGlobalDataFromMaster(masterRank,0.0,0);
         }
+        peano::heap::AbstractHeap::allHeapsFinishedToSendSynchronousData(); // can be called multiple times
       } break;
       default:
         break;

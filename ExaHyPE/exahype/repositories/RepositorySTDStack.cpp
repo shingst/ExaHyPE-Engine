@@ -282,6 +282,11 @@ void exahype::repositories::RepositorySTDStack::iterate(int numberOfIterations, 
     VT_end(handle);
     #endif
 
+    if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+      logInfo("iterate(...)","cells on global master   ="<<_vertexStack.sizeOfInputStack());
+      logInfo("iterate(...)","vertices on global master="<<_cellStack.sizeOfInputStack()  );
+    }
+
     #ifdef Parallel
     if ( switchedLoadBalancingTemporarilyOff && i==numberOfIterations-1) {
       peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(true);

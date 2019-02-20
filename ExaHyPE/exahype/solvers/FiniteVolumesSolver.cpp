@@ -1382,12 +1382,16 @@ void exahype::solvers::FiniteVolumesSolver::sendDataToMaster(
       "data[1]=" << messageForMaster[1]);
   }
 
-  MPI_Send(
+  // MPI_Send(
+  //     messageForMaster.data(), messageForMaster.size(),
+  //     MPI_DOUBLE,
+  //     masterRank,
+  //     MasterWorkerCommunicationTag,
+  //     tarch::parallel::Node::getInstance().getCommunicator());
+
+  DataHeap::getInstance().sendData(
       messageForMaster.data(), messageForMaster.size(),
-      MPI_DOUBLE,
-      masterRank,
-      MasterWorkerCommunicationTag,
-      tarch::parallel::Node::getInstance().getCommunicator());
+      masterRank,x,level,peano::heap::MessageType::MasterWorkerCommunication);
 }
 
 /**
@@ -1407,13 +1411,17 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithWorkerData(
     logDebug("mergeWithWorkerData(...)","Receiving time step data [pre] from rank " << workerRank);
   }
 
-  MPI_Recv(
+  // MPI_Recv(
+  //     messageFromWorker.data(), messageFromWorker.size(),
+  //     MPI_DOUBLE,
+  //     workerRank,
+  //     MasterWorkerCommunicationTag,
+  //     tarch::parallel::Node::getInstance().getCommunicator(),
+  //     MPI_STATUS_IGNORE);
+
+  DataHeap::getInstance().receiveData(
       messageFromWorker.data(), messageFromWorker.size(),
-      MPI_DOUBLE,
-      workerRank,
-      MasterWorkerCommunicationTag,
-      tarch::parallel::Node::getInstance().getCommunicator(),
-      MPI_STATUS_IGNORE);
+      workerRank,x,level,peano::heap::MessageType::MasterWorkerCommunication);
 
   assertion1(std::isfinite(messageFromWorker[0]),messageFromWorker[0]);
   assertion1(std::isfinite(messageFromWorker[1]),messageFromWorker[1]);

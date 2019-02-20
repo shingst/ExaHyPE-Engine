@@ -4119,12 +4119,16 @@ void exahype::solvers::ADERDGSolver::sendDataToMaster(
     );
   }
 
-  MPI_Send(
-    messageForMaster.data(), messageForMaster.size(),
-    MPI_DOUBLE,
-    masterRank,
-    MasterWorkerCommunicationTag,
-    tarch::parallel::Node::getInstance().getCommunicator());
+  // MPI_Send(
+  //   messageForMaster.data(), messageForMaster.size(),
+  //   MPI_DOUBLE,
+  //   masterRank,
+  //   MasterWorkerCommunicationTag,
+  //   tarch::parallel::Node::getInstance().getCommunicator());
+
+  DataHeap::getInstance().sendData(
+      messageForMaster.data(), messageForMaster.size(),
+      masterRank,x,level,peano::heap::MessageType::MasterWorkerCommunication);
 }
 
 exahype::DataHeap::HeapEntries
@@ -4153,13 +4157,17 @@ void exahype::solvers::ADERDGSolver::mergeWithWorkerData(
     const int                                    level) {
   DataHeap::HeapEntries messageFromWorker(2);
 
-  MPI_Recv(
-    messageFromWorker.data(), messageFromWorker.size(),
-    MPI_DOUBLE,
-    workerRank,
-    MasterWorkerCommunicationTag,
-    tarch::parallel::Node::getInstance().getCommunicator(),
-    MPI_STATUS_IGNORE);
+  //  MPI_Recv(
+  //    messageFromWorker.data(), messageFromWorker.size(),
+  //    MPI_DOUBLE,
+  //    workerRank,
+  //    MasterWorkerCommunicationTag,
+  //    tarch::parallel::Node::getInstance().getCommunicator(),
+  //    MPI_STATUS_IGNORE);
+
+  DataHeap::getInstance().receiveData(
+      messageFromWorker.data(), messageFromWorker.size(),
+      workerRank,x,level,peano::heap::MessageType::MasterWorkerCommunication);
 
   if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
     logDebug("mergeWithWorkerData(...)","Receive data from worker rank: " <<
@@ -4219,12 +4227,16 @@ void exahype::solvers::ADERDGSolver::sendDataToWorker(
         "data[4]=" << messageForWorker[4]);
   }
   
-  MPI_Send(
-    messageForWorker.data(), messageForWorker.size(),
-    MPI_DOUBLE,
-    workerRank,
-    MasterWorkerCommunicationTag,
-    tarch::parallel::Node::getInstance().getCommunicator());
+  // MPI_Send(
+  //   messageForWorker.data(), messageForWorker.size(),
+  //   MPI_DOUBLE,
+  //   workerRank,
+  //   MasterWorkerCommunicationTag,
+  //   tarch::parallel::Node::getInstance().getCommunicator());
+
+  DataHeap::getInstance().sendData(
+      messageForWorker.data(), messageForWorker.size(),
+      workerRank,x,level,peano::heap::MessageType::MasterWorkerCommunication);
 }
 
 void exahype::solvers::ADERDGSolver::mergeWithMasterData(const DataHeap::HeapEntries& message) {
@@ -4245,12 +4257,16 @@ void exahype::solvers::ADERDGSolver::mergeWithMasterData(
     const int                                    level) {
   DataHeap::HeapEntries messageFromMaster(5);
   
-  MPI_Recv(
+  // MPI_Recv(
+  //     messageFromMaster.data(), messageFromMaster.size(),
+  //     MPI_DOUBLE,
+  //     masterRank,
+  //     MasterWorkerCommunicationTag,
+  //     tarch::parallel::Node::getInstance().getCommunicator(),MPI_STATUS_IGNORE);
+
+  DataHeap::getInstance().receiveData(
       messageFromMaster.data(), messageFromMaster.size(),
-      MPI_DOUBLE,
-      masterRank,
-      MasterWorkerCommunicationTag,
-      tarch::parallel::Node::getInstance().getCommunicator(),MPI_STATUS_IGNORE);
+      masterRank,x,level,peano::heap::MessageType::MasterWorkerCommunication);
 
   assertion1(messageFromMaster.size()==5,messageFromMaster.size());
   mergeWithMasterData(messageFromMaster);
