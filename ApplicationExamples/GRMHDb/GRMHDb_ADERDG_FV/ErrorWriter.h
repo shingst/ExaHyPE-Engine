@@ -20,14 +20,16 @@ namespace GRMHDb {
 class GRMHDb::ErrorWriter : public exahype::plotters::LimitingADERDG2UserDefined {
  private:
    double _timeStamp;
-
-   double errorL1  [GRMHDbSolver_ADERDG::NumberOfVariables]; 
-   double errorL2  [GRMHDbSolver_ADERDG::NumberOfVariables]; 
-   double errorLInf[GRMHDbSolver_ADERDG::NumberOfVariables];
+   static constexpr int numberOfVariables = AbstractGRMHDbSolver_ADERDG::NumberOfVariables;
+   static constexpr int numberOfParameters = AbstractGRMHDbSolver_ADERDG::NumberOfParameters;
+   static constexpr int numberOfData = numberOfVariables + numberOfParameters;
+   double errorL1  [numberOfData]; 
+   double errorL2  [numberOfData]; 
+   double errorLInf[numberOfData];
    
-   double normL1Ana  [GRMHDbSolver_ADERDG::NumberOfVariables];  
-   double normL2Ana  [GRMHDbSolver_ADERDG::NumberOfVariables];  
-   double normLInfAna[GRMHDbSolver_ADERDG::NumberOfVariables]; 
+   double normL1Ana  [numberOfData];  
+   double normL2Ana  [numberOfData];  
+   double normLInfAna[numberOfData]; 
    
  public:
   /**
@@ -53,7 +55,7 @@ class GRMHDb::ErrorWriter : public exahype::plotters::LimitingADERDG2UserDefined
    */
   void plotADERDGPatch(
       const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
-      const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* u,
+      const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* const u,
       double timeStamp) override;
 
   /**
@@ -70,7 +72,7 @@ class GRMHDb::ErrorWriter : public exahype::plotters::LimitingADERDG2UserDefined
    */
   void plotFiniteVolumesPatch(
       const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
-      const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* u,
+      const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* const u,
       double timeStamp) override;
 
   /** 

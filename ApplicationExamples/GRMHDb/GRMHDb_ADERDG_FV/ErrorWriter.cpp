@@ -41,10 +41,10 @@ GRMHDb::ErrorWriter::ErrorWriter() : exahype::plotters::LimitingADERDG2UserDefin
 
 void GRMHDb::ErrorWriter::plotADERDGPatch(
   const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
-  const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* u,
+    const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* const u,
   double timeStamp) {
   // @TODO Please insert your code here.
-  constexpr int numberOfVariables  = AbstractGRMHDbSolver_ADERDG::NumberOfVariables;
+  //constexpr int numberOfVariables  = AbstractGRMHDbSolver_ADERDG::NumberOfVariables;
   //constexpr int numberOfParameters = AbstractGRMHDbSolver_ADERDG::NumberOfParameters;
   //constexpr int numberOfData       = numberOfVariables+numberOfParameters;
   constexpr int basisSize          = AbstractGRMHDbSolver_ADERDG::Order+1;
@@ -52,9 +52,9 @@ void GRMHDb::ErrorWriter::plotADERDGPatch(
 
   double x[DIMENSIONS];
 
-  printf("\n########## GRMHDb::ErrorWriter::plotADERDGPatch ##########");
+  //printf("\n########## GRMHDb::ErrorWriter::plotADERDGPatch ##########");
   //kernels::idx4 idx(basisSize,basisSize,basisSize,numberOfData);
-  kernels::idx4 idx(basisSize,basisSize,basisSize,numberOfVariables);
+  kernels::idx4 idx(basisSize,basisSize,basisSize,numberOfData);
   dfor(i,basisSize) {
 	 double w_dV = 1.0;
      for (int d=0; d<DIMENSIONS; d++) {
@@ -62,17 +62,17 @@ void GRMHDb::ErrorWriter::plotADERDGPatch(
        w_dV *= sizeOfPatch[d] * kernels::gaussLegendreWeights[order][i(d)];
      }
 
-	 double uAna[numberOfVariables];
+	 double uAna[numberOfData];
 	 //GRMHDbSolver_FV::referenceSolution(x,timeStamp,uAna);
 	 getExactSolution(x, timeStamp, uAna); // (exact, pos, timeStamp);
 	 
      const double* uNum = u + idx ( (DIMENSIONS==3) ? i(2) : 0, i(1), i(0), 0);
 
 	 int iErr = 0;
-	 double uPrim[numberOfVariables];
+	 double uPrim[numberOfData];
 	 getPrimitive(uPrim, uNum, iErr);
 
-     for (int v=0; v<numberOfVariables; v++) {
+     for (int v=0; v< numberOfData; v++) {
          const double uDiff = std::abs(uPrim[v]-uAna[v]);
          errorL2[v]   += uDiff*uDiff * w_dV;
          errorL1[v]   += uDiff * w_dV;
@@ -83,20 +83,20 @@ void GRMHDb::ErrorWriter::plotADERDGPatch(
          normLInfAna[v] = std::max( normLInfAna[v], std::abs(uAna[v]) );
      }
   }
-  printf("\n########## GRMHDb::ErrorWriter::plotADERDGPatch ##########  .... DONE!\n");
+  //printf("\n########## GRMHDb::ErrorWriter::plotADERDGPatch ##########  .... DONE!\n");
 }
 
 
 
 void GRMHDb::ErrorWriter::plotFiniteVolumesPatch(
     const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
-    const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* u,
+    const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* const u,
     double timeStamp) {
   // @TODO Please insert your code here.
-	printf("\n########## GRMHDb::ErrorWriter::plotFiniteVolumesPatch ##########");
-  constexpr int numberOfVariables  = AbstractGRMHDbSolver_FV::NumberOfVariables;
-  constexpr int numberOfParameters = AbstractGRMHDbSolver_FV::NumberOfParameters;
-  constexpr int numberOfData       = numberOfVariables+numberOfParameters;
+	//printf("\n########## GRMHDb::ErrorWriter::plotFiniteVolumesPatch ##########");
+  //constexpr int numberOfVariables  = AbstractGRMHDbSolver_FV::NumberOfVariables;
+  //constexpr int numberOfParameters = AbstractGRMHDbSolver_FV::NumberOfParameters;
+  //constexpr int numberOfData       = numberOfVariables+numberOfParameters;
   constexpr int basisSize          = AbstractGRMHDbSolver_FV::PatchSize;
   constexpr int ghostLayerWidth   = AbstractGRMHDbSolver_FV::GhostLayerWidth;
   //constexpr int order              = basisSize-1;
@@ -122,7 +122,7 @@ void GRMHDb::ErrorWriter::plotFiniteVolumesPatch(
        w_dV *= cellSize;
 	 }
 
-	 double uAna[numberOfVariables];
+	 double uAna[numberOfData];
      //GRMHDbSolver_FV::referenceSolution(x,timeStamp,uAna);
 	 getExactSolution(x, timeStamp, uAna); // (exact, pos, timeStamp);
 
@@ -131,7 +131,7 @@ void GRMHDb::ErrorWriter::plotFiniteVolumesPatch(
      const double* uNum = u + idx ( (DIMENSIONS==3) ? i(2)+ghostLayerWidth : 0, i(1)+ghostLayerWidth, i(0)+ghostLayerWidth, 0);
 
 	 int iErr = 0;
-	 double uPrim[numberOfVariables];
+	 double uPrim[numberOfData];
 	 getPrimitive(uPrim,uNum,iErr);
 
 	 //double uCons[numberOfVariables];
@@ -143,7 +143,7 @@ void GRMHDb::ErrorWriter::plotFiniteVolumesPatch(
 	 //double uPrim[numberOfVariables];
 	 //pdecons2prim_(&uPrim[0], &uCons[0], &iErr);
 	 ////printf("\n ouble pdecons2prim");
-     for (int v=0; v<numberOfVariables; v++) {
+     for (int v=0; v< numberOfData; v++) {
 		 const double uDiff = std::abs(uPrim[v] - uAna[v]);
 		 //const double uDiff = std::abs(uNum[v] - uAna[v]);
 		errorL1[v] += uDiff * w_dV;
@@ -157,27 +157,32 @@ void GRMHDb::ErrorWriter::plotFiniteVolumesPatch(
 		//printf("\n errorL1[v], errorL2[v], errorLInf[v] = %f %f %f ", errorL1[v], errorL2[v], errorLInf[v]);
      }
   }
-  printf("\n########## GRMHDb::ErrorWriter::plotFiniteVolumesPatch ##########  .... DONE!\n");
+  //printf("\n########## GRMHDb::ErrorWriter::plotFiniteVolumesPatch ##########  .... DONE!\n");
 }
 
 void GRMHDb::ErrorWriter::startPlotting( double time) {
   // @TODO Please insert your code here.
+	//constexpr int numberOfVariables = AbstractGRMHDbSolver_ADERDG::NumberOfVariables;
+	//constexpr int numberOfParameters = AbstractGRMHDbSolver_ADERDG::NumberOfParameters;
+	//constexpr int numberOfData = numberOfVariables + numberOfParameters;
   _timeStamp = time;
-  printf("\n########## GRMHDb::ErrorWriter::startPlotting ##########");
+  //printf("\n########## GRMHDb::ErrorWriter::startPlotting ##########");
   
-  std::fill_n(errorL1,  AbstractGRMHDbSolver_ADERDG::NumberOfVariables, 0.0);
-  std::fill_n(errorL2,  AbstractGRMHDbSolver_ADERDG::NumberOfVariables, 0.0);
-  std::fill_n(errorLInf,AbstractGRMHDbSolver_ADERDG::NumberOfVariables, 0.0);
+  std::fill_n(errorL1,  numberOfData, 0.0);
+  std::fill_n(errorL2,  numberOfData, 0.0);
+  std::fill_n(errorLInf,numberOfData, 0.0);
   
-  std::fill_n(normL1Ana,  AbstractGRMHDbSolver_ADERDG::NumberOfVariables, 0.0);
-  std::fill_n(normL2Ana,  AbstractGRMHDbSolver_ADERDG::NumberOfVariables, 0.0);
-  std::fill_n(normLInfAna,AbstractGRMHDbSolver_ADERDG::NumberOfVariables, 0.0);
+  std::fill_n(normL1Ana,  numberOfData, 0.0);
+  std::fill_n(normL2Ana,  numberOfData, 0.0);
+  std::fill_n(normLInfAna,numberOfData, 0.0);
 }
 
 void GRMHDb::ErrorWriter::finishPlotting() {
-  constexpr int numberOfVariables = AbstractGRMHDbSolver_ADERDG::NumberOfVariables;
+	//constexpr int numberOfVariables = AbstractGRMHDbSolver_ADERDG::NumberOfVariables;
+	//constexpr int numberOfParameters = AbstractGRMHDbSolver_ADERDG::NumberOfParameters;
+	//constexpr int numberOfData = numberOfVariables + numberOfParameters;
   ofstream myfile;
-  printf("\n########## GRMHDb::ErrorWriter::finishPlotting ##########");
+  //printf("\n########## GRMHDb::ErrorWriter::finishPlotting ##########");
   int mpirank = tarch::parallel::Node::getInstance().getRank();
   const int myMessageTagUseForTheReduction = tarch::parallel::Node::getInstance().reserveFreeTag("GRMHDb::ErrorWriter::finishPlotting()");
 
@@ -185,10 +190,9 @@ void GRMHDb::ErrorWriter::finishPlotting() {
 //#define Parallel
 #ifdef Parallel 
   //int NumberOfNodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
-  const int numberOfAvailableRanks =
-      tarch::parallel::Node::getInstance().getNumberOfNodes();
-  const int numberOfData = 3 * numberOfVariables;
-  const int numberOfDataTot = 3 * numberOfVariables * numberOfAvailableRanks;
+  const int numberOfAvailableRanks = tarch::parallel::Node::getInstance().getNumberOfNodes();
+  const int numberOfErrData = 3 * numberOfData;
+  const int numberOfErrDataTot = 3 * numberOfData * numberOfAvailableRanks;
   int tag;
   //int l1tag;
   //int l2tag;
@@ -197,11 +201,11 @@ void GRMHDb::ErrorWriter::finishPlotting() {
   MPI_Request rq_send[numberOfAvailableRanks];
   //MPI_Request rq_L2  [numberOfAvailableRanks];
   //MPI_Request rq_Linf[numberOfAvailableRanks];
-  double	  receivedValues[numberOfAvailableRanks][numberOfData];
+  double	  receivedValues[numberOfAvailableRanks][numberOfErrData];
   //double      receivedValueL1  [numberOfAvailableRanks][numberOfData];
   //double      receivedValueL2  [numberOfAvailableRanks][numberOfData];
   //double      receivedValueLinf[numberOfAvailableRanks][numberOfData]; 
-  double SentValues[numberOfData];
+  double SentValues[numberOfErrData];
   //std::fill_n(SentValues, numberOfData, 0.0);
   //std::fill_n(receivedValues, numberOfDataTot, 0.0);
   tag = 333;
@@ -214,9 +218,9 @@ void GRMHDb::ErrorWriter::finishPlotting() {
 	  //
       if (!tarch::parallel::NodePool::getInstance().isIdleNode(rank)) {
 		//
-        MPI_Irecv(&receivedValues[rank-1][0]  , numberOfData, MPI_DOUBLE, rank, tag+rank  , tarch::parallel::Node::getInstance().getCommunicator(), &rq_recv[rank-1]);
-        //MPI_Irecv(&receivedValueL2[rank-1][0]  , numberOfVariables, MPI_DOUBLE, rank, l2tag  , tarch::parallel::Node::getInstance().getCommunicator(), &rq_L2[rank-1]);
-        //MPI_Irecv(&receivedValueLinf[rank-1][0], numberOfVariables, MPI_DOUBLE, rank, linftag, tarch::parallel::Node::getInstance().getCommunicator(), &rq_Linf[rank-1]);
+        MPI_Irecv(&receivedValues[rank-1][0]  , numberOfErrData, MPI_DOUBLE, rank, tag+rank  , tarch::parallel::Node::getInstance().getCommunicator(), &rq_recv[rank-1]);
+        //MPI_Irecv(&receivedValueL2[rank-1][0]  , numberOfData, MPI_DOUBLE, rank, l2tag  , tarch::parallel::Node::getInstance().getCommunicator(), &rq_L2[rank-1]);
+        //MPI_Irecv(&receivedValueLinf[rank-1][0], numberOfData, MPI_DOUBLE, rank, linftag, tarch::parallel::Node::getInstance().getCommunicator(), &rq_Linf[rank-1]);
       }
     }
     for (int rank = 1; rank < numberOfAvailableRanks; rank++) {
@@ -226,7 +230,7 @@ void GRMHDb::ErrorWriter::finishPlotting() {
         MPI_Wait(&rq_recv[rank-1], MPI_STATUS_IGNORE);
         //MPI_Wait(&rq_L2[rank-1], MPI_STATUS_IGNORE);
         //MPI_Wait(&rq_Linf[rank-1], MPI_STATUS_IGNORE);
-        for (int i = 0; i < numberOfVariables; i++) {
+        for (int i = 0; i < numberOfData; i++) {
           errorL1[i] += receivedValues[rank - 1][3*i];
           errorL2[i] += receivedValues[rank - 1][3 * i + 1];
           errorLInf[i] = std::max(receivedValues[rank - 1][3 * i + 2],errorLInf[i]);
@@ -237,22 +241,22 @@ void GRMHDb::ErrorWriter::finishPlotting() {
     }
   } else {
 		// then this is a PDE-worker rank.
-		for (int i = 0; i < numberOfVariables; i++) {
+		for (int i = 0; i < numberOfData; i++) {
 		              SentValues[3*i] = errorL1[i];
 		              SentValues[3*i+1] = errorL2[i];
 		              SentValues[3*i+2] = errorLInf[i];
 		} 
-		MPI_Isend(&SentValues, numberOfData, MPI_DOUBLE,tarch::parallel::Node::getGlobalMasterRank(), tag+mpirank  , tarch::parallel::Node::getInstance().getCommunicator(), &rq_send[mpirank-1]);
+		MPI_Isend(&SentValues, numberOfErrData, MPI_DOUBLE,tarch::parallel::Node::getGlobalMasterRank(), tag+mpirank  , tarch::parallel::Node::getInstance().getCommunicator(), &rq_send[mpirank-1]);
         MPI_Wait(&rq_send[mpirank-1], MPI_STATUS_IGNORE);
-		//MPI_Isend(&errorL2  , numberOfVariables, MPI_DOUBLE,tarch::parallel::Node::getGlobalMasterRank(), l2tag  , tarch::parallel::Node::getInstance().getCommunicator(), &rq_L2[mpirank-1]);
-		//MPI_Isend(&errorLInf, numberOfVariables, MPI_DOUBLE,tarch::parallel::Node::getGlobalMasterRank(), linftag, tarch::parallel::Node::getInstance().getCommunicator(), &rq_Linf[mpirank-1]);
+		//MPI_Isend(&errorL2  , numberOfData, MPI_DOUBLE,tarch::parallel::Node::getGlobalMasterRank(), l2tag  , tarch::parallel::Node::getInstance().getCommunicator(), &rq_L2[mpirank-1]);
+		//MPI_Isend(&errorLInf, numberOfData, MPI_DOUBLE,tarch::parallel::Node::getGlobalMasterRank(), linftag, tarch::parallel::Node::getInstance().getCommunicator(), &rq_Linf[mpirank-1]);
   }
   tarch::parallel::Node::getInstance().releaseTag(myMessageTagUseForTheReduction);
 #endif
 
   if (tarch::parallel::Node::getInstance().isGlobalMaster()) {
 	    //
-		for (int v = 0; v < numberOfVariables; v++) {
+		for (int v = 0; v < numberOfData; v++) {
 		  errorL2[v] = sqrt(errorL2[v]);
 		  normL2Ana[v] = sqrt(normL2Ana[v]);
 		}
@@ -264,7 +268,7 @@ void GRMHDb::ErrorWriter::finishPlotting() {
 			myfile << "*********************************************" << std::endl;
 			myfile << "---------------------------------------------" << std::endl;
                         myfile << "variable:\t";
-			for (int v = 0; v < numberOfVariables; v++) {
+			for (int v = 0; v < numberOfData; v++) {
 				myfile << v << " \t ";
 			}
 			myfile << std::endl;
@@ -279,13 +283,13 @@ void GRMHDb::ErrorWriter::finishPlotting() {
 		std::cout << "**Errors for ADER-DG solver with order="<<AbstractGRMHDbSolver_ADERDG::Order<<"**" << std::endl;
 		std::cout << "t_eval : "<<_timeStamp << std::endl;
 		std::cout << "variable     : ";
-		for (int v=0; v<numberOfVariables; v++) {
+		for (int v=0; v<numberOfData; v++) {
 		  std::cout << v << " \t ";
 		}
 		std::cout << std::endl;
 
 		std::cout << "absErrorL1   : ";
-		for (int v=0; v<numberOfVariables; v++) {
+		for (int v=0; v<numberOfData; v++) {
 		  std::cout << std::setprecision(2) << errorL1[v] << " \t ";
 		}
 		std::cout << std::endl;
@@ -295,26 +299,26 @@ void GRMHDb::ErrorWriter::finishPlotting() {
 		*/
 
 		myfile << "ErrorL1:\t";
-		for (int v = 0; v < numberOfVariables; v++) {
+		for (int v = 0; v < numberOfData; v++) {
 		  myfile << std::scientific << errorL1[v] << " \t ";
 		}
 		myfile << std::endl;
 
 		myfile << "ErrorL2:\t";
-		for (int v = 0; v < numberOfVariables; v++) {
+		for (int v = 0; v < numberOfData; v++) {
 		  myfile << std::scientific << errorL2[v] << " \t ";
 		}
 		myfile << std::endl;
 
 		myfile << "errorLInf:\t";
-		for (int v = 0; v < numberOfVariables; v++) {
+		for (int v = 0; v < numberOfData; v++) {
 		  myfile << std::scientific << errorLInf[v] << " \t ";
 		}
 		myfile << std::endl;
 		 
 		myfile.close();  
 	}
-  printf("\n########## GRMHDb::ErrorWriter::finishPlotting ##########  .... DONE!\n");
+  //printf("\n########## GRMHDb::ErrorWriter::finishPlotting ##########  .... DONE!\n");
 }
 
 

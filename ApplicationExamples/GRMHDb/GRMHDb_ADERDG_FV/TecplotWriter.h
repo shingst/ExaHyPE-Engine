@@ -66,11 +66,24 @@ private:
 	  double timeStamp) override;*/
   void plotADERDGPatch(
 	  const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
-	  const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* u,
+      const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* const u,
 	  double timeStamp) override;
+
+  /**
+   * This method is invoked every time a Finite Volume cell 
+   * is touched by the plotting plotter.
+   *
+   * \note Use the protected variables _order, _variables to
+   * determine the size of u. 
+   * The array u has the size _variables * (_order+1)^DIMENSIONS.
+   * 
+   * \param[in] offsetOfPatch the offset of the cell/patch.
+   * \param[in] sizeOfPatch the offset of the cell/patch.
+   * \param[in] u the degrees of freedom "living" inside of the patch.
+   */
   void plotFiniteVolumesPatch(
 	  const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
-	  const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* u,
+      const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* const u,
 	  double timeStamp) override;
 
   /** 
@@ -89,7 +102,6 @@ private:
    * or to increment file counters
    */
   void finishPlotting() override;
-   
 };
 
 #endif /* TecplotWriter_CLASS_HEADER_ */
