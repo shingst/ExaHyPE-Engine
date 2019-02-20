@@ -3,7 +3,7 @@ util = load "Miscellaneous/Jenkins/Util.groovy"
 
 def build(config, workspace) {
     node ('Linux-Cluster') {
-	ws("${env.JOB_NAME}-${config.name}-build") {
+	ws(util.adjust_ws("${env.JOB_NAME}-${config.name}-build")) {
 	    deleteDir()
 	    def directory=sh(returnStdout: true,
 			     script: "dirname ${config.exahypeFile}"

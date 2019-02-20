@@ -18,7 +18,7 @@ void Euler::MyEulerSolver::init(const std::vector<std::string>& cmdlineargs,cons
 
 
 
-void Euler::MyEulerSolver::boundaryValues(const double* const x,const double t, const double dt, const int faceIndex, const int normalNonZero, const double * const fluxIn, const double* const stateIn, double *fluxOut, double* stateOut) {
+void Euler::MyEulerSolver::boundaryValues(const double* const x,const double t, const double dt, const int faceIndex, const int normalNonZero, const double * const fluxIn, const double* const stateIn, double* const fluxOut, double* const stateOut) {
   // Dimensions             = 3
   // Number of variables    = 5 (#unknowns + #parameters)
 
@@ -54,7 +54,7 @@ bool Euler::MyEulerSolver::hasToAdjustSolution(const tarch::la::Vector<DIMENSION
 
 
 
-void Euler::MyEulerSolver::adjustedSolutionValues(const double* const x,const double w,const double t,const double dt,double* Q) {
+void Euler::MyEulerSolver::adjustedSolutionValues(const double* const x,const double w,const double t,const double dt,double* const Q) {
   // Dimensions             = 3
   // Number of variables    = 5 (#unknowns + #parameters)
   // @todo Please implement
@@ -75,7 +75,7 @@ void Euler::MyEulerSolver::adjustedSolutionValues(const double* const x,const do
 
 
 
-exahype::solvers::Solver::RefinementControl Euler::MyEulerSolver::refinementCriterion(const double* luh, const tarch::la::Vector<DIMENSIONS, double>& center, const tarch::la::Vector<DIMENSIONS, double>& dx, double t, const int level) {
+exahype::solvers::Solver::RefinementControl Euler::MyEulerSolver::refinementCriterion(const double* const luh, const tarch::la::Vector<DIMENSIONS, double>& center, const tarch::la::Vector<DIMENSIONS, double>& dx, double t, const int level) {
   // @todo Please implement
   return exahype::solvers::Solver::RefinementControl::Keep;
 }

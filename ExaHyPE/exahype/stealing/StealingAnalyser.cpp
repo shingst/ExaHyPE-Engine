@@ -30,6 +30,7 @@ exahype::stealing::StealingAnalyser::StealingAnalyser():
   _isSwitchedOn(true),
   _waitForWorkerDataWatch("exahype::stealing::StealingAnalyser", "-", false,false),
   _waitForMasterDataWatch("exahype::stealing::StealingAnalyser", "-", false,false),
+  _waitForGlobalMasterDataWatch("exahype::stealing::StealingAnalyser", "-", false,false),
   _waitForOtherRank(tarch::parallel::Node::getInstance().getNumberOfNodes()),
   _currentZeroThreshold(0),
   _iterationCounter(0),
@@ -126,9 +127,7 @@ void exahype::stealing::StealingAnalyser::beginIteration() {
 }
 
 
-void exahype::stealing::StealingAnalyser::endIteration(double numberOfInnerLeafCells, double numberOfOuterLeafCells,
-                                                       double numberOfInnerCells, double numberOfOuterCells, 
-                                                       double numberOfLocalCells, double numberOfLocalVertices) {
+void exahype::stealing::StealingAnalyser::endIteration() {
   if(_iterationCounter%2 !=0) {
      _iterationCounter++; 
      return;
@@ -219,20 +218,100 @@ void exahype::stealing::StealingAnalyser::endToReceiveDataFromMaster() {
     const double elapsedTime = _waitForMasterDataWatch.getCalendarTime();
     int myMaster = tarch::parallel::NodePool::getInstance().getMasterRank();
     
-    _waitForOtherRank[myMaster].setValue(elapsedTime);
+    //_waitForOtherRank[myMaster].setValue(elapsedTime);
 
-    double currentAvg = _waitForOtherRank[myMaster].getValue();
+    //double currentAvg = _waitForOtherRank[myMaster].getValue();
 
     if (tarch::la::greater(elapsedTime,0.0)) {
       logInfo(
         "endToReceiveDataFromMaster()",
+        "rank had to wait for master " << myMaster << " for "<< elapsedTime 
+      );
+    }
+  }
+}
+
+void exahype::stealing::StealingAnalyser::beginToSendDataToMaster() {
+  //if (_isSwitchedOn && !_waitForMasterDataWatch.isOn()) {
+  //  _waitForMasterDataWatch.startTimer();
+  //}
+}
+
+
+void exahype::stealing::StealingAnalyser::endToSendDataToMaster() {
+  /*if (_isSwitchedOn && _waitForMasterDataWatch.isOn()) {
+    _waitForMasterDataWatch.stopTimer();
+    const double elapsedTime = _waitForMasterDataWatch.getCalendarTime();
+    int myMaster = tarch::parallel::NodePool::getInstance().getMasterRank();
+    
+    //_waitForOtherRank[myMaster].setValue(elapsedTime);
+
+    //double currentAvg = _waitForOtherRank[myMaster].getValue();
+
+    if (tarch::la::greater(elapsedTime,0.0)) {
+      logInfo(
+        "endToSendDataToMaster()",
+        "rank had to wait for send to master " << myMaster << " for "<< elapsedTime 
+      );
+    }
+    _waitForMasterDataWatch.startTimer();
+  }*/
+  if (_isSwitchedOn && !_waitForMasterDataWatch.isOn()) {
+    _waitForMasterDataWatch.startTimer();
+  }
+}
+
+void exahype::stealing::StealingAnalyser::beginToSendDataToWorker() {
+  if (_isSwitchedOn && !_waitForWorkerDataWatch.isOn()) {
+    _waitForWorkerDataWatch.startTimer();
+  }
+}
+
+
+void exahype::stealing::StealingAnalyser::endToSendDataToWorker(int worker) {
+  if (_isSwitchedOn && _waitForWorkerDataWatch.isOn()) {
+    _waitForWorkerDataWatch.stopTimer();
+    const double elapsedTime = _waitForWorkerDataWatch.getCalendarTime();
+
+    //_waitForOtherRank[worker].setValue(elapsedTime);
+
+    //double currentAvg = _waitForOtherRank[worker].getValue();
+
+    if (tarch::la::greater(elapsedTime,0.0)) {
+      logInfo(
+        "endToSendDataToWorker()",
+        "rank had to wait for send to worker " << worker << " for "<< elapsedTime 
+      );
+    }
+  }
+}
+
+void exahype::stealing::StealingAnalyser::beginToReceiveDataFromGlobalMaster() {
+  //if (_isSwitchedOn && !_waitForGlobalMasterDataWatch.isOn()) {
+    //_waitForGlobalMasterDataWatch.startTimer();
+  //}
+}
+
+
+void exahype::stealing::StealingAnalyser::endToReceiveDataFromGlobalMaster() {
+  if (_isSwitchedOn && _waitForMasterDataWatch.isOn()) {
+    _waitForMasterDataWatch.stopTimer();
+    const double elapsedTime = _waitForMasterDataWatch.getCalendarTime();
+    int myMaster = 0;
+    
+    _waitForOtherRank[0].setValue(elapsedTime); //0 is global master
+
+    double currentAvg = _waitForOtherRank[0].getValue();
+
+    if (tarch::la::greater(elapsedTime,0.0)) {
+      logInfo(
+        "endToReceiveDataFromGlobalMaster()",
         "rank had to wait for master " << myMaster << " for "<< elapsedTime <<
         " currentAvg "<< currentAvg << "s"
       );
     }
   }
 }
-
 
 void exahype::stealing::StealingAnalyser::dataWasNotReceivedInBackground( int fromRank, int tag, int cardinality, int pageSize ) {
 }

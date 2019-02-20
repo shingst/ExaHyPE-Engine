@@ -57,18 +57,18 @@ class {{project}}::{{abstractSolver}} : public exahype::solvers::FiniteVolumesSo
         const exahype::solvers::Solver::TimeStepping timeStepping
         {% if enableProfiler %},std::unique_ptr<exahype::profilers::Profiler> profiler{% endif %});
     
-    void solutionUpdate(double* luh,const tarch::la::Vector<DIMENSIONS,double>& dx,const double dt,double& maxAdmissibleDt) override;
+    void solutionUpdate(double* const luh,const tarch::la::Vector<DIMENSIONS,double>& dx,const double dt,double& maxAdmissibleDt) override;
     
     double stableTimeStepSize(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& dx) override;
-    void adjustSolution(double* luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,double dt) override;
+    void adjustSolution(double* const luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,double dt) override;
     
-    void ghostLayerFilling(double* luh,const double* luhNeighbour,const tarch::la::Vector<DIMENSIONS,int>& neighbourPosition) override;
-    void ghostLayerFillingAtBoundary(double* luh,const double* luhbnd,const tarch::la::Vector<DIMENSIONS,int>& boundaryPosition) override;
-    void boundaryLayerExtraction(double* luhbnd,const double* luh,const tarch::la::Vector<DIMENSIONS,int>& boundaryPosition) override;
-    void boundaryConditions(double* luh,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const tarch::la::Vector<DIMENSIONS, int>& posCell,const tarch::la::Vector<DIMENSIONS, int>& posBoundary) override;
+    void ghostLayerFilling(double* const luh,const double* const luhNeighbour,const tarch::la::Vector<DIMENSIONS,int>& neighbourPosition) override;
+    void ghostLayerFillingAtBoundary(double* const luh,const double* const luhbnd,const tarch::la::Vector<DIMENSIONS,int>& boundaryPosition) override;
+    void boundaryLayerExtraction(double* const luhbnd,const double* const luh,const tarch::la::Vector<DIMENSIONS,int>& boundaryPosition) override;
+    void boundaryConditions(double* const luh,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const tarch::la::Vector<DIMENSIONS, int>& posCell,const tarch::la::Vector<DIMENSIONS, int>& posBoundary) override;
 
     /// Apr 18, Coding Week: Riemann Solvers in FV. Hopefully inlined as evaluated point wise.
-    double riemannSolver(double* fL, double *fR, const double* qL, const double* qR, int direction) override;
+    double riemannSolver(double* const fL, double* const fR, const double* const qL, const double* const qR, int direction) override;
 
     static void constantsToString(std::ostream& os);
     static void abortWithMsg(const char* const msg);
@@ -85,7 +85,7 @@ class {{project}}::{{abstractSolver}} : public exahype::solvers::FiniteVolumesSo
      * \param[in] d  the column of the flux vector (d=0,1,...,DIMENSIONS).
      * \param[inout] lambda the eigenvalues as C array (already allocated).
      */
-    virtual void eigenvalues(const double* const Q,const int d,double* lambda) {}
+    virtual void eigenvalues(const double* const Q,const int d,double* const lambda) {}
   
     /**
      * Impose boundary conditions at a point on a boundary face
@@ -106,14 +106,14 @@ class {{project}}::{{abstractSolver}} : public exahype::solvers::FiniteVolumesSo
      * \param[inout] FOut      the normal fluxes at point x from outside of the domain
      *                         and time-averaged (over [t,t+dt]) as C array (already allocated).
      */
-    virtual void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double* const stateIn,double* stateOut) {}
+    virtual void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double* const stateIn,double* const stateOut) {}
   
     /**
      * Compute a pointSource contribution.
      * 
      * @TODO: Document me, please.
      **/
-     virtual void pointSource(const double* const Q,const double* const x,const double t,const double dt, double* forceVector,int n) {}
+     virtual void pointSource(const double* const Q,const double* const x,const double t,const double dt, double* const forceVector,int n) {}
   
     /**
      * Compute the Algebraic Sourceterms.
@@ -130,7 +130,7 @@ class {{project}}::{{abstractSolver}} : public exahype::solvers::FiniteVolumesSo
      *                 as C array (already allocated).
      * \param[inout] S the source point as C array (already allocated).
      */
-    virtual void algebraicSource(const double* const Q,double* S) {}
+    virtual void algebraicSource(const double* const Q,double* const S) {}
     
     /**
      * Compute the nonconservative term $B(Q) \nabla Q$.
@@ -154,7 +154,7 @@ class {{project}}::{{abstractSolver}} : public exahype::solvers::FiniteVolumesSo
      * \param[inout]  The vector BgradQ (extends nVar), already allocated. 
      *
      **/
-    virtual void nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) {}
+    virtual void nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ) {}
     
     /**
      * Compute the conserved flux.
@@ -165,7 +165,7 @@ class {{project}}::{{abstractSolver}} : public exahype::solvers::FiniteVolumesSo
      *               holding pointers to actual lists. Thus, the storage may be noncontinous.
      *               In any case, the storage has already been allocated.
      **/
-    virtual void flux(const double* const Q,double** F) {}
+    virtual void flux(const double* const Q,double** const F) {}
   
     /**
      * Compute the flux with diffusive component.
@@ -178,9 +178,9 @@ class {{project}}::{{abstractSolver}} : public exahype::solvers::FiniteVolumesSo
      *               holding pointers to actual lists. Thus, the storage may be noncontinous.
      *               In any case, the storage has already been allocated.
      **/
-    virtual void viscousFlux(const double* const Q, const double* const gradQ, double** F) {}
+    virtual void viscousFlux(const double* const Q, const double* const gradQ, double** const F) {}
     
-    virtual void viscousEigenvalues(const double* const Q,const int d,double* lambda) {}
+    virtual void viscousEigenvalues(const double* const Q,const int d,double* const lambda) {}
     ///@}
 };
 

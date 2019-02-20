@@ -45,8 +45,9 @@ exahype-project SRHD
   end distributed-memory
 
   global-optimisation
-    fuse-algorithmic-steps          = off
-    fuse-algorithmic-steps-factor   = 0.99
+    fuse-algorithmic-steps          = none
+    fuse-algorithmic-steps-rerun-factor   = 0.99
+    fuse-algorithmic-steps-diffusion-factor   = 0.99
     spawn-predictor-as-background-thread = off
     spawn-amr-background-threads         = off
     /* 0.0 und 0.8 sind schon mal zwei Faktoren */
@@ -70,7 +71,6 @@ exahype-project SRHD
     limiter-language const         = C
     dmp-relaxation-parameter = 0.0001
     dmp-difference-scaling   = 0.001
-    steps-till-cured   = 0
 
     plot vtk::Cartesian::vertices::ascii
       variables const = 5

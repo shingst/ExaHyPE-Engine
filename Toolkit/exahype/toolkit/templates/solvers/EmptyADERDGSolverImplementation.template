@@ -24,31 +24,31 @@
 
 
 
-void {{Project}}::{{Solver}}::spaceTimePredictor(double* lQhbnd,double* lFhbnd,double** tempSpaceTimeUnknowns,double** tempSpaceTimeFluxUnknowns,double*  tempUnknowns,double*  tempFluxUnknowns,const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& dx,const double dt) {
+void {{Project}}::{{Solver}}::spaceTimePredictor(double* const lQhbnd,double* const lFhbnd,double** const tempSpaceTimeUnknowns,double** const tempSpaceTimeFluxUnknowns,double* const  tempUnknowns,double* const  tempFluxUnknowns,const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& dx,const double dt) {
   // @todo Please implement/augment if required
 }
 
 
 
-void {{Project}}::{{Solver}}::solutionUpdate(double* luh, const double* const lduh, const double dt) {
+void {{Project}}::{{Solver}}::solutionUpdate(double* const luh, const double* const lduh, const double dt) {
   // @todo Please implement/augment if required
 }
 
 
 
-void {{Project}}::{{Solver}}::volumeIntegral(double* lduh, const double* const lFhi, const tarch::la::Vector<DIMENSIONS,double>& dx) {
+void {{Project}}::{{Solver}}::volumeIntegral(double* const lduh, const double* const lFhi, const tarch::la::Vector<DIMENSIONS,double>& dx) {
   // @todo Please implement/augment if required
 }
 
 
 
-void {{Project}}::{{Solver}}::surfaceIntegral(double* lduh, const double* const lFhbnd, const tarch::la::Vector<DIMENSIONS,double>& dx) {
+void {{Project}}::{{Solver}}::surfaceIntegral(double* const lduh, const double* const lFhbnd, const tarch::la::Vector<DIMENSIONS,double>& dx) {
   // @todo Please implement/augment if required
 }
 
 
 
-void {{Project}}::{{Solver}}::riemannSolver(double* FL, double* FR, const double* const QL, const double* const QR, double* tempFaceUnknownsArray, double** tempStateSizedVectors, double** tempStateSizedSquareMatrices, const double t, const double dt, const int direction) {
+void {{Project}}::{{Solver}}::riemannSolver(double* const FL, double* const FR, const double* const QL, const double* const QR, double* const tempFaceUnknownsArray, double** const tempStateSizedVectors, double** const tempStateSizedSquareMatrices, const double t, const double dt, const int direction) {
   assertion2(direction>=0,dt,direction);
   assertion2(direction<DIMENSIONS,dt,direction);
   // @todo Please implement/augment if required
@@ -56,7 +56,7 @@ void {{Project}}::{{Solver}}::riemannSolver(double* FL, double* FR, const double
 
 
 
-void {{Project}}::{{Solver}}::boundaryConditions(double* fluxOut,double* stateOut,const double* const fluxIn,const double* const stateIn,const tarch::la::Vector<DIMENSIONS, double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const int faceIndex,const int normalNonZero) {
+void {{Project}}::{{Solver}}::boundaryConditions(double* const fluxOut,double* const stateOut,const double* const fluxIn,const double* const stateIn,const tarch::la::Vector<DIMENSIONS, double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const int faceIndex,const int normalNonZero) {
   // @todo Please implement/augment if required
 }
 
@@ -69,31 +69,31 @@ double {{Project}}::{{Solver}}::stableTimeStepSize(const double* const luh,const
 
 
 
-void {{Project}}::{{Solver}}::adjustSolution(double *luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,double dt) {
+void {{Project}}::{{Solver}}::adjustSolution(double* const luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,double dt) {
   // @todo Please implement/augment if required
 }
 
 
 
-void {{Project}}::{{Solver}}::faceUnknownsProlongation(double* lQhbndFine,double* lFhbndFine,const double* lQhbndCoarse,const double* lFhbndCoarse,const int coarseGridLevel,const int fineGridLevel,const tarch::la::Vector<DIMENSIONS-1, int>& subfaceIndex) {
+void {{Project}}::{{Solver}}::faceUnknownsProlongation(double* const lQhbndFine,double* const lFhbndFine,const double* const lQhbndCoarse,const double* const lFhbndCoarse,const int coarseGridLevel,const int fineGridLevel,const tarch::la::Vector<DIMENSIONS-1, int>& subfaceIndex) {
   // @todo Please implement/augment if required
 }
 
 
 
-void {{Project}}::{{Solver}}::faceUnknownsRestriction(double* lQhbndCoarse,double* lFhbndCoarse,const double* lQhbndFine,const double* lFhbndFine,const int coarseGridLevel,const int fineGridLevel,const tarch::la::Vector<DIMENSIONS-1, int>& subfaceIndex) {
+void {{Project}}::{{Solver}}::faceUnknownsRestriction(double* const lQhbndCoarse,double* const lFhbndCoarse,const double* const lQhbndFine,const double* const lFhbndFine,const int coarseGridLevel,const int fineGridLevel,const tarch::la::Vector<DIMENSIONS-1, int>& subfaceIndex) {
   // @todo Please implement/augment if required
 }
 
 
 
-void {{Project}}::{{Solver}}::volumeUnknownsProlongation(double* luhFine, const double* luhCoarse, const int coarseGridLevel, const int fineGridLevel, const tarch::la::Vector<DIMENSIONS, int>& subcellIndex) {
+void {{Project}}::{{Solver}}::volumeUnknownsProlongation(double* const luhFine, const double* const luhCoarse, const int coarseGridLevel, const int fineGridLevel, const tarch::la::Vector<DIMENSIONS, int>& subcellIndex) {
   // @todo Please implement/augment if required
 }
 
 
 
-void {{Project}}::{{Solver}}::volumeUnknownsRestriction(double* luhCoarse, const double* luhFine, const int coarseGridLevel, const int fineGridLevel, const tarch::la::Vector<DIMENSIONS, int>& subcellIndex) {
+void {{Project}}::{{Solver}}::volumeUnknownsRestriction(double* const luhCoarse, const double* const luhFine, const int coarseGridLevel, const int fineGridLevel, const tarch::la::Vector<DIMENSIONS, int>& subcellIndex) {
   // @todo Please implement/augment if required
 }
 

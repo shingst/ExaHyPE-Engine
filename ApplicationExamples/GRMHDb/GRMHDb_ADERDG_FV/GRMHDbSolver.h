@@ -32,9 +32,7 @@ class GRMHDb::GRMHDbSolver: public exahype::solvers::LimitingADERDGSolver {
         const int maximumMeshDepth,
         const int haloCells,
         const int regularisedFineGridLevels,
-        const exahype::solvers::Solver::TimeStepping timeStepping,
-        const int limiterHelperLayers,
-        const int DMPObservables,
+        const exahype::solvers::Solver::TimeStepping timeStepping,const int DMPObservables,
         const double DMPRelaxationParameter,
         const double DMPDifferenceScaling,
         const int iterationsToCureTroubledCell
@@ -42,7 +40,7 @@ class GRMHDb::GRMHDbSolver: public exahype::solvers::LimitingADERDGSolver {
     
     void projectOnFVLimiterSpace(const double* const luh, double* const lim) const override;
     void projectOnDGSpace(const double* const lim, double* const luh) const override;
-    bool discreteMaximumPrincipleAndMinAndMaxSearch(const double* const luh, double* boundaryMinPerVariables, double* boundaryMaxPerVariables) override;
+    bool discreteMaximumPrincipleAndMinAndMaxSearch(const double* const luh, double* const boundaryMinPerVariables, double* const boundaryMaxPerVariables) override;
     void findCellLocalMinAndMax(const double* const luh, double* const localMinPerVariables, double* const localMaxPerVariable) override;
     void findCellLocalLimiterMinAndMax(const double* const lim, double* const localMinPerObservable, double* const localMaxPerObservable) override;
 };

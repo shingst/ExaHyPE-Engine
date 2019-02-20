@@ -59,16 +59,6 @@ class exahype::mappings::FinaliseMeshRefinement {
    */
   static bool OneSolverRequestedMeshUpdate;
 
-  /**
-   * A minimum time step size for each solver.
-   */
-  std::vector<double> _minTimeStepSizes;
-
-  /**
-   * The maximum level occupied by cells of a solver.
-   */
-  std::vector<int> _maxLevels;
-
   int _numberOfEnclaveCells;
   int _numberOfSkeletonCells;
 
@@ -87,10 +77,7 @@ class exahype::mappings::FinaliseMeshRefinement {
    */
   bool _backgroundJobsHaveTerminated = false;
 
-  /**
-   * Prepare a appropriately sized vector _minTimeStepSizes
-   * with elements initiliased to MAX_DOUBLE.
-   */
+
   void initialiseLocalVariables();
 
  public:

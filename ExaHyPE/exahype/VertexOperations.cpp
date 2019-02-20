@@ -1,5 +1,4 @@
-// Do not modify any part of this file. It will be overwritten throughout the 
-// next pdt run.
+// THIS FILE WAS MODIFIED BY HAND. BE CAREFUL WHEN RUNNING PEANO'S PDT
 #include "exahype/VertexOperations.h"
 #include "peano/utils/Loop.h"
 #include "peano/grid/Checkpoint.h"

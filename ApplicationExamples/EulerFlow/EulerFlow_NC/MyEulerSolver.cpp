@@ -70,7 +70,7 @@ void Euler::MyEulerSolver::init(const std::vector<std::string>& cmdlineargs,cons
 //   idfunc = MovingGauss; //  TODO(Dominic): Use this function for the dyn amr test.
 }
 
-void Euler::MyEulerSolver::flux(const double* const Q, double** F) {
+void Euler::MyEulerSolver::flux(const double* const Q, double** const F) {
   // THERE ARE NO FLUXES in this formulation,
   // ALL IS DONE VIA NCP.
   // This should not even be called.
@@ -85,7 +85,7 @@ constexpr double delta(int i, int j) {
 	return (i==j) ? 1 : 0;
 }
 
-void Euler::MyEulerSolver::nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ){
+void Euler::MyEulerSolver::nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ){
   // This is a nonconservative verison of the Euler equations.
   // We just implement:
   //
@@ -144,7 +144,7 @@ void Euler::MyEulerSolver::nonConservativeProduct(const double* const Q,const do
 
 void Euler::MyEulerSolver::eigenvalues(const double* const Q,
                                        const int normalNonZeroIndex,
-                                       double* lambda) {
+                                       double* const lambda) {
   ReadOnlyVariables vars(Q);
   Variables eigs(lambda);
 
@@ -161,7 +161,7 @@ void Euler::MyEulerSolver::eigenvalues(const double* const Q,
 }
 
 
-void Euler::MyEulerSolver::adjustPointSolution(const double* const x,const double t,const double dt,double* Q) {
+void Euler::MyEulerSolver::adjustPointSolution(const double* const x,const double t,const double dt,double* const Q) {
   // Dimensions             = 2
   // Number of variables    = 5 (#unknowns + #parameters)
   // @todo Please implement
@@ -174,7 +174,7 @@ void Euler::MyEulerSolver::adjustPointSolution(const double* const x,const doubl
 
 exahype::solvers::Solver::RefinementControl
 Euler::MyEulerSolver::refinementCriterion(
-    const double* luh, const tarch::la::Vector<DIMENSIONS, double>& center,
+    const double* const luh, const tarch::la::Vector<DIMENSIONS, double>& center,
     const tarch::la::Vector<DIMENSIONS, double>& dx, double t,
     const int level) {
 //  if (t>1e-6)
@@ -206,7 +206,7 @@ Euler::MyEulerSolver::refinementCriterion(
 void Euler::MyEulerSolver::boundaryValues(const double* const x, const double t,const double dt,
                                           const int faceIndex,const int normalNonZero,
                                           const double* const fluxIn,const double* const stateIn,
-                                          double* fluxOut, double* stateOut) {
+                                          double* const fluxOut, double* const stateOut) {
   // Dimensions             = 2
   // Number of variables    = 5 (#unknowns + #parameters)
 

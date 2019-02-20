@@ -47,8 +47,9 @@ exahype-project GPRDIM
   end distributed-memory
 
   global-optimisation
-    fuse-algorithmic-steps          = on
-    fuse-algorithmic-steps-factor   = 0.99
+    fuse-algorithmic-steps          = all
+    fuse-algorithmic-steps-rerun-factor   = 0.99
+    fuse-algorithmic-steps-diffusion-factor   = 0.99
     spawn-predictor-as-background-thread = off
     spawn-amr-background-threads         = on
     disable-vertex-exchange-in-time-steps = on
@@ -72,11 +73,9 @@ exahype-project GPRDIM
     limiter-type const         = musclhancock
     limiter-optimisation const = generic
     limiter-language const     = C
-    dmp-observables  const         = 2
-    dmp-relaxation-parameter       = 1e+3 
-    dmp-difference-scaling         = 1e+4 
-    steps-till-cured           = 5
-    // helper-layers              = 2
+    dmp-observables  const     = 2
+    dmp-relaxation-parameter   = 1e+3 
+    dmp-difference-scaling     = 1e+4 
 
      plot user::defined TecplotWriter
        variables const = 24

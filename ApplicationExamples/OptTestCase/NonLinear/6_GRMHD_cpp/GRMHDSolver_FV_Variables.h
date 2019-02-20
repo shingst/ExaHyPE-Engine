@@ -176,7 +176,7 @@ namespace GRMHD {
  *   public:
  *      double &varfoo;
  *      double &varbar;
- *      VariablePointers(double*Q) : varfoo(Q[0]), bar(Q[1]), ... {}
+ *      VariablePointers(double* const Q) : varfoo(Q[0]), bar(Q[1]), ... {}
  * }
  * 
  * Advantages: Use as positions in Q.
@@ -295,7 +295,7 @@ class GRMHD::AbstractGRMHDSolver_FV::Variables : public GRMHD::AbstractGRMHDSolv
     static constexpr int SizeParameters = 0;
     static constexpr int Size           = 23+0;
   
-    Variables(double* Q) : _Q(Q) {}
+    Variables(double* const Q) : _Q(Q) {}
     
     void operator = (Variables& variables) {
       std::copy(variables.data(),variables.data()+Size,_Q);
@@ -499,7 +499,7 @@ class GRMHD::AbstractGRMHDSolver_FV::Fluxes : public GRMHD::AbstractGRMHDSolver_
   private:
     double** _F;
   public:
-    Fluxes(double** F) : _F(F) {}
+    Fluxes(double** const F) : _F(F) {}
     
     /** The rows of the flux tensor. */
     int variables() const {

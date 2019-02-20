@@ -180,7 +180,7 @@ void {{codeNamespace}}::findCellLocalLimiterMinAndMax(
   for (int z = {{ghostLayerWidth3D}}; z < {{nDofLim3D+ghostLayerWidth3D}}; z++) { // skip the last element
     for (int y = {{ghostLayerWidth}}; y < {{nDofLim+ghostLayerWidth}}; y++) {
       for (int x = {{ghostLayerWidth}}; x < {{nDofLim+ghostLayerWidth}}; x++) {
-        solver->mapDiscreteMaximumPrincipleObservables(observables,{{nObs}},lim+(((z*{{nDofLim+2*ghostLayerWidth}}+y)*{{nDofLim+2*ghostLayerWidth}}+x)*{{nData}}));
+        solver->mapDiscreteMaximumPrincipleObservables(observables,lim+(((z*{{nDofLim+2*ghostLayerWidth}}+y)*{{nDofLim+2*ghostLayerWidth}}+x)*{{nData}}));
 
         for (int v = 0; v < {{nObs}}; v++) {
           localMinPerVariables[v] = std::min ( localMinPerVariables[v], observables[v] );
@@ -207,7 +207,7 @@ void {{codeNamespace}}::findCellLocalMinAndMax(
   double observables[{{nObs}}] __attribute__((aligned(ALIGNMENT)));
 
   for (int zyx = 0; zyx < {{nDof**nDim}}; zyx++) {
-    solver->mapDiscreteMaximumPrincipleObservables(observables,{{nObs}},luh+(zyx*{{nData}}));
+    solver->mapDiscreteMaximumPrincipleObservables(observables,luh+(zyx*{{nData}}));
 
     for (int v = 0; v < {{nObs}}; v++) {
       localMinPerVariables[v] = std::min ( localMinPerVariables[v], observables[v] );
@@ -248,7 +248,7 @@ void {{codeNamespace}}::compareWithADERDGSolutionAtGaussLobattoNodes(
     // will overwrite lop, no need to set to 0
     {{ m.matmul('uh2lob_y_slice', 'tmpX', 'uh2lob', 'lob', 'x*'~nDataPad, '0', '0') | indent(4) }}{##} 
     for(int p = 0; p < {{nDof}}; p++) {
-      solver->mapDiscreteMaximumPrincipleObservables(observables, {{nObs}}, lob+p*{{nDataPad}});
+      solver->mapDiscreteMaximumPrincipleObservables(observables, lob+p*{{nDataPad}});
       for (int n = 0; n < {{nObs}}; n++) {
         min[n] = std::min( min[n], observables[n] );
         max[n] = std::max( max[n], observables[n] );
@@ -275,7 +275,7 @@ void {{codeNamespace}}::compareWithADERDGSolutionAtGaussLobattoNodes(
     // will overwrite lop, no need to set to 0
     {{ m.matmul('uh2lob_z_slice', 'tmpY', 'uh2lob', 'lob', 'yx*'~nDataPad, '0', '0') | indent(4) }}{##}
     for(int p = 0; p < {{nDof}}; p++) {
-      solver->mapDiscreteMaximumPrincipleObservables(observables, {{nObs}}, lob+p*{{nDataPad}});
+      solver->mapDiscreteMaximumPrincipleObservables(observables, lob+p*{{nDataPad}});
       for (int n = 0; n < {{nObs}}; n++) {
         min[n] = std::min( min[n], observables[n] );
         max[n] = std::max( max[n], observables[n] );
@@ -314,7 +314,7 @@ void {{codeNamespace}}::compareWithADERDGSolutionAtFVSubcellCenters(
     // will overwrite lim, no need to set to 0
     {{ m.matmul('dg2fv_y_slice', 'tmpX', 'dg2fv', 'lim', 'x*'~nDataPad, '0', '0') | indent(4) }}{##}
     for(int p = 0; p < {{nDofLim}}; p++) {
-      solver->mapDiscreteMaximumPrincipleObservables(observables, {{nObs}}, lim+p*{{nDataPad}});
+      solver->mapDiscreteMaximumPrincipleObservables(observables, lim+p*{{nDataPad}});
       for (int n = 0; n < {{nObs}}; n++) {
         min[n] = std::min( min[n], observables[n] );
         max[n] = std::max( max[n], observables[n] );
@@ -341,7 +341,7 @@ void {{codeNamespace}}::compareWithADERDGSolutionAtFVSubcellCenters(
     // will overwrite lim, no need to set to 0
     {{ m.matmul('dg2fv_z_slice', 'tmpY', 'dg2fv', 'lim', 'yx*'~nDataPad, '0', '0') | indent(4) }}{##}
     for(int p = 0; p < {{nDofLim}}; p++) {
-      solver->mapDiscreteMaximumPrincipleObservables(observables, {{nObs}}, lim+p*{{nDataPad}});
+      solver->mapDiscreteMaximumPrincipleObservables(observables, lim+p*{{nDataPad}});
       for (int n = 0; n < {{nObs}}; n++) {
         min[n] = std::min( min[n], observables[n] );
         max[n] = std::max( max[n], observables[n] );

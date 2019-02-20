@@ -237,57 +237,13 @@ public:
                           const tarch::la::Vector<DIMENSIONS, double>& h,
                           int level);
 
+  //
+  // Below all methods are nop.
+  //
+  //===================================
+
   /**
-   * This routine is called on the master.
-   *
-   * Send the local array of reduced minimal time step sizes down to
-   * the worker. Further send down face data if a cell description
-   * registered in the fine grid cell is of type Descendant.
-   *
-   * \note Has to return true since in the next adapter,
-   * we will perform a reduction and skip the broadcast.
-   * Skipping the broadcast implies that the reduceToDataMaster
-   * flag is not updated anymore.
-   *
-   *
-   * <h2>Domain Decomposition in Peano</h2>
-   * It is important to notice
-   * that the master rank's cell
-   * and the worker rank's cell
-   * overlap.
-   *
-   * It is further important to notice
-   * that both master and worker rank
-   * are communicating with their
-   * neighbouring cells.
-   *
-   * The master rank's cell communicates
-   * with some neighbour cells
-   * via touchVertexFirstTime while
-   * the the worker rank's cell communicates
-   * with these cells via mergeWithNeighbour,
-   * and vice versa.
-   *
-   * This means that cell descriptions of type
-   * Cell registered at a worker cell
-   * do not need to communicate their
-   * boundary values to their master.
-   *
-   * Descendants are used to store prolongated
-   * face unknowns originating from coarser grid levels.
-   * If the overlapping cell holds cell
-   * descriptions of type Descendant on the master (and worker) side,
-   * we thus need to send data from the master rank to the worker rank.
-   * This operation is performed in the mapping MergeNeighbours since
-   * it is a top-down broadcast type operation.
-   *
-   * Ancestors are used for storing restricted
-   * face unknowns originating from finer grid levels.
-   * If the overlapping cell holds cell
-   * descriptions of type Ancestor on the worker (and master) side,
-   * we thus need to send data from the worker rank to the master rank.
-   * This operation is performed in the mapping Sending since
-   * it is a bottom-up reduction type operation.
+   * Nop.
    */
   bool prepareSendToWorker(
       exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
@@ -299,22 +255,7 @@ public:
       int worker);
 
   /**
-   * Receive kick-off message from master
-   *
-   * Counterpart of prepareSendToWorker(). This operation is called once when
-   * we receive data from the master node.
-   *
-   * To do a proper Riemann solve, it is important that all the solvers have
-   * the right state.We therefore receive for each individual solver a couple
-   * of messages and merge them into the global instance before we continue
-   * with the actual iteration. However, this data exchange in the mapping
-   * Sending. See the documentation there for rationale.
-   *
-   * We further receive face data send from the master in
-   * this hook if a cell description of the worker (and master)
-   * is of type Descendant. See prepareSendToWorker(...) for a rationale
-   *
-   * \see prepareSendToWorker(...)
+   * Nop.
    */
   void receiveDataFromMaster(
       exahype::Cell& receivedCell, exahype::Vertex* receivedVertices,
@@ -327,7 +268,6 @@ public:
       exahype::Cell& workersCoarseGridCell,
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
 
-
   /**
    * Nop.
    */
@@ -337,12 +277,6 @@ public:
       const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
       const tarch::la::Vector<DIMENSIONS, double>& cellSize,
       int level);
-
-  //
-  // Below all methods are nop.
-  //
-  //===================================
-
 
   /**
    * Nop.

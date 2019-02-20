@@ -15,7 +15,7 @@ exahype::solvers::ADERDGSolver::AdjustSolutionValue ElasticWave::MyElasticWaveSo
   return tarch::la::equals(t,0.0) ? exahype::solvers::ADERDGSolver::AdjustSolutionValue::PointWisely : exahype::solvers::ADERDGSolver::AdjustSolutionValue::No;
 }
 
-void ElasticWave::MyElasticWaveSolver::adjustPointSolution(const double* const x,const double t,const double dt,double* Q) {
+void ElasticWave::MyElasticWaveSolver::adjustPointSolution(const double* const x,const double t,const double dt,double* const Q) {
   // Dimensions             = 3
   // Number of variables    = 12 (#unknowns + #parameters)
   
@@ -50,7 +50,7 @@ void ElasticWave::MyElasticWaveSolver::adjustPointSolution(const double* const x
   }
 }
 
-void ElasticWave::MyElasticWaveSolver::eigenvalues(const double* const Q,const int d,double* lambda) {
+void ElasticWave::MyElasticWaveSolver::eigenvalues(const double* const Q,const int d,double* const lambda) {
   // Dimensions             = 3
   // Number of variables    = 12 + #parameters
   
@@ -71,7 +71,7 @@ void ElasticWave::MyElasticWaveSolver::eigenvalues(const double* const Q,const i
 }
 
 
-void ElasticWave::MyElasticWaveSolver::flux(const double* const Q,double** F) {
+void ElasticWave::MyElasticWaveSolver::flux(const double* const Q,double** const F) {
   // Dimensions             = 3
   // Number of variables    = 12 + #parameters
   
@@ -110,7 +110,7 @@ void ElasticWave::MyElasticWaveSolver::flux(const double* const Q,double** F) {
 
 void ElasticWave::MyElasticWaveSolver::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,
   const double * const fluxIn,const double* const stateIn,
-  double *fluxOut,double* stateOut) {
+  double* const fluxOut,double* const stateOut) {
   // Dimensions             = 3
   // Number of variables    = 12 + #parameters
 
@@ -164,7 +164,7 @@ void ElasticWave::MyElasticWaveSolver::boundaryValues(const double* const x,cons
 
 }
 
-void ElasticWave::MyElasticWaveSolver::nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ){
+void ElasticWave::MyElasticWaveSolver::nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ){
   // Dimensions             = 3
   // Number of variables    = 12 (#unknowns + #parameters)
 
@@ -219,7 +219,7 @@ void ElasticWave::MyElasticWaveSolver::nonConservativeProduct(const double* cons
 }
 
 
-void ElasticWave::MyElasticWaveSolver::coefficientMatrix(const double* const Q,const int d,double* Bn){
+void ElasticWave::MyElasticWaveSolver::coefficientMatrix(const double* const Q,const int d,double* const Bn){
   // Dimensions             = 3
   // Number of variables    = 12 (#unknowns + #parameters)
   
@@ -372,7 +372,7 @@ void ElasticWave::MyElasticWaveSolver::coefficientMatrix(const double* const Q,c
 
 
 
-void ElasticWave::MyElasticWaveSolver::pointSource(const double* const x,const double t,const double dt, double* forceVector, double* x0){
+void ElasticWave::MyElasticWaveSolver::pointSource(const double* const x,const double t,const double dt, double* const forceVector, double* const x0){
   //TODO KD // @todo Please implement/augment if required and set bool function
 
    double pi = 3.14159265359;
@@ -406,7 +406,7 @@ void ElasticWave::MyElasticWaveSolver::pointSource(const double* const x,const d
 }
 
 
-exahype::solvers::Solver::RefinementControl ElasticWave::MyElasticWaveSolver::refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
+exahype::solvers::Solver::RefinementControl ElasticWave::MyElasticWaveSolver::refinementCriterion(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
   // @todo Please implement/augment if required
   return exahype::solvers::Solver::RefinementControl::Keep;
 }

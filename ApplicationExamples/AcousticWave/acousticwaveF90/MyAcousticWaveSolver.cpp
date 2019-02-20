@@ -13,7 +13,7 @@ bool AcousticWave::MyAcousticWaveSolver::hasToAdjustSolution(const tarch::la::Ve
  
 }
 
-void AcousticWave::MyAcousticWaveSolver::adjustedSolutionValues(const double* const x,const double w,const double t,const double dt,double* Q) {
+void AcousticWave::MyAcousticWaveSolver::adjustedSolutionValues(const double* const x,const double w,const double t,const double dt,double* const Q) {
   // Dimensions             = 3
   // Number of variables    = 4 (#unknowns + #parameters)
   
@@ -27,13 +27,13 @@ void AcousticWave::MyAcousticWaveSolver::adjustedSolutionValues(const double* co
   Q[3] = 0.0;
 }
 
-exahype::solvers::Solver::RefinementControl AcousticWave::MyAcousticWaveSolver::refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
+exahype::solvers::Solver::RefinementControl AcousticWave::MyAcousticWaveSolver::refinementCriterion(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
   // @todo Please implement/augment if required
   return exahype::solvers::Solver::RefinementControl::Keep;
 }
 
 
-// void ScalarWave::MyScalarWaveSolver::eigenvalues(const double* const Q,const int normalNonZeroIndex,double* lambda) {
+// void ScalarWave::MyScalarWaveSolver::eigenvalues(const double* const Q,const int normalNonZeroIndex,double* const lambda) {
 //   // Dimensions             = 3
 //   // Number of variables    = 4 (#unknowns + #parameters)
   
@@ -44,7 +44,7 @@ exahype::solvers::Solver::RefinementControl AcousticWave::MyAcousticWaveSolver::
 //   lambda[3] = 0.0;
 // }
 
-// void ScalarWave::MyScalarWaveSolver::flux(const double* const Q,double** F) {
+// void ScalarWave::MyScalarWaveSolver::flux(const double* const Q,double** const F) {
 //   // Dimensions             = 3
 //   // Number of variables    = 4 (#unknowns + #parameters)
   
@@ -66,7 +66,7 @@ exahype::solvers::Solver::RefinementControl AcousticWave::MyAcousticWaveSolver::
 // }
 
 
-// void ScalarWave::MyScalarWaveSolver::algebraicSource(const double* const Q,double* S) {
+// void ScalarWave::MyScalarWaveSolver::algebraicSource(const double* const Q,double* const S) {
 //   // Dimensions             = 3
 //   // Number of variables    = 4 (#unknowns + #parameters)
   
@@ -80,7 +80,7 @@ exahype::solvers::Solver::RefinementControl AcousticWave::MyAcousticWaveSolver::
 
 void AcousticWave::MyAcousticWaveSolver::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,
   const double * const fluxIn,const double* const stateIn,
-  double *fluxOut,double* stateOut) {
+  double* const fluxOut,double* const stateOut) {
   // Dimensions             = 3
   // Number of variables    = 4 (#unknowns + #parameters)
 
@@ -97,7 +97,7 @@ void AcousticWave::MyAcousticWaveSolver::boundaryValues(const double* const x,co
 }
 
 
-// void ScalarWave::MyScalarWaveSolver::nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) {
+// void ScalarWave::MyScalarWaveSolver::nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ) {
 //   // Dimensions             = 3
 //   // Number of variables    = 4 (#unknowns + #parameters)
 
@@ -109,7 +109,7 @@ void AcousticWave::MyAcousticWaveSolver::boundaryValues(const double* const x,co
 // }
 
     
-// void ScalarWave::MyScalarWaveSolver::coefficientMatrix(const double* const Q,const int normalNonZero,double* Bn) {
+// void ScalarWave::MyScalarWaveSolver::coefficientMatrix(const double* const Q,const int normalNonZero,double* const Bn) {
 //   // Dimensions             = 3
 //   // Number of variables    = 4 (#unknowns + #parameters)
   

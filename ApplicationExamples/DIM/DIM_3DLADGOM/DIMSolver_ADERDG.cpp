@@ -24,7 +24,7 @@ void DIM::DIMSolver_ADERDG::init(const std::vector<std::string>& cmdlineargs,con
   inittecplot_(&order,&order);
 }
 
-void DIM::DIMSolver_ADERDG::adjustPointSolution(const double* const x,const double t,const double dt,double* Q) {
+void DIM::DIMSolver_ADERDG::adjustPointSolution(const double* const x,const double t,const double dt,double* const Q) {
   // Dimensions                        = 3
   // Number of variables + parameters  = 14 + 0
   // @todo Please implement/augment if required
@@ -37,7 +37,7 @@ void DIM::DIMSolver_ADERDG::adjustPointSolution(const double* const x,const doub
 
 void DIM::DIMSolver_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,
   const double * const fluxIn,const double* const stateIn,
-  double *fluxOut,double* stateOut) {
+  double* const fluxOut,double* const stateOut) {
 const int nVar = DIM::AbstractDIMSolver_ADERDG::NumberOfVariables;
   const int order = DIM::AbstractDIMSolver_ADERDG::Order;
   const int basisSize = order + 1;
@@ -65,7 +65,7 @@ const int nVar = DIM::AbstractDIMSolver_ADERDG::NumberOfVariables;
   }
 }
 /*
-void DIM::DIMSolver_ADERDG::algebraicSource(const double* const Q,double* S) {
+void DIM::DIMSolver_ADERDG::algebraicSource(const double* const Q,double* const S) {
 	const int nVar = DIM::AbstractDIMSolver_ADERDG::NumberOfVariables;
   // @todo Please implement/augment if required
   for(int m=0; m < nVar; m++) {
@@ -73,7 +73,7 @@ void DIM::DIMSolver_ADERDG::algebraicSource(const double* const Q,double* S) {
   }
 }
 */
-exahype::solvers::Solver::RefinementControl DIM::DIMSolver_ADERDG::refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
+exahype::solvers::Solver::RefinementControl DIM::DIMSolver_ADERDG::refinementCriterion(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
   if ( level > getCoarsestMeshLevel() )
     return exahype::solvers::Solver::RefinementControl::Erase;
   else return exahype::solvers::Solver::RefinementControl::Keep;
@@ -86,7 +86,7 @@ exahype::solvers::Solver::RefinementControl DIM::DIMSolver_ADERDG::refinementCri
 //*****************************************************************************
 
 
-void DIM::DIMSolver_ADERDG::eigenvalues(const double* const Q,const int d,double* lambda) {
+void DIM::DIMSolver_ADERDG::eigenvalues(const double* const Q,const int d,double* const lambda) {
   // Dimensions                        = 3
   // Number of variables + parameters  = 14 + 0
   
@@ -97,7 +97,7 @@ void DIM::DIMSolver_ADERDG::eigenvalues(const double* const Q,const int d,double
 }
 
 
-void DIM::DIMSolver_ADERDG::flux(const double* const Q,double** F) {
+void DIM::DIMSolver_ADERDG::flux(const double* const Q,double** const F) {
 	const int nVar = DIM::AbstractDIMSolver_ADERDG::NumberOfVariables;
   // Dimensions                        = 3
   // Number of variables + parameters  = 14 + 0
@@ -111,10 +111,8 @@ void DIM::DIMSolver_ADERDG::flux(const double* const Q,double** F) {
 	}
 }
 
-void DIM::DIMSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(
-    double* observables,const int numberOfObservables,
-    const double* const Q) const {
-  assertion(numberOfObservables==2);
+void DIM::DIMSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(double* const observables, const double* const Q) const {
+  assertion(NumberOfDMPObservables==2);
   ReadOnlyVariables vars(Q);
 
   observables[0]=Q[12]; //extract alpha
@@ -157,11 +155,11 @@ bool DIM::DIMSolver_ADERDG::isPhysicallyAdmissible(
   //  double obsMax[(NumberOfVariables+NumberOfParameters)];
   //  kernels::limiter::generic::c::computeMinimumAndMaximumValueAtGaussLobattoNodes<Order+1,NumberOfVariables+NumberOfParameters>(
   //      solution,obsMin,obsMax);
-  //  pdelimitervalue_(&limvalue,&center[0],&NumberOfObservables, obsMin, obsMax);
+  //  pdelimitervalue_(&limvalue,&center[0],&NumberOfDMPObservables, obsMin, obsMax);
 
-  //pdelimitervalue_(&limvalue,&center[0],&NumberOfObservables, observablesMin, observablesMax);
+  //pdelimitervalue_(&limvalue,&center[0],&NumberOfDMPObservables, observablesMin, observablesMax);
   if (tarch::la::equals(t,0.0)) {
-	  //pdelimitervalue_(&limvalue,&center[0],&NumberOfObservables, observablesMin, observablesMax);
+	  //pdelimitervalue_(&limvalue,&center[0],&NumberOfDMPObservables, observablesMin, observablesMax);
 	  pdegeometriclimitervalue_(&limvalue,&center[0]);
 	  if(limvalue>0){
 		  return false;
@@ -183,7 +181,7 @@ bool DIM::DIMSolver_ADERDG::isPhysicallyAdmissible(
   }*/
 }
 
-void  DIM::DIMSolver_ADERDG::nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) {
+void  DIM::DIMSolver_ADERDG::nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ) {
   // @todo Please implement/augment if required
    pdencp_(BgradQ, Q, gradQ);
 /*    BgradQ[0] = 0.0;

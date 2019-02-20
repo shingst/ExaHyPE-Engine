@@ -29,6 +29,7 @@
  #include "exahype/adapters/MergeNeighbours.h" 
  #include "exahype/adapters/UpdateAndReduce.h" 
  #include "exahype/adapters/Prediction.h" 
+ #include "exahype/adapters/Correction.h" 
 
 
 
@@ -67,6 +68,7 @@ class exahype::repositories::RepositorySTDStack: public exahype::repositories::R
     peano::grid::Grid<exahype::Vertex,exahype::Cell,exahype::State,VertexStack,CellStack,exahype::adapters::MergeNeighbours> _gridWithMergeNeighbours;
     peano::grid::Grid<exahype::Vertex,exahype::Cell,exahype::State,VertexStack,CellStack,exahype::adapters::UpdateAndReduce> _gridWithUpdateAndReduce;
     peano::grid::Grid<exahype::Vertex,exahype::Cell,exahype::State,VertexStack,CellStack,exahype::adapters::Prediction> _gridWithPrediction;
+    peano::grid::Grid<exahype::Vertex,exahype::Cell,exahype::State,VertexStack,CellStack,exahype::adapters::Correction> _gridWithCorrection;
 
      
    exahype::records::RepositoryState               _repositoryState;
@@ -84,6 +86,7 @@ class exahype::repositories::RepositorySTDStack: public exahype::repositories::R
     tarch::timing::Measurement _measureMergeNeighboursCPUTime;
     tarch::timing::Measurement _measureUpdateAndReduceCPUTime;
     tarch::timing::Measurement _measurePredictionCPUTime;
+    tarch::timing::Measurement _measureCorrectionCPUTime;
 
     tarch::timing::Measurement _measureMeshRefinementCalendarTime;
     tarch::timing::Measurement _measureMeshRefinementAndPlotTreeCalendarTime;
@@ -98,6 +101,7 @@ class exahype::repositories::RepositorySTDStack: public exahype::repositories::R
     tarch::timing::Measurement _measureMergeNeighboursCalendarTime;
     tarch::timing::Measurement _measureUpdateAndReduceCalendarTime;
     tarch::timing::Measurement _measurePredictionCalendarTime;
+    tarch::timing::Measurement _measureCorrectionCalendarTime;
 
    
   public:
@@ -150,6 +154,7 @@ class exahype::repositories::RepositorySTDStack: public exahype::repositories::R
     virtual void switchToMergeNeighbours();    
     virtual void switchToUpdateAndReduce();    
     virtual void switchToPrediction();    
+    virtual void switchToCorrection();    
 
     virtual bool isActiveAdapterMeshRefinement() const;
     virtual bool isActiveAdapterMeshRefinementAndPlotTree() const;
@@ -164,6 +169,7 @@ class exahype::repositories::RepositorySTDStack: public exahype::repositories::R
     virtual bool isActiveAdapterMergeNeighbours() const;
     virtual bool isActiveAdapterUpdateAndReduce() const;
     virtual bool isActiveAdapterPrediction() const;
+    virtual bool isActiveAdapterCorrection() const;
 
    
     #ifdef Parallel

@@ -36,9 +36,7 @@ class NavierStokesADERDG::MyNavierStokesSolver_ADERDG : public NavierStokesADERD
         const int maximumMeshDepth,
         const int haloCells,
         const int regularisedFineGridLevels,
-        const exahype::solvers::Solver::TimeStepping timeStepping,
-        const int limiterHelperLayers,
-        const int DMPObservables
+        const exahype::solvers::Solver::TimeStepping timeStepping,const int DMPObservables
         );
 
     /**
@@ -61,7 +59,7 @@ class NavierStokesADERDG::MyNavierStokesSolver_ADERDG : public NavierStokesADERD
      * \param[inout] Q         the conserved variables (and parameters) associated with a quadrature point
      *                         as C array (already allocated).
      */
-    void adjustPointSolution(const double* const x,const double t,const double dt,double* Q) final override;
+    void adjustPointSolution(const double* const x,const double t,const double dt,double* const Q) final override;
 
     /**
      * Compute the eigenvalues of the flux tensor per coordinate direction \p d.
@@ -71,8 +69,8 @@ class NavierStokesADERDG::MyNavierStokesSolver_ADERDG : public NavierStokesADERD
      * \param[in] d  the column of the flux vector (d=0,1,...,DIMENSIONS).
      * \param[inout] lambda the eigenvalues as C array (already allocated).
      */
-    void eigenvalues(const double* const Q,const int d,double* lambda) final override;
-    void viscousEigenvalues(const double* const Q,const int d,double* lambda) final override;
+    void eigenvalues(const double* const Q,const int d,double* const lambda) final override;
+    void viscousEigenvalues(const double* const Q,const int d,double* const lambda) final override;
     
     /**
      * Impose boundary conditions at a point on a boundary face
@@ -93,7 +91,7 @@ class NavierStokesADERDG::MyNavierStokesSolver_ADERDG : public NavierStokesADERD
      * \param[inout] FOut      the normal fluxes at point x from outside of the domain
      *                         and time-averaged (over [t,t+dt]) as C array (already allocated).
      */
-    void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double * const fluxIn,const double* const stateIn,double *fluxOut,double* stateOut) final override;
+    void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double * const fluxIn,const double* const stateIn,double* const fluxOut,double* const stateOut) final override;
     
     /**
      * Evaluate the refinement criterion within a cell.
@@ -109,7 +107,7 @@ class NavierStokesADERDG::MyNavierStokesSolver_ADERDG : public NavierStokesADERD
      * \param[in]    dt        the width of the time interval.
      * \return One of exahype::solvers::Solver::RefinementControl::{Erase,Keep,Refine}.
      */
-    exahype::solvers::Solver::RefinementControl refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& centre,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) override;
+    exahype::solvers::Solver::RefinementControl refinementCriterion(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& centre,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) override;
     
     //PDE
 
@@ -124,7 +122,7 @@ class NavierStokesADERDG::MyNavierStokesSolver_ADERDG : public NavierStokesADERD
      *                     as C array (already allocated).
      * \param[inout] F the fluxes at that point as C array (already allocated).
      */
-    void viscousFlux(const double* const Q,const double* gradQ, double** F) final override;
+    void viscousFlux(const double* const Q,const double* const gradQ, double** const F) final override;
 
 /* algebraicSource() function not included, as requested by the specification file */
 

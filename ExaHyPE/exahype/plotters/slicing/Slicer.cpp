@@ -14,8 +14,8 @@ using namespace exahype::plotters;
 using namespace std;
 
 // storage for the RegionSlicer limits
-const double RegionSlicer::defaultLeftBottomFront = -std::numeric_limits<double>::max();
-const double RegionSlicer::defaultRightTopBack    = +std::numeric_limits<double>::max();
+const double RegionSlicer::defaultLeftBottomFront = -std::numeric_limits<double>::infinity();
+const double RegionSlicer::defaultRightTopBack    = +std::numeric_limits<double>::infinity();
 
 static tarch::logging::Log _log("exahype::plotters::Slicer");
 

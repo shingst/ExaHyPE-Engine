@@ -7,7 +7,7 @@ void Elastic::MyElasticSolver::init() {
   // @todo Please implement/augment if required
 }
 
-void Elastic::MyElasticSolver::flux(const double* const Q, double** F) {
+void Elastic::MyElasticSolver::flux(const double* const Q, double** const F) {
   // Dimensions             = 3
   // Number of variables    = 12 (#unknowns + #parameters)
 
@@ -67,7 +67,7 @@ void Elastic::MyElasticSolver::flux(const double* const Q, double** F) {
   h[11] = 0.0;
 }
 
-void Elastic::MyElasticSolver::algebraicSource(const double* const Q, double* S) {
+void Elastic::MyElasticSolver::algebraicSource(const double* const Q, double* const S) {
   // Number of variables = 12 + 0
   // @todo Please implement
   S[0] = 0.0;
@@ -87,7 +87,7 @@ void Elastic::MyElasticSolver::algebraicSource(const double* const Q, double* S)
 void Elastic::MyElasticSolver::boundaryValues(
     const double* const x, const double t, const int faceIndex,
     const int normalNonZero, const double* const fluxIn,
-    const double* const stateIn, double* fluxOut, double* stateOut) {
+    const double* const stateIn, double* const fluxOut, double* const stateOut) {
   // Dimensions             = 3
   // Number of variables    = 12 (#unknowns + #parameters)
 
@@ -160,7 +160,7 @@ void Elastic::MyElasticSolver::boundaryValues(
 
 void Elastic::MyElasticSolver::eigenvalues(const double* const Q,
                                            const int normalNonZeroIndex,
-                                           double* lambda) {
+                                           double* const lambda) {
   // Dimensions             = 3
   // Number of variables    = 12 (#unknowns + #parameters)
   // @todo Please implement
@@ -205,7 +205,7 @@ void Elastic::MyElasticSolver::adjustedSolutionValues(const double* const x,
                                                       const double w,
                                                       const double t,
                                                       const double dt,
-                                                      double* Q) {
+                                                      double* const Q) {
   // Dimensions             = 3
   // Number of variables    = 12 (#unknowns + #parameters)
   // @todo Please implement
@@ -257,7 +257,7 @@ void Elastic::MyElasticSolver::adjustedSolutionValues(const double* const x,
 
 exahype::solvers::Solver::RefinementControl
 Elastic::MyElasticSolver::refinementCriterion(
-    const double* luh, const tarch::la::Vector<DIMENSIONS, double>& center,
+    const double* const luh, const tarch::la::Vector<DIMENSIONS, double>& center,
     const tarch::la::Vector<DIMENSIONS, double>& dx, double t,
     const int level) {
   // @todo Please implement

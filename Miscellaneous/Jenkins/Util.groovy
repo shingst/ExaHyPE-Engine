@@ -7,6 +7,9 @@ IFS=$'\n\t'
 # Kill all called processes when script finishes!
 trap "kill 0" SIGINT
 
+#REMARK: required until SCRATCH env got fixed by LRZ
+export SCRATCH="/gpfs/scratch/pr63so/di57wuf"
+
 mkdir -p ${SCRATCH}/jenkins/exahype/tmp
 tmpfile=$(mktemp $SCRATCH/jenkins/exahype/tmp/slurm-XXXXX.sh)
 
@@ -92,6 +95,10 @@ module load cmake >/dev/null 2>&1
 module switch python/3.5_intel >/dev/null 2>&1
 module list
 '''
+}
+
+def adjust_ws(dir){
+    return dir.replaceAll('%2F','_')
 }
 
 return this

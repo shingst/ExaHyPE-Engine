@@ -33,8 +33,9 @@ exahype-project GRMHD
   end distributed-memory
 
   global-optimisation
-    fuse-algorithmic-steps          = on
-    fuse-algorithmic-steps-factor   = 0.99
+    fuse-algorithmic-steps          = all
+    fuse-algorithmic-steps-rerun-factor   = 0.99
+    fuse-algorithmic-steps-diffusion-factor   = 0.99
     disable-vertex-exchange-in-time-steps = on
     time-step-batch-factor           = 0.0
     disable-metadata-exchange-in-batched-time-steps = off

@@ -60,12 +60,12 @@ bool CCZ4::CCZ4Solver_ADERDG::isPhysicallyAdmissible(
 	return isAdmissible;
 }
 
-void CCZ4::CCZ4Solver_ADERDG::adjustPointSolution(const double* const x,const double t,const double dt,double* Q) {
+void CCZ4::CCZ4Solver_ADERDG::adjustPointSolution(const double* const x,const double t,const double dt,double* const Q) {
 	AdjustPointSolution(x,t,dt,Q);
 }
 
 void CCZ4::CCZ4Solver_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int d,
-  const double * const fluxIn,const double* const stateIn, double *fluxOut,double* stateOut) {
+  const double * const fluxIn,const double* const stateIn, double* const fluxOut,double* const stateOut) {
 	double Qgp[nVar];
 
 	// Impose exact boundary conditions
@@ -95,21 +95,21 @@ void CCZ4::CCZ4Solver_ADERDG::boundaryValues(const double* const x,const double 
 }
 
 
-exahype::solvers::Solver::RefinementControl CCZ4::CCZ4Solver_ADERDG::refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
+exahype::solvers::Solver::RefinementControl CCZ4::CCZ4Solver_ADERDG::refinementCriterion(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
 	// @todo Please implement/augment if required
 	return exahype::solvers::Solver::RefinementControl::Keep;
 }
 
 
-void CCZ4::CCZ4Solver_ADERDG::eigenvalues(const double* const Q,const int d,double* lambda) {
+void CCZ4::CCZ4Solver_ADERDG::eigenvalues(const double* const Q,const int d,double* const lambda) {
 	PDE::eigenvalues(Q, d, lambda);
 }
 
-void CCZ4::CCZ4Solver_ADERDG::algebraicSource(const double* const Q,double* S) {
+void CCZ4::CCZ4Solver_ADERDG::algebraicSource(const double* const Q,double* const S) {
 	PDE::algebraicSource(Q, S);
 }
 
-void  CCZ4::CCZ4Solver_ADERDG::nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) {
+void  CCZ4::CCZ4Solver_ADERDG::nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ) {
 	PDE::nonConservativeProduct(Q, gradQ, BgradQ);
 }
 

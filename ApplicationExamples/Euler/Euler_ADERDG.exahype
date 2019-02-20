@@ -23,14 +23,13 @@ exahype-project Euler
   peano-kernel-path const = ./Peano
   exahype-path const      = ./ExaHyPE
   output-directory const  = ./ApplicationExamples/Euler/Euler_ADERDG
-  architecture const      = noarch
-  log-file                = mylogfile.log
+  architecture const      = noarch 
 
   computational-domain
-    dimension const          = 3
+    dimension const          = 2
     width                    = 1.0, 1.0, 1.0
     offset                   = 0.0, 0.0, 0.0
-    end-time                 = 0.021
+    time-steps               = 100
   end computational-domain
 
   shared-memory
@@ -48,13 +47,13 @@ exahype-project Euler
   end distributed-memory
 
   global-optimisation
-    fuse-algorithmic-steps          = on
-    fuse-algorithmic-steps-factor   = 0.99
+    fuse-algorithmic-steps          = none
+    fuse-algorithmic-steps-rerun-factor   = 0.99
+    fuse-algorithmic-steps-diffusion-factor   = 0.99
     spawn-predictor-as-background-thread = off
     spawn-amr-background-threads = off
-    /* 0.0 und 0.8 sind schon mal zwei Faktoren */
     disable-vertex-exchange-in-time-steps        = on
-    time-step-batch-factor           = 1.0
+    time-step-batch-factor           = 0.5
     disable-metadata-exchange-in-batched-time-steps = on
     double-compression = 0.0
     spawn-double-compression-as-background-thread = off
@@ -62,7 +61,7 @@ exahype-project Euler
 
   solver ADER-DG EulerSolver_ADERDG
     variables const    = rho:1,j:3,E:1
-    order const        = 3
+    order const        = 9
     /* 27 points: 0.05, 9 points: 0.15 */
     maximum-mesh-size  = 0.05
     time-stepping      = globalfixed
@@ -76,7 +75,7 @@ exahype-project Euler
     /*
     plot user::defined ErrorWriter
       variables const = 5
-      time            = 0.0
+      time            = 10.0
       repeat          = 1e-2
       output          = not-available
     end plot

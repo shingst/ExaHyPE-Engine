@@ -124,7 +124,8 @@ class SpecFile1Reader():
             "maximum_mesh_size",\
             "time",\
             "repeat",\
-            "fuse_algorithmic_steps_factor",\
+            "fuse_algorithmic_steps_rerun_factor",\
+            "fuse_algorithmic_steps_diffusion_factor",\
             "time_step_batch_factor",\
             "double_compression",\
             "dmp_relaxation_parameter",\

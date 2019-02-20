@@ -321,7 +321,7 @@ void exahype::plotters::ADERDG2LegendreDivergenceVTK::plotPatch(const int solver
     plotPatch(
         aderdgCellDescription.getOffset(),
         aderdgCellDescription.getSize(), solverSolution,
-        aderdgCellDescription.getCorrectorTimeStamp());
+        aderdgCellDescription.getTimeStamp());
   }
 }
 

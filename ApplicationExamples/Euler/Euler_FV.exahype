@@ -15,10 +15,9 @@ exahype-project Euler
   exahype-path const               = ./ExaHyPE
   output-directory const           = ./ApplicationExamples/Euler/Euler_FV
   architecture const               = noarch
-  log-file                         = mylogfile.log
 
   computational-domain
-    dimension const         = 3
+    dimension const         = 2
     width                   = 1.0, 1.0, 1.0
     offset                  = 0.0, 0.0, 0.0
     end-time                = 0.22
@@ -27,8 +26,9 @@ exahype-project Euler
   shared-memory
     identifier               = dummy
     configure                = {}
-    cores                    = 4
+    cores                    = 2
     properties-file          = sharedmemory.properties
+    thread-stack-size        = 8000000
   end shared-memory
   
   distributed-memory
@@ -39,13 +39,14 @@ exahype-project Euler
   end distributed-memory
   
   global-optimisation
-    fuse-algorithmic-steps          = on
-    fuse-algorithmic-steps-factor   = 0.99
+    fuse-algorithmic-steps          = all
+    fuse-algorithmic-steps-rerun-factor   = 0.99
+    fuse-algorithmic-steps-diffusion-factor   = 0.99
     spawn-predictor-as-background-thread = off
     spawn-amr-background-threads = off
     /* 0.0 und 0.8 sind schon mal zwei Faktoren */
     disable-vertex-exchange-in-time-steps = on
-    time-step-batch-factor           = 0.8
+    time-step-batch-factor           = 0.2
     disable-metadata-exchange-in-batched-time-steps = off
     double-compression = 0.0
     spawn-double-compression-as-background-thread = off
@@ -53,21 +54,21 @@ exahype-project Euler
  
   solver Finite-Volumes EulerSolver_FV
     variables const    = rho:1,j:3,E:1
-    patch-size const   = 7
-    maximum-mesh-size  = 0.038
+    patch-size const   = 12
+    maximum-mesh-size  = 0.12
     time-stepping      = global
-    type const         = godunov
+    type const         = musclhancock
     terms const        = flux
     optimisation const = generic
     language const     = C
     // reference either: sod,entropywave,explosion,rarefactionwave
-    constants          = reference:entropywave
+    constants          = reference:explosion
 
     // works only properly for single-node runs
     /*
     plot user::defined ErrorWriter
       variables const = 5
-      time            = 0.0
+      time            = 10.0
       repeat          = 1e-2
       output          = not-available
     end plot
@@ -77,7 +78,7 @@ exahype-project Euler
       // absErrorL1perCell[nvar],Q[nvar],QAnalytical[nvar]
       variables const = 15 
       time            = 0.0
-      repeat          = 1e-10
+      repeat          = 0.01
       output          = ./errors
     end plot
   end solver

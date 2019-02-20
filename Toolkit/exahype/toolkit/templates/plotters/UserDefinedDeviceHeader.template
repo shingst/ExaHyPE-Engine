@@ -39,7 +39,7 @@ class {{project}}::{{plotter}} : public exahype::plotters::{{solverType | replac
    */
   void plotADERDGPatch(
       const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
-      const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* u,
+      const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* const u,
       double timeStamp) override;
 
   /**
@@ -56,7 +56,7 @@ class {{project}}::{{plotter}} : public exahype::plotters::{{solverType | replac
    */
   void plotFiniteVolumesPatch(
       const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
-      const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* u,
+      const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* const u,
       double timeStamp) override;
   {% else %}
   /**
@@ -73,7 +73,7 @@ class {{project}}::{{plotter}} : public exahype::plotters::{{solverType | replac
    */
   void plotPatch(
       const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
-      const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* u,
+      const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* const u,
       double timeStamp) override;
   {% endif %}
 

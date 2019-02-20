@@ -22,7 +22,7 @@ void Euler::MyEulerSolver::init() {
   // @todo Please implement/augment if required
 }
 
-void Euler::MyEulerSolver::flux(const double* const Q, double** F) {
+void Euler::MyEulerSolver::flux(const double* const Q, double** const F) {
   // Dimensions             = 2/3
   // Number of variables    = 5 (#unknowns + #parameters)
 
@@ -70,7 +70,7 @@ void Euler::MyEulerSolver::flux(const double* const Q, double** F) {
 #endif
 }
 
-void Euler::MyEulerSolver::algebraicSource(const double* const Q, double* S) {
+void Euler::MyEulerSolver::algebraicSource(const double* const Q, double* const S) {
   S[0] = 0.0;
   S[1] = 0.0;
   S[2] = 0.0;
@@ -80,7 +80,7 @@ void Euler::MyEulerSolver::algebraicSource(const double* const Q, double* S) {
 
 void Euler::MyEulerSolver::eigenvalues(const double* const Q,
                                        const int normalNonZeroIndex,
-                                       double* lambda) {
+                                       double* const lambda) {
   // Dimensions             = 2/3
   // Number of variables    = 5 (#unknowns + #parameters)
   const double GAMMA = 1.4;
@@ -119,7 +119,7 @@ bool Euler::MyEulerSolver::hasToAdjustSolution(
 void Euler::MyEulerSolver::adjustedSolutionValues(const double* const x,
                                                   const double w,
                                                   const double t,
-                                                  const double dt, double* Q) {
+                                                  const double dt, double* const Q) {
   // Dimensions             = 2
   // Number of variables    = 5 (#unknowns + #parameters)
   // @todo Please implement
@@ -131,7 +131,7 @@ void Euler::MyEulerSolver::adjustedSolutionValues(const double* const x,
 
 exahype::solvers::Solver::RefinementControl
 Euler::MyEulerSolver::refinementCriterion(
-    const double* luh, const tarch::la::Vector<DIMENSIONS, double>& center,
+    const double* const luh, const tarch::la::Vector<DIMENSIONS, double>& center,
     const tarch::la::Vector<DIMENSIONS, double>& dx, double t,
     const int level) {
   // @todo Please implement
@@ -151,7 +151,7 @@ void Euler::MyEulerSolver::boundaryValues(const double* const x, const double t,
                                           const int normalNonZero,
                                           const double* const fluxIn,
                                           const double* const stateIn,
-                                          double* fluxOut, double* stateOut) {
+                                          double* const fluxOut, double* const stateOut) {
   // Dimensions             = 2
   // Number of variables    = 5 (#unknowns + #parameters)
 

@@ -51,8 +51,9 @@ exahype-project GRMHD
   end distributed-memory
 
   global-optimisation
-    fuse-algorithmic-steps          = on
-    fuse-algorithmic-steps-factor   = 0.99
+    fuse-algorithmic-steps          = all
+    fuse-algorithmic-steps-rerun-factor   = 0.99
+    fuse-algorithmic-steps-diffusion-factor   = 0.99
     spawn-predictor-as-background-thread = on
     spawn-update-as-background-thread = on
     spawn-amr-background-threads         = on
@@ -95,6 +96,54 @@ exahype-project GRMHD
          time      = 0.0
          repeat    = 0.5
          output    = ./vtk-output/primitive
+    end plot
+
+    plot Carpet::Cartesian::Vertices::hdf5 PrimitiveWriter
+      variables const = 19
+      time = 0.0
+      repeat = 0.01
+      select = y:0,z:0,one_file_per_timestep:False,all_unknowns_in_one_file:False
+      output = ./hdf5-output/prims1d
+    end plot
+
+    plot Carpet::Cartesian::Vertices::hdf5 PrimitiveWriter
+      variables const = 19
+      time = 0.0
+      repeat = 0.01
+      select = z:0,one_file_per_timestep:False,all_unknowns_in_one_file:False
+      output = ./hdf5-output/prims2d
+    end plot
+
+    plot Carpet::Cartesian::Vertices::hdf5 PrimitiveWriter
+      variables const = 19
+      time = 0.0
+      repeat = 0.01
+      select = one_file_per_timestep:False,all_unknowns_in_one_file:False
+      output = ./hdf5-output/prims3d
+    end plot
+    
+    plot Carpet::Cartesian::Vertices::hdf5 H5Writer
+      variables const = 9
+      time = 0.0
+      repeat = 0.01
+      select = y:0,z:0,one_file_per_timestep:False,all_unknowns_in_one_file:False
+      output = ./hdf5-output/demo1d
+    end plot
+
+    plot Carpet::Cartesian::Vertices::hdf5 H5Writer
+      variables const = 9
+      time = 0.0
+      repeat = 0.01
+      select = z:0,one_file_per_timestep:False,all_unknowns_in_one_file:False
+      output = ./hdf5-output/demo2d
+    end plot
+
+    plot Carpet::Cartesian::Vertices::hdf5 H5Writer
+      variables const = 9
+      time = 0.0
+      repeat = 0.01
+      select = one_file_per_timestep:False,all_unknowns_in_one_file:False
+      output = ./hdf5-output/demo3d
     end plot
 
   end solver

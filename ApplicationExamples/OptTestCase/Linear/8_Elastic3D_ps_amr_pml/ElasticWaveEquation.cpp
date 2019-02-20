@@ -19,13 +19,13 @@
 
 
 // We define the constructor of the actual solver here in order to regenerate it easily.
-ElasticWaveEquation3D::ElasticWaveEquation::ElasticWaveEquation(double maximumMeshSize,int maximumAdaptiveMeshDepth,int DMPObservables,int limiterHelperLayers,exahype::solvers::Solver::TimeStepping timeStepping,std::vector<std::string>& cmdlineargs):
+ElasticWaveEquation3D::ElasticWaveEquation::ElasticWaveEquation(double maximumMeshSize,int maximumAdaptiveMeshDepth,int DMPObservables,exahype::solvers::Solver::TimeStepping timeStepping,std::vector<std::string>& cmdlineargs):
 #if defined(_CURVILINEAR)
   curvilinear_transformation(Order+1,1/9.0),
 #elif defined(_USE_NETCDF)
   reader("topography.nc",Order+1),
 #endif  
-  AbstractElasticWaveEquation::AbstractElasticWaveEquation(maximumMeshSize,maximumAdaptiveMeshDepth,DMPObservables,limiterHelperLayers,timeStepping) {
+  AbstractElasticWaveEquation::AbstractElasticWaveEquation(maximumMeshSize,maximumAdaptiveMeshDepth,DMPObservables,timeStepping) {
   init(cmdlineargs);
 }
 

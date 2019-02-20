@@ -82,6 +82,7 @@ class exahype::repositories::Repository {
     virtual void switchToMergeNeighbours() = 0;    
     virtual void switchToUpdateAndReduce() = 0;    
     virtual void switchToPrediction() = 0;    
+    virtual void switchToCorrection() = 0;    
 
     virtual bool isActiveAdapterMeshRefinement() const = 0;
     virtual bool isActiveAdapterMeshRefinementAndPlotTree() const = 0;
@@ -96,6 +97,7 @@ class exahype::repositories::Repository {
     virtual bool isActiveAdapterMergeNeighbours() const = 0;
     virtual bool isActiveAdapterUpdateAndReduce() const = 0;
     virtual bool isActiveAdapterPrediction() const = 0;
+    virtual bool isActiveAdapterCorrection() const = 0;
 
 
     /**

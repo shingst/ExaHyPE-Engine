@@ -23,7 +23,7 @@ void SWE::MySWESolver_FV::init(const std::vector<std::string>& cmdlineargs,const
     }
 }
 
-void SWE::MySWESolver_FV::adjustSolution(const double* const x,const double t,const double dt, double* Q) {
+void SWE::MySWESolver_FV::adjustSolution(const double* const x,const double t,const double dt, double* const Q) {
   // Dimensions             = 2
   // Number of variables    = 4 + #parameters
 
@@ -37,7 +37,7 @@ void SWE::MySWESolver_FV::adjustSolution(const double* const x,const double t,co
   }
 }
 
-void SWE::MySWESolver_FV::eigenvalues(const double* const Q, const int dIndex, double* lambda) {
+void SWE::MySWESolver_FV::eigenvalues(const double* const Q, const int dIndex, double* const lambda) {
   // Dimensions             = 2
   // Number of variables    = 4 + #parameters
 
@@ -64,7 +64,7 @@ void SWE::MySWESolver_FV::boundaryValues(
     const int faceIndex,
     const int d,
     const double* const stateInside,
-    double* stateOutside) {
+    double* const stateOutside) {
   // Dimensions             = 2
   // Number of variables    = 4 + #parameters
 
@@ -93,7 +93,7 @@ void SWE::MySWESolver_FV::boundaryValues(
 //to add new PDEs specify them in the specification file, delete this file and its header and rerun the toolkit
 
 
-void SWE::MySWESolver_FV::flux(const double* const Q,double** F) {
+void SWE::MySWESolver_FV::flux(const double* const Q,double** const F) {
   // Dimensions                        = 2
   // Number of variables + parameters  = 4 + 0
  
@@ -117,7 +117,7 @@ void SWE::MySWESolver_FV::flux(const double* const Q,double** F) {
  
 }
 
-double SWE::MySWESolver_FV::riemannSolver(double* fL, double *fR, const double* qL, const double* qR, int direction) {
+double SWE::MySWESolver_FV::riemannSolver(double* const fL, double* const fR, const double* const qL, const double* const qR, int direction) {
     double LL[NumberOfVariables] = {0.0};
     double LR[NumberOfVariables] = {0.0};
 
@@ -170,7 +170,7 @@ double SWE::MySWESolver_FV::riemannSolver(double* fL, double *fR, const double* 
     return smax;
 }
 
-void SWE::MySWESolver_FV::nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) {
+void SWE::MySWESolver_FV::nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ) {
   //do nothing: Should never be called
   std::cout << "Called fv ncp" << std::endl;
   std::terminate();

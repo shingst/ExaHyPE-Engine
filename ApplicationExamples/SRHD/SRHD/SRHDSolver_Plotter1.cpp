@@ -23,7 +23,7 @@ void SRHD::SRHDSolver_Plotter1::finishPlotting() {
 
 extern "C" {
 // Fortran function, implemented in C2P-SRHD.f90
-void pdecons2prim_(double* V, double* Q, int* iErr);
+void pdecons2prim_(double* const V, double* const Q, int* iErr);
 }
 
 void SRHD::SRHDSolver_Plotter1::mapQuantities(
@@ -31,8 +31,8 @@ void SRHD::SRHDSolver_Plotter1::mapQuantities(
     const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const tarch::la::Vector<DIMENSIONS, int>&    pos,
-    double* Q,
-    double* outputQuantities,
+    double* const Q,
+    double* const outputQuantities,
     double timeStamp
 ) {
   // Convert Q to Primitive quantities

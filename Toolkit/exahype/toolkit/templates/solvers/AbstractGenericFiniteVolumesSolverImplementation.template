@@ -44,7 +44,7 @@ void {{project}}::{{abstractSolver}}::abortWithMsg(const char* const msg) {
 	abort();
 }
 
-void {{project}}::{{abstractSolver}}::solutionUpdate(double* luh,const tarch::la::Vector<DIMENSIONS,double>& dx,const double dt,double& maxAdmissibleDt) {
+void {{project}}::{{abstractSolver}}::solutionUpdate(double* const luh,const tarch::la::Vector<DIMENSIONS,double>& dx,const double dt,double& maxAdmissibleDt) {
   maxAdmissibleDt = kernels::finitevolumes::{{finiteVolumesType}}::c::solutionUpdate<{{useSource_s}}, {{useNCP_s}}, {{useFlux_s}}, {{useRobustDiagonalLimiting_s}}, {{solver}}>(*static_cast<{{solver}}*>(this),luh,dx,dt);
 }
 
@@ -54,11 +54,11 @@ double {{project}}::{{abstractSolver}}::stableTimeStepSize(const double* const l
   return maxAdmissibleDt;
 }
 
-void {{project}}::{{abstractSolver}}::adjustSolution(double *luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,const double t,const double dt) {
+void {{project}}::{{abstractSolver}}::adjustSolution(double* const luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,const double t,const double dt) {
   kernels::finitevolumes::commons::c::solutionAdjustment<{{solver}}>(*static_cast<{{solver}}*>(this),luh,center,dx,t,dt);
 }
 
-void {{project}}::{{abstractSolver}}::boundaryConditions(double* luh,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const tarch::la::Vector<DIMENSIONS, int>& posCell,const tarch::la::Vector<DIMENSIONS, int>& posBoundary) {
+void {{project}}::{{abstractSolver}}::boundaryConditions(double* const luh,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const tarch::la::Vector<DIMENSIONS, int>& posCell,const tarch::la::Vector<DIMENSIONS, int>& posBoundary) {
   {% if dimensions==3 %}
   constexpr int cellsPerFace = PatchSize*PatchSize*GhostLayerWidth;
   {% else %}
@@ -93,20 +93,20 @@ void {{project}}::{{abstractSolver}}::boundaryConditions(double* luh,const tarch
 }
 
 
-void {{project}}::{{abstractSolver}}::ghostLayerFilling(double* luh,const double* luhNeighbour,const tarch::la::Vector<DIMENSIONS,int>& neighbourPosition) {
+void {{project}}::{{abstractSolver}}::ghostLayerFilling(double* const luh,const double* const luhNeighbour,const tarch::la::Vector<DIMENSIONS,int>& neighbourPosition) {
   kernels::finitevolumes::commons::c::ghostLayerFilling<{{solver}}>(*static_cast<{{solver}}*>(this),luh,luhNeighbour,neighbourPosition);
 }
 
-void {{project}}::{{abstractSolver}}::ghostLayerFillingAtBoundary(double* luh,const double* luhbnd,const tarch::la::Vector<DIMENSIONS,int>& boundaryPosition) {
+void {{project}}::{{abstractSolver}}::ghostLayerFillingAtBoundary(double* const luh,const double* const luhbnd,const tarch::la::Vector<DIMENSIONS,int>& boundaryPosition) {
   kernels::finitevolumes::commons::c::ghostLayerFillingAtBoundary<{{solver}}>(*static_cast<{{solver}}*>(this),luh,luhbnd,boundaryPosition);
 }
 
-void {{project}}::{{abstractSolver}}::boundaryLayerExtraction(double* luhbnd,const double* luh,const tarch::la::Vector<DIMENSIONS,int>& boundaryPosition) {
+void {{project}}::{{abstractSolver}}::boundaryLayerExtraction(double* const luhbnd,const double* const luh,const tarch::la::Vector<DIMENSIONS,int>& boundaryPosition) {
   kernels::finitevolumes::commons::c::boundaryLayerExtraction<{{solver}}>(*static_cast<{{solver}}*>(this),luhbnd,luh,boundaryPosition);
 }
 
 
-double {{project}}::{{abstractSolver}}::riemannSolver(double* fL, double *fR, const double* qL, const double* qR, int direction) {
+double {{project}}::{{abstractSolver}}::riemannSolver(double* const fL, double* const fR, const double* const qL, const double* const qR, int direction) {
   // Default FV Riemann Solver
   return kernels::finitevolumes::riemannsolvers::c::rusanov<{{useNCP_s}}, {{useFlux_s}}, {{useViscousFlux_s}}, {{solver}}>(*static_cast<{{solver}}*>(this), fL,fR,qL,qR,direction);
 }

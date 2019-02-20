@@ -76,10 +76,12 @@ namespace exahype {
 #include "exahype/stealing/StealingProfiler.h"
 #endif
 
+#if defined(USE_ITAC_ALL) and !defined(USE_ITAC)
+#define USE_ITAC 1
+#endif
 #ifdef USE_ITAC
 #include "VT.h"
 #endif
-
 
 // Some helpers
 constexpr int power(int basis, int exp) {
@@ -147,13 +149,13 @@ namespace exahype {
   typedef peano::heap::DoubleHeap<
     peano::heap::SynchronousDataExchanger< double, true, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
     peano::heap::SynchronousDataExchanger< double, true, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
-    peano::heap::RLEBoundaryDataExchanger< double, false, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
+    peano::heap::AggregationBoundaryDataExchanger< double, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
     std::vector< double, AlignedAllocator >
   >     DataHeap;
   typedef peano::heap::CharHeap<
     peano::heap::SynchronousDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedCharAllocator > >,
     peano::heap::SynchronousDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedCharAllocator > >,
-    peano::heap::RLEBoundaryDataExchanger< char, false, AlignedCharSendReceiveTask, std::vector< char, AlignedCharAllocator > >,
+    peano::heap::AggregationBoundaryDataExchanger< char, AlignedCharSendReceiveTask, std::vector< char, AlignedCharAllocator > >,
     std::vector< char, AlignedCharAllocator >
   >     CompressedDataHeap;
   #elif defined(ALIGNMENT) // Default: AggregationBoundaryDataExchanger
@@ -170,7 +172,7 @@ namespace exahype {
     std::vector< char, AlignedCharAllocator >
   >     CompressedDataHeap;
   #endif
- // non-aligned data -> SendReceiveTask
+  // non-aligned data -> SendReceiveTask
   #if !defined(ALIGNMENT) and defined(UsePeanosSymmetricBoundaryExchanger)
   typedef peano::heap::DoubleHeap<
     peano::heap::SynchronousDataExchanger< double, true,  peano::heap::SendReceiveTask<double> >,
@@ -225,7 +227,7 @@ namespace exahype {
   /**
    * @see waitUntilAllBackgroundTasksHaveTerminated()
    */
-  extern tarch::multicore::BooleanSemaphore BackgroundJobSemaphore;
+  extern tarch::multicore::BooleanSemaphore ReductionSemaphore;
 
   /**
    * A semaphore for serialising heap access.
@@ -338,7 +340,7 @@ namespace exahype {
       const tarch::la::Vector<DIMENSIONS,int>& dest);
 
   /**
-   * Send metadata to rank \p toRank.
+   * Send metadata to rank @p toRank.
    */
   void sendNeighbourCommunicationMetadata(
       const int                                   toRank,
@@ -349,12 +351,12 @@ namespace exahype {
       const int                                   level);
 
   /**
-   * Receive metadata to rank \p toRank.
+   * Receive metadata to rank @p toRank.
    *
-   * \note Clears and enlarges the buffer
+   * @note Clears and enlarges the buffer
    * if necessary.
    *
-   * \param[in] doNotReceiveAndFillBufferWithInvalidEntries Within batches, we sometimes do not want to receive metadata.
+   * @param[in] doNotReceiveAndFillBufferWithInvalidEntries Within batches, we sometimes do not want to receive metadata.
    *
    * \return The index of the received metadata message
    * on the exahype::MetadataHeap.
@@ -367,7 +369,7 @@ namespace exahype {
 
   /**
    * Send a metadata sequence filled with InvalidMetadataEntry
-   * to rank \p toRank.
+   * to rank @p toRank.
    */
   void sendNeighbourCommunicationMetadataSequenceWithInvalidEntries(
       const int                                   toRank,
@@ -375,7 +377,7 @@ namespace exahype {
       const int                                   level);
 
   /**
-   * Drop metadata sent by rank \p fromRank.
+   * Drop metadata sent by rank @p fromRank.
    */
   void dropMetadata(
       const int                                   fromRank,
@@ -407,11 +409,25 @@ class exahype::solvers::Solver {
   static tarch::logging::Log _log;
 
  protected:
-
   void tearApart(int numberOfEntries, int normalHeapIndex, int compressedHeapIndex, int bytesForMantissa) const;
   void glueTogether(int numberOfEntries, int normalHeapIndex, int compressedHeapIndex, int bytesForMantissa) const;
 
  public:
+  #ifdef USE_ITAC
+  /**
+   * These handles are used to trace solver events with Intel Trace Analyzer and Collector.
+   */
+  static int waitUntilCompletedLastStepHandle;
+  static int ensureAllJobsHaveTerminatedHandle;
+  #endif
+
+
+  #ifdef Parallel
+  /**
+   * Tag used for master worker communication.
+   */
+  static int MasterWorkerCommunicationTag;
+  #endif
 
   /**
    * Default return value of function getElement(...)
@@ -589,49 +605,79 @@ class exahype::solvers::Solver {
   static double PipedCompressedBytes;
   #endif
 
+  /** @name Global profiling options
+   *
+   * Global profiling options which are set via the parser.
+   */
+   ///@{
   /**
    * The solvers need to do adjust some operations slightly
    * when those are run multiple times after each other in isolation.
    */
-  static bool SwitchOffNeighbourMergePerformedCheck;
+  static bool ProfileUpdate;
+  ///@}
+
+ /** @name Global solver optimisations
+  *
+  * Global solver optimisations which are set via the parser.
+  */
+  ///@{
+
+  /**
+   * A flag indicating that only initial mesh refinement is used, i.e.
+   * the mesh remains static.
+   *
+   * Multiple operations can then be omitted during the time stepping
+   * iterations, e.g. backing up a previous solution for
+   * the pure ADER-DG scheme, evaluating the refinement criterion,
+   * computing a new time step size if the scheme is linear, ...
+   */
+  static bool OnlyInitialMeshRefinement;
+
+  /**
+   * Indicates that only static limiting is used.
+   * In this case, the limiter criteria do not need
+   * to be evaluated and no FV->DG projection needs to
+   * be performed in troubled cells. This
+   * makes the troubled cells pure FV cells.
+   */
+  static bool OnlyStaticLimiting;
 
   /**
    * A flag indicating we fuse the algorithmic
    * phases of all ADERDGSolver and
    * LimitingADERDGSolver instances.
    *
-   * TODO(Dominic): Make private and hide in init function
    */
-  static bool FuseADERDGPhases;
+  static bool FuseAllADERDGPhases;
+  /**
+   * This factor (alpha) is used to scale
+   * the admissible time step size if the fused
+   * time stepping (for nonlinear PDEs) scheme is reset.
+   *
+   * The fused times stepping time step size estimate is then reset to
+   *
+   * dt_est = alpha * dt_adm.
+   */
+  static double FusedTimeSteppingRerunFactor;
+  /**
+   * This factor (beta) is used in the fused time stepping (for nonlinear PDEs)
+   * time step size estimate as follows:
+   *
+   * dt_est = 0.5 ( beta * dt_adm + dt_est ),
+   *
+   * i.e dt_est approaches beta * dt_adm over time.
+   *
+   * This adds additional numerical diffusion as
+   * a smaller time step size is chosen as necessary.
+   */
+  static double FusedTimeSteppingDiffusionFactor;
 
   /**
-   * The weight which is used to scale
-   * the stable time step size the fused
-   * ADERDG time stepping scheme is
-   * reset to after a rerun has become necessary.
-   *
-   * TODO(Dominic): Further consider to introduce
-   * a second weight for the averaging:
-   *
-   * t_est = 0.5 (t_est_old + beta t_stable), beta<1.
-   *
-   * fuse-algorithmic-steps-reset-factor
-   * fuse-algorithmic-steps-averaging-factor
-   *
-   * TODO(Dominic): Make private and hide in init function
+   * The number of Prediction,PredictionRerun,PredictionOrLocalRecomputation<
+   * and FusedTimeStep iterations we need to run per time step.
    */
-  static double WeightForPredictionRerun;
-
-  /**
-   * If this is set, we can skip sending metadata around during
-   * batching iterations.
-   */
-  static bool DisableMetaDataExchangeInBatchedTimeSteps;
-
-  /**
-   * If this is set, we can skip Peano vertex neighbour exchange during batching iterations.
-   */
-  static bool DisablePeanoNeighbourExchangeInTimeSteps;
+  static int PredictionSweeps;
 
   /**
    * Set to 0 if no floating point compression is used. Is usually done in the
@@ -650,19 +696,16 @@ class exahype::solvers::Solver {
    * Default is zero.
    */
   static int MaxNumberOfRunningBackgroundJobConsumerTasksDuringTraversal;
-
   /**
    * Set to true if the prediction, and the first and intermediate fused time steps in
    * a batch should be launched as background job.
    */
   static bool SpawnPredictionAsBackgroundJob;
-
   /**
    * Set to true if the update and last fused time step in a batch
    * should be launched as background job.
    */
   static bool SpawnUpdateAsBackgroundJob;
-
   /**
    * Set to true if the prolongation
    * should be launched as background job whenever possible.
@@ -670,19 +713,23 @@ class exahype::solvers::Solver {
    * Requires that the prediction is launched as background job too.
    */
   static bool SpawnProlongationAsBackgroundJob;
-
-  /**
-   * The number of Prediction,PredictionRerun,PredictionOrLocalRecomputation<
-   * and FusedTimeStep iterations we need to run per time step.
-   */
-  static int  PredictionSweeps;
-
   /**
    * Set to true if the mesh refinement iterations
    * should run background jobs whenever possible.
    */
   static bool SpawnAMRBackgroundJobs;
 
+
+  /**
+   * If this is set, we can skip sending metadata around during
+   * batching iterations.
+   */
+  static bool DisableMetaDataExchangeInBatchedTimeSteps;
+  /**
+   * If this is set, we can skip Peano vertex neighbour exchange during batching iterations.
+   */
+  static bool DisablePeanoNeighbourExchangeInTimeSteps;
+  ///@}
 
   enum class JobType { AMRJob, ReductionJob, EnclaveJob, SkeletonJob };
 
@@ -797,6 +844,7 @@ class exahype::solvers::Solver {
     InitialRefinementRequested = 3
   };
 
+
   /**
    * \return String representation of the meshUpdateEvent.
    */
@@ -823,7 +871,7 @@ class exahype::solvers::Solver {
    * methods are run.
    */
   typedef struct UpdateResult {
-    double _timeStepSize                     = std::numeric_limits<double>::max();
+    double _timeStepSize                     = std::numeric_limits<double>::infinity();
     MeshUpdateEvent _meshUpdateEvent         = MeshUpdateEvent::None;
 
     UpdateResult() {}
@@ -898,6 +946,13 @@ class exahype::solvers::Solver {
   };
 
   /**
+   * @return if dynamic mesh refinement or limiting is used.
+   */
+  static bool areRollbacksPossible() {
+    return !OnlyInitialMeshRefinement || !OnlyStaticLimiting;
+  }
+
+  /**
    * Checks if one of the solvers is of a certain
    * type.
    */
@@ -945,11 +1000,11 @@ class exahype::solvers::Solver {
    * Returns the coarsest level which holds patches of
    * a solver.
    *
-   * \note It is very important that initSolvers
+   * @note It is very important that initSolvers
    * has been called on all solvers before this
    * method is used.
    *
-   * \note That we start counting the mesh level
+   * @note That we start counting the mesh level
    * at 1. In a uniform mesh with level l, there
    * are thus 3^{DIMENSIONS*(l-1)} cells.
    */
@@ -959,7 +1014,7 @@ class exahype::solvers::Solver {
    * Returns the finest mesh level where a solver
    * has his uniform mesh.
    *
-   * \note It is very important that initSolvers
+   * @note It is very important that initSolvers
    * has been called on all solvers before this
    * method is used.
    */
@@ -969,7 +1024,7 @@ class exahype::solvers::Solver {
    * Returns the coarsest mesh size a solver is actually
    * using.
    *
-   * \note It is very important that initSolvers
+   * @note It is very important that initSolvers
    * has been called on all solvers before this
    * method is used.
    */
@@ -977,19 +1032,6 @@ class exahype::solvers::Solver {
 
   static const tarch::la::Vector<DIMENSIONS,double>& getDomainSize();
   static const tarch::la::Vector<DIMENSIONS,double>& getDomainOffset();
-
-  /**
-   * Run over all solvers and identify the maximum depth of adaptive
-   * refinement employed.
-   *
-   * This number might correlate with the number
-   * of grid iterations to run for performing an erasing operation.
-   *
-   * \note It is very important that initSolvers
-   * has been called on all solvers before this
-   * method is used.
-   */
-  static int getMaximumAdaptiveMeshDepthOfAllSolvers();
 
   /**
    * Loop over the solver registry and check if no solver
@@ -1046,38 +1088,6 @@ class exahype::solvers::Solver {
   static int getMaxRefinementStatus();
 
   /**
-   * Weights the min next predictor time step size
-   * by the user's safety factor for the fused time stepping
-   * algorithm.
-   */
-  static void weighMinNextPredictorTimeStepSize(exahype::solvers::Solver* solver);
-
-  /**
-   * Reinitialises the corrector and predictor time step sizes of an ADER-DG solver
-   * with stable time step sizes if we detect a-posteriori that the CFL condition was
-   * harmed by the estimated predictor time step size used in the last iteration.
-   */
-  static void reinitialiseTimeStepDataIfLastPredictorTimeStepSizeWasInstable(exahype::solvers::Solver* solver);
-
-  /**
-   * Starts a new time step on all solvers.
-   *
-   * @param[in] isFirstIterationOfBatchOrNoBatch we run the first iteration of a batch or no batch at all
-   * @param[in] isLastIterationOfBatchOrNoBatch we run the last iteration of a batch or no batch at all
-   * @param[in] fusedTimeStepping fused time stepping is used or not
-   */
-  static void startNewTimeStepForAllSolvers(
-      const bool isFirstIterationOfBatchOrNoBatch,
-      const bool isLastIterationOfBatchOrNoBatch,
-      const bool fusedTimeStepping);
-
-  /**
-   * Rolls back those solvers which requested a global rollback
-   * to the previous time step.
-   */
-  static void rollbackSolversToPreviousTimeStepIfApplicable();
-
-  /**
    * Specify if solvers spawn background jobs and
    * configure the number of sweeps run by the adapters FusedTimeStep, Prediction, PredictionRerun,
    * and PredictorOrLocalRecomputation.
@@ -1098,12 +1108,12 @@ class exahype::solvers::Solver {
    * Therefore, the wait (as well as the underlying semaphore) belong
    * into this abstract superclass.
    *
-   * \param[in] backgroundJobCounter A reference to a background job counter.
+   * @param[in] backgroundJobCounter A reference to a background job counter.
    */
   static void ensureAllJobsHaveTerminated(JobType jobType);
 
  /**
-  * Waits until the \p cellDescription has completed its time step.
+  * Waits until the @p cellDescription has completed its time step.
   *
   * <h2> Thread-safety </h2>
   *
@@ -1133,9 +1143,7 @@ class exahype::solvers::Solver {
      const CellDescription& cellDescription,const bool waitForHighPriorityJob,const bool receiveDanglingMessages) {
 
 #ifdef USE_ITAC
-  static int event_wait = -1;
-  static const char *event_name_wait = "wait_cell";
-  int ierr=VT_funcdef(event_name_wait, VT_NOCLASS, &event_wait ); assert(ierr==0);
+  VT_begin(waitUntilCompletedLastStepHandle);
   static int event_emergency = -1;
   static const char *event_name_emergency = "trigger_emergency";
   ierr=VT_funcdef(event_name_emergency, VT_NOCLASS, &event_emergency ); assert(ierr==0);
@@ -1156,9 +1164,6 @@ class exahype::solvers::Solver {
 #endif
 
    if ( !cellDescription.getHasCompletedLastStep() ) {
-#ifdef USE_ITAC
-	// VT_begin(event_wait);
-#endif
      peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
 #if defined(DistributedStealing)
      if (this->getType()==exahype::solvers::Solver::Type::ADERDG && responsibleRank!=myRank) {
@@ -1218,14 +1223,14 @@ class exahype::solvers::Solver {
 
 
 #ifdef USE_ITAC
-	 //VT_end(event_wait);
+	  VT_end(waitUntilCompletedLastStepHandle);
 #endif
  }
 
  /**
   * Submit a Prediction- or FusedTimeStepJob.
   *
-  * \param[in] isSkeletonJob is is a skeleton job?
+  * @param[in] isSkeletonJob is is a skeleton job?
   */
  static tarch::multicore::jobs::JobType getTaskType(bool isSkeletonJob) {
     return isSkeletonJob ? tarch::multicore::jobs::JobType::RunTaskAsSoonAsPossible : tarch::multicore::jobs::JobType::BackgroundTask;
@@ -1239,6 +1244,29 @@ class exahype::solvers::Solver {
    }
  }
 */
+
+ /**
+  * Return a string representation for the type @p param.
+  */
+ static std::string toString(const exahype::solvers::Solver::Type& param);
+
+ /**
+  * Return a string representation for the time stepping mode @p param.
+  */
+ static std::string toString(const exahype::solvers::Solver::TimeStepping& param);
+
+ /**
+  * Return the mesh level corresponding to the given mesh size with
+  * respect to the given domainSize.
+  *
+  * @note That the domain root cell is actually at Peano mesh level 1
+  * since the domain itself is embedded in a 3^d mesh in Peano.
+  *
+  * @note Load balancing makes only sense for a Peano mesh with
+  * at least 3 (Peano) levels.
+  * This is not ensured or checked in this routine.
+  */
+ static std::pair<double,int> computeCoarsestMeshSizeAndLevel(double meshSize, double domainSize);
 
  protected:
 
@@ -1281,27 +1309,10 @@ class exahype::solvers::Solver {
   /**
    * The maximum extent a cell is allowed to have in each coordinate direction.
    *
-   * \note This is an upper bound specified in the specification file.
+   * @note This is an upper bound specified in the specification file.
    * This is not the actual maximum extent of a cell.
    */
   const double _maximumMeshSize;
-
-
-  /**
-   * The coarsest level of the adaptive mesh that is
-   * occupied by this solver.
-   *
-   * \note Is set by initSolver(...) function
-   */
-  int _coarsestMeshLevel;
-
-  /**
-   * The coarsest mesh size this solver is using, i.e.
-   * the mesh size chosen for the uniform base grid.
-   *
-   * \note Is set by initSolver(...) function
-   */
-  double _coarsestMeshSize;
 
   /**
    * The maximum depth the adaptive mesh is allowed
@@ -1313,18 +1324,26 @@ class exahype::solvers::Solver {
   const int _maximumAdaptiveMeshDepth;
 
   /**
-   * The maximum tree level which is occupied by
-   * cells of this solver.
-   *
-   * This value needs to be updated every time the grid has been changed.
-   */
-  int _maxLevel;
-  int _nextMaxLevel;
-
-  /**
    * The time stepping mode of this solver.
    */
   const TimeStepping _timeStepping;
+
+
+  /**
+   * The coarsest level of the adaptive mesh that is
+   * occupied by this solver.
+   *
+   * @note Is set by initSolver(...) function
+   */
+  int _coarsestMeshLevel;
+
+  /**
+   * The coarsest mesh size this solver is using, i.e.
+   * the mesh size chosen for the uniform base grid.
+   *
+   * @note Is set by initSolver(...) function
+   */
+  double _coarsestMeshSize;
 
   /**
    * A profiler for this solver.
@@ -1348,28 +1367,9 @@ class exahype::solvers::Solver {
   Solver(const Solver& other) = delete;
   Solver& operator=(const Solver& other) = delete;
 
-  /**
-   * Return a string representation for the type \p param.
-   */
-  static std::string toString(const exahype::solvers::Solver::Type& param);
+  virtual std::string toString() const;
 
-  /**
-   * Return a string representation for the time stepping mode \p param.
-   */
-  static std::string toString(const exahype::solvers::Solver::TimeStepping& param);
-
-  /**
-   * Return the mesh level corresponding to the given mesh size with
-   * respect to the given domainSize.
-   *
-   * \note That the domain root cell is actually at Peano mesh level 1
-   * since the domain itself is embedded in a 3^d mesh in Peano.
-   *
-   * \note Load balancing makes only sense for a Peano mesh with
-   * at least 3 (Peano) levels.
-   * This is not ensured or checked in this routine.
-   */
-  static std::pair<double,int> computeCoarsestMeshSizeAndLevel(double meshSize, double domainSize);
+  virtual void toString(std::ostream& out) const;
 
   /**
    * Returns the maximum extent a mesh cell is allowed to have
@@ -1380,7 +1380,7 @@ class exahype::solvers::Solver {
    * each coordinate direction or larger values,
    * you indicate that this solver is not active in the domain.
    *
-   * \note This is just an upper bound on the coarsest mesh
+   * @note This is just an upper bound on the coarsest mesh
    * size. For the actual coarsest mesh size, see method
    * getCoarsestMeshSize().
    *
@@ -1392,7 +1392,7 @@ class exahype::solvers::Solver {
    * The coarsest level of the adaptive mesh that is
    * occupied by this solver.
    *
-   * \note Only safe to use after initSolver(...) was called.
+   * @note Only safe to use after initSolver(...) was called.
    */
   int getCoarsestMeshLevel() const;
 
@@ -1400,9 +1400,9 @@ class exahype::solvers::Solver {
    * The coarsest mesh size this solver is using,
    * i.e. the size of the cells on the uniform base grid.
    *
-   * \note Only safe to use after initSolver(...) was called.
+   * @note Only safe to use after initSolver(...) was called.
    *
-   * \note This is not not the maximumMeshSize specified by the user.
+   * @note This is not not the maximumMeshSize specified by the user.
    */
   double getCoarsestMeshSize() const;
 
@@ -1420,14 +1420,6 @@ class exahype::solvers::Solver {
    * occupied by this solver.
    */
   int getMaximumAdaptiveMeshLevel() const;
-
-  /**
-   * \note methods are virtual in order to enable
-   * overriding by LimitingADERDGSolver
-   */
-  virtual void updateNextMaxLevel(int maxLevel);
-  virtual int getNextMaxLevel() const;
-  virtual int getMaxLevel() const;
 
   /**
    * Returns the identifier of this solver.
@@ -1461,56 +1453,63 @@ class exahype::solvers::Solver {
    */
   int getNodesPerCoordinateAxis() const;
 
-  virtual std::string toString() const;
-
-  virtual void toString(std::ostream& out) const;
-
-  /**
-   * \return the mesh update event which will be set in
-   * the next iteration. (This value might change during an iteration.)
-   *
-   * \note We decided to make these functions virtual as the LimitingADERDGSolver
-   * delegates these events to the wrapped ADERDGSolver.
-   */
-  virtual  MeshUpdateEvent getNextMeshUpdateEvent() const = 0;
   /**
    * \see mergeMeshUpdateEvents
+   *
+   * @note Implementation must ensure thread-safety!
    */
-  virtual void updateNextMeshUpdateEvent(MeshUpdateEvent meshUpdateEvent) = 0;
+  virtual void updateMeshUpdateEvent(MeshUpdateEvent meshUpdateEvent) = 0;
+
   /**
    * Sets the _nextMeshUpdateEvent as this solver's
    * current event. Furthermore resets the
    * _nextMeshUpdateEvent variable.
    */
-  virtual void setNextMeshUpdateEvent() = 0;
+  virtual void resetMeshUpdateEvent() = 0;
   /**
    * \return the currently set mesh update event.
    */
   virtual MeshUpdateEvent getMeshUpdateEvent() const = 0;
-  /**
-   * Overwrite the current mesh update event with the given value.
-   *
-   * Is used to set the master's value on a worker rank.
-   */
-  virtual void overwriteMeshUpdateEvent(MeshUpdateEvent newMeshUpdateEvent) = 0;
 
   /**
    * \return true if the current mesh update event
    * is either RefinementRequested or InitialRefinementRequested.
    */
-  bool hasRequestedMeshRefinement() const;
+  bool hasRequestedAnyMeshRefinement() const;
   /**
-   * Run over all solvers and identify the minimal time stamp.
+   * \return minimum time stamp of all cell descriptions.
    */
   virtual double getMinTimeStamp() const = 0;
 
   /**
-   * The minimum time step size
-   * of all cell descriptions.
+   * \return minimum time step size of all cell descriptions computed during the last time step or
+   * after the last mesh refinement.
    */
   virtual double getMinTimeStepSize() const = 0;
 
-  virtual void updateMinNextTimeStepSize(double value) = 0;
+  /**
+   * Update the admissible time step size which is computed
+   * as the minium of the admissible time step size of all cells.
+   *
+   * @param value a value the current minium is compared against.
+   *
+   * @note Implementation must ensure thread-safety!
+   */
+  virtual void updateAdmissibleTimeStepSize(double value) = 0;
+
+  /**
+   * @return the admissible time step size which is only
+   * available at the end of a time step.
+   *
+   * @note Access is not thread-safe.
+   */
+  virtual double getAdmissibleTimeStepSize() const=0;
+
+  /**
+   * Reset the admissible time step size to infinity in order
+   * to search for a minimum over all cells.
+   */
+  virtual void resetAdmissibleTimeStepSize() = 0;
 
   /**
    * Initialise the solver's time stamps and time step sizes.
@@ -1518,7 +1517,7 @@ class exahype::solvers::Solver {
    * maximum mesh size to compute the coarsest grid level
    * this solver is placed on.
    *
-   * \note It is very important that the domainSize
+   * @note It is very important that the domainSize
    * is chosen as an multiple of the coarsest mesh size
    * of all solvers within the grid.
    *
@@ -1533,6 +1532,21 @@ class exahype::solvers::Solver {
       const tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize,
       const std::vector<std::string>& cmdlineargs,
       const exahype::parser::ParserView& parserView) = 0;
+
+  /**
+   * Notify the solver that a time step just started.
+   *
+   * @param isFirstTimeStepOfBatchOrNoBatch  if this is the first time step of a batch or no batch is run.
+   */
+  virtual void kickOffTimeStep(const bool isFirstTimeStepOfBatchOrNoBatch) = 0;
+
+  /**
+   * Notify the solver that a time step just finished.
+   *
+   * @param isFirstTimeStepOfBatchOrNoBatch  if this is the first time step of a batch or no batch is run.
+   * @param isLastTimeStepOfBatchOrNoBatch   if this is the last time step of a batch or if no batch is run.
+   */
+  virtual void wrapUpTimeStep(const bool isFirstTimeStepOfBatchOrNoBatch,const bool isLastTimeStepOfBatchOrNoBatch) = 0;
 
   /**
    * \return true if the solver is computing in the current algorithmic section.
@@ -1561,64 +1575,28 @@ class exahype::solvers::Solver {
   virtual bool isMergingMetadata(const exahype::State::AlgorithmSection& section) const = 0;
 
   /**
-   * This routine is called if we perform
-   * a time step update
-   */
-  virtual void startNewTimeStep() = 0;
-
-  /**
-   * Similar as Solver::startNewTimeStep but
-   * for the fused time stepping scheme.
-   *
-   * \param[in] isFirstIterationOfBatch indicates that we are in the first iteration
-   *                                    of a batch or not. Note that this must be also set to true
-   *                                    in case we run a batch of size 1, i.e. no batch at all.
-   *
-   * \param[in] isLastIterationOfBatch indicates that we are in the last iteration
-   *                                    of a batch or not. Note that this must be also set to true
-   *                                    in case we run a batch of size 1, i.e. no batch at all.
-   */
-  virtual void startNewTimeStepFused(
-      const bool isFirstIterationOfBatch,
-      const bool isLastIterationOfBatch) = 0;
-
-  /**
-   * Similar as Solver::updateTimeStepSizes but
-   * for the fused time stepping scheme.
-   */
-  virtual void updateTimeStepSizesFused() = 0;
-
-  /**
    * In contrast to startNewTimeStep(), this
    * method does not shift the time stamp.
    *
-   * It simply updates the time step sizes
+   * It simply updates the time step size.
    *
    * This method is used after a mesh refinement.
    */
-  virtual void updateTimeStepSizes() = 0;
+  virtual void updateTimeStepSize() = 0;
 
   /**
-   * Rolls the solver time step data back to the
-   * previous time step.
-   * Note that the newest time step
-   * data is lost in this process.
+   * Roll back the minimum time stamp to the one of
+   * the previous time step.
+   *
+   * @note This is a global rollback which is performed happens after mesh refinement.
+   * The time step size then needs to be recomputed. The old one is thus not restored.
    */
   virtual void rollbackToPreviousTimeStep() = 0;
-
-  /**
-   * Same as Solver::rollbackToPreviousTimeStep
-   * for fused time stepping.
-   */
-  virtual void rollbackToPreviousTimeStepFused() = 0;
-
-  virtual double getMinNextTimeStepSize() const=0;
-
   /**
    * If an entry for this solver exists,
    * return the element index of the cell description
-   * in the array at address \p cellDescriptionsIndex.
-   * Otherwise and if \p cellDescriptionsIndex is an
+   * in the array at address @p cellDescriptionsIndex.
+   * Otherwise and if @p cellDescriptionsIndex is an
    * invalid index, return Solver::NotFound.
    */
   virtual int tryGetElement(
@@ -1633,7 +1611,7 @@ class exahype::solvers::Solver {
    *
    * \return a struct of type bool.
    *
-   * \note We use this at the moment only
+   * @note We use this at the moment only
    * for refinement events. We can consider later
    * on to merge the time stepping functionality
    * (solution update, predictor comp.) into
@@ -1668,7 +1646,7 @@ class exahype::solvers::Solver {
    * \return if the vertices around a cell should be erased, kept,
    * or refined.
    *
-   * \param checkThoroughly If set to true, check that the indices found in the
+   * @param checkThoroughly If set to true, check that the indices found in the
    *                        adjacency map are actual heap indices and that the
    *                        geometry information of the cell descriptions found at
    *                        the heap index indicates that these cells are adjacent
@@ -1679,16 +1657,17 @@ class exahype::solvers::Solver {
       const int solverNumber,
       const tarch::la::Vector<DIMENSIONS, double>& cellOffset,
       const tarch::la::Vector<DIMENSIONS, double>& cellSize,
+      const int level,
       const bool checkThoroughly) const = 0;
 
   /**
    * Returns true if the solver has attained
    * a stable state on the cell description
    *
-   * \param fineGridCell a fine grid cell
-   * \param fineGridVertices vertices surrounding the fine grid cell
-   * \param fineGridVerticesEnumerator a enumerator for the fine grid vertices
-   * \param solverNumber a solver number
+   * @param fineGridCell a fine grid cell
+   * @param fineGridVertices vertices surrounding the fine grid cell
+   * @param fineGridVerticesEnumerator a enumerator for the fine grid vertices
+   * @param solverNumber a solver number
    */
   virtual bool attainedStableState(
       exahype::Cell& fineGridCell,
@@ -1726,17 +1705,17 @@ class exahype::solvers::Solver {
    * This method is usually called after mesh refinement
    * was performed.
    *
-   * \note Has no const modifier since kernels are not const functions yet.
+   * @note Has no const modifier since kernels are not const functions yet.
    */
-    virtual double updateTimeStepSizes(const int solverNumber,CellInfo& cellInfo,const bool fusedTimeStepping) = 0;
+    virtual double updateTimeStepSize(const int solverNumber,CellInfo& cellInfo) = 0;
 
   /**
    * Impose initial conditions and mark for refinement.
    *
-   * \note Make sure to reset neighbour merge
+   * @note Make sure to reset neighbour merge
    * helper variables in this method call.
    *
-   * \note Has no const modifier since kernels are not const functions yet.
+   * @note Has no const modifier since kernels are not const functions yet.
    */
   virtual void adjustSolutionDuringMeshRefinement(const int solverNumber,CellInfo& cellInfo) = 0;
 
@@ -1788,8 +1767,8 @@ class exahype::solvers::Solver {
    * @param[in] isLastIterationOfBatch  Indicates that we currently run no batch or
    *                                    we are in the last iteration of a batch.
    *                                    (If no batch is run, both flags
-   *                                    \p isFirstIterationOfBatch and
-   *                                    \p isLastIterationOfBatch are true).
+   *                                    @p isFirstIterationOfBatch and
+   *                                    @p isLastIterationOfBatch are true).
    * @param[in] isAtRemoteBoundary Flag indicating that the cell hosting the
    *                                    cell description is adjacent to a remote rank.
    */
@@ -1818,10 +1797,10 @@ class exahype::solvers::Solver {
    * evaluate the limiter and
    * the refinement criteria.
    *
-   * \note Make sure to reset neighbour merge
+   * @note Make sure to reset neighbour merge
    * helper variables in this method call.
    *
-   * \note Has no const modifier since kernels are not const functions yet.
+   * @note Has no const modifier since kernels are not const functions yet.
    *
    * @param cellInfo           links to the data associated with the mesh cell
    * @param solverNumber       id of a solver
@@ -1841,16 +1820,13 @@ class exahype::solvers::Solver {
    *
    * Allocate necessary new limiter patches.
    */
-  virtual void rollbackSolutionGlobally(
-         const int solverNumber,
-         CellInfo& cellInfo,
-         const bool fusedTimeStepping) const = 0;
+  virtual void rollbackSolutionGlobally(const int solverNumber,CellInfo& cellInfo) const = 0;
 
   /**
    * Explicitly ask the solver to compress
    * a cell description.
    *
-   * \param[in] isAtRemoteBoundary Flag indicating that the cell hosting the
+   * @param[in] isAtRemoteBoundary Flag indicating that the cell hosting the
    *                               cell description is adjacent to a remote rank.
    */
   virtual void compress(
@@ -1865,9 +1841,9 @@ class exahype::solvers::Solver {
   #ifdef Parallel
 
   /**
-   * If a cell description was allocated at heap address \p cellDescriptionsIndex
-   * for solver \p solverNumber, encode metadata of the cell description
-   * and push it to the back of the metadata vector \p metadata.
+   * If a cell description was allocated at heap address @p cellDescriptionsIndex
+   * for solver @p solverNumber, encode metadata of the cell description
+   * and push it to the back of the metadata vector @p metadata.
    *
    * Otherwise, push exahype::NeighbourCommunicationMetadataPerSolver
    * times exahype::InvalidMetadataEntry to the back of the vector.
@@ -1953,9 +1929,9 @@ class exahype::solvers::Solver {
       const bool                                   stillInRefiningMode) = 0;
 
   /**
-   * If a cell description was allocated at heap address \p cellDescriptionsIndex
-   * for solver \p solverNumber, encode metadata of the cell description
-   * and push it to the back of the metadata vector \p metadata.
+   * If a cell description was allocated at heap address @p cellDescriptionsIndex
+   * for solver @p solverNumber, encode metadata of the cell description
+   * and push it to the back of the metadata vector @p metadata.
    *
    * Otherwise, push exahype::MasterWorkerCommunicationMetadataPerSolver
    * times exahype::InvalidMetadataEntry to the back of the vector.
@@ -1968,13 +1944,13 @@ class exahype::solvers::Solver {
 
   /**
    * Send solver data to master or worker rank. Read the data from
-   * the cell description \p element in
-   * the cell descriptions vector stored at \p
+   * the cell description @p element in
+   * the cell descriptions vector stored at @p
    * cellDescriptionsIndex.
    *
-   * \param[in] element Index of the cell description
+   * @param[in] element Index of the cell description
    *                    holding the data to send out in
-   *                    the array with address \p cellDescriptionsIndex.
+   *                    the array with address @p cellDescriptionsIndex.
    *                    This is not the solver number.
    */
   virtual void sendDataToWorkerOrMasterDueToForkOrJoin(
@@ -1988,13 +1964,13 @@ class exahype::solvers::Solver {
   /**
    * Merge with solver data from master or worker rank
    * that was sent out due to a fork or join. Wrote the data to
-   * the cell description \p element in
-   * the cell descriptions vector stored at \p
+   * the cell description @p element in
+   * the cell descriptions vector stored at @p
    * cellDescriptionsIndex.
    *
-   * \param[in] element Index of the cell description
+   * @param[in] element Index of the cell description
    *                    holding the data to send out in
-   *                    the array with address \p cellDescriptionsIndex.
+   *                    the array with address @p cellDescriptionsIndex.
    *                    This is not the solver number.
    */
   virtual void mergeWithWorkerOrMasterDataDueToForkOrJoin(
@@ -2016,7 +1992,7 @@ class exahype::solvers::Solver {
    * This operation might be used for the reduction of a global
    * minimum time step size over all MPI ranks.
    *
-   * \note We always assume that
+   * @note We always assume that
    * startNewTimeStep() has been already called on the
    * local solver instance. You thus
    * have to return the updated local time step size.
@@ -2089,26 +2065,6 @@ class exahype::solvers::Solver {
       const int                                    level) = 0;
   #endif
 
-  /** @defgroup userHooks User Hooks
-   *  Hooks for user solvers
-   *  @{
-   */
-  /**
-   * Signals a user solver that ExaHyPE just started a new time step.
-   *
-   * \param[in] minTimeStamp the minimum time stamp (over all cells)
-   *
-   * \note Do not use global MPI collectives in this method
-   * as this operation is not invoked by all ranks at the same time.
-   *
-   * \note This function is invoked before the first predictor computation
-   * when the nonfused time stepping is run. Otherwise, it is invoked after
-   * the first predictor computation. It will always be called before
-   * "adjustSolution" is invoked.
-   */
-  virtual void beginTimeStep(const double minTimeStamp) {}
-  /** @} */ // end of userHooks
-
   ///////////////////////
   // PROFILING
   ///////////////////////
@@ -2152,6 +2108,49 @@ class exahype::solvers::Solver {
    * @return @see exahype::solvers::Solver::CellProcessingTimes
    */
   virtual CellProcessingTimes measureCellProcessingTimes(const int numberOfRuns=100) { return CellProcessingTimes(); }
+
+
+  /** @defgroup userHooks User Hooks
+   *  Hooks for user solvers
+   *  @{
+   */
+  /**
+   * Signals a user solver that ExaHyPE just started a new time step.
+   *
+   * @param[in] minTimeStamp the minimum time stamp (over all cells)
+   *
+   * @note This function is invoked before the first predictor computation
+   * when the non fused time stepping is run. Otherwise, it is invoked after
+   * the first predictor computation. It will always be called before
+   * "adjustSolution" is invoked.
+   *
+   * @note [MPI] Do not use collective MPI operations in here. Not all ranks call this function.
+   *
+   * @note [MPI] If you perform broadcasts via MPI primitives in here, ensure
+   * that isFirstTimeStepOfBatchOrNoBatch is set to true in order to not synchronise
+   * the MPI ranks during batched time steps.
+   */
+  virtual void beginTimeStep(const double minTimeStamp,const bool isFirstTimeStepOfBatchOrNoBatch) {}
+
+  /**
+   * Signals a user solver that ExaHyPE just finished a time step.
+   *
+   * @param[in] minTimeStamp the minimum time stamp (over all cells)
+   *
+   * @note This function is invoked after the solution was updated in all
+   * cells.
+   *
+   * @note [MPI] Do not use collective MPI operations in here. Not all ranks call this function.
+   *
+   * @note [MPI] If you perform reductions via MPI primitives in here, ensure
+   * that isLastTimeStepOfBatchOrNoBatch is set to true in order to not synchronise
+   * the MPI ranks during batched time steps.
+   *
+   * @param isFirstTimeStepOfBatchOrNoBatch  if this is the first time step of a batch or no batch is run.
+   * @param isLastTimeStepOfBatchOrNoBatch   if this is the last time step of a batch or if no batch is run.
+   */
+  virtual void endTimeStep(const double minTimeStamp,const bool isLastTimeStepOfBatchOrNoBatch)   {}
+  /** @} */ // end of userHooks
 };
 
 #endif

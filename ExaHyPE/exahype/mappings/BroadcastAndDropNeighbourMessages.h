@@ -107,13 +107,13 @@ public:
       const tarch::la::Vector<DIMENSIONS, double>& h,
       int level);
 
+  //
+  // Below all methods are nop.
+  //
+  //===================================
+
   /**
-   * Send down global time step and plotter data down to the worker.
-   *
-   * \note Has to return true since in the next adapter,
-   * we will perform a reduction and skip the broadcast.
-   * Skipping the broadcast implies that the reduceToDataMaster
-   * flag is not updated anymore.
+   * Nop.
    */
   bool prepareSendToWorker(
       exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
@@ -125,7 +125,7 @@ public:
       int worker);
 
   /**
-   * Receive global time step and plotter from the master.
+   * Nop.
    */
   void receiveDataFromMaster(
       exahype::Cell& receivedCell, exahype::Vertex* receivedVertices,
@@ -137,12 +137,6 @@ public:
       const peano::grid::VertexEnumerator& workersCoarseGridVerticesEnumerator,
       exahype::Cell& workersCoarseGridCell,
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
-
-  //
-  // Below all methods are nop.
-  //
-  //===================================
-
 
   /**
    * Nop.

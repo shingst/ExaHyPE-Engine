@@ -341,12 +341,16 @@ def parseAdapterTimes(resultsFolderPath,projectName,compressTable):
                         elif "order" in parameterDict:
                             base = float(parameterDict["order"]) + 1.0 
                         else:
-                            print("ERROR: Found neither 'order' nor 'patchSize' key in parameter list="+str(parameterDict),file=sys.stderr)
-                            sys.exit()
+                            print("WARNING: Found neither 'order' nor 'patchSize' key in parameter list="+str(parameterDict),file=sys.stderr)
 
-                        normalisationPerCells =  base**int(parameterDict["dimension"]) * float(stats["unrefined_inner_cells_avg"])
-                        row.append(str( float(adapters[adapter]["total_cputime"])  / normalisationPerCells ))
-                        row.append(str( float(adapters[adapter]["total_realtime"]) / normalisationPerCells ))
+                        normalisationPerCells =  base**int(parameterDict["dimension"]) * float(stats["unrefined_inner_cells_max"])
+                        if normalisationPerCells > 0:
+                          row.append(str( float(adapters[adapter]["total_cputime"])  / normalisationPerCells ))
+                          row.append(str( float(adapters[adapter]["total_realtime"]) / normalisationPerCells ))
+                        else:
+                          print("WARNING: Cannot compute normalised times as normalisation is not greater than zero. Probably, Peano's grid statistics were filtered out by a log filter.",file=sys.stderr)
+                          row.append("nan")
+                          row.append("nan")
                         row.append(str( int(stats["unrefined_inner_cells_min"]) ))
                         row.append(str( int(stats["unrefined_inner_cells_max"]) ))
                         row.append(str( stats["unrefined_inner_cells_avg"] ))

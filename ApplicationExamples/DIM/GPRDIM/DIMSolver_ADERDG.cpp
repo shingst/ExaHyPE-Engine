@@ -28,7 +28,7 @@ void GPRDIM::DIMSolver_ADERDG::init(const std::vector<std::string>& cmdlineargs,
 	inittecplot_(&order,&order);
 }
 
-void GPRDIM::DIMSolver_ADERDG::adjustPointSolution(const double* const x,const double t,const double dt,double* Q) {
+void GPRDIM::DIMSolver_ADERDG::adjustPointSolution(const double* const x,const double t,const double dt,double* const Q) {
 	if (tarch::la::equals(t,0.0)) {
 		int md = exahype::solvers::Solver::getMaximumAdaptiveMeshDepth();
 		double cms = exahype::solvers::Solver::getCoarsestMeshSize();
@@ -48,7 +48,7 @@ void GPRDIM::DIMSolver_ADERDG::adjustPointSolution(const double* const x,const d
 
 void GPRDIM::DIMSolver_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,
   const double * const fluxIn,const double* const stateIn,
-  double *fluxOut,double* stateOut) {
+  double* const fluxOut,double* const stateOut) {
 	// Local variables
 	const int nVar = GPRDIM::AbstractDIMSolver_ADERDG::NumberOfVariables;
 	const int order = GPRDIM::AbstractDIMSolver_ADERDG::Order;
@@ -78,7 +78,7 @@ void GPRDIM::DIMSolver_ADERDG::boundaryValues(const double* const x,const double
 	}
 }
 
-exahype::solvers::Solver::RefinementControl GPRDIM::DIMSolver_ADERDG::refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
+exahype::solvers::Solver::RefinementControl GPRDIM::DIMSolver_ADERDG::refinementCriterion(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
 	const int order = GPRDIM::AbstractDIMSolver_ADERDG::Order;
 	int rupture_flag;
 	
@@ -102,7 +102,7 @@ exahype::solvers::Solver::RefinementControl GPRDIM::DIMSolver_ADERDG::refinement
 //*****************************************************************************
 
 
-void GPRDIM::DIMSolver_ADERDG::eigenvalues(const double* const Q,const int d,double* lambda) {
+void GPRDIM::DIMSolver_ADERDG::eigenvalues(const double* const Q,const int d,double* const lambda) {
   // Dimensions                        = 2
   // Number of variables + parameters  = 24 + 0
   double nv[3] = {0.};
@@ -111,7 +111,7 @@ void GPRDIM::DIMSolver_ADERDG::eigenvalues(const double* const Q,const int d,dou
 }
 
 
-void GPRDIM::DIMSolver_ADERDG::flux(const double* const Q,double** F) {
+void GPRDIM::DIMSolver_ADERDG::flux(const double* const Q,double** const F) {
 	const int nVar = GPRDIM::AbstractDIMSolver_ADERDG::NumberOfVariables;
 	if(DIMENSIONS == 2){
 		double F_3[nVar];
@@ -123,7 +123,7 @@ void GPRDIM::DIMSolver_ADERDG::flux(const double* const Q,double** F) {
 
 
 //You can either implement this method or modify fusedSource
-void GPRDIM::DIMSolver_ADERDG::algebraicSource(const double* const Q,double* S) {
+void GPRDIM::DIMSolver_ADERDG::algebraicSource(const double* const Q,double* const S) {
   // @todo Please implement/augment if required
   //S[0] = 0.0;
   //S[1] = 0.0;
@@ -152,7 +152,7 @@ void GPRDIM::DIMSolver_ADERDG::algebraicSource(const double* const Q,double* S) 
   pdesource_(S, Q);
 }
 
-void  GPRDIM::DIMSolver_ADERDG::nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) {
+void  GPRDIM::DIMSolver_ADERDG::nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ) {
 	pdencp_(BgradQ, Q, gradQ);
 }
 
@@ -160,10 +160,8 @@ void  GPRDIM::DIMSolver_ADERDG::nonConservativeProduct(const double* const Q,con
 
 
 
-void GPRDIM::DIMSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(
-    double* observables,const int numberOfObservables,
-    const double* const Q) const {
-	assertion(numberOfObservables==1);
+void GPRDIM::DIMSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(double* const observables, const double* const Q) const {
+	assertion(NumberOfDMPObservables==1);
 	ReadOnlyVariables vars(Q);
 	observables[0]=Q[13];
 	observables[1]=Q[13];
@@ -177,9 +175,9 @@ bool GPRDIM::DIMSolver_ADERDG::isPhysicallyAdmissible(
       const tarch::la::Vector<DIMENSIONS,double>& dx,
       const double t) const {
 		  
-	int limvalue, LocNumberOfObservables;
-	LocNumberOfObservables=1;
-	pdelimitervalue_(&limvalue,&center[0],&LocNumberOfObservables, observablesMin, observablesMax);
+	int limvalue, LocNumberOfDMPObservables;
+	LocNumberOfDMPObservables=1;
+	pdelimitervalue_(&limvalue,&center[0],&LocNumberOfDMPObservables, observablesMin, observablesMax);
 	if(limvalue>0){
 		return false;
 	}else{
@@ -187,7 +185,7 @@ bool GPRDIM::DIMSolver_ADERDG::isPhysicallyAdmissible(
 	};
 	/*
 	if (tarch::la::equals(t,0.0)) {
-	  pdelimitervalue_(&limvalue,&center[0],&NumberOfObservables, observablesMin, observablesMax);
+	  pdelimitervalue_(&limvalue,&center[0],&NumberOfDMPObservables, observablesMin, observablesMax);
 	  //pdegeometriclimitervalue_(&limvalue,&center[0]);
 	  if(limvalue>0){
 		  return false;

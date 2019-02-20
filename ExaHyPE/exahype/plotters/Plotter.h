@@ -57,7 +57,14 @@ namespace exahype {
  * @author Tobias Weinzierl
  */
 class exahype::plotters::Plotter {
- public:
+
+public:
+  #ifdef Parallel
+  /**
+   * Tag used for master worker communication.
+   */
+  static int MasterWorkerCommunicationTag;
+  #endif
 
   /**
    * Interface/abstract superclass for user-defined filtering and in-situ postprocessing
@@ -148,8 +155,8 @@ class exahype::plotters::Plotter {
         const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch,
         const tarch::la::Vector<DIMENSIONS, double>& x,
         const tarch::la::Vector<DIMENSIONS, int>&    pos,
-        double* Q,
-        double* outputQuantities,
+        double* const Q,
+        double* const outputQuantities,
         double timeStamp) { abort(); /* catch missing API implementations */ }
 
       /**
@@ -166,9 +173,9 @@ class exahype::plotters::Plotter {
         const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch,
         const tarch::la::Vector<DIMENSIONS, double>& x,
         const tarch::la::Vector<DIMENSIONS, int>&    pos,
-        double* Q,
-        double* gradQ,
-        double* outputQuantities,
+        double* const Q,
+        double* const gradQ,
+        double* const outputQuantities,
         double timeStamp) { abort(); /* catch missing API implementations */ }
 
       /**
@@ -208,6 +215,7 @@ class exahype::plotters::Plotter {
   class Device {
    protected:
     UserOnTheFlyPostProcessing*  _postProcessing;
+
    public:
     Device(UserOnTheFlyPostProcessing* postProcessing):
       _postProcessing(postProcessing) {}
@@ -216,6 +224,8 @@ class exahype::plotters::Plotter {
     /**
      * Configure the plotter device. Is invoked directly after the constructor is
      * called.
+     *
+     * @note Assumes that the solution is not padded. Otherwise, the striding done by the plotters will be wrong.
      */
     virtual void init(const std::string& filename, int order, int unknowns, int writtenUnknowns, const exahype::parser::ParserView plotterParameters) = 0;
 

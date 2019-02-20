@@ -29,7 +29,7 @@ class Elastic::MyElasticWaveSolver : public Elastic::AbstractMyElasticWaveSolver
      */
     static tarch::logging::Log _log;
   public:
-    MyElasticWaveSolver(const double maximumMeshSize,const int maximumMeshDepth,const int haloCells,const int regularisedFineGridLevels,const exahype::solvers::Solver::TimeStepping timeStepping,const int limiterHelperLayers,const int DMPObservables);
+    MyElasticWaveSolver(const double maximumMeshSize,const int maximumMeshDepth,const int haloCells,const int regularisedFineGridLevels,const exahype::solvers::Solver::TimeStepping timeStepping,const int DMPObservables);
 
     /**
      * Initialise the solver.
@@ -42,7 +42,7 @@ class Elastic::MyElasticWaveSolver : public Elastic::AbstractMyElasticWaveSolver
      * Patchwise adjust
      * @TODO LR : Document
      */
-    void adjustSolution(double *luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,double dt) final override;
+    void adjustSolution(double* const luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,double dt) final override;
 
     /**
      * Compute the eigenvalues of the flux tensor per coordinate direction \p d.
@@ -52,7 +52,7 @@ class Elastic::MyElasticWaveSolver : public Elastic::AbstractMyElasticWaveSolver
      * \param[in] d  the column of the flux vector (d=0,1,...,DIMENSIONS).
      * \param[inout] lambda the eigenvalues as C array (already allocated).
      */
-    void eigenvalues(const double* const Q,const int d,double* lambda) final override;
+    void eigenvalues(const double* const Q,const int d,double* const lambda) final override;
     
     /**
      * Impose boundary conditions at a point on a boundary face
@@ -73,7 +73,7 @@ class Elastic::MyElasticWaveSolver : public Elastic::AbstractMyElasticWaveSolver
      * \param[inout] FOut      the normal fluxes at point x from outside of the domain
      *                         and time-averaged (over [t,t+dt]) as C array (already allocated).
      */
-    void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double * const fluxIn,const double* const stateIn,double *fluxOut,double* stateOut) final override;
+    void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double * const fluxIn,const double* const stateIn,double* const fluxOut,double* const stateOut) final override;
     
     /**
      * Evaluate the refinement criterion within a cell.
@@ -89,7 +89,7 @@ class Elastic::MyElasticWaveSolver : public Elastic::AbstractMyElasticWaveSolver
      * \param[in]    dt        the width of the time interval.
      * \return One of exahype::solvers::Solver::RefinementControl::{Erase,Keep,Refine}.
      */
-    exahype::solvers::Solver::RefinementControl refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& centre,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) override;
+    exahype::solvers::Solver::RefinementControl refinementCriterion(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& centre,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) override;
     
     //PDE
 
@@ -100,7 +100,7 @@ class Elastic::MyElasticWaveSolver : public Elastic::AbstractMyElasticWaveSolver
      *                 as C array (already allocated).
      * \param[inout] F the fluxes at that point as C array (already allocated).
      */
-    void flux(const double* const Q,double** F) final override;
+    void flux(const double* const Q,double** const F) final override;
 
 
     /**
@@ -125,16 +125,16 @@ class Elastic::MyElasticWaveSolver : public Elastic::AbstractMyElasticWaveSolver
      * \param[inout]  The vector BgradQ (extends nVar), already allocated. 
      *
      **/
-    void nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) final override;
-    /* void coefficientMatrix(const double* const Q,const int d,double* Bn); */
+    void nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ) final override;
+    /* void coefficientMatrix(const double* const Q,const int d,double* const Bn); */
 
-    void pointSource(const double* const x,const double t,const double dt, double* forceVector, double* x0, int n) final override;
-    void riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double dt,const int normalNonZeroIndex, bool isBoundaryFace, int faceIndex) override; 
+    void pointSource(const double* const x,const double t,const double dt, double* const forceVector, double* const x0, int n) final override;
+    void riemannSolver(double* const FL,double* const FR,const double* const QL,const double* const QR,const double dt,const int normalNonZeroIndex, bool isBoundaryFace, int faceIndex) override; 
   
     /**
      * @TODO LR : document
      */
-    void multiplyMaterialParameterMatrix(const double* const Q, double* rhs) final override;
+    void multiplyMaterialParameterMatrix(const double* const Q, double* const rhs) final override;
 
     /* implement user defined numerical boundary procedures*/
     void riemannSolver_BC0(double v, double sigma, double z,  double r, double& v_hat, double& sigma_hat);
@@ -143,16 +143,16 @@ class Elastic::MyElasticWaveSolver : public Elastic::AbstractMyElasticWaveSolver
     /* implement user defined numerical fluxes*/
     void riemannSolver_Nodal(double v_p,double v_m, double sigma_p, double sigma_m, double z_p , double z_m, double& v_hat_p , double& v_hat_m, double& sigma_hat_p, double& sigma_hat_m);
 
-    void localBasis(double* n, double * m);
+    void localBasis(double* const n, double* const m);
 
     void riemannSolver_boundary(int faceIndex,double r, double vn , double vm, double Tn , double Tm, double zp, double zs,  double& vn_hat , double& vm_hat , double& Tn_hat , double& Tm_hat);
     
     void generate_fluctuations_right(double z,  double T,double T_hat,double v, double v_hat, double& F);
     void generate_fluctuations_left(double z,  double T,double T_hat,double v, double v_hat, double& F);
-    void rotate_into_physical_basis(double* n,double* m, double Fn,double Fm, double& Fx, double& Fy);
-    void rotate_into_orthogonal_basis(double* n,double* m, double Tx,double Ty, double& Tn, double& Tm);
-    void extract_tractions_and_particle_velocity(double* n, const double* Q, double& Tx,double& Ty,double& vx,double& vy);
-    void get_normals(int normalNonZeroIndex,double& norm, double* n,const double* Q);
+    void rotate_into_physical_basis(double* const n,double* const m, double Fn,double Fm, double& Fx, double& Fy);
+    void rotate_into_orthogonal_basis(double* const n,double* const m, double Tx,double Ty, double& Tn, double& Tm);
+    void extract_tractions_and_particle_velocity(double* const n, const double* const Q, double& Tx,double& Ty,double& vx,double& vy);
+    void get_normals(int normalNonZeroIndex,double& norm, double* const n,const double* const Q);
     
 };
 

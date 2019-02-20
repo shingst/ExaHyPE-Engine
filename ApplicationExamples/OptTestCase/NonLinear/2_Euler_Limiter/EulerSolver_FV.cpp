@@ -36,7 +36,7 @@ void Euler::EulerSolver_FV::init(const std::vector<std::string>& cmdlineargs,con
   }
 }
 
-void Euler::EulerSolver_FV::flux(const double* const Q, double** F) {
+void Euler::EulerSolver_FV::flux(const double* const Q, double** const F) {
   
   constexpr double gamma = 1.4;
   const double irho = 1./Q[0];
@@ -73,7 +73,7 @@ void Euler::EulerSolver_FV::flux(const double* const Q, double** F) {
 
 void Euler::EulerSolver_FV::eigenvalues(const double* const Q,
     const int direction,
-    double* lambda) {
+    double* const lambda) {
   constexpr double gamma = 1.4;
   const double irho = 1./Q[0];
   #if DIMENSIONS==3
@@ -91,7 +91,7 @@ void Euler::EulerSolver_FV::eigenvalues(const double* const Q,
   lambda[4] += c;
 }
 
-void Euler::EulerSolver_FV::entropyWave(const double* const x,double t, double* Q) {
+void Euler::EulerSolver_FV::entropyWave(const double* const x,double t, double* const Q) {
   const double gamma     = 1.4;
   constexpr double width = 0.3;
 
@@ -115,7 +115,7 @@ void Euler::EulerSolver_FV::entropyWave(const double* const x,double t, double* 
   Q[4] = p / (gamma-1)   +  0.5*Q[0] * (v0[0]*v0[0]+v0[1]*v0[1]); // v*v; assumes: v0[2]=0
 }
 
-void Euler::EulerSolver_FV::sodShockTube(const double* const x, const double t, double* Q) {
+void Euler::EulerSolver_FV::sodShockTube(const double* const x, const double t, double* const Q) {
   // Initial data
   constexpr double gamma     =1.39999999999999991118;
   constexpr double x_0       =0.50000000000000000000;
@@ -195,7 +195,7 @@ void Euler::EulerSolver_FV::sodShockTube(const double* const x, const double t, 
   }
 }
 
-void Euler::EulerSolver_FV::sphericalExplosion(const double* const x,double t, double* Q) { 
+void Euler::EulerSolver_FV::sphericalExplosion(const double* const x,double t, double* const Q) { 
    constexpr double x0[3]   = {0.5, 0.5, 0.5};
    constexpr double radius  = 0.25;
    constexpr double radius2 = radius*radius;
@@ -230,7 +230,7 @@ void Euler::EulerSolver_FV::sphericalExplosion(const double* const x,double t, d
   }
 }
 
-void Euler::EulerSolver_FV::rarefactionWave(const double* const x,double t, double* Q) {
+void Euler::EulerSolver_FV::rarefactionWave(const double* const x,double t, double* const Q) {
   constexpr double gamma = 1.4;
   constexpr double width = 0.25;
   constexpr double x0[3] = { 0.5, 0.5, 0.5 };
@@ -254,7 +254,7 @@ void Euler::EulerSolver_FV::rarefactionWave(const double* const x,double t, doub
   }
 }
 
-void Euler::EulerSolver_FV::referenceSolution(const double* const x,double t, double* Q) {
+void Euler::EulerSolver_FV::referenceSolution(const double* const x,double t, double* const Q) {
   switch (ReferenceChoice) {
   case Reference::SodShockTube:
     sodShockTube(x,t,Q);
@@ -274,7 +274,7 @@ void Euler::EulerSolver_FV::referenceSolution(const double* const x,double t, do
 void Euler::EulerSolver_FV::adjustSolution(
     const double* const x,
     const double t,
-    const double dt, double* Q) {
+    const double dt, double* const Q) {
   if (tarch::la::equals(t,0.0)) {
     EulerSolver_FV::referenceSolution(x,t,Q);
   }
@@ -286,7 +286,7 @@ void Euler::EulerSolver_FV::boundaryValues(
     const int faceIndex,
     const int direction,
     const double* const stateInside,
-    double* stateOutside) {
+    double* const stateOutside) {
   switch (ReferenceChoice) {
   case Reference::SphericalExplosion:
   case Reference::RarefactionWave:

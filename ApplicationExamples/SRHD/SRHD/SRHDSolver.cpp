@@ -7,17 +7,17 @@ using std::endl;
 using std::cout;
 
 extern "C" {
-void hastoadjustsolution_(double* time, bool* refine);
-void adjustedsolutionvalues_(const double* const x,const double* w,const double* t,const double* dt,double* Q);
-void pdeflux_(double* F, const double* const Q);
-void pdeeigenvalues_(double* lambda, const double* const Q, const double* nv);
+void hastoadjustsolution_(double* const time, bool* refine);
+void adjustedsolutionvalues_(const double* const x,const double* const w,const double* const t,const double* const dt,double* const Q);
+void pdeflux_(double* const F, const double* const Q);
+void pdeeigenvalues_(double* const lambda, const double* const Q, const double* const nv);
 }
 
 void SRHD::SRHDSolver::init(){
   // implement if wanted
 }
 
-void SRHD::SRHDSolver::flux(const double* const Q, double** F) {
+void SRHD::SRHDSolver::flux(const double* const Q, double** const F) {
   // Dimensions             = 2
   // Number of variables    = 5 (#unknowns + #parameters)
   pdeflux_(F[0], Q);
@@ -25,7 +25,7 @@ void SRHD::SRHDSolver::flux(const double* const Q, double** F) {
 
 
 
-void SRHD::SRHDSolver::eigenvalues(const double* const Q, const int normalNonZeroIndex, double* lambda) {
+void SRHD::SRHDSolver::eigenvalues(const double* const Q, const int normalNonZeroIndex, double* const lambda) {
   // Dimensions             = 2
   // Number of variables    = 5 (#unknowns + #parameters)
   // normal vector: Allocate for 3 dimensions for convenience
@@ -48,13 +48,13 @@ bool SRHD::SRHDSolver::hasToAdjustSolution(const tarch::la::Vector<DIMENSIONS, d
 
 
 
-void SRHD::SRHDSolver::adjustedSolutionValues(const double* const x,const double w,const double t,const double dt,double* Q) {
+void SRHD::SRHDSolver::adjustedSolutionValues(const double* const x,const double w,const double t,const double dt,double* const Q) {
   // Dimensions             = 2
   // Number of variables    = 5 (#unknowns + #parameters)
   adjustedsolutionvalues_(x, &w, &t, &dt, Q);
 }
 
-void SRHD::SRHDSolver::algebraicSource(const double* const Q, double* S){
+void SRHD::SRHDSolver::algebraicSource(const double* const Q, double* const S){
   S[0] = 0.0;
   S[1] = 0.0;
   S[2] = 0.0;
@@ -63,11 +63,11 @@ void SRHD::SRHDSolver::algebraicSource(const double* const Q, double* S){
 }
 
 
-exahype::solvers::Solver::RefinementControl SRHD::SRHDSolver::refinementCriterion(const double* luh, const tarch::la::Vector<DIMENSIONS, double>& center, const tarch::la::Vector<DIMENSIONS, double>& dx, double t, const int level) {
+exahype::solvers::Solver::RefinementControl SRHD::SRHDSolver::refinementCriterion(const double* const luh, const tarch::la::Vector<DIMENSIONS, double>& center, const tarch::la::Vector<DIMENSIONS, double>& dx, double t, const int level) {
   return exahype::solvers::Solver::RefinementControl::Keep;
 }
 
-void SRHD::SRHDSolver::boundaryValues(const double* const x,const double t, const int faceIndex, const int normalNonZero, const double * const fluxIn, const double* const stateIn, double *fluxOut, double* stateOut) {
+void SRHD::SRHDSolver::boundaryValues(const double* const x,const double t, const int faceIndex, const int normalNonZero, const double * const fluxIn, const double* const stateIn, double* const fluxOut, double* const stateOut) {
   // Dimensions             = 2
   // Number of variables    = 5 (#unknowns + #parameters)
 

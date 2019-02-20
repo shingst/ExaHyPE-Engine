@@ -72,32 +72,10 @@ class exahype::mappings::PredictionOrLocalRecomputation {
   static tarch::logging::Log _log;
 
   /**
-   * A local copy of the state set
-   * in beginIteration(...).
-   */
-  exahype::State _stateCopy;
-
-  /**
    * Flag indicating if one solver requested a local recomputation.
    * Is set in beginIteration(...).
    */
   static bool OneSolverRequestedLocalRecomputation;
-
-  /**
-   * A minimum time step size for each solver.
-   */
-  std::vector<double> _minTimeStepSizes;
-
-  /**
-   * The maximum level occupied by cells of a solver.
-   */
-  std::vector<int> _maxLevels;
-
-  /**
-   * Prepare a appropriately sized vector _minTimeStepSizes
-   * with elements initiliased to MAX_DOUBLE.
-   */
-  void initialiseLocalVariables();
 
   /**
    * \return true if we perform a local recomputation for this solver.
@@ -180,13 +158,21 @@ class exahype::mappings::PredictionOrLocalRecomputation {
    * Run through the whole tree. Avoid fine grid races.
    */
   peano::MappingSpecification touchVertexFirstTimeSpecification(int level) const;
-
   /**
    * Nop.
    */
   peano::MappingSpecification touchVertexLastTimeSpecification(int level) const;
   peano::MappingSpecification ascendSpecification(int level) const;
   peano::MappingSpecification descendSpecification(int level) const;
+
+  /**
+   * Reduce solver data in the last time step of the batch.
+   * Do not broadcast anything.
+   *
+   * If only one prediction sweep is used, delegate heap data exchange to
+   * Peano. Otherwise, start and stop it in begin/endIteration(...).
+   * Stretch the start/stop window over two sweeps.
+   */
   peano::CommunicationSpecification communicationSpecification() const;
 
   /**
