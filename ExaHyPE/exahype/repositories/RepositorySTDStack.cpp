@@ -234,6 +234,13 @@ void exahype::repositories::RepositorySTDStack::iterate(int numberOfIterations, 
   for (int i=0; i<numberOfIterations; i++) {
     _solverState.setBatchState(numberOfIterations, i );
  
+    if (
+        tarch::parallel::Node::getInstance().isGlobalMaster() &&
+        tarch::parallel::Node::getInstance().getNumberOfNodes()>1
+    ) {
+      logInfo("iterate(...)","start iteration on global master (includes time spent in broadcast).");
+    }
+
     // NOT GENERATED. Manual modification. Be careful when you rerun the PDT.
     exahype::State::kickOffIteration(_repositoryState,_solverState,i);
 
@@ -282,9 +289,13 @@ void exahype::repositories::RepositorySTDStack::iterate(int numberOfIterations, 
     VT_end(handle);
     #endif
 
-    if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
-      logInfo("iterate(...)","cells on global master   ="<<_vertexStack.sizeOfInputStack());
-      logInfo("iterate(...)","vertices on global master="<<_cellStack.sizeOfInputStack()  );
+    if (
+        tarch::parallel::Node::getInstance().isGlobalMaster() &&
+        tarch::parallel::Node::getInstance().getNumberOfNodes()>1
+    ) {
+      logInfo("iterate(...)","finish iteration on global master (includes time spent performing reduction).");
+      logInfo("iterate(...)","local vertices on global master="<<_cellStack.sizeOfInputStack()  );
+      logInfo("iterate(...)","local cells on global master   ="<<_vertexStack.sizeOfInputStack());
     }
 
     #ifdef Parallel
