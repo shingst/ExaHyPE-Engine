@@ -282,6 +282,14 @@ class exahype::parser::Parser {
    */
   bool getScaleBoundingBox() const;
 
+  /**
+   * 2+3*i cells are placed outside of the domain per coordinate axis if
+   * the bounding box is scaled.
+   *
+   * @return the multiplier i which should be used.
+   */
+  int getScaleBoundingBoxMultiplier() const;
+
   int getMPIBufferSize() const;
 
   int getMPITimeOut() const;

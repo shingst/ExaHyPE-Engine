@@ -117,7 +117,8 @@ class SpecFile1Reader():
             "dmp_observables",\
             "steps_till_cured",\
             "helper_layers",\
-            "thread_stack_size"\
+            "thread_stack_size",\
+            "scale_bounding_box_multiplier"\
         ]
         numbers=[\
             "end_time",\

@@ -138,18 +138,17 @@ void exahype::mappings::MeshRefinement::beginIteration( exahype::State& solverSt
   if ( IsInitialMeshRefinement || DynamicLoadBalancing ) {
     peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(true);
   }
-    
-   //logInfo("beginIteration(...)","solverState.getAllSolversAttainedStableStateInPreviousIteration()="<<solverState.getAllSolversAttainedStableStateInPreviousIteration());
 
-  // stability check
+  // mesh refinement convergence check
   if ( exahype::mappings::MeshRefinement::IsFirstIteration ) {
-    solverState.setAllSolversAttainedStableStateInPreviousIteration(false);
     _stableIterationsInARow = 0;
     StillInRefiningMode     = true;
-    
     _allSolversAttainedStableState = false;
   } else {
-    if ( solverState.getAllSolversAttainedStableStateInPreviousIteration() ) {
+    if (
+        solverState.getAllSolversAttainedStableStateInPreviousIteration() ||
+        !solverState.isInvolvedInJoinOrFork()
+    ) {
       _stableIterationsInARow++;
     } else { // this is for the worker ranks, the global master was already updated in the last endIteration(...)
       _stableIterationsInARow=0;
@@ -159,7 +158,7 @@ void exahype::mappings::MeshRefinement::beginIteration( exahype::State& solverSt
   }
   if ( StillInRefiningMode && _stableIterationsInARow>1 ) {
     StillInRefiningMode = false;
-    _stableIterationsInARow=0; // TODO(Dominic): REMOVE AFTER DEBUGGING
+    _stableIterationsInARow=0;
     if (!IsInitialMeshRefinement) {
       logInfo("beginIteration(...)","refinement converged. switch to coarsening");
     }
@@ -180,11 +179,6 @@ void exahype::mappings::MeshRefinement::endIteration(exahype::State& solverState
   // update the solver state
   solverState.setAllSolversAttainedStableStateInPreviousIteration(_allSolversAttainedStableState);  // merge the local values
   solverState.setVerticalExchangeOfSolverDataRequired(_verticalExchangeOfSolverDataRequired);
-  //logInfo("endIteration(...)","_attainedStableState="<<_allSolversAttainedStableState);
-  //logInfo("endIteration(...)","StillInRefiningMode="<<StillInRefiningMode);
-  //logInfo("endIteration(...)","_stableIterationsInARow="<<_stableIterationsInARow);
-  //logInfo("endIteration(...)","solverState.getMaxLevel()="<<solverState.getMaxLevel());
-  //logInfo("endIteration(...)","getFinestUniformMeshLevelOfAllSolvers()="<<solvers::Solver::getFinestUniformMeshLevelOfAllSolvers());
 
   if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
     #ifndef TrackGridStatistics
@@ -198,6 +192,10 @@ void exahype::mappings::MeshRefinement::endIteration(exahype::State& solverState
       _stableIterationsInARow = 0;
     }
     solverState.setMeshRefinementHasConverged(
+        solverState.isGridBalanced()
+        &&
+        solverState.isGridStationary()
+        &&
         !StillInRefiningMode
         &&
         (IsInitialMeshRefinement ||
@@ -253,8 +251,8 @@ void exahype::mappings::MeshRefinement::touchVertexLastTime(
       fineGridH,
       !StillInRefiningMode);
 
-  if (
-      refineOnThisRankAndLevel(coarseGridVerticesEnumerator.getLevel()+1)
+  if ( // TODO(Dominic): This is not completely figured out yet.
+      !fineGridVertex.isOutside()
       &&
       _stableIterationsInARow <= 3 // Found experimentally
       &&
@@ -292,13 +290,11 @@ void exahype::mappings::MeshRefinement::createBoundaryVertex(
                            coarseGridCell, fineGridPositionOfVertex);
 
   if (
-      refineOnThisRankAndLevel(coarseGridVerticesEnumerator.getLevel()+1)
-      &&
       fineGridVertex.evaluateRefinementCriterion(
-          fineGridX,
-          coarseGridVerticesEnumerator.getLevel()+1,
-          fineGridH,
-          !StillInRefiningMode)
+      fineGridX,
+      coarseGridVerticesEnumerator.getLevel()+1,
+      fineGridH,
+      !StillInRefiningMode)
       == exahype::solvers::Solver::RefinementControl::Refine
   ) {
     refineSafely(fineGridVertex,fineGridH,coarseGridVerticesEnumerator.getLevel()+1,true);
@@ -320,8 +316,6 @@ void exahype::mappings::MeshRefinement::createInnerVertex(
                            fineGridH, coarseGridVerticesEnumerator.toString(),
                            coarseGridCell, fineGridPositionOfVertex);
   if (
-      refineOnThisRankAndLevel(coarseGridVerticesEnumerator.getLevel()+1)
-      &&
       fineGridVertex.evaluateRefinementCriterion(
           fineGridX,
           coarseGridVerticesEnumerator.getLevel()+1,
@@ -388,8 +382,6 @@ void exahype::mappings::MeshRefinement::ensureRegularityAlongBoundary(
     exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator) const {
   if (
-      refineOnThisRankAndLevel(fineGridVerticesEnumerator.getLevel())
-      &&
       !StillInRefiningMode
       &&
       peano::grid::aspects::VertexStateAnalysis::isOneVertexBoundary(

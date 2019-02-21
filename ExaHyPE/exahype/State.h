@@ -230,12 +230,18 @@ class exahype::State : public peano::grid::State<exahype::records::State> {
    */
   bool getMeshRefinementHasConverged() const;
 
-  /**
-   * Has to be called after the iteration!
-   *
-   * Please consult Peano guidebook Section 6.3.2 for details.
-   */
-  void endedGridConstructionIteration(int finestGridLevelPossible);
+
+/**
+ * Please consult Peano guidebook Section 6.3.2 for details.
+ *
+ * Mainly used to decide if the refinement can be enforced or
+ * must be done more carefully. If there are still
+ * idle ranks and the mesh is not stable, the
+ * mesh refinement must not be enforced.
+ *
+ * @note Has to be called after the iteration!
+ */
+void endedGridConstructionIteration(int finestGridLevelPossible);
 
   /**
    * Please consult Peano guidebook Section 6.3.2 for details.
@@ -248,7 +254,8 @@ class exahype::State : public peano::grid::State<exahype::records::State> {
   RefinementAnswer mayRefine(bool isCreationalEvent, int level) const;
 
   /**
-   * Please consult Peano guidebook Section 6.3.2 for details.
+   * We do not follow Peao guidebook Section 6.3.2 as
+   * we have other convergence checks in place.
    */
   bool continueToConstructGrid() const;
 

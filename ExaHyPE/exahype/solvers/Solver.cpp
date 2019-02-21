@@ -808,13 +808,16 @@ void exahype::solvers::Solver::sendMeshUpdateEventToMaster(
              ",_nextMeshUpdateEvent=" << toString( getNextMeshUpdateEvent() ));
   }
 
-  
-  MPI_Send(
-    meshUpdateEvent.data(), meshUpdateEvent.size(),
-    MPI_DOUBLE,
-    masterRank,
-    MasterWorkerCommunicationTag,
-    tarch::parallel::Node::getInstance().getCommunicator());
+  // MPI_Send(
+  //   meshUpdateEvent.data(), meshUpdateEvent.size(),
+  //   MPI_DOUBLE,
+  //   masterRank,
+  //   MasterWorkerCommunicationTag,
+  //   tarch::parallel::Node::getInstance().getCommunicator());
+
+  DataHeap::getInstance().sendData(
+      meshUpdateEvent.data(), meshUpdateEvent.size(),
+      masterRank,x,level,peano::heap::MessageType::MasterWorkerCommunication);
 }
 
 void exahype::solvers::Solver::mergeWithWorkerMeshUpdateEvent(
@@ -823,17 +826,17 @@ void exahype::solvers::Solver::mergeWithWorkerMeshUpdateEvent(
     const int                                    level) {
   DataHeap::HeapEntries messageFromWorker(1); // !!! fills the vector
   
-  MPI_Recv(
-    messageFromWorker.data(), messageFromWorker.size(),
-    MPI_DOUBLE,
-    workerRank,
-    MasterWorkerCommunicationTag,
-    tarch::parallel::Node::getInstance().getCommunicator(),
-    MPI_STATUS_IGNORE);
+  // MPI_Recv(
+  //   messageFromWorker.data(), messageFromWorker.size(),
+  //   MPI_DOUBLE,
+  //   workerRank,
+  //   MasterWorkerCommunicationTag,
+  //   tarch::parallel::Node::getInstance().getCommunicator(),
+  //   MPI_STATUS_IGNORE);
 
-//  DataHeap::getInstance().receiveData(
-//      messageFromWorker.data(),messageFromWorker.size(),workerRank, x, level,
-//      peano::heap::MessageType::MasterWorkerCommunication);
+  DataHeap::getInstance().receiveData(
+      messageFromWorker.data(),messageFromWorker.size(),workerRank, x, level,
+      peano::heap::MessageType::MasterWorkerCommunication);
 
   updateMeshUpdateEvent( convertToMeshUpdateEvent( messageFromWorker[0] ) );
   assertion1(messageFromWorker.size()==1,messageFromWorker.size());

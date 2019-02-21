@@ -149,6 +149,13 @@ void exahype::mappings::FusedTimeStep::beginIteration(
     exahype::State& solverState) {
   logTraceInWith1Argument("beginIteration(State)", solverState);
 
+  if (
+      tarch::parallel::Node::getInstance().isGlobalMaster() &&
+      tarch::parallel::Node::getInstance().getNumberOfNodes()>1
+  ) {
+    logInfo("beginIteration(...)","start traversal on global master (after broadcast).");
+  }
+
   if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
     exahype::plotters::startPlottingIfAPlotterIsActive(
         solvers::Solver::getMinTimeStampOfAllSolvers());
@@ -401,6 +408,13 @@ void exahype::mappings::FusedTimeStep::mergeWithMaster(
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
     int workerRank, const exahype::State& workerState,
     exahype::State& masterState) {
+  if (
+      tarch::parallel::Node::getInstance().isGlobalMaster() &&
+      tarch::parallel::Node::getInstance().getNumberOfNodes()>1
+  ) {
+    logInfo("mergeWithMaster(...)","end traversal on global master (before reduction).");
+  }
+
   if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
     exahype::State::mergeWithGlobalDataFromWorker(workerRank,0.0,0);
   }

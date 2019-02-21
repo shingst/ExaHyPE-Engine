@@ -5,27 +5,27 @@
 // ========================
 //   www.exahype.eu
 // ========================
-#include "PrimitiveWriterSubcell.h"
+#include "ProbeWriter_0.h"
 
 #include "PDE.h"
 
-GRMHDb::PrimitiveWriterSubcell::PrimitiveWriterSubcell(GRMHDb::GRMHDbSolver& solver) {
+GRMHDb::ProbeWriter_0::ProbeWriter_0(GRMHDb::GRMHDbSolver& solver) {
   // @TODO Please insert your code here.
 }
 
-GRMHDb::PrimitiveWriterSubcell::~PrimitiveWriterSubcell() {
+GRMHDb::ProbeWriter_0::~ProbeWriter_0() {
 }
 
-void GRMHDb::PrimitiveWriterSubcell::startPlotting( double time) {
+void GRMHDb::ProbeWriter_0::startPlotting( double time) {
   // @TODO Please insert your code here.
 }
 
 
-void GRMHDb::PrimitiveWriterSubcell::finishPlotting() {
+void GRMHDb::ProbeWriter_0::finishPlotting() {
   // @TODO Please insert your code here.
 }
 
-void GRMHDb::PrimitiveWriterSubcell::mapQuantities(
+void GRMHDb::ProbeWriter_0::mapQuantities(
     const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
     const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch,
     const tarch::la::Vector<DIMENSIONS, double>& x,
@@ -36,8 +36,9 @@ void GRMHDb::PrimitiveWriterSubcell::mapQuantities(
 ) {
 	int iErr = 0;
 	pdecons2prim_(outputQuantities, Q, &iErr);
-  //const int writtenUnknowns = 19;
-  //for (int i=0; i<writtenUnknowns; i++){ 
-  //  outputQuantities[i] = Q[i];
-  //}
+	/*
+  const int writtenUnknowns = 19;
+  for (int i=0; i<writtenUnknowns; i++){ 
+    outputQuantities[i] = Q[i];
+  }*/
 }

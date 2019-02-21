@@ -129,7 +129,9 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
       tarch::parallel::NodePool::getInstance().setStrategy(
         new tarch::parallel::FCFSNodePoolStrategy()
       );
-      logInfo("initDistributedMemoryConfiguration()", "load balancing relies on FCFS answering strategy");
+      if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+        logInfo("initDistributedMemoryConfiguration()", "load balancing relies on FCFS answering strategy");
+      }
     }
     else if (_parser.compareNodePoolStrategy( "fair" )) {
       int ranksPerNode = _parser.getRanksPerNode();
@@ -144,7 +146,9 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
       tarch::parallel::NodePool::getInstance().setStrategy(
         new mpibalancing::FairNodePoolStrategy(ranksPerNode,1,_parser.getNodePoolAnsweringTimeout())
       );
-      logInfo("initDistributedMemoryConfiguration()", "load balancing relies on fair answering strategy with " << ranksPerNode << " rank(s) per node") ;
+      if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+        logInfo("initDistributedMemoryConfiguration()", "load balancing relies on fair answering strategy with " << ranksPerNode << " rank(s) per node") ;
+      }
     }
     else if (_parser.compareNodePoolStrategy( "sfc-diffusion" )) {
       int ranksPerNode = _parser.getRanksPerNode();
@@ -172,9 +176,11 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
       tarch::parallel::NodePool::getInstance().setStrategy(
         new mpibalancing::SFCDiffusionNodePoolStrategy(ranksPerNode,primaryRanksPerNode,_parser.getNodePoolAnsweringTimeout())
       );
-      logInfo("initDistributedMemoryConfiguration()",
-        "load balancing relies on an sfc-diffusion answering strategy with " << ranksPerNode <<
-        " rank(s) per node while " << primaryRanksPerNode << " rank(s) per node are primary ranks" );
+      if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+        logInfo("initDistributedMemoryConfiguration()",
+                "load balancing relies on an sfc-diffusion answering strategy with " << ranksPerNode <<
+                " rank(s) per node while " << primaryRanksPerNode << " rank(s) per node are primary ranks" );
+      }
     }
     else {
       logError("initDistributedMemoryConfiguration()", "no valid load balancing answering strategy specified");
@@ -219,13 +225,17 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
   if ( _parser.getMPILoadBalancingType()==exahype::parser::Parser::MPILoadBalancingType::Static ) {
     switch ( exahype::mappings::LoadBalancing::getLoadBalancingAnalysis() ) {
       case exahype::mappings::LoadBalancing::LoadBalancingAnalysis::Greedy:
-        logInfo("initDistributedMemoryConfiguration()", "use greedy load balancing without joins");
+        if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+          logInfo("initDistributedMemoryConfiguration()", "use greedy load balancing without joins");
+        }
         peano::parallel::loadbalancing::Oracle::getInstance().setOracle(
             new peano::parallel::loadbalancing::OracleForOnePhaseWithGreedyPartitioning(false)
         );
         break;
       case exahype::mappings::LoadBalancing::LoadBalancingAnalysis::GreedyWithRegularityAnalysis:
-        logInfo("initDistributedMemoryConfiguration()", "use greedy load balancing without joins (mpibalancing/GreedyBalancing)");
+        if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+          logInfo("initDistributedMemoryConfiguration()", "use greedy load balancing without joins (mpibalancing/GreedyBalancing)");
+        }
         peano::parallel::loadbalancing::Oracle::getInstance().setOracle(
           new mpibalancing::GreedyBalancing(
             getCoarsestGridLevelForLoadBalancing(_boundingBoxSize),
@@ -234,11 +244,13 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
         );
         break;
       case exahype::mappings::LoadBalancing::LoadBalancingAnalysis::Hotspot:
-        logInfo("initDistributedMemoryConfiguration()", "use global hotspot elimination without joins (mpibalancing/StaticBalancing)");
+        if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+          logInfo("initDistributedMemoryConfiguration()", "use global hotspot elimination without joins (mpibalancing/StaticBalancing)");
+        }
         peano::parallel::loadbalancing::Oracle::getInstance().setOracle(
             new mpibalancing::HotspotBalancing(
                 false,
-                1, // getFinestUniformGridLevelForLoadBalancing(_boundingBoxSize), /*boundary regularity*/
+                getFinestUniformGridLevelForLoadBalancing(_boundingBoxSize), /*boundary regularity*/
                 0 /* 0 means no admistrative ranks; previous: tarch::parallel::Node::getInstance().getNumberOfNodes()/THREE_POWER_D */
           )
         );
@@ -258,18 +270,22 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
 
     tarch::parallel::Node::getInstance().setDeadlockTimeOut(_parser.getMPITimeOut());
     tarch::parallel::Node::getInstance().setTimeOutWarning(_parser.getMPITimeOut()/2);
-    logInfo("initDistributedMemoryConfiguration()", "use MPI time out of " << _parser.getMPITimeOut() << " (warn after half the timeout span)");
+
+    if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+      logInfo("initDistributedMemoryConfiguration()", "use MPI time out of " << _parser.getMPITimeOut() << " (warn after half the timeout span)");
+    }
 
     const int bufferSize = _parser.getMPIBufferSize();
     peano::parallel::SendReceiveBufferPool::getInstance().setBufferSize(bufferSize);
     peano::parallel::JoinDataBufferPool::getInstance().setBufferSize(bufferSize);
-    logInfo("initDistributedMemoryConfiguration()", "use MPI buffer size of " << bufferSize);
 
-    if ( _parser.getSkipReductionInBatchedTimeSteps() ) {
-      logInfo("initDistributedMemoryConfiguration()", "allow ranks to skip reduction and broadcasts within a batch" );
-    }
-    else {
-      logWarning("initDistributedMemoryConfiguration()", "ranks are not allowed to skip any reduction (might harm performance). Use optimisation section to switch feature on" );
+    if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+      logInfo("initDistributedMemoryConfiguration()", "use MPI buffer size of " << bufferSize);
+      if ( _parser.getSkipReductionInBatchedTimeSteps() ) {
+        logInfo("initDistributedMemoryConfiguration()", "allow ranks to skip reduction and broadcasts within a batch" );
+      } else {
+        logWarning("initDistributedMemoryConfiguration()", "ranks are not allowed to skip any reduction (might harm performance). Use optimisation section to switch feature on" );
+      }
     }
 
 #if defined(DistributedStealing) 
@@ -301,8 +317,10 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
   //
   exahype::solvers::Solver::MasterWorkerCommunicationTag   = tarch::parallel::Node::reserveFreeTag("solver[master<->worker]");
   exahype::plotters::Plotter::MasterWorkerCommunicationTag = exahype::solvers::Solver::MasterWorkerCommunicationTag;
-  logInfo("Solver(...)","solver master worker communication uses tag " <<  exahype::solvers::Solver::MasterWorkerCommunicationTag);
-  logInfo("Solver(...)","plotter master worker communication uses tag " << exahype::plotters::Plotter::MasterWorkerCommunicationTag);
+  if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+    logInfo("initDistributedMemoryConfiguration(...)","solver master worker communication uses tag " <<  exahype::solvers::Solver::MasterWorkerCommunicationTag);
+    logInfo("initDistributedMemoryConfiguration(...)","plotter master worker communication uses tag " << exahype::plotters::Plotter::MasterWorkerCommunicationTag);
+  }
   #endif
 }
 
@@ -350,12 +368,18 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
 
   if ( _parser.useManualPinning() ) {
     #if defined(TBBInvade)
-    logWarning("initSharedMemoryConfiguration()", "TBBInvade always pins threads automatically, i.e. manual pinning is ignored" );
+    if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+      logWarning("initSharedMemoryConfiguration()", "TBBInvade always pins threads automatically, i.e. manual pinning is ignored" );
+    }
     #elif defined(SharedTBB) || defined(SharedCPP)
-    logInfo("initSharedMemoryConfiguration()", "manual pinning switched on" );
+    if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+      logInfo("initSharedMemoryConfiguration()", "manual pinning switched on" );
+    }
     tarch::multicore::Core::getInstance().pinThreads( true );
     #else
-    logWarning("initSharedMemoryConfiguration()", "manual pinning only supported for TBB" );
+    if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+      logWarning("initSharedMemoryConfiguration()", "manual pinning only supported for TBB" );
+    }
     #endif
   }
 
@@ -380,8 +404,10 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
     }
   } else if ( _parser.getSpawnHighPriorityBackgroundJobsAsATask() ) {
     if ( _parser.getRunLowPriorityJobsOnlyIfNoHighPriorityJobIsLeft() ) { // low priority behaviour
-      logWarning("initSharedMemoryConfiguration()","There exists no high priority job queue if we spawn high priority jobs directly as TBB tasks. "<<
-                  "Fall back to 'run_always' low priority job processing strategy.");
+      if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+        logWarning("initSharedMemoryConfiguration()","There exists no high priority job queue if we spawn high priority jobs directly as TBB tasks. "<<
+                   "Fall back to 'run_always' low priority job processing strategy.");
+      }
     }
     if ( _parser.getSpawnLowPriorityBackgroundJobsAsATask() ){
       tarch::multicore::jobs::setHighPriorityJobBehaviour(
@@ -407,8 +433,10 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
 
   switch (_parser.getMulticoreOracleType()) {
   case exahype::parser::Parser::MulticoreOracleType::Dummy:
-    logInfo("initSharedMemoryConfiguration()",
-        "use dummy shared memory oracle");
+    if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+      logInfo("initSharedMemoryConfiguration()",
+              "use dummy shared memory oracle");
+    }
     peano::datatraversal::autotuning::Oracle::getInstance().setOracle(
       new peano::datatraversal::autotuning::OracleForOnePhaseDummy(
          true,  //   bool useMultithreading                  = true,
@@ -428,8 +456,10 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
     );
     break;
   case exahype::parser::Parser::MulticoreOracleType::AutotuningWithRestartAndLearning:
-    logInfo("initSharedMemoryConfiguration()",
-        "use learning autotuning shared memory oracle and allow restarts");
+    if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+      logInfo("initSharedMemoryConfiguration()",
+              "use learning autotuning shared memory oracle and allow restarts");
+    }
     peano::datatraversal::autotuning::Oracle::getInstance().setOracle(
         new sharedmemoryoracles::OracleForOnePhaseWithShrinkingGrainSize(
           tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getNumberOfNodes()-1,
@@ -439,16 +469,20 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
         _parser.getMulticorePropertiesFile());
     break;
   case exahype::parser::Parser::MulticoreOracleType::AutotuningWithoutLearning:
-    logInfo("initSharedMemoryConfiguration()",
-        "use autotuning shared memory oracle configuration but disable machine learning algorithm");
+    if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+      logInfo("initSharedMemoryConfiguration()",
+              "use autotuning shared memory oracle configuration but disable machine learning algorithm");
+    }
     peano::datatraversal::autotuning::Oracle::getInstance().setOracle(
         new sharedmemoryoracles::OracleForOnePhaseWithShrinkingGrainSize(false,false));
     peano::datatraversal::autotuning::Oracle::getInstance().loadStatistics(
         _parser.getMulticorePropertiesFile());
     break;
   case exahype::parser::Parser::MulticoreOracleType::AutotuningWithLearningButWithoutRestart:
-    logInfo("initSharedMemoryConfiguration()",
-        "use autotuning shared memory oracle but disable search restarts");
+    if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+      logInfo("initSharedMemoryConfiguration()",
+              "use autotuning shared memory oracle but disable search restarts");
+    }
     peano::datatraversal::autotuning::Oracle::getInstance().setOracle(
         new sharedmemoryoracles::OracleForOnePhaseWithShrinkingGrainSize(
           tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getNumberOfNodes()-1,
@@ -458,8 +492,10 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
         _parser.getMulticorePropertiesFile());
     break;
   case exahype::parser::Parser::MulticoreOracleType::GrainSizeSampling:
-    logInfo("initSharedMemoryConfiguration()",
-        "use shared memory oracle sampling");
+    if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+      logInfo("initSharedMemoryConfiguration()",
+              "use shared memory oracle sampling");
+    }
     peano::datatraversal::autotuning::Oracle::getInstance().setOracle(
         new sharedmemoryoracles::OracleForOnePhaseWithGrainSizeSampling(
             64,
@@ -491,7 +527,9 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
     case exahype::parser::Parser::TBBInvadeStrategy::InvadeThroughoutComputation:
     case exahype::parser::Parser::TBBInvadeStrategy::InvadeAtTimeStepStartupPlusThroughoutComputation:
       shminvade::SHMStrategy::setStrategy( new shminvade::SHMMultipleRanksPerNodeStrategy() );
-	  logInfo( "initSharedMemoryConfiguration()", "selected SHMInvade's MultipleRanksPerNode strategy" );
+      if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+        logInfo( "initSharedMemoryConfiguration()", "selected SHMInvade's MultipleRanksPerNode strategy" );
+      }
       break;
   }
 
@@ -500,13 +538,17 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
   // This initialisation with dummies is most likely not required at all
   double localData[3] = { 0.0, 1.0, 1.0 };
   shminvade::SHMSharedMemoryBetweenTasks::getInstance().setSharedUserData(localData,3*sizeof(double));
-  logInfo( "initSharedMemoryConfiguration()", "initialised local shared memory region with dummies" );
+  if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+    logInfo( "initSharedMemoryConfiguration()", "initialised local shared memory region with dummies" );
+  }
 
   #if defined(Asserts)
-  for (int k=0; k<_parser.getRanksPerNode(); k++) {
-    logInfo( "initSharedMemoryConfiguration()", "getSharedUserData<double>(k,0)=" << (shminvade::SHMSharedMemoryBetweenTasks::getInstance().getSharedUserData<double>(k,0)) );
-    logInfo( "initSharedMemoryConfiguration()", "getSharedUserData<double>(k,1)=" << (shminvade::SHMSharedMemoryBetweenTasks::getInstance().getSharedUserData<double>(k,1)) );
-    logInfo( "initSharedMemoryConfiguration()", "getSharedUserData<double>(k,2)=" << (shminvade::SHMSharedMemoryBetweenTasks::getInstance().getSharedUserData<double>(k,2)) );
+  if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+    for (int k=0; k<_parser.getRanksPerNode(); k++) {
+      logInfo( "initSharedMemoryConfiguration()", "getSharedUserData<double>(k,0)=" << (shminvade::SHMSharedMemoryBetweenTasks::getInstance().getSharedUserData<double>(k,0)) );
+      logInfo( "initSharedMemoryConfiguration()", "getSharedUserData<double>(k,1)=" << (shminvade::SHMSharedMemoryBetweenTasks::getInstance().getSharedUserData<double>(k,1)) );
+      logInfo( "initSharedMemoryConfiguration()", "getSharedUserData<double>(k,2)=" << (shminvade::SHMSharedMemoryBetweenTasks::getInstance().getSharedUserData<double>(k,2)) );
+    }
   }
   #endif
   #endif
@@ -517,11 +559,15 @@ void exahype::runners::Runner::initDataCompression() {
   exahype::solvers::Solver::CompressionAccuracy = _parser.getDoubleCompressionFactor();
 
   if (exahype::solvers::Solver::CompressionAccuracy==0.0) {
-    logInfo( "initDataCompression()", "switched off any data compression");
+    if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+      logInfo( "initDataCompression()", "switched off any data compression");
+    }
   }
   else {
     exahype::solvers::Solver::SpawnCompressionAsBackgroundJob = _parser.getSpawnDoubleCompressionAsBackgroundTask();
-    logInfo( "initDataCompression()", "store all data with accuracy of " << exahype::solvers::Solver::CompressionAccuracy << ". Use background threads for data conversion=" << exahype::solvers::ADERDGSolver::SpawnCompressionAsBackgroundJob);
+    if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+      logInfo( "initDataCompression()", "store all data with accuracy of " << exahype::solvers::Solver::CompressionAccuracy << ". Use background threads for data conversion=" << exahype::solvers::ADERDGSolver::SpawnCompressionAsBackgroundJob);
+    }
   }
 }
 
@@ -559,9 +605,11 @@ void exahype::runners::Runner::shutdownSharedMemoryConfiguration() {
     }
     #else
     if ( tarch::multicore::Core::getInstance().getNumberOfThreads()>1 ) {
-      logInfo("shutdownSharedMemoryConfiguration()",
-        "wrote statistics into file "
-        << _parser.getMulticorePropertiesFile());
+      if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+        logInfo("shutdownSharedMemoryConfiguration()",
+                "wrote statistics into file "
+                << _parser.getMulticorePropertiesFile());
+      }
       peano::datatraversal::autotuning::Oracle::getInstance().plotStatistics(
         _parser.getMulticorePropertiesFile());
     }
@@ -588,12 +636,16 @@ int exahype::runners::Runner::getCoarsestGridLevelForLoadBalancing(
 
 int exahype::runners::Runner::getFinestUniformGridLevelOfAllSolvers(
     tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize) const {
-  double hMax = exahype::solvers::Solver::getFinestMaximumMeshSizeOfAllSolvers();
+  if ( _parser.getScaleBoundingBox() ) {
+    return std::numeric_limits<int>::max();
+  } else { 
+    double hMax = exahype::solvers::Solver::getFinestMaximumMeshSizeOfAllSolvers();
 
-  const int peanoLevel = exahype::solvers::Solver::computeCoarsestMeshSizeAndLevel(hMax,boundingBoxSize[0]).second;
+    const int peanoLevel = exahype::solvers::Solver::computeCoarsestMeshSizeAndLevel(hMax,boundingBoxSize[0]).second;
 
-  logDebug( "getCoarsestGridLevelOfAllSolvers()", "regular grid depth of " << peanoLevel << " (1 means a single cell)");
-  return peanoLevel;
+    logDebug( "getCoarsestGridLevelOfAllSolvers()", "regular grid depth of " << peanoLevel << " (1 means a single cell)");
+    return peanoLevel;
+  }
 }
 
 int exahype::runners::Runner::getFinestUniformGridLevelForLoadBalancing(
@@ -619,7 +671,7 @@ exahype::runners::Runner::determineScaledDomainSize(
   tarch::la::Vector<DIMENSIONS, double> scaledDomainSize =
       domainSize / meshSize;
   for(int i=0; i<DIMENSIONS; i++) {
-    scaledDomainSize[i] = std::ceil(scaledDomainSize[i]) * meshSize;
+    scaledDomainSize[i] = std::ceil(scaledDomainSize[i] - 1e-11) * meshSize;
   }
   return scaledDomainSize;
 }
@@ -645,20 +697,20 @@ exahype::repositories::Repository* exahype::runners::Runner::createRepository() 
   int boundingBoxMeshLevel = coarsestUserMeshLevel;
   tarch::la::Vector<DIMENSIONS,double> boundingBoxOffset = _domainOffset;
 
+  double boundingBoxMeshSpacing = -1;
   if ( _parser.getScaleBoundingBox() ) {
+    const int cellsOutside = 2*(2+3*_parser.getScaleBoundingBoxMultiplier());
+
     const double coarsestUserMeshSpacing =
         exahype::solvers::Solver::getCoarsestMaximumMeshSizeOfAllSolvers();
     const double maxDomainExtent = tarch::la::max(_domainSize);
 
     double boundingBoxScaling     = 0;
     double boundingBoxExtent      = 0;
-    double boundingBoxMeshSpacing = std::numeric_limits<double>::infinity();
-
-    const int cellsPushedOutside = ( coarsestUserMeshLevel <= 3 ) ? 1 : 2;
     int level = coarsestUserMeshLevel; // level=1 means a single cell
-    while (boundingBoxMeshSpacing > coarsestUserMeshSpacing) {
+    while (boundingBoxMeshSpacing < 0 || boundingBoxMeshSpacing > coarsestUserMeshSpacing) {
       const double boundingBoxMeshCells = std::pow(3,level-1);
-      boundingBoxScaling                = boundingBoxMeshCells / ( boundingBoxMeshCells - 2*cellsPushedOutside );
+      boundingBoxScaling                = boundingBoxMeshCells / ( boundingBoxMeshCells - cellsOutside ); // two cells are removed on each side
       boundingBoxExtent                 = boundingBoxScaling * maxDomainExtent;
       boundingBoxMeshSpacing            = boundingBoxExtent/boundingBoxMeshCells;
       level++;
@@ -669,22 +721,23 @@ exahype::repositories::Repository* exahype::runners::Runner::createRepository() 
     assertion6(boundingBoxScaling>=1.0,boundingBoxScaling,boundingBoxExtent,boundingBoxMeshSpacing,boundingBoxMeshLevel,coarsestUserMeshSpacing,maxDomainExtent);
 
     _boundingBoxSize    *= boundingBoxScaling;
-    boundingBoxOffset   -= boundingBoxMeshSpacing;
+    boundingBoxOffset   -= 0.5*cellsOutside*boundingBoxMeshSpacing;
+  } else {
+    boundingBoxMeshSpacing = determineCoarsestMeshSize(_domainSize);
   }
 
   const double coarsestUserMeshSize = exahype::solvers::Solver::getCoarsestMaximumMeshSizeOfAllSolvers();
-  const double coarsestMeshSize     = determineCoarsestMeshSize(_boundingBoxSize);
   tarch::la::Vector<DIMENSIONS,double> scaledDomainSize =
-      determineScaledDomainSize(_domainSize,coarsestMeshSize);
+      determineScaledDomainSize(_domainSize,boundingBoxMeshSpacing);
 
-  if ( tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getGlobalMasterRank() ) {
+  if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
     if (!tarch::la::equals(_domainSize,scaledDomainSize)) {
       logInfo("createRepository(...)",
           "scale domain size artificially to " << scaledDomainSize << " from "
           << _domainSize << " since non-cubic domain was specified");
     }
     logInfo("createRepository(...)",
-        "coarsest mesh size was chosen as " << coarsestMeshSize << " based on user's maximum mesh size "<<
+        "coarsest mesh size was chosen as " << boundingBoxMeshSpacing << " based on user's maximum mesh size "<<
         coarsestUserMeshSize << " and length of longest edge of domain " << tarch::la::max(scaledDomainSize));
     if (boundingBoxMeshLevel!=coarsestUserMeshLevel) {
       logInfo("createRepository(...)",
@@ -719,7 +772,7 @@ void exahype::runners::Runner::initHeaps() {
   exahype::CompressedDataHeap::getInstance().setName("compressed-data");
   exahype::solvers::ADERDGSolver::Heap::getInstance().setName("ADERDGCellDescriptionHeap");
   exahype::solvers::FiniteVolumesSolver::Heap::getInstance().setName("FiniteVolumesCellDescriptionHeap");
-  if ( tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getGlobalMasterRank() ) {
+  if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
     logInfo("initHeaps()","initialised DataHeap="<<exahype::DataHeap::getInstance().toString());
     logInfo("initHeaps()","initialised CompressedDataHeap::Heap="<<exahype::CompressedDataHeap::getInstance().toString());
     logInfo("initHeaps()","initialised ADERDGSolver::Heap="<<exahype::solvers::ADERDGSolver::Heap::getInstance().toString());
@@ -727,14 +780,16 @@ void exahype::runners::Runner::initHeaps() {
   }
   #ifdef Parallel
   exahype::MetadataHeap::getInstance().setName("MetadataHeap");
-  if ( tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getGlobalMasterRank() ) {
+  if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
     logInfo("initHeaps()","initialised MetadataHeap="<<exahype::MetadataHeap::getInstance().toString());
   }
   #endif
 }
 
 void exahype::runners::Runner::shutdownHeaps() {
-  logInfo("shutdownHeaps()","shutdown all heaps");
+  if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+    logInfo("shutdownHeaps()","shutdown all heaps");
+  }
   exahype::DataHeap::getInstance().shutdown();
   exahype::solvers::ADERDGSolver::Heap::getInstance().shutdown();
   exahype::solvers::FiniteVolumesSolver::Heap::getInstance().shutdown();

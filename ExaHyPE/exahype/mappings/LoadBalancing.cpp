@@ -6,14 +6,18 @@
 
 exahype::mappings::LoadBalancing::LoadBalancingAnalysis  exahype::mappings::LoadBalancing::_loadBalancingAnalysis;
 
-/**
- * Compute the number of ranks required to populate the given mesh level
- */
 
+exahype::mappings::LoadBalancing::LoadBalancing()
+  : _numberOfLocalCells(0) {
+  // do nothing
+}
 
 #ifdef Parallel
 int exahype::mappings::LoadBalancing::LastLevelToPopulateUniformly  = -1;
 
+/**
+ * Compute the number of ranks required to populate the given mesh level
+ */
 int exahype::mappings::LoadBalancing::determineLastLevelToPopulateUniformly() {
   if ( exahype::solvers::Solver::allSolversPerformOnlyUniformRefinement() ) {
     return std::numeric_limits<int>::max();
@@ -118,6 +122,7 @@ void exahype::mappings::LoadBalancing::beginIteration(
   LastLevelToPopulateUniformly  = 
       determineLastLevelToPopulateUniformly();
   _numberOfLocalCells = 0;
+  solverState.setReduceStateAndCell(true);
   #endif
 }
 
@@ -159,6 +164,19 @@ void exahype::mappings::LoadBalancing::leaveCell(
 
 
 #ifdef Parallel
+bool exahype::mappings::LoadBalancing::prepareSendToWorker(
+  exahype::Cell&                 fineGridCell,
+  exahype::Vertex * const        fineGridVertices,
+  const peano::grid::VertexEnumerator&                fineGridVerticesEnumerator,
+  exahype::Vertex * const        coarseGridVertices,
+  const peano::grid::VertexEnumerator&                coarseGridVerticesEnumerator,
+  exahype::Cell&                 coarseGridCell,
+  const tarch::la::Vector<DIMENSIONS,int>&                             fineGridPositionOfCell,
+  int                                                                  worker
+) {
+  return true; // we want to perform a reduction for this worker
+}
+
 void exahype::mappings::LoadBalancing::mergeWithMaster(
   const exahype::Cell&                       workerGridCell,
   exahype::Vertex * const                    workerGridVertices,
@@ -187,35 +205,36 @@ void exahype::mappings::LoadBalancing::mergeWithMaster(
   logTraceOut( "mergeWithMaster(...)" );
 }
 
-
-
-void exahype::mappings::LoadBalancing::mergeWithWorker(
-  exahype::Cell&           localCell,
-  const exahype::Cell&     receivedMasterCell,
-  const tarch::la::Vector<DIMENSIONS,double>&  cellCentre,
-  const tarch::la::Vector<DIMENSIONS,double>&  cellSize,
-  int                                          level
+void exahype::mappings::LoadBalancing::prepareSendToMaster(
+  exahype::Cell&                       localCell,
+  exahype::Vertex *                    vertices,
+  const peano::grid::VertexEnumerator&       verticesEnumerator,
+  const exahype::Vertex * const        coarseGridVertices,
+  const peano::grid::VertexEnumerator&       coarseGridVerticesEnumerator,
+  const exahype::Cell&                 coarseGridCell,
+  const tarch::la::Vector<DIMENSIONS,int>&   fineGridPositionOfCell
 ) {
+  if ( // do not count the root cell
+    verticesEnumerator.getLevel() <= LastLevelToPopulateUniformly
+  ) {
+    _numberOfLocalCells--;
+  } else {
+    _numberOfLocalCells -= exahype::solvers::ADERDGSolver::computeWeight(localCell.getCellDescriptionsIndex());
+    _numberOfLocalCells -= exahype::solvers::FiniteVolumesSolver::computeWeight(localCell.getCellDescriptionsIndex());
+  }
+
+  if (_loadBalancingAnalysis==LoadBalancingAnalysis::Hotspot) {
+    mpibalancing::HotspotBalancing::setLocalWeightAndNotifyMaster( _numberOfLocalCells );
+  }
 }
 #endif
-
-
-
-void exahype::mappings::LoadBalancing::endIteration(
-  exahype::State&  solverState
-) {
-}
-
 
 //
 //   NOP
 // =======
 //
-exahype::mappings::LoadBalancing::LoadBalancing()
-  : _numberOfLocalCells(0) {
-  // do nothing
-}
 
+void exahype::mappings::LoadBalancing::endIteration(exahype::State&  solverState) {}
 
 exahype::mappings::LoadBalancing::~LoadBalancing() {
   // do nothing
@@ -312,6 +331,15 @@ void exahype::mappings::LoadBalancing::destroyCell(
 }
 
 #ifdef Parallel
+void exahype::mappings::LoadBalancing::mergeWithWorker(
+  exahype::Cell&           localCell,
+  const exahype::Cell&     receivedMasterCell,
+  const tarch::la::Vector<DIMENSIONS,double>&  cellCentre,
+  const tarch::la::Vector<DIMENSIONS,double>&  cellSize,
+  int                                          level
+) {
+}
+
 void exahype::mappings::LoadBalancing::mergeWithNeighbour(
   exahype::Vertex&  vertex,
   const exahype::Vertex&  neighbour,
@@ -374,43 +402,6 @@ void exahype::mappings::LoadBalancing::mergeWithRemoteDataDueToForkOrJoin(
 ) {
   // do nothing
 }
-
-bool exahype::mappings::LoadBalancing::prepareSendToWorker(
-  exahype::Cell&                 fineGridCell,
-  exahype::Vertex * const        fineGridVertices,
-  const peano::grid::VertexEnumerator&                fineGridVerticesEnumerator,
-  exahype::Vertex * const        coarseGridVertices,
-  const peano::grid::VertexEnumerator&                coarseGridVerticesEnumerator,
-  exahype::Cell&                 coarseGridCell,
-  const tarch::la::Vector<DIMENSIONS,int>&                             fineGridPositionOfCell,
-  int                                                                  worker
-) {
-  return false;
-}
-
-void exahype::mappings::LoadBalancing::prepareSendToMaster(
-  exahype::Cell&                       localCell,
-  exahype::Vertex *                    vertices,
-  const peano::grid::VertexEnumerator&       verticesEnumerator, 
-  const exahype::Vertex * const        coarseGridVertices,
-  const peano::grid::VertexEnumerator&       coarseGridVerticesEnumerator,
-  const exahype::Cell&                 coarseGridCell,
-  const tarch::la::Vector<DIMENSIONS,int>&   fineGridPositionOfCell
-) {
-  if ( // do not count the root cell
-    verticesEnumerator.getLevel() <= LastLevelToPopulateUniformly
-  ) {
-    _numberOfLocalCells--;
-  } else { 
-    _numberOfLocalCells -= exahype::solvers::ADERDGSolver::computeWeight(localCell.getCellDescriptionsIndex());
-    _numberOfLocalCells -= exahype::solvers::FiniteVolumesSolver::computeWeight(localCell.getCellDescriptionsIndex());
-  }
-   
-  if (_loadBalancingAnalysis==LoadBalancingAnalysis::Hotspot) {
-    mpibalancing::HotspotBalancing::setLocalWeightAndNotifyMaster( _numberOfLocalCells );
-  }
-}
-
 
 void exahype::mappings::LoadBalancing::receiveDataFromMaster(
       exahype::Cell&                        receivedCell, 

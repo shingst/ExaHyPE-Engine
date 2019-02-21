@@ -34,6 +34,8 @@
 tarch::logging::Log GRMHDb::GRMHDbSolver_FV::_log( "GRMHDb::GRMHDbSolver_FV" );
 
 void GRMHDb::GRMHDbSolver_FV::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
+  // Tip: You find documentation for this method in header file "GRMHDb::GRMHDbSolver_FV.h".
+  
   // @todo Please implement/augment if required
 
     //const int order = GRMHDb::AbstractGRMHDbSolver_ADERDG::Order;
@@ -71,13 +73,20 @@ void GRMHDb::GRMHDbSolver_FV::init(const std::vector<std::string>& cmdlineargs,c
 	///**************************************************************************/
 }
 
-void GRMHDb::GRMHDbSolver_FV::adjustSolution(const double* const x, const double t, const double dt, double* const Q) {
+void GRMHDb::GRMHDbSolver_FV::adjustSolution(const double* const x,const double t,const double dt, double* const Q) {
+  // Tip: You find documentation for this method in header file "GRMHDb::GRMHDbSolver_FV.h".
+  // Tip: See header file "GRMHDb::AbstractGRMHDbSolver_FV.h" for toolkit generated compile-time 
+  //      constants such as PatchSize, NumberOfVariables, and NumberOfParameters.
+
 	// Dimensions             = 3
 	// Number of variables    = 19 + #parameters
 
 	// @todo Please implement/augment if required
   if (tarch::la::equals(t,0.0)) {
-	  const int nVar = GRMHDb::AbstractGRMHDbSolver_ADERDG::NumberOfVariables;
+	  //const int nVar = GRMHDb::AbstractGRMHDbSolver_ADERDG::NumberOfVariables;
+	  constexpr int numberOfVariables = AbstractGRMHDbSolver_FV::NumberOfVariables;
+	  constexpr int numberOfParameters = AbstractGRMHDbSolver_FV::NumberOfParameters;
+	  constexpr int numberOfData = numberOfVariables + numberOfParameters;
 		Q[0] = 0.0;
 		Q[1] = 0.0;
 		Q[2] = 0.0;
@@ -98,14 +107,14 @@ void GRMHDb::GRMHDbSolver_FV::adjustSolution(const double* const x, const double
 		Q[17] = 0.0;
 		Q[18] = 0.0;
 		/**************************************************************************/
-		static tarch::multicore::BooleanSemaphore initialDataSemaphore;
-		tarch::multicore::Lock lock(initialDataSemaphore);
+		static tarch::multicore::BooleanSemaphore initialDataSemaphoreFV;
+		tarch::multicore::Lock lock(initialDataSemaphoreFV);
 		/***************************************************/
 		// everything in here is thread-safe w.r.t. the lock
 		// call Fortran routines
 		/***********************/
 
-                initialdata_(x, &t, Q);
+        initialdata_(x, &t, Q);
 
 		/************/
 		lock.free();
@@ -122,22 +131,11 @@ void GRMHDb::GRMHDbSolver_FV::adjustSolution(const double* const x, const double
 }
 
 
-void GRMHDb::GRMHDbSolver_FV::referenceSolution(const double* const x, double t, double* const Q) {
-	const int nVar = GRMHDb::AbstractGRMHDbSolver_ADERDG::NumberOfVariables;
-	int iErr = 0;
-	double* Qcons;
-	initialdata_(x, &t, Qcons);
-	/*Q[0] = exp(-(x[0] * x[0] + x[1] * x[1] + x[2] * x[2]) / 8.0);
-	Q[1] = sin(x[1])*sin(x[0]);
-	Q[2] = sin(x[2]);
-	for (int i = 3; i < nVar; i++) {
-		Q[i] = cos(x[0]);
-	}*/
-	pdecons2prim_(Q, Qcons, &iErr);
-}
-
-
 void GRMHDb::GRMHDbSolver_FV::eigenvalues(const double* const Q, const int dIndex, double* const lambda) {
+  // Tip: You find documentation for this method in header file "GRMHDb::GRMHDbSolver_FV.h".
+  // Tip: See header file "GRMHDb::AbstractGRMHDbSolver_FV.h" for toolkit generated compile-time 
+  //      constants such as PatchSize, NumberOfVariables, and NumberOfParameters.
+
   // Dimensions             = 3
   // Number of variables    = 19 + #parameters
   
@@ -173,11 +171,17 @@ void GRMHDb::GRMHDbSolver_FV::boundaryValues(
     const int d,
     const double* const stateInside,
     double* const stateOutside) {
+  // Tip: You find documentation for this method in header file "GRMHDb::GRMHDbSolver_FV.h".
+  // Tip: See header file "GRMHDb::AbstractGRMHDbSolver_FV.h" for toolkit generated compile-time 
+  //      constants such as PatchSize, NumberOfVariables, and NumberOfParameters.
+
   // Dimensions             = 3
   // Number of variables    = 19 + #parameters 
   // @todo Please implement/augment if required
-	const int nVar = GRMHDb::AbstractGRMHDbSolver_FV::NumberOfVariables;
-	double Qgp[nVar];
+	constexpr int numberOfVariables = AbstractGRMHDbSolver_FV::NumberOfVariables;
+	constexpr int numberOfParameters = AbstractGRMHDbSolver_FV::NumberOfParameters;
+	constexpr int numberOfData = numberOfVariables + numberOfParameters;
+	double Qgp[numberOfData];
   stateOutside[0] = stateInside[0];
   stateOutside[1] = stateInside[1];
   stateOutside[2] = stateInside[2];
@@ -200,7 +204,7 @@ void GRMHDb::GRMHDbSolver_FV::boundaryValues(
 
   double ti = t + 0.5 * dt;
   initialdata_(x, &ti, &Qgp[0]);
-  for(int m=0; m < nVar; m++) {
+  for(int m=0; m < numberOfData; m++) {
         stateOutside[m] = Qgp[m];
   }
 
@@ -222,8 +226,15 @@ void GRMHDb::GRMHDbSolver_FV::boundaryValues(
 
 
 void GRMHDb::GRMHDbSolver_FV::flux(const double* const Q,double** const F) {
+  // Tip: You find documentation for this method in header file "GRMHDb::GRMHDbSolver_FV.h".
+  // Tip: See header file "GRMHDb::AbstractGRMHDbSolver_FV.h" for toolkit generated compile-time 
+  //      constants such as PatchSize, NumberOfVariables, and NumberOfParameters.
+
   // Dimensions                        = 3
   // Number of variables + parameters  = 19 + 0
+	constexpr int numberOfVariables = AbstractGRMHDbSolver_FV::NumberOfVariables;
+	constexpr int numberOfParameters = AbstractGRMHDbSolver_FV::NumberOfParameters;
+	constexpr int numberOfData = numberOfVariables + numberOfParameters;
   
   // @todo Please implement/augment if required
   F[0][0] = 0.0;
@@ -286,19 +297,25 @@ void GRMHDb::GRMHDbSolver_FV::flux(const double* const Q,double** const F) {
   F[2][17] = 0.0;
   F[2][18] = 0.0;
   
+  
     if(DIMENSIONS == 2){
-        const int nVar = GRMHDb::AbstractGRMHDbSolver_FV::NumberOfVariables;
-		double F_3[nVar];
+        //const int nVar = GRMHDb::AbstractGRMHDbSolver_FV::NumberOfVariables;
+		double F_3[numberOfData];
 		pdeflux_(F[0], F[1],F_3, Q);
 	}else{
 		pdeflux_(F[0], F[1],F[2], Q);
 	}
-
+  
 }
 
 
 
+
 void  GRMHDb::GRMHDbSolver_FV::nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ) {
+  // Tip: You find documentation for this method in header file "GRMHDb::GRMHDbSolver_FV.h".
+  // Tip: See header file "GRMHDb::AbstractGRMHDbSolver_FV.h" for toolkit generated compile-time 
+  //      constants such as PatchSize, NumberOfVariables, and NumberOfParameters.
+  
   // @todo Please implement/augment if required
   BgradQ[0] = 0.0;
   BgradQ[1] = 0.0;
@@ -322,3 +339,40 @@ void  GRMHDb::GRMHDbSolver_FV::nonConservativeProduct(const double* const Q,cons
   pdencp_(BgradQ, Q, gradQ);
 }
 
+
+void GRMHDb::GRMHDbSolver_FV::referenceSolution(const double* const x, double t, double* Q) {
+	constexpr int numberOfVariables = AbstractGRMHDbSolver_FV::NumberOfVariables;
+	constexpr int numberOfParameters = AbstractGRMHDbSolver_FV::NumberOfParameters;
+	constexpr int numberOfData = numberOfVariables + numberOfParameters;
+	int iErr;
+	double Qcons[numberOfData];
+	iErr = 0;
+
+	initialdata_(x, &t, &Qcons[0]);
+
+	//// test:
+	//Q[0] = exp(-(x[0] * x[0] + x[1] * x[1] + x[2] * x[2]) / 8.0);
+	//	Q[1] = sin(x[1])*sin(x[0]);
+	//	Q[2] = sin(x[2]);
+	//for (int i = 3; i < nVar; i++) {
+	//	Q[i] = cos(x[0]);
+	//}
+	pdecons2prim_(Q, &Qcons[0], &iErr);
+}
+
+
+#include "kernels/finitevolumes/riemannsolvers/c/riemannsolvers.h"
+
+double GRMHDb::GRMHDbSolver_FV::riemannSolver(double* const fL, double* const fR, const double* const qL, const double* const qR, int direction) {
+	//// Default FV Riemann Solver
+	//return kernels::finitevolumes::riemannsolvers::c::rusanov<true, true, false, GRMHDbSolver_FV>(*static_cast<GRMHDbSolver_FV*>(this), fL, fR, qL, qR, direction);
+	constexpr int numberOfVariables = AbstractGRMHDbSolver_FV::NumberOfVariables;
+	double lambda = kernels::finitevolumes::riemannsolvers::c::rusanov<true, true, false, GRMHDbSolver_FV>(*static_cast<GRMHDbSolver_FV*>(this), fL, fR, qL, qR, direction);
+
+	// avoid spurious numerical diffusion (ony for Cowling approximation)
+	for (int m = 9; m < numberOfVariables; m++) {
+		fL[m] = 0.0;
+		fR[m] = 0.0;
+	}
+	return lambda;
+}

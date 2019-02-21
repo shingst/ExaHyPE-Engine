@@ -406,9 +406,16 @@
         "scale_bounding_box" : {
           "type" : "boolean", 
           "title" : "Scale the bounding box to remove some communication",
-          "$comment" : "The bounding box is scaled such that at least one cell is placed outside of the domain at each boundary. This option was previously known as 'virtually-expand-domain'.",
+          "$comment" : "The bounding box is scaled such that at least 2*2 cells are placed outside of the domain per coordinate direction. This option was previously known as 'virtually-expand-domain'.",
           "old_format" : { "token_after" : "configure" },
           "default" : true
+        },
+        "scale_bounding_box_multiplier" : {
+          "type" : "integer", 
+          "title" : "Specify i>=0 which results in 2*(2+3*i) cells being placed outside of the domain per coordinate direction.", 
+          "default" : 0,
+          "minimum" : 0,
+          "exclusiveMinimum" : false
         },        
         "timeout" : {
           "type" : "number", 
