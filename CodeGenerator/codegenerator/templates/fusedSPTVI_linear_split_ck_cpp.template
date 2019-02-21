@@ -239,12 +239,10 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
 {% endif%}
 {% if usePointSources %}
     //add ith Ps derivative to lQi_next
-    for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {
-      for (int t = 0; t < {{nDof}}; t++) {
-        #pragma omp simd aligned(derPS,lQi_next,PSi:ALIGNMENT)
-        for (int n = 0; n < {{nVarPad}}; n++) {
-          lQi_next[xyz*12+n] += derPS[t]*PSi[(t*216+xyz)*12+n];
-        }
+    for (int t = 0; t < {{nDof}}; t++) {
+      #pragma omp simd aligned(derPS,lQi_next,PSi:ALIGNMENT)
+      for (int it = 0; it < {{nDof**nDim*nVarPad}}; it++) {
+        lQi_next[it] += derPS[t]*PSi[t*{{nDof**nDim*nVarPad}}+it];
       }
     }
     
@@ -253,7 +251,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
     for(int it2 = 0 ; it2 < {{nDof}} ; it2++){
       #pragma omp simd aligned(derPS_buffer,dudx_T:ALIGNMENT)
       for(int it1 = 0 ; it1 < {{nDof}} ; it1++){
-        derPS_buffer[it2] += derPS[it1]*dudx_T[it2*8+it1];
+        derPS_buffer[it2] += derPS[it1]*dudx_T[it2*{{nDofPad}}+it1];
       }
     }
     std::copy_n(derPS_buffer,{{nDof}},derPS);
