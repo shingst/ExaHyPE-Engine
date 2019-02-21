@@ -28,30 +28,13 @@ exahype-project  Dummy
   log-file                = mylogfile.log
 
   computational-domain
-    dimension const          = 2
-    width                    = 1.0, 1.0
-    offset                   = 0.0, 0.0
+    dimension const          = 3
+    width                    = 1.0, 1.0, 1.0
+    offset                   = 0.0, 0.0, 0.0
     end-time                 = 0.1
   end computational-domain
 
-  shared-memory
-    identifier               = dummy
-    configure                = {}
-    cores                    = 8
-    properties-file          = sharedmemory.properties
-  end shared-memory
-
-  distributed-memory
-    identifier               = static_load_balancing
-    configure                = {greedy-naive,FCFS}
-    buffer-size              = 64
-    timeout                  = 60
-  end distributed-memory
-
   global-optimisation
-    fuse-algorithmic-steps          = all
-    fuse-algorithmic-steps-rerun-factor   = 0.99
-    fuse-algorithmic-steps-diffusion-factor   = 0.99
     spawn-predictor-as-background-thread = off
     spawn-amr-background-threads         = off
     disable-vertex-exchange-in-time-steps = on
@@ -63,7 +46,7 @@ exahype-project  Dummy
 
 
   solver Finite-Volumes DummySolver
-    variables const    = 10
+    variables const    = 60
     patch-size const   = 13
     maximum-mesh-size  = 0.3339
     time-stepping      = global
@@ -73,7 +56,7 @@ exahype-project  Dummy
     language const     = C
 
     plot vtk::Cartesian::cells::ascii Writer
-      variables const = 10
+      variables const = 60
       time            = 0.0
       repeat          = 0.1e-4
       output          = ./dummyoutput
