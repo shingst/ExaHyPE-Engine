@@ -240,10 +240,10 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
 {% endif%}
 {% if usePointSources %}
     //add ith Ps derivative to lQi_next
-    for (int t = 0; t < {{nDof}}; t++) {
+    for (int it_t = 0; it_t < {{nDof}}; it_t++) {
       #pragma omp simd aligned(derPS,lQi_next,PSi:ALIGNMENT)
       for (int it = 0; it < {{nDof**nDim*nVarPad}}; it++) {
-        lQi_next[it] += derPS[t]*PSi[t*{{nDof**nDim*nVarPad}}+it];
+        lQi_next[it] += derPS[it_t]*PSi[it_t*{{nDof**nDim*nVarPad}}+it];
       }
     }
     
