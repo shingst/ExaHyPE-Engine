@@ -266,7 +266,7 @@ bool exahype::solvers::LimitingADERDGSolver::attainedStableState(
     const bool                           stillInRefiningMode) const {
   return
       _solver->attainedStableState(
-          fineGridCell,fineGridVertices,fineGridVerticesEnumerator,solverNumber);
+          fineGridCell,fineGridVertices,fineGridVerticesEnumerator,solverNumber,stillInRefiningMode);
 }
 
 void exahype::solvers::LimitingADERDGSolver::finaliseStateUpdates(
