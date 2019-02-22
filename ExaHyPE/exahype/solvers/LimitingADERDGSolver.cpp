@@ -259,10 +259,11 @@ exahype::solvers::LimitingADERDGSolver::eraseOrRefineAdjacentVertices(
 }
 
 bool exahype::solvers::LimitingADERDGSolver::attainedStableState(
-    exahype::Cell& fineGridCell,
-    exahype::Vertex* const fineGridVertices,
+    exahype::Cell&                       fineGridCell,
+    exahype::Vertex* const               fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-    const int solverNumber) const {
+    const int                            solverNumber,
+    const bool                           stillInRefiningMode) const {
   return
       _solver->attainedStableState(
           fineGridCell,fineGridVertices,fineGridVerticesEnumerator,solverNumber);

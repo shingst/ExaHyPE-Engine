@@ -1496,10 +1496,11 @@ public:
    * a stable state yet.
    */
   bool attainedStableState(
-      exahype::Cell& fineGridCell,
-      exahype::Vertex* const fineGridVertices,
+      exahype::Cell&                       fineGridCell,
+      exahype::Vertex* const               fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-      const int solverNumber) const override;
+      const int                            solverNumber,
+      const bool                           stillInRefiningMode) const final override;
 
   void finaliseStateUpdates(const int solverNumber,CellInfo& cellInfo) override;
 

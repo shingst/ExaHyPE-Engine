@@ -533,7 +533,8 @@ void exahype::mappings::MeshRefinement::leaveCell(
               fineGridCell,
               fineGridVertices,
               fineGridVerticesEnumerator,
-              solverNumber);
+              solverNumber,
+              StillInRefiningMode);
     }
   }
 
