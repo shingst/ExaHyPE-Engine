@@ -1446,7 +1446,8 @@ bool exahype::solvers::ADERDGSolver::attainedStableState(
         #endif
         if (
             !stillInRefiningMode &&
-            cellDescription.getType()==CellDescription::Descendant &&
+            cellDescription.getType()  == CellDescription::Descendant &&
+            cellDescription.getLevel() == getMaximumAdaptiveMeshLevel() &&
             cellDescription.getRefinementStatus() > 0
         ) {
           logError("attainedStableState(...)","Virtual subcell requests refining of coarse grid parent but mesh refinement is not in refining mode anymore. Inform Dominic.");
