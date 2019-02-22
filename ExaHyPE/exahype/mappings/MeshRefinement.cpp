@@ -156,7 +156,7 @@ void exahype::mappings::MeshRefinement::beginIteration( exahype::State& solverSt
     
     _allSolversAttainedStableState = true;
   }
-  if ( StillInRefiningMode && _stableIterationsInARow>1 ) {
+  if ( StillInRefiningMode && _stableIterationsInARow > std::max(exahype::solvers::Solver::getMaxRefinementStatus(),1) ) {
     StillInRefiningMode = false;
     _stableIterationsInARow=0;
     if (!IsInitialMeshRefinement) {
