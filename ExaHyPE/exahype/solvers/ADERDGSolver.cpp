@@ -1386,10 +1386,11 @@ void exahype::solvers::ADERDGSolver::prolongateVolumeData(
 }
 
 bool exahype::solvers::ADERDGSolver::attainedStableState(
-        exahype::Cell& fineGridCell,
-        exahype::Vertex* const fineGridVertices,
+        exahype::Cell&                       fineGridCell,
+        exahype::Vertex* const               fineGridVertices,
         const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-        const int solverNumber) const {
+        const int                            solverNumber,
+        const bool                           stillInRefiningMode) const {
   const int element = tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
   if ( element!=exahype::solvers::Solver::NotFound ) {
     CellDescription& cellDescription = getCellDescription(fineGridCell.getCellDescriptionsIndex(),element);
@@ -1430,8 +1431,8 @@ bool exahype::solvers::ADERDGSolver::attainedStableState(
       cellDescription.getLevel() != getMaximumAdaptiveMeshLevel() ||
       cellDescription.getRefinementStatus()<=0);
 
-      #ifdef MonitorMeshRefinement
       if (!stable) {
+        #ifdef MonitorMeshRefinement
         logInfo("attainedStableState(...)","cell has not attained stable state (yet):");
         logInfo("attainedStableState(...)","type="<<cellDescription.toString(cellDescription.getType()));
         logInfo("attainedStableState(...)","x="<<cellDescription.getOffset());
@@ -1442,8 +1443,18 @@ bool exahype::solvers::ADERDGSolver::attainedStableState(
         logInfo("attainedStableState(...)","getFacewiseAugmentationStatus="<<cellDescription.getFacewiseAugmentationStatus());
         logInfo("attainedStableState(...)","getFacewiseCommunicationStatus="<<cellDescription.getFacewiseCommunicationStatus());
         logInfo("attainedStableState(...)","getFacewiseRefinementStatus="<<cellDescription.getFacewiseRefinementStatus());
+        #endif
+        if (
+            !stillInRefiningMode &&
+            cellDescription.getType()  == CellDescription::Descendant &&
+            cellDescription.getLevel() == getMaximumAdaptiveMeshLevel() &&
+            cellDescription.getRefinementStatus() > 0
+        ) {
+          logError("attainedStableState(...)","Virtual subcell requests refining of coarse grid parent but mesh refinement is not in refining mode anymore. Inform Dominic.");
+          logError("attainedStableState(...)","cell="<<cellDescription.toString());
+          std::terminate();
+        }
       }
-      #endif
 
     return stable;
   } else {

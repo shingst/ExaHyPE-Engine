@@ -1582,16 +1582,19 @@ class exahype::solvers::Solver {
    * Returns true if the solver has attained
    * a stable state on the cell description
    *
-   * @param fineGridCell a fine grid cell
-   * @param fineGridVertices vertices surrounding the fine grid cell
+   * @param fineGridCell               a fine grid cell
+   * @param fineGridVertices           vertices surrounding the fine grid cell
    * @param fineGridVerticesEnumerator a enumerator for the fine grid vertices
-   * @param solverNumber a solver number
+   * @param solverNumber               a solver number
+   * @param stillInRefiningMode        indicates if the mesh refinement
+   *                                   is still in refining mode (true) or switched to coarsening mode (false).
    */
   virtual bool attainedStableState(
-      exahype::Cell& fineGridCell,
-      exahype::Vertex* const fineGridVertices,
+      exahype::Cell&                       fineGridCell,
+      exahype::Vertex* const               fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-      const int solverNumber) const = 0;
+      const int                            solverNumber,
+      const bool                           stillInRefiningMode) const = 0;
 
   /**
    * This method is called after the

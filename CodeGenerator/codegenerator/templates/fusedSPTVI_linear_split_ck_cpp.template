@@ -69,6 +69,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
   __assume_aligned(PSi,      ALIGNMENT);
   __assume_aligned(luh,      ALIGNMENT);
   // Aligned global
+  __assume_aligned(dudx,     ALIGNMENT);
   __assume_aligned(dudx_T,   ALIGNMENT);
   __assume_aligned(weights1, ALIGNMENT);
   __assume_aligned(weights3, ALIGNMENT);
@@ -177,8 +178,8 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
     }
   }
   //Initialize PS derivation operator
-  double derPS[{{nDof}}] __attribute__((aligned(ALIGNMENT)));
-  std::copy_n(FLCoeff, {{nDof}}, derPS);
+  double derPS[{{nDofPad}}] __attribute__((aligned(ALIGNMENT)));
+  std::copy_n(FLCoeff, {{nDofPad}}, derPS);
 {% endif %}
 
   double dtavFac = 0.5 * dt;
@@ -239,24 +240,22 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
 {% endif%}
 {% if usePointSources %}
     //add ith Ps derivative to lQi_next
-    for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {
-      for (int t = 0; t < {{nDof}}; t++) {
-        #pragma omp simd aligned(derPS,lQi_next,PSi:ALIGNMENT)
-        for (int n = 0; n < {{nVarPad}}; n++) {
-          lQi_next[xyz*12+n] += derPS[t]*PSi[(t*216+xyz)*12+n];
-        }
+    for (int it_t = 0; it_t < {{nDof}}; it_t++) {
+      #pragma omp simd aligned(derPS,lQi_next,PSi:ALIGNMENT)
+      for (int it = 0; it < {{nDof**nDim*nVarPad}}; it++) {
+        lQi_next[it] += derPS[it_t]*PSi[it_t*{{nDof**nDim*nVarPad}}+it];
       }
     }
     
-    double derPS_buffer[{{nDof}}] __attribute__((aligned(ALIGNMENT)));
-    std::memset(derPS_buffer,0,{{nDof}}*sizeof(double));
-    for(int it2 = 0 ; it2 < {{nDof}} ; it2++){
-      #pragma omp simd aligned(derPS_buffer,dudx_T:ALIGNMENT)
-      for(int it1 = 0 ; it1 < {{nDof}} ; it1++){
-        derPS_buffer[it2] += derPS[it1]*dudx_T[it2*8+it1];
+    double derPS_buffer[{{nDofPad}}] __attribute__((aligned(ALIGNMENT)));
+    std::memset(derPS_buffer,0,{{nDofPad}}*sizeof(double));
+    for(int it1 = 0 ; it1 < {{nDof}} ; it1++){
+      #pragma omp simd aligned(derPS_buffer,dudx:ALIGNMENT)
+      for(int it2 = 0 ; it2 < {{nDofPad}} ; it2++){
+        derPS_buffer[it2] += derPS[it1]*dudx[it1*{{nDofPad}}+it2];
       }
     }
-    std::copy_n(derPS_buffer,{{nDof}},derPS);
+    std::copy_n(derPS_buffer,{{nDofPad}},derPS);
 {% endif %}
     
     // update lQhi

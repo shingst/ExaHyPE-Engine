@@ -156,7 +156,7 @@ void exahype::mappings::MeshRefinement::beginIteration( exahype::State& solverSt
     
     _allSolversAttainedStableState = true;
   }
-  if ( StillInRefiningMode && _stableIterationsInARow>1 ) {
+  if ( StillInRefiningMode && _stableIterationsInARow > std::max(exahype::solvers::Solver::getMaxRefinementStatus(),1) ) {
     StillInRefiningMode = false;
     _stableIterationsInARow=0;
     if (!IsInitialMeshRefinement) {
@@ -251,8 +251,6 @@ void exahype::mappings::MeshRefinement::touchVertexLastTime(
       !StillInRefiningMode);
 
   if ( // TODO(Dominic): This is not completely figured out yet.
-      !fineGridVertex.isOutside()
-      &&
       _stableIterationsInARow <= 3 // Found experimentally
       &&
       refinementControl==exahype::solvers::Solver::RefinementControl::Refine
@@ -535,7 +533,8 @@ void exahype::mappings::MeshRefinement::leaveCell(
               fineGridCell,
               fineGridVertices,
               fineGridVerticesEnumerator,
-              solverNumber);
+              solverNumber,
+              StillInRefiningMode);
     }
   }
 
