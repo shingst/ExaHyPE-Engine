@@ -964,14 +964,26 @@ bool exahype::runners::Runner::createMesh(exahype::repositories::Repository& rep
   bool meshUpdate = false;
 
   int meshSetupIterations = 0;
+  int meshSetupIterationsWithoutBookingFurtherRanks = 0;
   repository.switchToMeshRefinement();
 
   const int MaxIterations = 32;
 
   repository.getState().setMeshRefinementHasConverged(false);
-  while ( repository.getState().continueToConstructGrid() and meshSetupIterations<MaxIterations) {
+
+  int numberOfIdleNodes = tarch::parallel::NodePool::getInstance().getNumberOfIdleNodes();
+
+  while ( repository.getState().continueToConstructGrid() and meshSetupIterationsWithoutBookingFurtherRanks<MaxIterations) {
     repository.iterate(1,true);
     meshSetupIterations++;
+
+    if (tarch::parallel::NodePool::getInstance().getNumberOfIdleNodes()==numberOfIdleNodes) {
+      meshSetupIterationsWithoutBookingFurtherRanks++;
+    }
+    else {
+      numberOfIdleNodes = tarch::parallel::NodePool::getInstance().getNumberOfIdleNodes();
+      meshSetupIterationsWithoutBookingFurtherRanks = 0;
+    }
 
     repository.getState().endedGridConstructionIteration( getFinestUniformGridLevelOfAllSolvers(_boundingBoxSize) );
 
@@ -980,8 +992,8 @@ bool exahype::runners::Runner::createMesh(exahype::repositories::Repository& rep
     meshUpdate = true;
   }
 
-  if (meshSetupIterations==MaxIterations) {
-	logWarning( "createMesh(...)", "reached max mesh setup iteration count of " << meshSetupIterations << " and make setup terminate artifically" );
+  if (meshSetupIterationsWithoutBookingFurtherRanks==MaxIterations) {
+	logWarning( "createMesh(...)", "reached max mesh setup iteration count of " << meshSetupIterations << " without any further node booking and make setup terminate artifically" );
   }
 
   logInfo("createGrid(Repository)", "finished grid setup after " << meshSetupIterations << " iterations" );
