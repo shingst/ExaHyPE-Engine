@@ -1002,6 +1002,12 @@ class exahype::solvers::Solver {
   static int getFinestUniformMeshLevelOfAllSolvers();
 
   /**
+   * @return the maximum mesh level which might be occupied
+   * by a solver's cells.
+   */
+  static int getMaximumAdaptiveMeshLevelOfAllSolvers();
+
+  /**
    * Returns the coarsest mesh size a solver is actually
    * using.
    *

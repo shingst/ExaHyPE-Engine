@@ -532,6 +532,16 @@ int exahype::solvers::Solver::getFinestUniformMeshLevelOfAllSolvers() {
   return result;
 }
 
+int exahype::solvers::Solver::getMaximumAdaptiveMeshLevelOfAllSolvers() {
+  int result = -std::numeric_limits<int>::max(); // "-", min
+
+  for (const auto& p : exahype::solvers::RegisteredSolvers) {
+    result = std::max( result, p->getMaximumAdaptiveMeshLevel() );
+  }
+
+  return result;
+}
+
 
 double exahype::solvers::Solver::getCoarsestMeshSizeOfAllSolvers() {
   double result = std::numeric_limits<double>::infinity();

@@ -156,7 +156,10 @@ void exahype::mappings::MeshRefinement::beginIteration( exahype::State& solverSt
     
     _allSolversAttainedStableState = true;
   }
-  if ( StillInRefiningMode && _stableIterationsInARow > std::max(exahype::solvers::Solver::getMaxRefinementStatus(),1) ) {
+  if ( StillInRefiningMode &&
+      _stableIterationsInARow >
+         (exahype::solvers::Solver::getMaximumAdaptiveMeshLevelOfAllSolvers() +
+          std::max(exahype::solvers::Solver::getMaxRefinementStatus(),1)) ) { // all found experimentally; not completely understood yet
     StillInRefiningMode = false;
     _stableIterationsInARow=0;
     if (!IsInitialMeshRefinement) {
@@ -204,12 +207,12 @@ void exahype::mappings::MeshRefinement::endIteration(exahype::State& solverState
                solverState.getAllSolversAttainedStableStateInPreviousIteration()));
     if (!meshRefinementHasConverged) {
       logInfo( "endIteration(...)",
-        "grid construction not yet finished. grid balanced=" << solverState.isGridBalanced() <<
-		", grid stationary=" << solverState.isGridStationary() <<
-		", still in refining mode=" << StillInRefiningMode <<
-		", initial refinement=" << IsInitialMeshRefinement <<
-		", stable iterations in a row=" << _stableIterationsInARow <<
-		", all solvers attained=" << solverState.getAllSolversAttainedStableStateInPreviousIteration()
+               "grid construction not yet finished. grid balanced=" << solverState.isGridBalanced() <<
+               ", grid stationary=" << solverState.isGridStationary() <<
+               ", still in refining mode=" << StillInRefiningMode <<
+               ", initial refinement=" << IsInitialMeshRefinement <<
+               ", stable iterations in a row=" << _stableIterationsInARow <<
+               ", all solvers attained=" << solverState.getAllSolversAttainedStableStateInPreviousIteration()
       );
     }
     solverState.setMeshRefinementHasConverged( meshRefinementHasConverged ); // it's actually the currently finishing iteration

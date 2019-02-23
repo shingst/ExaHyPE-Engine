@@ -642,6 +642,10 @@ int exahype::parser::Parser::getSimulationTimeSteps() const {
   return result;
 }
 
+int exahype::parser::Parser::getMaxMeshSetupIterations() const {
+  return getIntFromPath("/computational_domain/max_mesh_setup_iterations", std::numeric_limits<int>::max(), isOptional);
+}
+
 bool exahype::parser::Parser::getScaleBoundingBox() const {
   return getBoolFromPath("/distributed_memory/scale_bounding_box", false, isOptional);
 }
