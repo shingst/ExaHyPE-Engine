@@ -260,7 +260,7 @@
           "title" : "set a limit on the maximum number of grid setup iterations. This is mainly a debugging option as the grid might be instable when the mesh setup is stopped.", 
           "minimum" : 1,
           "exclusiveMinimum" : false,
-          "default": 4294967295
+          "default": 400
         }
       }
     }, 
