@@ -191,17 +191,28 @@ void exahype::mappings::MeshRefinement::endIteration(exahype::State& solverState
     if ( !solverState.getAllSolversAttainedStableStateInPreviousIteration() ) { // reset directly
       _stableIterationsInARow = 0;
     }
-    solverState.setMeshRefinementHasConverged(
-        solverState.isGridBalanced()
-        &&
-        solverState.isGridStationary()
-        &&
-        !StillInRefiningMode
-        &&
-        (IsInitialMeshRefinement ||
-          (_stableIterationsInARow > 1 && // experimentally found
-           solverState.getAllSolversAttainedStableStateInPreviousIteration()))
-      ); // it's actually the currently finishing iteration
+    // @todo This is not so nice. The solver has the first attributes already, so why set them?
+    const bool meshRefinementHasConverged =
+            solverState.isGridBalanced()
+            &&
+            solverState.isGridStationary()
+            &&
+            !StillInRefiningMode
+            &&
+            (IsInitialMeshRefinement ||
+              (_stableIterationsInARow > 1 && // experimentally found
+               solverState.getAllSolversAttainedStableStateInPreviousIteration()));
+    if (!meshRefinementHasConverged) {
+      logInfo( "endIteration(...)",
+        "grid construction not yet finished. grid balanced=" << solverState.isGridBalanced() <<
+		", grid stationary=" << solverState.isGridStationary() <<
+		", still in refining mode=" << StillInRefiningMode <<
+		", initial refinement=" << IsInitialMeshRefinement <<
+		", stable iterations in a row=" << _stableIterationsInARow <<
+		", all solvers attained=" << solverState.getAllSolversAttainedStableStateInPreviousIteration()
+      );
+    }
+    solverState.setMeshRefinementHasConverged( meshRefinementHasConverged ); // it's actually the currently finishing iteration
   }
 
   exahype::mappings::MeshRefinement::IsFirstIteration=false;
