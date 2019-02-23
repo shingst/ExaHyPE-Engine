@@ -786,10 +786,12 @@ void exahype::solvers::Solver::sendMeshUpdateEventToMaster(
   assertion1(meshUpdateEvent.size()==1,meshUpdateEvent.size());
   if (tarch::parallel::Node::getInstance().getRank()!=
       tarch::parallel::Node::getInstance().getGlobalMasterRank()) {
+/*
     logDebug("sendDataToMaster(...)","sending mesh update event: " <<
              "data[0]=" << toString(convertToMeshUpdateEvent( meshUpdateEvent[0] )) <<
 	     ",_meshUpdateEvent=" << toString( getMeshUpdateEvent() ) <<
              ",_nextMeshUpdateEvent=" << toString( getNextMeshUpdateEvent() ));
+*/
   }
 
   // MPI_Send(
@@ -827,10 +829,12 @@ void exahype::solvers::Solver::mergeWithWorkerMeshUpdateEvent(
 
   if (tarch::parallel::Node::getInstance().getRank()==
       tarch::parallel::Node::getInstance().getGlobalMasterRank()) {
+/*
     logDebug("mergeWithWorkerData(...)","merged with worker's mesh update event: " <<
              "data[0]=" << toString(convertToMeshUpdateEvent( messageFromWorker[0] )) <<
 	     ",_meshUpdateEvent=" << toString( getMeshUpdateEvent() ) <<
              ",_nextMeshUpdateEvent=" << toString( getNextMeshUpdateEvent() ));
+*/
   }
 }
 #endif
