@@ -966,8 +966,10 @@ bool exahype::runners::Runner::createMesh(exahype::repositories::Repository& rep
   int meshSetupIterations = 0;
   repository.switchToMeshRefinement();
 
+  const int MaxIterations = 32;
+
   repository.getState().setMeshRefinementHasConverged(false);
-  while ( repository.getState().continueToConstructGrid() ) {
+  while ( repository.getState().continueToConstructGrid() and meshSetupIterations<MaxIterations) {
     repository.iterate(1,true);
     meshSetupIterations++;
 
@@ -976,6 +978,10 @@ bool exahype::runners::Runner::createMesh(exahype::repositories::Repository& rep
     printMeshSetupInfo(repository,meshSetupIterations);
 
     meshUpdate = true;
+  }
+
+  if (meshSetupIterations==MaxIterations) {
+	logWarning( "createMesh(...)", "reached max mesh setup iteration count of " << meshSetupIterations << " and make setup terminate artifically" );
   }
 
   logInfo("createGrid(Repository)", "finished grid setup after " << meshSetupIterations << " iterations" );
