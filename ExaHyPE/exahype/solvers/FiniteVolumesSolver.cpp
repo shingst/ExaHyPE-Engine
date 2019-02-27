@@ -182,7 +182,7 @@ void exahype::solvers::FiniteVolumesSolver::initSolver(
   _domainSize=domainSize;
   std::pair<double,int> coarsestMeshInfo =
       exahype::solvers::Solver::computeCoarsestMeshSizeAndLevel(
-          std::min(boundingBoxMeshSize,_maximumMeshSize),tarch::la::max(domainSize));
+          std::min(boundingBoxMeshSize,_maximumMeshSize),boundingBoxSize);
   _coarsestMeshSize  = coarsestMeshInfo.first;
   _coarsestMeshLevel = coarsestMeshInfo.second;
 

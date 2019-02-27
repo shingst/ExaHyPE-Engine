@@ -117,8 +117,8 @@ void exahype::solvers::LimitingADERDGSolver::initSolver(
   _domainOffset=domainOffset;
   _domainSize=domainSize;
   std::pair<double,int> coarsestMeshInfo =
-        exahype::solvers::Solver::computeCoarsestMeshSizeAndLevel(
-            std::min(boundingBoxMeshSize,_maximumMeshSize),tarch::la::max(domainSize));
+      exahype::solvers::Solver::computeCoarsestMeshSizeAndLevel(
+          std::min(boundingBoxMeshSize,_maximumMeshSize),boundingBoxSize);
   _coarsestMeshSize  = coarsestMeshInfo.first; // TODO(Dominic): Wire through as well
   _coarsestMeshLevel = coarsestMeshInfo.second;
 
