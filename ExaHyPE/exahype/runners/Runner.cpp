@@ -638,7 +638,7 @@ exahype::repositories::Repository* exahype::runners::Runner::createRepository() 
   tarch::la::Vector<DIMENSIONS,double> boundingBoxOffset = _domainOffset;
 
   if ( _parser.getScaleBoundingBox() ) {
-    const int cellsOutside = 2*(2+3*_parser.getScaleBoundingBoxMultiplier());
+    const int cellsOutside = 2*(1+3*_parser.getScaleBoundingBoxMultiplier());
 
     const double coarsestUserMeshSpacing =
         exahype::solvers::Solver::getCoarsestMaximumMeshSizeOfAllSolvers();
