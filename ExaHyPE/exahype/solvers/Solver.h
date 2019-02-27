@@ -1180,17 +1180,19 @@ class exahype::solvers::Solver {
  static std::string toString(const exahype::solvers::Solver::TimeStepping& param);
 
  /**
-  * Return the mesh level corresponding to the given mesh size with
-  * respect to the given domainSize.
+  * @return mesh resolution and mesh level (incremented by 1) such that
+  * @p boundingBoxSize / 3^level <= @p meshSize.
   *
-  * @note That the domain root cell is actually at Peano mesh level 1
-  * since the domain itself is embedded in a 3^d mesh in Peano.
+  * @note The domain root cell is actually at Peano mesh level 1
+  * as the domain itself is embedded in a 3^d mesh in Peano.
   *
   * @note Load balancing makes only sense for a Peano mesh with
-  * at least 3 (Peano) levels.
-  * This is not ensured or checked in this routine.
+  * at least 3 (Peano) levels. This is not ensured or checked in this routine.
+  *
+  * @param meshSize        the coarsest allowed mesh size.
+  * @param boundingBoxSize size of the bounding box.
   */
- static std::pair<double,int> computeCoarsestMeshSizeAndLevel(double meshSize, double domainSize);
+ static std::pair<double,int> computeCoarsestMeshSizeAndLevel(double meshSize, double boundingBoxSize);
 
  protected:
 
@@ -1447,15 +1449,23 @@ class exahype::solvers::Solver {
    *
    * The maximum adaptive refinement level is defined
    * with respect to this level.
+   *
+   * @param timeStamp            the initial time stamp.
+   * @param domainOffset         offset of the domain.
+   * @param domainSize           size of the domain.
+   * @param boundingBoxSize      size of the bounding box.
+   * @param cellsOutsideOfDomainPerDimension cells which are placed outside of the domain due to bounding box scaling.
+   * @param cmdlineargs          command line arguments.
+   * @param parserView           view on the specification file for the solver.
    */
-
   virtual void initSolver(
       const double timeStamp,
       const tarch::la::Vector<DIMENSIONS,double>& domainOffset,
       const tarch::la::Vector<DIMENSIONS,double>& domainSize,
-      const tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize,
-      const std::vector<std::string>& cmdlineargs,
-      const exahype::parser::ParserView& parserView) = 0;
+      const double                                boundingBoxSize,
+      const double                                boundingBoxMeshSize,
+      const std::vector<std::string>&             cmdlineargs,
+      const exahype::parser::ParserView&          parserView) = 0;
 
   /**
    * Notify the solver that a time step just started.

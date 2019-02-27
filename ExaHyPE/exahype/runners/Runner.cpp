@@ -95,6 +95,7 @@ exahype::runners::Runner::Runner(exahype::parser::Parser& parser, std::vector<st
     _parser(parser),
     _cmdlineargs(cmdlineargs),
     _boundingBoxSize(0.0),
+    _boundingBoxMeshSize(0.0),
     _meshRefinements(0),
     _localRecomputations(0),
     _predictorReruns(0) {
@@ -560,37 +561,33 @@ void exahype::runners::Runner::shutdownSharedMemoryConfiguration() {
   #endif
 }
 
-int exahype::runners::Runner::getCoarsestGridLevelOfAllSolvers(
-    tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize) const {
+int exahype::runners::Runner::getCoarsestGridLevelOfAllSolvers(const double boundingBoxSize) const {
   double hMax = exahype::solvers::Solver::getCoarsestMaximumMeshSizeOfAllSolvers();
 
-  const int peanoLevel = exahype::solvers::Solver::computeCoarsestMeshSizeAndLevel(hMax,boundingBoxSize[0]).second;
+  const int peanoLevel = exahype::solvers::Solver::computeCoarsestMeshSizeAndLevel(hMax,boundingBoxSize).second;
 
   logDebug( "getCoarsestGridLevelOfAllSolvers()", "regular grid depth of " << peanoLevel << " (1 means a single cell)");
   return peanoLevel;
 }
 
-int exahype::runners::Runner::getCoarsestGridLevelForLoadBalancing(
-    tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize) const {
+int exahype::runners::Runner::getCoarsestGridLevelForLoadBalancing(const double boundingBoxSize) const {
   return std::max( 3, getCoarsestGridLevelOfAllSolvers(boundingBoxSize) );
 }
 
-int exahype::runners::Runner::getFinestUniformGridLevelOfAllSolvers(
-    tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize) const {
+int exahype::runners::Runner::getFinestUniformGridLevelOfAllSolvers(const double boundingBoxSize) const {
   if ( _parser.getScaleBoundingBox() ) {
     return std::numeric_limits<int>::max();
   } else { 
     double hMax = exahype::solvers::Solver::getFinestMaximumMeshSizeOfAllSolvers();
 
-    const int peanoLevel = exahype::solvers::Solver::computeCoarsestMeshSizeAndLevel(hMax,boundingBoxSize[0]).second;
+    const int peanoLevel = exahype::solvers::Solver::computeCoarsestMeshSizeAndLevel(hMax,boundingBoxSize).second;
 
     logDebug( "getCoarsestGridLevelOfAllSolvers()", "regular grid depth of " << peanoLevel << " (1 means a single cell)");
     return peanoLevel;
   }
 }
 
-int exahype::runners::Runner::getFinestUniformGridLevelForLoadBalancing(
-    tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize) const {
+int exahype::runners::Runner::getFinestUniformGridLevelForLoadBalancing(const double boundingBoxSize) const {
   return std::max( 3, getFinestUniformGridLevelOfAllSolvers(boundingBoxSize) );
 }
 
@@ -621,11 +618,13 @@ exahype::runners::Runner::determineScaledDomainSize(
  * @return Bounding box size. If we have a non-cubical domain,
  *         then the bounding box still is cubical and all of its entries are
  *         the biggest dimension along one coordinate axis.
+ *
+ * @note this returns a bounding box where no bounding box scaling
+ * has been applied.
  */
-tarch::la::Vector<DIMENSIONS, double> exahype::runners::Runner::determineBoundingBoxSize(
+double exahype::runners::Runner::determineBoundingBoxSize(
     const tarch::la::Vector<DIMENSIONS, double>& domainSize) const {
-    double longestH = tarch::la::max(domainSize);
-    return tarch::la::Vector<DIMENSIONS, double>(longestH);
+    return tarch::la::max(domainSize);
 }
 
 exahype::repositories::Repository* exahype::runners::Runner::createRepository() {
@@ -638,7 +637,6 @@ exahype::repositories::Repository* exahype::runners::Runner::createRepository() 
   int boundingBoxMeshLevel = coarsestUserMeshLevel;
   tarch::la::Vector<DIMENSIONS,double> boundingBoxOffset = _domainOffset;
 
-  double boundingBoxMeshSpacing = -1;
   if ( _parser.getScaleBoundingBox() ) {
     const int cellsOutside = 2*(2+3*_parser.getScaleBoundingBoxMultiplier());
 
@@ -646,30 +644,31 @@ exahype::repositories::Repository* exahype::runners::Runner::createRepository() 
         exahype::solvers::Solver::getCoarsestMaximumMeshSizeOfAllSolvers();
     const double maxDomainExtent = tarch::la::max(_domainSize);
 
-    double boundingBoxScaling     = 0;
-    double boundingBoxExtent      = 0;
+    _boundingBoxMeshSize      = -1;
+    double boundingBoxScaling = 0;
+    double boundingBoxExtent  = 0;
     int level = coarsestUserMeshLevel; // level=1 means a single cell
-    while (boundingBoxMeshSpacing < 0 || boundingBoxMeshSpacing > coarsestUserMeshSpacing) {
+    while (_boundingBoxMeshSize < 0 || _boundingBoxMeshSize > coarsestUserMeshSpacing) {
       const double boundingBoxMeshCells = std::pow(3,level-1);
       boundingBoxScaling                = boundingBoxMeshCells / ( boundingBoxMeshCells - cellsOutside ); // two cells are removed on each side
       boundingBoxExtent                 = boundingBoxScaling * maxDomainExtent;
-      boundingBoxMeshSpacing            = boundingBoxExtent/boundingBoxMeshCells;
+      _boundingBoxMeshSize            = boundingBoxExtent/boundingBoxMeshCells;
       level++;
     }
     level--; // decrement result since boundingBox was computed using level-1
     boundingBoxMeshLevel = level;
 
-    assertion6(boundingBoxScaling>=1.0,boundingBoxScaling,boundingBoxExtent,boundingBoxMeshSpacing,boundingBoxMeshLevel,coarsestUserMeshSpacing,maxDomainExtent);
+    assertion6(boundingBoxScaling>=1.0,boundingBoxScaling,boundingBoxExtent,_boundingBoxMeshSize,boundingBoxMeshLevel,coarsestUserMeshSpacing,maxDomainExtent);
 
     _boundingBoxSize    *= boundingBoxScaling;
-    boundingBoxOffset   -= 0.5*cellsOutside*boundingBoxMeshSpacing;
+    boundingBoxOffset   -= 0.5*cellsOutside*_boundingBoxMeshSize;
   } else {
-    boundingBoxMeshSpacing = determineCoarsestMeshSize(_domainSize);
+    _boundingBoxMeshSize = determineCoarsestMeshSize(_domainSize);
   }
 
   const double coarsestUserMeshSize = exahype::solvers::Solver::getCoarsestMaximumMeshSizeOfAllSolvers();
   tarch::la::Vector<DIMENSIONS,double> scaledDomainSize =
-      determineScaledDomainSize(_domainSize,boundingBoxMeshSpacing);
+      determineScaledDomainSize(_domainSize,_boundingBoxMeshSize);
 
   if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
     if (!tarch::la::equals(_domainSize,scaledDomainSize)) {
@@ -678,7 +677,7 @@ exahype::repositories::Repository* exahype::runners::Runner::createRepository() 
           << _domainSize << " since non-cubic domain was specified");
     }
     logInfo("createRepository(...)",
-        "coarsest mesh size was chosen as " << boundingBoxMeshSpacing << " based on user's maximum mesh size "<<
+        "coarsest mesh size was chosen as " << _boundingBoxMeshSize << " based on user's maximum mesh size "<<
         coarsestUserMeshSize << " and length of longest edge of domain " << tarch::la::max(scaledDomainSize));
     if (boundingBoxMeshLevel!=coarsestUserMeshLevel) {
       logInfo("createRepository(...)",
@@ -882,7 +881,9 @@ void exahype::runners::Runner::initSolvers() const {
   for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
     solver->initSolver(
-      0.0,_domainOffset,_domainSize,_boundingBoxSize,
+      0.0,
+      _domainOffset,_domainSize,
+      _boundingBoxSize,_boundingBoxMeshSize,
       _cmdlineargs,_parser.createParserView(solverNumber)
     );
   }

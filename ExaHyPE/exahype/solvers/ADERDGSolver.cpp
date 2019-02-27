@@ -834,17 +834,19 @@ void exahype::solvers::ADERDGSolver::resetAdmissibleTimeStepSize() {
 }
 
 void exahype::solvers::ADERDGSolver::initSolver(
-    const double timeStamp,
+    const double                                timeStamp,
     const tarch::la::Vector<DIMENSIONS,double>& domainOffset,
     const tarch::la::Vector<DIMENSIONS,double>& domainSize,
-    const tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize,
-    const std::vector<std::string>& cmdlineargs,
-    const exahype::parser::ParserView& parserView
+    const double                                boundingBoxSize,
+    const double                                boundingBoxMeshSize,
+    const std::vector<std::string>&             cmdlineargs,
+    const exahype::parser::ParserView&          parserView
 ) {
   _domainOffset=domainOffset;
   _domainSize=domainSize;
   std::pair<double,int> coarsestMeshInfo =
-      exahype::solvers::Solver::computeCoarsestMeshSizeAndLevel(_maximumMeshSize,boundingBoxSize[0]);
+      exahype::solvers::Solver::computeCoarsestMeshSizeAndLevel(
+          std::min(boundingBoxMeshSize,_maximumMeshSize),tarch::la::max(domainSize));
   _coarsestMeshSize  = coarsestMeshInfo.first;
   _coarsestMeshLevel = coarsestMeshInfo.second;
 

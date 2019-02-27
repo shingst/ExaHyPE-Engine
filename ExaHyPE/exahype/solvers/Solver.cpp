@@ -355,7 +355,7 @@ void exahype::solvers::Solver::glueTogether(
 std::pair<double,int> exahype::solvers::Solver::computeCoarsestMeshSizeAndLevel(double meshSize, double domainSize) {
   int    peanoLevel      = 1; // The domain root cell is actually at Peano level 1
   double currenthMax = std::numeric_limits<double>::infinity();
-  while (currenthMax>meshSize) {
+  while ( currenthMax>meshSize ) {
     currenthMax = domainSize / threePowI(peanoLevel-1);
     peanoLevel++;
   }

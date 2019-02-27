@@ -106,23 +106,26 @@ void exahype::solvers::LimitingADERDGSolver::resetAdmissibleTimeStepSize() {
 }
 
 void exahype::solvers::LimitingADERDGSolver::initSolver(
-    const double timeStamp,
+    const double                                timeStamp,
     const tarch::la::Vector<DIMENSIONS,double>& domainOffset,
     const tarch::la::Vector<DIMENSIONS,double>& domainSize,
-    const tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize,
-    const std::vector<std::string>& cmdlineargs,
-    const exahype::parser::ParserView& parserView) {
+    const double                                boundingBoxSize,
+    const double                                boundingBoxMeshSize,
+    const std::vector<std::string>&             cmdlineargs,
+    const exahype::parser::ParserView&          parserView
+) {
   _domainOffset=domainOffset;
   _domainSize=domainSize;
   std::pair<double,int> coarsestMeshInfo =
-      exahype::solvers::Solver::computeCoarsestMeshSizeAndLevel(_maximumMeshSize,boundingBoxSize[0]);
+        exahype::solvers::Solver::computeCoarsestMeshSizeAndLevel(
+            std::min(boundingBoxMeshSize,_maximumMeshSize),tarch::la::max(domainSize));
   _coarsestMeshSize  = coarsestMeshInfo.first; // TODO(Dominic): Wire through as well
   _coarsestMeshLevel = coarsestMeshInfo.second;
 
   resetMeshUpdateEvent();
 
-  _solver->initSolver(timeStamp, domainOffset, domainSize, boundingBoxSize, cmdlineargs, parserView);
-  _limiter->initSolver(timeStamp, domainOffset, domainSize, boundingBoxSize, cmdlineargs, parserView);
+  _solver->initSolver(timeStamp, domainOffset, domainSize, boundingBoxSize, boundingBoxMeshSize, cmdlineargs, parserView);
+  _limiter->initSolver(timeStamp, domainOffset, domainSize, boundingBoxSize, boundingBoxMeshSize, cmdlineargs, parserView);
 }
 
 bool exahype::solvers::LimitingADERDGSolver::isPerformingPrediction(
