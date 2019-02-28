@@ -104,10 +104,11 @@ for line in file:
   if m:
     #print line
     #print float(m.group(2))
-    n = dot.get_node(int(m.group(1)))
-    n.attr['label']= m.group(1)+" bval="+m.group(2)
-    n.attr['fillcolor'] = 'grey'
-    n.attr['style'] = 'filled'
+    if float(m.group(2))>0.5:
+      n = dot.get_node(int(m.group(1)))
+      n.attr['label']= m.group(1)+" bval="+m.group(2)
+      n.attr['fillcolor'] = 'grey'
+      n.attr['style'] = 'filled'
     #cur_blacklist_values[int(m.group(1))]=float(m.group(2))
   m=temperatureCCP_pattern.match(line)
   if m and current_step>0:
