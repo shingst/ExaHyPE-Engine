@@ -653,7 +653,7 @@ int exahype::parser::Parser::getMaxMeshSetupIterations() const {
 }
 
 bool exahype::parser::Parser::getScaleBoundingBox() const {
-  return getBoolFromPath("/distributed_memory/scale_bounding_box", false, isOptional);
+  return getBoolFromPath("/distributed_memory/scale_bounding_box", true, isOptional);
 }
 
 int exahype::parser::Parser::getScaleBoundingBoxMultiplier() const {
