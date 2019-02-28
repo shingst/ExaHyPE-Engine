@@ -642,8 +642,18 @@ int exahype::parser::Parser::getSimulationTimeSteps() const {
   return result;
 }
 
+int exahype::parser::Parser::getMaxMeshSetupIterations() const {
+  int result = getIntFromPath("/computational_domain/max_mesh_setup_iterations", 400, isOptional);
+  if ( result < 1 ) {
+    logError("getMaxMeshSetupIterations()",
+            "'max_mesh_setup_iterations': Use infinite number of mesh setup iterations as given value was found to be smaller than one.");
+    result = std::numeric_limits<int>::max();
+  }
+  return result;
+}
+
 bool exahype::parser::Parser::getScaleBoundingBox() const {
-  return getBoolFromPath("/distributed_memory/scale_bounding_box", true, isOptional);
+  return getBoolFromPath("/distributed_memory/scale_bounding_box", false, isOptional);
 }
 
 int exahype::parser::Parser::getScaleBoundingBoxMultiplier() const {

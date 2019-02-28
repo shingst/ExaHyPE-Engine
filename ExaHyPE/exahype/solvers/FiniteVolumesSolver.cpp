@@ -170,16 +170,19 @@ void exahype::solvers::FiniteVolumesSolver::resetAdmissibleTimeStepSize() {
 }
 
 void exahype::solvers::FiniteVolumesSolver::initSolver(
-    const double timeStamp,
+    const double                                timeStamp,
     const tarch::la::Vector<DIMENSIONS,double>& domainOffset,
     const tarch::la::Vector<DIMENSIONS,double>& domainSize,
-    const tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize,
-    const std::vector<std::string>& cmdlineargs,
-    const exahype::parser::ParserView& parserView) {
+    const double                                boundingBoxSize,
+    const double                                boundingBoxMeshSize,
+    const std::vector<std::string>&             cmdlineargs,
+    const exahype::parser::ParserView&          parserView
+) {
   _domainOffset=domainOffset;
   _domainSize=domainSize;
   std::pair<double,int> coarsestMeshInfo =
-      exahype::solvers::Solver::computeCoarsestMeshSizeAndLevel(_maximumMeshSize,boundingBoxSize[0]);
+      exahype::solvers::Solver::computeCoarsestMeshSizeAndLevel(
+          std::min(boundingBoxMeshSize,_maximumMeshSize),boundingBoxSize);
   _coarsestMeshSize  = coarsestMeshInfo.first;
   _coarsestMeshLevel = coarsestMeshInfo.second;
 
@@ -535,10 +538,11 @@ void exahype::solvers::FiniteVolumesSolver::ensureNecessaryMemoryIsAllocated(
 }
 
 bool exahype::solvers::FiniteVolumesSolver::attainedStableState(
-    exahype::Cell& fineGridCell,
-    exahype::Vertex* const fineGridVertices,
+    exahype::Cell&                       fineGridCell,
+    exahype::Vertex* const               fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-    const int solverNumber) const {
+    const int                            solverNumber,
+    const bool                           stillInRefiningMode) const {
   return true;
 }
 

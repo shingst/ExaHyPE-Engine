@@ -118,7 +118,8 @@ class SpecFile1Reader():
             "steps_till_cured",\
             "helper_layers",\
             "thread_stack_size",\
-            "scale_bounding_box_multiplier"\
+            "scale_bounding_box_multiplier",\
+            "max_mesh_setup_iterations"\
         ]
         numbers=[\
             "end_time",\

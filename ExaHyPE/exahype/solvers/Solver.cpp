@@ -371,7 +371,7 @@ void exahype::solvers::Solver::glueTogether(
 std::pair<double,int> exahype::solvers::Solver::computeCoarsestMeshSizeAndLevel(double meshSize, double domainSize) {
   int    peanoLevel      = 1; // The domain root cell is actually at Peano level 1
   double currenthMax = std::numeric_limits<double>::infinity();
-  while (currenthMax>meshSize) {
+  while ( currenthMax>meshSize ) {
     currenthMax = domainSize / threePowI(peanoLevel-1);
     peanoLevel++;
   }
@@ -543,6 +543,16 @@ int exahype::solvers::Solver::getFinestUniformMeshLevelOfAllSolvers() {
 
   for (const auto& p : exahype::solvers::RegisteredSolvers) {
     result = std::max( result, p->getCoarsestMeshLevel() );
+  }
+
+  return result;
+}
+
+int exahype::solvers::Solver::getMaximumAdaptiveMeshLevelOfAllSolvers() {
+  int result = -std::numeric_limits<int>::max(); // "-", min
+
+  for (const auto& p : exahype::solvers::RegisteredSolvers) {
+    result = std::max( result, p->getMaximumAdaptiveMeshLevel() );
   }
 
   return result;
@@ -802,10 +812,12 @@ void exahype::solvers::Solver::sendMeshUpdateEventToMaster(
   assertion1(meshUpdateEvent.size()==1,meshUpdateEvent.size());
   if (tarch::parallel::Node::getInstance().getRank()!=
       tarch::parallel::Node::getInstance().getGlobalMasterRank()) {
+/*
     logDebug("sendDataToMaster(...)","sending mesh update event: " <<
              "data[0]=" << toString(convertToMeshUpdateEvent( meshUpdateEvent[0] )) <<
 	     ",_meshUpdateEvent=" << toString( getMeshUpdateEvent() ) <<
              ",_nextMeshUpdateEvent=" << toString( getNextMeshUpdateEvent() ));
+*/
   }
 
   // MPI_Send(
@@ -843,10 +855,12 @@ void exahype::solvers::Solver::mergeWithWorkerMeshUpdateEvent(
 
   if (tarch::parallel::Node::getInstance().getRank()==
       tarch::parallel::Node::getInstance().getGlobalMasterRank()) {
+/*
     logDebug("mergeWithWorkerData(...)","merged with worker's mesh update event: " <<
              "data[0]=" << toString(convertToMeshUpdateEvent( messageFromWorker[0] )) <<
 	     ",_meshUpdateEvent=" << toString( getMeshUpdateEvent() ) <<
              ",_nextMeshUpdateEvent=" << toString( getNextMeshUpdateEvent() ));
+*/
   }
 }
 #endif

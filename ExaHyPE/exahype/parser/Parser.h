@@ -309,6 +309,13 @@ class exahype::parser::Parser {
   int  getSimulationTimeSteps() const;
 
   /**
+   * @return the maximum number of grid setup iterations.
+   * This is mainly a debugging option as the grid might be instable when the mesh setup is stopped
+   * abruptly.
+   */
+  int getMaxMeshSetupIterations() const;
+
+  /**
    * @return if static mesh refinement is used. Otherwise, or if not specified,
    * it is assumed dynamic mesh refinement is used.
    */

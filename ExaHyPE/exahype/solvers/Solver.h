@@ -1021,6 +1021,12 @@ class exahype::solvers::Solver {
   static int getFinestUniformMeshLevelOfAllSolvers();
 
   /**
+   * @return the maximum mesh level which might be occupied
+   * by a solver's cells.
+   */
+  static int getMaximumAdaptiveMeshLevelOfAllSolvers();
+
+  /**
    * Returns the coarsest mesh size a solver is actually
    * using.
    *
@@ -1256,17 +1262,19 @@ class exahype::solvers::Solver {
  static std::string toString(const exahype::solvers::Solver::TimeStepping& param);
 
  /**
-  * Return the mesh level corresponding to the given mesh size with
-  * respect to the given domainSize.
+  * @return mesh resolution and mesh level (incremented by 1) such that
+  * @p boundingBoxSize / 3^level <= @p meshSize.
   *
-  * @note That the domain root cell is actually at Peano mesh level 1
-  * since the domain itself is embedded in a 3^d mesh in Peano.
+  * @note The domain root cell is actually at Peano mesh level 1
+  * as the domain itself is embedded in a 3^d mesh in Peano.
   *
   * @note Load balancing makes only sense for a Peano mesh with
-  * at least 3 (Peano) levels.
-  * This is not ensured or checked in this routine.
+  * at least 3 (Peano) levels. This is not ensured or checked in this routine.
+  *
+  * @param meshSize        the coarsest allowed mesh size.
+  * @param boundingBoxSize size of the bounding box.
   */
- static std::pair<double,int> computeCoarsestMeshSizeAndLevel(double meshSize, double domainSize);
+ static std::pair<double,int> computeCoarsestMeshSizeAndLevel(double meshSize, double boundingBoxSize);
 
  protected:
 
@@ -1523,15 +1531,23 @@ class exahype::solvers::Solver {
    *
    * The maximum adaptive refinement level is defined
    * with respect to this level.
+   *
+   * @param timeStamp            the initial time stamp.
+   * @param domainOffset         offset of the domain.
+   * @param domainSize           size of the domain.
+   * @param boundingBoxSize      size of the bounding box.
+   * @param cellsOutsideOfDomainPerDimension cells which are placed outside of the domain due to bounding box scaling.
+   * @param cmdlineargs          command line arguments.
+   * @param parserView           view on the specification file for the solver.
    */
-
   virtual void initSolver(
       const double timeStamp,
       const tarch::la::Vector<DIMENSIONS,double>& domainOffset,
       const tarch::la::Vector<DIMENSIONS,double>& domainSize,
-      const tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize,
-      const std::vector<std::string>& cmdlineargs,
-      const exahype::parser::ParserView& parserView) = 0;
+      const double                                boundingBoxSize,
+      const double                                boundingBoxMeshSize,
+      const std::vector<std::string>&             cmdlineargs,
+      const exahype::parser::ParserView&          parserView) = 0;
 
   /**
    * Notify the solver that a time step just started.
@@ -1664,16 +1680,19 @@ class exahype::solvers::Solver {
    * Returns true if the solver has attained
    * a stable state on the cell description
    *
-   * @param fineGridCell a fine grid cell
-   * @param fineGridVertices vertices surrounding the fine grid cell
+   * @param fineGridCell               a fine grid cell
+   * @param fineGridVertices           vertices surrounding the fine grid cell
    * @param fineGridVerticesEnumerator a enumerator for the fine grid vertices
-   * @param solverNumber a solver number
+   * @param solverNumber               a solver number
+   * @param stillInRefiningMode        indicates if the mesh refinement
+   *                                   is still in refining mode (true) or switched to coarsening mode (false).
    */
   virtual bool attainedStableState(
-      exahype::Cell& fineGridCell,
-      exahype::Vertex* const fineGridVertices,
+      exahype::Cell&                       fineGridCell,
+      exahype::Vertex* const               fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-      const int solverNumber) const = 0;
+      const int                            solverNumber,
+      const bool                           stillInRefiningMode) const = 0;
 
   /**
    * This method is called after the

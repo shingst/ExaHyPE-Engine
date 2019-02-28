@@ -156,7 +156,10 @@ void exahype::mappings::MeshRefinement::beginIteration( exahype::State& solverSt
     
     _allSolversAttainedStableState = true;
   }
-  if ( StillInRefiningMode && _stableIterationsInARow>1 ) {
+  if ( StillInRefiningMode &&
+      _stableIterationsInARow >
+         (exahype::solvers::Solver::getMaximumAdaptiveMeshLevelOfAllSolvers() +
+          std::max(exahype::solvers::Solver::getMaxRefinementStatus(),1)) ) { // all found experimentally; not completely understood yet
     StillInRefiningMode = false;
     _stableIterationsInARow=0;
     if (!IsInitialMeshRefinement) {
@@ -191,17 +194,28 @@ void exahype::mappings::MeshRefinement::endIteration(exahype::State& solverState
     if ( !solverState.getAllSolversAttainedStableStateInPreviousIteration() ) { // reset directly
       _stableIterationsInARow = 0;
     }
-    solverState.setMeshRefinementHasConverged(
-        solverState.isGridBalanced()
-        &&
-        solverState.isGridStationary()
-        &&
-        !StillInRefiningMode
-        &&
-        (IsInitialMeshRefinement ||
-          (_stableIterationsInARow > 1 && // experimentally found
-           solverState.getAllSolversAttainedStableStateInPreviousIteration()))
-      ); // it's actually the currently finishing iteration
+    // @todo This is not so nice. The solver has the first attributes already, so why set them?
+    const bool meshRefinementHasConverged =
+            solverState.isGridBalanced()
+            &&
+            solverState.isGridStationary()
+            &&
+            !StillInRefiningMode
+            &&
+            (IsInitialMeshRefinement ||
+              (_stableIterationsInARow > 1 && // experimentally found
+               solverState.getAllSolversAttainedStableStateInPreviousIteration()));
+    if (!meshRefinementHasConverged) {
+      logInfo( "endIteration(...)",
+               "grid construction not yet finished. grid balanced=" << solverState.isGridBalanced() <<
+               ", grid stationary=" << solverState.isGridStationary() <<
+               ", still in refining mode=" << StillInRefiningMode <<
+               ", initial refinement=" << IsInitialMeshRefinement <<
+               ", stable iterations in a row=" << _stableIterationsInARow <<
+               ", all solvers attained=" << solverState.getAllSolversAttainedStableStateInPreviousIteration()
+      );
+    }
+    solverState.setMeshRefinementHasConverged( meshRefinementHasConverged ); // it's actually the currently finishing iteration
   }
 
   exahype::mappings::MeshRefinement::IsFirstIteration=false;
@@ -252,8 +266,6 @@ void exahype::mappings::MeshRefinement::touchVertexLastTime(
       !StillInRefiningMode);
 
   if ( // TODO(Dominic): This is not completely figured out yet.
-      !fineGridVertex.isOutside()
-      &&
       _stableIterationsInARow <= 3 // Found experimentally
       &&
       refinementControl==exahype::solvers::Solver::RefinementControl::Refine
@@ -536,7 +548,8 @@ void exahype::mappings::MeshRefinement::leaveCell(
               fineGridCell,
               fineGridVertices,
               fineGridVerticesEnumerator,
-              solverNumber);
+              solverNumber,
+              StillInRefiningMode);
     }
   }
 

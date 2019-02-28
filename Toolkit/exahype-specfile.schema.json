@@ -254,6 +254,13 @@
           "minimum" : 0,
           "exclusiveMinimum" : false,
           "old_format" : { "token_after" : "time-steps" }
+        },
+        "max_mesh_setup_iterations" : {
+          "type" : "integer", 
+          "title" : "set a limit on the maximum number of grid setup iterations. This is mainly a debugging option as the grid might be instable when the mesh setup is stopped.", 
+          "minimum" : 1,
+          "exclusiveMinimum" : false,
+          "default": 400
         }
       }
     }, 
