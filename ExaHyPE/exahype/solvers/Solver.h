@@ -1146,7 +1146,7 @@ class exahype::solvers::Solver {
   VT_begin(waitUntilCompletedLastStepHandle);
   static int event_emergency = -1;
   static const char *event_name_emergency = "trigger_emergency";
-  ierr=VT_funcdef(event_name_emergency, VT_NOCLASS, &event_emergency ); assert(ierr==0);
+  int ierr=VT_funcdef(event_name_emergency, VT_NOCLASS, &event_emergency ); assert(ierr==0);
 #endif
 
 #ifdef StealingUseProfiler
