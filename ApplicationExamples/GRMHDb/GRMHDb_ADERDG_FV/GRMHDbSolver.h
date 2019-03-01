@@ -32,10 +32,10 @@ class GRMHDb::GRMHDbSolver: public exahype::solvers::LimitingADERDGSolver {
         const int maximumMeshDepth,
         const int haloCells,
         const int regularisedFineGridLevels,
-        const exahype::solvers::Solver::TimeStepping timeStepping,const int DMPObservables,
+        const exahype::solvers::Solver::TimeStepping timeStepping,
+        const int DMPObservables,
         const double DMPRelaxationParameter,
-        const double DMPDifferenceScaling,
-        const int iterationsToCureTroubledCell
+        const double DMPDifferenceScaling
 );
     
     void projectOnFVLimiterSpace(const double* const luh, double* const lim) const override;

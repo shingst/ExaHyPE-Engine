@@ -894,17 +894,19 @@ void exahype::solvers::ADERDGSolver::resetAdmissibleTimeStepSize() {
 }
 
 void exahype::solvers::ADERDGSolver::initSolver(
-    const double timeStamp,
+    const double                                timeStamp,
     const tarch::la::Vector<DIMENSIONS,double>& domainOffset,
     const tarch::la::Vector<DIMENSIONS,double>& domainSize,
-    const tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize,
-    const std::vector<std::string>& cmdlineargs,
-    const exahype::parser::ParserView& parserView
+    const double                                boundingBoxSize,
+    const double                                boundingBoxMeshSize,
+    const std::vector<std::string>&             cmdlineargs,
+    const exahype::parser::ParserView&          parserView
 ) {
   _domainOffset=domainOffset;
   _domainSize=domainSize;
   std::pair<double,int> coarsestMeshInfo =
-      exahype::solvers::Solver::computeCoarsestMeshSizeAndLevel(_maximumMeshSize,boundingBoxSize[0]);
+      exahype::solvers::Solver::computeCoarsestMeshSizeAndLevel(
+          std::min(boundingBoxMeshSize,_maximumMeshSize),boundingBoxSize);
   _coarsestMeshSize  = coarsestMeshInfo.first;
   _coarsestMeshLevel = coarsestMeshInfo.second;
 
@@ -1446,10 +1448,11 @@ void exahype::solvers::ADERDGSolver::prolongateVolumeData(
 }
 
 bool exahype::solvers::ADERDGSolver::attainedStableState(
-        exahype::Cell& fineGridCell,
-        exahype::Vertex* const fineGridVertices,
+        exahype::Cell&                       fineGridCell,
+        exahype::Vertex* const               fineGridVertices,
         const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-        const int solverNumber) const {
+        const int                            solverNumber,
+        const bool                           stillInRefiningMode) const {
   const int element = tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
   if ( element!=exahype::solvers::Solver::NotFound ) {
     CellDescription& cellDescription = getCellDescription(fineGridCell.getCellDescriptionsIndex(),element);
@@ -1476,7 +1479,6 @@ bool exahype::solvers::ADERDGSolver::attainedStableState(
       }
     }
  
-    // TODO(Dominic): Debugging
     bool stable =
       flaggingHasConverged
       &&
@@ -1491,16 +1493,30 @@ bool exahype::solvers::ADERDGSolver::attainedStableState(
       cellDescription.getLevel() != getMaximumAdaptiveMeshLevel() ||
       cellDescription.getRefinementStatus()<=0);
 
-//    if (!stable) {
-//      logInfo("attainedStableState(...)",">flaggingHasConverged="<<flaggingHasConverged);
-//      logInfo("attainedStableState(...)","type="<<cellDescription.toString(cellDescription.getType()));
-//      logInfo("attainedStableState(...)","x="<<cellDescription.getOffset());
-//      logInfo("attainedStableState(...)","level="<<cellDescription.getLevel());
-//      logInfo("attainedStableState(...)","refinementStatus="<<cellDescription.getRefinementStatus());
-//      logInfo("attainedStableState(...)","getFacewiseAugmentationStatus="<<cellDescription.getFacewiseAugmentationStatus());
-//      logInfo("attainedStableState(...)","getFacewiseCommunicationStatus="<<cellDescription.getFacewiseCommunicationStatus());
-//      logInfo("attainedStableState(...)","getFacewiseRefinementStatus="<<cellDescription.getFacewiseRefinementStatus());
-//    }
+      if (!stable) {
+        #ifdef MonitorMeshRefinement
+        logInfo("attainedStableState(...)","cell has not attained stable state (yet):");
+        logInfo("attainedStableState(...)","type="<<cellDescription.toString(cellDescription.getType()));
+        logInfo("attainedStableState(...)","x="<<cellDescription.getOffset());
+        logInfo("attainedStableState(...)","level="<<cellDescription.getLevel());
+        logInfo("attainedStableState(...)","flaggingHasConverged="<<flaggingHasConverged);
+        logInfo("attainedStableState(...)","refinementEvent="<<cellDescription.toString(cellDescription.getRefinementEvent()));
+        logInfo("attainedStableState(...)","refinementStatus="<<cellDescription.getRefinementStatus());
+        logInfo("attainedStableState(...)","getFacewiseAugmentationStatus="<<cellDescription.getFacewiseAugmentationStatus());
+        logInfo("attainedStableState(...)","getFacewiseCommunicationStatus="<<cellDescription.getFacewiseCommunicationStatus());
+        logInfo("attainedStableState(...)","getFacewiseRefinementStatus="<<cellDescription.getFacewiseRefinementStatus());
+        #endif
+        if (
+            !stillInRefiningMode &&
+            cellDescription.getType()  == CellDescription::Descendant &&
+            cellDescription.getLevel() == getMaximumAdaptiveMeshLevel() &&
+            cellDescription.getRefinementStatus() > 0
+        ) {
+          logError("attainedStableState(...)","Virtual subcell requests refining of coarse grid parent but mesh refinement is not in refining mode anymore. Inform Dominic.");
+          logError("attainedStableState(...)","cell="<<cellDescription.toString());
+          std::terminate();
+        }
+      }
 
     return stable;
   } else {
@@ -4231,12 +4247,16 @@ void exahype::solvers::ADERDGSolver::sendDataToMaster(
     );
   }
 
-  MPI_Send(
-    messageForMaster.data(), messageForMaster.size(),
-    MPI_DOUBLE,
-    masterRank,
-    MasterWorkerCommunicationTag,
-    tarch::parallel::Node::getInstance().getCommunicator());
+  // MPI_Send(
+  //   messageForMaster.data(), messageForMaster.size(),
+  //   MPI_DOUBLE,
+  //   masterRank,
+  //   MasterWorkerCommunicationTag,
+  //   tarch::parallel::Node::getInstance().getCommunicator());
+
+  DataHeap::getInstance().sendData(
+      messageForMaster.data(), messageForMaster.size(),
+      masterRank,x,level,peano::heap::MessageType::MasterWorkerCommunication);
 }
 
 exahype::DataHeap::HeapEntries
@@ -4265,13 +4285,17 @@ void exahype::solvers::ADERDGSolver::mergeWithWorkerData(
     const int                                    level) {
   DataHeap::HeapEntries messageFromWorker(2);
 
-  MPI_Recv(
-    messageFromWorker.data(), messageFromWorker.size(),
-    MPI_DOUBLE,
-    workerRank,
-    MasterWorkerCommunicationTag,
-    tarch::parallel::Node::getInstance().getCommunicator(),
-    MPI_STATUS_IGNORE);
+  //  MPI_Recv(
+  //    messageFromWorker.data(), messageFromWorker.size(),
+  //    MPI_DOUBLE,
+  //    workerRank,
+  //    MasterWorkerCommunicationTag,
+  //    tarch::parallel::Node::getInstance().getCommunicator(),
+  //    MPI_STATUS_IGNORE);
+
+  DataHeap::getInstance().receiveData(
+      messageFromWorker.data(), messageFromWorker.size(),
+      workerRank,x,level,peano::heap::MessageType::MasterWorkerCommunication);
 
   if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
     logDebug("mergeWithWorkerData(...)","Receive data from worker rank: " <<
@@ -4331,12 +4355,16 @@ void exahype::solvers::ADERDGSolver::sendDataToWorker(
         "data[4]=" << messageForWorker[4]);
   }
   
-  MPI_Send(
-    messageForWorker.data(), messageForWorker.size(),
-    MPI_DOUBLE,
-    workerRank,
-    MasterWorkerCommunicationTag,
-    tarch::parallel::Node::getInstance().getCommunicator());
+  // MPI_Send(
+  //   messageForWorker.data(), messageForWorker.size(),
+  //   MPI_DOUBLE,
+  //   workerRank,
+  //   MasterWorkerCommunicationTag,
+  //   tarch::parallel::Node::getInstance().getCommunicator());
+
+  DataHeap::getInstance().sendData(
+      messageForWorker.data(), messageForWorker.size(),
+      workerRank,x,level,peano::heap::MessageType::MasterWorkerCommunication);
 }
 
 void exahype::solvers::ADERDGSolver::mergeWithMasterData(const DataHeap::HeapEntries& message) {
@@ -4357,12 +4385,16 @@ void exahype::solvers::ADERDGSolver::mergeWithMasterData(
     const int                                    level) {
   DataHeap::HeapEntries messageFromMaster(5);
   
-  MPI_Recv(
+  // MPI_Recv(
+  //     messageFromMaster.data(), messageFromMaster.size(),
+  //     MPI_DOUBLE,
+  //     masterRank,
+  //     MasterWorkerCommunicationTag,
+  //     tarch::parallel::Node::getInstance().getCommunicator(),MPI_STATUS_IGNORE);
+
+  DataHeap::getInstance().receiveData(
       messageFromMaster.data(), messageFromMaster.size(),
-      MPI_DOUBLE,
-      masterRank,
-      MasterWorkerCommunicationTag,
-      tarch::parallel::Node::getInstance().getCommunicator(),MPI_STATUS_IGNORE);
+      masterRank,x,level,peano::heap::MessageType::MasterWorkerCommunication);
 
   assertion1(messageFromMaster.size()==5,messageFromMaster.size());
   mergeWithMasterData(messageFromMaster);

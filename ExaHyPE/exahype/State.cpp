@@ -103,11 +103,11 @@ void exahype::State::endedGridConstructionIteration(int finestGridLevelPossible)
       tarch::parallel::NodePool::getInstance().hasGivenOutRankSizeLastQuery();
 
   #ifdef Debug
-  std::cout <<  "!getHasChangedVertexOrCellState=" << !_stateData.getHasChangedVertexOrCellState() << std::endl;
-  std::cout <<  "!getHasRefined=" << !_stateData.getHasRefined() << std::endl;
-  std::cout <<  "!getHasErased=" << !_stateData.getHasErased()  << std::endl;
+  std::cout <<  "!getHasChangedVertexOrCellState="            << !_stateData.getHasChangedVertexOrCellState() << std::endl;
+  std::cout <<  "!getHasRefined="                             << !_stateData.getHasRefined() << std::endl;
+  std::cout <<  "!getHasErased="                              << !_stateData.getHasErased()  << std::endl;
   std::cout <<  "!getHasTriggeredRefinementForNextIteration=" << !_stateData.getHasTriggeredRefinementForNextIteration() << std::endl;
-  std::cout <<  "!getHasTriggeredEraseForNextIteration=" << !_stateData.getHasTriggeredEraseForNextIteration() << std::endl;
+  std::cout <<  "!getHasTriggeredEraseForNextIteration="      << !_stateData.getHasTriggeredEraseForNextIteration() << std::endl;
   #ifdef Parallel
   std::cout <<  "!getCouldNotEraseDueToDecompositionFlag=" << !_stateData.getCouldNotEraseDueToDecompositionFlag() << std::endl;
   #endif
@@ -159,7 +159,6 @@ void exahype::State::endedGridConstructionIteration(int finestGridLevelPossible)
   }
 }
 
-
 exahype::State::RefinementAnswer exahype::State::mayRefine(bool isCreationalEvent, int level) const
 {
 #ifdef Parallel
@@ -194,11 +193,7 @@ exahype::State::RefinementAnswer exahype::State::mayRefine(bool isCreationalEven
 
 
 bool exahype::State::continueToConstructGrid() const {
-#ifdef Parallel
-  return _stateData.getMaxRefinementLevelAllowed()>=-3 || !_stateData.getMeshRefinementHasConverged();
-#else
-  return !isGridBalanced() || !_stateData.getMeshRefinementHasConverged();
-#endif
+  return !_stateData.getMeshRefinementHasConverged();
 }
 
 bool exahype::State::isEvenBatchIteration() {
@@ -275,6 +270,7 @@ void exahype::State::kickOffIteration(exahype::records::RepositoryState& reposit
       case exahype::records::RepositoryState::UseAdapterPredictionRerun:
       case exahype::records::RepositoryState::UseAdapterFusedTimeStep:
       case exahype::records::RepositoryState::UseAdapterBroadcastAndDropNeighbourMessages: {
+        peano::heap::AbstractHeap::allHeapsStartToSendSynchronousData(); // can be called multiple times
         if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) { // TODO scalability bottleneck; use tree-based approach
             for (int workerRank=1; workerRank<tarch::parallel::Node::getInstance().getNumberOfNodes(); workerRank++) {
               if (!(tarch::parallel::NodePool::getInstance().isIdleNode(workerRank))) { // TODO scalability bottleneck; use tree-based approach
@@ -284,6 +280,7 @@ void exahype::State::kickOffIteration(exahype::records::RepositoryState& reposit
         } else {
           exahype::State::mergeWithGlobalDataFromMaster(masterRank,0.0,0);
         }
+        peano::heap::AbstractHeap::allHeapsFinishedToSendSynchronousData(); // can be called multiple times
       } break;
       default:
         break;

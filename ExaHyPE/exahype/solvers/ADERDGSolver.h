@@ -1676,12 +1676,13 @@ public:
       const exahype::parser::ParserView& constants) = 0;
 
   void initSolver(
-      const double timeStamp,
+      const double                                timeStamp,
       const tarch::la::Vector<DIMENSIONS,double>& domainOffset,
       const tarch::la::Vector<DIMENSIONS,double>& domainSize,
-      const tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize,
-      const std::vector<std::string>& cmdlineargs,
-      const exahype::parser::ParserView& parserView) override;
+      const double                                boundingBoxSize,
+      const double                                boundingBoxMeshSize,
+      const std::vector<std::string>&             cmdlineargs,
+      const exahype::parser::ParserView&          parserView) final override;
 
   bool isPerformingPrediction(const exahype::State::AlgorithmSection& section) const override;
   bool isMergingMetadata(const exahype::State::AlgorithmSection& section) const override;
@@ -1734,10 +1735,11 @@ public:
    * a stable state yet.
    */
   bool attainedStableState(
-      exahype::Cell& fineGridCell,
-      exahype::Vertex* const fineGridVertices,
+      exahype::Cell&                       fineGridCell,
+      exahype::Vertex* const               fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-      const int solverNumber) const override;
+      const int                            solverNumber,
+      const bool                           stillInRefiningMode) const final override;
 
   void finaliseStateUpdates(const int solverNumber,CellInfo& cellInfo) override;
 

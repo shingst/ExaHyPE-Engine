@@ -17,6 +17,8 @@
 #include <streambuf> // read file
 {% endif %}
 
+#include "tarch/parallel/Node.h"
+
 #include "exahype/plotters/Plotter.h"
 #include "exahype/profilers/ProfilerFactory.h"
 #include "exahype/solvers/Solver.h"
@@ -196,9 +198,11 @@ void kernels::finalise() {
 std::string kernels::readSpecificationFileToJSON(const std::string& filename) {
   static tarch::logging::Log _log("kernels");
 {% if strictJSON %}
-  logInfo("readSpecificationFileToJSON()", "ExaHyPE was build with the strict JSON option (see toolkit options).");
-  logInfo("readSpecificationFileToJSON()", "a valid JSON formatted specification file is expected.");
-  logInfo("readSpecificationFileToJSON()", "read file: " << filename);
+  if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+    logInfo("readSpecificationFileToJSON()", "ExaHyPE was build with the strict JSON option (see toolkit options).");
+    logInfo("readSpecificationFileToJSON()", "a valid JSON formatted specification file is expected.");
+    logInfo("readSpecificationFileToJSON()", "read file: " << filename);
+  }
   std::ifstream ifs(filename);
   std::string json((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
 {% else %}
@@ -216,7 +220,9 @@ std::string kernels::readSpecificationFileToJSON(const std::string& filename) {
   std::string command = "{{externalParserCommand}} " + filename + " 2>&1";
   // Note that we pass stderr to stdout so in case of problems, 
   
-  logInfo("readSpecificationFileToJSON()", "Invoking external command: " << command);
+  if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+    logInfo("readSpecificationFileToJSON()", "Invoking external command: " << command);
+  }
 
   std::array<char, buffer_size> buffer;
   std::string json;

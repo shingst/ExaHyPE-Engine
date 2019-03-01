@@ -400,14 +400,14 @@ void exahype::stealing::AggressiveHybridDistributor::updateLoadDistributionCCP()
   for(int i=0; i<nnodes; i++) {
     if(_idealTasksToOffload[i]>0) {
       //we have a potential victim rank
-      //if(!exahype::stealing::StealingManager::getInstance().isBlacklisted(i)) {
+//     if(!exahype::stealing::StealingManager::getInstance().isBlacklisted(i)) {
       logInfo("updateLoadDistributionCCP", "offloading to "<<i<<" tasks "<<_temperatureCCP*_idealTasksToOffload[i]);
       _optimalTasksPerRank[i] = _idealTasksToOffload[i];
       _tasksToOffload[i] = std::ceil(std::max((1.0-_temperatureCCP), 0.0)*_tasksToOffload[i] + _temperatureCCP*_idealTasksToOffload[i]);
 #ifdef DistributedStealingDisable
        _tasksToOffload[i] = 0;
 #endif
-       // }
+//       }
      }
    }
 

@@ -44,8 +44,7 @@ public:
     const int haloCells,
     const int regularisedFineGridLevels,
     const exahype::solvers::Solver::TimeStepping timeStepping,
-    const int DMPObservables,
-    const int limiterHelperLayers 
+    const int DMPObservables
 );
 
   /**

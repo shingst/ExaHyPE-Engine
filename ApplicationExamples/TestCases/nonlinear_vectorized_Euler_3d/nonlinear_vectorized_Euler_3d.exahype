@@ -41,7 +41,7 @@ exahype-project Euler
   solver ADER-DG EulerSolver_ADERDG
     variables const            = 5
     order const                = 6
-    maximum-mesh-size          = 1.0
+    maximum-mesh-size          = 1.5
     time-stepping              = global
     type const                 = nonlinear
     terms const                = flux
@@ -53,7 +53,7 @@ exahype-project Euler
     plot vtk::Legendre::cells::ascii ConservedQuantitiesWriter
       variables const = 5
       time            = 0.0
-      repeat          = 0.0355
+      repeat          = 0.0418
       output          = ./conserved
     end plot
 

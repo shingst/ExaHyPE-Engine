@@ -30,31 +30,12 @@ GRMHDb::TecplotWriter::TecplotWriter() : exahype::plotters::LimitingADERDG2UserD
   // @TODO Please insert your code here.
 }
 
-/*GRMHDb::TecplotWriter::TecplotWriter(GRMHDb::GRMHDbSolver_ADERDG& solver) : TecplotWriter(){
-	plotForADERSolver = 1;
-	plotForFVSolver = 0;
-}
-
-GRMHDb::TecplotWriter::TecplotWriter(GRMHDb::GRMHDbSolver_FV& solver) : TecplotWriter(){
-	plotForADERSolver = 0;
-	plotForFVSolver = 1;
-}
-
-
-
-void GRMHDb::TecplotWriter::plotPatch(
-    const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
-    const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* u,
-    double timeStamp) {
-  // @TODO Please insert your code here.
-    elementcalltecplotplotter_(u, &offsetOfPatch[0], &sizeOfPatch[0],&plotForADERSolver);
-}*/
 
 
 
 void GRMHDb::TecplotWriter::plotADERDGPatch(
 	const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
-	const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* u,
+    const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* const u,
 	double timeStamp) {
 
 	plotForADERSolver = 1;
@@ -65,7 +46,7 @@ void GRMHDb::TecplotWriter::plotADERDGPatch(
 
 void GRMHDb::TecplotWriter::plotFiniteVolumesPatch(
 	const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
-	const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* u,
+    const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* const u,
 	double timeStamp) {
 	// @TODO Please insert your code here.
 	plotForADERSolver = 0;

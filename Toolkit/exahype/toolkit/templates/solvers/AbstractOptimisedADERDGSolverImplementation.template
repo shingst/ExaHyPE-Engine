@@ -39,9 +39,9 @@ std::atomic_ulong {{project}}::{{abstractSolver}}::faceIntegral_f = 0;
 std::atomic_ulong {{project}}::{{abstractSolver}}::faceIntegral_t = 0;
 std::atomic_ulong {{project}}::{{abstractSolver}}::faceIntegral_c = 0;
     
-std::atomic_ulong {{project}}::{{abstractSolver}}::addUpdateToSolution_f = 0;
-std::atomic_ulong {{project}}::{{abstractSolver}}::addUpdateToSolution_t = 0;
-std::atomic_ulong {{project}}::{{abstractSolver}}::addUpdateToSolution_c = 0;
+std::atomic_ulong {{project}}::{{abstractSolver}}::solutionUpdate_f = 0;
+std::atomic_ulong {{project}}::{{abstractSolver}}::solutionUpdate_t = 0;
+std::atomic_ulong {{project}}::{{abstractSolver}}::solutionUpdate_c = 0;
     
 std::atomic_ulong {{project}}::{{abstractSolver}}::riemannSolver_f = 0;
 std::atomic_ulong {{project}}::{{abstractSolver}}::riemannSolver_t = 0;

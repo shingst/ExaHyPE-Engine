@@ -23,7 +23,7 @@
 exahype-project  Dummy
   peano-kernel-path const = ./Peano
   exahype-path const      = ./ExaHyPE
-  output-directory const  = ./ApplicationExamples/Experiments/DummySolver
+  output-directory const  = ./ApplicationExamples/TestCases/BigDummyApplication
   architecture const      = noarch
   log-file                = mylogfile.log
 

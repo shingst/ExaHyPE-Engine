@@ -32,7 +32,7 @@ exahype::stealing::StealingAnalyser::StealingAnalyser():
   _waitForMasterDataWatch("exahype::stealing::StealingAnalyser", "-", false,false),
   _waitForGlobalMasterDataWatch("exahype::stealing::StealingAnalyser", "-", false,false),
   _waitForOtherRank(tarch::parallel::Node::getInstance().getNumberOfNodes()),
-  _currentZeroThreshold(20000),
+  _currentZeroThreshold(0),
   _iterationCounter(0),
   _currentAccumulatedWorkerTime(0)
 {
@@ -95,8 +95,8 @@ void exahype::stealing::StealingAnalyser::updateZeroTresholdAndFilteredSnapshot(
   for(int i=0; i<nnodes; i++) {
     for(int j=0; j<nnodes; j++) {
       double currentWaitingTime = currentWaitingTimesSnapshot[i*nnodes+j];
-      //if(currentWaitingTime>0)
-      //  logInfo("updateZeroTresholdAndFilteredSnapshot()","rank "<<i<<" waiting for "<<currentWaitingTime<<" for rank "<<j);
+      if(currentWaitingTime>0)
+        logInfo("updateZeroTresholdAndFilteredSnapshot()","rank "<<i<<" waiting for "<<currentWaitingTime<<" for rank "<<j);
       if(currentWaitingTime>max) {
 	 max = currentWaitingTime;
       }

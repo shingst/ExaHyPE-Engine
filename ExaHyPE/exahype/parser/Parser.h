@@ -282,6 +282,14 @@ class exahype::parser::Parser {
    */
   bool getScaleBoundingBox() const;
 
+  /**
+   * 2+3*i cells are placed outside of the domain per coordinate axis if
+   * the bounding box is scaled.
+   *
+   * @return the multiplier i which should be used.
+   */
+  int getScaleBoundingBoxMultiplier() const;
+
   int getMPIBufferSize() const;
 
   int getMPITimeOut() const;
@@ -299,6 +307,13 @@ class exahype::parser::Parser {
    * simulation shall be run (0 is a valid value)
    */
   int  getSimulationTimeSteps() const;
+
+  /**
+   * @return the maximum number of grid setup iterations.
+   * This is mainly a debugging option as the grid might be instable when the mesh setup is stopped
+   * abruptly.
+   */
+  int getMaxMeshSetupIterations() const;
 
   /**
    * @return if static mesh refinement is used. Otherwise, or if not specified,
