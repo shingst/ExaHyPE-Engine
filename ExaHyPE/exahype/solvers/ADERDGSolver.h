@@ -1438,12 +1438,13 @@ public:
       const exahype::parser::ParserView& constants) = 0;
 
   void initSolver(
-      const double timeStamp,
+      const double                                timeStamp,
       const tarch::la::Vector<DIMENSIONS,double>& domainOffset,
       const tarch::la::Vector<DIMENSIONS,double>& domainSize,
-      const tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize,
-      const std::vector<std::string>& cmdlineargs,
-      const exahype::parser::ParserView& parserView) override;
+      const double                                boundingBoxSize,
+      const double                                boundingBoxMeshSize,
+      const std::vector<std::string>&             cmdlineargs,
+      const exahype::parser::ParserView&          parserView) final override;
 
   bool isPerformingPrediction(const exahype::State::AlgorithmSection& section) const override;
   bool isMergingMetadata(const exahype::State::AlgorithmSection& section) const override;
