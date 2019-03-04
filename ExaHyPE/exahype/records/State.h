@@ -33,7 +33,7 @@ namespace exahype {
     *
     * 		   build date: 09-02-2014 14:40
     *
-    * @date   15/11/2018 18:02
+    * @date   04/03/2019 09:39
     */
    class exahype::records::State { 
       
@@ -684,7 +684,7 @@ namespace exahype {
     *
     * 		   build date: 09-02-2014 14:40
     *
-    * @date   15/11/2018 18:02
+    * @date   04/03/2019 09:39
     */
    class exahype::records::StatePacked { 
       
@@ -1371,7 +1371,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   15/11/2018 18:02
+       * @date   04/03/2019 09:39
        */
       class exahype::records::State { 
          
@@ -1415,6 +1415,7 @@ namespace exahype {
                bool _reduceStateAndCell;
                bool _couldNotEraseDueToDecompositionFlag;
                bool _subWorkerIsInvolvedInJoinOrFork;
+               bool _refineArtificiallyOutsideDomain;
                int _totalNumberOfBatchIterations;
                int _batchIteration;
                /**
@@ -1425,7 +1426,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& allSolversAttainedStableStateInPreviousIteration, const bool& meshRefinementHasConverged, const tarch::la::Vector<DIMENSIONS,double>& minMeshWidth, const tarch::la::Vector<DIMENSIONS,double>& maxMeshWidth, const double& numberOfInnerVertices, const double& numberOfBoundaryVertices, const double& numberOfOuterVertices, const double& numberOfInnerCells, const double& numberOfOuterCells, const double& numberOfInnerLeafVertices, const double& numberOfBoundaryLeafVertices, const double& numberOfOuterLeafVertices, const double& numberOfInnerLeafCells, const double& numberOfOuterLeafCells, const int& maxLevel, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork, const int& totalNumberOfBatchIterations, const int& batchIteration);
+               PersistentRecords(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& allSolversAttainedStableStateInPreviousIteration, const bool& meshRefinementHasConverged, const tarch::la::Vector<DIMENSIONS,double>& minMeshWidth, const tarch::la::Vector<DIMENSIONS,double>& maxMeshWidth, const double& numberOfInnerVertices, const double& numberOfBoundaryVertices, const double& numberOfOuterVertices, const double& numberOfInnerCells, const double& numberOfOuterCells, const double& numberOfInnerLeafVertices, const double& numberOfBoundaryLeafVertices, const double& numberOfOuterLeafVertices, const double& numberOfInnerLeafCells, const double& numberOfOuterLeafCells, const int& maxLevel, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork, const bool& refineArtificiallyOutsideDomain, const int& totalNumberOfBatchIterations, const int& batchIteration);
                
                
                inline int getMaxRefinementLevelAllowed() const 
@@ -2044,6 +2045,26 @@ namespace exahype {
                
                
                
+               inline bool getRefineArtificiallyOutsideDomain() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _refineArtificiallyOutsideDomain;
+               }
+               
+               
+               
+               inline void setRefineArtificiallyOutsideDomain(const bool& refineArtificiallyOutsideDomain) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _refineArtificiallyOutsideDomain = refineArtificiallyOutsideDomain;
+               }
+               
+               
+               
                inline int getTotalNumberOfBatchIterations() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
@@ -2102,7 +2123,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               State(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& allSolversAttainedStableStateInPreviousIteration, const bool& meshRefinementHasConverged, const tarch::la::Vector<DIMENSIONS,double>& minMeshWidth, const tarch::la::Vector<DIMENSIONS,double>& maxMeshWidth, const double& numberOfInnerVertices, const double& numberOfBoundaryVertices, const double& numberOfOuterVertices, const double& numberOfInnerCells, const double& numberOfOuterCells, const double& numberOfInnerLeafVertices, const double& numberOfBoundaryLeafVertices, const double& numberOfOuterLeafVertices, const double& numberOfInnerLeafCells, const double& numberOfOuterLeafCells, const int& maxLevel, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork, const int& totalNumberOfBatchIterations, const int& batchIteration);
+               State(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& allSolversAttainedStableStateInPreviousIteration, const bool& meshRefinementHasConverged, const tarch::la::Vector<DIMENSIONS,double>& minMeshWidth, const tarch::la::Vector<DIMENSIONS,double>& maxMeshWidth, const double& numberOfInnerVertices, const double& numberOfBoundaryVertices, const double& numberOfOuterVertices, const double& numberOfInnerCells, const double& numberOfOuterCells, const double& numberOfInnerLeafVertices, const double& numberOfBoundaryLeafVertices, const double& numberOfOuterLeafVertices, const double& numberOfInnerLeafCells, const double& numberOfOuterLeafCells, const int& maxLevel, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork, const bool& refineArtificiallyOutsideDomain, const int& totalNumberOfBatchIterations, const int& batchIteration);
                
                /**
                 * Generated
@@ -2778,6 +2799,26 @@ namespace exahype {
                
                
                
+               inline bool getRefineArtificiallyOutsideDomain() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._refineArtificiallyOutsideDomain;
+               }
+               
+               
+               
+               inline void setRefineArtificiallyOutsideDomain(const bool& refineArtificiallyOutsideDomain) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._refineArtificiallyOutsideDomain = refineArtificiallyOutsideDomain;
+               }
+               
+               
+               
                inline int getTotalNumberOfBatchIterations() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
@@ -2890,7 +2931,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   15/11/2018 18:02
+       * @date   04/03/2019 09:39
        */
       class exahype::records::StatePacked { 
          
@@ -2929,6 +2970,7 @@ namespace exahype {
                 |  reduceStateAndCell	| startbit 6	| #bits 1
                 |  couldNotEraseDueToDecompositionFlag	| startbit 7	| #bits 1
                 |  subWorkerIsInvolvedInJoinOrFork	| startbit 8	| #bits 1
+                |  refineArtificiallyOutsideDomain	| startbit 9	| #bits 1
                 */
                short int _packedRecords0;
                
@@ -2940,7 +2982,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& allSolversAttainedStableStateInPreviousIteration, const bool& meshRefinementHasConverged, const tarch::la::Vector<DIMENSIONS,double>& minMeshWidth, const tarch::la::Vector<DIMENSIONS,double>& maxMeshWidth, const double& numberOfInnerVertices, const double& numberOfBoundaryVertices, const double& numberOfOuterVertices, const double& numberOfInnerCells, const double& numberOfOuterCells, const double& numberOfInnerLeafVertices, const double& numberOfBoundaryLeafVertices, const double& numberOfOuterLeafVertices, const double& numberOfInnerLeafCells, const double& numberOfOuterLeafCells, const int& maxLevel, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork, const int& totalNumberOfBatchIterations, const int& batchIteration);
+               PersistentRecords(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& allSolversAttainedStableStateInPreviousIteration, const bool& meshRefinementHasConverged, const tarch::la::Vector<DIMENSIONS,double>& minMeshWidth, const tarch::la::Vector<DIMENSIONS,double>& maxMeshWidth, const double& numberOfInnerVertices, const double& numberOfBoundaryVertices, const double& numberOfOuterVertices, const double& numberOfInnerCells, const double& numberOfOuterCells, const double& numberOfInnerLeafVertices, const double& numberOfBoundaryLeafVertices, const double& numberOfOuterLeafVertices, const double& numberOfInnerLeafCells, const double& numberOfOuterLeafCells, const int& maxLevel, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork, const bool& refineArtificiallyOutsideDomain, const int& totalNumberOfBatchIterations, const int& batchIteration);
                
                
                inline int getMaxRefinementLevelAllowed() const 
@@ -3586,6 +3628,29 @@ namespace exahype {
                
                
                
+               inline bool getRefineArtificiallyOutsideDomain() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  short int mask = 1 << (9);
+   short int tmp = static_cast<short int>(_packedRecords0 & mask);
+   return (tmp != 0);
+               }
+               
+               
+               
+               inline void setRefineArtificiallyOutsideDomain(const bool& refineArtificiallyOutsideDomain) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  short int mask = 1 << (9);
+   _packedRecords0 = static_cast<short int>( refineArtificiallyOutsideDomain ? (_packedRecords0 | mask) : (_packedRecords0 & ~mask));
+               }
+               
+               
+               
                inline int getTotalNumberOfBatchIterations() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
@@ -3644,7 +3709,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               StatePacked(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& allSolversAttainedStableStateInPreviousIteration, const bool& meshRefinementHasConverged, const tarch::la::Vector<DIMENSIONS,double>& minMeshWidth, const tarch::la::Vector<DIMENSIONS,double>& maxMeshWidth, const double& numberOfInnerVertices, const double& numberOfBoundaryVertices, const double& numberOfOuterVertices, const double& numberOfInnerCells, const double& numberOfOuterCells, const double& numberOfInnerLeafVertices, const double& numberOfBoundaryLeafVertices, const double& numberOfOuterLeafVertices, const double& numberOfInnerLeafCells, const double& numberOfOuterLeafCells, const int& maxLevel, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork, const int& totalNumberOfBatchIterations, const int& batchIteration);
+               StatePacked(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& allSolversAttainedStableStateInPreviousIteration, const bool& meshRefinementHasConverged, const tarch::la::Vector<DIMENSIONS,double>& minMeshWidth, const tarch::la::Vector<DIMENSIONS,double>& maxMeshWidth, const double& numberOfInnerVertices, const double& numberOfBoundaryVertices, const double& numberOfOuterVertices, const double& numberOfInnerCells, const double& numberOfOuterCells, const double& numberOfInnerLeafVertices, const double& numberOfBoundaryLeafVertices, const double& numberOfOuterLeafVertices, const double& numberOfInnerLeafCells, const double& numberOfOuterLeafCells, const int& maxLevel, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork, const bool& refineArtificiallyOutsideDomain, const int& totalNumberOfBatchIterations, const int& batchIteration);
                
                /**
                 * Generated
@@ -4347,6 +4412,29 @@ namespace exahype {
                
                
                
+               inline bool getRefineArtificiallyOutsideDomain() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  short int mask = 1 << (9);
+   short int tmp = static_cast<short int>(_persistentRecords._packedRecords0 & mask);
+   return (tmp != 0);
+               }
+               
+               
+               
+               inline void setRefineArtificiallyOutsideDomain(const bool& refineArtificiallyOutsideDomain) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  short int mask = 1 << (9);
+   _persistentRecords._packedRecords0 = static_cast<short int>( refineArtificiallyOutsideDomain ? (_persistentRecords._packedRecords0 | mask) : (_persistentRecords._packedRecords0 & ~mask));
+               }
+               
+               
+               
                inline int getTotalNumberOfBatchIterations() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
@@ -4456,7 +4544,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   15/11/2018 18:02
+       * @date   04/03/2019 09:39
        */
       class exahype::records::State { 
          
@@ -5852,7 +5940,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   15/11/2018 18:02
+       * @date   04/03/2019 09:39
        */
       class exahype::records::StatePacked { 
          
@@ -7277,7 +7365,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   15/11/2018 18:02
+       * @date   04/03/2019 09:39
        */
       class exahype::records::State { 
          
@@ -7300,6 +7388,7 @@ namespace exahype {
                bool _reduceStateAndCell;
                bool _couldNotEraseDueToDecompositionFlag;
                bool _subWorkerIsInvolvedInJoinOrFork;
+               bool _refineArtificiallyOutsideDomain;
                int _totalNumberOfBatchIterations;
                int _batchIteration;
                /**
@@ -7310,7 +7399,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& allSolversAttainedStableStateInPreviousIteration, const bool& meshRefinementHasConverged, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork, const int& totalNumberOfBatchIterations, const int& batchIteration);
+               PersistentRecords(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& allSolversAttainedStableStateInPreviousIteration, const bool& meshRefinementHasConverged, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork, const bool& refineArtificiallyOutsideDomain, const int& totalNumberOfBatchIterations, const int& batchIteration);
                
                
                inline int getMaxRefinementLevelAllowed() const 
@@ -7593,6 +7682,26 @@ namespace exahype {
                
                
                
+               inline bool getRefineArtificiallyOutsideDomain() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _refineArtificiallyOutsideDomain;
+               }
+               
+               
+               
+               inline void setRefineArtificiallyOutsideDomain(const bool& refineArtificiallyOutsideDomain) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _refineArtificiallyOutsideDomain = refineArtificiallyOutsideDomain;
+               }
+               
+               
+               
                inline int getTotalNumberOfBatchIterations() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
@@ -7651,7 +7760,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               State(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& allSolversAttainedStableStateInPreviousIteration, const bool& meshRefinementHasConverged, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork, const int& totalNumberOfBatchIterations, const int& batchIteration);
+               State(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& allSolversAttainedStableStateInPreviousIteration, const bool& meshRefinementHasConverged, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork, const bool& refineArtificiallyOutsideDomain, const int& totalNumberOfBatchIterations, const int& batchIteration);
                
                /**
                 * Generated
@@ -7939,6 +8048,26 @@ namespace exahype {
                
                
                
+               inline bool getRefineArtificiallyOutsideDomain() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._refineArtificiallyOutsideDomain;
+               }
+               
+               
+               
+               inline void setRefineArtificiallyOutsideDomain(const bool& refineArtificiallyOutsideDomain) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._refineArtificiallyOutsideDomain = refineArtificiallyOutsideDomain;
+               }
+               
+               
+               
                inline int getTotalNumberOfBatchIterations() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
@@ -8051,7 +8180,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   15/11/2018 18:02
+       * @date   04/03/2019 09:39
        */
       class exahype::records::StatePacked { 
          
@@ -8077,6 +8206,7 @@ namespace exahype {
                 |  reduceStateAndCell	| startbit 6	| #bits 1
                 |  couldNotEraseDueToDecompositionFlag	| startbit 7	| #bits 1
                 |  subWorkerIsInvolvedInJoinOrFork	| startbit 8	| #bits 1
+                |  refineArtificiallyOutsideDomain	| startbit 9	| #bits 1
                 */
                short int _packedRecords0;
                
@@ -8088,7 +8218,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& allSolversAttainedStableStateInPreviousIteration, const bool& meshRefinementHasConverged, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork, const int& totalNumberOfBatchIterations, const int& batchIteration);
+               PersistentRecords(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& allSolversAttainedStableStateInPreviousIteration, const bool& meshRefinementHasConverged, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork, const bool& refineArtificiallyOutsideDomain, const int& totalNumberOfBatchIterations, const int& batchIteration);
                
                
                inline int getMaxRefinementLevelAllowed() const 
@@ -8398,6 +8528,29 @@ namespace exahype {
                
                
                
+               inline bool getRefineArtificiallyOutsideDomain() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  short int mask = 1 << (9);
+   short int tmp = static_cast<short int>(_packedRecords0 & mask);
+   return (tmp != 0);
+               }
+               
+               
+               
+               inline void setRefineArtificiallyOutsideDomain(const bool& refineArtificiallyOutsideDomain) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  short int mask = 1 << (9);
+   _packedRecords0 = static_cast<short int>( refineArtificiallyOutsideDomain ? (_packedRecords0 | mask) : (_packedRecords0 & ~mask));
+               }
+               
+               
+               
                inline int getTotalNumberOfBatchIterations() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
@@ -8456,7 +8609,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               StatePacked(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& allSolversAttainedStableStateInPreviousIteration, const bool& meshRefinementHasConverged, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork, const int& totalNumberOfBatchIterations, const int& batchIteration);
+               StatePacked(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& allSolversAttainedStableStateInPreviousIteration, const bool& meshRefinementHasConverged, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork, const bool& refineArtificiallyOutsideDomain, const int& totalNumberOfBatchIterations, const int& batchIteration);
                
                /**
                 * Generated
@@ -8767,6 +8920,29 @@ namespace exahype {
  {
                   short int mask = 1 << (8);
    _persistentRecords._packedRecords0 = static_cast<short int>( subWorkerIsInvolvedInJoinOrFork ? (_persistentRecords._packedRecords0 | mask) : (_persistentRecords._packedRecords0 & ~mask));
+               }
+               
+               
+               
+               inline bool getRefineArtificiallyOutsideDomain() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  short int mask = 1 << (9);
+   short int tmp = static_cast<short int>(_persistentRecords._packedRecords0 & mask);
+   return (tmp != 0);
+               }
+               
+               
+               
+               inline void setRefineArtificiallyOutsideDomain(const bool& refineArtificiallyOutsideDomain) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  short int mask = 1 << (9);
+   _persistentRecords._packedRecords0 = static_cast<short int>( refineArtificiallyOutsideDomain ? (_persistentRecords._packedRecords0 | mask) : (_persistentRecords._packedRecords0 & ~mask));
                }
                
                
