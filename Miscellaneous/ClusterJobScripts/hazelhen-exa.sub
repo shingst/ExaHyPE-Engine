@@ -1,0 +1,42 @@
+#!/bin/bash
+#PBS -N dg_ccz4_tov_part
+#PBS -o ccz4_tov_part_dg.output
+#PBS -e ccz4_tov_part_dg.error
+#PBS -m abe
+#PBS -l nodes=4:ppn=24
+#PBS -l walltime=24:00:00
+#PBS -w /zhome/academic/HLRS/xfp/xfplbova/scratch/solver_comp/long_term_full/dg_lim
+
+echo "Preparing:"
+set -x                          # Output commands
+set -e                          # Abort on errors
+
+# check this one
+cd /zhome/academic/HLRS/xfp/xfplbova/scratch/solver_comp/long_term_full/dg_lim
+
+pwd
+hostname
+date
+
+echo "Environment:"
+
+. < (exa config hazelhen)
+
+#export CRAYPE_LINK_TYPE=dynamic
+#export MP_SINGLE_THREAD=no
+#export LOADLEVELER_VERSION=$LOADL_ACTIVE
+
+env | sort > ENVIRONMENT
+
+echo "Starting:"
+
+export KMP_AFFINITY=disabled
+
+#export MP_DEBUG_NOTIMEOUT=yes
+aprun -cc none -n 24 -N 6 -d 4 ./ExaHyPE-GRMHD ../Path-To-GRMHD.exahype
+
+echo "Stopping:"
+date
+
+touch segment.done
+echo "Done."

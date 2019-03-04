@@ -1,0 +1,53 @@
+#!/bin/bash
+#PBS -N dg_tov_full
+#PBS -o /zhome/academic/HLRS/xfp/xfplbova/scratch/solver_comp/long_term_full/dg_lim/tov_full_dg.output
+#PBS -e /zhome/academic/HLRS/xfp/xfplbova/scratch/solver_comp/long_term_full/dg_lim/tov_full_dg.error
+#PBS -m abe
+#PBS -l nodes=4:ppn=24
+#PBS -l walltime=24:00:00
+#PBS -w /zhome/academic/HLRS/xfp/xfplbova/scratch/solver_comp/long_term_full/dg_lim
+
+## This script comes from Luke. He also provided a submission script
+## in the ExaHyPE guidebook, appendix D.6 (page 165).
+
+echo "Preparing:"
+set -x                          # Output commands
+set -e                          # Abort on errors
+
+cd /zhome/academic/HLRS/xfp/xfplbova/scratch/solver_comp/long_term_full/dg_lim
+
+pwd
+hostname
+date
+
+echo "Environment:"
+
+module switch PrgEnv-cray PrgEnv-intel 
+module swap intel intel/18.0.1.163
+
+
+export TBB_PATH=$INTEL_PATH/tbb
+export TBB_INC="-I${TBB_PATH}/include"
+export TBB_SHLIB="-L${TBB_PATH}/lib/intel64/gcc4.7 -dynamic -ltbb" 
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$TBB_PATH/lib/intel64/gcc4.7
+
+#export CRAYPE_LINK_TYPE=dynamic
+
+#export MP_SINGLE_THREAD=no
+#export LOADLEVELER_VERSION=$LOADL_ACTIVE
+
+env | sort > ENVIRONMENT
+
+echo "Starting:"
+
+
+export KMP_AFFINITY=disabled
+
+#export MP_DEBUG_NOTIMEOUT=yes
+aprun -cc none -n 24 -N 6 -d 4 ./ExaHyPE-GRMHD GRMHD_Limiting_4x6x4.exahype2 > tov_full_dg.out
+
+echo "Stopping:"
+date
+
+touch segment.done
+echo "Done."
