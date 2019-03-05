@@ -5,22 +5,19 @@
 #PBS -m abe
 #PBS -l nodes=4:ppn=24
 #PBS -l walltime=24:00:00
-#PBS -w /zhome/academic/HLRS/xfp/xfplbova/scratch/solver_comp/long_term_full/dg_lim
+#PBS -w /zhome/academic/HLRS/xfp/xfpskoep/ExaHyPE/Engine/AstroApplications/CCZ4GRMHD
 
 echo "Preparing:"
 set -x                          # Output commands
 set -e                          # Abort on errors
 
-# check this one
-cd /zhome/academic/HLRS/xfp/xfplbova/scratch/solver_comp/long_term_full/dg_lim
-
 pwd
 hostname
 date
+which exa
 
-echo "Environment:"
-
-. < (exa config hazelhen)
+echo "Environment: "
+. <(exa config hazelhen)
 
 #export CRAYPE_LINK_TYPE=dynamic
 #export MP_SINGLE_THREAD=no
@@ -28,12 +25,17 @@ echo "Environment:"
 
 env | sort > ENVIRONMENT
 
+mkdir -p output vtk-output hdf5-output h5-output
+
+echo "ExaHyPE version check:"
+aprun -n1 ./ExaHyPE-CCZ4GRMHD -v
+
 echo "Starting:"
 
 export KMP_AFFINITY=disabled
 
 #export MP_DEBUG_NOTIMEOUT=yes
-aprun -cc none -n 24 -N 6 -d 4 ./ExaHyPE-GRMHD ../Path-To-GRMHD.exahype
+aprun -cc none -n 24 -N 6 -d 4 ./ExaHyPE-CCZ4GRMHD ../CCZ4GRMHD_DG.exahype
 
 echo "Stopping:"
 date
