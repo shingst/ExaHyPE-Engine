@@ -114,6 +114,8 @@ private:
    * In case any inside vertex is refined, refine any boundary vertex as well.
    * In case all inside vertices are unrefined, erase any boundary vertex.
    *
+   * This routine has to take the finest permitted resolution into account.
+   *
    * \note Thread-safe as reads and writes to the boundary vertices are locked.
    */
   void ensureRegularityAlongBoundary(

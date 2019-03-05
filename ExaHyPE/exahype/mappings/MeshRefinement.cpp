@@ -411,6 +411,7 @@ void exahype::mappings::MeshRefinement::ensureRegularityAlongBoundary(
           ==exahype::Vertex::Records::RefinementControl::Unrefined;
     enddforx
 
+	// @todo
     if (oneInnerVertexIsRefined) {
       dfor2(v)
         tarch::multicore::Lock lock(BoundarySemaphore);
@@ -428,6 +429,8 @@ void exahype::mappings::MeshRefinement::ensureRegularityAlongBoundary(
                 fineGridVerticesEnumerator.getCellSize(),
                 false)
             !=exahype::solvers::Solver::RefinementControl::Erase
+			&&
+        	_localState.mayRefine(true,fineGridVerticesEnumerator.getLevel())
         ) {
           fineGridVertices[fineGridVerticesEnumerator(v)].refine();
         }

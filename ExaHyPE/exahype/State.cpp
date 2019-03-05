@@ -122,6 +122,9 @@ void exahype::State::endedGridConstructionIteration(int finestGridLevelPossible)
   else if (isGridStationary()
       && _stateData.getMaxRefinementLevelAllowed()>finestGridLevelPossible
       && _stateData.getMaxRefinementLevelAllowed()>=0
+	  // @todo TW/DEC
+	  // we might want to roll this back to isGridStationary() or remove completely
+      && isGridBalanced()
       && !nodePoolHasGivenOutRankSizeLastQuery) {
     _stateData.setMaxRefinementLevelAllowed( -1 );
   }
@@ -147,7 +150,10 @@ void exahype::State::endedGridConstructionIteration(int finestGridLevelPossible)
   // one and give another try whether the grid adds more vertices.
   else if (
       (!nodePoolHasGivenOutRankSizeLastQuery)
-      && isGridStationary()
+	  // @todo TW/DEC
+	  // we might want to roll this back to isGridStationary()
+      && isGridBalanced()
+//	  && isGridStationary()
       && (_stateData.getMaxRefinementLevelAllowed()>=0)
   ) {
     _stateData.setMaxRefinementLevelAllowed(

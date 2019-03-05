@@ -47,7 +47,11 @@ class exahype::records::State {
 
   persistent packed parallelise bool             subWorkerIsInvolvedInJoinOrFork;
 
-  persistent packed parallelise bool             refineArtificiallyOutsideDomain;
+  enum BoundaryRefinement {
+    RefineArtificially, Nop, EraseAggressively
+  };
+
+  persistent packed parallelise BoundaryRefinement       refineArtificiallyOutsideDomain;
   #endif
 
   /**

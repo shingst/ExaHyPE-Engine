@@ -1285,7 +1285,7 @@ switch (mode) {
       }
       
       
-      exahype::records::State::PersistentRecords::PersistentRecords(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& allSolversAttainedStableStateInPreviousIteration, const bool& meshRefinementHasConverged, const tarch::la::Vector<DIMENSIONS,double>& minMeshWidth, const tarch::la::Vector<DIMENSIONS,double>& maxMeshWidth, const double& numberOfInnerVertices, const double& numberOfBoundaryVertices, const double& numberOfOuterVertices, const double& numberOfInnerCells, const double& numberOfOuterCells, const double& numberOfInnerLeafVertices, const double& numberOfBoundaryLeafVertices, const double& numberOfOuterLeafVertices, const double& numberOfInnerLeafCells, const double& numberOfOuterLeafCells, const int& maxLevel, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork, const bool& refineArtificiallyOutsideDomain, const int& totalNumberOfBatchIterations, const int& batchIteration):
+      exahype::records::State::PersistentRecords::PersistentRecords(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& allSolversAttainedStableStateInPreviousIteration, const bool& meshRefinementHasConverged, const tarch::la::Vector<DIMENSIONS,double>& minMeshWidth, const tarch::la::Vector<DIMENSIONS,double>& maxMeshWidth, const double& numberOfInnerVertices, const double& numberOfBoundaryVertices, const double& numberOfOuterVertices, const double& numberOfInnerCells, const double& numberOfOuterCells, const double& numberOfInnerLeafVertices, const double& numberOfBoundaryLeafVertices, const double& numberOfOuterLeafVertices, const double& numberOfInnerLeafCells, const double& numberOfOuterLeafCells, const int& maxLevel, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork, const BoundaryRefinement& refineArtificiallyOutsideDomain, const int& totalNumberOfBatchIterations, const int& batchIteration):
       _maxRefinementLevelAllowed(maxRefinementLevelAllowed),
       _verticalExchangeOfSolverDataRequired(verticalExchangeOfSolverDataRequired),
       _allSolversAttainedStableStateInPreviousIteration(allSolversAttainedStableStateInPreviousIteration),
@@ -1330,7 +1330,7 @@ switch (mode) {
       }
       
       
-      exahype::records::State::State(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& allSolversAttainedStableStateInPreviousIteration, const bool& meshRefinementHasConverged, const tarch::la::Vector<DIMENSIONS,double>& minMeshWidth, const tarch::la::Vector<DIMENSIONS,double>& maxMeshWidth, const double& numberOfInnerVertices, const double& numberOfBoundaryVertices, const double& numberOfOuterVertices, const double& numberOfInnerCells, const double& numberOfOuterCells, const double& numberOfInnerLeafVertices, const double& numberOfBoundaryLeafVertices, const double& numberOfOuterLeafVertices, const double& numberOfInnerLeafCells, const double& numberOfOuterLeafCells, const int& maxLevel, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork, const bool& refineArtificiallyOutsideDomain, const int& totalNumberOfBatchIterations, const int& batchIteration):
+      exahype::records::State::State(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& allSolversAttainedStableStateInPreviousIteration, const bool& meshRefinementHasConverged, const tarch::la::Vector<DIMENSIONS,double>& minMeshWidth, const tarch::la::Vector<DIMENSIONS,double>& maxMeshWidth, const double& numberOfInnerVertices, const double& numberOfBoundaryVertices, const double& numberOfOuterVertices, const double& numberOfInnerCells, const double& numberOfOuterCells, const double& numberOfInnerLeafVertices, const double& numberOfBoundaryLeafVertices, const double& numberOfOuterLeafVertices, const double& numberOfInnerLeafCells, const double& numberOfOuterLeafCells, const int& maxLevel, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork, const BoundaryRefinement& refineArtificiallyOutsideDomain, const int& totalNumberOfBatchIterations, const int& batchIteration):
       _persistentRecords(maxRefinementLevelAllowed, verticalExchangeOfSolverDataRequired, allSolversAttainedStableStateInPreviousIteration, meshRefinementHasConverged, minMeshWidth, maxMeshWidth, numberOfInnerVertices, numberOfBoundaryVertices, numberOfOuterVertices, numberOfInnerCells, numberOfOuterCells, numberOfInnerLeafVertices, numberOfBoundaryLeafVertices, numberOfOuterLeafVertices, numberOfInnerLeafCells, numberOfOuterLeafCells, maxLevel, hasRefined, hasTriggeredRefinementForNextIteration, hasErased, hasTriggeredEraseForNextIteration, hasChangedVertexOrCellState, hasModifiedGridInPreviousIteration, isTraversalInverted, reduceStateAndCell, couldNotEraseDueToDecompositionFlag, subWorkerIsInvolvedInJoinOrFork, refineArtificiallyOutsideDomain, totalNumberOfBatchIterations, batchIteration) {
          
       }
@@ -1338,6 +1338,18 @@ switch (mode) {
       
       exahype::records::State::~State() { }
       
+      std::string exahype::records::State::toString(const BoundaryRefinement& param) {
+         switch (param) {
+            case RefineArtificially: return "RefineArtificially";
+            case Nop: return "Nop";
+            case EraseAggressively: return "EraseAggressively";
+         }
+         return "undefined";
+      }
+      
+      std::string exahype::records::State::getBoundaryRefinementMapping() {
+         return "BoundaryRefinement(RefineArtificially=0,Nop=1,EraseAggressively=2)";
+      }
       
       
       std::string exahype::records::State::toString() const {
@@ -1410,7 +1422,7 @@ switch (mode) {
          out << ",";
          out << "subWorkerIsInvolvedInJoinOrFork:" << getSubWorkerIsInvolvedInJoinOrFork();
          out << ",";
-         out << "refineArtificiallyOutsideDomain:" << getRefineArtificiallyOutsideDomain();
+         out << "refineArtificiallyOutsideDomain:" << toString(getRefineArtificiallyOutsideDomain());
          out << ",";
          out << "totalNumberOfBatchIterations:" << getTotalNumberOfBatchIterations();
          out << ",";
@@ -1501,7 +1513,7 @@ switch (mode) {
                   , MPI_CXX_BOOL		 //reduceStateAndCell
                   , MPI_CXX_BOOL		 //couldNotEraseDueToDecompositionFlag
                   , MPI_CXX_BOOL		 //subWorkerIsInvolvedInJoinOrFork
-                  , MPI_CXX_BOOL		 //refineArtificiallyOutsideDomain
+                  , MPI_INT		 //refineArtificiallyOutsideDomain
                   #ifndef MPI2
                   , MPI_UB
                   #endif
@@ -1753,7 +1765,7 @@ switch (mode) {
                   , MPI_CXX_BOOL		 //reduceStateAndCell
                   , MPI_CXX_BOOL		 //couldNotEraseDueToDecompositionFlag
                   , MPI_CXX_BOOL		 //subWorkerIsInvolvedInJoinOrFork
-                  , MPI_CXX_BOOL		 //refineArtificiallyOutsideDomain
+                  , MPI_INT		 //refineArtificiallyOutsideDomain
                   , MPI_INT		 //totalNumberOfBatchIterations
                   , MPI_INT		 //batchIteration
                   #ifndef MPI2
@@ -2254,17 +2266,17 @@ switch (mode) {
       
       
       exahype::records::StatePacked::PersistentRecords::PersistentRecords() {
-         if ((10 >= (8 * sizeof(short int)))) {
+         if ((11 >= (8 * sizeof(short int)))) {
             std::cerr << "Packed-Type in " << __FILE__ << " too small. Either use bigger data type or append " << std::endl << std::endl;
             std::cerr << "  Packed-Type: short int hint-size no-of-bits;  " << std::endl << std::endl;
             std::cerr << "to your data type spec to guide DaStGen how many bits (no-of-bits) a data type has on your machine. DaStGen then can split up the bitfields into several attributes. " << std::endl; 
          }
-         assertion((10 < (8 * sizeof(short int))));
+         assertion((11 < (8 * sizeof(short int))));
          
       }
       
       
-      exahype::records::StatePacked::PersistentRecords::PersistentRecords(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& allSolversAttainedStableStateInPreviousIteration, const bool& meshRefinementHasConverged, const tarch::la::Vector<DIMENSIONS,double>& minMeshWidth, const tarch::la::Vector<DIMENSIONS,double>& maxMeshWidth, const double& numberOfInnerVertices, const double& numberOfBoundaryVertices, const double& numberOfOuterVertices, const double& numberOfInnerCells, const double& numberOfOuterCells, const double& numberOfInnerLeafVertices, const double& numberOfBoundaryLeafVertices, const double& numberOfOuterLeafVertices, const double& numberOfInnerLeafCells, const double& numberOfOuterLeafCells, const int& maxLevel, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork, const bool& refineArtificiallyOutsideDomain, const int& totalNumberOfBatchIterations, const int& batchIteration):
+      exahype::records::StatePacked::PersistentRecords::PersistentRecords(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& allSolversAttainedStableStateInPreviousIteration, const bool& meshRefinementHasConverged, const tarch::la::Vector<DIMENSIONS,double>& minMeshWidth, const tarch::la::Vector<DIMENSIONS,double>& maxMeshWidth, const double& numberOfInnerVertices, const double& numberOfBoundaryVertices, const double& numberOfOuterVertices, const double& numberOfInnerCells, const double& numberOfOuterCells, const double& numberOfInnerLeafVertices, const double& numberOfBoundaryLeafVertices, const double& numberOfOuterLeafVertices, const double& numberOfInnerLeafCells, const double& numberOfOuterLeafCells, const int& maxLevel, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork, const BoundaryRefinement& refineArtificiallyOutsideDomain, const int& totalNumberOfBatchIterations, const int& batchIteration):
       _maxRefinementLevelAllowed(maxRefinementLevelAllowed),
       _verticalExchangeOfSolverDataRequired(verticalExchangeOfSolverDataRequired),
       _allSolversAttainedStableStateInPreviousIteration(allSolversAttainedStableStateInPreviousIteration),
@@ -2295,51 +2307,59 @@ switch (mode) {
          setRefineArtificiallyOutsideDomain(refineArtificiallyOutsideDomain);
          setTotalNumberOfBatchIterations(totalNumberOfBatchIterations);
          setBatchIteration(batchIteration);
-         if ((10 >= (8 * sizeof(short int)))) {
+         if ((11 >= (8 * sizeof(short int)))) {
             std::cerr << "Packed-Type in " << __FILE__ << " too small. Either use bigger data type or append " << std::endl << std::endl;
             std::cerr << "  Packed-Type: short int hint-size no-of-bits;  " << std::endl << std::endl;
             std::cerr << "to your data type spec to guide DaStGen how many bits (no-of-bits) a data type has on your machine. DaStGen then can split up the bitfields into several attributes. " << std::endl; 
          }
-         assertion((10 < (8 * sizeof(short int))));
+         assertion((11 < (8 * sizeof(short int))));
          
       }
       
       exahype::records::StatePacked::StatePacked() {
-         if ((10 >= (8 * sizeof(short int)))) {
+         if ((11 >= (8 * sizeof(short int)))) {
             std::cerr << "Packed-Type in " << __FILE__ << " too small. Either use bigger data type or append " << std::endl << std::endl;
             std::cerr << "  Packed-Type: short int hint-size no-of-bits;  " << std::endl << std::endl;
             std::cerr << "to your data type spec to guide DaStGen how many bits (no-of-bits) a data type has on your machine. DaStGen then can split up the bitfields into several attributes. " << std::endl; 
          }
-         assertion((10 < (8 * sizeof(short int))));
+         assertion((11 < (8 * sizeof(short int))));
          
       }
       
       
       exahype::records::StatePacked::StatePacked(const PersistentRecords& persistentRecords):
       _persistentRecords(persistentRecords._maxRefinementLevelAllowed, persistentRecords._verticalExchangeOfSolverDataRequired, persistentRecords._allSolversAttainedStableStateInPreviousIteration, persistentRecords._meshRefinementHasConverged, persistentRecords._minMeshWidth, persistentRecords._maxMeshWidth, persistentRecords._numberOfInnerVertices, persistentRecords._numberOfBoundaryVertices, persistentRecords._numberOfOuterVertices, persistentRecords._numberOfInnerCells, persistentRecords._numberOfOuterCells, persistentRecords._numberOfInnerLeafVertices, persistentRecords._numberOfBoundaryLeafVertices, persistentRecords._numberOfOuterLeafVertices, persistentRecords._numberOfInnerLeafCells, persistentRecords._numberOfOuterLeafCells, persistentRecords._maxLevel, persistentRecords.getHasRefined(), persistentRecords.getHasTriggeredRefinementForNextIteration(), persistentRecords.getHasErased(), persistentRecords.getHasTriggeredEraseForNextIteration(), persistentRecords.getHasChangedVertexOrCellState(), persistentRecords.getHasModifiedGridInPreviousIteration(), persistentRecords._isTraversalInverted, persistentRecords.getReduceStateAndCell(), persistentRecords.getCouldNotEraseDueToDecompositionFlag(), persistentRecords.getSubWorkerIsInvolvedInJoinOrFork(), persistentRecords.getRefineArtificiallyOutsideDomain(), persistentRecords.getTotalNumberOfBatchIterations(), persistentRecords.getBatchIteration()) {
-         if ((10 >= (8 * sizeof(short int)))) {
+         if ((11 >= (8 * sizeof(short int)))) {
             std::cerr << "Packed-Type in " << __FILE__ << " too small. Either use bigger data type or append " << std::endl << std::endl;
             std::cerr << "  Packed-Type: short int hint-size no-of-bits;  " << std::endl << std::endl;
             std::cerr << "to your data type spec to guide DaStGen how many bits (no-of-bits) a data type has on your machine. DaStGen then can split up the bitfields into several attributes. " << std::endl; 
          }
-         assertion((10 < (8 * sizeof(short int))));
+         assertion((11 < (8 * sizeof(short int))));
          
       }
       
       
-      exahype::records::StatePacked::StatePacked(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& allSolversAttainedStableStateInPreviousIteration, const bool& meshRefinementHasConverged, const tarch::la::Vector<DIMENSIONS,double>& minMeshWidth, const tarch::la::Vector<DIMENSIONS,double>& maxMeshWidth, const double& numberOfInnerVertices, const double& numberOfBoundaryVertices, const double& numberOfOuterVertices, const double& numberOfInnerCells, const double& numberOfOuterCells, const double& numberOfInnerLeafVertices, const double& numberOfBoundaryLeafVertices, const double& numberOfOuterLeafVertices, const double& numberOfInnerLeafCells, const double& numberOfOuterLeafCells, const int& maxLevel, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork, const bool& refineArtificiallyOutsideDomain, const int& totalNumberOfBatchIterations, const int& batchIteration):
+      exahype::records::StatePacked::StatePacked(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& allSolversAttainedStableStateInPreviousIteration, const bool& meshRefinementHasConverged, const tarch::la::Vector<DIMENSIONS,double>& minMeshWidth, const tarch::la::Vector<DIMENSIONS,double>& maxMeshWidth, const double& numberOfInnerVertices, const double& numberOfBoundaryVertices, const double& numberOfOuterVertices, const double& numberOfInnerCells, const double& numberOfOuterCells, const double& numberOfInnerLeafVertices, const double& numberOfBoundaryLeafVertices, const double& numberOfOuterLeafVertices, const double& numberOfInnerLeafCells, const double& numberOfOuterLeafCells, const int& maxLevel, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork, const BoundaryRefinement& refineArtificiallyOutsideDomain, const int& totalNumberOfBatchIterations, const int& batchIteration):
       _persistentRecords(maxRefinementLevelAllowed, verticalExchangeOfSolverDataRequired, allSolversAttainedStableStateInPreviousIteration, meshRefinementHasConverged, minMeshWidth, maxMeshWidth, numberOfInnerVertices, numberOfBoundaryVertices, numberOfOuterVertices, numberOfInnerCells, numberOfOuterCells, numberOfInnerLeafVertices, numberOfBoundaryLeafVertices, numberOfOuterLeafVertices, numberOfInnerLeafCells, numberOfOuterLeafCells, maxLevel, hasRefined, hasTriggeredRefinementForNextIteration, hasErased, hasTriggeredEraseForNextIteration, hasChangedVertexOrCellState, hasModifiedGridInPreviousIteration, isTraversalInverted, reduceStateAndCell, couldNotEraseDueToDecompositionFlag, subWorkerIsInvolvedInJoinOrFork, refineArtificiallyOutsideDomain, totalNumberOfBatchIterations, batchIteration) {
-         if ((10 >= (8 * sizeof(short int)))) {
+         if ((11 >= (8 * sizeof(short int)))) {
             std::cerr << "Packed-Type in " << __FILE__ << " too small. Either use bigger data type or append " << std::endl << std::endl;
             std::cerr << "  Packed-Type: short int hint-size no-of-bits;  " << std::endl << std::endl;
             std::cerr << "to your data type spec to guide DaStGen how many bits (no-of-bits) a data type has on your machine. DaStGen then can split up the bitfields into several attributes. " << std::endl; 
          }
-         assertion((10 < (8 * sizeof(short int))));
+         assertion((11 < (8 * sizeof(short int))));
          
       }
       
       
       exahype::records::StatePacked::~StatePacked() { }
+      
+      std::string exahype::records::StatePacked::toString(const BoundaryRefinement& param) {
+         return exahype::records::State::toString(param);
+      }
+      
+      std::string exahype::records::StatePacked::getBoundaryRefinementMapping() {
+         return exahype::records::State::getBoundaryRefinementMapping();
+      }
       
       
       
@@ -2413,7 +2433,7 @@ switch (mode) {
          out << ",";
          out << "subWorkerIsInvolvedInJoinOrFork:" << getSubWorkerIsInvolvedInJoinOrFork();
          out << ",";
-         out << "refineArtificiallyOutsideDomain:" << getRefineArtificiallyOutsideDomain();
+         out << "refineArtificiallyOutsideDomain:" << toString(getRefineArtificiallyOutsideDomain());
          out << ",";
          out << "totalNumberOfBatchIterations:" << getTotalNumberOfBatchIterations();
          out << ",";
@@ -4901,7 +4921,7 @@ switch (mode) {
       }
       
       
-      exahype::records::State::PersistentRecords::PersistentRecords(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& allSolversAttainedStableStateInPreviousIteration, const bool& meshRefinementHasConverged, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork, const bool& refineArtificiallyOutsideDomain, const int& totalNumberOfBatchIterations, const int& batchIteration):
+      exahype::records::State::PersistentRecords::PersistentRecords(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& allSolversAttainedStableStateInPreviousIteration, const bool& meshRefinementHasConverged, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork, const BoundaryRefinement& refineArtificiallyOutsideDomain, const int& totalNumberOfBatchIterations, const int& batchIteration):
       _maxRefinementLevelAllowed(maxRefinementLevelAllowed),
       _verticalExchangeOfSolverDataRequired(verticalExchangeOfSolverDataRequired),
       _allSolversAttainedStableStateInPreviousIteration(allSolversAttainedStableStateInPreviousIteration),
@@ -4933,7 +4953,7 @@ switch (mode) {
       }
       
       
-      exahype::records::State::State(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& allSolversAttainedStableStateInPreviousIteration, const bool& meshRefinementHasConverged, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork, const bool& refineArtificiallyOutsideDomain, const int& totalNumberOfBatchIterations, const int& batchIteration):
+      exahype::records::State::State(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& allSolversAttainedStableStateInPreviousIteration, const bool& meshRefinementHasConverged, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork, const BoundaryRefinement& refineArtificiallyOutsideDomain, const int& totalNumberOfBatchIterations, const int& batchIteration):
       _persistentRecords(maxRefinementLevelAllowed, verticalExchangeOfSolverDataRequired, allSolversAttainedStableStateInPreviousIteration, meshRefinementHasConverged, hasRefined, hasTriggeredRefinementForNextIteration, hasErased, hasTriggeredEraseForNextIteration, hasChangedVertexOrCellState, hasModifiedGridInPreviousIteration, isTraversalInverted, reduceStateAndCell, couldNotEraseDueToDecompositionFlag, subWorkerIsInvolvedInJoinOrFork, refineArtificiallyOutsideDomain, totalNumberOfBatchIterations, batchIteration) {
          
       }
@@ -4941,6 +4961,18 @@ switch (mode) {
       
       exahype::records::State::~State() { }
       
+      std::string exahype::records::State::toString(const BoundaryRefinement& param) {
+         switch (param) {
+            case RefineArtificially: return "RefineArtificially";
+            case Nop: return "Nop";
+            case EraseAggressively: return "EraseAggressively";
+         }
+         return "undefined";
+      }
+      
+      std::string exahype::records::State::getBoundaryRefinementMapping() {
+         return "BoundaryRefinement(RefineArtificially=0,Nop=1,EraseAggressively=2)";
+      }
       
       
       std::string exahype::records::State::toString() const {
@@ -4979,7 +5011,7 @@ switch (mode) {
          out << ",";
          out << "subWorkerIsInvolvedInJoinOrFork:" << getSubWorkerIsInvolvedInJoinOrFork();
          out << ",";
-         out << "refineArtificiallyOutsideDomain:" << getRefineArtificiallyOutsideDomain();
+         out << "refineArtificiallyOutsideDomain:" << toString(getRefineArtificiallyOutsideDomain());
          out << ",";
          out << "totalNumberOfBatchIterations:" << getTotalNumberOfBatchIterations();
          out << ",";
@@ -5044,7 +5076,7 @@ switch (mode) {
                   , MPI_CXX_BOOL		 //reduceStateAndCell
                   , MPI_CXX_BOOL		 //couldNotEraseDueToDecompositionFlag
                   , MPI_CXX_BOOL		 //subWorkerIsInvolvedInJoinOrFork
-                  , MPI_CXX_BOOL		 //refineArtificiallyOutsideDomain
+                  , MPI_INT		 //refineArtificiallyOutsideDomain
                   #ifndef MPI2
                   , MPI_UB
                   #endif
@@ -5205,7 +5237,7 @@ switch (mode) {
                   , MPI_CXX_BOOL		 //reduceStateAndCell
                   , MPI_CXX_BOOL		 //couldNotEraseDueToDecompositionFlag
                   , MPI_CXX_BOOL		 //subWorkerIsInvolvedInJoinOrFork
-                  , MPI_CXX_BOOL		 //refineArtificiallyOutsideDomain
+                  , MPI_INT		 //refineArtificiallyOutsideDomain
                   , MPI_INT		 //totalNumberOfBatchIterations
                   , MPI_INT		 //batchIteration
                   #ifndef MPI2
@@ -5628,17 +5660,17 @@ switch (mode) {
       
       
       exahype::records::StatePacked::PersistentRecords::PersistentRecords() {
-         if ((10 >= (8 * sizeof(short int)))) {
+         if ((11 >= (8 * sizeof(short int)))) {
             std::cerr << "Packed-Type in " << __FILE__ << " too small. Either use bigger data type or append " << std::endl << std::endl;
             std::cerr << "  Packed-Type: short int hint-size no-of-bits;  " << std::endl << std::endl;
             std::cerr << "to your data type spec to guide DaStGen how many bits (no-of-bits) a data type has on your machine. DaStGen then can split up the bitfields into several attributes. " << std::endl; 
          }
-         assertion((10 < (8 * sizeof(short int))));
+         assertion((11 < (8 * sizeof(short int))));
          
       }
       
       
-      exahype::records::StatePacked::PersistentRecords::PersistentRecords(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& allSolversAttainedStableStateInPreviousIteration, const bool& meshRefinementHasConverged, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork, const bool& refineArtificiallyOutsideDomain, const int& totalNumberOfBatchIterations, const int& batchIteration):
+      exahype::records::StatePacked::PersistentRecords::PersistentRecords(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& allSolversAttainedStableStateInPreviousIteration, const bool& meshRefinementHasConverged, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork, const BoundaryRefinement& refineArtificiallyOutsideDomain, const int& totalNumberOfBatchIterations, const int& batchIteration):
       _maxRefinementLevelAllowed(maxRefinementLevelAllowed),
       _verticalExchangeOfSolverDataRequired(verticalExchangeOfSolverDataRequired),
       _allSolversAttainedStableStateInPreviousIteration(allSolversAttainedStableStateInPreviousIteration),
@@ -5656,51 +5688,59 @@ switch (mode) {
          setRefineArtificiallyOutsideDomain(refineArtificiallyOutsideDomain);
          setTotalNumberOfBatchIterations(totalNumberOfBatchIterations);
          setBatchIteration(batchIteration);
-         if ((10 >= (8 * sizeof(short int)))) {
+         if ((11 >= (8 * sizeof(short int)))) {
             std::cerr << "Packed-Type in " << __FILE__ << " too small. Either use bigger data type or append " << std::endl << std::endl;
             std::cerr << "  Packed-Type: short int hint-size no-of-bits;  " << std::endl << std::endl;
             std::cerr << "to your data type spec to guide DaStGen how many bits (no-of-bits) a data type has on your machine. DaStGen then can split up the bitfields into several attributes. " << std::endl; 
          }
-         assertion((10 < (8 * sizeof(short int))));
+         assertion((11 < (8 * sizeof(short int))));
          
       }
       
       exahype::records::StatePacked::StatePacked() {
-         if ((10 >= (8 * sizeof(short int)))) {
+         if ((11 >= (8 * sizeof(short int)))) {
             std::cerr << "Packed-Type in " << __FILE__ << " too small. Either use bigger data type or append " << std::endl << std::endl;
             std::cerr << "  Packed-Type: short int hint-size no-of-bits;  " << std::endl << std::endl;
             std::cerr << "to your data type spec to guide DaStGen how many bits (no-of-bits) a data type has on your machine. DaStGen then can split up the bitfields into several attributes. " << std::endl; 
          }
-         assertion((10 < (8 * sizeof(short int))));
+         assertion((11 < (8 * sizeof(short int))));
          
       }
       
       
       exahype::records::StatePacked::StatePacked(const PersistentRecords& persistentRecords):
       _persistentRecords(persistentRecords._maxRefinementLevelAllowed, persistentRecords._verticalExchangeOfSolverDataRequired, persistentRecords._allSolversAttainedStableStateInPreviousIteration, persistentRecords._meshRefinementHasConverged, persistentRecords.getHasRefined(), persistentRecords.getHasTriggeredRefinementForNextIteration(), persistentRecords.getHasErased(), persistentRecords.getHasTriggeredEraseForNextIteration(), persistentRecords.getHasChangedVertexOrCellState(), persistentRecords.getHasModifiedGridInPreviousIteration(), persistentRecords._isTraversalInverted, persistentRecords.getReduceStateAndCell(), persistentRecords.getCouldNotEraseDueToDecompositionFlag(), persistentRecords.getSubWorkerIsInvolvedInJoinOrFork(), persistentRecords.getRefineArtificiallyOutsideDomain(), persistentRecords.getTotalNumberOfBatchIterations(), persistentRecords.getBatchIteration()) {
-         if ((10 >= (8 * sizeof(short int)))) {
+         if ((11 >= (8 * sizeof(short int)))) {
             std::cerr << "Packed-Type in " << __FILE__ << " too small. Either use bigger data type or append " << std::endl << std::endl;
             std::cerr << "  Packed-Type: short int hint-size no-of-bits;  " << std::endl << std::endl;
             std::cerr << "to your data type spec to guide DaStGen how many bits (no-of-bits) a data type has on your machine. DaStGen then can split up the bitfields into several attributes. " << std::endl; 
          }
-         assertion((10 < (8 * sizeof(short int))));
+         assertion((11 < (8 * sizeof(short int))));
          
       }
       
       
-      exahype::records::StatePacked::StatePacked(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& allSolversAttainedStableStateInPreviousIteration, const bool& meshRefinementHasConverged, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork, const bool& refineArtificiallyOutsideDomain, const int& totalNumberOfBatchIterations, const int& batchIteration):
+      exahype::records::StatePacked::StatePacked(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& allSolversAttainedStableStateInPreviousIteration, const bool& meshRefinementHasConverged, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork, const BoundaryRefinement& refineArtificiallyOutsideDomain, const int& totalNumberOfBatchIterations, const int& batchIteration):
       _persistentRecords(maxRefinementLevelAllowed, verticalExchangeOfSolverDataRequired, allSolversAttainedStableStateInPreviousIteration, meshRefinementHasConverged, hasRefined, hasTriggeredRefinementForNextIteration, hasErased, hasTriggeredEraseForNextIteration, hasChangedVertexOrCellState, hasModifiedGridInPreviousIteration, isTraversalInverted, reduceStateAndCell, couldNotEraseDueToDecompositionFlag, subWorkerIsInvolvedInJoinOrFork, refineArtificiallyOutsideDomain, totalNumberOfBatchIterations, batchIteration) {
-         if ((10 >= (8 * sizeof(short int)))) {
+         if ((11 >= (8 * sizeof(short int)))) {
             std::cerr << "Packed-Type in " << __FILE__ << " too small. Either use bigger data type or append " << std::endl << std::endl;
             std::cerr << "  Packed-Type: short int hint-size no-of-bits;  " << std::endl << std::endl;
             std::cerr << "to your data type spec to guide DaStGen how many bits (no-of-bits) a data type has on your machine. DaStGen then can split up the bitfields into several attributes. " << std::endl; 
          }
-         assertion((10 < (8 * sizeof(short int))));
+         assertion((11 < (8 * sizeof(short int))));
          
       }
       
       
       exahype::records::StatePacked::~StatePacked() { }
+      
+      std::string exahype::records::StatePacked::toString(const BoundaryRefinement& param) {
+         return exahype::records::State::toString(param);
+      }
+      
+      std::string exahype::records::StatePacked::getBoundaryRefinementMapping() {
+         return exahype::records::State::getBoundaryRefinementMapping();
+      }
       
       
       
@@ -5740,7 +5780,7 @@ switch (mode) {
          out << ",";
          out << "subWorkerIsInvolvedInJoinOrFork:" << getSubWorkerIsInvolvedInJoinOrFork();
          out << ",";
-         out << "refineArtificiallyOutsideDomain:" << getRefineArtificiallyOutsideDomain();
+         out << "refineArtificiallyOutsideDomain:" << toString(getRefineArtificiallyOutsideDomain());
          out << ",";
          out << "totalNumberOfBatchIterations:" << getTotalNumberOfBatchIterations();
          out << ",";
