@@ -31,7 +31,7 @@ int exahype::State::NumberOfBatchIterations = 1;
 
 exahype::State::State() : Base() {
   _stateData.setMaxRefinementLevelAllowed(3);
-  // I want the code to lb more aggressively
+  // I want the code to lb more aggressively, so it should not wait more than
   Base::IterationsInBetweenRebalancing = 2;
 }
 
@@ -154,6 +154,7 @@ void exahype::State::endedGridConstructionIteration(int finestGridLevelPossible)
         _stateData.getMaxRefinementLevelAllowed()+1);
       stationarySweeps=0;
 //	}
+      //IterationsInBetweenRebalancing
   }
 }
 

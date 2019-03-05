@@ -200,9 +200,13 @@ void exahype::mappings::MeshRefinement::endIteration(exahype::State& solverState
             &&
             !StillInRefiningMode
             &&
-            (IsInitialMeshRefinement ||
-              (_stableIterationsInARow > 1 && // experimentally found
+            (IsInitialMeshRefinement || solverState.getAllSolversAttainedStableStateInPreviousIteration());
+    // @todo _stableIterationsInARow rausschmeissen
+/*
+              (
+            		  //_stableIterationsInARow > 1 && // experimentally found
                solverState.getAllSolversAttainedStableStateInPreviousIteration()));
+*/
     if (!meshRefinementHasConverged) {
       logInfo( "endIteration(...)",
                "grid construction not yet finished. grid balanced=" << solverState.isGridBalanced() <<
