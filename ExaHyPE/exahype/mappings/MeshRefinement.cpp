@@ -198,8 +198,6 @@ void exahype::mappings::MeshRefinement::endIteration(exahype::State& solverState
     const bool meshRefinementHasConverged =
             solverState.isGridBalanced()
             &&
-            solverState.isGridStationary()
-            &&
             !StillInRefiningMode
             &&
             (IsInitialMeshRefinement ||
