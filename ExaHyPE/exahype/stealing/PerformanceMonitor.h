@@ -25,6 +25,8 @@ class exahype::stealing::PerformanceMonitor {
     // status flag, if false then a rank has terminated locally
     bool _isStarted;
 
+    bool _terminatedGlobally;
+
     double *_currentWaitingTimesSnapshot; //length nranks*nranks
     //int *_currentWaitingTimesReceiveBuffer; //length nrank*nranks
     //int *_currentWaitingTimesSendBuffer; //length nranks

@@ -14,7 +14,7 @@
 #include "exahype/stealing/StealingManager.h"
 
 
-#define TERMINATE_SIGNAL -1
+#define TERMINATE_SIGNAL -1.0
 
 tarch::logging::Log exahype::stealing::PerformanceMonitor::_log( "exahype::stealing::PerformanceMonitor" );
 
@@ -27,7 +27,8 @@ exahype::stealing::PerformanceMonitor::PerformanceMonitor() :
     _currentTasks(0),
     _currentTasksSendBuffer(0),
     _remainingTasks(0),
-    _tasksPerTimestep(0) {
+    _tasksPerTimestep(0),
+    _terminatedGlobally(false) {
 
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
 
@@ -44,8 +45,8 @@ exahype::stealing::PerformanceMonitor::PerformanceMonitor() :
   //_currentBlacklistSendBuffer = new double[nnodes];
   _currentBlacklist = new double[nnodes];
 
-  _currentFusedDataSendBuffer = new double[nnodes+nnodes];
-  _currentFusedDataReceiveBuffer = new double[nnodes*(nnodes+nnodes)];
+  _currentFusedDataSendBuffer = new double[nnodes+nnodes+1];
+  _currentFusedDataReceiveBuffer = new double[nnodes*(nnodes+nnodes+1)];
 
   //std::fill(_currentTasksSnapshot, _currentTasksSnapshot+nnodes, 0);
   //std::fill(_currentTasksReceiveBuffer, _currentTasksReceiveBuffer+nnodes, 0);
@@ -60,8 +61,8 @@ exahype::stealing::PerformanceMonitor::PerformanceMonitor() :
   //std::fill(_currentBlacklistSendBuffer, _currentBlacklistSendBuffer+nnodes, 0);
   std::fill(_currentBlacklist, _currentBlacklist+nnodes, 0);
 
-  std::fill(_currentFusedDataSendBuffer, _currentFusedDataSendBuffer+nnodes+nnodes, 0);
-  std::fill(_currentFusedDataReceiveBuffer, _currentFusedDataReceiveBuffer+nnodes*(nnodes+nnodes), 0);
+  std::fill(_currentFusedDataSendBuffer, _currentFusedDataSendBuffer+nnodes+nnodes+1, 0);
+  std::fill(_currentFusedDataReceiveBuffer, _currentFusedDataReceiveBuffer+nnodes*(nnodes+nnodes+1), 0);
 }
 
 exahype::stealing::PerformanceMonitor::~PerformanceMonitor() {
@@ -343,14 +344,15 @@ void exahype::stealing::PerformanceMonitor::progressGather() {
   }
  
   if(completed_fused) {
+    bool newGlobalTerminationStatus = true;
     double *newSnapshot = new double[nnodes];
     std::fill(&newSnapshot[0], &newSnapshot[nnodes], 0);
     //logInfo("progressGather", " got new fused result" );
     for(int i=0; i<nnodes; i++) {
        //copy waiting times
-       int offsetWaitingTimes = i*(nnodes+nnodes);
+       int offsetWaitingTimes = i*(nnodes+nnodes+1);
        std::copy(&_currentFusedDataReceiveBuffer[offsetWaitingTimes], &_currentFusedDataReceiveBuffer[offsetWaitingTimes+nnodes], &_currentWaitingTimesSnapshot[i*nnodes]);
-       int offsetBlacklistValues = i*(nnodes+nnodes)+nnodes;
+       int offsetBlacklistValues = i*(nnodes+nnodes+1)+nnodes;
 
        //reduce blacklist values
        for(int j=0; j<nnodes; j++) {
@@ -358,8 +360,15 @@ void exahype::stealing::PerformanceMonitor::progressGather() {
       //     logInfo("reduceBVal()"," val "<<_currentFusedDataReceiveBuffer[offsetBlacklistValues+j]<< " for "<< j);
          newSnapshot[j] += _currentFusedDataReceiveBuffer[offsetBlacklistValues+j];
        }
-    }
 
+       //reduce termination status
+       newGlobalTerminationStatus &= (_currentFusedDataReceiveBuffer[offsetBlacklistValues+nnodes]==TERMINATE_SIGNAL);
+    }
+    _terminatedGlobally = newGlobalTerminationStatus;
+    if(_terminatedGlobally)
+     logInfo("progressStealing", "received terminated"<<_terminatedGlobally);
+
+ 
     for(int j=0; j<nnodes; j++) {
        _currentBlacklistSnapshot[j] = newSnapshot[j];
        //logInfo("afterReduction()"," val "<<_currentBlacklistSnapshot[j]<< " for "<< j);
@@ -370,7 +379,7 @@ void exahype::stealing::PerformanceMonitor::progressGather() {
   }
 
 
-  if(_fusedGatherRequest==MPI_REQUEST_NULL) {
+  if(_fusedGatherRequest==MPI_REQUEST_NULL && !isGloballyTerminated()) {
     postFusedRequest();
   }
 
@@ -422,20 +431,21 @@ void exahype::stealing::PerformanceMonitor::postFusedRequest() {
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
   std::copy(&_currentWaitingTimes[0], &_currentWaitingTimes[nnodes], &_currentFusedDataSendBuffer[0]);
   std::copy(&_currentBlacklist[0], &_currentBlacklist[nnodes], &_currentFusedDataSendBuffer[nnodes]);
+  _currentFusedDataSendBuffer[2*nnodes]= !_isStarted ? TERMINATE_SIGNAL : 0; //0 means running   
 
   assert(_fusedGatherRequest==MPI_REQUEST_NULL);
  
   //for(int i=0; i< nnodes*2;i++)
   //  logInfo("postFusedrequest()", "send buffer "<<_currentFusedDataSendBuffer[i]);
 
-  int err = MPI_Iallgather(&_currentFusedDataSendBuffer[0], 2*nnodes, MPI_DOUBLE, &_currentFusedDataReceiveBuffer[0],
-                   2*nnodes, MPI_DOUBLE, exahype::stealing::StealingManager::getInstance().getMPICommunicator(),
+  int err = MPI_Iallgather(&_currentFusedDataSendBuffer[0], 2*nnodes+1, MPI_DOUBLE, &_currentFusedDataReceiveBuffer[0],
+                   2*nnodes+1, MPI_DOUBLE, exahype::stealing::StealingManager::getInstance().getMPICommunicator(),
                    &_fusedGatherRequest);// assert(err==MPI_SUCCESS);
 
 }
 
 bool exahype::stealing::PerformanceMonitor::isGloballyTerminated() {
-  static bool globalTermination=false;
+/*  static bool globalTermination=false;
   if(globalTermination) return true;
   if(_isStarted) return false;
 
@@ -443,8 +453,8 @@ bool exahype::stealing::PerformanceMonitor::isGloballyTerminated() {
   for(int i=0; i<tarch::parallel::Node::getInstance().getNumberOfNodes(); i++)
     result &= _currentTasksReceiveBuffer[i]==TERMINATE_SIGNAL;
 
-  globalTermination=result;
-  return globalTermination;
+  globalTermination=result; */
+  return _terminatedGlobally;
 }
 
 #endif
