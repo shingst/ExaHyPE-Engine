@@ -158,8 +158,12 @@ void exahype::mappings::MeshRefinement::beginIteration( exahype::State& solverSt
   }
   if ( StillInRefiningMode &&
       _stableIterationsInARow >
-         (exahype::solvers::Solver::getMaximumAdaptiveMeshLevelOfAllSolvers() +
-          std::max(exahype::solvers::Solver::getMaxRefinementStatus(),1)) ) { // all found experimentally; not completely understood yet
+         (
+           exahype::solvers::Solver::getMaximumAdaptiveMeshDepthOfAllSolvers()
+           - exahype::solvers::Solver::getCoarsestMeshLevelOfAllSolvers()
+           + std::max(exahype::solvers::Solver::getMaxRefinementStatus(),1)
+         )
+  ) { // all found experimentally; not completely understood yet
     StillInRefiningMode = false;
     _stableIterationsInARow=0;
     if (!IsInitialMeshRefinement) {
