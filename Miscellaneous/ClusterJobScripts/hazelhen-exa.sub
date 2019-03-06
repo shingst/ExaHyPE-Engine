@@ -35,7 +35,16 @@ echo "Starting:"
 export KMP_AFFINITY=disabled
 
 #export MP_DEBUG_NOTIMEOUT=yes
-aprun -cc none -n 24 -N 6 -d 4 ./ExaHyPE-CCZ4GRMHD ../CCZ4GRMHD_DG.exahype
+
+# This is what Luke was using, probably one node:
+APRUN="aprun -cc none -n 24 -N 6 -d 4"
+
+# This is what I will use, 30 nodes, 30 MPI ranks, 24 threads per rank.
+APRUN="aprun -cc none -n 30 -N 1 -d 24"
+
+echo "APRUN=$APRUN"
+
+$APRUN ./ExaHyPE-CCZ4GRMHD ../CCZ4GRMHD_DG.exahype
 
 echo "Stopping:"
 date
