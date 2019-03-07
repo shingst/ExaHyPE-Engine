@@ -252,7 +252,7 @@ def output_ascii(npdata, outputfname, **args):
 		fmt = args["nformat"],
 		#fmt=([args["nformat"]]*len(npdata.dtype.names) if isinstance(args['nformat'],str) else args["nformat"]),
 		header=','.join(['"%s"' % s for s in npdata.dtype.names]),
-		comments=''
+		comments='# '
 	)
 
 @write_formats.register('info', desc='Informative textual output')

@@ -147,6 +147,27 @@ def vectorize_concatenate(func):
 			return func(*args, **kwargs)
 	return func_wrapper
 
+def find_nearest(array, value):
+	"Comes from https://stackoverflow.com/a/2566508/1656042"
+	array = np.asarray(array)
+	idx = (np.abs(array - value)).argmin()
+	return array[idx]
+
+def close_mask(array, value):
+	"""
+	Will give a mask of all entries which are as close to the required value
+	as the nearest value in the list, but with the same sign. Example:
+	
+	>>> close_mask([1,2,-2,-1], 0)
+	array([ True, False, False, False])
+	"""
+	array = np.asarray(array)
+	nearest = find_nearest(array, value)
+	if nearest < value:
+		return (nearest <= array)&(array <= value)
+	else:
+		return (value <= array)&(array <= nearest)
+
 class ExaVerbosity:
 	"""
 	ExaVerbosity manages parsing and applying logging related arguments.
