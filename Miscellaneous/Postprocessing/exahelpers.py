@@ -128,8 +128,13 @@ def vectorize_concatenate(func):
 				return func(fnames[0], *args_without_fname, **kwargs)
 
 			outputs = [func(f, *args_without_fname, **kwargs) for i,f in enumerate(fnames)]
-			# vstack does not really work (any more, for some reason) for my
-			# recarrays.
+			# filter out "None" outputs which are invalid
+			outputs = [o for o in outputs if o is not None]
+			if len(outputs) == 0:
+				logger.error("There where no data which can be concatenated.")
+				return None
+			# vstack does not really work (any more, for some reason) for my recarrays.
+			# Note: This works for my old test data pretty well.
 			whateverworks = 1
 			if whateverworks == 1:
 				return np.vstack(tuple(outputs)).flatten()

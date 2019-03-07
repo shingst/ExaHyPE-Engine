@@ -122,6 +122,8 @@ def read_exahype_cartesian_vertices(fname):
 	logger.info("Exporting scalar fields "+str(column_names))
 
 	ret = datasets.transpose()
+	assert ret.shape[1] == len(column_names), "The shape of the datasets is broken. Sorry for that. Please rerun this script with the python debugger to look into the data."
+	#logger.info("Shape of return value is %s; column names are %s" % (ret.shape, ",".join(column_names)))
 	#numpy.float32
 	structured_array_dtype = np.dtype([ (k, ret.dtype) for k in column_names ])
 	ret.dtype = structured_array_dtype
@@ -245,7 +247,7 @@ def output_ascii(npdata, outputfname, **args):
 	logger.info("This may take a while. Have a coffee. Or watch your output growing.")
 	np.savetxt(
 		fname=outputfname,
-		X=npdata.view("<f4"), # convert recarray to regular array
+		X=npdata, # Weirdo: It seemed to dislike my recarray? ## .view("<f4"), # convert recarray to regular array
 		# old comment about fmt: args type (dict/Namespace) not really clear here
 		fmt = args["nformat"],
 		#fmt=([args["nformat"]]*len(npdata.dtype.names) if isinstance(args['nformat'],str) else args["nformat"]),
