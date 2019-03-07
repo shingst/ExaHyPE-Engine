@@ -41,6 +41,15 @@ cleandoc = lambda obj: inspect.cleandoc(obj.__doc__) if obj.__doc__ else None
 def is_headless():
 	return not 'DISPLAY' in os.environ
 
+def is_xml_file(fname):
+	"""
+	Determine whether a file is XML (VTU) or not (VTK) by inspecting
+	the first character.
+	"""
+	with open(fname) as unknown_file:
+		c = unknown_file.read(1)
+		return c == '<'
+
 class fileformat:
 	"""
 	A class representing a number of functions to read in or
