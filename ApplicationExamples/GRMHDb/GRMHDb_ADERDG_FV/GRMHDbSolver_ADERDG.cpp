@@ -263,10 +263,21 @@ exahype::solvers::Solver::RefinementControl GRMHDb::GRMHDbSolver_ADERDG::refinem
         if(radiusC > 0.){
                 radiusC = sqrt(radiusC);
         }
-        if (radiusC + 0.5*dr > 7.6 && radiusC-0.5*dr < 8.5) {
-	 return exahype::solvers::Solver::RefinementControl::Refine;
+        if (radiusC-0.5*dr < 8.33) {
+          if (radiusC + 0.5*dr > 7.95) {
+            return exahype::solvers::Solver::RefinementControl::Refine;
+          }
+          else{
+           if (level <= getCoarsestMeshLevel()+1) {
+                 return exahype::solvers::Solver::RefinementControl::Refine;
+            }
+            else{
+                return exahype::solvers::Solver::RefinementControl::Erase; 
+            }
+          }            
 	}
 	else{
+	 
 	 return exahype::solvers::Solver::RefinementControl::Erase;
 	}
 	if (level > getCoarsestMeshLevel())  return exahype::solvers::Solver::RefinementControl::Erase;
@@ -488,7 +499,7 @@ bool GRMHDb::GRMHDbSolver_ADERDG::isPhysicallyAdmissible(
 	if (radiusC > 0.) {
 		radiusC = sqrt(radiusC);		
 	}		
-        if (radiusC + 0.5*dr > 7.6 && radiusC-0.5*dr < 8.5) {
+        if (radiusC + 0.5*dr > 8.05 && radiusC-0.5*dr < 8.35) {
 	//if (radiusC > 7.6 && radiusC < 8.5) {
 		return false;
 	}
@@ -501,11 +512,14 @@ bool GRMHDb::GRMHDbSolver_ADERDG::isPhysicallyAdmissible(
 
 #include "kernels/GRMHDb_GRMHDbSolver_ADERDG/Kernels.h"
 
-void GRMHDb::AbstractGRMHDbSolver_ADERDG::riemannSolver(double* const FL, double* const FR, const double* const QL, const double* const QR, const double t, const double dt, const int direction, bool isBoundaryFace, int faceIndex) {
+
+using namespace GRMHDb::GRMHDbSolver_ADERDG_kernels::aderdg;
+
+
+void GRMHDb::GRMHDbSolver_ADERDG::riemannSolver(double* const FL, double* const FR, const double* const QL, const double* const QR, const double t, const double dt, const int direction, bool isBoundaryFace, int faceIndex) {
 	assertion2(direction >= 0, dt, direction);
 	assertion2(direction < DIMENSIONS, dt, direction);
 	GRMHDb::GRMHDbSolver_ADERDG_kernels::aderdg::riemannSolver(*static_cast<GRMHDbSolver_ADERDG*>(this), FL, FR, QL, QR, t, dt, direction);
-
 
 	constexpr int order = GRMHDb::AbstractGRMHDbSolver_ADERDG::Order;
 	constexpr int basisSize = order + 1;
