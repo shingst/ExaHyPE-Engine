@@ -1160,7 +1160,7 @@ double exahype::solvers::LimitingADERDGSolver::localRecomputationBody(
   // 2. Compute a new time step size in ALL Cells
   double admissibleTimeStepSize = std::numeric_limits<double>::infinity();
   if ( solverPatch.getType()==SolverPatch::Type::Cell ) {
-    double admissibleTimeStepSize = startNewTimeStep(solverPatch,cellInfo,true);
+    admissibleTimeStepSize = startNewTimeStep(solverPatch,cellInfo,true);
   }
 
   // 3. Recompute the predictor in certain cells if fused time stepping is used.
