@@ -811,7 +811,17 @@ bool exahype::solvers::LimitingADERDGSolver::evaluateDiscreteMaximumPrincipleAnd
           observablesMax+i*numberOfObservables);
     }
 
-    return dmpIsSatisfied;
+    // todo later on we might evaluate the DMP also during the mesh refinement iterations.
+    // Then, we might need to pass the time stamp as well
+
+    return
+        dmpIsSatisfied ||
+        _solver->vetoDiscreteMaximumPrincipleDecision(
+            solution,
+            observablesMin,observablesMax,
+            solverPatch.getRefinementStatus()>=_solver->_minRefinementStatusForTroubledCell,
+            solverPatch.getOffset()+0.5*solverPatch.getSize(),solverPatch.getSize(),
+            solverPatch.getTimeStamp()+solverPatch.getTimeStepSize());
   } else {
     return true;
   }
