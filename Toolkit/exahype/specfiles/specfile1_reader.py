@@ -111,6 +111,7 @@ class SpecFile1Reader():
             "cores",\
             "measure_cell_processing_times_iter",\
             "outside_cells",\
+            "outside_cells_left",\
             "order",\
             "patch_size",\
             "halo_cells",\

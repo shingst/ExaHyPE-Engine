@@ -277,6 +277,12 @@ class exahype::parser::Parser {
    */
   int getOutsideCells() const;
 
+  /**
+   * @return number of outside cells which should be placed on the "left" side
+   * in each coordinate direction. Default is getOutsideCells()/2.
+   */
+  int getOutsideCellsLeft() const;
+
   int getMPIBufferSize() const;
 
   int getMPITimeOut() const;

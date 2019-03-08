@@ -246,6 +246,13 @@
           "minimum" : 0,
           "exclusiveMinimum" : false
         },
+        "outside_cells_left" : {
+          "type" : "integer", 
+          "title" : "Number of outside cells to be placed on the 'left' side.", 
+          "default" : 1,
+          "minimum" : 0,
+          "exclusiveMinimum" : false
+        },
         "end_time" : {
           "type" : "number", 
           "title" : "The end time of the simulation",

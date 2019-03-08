@@ -640,7 +640,7 @@ exahype::repositories::Repository* exahype::runners::Runner::createRepository() 
   // scale bounding box
   const int cellsOutside = _parser.getOutsideCells();
   if ( cellsOutside > 0 ) {
-    const int cellOutsideLeft = cellsOutside / 2; // floors
+    const int cellOutsideLeft = _parser.getOutsideCellsLeft(); // if we only cut from one side, we need less ranks on the coarsest grid.
 
     const double coarsestUserMeshSpacing =
         exahype::solvers::Solver::getCoarsestMaximumMeshSizeOfAllSolvers();
