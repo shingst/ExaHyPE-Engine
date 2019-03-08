@@ -657,9 +657,11 @@
                     "title" : "Use the continous extrapolated Runge Kutta initial guess for the space time predictor"
                   },
                   "split_ck" : {
-                    "type" : "boolean",
+                    "type" : "string",
                     "available-for" : ["optimised"],
-                    "title" : "Use a split Cauchy-Kowalevski for the space time predictor (linear only)"
+                    "title" : "Use a split Cauchy–Kowalevski for the space time predictor (linear only)",
+                    "enum" : ["disabled","scalar","vectorised"],
+                    "default" : "disabled"
                   }
                 }
               },
