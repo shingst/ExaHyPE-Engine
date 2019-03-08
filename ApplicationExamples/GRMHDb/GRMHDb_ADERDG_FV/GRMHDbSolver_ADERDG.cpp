@@ -475,6 +475,40 @@ void GRMHDb::GRMHDbSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(
 }
 
 
+
+bool GRMHDb::GRMHDbSolver_ADERDG::vetoDiscreteMaximumPrincipleDecision(
+		const double* const                         solution,
+		const double* const                         localObservablesMin,
+		const double* const                         localObservablesMax,
+		const bool                                  wasTroubledInPreviousTimeStep,
+		const tarch::la::Vector<DIMENSIONS, double>& center,
+		const tarch::la::Vector<DIMENSIONS, double>& dx,
+		const double                                timeStamp) const {
+	//int limvalue;
+	//int NumberOfObservables;
+	//NumberOfObservables=1;
+	//pdelimitervalue_(&limvalue,&center[0]);
+	//pdelimitervalue_(&limvalue,&center[0],&NumberOfObservables, observablesMin, observablesMax);
+	//if(limvalue>0){
+	  //  return false;
+	//}else{
+	  //  return true;
+	//};
+	  //return false;
+	double dr = dx[0] * dx[0] + dx[1] * dx[1] + dx[2] * dx[2];
+	dr = sqrt(dr);
+	double radiusC = center[0] * center[0] + center[1] * center[1] + center[2] * center[2];
+	if (radiusC > 0.) {
+		radiusC = sqrt(radiusC);
+	}
+	if (radiusC + 0.5*dr < 8.05) {
+		return false;
+	}
+	else {
+		return true;
+	}
+}
+
 bool GRMHDb::GRMHDbSolver_ADERDG::isPhysicallyAdmissible(
 	const double* const solution,
 	const double* const observablesMin, const double* const observablesMax,
