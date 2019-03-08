@@ -171,8 +171,8 @@ class exahype::State : public peano::grid::State<exahype::records::State> {
   /**
    * Default Constructor
    *
-   * This constructor is required by the framework's data container. Do not
-   * remove it.
+   * We set the default max mesh width to three, as it does not make sense to
+   * kick off with a mesh that is shallower than that.
    */
   State();
 
@@ -238,6 +238,8 @@ class exahype::State : public peano::grid::State<exahype::records::State> {
  * must be done more carefully. If there are still
  * idle ranks and the mesh is not stable, the
  * mesh refinement must not be enforced.
+ *
+ * We switch to immediate, aggressive refinement if and only if
  *
  * @note Has to be called after the iteration!
  */

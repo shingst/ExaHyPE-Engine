@@ -93,11 +93,13 @@ void __attribute__((optimize("O0"))) initialData_FV(const double* const x,const 
 
 }
 
+bool doneOnce=false;
 void GRMHD::GRMHDSolver_FV::adjustSolution(const double* const x,const double t,const double dt, double* const Q) {
   using namespace tarch::la;
   // Do excision only in 3D.
 
   if(equals(t,0.0)) {
+    if(!doneOnce) { printf("Calling ID on FV grid\n"); doneOnce=true; }
     initialData_FV(x, t, dt, Q);
 
     if( (x[1] > -1.e-10) && (x[1]  < 1.e-10)) {

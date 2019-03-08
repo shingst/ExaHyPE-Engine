@@ -172,6 +172,7 @@ void GRMHD::GRMHDSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(double* c
 }
 */
 
+/*
 void GRMHD::GRMHDSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(
   double* const observables, const int NumberOfVariables,
   const double* const Q) const {
@@ -179,6 +180,7 @@ void GRMHD::GRMHDSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(
     observables[i] = Q[i];
   }
 }
+*/
 
 
 

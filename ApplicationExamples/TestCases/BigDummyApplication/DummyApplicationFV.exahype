@@ -26,6 +26,7 @@ exahype-project  Dummy
   output-directory const  = ./ApplicationExamples/TestCases/BigDummyApplication
   architecture const      = noarch
   log-file                = mylogfile.log
+  compiler-flags          = "-DASSERTS"
 
   computational-domain
     dimension const          = 3

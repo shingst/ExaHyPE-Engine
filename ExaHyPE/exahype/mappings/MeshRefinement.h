@@ -70,16 +70,6 @@ private:
    * for all solver.
    */
   bool _allSolversAttainedStableState = false;
-
-  /**
-   * The number of iterations in a row where
-   * all solvers attained a stable state.
-   * This counter is used for delaying erasing
-   * iterations till all solvers
-   * have finished their flagging.
-   */
-  int _stableIterationsInARow = 0;
-
   /**
    * A state indicating if vertical (master-worker) exchange
    * of face data is required during the time stepping iterations
@@ -113,6 +103,8 @@ private:
    *
    * In case any inside vertex is refined, refine any boundary vertex as well.
    * In case all inside vertices are unrefined, erase any boundary vertex.
+   *
+   * This routine has to take the finest permitted resolution into account.
    *
    * \note Thread-safe as reads and writes to the boundary vertices are locked.
    */

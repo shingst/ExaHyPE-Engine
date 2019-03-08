@@ -214,6 +214,9 @@ class SolverController:
         context["headerPath"]       = os.path.join(context["plotterSubDirectory"],(context["plotter"]+".h"))
         if context["plotterSubDirectory"] != "":
             context["outputPath"]   = os.path.join(context["outputPath"], context["plotterSubDirectory"])
+
+            # This might be the wrong place, but we need to make sure the plotterSubDirectory exists.
+            os.makedirs(context["outputPath"], exist_ok=True)
             
         return context
 

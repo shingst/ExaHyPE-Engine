@@ -118,6 +118,15 @@ void exahype::stealing::StealingManager::submitRequests(
 	bool block ) {
     
   //static std::atomic<int> submitted[4];
+  int finished = -1;
+  MPI_Testall(nRequests, requests, &finished, MPI_STATUSES_IGNORE);
+  if(finished) return;
+  if(finished) {
+     handler(solver, tag, remoteRank);
+     return;
+  }
+
+
 
   if(block) {
     MPI_Waitall(nRequests, requests, MPI_STATUSES_IGNORE);

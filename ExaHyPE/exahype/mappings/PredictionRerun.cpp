@@ -131,7 +131,7 @@ void exahype::mappings::PredictionRerun::prepareSendToNeighbour(
     const tarch::la::Vector<DIMENSIONS, double>& h, int level) {
   logTraceInWith5Arguments( "prepareSendToNeighbour(...)", vertex, toRank, x, h, level );
 
-  if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
+  if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
     vertex.sendToNeighbour(toRank,true,x,h,level);
   }
   logTraceOut( "prepareSendToNeighbour(...)" );

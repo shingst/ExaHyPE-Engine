@@ -34,10 +34,11 @@ int exahype::State::CurrentBatchIteration   = 0;
 int exahype::State::NumberOfBatchIterations = 1;
 
 exahype::State::State() : Base() {
-  // @todo Guidebook
-
-  _stateData.setMaxRefinementLevelAllowed(0);
+  _stateData.setMaxRefinementLevelAllowed(3);
+  // I want the code to lb more aggressively, so it should not wait more than
+  Base::IterationsInBetweenRebalancing = 2;
 }
+
 
 exahype::State::State(const Base::PersistentState& argument) : Base(argument) {
   // do nothing
@@ -118,24 +119,17 @@ void exahype::State::endedGridConstructionIteration(int finestGridLevelPossible)
   // No more nodes left. Start to enforce refinement
   if ( !idleNodesLeft
       && _stateData.getMaxRefinementLevelAllowed()>=0
-      && !nodePoolHasGivenOutRankSizeLastQuery) {
+      && !nodePoolHasGivenOutRankSizeLastQuery
+	  && isGridBalanced() ) {
     _stateData.setMaxRefinementLevelAllowed(-1);
   }
   // Seems that max permitted level has exceeded max grid level. We may assume
   // that there are more MPI ranks than available trees.
   else if (isGridStationary()
       && _stateData.getMaxRefinementLevelAllowed()>finestGridLevelPossible
-      && _stateData.getMaxRefinementLevelAllowed()>=0
+      && isGridBalanced()
       && !nodePoolHasGivenOutRankSizeLastQuery) {
     _stateData.setMaxRefinementLevelAllowed( -1 );
-  }
-  // Reset counter by two. Some LB has happened and we might wanna
-  // give the whole system two sweeps to recover from this LB, i.e. to
-  // set up all partitions properly and recompute all LB metrics.
-  else if (nodePoolHasGivenOutRankSizeLastQuery
-      && _stateData.getMaxRefinementLevelAllowed()>=2) {
-    _stateData.setMaxRefinementLevelAllowed(
-        _stateData.getMaxRefinementLevelAllowed()-2);
   }
   // Refinement is enforced. So we decrease counter. Once we underrun -2, grid
   // construction can terminate as all enforced refined instructions went
@@ -151,11 +145,20 @@ void exahype::State::endedGridConstructionIteration(int finestGridLevelPossible)
   // one and give another try whether the grid adds more vertices.
   else if (
       (!nodePoolHasGivenOutRankSizeLastQuery)
-      && isGridStationary()
+	  // @todo TW/DEC
+	  // we might want to roll this back to isGridStationary()
+      && isGridBalanced()
+//	  && isGridStationary()
       && (_stateData.getMaxRefinementLevelAllowed()>=0)
   ) {
-    _stateData.setMaxRefinementLevelAllowed(
+	static int stationarySweeps = 0;
+	stationarySweeps++;
+//	if (stationarySweeps>=Base::IterationsInBetweenRebalancing) {
+      _stateData.setMaxRefinementLevelAllowed(
         _stateData.getMaxRefinementLevelAllowed()+1);
+      stationarySweeps=0;
+//	}
+      //IterationsInBetweenRebalancing
   }
 }
 
