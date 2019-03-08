@@ -30,12 +30,14 @@ exahype-project Euler
     dimension const          = 2
     width                    = 3.0, 1.0
     offset                   = 0.0, 0.0
-    time-steps = 10000
+    end-time                 = 3.195
+//    time-steps               = 10000
   end computational-domain
 
   global-optimisation
-    fuse-algorithmic-steps          = off
-    fuse-algorithmic-steps-factor   = 0.99
+    fuse-algorithmic-steps          =  all
+    fuse-algorithmic-steps-rerun-factor   = 0.99
+    fuse-algorithmic-steps-diffusion-factor   = 0.99
     spawn-predictor-as-background-thread = off
     spawn-amr-background-threads = off
     /* 0.0 und 0.8 sind schon mal zwei Faktoren */
@@ -69,7 +71,7 @@ exahype-project Euler
     end plot
     */
     
-    plot vtk::Legendre::cells::ascii ConservedQuantitiesWriter
+    plot vtk::Legendre::vertices::ascii ConservedQuantitiesWriter
       variables const = 5
       time            = 0.0
       repeat          = 0.05

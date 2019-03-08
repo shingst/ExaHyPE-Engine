@@ -17,7 +17,7 @@ void DIM::DIMSolver_FV::init(const std::vector<std::string>& cmdlineargs,const e
   // @todo Please implement/augment if required
 }
 
-void DIM::DIMSolver_FV::adjustSolution(const double* const x,const double t,const double dt, double* Q) {
+void DIM::DIMSolver_FV::adjustSolution(const double* const x,const double t,const double dt, double* const Q) {
   // Dimensions             = 2
   // Number of variables    = 14 + #parameters
   
@@ -28,7 +28,7 @@ void DIM::DIMSolver_FV::adjustSolution(const double* const x,const double t,cons
   }
 }
 
-void DIM::DIMSolver_FV::eigenvalues(const double* const Q, const int dIndex, double* lambda) {
+void DIM::DIMSolver_FV::eigenvalues(const double* const Q, const int dIndex, double* const lambda) {
   // Dimensions             = 2
   // Number of variables    = 14 + #parameters
   
@@ -45,7 +45,7 @@ void DIM::DIMSolver_FV::boundaryValues(
     const int faceIndex,
     const int d,
     const double* const stateInside,
-    double* stateOutside) {
+    double* const stateOutside) {
   // Dimensions             = 2
   // Number of variables    = 14 + #parameters
 
@@ -59,7 +59,7 @@ initialdata_(x, &t, stateOutside);
 
 //to add new PDEs specify them in the specification file, delete this file and its header and rerun the toolkit
 
-double DIM::DIMSolver_FV::riemannSolver(double* fL, double *fR, const double* qL, const double* qR, int normalNonZero) {
+double DIM::DIMSolver_FV::riemannSolver(double* const fL, double* const fR, const double* const qL, const double* const qR, int normalNonZero) {
   const int numberOfVariables  = DIM::AbstractDIMSolver_FV::NumberOfVariables;
   const int numberOfParameters = DIM::AbstractDIMSolver_FV::NumberOfParameters;
   const int numberOfData       = numberOfVariables+numberOfParameters;
@@ -94,7 +94,7 @@ hllemriemannsolver_(&basisSize, &normalNonZero, fL,fR,qL, qR,QavL, QavR);
 	return 1.0; // if you don't want to return a proper maximum eigenvalue
 }
 
-void  DIM::DIMSolver_FV::nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) {
+void  DIM::DIMSolver_FV::nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ) {
   // @todo Please implement/augment if required
     pdencp_(BgradQ, Q, gradQ);
 }

@@ -18,21 +18,18 @@ NavierStokes::NavierStokesSolver::NavierStokesSolver(
         const int haloCells,
         const int regularisedFineGridLevels,
         const exahype::solvers::Solver::TimeStepping timeStepping,
-        const int limiterHelperLayers,
         const int DMPObservables,
         const double DMPRelaxationParameter,
-        const double DMPDifferenceScaling,
-        const int iterationsToCureTroubledCell 
+        const double DMPDifferenceScaling
 ) :
   exahype::solvers::LimitingADERDGSolver::LimitingADERDGSolver(
       "NavierStokesSolver",
     new NavierStokes::NavierStokesSolver_ADERDG(
-      maximumMeshSize,maximumMeshDepth,haloCells,regularisedFineGridLevels,timeStepping,limiterHelperLayers,DMPObservables),
+      maximumMeshSize,maximumMeshDepth,haloCells,regularisedFineGridLevels,timeStepping,DMPObservables),
     new NavierStokes::NavierStokesSolver_FV(
       maximumMeshSize, timeStepping),
     DMPRelaxationParameter,
-    DMPDifferenceScaling,
-    iterationsToCureTroubledCell) {}
+    DMPDifferenceScaling) {}
 
 void NavierStokes::NavierStokesSolver::projectOnFVLimiterSpace(const double* const luh, double* const lim) const {
   kernels::limiter::generic::c::projectOnFVLimiterSpace<Order+1,NumberOfVariables+NumberOfParameters,GhostLayerWidth>(luh, lim);
@@ -42,7 +39,7 @@ void NavierStokes::NavierStokesSolver::projectOnDGSpace(const double* const lim,
   kernels::limiter::generic::c::projectOnDGSpace<Order+1,NumberOfVariables+NumberOfParameters,GhostLayerWidth>(lim, luh);
 }
 
-bool NavierStokes::NavierStokesSolver::discreteMaximumPrincipleAndMinAndMaxSearch(const double* const luh, double* boundaryMinPerVariables, double* boundaryMaxPerVariables) {
+bool NavierStokes::NavierStokesSolver::discreteMaximumPrincipleAndMinAndMaxSearch(const double* const luh, double* const boundaryMinPerVariables, double* const boundaryMaxPerVariables) {
   return kernels::limiter::generic::c::discreteMaximumPrincipleAndMinAndMaxSearch<AbstractNavierStokesSolver_ADERDG, NumberOfDMPObservables, GhostLayerWidth>(luh, *static_cast<AbstractNavierStokesSolver_ADERDG*>(_solver.get()), _DMPMaximumRelaxationParameter, _DMPDifferenceScaling, boundaryMinPerVariables, boundaryMaxPerVariables);
 }
 

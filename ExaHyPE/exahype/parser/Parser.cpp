@@ -482,7 +482,7 @@ int exahype::parser::Parser::getNumberOfThreads() const {
 }
 
 int exahype::parser::Parser::getThreadStackSize() const {
-  return getIntFromPath("/shared_memory/thread_stack_size",0,isOptional);
+  return getIntFromPath("/shared_memory/thread_stack_size",8388608,isOptional);
 }
 
 tarch::la::Vector<DIMENSIONS, double> exahype::parser::Parser::getDomainSize() const {
@@ -642,28 +642,63 @@ int exahype::parser::Parser::getSimulationTimeSteps() const {
   return result;
 }
 
-bool exahype::parser::Parser::getScaleBoundingBox() const {
-  return getBoolFromPath("/distributed_memory/scale_bounding_box", false, isOptional);
-}
-
-bool exahype::parser::Parser::getFuseAlgorithmicSteps() const {
-  const bool default_value = false;
-  bool result = getBoolFromPath("/optimisation/fuse_algorithmic_steps", default_value, isOptional);
+int exahype::parser::Parser::getMaxMeshSetupIterations() const {
+  int result = getIntFromPath("/computational_domain/max_mesh_setup_iterations", 400, isOptional);
+  if ( result < 1 ) {
+    logError("getMaxMeshSetupIterations()",
+            "'max_mesh_setup_iterations': Use infinite number of mesh setup iterations as given value was found to be smaller than one.");
+    result = std::numeric_limits<int>::max();
+  }
   return result;
 }
 
+bool exahype::parser::Parser::getScaleBoundingBox() const {
+  return getBoolFromPath("/distributed_memory/scale_bounding_box", true, isOptional);
+}
 
+int exahype::parser::Parser::getScaleBoundingBoxMultiplier() const {
+  return getIntFromPath("/distributed_memory/scale_bounding_box_multiplier", 0, isOptional);
+}
 
-double exahype::parser::Parser::getFuseAlgorithmicStepsFactor() const {
-  const double default_value = 0.0;
-  double result = getDoubleFromPath("/optimisation/fuse_algorithmic_steps_factor", default_value, isOptional);
-  logDebug("getFuseAlgorithmicStepsFactor()", "found fuse-algorithmic-steps-factor " << result);
+bool exahype::parser::Parser::getStaticMeshRefinement() const {
+  return getStringFromPath("/optimisation/mesh_refinement", "dynamic", isOptional).compare("static")==0;
+}
+
+bool exahype::parser::Parser::getStaticLimiting() const {
+  return getStringFromPath("/optimisation/limiting", "dynamic", isOptional).compare("static")==0;
+}
+
+bool exahype::parser::Parser::getFuseAllAlgorithmicSteps() const {
+  return getStringFromPath("/optimisation/fuse_algorithmic_steps", "none", isOptional).compare("all")==0;
+}
+
+bool exahype::parser::Parser::getFuseMostAlgorithmicSteps() const {
+  return getStringFromPath("/optimisation/fuse_algorithmic_steps", "none", isOptional).compare("most")==0;
+}
+
+double exahype::parser::Parser::getFuseAlgorithmicStepsRerunFactor() const {
+  const double default_value = 0.99;
+  double result = getDoubleFromPath("/optimisation/fuse_algorithmic_steps_rerun_factor", default_value, isOptional);
+  logDebug("getFuseAlgorithmicStepsFactor()", "found fuse_algorithmic_steps_rerun_factor " << result);
+  if(result < 0.0 || result > 1.0) {
+    logError("getFuseAlgorithmicStepsRerunFactor()",
+              "'fuse_algorithmic_steps_rerun_factor': Value must be greater than zero "
+              "and smaller than or equal to one. It is: "
+                  << result);
+    invalidate();
+  }
+  return result;
+}
+
+double exahype::parser::Parser::getFuseAlgorithmicStepsDiffusionFactor() const {
+  const double default_value = 0.99;
+  double result = getDoubleFromPath("/optimisation/fuse_algorithmic_steps_diffusion_factor", default_value, isOptional);
+  logDebug("getFuseAlgorithmicStepsDiffusionFactor()", "found fuse_algorithmic_steps_diffusion_factor" << result);
   if(result < 0.0 || result > 1.0) {
     logError("getFuseAlgorithmicStepsFactor()",
-              "'fuse-algorithmic-steps-factor': Value must be greater than zero "
-              "and smaller than one: "
+              "'fuse_algorithmic_steps_diffusion_factor': Value must be greater than zero "
+              "and smaller than or equal to one. It is: "
                   << result);
-    result = 0.0;
     invalidate();
   }
   return result;
@@ -944,25 +979,6 @@ int exahype::parser::Parser::getDMPObservables(int solverNumber) const {
 
   logDebug("getDMPObservables()", "found dmp-observables " << result);
   return result;
-}
-
-int exahype::parser::Parser::getStepsTillCured(int solverNumber) const {
-  const int default_value = 0;
-  int result = getIntFromPath(sformat("/solvers/%d/limiter/steps_till_cured", solverNumber), default_value, isOptional);
-
-  if (result < 0) {
-    logError("getStepsTillCured()",
-              "'" << getIdentifier(solverNumber)
-              << "': 'steps-till-cured': Value must be integral and not negative.");
-    invalidate();
-  }
-
-  logDebug("getStepsTillCured()", "found steps-till-cured " << result);
-  return result;
-}
-
-int exahype::parser::Parser::getLimiterHelperLayers(int solverNumber) const {
-  return getIntFromPath(sformat("/solvers/%d/limiter/helper_layers", solverNumber), 1, isOptional);
 }
 
 std::string exahype::parser::Parser::getTypeForPlotter(int solverNumber,int plotterNumber) const {

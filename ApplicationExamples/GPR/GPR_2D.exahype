@@ -46,8 +46,9 @@ exahype-project GPR
   end distributed-memory
 
   global-optimisation
-    fuse-algorithmic-steps          = on
-    fuse-algorithmic-steps-factor   = 0.99
+    fuse-algorithmic-steps          = all
+    fuse-algorithmic-steps-rerun-factor   = 0.99
+    fuse-algorithmic-steps-diffusion-factor   = 0.99
     spawn-predictor-as-background-thread = on
     spawn-amr-background-threads         = off
     disable-vertex-exchange-in-time-steps = on
@@ -71,11 +72,9 @@ exahype-project GPR
     limiter-type const         = musclhancock
     limiter-optimisation const = generic
     limiter-language const     = C
-    dmp-observables const          = 1
-    dmp-relaxation-parameter       = 1e-3 
-    dmp-difference-scaling         = 1e-4 
-    steps-till-cured           = 5
-    // helper-layers              = 2
+    dmp-observables const      = 1
+    dmp-relaxation-parameter   = 1e-3 
+    dmp-difference-scaling     = 1e-4 
 /*
     plot vtu::Cartesian::vertices::ascii ConservedWriter
       variables const = 17

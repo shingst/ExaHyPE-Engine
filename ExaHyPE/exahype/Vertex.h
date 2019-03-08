@@ -402,9 +402,9 @@ private:
    */
   exahype::solvers::Solver::RefinementControl evaluateRefinementCriterion(
       const tarch::la::Vector<DIMENSIONS, double>& vertexOffset,
-      const tarch::la::Vector<DIMENSIONS, double>& level,
+      const int                                    level,
       const tarch::la::Vector<DIMENSIONS, double>& cellSize,
-      const bool checkThoroughly) const;
+      const bool                                   checkThoroughly) const;
 
   /**
    * Loop over all neighbouring cells and merge

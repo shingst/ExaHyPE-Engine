@@ -54,11 +54,11 @@ double {{project}}::{{abstractSolver}}::stableTimeStepSize(const double* const l
   return maxAdmissibleDt;
 }
 
-void {{project}}::{{abstractSolver}}::adjustSolution(double *luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,const double t,const double dt) {
+void {{project}}::{{abstractSolver}}::adjustSolution(double* const luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,const double t,const double dt) {
   kernels::finitevolumes::commons::c::solutionAdjustment<{{solver}}>(*static_cast<{{solver}}*>(this),luh,center,dx,t,dt);
 }
 
-void {{project}}::{{abstractSolver}}::boundaryConditions(double* luh,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const tarch::la::Vector<DIMENSIONS, int>& posCell,const tarch::la::Vector<DIMENSIONS, int>& posBoundary) {
+void {{project}}::{{abstractSolver}}::boundaryConditions(double* const luh,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const tarch::la::Vector<DIMENSIONS, int>& posCell,const tarch::la::Vector<DIMENSIONS, int>& posBoundary) {
   {% if dimensions==3 %}
   constexpr int cellsPerFace = PatchSize*PatchSize*GhostLayerWidth;
   {% else %}
@@ -93,15 +93,15 @@ void {{project}}::{{abstractSolver}}::boundaryConditions(double* luh,const tarch
 }
 
 
-void {{project}}::{{abstractSolver}}::ghostLayerFilling(double* luh,const double* luhNeighbour,const tarch::la::Vector<DIMENSIONS,int>& neighbourPosition) {
+void {{project}}::{{abstractSolver}}::ghostLayerFilling(double* const luh,const double* const luhNeighbour,const tarch::la::Vector<DIMENSIONS,int>& neighbourPosition) {
   kernels::finitevolumes::commons::c::ghostLayerFilling<{{solver}}>(*static_cast<{{solver}}*>(this),luh,luhNeighbour,neighbourPosition);
 }
 
-void {{project}}::{{abstractSolver}}::ghostLayerFillingAtBoundary(double* luh,const double* luhbnd,const tarch::la::Vector<DIMENSIONS,int>& boundaryPosition) {
+void {{project}}::{{abstractSolver}}::ghostLayerFillingAtBoundary(double* const luh,const double* const luhbnd,const tarch::la::Vector<DIMENSIONS,int>& boundaryPosition) {
   kernels::finitevolumes::commons::c::ghostLayerFillingAtBoundary<{{solver}}>(*static_cast<{{solver}}*>(this),luh,luhbnd,boundaryPosition);
 }
 
-void {{project}}::{{abstractSolver}}::boundaryLayerExtraction(double* luhbnd,const double* luh,const tarch::la::Vector<DIMENSIONS,int>& boundaryPosition) {
+void {{project}}::{{abstractSolver}}::boundaryLayerExtraction(double* const luhbnd,const double* const luh,const tarch::la::Vector<DIMENSIONS,int>& boundaryPosition) {
   kernels::finitevolumes::commons::c::boundaryLayerExtraction<{{solver}}>(*static_cast<{{solver}}*>(this),luhbnd,luh,boundaryPosition);
 }
 

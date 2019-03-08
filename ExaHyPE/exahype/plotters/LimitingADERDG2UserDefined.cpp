@@ -61,7 +61,7 @@ void exahype::plotters::LimitingADERDG2UserDefined::plotPatch(const int solverNu
     auto* limitingADERDG =
         static_cast<exahype::solvers::LimitingADERDGSolver*>(exahype::solvers::RegisteredSolvers[solverPatch.getSolverNumber()]);
 
-    if (solverPatch.getRefinementStatus()>=limitingADERDG->getSolver()->getMinRefinementStatusForBufferCell()) {
+    if (solverPatch.getRefinementStatus()>=limitingADERDG->getSolver()->getMinRefinementStatusForTroubledCell()-1) {
       auto& limiterPatch = limitingADERDG->getLimiterPatch(solverPatch,cellInfo);
 
       double* limiterSolution = static_cast<double*>(limiterPatch.getSolution());
@@ -76,7 +76,7 @@ void exahype::plotters::LimitingADERDG2UserDefined::plotPatch(const int solverNu
       plotADERDGPatch(
           solverPatch.getOffset(),
           solverPatch.getSize(), solverSolution,
-          solverPatch.getCorrectorTimeStamp());
+          solverPatch.getTimeStamp());
     }
   }
 }

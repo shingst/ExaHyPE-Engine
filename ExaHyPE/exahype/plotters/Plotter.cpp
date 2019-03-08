@@ -62,6 +62,10 @@ tarch::multicore::BooleanSemaphore exahype::plotters::SemaphoreForPlotting;
 
 tarch::logging::Log exahype::plotters::Plotter::_log( "exahype::plotters::Plotter" );
 
+#ifdef Parallel
+int exahype::plotters::Plotter::MasterWorkerCommunicationTag = MPI_ANY_TAG;
+#endif
+
 exahype::plotters::Plotter::Plotter(
         const int solverConfig,const int plotterConfig,
         const exahype::parser::Parser& parser,
@@ -70,7 +74,7 @@ exahype::plotters::Plotter::Plotter(
         _type(parser.getTypeForPlotter(solverConfig, plotterConfig)),
         _writtenUnknowns(parser.getUnknownsForPlotter(solverConfig, plotterConfig)),
         _time(parser.getFirstSnapshotTimeForPlotter(solverConfig, plotterConfig)),
-        _solverTimeStamp(-std::numeric_limits<double>::max()),
+        _solverTimeStamp(-std::numeric_limits<double>::infinity()),
         _repeat(parser.getRepeatTimeForPlotter(solverConfig, plotterConfig)),
         _filename(parser.getFilenameForPlotter(solverConfig, plotterConfig)),
         _plotterParameters(parser.getParametersForPlotter(solverConfig, plotterConfig)),
@@ -134,7 +138,7 @@ exahype::plotters::Plotter::Plotter(
       _type(parser.getTypeForPlotter(solverConfig, plotterConfig)),
       _writtenUnknowns(parser.getUnknownsForPlotter(solverConfig, plotterConfig)),
       _time(parser.getFirstSnapshotTimeForPlotter(solverConfig, plotterConfig)),
-      _solverTimeStamp(-std::numeric_limits<double>::max()),
+      _solverTimeStamp(-std::numeric_limits<double>::infinity()),
       _repeat(parser.getRepeatTimeForPlotter(solverConfig, plotterConfig)),
       _filename(parser.getFilenameForPlotter(solverConfig, plotterConfig)),
       _plotterParameters(parser.getParametersForPlotter(solverConfig, plotterConfig)),
@@ -538,8 +542,6 @@ exahype::plotters::Plotter::Plotter(
   _solver   = solverDataSource;
   _filename = _filename + "_" + std::to_string(solverDataSource);
 
-  // TODO(Dominic): Looks like a hack. Clean.
-
   if (_device!=nullptr) {
     _device->init(
         _filename,
@@ -597,7 +599,7 @@ bool exahype::plotters::Plotter::checkWetherPlotterBecomesActiveAndStartPlotting
       _device->startPlotting(currentTimeStamp);
     }
   } else {
-    _solverTimeStamp = -std::numeric_limits<double>::max();
+    _solverTimeStamp = -std::numeric_limits<double>::infinity();
   }
 
   logDebug(
@@ -681,7 +683,7 @@ bool exahype::plotters::checkWhetherPlotterBecomesActive(double currentTimeStamp
 }
 
 double exahype::plotters::getTimeOfNextPlot() {
-  double result = std::numeric_limits<double>::max();
+  double result = std::numeric_limits<double>::infinity();
   for (const auto& p : RegisteredPlotters) {
     result = std::min(result,p->getNextPlotTime());
   }
@@ -712,17 +714,22 @@ void exahype::plotters::Plotter::sendDataToWorker(
   assertion1(plotterDataToSend.size()==1,plotterDataToSend.size());
   assertion1(std::isfinite(plotterDataToSend[0]),plotterDataToSend[0]);
 
-  if (tarch::parallel::Node::getInstance().getRank()==
-      tarch::parallel::Node::getInstance().getGlobalMasterRank()) {
+  if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
     logDebug("sendDataToWorker(...)","Broadcasting plotter data: " <<
         " data[0]=" << plotterDataToSend[0]);
     logDebug("sendDataWorker(...)","_time="<<_time);
   }
 
+//  MPI_Send(
+//      plotterDataToSend.data(), plotterDataToSend.size(),
+//      MPI_DOUBLE,
+//      workerRank,
+//      MasterWorkerCommunicationTag,
+//      tarch::parallel::Node::getInstance().getCommunicator());
+
   DataHeap::getInstance().sendData(
       plotterDataToSend.data(), plotterDataToSend.size(),
-      workerRank, x, level,
-      peano::heap::MessageType::MasterWorkerCommunication);
+      workerRank,x,level,peano::heap::MessageType::MasterWorkerCommunication);
 }
 
 void exahype::plotters::Plotter::mergeWithMasterData(
@@ -730,13 +737,21 @@ void exahype::plotters::Plotter::mergeWithMasterData(
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const int                                    level) {
   std::vector<double> receivedPlotterData(1);
+
+//  MPI_Recv(
+//      receivedPlotterData.data(), receivedPlotterData.size(),
+//      MPI_DOUBLE,
+//      masterRank,
+//      MasterWorkerCommunicationTag,
+//      tarch::parallel::Node::getInstance().getCommunicator(),MPI_STATUS_IGNORE);
+
   DataHeap::getInstance().receiveData(
-      receivedPlotterData.data(),receivedPlotterData.size(),masterRank, x, level,
-      peano::heap::MessageType::MasterWorkerCommunication);
+      receivedPlotterData.data(), receivedPlotterData.size(),
+      masterRank,x,level,peano::heap::MessageType::MasterWorkerCommunication);
+
   assertion1(receivedPlotterData.size()==1,receivedPlotterData.size());
 
-  if (tarch::parallel::Node::getInstance().getRank()!=
-      tarch::parallel::Node::getInstance().getGlobalMasterRank()) {
+  if ( !tarch::parallel::Node::getInstance().isGlobalMaster() ) {
     logDebug("mergeWithMasterData(...)","Received plotter data: " <<
         "data[0]="  << receivedPlotterData[0]);
   }

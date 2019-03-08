@@ -48,8 +48,9 @@ exahype-project GRMHD
   */
 
   global-optimisation
-    fuse-algorithmic-steps          = off
-    fuse-algorithmic-steps-factor   = 0.99
+    fuse-algorithmic-steps          = none
+    fuse-algorithmic-steps-rerun-factor   = 0.99
+    fuse-algorithmic-steps-diffusion-factor   = 0.99
     spawn-predictor-as-background-thread = off
     spawn-amr-background-threads         = off
     disable-vertex-exchange-in-time-steps = on

@@ -117,14 +117,17 @@ class SpecFile1Reader():
             "dmp_observables",\
             "steps_till_cured",\
             "helper_layers",\
-            "thread_stack_size"\
+            "thread_stack_size",\
+            "scale_bounding_box_multiplier",\
+            "max_mesh_setup_iterations"\
         ]
         numbers=[\
             "end_time",\
             "maximum_mesh_size",\
             "time",\
             "repeat",\
-            "fuse_algorithmic_steps_factor",\
+            "fuse_algorithmic_steps_rerun_factor",\
+            "fuse_algorithmic_steps_diffusion_factor",\
             "time_step_batch_factor",\
             "double_compression",\
             "dmp_relaxation_parameter",\
@@ -410,7 +413,7 @@ class SpecFile1Reader():
             if option in ["log_file","peano_kernel_path","peano_toolbox_path","exahype_path","output_directory","plotter_subdirectory"]:
                 context["paths"][option] = context.pop(option)
         self.map_computational_domain(context["computational_domain"])
-        for section in ["optimisation","profiling"]:
+        for section in ["optimisation","profiling","distributed_memory"]:
             if section in context:
                 for option in context[section]:
                     if context[section][option] in ["on","off"]:

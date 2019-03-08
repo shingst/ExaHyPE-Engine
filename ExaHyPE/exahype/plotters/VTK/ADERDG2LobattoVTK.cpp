@@ -501,7 +501,7 @@ void exahype::plotters::ADERDG2LobattoVTK::plotPatch(const int solverNumber,solv
     plotPatch(
         aderdgCellDescription.getOffset(),
         aderdgCellDescription.getSize(), solverSolution,
-        aderdgCellDescription.getCorrectorTimeStamp());
+        aderdgCellDescription.getTimeStamp());
   }
 }
 

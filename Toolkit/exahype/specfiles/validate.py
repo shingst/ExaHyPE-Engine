@@ -25,7 +25,7 @@ from jsonschema import Draft4Validator, validators, validate
 # Current stable version is 2.6, version 3.0 brings Draft6Validator,
 # but that's still alpha.
 
-schema = json.load(pathlib.Path(__file__).parent.joinpath(Configuration.pathToSchema).open("r"))
+schema = json.load(pathlib.Path(__file__).parent.joinpath(Configuration.pathToSchema).open("r",encoding="utf-8"))
 
 def extend_with_default(validator_class):
   """

@@ -64,59 +64,13 @@ private:
   static tarch::logging::Log _log;
 
   /**
-   * This semaphore is used for locking the plotters'
-   * plotPatch function which is usually not thread-safe.
-   */
-  static tarch::multicore::BooleanSemaphore Semaphore;
-
-  /**
-   * A local copy of the state set
-   * in beginIteration(...).
-   */
-  exahype::State _stateCopy;
-
-  /**
-   * Indicates that the background tasks have terminated.
-   * No further checks are required in this case.
-   *
-   * Is initialised with false for the main thread
-   * and for the worker threads.
-   * As the worker threads; mappings are destroyed but
-   * the main thread's mapping continues to
-   * exist we reset this value in endIteration(State) to false.
-   *
-   * We process background jobs in touchVertexFirstTime(...)
-   * and set this flag here as well.
-   */
-  bool _batchIterationCounterUpdated = false;
-
-
-  int _batchIteration = 0;
-  /**
-   * Updates a batch iteration counter and
-   * ensures that all background jobs of a certain type have terminated.
-   * The type of the background jobs is determined based on the batch iteration counter.
-   *
-   * Signal the solvers that we start a new time step.
-   *
-   * \note As the state can only be copied in beginIteration(...) and
-   * we need to know the batch iteration in touchVertexFirstTime(...),
-   * we cannot rely on its batch iteration counter and
-   * have to count ourselves.
-   * Note that touchVertexFirstTime(...) might be invoked before beginIteration(...)
-   * if state broadcasting is turned off.
-   *
-   */
-  void updateBatchIterationCounter(bool initialiseBatchIterationCounter);
-
-  /**
    * \return if the mappings/adapters
    * FusedTimeStep, Prediction, PredictionRerun, and PredictionOrLocalRecomputation
    * are supposed to send out riemann data in this iteration.
    *
    * \see updatePredictionIterationTag(...)
    */
-  bool sendOutRiemannDataInThisIteration() const;
+  static bool sendOutRiemannDataInThisIteration();
 
   /**
    * \return if the mappings/adapters
@@ -125,7 +79,7 @@ private:
    *
    * \see updatePredictionIterationTag(...)
    */
-  bool issuePredictionJobsInThisIteration() const;
+  static bool issuePredictionJobsInThisIteration();
 
  public:
   /**
@@ -144,7 +98,7 @@ private:
    * not work with parallel builds as it corrupts the neighbour
    * data communication behaviour.
    */
-  peano::MappingSpecification enterCellSpecification(int level);
+  peano::MappingSpecification enterCellSpecification(int level) const;
   /**
    * Run through the whole tree. Run concurrently on the fine grid.
    *
@@ -157,7 +111,7 @@ private:
    * not work with parallel builds as it corrupts the neighbour
    * data communication behaviour.
    */
-  peano::MappingSpecification leaveCellSpecification(int level);
+  peano::MappingSpecification leaveCellSpecification(int level) const;
   /**
    * Run concurrently through the whole tree.
    *
@@ -173,7 +127,7 @@ private:
    * not work with parallel builds as it corrupts the neighbour
    * data communication behaviour.
    */
-  peano::MappingSpecification touchVertexFirstTimeSpecification(int level);
+  peano::MappingSpecification touchVertexFirstTimeSpecification(int level) const;
 
   /**
    * Nop.
@@ -189,7 +143,12 @@ private:
   peano::MappingSpecification descendSpecification(int level) const;
 
   /**
-   * No data needs to be synchronised between masters and workers.
+   * Reduce solver data in the last time step of the batch.
+   * Do not broadcast anything.
+   *
+   * If only one prediction sweep is used, delegate heap data exchange to
+   * Peano. Otherwise, start and stop it in begin/endIteration(...).
+   * Stretch the start/stop window over two sweeps.
    */
   peano::CommunicationSpecification communicationSpecification() const;
 
@@ -262,10 +221,6 @@ private:
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
 
   /**
-   *Resets the next mesh update request flag to false and
-   * the next limiter domain change to Regular
-   * using the "setNext..." methods.
-   *
    * Updates the prediction iteration tag in the first iteration
    * of a batch or if no batch is run.
    */

@@ -28,7 +28,7 @@ double kernels::finitevolumes::riemannsolvers::c::rusanov(
     const double* gradQL,
     const double* gradQR,
     const double* const cellSize,
-    int normalNonZero) { // TODO(Dominic): I need four of those
+    int normalNonZero) {
   constexpr int numberOfVariables  = SolverType::NumberOfVariables;
   constexpr int numberOfParameters = SolverType::NumberOfParameters;
   constexpr int numberOfData       = numberOfVariables + numberOfParameters;
@@ -132,7 +132,7 @@ double kernels::finitevolumes::riemannsolvers::c::rusanov(
         SolverType& solver, double* fnL, double *fnR, const double* qL, const double* qR,
         const double* gradQL, const double* gradQR,
         const double* const cellSize,
-        int normalNonZero) { // TODO(Dominic): I need four of those
+        int normalNonZero) {
   constexpr int numberOfVariables  = SolverType::NumberOfVariables;
   constexpr int numberOfParameters = SolverType::NumberOfParameters;
   constexpr int numberOfData       = numberOfVariables+numberOfParameters;

@@ -58,6 +58,6 @@ void exahype::plotters::ADERDG2UserDefined::plotPatch(const int solverNumber,sol
     plotPatch(
         aderdgCellDescription.getOffset(),
         aderdgCellDescription.getSize(), solverSolution,
-        aderdgCellDescription.getCorrectorTimeStamp());
+        aderdgCellDescription.getTimeStamp());
   }
 }

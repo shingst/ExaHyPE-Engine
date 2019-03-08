@@ -57,7 +57,7 @@ void exahype::plotters::ADERDG2Carpet::plotPatch(const int solverNumber,solvers:
     plotPatch(
         aderdgCellDescription.getOffset(),
         aderdgCellDescription.getSize(), solverSolution,
-        aderdgCellDescription.getCorrectorTimeStamp(),
+        aderdgCellDescription.getTimeStamp(),
 	aderdgCellDescription.getRefinementStatus() // interestingly this method is always available, even in non-limiter context
     );
   }

@@ -214,6 +214,7 @@ bool NavierStokes::NavierStokesSolver_ADERDG::isPhysicallyAdmissible(
     // We now need to do a pointwise check for the primitive variables
     // pressure and Z.
     // TODO(Lukas) At least refactor this. And 3D!
+  // return false;
 #if DIMENSIONS == 2
     constexpr auto basisSize = Order + 1;
     kernels::idx3 idx(basisSize,basisSize,NumberOfVariables);
@@ -250,12 +251,11 @@ bool NavierStokes::NavierStokesSolver_ADERDG::isPhysicallyAdmissible(
   return true;
 }
 
-void NavierStokes::NavierStokesSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(double* observables,const int numberOfObservables,const double* const Q) const {
-  if (numberOfObservables>0) {
+void NavierStokes::NavierStokesSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(double* observables,const double* const Q) const {
+  if (NumberOfDMPObservables > 0) {
     // TODO(Lukas) Remove this.
-    //std::copy_n(Q,numberOfObservables,observables);
-    std::fill_n(observables, numberOfObservables, 0.0);
-    assert(numberOfObservables >= 2);
+    std::fill_n(observables, NumberOfDMPObservables, 0.0);
+    assert(NumberOfDMPObservables >= 2);
     observables[0] = Q[0];
     const auto vars = ReadOnlyVariables{Q};
     observables[1] = ns.evaluatePressure(vars.E(),
@@ -276,12 +276,18 @@ exahype::solvers::Solver::RefinementControl NavierStokes::NavierStokesSolver_ADE
     const tarch::la::Vector<DIMENSIONS, double>& dx,
     const double t,
     const int level) {
-  double* Q = const_cast<double*>(luh);
+  // TODO(Lukas) Dont do this!
+  if (center[0] > 500) {
+    return exahype::solvers::Solver::RefinementControl::Refine;
+  } else {
+    return exahype::solvers::Solver::RefinementControl::Keep;
+  }
+  
   if (!amrSettings.useAMR) {
     // Default: Delete cells.
     // This is useful when one wants to use limiting-guided refinement
     // without another source of AMR.
-    return exahype::solvers::Solver::RefinementControl::Erase;
+    return exahype::solvers::Solver::RefinementControl::Keep;
   }
 
   if (t == 0) {
@@ -305,6 +311,7 @@ exahype::solvers::Solver::RefinementControl NavierStokes::NavierStokesSolver_ADE
   const auto lo = meanGlobal + factorCoarse * stdGlobal;
 
   if (curTv > hi) {
+    std::cout << "Refine" << std::endl;
     return exahype::solvers::Solver::RefinementControl::Refine;
   }
 

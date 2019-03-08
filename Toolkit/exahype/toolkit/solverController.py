@@ -166,6 +166,7 @@ class SolverController:
         context["language"]                = kernel.get("language","C").lower()
         context["basis"]                   = kernel.get("basis","Legendre").lower()
         context["isLinear"]                = not kernel.get("nonlinear",True)
+        context["isLinear_s"]              = "true" if not kernel.get("nonlinear",True) else "false"
         context["isNonlinear"]             = kernel.get("nonlinear",True)
         context["linearOrNonlinear"]       = "Linear" if context["isLinear"] else "Nonlinear"
         context["isFortran"]               = kernel.get("language",False)=="Fortran" 
@@ -220,6 +221,9 @@ class SolverController:
         context["headerPath"]       = os.path.join(context["plotterSubDirectory"],(context["plotter"]+".h"))
         if context["plotterSubDirectory"] != "":
             context["outputPath"]   = os.path.join(context["outputPath"], context["plotterSubDirectory"])
+
+            # This might be the wrong place, but we need to make sure the plotterSubDirectory exists.
+            os.makedirs(context["outputPath"], exist_ok=True)
             
         return context
 

@@ -33,7 +33,7 @@ namespace exahype {
     *
     * 		   build date: 09-02-2014 14:40
     *
-    * @date   10/02/2019 18:21
+    * @date   06/03/2019 16:14
     */
    class exahype::records::ADERDGCellDescription { 
       
@@ -80,12 +80,10 @@ namespace exahype {
             #else
             tarch::la::Vector<DIMENSIONS,double> _size;
             #endif
-            double _previousCorrectorTimeStamp;
-            double _previousCorrectorTimeStepSize;
-            double _correctorTimeStepSize;
-            double _correctorTimeStamp;
-            double _predictorTimeStepSize;
-            double _predictorTimeStamp;
+            double _previousTimeStamp;
+            double _previousTimeStepSize;
+            double _timeStepSize;
+            double _timeStamp;
             int _solutionIndex;
             int _solutionAveragesIndex;
             int _solutionCompressedIndex;
@@ -159,7 +157,7 @@ namespace exahype {
             /**
              * Generated
              */
-            PersistentRecords(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const bool& hasCompletedLastStep, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& updateIndex, const int& updateAveragesIndex, const int& updateCompressedIndex, void* update, void* updateAverages, void* updateCompressed, const int& extrapolatedPredictorIndex, const int& extrapolatedPredictorAveragesIndex, const int& extrapolatedPredictorCompressedIndex, void* extrapolatedPredictor, void* extrapolatedPredictorAverages, void* extrapolatedPredictorCompressed, const int& extrapolatedPredictorGradientIndex, void* extrapolatedPredictorGradient, const int& fluctuationIndex, const int& fluctuationAveragesIndex, const int& fluctuationCompressedIndex, void* fluctuation, void* fluctuationAverages, void* fluctuationCompressed, const int& solutionMinIndex, const int& solutionMaxIndex, void* solutionMin, void* solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation, const Creation& creation);
+            PersistentRecords(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const bool& hasCompletedLastStep, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousTimeStamp, const double& previousTimeStepSize, const double& timeStepSize, const double& timeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& updateIndex, const int& updateAveragesIndex, const int& updateCompressedIndex, void* update, void* updateAverages, void* updateCompressed, const int& extrapolatedPredictorIndex, const int& extrapolatedPredictorAveragesIndex, const int& extrapolatedPredictorCompressedIndex, void* extrapolatedPredictor, void* extrapolatedPredictorAverages, void* extrapolatedPredictorCompressed, const int& extrapolatedPredictorGradientIndex, void* extrapolatedPredictorGradient, const int& fluctuationIndex, const int& fluctuationAveragesIndex, const int& fluctuationCompressedIndex, void* fluctuation, void* fluctuationAverages, void* fluctuationCompressed, const int& solutionMinIndex, const int& solutionMaxIndex, void* solutionMin, void* solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation, const Creation& creation);
             
             
             inline int getSolverNumber() const 
@@ -476,122 +474,82 @@ namespace exahype {
             
             
             
-            inline double getPreviousCorrectorTimeStamp() const 
+            inline double getPreviousTimeStamp() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               return _previousCorrectorTimeStamp;
+               return _previousTimeStamp;
             }
             
             
             
-            inline void setPreviousCorrectorTimeStamp(const double& previousCorrectorTimeStamp) 
+            inline void setPreviousTimeStamp(const double& previousTimeStamp) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               _previousCorrectorTimeStamp = previousCorrectorTimeStamp;
+               _previousTimeStamp = previousTimeStamp;
             }
             
             
             
-            inline double getPreviousCorrectorTimeStepSize() const 
+            inline double getPreviousTimeStepSize() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               return _previousCorrectorTimeStepSize;
+               return _previousTimeStepSize;
             }
             
             
             
-            inline void setPreviousCorrectorTimeStepSize(const double& previousCorrectorTimeStepSize) 
+            inline void setPreviousTimeStepSize(const double& previousTimeStepSize) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               _previousCorrectorTimeStepSize = previousCorrectorTimeStepSize;
+               _previousTimeStepSize = previousTimeStepSize;
             }
             
             
             
-            inline double getCorrectorTimeStepSize() const 
+            inline double getTimeStepSize() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               return _correctorTimeStepSize;
+               return _timeStepSize;
             }
             
             
             
-            inline void setCorrectorTimeStepSize(const double& correctorTimeStepSize) 
+            inline void setTimeStepSize(const double& timeStepSize) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               _correctorTimeStepSize = correctorTimeStepSize;
+               _timeStepSize = timeStepSize;
             }
             
             
             
-            inline double getCorrectorTimeStamp() const 
+            inline double getTimeStamp() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               return _correctorTimeStamp;
+               return _timeStamp;
             }
             
             
             
-            inline void setCorrectorTimeStamp(const double& correctorTimeStamp) 
+            inline void setTimeStamp(const double& timeStamp) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               _correctorTimeStamp = correctorTimeStamp;
-            }
-            
-            
-            
-            inline double getPredictorTimeStepSize() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               return _predictorTimeStepSize;
-            }
-            
-            
-            
-            inline void setPredictorTimeStepSize(const double& predictorTimeStepSize) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               _predictorTimeStepSize = predictorTimeStepSize;
-            }
-            
-            
-            
-            inline double getPredictorTimeStamp() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               return _predictorTimeStamp;
-            }
-            
-            
-            
-            inline void setPredictorTimeStamp(const double& predictorTimeStamp) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               _predictorTimeStamp = predictorTimeStamp;
+               _timeStamp = timeStamp;
             }
             
             
@@ -1788,7 +1746,7 @@ namespace exahype {
             /**
              * Generated
              */
-            ADERDGCellDescription(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const bool& hasCompletedLastStep, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& updateIndex, const int& updateAveragesIndex, const int& updateCompressedIndex, void* update, void* updateAverages, void* updateCompressed, const int& extrapolatedPredictorIndex, const int& extrapolatedPredictorAveragesIndex, const int& extrapolatedPredictorCompressedIndex, void* extrapolatedPredictor, void* extrapolatedPredictorAverages, void* extrapolatedPredictorCompressed, const int& extrapolatedPredictorGradientIndex, void* extrapolatedPredictorGradient, const int& fluctuationIndex, const int& fluctuationAveragesIndex, const int& fluctuationCompressedIndex, void* fluctuation, void* fluctuationAverages, void* fluctuationCompressed, const int& solutionMinIndex, const int& solutionMaxIndex, void* solutionMin, void* solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation, const Creation& creation);
+            ADERDGCellDescription(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const bool& hasCompletedLastStep, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousTimeStamp, const double& previousTimeStepSize, const double& timeStepSize, const double& timeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& updateIndex, const int& updateAveragesIndex, const int& updateCompressedIndex, void* update, void* updateAverages, void* updateCompressed, const int& extrapolatedPredictorIndex, const int& extrapolatedPredictorAveragesIndex, const int& extrapolatedPredictorCompressedIndex, void* extrapolatedPredictor, void* extrapolatedPredictorAverages, void* extrapolatedPredictorCompressed, const int& extrapolatedPredictorGradientIndex, void* extrapolatedPredictorGradient, const int& fluctuationIndex, const int& fluctuationAveragesIndex, const int& fluctuationCompressedIndex, void* fluctuation, void* fluctuationAverages, void* fluctuationCompressed, const int& solutionMinIndex, const int& solutionMaxIndex, void* solutionMin, void* solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation, const Creation& creation);
             
             /**
              * Generated
@@ -2188,122 +2146,82 @@ namespace exahype {
             
             
             
-            inline double getPreviousCorrectorTimeStamp() const 
+            inline double getPreviousTimeStamp() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               return _persistentRecords._previousCorrectorTimeStamp;
+               return _persistentRecords._previousTimeStamp;
             }
             
             
             
-            inline void setPreviousCorrectorTimeStamp(const double& previousCorrectorTimeStamp) 
+            inline void setPreviousTimeStamp(const double& previousTimeStamp) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               _persistentRecords._previousCorrectorTimeStamp = previousCorrectorTimeStamp;
+               _persistentRecords._previousTimeStamp = previousTimeStamp;
             }
             
             
             
-            inline double getPreviousCorrectorTimeStepSize() const 
+            inline double getPreviousTimeStepSize() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               return _persistentRecords._previousCorrectorTimeStepSize;
+               return _persistentRecords._previousTimeStepSize;
             }
             
             
             
-            inline void setPreviousCorrectorTimeStepSize(const double& previousCorrectorTimeStepSize) 
+            inline void setPreviousTimeStepSize(const double& previousTimeStepSize) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               _persistentRecords._previousCorrectorTimeStepSize = previousCorrectorTimeStepSize;
+               _persistentRecords._previousTimeStepSize = previousTimeStepSize;
             }
             
             
             
-            inline double getCorrectorTimeStepSize() const 
+            inline double getTimeStepSize() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               return _persistentRecords._correctorTimeStepSize;
+               return _persistentRecords._timeStepSize;
             }
             
             
             
-            inline void setCorrectorTimeStepSize(const double& correctorTimeStepSize) 
+            inline void setTimeStepSize(const double& timeStepSize) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               _persistentRecords._correctorTimeStepSize = correctorTimeStepSize;
+               _persistentRecords._timeStepSize = timeStepSize;
             }
             
             
             
-            inline double getCorrectorTimeStamp() const 
+            inline double getTimeStamp() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               return _persistentRecords._correctorTimeStamp;
+               return _persistentRecords._timeStamp;
             }
             
             
             
-            inline void setCorrectorTimeStamp(const double& correctorTimeStamp) 
+            inline void setTimeStamp(const double& timeStamp) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               _persistentRecords._correctorTimeStamp = correctorTimeStamp;
-            }
-            
-            
-            
-            inline double getPredictorTimeStepSize() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               return _persistentRecords._predictorTimeStepSize;
-            }
-            
-            
-            
-            inline void setPredictorTimeStepSize(const double& predictorTimeStepSize) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               _persistentRecords._predictorTimeStepSize = predictorTimeStepSize;
-            }
-            
-            
-            
-            inline double getPredictorTimeStamp() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               return _persistentRecords._predictorTimeStamp;
-            }
-            
-            
-            
-            inline void setPredictorTimeStamp(const double& predictorTimeStamp) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               _persistentRecords._predictorTimeStamp = predictorTimeStamp;
+               _persistentRecords._timeStamp = timeStamp;
             }
             
             
@@ -3669,7 +3587,7 @@ namespace exahype {
     *
     * 		   build date: 09-02-2014 14:40
     *
-    * @date   10/02/2019 18:21
+    * @date   06/03/2019 16:14
     */
    class exahype::records::ADERDGCellDescriptionPacked { 
       
@@ -3691,12 +3609,10 @@ namespace exahype {
             int _level;
             tarch::la::Vector<DIMENSIONS,double> _offset;
             tarch::la::Vector<DIMENSIONS,double> _size;
-            double _previousCorrectorTimeStamp;
-            double _previousCorrectorTimeStepSize;
-            double _correctorTimeStepSize;
-            double _correctorTimeStamp;
-            double _predictorTimeStepSize;
-            double _predictorTimeStamp;
+            double _previousTimeStamp;
+            double _previousTimeStepSize;
+            double _timeStepSize;
+            double _timeStamp;
             int _solutionIndex;
             int _solutionAveragesIndex;
             int _solutionCompressedIndex;
@@ -3767,7 +3683,7 @@ namespace exahype {
             /**
              * Generated
              */
-            PersistentRecords(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const bool& hasCompletedLastStep, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& updateIndex, const int& updateAveragesIndex, const int& updateCompressedIndex, void* update, void* updateAverages, void* updateCompressed, const int& extrapolatedPredictorIndex, const int& extrapolatedPredictorAveragesIndex, const int& extrapolatedPredictorCompressedIndex, void* extrapolatedPredictor, void* extrapolatedPredictorAverages, void* extrapolatedPredictorCompressed, const int& extrapolatedPredictorGradientIndex, void* extrapolatedPredictorGradient, const int& fluctuationIndex, const int& fluctuationAveragesIndex, const int& fluctuationCompressedIndex, void* fluctuation, void* fluctuationAverages, void* fluctuationCompressed, const int& solutionMinIndex, const int& solutionMaxIndex, void* solutionMin, void* solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation, const Creation& creation);
+            PersistentRecords(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const bool& hasCompletedLastStep, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousTimeStamp, const double& previousTimeStepSize, const double& timeStepSize, const double& timeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& updateIndex, const int& updateAveragesIndex, const int& updateCompressedIndex, void* update, void* updateAverages, void* updateCompressed, const int& extrapolatedPredictorIndex, const int& extrapolatedPredictorAveragesIndex, const int& extrapolatedPredictorCompressedIndex, void* extrapolatedPredictor, void* extrapolatedPredictorAverages, void* extrapolatedPredictorCompressed, const int& extrapolatedPredictorGradientIndex, void* extrapolatedPredictorGradient, const int& fluctuationIndex, const int& fluctuationAveragesIndex, const int& fluctuationCompressedIndex, void* fluctuation, void* fluctuationAverages, void* fluctuationCompressed, const int& solutionMinIndex, const int& solutionMaxIndex, void* solutionMin, void* solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation, const Creation& creation);
             
             
             inline int getSolverNumber() const 
@@ -4105,122 +4021,82 @@ namespace exahype {
             
             
             
-            inline double getPreviousCorrectorTimeStamp() const 
+            inline double getPreviousTimeStamp() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               return _previousCorrectorTimeStamp;
+               return _previousTimeStamp;
             }
             
             
             
-            inline void setPreviousCorrectorTimeStamp(const double& previousCorrectorTimeStamp) 
+            inline void setPreviousTimeStamp(const double& previousTimeStamp) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               _previousCorrectorTimeStamp = previousCorrectorTimeStamp;
+               _previousTimeStamp = previousTimeStamp;
             }
             
             
             
-            inline double getPreviousCorrectorTimeStepSize() const 
+            inline double getPreviousTimeStepSize() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               return _previousCorrectorTimeStepSize;
+               return _previousTimeStepSize;
             }
             
             
             
-            inline void setPreviousCorrectorTimeStepSize(const double& previousCorrectorTimeStepSize) 
+            inline void setPreviousTimeStepSize(const double& previousTimeStepSize) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               _previousCorrectorTimeStepSize = previousCorrectorTimeStepSize;
+               _previousTimeStepSize = previousTimeStepSize;
             }
             
             
             
-            inline double getCorrectorTimeStepSize() const 
+            inline double getTimeStepSize() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               return _correctorTimeStepSize;
+               return _timeStepSize;
             }
             
             
             
-            inline void setCorrectorTimeStepSize(const double& correctorTimeStepSize) 
+            inline void setTimeStepSize(const double& timeStepSize) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               _correctorTimeStepSize = correctorTimeStepSize;
+               _timeStepSize = timeStepSize;
             }
             
             
             
-            inline double getCorrectorTimeStamp() const 
+            inline double getTimeStamp() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               return _correctorTimeStamp;
+               return _timeStamp;
             }
             
             
             
-            inline void setCorrectorTimeStamp(const double& correctorTimeStamp) 
+            inline void setTimeStamp(const double& timeStamp) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               _correctorTimeStamp = correctorTimeStamp;
-            }
-            
-            
-            
-            inline double getPredictorTimeStepSize() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               return _predictorTimeStepSize;
-            }
-            
-            
-            
-            inline void setPredictorTimeStepSize(const double& predictorTimeStepSize) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               _predictorTimeStepSize = predictorTimeStepSize;
-            }
-            
-            
-            
-            inline double getPredictorTimeStamp() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               return _predictorTimeStamp;
-            }
-            
-            
-            
-            inline void setPredictorTimeStamp(const double& predictorTimeStamp) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               _predictorTimeStamp = predictorTimeStamp;
+               _timeStamp = timeStamp;
             }
             
             
@@ -5476,7 +5352,7 @@ namespace exahype {
             /**
              * Generated
              */
-            ADERDGCellDescriptionPacked(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const bool& hasCompletedLastStep, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& updateIndex, const int& updateAveragesIndex, const int& updateCompressedIndex, void* update, void* updateAverages, void* updateCompressed, const int& extrapolatedPredictorIndex, const int& extrapolatedPredictorAveragesIndex, const int& extrapolatedPredictorCompressedIndex, void* extrapolatedPredictor, void* extrapolatedPredictorAverages, void* extrapolatedPredictorCompressed, const int& extrapolatedPredictorGradientIndex, void* extrapolatedPredictorGradient, const int& fluctuationIndex, const int& fluctuationAveragesIndex, const int& fluctuationCompressedIndex, void* fluctuation, void* fluctuationAverages, void* fluctuationCompressed, const int& solutionMinIndex, const int& solutionMaxIndex, void* solutionMin, void* solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation, const Creation& creation);
+            ADERDGCellDescriptionPacked(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const bool& hasCompletedLastStep, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousTimeStamp, const double& previousTimeStepSize, const double& timeStepSize, const double& timeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& updateIndex, const int& updateAveragesIndex, const int& updateCompressedIndex, void* update, void* updateAverages, void* updateCompressed, const int& extrapolatedPredictorIndex, const int& extrapolatedPredictorAveragesIndex, const int& extrapolatedPredictorCompressedIndex, void* extrapolatedPredictor, void* extrapolatedPredictorAverages, void* extrapolatedPredictorCompressed, const int& extrapolatedPredictorGradientIndex, void* extrapolatedPredictorGradient, const int& fluctuationIndex, const int& fluctuationAveragesIndex, const int& fluctuationCompressedIndex, void* fluctuation, void* fluctuationAverages, void* fluctuationCompressed, const int& solutionMinIndex, const int& solutionMaxIndex, void* solutionMin, void* solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation, const Creation& creation);
             
             /**
              * Generated
@@ -5897,122 +5773,82 @@ namespace exahype {
             
             
             
-            inline double getPreviousCorrectorTimeStamp() const 
+            inline double getPreviousTimeStamp() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               return _persistentRecords._previousCorrectorTimeStamp;
+               return _persistentRecords._previousTimeStamp;
             }
             
             
             
-            inline void setPreviousCorrectorTimeStamp(const double& previousCorrectorTimeStamp) 
+            inline void setPreviousTimeStamp(const double& previousTimeStamp) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               _persistentRecords._previousCorrectorTimeStamp = previousCorrectorTimeStamp;
+               _persistentRecords._previousTimeStamp = previousTimeStamp;
             }
             
             
             
-            inline double getPreviousCorrectorTimeStepSize() const 
+            inline double getPreviousTimeStepSize() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               return _persistentRecords._previousCorrectorTimeStepSize;
+               return _persistentRecords._previousTimeStepSize;
             }
             
             
             
-            inline void setPreviousCorrectorTimeStepSize(const double& previousCorrectorTimeStepSize) 
+            inline void setPreviousTimeStepSize(const double& previousTimeStepSize) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               _persistentRecords._previousCorrectorTimeStepSize = previousCorrectorTimeStepSize;
+               _persistentRecords._previousTimeStepSize = previousTimeStepSize;
             }
             
             
             
-            inline double getCorrectorTimeStepSize() const 
+            inline double getTimeStepSize() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               return _persistentRecords._correctorTimeStepSize;
+               return _persistentRecords._timeStepSize;
             }
             
             
             
-            inline void setCorrectorTimeStepSize(const double& correctorTimeStepSize) 
+            inline void setTimeStepSize(const double& timeStepSize) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               _persistentRecords._correctorTimeStepSize = correctorTimeStepSize;
+               _persistentRecords._timeStepSize = timeStepSize;
             }
             
             
             
-            inline double getCorrectorTimeStamp() const 
+            inline double getTimeStamp() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               return _persistentRecords._correctorTimeStamp;
+               return _persistentRecords._timeStamp;
             }
             
             
             
-            inline void setCorrectorTimeStamp(const double& correctorTimeStamp) 
+            inline void setTimeStamp(const double& timeStamp) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               _persistentRecords._correctorTimeStamp = correctorTimeStamp;
-            }
-            
-            
-            
-            inline double getPredictorTimeStepSize() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               return _persistentRecords._predictorTimeStepSize;
-            }
-            
-            
-            
-            inline void setPredictorTimeStepSize(const double& predictorTimeStepSize) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               _persistentRecords._predictorTimeStepSize = predictorTimeStepSize;
-            }
-            
-            
-            
-            inline double getPredictorTimeStamp() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               return _persistentRecords._predictorTimeStamp;
-            }
-            
-            
-            
-            inline void setPredictorTimeStamp(const double& predictorTimeStamp) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               _persistentRecords._predictorTimeStamp = predictorTimeStamp;
+               _persistentRecords._timeStamp = timeStamp;
             }
             
             
@@ -7433,7 +7269,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   10/02/2019 18:21
+       * @date   06/03/2019 16:14
        */
       class exahype::records::ADERDGCellDescription { 
          
@@ -7476,12 +7312,10 @@ namespace exahype {
                #else
                tarch::la::Vector<DIMENSIONS,double> _size;
                #endif
-               double _previousCorrectorTimeStamp;
-               double _previousCorrectorTimeStepSize;
-               double _correctorTimeStepSize;
-               double _correctorTimeStamp;
-               double _predictorTimeStepSize;
-               double _predictorTimeStamp;
+               double _previousTimeStamp;
+               double _previousTimeStepSize;
+               double _timeStepSize;
+               double _timeStamp;
                int _solutionIndex;
                int _solutionAveragesIndex;
                int _solutionCompressedIndex;
@@ -7554,7 +7388,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const bool& hasCompletedLastStep, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& updateIndex, const int& updateAveragesIndex, const int& updateCompressedIndex, void* update, void* updateAverages, void* updateCompressed, const int& extrapolatedPredictorIndex, const int& extrapolatedPredictorAveragesIndex, const int& extrapolatedPredictorCompressedIndex, void* extrapolatedPredictor, void* extrapolatedPredictorAverages, void* extrapolatedPredictorCompressed, const int& extrapolatedPredictorGradientIndex, void* extrapolatedPredictorGradient, const int& fluctuationIndex, const int& fluctuationAveragesIndex, const int& fluctuationCompressedIndex, void* fluctuation, void* fluctuationAverages, void* fluctuationCompressed, const int& solutionMinIndex, const int& solutionMaxIndex, void* solutionMin, void* solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
+               PersistentRecords(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const bool& hasCompletedLastStep, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousTimeStamp, const double& previousTimeStepSize, const double& timeStepSize, const double& timeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& updateIndex, const int& updateAveragesIndex, const int& updateCompressedIndex, void* update, void* updateAverages, void* updateCompressed, const int& extrapolatedPredictorIndex, const int& extrapolatedPredictorAveragesIndex, const int& extrapolatedPredictorCompressedIndex, void* extrapolatedPredictor, void* extrapolatedPredictorAverages, void* extrapolatedPredictorCompressed, const int& extrapolatedPredictorGradientIndex, void* extrapolatedPredictorGradient, const int& fluctuationIndex, const int& fluctuationAveragesIndex, const int& fluctuationCompressedIndex, void* fluctuation, void* fluctuationAverages, void* fluctuationCompressed, const int& solutionMinIndex, const int& solutionMaxIndex, void* solutionMin, void* solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
                
                
                inline int getSolverNumber() const 
@@ -7871,122 +7705,82 @@ namespace exahype {
                
                
                
-               inline double getPreviousCorrectorTimeStamp() const 
+               inline double getPreviousTimeStamp() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  return _previousCorrectorTimeStamp;
+                  return _previousTimeStamp;
                }
                
                
                
-               inline void setPreviousCorrectorTimeStamp(const double& previousCorrectorTimeStamp) 
+               inline void setPreviousTimeStamp(const double& previousTimeStamp) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  _previousCorrectorTimeStamp = previousCorrectorTimeStamp;
+                  _previousTimeStamp = previousTimeStamp;
                }
                
                
                
-               inline double getPreviousCorrectorTimeStepSize() const 
+               inline double getPreviousTimeStepSize() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  return _previousCorrectorTimeStepSize;
+                  return _previousTimeStepSize;
                }
                
                
                
-               inline void setPreviousCorrectorTimeStepSize(const double& previousCorrectorTimeStepSize) 
+               inline void setPreviousTimeStepSize(const double& previousTimeStepSize) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  _previousCorrectorTimeStepSize = previousCorrectorTimeStepSize;
+                  _previousTimeStepSize = previousTimeStepSize;
                }
                
                
                
-               inline double getCorrectorTimeStepSize() const 
+               inline double getTimeStepSize() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  return _correctorTimeStepSize;
+                  return _timeStepSize;
                }
                
                
                
-               inline void setCorrectorTimeStepSize(const double& correctorTimeStepSize) 
+               inline void setTimeStepSize(const double& timeStepSize) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  _correctorTimeStepSize = correctorTimeStepSize;
+                  _timeStepSize = timeStepSize;
                }
                
                
                
-               inline double getCorrectorTimeStamp() const 
+               inline double getTimeStamp() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  return _correctorTimeStamp;
+                  return _timeStamp;
                }
                
                
                
-               inline void setCorrectorTimeStamp(const double& correctorTimeStamp) 
+               inline void setTimeStamp(const double& timeStamp) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  _correctorTimeStamp = correctorTimeStamp;
-               }
-               
-               
-               
-               inline double getPredictorTimeStepSize() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _predictorTimeStepSize;
-               }
-               
-               
-               
-               inline void setPredictorTimeStepSize(const double& predictorTimeStepSize) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _predictorTimeStepSize = predictorTimeStepSize;
-               }
-               
-               
-               
-               inline double getPredictorTimeStamp() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _predictorTimeStamp;
-               }
-               
-               
-               
-               inline void setPredictorTimeStamp(const double& predictorTimeStamp) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _predictorTimeStamp = predictorTimeStamp;
+                  _timeStamp = timeStamp;
                }
                
                
@@ -9163,7 +8957,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               ADERDGCellDescription(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const bool& hasCompletedLastStep, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& updateIndex, const int& updateAveragesIndex, const int& updateCompressedIndex, void* update, void* updateAverages, void* updateCompressed, const int& extrapolatedPredictorIndex, const int& extrapolatedPredictorAveragesIndex, const int& extrapolatedPredictorCompressedIndex, void* extrapolatedPredictor, void* extrapolatedPredictorAverages, void* extrapolatedPredictorCompressed, const int& extrapolatedPredictorGradientIndex, void* extrapolatedPredictorGradient, const int& fluctuationIndex, const int& fluctuationAveragesIndex, const int& fluctuationCompressedIndex, void* fluctuation, void* fluctuationAverages, void* fluctuationCompressed, const int& solutionMinIndex, const int& solutionMaxIndex, void* solutionMin, void* solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
+               ADERDGCellDescription(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const bool& hasCompletedLastStep, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousTimeStamp, const double& previousTimeStepSize, const double& timeStepSize, const double& timeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& updateIndex, const int& updateAveragesIndex, const int& updateCompressedIndex, void* update, void* updateAverages, void* updateCompressed, const int& extrapolatedPredictorIndex, const int& extrapolatedPredictorAveragesIndex, const int& extrapolatedPredictorCompressedIndex, void* extrapolatedPredictor, void* extrapolatedPredictorAverages, void* extrapolatedPredictorCompressed, const int& extrapolatedPredictorGradientIndex, void* extrapolatedPredictorGradient, const int& fluctuationIndex, const int& fluctuationAveragesIndex, const int& fluctuationCompressedIndex, void* fluctuation, void* fluctuationAverages, void* fluctuationCompressed, const int& solutionMinIndex, const int& solutionMaxIndex, void* solutionMin, void* solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
                
                /**
                 * Generated
@@ -9563,122 +9357,82 @@ namespace exahype {
                
                
                
-               inline double getPreviousCorrectorTimeStamp() const 
+               inline double getPreviousTimeStamp() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  return _persistentRecords._previousCorrectorTimeStamp;
+                  return _persistentRecords._previousTimeStamp;
                }
                
                
                
-               inline void setPreviousCorrectorTimeStamp(const double& previousCorrectorTimeStamp) 
+               inline void setPreviousTimeStamp(const double& previousTimeStamp) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  _persistentRecords._previousCorrectorTimeStamp = previousCorrectorTimeStamp;
+                  _persistentRecords._previousTimeStamp = previousTimeStamp;
                }
                
                
                
-               inline double getPreviousCorrectorTimeStepSize() const 
+               inline double getPreviousTimeStepSize() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  return _persistentRecords._previousCorrectorTimeStepSize;
+                  return _persistentRecords._previousTimeStepSize;
                }
                
                
                
-               inline void setPreviousCorrectorTimeStepSize(const double& previousCorrectorTimeStepSize) 
+               inline void setPreviousTimeStepSize(const double& previousTimeStepSize) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  _persistentRecords._previousCorrectorTimeStepSize = previousCorrectorTimeStepSize;
+                  _persistentRecords._previousTimeStepSize = previousTimeStepSize;
                }
                
                
                
-               inline double getCorrectorTimeStepSize() const 
+               inline double getTimeStepSize() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  return _persistentRecords._correctorTimeStepSize;
+                  return _persistentRecords._timeStepSize;
                }
                
                
                
-               inline void setCorrectorTimeStepSize(const double& correctorTimeStepSize) 
+               inline void setTimeStepSize(const double& timeStepSize) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  _persistentRecords._correctorTimeStepSize = correctorTimeStepSize;
+                  _persistentRecords._timeStepSize = timeStepSize;
                }
                
                
                
-               inline double getCorrectorTimeStamp() const 
+               inline double getTimeStamp() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  return _persistentRecords._correctorTimeStamp;
+                  return _persistentRecords._timeStamp;
                }
                
                
                
-               inline void setCorrectorTimeStamp(const double& correctorTimeStamp) 
+               inline void setTimeStamp(const double& timeStamp) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  _persistentRecords._correctorTimeStamp = correctorTimeStamp;
-               }
-               
-               
-               
-               inline double getPredictorTimeStepSize() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._predictorTimeStepSize;
-               }
-               
-               
-               
-               inline void setPredictorTimeStepSize(const double& predictorTimeStepSize) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._predictorTimeStepSize = predictorTimeStepSize;
-               }
-               
-               
-               
-               inline double getPredictorTimeStamp() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._predictorTimeStamp;
-               }
-               
-               
-               
-               inline void setPredictorTimeStamp(const double& predictorTimeStamp) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._predictorTimeStamp = predictorTimeStamp;
+                  _persistentRecords._timeStamp = timeStamp;
                }
                
                
@@ -11014,7 +10768,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   10/02/2019 18:21
+       * @date   06/03/2019 16:14
        */
       class exahype::records::ADERDGCellDescriptionPacked { 
          
@@ -11034,12 +10788,10 @@ namespace exahype {
                int _level;
                tarch::la::Vector<DIMENSIONS,double> _offset;
                tarch::la::Vector<DIMENSIONS,double> _size;
-               double _previousCorrectorTimeStamp;
-               double _previousCorrectorTimeStepSize;
-               double _correctorTimeStepSize;
-               double _correctorTimeStamp;
-               double _predictorTimeStepSize;
-               double _predictorTimeStamp;
+               double _previousTimeStamp;
+               double _previousTimeStepSize;
+               double _timeStepSize;
+               double _timeStamp;
                int _solutionIndex;
                int _solutionAveragesIndex;
                int _solutionCompressedIndex;
@@ -11109,7 +10861,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const bool& hasCompletedLastStep, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& updateIndex, const int& updateAveragesIndex, const int& updateCompressedIndex, void* update, void* updateAverages, void* updateCompressed, const int& extrapolatedPredictorIndex, const int& extrapolatedPredictorAveragesIndex, const int& extrapolatedPredictorCompressedIndex, void* extrapolatedPredictor, void* extrapolatedPredictorAverages, void* extrapolatedPredictorCompressed, const int& extrapolatedPredictorGradientIndex, void* extrapolatedPredictorGradient, const int& fluctuationIndex, const int& fluctuationAveragesIndex, const int& fluctuationCompressedIndex, void* fluctuation, void* fluctuationAverages, void* fluctuationCompressed, const int& solutionMinIndex, const int& solutionMaxIndex, void* solutionMin, void* solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
+               PersistentRecords(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const bool& hasCompletedLastStep, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousTimeStamp, const double& previousTimeStepSize, const double& timeStepSize, const double& timeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& updateIndex, const int& updateAveragesIndex, const int& updateCompressedIndex, void* update, void* updateAverages, void* updateCompressed, const int& extrapolatedPredictorIndex, const int& extrapolatedPredictorAveragesIndex, const int& extrapolatedPredictorCompressedIndex, void* extrapolatedPredictor, void* extrapolatedPredictorAverages, void* extrapolatedPredictorCompressed, const int& extrapolatedPredictorGradientIndex, void* extrapolatedPredictorGradient, const int& fluctuationIndex, const int& fluctuationAveragesIndex, const int& fluctuationCompressedIndex, void* fluctuation, void* fluctuationAverages, void* fluctuationCompressed, const int& solutionMinIndex, const int& solutionMaxIndex, void* solutionMin, void* solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
                
                
                inline int getSolverNumber() const 
@@ -11447,122 +11199,82 @@ namespace exahype {
                
                
                
-               inline double getPreviousCorrectorTimeStamp() const 
+               inline double getPreviousTimeStamp() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  return _previousCorrectorTimeStamp;
+                  return _previousTimeStamp;
                }
                
                
                
-               inline void setPreviousCorrectorTimeStamp(const double& previousCorrectorTimeStamp) 
+               inline void setPreviousTimeStamp(const double& previousTimeStamp) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  _previousCorrectorTimeStamp = previousCorrectorTimeStamp;
+                  _previousTimeStamp = previousTimeStamp;
                }
                
                
                
-               inline double getPreviousCorrectorTimeStepSize() const 
+               inline double getPreviousTimeStepSize() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  return _previousCorrectorTimeStepSize;
+                  return _previousTimeStepSize;
                }
                
                
                
-               inline void setPreviousCorrectorTimeStepSize(const double& previousCorrectorTimeStepSize) 
+               inline void setPreviousTimeStepSize(const double& previousTimeStepSize) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  _previousCorrectorTimeStepSize = previousCorrectorTimeStepSize;
+                  _previousTimeStepSize = previousTimeStepSize;
                }
                
                
                
-               inline double getCorrectorTimeStepSize() const 
+               inline double getTimeStepSize() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  return _correctorTimeStepSize;
+                  return _timeStepSize;
                }
                
                
                
-               inline void setCorrectorTimeStepSize(const double& correctorTimeStepSize) 
+               inline void setTimeStepSize(const double& timeStepSize) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  _correctorTimeStepSize = correctorTimeStepSize;
+                  _timeStepSize = timeStepSize;
                }
                
                
                
-               inline double getCorrectorTimeStamp() const 
+               inline double getTimeStamp() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  return _correctorTimeStamp;
+                  return _timeStamp;
                }
                
                
                
-               inline void setCorrectorTimeStamp(const double& correctorTimeStamp) 
+               inline void setTimeStamp(const double& timeStamp) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  _correctorTimeStamp = correctorTimeStamp;
-               }
-               
-               
-               
-               inline double getPredictorTimeStepSize() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _predictorTimeStepSize;
-               }
-               
-               
-               
-               inline void setPredictorTimeStepSize(const double& predictorTimeStepSize) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _predictorTimeStepSize = predictorTimeStepSize;
-               }
-               
-               
-               
-               inline double getPredictorTimeStamp() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _predictorTimeStamp;
-               }
-               
-               
-               
-               inline void setPredictorTimeStamp(const double& predictorTimeStamp) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _predictorTimeStamp = predictorTimeStamp;
+                  _timeStamp = timeStamp;
                }
                
                
@@ -12798,7 +12510,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               ADERDGCellDescriptionPacked(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const bool& hasCompletedLastStep, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& updateIndex, const int& updateAveragesIndex, const int& updateCompressedIndex, void* update, void* updateAverages, void* updateCompressed, const int& extrapolatedPredictorIndex, const int& extrapolatedPredictorAveragesIndex, const int& extrapolatedPredictorCompressedIndex, void* extrapolatedPredictor, void* extrapolatedPredictorAverages, void* extrapolatedPredictorCompressed, const int& extrapolatedPredictorGradientIndex, void* extrapolatedPredictorGradient, const int& fluctuationIndex, const int& fluctuationAveragesIndex, const int& fluctuationCompressedIndex, void* fluctuation, void* fluctuationAverages, void* fluctuationCompressed, const int& solutionMinIndex, const int& solutionMaxIndex, void* solutionMin, void* solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
+               ADERDGCellDescriptionPacked(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const bool& hasCompletedLastStep, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousTimeStamp, const double& previousTimeStepSize, const double& timeStepSize, const double& timeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& updateIndex, const int& updateAveragesIndex, const int& updateCompressedIndex, void* update, void* updateAverages, void* updateCompressed, const int& extrapolatedPredictorIndex, const int& extrapolatedPredictorAveragesIndex, const int& extrapolatedPredictorCompressedIndex, void* extrapolatedPredictor, void* extrapolatedPredictorAverages, void* extrapolatedPredictorCompressed, const int& extrapolatedPredictorGradientIndex, void* extrapolatedPredictorGradient, const int& fluctuationIndex, const int& fluctuationAveragesIndex, const int& fluctuationCompressedIndex, void* fluctuation, void* fluctuationAverages, void* fluctuationCompressed, const int& solutionMinIndex, const int& solutionMaxIndex, void* solutionMin, void* solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
                
                /**
                 * Generated
@@ -13219,122 +12931,82 @@ namespace exahype {
                
                
                
-               inline double getPreviousCorrectorTimeStamp() const 
+               inline double getPreviousTimeStamp() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  return _persistentRecords._previousCorrectorTimeStamp;
+                  return _persistentRecords._previousTimeStamp;
                }
                
                
                
-               inline void setPreviousCorrectorTimeStamp(const double& previousCorrectorTimeStamp) 
+               inline void setPreviousTimeStamp(const double& previousTimeStamp) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  _persistentRecords._previousCorrectorTimeStamp = previousCorrectorTimeStamp;
+                  _persistentRecords._previousTimeStamp = previousTimeStamp;
                }
                
                
                
-               inline double getPreviousCorrectorTimeStepSize() const 
+               inline double getPreviousTimeStepSize() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  return _persistentRecords._previousCorrectorTimeStepSize;
+                  return _persistentRecords._previousTimeStepSize;
                }
                
                
                
-               inline void setPreviousCorrectorTimeStepSize(const double& previousCorrectorTimeStepSize) 
+               inline void setPreviousTimeStepSize(const double& previousTimeStepSize) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  _persistentRecords._previousCorrectorTimeStepSize = previousCorrectorTimeStepSize;
+                  _persistentRecords._previousTimeStepSize = previousTimeStepSize;
                }
                
                
                
-               inline double getCorrectorTimeStepSize() const 
+               inline double getTimeStepSize() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  return _persistentRecords._correctorTimeStepSize;
+                  return _persistentRecords._timeStepSize;
                }
                
                
                
-               inline void setCorrectorTimeStepSize(const double& correctorTimeStepSize) 
+               inline void setTimeStepSize(const double& timeStepSize) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  _persistentRecords._correctorTimeStepSize = correctorTimeStepSize;
+                  _persistentRecords._timeStepSize = timeStepSize;
                }
                
                
                
-               inline double getCorrectorTimeStamp() const 
+               inline double getTimeStamp() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  return _persistentRecords._correctorTimeStamp;
+                  return _persistentRecords._timeStamp;
                }
                
                
                
-               inline void setCorrectorTimeStamp(const double& correctorTimeStamp) 
+               inline void setTimeStamp(const double& timeStamp) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  _persistentRecords._correctorTimeStamp = correctorTimeStamp;
-               }
-               
-               
-               
-               inline double getPredictorTimeStepSize() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._predictorTimeStepSize;
-               }
-               
-               
-               
-               inline void setPredictorTimeStepSize(const double& predictorTimeStepSize) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._predictorTimeStepSize = predictorTimeStepSize;
-               }
-               
-               
-               
-               inline double getPredictorTimeStamp() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._predictorTimeStamp;
-               }
-               
-               
-               
-               inline void setPredictorTimeStamp(const double& predictorTimeStamp) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._predictorTimeStamp = predictorTimeStamp;
+                  _persistentRecords._timeStamp = timeStamp;
                }
                
                

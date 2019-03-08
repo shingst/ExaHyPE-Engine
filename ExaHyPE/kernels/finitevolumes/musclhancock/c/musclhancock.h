@@ -87,7 +87,8 @@ namespace c {
   template <bool useSource, bool useNCP, bool useFlux, bool useViscousFlux, bool robustDiagonalLimiting, typename SolverType>
   double solutionUpdate(
       SolverType& solver,double* luh,
-      const tarch::la::Vector<DIMENSIONS, double>& dx,double dt);
+      const tarch::la::Vector<DIMENSIONS, double>& cellCenter,
+      const tarch::la::Vector<DIMENSIONS, double>& dx,double t,double dt);
 }  // namespace c
 }  // namespace musclhancock
 }  // namespace finitevolumes

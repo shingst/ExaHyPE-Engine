@@ -47,7 +47,6 @@ class NavierStokes::NavierStokesSolver_ADERDG : public NavierStokes::AbstractNav
         const int haloCells,
         const int regularisedFineGridLevels,
         const exahype::solvers::Solver::TimeStepping timeStepping,
-        const int limiterHelperLayers,
         const int DMPObservables);
 
     /**
@@ -116,7 +115,7 @@ class NavierStokes::NavierStokesSolver_ADERDG : public NavierStokes::AbstractNav
           const int direction,
           const int orientation);
 
-  void mapDiscreteMaximumPrincipleObservables(double* observables,const int numberOfObservables,const double* const Q) const override;
+  void mapDiscreteMaximumPrincipleObservables(double* observables,const double* const Q) const override;
 
   bool isPhysicallyAdmissible(
      const double* const solution,

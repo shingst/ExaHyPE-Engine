@@ -22,7 +22,7 @@ void Synthetical::TroubleSolver_ADERDG::init(const std::vector<std::string>& cmd
   // @todo Please implement/augment if required
 }
 
-void InitialData(const double* const x,const double t,double* Q) {
+void InitialData(const double* const x,const double t,double* const Q) {
   using namespace Synthetical::TroubleSolver_ADERDG_Variables::shortcuts;
   // initialize everything with rising numbers
   NVARS(i) Q[i] = i;
@@ -49,13 +49,13 @@ void checkCorrectState(const double* const Q) {
   }
 }
 
-void Synthetical::TroubleSolver_ADERDG::adjustPointSolution(const double* const x,const double t,const double dt,double* Q) {
+void Synthetical::TroubleSolver_ADERDG::adjustPointSolution(const double* const x,const double t,const double dt,double* const Q) {
   if (tarch::la::equals(t,0.0)) InitialData(x,t,Q);
 }
 
 void Synthetical::TroubleSolver_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,
   const double * const fluxIn,const double* const stateIn,
-  double *fluxOut,double* stateOut) {
+  double* const fluxOut,double* const stateOut) {
 
   // trivial BC.
 
@@ -69,7 +69,7 @@ void Synthetical::TroubleSolver_ADERDG::boundaryValues(const double* const x,con
   */
 }
 
-exahype::solvers::Solver::RefinementControl Synthetical::TroubleSolver_ADERDG::refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
+exahype::solvers::Solver::RefinementControl Synthetical::TroubleSolver_ADERDG::refinementCriterion(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
   // @todo Please implement/augment if required
   return exahype::solvers::Solver::RefinementControl::Keep;
 }
@@ -81,12 +81,12 @@ exahype::solvers::Solver::RefinementControl Synthetical::TroubleSolver_ADERDG::r
 //*****************************************************************************
 
 
-void Synthetical::TroubleSolver_ADERDG::eigenvalues(const double* const Q,const int d,double* lambda) {
+void Synthetical::TroubleSolver_ADERDG::eigenvalues(const double* const Q,const int d,double* const lambda) {
   NVARS(i) lambda[i] = 1;
 }
 
 
-void Synthetical::TroubleSolver_ADERDG::flux(const double* const Q,double** F) {
+void Synthetical::TroubleSolver_ADERDG::flux(const double* const Q,double** const F) {
   checkCorrectState(Q);
 
   DFOR(d) NVARS(i) F[d][i] = 0;
@@ -94,12 +94,12 @@ void Synthetical::TroubleSolver_ADERDG::flux(const double* const Q,double** F) {
 
 
 //You can either implement this method or modify fusedSource
-void Synthetical::TroubleSolver_ADERDG::algebraicSource(const double* const Q,double* S) {
+void Synthetical::TroubleSolver_ADERDG::algebraicSource(const double* const Q,double* const S) {
   checkCorrectState(Q);
   NVARS(i) S[i] = 0;
 }
 
-void  Synthetical::TroubleSolver_ADERDG::nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) {
+void  Synthetical::TroubleSolver_ADERDG::nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ) {
   checkCorrectState(Q);
   NVARS(i) BgradQ[i] = 0;
 }

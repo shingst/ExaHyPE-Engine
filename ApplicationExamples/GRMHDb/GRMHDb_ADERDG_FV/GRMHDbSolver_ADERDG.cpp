@@ -42,16 +42,18 @@ tarch::logging::Log GRMHDb::GRMHDbSolver_ADERDG::_log( "GRMHDb::GRMHDbSolver_ADE
 
 
 void GRMHDb::GRMHDbSolver_ADERDG::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
+  // Tip: You find documentation for this method in header file "GRMHDb::GRMHDbSolver_ADERDG.h".
+  
   // @todo Please implement/augment if required
 
-    const int order = GRMHDb::AbstractGRMHDbSolver_ADERDG::Order;
+	constexpr int order = GRMHDb::AbstractGRMHDbSolver_ADERDG::Order;
 	constexpr int basisSize = AbstractGRMHDbSolver_FV::PatchSize;
 	constexpr int Ghostlayers = AbstractGRMHDbSolver_FV::GhostLayerWidth;
     int mpirank = tarch::parallel::Node::getInstance().getRank();
 
 	/**************************************************************************/
-	static tarch::multicore::BooleanSemaphore initialDataSemaphore;
-	tarch::multicore::Lock lock(initialDataSemaphore);
+	static tarch::multicore::BooleanSemaphore initializationSemaphoreDG;
+	tarch::multicore::Lock lock(initializationSemaphoreDG);
 	/***************************************************/
 	// everything in here is thread-safe w.r.t. the lock
 	// call Fortran routines
@@ -60,7 +62,7 @@ void GRMHDb::GRMHDbSolver_ADERDG::init(const std::vector<std::string>& cmdlinear
 	//printf("\n******************************************************************");
 	//printf("\n**************<<<  INIT TECPLOT    >>>****************************");
 	//printf("\n******************************************************************");
-    inittecplot_(&order,&order,&basisSize,&Ghostlayers);
+     inittecplot_(&order,&basisSize,&Ghostlayers);
 	 printf("\n******************************************************************");
 	 printf("\n**************<<<  INIT PDE SETUP  >>>****************************");
 	 printf("\n******************************************************************");
@@ -77,11 +79,14 @@ void GRMHDb::GRMHDbSolver_ADERDG::init(const std::vector<std::string>& cmdlinear
 	 /**************************************************************************/
 }
 
-void GRMHDb::GRMHDbSolver_ADERDG::adjustPointSolution(const double* const x,const double t,const double dt,double* Q) {
+void GRMHDb::GRMHDbSolver_ADERDG::adjustPointSolution(const double* const x,const double t,const double dt,double* const Q) {
+  // Tip: You find documentation for this method in header file "GRMHDb::GRMHDbSolver_ADERDG.h".
+  // Tip: See header file "GRMHDb::AbstractGRMHDbSolver_ADERDG.h" for toolkit generated compile-time 
+  //      constants such as Order, NumberOfVariables, and NumberOfParameters.
   // Dimensions                        = 3
   // Number of variables + parameters  = 19 + 0
   // @todo Please implement/augment if required
-	//const int nVar = GRMHDb::AbstractGRMHDbSolver_ADERDG::NumberOfVariables;
+	//const int numberOfData = GRMHDb::AbstractGRMHDbSolver_ADERDG::NumberOfVariables;
   if (tarch::la::equals(t,0.0)) {
     Q[0] = 0.0;
     Q[1] = 0.0;
@@ -105,13 +110,13 @@ void GRMHDb::GRMHDbSolver_ADERDG::adjustPointSolution(const double* const x,cons
 
 
 	/**************************************************************************/
-	static tarch::multicore::BooleanSemaphore initialDataSemaphore;
-	tarch::multicore::Lock lock(initialDataSemaphore);
+	static tarch::multicore::BooleanSemaphore initialDataSemaphoreDG;
+	tarch::multicore::Lock lock(initialDataSemaphoreDG);
 	/***************************************************/
 	// everything in here is thread-safe w.r.t. the lock
 	// call Fortran routines
 	/***********************/
-        initialdata_(x, &t, Q);
+    initialdata_(x, &t, Q);
 
 	/************/
 	lock.free();
@@ -130,12 +135,18 @@ void GRMHDb::GRMHDbSolver_ADERDG::adjustPointSolution(const double* const x,cons
 
 void GRMHDb::GRMHDbSolver_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,
   const double * const fluxIn,const double* const stateIn,
-  double *fluxOut,double* stateOut) {
-const int nVar = GRMHDb::AbstractGRMHDbSolver_ADERDG::NumberOfVariables;
+  double* const fluxOut,double* const stateOut) {
+  // Tip: You find documentation for this method in header file "GRMHDb::GRMHDbSolver_ADERDG.h".
+  // Tip: See header file "GRMHDb::AbstractGRMHDbSolver_ADERDG.h" for toolkit generated compile-time 
+  //      constants such as Order, NumberOfVariables, and NumberOfParameters.
+  constexpr int numberOfVariables = AbstractGRMHDbSolver_ADERDG::NumberOfVariables;
+  constexpr int numberOfParameters = AbstractGRMHDbSolver_ADERDG::NumberOfParameters;
+  constexpr int numberOfData = numberOfVariables + numberOfParameters;
+  //constexpr int numberOfData = AbstractGRMHDbSolver_FV::NumberOfVariables;
   const int order = GRMHDb::AbstractGRMHDbSolver_ADERDG::Order;
   const int basisSize = order + 1;
   const int nDim = DIMENSIONS;
-  double Qgp[nVar],*F[nDim], Fs[nDim][nVar];
+  double Qgp[numberOfData],*F[nDim], Fs[nDim][numberOfData];
 
 
   // Dimensions                        = 3
@@ -186,15 +197,17 @@ const int nVar = GRMHDb::AbstractGRMHDbSolver_ADERDG::NumberOfVariables;
  /* stateOut[0] = exp(-(x[0] * x[0] + x[1] * x[1] + x[2] * x[2]) / 8.0);
   stateOut[1] = sin(x[1])*sin(x[0]);
   stateOut[2] = sin(x[2]);
-  for (int i = 3; i < nVar; i++) {
+  for (int i = 3; i < numberOfData; i++) {
 	  stateOut[i] = cos(x[0]);
   }
   fluxOut[0] = exp(-(x[0] * x[0] + x[1] * x[1] + x[2] * x[2]) / 8.0);
   fluxOut[1] = sin(x[1])*sin(x[0]);
   fluxOut[2] = sin(x[2]);
-  for (int i = 3; i < nVar; i++) {
+  for (int i = 3; i < numberOfData; i++) {
 	  fluxOut[i] = cos(x[0]);
   }*/
+ 
+ 
  for(int dd=0; dd<nDim; dd++) F[dd] = Fs[dd];
 
  for(int i=0; i < basisSize; i++)  { // i == time
@@ -203,26 +216,63 @@ const int nVar = GRMHDb::AbstractGRMHDbSolver_ADERDG::NumberOfVariables;
 	  double ti = t + xi * dt;
 
 	  initialdata_(x, &ti, Qgp);
-	  pdeflux_(F[0], F[1], F[2], Qgp);
+	  //pdeflux_(F[0], F[1], F[2], Qgp);
 	  flux(Qgp, F);
-    for(int m=0; m < nVar; m++) {
+          for(int m=0; m < numberOfData; m++) {
 		  stateOut[m] += weight * Qgp[m];
 		  fluxOut[m] += weight * Fs[normalNonZero][m];
 	  }
  }
 
   /*
-	for(int m=0; m < nVar; m++) {
+	for(int m=0; m < numberOfData; m++) {
 	stateOut[m] = stateIn[m];
 	fluxOut[m] = fluxIn[m];
 	}
 	*/
 }
 
-exahype::solvers::Solver::RefinementControl GRMHDb::GRMHDbSolver_ADERDG::refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
+exahype::solvers::Solver::RefinementControl GRMHDb::GRMHDbSolver_ADERDG::refinementCriterion(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
+  // Tip: You find documentation for this method in header file "GRMHDb::GRMHDbSolver_ADERDG.h".
+  // Tip: See header file "GRMHDb::AbstractGRMHDbSolver_ADERDG.h" for toolkit generated compile-time 
+  //      constants such as Order, NumberOfVariables, and NumberOfParameters.
+  // Tip: See header file "peano/utils/Loop.h" for dimension-agnostic for loops.
+  
+  //  Example: Loop over all pointwise state variables (plus parameters)
+  //
+  //  constexpr int sizeOfQ = NumberOfVariables+NumberOfParameters;
+  //  dfor(i,Order+1) {
+  //    const int iLinearised = dLinearised(i,Order+1);
+  //    const double* const Q = luh + iLinearised * sizeOfQ; // pointwise state variables (plus parameters)
+  //    // use Q[0], Q[1], ... Q[sizeOfQ-1]
+  //  }
+  
   // @todo Please implement/augment if required
-  return exahype::solvers::Solver::RefinementControl::Keep;
+        //return exahype::solvers::Solver::RefinementControl::Keep;	
+	//constexpr int numberOfVariables = AbstractGRMHDbSolver_ADERDG::NumberOfVariables;
+	//constexpr int numberOfParameters = AbstractGRMHDbSolver_ADERDG::NumberOfParameters;
+	//constexpr int numberOfData = numberOfVariables + numberOfParameters;
+	//constexpr int numberOfData = AbstractGRMHDbSolver_FV::NumberOfVariables;
+	//const int order = GRMHDb::AbstractGRMHDbSolver_ADERDG::Order;
+	//const int basisSize = order + 1;
+	//const int nDim = DIMENSIONS; 
+        
+        double dr = dx[0]*dx[0] +  dx[1]*dx[1] +  dx[2]*dx[2];
+        dr = sqrt(dr);
+        double radiusC = center[0] * center[0] + center[1] * center[1] + center[2] * center[2];
+        if(radiusC > 0.){
+                radiusC = sqrt(radiusC);
+        }
+        if (radiusC + 0.5*dr > 7.6 && radiusC-0.5*dr < 8.5) {
+	 return exahype::solvers::Solver::RefinementControl::Refine;
+	}
+	else{
+	 return exahype::solvers::Solver::RefinementControl::Erase;
+	}
+	if (level > getCoarsestMeshLevel())  return exahype::solvers::Solver::RefinementControl::Erase;
+        return exahype::solvers::Solver::RefinementControl::Keep;
 }
+
 
 //*****************************************************************************
 //******************************** PDE ****************************************
@@ -231,7 +281,10 @@ exahype::solvers::Solver::RefinementControl GRMHDb::GRMHDbSolver_ADERDG::refinem
 //*****************************************************************************
 
 
-void GRMHDb::GRMHDbSolver_ADERDG::eigenvalues(const double* const Q,const int d,double* lambda) {
+void GRMHDb::GRMHDbSolver_ADERDG::eigenvalues(const double* const Q,const int d,double* const lambda) {
+  // Tip: You find documentation for this method in header file "GRMHDb::GRMHDbSolver_ADERDG.h".
+  // Tip: See header file "GRMHDb::AbstractGRMHDbSolver_ADERDG.h" for toolkit generated compile-time 
+  //      constants such as Order, NumberOfVariables, and NumberOfParameters.
   // Dimensions                        = 3
   // Number of variables + parameters  = 19 + 0
   
@@ -263,10 +316,14 @@ void GRMHDb::GRMHDbSolver_ADERDG::eigenvalues(const double* const Q,const int d,
 
 
 void GRMHDb::GRMHDbSolver_ADERDG::referenceSolution(const double* const x,double t, double* Q) {
-	//const int nVar = GRMHDb::AbstractGRMHDbSolver_ADERDG::NumberOfVariables;
-	const int nVar = GRMHDb::AbstractGRMHDbSolver_ADERDG::NumberOfVariables;
+	//const int numberOfData = GRMHDb::AbstractGRMHDbSolver_ADERDG::NumberOfVariables;
+	//const int numberOfData = GRMHDb::AbstractGRMHDbSolver_ADERDG::NumberOfVariables;
+	constexpr int numberOfVariables = AbstractGRMHDbSolver_ADERDG::NumberOfVariables;
+	constexpr int numberOfParameters = AbstractGRMHDbSolver_ADERDG::NumberOfParameters;
+	constexpr int numberOfData = numberOfVariables + numberOfParameters;
+	//constexpr int numberOfData = AbstractGRMHDbSolver_FV::NumberOfVariables;
 	int iErr;
-	double Qcons[nVar];
+	double Qcons[numberOfData];
 	iErr = 0;
 
 	initialdata_(x, &t, &Qcons[0]);
@@ -275,14 +332,17 @@ void GRMHDb::GRMHDbSolver_ADERDG::referenceSolution(const double* const x,double
 	//Q[0] = exp(-(x[0] * x[0] + x[1] * x[1] + x[2] * x[2]) / 8.0);
 	//	Q[1] = sin(x[1])*sin(x[0]);
 	//	Q[2] = sin(x[2]);
-	//for (int i = 3; i < nVar; i++) {
+	//for (int i = 3; i < numberOfData; i++) {
 	//	Q[i] = cos(x[0]);
 	//}
 	pdecons2prim_(Q, &Qcons[0], &iErr);
 }
 
 
-void GRMHDb::GRMHDbSolver_ADERDG::flux(const double* const Q,double** F) {
+void GRMHDb::GRMHDbSolver_ADERDG::flux(const double* const Q,double** const F) {
+  // Tip: You find documentation for this method in header file "GRMHDb::GRMHDbSolver_ADERDG.h".
+  // Tip: See header file "GRMHDb::AbstractGRMHDbSolver_ADERDG.h" for toolkit generated compile-time 
+  //      constants such as Order, NumberOfVariables, and NumberOfParameters.
   // Dimensions                        = 3
   // Number of variables + parameters  = 19 + 0
   
@@ -347,18 +407,26 @@ void GRMHDb::GRMHDbSolver_ADERDG::flux(const double* const Q,double** F) {
   F[2][17] = 0.0;
   F[2][18] = 0.0;
   
+  
     if(DIMENSIONS == 2){
-        const int nVar = GRMHDb::AbstractGRMHDbSolver_ADERDG::NumberOfVariables;
-		double F_3[nVar];
+		constexpr int numberOfVariables = AbstractGRMHDbSolver_ADERDG::NumberOfVariables;
+		constexpr int numberOfParameters = AbstractGRMHDbSolver_ADERDG::NumberOfParameters;
+		constexpr int numberOfData = numberOfVariables + numberOfParameters;
+		double F_3[numberOfData];
 		pdeflux_(F[0], F[1],F_3, Q);
 	}else{
 		pdeflux_(F[0], F[1],F[2], Q);
 	}
+   
 }
 
 
 
-void  GRMHDb::GRMHDbSolver_ADERDG::nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) {
+void  GRMHDb::GRMHDbSolver_ADERDG::nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ) {
+  // Tip: You find documentation for this method in header file "GRMHDb::GRMHDbSolver_ADERDG.h".
+  // Tip: See header file "GRMHDb::AbstractGRMHDbSolver_ADERDG.h" for toolkit generated compile-time 
+  //      constants such as Order, NumberOfVariables, and NumberOfParameters.
+  
   // @todo Please implement/augment if required
   BgradQ[0] = 0.0;
   BgradQ[1] = 0.0;
@@ -383,11 +451,16 @@ void  GRMHDb::GRMHDbSolver_ADERDG::nonConservativeProduct(const double* const Q,
 }
 
 void GRMHDb::GRMHDbSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(
-	double* observables, const int NumberOfVariables,
+	double* const observables,
 	const double* const Q) const {
+	
+                if (NumberOfDMPObservables>0) {
+                        std::copy_n(Q,NumberOfDMPObservables,observables);
+                }
+/*
 	for (int i = 0; i < NumberOfVariables; ++i) {
 		observables[i] = Q[i];
-	}
+	}*/
 }
 
 
@@ -407,7 +480,81 @@ bool GRMHDb::GRMHDbSolver_ADERDG::isPhysicallyAdmissible(
 	//  return false;
   //}else{
 	//  return true;
-
   //};
-  return false;
+	//return false;
+        double dr = dx[0]*dx[0] +  dx[1]*dx[1] +  dx[2]*dx[2];
+        dr = sqrt(dr);
+	double radiusC = center[0] * center[0] + center[1] * center[1] + center[2] * center[2];
+	if (radiusC > 0.) {
+		radiusC = sqrt(radiusC);		
+	}		
+        if (radiusC + 0.5*dr > 7.6 && radiusC-0.5*dr < 8.5) {
+	//if (radiusC > 7.6 && radiusC < 8.5) {
+		return false;
+	}
+	else {
+		return true;
+	}
 }
+
+#ifdef OPT_KERNELS
+
+#include "kernels/GRMHDb_GRMHDbSolver_ADERDG/Kernels.h"
+
+void GRMHDb::AbstractGRMHDbSolver_ADERDG::riemannSolver(double* const FL, double* const FR, const double* const QL, const double* const QR, const double t, const double dt, const int direction, bool isBoundaryFace, int faceIndex) {
+	assertion2(direction >= 0, dt, direction);
+	assertion2(direction < DIMENSIONS, dt, direction);
+	GRMHDb::GRMHDbSolver_ADERDG_kernels::aderdg::riemannSolver(*static_cast<GRMHDbSolver_ADERDG*>(this), FL, FR, QL, QR, t, dt, direction);
+
+
+	constexpr int order = GRMHDb::AbstractGRMHDbSolver_ADERDG::Order;
+	constexpr int basisSize = order + 1;
+	constexpr int numberOfVariables = GRMHDb::GRMHDbSolver_ADERDG_kernels::aderdg::getNumberOfVariablePadded();   //              AbstractGRMHDbSolver_ADERDG::NumberOfVariables;
+	// avoid spurious numerical diffusion (ony for Cowling approximation)
+	kernels::idx3 idx_FLR(basisSize, basisSize, numberOfVariables);
+	for (int i = 0; i < basisSize; i++) {
+		for (int j = 0; j < basisSize; j++) {
+			//resetNumericalDiffusionOnADM(FL + idx_FLR(i, j, 0));
+			//resetNumericalDiffusionOnADM(FR + idx_FLR(i, j, 0));
+			double* FLL = FL + idx_FLR(i, j, 0);
+			double* FRR = FR + idx_FLR(i, j, 0);
+			for (int m = 9; m < numberOfVariables; m++) {
+				FLL[m] = 0.0;
+				FRR[m] = 0.0;
+			}
+		}
+	}
+
+}
+
+
+#else
+
+#include "kernels/aderdg/generic/Kernels.h"
+void GRMHDb::GRMHDbSolver_ADERDG::riemannSolver(double* const FL, double* const FR, const double* const QL, const double* const QR, const double t, const double dt, const int direction, bool isBoundaryFace, int faceIndex) {
+	assertion2(direction >= 0, dt, direction);
+	assertion2(direction < DIMENSIONS, dt, direction);
+	kernels::aderdg::generic::c::riemannSolverNonlinear<true, GRMHDbSolver_ADERDG>(*static_cast<GRMHDbSolver_ADERDG*>(this), FL, FR, QL, QR, t, dt, direction);
+
+
+	constexpr int order = GRMHDb::AbstractGRMHDbSolver_ADERDG::Order;
+	constexpr int basisSize = order + 1;
+	constexpr int numberOfVariables = AbstractGRMHDbSolver_ADERDG::NumberOfVariables;
+	// avoid spurious numerical diffusion (ony for Cowling approximation)
+	kernels::idx3 idx_FLR(basisSize, basisSize, numberOfVariables);
+	for (int i = 0; i < basisSize; i++) {
+		for (int j = 0; j < basisSize; j++) {
+			//resetNumericalDiffusionOnADM(FL + idx_FLR(i, j, 0));
+			//resetNumericalDiffusionOnADM(FR + idx_FLR(i, j, 0));
+			double* FLL = FL + idx_FLR(i, j, 0);
+			double* FRR = FR + idx_FLR(i, j, 0);
+			for (int m = 9; m < numberOfVariables; m++) {
+				FLL[m] = 0.0;
+				FRR[m] = 0.0;
+			}
+		}
+	}
+
+}
+#endif
+

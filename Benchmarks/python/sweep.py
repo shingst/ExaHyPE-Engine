@@ -20,6 +20,7 @@ def haveToPrintHelpMessage(argv):
     """
     result = parseArgument(argv,2) not in subprograms or \
              parseArgument(argv,1)==None
+    result = result and parseArgument(argv,1) not in ["iniTemplate","jobTemplate"]
     for arg in argv:
         result = result or ( arg=="-help" or arg=="-h" )
     return result
@@ -291,7 +292,7 @@ def build(buildOnlyMissing=False, skipMakeClean=False):
                         process.wait()
                        
                         # run toolkit
-                        toolkitCommand = "{0}/Toolkit/toolkit.sh -s {0}/{1}".format(exahypeRoot,buildSpecFilePath)
+                        toolkitCommand = "{0}/Toolkit/toolkit.sh --format=json -s {0}/{1}".format(exahypeRoot,buildSpecFilePath)
                         print(toolkitCommand,end="",flush=True)
                         process = subprocess.Popen([toolkitCommand], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
                         (output, toolkitErr) = process.communicate()
@@ -839,7 +840,11 @@ if __name__ == "__main__":
     import sweep_analysis
     import sweep_options
     
-    subprograms = ["build","buildMissing","buildLocally","link","scripts","submit","cancel","parseAdapters","parseTotalTimes","parseTimeStepTimes","parseMetrics","parseJobStatistics","cleanBuild", "cleanScripts","cleanResults","cleanHistory","cleanAll"]
+    subprograms = [\
+"build","buildMissing","buildLocally","link","scripts","submit","cancel","parseAdapters",\
+"parseTotalTimes","parseTimeStepTimes","parseMetrics","parseJobStatistics",\
+"cleanBuild", "cleanScripts","cleanResults","cleanHistory","cleanAll",\
+"iniTemplate","jobTemplate"]
     
     if haveToPrintHelpMessage(sys.argv):
         info = \
@@ -851,28 +856,36 @@ if __name__ == "__main__":
 
 available subprograms:
 
-* build              - build all executables
-* buildMissing       - build only missing executables
-* buildLocally       - rebuild only the local application folder (no make clean)
-* link               - link runtime dependencies into the build folder
-* scripts            - submit the generated jobs
-* cancel             - cancel the submitted jobs
-* parseAdapters      - read the job output and parse adapter times
-* parseTotalTimes    - read the adapter times table and:
-                       Per configuration, calculate the total simulation time 
-                       and minimise over all runs.
-* parseTimeStepTimes - read the adapter times table and:
-                       Per configuration, calculate the time spent per time step
-                       and minimise over all runs.
-* parseMetrics       - read the job output and parse likwid metrics
-* parseJobStatistics - read background job processing stastistics. Requires that executables are built with "-DTBB_USE_THREADING_TOOLS=1".
-* cleanAll           - remove the whole sweep benchmark suite
-* cleanBuild         - remove the build subfolder
-* cleanScripts       - remove the scripts subfolder
-* cleanResults       - remove the results subfolder
-* cleanHistory       - clean the submission history
+* build                 - build all executables
+* buildMissing          - build only missing executables
+* buildLocally          - rebuild only the local application folder (no make clean)
+* link                  - link runtime dependencies into the build folder
+* scripts               - submit the generated jobs
+* cancel                - cancel the submitted jobs
+* parseAdapters         - read the job output and parse adapter times
+* parseTotalTimes       - read the adapter times table and:
+                          Per configuration, calculate the total simulation time 
+                          and minimise over all runs.
+* parseTimeStepTimes    - read the adapter times table and:
+                          Per configuration, calculate the time spent per time step
+                          and minimise over all runs.
+* parseMetrics          - read the job output and parse likwid metrics
+* parseJobStatistics    - read background job processing stastistics. 
+                          Requires that executables are built with "-DTBB_USE_THREADING_TOOLS=1".
+* cleanAll              - remove the whole sweep benchmark suite
+* cleanBuild            - remove the build subfolder
+* cleanScripts          - remove the scripts subfolder
+* cleanResults          - remove the results subfolder
+* cleanHistory          - clean the submission history
+* iniTemplate          - print out template for ini file
+* jobTemplate <machine> - print out job template file for supercomputer. Supported: "supermuc","hamilton"
 
 2) typical workflow:
+
+./sweep.py iniTemplate > myTemplateFile.ini
+./sweep.py jobTemplate supermuc > myJobTemplate.ini
+
+# edit both files and create specification file template
 
 ./sweep.py myoptions.ini build
 ./sweep.py myoptions.ini scripts
@@ -911,10 +924,20 @@ It must further contain at least one of the following sections:
         sys.exit()
     
     optionsFile = parseArgument(sys.argv,1)
+    
+    # print out templates
+    if optionsFile == "iniTemplate":
+        sweep_options.printOptionsFileTemplate()
+        sys.exit()
+    elif optionsFile == "jobTemplate":
+        machine = parseArgument(sys.argv,2)
+        sweep_options.printJobTemplate(machine)
+        sys.exit()
+
+    # run subprograms
     subprogram  = parseArgument(sys.argv,2)
-    
     compressTable = parseArgument(sys.argv,3)=="--compress"
-    
+
     options = sweep_options.parseOptionsFile(optionsFile)
     
     general                   = options.general

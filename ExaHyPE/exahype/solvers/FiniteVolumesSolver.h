@@ -24,6 +24,10 @@
 #include "exahype/Cell.h"
 #include "exahype/Vertex.h"
 
+#ifdef USE_ITAC
+#include "VT.h"
+#endif
+
 namespace exahype {
 namespace solvers {
 class FiniteVolumesSolver;
@@ -39,12 +43,24 @@ class ParserView;
 class exahype::solvers::FiniteVolumesSolver : public exahype::solvers::Solver {
   friend class LimitingADERDGSolver;
 public:
+
+  #ifdef USE_ITAC
+  /**
+   * These handles are used to trace solver events with Intel Trace Analyzer and Collector.
+   */
+  static int adjustSolutionHandle;
+  static int fusedTimeStepBodyHandle;
+  static int predictorBodyHandle;
+  static int updateBodyHandle;
+  static int mergeNeighboursHandle;
+  #endif
+
   typedef exahype::DataHeap DataHeap;
 
   /**
    * Rank-local heap that stores FiniteVolumesCellDescription instances.
    *
-   * \note This heap might be shared by multiple FiniteVolumesSolver instances
+   * @note This heap might be shared by multiple FiniteVolumesSolver instances
    * that differ in their solver number and other attributes.
    * @see solvers::Solver::RegisteredSolvers.
    */
@@ -90,7 +106,7 @@ private:
    * Minimum stable time step size of all patches for
    * the next iteration.
    */
-  double _minNextTimeStepSize;
+  double _admissibleTimeStepSize;
 
   /**
    * Width of the ghost layer used for
@@ -102,12 +118,6 @@ private:
    * The current mesh update event.
    */
   MeshUpdateEvent _meshUpdateEvent;
-
-  /**
-   * The mesh update event which will become active
-   * in the next iteration.
-   */
-  MeshUpdateEvent _nextMeshUpdateEvent;
 
   /**
    * Synchronises the cell description's time stepping data with
@@ -183,7 +193,7 @@ private:
    * There are no prolongations and restrictions
    * for the Finite Volums Solver in ExaHyPE
    *
-   * \param[in] isSkeletonCell indicates that the cell is adjacent to a remote boundary.
+   * @param[in] isSkeletonCell indicates that the cell is adjacent to a remote boundary.
    *            (There is currently no AMR for the pure FVM solver.)
    */
   void compress(
@@ -208,6 +218,34 @@ private:
   void pullUnknownsFromByteStream(CellDescription& cellDescription) const;
   void putUnknownsIntoByteStream(CellDescription& cellDescription) const;
   void uncompress(CellDescription& cellDescription) const;
+
+  /**
+   * Perform a solution update.
+   *
+   * @param cellDescription          a cell description
+   * @param neighbourMergePerformed  per face, a flag indicating if ghost layers have been copied over from a neighbour
+   * @param cellDescriptionsIndex    a cell descriptions index for debuggin purposes
+   * @param backupPreviousSolution   if the previous solution should be backed up or not. When running batches, we only want to back up the solution in the first step.
+   */
+  void updateSolution(
+      CellDescription&                                           cellDescription,
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
+      const int                                                  cellDescriptionsIndex,
+      const bool                                                 backupPreviousSolution);
+
+  /**
+   * Rolls back the solver's solution on the cell description.
+   * This method is used by the ADER-DG a-posteriori
+   * subcell limiter (LimitingADERDGSolver).
+   *
+   * <h2>Open issues</h2>
+   * A rollback is of course not possible if we have adjusted the solution
+   * values. Assuming the rollback is invoked by a LimitingADERDGSolver,
+   * we should use the adjusted FVM solution as reference solution.
+   * A similar issue occurs if we impose initial conditions that
+   * include a discontinuity.
+   */
+  void swapSolutionAndPreviousSolution(CellDescription& cellDescription) const;
 
   class CompressionJob: public tarch::multicore::jobs::Job {
     private:
@@ -276,7 +314,7 @@ private:
   /**
    * A job which performs the solution update and computes a new time step size.
    *
-   * \note Spawning these operations as background job makes only sense if you
+   * @note Spawning these operations as background job makes only sense if you
    * wait in endIteration(...) on the completion of the job.
    * It further important to flag this job as high priority job to
    * ensure completion before the next reduction.
@@ -379,12 +417,7 @@ public:
    /**
     * Returns if a ADERDGCellDescription type holds face data.
     */
-   static bool holdsFaceData(const CellDescription::Type& cellDescriptionType) {
-//     return cellDescriptionType==CellDescription::Cell ||
-//            cellDescriptionType==CellDescription::Ancestor   ||
-//            cellDescriptionType==CellDescription::Descendant;
-     return true;
-   }
+   static bool holdsFaceData(const CellDescription::Type& cellDescriptionType) { return true; }
 
 
   /**
@@ -412,177 +445,30 @@ public:
   FiniteVolumesSolver(const FiniteVolumesSolver& other) = delete;
   FiniteVolumesSolver& operator=(const FiniteVolumesSolver& other) = delete;
 
-  MeshUpdateEvent getNextMeshUpdateEvent() const final override;
-  void updateNextMeshUpdateEvent(MeshUpdateEvent meshUpdateEvent) final override;
-  void setNextMeshUpdateEvent() final override;
+  void initSolver(
+      const double                                timeStamp,
+      const tarch::la::Vector<DIMENSIONS,double>& domainOffset,
+      const tarch::la::Vector<DIMENSIONS,double>& domainSize,
+      const double                                boundingBoxSize,
+      const double                                boundingBoxMeshSize,
+      const std::vector<std::string>&             cmdlineargs,
+      const exahype::parser::ParserView&          parserView) final override;
+
+  void kickOffTimeStep(const bool isFirstTimeStepOfBatchOrNoBatch) final override;
+  void wrapUpTimeStep(const bool isFirstTimeStepOfBatchOrNoBatch,const bool isLastTimeStepOfBatchOrNoBatch) final override;
+
+  void updateTimeStepSize()      override;
+  void rollbackToPreviousTimeStep() final override;
+
+  void updateMeshUpdateEvent(MeshUpdateEvent meshUpdateEvent) final override;
+  void resetMeshUpdateEvent() final override;
   MeshUpdateEvent getMeshUpdateEvent() const final override;
-  void overwriteMeshUpdateEvent(MeshUpdateEvent newMeshUpdateEvent) final override;
-
-  /**
-   * \brief Returns a stable time step size.
-   *
-   * \param[in] luh             Cell-local solution DoF.
-   * \param[in] cellSize        Extent of the cell in each coordinate direction.
-   */
-  virtual double stableTimeStepSize(
-      const double* const luh,
-      const tarch::la::Vector<DIMENSIONS, double>& cellSize) = 0;
-
-  /**
-   * Extract volume averages belonging to the boundary layer
-   * of the neighbour patch and store them in the ghost layer
-   * of the current patch.
-   *
-   * Depending on the implementation (if reconstruction is applied),
-   * the boundary layer/ghost layer might not just be a single layer.
-   *
-   * \param luhbnd Points to the extrapolated solution values.
-   * \param luh Points to the the new solution values.
-   * \param neighbourPosition Contains the relative position of the neighbour patch
-   * with respect to the patch this method was invoked for. The entries of the vector are in the range
-   * {-1,0,1}.
-   *
-   * \note The theoretical arithmetic intensity of this operation is zero.
-   * \note This operation is invoked per vertex in touchVertexFirstTime and mergeWithNeighbour
-   * in mapping Merging.
-   *
-   * <h2>MPI</h2>
-   * No ghost layer is necessary if a patch is surrounded only
-   * by local cells. However as soon as the cell is adjacent
-   * to a MPI boundary this becomes necessary.
-   * We thus always hold ghost layers.
-   */
-  virtual void ghostLayerFilling(
-      double* luh,
-      const double* luhNeighbour,
-      const tarch::la::Vector<DIMENSIONS,int>& neighbourPosition) = 0;
-
-  /**
-   * Similar to ghostLayerFilling but we do not work with
-   * complete patches from a local neighbour here but with smaller arrays received
-   * from a remote neighbour or containing boundary conditions.
-   *
-   * \note The theoretical arithmetic intensity of this operation is zero.
-   * \note This operation is invoked per vertex in mergeWithNeighbour in mapping Merging.
-   */
-  virtual void ghostLayerFillingAtBoundary(
-      double* luh,
-      const double* luhbnd,
-      const tarch::la::Vector<DIMENSIONS,int>& boundaryPosition) = 0;
-
-  /**
-   * Extract boundary layers of \p luh before
-   * sending them away via MPI.
-   *
-   * \note The theoretical arithmetic intensity of this operation is zero.
-   * \note This operation is invoked per vertex in prepareSendToNeighbour in mapping Sending.
-   */
-  virtual void boundaryLayerExtraction(
-      double* luhbnd,
-      const double* luh,
-      const tarch::la::Vector<DIMENSIONS,int>& boundaryPosition) = 0;
-
-  /**
-   * Return the state variables at the boundary.
-   *
-   * @param[inout] luh           the solution patch
-   * @param[in]    cellCentre    cell centre.
-   * @param[in]    cellSize      cell size.
-   * @param[in]    t             The time.
-   * @param[in]    dt            A time step size.
-   * @param[in]    normalNonZero Index of the nonzero normal vector component,
-   *i.e., 0 for e_x, 1 for e_y, and 2 for e_z.
-   */
-  virtual void boundaryConditions(
-      double* luh,
-      const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
-      const tarch::la::Vector<DIMENSIONS,double>& cellSize,
-      const double t,const double dt,
-      const tarch::la::Vector<DIMENSIONS, int>& posCell,
-      const tarch::la::Vector<DIMENSIONS, int>& posBoundary) = 0;
-
-
-  /**
-   * Compute the Riemann problem.
-   * 
-   * This function shall implement a pointwise riemann Solver, in contrast to the ADERDGSolver::riemannSolver
-   * function which implements a patch-wise riemann solver.
-   * 
-   * In a fully conservative scheme, it is fL = fR and the Riemann solver really computes the fluxes
-   * in normalNonzero direction steming from the contribution of qL and qR.
-   * 
-   * \param[out]   fL      the fluxes on the left side of the point cell (already allocated)
-   * \param[out]   fR      the fluxes on the right side of the point cell (already allocated).
-   * \param[in]    qL      the state vector in the left neighbour cell
-   * \param[in]    qR      the state vector in the right neighbour cell
-   * \param[in]    cellSize the size of a single cell (dx/patchSize)
-   * \param[in]    normalNonZero  Index of the nonzero normal vector component.
-   **/
-  virtual double riemannSolver(
-          double* fL,
-          double *fR,
-          const double* qL,
-          const double* qR,
-          const double* gradQL,
-          const double* gradQR,
-          const double* cellSize,
-          int normalNonZero) = 0;
-
-  /**
-   * Update the solution of all volumes on a patch.
-   *
-   * @param[inout] luh             the current (and then new) solution
-   * @param[in]    cellCentre    cell centre.
-   * @param[in]    dx              the extends of the cell holding the FV patch
-   * \param[in]    t         the start of the time interval.
-   * @param[in]    dt              time step size the FV patch is marching with
-   * @param[inout] maxAdmissibleDt admissible time step size obtained from the Riemann solves
-   */
-  virtual void solutionUpdate(double* luh,const tarch::la::Vector<DIMENSIONS,double>& cellCenter,
-                              const tarch::la::Vector<DIMENSIONS, double>& dx,
-                              const double t,
-                              const double dt, double& maxAdmissibleDt) = 0;
-
-  /**
-   * Adjust the conserved variables and parameters (together: Q) at a given time t at the (quadrature) point x.
-   *
-   * \note Use this function and ::useAdjustSolution to set initial conditions.
-   *
-   * \param[in]    x         the physical coordinate on the face.
-   * \param[in]    t         the start of the time interval.
-   * \param[in]    dt        the width of the time interval.
-   * \param[inout] Q         the conserved variables (and parameters) associated with a quadrature point
-   *                         as C array (already allocated).
-   */
-  virtual void adjustSolution(
-      double* luh, const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
-      const tarch::la::Vector<DIMENSIONS, double>& dx,
-      const double t,
-      const double dt) = 0;
-
-  /**
-   * Pointwise solution adjustment.
-   * 
-   * In the FV solver, we currently don't support both patchwise
-   * and pointwise adjustment @TODO.
-   * 
-   * \param[in]   x   The position (array with DIMENSIONS entries)
-   * \param[in]   t   the start of the time interval
-   * \param[in]   dt  the width of the time interval.
-   * \param[inout] Q  the conserved variables and parameters as C array (already allocated).
-   * 
-   **/
-  virtual void adjustSolution(const double* const x,const double t,const double dt, double* Q) = 0;
-
-  /**
-   * Returns the min time step size of the
-   * previous iteration.
-   * This value is initialised with zero
-   * to enable an initial "rollback".
-   */
   double getPreviousMinTimeStepSize() const;
-
   double getMinTimeStamp() const override;
+  double getMinTimeStepSize() const override;
+  void updateAdmissibleTimeStepSize( double value ) override;
+  double getAdmissibleTimeStepSize() const override;
+  void resetAdmissibleTimeStepSize() final override;
 
   /**
    * The number of unknowns per patch.
@@ -627,52 +513,8 @@ public:
   virtual int getTempUnknownsSize()              const {return getDataPerPatch();} // TODO function should be renamed
   virtual int getBndFaceSize()                   const {return getDataPerPatchFace();} // TODO function should be renamed
 
-  /**
-   * Run over all solvers and identify the minimal time step size.
-   */
-  double getMinTimeStepSize() const override;
-
-  void updateMinNextTimeStepSize( double value ) override;
-
-  /**
-    * User defined solver initialisation.
-    *
-    * \param[in] cmdlineargs the command line arguments.
-    */
-  virtual void init(
-        const std::vector<std::string>& cmdlineargs,
-        const exahype::parser::ParserView& constants) = 0;
-
-  void initSolver(
-      const double timeStamp,
-      const tarch::la::Vector<DIMENSIONS,double>& domainOffset,
-      const tarch::la::Vector<DIMENSIONS,double>& domainSize,
-      const tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize,
-      const std::vector<std::string>& cmdlineargs,
-      const exahype::parser::ParserView& parserView) override;
-
   bool isPerformingPrediction(const exahype::State::AlgorithmSection& section) const override;
   bool isMergingMetadata(const exahype::State::AlgorithmSection& section) const override;
-
-  void startNewTimeStep() override;
-
-  void startNewTimeStepFused(
-      const bool isFirstTimeStepOfBatch,
-      const bool isLastTimeStepOfBatch) final override;
-
-  void updateTimeStepSizesFused() override;
-
-  void updateTimeStepSizes()      override;
-
-  /**
-   * Roll back the time step data to the
-   * ones of the previous time step.
-   */
-  void rollbackToPreviousTimeStep() final override;
-
-  void rollbackToPreviousTimeStepFused() final override;
-
-  double getMinNextTimeStepSize() const override;
 
   static bool isValidCellDescriptionIndex(const int cellDescriptionsIndex);
 
@@ -703,7 +545,7 @@ public:
       const int solverNumber);
 
   /**
-   * Check if the heap array with index \p index could be allocated.
+   * Check if the heap array with index @p index could be allocated.
    */
   static void checkDataHeapIndex(const CellDescription& cellDescription, const int arrayIndex, const std::string arrayName);
 
@@ -718,7 +560,7 @@ public:
    * If this is not the case, it allocates the necessary
    * memory for the cell description.
    *
-   * \note Heap data creation assumes default policy
+   * @note Heap data creation assumes default policy
    * DataHeap::Allocation::UseRecycledEntriesIfPossibleCreateNewEntriesIfRequired.
    */
   void ensureNecessaryMemoryIsAllocated(CellDescription& cellDescription) const;
@@ -746,13 +588,15 @@ public:
           const int solverNumber,
           const tarch::la::Vector<DIMENSIONS, double>& cellOffset,
           const tarch::la::Vector<DIMENSIONS, double>& cellSize,
+          const int level,
           const bool checkThoroughly) const final override;
 
   bool attainedStableState(
-      exahype::Cell& fineGridCell,
-      exahype::Vertex* const fineGridVertices,
+      exahype::Cell&                       fineGridCell,
+      exahype::Vertex* const               fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-      const int solverNumber) const override;
+      const int                            solverNumber,
+      const bool                           stillInRefiningMode) const final override;
 
   void finaliseStateUpdates(
       const int solverNumber,
@@ -761,30 +605,20 @@ public:
   ///////////////////////////////////
   // CELL-LOCAL
   //////////////////////////////////
-  double startNewTimeStep(CellDescription& cellDescription);
+  double updateTimeStepSize(const int solverNumber,CellInfo& cellInfo) final override;
+
+  double startNewTimeStep(CellDescription& cellDescription,const bool isFirstTimeStepOfBatch);
 
   /**
-   * Required by the fusedTimeStep routine.
-   * Further, used by the other startNewTimeStepFused
-   * routine.
+   * Set the previous time stamp and step size for the patch.
+   *
+   * @note the original time stamp and step size is lost (although the time stamp can be easily recalculated).
    */
-  double startNewTimeStepFused(
-      CellDescription& cellDescription,
-      const bool isFirstTimeStepOfBatch,
-      const bool isLastTimeStepOfBatch);
-
-  double updateTimeStepSizes(
-      const int solverNumber,
-      CellInfo& cellInfo,
-      const bool fused) override final;
-
   void rollbackToPreviousTimeStep(CellDescription& cellDescription) const;
-
-  void rollbackToPreviousTimeStepFused(CellDescription& cellDescription) const;
 
   /** @copydoc: exahype::solvers::Solver::fusedTimeStepOrRestrict
    *
-   * The "hasCompletedLastStep" flag must be only be unset when
+   * The "hasCompletedLastStep" flag must only be unset when
    * a background job is spawned.
    */
   UpdateResult fusedTimeStepOrRestrict(
@@ -794,68 +628,23 @@ public:
       const bool isLastTimeStepOfBatch,
       const bool isAtRemoteBoundary) final override;
 
-  /**
-   *  TODO
-   *
-   * @param solverNumber
-   * @param cellInfo
-   * @param isAtRemoteBoundary
-   * @return
-   */
   UpdateResult updateOrRestrict(
         const int  solverNumber,
         CellInfo&  cellInfo,
         const bool isAtRemoteBoundary) final override;
 
-  void compress(
-      const int solverNumber,
-      CellInfo& cellInfo,
-      const bool isAtRemoteBoundary) const final override;
-
   void adjustSolutionDuringMeshRefinement(const int solverNumber,CellInfo& cellInfo) final override;
-
-  /**
-   * Update the solution of a cell description.
-   *
-   * \note Make sure to reset neighbour merge
-   * helper variables in this method call.
-   *
-   * \note Has no const modifier since kernels are not const functions yet.
-   *
-   * \param[in] backupPreviousSolution Set to true if the solution should be backed up before
-   *                                   we overwrite it by the updated solution.
-   */
-  void updateSolution(
-      CellDescription&                                           cellDescription,
-      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
-      const int                                                  cellDescriptionsIndex,
-      const bool                                                 backupPreviousSolution);
-
-  /**
-   * TODO(Dominic): Update docu.
-   *
-   * Rolls back the solver's solution on the
-   * particular cell description.
-   * This method is used by the ADER-DG a-posteriori
-   * subcell limiter (LimitingADERDGSolver).
-   *
-   * <h2>Open issues</h2>
-   * A rollback is of course not possible if we have adjusted the solution
-   * values. Assuming the rollback is invoked by a LimitingADERDGSolver,
-   * we should use the adjusted FVM solution as reference solution.
-   * A similar issue occurs if we impose initial conditions that
-   * include a discontinuity.
-   */
-  void swapSolutionAndPreviousSolution(CellDescription& cellDescription) const;
 
   /**
    * Does nothing as a FV solver should never do global rollbacks;
    * no mesh refinement is performed by this solver type.
    */
-  void rollbackSolutionGlobally(
+  void rollbackSolutionGlobally(const int solverNumber,CellInfo& cellInfo) const final override;
+
+  void compress(
       const int solverNumber,
       CellInfo& cellInfo,
-      const bool fusedTimeStepping) const final override;
+      const bool isAtRemoteBoundary) const final override;
 
   ///////////////////////////////////
   // NEIGHBOUR
@@ -872,6 +661,8 @@ public:
       Solver::CellInfo&                         context,
       const tarch::la::Vector<DIMENSIONS, int>& posCell,
       const tarch::la::Vector<DIMENSIONS, int>& posBoundary);
+
+
 #ifdef Parallel
   ///////////////////////////////////
   // MASTER<=>WORKER
@@ -884,14 +675,14 @@ public:
 
   /**
      * Sets heap indices of an FiniteVolumesCellDescription to -1,
-     * and the parent index of the cell descriptions to the specified \p
+     * and the parent index of the cell descriptions to the specified @p
      * parentIndex.
      */
    static void resetIndicesAndFlagsOfReceivedCellDescription(CellDescription& cellDescription,const int parentIndex);
 
   /**
    * Send all ADERDG cell descriptions to rank
-   * \p toRank.
+   * @p toRank.
    */
   static void sendCellDescriptions(
       const int                                     toRank,
@@ -902,7 +693,7 @@ public:
 
   /**
    * Send an empty message to rank
-   * \p toRank.
+   * @p toRank.
    */
   static void sendEmptyCellDescriptions(
       const int                                     toRank,
@@ -911,20 +702,20 @@ public:
       const int                                     level);
 
   /**
-   * Receives cell descriptions from rank \p fromRank
+   * Receives cell descriptions from rank @p fromRank
    * and resets the data heap indices to -1.
    *
    * If a received cell description has the same
    * solver number as a cell description in the
-   * array at address \p cellDescriptionsIndex,
+   * array at address @p cellDescriptionsIndex,
    * we merge the metadata (time stamps, time step size)
    * of both cell descriptions.
    *
    * If no cell description in the array at address
-   * \p cellDescriptionsIndex can be found with the
+   * @p cellDescriptionsIndex can be found with the
    * same solver number than a received cell description,
    * we push the received cell description to
-   * the back of the array at address \p cellDescriptions
+   * the back of the array at address @p cellDescriptions
    * Index.
    *
    * This operation is intended to be used in combination
@@ -940,7 +731,7 @@ public:
       const int                                     level);
 
   /**
-   * Drop cell descriptions received from \p fromRank.
+   * Drop cell descriptions received from @p fromRank.
    */
   static void dropCellDescriptions(
       const int                                     fromRank,
@@ -1138,7 +929,7 @@ public:
 
   void printFiniteVolumesSolution(CellDescription& cellDescription) const;
 
-  void printFiniteVolumesBoundaryLayer(const double* luhbnd)  const;
+  void printFiniteVolumesBoundaryLayer(const double* const luhbnd)  const;
 
   std::string toString() const override;
 
@@ -1154,6 +945,195 @@ public:
   ///////////////////////
 
   CellProcessingTimes measureCellProcessingTimes(const int numberOfRuns=100) override;
+
+protected:
+  /** @name Plugin points for derived solvers.
+   *
+   *  These are the macro kernels and user hooks solvers derived from
+   *  FiniteVolumesSolver need to implement.
+   */
+  ///@{
+  /**
+   * Initialise the solver using command line arguments and specification
+   * file parameters.
+   *
+   * @param cmdlineargs command line arguments as passed to the applciation
+   * @param parameters  user-defined parameters as specified in the specification file
+   */
+  virtual void init(
+      const std::vector<std::string>& cmdlineargs,
+      const exahype::parser::ParserView& parameters) = 0;
+
+  /**
+   * @brief Returns a stable time step size.
+   *
+   * @param[in] luh             Cell-local solution DoF.
+   * @param[in] cellSize        Extent of the cell in each coordinate direction.
+   */
+  virtual double stableTimeStepSize(
+      const double* const                          luh,
+      const tarch::la::Vector<DIMENSIONS, double>& cellSize) = 0;
+
+  /**
+   * Extract volume averages belonging to the boundary layer
+   * of the neighbour patch and store them in the ghost layer
+   * of the current patch.
+   *
+   * Depending on the implementation (if reconstruction is applied),
+   * the boundary layer/ghost layer might not just be a single layer.
+   *
+   * @param[inout] luh               the solution vector (with updated ghost layers).
+   * @param[in]    luhbnd            hold the boundary layers obtained from the neighbour.
+   * @param[in]    neighbourPosition contains the relative position of the neighbour patch
+   *                          with respect to the patch this method was invoked for. The entries of the vector are in the range
+   *                          {-1,0,1}.
+   *
+   * @note The theoretical arithmetic intensity of this operation is zero.
+   * @note This operation is invoked per vertex in touchVertexFirstTime and mergeWithNeighbour
+   * in mapping Merging.
+   *
+   * <h2>MPI</h2>
+   * No ghost layer is necessary if a patch is surrounded only
+   * by local cells. However as soon as the cell is adjacent
+   * to a MPI boundary this becomes necessary.
+   * We thus always hold ghost layers.
+   */
+  virtual void ghostLayerFilling(
+      double* const                                  luh,
+      const double* const                            luhNeighbour,
+      const tarch::la::Vector<DIMENSIONS,int>& boundaryPosition) = 0;
+
+  /**
+   * Similar to ghostLayerFilling but we do not work with
+   * complete patches from a local neighbour here but with smaller arrays received
+   * from a remote neighbour or containing boundary conditions.
+   *
+   * @note The theoretical arithmetic intensity of this operation is zero.
+   * @note This operation is invoked per vertex in mergeWithNeighbour in mapping Merging.
+   *
+   * @param[inout] luh              the local solution vector
+   * @param[in]    luhbnd           a vector with enough space to hold the method-specific boundary layers
+   * @param[in]    boundaryPosition positon of the boundary w.r.t. the cell
+   */
+  virtual void ghostLayerFillingAtBoundary(
+      double* const                                  luh,
+      const double* const                            luhbnd,
+      const tarch::la::Vector<DIMENSIONS,int>& boundaryPosition) = 0;
+
+  /**
+   * Extract boundary layers of @p luh before
+   * sending them away via MPI, e.g.
+   *
+   * @note The theoretical arithmetic intensity of this operation is zero.
+   * @note This operation is invoked per vertex in prepareSendToNeighbour in mapping Sending.
+   *
+   * @param[inout] luhbnd           a vector with enough space to hold the method-specific boundary layers
+   * @param[in]    luh              the local solution vector
+   * @param[in]    boundaryPosition positon of the boundary w.r.t. the cell
+   */
+  virtual void boundaryLayerExtraction(
+      double* const                                  luhbnd,
+      const double* const                            luh,
+      const tarch::la::Vector<DIMENSIONS,int>& boundaryPosition) = 0;
+
+  /**
+   * Return the state variables at the boundary.
+   *
+   * @param[inout] luh         the solution patch
+   * @param[in]    cellCentre  cell centre.
+   * @param[in]    dx          cell size.
+   * @param[in]    t           a time stamp.
+   * @param[in]    dt          a time step size.
+   * @param[in]    posCell     position of the cell w.r.t. a vertex.
+   * @param[in]    posBoundary position of the boundary w.r.t. the same vertex.
+   */
+  virtual void boundaryConditions(
+      double* const luh,
+      const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+      const tarch::la::Vector<DIMENSIONS,double>& dx,
+      const double                                t,
+      const double                                dt,
+      const tarch::la::Vector<DIMENSIONS, int>&   posCell,
+      const tarch::la::Vector<DIMENSIONS, int>&   posBoundary) = 0;
+
+
+  /**
+   * Compute the Riemann problem.
+   *
+   * This function shall implement a pointwise riemann Solver, in contrast to the ADERDGSolver::riemannSolver
+   * function which implements a patch-wise riemann solver.
+   *
+   * In a fully conservative scheme, it is fL = fR and the Riemann solver really computes the fluxes
+   * in normalNonzero direction steming from the contribution of qL and qR.
+   *
+   * @param[out] fL        the fluxes on the left side of the point cell (already allocated)
+   * @param[out] fR        the fluxes on the right side of the point cell (already allocated).
+   * @param[in]  qL        the state vector in the left neighbour cell
+   * @param[in]  qR        the state vector in the right neighbour cell
+   * @param[in]  direction coordinate direction the normal vector of the face points to,
+   *                       i.e., 0 for e_x, 1 for e_y, and 2 for e_z.
+   */
+  virtual double riemannSolver(
+      double* const       fL,
+      double* const       fR,
+      const double* const qL,
+      const double* const qR,
+      const double* gradQL,
+      const double* gradQR,
+      const double* cellSize,
+      const int     direction) = 0;
+
+  /**
+   * Update the solution of all volumes on a patch.
+   *
+   * @param[inout] luh             the current (and then new) solution
+   * @param[in]    dx              the extends of the cell holding the FV patch
+   * @param[in]    dt              time step size the FV patch is marching with
+   * @param[inout] maxAdmissibleDt admissible time step size obtained from the Riemann solves
+   */
+  virtual void solutionUpdate(
+      double* const                                      luh,
+      const tarch::la::Vector<DIMENSIONS, double>& center,
+      const tarch::la::Vector<DIMENSIONS, double>& dx,
+      const double t,
+      const double dt, double&                     maxAdmissibleDt) = 0;
+
+  /**
+   * Adjust the conserved variables and parameters (together: Q) at a given time t at the (quadrature) point x.
+   *
+   * @note Use this function and ::useAdjustSolution to set initial conditions.
+   *
+   * @param[in]    x         the physical coordinate on the face.
+   * @param[in]    t         the start of the time interval.
+   * @param[in]    dt        the width of the time interval.
+   * @param[inout] Q         the conserved variables (and parameters) associated with a quadrature point
+   *                         as C array (already allocated).
+   */
+  virtual void adjustSolution(
+      double* const                                luh,
+      const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
+      const tarch::la::Vector<DIMENSIONS, double>& dx,
+      const double                                 t,
+      const double                                 dt) = 0;
+
+  /**
+   * Pointwise solution adjustment.
+   *
+   * In the FV solver, we currently don't support both patchwise
+   * and pointwise adjustment @TODO.
+   *
+   * @param[in]   x   The position (array with DIMENSIONS entries)
+   * @param[in]   t   the start of the time interval
+   * @param[in]   dt  the width of the time interval.
+   * @param[inout] Q  the conserved variables and parameters as C array (already allocated).
+   *
+   **/
+  virtual void adjustSolution(
+      const double* const x,
+      const double        t,
+      const double        dt,
+      double* const       Q) = 0;
+  ///@}
 };
 
 #endif

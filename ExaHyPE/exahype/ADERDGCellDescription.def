@@ -236,38 +236,26 @@ class exahype::records::ADERDGCellDescription {
   ///@{
   
   /**
-   * The time stamp the correction phase was working with
-   * in the previous iteration.
+   * previous time stamp.
    */
-  parallelise persistent double previousCorrectorTimeStamp;
+  parallelise persistent double previousTimeStamp;
   
   /**
-   * The corrector time step size this cell description was working
-   * with in the previous iteration.
+   * Previous time step size.
    * 
-   * This variable is necessary for performing rollbacks during the limiting.
+   * This variable is necessary for performing rollbacks.
    */
-  parallelise persistent double previousCorrectorTimeStepSize;
+  parallelise persistent double previousTimeStepSize;
   
   /**
-   * The time step size the correction phase is working with.
+   * The time step size.
    */
-  parallelise persistent double correctorTimeStepSize;
+  parallelise persistent double timeStepSize;
 
   /**
-   * The time stamp the correction phase is working with.
+   * Time stamp.
    */
-  parallelise persistent double correctorTimeStamp;
-  
-  /**
-   * The time step size the prediction phase is working with.
-   */
-  parallelise persistent double predictorTimeStepSize;
-
-  /**
-   * The time stamp the prediction phase is working with.
-   */
-  parallelise persistent double predictorTimeStamp;
+  parallelise persistent double timeStamp;
   ///@}
   /**
    * @defgroup VolumeDataIndices Volume Data Indices

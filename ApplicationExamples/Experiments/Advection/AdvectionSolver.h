@@ -33,7 +33,7 @@ class Trivial::AdvectionSolver: public Trivial::AbstractAdvectionSolver {
      */
     static tarch::logging::Log _log;
   public:
-    AdvectionSolver(const double maximumMeshSize,const int maximumMeshDepth,const int haloCells,const int regularisedFineGridLevels,const exahype::solvers::Solver::TimeStepping timeStepping,const int limiterHelperLayers,const int DMPObservables);
+    AdvectionSolver(const double maximumMeshSize,const int maximumMeshDepth,const int haloCells,const int regularisedFineGridLevels,const exahype::solvers::Solver::TimeStepping timeStepping,const int DMPObservables);
 
     /**
      * Initialise the solver.
@@ -55,7 +55,7 @@ class Trivial::AdvectionSolver: public Trivial::AbstractAdvectionSolver {
      * \param[inout] Q         the conserved variables (and parameters) associated with a quadrature point
      *                         as C array (already allocated).
      */
-    void adjustPointSolution(const double* const x,const double t,const double dt,double* Q) override;
+    void adjustPointSolution(const double* const x,const double t,const double dt,double* const Q) override;
     
     /**
      * Compute the flux tensor.
@@ -64,7 +64,7 @@ class Trivial::AdvectionSolver: public Trivial::AbstractAdvectionSolver {
      *                 as C array (already allocated).
      * \param[inout] F the fluxes at that point as C array (already allocated).
      */
-    virtual void flux(const double* const Q,double** F);
+    virtual void flux(const double* const Q,double** const F);
     
     /**
      * Compute the eigenvalues of the flux tensor per coordinate direction \p d.
@@ -74,7 +74,7 @@ class Trivial::AdvectionSolver: public Trivial::AbstractAdvectionSolver {
      * \param[in] d  the column of the flux vector (d=0,1,...,DIMENSIONS).
      * \param[inout] lambda the eigenvalues as C array (already allocated).
      */
-    void eigenvalues(const double* const Q,const int d,double* lambda);
+    void eigenvalues(const double* const Q,const int d,double* const lambda);
     
     /**
      * Impose boundary conditions at a point on a boundary face
@@ -95,7 +95,7 @@ class Trivial::AdvectionSolver: public Trivial::AbstractAdvectionSolver {
      * \param[inout] FOut      the normal fluxes at point x from outside of the domain
      *                         and time-averaged (over [t,t+dt]) as C array (already allocated).
      */
-    void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double * const fluxIn,const double* const stateIn,double *fluxOut,double* stateOut);
+    void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double * const fluxIn,const double* const stateIn,double* const fluxOut,double* const stateOut);
     
     /**
      * Evaluate the refinement criterion within a cell.
@@ -111,7 +111,7 @@ class Trivial::AdvectionSolver: public Trivial::AbstractAdvectionSolver {
      * \param[in]    dt        the width of the time interval.
      * \return One of exahype::solvers::Solver::RefinementControl::{Erase,Keep,Refine}.
      */
-    exahype::solvers::Solver::RefinementControl refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& centre,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) override;
+    exahype::solvers::Solver::RefinementControl refinementCriterion(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& centre,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) override;
 };
 
 #endif // __AdvectionSolver_CLASS_HEADER__

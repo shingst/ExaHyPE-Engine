@@ -33,8 +33,8 @@ void MHDSolver::MHDSolver::init() {
 }
 
 
-void FUNC_C2P_RMHD1(const double x,double* f,double* df,const double gam,const double d,const double e,const double s2,const double b2,
-    const double sb2,double* w_out) {
+void FUNC_C2P_RMHD1(const double x,double* const f,double* const df,const double gam,const double d,const double e,const double s2,const double b2,
+    const double sb2,double* const w_out) {
   //
   // This is the CONS2PRIM strategy adopted by Del Zanna et al. (2007) A&A, 473, 11-30
   // and it corresponds to their choice 3 in Section 3.2
@@ -83,7 +83,7 @@ void FUNC_C2P_RMHD1(const double x,double* f,double* df,const double gam,const d
 }
 
 double RTSAFE_C2P_RMHD1(double X1,double X2,double XACC,double gam,double d,
-    double e,double s2,double b2,double sb2,double* w,bool* failed) {
+    double e,double s2,double b2,double sb2,double* const w,bool* failed) {
   int MAXIT=200;
   *failed = false;
   double FL;
@@ -197,7 +197,7 @@ double RTSAFE_C2P_RMHD1(double X1,double X2,double XACC,double gam,double d,
   return RTSAFE_C2P_RMHD1_result;
 }
 
-void MHDSolver::MHDSolver::Cons2Prim(const double* Q,double* V) {
+void MHDSolver::MHDSolver::Cons2Prim(const double* const Q,double* const V) {
   double tol       = 1e-8;
 //  double third     = 1.0/3.0; // unused for this Cons2Prim
   double p_floor   = 1.0e-5;
@@ -272,7 +272,7 @@ void MHDSolver::MHDSolver::Cons2Prim(const double* Q,double* V) {
 
 // V: prim
 // Q: cons
-void MHDSolver::MHDSolver::Prim2Cons(const double* V,double* Q) {
+void MHDSolver::MHDSolver::Prim2Cons(const double* const V,double* const Q) {
   double rho    = V[0];
   double vx     = V[1];
   double vy     = V[2];
@@ -313,7 +313,7 @@ void MHDSolver::MHDSolver::Prim2Cons(const double* V,double* Q) {
   Q[8]   = V[8];
 }
 
-void MHDSolver::MHDSolver::eigenvalues(const double* const Q, const int normalNonZeroIndex, double* lambda) {
+void MHDSolver::MHDSolver::eigenvalues(const double* const Q, const int normalNonZeroIndex, double* const lambda) {
   // These are not the exact eigenvalues, instead of Lambda(1..9)
   // we compute only two eigenvalues: Approximate magnetosonics // cons2prim
   double V[MHD_VARIABLES];
@@ -362,7 +362,7 @@ void MHDSolver::MHDSolver::eigenvalues(const double* const Q, const int normalNo
   lambda[8] = 0.0;
 }
 
-void MHDSolver::MHDSolver::flux(const double* const Q, double** F) {
+void MHDSolver::MHDSolver::flux(const double* const Q, double** const F) {
   double V[MHD_VARIABLES];
   Cons2Prim(Q,V);
   double gamma1 = gamma/(gamma-1.0);
@@ -432,7 +432,7 @@ bool MHDSolver::MHDSolver::hasToAdjustSolution(const tarch::la::Vector<DIMENSION
 //  //return _ltob(refine); // something like this is needed
 }
 
-void MHDSolver::MHDSolver::AlfvenWave(const double* x, double* Q, const double t) {
+void MHDSolver::MHDSolver::AlfvenWave(const double* const x, double* const Q, const double t) {
   // Computes the AlfvenWave at a given time t.
   // Use it ie. with t=0 for initial data
   // Use it for any other time ie. for comparison
@@ -473,13 +473,13 @@ void MHDSolver::MHDSolver::AlfvenWave(const double* x, double* Q, const double t
   Prim2Cons(V,Q);
 }
 
-void MHDSolver::MHDSolver::adjustedSolutionValues(const double* const x,const double w,const double t,const double dt,double* Q) {
+void MHDSolver::MHDSolver::adjustedSolutionValues(const double* const x,const double w,const double t,const double dt,double* const Q) {
   assertion1(tarch::la::equals(t,0.0),t);
 
   AlfvenWave(x, Q, t);
 }
 
-void MHDSolver::MHDSolver::algebraicSource(const double* const Q, double* S) {
+void MHDSolver::MHDSolver::algebraicSource(const double* const Q, double* const S) {
   // TODO: pass this to Fortran.
   for(int i=0; i < MHD_VARIABLES; i++) {
     S[i] = 0.0;
@@ -488,12 +488,12 @@ void MHDSolver::MHDSolver::algebraicSource(const double* const Q, double* S) {
 
 
 
-exahype::solvers::Solver::RefinementControl MHDSolver::MHDSolver::refinementCriterion(const double* luh, const tarch::la::Vector<DIMENSIONS, double>& center, const tarch::la::Vector<DIMENSIONS, double>& dx, double t, const int level) {
+exahype::solvers::Solver::RefinementControl MHDSolver::MHDSolver::refinementCriterion(const double* const luh, const tarch::la::Vector<DIMENSIONS, double>& center, const tarch::la::Vector<DIMENSIONS, double>& dx, double t, const int level) {
   // @todo Please implement
   return exahype::solvers::Solver::RefinementControl::Keep;
 }
 
-void MHDSolver::MHDSolver::boundaryValues(const double* const x,const double t, const int faceIndex, const int normalNonZero, const double * const fluxIn, const double* const stateIn, double *fluxOut, double* stateOut) {
+void MHDSolver::MHDSolver::boundaryValues(const double* const x,const double t, const int faceIndex, const int normalNonZero, const double * const fluxIn, const double* const stateIn, double* const fluxOut, double* const stateOut) {
   // TODO: Pass this to Fortran
 
   // Impose exact boundary conditions

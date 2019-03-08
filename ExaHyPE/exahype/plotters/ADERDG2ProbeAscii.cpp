@@ -28,7 +28,7 @@ exahype::plotters::ADERDG2ProbeAscii::~ADERDG2ProbeAscii() {
 
 void exahype::plotters::ADERDG2ProbeAscii::startPlotting( double time ) {
   // In the very first time step, the
-  if (time==std::numeric_limits<double>::max() ) {
+  if (time==std::numeric_limits<double>::infinity() ) {
     _time = 0.0;
   }
   else {
@@ -124,7 +124,7 @@ void exahype::plotters::ADERDG2ProbeAscii::plotPatch(const int solverNumber,solv
     plotPatch(
         aderdgCellDescription.getOffset(),
         aderdgCellDescription.getSize(), solverSolution,
-        aderdgCellDescription.getCorrectorTimeStamp());
+        aderdgCellDescription.getTimeStamp());
   }
 }
 

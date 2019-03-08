@@ -5,23 +5,25 @@
 #endif
 
 exahype::solvers::ADERDGSolver::PredictionJob::PredictionJob(
-  ADERDGSolver&    solver,
-  CellDescription& cellDescription,
-  const int        cellDescriptionsIndex,
-  const int        element,
-  const double     predictorTimeStamp,
-  const double     predictorTimeStepSize,
-  const bool       uncompressBefore,
-  const bool       isSkeletonJob):
-  tarch::multicore::jobs::Job(Solver::getTaskType(isSkeletonJob),0),
-  _solver(solver),
-  _cellDescription(cellDescription),
-  _cellDescriptionsIndex(cellDescriptionsIndex),
-  _element(element),
-  _predictorTimeStamp(predictorTimeStamp),
-  _predictorTimeStepSize(predictorTimeStepSize),
-  _uncompressBefore(uncompressBefore),
-  _isSkeletonJob(isSkeletonJob) {
+    ADERDGSolver&    solver,
+    CellDescription& cellDescription,
+    const int        cellDescriptionsIndex,
+    const int        element,
+    const double     predictorTimeStamp,
+    const double     predictorTimeStepSize,
+    const bool       uncompressBefore,
+    const bool       isSkeletonJob,
+    const bool       addVolumeIntegralResultToUpdate):
+    tarch::multicore::jobs::Job(Solver::getTaskType(isSkeletonJob),0),
+    _solver(solver),
+    _cellDescription(cellDescription),
+    _cellDescriptionsIndex(cellDescriptionsIndex),
+    _element(element),
+    _predictorTimeStamp(predictorTimeStamp),
+    _predictorTimeStepSize(predictorTimeStepSize),
+    _uncompressBefore(uncompressBefore),
+    _isSkeletonJob(isSkeletonJob),
+    _addVolumeIntegralResultToUpdate(addVolumeIntegralResultToUpdate) {
   if (_isSkeletonJob) {
     NumberOfSkeletonJobs.fetch_add(1);
   } else {
@@ -31,9 +33,9 @@ exahype::solvers::ADERDGSolver::PredictionJob::PredictionJob(
 
 
 bool exahype::solvers::ADERDGSolver::PredictionJob::run() {
-  _solver.performPredictionAndVolumeIntegralBody(
+  _solver.predictionAndVolumeIntegralBody(
       _cellDescription,_predictorTimeStamp,_predictorTimeStepSize,
-      _uncompressBefore,_isSkeletonJob); // ignore return value
+      _uncompressBefore,_isSkeletonJob,_addVolumeIntegralResultToUpdate); // ignore return value
 
   if (_isSkeletonJob) {
     NumberOfSkeletonJobs.fetch_sub(1);
@@ -49,7 +51,7 @@ bool exahype::solvers::ADERDGSolver::PredictionJob::run() {
 // @see PredictionJob
 //
 void exahype::solvers::ADERDGSolver::PredictionJob::prefetchData() {
-  #if defined(SharedTBB) && !defined(noTBBPrefetchesJobData)
+#if defined(SharedTBB) && !defined(noTBBPrefetchesJobData)
   double* luh  = static_cast<double*>(_cellDescription.getSolution());
   double* lduh = static_cast<double*>(_cellDescription.getUpdate());
   double* lQhbnd = static_cast<double*>(_cellDescription.getExtrapolatedPredictor());
@@ -59,6 +61,6 @@ void exahype::solvers::ADERDGSolver::PredictionJob::prefetchData() {
   _mm_prefetch(lduh, _MM_HINT_NTA);
   _mm_prefetch(lQhbnd, _MM_HINT_NTA);
   _mm_prefetch(lFhbnd, _MM_HINT_NTA);
-  #endif
+#endif
 }
 

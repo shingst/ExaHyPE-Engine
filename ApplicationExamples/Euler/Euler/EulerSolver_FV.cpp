@@ -5,6 +5,8 @@
 #include "EulerSolver_FV.h"
 #include "EulerSolver_FV_Variables.h"
 
+#include "kernels/finitevolumes/riemannsolvers/c/riemannsolvers.h"
+
 tarch::logging::Log Euler::EulerSolver_FV::_log("Euler::EulerSolver_FV");
 
 Euler::EulerSolver_FV::Reference Euler::EulerSolver_FV::ReferenceChoice = Euler::EulerSolver_FV::Reference::EntropyWave;
@@ -39,7 +41,7 @@ void Euler::EulerSolver_FV::init(const std::vector<std::string>& cmdlineargs,con
   }
 }
 
-void Euler::EulerSolver_FV::flux(const double* const Q, double** F) {
+void Euler::EulerSolver_FV::flux(const double* const Q, double** const F) {
   #ifdef SymbolicVariables
   ReadOnlyVariables vars(Q);
   Fluxes f(F);
@@ -91,9 +93,136 @@ void Euler::EulerSolver_FV::flux(const double* const Q, double** F) {
   #endif
 }
 
-void Euler::EulerSolver_FV::eigenvalues(const double* const Q,
-    const int direction,
-    double* lambda) {
+/**
+ * Use generalised Osher Solomon flux.
+ */
+double Euler::EulerSolver_FV::riemannSolver(double* const fL, double* const fR, const double* const qL, const double* const qR, int direction) {
+  if ( 
+      (ReferenceChoice == Reference::ShuOsher ||
+      ReferenceChoice  == Reference::SodShockTube) &&
+      direction!=0 
+  ) {
+    return kernels::finitevolumes::riemannsolvers::c::rusanov<false, true, false, EulerSolver_FV>(*static_cast<EulerSolver_FV*>(this), fL,fR,qL,qR,direction);
+  } else {
+    return kernels::finitevolumes::riemannsolvers::c::generalisedOsherSolomon<false, true, false, 3, EulerSolver_FV>(*static_cast<EulerSolver_FV*>(this), fL,fR,qL,qR,direction);
+  }
+}
+
+void Euler::EulerSolver_FV::eigenvectors(
+    const double* const Q,const int in, const int is, const int it,
+    double (&R)[NumberOfVariables][NumberOfVariables],double (&eigvals)[NumberOfVariables], double (&iR)[NumberOfVariables][NumberOfVariables]) {
+  // see: https://www3.nd.edu/~dbalsara/Numerical-PDE-Course/Appendix_LesHouches/LesHouches_Lecture_5_Approx_RS.pdf
+  const double gamma = 1.4;
+
+  const double rho  = Q[0];
+  const double irho = 1./Q[0];
+  const double j2   = Q[1]*Q[1] + Q[2]*Q[2] + Q[3]*Q[3];
+  const double p    = (gamma-1) * (Q[4] - 0.5 * irho * j2);
+
+  const double c   = std::sqrt(gamma*p/rho);
+  const double H   = (Q[4]+p)/rho;
+  const double v2  = j2*irho*irho;
+  const double M   = std::sqrt(v2)/c;
+  const double r2c = rho/2./c;
+
+  eigenvalues(Q,in,eigvals);
+
+  // forward rotation into reference frame
+  double u = Q[in+1]*irho; 
+  double v = Q[is+1]*irho;
+  double w = Q[it+1]*irho;
+
+  // Right eigenvector matrix
+  constexpr int nVar = 5;
+  double RM[nVar][nVar] = {0.0};
+  RM[0][0]=1.;
+  RM[0][1]=0.;
+  RM[0][2]=0.;
+  RM[0][3]=r2c;
+  RM[0][4]=r2c;
+
+  RM[1][0]=u;
+  RM[1][1]=0.;
+  RM[1][2]=0.;
+  RM[1][3]=r2c*(u+c);
+  RM[1][4]=r2c*(u-c);
+
+  RM[2][0]=v;
+  RM[2][1]=0.;
+  RM[2][2]=-rho;
+  RM[2][3]=r2c*v;
+  RM[2][4]=r2c*v;
+
+  RM[3][0]=w;
+  RM[3][1]=rho;
+  RM[3][2]=0.;
+  RM[3][3]=r2c*w;
+  RM[3][4]=r2c*w;
+
+  RM[4][0]=0.5*v2;
+  RM[4][1]=rho*w;
+  RM[4][2]=-rho*v;
+  RM[4][3]=r2c*(H+c*u);
+  RM[4][4]=r2c*(H-c*u);
+
+  // Left eigenvector matrix (inverse of RM)
+  double iRM[nVar][nVar] = {0.0};
+  iRM[0][0]=1.-(gamma-1.)/2.*M*M;
+  iRM[0][1]=   (gamma-1.)*u/c/c;
+  iRM[0][2]=   (gamma-1.)*v/c/c;
+  iRM[0][3]=   (gamma-1.)*w/c/c;
+  iRM[0][4]=  -(gamma-1.)/c/c;
+
+  iRM[1][0]=-w/rho;
+  iRM[1][1]=0.;
+  iRM[1][2]=0.;
+  iRM[1][3]=1./rho;
+  iRM[1][4]=0.;
+
+  iRM[2][0]=v/rho;
+  iRM[2][1]=0.;
+  iRM[2][2]=-1./rho;
+  iRM[2][3]=0.;
+  iRM[2][4]=0.;
+
+  iRM[3][0]=c/rho*(0.5*(gamma-1.)*M*M-u/c);
+  iRM[3][1]=1./rho*( 1.-(gamma-1.)*u/c);
+  iRM[3][2]=1./rho*(   -(gamma-1.)*v/c);
+  iRM[3][3]=1./rho*(   -(gamma-1.)*w/c);
+  iRM[3][4]=(gamma-1.)/rho/c;
+
+  iRM[4][0]=c/rho*(0.5*(gamma-1.)*M*M+u/c);
+  iRM[4][1]=1./rho*(-1.-(gamma-1.)*u/c);
+  iRM[4][2]=1./rho*(   -(gamma-1.)*v/c);
+  iRM[4][3]=1./rho*(   -(gamma-1.)*w/c);
+  iRM[4][4]=(gamma-1.)/rho/c;
+
+  // transformation matrix for backwards rotation
+  double TM[nVar][nVar] = {0.0}; 
+  TM[0][0] = 1.; // rho
+  TM[4][4] = 1.; // energy
+  TM[1+in][1] = 1.; // this can be externalised if we know where physical vectors are.
+  TM[1+is][2] = 1.;
+  TM[1+it][3] = 1.;
+
+  // Final Matrices including the rotation (matrix products)
+  for (int i=0; i<nVar; i++) {
+    for (int j=0; j<nVar; j++) {
+      for (int a=0; a<nVar; a++) {
+        R[i][j] += TM[i][a] * RM[a][j];
+      }
+    }
+  }
+  for (int i=0; i<nVar; i++) {
+    for (int j=0; j<nVar; j++) {
+      for (int a=0; a<nVar; a++) {
+        iR[i][j] += iRM[i][a] * TM[a][j];
+      }
+    }
+  }
+}
+
+void Euler::EulerSolver_FV::eigenvalues(const double* const Q,const int direction,double* const lambda) {
   #ifdef SymbolicVariables
   ReadOnlyVariables vars(Q);
   Variables eigs(lambda);
@@ -127,7 +256,7 @@ void Euler::EulerSolver_FV::eigenvalues(const double* const Q,
   #endif
 }
 
-void Euler::EulerSolver_FV::entropyWave(const double* const x,double t, double* Q) {
+void Euler::EulerSolver_FV::entropyWave(const double* const x,double t, double* const Q) {
   const double gamma     = 1.4;
   constexpr double width = 0.3;
 
@@ -151,7 +280,7 @@ void Euler::EulerSolver_FV::entropyWave(const double* const x,double t, double* 
   Q[4] = p / (gamma-1)   +  0.5*Q[0] * (v0[0]*v0[0]+v0[1]*v0[1]); // v*v; assumes: v0[2]=0
 }
 
-void Euler::EulerSolver_FV::sodShockTube(const double* const x, const double t, double* Q) {
+void Euler::EulerSolver_FV::sodShockTube(const double* const x, const double t, double* const Q) {
   // Initial data
   constexpr double gamma     =1.39999999999999991118;
   constexpr double x_0       =0.50000000000000000000;
@@ -231,7 +360,7 @@ void Euler::EulerSolver_FV::sodShockTube(const double* const x, const double t, 
   }
 }
 
-void Euler::EulerSolver_FV::shuOsher(const double* const x, double t, double* Q) {
+void Euler::EulerSolver_FV::shuOsher(const double* const x, double t, double* const Q) {
   double p = 1.0; 
   if ( x[0] < -4 ) {
     Q[0]=3.8571; 
@@ -252,7 +381,7 @@ void Euler::EulerSolver_FV::shuOsher(const double* const x, double t, double* Q)
   Q[4] = p/(gamma-1) + 0.5 / Q[0] * (Q[1]*Q[1]); // j*j, j=rho*v !!! ; assumes: Q[1+i]=0, i=1,2.
 }
 
-void Euler::EulerSolver_FV::sphericalExplosion(const double* const x,double t, double* Q) { 
+void Euler::EulerSolver_FV::sphericalExplosion(const double* const x,double t, double* const Q) { 
    constexpr double x0[3]   = {0.5, 0.5, 0.5};
    constexpr double radius  = 0.25;
    constexpr double radius2 = radius*radius;
@@ -287,7 +416,7 @@ void Euler::EulerSolver_FV::sphericalExplosion(const double* const x,double t, d
   }
 }
 
-void Euler::EulerSolver_FV::rarefactionWave(const double* const x,double t, double* Q) {
+void Euler::EulerSolver_FV::rarefactionWave(const double* const x,double t, double* const Q) {
   constexpr double gamma = 1.4;
   constexpr double width = 0.25;
   constexpr double x0[3] = { 0.5, 0.5, 0.5 };
@@ -311,7 +440,7 @@ void Euler::EulerSolver_FV::rarefactionWave(const double* const x,double t, doub
   }
 }
 
-void Euler::EulerSolver_FV::referenceSolution(const double* const x,double t, double* Q) {
+void Euler::EulerSolver_FV::referenceSolution(const double* const x,double t, double* const Q) {
   switch (ReferenceChoice) {
   case Reference::SodShockTube:
     sodShockTube(x,t,Q);
@@ -334,7 +463,7 @@ void Euler::EulerSolver_FV::referenceSolution(const double* const x,double t, do
 void Euler::EulerSolver_FV::adjustSolution(
     const double* const x,
     const double t,
-    const double dt, double* Q) {
+    const double dt, double* const Q) {
   if (tarch::la::equals(t,0.0)) {
     EulerSolver_FV::referenceSolution(x,t,Q);
   }
@@ -346,7 +475,7 @@ void Euler::EulerSolver_FV::boundaryValues(
     const int faceIndex,
     const int direction,
     const double* const stateInside,
-    double* stateOutside) {
+    double* const stateOutside) {
   switch (ReferenceChoice) {
   case Reference::SphericalExplosion:
   case Reference::RarefactionWave:

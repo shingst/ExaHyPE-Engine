@@ -244,7 +244,7 @@ else
 			echo "-w set submodules url to https"
 			echo "-p only update the Peano submodule"
 			echo "-o only update submodules other than Peano"
-			echo "-n update dependeices to the newest version instead of the git submodule version"
+			echo "-n update dependencies to the newest version instead of the git submodule version"
 			exit -1;;
 		n)  echo "Will update to newest version instead of submodule version"
 			toNewest=true

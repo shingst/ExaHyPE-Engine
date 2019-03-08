@@ -7,6 +7,8 @@
 // ========================
 #include "PrimitiveWriterSubcellVTK.h"
 
+#include "PDE.h"
+
 GRMHDb::PrimitiveWriterSubcellVTK::PrimitiveWriterSubcellVTK(GRMHDb::GRMHDbSolver& solver) {
   // @TODO Please insert your code here.
 }
@@ -28,12 +30,14 @@ void GRMHDb::PrimitiveWriterSubcellVTK::mapQuantities(
     const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const tarch::la::Vector<DIMENSIONS, int>&    pos,
-    double* Q,
-    double* outputQuantities,
+    double* const Q,
+    double* const outputQuantities,
     double timeStamp
 ) {
-  const int writtenUnknowns = 19;
-  for (int i=0; i<writtenUnknowns; i++){ 
-    outputQuantities[i] = Q[i];
-  }
+	int iErr = 0;
+	pdecons2prim_(outputQuantities, Q, &iErr);
+  //const int writtenUnknowns = 19;
+  //for (int i=0; i<writtenUnknowns; i++){ 
+  //  outputQuantities[i] = Q[i];
+  //}
 }

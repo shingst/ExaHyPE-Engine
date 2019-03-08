@@ -228,8 +228,7 @@ void kernels::limiter::generic::c::findCellLocalLimiterMinAndMax(
     for (int iz=ghostLayerWidth3D; iz<basisSizeLim3D+ghostLayerWidth3D; ++iz) { // skip the last element
       for (int iy=ghostLayerWidth; iy<basisSizeLim+ghostLayerWidth; ++iy) {
         for (int ix=ghostLayerWidth; ix<basisSizeLim+ghostLayerWidth; ++ix) {
-          solver.mapDiscreteMaximumPrincipleObservables(
-              observables,numberOfObservables,lim+idxLim(iz,iy,ix,0));
+          solver.mapDiscreteMaximumPrincipleObservables(observables,lim+idxLim(iz,iy,ix,0));
   
           for (int v=0; v<numberOfObservables; v++) {
             localMinPerVariables[v] = std::min ( localMinPerVariables[v], observables[v] );
@@ -271,8 +270,7 @@ void kernels::limiter::generic::c::findCellLocalMinAndMax(
     for(int iz = 0; iz < basisSize3D; iz++) {
       for(int iy = 0; iy < basisSize;   iy++) {
         for(int ix = 0; ix < basisSize;   ix++) {
-          solver.mapDiscreteMaximumPrincipleObservables(
-              observables,numberOfObservables,luh+idx(iz,iy,ix,0));
+          solver.mapDiscreteMaximumPrincipleObservables(observables,luh+idx(iz,iy,ix,0));
   
           for (int v=0; v<numberOfObservables; v++) {
             localMinPerVariables[v] = std::min ( localMinPerVariables[v], observables[v] );
@@ -340,8 +338,7 @@ void kernels::limiter::generic::c::compareWithADERDGSolutionAtGaussLobattoNodes(
             }
           }
   
-          solver.mapDiscreteMaximumPrincipleObservables(
-              observables,numberOfObservables,lobValues);
+          solver.mapDiscreteMaximumPrincipleObservables(observables,lobValues);
           for (int v=0; v<numberOfObservables; v++) {
             min[v] = std::min( min[v], observables[v] );
             max[v] = std::max( max[v], observables[v] );
@@ -405,8 +402,7 @@ void kernels::limiter::generic::c::compareWithADERDGSolutionAtFVSubcellCenters(
             }
           }
   
-          solver.mapDiscreteMaximumPrincipleObservables(
-              observables,numberOfObservables,limValues);
+          solver.mapDiscreteMaximumPrincipleObservables(observables,limValues);
           for (int v=0; v<numberOfObservables; v++) {
             min[v] = std::min( min[v], observables[v] );
             max[v] = std::max( max[v], observables[v] );

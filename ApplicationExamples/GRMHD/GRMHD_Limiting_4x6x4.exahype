@@ -57,8 +57,9 @@ exahype-project GRMHD
   end distributed-memory
 
   global-optimisation
-    fuse-algorithmic-steps          = on
-    fuse-algorithmic-steps-factor   = 0.99
+    fuse-algorithmic-steps          = all
+    fuse-algorithmic-steps-rerun-factor   = 0.99
+    fuse-algorithmic-steps-diffusion-factor   = 0.99
     spawn-predictor-as-background-thread = on
     spawn-update-as-background-thread = on
     spawn-amr-background-threads         = on
@@ -92,7 +93,6 @@ exahype-project GRMHD
     dmp-difference-scaling         = 1e-3 
 //    dmp-relaxation-parameter       = 1e14 
 //    dmp-difference-scaling         = 1e13 
-    steps-till-cured               = 0
 
   plot vtu::Legendre::vertices::ascii ConservedWriter
       variables const = 1

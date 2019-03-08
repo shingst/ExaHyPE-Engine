@@ -82,7 +82,7 @@ void GRMHD::GRMHDSolver_FV::init(const std::vector<std::string>& cmdlineargs,con
 
 }
 
-void __attribute__((optimize("O0"))) initialData_FV(const double* const x,const double t,const double dt,double* Q) {
+void __attribute__((optimize("O0"))) initialData_FV(const double* const x,const double t,const double dt,double* const Q) {
   id->Interpolate(x, t, Q);
   //printf("Interpoalted at x=[%f,%f,%f], t=%f, Q0=%f\n", x[0],x[1],x[2], t, Q[0]);
   for(int i=0; i<nVar; i++) {
@@ -93,17 +93,25 @@ void __attribute__((optimize("O0"))) initialData_FV(const double* const x,const 
 
 }
 
-void GRMHD::GRMHDSolver_FV::adjustSolution(const double* const x,const double t,const double dt, double* Q) {
+bool doneOnce=false;
+void GRMHD::GRMHDSolver_FV::adjustSolution(const double* const x,const double t,const double dt, double* const Q) {
   using namespace tarch::la;
   // Do excision only in 3D.
-  //bool insideExcisionBall = norm2(x) < excision_radius;
-  bool insideExcisionBall = false;
-  bool useAdjustSolution = equals(t,0.0) || insideExcisionBall;
 
-  if(useAdjustSolution) id->Interpolate(x, t, Q);
+  if(equals(t,0.0)) {
+    if(!doneOnce) { printf("Calling ID on FV grid\n"); doneOnce=true; }
+    initialData_FV(x, t, dt, Q);
+
+    if( (x[1] > -1.e-10) && (x[1]  < 1.e-10)) {
+      if( (x[2] > -1.e-10) && (x[2]  < 1.e-10)) {
+//        std::cout << "adjusting FV at : " <<   x[0]  << " t = " << t <<  " Q[0] = " << Q[0] << std::endl;
+        printf("adjusting FV at : %.5e , %.5e\n",x[0],Q[0]);
+      }
+    }
+  }
 }
 
-void GRMHD::GRMHDSolver_FV::eigenvalues(const double* const Q, const int dIndex, double* lambda) {
+void GRMHD::GRMHDSolver_FV::eigenvalues(const double* const Q, const int dIndex, double* const lambda) {
   double nv[3] = {0.};
   nv[dIndex] = 1;
   pdeeigenvalues_(lambda, Q, nv);
@@ -121,14 +129,14 @@ inline bool isAllZero(const double* const Q) {
 }
 
 
-void GRMHD::GRMHDSolver_FV::flux(const double* const Q, double** F) {
+void GRMHD::GRMHDSolver_FV::flux(const double* const Q, double** const F) {
   if(!isAllZero(Q))
     pdeflux_(F[0], F[1], (DIMENSIONS==3)?F[2]:nullptr, Q);
 }
 
 // Source is exactly 0
 /*
-void GRMHD::GRMHDSolver_FV::algebraicSource(const double* const Q, double* S) {
+void GRMHD::GRMHDSolver_FV::algebraicSource(const double* const Q, double* const S) {
   pdesource_(S, Q);
 }
 */
@@ -139,8 +147,8 @@ void GRMHD::GRMHDSolver_FV::boundaryValues(
     const int faceIndex,
     const int d,
     const double* const stateIn,
-    double* stateOut) {
-  //	fvbc->apply(FV_BOUNDARY_CALL);
+    double* const stateOut) {
+  //  fvbc->apply(FV_BOUNDARY_CALL);
   // Use for the time being: Exact BC
   //id->Interpolate(x, t, stateOut);
 
@@ -154,19 +162,18 @@ void GRMHD::GRMHDSolver_FV::boundaryValues(
   initialData_FV(x, ti, dt, Qgp);
   for(int m=0; m < nVar; m++) {
     stateOut[m] = Qgp[m];
-  }
-
-
+  } 
 }
 
 
-void GRMHD::GRMHDSolver_FV::nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) {
+
+void GRMHD::GRMHDSolver_FV::nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ) {
   if(!isAllZero(Q))
     pdencp_(BgradQ, Q, gradQ);
 }
 
 /*
-void GRMHD::GRMHDSolver_FV::coefficientMatrix(const double* const Q,const int d,double* Bn) {
+void GRMHD::GRMHDSolver_FV::coefficientMatrix(const double* const Q,const int d,double* const Bn) {
   // new FV scheme has no coefficient matrix
   static tarch::logging::Log _log("GRMHDSolver");
   logError("coefficientMatrix()", "Coefficient Matrix invoked");

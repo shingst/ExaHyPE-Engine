@@ -25,8 +25,9 @@ exahype-project Euler
   end computational-domain
   
   global-optimisation
-    fuse-algorithmic-steps          = on
-    fuse-algorithmic-steps-factor   = 0.99
+    fuse-algorithmic-steps          = all
+    fuse-algorithmic-steps-rerun-factor   = 0.99
+    fuse-algorithmic-steps-diffusion-factor   = 0.99
     spawn-predictor-as-background-thread = off
     spawn-amr-background-threads = off
     /* 0.0 und 0.8 sind schon mal zwei Faktoren */
@@ -40,7 +41,7 @@ exahype-project Euler
   solver ADER-DG EulerSolver_ADERDG
     variables const            = 5
     order const                = 6
-    maximum-mesh-size          = 1.0
+    maximum-mesh-size          = 1.5
     time-stepping              = global
     type const                 = nonlinear
     terms const                = flux
@@ -52,7 +53,7 @@ exahype-project Euler
     plot vtk::Legendre::cells::ascii ConservedQuantitiesWriter
       variables const = 5
       time            = 0.0
-      repeat          = 0.0355
+      repeat          = 0.0418
       output          = ./conserved
     end plot
 

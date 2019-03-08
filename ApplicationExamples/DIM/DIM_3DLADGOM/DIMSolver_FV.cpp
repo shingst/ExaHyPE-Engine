@@ -20,7 +20,7 @@ void DIM::DIMSolver_FV::init(const std::vector<std::string>& cmdlineargs,const e
 	readcgfile_(&_domainOffset[0],&_domainSize[0]);
 }
 
-void DIM::DIMSolver_FV::adjustSolution(const double* const x,const double t,const double dt, double* Q) {
+void DIM::DIMSolver_FV::adjustSolution(const double* const x,const double t,const double dt, double* const Q) {
   // Dimensions             = 3
   // Number of variables    = 14 + #parameters
   
@@ -32,7 +32,7 @@ void DIM::DIMSolver_FV::adjustSolution(const double* const x,const double t,cons
   //Q[14]=1.0;
 }
 /*
-void DIM::DIMSolver_FV::algebraicSource(const double* const Q,double* S) {
+void DIM::DIMSolver_FV::algebraicSource(const double* const Q,double* const S) {
 	const int nVar = DIM::AbstractDIMSolver_FV::NumberOfVariables;
   // @todo Please implement/augment if required
   for(int m=0; m < nVar; m++) {
@@ -40,7 +40,7 @@ void DIM::DIMSolver_FV::algebraicSource(const double* const Q,double* S) {
   }
 }
 */
-void DIM::DIMSolver_FV::eigenvalues(const double* const Q, const int dIndex, double* lambda) {
+void DIM::DIMSolver_FV::eigenvalues(const double* const Q, const int dIndex, double* const lambda) {
   // Dimensions             = 3
   // Number of variables    = 14 + #parameters
   
@@ -56,7 +56,7 @@ void DIM::DIMSolver_FV::boundaryValues(
     const int faceIndex,
     const int d,
     const double* const stateInside,
-    double* stateOutside) {
+    double* const stateOutside) {
 	const int nVar = DIM::AbstractDIMSolver_FV::NumberOfVariables;	
 	double Qgp[nVar];
   // Dimensions             = 3
@@ -77,7 +77,7 @@ void DIM::DIMSolver_FV::boundaryValues(
 //to add new PDEs specify them in the specification file, delete this file and its header and rerun the toolkit
 
 
-void DIM::DIMSolver_FV::flux(const double* const Q,double** F) {
+void DIM::DIMSolver_FV::flux(const double* const Q,double** const F) {
 	const int nVar = DIM::AbstractDIMSolver_FV::NumberOfVariables;
   // Dimensions                        = 3
   // Number of variables + parameters  = 14 + 0
@@ -93,12 +93,12 @@ void DIM::DIMSolver_FV::flux(const double* const Q,double** F) {
 
 
 
-void  DIM::DIMSolver_FV::nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) {
+void  DIM::DIMSolver_FV::nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ) {
   // @todo Please implement/augment if required
   pdencp_(BgradQ, Q, gradQ);
 }
 
-double DIM::DIMSolver_FV::riemannSolver(double* fL, double *fR, const double* qL, const double* qR, int normalNonZero) {
+double DIM::DIMSolver_FV::riemannSolver(double* const fL, double* const fR, const double* const qL, const double* const qR, int normalNonZero) {
   const int numberOfVariables  = DIM::AbstractDIMSolver_FV::NumberOfVariables;
   const int numberOfParameters = DIM::AbstractDIMSolver_FV::NumberOfParameters;
   const int numberOfData       = numberOfVariables+numberOfParameters;

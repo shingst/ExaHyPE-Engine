@@ -60,6 +60,7 @@ class exahype::mappings::FinaliseMeshRefinement {
   static bool OneSolverRequestedMeshUpdate;
 
   /**
+<<<<<<< HEAD
    * A minimum time step size for each solver.
    */
   std::vector<double> _minTimeStepSizes;
@@ -75,6 +76,8 @@ class exahype::mappings::FinaliseMeshRefinement {
   std::vector<std::vector<double>> _reducedGlobalObservables;
 
   /**
+=======
+>>>>>>> master
    * Indicates that the background tasks have terminated.
    * No further checks are required in this case.
    *
@@ -88,12 +91,6 @@ class exahype::mappings::FinaliseMeshRefinement {
    * and set this flag here as well.
    */
   bool _backgroundJobsHaveTerminated = false;
-
-  /**
-   * Prepare a appropriately sized vector _minTimeStepSizes
-   * with elements initiliased to MAX_DOUBLE.
-   */
-  void initialiseLocalVariables();
 
  public:
   /**

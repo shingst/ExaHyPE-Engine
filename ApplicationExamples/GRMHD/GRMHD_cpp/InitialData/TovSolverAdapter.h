@@ -16,7 +16,7 @@ public:
 	
 	void readParameters(const mexa::mexafile& parameters) override;
 	void prepare() override;
-	void Interpolate(const double* x, double t, double* Q) override;
+	void Interpolate(const double* const x, double t, double* const Q) override;
 };
 
 

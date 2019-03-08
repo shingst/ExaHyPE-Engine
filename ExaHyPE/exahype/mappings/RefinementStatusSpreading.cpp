@@ -28,25 +28,13 @@
 
 tarch::logging::Log exahype::mappings::RefinementStatusSpreading::_log("exahype::mappings::RefinementStatusSpreading");
 
-bool exahype::mappings::RefinementStatusSpreading::IsFirstIteration = true;
-
-void exahype::mappings::RefinementStatusSpreading::initialiseLocalVariables(){
-  const unsigned int numberOfSolvers = exahype::solvers::RegisteredSolvers.size();
-  _meshUpdateEvents.resize(numberOfSolvers);
-
-  for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
-    _meshUpdateEvents[solverNumber] = exahype::solvers::Solver::MeshUpdateEvent::None;
-  }
-}
+tarch::multicore::BooleanSemaphore exahype::mappings::RefinementStatusSpreading::Semaphore;
 
 peano::CommunicationSpecification
 exahype::mappings::RefinementStatusSpreading::communicationSpecification() const {
   return peano::CommunicationSpecification(
-      peano::CommunicationSpecification::ExchangeMasterWorkerData::
-          MaskOutMasterWorkerDataAndStateExchange,
-      peano::CommunicationSpecification::ExchangeWorkerMasterData::
-          SendDataAndStateAfterLastTouchVertexLastTime,
-      true);
+      peano::CommunicationSpecification::ExchangeMasterWorkerData::MaskOutMasterWorkerDataAndStateExchange,
+      peano::CommunicationSpecification::ExchangeWorkerMasterData::SendDataAndStateAfterLastTouchVertexLastTime,true);
 }
 
 // Switched on.
@@ -88,73 +76,17 @@ exahype::mappings::RefinementStatusSpreading::descendSpecification(int level) co
       peano::MappingSpecification::AvoidCoarseGridRaces,false);
 }
 
-#if defined(SharedMemoryParallelisation)
-exahype::mappings::RefinementStatusSpreading::RefinementStatusSpreading(
-    const RefinementStatusSpreading& masterThread) {
-  initialiseLocalVariables();
-}
-#endif
-
-exahype::mappings::RefinementStatusSpreading::~RefinementStatusSpreading() {
-  // do nothing
-}
-
-#if defined(SharedMemoryParallelisation)
-void exahype::mappings::RefinementStatusSpreading::mergeWithWorkerThread(
-    const RefinementStatusSpreading& workerThread) {
-  for (int i = 0; i < static_cast<int>(exahype::solvers::RegisteredSolvers.size()); i++) {
-    _meshUpdateEvents[i] = exahype::solvers::Solver::mergeMeshUpdateEvents ( _meshUpdateEvents[i], workerThread._meshUpdateEvents[i] );
-  }
-}
-#endif
 
 bool exahype::mappings::RefinementStatusSpreading::spreadRefinementStatus(exahype::solvers::Solver* solver) {
   return
       solver->getMeshUpdateEvent()!=exahype::solvers::Solver::MeshUpdateEvent::None;
 }
 
-void exahype::mappings::RefinementStatusSpreading::beginIteration(
-  exahype::State& solverState
-) {
-
-  // We memorise the previous request per solver
-  for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
-    auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-    if ( spreadRefinementStatus(solver) ) {
-      solver->updateNextMeshUpdateEvent(solver->getMeshUpdateEvent());
-    }
-  }
-
-  initialiseLocalVariables();
-
+void exahype::mappings::RefinementStatusSpreading::beginIteration(exahype::State& solverState) {
   #ifdef Parallel
-  if (! MetadataHeap::getInstance().validateThatIncomingJoinBuffersAreEmpty() ) {
-      exit(-1);
-  }
+  // hack to enforce reductions
+  solverState.setReduceStateAndCell(true);
   #endif
-}
-
-void exahype::mappings::RefinementStatusSpreading::endIteration(exahype::State& solverState) {
-  for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
-    auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-    if ( spreadRefinementStatus(solver) ) {
-      solver->updateNextMeshUpdateEvent(_meshUpdateEvents[solverNumber]);
-      solver->setNextMeshUpdateEvent();
-    }
-  }
-
-  IsFirstIteration = false;
-}
-
-void exahype::mappings::RefinementStatusSpreading::createHangingVertex(
-    exahype::Vertex& fineGridVertex,
-    const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
-    const tarch::la::Vector<DIMENSIONS, double>& fineGridH,
-    exahype::Vertex* const coarseGridVertices,
-    const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-    exahype::Cell& coarseGridCell,
-    const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfVertex) {
-  // do nothing
 }
 
 void exahype::mappings::RefinementStatusSpreading::touchVertexFirstTime(
@@ -202,11 +134,13 @@ void exahype::mappings::RefinementStatusSpreading::enterCell(
           } break;
           case exahype::solvers::Solver::Type::LimitingADERDG: {
             auto& cellDescription = cellInfo._ADERDGCellDescriptions[element];
-            _meshUpdateEvents[cellDescription.getSolverNumber()] =
-                exahype::solvers::Solver::mergeMeshUpdateEvents(
-                    _meshUpdateEvents[cellDescription.getSolverNumber()],
-                    static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->
-                        updateRefinementStatusDuringRefinementStatusSpreading(cellDescription));
+            solvers::Solver::MeshUpdateEvent meshUpdateEvent =
+                static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->
+                updateRefinementStatusDuringRefinementStatusSpreading(cellDescription);
+
+            tarch::multicore::Lock lock(Semaphore);
+            solver->updateMeshUpdateEvent(meshUpdateEvent);
+            lock.free();
           } break;
           default:
             break;
@@ -221,19 +155,6 @@ void exahype::mappings::RefinementStatusSpreading::enterCell(
 }
 
 #ifdef Parallel
-bool exahype::mappings::RefinementStatusSpreading::prepareSendToWorker(
-    exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
-    const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-    exahype::Vertex* const coarseGridVertices,
-    const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-    exahype::Cell& coarseGridCell,
-    const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-    int worker) {
-  logTraceIn( "prepareSendToWorker(...)" );
-  logTraceOutWith1Argument( "prepareSendToWorker(...)", true );
-  return true;
-}
-
 void exahype::mappings::RefinementStatusSpreading::mergeWithNeighbour(
     exahype::Vertex& vertex, const exahype::Vertex& neighbour, int fromRank,
     const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
@@ -241,7 +162,7 @@ void exahype::mappings::RefinementStatusSpreading::mergeWithNeighbour(
   logTraceInWith6Arguments("mergeWithNeighbour(...)", vertex, neighbour,
                            fromRank, fineGridX, fineGridH, level);
 
-  if ( !IsFirstIteration ) {
+  if ( !exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
     vertex.mergeOnlyWithNeighbourMetadata(
         fromRank,fineGridX,fineGridH,level,
         exahype::State::AlgorithmSection::RefinementStatusSpreading,false);
@@ -257,10 +178,31 @@ void exahype::mappings::RefinementStatusSpreading::prepareSendToNeighbour(
   logTraceInWith5Arguments("prepareSendToNeighbour(...)", vertex,
                            toRank, x, h, level);
 
-  vertex.sendOnlyMetadataToNeighbour(toRank,x,h,level,false);
+  if ( !exahype::State::isLastIterationOfBatchOrNoBatch() ) {
+    vertex.sendOnlyMetadataToNeighbour(toRank,x,h,level,false);
+  }
 
   logTraceOut("prepareSendToNeighbour(...)");
 }
+
+bool exahype::mappings::RefinementStatusSpreading::prepareSendToWorker(
+    exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
+    const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
+    exahype::Vertex* const coarseGridVertices,
+    const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
+    exahype::Cell& coarseGridCell,
+    const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
+    int worker) {
+  logTraceIn( "prepareSendToWorker(...)" );
+  logTraceOutWith1Argument( "prepareSendToWorker(...)", true );
+  return exahype::State::isLastIterationOfBatchOrNoBatch(); // tells master this worker wants to reduce
+}
+
+
+//
+// All methods below are nop,
+//
+// ==================================
 
 void exahype::mappings::RefinementStatusSpreading::prepareSendToMaster(
     exahype::Cell& localCell, exahype::Vertex* vertices,
@@ -269,20 +211,14 @@ void exahype::mappings::RefinementStatusSpreading::prepareSendToMaster(
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
     const exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
-  logTraceInWith2Arguments( "prepareSendToMaster(...)", localCell, verticesEnumerator.toString() );
-
-  for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
-    auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-
-    if ( spreadRefinementStatus(solver) ) {
-      solver->sendMeshUpdateEventToMaster(
-          tarch::parallel::NodePool::getInstance().getMasterRank(),
-          verticesEnumerator.getCellCenter(),
-          verticesEnumerator.getLevel());
+  if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
+    const int masterRank = tarch::parallel::NodePool::getInstance().getMasterRank();
+    for (auto* solver : exahype::solvers::RegisteredSolvers) {
+      if ( solver->getMeshUpdateEvent()!=exahype::solvers::Solver::MeshUpdateEvent::None ) {
+        solver->sendMeshUpdateEventToMaster(masterRank,0.0,0);
+      }
     }
   }
-
-  logTraceOut( "prepareSendToMaster(...)" );
 }
 
 void exahype::mappings::RefinementStatusSpreading::mergeWithMaster(
@@ -295,29 +231,16 @@ void exahype::mappings::RefinementStatusSpreading::mergeWithMaster(
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
     exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-    int worker, const exahype::State& workerState,
+    int workerRank, const exahype::State& workerState,
     exahype::State& masterState) {
-  logTraceIn( "mergeWithMaster(...)" );
-
-  // Merge global solver states
-  for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
-    auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-
-    if ( spreadRefinementStatus(solver) ) {
-      solver->mergeWithWorkerMeshUpdateEvent(
-          worker,
-          fineGridVerticesEnumerator.getCellCenter(),
-          fineGridVerticesEnumerator.getLevel());
+  if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
+    for (auto* solver : exahype::solvers::RegisteredSolvers) {
+      if ( solver->getMeshUpdateEvent()!=exahype::solvers::Solver::MeshUpdateEvent::None ) {
+        solver->mergeWithWorkerMeshUpdateEvent(workerRank,0.0,0);
+      }
     }
   }
-
-  logTraceOut( "mergeWithMaster(...)" );
 }
-
-//
-// All methods below are nop,
-//
-// ==================================
 
 void exahype::mappings::RefinementStatusSpreading::prepareCopyToRemoteNode(
     exahype::Cell& localCell, int toRank,
@@ -374,6 +297,37 @@ void exahype::mappings::RefinementStatusSpreading::mergeWithWorker(
   // do nothing
 }
 #endif
+
+
+#if defined(SharedMemoryParallelisation)
+exahype::mappings::RefinementStatusSpreading::RefinementStatusSpreading(
+    const RefinementStatusSpreading& masterThread) {
+  // do nothing
+}
+void exahype::mappings::RefinementStatusSpreading::mergeWithWorkerThread(
+    const RefinementStatusSpreading& workerThread) {
+  // do nothing
+}
+#endif
+
+exahype::mappings::RefinementStatusSpreading::~RefinementStatusSpreading() {
+  // do nothing
+}
+
+void exahype::mappings::RefinementStatusSpreading::endIteration(exahype::State& solverState) {
+  // do nothing
+}
+
+void exahype::mappings::RefinementStatusSpreading::createHangingVertex(
+    exahype::Vertex& fineGridVertex,
+    const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
+    const tarch::la::Vector<DIMENSIONS, double>& fineGridH,
+    exahype::Vertex* const coarseGridVertices,
+    const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
+    exahype::Cell& coarseGridCell,
+    const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfVertex) {
+  // do nothing
+}
 
 exahype::mappings::RefinementStatusSpreading::RefinementStatusSpreading() {
   // do nothing

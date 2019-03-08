@@ -118,7 +118,7 @@ void exahype::plotters::ADERDG2FlashHDF5::plotPatch(const int solverNumber,solve
     plotPatch(
         aderdgCellDescription.getOffset(),
         aderdgCellDescription.getSize(), solverSolution,
-        aderdgCellDescription.getCorrectorTimeStamp());
+        aderdgCellDescription.getTimeStamp());
   }
 }
 

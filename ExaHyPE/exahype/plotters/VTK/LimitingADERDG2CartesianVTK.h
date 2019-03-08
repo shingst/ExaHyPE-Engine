@@ -58,6 +58,22 @@ private:
   int           _solverUnknowns  = -1;
   int           _writtenUnknowns = -1;
   exahype::parser::ParserView   _plotterParameters ;
+
+  /**
+   * To resolve features of a high order polynomial solution
+   * in a VTK compatible way, we apply the volume interpolation operator
+   * to the DG solution polynomial.
+   *
+   * @return number of times the prolongation operators should be applied.
+   */
+  int                          _resolution = 0;
+
+  /**
+   * Temporary solution and gradient arrays used for interpolating the solution
+   * onto finer grids.
+   */
+  std::vector<double>          _tempSolution;
+  std::vector<double>          _tempGradient;
   /**
    * The ghost layer width the finite volumes patch is using.
    */

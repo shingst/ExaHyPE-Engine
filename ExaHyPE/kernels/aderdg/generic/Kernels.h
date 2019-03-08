@@ -138,6 +138,18 @@ void solutionAdjustment(SolverType& solver, double* luh,
 // @todo Dominic Etienne Charrier
 // Inconsistent ordering of inout and in arguments
 // template argument functions and non-template argument function.
+/**
+ * Implements a Rusanov Riemann solver.
+ *
+ * @param solver
+ * @param FL
+ * @param FR
+ * @param QL
+ * @param QR
+ * @param t
+ * @param dt
+ * @param direction
+ */
 template <bool useNCP, bool useViscousFlux, typename SolverType>
 void riemannSolverNonlinear(
     SolverType& solver, double* FL, double* FR,
@@ -148,16 +160,55 @@ void riemannSolverNonlinear(
     const tarch::la::Vector<DIMENSIONS, double>& dx,
     const int direction);
 
-template <typename SolverType>
+
+/**
+ * Implements a generalised osher type flux.
+ *
+ * @note Requires @p solver to implement a nonconservative product and an eigenvectors function which returns the
+ * eigenvalues and eigenvectors. The kernel supplies the solver with reference coordinate indices.
+ *
+ * References:
+ *
+ * [1] M. Dumbser and E. F. Toro, “On Universal Osher-Type Schemes for General Nonlinear Hyperbolic Conservation Laws,” Communications in Computational Physics, vol. 10, no. 03, pp. 635–671, Sep. 2011.
+ * [2] M. Dumbser and E. F. Toro, “A Simple Extension of the Osher Riemann Solver to Non-conservative Hyperbolic Systems,” Journal of Scientific Computing, vol. 48, no. 1–3, pp. 70–88, Jul. 2011.
+ *
+ * @note Currently, no viscous flux is supported.
+ *
+ * @tparam numQuadPoints the number of quadrature points the Legendre quadrature should use. 3 is chosen in paper [1].
+ *
+ * @param solver    solver implementing an eigenvectors function (plus a nonconservative product) if required.
+ * @param FL        "left"/"-" normal flux of size [0,nVar]^2.
+ * @param FR        "right"/"+"normal flux of size [0,nVar]^2.
+ * @param QL        "left"/"-" state variables (plus parameters); range: [0,nVar+nPar]^2.
+ * @param QR        "right"/"+"state variables (plus parameters); range: [0,nVar+nPar]^2.
+ * @param t         time stamp
+ * @param dt        time step size
+ * @param direction normal direction
+ */
+template <bool useFlux, bool useNCP, typename SolverType>
+void generalisedOsherSolomon(
+    SolverType&         solver,
+    double* const       FL,
+    double* const       FR,
+    const double* const QL,
+    const double* const QR,
+    const double        t,
+    const double        dt,
+    const int           direction);
+
+template <bool useGradientFlux, typename SolverType>
 void boundaryConditions(
     SolverType& solver,
-    double* fluxOut, double* stateOut,
-    const double* const fluxIn, const double* const stateIn, // TODO(Dominic): Inconsistent order of arguments w.r.t to riemannSolver
+    double* fluxOut,
+    double* stateOut,
+    const double* const fluxIn,
+    const double* const stateIn,
+    const double* const gradStateIn,
     const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
-    const tarch::la::Vector<DIMENSIONS, double>& cellSize,
-    const double t, const double dt, const int faceIndex,
+    const tarch::la::Vector<DIMENSIONS,double>& cellSize,
+    const double t,const double dt,
+    const int faceIndex,
     const int direction);
-
 
 template <typename SolverType,bool useViscousFlux>
 double stableTimeStepSize(SolverType& solver, const double* const luh,
@@ -237,6 +288,8 @@ void deltaDistribution(
 }  // namespace generic
 }  // namespace aderdg
 }  // namespace kernels
+
+#include "kernels/aderdg/generic/c/generalisedOsherSolomon.cpph"
 
 #if DIMENSIONS == 2
 #include "kernels/aderdg/generic/c/2d/boundaryConditions.cpph"

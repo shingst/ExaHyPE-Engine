@@ -19,7 +19,7 @@ bool DIM::DIMSolver::useAdjustSolution(const tarch::la::Vector<DIMENSIONS, doubl
   return tarch::la::equals(t,0.0);
 }
 
-void DIM::DIMSolver::adjustSolution(const double* const x,const double w,const double t,const double dt, double* Q) {
+void DIM::DIMSolver::adjustSolution(const double* const x,const double w,const double t,const double dt, double* const Q) {
   // Dimensions             = 2
   // Number of variables    = 14 + #parameters
   
@@ -27,13 +27,13 @@ void DIM::DIMSolver::adjustSolution(const double* const x,const double w,const d
   initialdata_(x, &t, Q);
 }
 
-exahype::solvers::Solver::RefinementControl DIM::DIMSolver::refinementCriterion(const double* luh, const tarch::la::Vector<DIMENSIONS, double>& center,const tarch::la::Vector<DIMENSIONS, double>& dx, double t,const int level) {
+exahype::solvers::Solver::RefinementControl DIM::DIMSolver::refinementCriterion(const double* const luh, const tarch::la::Vector<DIMENSIONS, double>& center,const tarch::la::Vector<DIMENSIONS, double>& dx, double t,const int level) {
   // @todo Please implement/augment if required
   return exahype::solvers::Solver::RefinementControl::Keep;
 }
 
 
-void __attribute__((optimize("O0"))) DIM::DIMSolver::eigenvalues(const double* const Q, const int dIndex, double* lambda) {
+void __attribute__((optimize("O0"))) DIM::DIMSolver::eigenvalues(const double* const Q, const int dIndex, double* const lambda) {
   // Dimensions             = 2
   // Number of variables    = 14 + #parameters
   
@@ -43,7 +43,7 @@ void __attribute__((optimize("O0"))) DIM::DIMSolver::eigenvalues(const double* c
     
 }
 
-/* void DIM::DIMSolver::flux(const double* const Q, double** F) {
+/* void DIM::DIMSolver::flux(const double* const Q, double** const F) {
   // Dimensions             = 2
   // Number of variables    = 14 + #parameters
   
@@ -87,7 +87,7 @@ void DIM::DIMSolver::boundaryValues(
     const int faceIndex,
     const int d,
     const double* const stateInside,
-    double* stateOutside) {
+    double* const stateOutside) {
   // Dimensions             = 2
   // Number of variables    = 14 + #parameters
 
@@ -95,17 +95,17 @@ void DIM::DIMSolver::boundaryValues(
   
 }
 
-void  __attribute__((optimize("O0"))) DIM::DIMSolver::nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) {
+void  __attribute__((optimize("O0"))) DIM::DIMSolver::nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ) {
     pdencp_(BgradQ, Q, gradQ);
 }
 
-void  __attribute__((optimize("O0"))) DIM::DIMSolver::algebraicSource(const double* const Q, double* S) {
+void  __attribute__((optimize("O0"))) DIM::DIMSolver::algebraicSource(const double* const Q, double* const S) {
   pdesource_(S, Q);
 
 }
 
 
-void DIM::DIMSolver::coefficientMatrix(const double* const Q,const int d,double* Bn) {
+void DIM::DIMSolver::coefficientMatrix(const double* const Q,const int d,double* const Bn) {
   double nv[3] = {0.};
   nv[d] = 1;
   pdematrixb_(Bn, Q, nv);

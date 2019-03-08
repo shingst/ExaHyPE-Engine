@@ -139,7 +139,7 @@ namespace {{project}} {
  *   public:
  *      double &varfoo;
  *      double &varbar;
- *      VariablePointers(double*Q) : varfoo(Q[0]), bar(Q[1]), ... {}
+ *      VariablePointers(double* const Q) : varfoo(Q[0]), bar(Q[1]), ... {}
  * }
  * 
  * Advantages: Use as positions in Q.
@@ -210,7 +210,7 @@ class {{project}}::{{abstractSolver}}::Variables : public {{project}}::{{abstrac
     static constexpr int SizeParameters = {{numberOfMaterialParameters}};
     static constexpr int Size           = {{numberOfVariables}}+{{numberOfMaterialParameters}};
   
-    Variables(double* Q) : _Q(Q) {}
+    Variables(double* const Q) : _Q(Q) {}
     
     void operator = (Variables& variables) {
       std::copy(variables.data(),variables.data()+Size,_Q);
@@ -289,7 +289,7 @@ class {{project}}::{{abstractSolver}}::Fluxes : public {{project}}::{{abstractSo
   private:
     double** _F;
   public:
-    Fluxes(double** F) : _F(F) {}
+    Fluxes(double** const F) : _F(F) {}
     
     /** The rows of the flux tensor. */
     int variables() const {

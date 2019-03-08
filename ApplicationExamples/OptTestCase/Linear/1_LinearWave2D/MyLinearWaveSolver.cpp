@@ -17,7 +17,7 @@ void Linear::MyLinearWaveSolver::init(const std::vector<std::string>& cmdlinearg
     pointSourceLocation[0][1] = 5.0;
 }
 
-void Linear::MyLinearWaveSolver::adjustSolution(double *luh, const tarch::la::Vector<DIMENSIONS,double>& center, const tarch::la::Vector<DIMENSIONS,double>& dx,double t,double dt) {
+void Linear::MyLinearWaveSolver::adjustSolution(double* const luh, const tarch::la::Vector<DIMENSIONS,double>& center, const tarch::la::Vector<DIMENSIONS,double>& dx,double t,double dt) {
   // Dimensions                        = 2
   // Number of variables + parameters  = 3 + 0
   // @todo Please implement/augment if required
@@ -70,7 +70,7 @@ void Linear::MyLinearWaveSolver::adjustSolution(double *luh, const tarch::la::Ve
 
 void Linear::MyLinearWaveSolver::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,
   const double * const fluxIn,const double* const stateIn,
-  double *fluxOut,double* stateOut) {
+  double* const fluxOut,double* const stateOut) {
   // Dimensions                        = 2
   // Number of variables + parameters  = 3 + 0
 
@@ -91,7 +91,7 @@ void Linear::MyLinearWaveSolver::boundaryValues(const double* const x,const doub
  
 }
 
-exahype::solvers::Solver::RefinementControl Linear::MyLinearWaveSolver::refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
+exahype::solvers::Solver::RefinementControl Linear::MyLinearWaveSolver::refinementCriterion(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
   // @todo Please implement/augment if required
   return exahype::solvers::Solver::RefinementControl::Keep;
 }
@@ -103,7 +103,7 @@ exahype::solvers::Solver::RefinementControl Linear::MyLinearWaveSolver::refineme
 //*****************************************************************************
 
 
-void Linear::MyLinearWaveSolver::eigenvalues(const double* const Q,const int d,double* lambda) {
+void Linear::MyLinearWaveSolver::eigenvalues(const double* const Q,const int d,double* const lambda) {
   // Dimensions                        = 2
   // Number of variables + parameters  = 3 + 0
   
@@ -118,7 +118,7 @@ void Linear::MyLinearWaveSolver::eigenvalues(const double* const Q,const int d,d
 }
 
 
-void Linear::MyLinearWaveSolver::flux(const double* const Q,double** F) {
+void Linear::MyLinearWaveSolver::flux(const double* const Q,double** const F) {
   // Dimensions                        = 2
   // Number of variables + parameters  = 3 + 0
   
@@ -139,7 +139,7 @@ void Linear::MyLinearWaveSolver::flux(const double* const Q,double** F) {
 
 
 
-void  Linear::MyLinearWaveSolver::nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) {
+void  Linear::MyLinearWaveSolver::nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ) {
   // @todo Please implement/augment if required
   static tarch::logging::Log _log("MyLinearSolver::nonConservativeProduct");
 
@@ -165,7 +165,7 @@ void  Linear::MyLinearWaveSolver::nonConservativeProduct(const double* const Q,c
     /**
      * @TODO LR : document
      */
-void Linear::MyLinearWaveSolver::multiplyMaterialParameterMatrix(const double* const Q, double* rhs) {
+void Linear::MyLinearWaveSolver::multiplyMaterialParameterMatrix(const double* const Q, double* const rhs) {
   // @todo Please implement/augment if required
 
   //double cp = 1.0;
@@ -186,7 +186,7 @@ void Linear::MyLinearWaveSolver::multiplyMaterialParameterMatrix(const double* c
 }
 
 
-void Linear::MyLinearWaveSolver::coefficientMatrix(const double* const Q,const int d,double* Bn){
+void Linear::MyLinearWaveSolver::coefficientMatrix(const double* const Q,const int d,double* const Bn){
   static tarch::logging::Log _log("MyLinearWaveSolver::coefficientMatrix");
 
   double cp = Q[4];
@@ -225,7 +225,7 @@ void Linear::MyLinearWaveSolver::coefficientMatrix(const double* const Q,const i
 }
 
 
-void Linear::MyLinearWaveSolver::pointSource(const double* const Q,const double* const x,const double t,const double dt, double* forceVector,int n) {
+void Linear::MyLinearWaveSolver::pointSource(const double* const Q,const double* const x,const double t,const double dt, double* const forceVector,int n) {
   static tarch::logging::Log _log("MyLinearWaveSolver::pointSource");
   double pi = 3.14159265359;
   double sigma = 0.1149;
@@ -293,7 +293,7 @@ void Linear::MyLinearWaveSolver::riemannSolver_Nodal(double v_p,double v_m, doub
 
 
 
-// void Linear::MyLinearWaveSolver::riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double dt,const int normalNonZeroIndex, bool isBoundaryFace, int faceIndex){
+// void Linear::MyLinearWaveSolver::riemannSolver(double* const FL,double* const FR,const double* const QL,const double* const QR,const double dt,const int normalNonZeroIndex, bool isBoundaryFace, int faceIndex){
 
 //   constexpr int numberOfVariables  = MyLinearWaveSolver::NumberOfVariables;
 //   constexpr int numberOfVariables2 = numberOfVariables*numberOfVariables;

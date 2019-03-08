@@ -28,6 +28,10 @@ namespace exahype {
   namespace repositories {
     class Repository;
   }
+
+  namespace records {
+    class RepositoryState;
+  }
 }
 
 #ifdef TBBInvade
@@ -66,13 +70,19 @@ class exahype::runners::Runner {
    * The bounding box size used by the repository.
    *
    * The bounding box embeds the computational
-   * domain into a cube with extent identical
-   * to the largest extent of the computational
+   * domain into a cube with extent greater than
+   * or equalt to the largest extent of the computational
    * domain (see ::_domainSize).
    *
    * \note Is initialised in ::createRepository.
    */
-  tarch::la::Vector<DIMENSIONS,double> _boundingBoxSize;
+  double _boundingBoxSize;
+
+  /**
+   * The mesh spacing used to partition the
+   * bounding box.
+   */
+  double _boundingBoxMeshSize;
 
   /**
    * Statistics.
@@ -258,11 +268,19 @@ class exahype::runners::Runner {
       exahype::repositories::Repository& repository,
       const bool fusedTimeStepping);
 
+
   /**
-   * Do one time step but actually use a couple of iterations to do so.
+   * Do one time step but actually use two algorithmic steps (2 to 3 loops) to do so.
+
+   * @param plot       Do plot before the corrector is applied
+   */
+  void runOneTimeStepWithTwoSeparateAlgorithmicSteps(
+      exahype::repositories::Repository& repository, bool plot);
+
+  /**
+   * Do one time step but actually use three algorithmic steps (3 to 4 loops) to do so.
    *
-   *
-   * @param plot      Do plot in the after the corrector has been applied
+   * @param plot       Do plot before the corrector is applied
    */
   void runOneTimeStepWithThreeSeparateAlgorithmicSteps(
       exahype::repositories::Repository& repository, bool plot);
@@ -277,8 +295,6 @@ class exahype::runners::Runner {
    */
   void runPredictionInIsolation(repositories::Repository& repository);
 
-  void validateSolverTimeStepDataForThreeAlgorithmicPhases(const bool fuseADERDGPhases) const;
-
   /**
    * Per dimension, computes the smallest multiplicity of the coarsest solver mesh size
    * which is larger than the domain size.
@@ -290,8 +306,7 @@ class exahype::runners::Runner {
    *         then the bounding box still is cubical and all of its entries are
    *         the biggest dimension along one coordinate axis.
    */
-  tarch::la::Vector<DIMENSIONS, double> determineBoundingBoxSize(
-      const tarch::la::Vector<DIMENSIONS, double>& domainSize) const;
+  double determineBoundingBoxSize(const tarch::la::Vector<DIMENSIONS, double>& domainSize) const;
 
   /**
    * Sets up the geometry, hands it over to a new instance of the repository
@@ -385,29 +400,25 @@ class exahype::runners::Runner {
    * Run through all the solvers and identify the coarsest grid level in the tree
    * that will be populated by a solver.
    */
-  int getCoarsestGridLevelOfAllSolvers(
-      tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize) const;
+  int getCoarsestGridLevelOfAllSolvers(const double boundingBoxSize) const;
 
   /**
    * The same as ::getCoarsestGridLevelOfAllSolvers but
    * returns at least a value of 3 (Peano) levels.
    */
-  int getCoarsestGridLevelForLoadBalancing(
-      tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize) const;
+  int getCoarsestGridLevelForLoadBalancing(const double boundingBoxSize) const;
 
   /**
    * Run through all the solvers and identify the finest grid level in the tree
    * that will be populated by a solver in a uniform manner.
    */
-  int getFinestUniformGridLevelOfAllSolvers(
-      tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize) const;
+  int getFinestUniformGridLevelOfAllSolvers(const double boundingBoxSize) const;
 
   /**
    * The same as ::getFinestUniformGridLevelOfAllSolvers but
    * returns at least a value of 3 (Peano) levels.
    */
-  int getFinestUniformGridLevelForLoadBalancing(
-        tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize) const;
+  int getFinestUniformGridLevelForLoadBalancing(const double boundingBoxSize) const;
 
   /**
    * Compute the coarsest mesh size according to the bounding box size.

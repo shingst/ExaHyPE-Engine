@@ -14,7 +14,7 @@ void GRGPR::GPRSolver_FV::init(const std::vector<std::string>& cmdlineargs,const
   // @todo Please implement/augment if required
 }
 
-void GRGPR::GPRSolver_FV::adjustSolution(const double* const x,const double t,const double dt, double* Q) {
+void GRGPR::GPRSolver_FV::adjustSolution(const double* const x,const double t,const double dt, double* const Q) {
   // Dimensions             = 2
   // Number of variables    = 30 + #parameters
   
@@ -24,7 +24,7 @@ void GRGPR::GPRSolver_FV::adjustSolution(const double* const x,const double t,co
   }
 }
 
-void GRGPR::GPRSolver_FV::eigenvalues(const double* const Q, const int dIndex, double* lambda) {
+void GRGPR::GPRSolver_FV::eigenvalues(const double* const Q, const int dIndex, double* const lambda) {
   // Dimensions             = 2
   // Number of variables    = 30 + #parameters
   
@@ -40,7 +40,7 @@ void GRGPR::GPRSolver_FV::boundaryValues(
     const int faceIndex,
     const int d,
     const double* const stateInside,
-    double* stateOutside) {
+    double* const stateOutside) {
 		
 	const int nVar = GRGPR::AbstractGPRSolver_FV::NumberOfVariables;	
 	double Qgp[nVar];
@@ -62,7 +62,7 @@ void GRGPR::GPRSolver_FV::boundaryValues(
 //to add new PDEs specify them in the specification file, delete this file and its header and rerun the toolkit
 
 
-void GRGPR::GPRSolver_FV::flux(const double* const Q,double** F) {
+void GRGPR::GPRSolver_FV::flux(const double* const Q,double** const F) {
 	const int nVar = GRGPR::AbstractGPRSolver_FV::NumberOfVariables;
   // Dimensions                        = 3
   // Number of variables + parameters  = 17 + 0
@@ -79,12 +79,12 @@ void GRGPR::GPRSolver_FV::flux(const double* const Q,double** F) {
 
 
 //You can either implement this method or modify fusedSource
-void GRGPR::GPRSolver_FV::algebraicSource(const double* const Q,double* S) {
+void GRGPR::GPRSolver_FV::algebraicSource(const double* const Q,double* const S) {
   // @todo Please implement/augment if required
   pdesource_(S, Q);
 }
 
-void  GRGPR::GPRSolver_FV::nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) {
+void  GRGPR::GPRSolver_FV::nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ) {
   // @todo Please implement/augment if required
   pdencp_(BgradQ, Q, gradQ);
 }

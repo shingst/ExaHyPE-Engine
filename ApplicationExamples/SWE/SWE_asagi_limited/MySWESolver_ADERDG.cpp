@@ -37,7 +37,7 @@ void SWE::MySWESolver_ADERDG::init(const std::vector<std::string>& cmdlineargs,c
 
 }
 
-void SWE::MySWESolver_ADERDG::adjustPointSolution(const double* const x,const double t,const double dt,double* Q) {
+void SWE::MySWESolver_ADERDG::adjustPointSolution(const double* const x,const double t,const double dt,double* const Q) {
   // Dimensions                        = 2
   // Number of variables + parameters  = 4 + 0
   if (tarch::la::equals(t,0.0)) {
@@ -48,7 +48,7 @@ void SWE::MySWESolver_ADERDG::adjustPointSolution(const double* const x,const do
 
 void SWE::MySWESolver_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,
   const double * const fluxIn,const double* const stateIn,
-  double *fluxOut,double* stateOut) {
+  double* const fluxOut,double* const stateOut) {
   // Dimensions                        = 2
   // Number of variables + parameters  = 4 + 0
 
@@ -67,7 +67,7 @@ void SWE::MySWESolver_ADERDG::boundaryValues(const double* const x,const double 
   std::copy_n(F[normalNonZero], NumberOfVariables, fluxOut);
 }
 
-exahype::solvers::Solver::RefinementControl SWE::MySWESolver_ADERDG::refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
+exahype::solvers::Solver::RefinementControl SWE::MySWESolver_ADERDG::refinementCriterion(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
     double largestH = -std::numeric_limits<double>::max();
     double smallestH = std::numeric_limits<double>::max();
 
@@ -107,7 +107,7 @@ exahype::solvers::Solver::RefinementControl SWE::MySWESolver_ADERDG::refinementC
 //*****************************************************************************
 
 
-void SWE::MySWESolver_ADERDG::eigenvalues(const double* const Q,const int d,double* lambda) {
+void SWE::MySWESolver_ADERDG::eigenvalues(const double* const Q,const int d,double* const lambda) {
   /// Dimensions                        = 2
   // Number of variables + parameters  = 4 + 0
   ReadOnlyVariables vars(Q);
@@ -135,7 +135,7 @@ void SWE::MySWESolver_ADERDG::eigenvalues(const double* const Q,const int d,doub
 }
 
 
-void SWE::MySWESolver_ADERDG::flux(const double* const Q,double** F) {
+void SWE::MySWESolver_ADERDG::flux(const double* const Q,double** const F) {
   // Dimensions                        = 2
   // Number of variables + parameters  = 4 + 0
 
@@ -176,7 +176,7 @@ void SWE::MySWESolver_ADERDG::flux(const double* const Q,double** F) {
 
 
 
-void  SWE::MySWESolver_ADERDG::nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) {
+void  SWE::MySWESolver_ADERDG::nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ) {
   idx2 idx_gradQ(DIMENSIONS,NumberOfVariables);
 
   BgradQ[0] = 0.0;
@@ -230,7 +230,7 @@ bool SWE::MySWESolver_ADERDG::isPhysicallyAdmissible(
 
 }
 
-void SWE::MySWESolver_ADERDG::riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double dt,const int direction,bool isBoundaryFace, int faceIndex) {
+void SWE::MySWESolver_ADERDG::riemannSolver(double* const FL,double* const FR,const double* const QL,const double* const QR,const double dt,const int direction,bool isBoundaryFace, int faceIndex) {
   constexpr int numberOfVariables  = NumberOfVariables;
   constexpr int numberOfData       = numberOfVariables;
   constexpr int order              = Order;
@@ -341,7 +341,7 @@ void SWE::MySWESolver_ADERDG::riemannSolver(double* FL,double* FR,const double* 
 
 }
 
-// void SWE::MySWESolver_ADERDG::mapDiscreteMaximumPrincipleObservables(double* observables, const int numberOfObservables, const double* const Q){
+// void SWE::MySWESolver_ADERDG::mapDiscreteMaximumPrincipleObservables(double* const observables, const double* const Q){
 
 //}
 

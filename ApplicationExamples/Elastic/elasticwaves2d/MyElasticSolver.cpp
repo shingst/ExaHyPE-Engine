@@ -7,7 +7,7 @@ elasticwaves2d::MyElasticSolver::init() {
   // @todo Please implement/augment if required
 }
 
-void elasticwaves2d::MyElasticSolver::flux(const double* const Q, double** F) {
+void elasticwaves2d::MyElasticSolver::flux(const double* const Q, double** const F) {
   // Dimensions             = 2
   // Number of variables    = 5 (#unknowns + #parameters)
 
@@ -37,7 +37,7 @@ void elasticwaves2d::MyElasticSolver::flux(const double* const Q, double** F) {
 
 void elasticwaves2d::MyElasticSolver::eigenvalues(const double* const Q,
                                                   const int normalNonZeroIndex,
-                                                  double* lambda) {
+                                                  double* const lambda) {
   // Dimensions             = 2
   // Number of variables    = 5 (#unknowns + #parameters)
   // @todo Please implement
@@ -70,7 +70,7 @@ bool elasticwaves2d::MyElasticSolver::hasToAdjustSolution(
 
 void elasticwaves2d::MyElasticSolver::adjustedSolutionValues(
     const double* const x, const double w, const double t, const double dt,
-    double* Q) {
+    double* const Q) {
   // Dimensions             = 2
   // Number of variables    = 5 (#unknowns + #parameters)
   // @todo Please implement
@@ -90,7 +90,7 @@ void elasticwaves2d::MyElasticSolver::adjustedSolutionValues(
 
 exahype::solvers::Solver::RefinementControl
 elasticwaves2d::MyElasticSolver::refinementCriterion(
-    const double* luh, const tarch::la::Vector<DIMENSIONS, double>& center,
+    const double* const luh, const tarch::la::Vector<DIMENSIONS, double>& center,
     const tarch::la::Vector<DIMENSIONS, double>& dx, double t,
     const int level) {
   // @todo Please implement

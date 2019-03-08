@@ -44,7 +44,7 @@ void SWE::MySWESolver::init(const std::vector<std::string>& cmdlineargs,const ex
     writeCsv("Input/measurements.csv", a_measurements);
 }
 
-void SWE::MySWESolver::adjustSolution(double *luh, const tarch::la::Vector<DIMENSIONS,double>& center, const tarch::la::Vector<DIMENSIONS,double>& dx,double t,double dt) {
+void SWE::MySWESolver::adjustSolution(double* const luh, const tarch::la::Vector<DIMENSIONS,double>& center, const tarch::la::Vector<DIMENSIONS,double>& dx,double t,double dt) {
     // Dimensions                        = 2
     // Number of variables + parameters  = 4 + 0
     if (tarch::la::equals(t,0.0)) {
@@ -83,7 +83,7 @@ void SWE::MySWESolver::adjustSolution(double *luh, const tarch::la::Vector<DIMEN
 
 void SWE::MySWESolver::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,
   const double * const fluxIn,const double* const stateIn,
-  double *fluxOut,double* stateOut) {
+  double* const fluxOut,double* const stateOut) {
   // Dimensions                        = 2
   // Number of variables + parameters  = 4 + 0
   // Dimensions                        = 2
@@ -97,7 +97,7 @@ void SWE::MySWESolver::boundaryValues(const double* const x,const double t,const
     std::copy_n(F[normalNonZero], NumberOfVariables, fluxOut);
 }
 
-exahype::solvers::Solver::RefinementControl SWE::MySWESolver::refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
+exahype::solvers::Solver::RefinementControl SWE::MySWESolver::refinementCriterion(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
   // @todo Please implement/augment if required
   return exahype::solvers::Solver::RefinementControl::Keep;
 }
@@ -109,7 +109,7 @@ exahype::solvers::Solver::RefinementControl SWE::MySWESolver::refinementCriterio
 //*****************************************************************************
 
 
-void SWE::MySWESolver::eigenvalues(const double* const Q,const int d,double* lambda) {
+void SWE::MySWESolver::eigenvalues(const double* const Q,const int d,double* const lambda) {
   // Dimensions                        = 2
   // Number of variables + parameters  = 4 + 0
     ReadOnlyVariables vars(Q);
@@ -129,7 +129,7 @@ void SWE::MySWESolver::eigenvalues(const double* const Q,const int d,double* lam
 
 
 
-void SWE::MySWESolver::flux(const double* const Q,double** F) {
+void SWE::MySWESolver::flux(const double* const Q,double** const F) {
   // Dimensions                        = 2
   // Number of variables + parameters  = 4 + 0
     ReadOnlyVariables vars(Q);
@@ -152,7 +152,7 @@ void SWE::MySWESolver::flux(const double* const Q,double** F) {
 
 
 
-void  SWE::MySWESolver::nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) {
+void  SWE::MySWESolver::nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ) {
   // @todo Please implement/augment if required
     kernels::idx2 idx_gradQ(DIMENSIONS,NumberOfVariables);
 

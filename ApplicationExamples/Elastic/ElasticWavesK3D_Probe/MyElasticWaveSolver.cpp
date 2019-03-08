@@ -14,7 +14,7 @@ bool ElasticWave::MyElasticWaveSolver::hasToAdjustSolution(const tarch::la::Vect
    return false;
 }
 
-void ElasticWave::MyElasticWaveSolver::adjustedSolutionValues(const double* const x,const double w,const double t,const double dt,double* Q) {
+void ElasticWave::MyElasticWaveSolver::adjustedSolutionValues(const double* const x,const double w,const double t,const double dt,double* const Q) {
   Variables vars(Q);
   vars.v(0,0,0);
   vars.s(0,0,0,0,0,0);
@@ -24,13 +24,13 @@ void ElasticWave::MyElasticWaveSolver::adjustedSolutionValues(const double* cons
   vars.cp()=6.0;
 }
 
-exahype::solvers::Solver::RefinementControl ElasticWave::MyElasticWaveSolver::refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
+exahype::solvers::Solver::RefinementControl ElasticWave::MyElasticWaveSolver::refinementCriterion(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
   // @todo Please implement/augment if required
   return exahype::solvers::Solver::RefinementControl::Keep;
 }
 
 
-void ElasticWave::MyElasticWaveSolver::eigenvalues(const double* const Q,const int normalNonZeroIndex,double* lambda) {
+void ElasticWave::MyElasticWaveSolver::eigenvalues(const double* const Q,const int normalNonZeroIndex,double* const lambda) {
   ReadOnlyVariables vars(Q);
 
   //  std::cout << "eigenvalues " << vars.rho() << "," << vars.cs() << "," << vars.cp() << std::endl;
@@ -50,7 +50,7 @@ void ElasticWave::MyElasticWaveSolver::eigenvalues(const double* const Q,const i
   lambda[8] = +cp;
 }
 
-void ElasticWave::MyElasticWaveSolver::flux(const double* const Q,double** F) {
+void ElasticWave::MyElasticWaveSolver::flux(const double* const Q,double** const F) {
   ReadOnlyVariables vars(Q);
 
   F[0][0] = 0.0;
@@ -85,7 +85,7 @@ void ElasticWave::MyElasticWaveSolver::flux(const double* const Q,double** F) {
 }
 
 
-void ElasticWave::MyElasticWaveSolver::algebraicSource(const double* const Q,double* S) {
+void ElasticWave::MyElasticWaveSolver::algebraicSource(const double* const Q,double* const S) {
   S[0] = 0.0;
   S[1] = 0.0;
   S[2] = 0.0;
@@ -100,7 +100,7 @@ void ElasticWave::MyElasticWaveSolver::algebraicSource(const double* const Q,dou
 
 void ElasticWave::MyElasticWaveSolver::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,
     const double * const fluxIn,const double* const stateIn,
-    double *fluxOut,double* stateOut) {
+    double* const fluxOut,double* const stateOut) {
   stateOut[0] = stateIn[0];
   stateOut[1] = stateIn[1];
   stateOut[2] = stateIn[2];
@@ -146,7 +146,7 @@ void ElasticWave::MyElasticWaveSolver::boundaryValues(const double* const x,cons
 }
 
 
-void ElasticWave::MyElasticWaveSolver::nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) {
+void ElasticWave::MyElasticWaveSolver::nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ) {
   // Dimensions             = 3
   // Number of variables    = 9 (#unknowns + #parameters)
   ReadOnlyVariables vars(Q);
@@ -199,7 +199,7 @@ void ElasticWave::MyElasticWaveSolver::nonConservativeProduct(const double* cons
 }
 
     
-void ElasticWave::MyElasticWaveSolver::coefficientMatrix(const double* const Q,const int normalNonZero,double* Bn) {
+void ElasticWave::MyElasticWaveSolver::coefficientMatrix(const double* const Q,const int normalNonZero,double* const Bn) {
   ReadOnlyVariables vars(Q);
   
   //  std::cout << "matrixb " << vars.rho() << "," << vars.cs() << "," << vars.cp() << std::endl;
@@ -279,7 +279,7 @@ void ElasticWave::MyElasticWaveSolver::coefficientMatrix(const double* const Q,c
 }
 
 //TODO KD
-void ElasticWave::MyElasticWaveSolver::pointSource(const double* const x,const double t,const double dt, double* forceVector, double* x0) {
+void ElasticWave::MyElasticWaveSolver::pointSource(const double* const x,const double t,const double dt, double* const forceVector, double* const x0) {
   //TODO KD // @todo Please implement/augment if required and set bool function
   double pi = 3.14159265359;
   double sigma = 0.1149;

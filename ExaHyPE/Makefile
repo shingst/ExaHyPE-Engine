@@ -381,7 +381,9 @@ endif
 
 
 ifeq ($(call tolower,$(DISTRIBUTEDMEM)),mpi)
-	COMPILER_CFLAGS += -DParallel -DnoPackedRecords -DnoPersistentRegularSubtrees
+	COMPILER_CFLAGS += -DParallel
+	COMPILER_CFLAGS += -DnoPackedRecords -DnoPersistentRegularSubtrees 
+	COMPILER_CFLAGS += -DIprobeEveryKIterations=0 -DUsePeanosRLEBoundaryExchanger
 endif
 
 

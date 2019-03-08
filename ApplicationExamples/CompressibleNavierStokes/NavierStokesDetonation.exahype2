@@ -22,12 +22,12 @@
 	"autotuning_strategy": "dummy"
     },
     "optimisation": {
-	"fuse_algorithmic_steps": true,
-	"fuse_algorithmic_steps_factor": 0.99,
+	"fuse_algorithmic_steps": "most",
+	"fuse_algorithmic_steps_rerun_factor": 0.99,
 	"spawn_predictor_as_background_thread": true,
 	"spawn_amr_background_threads": true,
 	"disable_vertex_exchange_in_time_steps": false,
-	"time_step_batch_factor": 0.99,
+	"time_step_batch_factor": 0.0,
 	"disable_metadata_exchange_in_batched_time_steps": false,
 	"double_compression": 0.0,
 	"spawn_double_compression_as_background_thread": false
@@ -65,7 +65,7 @@
 	    },
 	    "limiter": {
 		"dmp_observables": 3,
-		"dmp_relaxation_parameter": 0.05,
+		"dmp_relaxation_parameter": 1e-4,
 		"dmp_difference_scaling": 1e-3,
 		"helper_layers": 1
 	    },
@@ -95,7 +95,7 @@
 		}
 	    ],
 	    "parameters": {
-		"viscosity": 0.00,
+		"viscosity": 0.0,
 		"scenario": "detonation",
 		"use-amr": false,
 		"use-tv-amr": true,

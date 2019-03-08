@@ -48,9 +48,6 @@ event-mapping:
 event-mapping:
   name: PredictionOrLocalRecomputation
   
-event-mapping:
-  name: GlobalRollback
-
 // GridUpdate     
 event-mapping:
   name: MeshRefinement
@@ -117,7 +114,7 @@ adapter:
   name: PredictionOrLocalRecomputation
   merge-with-user-defined-mapping: PredictionOrLocalRecomputation // This advances in time for local recomp.
  
-// Additional adapters for 4 phase time stepping
+// Additional adapters for 3 phase time stepping
 adapter: 
   name: MergeNeighbours
   merge-with-user-defined-mapping: MergeNeighbours
@@ -129,3 +126,10 @@ adapter:
 adapter:
   name: Prediction
   merge-with-user-defined-mapping: Prediction
+
+// Additional adapters for 2 phase time stepping
+
+adapter:
+  name: Correction
+  merge-with-user-defined-mapping: MergeNeighbours
+  merge-with-user-defined-mapping: UpdateAndReduce
