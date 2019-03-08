@@ -575,7 +575,7 @@ int exahype::runners::Runner::getCoarsestGridLevelForLoadBalancing(const double 
 }
 
 int exahype::runners::Runner::getFinestUniformGridLevelOfAllSolvers(const double boundingBoxSize) const {
-  if ( _parser.getScaleBoundingBox() ) {
+  if ( _parser.getOutsideCells() > 0 ) {
     return std::numeric_limits<int>::max();
   } else { 
     double hMax = exahype::solvers::Solver::getFinestMaximumMeshSizeOfAllSolvers();
@@ -637,8 +637,10 @@ exahype::repositories::Repository* exahype::runners::Runner::createRepository() 
   int boundingBoxMeshLevel = coarsestUserMeshLevel;
   tarch::la::Vector<DIMENSIONS,double> boundingBoxOffset = _domainOffset;
 
-  if ( _parser.getScaleBoundingBox() ) {
-    const int cellsOutside = 2*(1+3*_parser.getScaleBoundingBoxMultiplier());
+  // scale bounding box
+  const int cellsOutside = _parser.getOutsideCells();
+  if ( cellsOutside > 0 ) {
+    const int cellOutsideLeft = cellsOutside / 2; // floors
 
     const double coarsestUserMeshSpacing =
         exahype::solvers::Solver::getCoarsestMaximumMeshSizeOfAllSolvers();
@@ -652,16 +654,16 @@ exahype::repositories::Repository* exahype::runners::Runner::createRepository() 
       const double boundingBoxMeshCells = std::pow(3,level-1);
       boundingBoxScaling                = boundingBoxMeshCells / ( boundingBoxMeshCells - cellsOutside ); // two cells are removed on each side
       boundingBoxExtent                 = boundingBoxScaling * maxDomainExtent;
-      _boundingBoxMeshSize            = boundingBoxExtent/boundingBoxMeshCells;
+      _boundingBoxMeshSize              = boundingBoxExtent/boundingBoxMeshCells;
       level++;
     }
-    level--; // decrement result since boundingBox was computed using level-1
+    level--; // decrement result since bounding box was computed using level-1
     boundingBoxMeshLevel = level;
 
     assertion6(boundingBoxScaling>=1.0,boundingBoxScaling,boundingBoxExtent,_boundingBoxMeshSize,boundingBoxMeshLevel,coarsestUserMeshSpacing,maxDomainExtent);
 
     _boundingBoxSize    *= boundingBoxScaling;
-    boundingBoxOffset   -= 0.5*cellsOutside*_boundingBoxMeshSize;
+    boundingBoxOffset   -= cellOutsideLeft*_boundingBoxMeshSize;
   } else {
     _boundingBoxMeshSize = determineCoarsestMeshSize(_domainSize);
   }

@@ -513,6 +513,10 @@ tarch::la::Vector<DIMENSIONS, double> exahype::parser::Parser::getOffset() const
   return result;
 }
 
+int exahype::parser::Parser::getOutsideCells() const {
+  return getIntFromPath("/computational_domain/outside_cells", 2, isOptional);
+}
+
 std::string exahype::parser::Parser::getMulticorePropertiesFile() const {
   std::string result = getStringFromPath("/shared_memory/properties_file","shared-memory.properties",isOptional);
   logDebug("getMulticorePropertiesFile()", "found " << result);
@@ -650,14 +654,6 @@ int exahype::parser::Parser::getMaxMeshSetupIterations() const {
     result = std::numeric_limits<int>::max();
   }
   return result;
-}
-
-bool exahype::parser::Parser::getScaleBoundingBox() const {
-  return getBoolFromPath("/distributed_memory/scale_bounding_box", true, isOptional);
-}
-
-int exahype::parser::Parser::getScaleBoundingBoxMultiplier() const {
-  return getIntFromPath("/distributed_memory/scale_bounding_box_multiplier", 0, isOptional);
 }
 
 bool exahype::parser::Parser::getStaticMeshRefinement() const {

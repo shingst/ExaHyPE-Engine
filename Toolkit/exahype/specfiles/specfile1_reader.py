@@ -110,6 +110,7 @@ class SpecFile1Reader():
             "timeout",\
             "cores",\
             "measure_cell_processing_times_iter",\
+            "outside_cells",\
             "order",\
             "patch_size",\
             "halo_cells",\
