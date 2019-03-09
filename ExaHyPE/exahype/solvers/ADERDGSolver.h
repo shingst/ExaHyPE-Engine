@@ -852,7 +852,7 @@ private:
    * required in order to dynamically receive tasks and make progress on MPI
    * communication.
    */
-  class StealingManagerJob {
+  class StealingManagerJob : public tbb::task{
     public:
       enum class State {
         Running,
@@ -861,7 +861,8 @@ private:
 	  StealingManagerJob(ADERDGSolver& solver);
 	  ~StealingManagerJob();
 	  bool run();
-      bool operator()();
+          tbb::task* execute();
+          bool operator()();
 	  void terminate();
     private:
 	  ADERDGSolver& _solver;

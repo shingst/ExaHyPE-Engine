@@ -4838,6 +4838,11 @@ bool exahype::solvers::ADERDGSolver::StealingManagerJob::operator()() {
   //return true;
 }
 
+tbb::task* exahype::solvers::ADERDGSolver::StealingManagerJob::execute() {
+   while(run()) {};
+   return nullptr;
+}
+
 bool exahype::solvers::ADERDGSolver::StealingManagerJob::run() {
 // static bool terminated = false;
   bool result=true;
@@ -4878,12 +4883,12 @@ void exahype::solvers::ADERDGSolver::StealingManagerJob::terminate() {
 
 void exahype::solvers::ADERDGSolver::startStealingManager() {
   logInfo("startStealingManager", " starting ");
-  //static tbb::task_group_context  backgroundTaskContext(tbb::task_group_context::isolated);
-  //_stealingManagerJob = new( backgroundTaskContext ) StealingManagerJob(*this);
-  _stealingManagerJob = new StealingManagerJob(*this);
+  static tbb::task_group_context  backgroundTaskContext(tbb::task_group_context::isolated);
+  _stealingManagerJob = new( backgroundTaskContext ) StealingManagerJob(*this);
+  //_stealingManagerJob = new StealingManagerJob(*this);
   //assertion(_stealingManagerJob!=nullptr);
-  //tbb::task::enqueue(*_stealingManagerJob);
-  peano::datatraversal::TaskSet spawnedSet(_stealingManagerJob, peano::datatraversal::TaskSet::TaskType::Background);
+  tbb::task::enqueue(*_stealingManagerJob);
+  //peano::datatraversal::TaskSet spawnedSet(_stealingManagerJob, peano::datatraversal::TaskSet::TaskType::Background);
   //peano::datatraversal::TaskSet spawnedSet(_stealingManagerJob, peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible);
 }
 
