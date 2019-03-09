@@ -437,6 +437,11 @@
           "default" : "none",
           "old_format" : { "token_after" : "stealing" }
 	 },
+        "stealing_use_progress_thread": {
+          "type" : "boolean",
+          "title": "If true spawn MPI progress as separate TBB task.",
+          "default" : false
+        },
         "stealing_CCP_temperature" : {
               "type" : "number",
               "title" : "The initial temperature for CCP.",

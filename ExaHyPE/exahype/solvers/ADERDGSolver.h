@@ -852,7 +852,11 @@ private:
    * required in order to dynamically receive tasks and make progress on MPI
    * communication.
    */
+#ifdef StealingUseProgressThread
   class StealingManagerJob : public tbb::task{
+#else
+  class StealingManagerJob{
+#endif
     public:
       enum class State {
         Running,

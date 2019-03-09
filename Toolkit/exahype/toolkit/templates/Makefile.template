@@ -88,7 +88,9 @@ PROJECT_CFLAGS += -DDistributedStealing -DStealingStrategyHybrid
 {% elif stealing=="static_hardcoded" %}
 PROJECT_CFLAGS += -DDistributedStealing -DStealingStrategyStaticHardcoded
 {% endif %}
-
+{% if useStealingProgress %}
+PROJECT_CFLAGS += -DStealingUseProgressThread
+{% endif %}
 
 # If using TBB only, link pthread (comment this if you want to link a specific pthread)
 ifeq ($(call tolower,$(SHAREDMEM)),tbb)

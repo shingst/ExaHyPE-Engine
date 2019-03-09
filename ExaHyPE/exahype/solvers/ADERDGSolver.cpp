@@ -4883,13 +4883,17 @@ void exahype::solvers::ADERDGSolver::StealingManagerJob::terminate() {
 
 void exahype::solvers::ADERDGSolver::startStealingManager() {
   logInfo("startStealingManager", " starting ");
+#ifdef StealingUseProgressThread
   static tbb::task_group_context  backgroundTaskContext(tbb::task_group_context::isolated);
   _stealingManagerJob = new( backgroundTaskContext ) StealingManagerJob(*this);
   //_stealingManagerJob = new StealingManagerJob(*this);
   //assertion(_stealingManagerJob!=nullptr);
   tbb::task::enqueue(*_stealingManagerJob);
-  //peano::datatraversal::TaskSet spawnedSet(_stealingManagerJob, peano::datatraversal::TaskSet::TaskType::Background);
+#else
+  _stealingManagerJob = new StealingManagerJob(*this);
+  peano::datatraversal::TaskSet spawnedSet(_stealingManagerJob, peano::datatraversal::TaskSet::TaskType::Background);
   //peano::datatraversal::TaskSet spawnedSet(_stealingManagerJob, peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible);
+#endif
 }
 
 void exahype::solvers::ADERDGSolver::stopStealingManager() {
@@ -5256,6 +5260,7 @@ bool exahype::solvers::ADERDGSolver::StealablePredictionJob::handleLocalExecutio
     watch.startTimer();
 #endif
     MPI_Request sendBackRequests[4];
+    //logInfo("handleLocalExecution()", "postSendBack");
     _solver.isendStealablePredictionJob(_luh,
     		                            _lduh,
 										_lQhbnd,
@@ -5293,7 +5298,8 @@ void exahype::solvers::ADERDGSolver::StealablePredictionJob::receiveHandler(exah
 #if defined(PerformanceAnalysisStealingDetailed)
   logInfo("receiveHandler","successful receive request");
 #endif
-
+  //logInfo("receiveHandler","successful receive request");
+  
   tbb::concurrent_hash_map<std::pair<int, int>, StealablePredictionJobData*>::accessor a_tagRankToData;
   StealablePredictionJobData *data;
   static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagRankToStolenData.find(a_tagRankToData, std::make_pair(remoteRank, tag));
@@ -5313,6 +5319,7 @@ void exahype::solvers::ADERDGSolver::StealablePredictionJob::receiveBackHandler(
   logInfo("receiveBackHandler","successful receiveBack request, cnt "<<cnt);
 #endif
 
+  //logInfo("receiveBackHandler","successful receiveBack request");
   tbb::concurrent_hash_map<int, CellDescription*>::accessor a_tagToCellDesc;
   bool found = static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagToCellDesc.find(a_tagToCellDesc, tag);
   assertion(found);
@@ -5346,6 +5353,7 @@ void exahype::solvers::ADERDGSolver::StealablePredictionJob::sendBackHandler(exa
 #if defined(PerformanceAnalysisStealingDetailed)
   logInfo("sendBackHandler","successful sendBack request");
 #endif
+  //logInfo("sendBackHandler","successful sendBack request");
   tbb::concurrent_hash_map<std::pair<int, int>, StealablePredictionJobData*>::accessor a_tagRankToData;
 
   StealablePredictionJobData *data;
@@ -5364,8 +5372,8 @@ void exahype::solvers::ADERDGSolver::StealablePredictionJob::sendHandler(exahype
 #if defined(PerformanceAnalysisStealingDetailed)
   static std::atomic<int> cnt=0;
   cnt++;
-  logInfo("sendHandler","successful send request, cnt "<<cnt);
 #endif
+  //logInfo("sendHandler","successful send request");
   tbb::concurrent_hash_map<int, double*>::accessor a_tagToMeta;
   double *metaData;
   static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagToMetaData.find(a_tagToMeta, tag);

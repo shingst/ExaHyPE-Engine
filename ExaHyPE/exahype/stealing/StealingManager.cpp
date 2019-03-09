@@ -125,8 +125,6 @@ void exahype::stealing::StealingManager::submitRequests(
      return;
   }
 
-
-
   if(block) {
     MPI_Waitall(nRequests, requests, MPI_STATUSES_IGNORE);
     handler(solver, tag, remoteRank);

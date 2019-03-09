@@ -275,6 +275,7 @@ class Controller:
         context["likwidInc"] = ""    # TODO
         if context["useDistributedMem"]:
             context["stealing"]  = self.spec["distributed_memory"]["stealing"]
+            context["useStealingProgress"] = self.spec["distributed_memory"]["stealing_use_progress_thread"]
 
         # kernels
         useOptKernel = False
