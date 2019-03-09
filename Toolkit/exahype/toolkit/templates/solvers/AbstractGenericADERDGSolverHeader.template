@@ -114,7 +114,7 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver {
         const bool                                  wasTroubledInPreviousTimeStep,
         const tarch::la::Vector<DIMENSIONS,double>& center,
         const tarch::la::Vector<DIMENSIONS,double>& dx,
-        const double                                timeStamp) const override { return true; } 
+        const double                                timeStamp) const override { return false; /* do not veto DMP*/ } 
     
     /**
      * Default implementation. Please overwrite.
