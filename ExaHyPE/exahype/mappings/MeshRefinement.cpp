@@ -117,6 +117,7 @@ exahype::mappings::MeshRefinement::descendSpecification(int level) const {
 #if defined(SharedMemoryParallelisation)
 exahype::mappings::MeshRefinement::MeshRefinement(const MeshRefinement& masterThread):
   _allSolversAttainedStableState(masterThread._allSolversAttainedStableState),
+  _stableIterationsInARow(masterThread._stableIterationsInARow),
   _localState(masterThread._localState) {
   // do nothing
 }
@@ -140,13 +141,31 @@ void exahype::mappings::MeshRefinement::beginIteration( exahype::State& solverSt
 
   // mesh refinement convergence check
   if ( exahype::mappings::MeshRefinement::IsFirstIteration ) {
-    StillInRefiningMode            = true;
+    _stableIterationsInARow = 0;
+    StillInRefiningMode     = true;
     _allSolversAttainedStableState = false;
   } else {
+    if (
+        solverState.getAllSolversAttainedStableStateInPreviousIteration() ||
+        !solverState.isInvolvedInJoinOrFork()
+    ) {
+      _stableIterationsInARow++;
+    } else { // this is for the worker ranks, the global master was already updated in the last endIteration(...)
+      _stableIterationsInARow=0;
+    }
+    
     _allSolversAttainedStableState = true;
   }
-  if ( StillInRefiningMode ) { // all found experimentally; not completely understood yet
+  if ( StillInRefiningMode &&
+      _stableIterationsInARow >
+         (
+           exahype::solvers::Solver::getMaximumAdaptiveMeshLevelOfAllSolvers()
+           - exahype::solvers::Solver::getCoarsestMeshLevelOfAllSolvers()
+           + std::max(exahype::solvers::Solver::getMaxRefinementStatus(),1)
+         )
+  ) { // all found experimentally; not completely understood yet
     StillInRefiningMode = false;
+    _stableIterationsInARow=0;
     if (!IsInitialMeshRefinement) {
       logInfo("beginIteration(...)","refinement converged. switch to coarsening");
     }
@@ -176,11 +195,16 @@ void exahype::mappings::MeshRefinement::endIteration(exahype::State& solverState
         solverState.getAllSolversAttainedStableStateInPreviousIteration() &&
         solverState.getMaxLevel()>=exahype::solvers::Solver::getFinestUniformMeshLevelOfAllSolvers()); // max level only available in endIteration(..>)
 
+    if ( !solverState.getAllSolversAttainedStableStateInPreviousIteration() ) { // reset directly
+      _stableIterationsInARow = 0;
+    }
     // @todo This is not so nice. The solver has the first attributes already, so why set them?
     const bool meshRefinementHasConverged =
             solverState.isGridBalanced()
             &&
             !StillInRefiningMode
+            &&
+            _stableIterationsInARow > 1
             &&
             (IsInitialMeshRefinement || solverState.getAllSolversAttainedStableStateInPreviousIteration());
 
@@ -190,6 +214,7 @@ void exahype::mappings::MeshRefinement::endIteration(exahype::State& solverState
                ", grid stationary=" << solverState.isGridStationary() <<
                ", still in refining mode=" << StillInRefiningMode <<
                ", initial refinement=" << IsInitialMeshRefinement <<
+               ", stable iterations in a row=" << _stableIterationsInARow <<
                ", all solvers attained=" << solverState.getAllSolversAttainedStableStateInPreviousIteration()
       );
     }

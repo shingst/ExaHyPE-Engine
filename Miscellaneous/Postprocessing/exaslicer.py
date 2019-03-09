@@ -19,6 +19,18 @@
 exaslicer.py is both a standalone program as well a mini library to read VTK
 ExaHyPE files, slice 3D down to 2D or 1D and output it as CSV or similar.
 
+Important notes
+===============
+
+* This code does *not* interpolate. It really boils down to mask your
+  selection criterion to the data available. If you select x==0 but there
+  is data only on x=+-0.01, no interpolation will take place and you won't
+  get any data.
+
+* Therefore, this kind of "slicing" is only useful in uniform grids where you
+  know exactly about where your data live. However, you can use the
+  function close_mask to avoid at least looking up the coordinates.
+
 Examples
 ========
 
@@ -45,12 +57,22 @@ np.abs(x - 0.5) < 1e-10
 # You can also slice in time
 (x == 0.5) & (t <= 10)
 
+# Or you write for instance to get the z axis on any close coordinates,
+# where close_mask is a function provided by the exa tools:
+close_mask(x,0) & close_mask(y=0)
+
 Notes
 =====
 
+* Slicing conditions are evaluated as python statements and can call any function.
+  x,y,z,t are provided as numpy arrays, all with same shape (one dimensional lists)
+  and it is expected that the result is a mask for similarl shape (i.e. same length).
+
 * Slicing in time is not useful if you combine this with the ExaPlayer.
-* Sorting the output in coordinates helps you to understand whether the
+
+* Disable sorting the output in coordinates can help you to understand wether the
   slicing worked correctly.
+
 * Use the 'coords' output format (output_coordinates) of the ExaWriter
   to get a quick view of the input and output coordinates.
   A typical workflow may be:
@@ -59,7 +81,8 @@ Notes
   -> Read out some interesting coordinate, ie. x[114] = 0.525926
   $ exaslicer conserved-{1,2,3}.vtk --gridtype cells --sort-output --slice 'x==0.525926'
 
-  in order to obtain a sliced and sorted CSV table
+  in order to obtain a sliced and sorted CSV table.
+
 """
 
 from __future__ import print_function
@@ -68,7 +91,7 @@ import sys, argparse, logging
 import numpy as np
 import matplotlib.pyplot as plt
 
-from exahelpers import ExaFrontend, cleandoc
+from exahelpers import ExaFrontend, cleandoc, find_nearest, close_mask
 from exareader import ExaReader, ExaWriter
 
 logger = logging.getLogger("exaslicer")
@@ -118,8 +141,8 @@ class Slicer:
 
 		group.add_argument('--slice', default=None, type=str,
 		                   help="Slicing expression, e.g. 'x==0.001' or '(x==1e-3)&(y==5)'")
-		group.add_argument('--sort-output', action='store_true', default=False,
-		                   help="Sort output in coordinates (t,x,y,z)")
+		group.add_argument('--no-sorting', action='store_true', default=True,
+		                   help="Do not sort output in coordinates (t,x,y,z)")
 
 	def apply_args(self, args, parser):
 		# consistency check
@@ -154,7 +177,7 @@ class Slicer:
 
 		logger.info("Sliced %s -> %s shaped array" % (prev_shape, data.shape))
 
-		if args.sort_output:
+		if not args.no_sorting:
 			logger.info("Sorting output in order %s" % str(allcoords))
 			data.sort(order=allcoords)
 

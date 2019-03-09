@@ -55,7 +55,7 @@ Example invocations of the command line utility:
 from __future__ import print_function # Py3 compilance
 
 # VTK libraries for Python; NumPy
-from vtk import vtkUnstructuredGridReader
+from vtk import vtkUnstructuredGridReader, vtkXMLUnstructuredGridReader
 from vtk.util.numpy_support import vtk_to_numpy as npize # numpyize
 import numpy as np
 
@@ -64,9 +64,10 @@ import sys, logging, gzip
 from collections import namedtuple
 
 # our package
-from exahelpers import fileformat, vectorize_concatenate, cleandoc, is_list, ExaFrontend, openTextFile
+from exahelpers import fileformat, vectorize_concatenate, cleandoc, is_list, ExaFrontend, openTextFile, is_xml_file
 
 logger = logging.getLogger("exareader")
+vtkOmniUnstructuredGridReader = lambda fname: vtkXMLUnstructuredGridReader() if is_xml_file(fname) else vtkUnstructuredGridReader()
 
 read_formats = fileformat('Input Fileformat')
 write_formats = fileformat('Output Fileformat')
@@ -95,9 +96,10 @@ def read_exahype_cartesian_vertices(fname):
 	"""
 
 	logger.info("Reading %s... " % fname)
-	reader = vtkUnstructuredGridReader()
+	reader = vtkOmniUnstructuredGridReader(fname)
 	reader.SetFileName(fname)
-	reader.ReadAllScalarsOn()
+	if isinstance(reader, vtkUnstructuredGridReader):
+		reader.ReadAllScalarsOn() # only neccessary for non-xml reader
 	reader.Update()
 	dataset = reader.GetOutput() # is a VtkUnstructuredGrid
 	points = dataset.GetPoints()
@@ -120,6 +122,8 @@ def read_exahype_cartesian_vertices(fname):
 	logger.info("Exporting scalar fields "+str(column_names))
 
 	ret = datasets.transpose()
+	assert ret.shape[1] == len(column_names), "The shape of the datasets is broken. Sorry for that. Please rerun this script with the python debugger to look into the data."
+	#logger.info("Shape of return value is %s; column names are %s" % (ret.shape, ",".join(column_names)))
 	#numpy.float32
 	structured_array_dtype = np.dtype([ (k, ret.dtype) for k in column_names ])
 	ret.dtype = structured_array_dtype
@@ -139,9 +143,10 @@ def read_exahype_cartesian_cells(fname):
 	of data around).
 	"""
 	logger.info("Reading according to exahype::cartesian::cells the file %s... " % fname)
-	reader = vtkUnstructuredGridReader()
+	reader = vtkOmniUnstructuredGridReader(fname)
 	reader.SetFileName(fname)
-	reader.ReadAllScalarsOn()
+	if isinstance(reader, vtkUnstructuredGridReader):
+		reader.ReadAllScalarsOn() # only neccessary for non-xml reader
 	reader.Update()
 	dataset = reader.GetOutput() # is a VtkUnstructuredGrid
 
@@ -162,6 +167,10 @@ def read_exahype_cartesian_cells(fname):
 	# access the fields stored in the cells
 	celldata = dataset.GetCellData()
 	numfields = celldata.GetNumberOfArrays()
+	if numfields == 0:
+		logger.error("There are no Cell Data in this file!")
+		return None
+	
 	arrays = { celldata.GetArrayName(i): npize(celldata.GetArray(i)) for i in range(numfields) }
 	for n,v in arrays.iteritems():
 		logger.info("CellData array '%s' has the shape %s" % (n, str(v.shape)))
@@ -238,10 +247,12 @@ def output_ascii(npdata, outputfname, **args):
 	logger.info("This may take a while. Have a coffee. Or watch your output growing.")
 	np.savetxt(
 		fname=outputfname,
-		X=npdata,
-		fmt=args['nformat'], # args type (dict/Namespace) not really clear here
+		X=npdata, # Weirdo: It seemed to dislike my recarray? ## .view("<f4"), # convert recarray to regular array
+		# old comment about fmt: args type (dict/Namespace) not really clear here
+		fmt = args["nformat"],
+		#fmt=([args["nformat"]]*len(npdata.dtype.names) if isinstance(args['nformat'],str) else args["nformat"]),
 		header=','.join(['"%s"' % s for s in npdata.dtype.names]),
-		comments=''
+		comments='# '
 	)
 
 @write_formats.register('info', desc='Informative textual output')
@@ -312,7 +323,7 @@ def input_autodetect(filenames, **args):
 	
 	# I know os.path.splitext would be cleaner, but this approach works, too
 	detectors = {
-		"vtk": lambda fname: ".vtk" in fname,
+		"vtk": lambda fname: ".vtk" in fname or ".vtu" in fname,
 		"np":  lambda fname: ".np" in fname
 	}
 	for fileformat, detector in detectors.iteritems():
@@ -490,9 +501,13 @@ def exatractor(args=None):
 
 	logger.info("Welcome to the ExaReader/ExaWriter CLI")
 	data = reader.read_files_as_requested(args)
-	logger.info("Have read a %s-shaped numpy array", data.shape)
-	writer.write_output_as_requested(data, args)
-	logger.info("Finished")
+	if data is None:
+		logger.error("Have not produced any output data. Maybe you have to specify (correctly) whether this file holds cell or vertex data.")
+		sys.exit(-1)
+	else:
+		logger.info("Have read a %s-shaped numpy array", data.shape)
+		writer.write_output_as_requested(data, args)
+		logger.info("Finished")
 
 if __name__ == "__main__":
 	exatractor()

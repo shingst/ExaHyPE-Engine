@@ -746,6 +746,7 @@ exahype::solvers::LimitingADERDGSolver::determineRefinementStatusAfterSolutionUp
   // pre-update mesh update events
   MeshUpdateEvent meshUpdateEvent = MeshUpdateEvent::None;
   if ( isTroubled &&
+       solverPatch.getLevel() == getMaximumAdaptiveMeshLevel() &&
        solverPatch.getRefinementStatus()<_solver->_minRefinementStatusForTroubledCell
   ) {
     meshUpdateEvent = MeshUpdateEvent::IrregularLimiterDomainChange;
@@ -811,7 +812,17 @@ bool exahype::solvers::LimitingADERDGSolver::evaluateDiscreteMaximumPrincipleAnd
           observablesMax+i*numberOfObservables);
     }
 
-    return dmpIsSatisfied;
+    // todo later on we might evaluate the DMP also during the mesh refinement iterations.
+    // Then, we might need to pass the time stamp as well
+
+    return
+        dmpIsSatisfied ||
+        _solver->vetoDiscreteMaximumPrincipleDecision(
+            solution,
+            observablesMin,observablesMax,
+            solverPatch.getRefinementStatus()>=_solver->_minRefinementStatusForTroubledCell,
+            solverPatch.getOffset()+0.5*solverPatch.getSize(),solverPatch.getSize(),
+            solverPatch.getTimeStamp()+solverPatch.getTimeStepSize());
   } else {
     return true;
   }
@@ -1146,8 +1157,11 @@ double exahype::solvers::LimitingADERDGSolver::localRecomputationBody(
     localRecomputation(solverPatch,cellInfo,limiterNeighbourMergePerformed);
   }
 
-  // 2. Compute a new time step size in ALL cells
-  double admissibleTimeStepSize = startNewTimeStep(solverPatch,cellInfo,true);
+  // 2. Compute a new time step size in ALL Cells
+  double admissibleTimeStepSize = std::numeric_limits<double>::infinity();
+  if ( solverPatch.getType()==SolverPatch::Type::Cell ) {
+    admissibleTimeStepSize = startNewTimeStep(solverPatch,cellInfo,true);
+  }
 
   // 3. Recompute the predictor in certain cells if fused time stepping is used.
   const bool isNeigbourOfTroubledOrWasPreviouslyTroubled =
@@ -1251,7 +1265,7 @@ void exahype::solvers::LimitingADERDGSolver::mergeWithBoundaryDataDuringLocalRec
 
     if (solverPatch.getType()==SolverPatch::Type::Cell &&
         solverPatch.getRefinementStatus()>=_solver->_minRefinementStatusForTroubledCell-1) {
-      assertion1(solverPatch.getLevel()==getMaximumAdaptiveMeshLevel(),solverPatch.toString());
+      assertion2(solverPatch.getLevel()==getMaximumAdaptiveMeshLevel(),solverPatch.toString(),getMaximumAdaptiveMeshLevel());
 
       waitUntilCompletedLastStep<SolverPatch>(solverPatch,false,false); // must come before any other operation
 
