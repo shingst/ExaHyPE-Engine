@@ -238,28 +238,6 @@
           "minItems" : 2,
           "maxItems" : 3,
           "old_format" : { "all_numeric_tokens_after" : "offset" }
-        }, 
-        "outside_cells" : {
-          "type" : "integer", 
-          "title" : "Place a certain number of bounding box cells outside of the domain (all coordinate directions). If the number is odd, one less cells is placed outside on the 'left' side than on the 'right side'", 
-          "default" : 2,
-          "minimum" : 0,
-          "exclusiveMinimum" : false
-        },
-        "outside_cells_left" : {
-          "type" : "integer", 
-          "title" : "Number of outside cells to be placed on the 'left' side.", 
-          "default" : 1,
-          "minimum" : 0,
-          "exclusiveMinimum" : false
-        },
-        "end_time" : {
-          "type" : "number", 
-          "title" : "The end time of the simulation",
-          "scope" : "run-time",
-          "minimum" : 0,
-          "exclusiveMinimum" : false,
-          "old_format" : { "token_after" : "end-time" }
         },
         "time_steps" : {
           "type" : "integer", 
@@ -275,6 +253,25 @@
           "minimum" : 1,
           "exclusiveMinimum" : false,
           "default": 400
+        },
+        "outside_cells" : {
+          "type" : "integer", 
+          "title" : "Place a certain number of bounding box cells outside of the domain (all coordinate directions). If the number is odd, one less cells is placed outside on the 'left' side than on the 'right side'", 
+          "default" : 2,
+          "minimum" : 0,
+          "exclusiveMinimum" : false
+        },
+        "outside_cells_left" : {
+          "type" : "integer", 
+          "title" : "Number of outside cells to be placed on the 'left' side.", 
+          "default" : 1,
+          "minimum" : 0,
+          "exclusiveMinimum" : false
+        },
+        "one_third_of_cells_outside" : {
+          "type" : "boolean", 
+          "title" : "Places one third of the bounding box cells per coordinate direction (plus 2 cells) outside of the domain. This way we can put 2^d ranks on the coarsest grid (cubic domains). This flag overrules the outside_cells and outside_cells_left parameters.", 
+          "default" : false
         }
       }
     }, 
