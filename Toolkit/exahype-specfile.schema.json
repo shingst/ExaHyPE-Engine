@@ -247,6 +247,14 @@
           "exclusiveMinimum" : false,
           "old_format" : { "token_after" : "time-steps" }
         },
+        "end_time" : {
+          "type" : "number", 
+          "title" : "The end time of the simulation",
+          "scope" : "run-time",
+          "minimum" : 0,
+          "exclusiveMinimum" : false,
+          "old_format" : { "token_after" : "end-time" }
+        }, 
         "max_mesh_setup_iterations" : {
           "type" : "integer", 
           "title" : "set a limit on the maximum number of grid setup iterations. This is mainly a debugging option as the grid might be instable when the mesh setup is stopped.", 
