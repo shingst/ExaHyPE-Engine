@@ -304,12 +304,13 @@ export MP_TASK_AFFINITY=core:{{coresPerRank}}
 #SBATCH --mail-type=END
 module purge
 module load slurm
-module load intel/xe_2017.2
-module load intelmpi/intel/2017.2
-module load gcc
+module load intelmpi/intel/2018.2
+module load intel/xe_2018.2
+module load gcc/7.3.0
+module load python/3.6.8
 module load likwid
 
-export TBB_SHLIB="-L/ddn/apps/Cluster-Apps/intel/xe_2017.2/tbb/lib/intel64/gcc4.7 -ltbb"
+export TBB_SHLIB="-L/ddn/apps/Cluster-Apps/intel/xe_2018.2/tbb/lib/intel64/gcc4.7 -ltbb"
 
 export I_MPI_FABRICS="tmi"
 
