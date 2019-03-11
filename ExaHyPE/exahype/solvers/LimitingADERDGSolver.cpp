@@ -1882,14 +1882,19 @@ void exahype::solvers::LimitingADERDGSolver::reduceGlobalObservables(
 void exahype::solvers::LimitingADERDGSolver::reduceGlobalObservables(
     std::vector<double> &globalObservables,
     Solver::CellInfo cellInfo, int solverNumber) const {
+  tarch::multicore::Lock lock(ReductionSemaphore);
+  if (globalObservables.empty()) {
+    return;
+  }
+
   const int solverElement = cellInfo.indexOfADERDGCellDescription(solverNumber);
   if (solverElement != NotFound ) {
     SolverPatch& solverPatch = cellInfo._ADERDGCellDescriptions[solverElement];
 
     // TODO(Lukas) Maybe use previous refinement status? Depends on update time.
     //   bool isUnlimited = solverPatch.getPreviousRefinementStatus() < _solver->getMinRefinementStatusForBufferCell();
-    bool isUnlimited = true; // TODO(Lukas) Fix this!
     return;
+    bool isUnlimited = true; // TODO(Lukas) Fix this!
     if (isUnlimited) {
       // Solution is saved in DG-Space.
       // TODO(Lukas) Maybe pass solverPatch directly?
@@ -1903,6 +1908,7 @@ void exahype::solvers::LimitingADERDGSolver::reduceGlobalObservables(
       }
     }
   }
+  lock.free();
 }
 
 exahype::solvers::Solver::CellProcessingTimes exahype::solvers::LimitingADERDGSolver::measureCellProcessingTimes(const int numberOfRuns) {

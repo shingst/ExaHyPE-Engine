@@ -302,6 +302,8 @@ void exahype::mappings::FusedTimeStep::leaveCell(
       if ( isLastTimeStep && !exahype::solvers::Solver::SpawnUpdateAsBackgroundJob ) {
         solver->updateMeshUpdateEvent(result._meshUpdateEvent);
         solver->updateAdmissibleTimeStepSize(result._timeStepSize);
+      }
+      if (isLastTimeStep) {
 	solver->reduceGlobalObservables(solver->getGlobalObservables(), cellInfo, solverNumber);
       }
     }

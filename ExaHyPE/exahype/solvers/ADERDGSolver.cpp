@@ -759,9 +759,8 @@ void exahype::solvers::ADERDGSolver::kickOffTimeStep(const bool isFirstTimeStepO
   }
 
   // call user code
-  beginTimeStep(_minTimeStamp,isFirstTimeStepOfBatchOrNoBatch);
-  // TODO(Lukas) Maybe move to beginTimeStep?
   _globalObservables = resetGlobalObservables();
+  beginTimeStep(_minTimeStamp,isFirstTimeStepOfBatchOrNoBatch);
 }
 
 void exahype::solvers::ADERDGSolver::wrapUpTimeStep(const bool isFirstTimeStepOfBatchOrNoBatch,const bool isLastTimeStepOfBatchOrNoBatch) {
@@ -880,8 +879,6 @@ void exahype::solvers::ADERDGSolver::initSolver(
   _admissibleTimeStepSize  = std::numeric_limits<double>::infinity();
 
   _meshUpdateEvent = MeshUpdateEvent::InitialRefinementRequested;
-
-
 
   _globalObservables = resetGlobalObservables();
 
@@ -4107,7 +4104,7 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
         FL, FR, QL, QR,
         std::get<0>(timeStepData),
         std::get<1>(timeStepData),
-	pLeft.getSize(),
+	cellDescription.getSize(),
         face._direction,false,face._faceIndex);
     
     #ifdef Asserts
@@ -5037,6 +5034,9 @@ void exahype::solvers::ADERDGSolver::reduceGlobalObservables(
         std::vector<double>& globalObservables,
         CellInfo cellInfo, int solverNumber) const {
   tarch::multicore::Lock lock(ReductionSemaphore);
+  if (globalObservables.empty()) {
+    return;
+  }
   const auto element = cellInfo.indexOfADERDGCellDescription(solverNumber);
   if (element != NotFound ) {
     CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[element];

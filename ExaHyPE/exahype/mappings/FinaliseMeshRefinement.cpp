@@ -102,21 +102,6 @@ exahype::mappings::FinaliseMeshRefinement::FinaliseMeshRefinement(const Finalise
 // Merge over threads
 void exahype::mappings::FinaliseMeshRefinement::mergeWithWorkerThread(
     const FinaliseMeshRefinement& workerThread) {
-  // TODO(Lukas) Fix this.
-    /*
-  for (int i = 0; i < static_cast<int>(exahype::solvers::RegisteredSolvers.size()); i++) {
-    _minTimeStepSizes[i] =
-        std::min(_minTimeStepSizes[i], workerThread._minTimeStepSizes[i]);
-    _maxLevels[i] =
-        std::max(_maxLevels[i], workerThread._maxLevels[i]);
-
-
-    auto* solver = exahype::solvers::RegisteredSolvers[i];
-
-    solver->reduceGlobalObservables(_reducedGlobalObservables[i],
-            workerThread._reducedGlobalObservables[i]);
-  }
-    */
  // do nothing
 }
 #endif
@@ -172,8 +157,6 @@ void exahype::mappings::FinaliseMeshRefinement::enterCell(
         double admissibleTimeStepSize   = solver->updateTimeStepSize(solverNumber,cellInfo);
         solver->updateAdmissibleTimeStepSize(admissibleTimeStepSize);
 
-	solver->reduceGlobalObservables(solver->getGlobalObservables(), cellInfo, solverNumber);
-
         // determine min and max for LimitingADERDGSolver
         if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
           auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
@@ -197,33 +180,6 @@ void exahype::mappings::FinaliseMeshRefinement::endIteration(
     exahype::mappings::MeshRefinement::IsInitialMeshRefinement = false;
     exahype::mappings::MeshRefinement::IsFirstIteration        = true;
 
-    // TODO(Lukas) Fix this.
-    /*
-    // time stepping
-    for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
-      auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-
-      if (solver->hasRequestedMeshRefinement()) {
-        // cell sizes
-        solver->updateNextMaxLevel(_maxLevels[solverNumber]);
-
-        // time
-        assertion1(std::isfinite(_minTimeStepSizes[solverNumber]),_minTimeStepSizes[solverNumber]);
-        assertion1(_minTimeStepSizes[solverNumber]>0.0,_minTimeStepSizes[solverNumber]);
-        solver->updateMinNextTimeStepSize(_minTimeStepSizes[solverNumber]);
-
-        // TODO(Lukas) Does this also work for LimitingADERDG?
-        solver->updateNextGlobalObservables(_reducedGlobalObservables[solverNumber]);
-        if ( exahype::solvers::Solver::FuseADERDGPhases ) {
-          #ifdef Parallel
-          if (tarch::parallel::Node::getInstance().isGlobalMaster() ) {
-            exahype::solvers::Solver::weighMinNextPredictorTimeStepSize(solver);
-          }
-          #endif
-          solver->updateTimeStepSizesFused();
-        } else {
-          solver->updateTimeStepSizes();
-	  */
     if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
       for (auto* solver : solvers::RegisteredSolvers) {
         if ( solver->hasRequestedAnyMeshRefinement() ) {
