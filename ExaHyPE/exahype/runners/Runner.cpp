@@ -973,11 +973,16 @@ bool exahype::runners::Runner::createMesh(exahype::repositories::Repository& rep
   bool meshUpdate = false;
 
   repository.switchToMeshRefinement();
-  repository.getState().setMeshRefinementHasConverged(false);
+  repository.getState().setAllSolversAttainedStableState(false);
+  repository.getState().setMeshRefinementIsInRefiningMode(true);
+  repository.getState().setStableIterationsInARow(0);
 
   const int MaxIterations = _parser.getMaxMeshSetupIterations();
   int meshSetupIterations=0;
-  while ( repository.getState().continueToConstructGrid() and meshSetupIterations<MaxIterations) {
+  while (
+      repository.getState().continueToConstructGrid() &&
+      meshSetupIterations < MaxIterations
+  ) {
     repository.iterate(1,true);
     meshSetupIterations++;
 
