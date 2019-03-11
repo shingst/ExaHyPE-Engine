@@ -253,7 +253,7 @@ def printJobTemplate(machine):
 # body
 # 
 # Optional parameters are:
-# tasks, coresPerTask, mail
+# tasks, coresPerRank, mail
 
 #@ job_type     = parallel
 #@ class        = {{class}}
@@ -276,8 +276,8 @@ module switch intel/18.0
 module switch tbb/2018
 module switch gcc/5
 
-export OMP_NUM_THREADS={{coresPerTask}}
-export MP_TASK_AFFINITY=core:{{coresPerTask}}
+export OMP_NUM_THREADS={{coresPerRank}}
+export MP_TASK_AFFINITY=core:{{coresPerRank}}
 
 {{body}}"""
         print(template)
@@ -289,7 +289,7 @@ export MP_TASK_AFFINITY=core:{{coresPerTask}}
 # body
 # 
 # Optional parameters are:
-# tasks, coresPerTask, mail
+# tasks, coresPerRank, mail
 
 #SBATCH --job-name={{job_name}}
 #SBATCH -o {{output_file}}
@@ -300,7 +300,6 @@ export MP_TASK_AFFINITY=core:{{coresPerTask}}
 #SBATCH --mem=MaxMemPerNode
 #SBATCH --ntasks={{ranks}}
 #SBATCH --nodes={{nodes}}
-#SBATCH --cpus-per-task={{coresPerTask}}
 #SBATCH --mail-user={{mail}}
 #SBATCH --mail-type=END
 module purge
