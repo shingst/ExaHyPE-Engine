@@ -88,8 +88,8 @@ void Elastic::MyElasticWaveSolver::adjustSolution(double* const luh, const tarch
 }
 
 void Elastic::MyElasticWaveSolver::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,
-  const double * const fluxIn,const double* const stateIn,
-  double* const fluxOut,double* const stateOut) {
+					const double * const fluxIn,const double* const stateIn, const double* const gradStateIn,
+						  double *fluxOut,double* stateOut) {
   // Dimensions                        = 3
   // Number of variables + parameters  = 9 + 3
 
@@ -521,7 +521,7 @@ void Elastic::MyElasticWaveSolver::multiplyMaterialParameterMatrix_vect(const do
   
 }
 
-void Elastic::MyElasticWaveSolver::riemannSolver(double* const FL_,double* const FR_,const double* const QL_,const double* const QR_,const double t,const double dt,const int normalNonZeroIndex, bool isBoundaryFace, int faceIndex){
+void Elastic::MyElasticWaveSolver::riemannSolver(double* FL_,double* FR_,const double* const QL_,const double* const QR_,const double t, const double dt,const tarch::la::Vector<DIMENSIONS, double>& dx, const int normalNonZeroIndex, bool isBoundaryFace, int faceIndex){
 #ifdef OPT_KERNELS
   double FL[converter::getFFaceGenArraySize()];
   double FR[converter::getFFaceGenArraySize()];

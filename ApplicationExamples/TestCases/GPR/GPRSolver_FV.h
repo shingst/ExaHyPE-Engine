@@ -68,11 +68,11 @@ class GPR::GPRSolver_FV : public GPR::AbstractGPRSolver_FV {
      * \param[inout] QOut      the conserved variables at point x from outside of the domain
      *                         and time-averaged (over [t,t+dt]) as C array (already allocated).
      */
-    void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double* const stateIn,double* const stateOut) override;
+    void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double* const stateIn,double* stateOut) override;
 
     void nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ) override;
 
-    void algebraicSource(const double* const Q,double* const S) override;
+    void algebraicSource(const tarch::la::Vector<DIMENSIONS, double>& x, double t, const double *const Q, double *S) override;
     
     /**
      * Compute the flux tensor.

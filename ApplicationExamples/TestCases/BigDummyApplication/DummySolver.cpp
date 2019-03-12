@@ -55,7 +55,7 @@ void Dummy::DummySolver::flux(const double* const Q,double** const F) {
 }
 
 //You can either implement this method or modify fusedSource
-void Dummy::DummySolver::algebraicSource(const double* const Q,double* const S) {
+void Dummy::DummySolver::algebraicSource(const tarch::la::Vector<DIMENSIONS, double>& x, double t, const double *const Q, double *S) {
   if(isUnphysical(Q)) return;
   for(int i=0; i<NumberOfVariables; i++) S[i] = 0.0;
 }

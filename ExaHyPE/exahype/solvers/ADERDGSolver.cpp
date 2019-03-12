@@ -4181,12 +4181,9 @@ exahype::solvers::ADERDGSolver::compileMessageForMaster(const int capacity) cons
   message.push_back(_admissibleTimeStepSize);
   message.push_back(convertToDouble(_meshUpdateEvent));
 
-  auto observablesFromWorker = std::vector<double>(_numberOfGlobalObservables);
-  for (int i = 0; i < _numberOfGlobalObservables; ++i) {
-    observablesFromWorker[i] = message[index++];
+  for (const auto observable : _globalObservables) {
+    message.push_back(observable);
   }
-
-  reduceGlobalObservables(_nextGlobalObservables, observablesFromWorker);
 
   assertion1(message.size()==messageSize,message.size());
   assertion1(std::isfinite(message[0]),message[0]);
@@ -4241,6 +4238,12 @@ void exahype::solvers::ADERDGSolver::mergeWithWorkerData(const DataHeap::HeapEnt
   int index=0; // post update
   _admissibleTimeStepSize = std::min( _admissibleTimeStepSize, message[index++] );
   _meshUpdateEvent       = mergeMeshUpdateEvents(_meshUpdateEvent,convertToMeshUpdateEvent(message[index++]));
+  auto observablesFromWorker = std::vector<double>(_numberOfGlobalObservables);
+  for (int i = 0; i < _numberOfGlobalObservables; ++i) {
+    observablesFromWorker[i] = message[index++];
+  }
+  reduceGlobalObservables(_globalObservables, observablesFromWorker);
+
 }
 
 ///////////////////////////////////
@@ -4259,7 +4262,7 @@ exahype::solvers::ADERDGSolver::compileMessageForWorker(const int capacity) cons
   message.push_back(_stabilityConditionWasViolated ? 1.0 : -1.0);
 
   for (const auto observable : _globalObservables) {
-    messageForWorker.push_back(observable);
+    message.push_back(observable);
   }
 
   assertion1(message.size()==messageSize,message.size());

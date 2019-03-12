@@ -124,12 +124,12 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
    
   if(pointSources != nullptr) {
     kernels::aderdg::generic::c::deltaDistribution<{{solver}}>(*static_cast<{{solver}}*>(this), luh, t, dt, center, dx, pointSources, PSi);
-    kernels::aderdg::generic::c::spaceTimePredictorLinear<true , {{useSource_s}}, {{useFlux_s}}, {{useNCP_s}}, {{useMaterialParameters_s}}, {{solver}}>(*static_cast<{{solver}}*>(this),lQhbnd,lFhbnd,lQi,lFi,gradQ,PSi,PSderivatives,tmp_PSderivatives,lQhi,lFhi,luh,tarch::la::invertEntries(dx), dt);
+    kernels::aderdg::generic::c::spaceTimePredictorLinear<true , {{useSource_s}}, {{useFlux_s}}, {{useNCP_s}}, {{useMaterialParameters_s}}, {{solver}}>(*static_cast<{{solver}}*>(this),lQhbnd,lFhbnd,lQi,lFi,gradQ,PSi,PSderivatives,tmp_PSderivatives,lQhi,lFhi,luh,center, tarch::la::invertEntries(dx), t, dt);
   }else{
-    kernels::aderdg::generic::c::spaceTimePredictorLinear<false, {{useSource_s}}, {{useFlux_s}}, {{useNCP_s}}, {{useMaterialParameters_s}}, {{solver}}>(*static_cast<{{solver}}*>(this),lQhbnd,lFhbnd,lQi,lFi,gradQ,PSi,PSderivatives,tmp_PSderivatives,lQhi,lFhi,luh,tarch::la::invertEntries(dx), dt);
+    kernels::aderdg::generic::c::spaceTimePredictorLinear<false, {{useSource_s}}, {{useFlux_s}}, {{useNCP_s}}, {{useMaterialParameters_s}}, {{solver}}>(*static_cast<{{solver}}*>(this),lQhbnd,lFhbnd,lQi,lFi,gradQ,PSi,PSderivatives,tmp_PSderivatives,lQhi,lFhi,luh,center,tarch::la::invertEntries(dx),t, dt);
   }
 {% else %}
-  kernels::aderdg::generic::c::spaceTimePredictorLinear<{{usePointSources_s}}, {{useSource_s}}, {{useFlux_s}}, {{useNCP_s}}, {{useMaterialParameters_s}}, {{solver}}>(*static_cast<{{solver}}*>(this),lQhbnd,lFhbnd,lQi,lFi,gradQ,PSi,PSderivatives,tmp_PSderivatives,lQhi,lFhi,luh,tarch::la::invertEntries(dx), dt);
+ kernels::aderdg::generic::c::spaceTimePredictorLinear<{{usePointSources_s}}, {{useSource_s}}, {{useFlux_s}}, {{useNCP_s}}, {{useMaterialParameters_s}}, {{solver}}>(*static_cast<{{solver}}*>(this),lQhbnd,lFhbnd,lQi,lFi,gradQ,PSi,PSderivatives,tmp_PSderivatives,lQhi,lFhi,luh,center,tarch::la::invertEntries(dx),t, dt);
 {%   endif %}
   if ( addVolumeIntegralResultToUpdate ) {
     kernels::aderdg::generic::c::volumeIntegralLinear<{{useSource_s}}, {{useFlux_s}}, NumberOfVariables, Order+1>(lduh,lFhi,dx);
