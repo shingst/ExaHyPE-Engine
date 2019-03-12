@@ -634,7 +634,7 @@ int exahype::runners::Runner::getCoarsestGridLevelForLoadBalancing(const double 
 }
 
 int exahype::runners::Runner::getFinestUniformGridLevelOfAllSolvers(const double boundingBoxSize) const {
-  if ( _parser.getOutsideCells() > 0 ) {
+  if ( _parser.getScaleBoundingBox() ) {
     return std::numeric_limits<int>::max();
   } else { 
     double hMax = exahype::solvers::Solver::getFinestMaximumMeshSizeOfAllSolvers();
@@ -697,9 +697,12 @@ exahype::repositories::Repository* exahype::runners::Runner::createRepository() 
   tarch::la::Vector<DIMENSIONS,double> boundingBoxOffset = _domainOffset;
 
   // scale bounding box
-  const int cellsOutside = _parser.getOutsideCells();
-  if ( cellsOutside > 0 ) {
-    const int cellOutsideLeft = _parser.getOutsideCellsLeft(); // if we only cut from one side, we need less ranks on the coarsest grid.
+  if ( _parser.getScaleBoundingBox() ) {
+    int  cellsOutside   = _parser.getOutsideCells();
+    int cellsOutsideLeft = _parser.getOutsideCellsLeft(); // if we only cut from one side, we need less ranks on the coarsest grid.
+    if ( _parser.getPlaceOneThirdOfCellsOuside() ) {
+      cellsOutsideLeft = 1;
+    }
 
     const double coarsestUserMeshSpacing =
         exahype::solvers::Solver::getCoarsestMaximumMeshSizeOfAllSolvers();
@@ -710,8 +713,11 @@ exahype::repositories::Repository* exahype::runners::Runner::createRepository() 
     double boundingBoxExtent  = 0;
     int level = coarsestUserMeshLevel; // level=1 means a single cell
     while (_boundingBoxMeshSize < 0 || _boundingBoxMeshSize > coarsestUserMeshSpacing) {
-      const double boundingBoxMeshCells = std::pow(3,level-1);
-      boundingBoxScaling                = boundingBoxMeshCells / ( boundingBoxMeshCells - cellsOutside ); // two cells are removed on each side
+      const int boundingBoxMeshCells = std::pow(3,level-1);
+      if ( _parser.getPlaceOneThirdOfCellsOuside() ) {
+        cellsOutside = boundingBoxMeshCells/3 + 2;
+      }
+      boundingBoxScaling                = static_cast<double>(boundingBoxMeshCells) / ( boundingBoxMeshCells - cellsOutside ); // two cells are removed on each side
       boundingBoxExtent                 = boundingBoxScaling * maxDomainExtent;
       _boundingBoxMeshSize              = boundingBoxExtent/boundingBoxMeshCells;
       level++;
@@ -722,7 +728,7 @@ exahype::repositories::Repository* exahype::runners::Runner::createRepository() 
     assertion6(boundingBoxScaling>=1.0,boundingBoxScaling,boundingBoxExtent,_boundingBoxMeshSize,boundingBoxMeshLevel,coarsestUserMeshSpacing,maxDomainExtent);
 
     _boundingBoxSize    *= boundingBoxScaling;
-    boundingBoxOffset   -= cellOutsideLeft*_boundingBoxMeshSize;
+    boundingBoxOffset   -= cellsOutsideLeft*_boundingBoxMeshSize;
   } else {
     _boundingBoxMeshSize = determineCoarsestMeshSize(_domainSize);
   }
@@ -1044,11 +1050,16 @@ bool exahype::runners::Runner::createMesh(exahype::repositories::Repository& rep
   bool meshUpdate = false;
 
   repository.switchToMeshRefinement();
-  repository.getState().setMeshRefinementHasConverged(false);
+  repository.getState().setAllSolversAttainedStableState(false);
+  repository.getState().setMeshRefinementIsInRefiningMode(true);
+  repository.getState().setStableIterationsInARow(0);
 
   const int MaxIterations = _parser.getMaxMeshSetupIterations();
   int meshSetupIterations=0;
-  while ( repository.getState().continueToConstructGrid() and meshSetupIterations<MaxIterations) {
+  while (
+      repository.getState().continueToConstructGrid() &&
+      meshSetupIterations < MaxIterations
+  ) {
     repository.iterate(1,true);
     meshSetupIterations++;
 

@@ -1,4 +1,4 @@
-#if  defined(SharedTBB)  && defined(Parallel) && defined(DistributedStealing)
+#if  defined(SharedTBB)  && defined(Parallel) && (defined(DistributedStealing) || defined(AnalyseWaitingTimes))
 #include "exahype/stealing/StealingAnalyser.h"
 
 #include "tarch/parallel/Node.h"
@@ -84,6 +84,7 @@ double exahype::stealing::StealingAnalyser::getTimePerSTP() {
 }
 
 void exahype::stealing::StealingAnalyser::updateZeroTresholdAndFilteredSnapshot() {
+#if !defined(AnalyseWaitingTimes)
   const double* currentWaitingTimesSnapshot = exahype::stealing::PerformanceMonitor::getInstance().getWaitingTimesSnapshot();
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
   
@@ -112,22 +113,25 @@ void exahype::stealing::StealingAnalyser::updateZeroTresholdAndFilteredSnapshot(
     }
   }
   if(min < std::numeric_limits<double>::max()) {
-    double newThreshold = 0.8*min+0.2*max;
+    double newThreshold = 0.95*min+0.05*max;
     _currentZeroThreshold = newThreshold;
     logInfo("updateZeroTresholdAndFilteredSnapshot()", " zero threshold set to "<< newThreshold);
   }
-
+#endif
 }
 
 void exahype::stealing::StealingAnalyser::beginIteration() {
+#if !defined(AnalyseWaitingTimes)
   if(_iterationCounter%2 !=0) return;
 
   exahype::stealing::StealingManager::getInstance().resetVictimFlag(); //TODO: correct position here?
   exahype::stealing::StealingManager::getInstance().decreaseHeat();
+#endif
 }
 
 
 void exahype::stealing::StealingAnalyser::endIteration() {
+#if !defined(AnalyseWaitingTimes)
   if(_iterationCounter%2 !=0) {
      _iterationCounter++; 
      return;
@@ -143,6 +147,7 @@ void exahype::stealing::StealingAnalyser::endIteration() {
   }
 
   updateZeroTresholdAndFilteredSnapshot();
+  printWaitingTimes();
 #if defined(StealingStrategyDiffusive)
   exahype::stealing::DiffusiveDistributor::getInstance().updateLoadDistribution();
 #elif defined(StealingStrategyAggressive)
@@ -158,8 +163,23 @@ void exahype::stealing::StealingAnalyser::endIteration() {
   exahype::stealing::StealingManager::getInstance().printBlacklist();
 
   _iterationCounter++;
+#endif
 }
 
+void exahype::stealing::StealingAnalyser::printWaitingTimes() {
+  int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
+
+  const double* waitingTimesSnapshot = getFilteredWaitingTimesSnapshot();
+  int k = 0;
+  for(int i=0; i<nnodes; i++) {
+    for(int j=0; j<nnodes; j++) {
+      if(waitingTimesSnapshot[k+j]>0)
+        logInfo("printWaitingTimes()","rank "<<i<<" waiting for "<<waitingTimesSnapshot[k+j]<<" for rank "<<j);
+    }
+    k+= nnodes;
+  }
+
+}
 
 void exahype::stealing::StealingAnalyser::beginToReceiveDataFromWorker() {
   if (_isSwitchedOn) {
@@ -172,7 +192,14 @@ void exahype::stealing::StealingAnalyser::beginToReceiveDataFromWorker() {
 
 
 void exahype::stealing::StealingAnalyser::endToReceiveDataFromWorker( int fromRank ) {
+
+  if(_iterationCounter%2 !=0) {
+     _iterationCounter++; 
+     return;
+  }
+
   if (_isSwitchedOn) {
+ 
 #ifdef USE_ITAC
     VT_end(event_waitForWorker);
 #endif

@@ -283,6 +283,22 @@ class exahype::parser::Parser {
    */
   int getOutsideCellsLeft() const;
 
+  /**
+   * Places one third of the bounding box cells per coordinate direction (plus 2 cells)
+   * outside of the domain.
+   *
+   * This way we can put 2^d ranks on the coarsest grid (cubic domains).
+   * This flag overrules the 'outside_cells' and 'outside_cells_left' parameters.
+   *
+   * @return true if the feature is enabled.
+   */
+  bool getPlaceOneThirdOfCellsOuside() const;
+
+  /**
+   * @return if the bounding box is scaled in any way.
+   */
+  bool getScaleBoundingBox() const;
+
   int getMPIBufferSize() const;
 
   int getMPITimeOut() const;

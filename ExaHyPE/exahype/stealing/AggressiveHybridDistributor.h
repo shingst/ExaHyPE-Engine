@@ -73,7 +73,6 @@ class exahype::stealing::AggressiveHybridDistributor {
 
     void resetRemainingTasksToOffload();
     void printOffloadingStatistics();
-    void printWaitingTimes();
     // return next victim rank
     bool selectVictimRank(int& victim);
  
