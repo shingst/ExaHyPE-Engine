@@ -174,7 +174,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
 
 {% if usePointSources %}
   // Add average PS to zero time derviative and lQh
-    for (int t = 0; t < {{nDof}}; t++) {
+  for (int t = 0; t < {{nDof}}; t++) {
     #pragma omp simd aligned(lQi,lQhi,PSi,weights1:ALIGNMENT)
     for (int it = 0; it < {{nDof3D*nDof*nVar*nDofPad}}; it++) {
       lQi [it] += dt*weights1[t]*PSi[t*{{nDof3D*nDof*nVar*nDofPad}}+it];
@@ -310,8 +310,8 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
 
   // y-direction: face 3 (left) and face 4 (right)
   for (int z = 0; z < {{nDof3D}}; z++) {
-    for (int x = 0; x < {{nDof}}; x++) {
-      for (int y = 0; y < {{nDof}}; y++) {
+    for (int y = 0; y < {{nDof}}; y++) { //y before x recommended by compiler
+      for (int x = 0; x < {{nDof}}; x++) {
 {% if nPar == 0 %}
         #pragma omp simd aligned(lQhbnd,lQhi:ALIGNMENT)
         for (int n = 0; n < {{nData}}; n++) {
@@ -342,9 +342,9 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
 {% if nDim==3 %}
 
   // z-direction: face 5 (left) and face 6 (right)
-  for (int z = 0; z < {{nDof3D}}; z++) {
-    for (int x = 0; x < {{nDof}}; x++) {
-      for (int y = 0; y < {{nDof}}; y++) {
+  for (int y = 0; y < {{nDof}}; y++) { // yzx recommended by compiler
+    for (int z = 0; z < {{nDof3D}}; z++) {
+      for (int x = 0; x < {{nDof}}; x++) {
 {% if nPar == 0 %}
         #pragma omp simd aligned(lQhbnd,lQhi:ALIGNMENT)
         for (int n = 0; n <{{nData}}; n++) {
@@ -436,9 +436,9 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
     {{ m.matmul('gradQ_y_sck_vect', 'lQhi', 'dudxT_by_dx', 'gradQ', 'z*'~nDof*nVar*nDofPad, '0', 'z*'~nDof*nVar*nDofPad) | indent(4) }}{##}
   }
 {% if usePointSources %}
-  std::copy_n(PSi, {{(nDof**nDim)*nVarPad}}, lFhi); //start with the pointsource values
+  std::copy_n(PSi, {{nDof3D*nDof*nVar*nDofPad}}, lFhi); //start with the pointsource values
 {%else%}
-  std::memset(lFhi, 0, {{(nDof**nDim)*nVarPad}}*sizeof(double)); // TODO JMG flux ersatzt
+  std::memset(lFhi, 0, {{nDof3D*nDof*nVar*nDofPad}}*sizeof(double)); // TODO JMG flux ersatzt
 {% endif %}
   for (int yz = 0; yz < {{nDof*nDof3D}}; yz++) {
     //include flux here
@@ -453,8 +453,8 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
   // y boundary and volume
   std::memset(lFhbnd+{{2*nDof*nDof3D*nVarPad }}, 0, {{2*nDof*nDof3D*nVarPad}}*sizeof(double));
   for (int z = 0; z < {{nDof3D}}; z++) {
-    for (int x = 0; x < {{nDof}}; x++) {
-      for (int y = 0; y < {{nDof}}; y++) {
+    for (int y = 0; y < {{nDof}}; y++) {
+      for (int x = 0; x < {{nDof}}; x++) {
         #pragma omp simd aligned(lFhbnd,lFhi,lduh:ALIGNMENT)
         for (int n = 0; n < {{nVar}}; n++) {
           // left
@@ -472,9 +472,9 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
   //recompute lFhi in z
   {{ m.matmul('gradQ_z_sck_vect', 'lQhi', 'dudxT_by_dx', 'gradQ', '0', '0', '0') | indent(2) }}{##}
 {% if usePointSources %}
-  std::copy_n(PSi, {{(nDof**nDim)*nVarPad}}, lFhi); //start with the pointsource values
+  std::copy_n(PSi, {{nDof3D*nDof*nVar*nDofPad}}, lFhi); //start with the pointsource values
 {%else%}
-  std::memset(lFhi, 0, {{(nDof**nDim)*nVarPad}}*sizeof(double)); // TODO JMG flux ersatzt
+  std::memset(lFhi, 0, {{nDof3D*nDof*nVar*nDofPad}}*sizeof(double)); // TODO JMG flux ersatzt
 {% endif %}
   for (int yz = 0; yz < {{nDof*nDof3D}}; yz++) {
     //include flux here
@@ -504,8 +504,6 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
     }
   }
 {% endif %}
-
-
 
   return -1; //no picard iteration in linear case
 
