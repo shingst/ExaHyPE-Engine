@@ -113,7 +113,7 @@ void exahype::stealing::StealingAnalyser::updateZeroTresholdAndFilteredSnapshot(
     }
   }
   if(min < std::numeric_limits<double>::max()) {
-    double newThreshold = 0.8*min+0.2*max;
+    double newThreshold = 0.95*min+0.05*max;
     _currentZeroThreshold = newThreshold;
     logInfo("updateZeroTresholdAndFilteredSnapshot()", " zero threshold set to "<< newThreshold);
   }

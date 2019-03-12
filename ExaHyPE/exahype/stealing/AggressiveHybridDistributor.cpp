@@ -288,19 +288,6 @@ void exahype::stealing::AggressiveHybridDistributor::printOffloadingStatistics()
   logInfo("printOffloadingStatistics()", "time per STP  "<< exahype::stealing::StealingAnalyser::getInstance().getTimePerSTP());
 }
 
-void exahype::stealing::AggressiveHybridDistributor::printWaitingTimes() {
-  int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
-
-  const double* waitingTimesSnapshot = exahype::stealing::StealingAnalyser::getInstance().getFilteredWaitingTimesSnapshot();
-  int k = 0;
-  for(int i=0; i<nnodes; i++) {
-    for(int j=0; j<nnodes; j++) {
-      if(waitingTimesSnapshot[k+j]>0)
-        logInfo("printWaitingTimes()","rank "<<i<<" waiting for "<<waitingTimesSnapshot[k+j]<<" for rank "<<j);
-    }
-    k+= nnodes;
-  }
-}
 
 void exahype::stealing::AggressiveHybridDistributor::resetRemainingTasksToOffload() {
 
@@ -330,7 +317,6 @@ void exahype::stealing::AggressiveHybridDistributor::updateLoadDistribution() {
   logInfo("updateLoadDistribution()","total offloaded: "<<_totalTasksOffloaded<<" previous: "<<_oldTotalTasksOffloaded);
   logInfo("updateLoadDistribution()","increment current "<<_incrementCurrent<<" previous: "<<_incrementPrevious);
 
-  printWaitingTimes();
 
   _oldTotalTasksOffloaded = _totalTasksOffloaded;
 
@@ -484,7 +470,7 @@ bool exahype::stealing::AggressiveHybridDistributor::selectVictimRank(int& victi
 
   int threshold = 1+std::max(1, tarch::multicore::Core::getInstance().getNumberOfThreads()-1)*tarch::multicore::jobs::internal::_minimalNumberOfJobsPerConsumerRun;
   threshold = std::max(threshold, 20);
-
+  threshold = 0; //TODO:test
 
 //  logInfo("selectVictimRank","waiting "<<tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs()<<" criterion "<<threshold);
  

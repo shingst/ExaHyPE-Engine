@@ -1161,6 +1161,7 @@ class exahype::solvers::Solver {
 #endif
 
 #if defined(DistributedStealing)
+  bool hasProcessed = false;
   bool hasTriggeredEmergency = false;
   exahype::solvers::ADERDGSolver* solver = static_cast<exahype::solvers::ADERDGSolver*>(const_cast<exahype::solvers::Solver*>(this));
 #if !defined(StealingUseProgressThread)
@@ -1192,16 +1193,16 @@ class exahype::solvers::Solver {
        tarch::parallel::Node::getInstance().receiveDanglingMessages();
      }
      if ( waitForHighPriorityJob ) {
-       tarch::multicore::jobs::processHighPriorityJobs(1);
+       hasProcessed = tarch::multicore::jobs::processHighPriorityJobs(1);
      } else {
-       tarch::multicore::jobs::processBackgroundJobs(1);
+       hasProcessed = tarch::multicore::jobs::processBackgroundJobs(1);
  
 #if defined(DistributedStealing) 
-  /*    if( !cellDescription.getHasCompletedLastStep()
-         && tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs()<=1
-         && !hasTriggeredEmergency) {
+     if( !cellDescription.getHasCompletedLastStep()
+         && !hasProcessed) {
         logInfo("waitUntilCompletedTimeStep()","EMERGENCY?: missing from rank "<<responsibleRank);
-      }*/
+     }
+
  
 #if !defined(StealingUseProgressThread)
        if( !cellDescription.getHasCompletedLastStep()
