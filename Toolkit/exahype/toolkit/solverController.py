@@ -164,7 +164,8 @@ class SolverController:
         context["linearOrNonlinear"]       = "Linear" if context["isLinear"] else "Nonlinear"
         context["isFortran"]               = kernel.get("language",False)=="Fortran" 
         context["useCERK"]                 = kernel.get("space_time_predictor",{}).get("cerkguess",False)
-        context["useSplitCK"]              = kernel.get("space_time_predictor",{}).get("split_ck",False)
+        context["useSplitCKScalar"]        = kernel.get("space_time_predictor",{}).get("split_ck","disabled") == "scalar"
+        context["useSplitCKVect"]          = kernel.get("space_time_predictor",{}).get("split_ck","disabled") == "vectorised"
         context["noTimeAveraging"]         = kernel.get("space_time_predictor",{}).get("notimeavg",False)
         context["noTimeAveraging_s"]       = "true" if kernel.get("space_time_predictor",{}).get("notimeavg",False) else "false"
         context.update(self.buildKernelTermsContext(kernel["terms"]))

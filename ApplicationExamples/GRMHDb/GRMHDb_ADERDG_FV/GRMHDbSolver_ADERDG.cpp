@@ -263,10 +263,21 @@ exahype::solvers::Solver::RefinementControl GRMHDb::GRMHDbSolver_ADERDG::refinem
         if(radiusC > 0.){
                 radiusC = sqrt(radiusC);
         }
-        if (radiusC + 0.5*dr > 7.6 && radiusC-0.5*dr < 8.5) {
-	 return exahype::solvers::Solver::RefinementControl::Refine;
+        if (radiusC-0.5*dr < 8.33) {
+          if (radiusC + 0.5*dr > 7.95) {
+            return exahype::solvers::Solver::RefinementControl::Refine;
+          }
+          else{
+           if (level <= getCoarsestMeshLevel()+1) {
+                 return exahype::solvers::Solver::RefinementControl::Refine;
+            }
+            else{
+                return exahype::solvers::Solver::RefinementControl::Erase; 
+            }
+          }            
 	}
 	else{
+	 
 	 return exahype::solvers::Solver::RefinementControl::Erase;
 	}
 	if (level > getCoarsestMeshLevel())  return exahype::solvers::Solver::RefinementControl::Erase;
@@ -464,6 +475,40 @@ void GRMHDb::GRMHDbSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(
 }
 
 
+
+bool GRMHDb::GRMHDbSolver_ADERDG::vetoDiscreteMaximumPrincipleDecision(
+		const double* const                         solution,
+		const double* const                         localObservablesMin,
+		const double* const                         localObservablesMax,
+		const bool                                  wasTroubledInPreviousTimeStep,
+		const tarch::la::Vector<DIMENSIONS, double>& center,
+		const tarch::la::Vector<DIMENSIONS, double>& dx,
+		const double                                timeStamp) const {
+	//int limvalue;
+	//int NumberOfObservables;
+	//NumberOfObservables=1;
+	//pdelimitervalue_(&limvalue,&center[0]);
+	//pdelimitervalue_(&limvalue,&center[0],&NumberOfObservables, observablesMin, observablesMax);
+	//if(limvalue>0){
+	  //  return false;
+	//}else{
+	  //  return true;
+	//};
+	  //return false;
+	double dr = dx[0] * dx[0] + dx[1] * dx[1] + dx[2] * dx[2];
+	dr = sqrt(dr);
+	double radiusC = center[0] * center[0] + center[1] * center[1] + center[2] * center[2];
+	if (radiusC > 0.) {
+		radiusC = sqrt(radiusC);
+	}
+	if (radiusC + 0.5*dr < 8.05) {
+		return false;
+	}
+	else {
+		return true;
+	}
+}
+
 bool GRMHDb::GRMHDbSolver_ADERDG::isPhysicallyAdmissible(
 	const double* const solution,
 	const double* const observablesMin, const double* const observablesMax,
@@ -488,7 +533,7 @@ bool GRMHDb::GRMHDbSolver_ADERDG::isPhysicallyAdmissible(
 	if (radiusC > 0.) {
 		radiusC = sqrt(radiusC);		
 	}		
-        if (radiusC + 0.5*dr > 7.6 && radiusC-0.5*dr < 8.5) {
+        if (radiusC + 0.5*dr > 8.05 && radiusC-0.5*dr < 8.35) {
 	//if (radiusC > 7.6 && radiusC < 8.5) {
 		return false;
 	}
@@ -501,11 +546,14 @@ bool GRMHDb::GRMHDbSolver_ADERDG::isPhysicallyAdmissible(
 
 #include "kernels/GRMHDb_GRMHDbSolver_ADERDG/Kernels.h"
 
-void GRMHDb::AbstractGRMHDbSolver_ADERDG::riemannSolver(double* const FL, double* const FR, const double* const QL, const double* const QR, const double t, const double dt, const int direction, bool isBoundaryFace, int faceIndex) {
+
+using namespace GRMHDb::GRMHDbSolver_ADERDG_kernels::aderdg;
+
+
+void GRMHDb::GRMHDbSolver_ADERDG::riemannSolver(double* const FL, double* const FR, const double* const QL, const double* const QR, const double t, const double dt, const int direction, bool isBoundaryFace, int faceIndex) {
 	assertion2(direction >= 0, dt, direction);
 	assertion2(direction < DIMENSIONS, dt, direction);
 	GRMHDb::GRMHDbSolver_ADERDG_kernels::aderdg::riemannSolver(*static_cast<GRMHDbSolver_ADERDG*>(this), FL, FR, QL, QR, t, dt, direction);
-
 
 	constexpr int order = GRMHDb::AbstractGRMHDbSolver_ADERDG::Order;
 	constexpr int basisSize = order + 1;

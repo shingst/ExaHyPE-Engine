@@ -513,6 +513,28 @@ tarch::la::Vector<DIMENSIONS, double> exahype::parser::Parser::getOffset() const
   return result;
 }
 
+int exahype::parser::Parser::getOutsideCells() const {
+  return getIntFromPath("/computational_domain/outside_cells", 2, isOptional);
+}
+
+int exahype::parser::Parser::getOutsideCellsLeft() const {
+  const int outsideCells = getOutsideCells();
+  const int result       = getIntFromPath("/computational_domain/outside_cells_left", outsideCells/2, isOptional);
+  if ( result < 0 || result > outsideCells ) {
+    logError("getOutsideCellsLeft()", "'outside_cells_left' must not be negative or larger than 'outside_cells' (default: 2); it is: "<<result);
+    invalidate();
+  }
+  return result;
+}
+
+bool exahype::parser::Parser::getPlaceOneThirdOfCellsOuside() const {
+  return getBoolFromPath("/computational_domain/one_third_of_cells_outside", false, isOptional);
+}
+
+bool exahype::parser::Parser::getScaleBoundingBox() const {
+  return getPlaceOneThirdOfCellsOuside() || getOutsideCells() > 0;
+}
+
 std::string exahype::parser::Parser::getMulticorePropertiesFile() const {
   std::string result = getStringFromPath("/shared_memory/properties_file","shared-memory.properties",isOptional);
   logDebug("getMulticorePropertiesFile()", "found " << result);
@@ -650,14 +672,6 @@ int exahype::parser::Parser::getMaxMeshSetupIterations() const {
     result = std::numeric_limits<int>::max();
   }
   return result;
-}
-
-bool exahype::parser::Parser::getScaleBoundingBox() const {
-  return getBoolFromPath("/distributed_memory/scale_bounding_box", true, isOptional);
-}
-
-int exahype::parser::Parser::getScaleBoundingBoxMultiplier() const {
-  return getIntFromPath("/distributed_memory/scale_bounding_box_multiplier", 0, isOptional);
 }
 
 bool exahype::parser::Parser::getStaticMeshRefinement() const {

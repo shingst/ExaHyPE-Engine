@@ -43,8 +43,6 @@ bool exahype::mappings::MeshRefinement::DynamicLoadBalancing    = false;
 bool exahype::mappings::MeshRefinement::IsFirstIteration        = true;
 bool exahype::mappings::MeshRefinement::IsInitialMeshRefinement = true;
 
-bool exahype::mappings::MeshRefinement::StillInRefiningMode     = true;
-
 tarch::logging::Log exahype::mappings::MeshRefinement::_log("exahype::mappings::MeshRefinement");
 
 tarch::multicore::BooleanSemaphore exahype::mappings::MeshRefinement::BoundarySemaphore;
@@ -117,7 +115,7 @@ exahype::mappings::MeshRefinement::descendSpecification(int level) const {
 #if defined(SharedMemoryParallelisation)
 exahype::mappings::MeshRefinement::MeshRefinement(const MeshRefinement& masterThread):
   _allSolversAttainedStableState(masterThread._allSolversAttainedStableState),
-  _localState(masterThread._localState) {
+  _stateCopy(masterThread._stateCopy) {
   // do nothing
 }
 #endif
@@ -130,7 +128,7 @@ void exahype::mappings::MeshRefinement::mergeWithWorkerThread(
 #endif
 
 void exahype::mappings::MeshRefinement::beginIteration( exahype::State& solverState ) {
-  _localState = solverState;
+  _stateCopy = solverState;
 
   tarch::multicore::jobs::Job::setMaxNumberOfRunningBackgroundThreads(0); // during the traversal only have zero/one consumer thread running
 
@@ -139,18 +137,10 @@ void exahype::mappings::MeshRefinement::beginIteration( exahype::State& solverSt
   }
 
   // mesh refinement convergence check
-  if ( exahype::mappings::MeshRefinement::IsFirstIteration ) {
-    StillInRefiningMode            = true;
-    _allSolversAttainedStableState = false;
-  } else {
-    _allSolversAttainedStableState = true;
-  }
-  if ( StillInRefiningMode ) { // all found experimentally; not completely understood yet
-    StillInRefiningMode = false;
-    if (!IsInitialMeshRefinement) {
-      logInfo("beginIteration(...)","refinement converged. switch to coarsening");
-    }
-  }
+  _allSolversAttainedStableState =
+      !exahype::mappings::MeshRefinement::IsFirstIteration &&
+      !solverState.isInvolvedInJoinOrFork();
+
   // reset
   _verticalExchangeOfSolverDataRequired = false;
 
@@ -165,35 +155,16 @@ void exahype::mappings::MeshRefinement::endIteration(exahype::State& solverState
   logTraceInWith1Argument("endIteration(State)", solverState);
 
   // update the solver state
-  solverState.setAllSolversAttainedStableStateInPreviousIteration(_allSolversAttainedStableState);  // merge the local values
+  solverState.setAllSolversAttainedStableState(_allSolversAttainedStableState);  // merge the local values
   solverState.setVerticalExchangeOfSolverDataRequired(_verticalExchangeOfSolverDataRequired);
 
   if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
     #ifndef TrackGridStatistics
     #error Compiler flag TrackGridStatistics must be defined!
     #endif
-    solverState.setAllSolversAttainedStableStateInPreviousIteration( // check if we actually reached the solver's grids 
-        solverState.getAllSolversAttainedStableStateInPreviousIteration() &&
+    solverState.setAllSolversAttainedStableState( // check if we actually reached the solver's grids
+        solverState.getAllSolversAttainedStableState() &&
         solverState.getMaxLevel()>=exahype::solvers::Solver::getFinestUniformMeshLevelOfAllSolvers()); // max level only available in endIteration(..>)
-
-    // @todo This is not so nice. The solver has the first attributes already, so why set them?
-    const bool meshRefinementHasConverged =
-            solverState.isGridBalanced()
-            &&
-            !StillInRefiningMode
-            &&
-            (IsInitialMeshRefinement || solverState.getAllSolversAttainedStableStateInPreviousIteration());
-
-    if (!meshRefinementHasConverged) {
-      logInfo( "endIteration(...)",
-               "grid construction not yet finished. grid balanced=" << solverState.isGridBalanced() <<
-               ", grid stationary=" << solverState.isGridStationary() <<
-               ", still in refining mode=" << StillInRefiningMode <<
-               ", initial refinement=" << IsInitialMeshRefinement <<
-               ", all solvers attained=" << solverState.getAllSolversAttainedStableStateInPreviousIteration()
-      );
-    }
-    solverState.setMeshRefinementHasConverged( meshRefinementHasConverged ); // it's actually the currently finishing iteration
   }
 
   exahype::mappings::MeshRefinement::IsFirstIteration=false;
@@ -211,7 +182,7 @@ void exahype::mappings::MeshRefinement::refineSafely(
     int                                           fineGridLevel,
     bool                                          isCalledByCreationalEvent) const {
   if ( fineGridVertex.getRefinementControl()==Vertex::Records::Unrefined ) {
-    switch ( _localState.mayRefine(isCalledByCreationalEvent,fineGridLevel) ) {
+    switch ( _stateCopy.mayRefine(isCalledByCreationalEvent,fineGridLevel) ) {
     case State::RefinementAnswer::DontRefineYet:
       break;
     case State::RefinementAnswer::Refine:
@@ -241,7 +212,7 @@ void exahype::mappings::MeshRefinement::touchVertexLastTime(
       fineGridX,
       coarseGridVerticesEnumerator.getLevel()+1,
       fineGridH,
-      !StillInRefiningMode);
+      !_stateCopy.getMeshRefinementIsInRefiningMode());
 
   if ( refinementControl==exahype::solvers::Solver::RefinementControl::Refine ) {
     refineSafely(fineGridVertex,fineGridH,coarseGridVerticesEnumerator.getLevel()+1,false);
@@ -278,7 +249,7 @@ void exahype::mappings::MeshRefinement::createBoundaryVertex(
       fineGridX,
       coarseGridVerticesEnumerator.getLevel()+1,
       fineGridH,
-      !StillInRefiningMode)
+      !_stateCopy.getMeshRefinementIsInRefiningMode())
       == exahype::solvers::Solver::RefinementControl::Refine
   ) {
     refineSafely(fineGridVertex,fineGridH,coarseGridVerticesEnumerator.getLevel()+1,true);
@@ -304,7 +275,7 @@ void exahype::mappings::MeshRefinement::createInnerVertex(
           fineGridX,
           coarseGridVerticesEnumerator.getLevel()+1,
           fineGridH,
-          !StillInRefiningMode)
+          !_stateCopy.getMeshRefinementIsInRefiningMode())
       == exahype::solvers::Solver::RefinementControl::Refine
   ) {
     refineSafely(fineGridVertex,fineGridH,coarseGridVerticesEnumerator.getLevel()+1,true);
@@ -366,7 +337,7 @@ void exahype::mappings::MeshRefinement::ensureRegularityAlongBoundary(
     exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator) const {
   if (
-      !StillInRefiningMode
+      !_stateCopy.getMeshRefinementIsInRefiningMode()
       &&
       peano::grid::aspects::VertexStateAnalysis::isOneVertexBoundary(
           fineGridVertices,fineGridVerticesEnumerator)
@@ -401,7 +372,7 @@ void exahype::mappings::MeshRefinement::ensureRegularityAlongBoundary(
                 false)
             !=exahype::solvers::Solver::RefinementControl::Erase
 			&&
-        	_localState.mayRefine(true,fineGridVerticesEnumerator.getLevel())
+        	_stateCopy.mayRefine(true,fineGridVerticesEnumerator.getLevel())
         ) {
           fineGridVertices[fineGridVerticesEnumerator(v)].refine();
         }
@@ -466,7 +437,7 @@ void exahype::mappings::MeshRefinement::enterCell(
               coarseGridCell,
               coarseGridVerticesEnumerator,
               solverNumber,
-              StillInRefiningMode);
+              _stateCopy.getMeshRefinementIsInRefiningMode());
 
       // Synchronise time stepping, adjust the solution, evaluate refinement criterion if required
       if (
@@ -512,7 +483,7 @@ void exahype::mappings::MeshRefinement::leaveCell(
           coarseGridCell,
           fineGridPositionOfCell,
           solverNumber,
-          StillInRefiningMode);
+          _stateCopy.getMeshRefinementIsInRefiningMode());
 
       _allSolversAttainedStableState &=
           solver->attainedStableState(
@@ -520,7 +491,7 @@ void exahype::mappings::MeshRefinement::leaveCell(
               fineGridVertices,
               fineGridVerticesEnumerator,
               solverNumber,
-              StillInRefiningMode);
+              _stateCopy.getMeshRefinementIsInRefiningMode());
     }
   }
 
@@ -764,7 +735,7 @@ void exahype::mappings::MeshRefinement::mergeWithMaster(
   logTraceIn( "mergeWithMaster(...)" );
 
   // Merge global solver states
-  _allSolversAttainedStableState        &= workerState.getAllSolversAttainedStableStateInPreviousIteration();
+  _allSolversAttainedStableState        &= workerState.getAllSolversAttainedStableState();
   _verticalExchangeOfSolverDataRequired |= workerState.getVerticalExchangeOfSolverDataRequired();
 
   if ( fineGridCell.hasToCommunicate( fineGridVerticesEnumerator.getLevel() ) ) {
@@ -797,7 +768,7 @@ void exahype::mappings::MeshRefinement::mergeWithMaster(
                 coarseGridCell.getCellDescriptionsIndex(),
                 fineGridVerticesEnumerator.getCellCenter(),
                 fineGridVerticesEnumerator.getLevel(),
-                StillInRefiningMode);
+                _stateCopy.getMeshRefinementIsInRefiningMode());
       }
     }
 

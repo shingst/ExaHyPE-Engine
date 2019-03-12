@@ -57,19 +57,11 @@ private:
   static tarch::logging::Log _log;
 
   /**
-   * This switch is set to true in the first overall
-   * iteration in beginIteration(...).
-   * If we detect, that all solvers have
-   * attained a stable state for more than 1 iterations, we switch to
-   * erasing mode.
-   */
-  static bool StillInRefiningMode;
-
-  /**
    * A state indicating if the mesh refinement has attained a stable state
    * for all solver.
    */
   bool _allSolversAttainedStableState = false;
+
   /**
    * A state indicating if vertical (master-worker) exchange
    * of face data is required during the time stepping iterations
@@ -80,7 +72,7 @@ private:
   /**
    * I use a copy of the state to determine whether I'm allowed to refine or not.
    */
-  State _localState;
+  exahype::State _stateCopy;
 
   /**
    * We use this semaphore for refining along the

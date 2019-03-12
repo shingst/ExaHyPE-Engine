@@ -238,14 +238,6 @@
           "minItems" : 2,
           "maxItems" : 3,
           "old_format" : { "all_numeric_tokens_after" : "offset" }
-        }, 
-        "end_time" : {
-          "type" : "number", 
-          "title" : "The end time of the simulation",
-          "scope" : "run-time",
-          "minimum" : 0,
-          "exclusiveMinimum" : false,
-          "old_format" : { "token_after" : "end-time" }
         },
         "time_steps" : {
           "type" : "integer", 
@@ -255,12 +247,39 @@
           "exclusiveMinimum" : false,
           "old_format" : { "token_after" : "time-steps" }
         },
+        "end_time" : {
+          "type" : "number", 
+          "title" : "The end time of the simulation",
+          "scope" : "run-time",
+          "minimum" : 0,
+          "exclusiveMinimum" : false,
+          "old_format" : { "token_after" : "end-time" }
+        }, 
         "max_mesh_setup_iterations" : {
           "type" : "integer", 
           "title" : "set a limit on the maximum number of grid setup iterations. This is mainly a debugging option as the grid might be instable when the mesh setup is stopped.", 
           "minimum" : 1,
           "exclusiveMinimum" : false,
           "default": 400
+        },
+        "outside_cells" : {
+          "type" : "integer", 
+          "title" : "Place a certain number of bounding box cells outside of the domain (all coordinate directions). If the number is odd, one less cells is placed outside on the 'left' side than on the 'right side'", 
+          "default" : 2,
+          "minimum" : 0,
+          "exclusiveMinimum" : false
+        },
+        "outside_cells_left" : {
+          "type" : "integer", 
+          "title" : "Number of outside cells to be placed on the 'left' side.", 
+          "default" : 1,
+          "minimum" : 0,
+          "exclusiveMinimum" : false
+        },
+        "one_third_of_cells_outside" : {
+          "type" : "boolean", 
+          "title" : "Places one third of the bounding box cells per coordinate direction (plus 2 cells) outside of the domain. This way we can put 2^d ranks on the coarsest grid (cubic domains). This flag overrules the outside_cells and outside_cells_left parameters.", 
+          "default" : false
         }
       }
     }, 
@@ -409,20 +428,6 @@
           "type" : "integer", 
           "title" : "Primary MPI ranks used per node (only SFC-Diffusion node pool strategy)",
           "old_format" : { "token_after" : "primary-ranks-per-node" }
-        },
-        "scale_bounding_box" : {
-          "type" : "boolean", 
-          "title" : "Scale the bounding box to remove some communication",
-          "$comment" : "The bounding box is scaled such that at least 2*2 cells are placed outside of the domain per coordinate direction. This option was previously known as 'virtually-expand-domain'.",
-          "old_format" : { "token_after" : "configure" },
-          "default" : true
-        },
-        "scale_bounding_box_multiplier" : {
-          "type" : "integer", 
-          "title" : "Specify i>=0 which results in 2*(2+3*i) cells being placed outside of the domain per coordinate direction.", 
-          "default" : 0,
-          "minimum" : 0,
-          "exclusiveMinimum" : false
         },        
         "timeout" : {
           "type" : "number", 
@@ -699,9 +704,11 @@
                     "title" : "Use the continous extrapolated Runge Kutta initial guess for the space time predictor"
                   },
                   "split_ck" : {
-                    "type" : "boolean",
+                    "type" : "string",
                     "available-for" : ["optimised"],
-                    "title" : "Use a split Cauchy-Kowalevski for the space time predictor (linear only)"
+                    "title" : "Use a split Cauchy–Kowalevski for the space time predictor (linear only)",
+                    "enum" : ["disabled","scalar","vectorised"],
+                    "default" : "disabled"
                   }
                 }
               },

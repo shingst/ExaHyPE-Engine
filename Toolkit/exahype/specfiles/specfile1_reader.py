@@ -110,6 +110,8 @@ class SpecFile1Reader():
             "timeout",\
             "cores",\
             "measure_cell_processing_times_iter",\
+            "outside_cells",\
+            "outside_cells_left",\
             "order",\
             "patch_size",\
             "halo_cells",\
@@ -413,7 +415,7 @@ class SpecFile1Reader():
             if option in ["log_file","peano_kernel_path","peano_toolbox_path","exahype_path","output_directory","plotter_subdirectory"]:
                 context["paths"][option] = context.pop(option)
         self.map_computational_domain(context["computational_domain"])
-        for section in ["optimisation","profiling"]:
+        for section in ["optimisation","profiling","distributed_memory","computational_domain"]:
             if section in context:
                 for option in context[section]:
                     if context[section][option] in ["on","off"]:

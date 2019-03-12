@@ -267,28 +267,37 @@ class exahype::parser::Parser {
   bool compareMPILoadBalancingStrategy(const std::string& strategy) const;
 
   /**
-   * @return if the bounding box should be scaled
-   * such that exactly two cells lie outside of the domain in
-   * each coordinate direction.
-   *
    * @note It is important to scale the bounding box if MPI
    * experiments are run as this prevents communication
    * with rank 0. More importantly, it prevents that the
-   * global master traverses its outside cells.
+   * global master has too many outside cells which it traverses
+   * before and after sending a kick off message to its workers.
    *
-   * If the global master has too many outside cells
-   *
-   * @note We scale the bounding box by default.
+   * @return number of cells placed outside of the domain per coordinate axis.
    */
-  bool getScaleBoundingBox() const;
+  int getOutsideCells() const;
 
   /**
-   * 2+3*i cells are placed outside of the domain per coordinate axis if
-   * the bounding box is scaled.
-   *
-   * @return the multiplier i which should be used.
+   * @return number of outside cells which should be placed on the "left" side
+   * in each coordinate direction. Default is getOutsideCells()/2.
    */
-  int getScaleBoundingBoxMultiplier() const;
+  int getOutsideCellsLeft() const;
+
+  /**
+   * Places one third of the bounding box cells per coordinate direction (plus 2 cells)
+   * outside of the domain.
+   *
+   * This way we can put 2^d ranks on the coarsest grid (cubic domains).
+   * This flag overrules the 'outside_cells' and 'outside_cells_left' parameters.
+   *
+   * @return true if the feature is enabled.
+   */
+  bool getPlaceOneThirdOfCellsOuside() const;
+
+  /**
+   * @return if the bounding box is scaled in any way.
+   */
+  bool getScaleBoundingBox() const;
 
   int getMPIBufferSize() const;
 
