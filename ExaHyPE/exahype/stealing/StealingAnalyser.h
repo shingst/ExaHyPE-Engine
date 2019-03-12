@@ -50,6 +50,8 @@ class exahype::stealing::StealingAnalyser {
 
     const double* getFilteredWaitingTimesSnapshot();
 
+    void printWaitingTimes();
+
     static StealingAnalyser& getInstance();
 
     double getZeroThreshold();

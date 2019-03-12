@@ -171,6 +171,7 @@ void exahype::mappings::FusedTimeStep::beginIteration(
   if(issuePredictionJobsInThisIteration()) {
     exahype::stealing::StaticDistributor::getInstance().resetRemainingTasksToOffload();
   }
+  exahype::stealing::StealingAnalyser::getInstance().beginIteration();
 #elif defined(StealingStrategyAggressive) || defined(StealingStrategyAggressiveHybrid) || defined(StealingStrategyAggressiveDiffusive)
   exahype::stealing::StealingAnalyser::getInstance().beginIteration();
 #endif 
@@ -209,7 +210,7 @@ void exahype::mappings::FusedTimeStep::endIteration(
   }
 
 #if defined(Parallel) && defined(DistributedStealing)
-#if defined(StealingStrategyAggressive) || defined(StealingStrategyAggressiveHybrid) || defined(StealingStrategyAggressiveDiffusive)
+#if defined(StealingStrategyAggressive) || defined(StealingStrategyAggressiveHybrid) || defined(StealingStrategyAggressiveDiffusive) || defined(StealingStrategyStaticHardcoded)
   exahype::stealing::StealingAnalyser::getInstance().endIteration();
 #endif 
 #endif

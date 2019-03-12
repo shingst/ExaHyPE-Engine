@@ -441,7 +441,7 @@ void exahype::stealing::AggressiveHybridDistributor::updateLoadDistributionDiffu
       }
       int currentTasksOptimal = _initialLoadPerRank[currentOptimalVictim]+_tasksToOffload[currentOptimalVictim];
 
-      int optimalTasksToOffload = currentLongestWaitTimeVictim/exahype::stealing::StealingAnalyser::getInstance().getTimePerSTP();
+      int optimalTasksToOffload = currentLongestWaitTimeVictim/(2*exahype::stealing::StealingAnalyser::getInstance().getTimePerSTP());
       logInfo("updateLoadDistributionDiffusive()", "optimal tasks to offload "<<optimalTasksToOffload);
 
       _optimalTasksPerRank[currentOptimalVictim] = optimalTasksToOffload;

@@ -1163,7 +1163,9 @@ class exahype::solvers::Solver {
 #if defined(DistributedStealing)
   bool hasTriggeredEmergency = false;
   exahype::solvers::ADERDGSolver* solver = static_cast<exahype::solvers::ADERDGSolver*>(const_cast<exahype::solvers::Solver*>(this));
+#if !defined(StealingUseProgressThread)
   exahype::solvers::ADERDGSolver::setMaxNumberOfIprobesInProgressStealing(1);
+#endif
   int responsibleRank = solver->getResponsibleRankForCellDescription((const void*) &cellDescription);
   int myRank = tarch::parallel::Node::getInstance().getRank();
   bool progress = false;
@@ -1171,17 +1173,19 @@ class exahype::solvers::Solver {
 
    if ( !cellDescription.getHasCompletedLastStep() ) {
      peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
-#if defined(DistributedStealing)
+#if defined(DistributedStealing) && !defined(StealingUseProgressThread)
      if (this->getType()==exahype::solvers::Solver::Type::ADERDG && responsibleRank!=myRank) {
        exahype::solvers::ADERDGSolver::tryToReceiveTaskBack(solver) ;
      }
 #endif
    }
    while ( !cellDescription.getHasCompletedLastStep() ) {
-#if defined(DistributedStealing)
+#if defined(DistributedStealing) && !defined(StealingUseProgressThread)
      if (this->getType()==exahype::solvers::Solver::Type::ADERDG && responsibleRank!=myRank) {
        progress= exahype::solvers::ADERDGSolver::tryToReceiveTaskBack(solver);
      }
+#else
+     progress = false;
 #endif
      // do some work myself
      if ( receiveDanglingMessages ) {
@@ -1199,17 +1203,24 @@ class exahype::solvers::Solver {
         logInfo("waitUntilCompletedTimeStep()","EMERGENCY?: missing from rank "<<responsibleRank);
       }*/
  
+#if !defined(StealingUseProgressThread)
        if( !cellDescription.getHasCompletedLastStep()
          && tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs()==1
          && !hasTriggeredEmergency
          && myRank!=responsibleRank
          && !progress
-         && !exahype::stealing::StealingManager::getInstance().getRunningAndReceivingBack()){
+         && !exahype::stealing::StealingManager::getInstance().getRunningAndReceivingBack())
+#else
+       if( !cellDescription.getHasCompletedLastStep()
+         && !hasTriggeredEmergency
+         && myRank!=responsibleRank)
+#endif
+       {
 #ifdef USE_ITAC
 	 //VT_begin(event_emergency);
 #endif
          hasTriggeredEmergency = true;
-         logInfo("waitUntilCompletedTimeStep()","EMERGENCY: missing from rank "<<responsibleRank); //TODO: my rank can  no longer be a critical rank and I should give away one less per victim
+         logInfo("waitUntilCompletedTimeStep()","EMERGENCY: missing from rank "<<responsibleRank);
          exahype::stealing::StealingManager::getInstance().triggerEmergencyForRank(responsibleRank);
 #ifdef USE_ITAC
 	 //VT_end(event_emergency);
@@ -1218,7 +1229,7 @@ class exahype::solvers::Solver {
 #endif
      }
    }
-#if defined(DistributedStealing)
+#if defined(DistributedStealing) && !defined(StealingUseProgressThread)
    exahype::solvers::ADERDGSolver::setMaxNumberOfIprobesInProgressStealing( std::numeric_limits<int>::max() );
 #endif
 

@@ -24,7 +24,7 @@
 
 #include <limits>
 
-#ifdef DistributedStealing
+#if defined(DistributedStealing) || defined(AnalyseWaitingTimes)
 #include "exahype/stealing/StealingAnalyser.h"
 #endif
 
@@ -423,7 +423,7 @@ void exahype::State::broadcastGlobalDataToWorker(
     const int                                   worker,
     const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
     const int                                   level) {
-#if defined(DistributedStealing)
+#if defined(DistributedStealing) || defined(AnalyseWaitingTimes)
   exahype::stealing::StealingAnalyser::getInstance().beginToSendDataToWorker();
 #endif
   for (auto& solver : exahype::solvers::RegisteredSolvers) {
@@ -432,7 +432,7 @@ void exahype::State::broadcastGlobalDataToWorker(
   for (auto& plotter : exahype::plotters::RegisteredPlotters) {
     plotter->sendDataToWorker(worker,cellCentre,level);
   }
-#if defined(DistributedStealing)
+#if defined(DistributedStealing) || defined(AnalyseWaitingTimes)
   exahype::stealing::StealingAnalyser::getInstance().endToSendDataToWorker(worker);
 #endif
 }
@@ -441,7 +441,7 @@ void exahype::State::mergeWithGlobalDataFromMaster(
     const int                                   master,
     const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
     const int                                   level) {
-#if defined(DistributedStealing)
+#if defined(DistributedStealing) || defined(AnalyseWaitingTimes)
   exahype::stealing::StealingAnalyser::getInstance().beginToReceiveDataFromGlobalMaster();
 #endif
   for (auto& solver : exahype::solvers::RegisteredSolvers) {
@@ -450,7 +450,7 @@ void exahype::State::mergeWithGlobalDataFromMaster(
   for (auto& plotter : exahype::plotters::RegisteredPlotters) {
     plotter->mergeWithMasterData(master,cellCentre,level);
   }
-#if defined(DistributedStealing)
+#if defined(DistributedStealing) || defined(AnalyseWaitingTimes)
   exahype::stealing::StealingAnalyser::getInstance().endToReceiveDataFromGlobalMaster();
 #endif
 }
@@ -460,13 +460,13 @@ void exahype::State::reduceGlobalDataToMaster(
     const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
     const int                                   level) {
 
-#if defined(DistributedStealing)
+#if defined(DistributedStealing) || defined(AnalyseWaitingTimes)
   exahype::stealing::StealingAnalyser::getInstance().beginToSendDataToMaster();
 #endif
   for (auto* solver : exahype::solvers::RegisteredSolvers) {
     solver->sendDataToMaster(master,cellCentre,level);
   }
-#if defined(DistributedStealing)
+#if defined(DistributedStealing) || defined(AnalyseWaitingTimes)
   exahype::stealing::StealingAnalyser::getInstance().endToSendDataToMaster();
 #endif
 }
@@ -475,13 +475,13 @@ void exahype::State::mergeWithGlobalDataFromWorker(
     const int                                   worker,
     const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
     const int                                   level) {
-#if defined(DistributedStealing)
+#if defined(DistributedStealing) || defined(AnalyseWaitingTimes)
   exahype::stealing::StealingAnalyser::getInstance().beginToReceiveDataFromWorker();
 #endif
   for (auto& solver : exahype::solvers::RegisteredSolvers) {
     solver->mergeWithWorkerData(worker,cellCentre,level);
   }
-#if defined(DistributedStealing)
+#if defined(DistributedStealing) || defined(AnalyseWaitingTimes)
   exahype::stealing::StealingAnalyser::getInstance().endToReceiveDataFromWorker(worker);
 #endif
 }
