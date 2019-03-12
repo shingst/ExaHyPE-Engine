@@ -318,11 +318,14 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver {
      * again seperately the nonConservativeProduct function and the algebraicSource
      * function.
      *
+     * \param[in]    x         the physical coordinate
+     * \param[in]    t         the start of the time interval.
      * \param[in]    Q the conserved variables (and parameters) associated with a quadrature point
      *                 as C array (already allocated).
      * \param[inout] S the source point as C array (already allocated).
      */
-    virtual void algebraicSource(const double* const Q,double* const S);
+    virtual void algebraicSource(const tarch::la::Vector<DIMENSIONS, double>& x, double t, const double *const Q, double *S);
+
     
     /**
      * Compute the nonconservative term $B(Q) \nabla Q$.

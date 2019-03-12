@@ -191,7 +191,8 @@ for(int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {
   #ifdef USE_IPO
     #pragma forceinline recursive
   #endif
-  solver.{{solverName}}::algebraicSource({{inputQ}}+{{inputQ_iterator}}, {{sourceArray}}{{addShift}});
+  // TODO(JMG): Pass x/t here to enable spatio-temporal source terms.
+  solver.{{solverName}}::algebraicSource({0.0}, 0.0, {{inputQ}}+{{inputQ_iterator}}, {{sourceArray}}{{addShift}});
 {% endif %}
 {% if useNCP %}
   #pragma omp simd aligned({{sourceArray}},tmp_ncp_output:ALIGNMENT)
