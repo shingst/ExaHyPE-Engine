@@ -29,10 +29,7 @@ class MeshInfo:
     if outsideCellsLeft>outsideCells:
       print("Parameter 'outside_cells_left' must not be greater than 'outside_cells'",file=sys.stderr)
       sys.exit(1)
-
-    print(domainOffset)
-
-    self.domainOffset       = domainSize
+    self.domainOffset       = domainOffset
     self.domainSize         = domainSize
     self.unscaledDomainSize = domainSize
     self.userMeshSize       = userMeshSize
