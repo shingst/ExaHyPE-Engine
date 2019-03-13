@@ -31,7 +31,7 @@ exahype::stealing::StealingAnalyser::StealingAnalyser():
   _waitForWorkerDataWatch("exahype::stealing::StealingAnalyser", "-", false,false),
   _waitForMasterDataWatch("exahype::stealing::StealingAnalyser", "-", false,false),
   _waitForGlobalMasterDataWatch("exahype::stealing::StealingAnalyser", "-", false,false),
-  _waitForOtherRank(tarch::parallel::Node::getInstance().getNumberOfNodes()),
+  _waitForOtherRank(0),
   _currentZeroThreshold(0),
   _iterationCounter(0),
   _currentAccumulatedWorkerTime(0)
@@ -43,6 +43,9 @@ exahype::stealing::StealingAnalyser::StealingAnalyser():
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
   _currentFilteredWaitingTimesSnapshot = new double[nnodes*nnodes];
   std::fill(&_currentFilteredWaitingTimesSnapshot[0], &_currentFilteredWaitingTimesSnapshot[nnodes*nnodes], 0);
+
+  for(int i=0; i<nnodes; i++) 
+     _waitForOtherRank.push_back(tarch::timing::GlidingAverageMeasurement(0.01,16));
 }
 
 
