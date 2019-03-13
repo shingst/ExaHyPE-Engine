@@ -380,7 +380,7 @@ void exahype::solvers::ADERDGSolver::ensureNoUnnecessaryMemoryIsAllocated(
     cellDescription.setExtrapolatedPredictorAverages(nullptr);
 
     // gradient of extrapolated predictor
-    if (cellDescription.getExtrapolatedPredictorGradientIndex() >= 0) {
+    if (isUseViscousFlux() && cellDescription.getExtrapolatedPredictorGradientIndex() >= 0) {
       assertion(DataHeap::getInstance().isValidIndex(cellDescription.getExtrapolatedPredictorGradientIndex()));
 
       DataHeap::getInstance().deleteData(cellDescription.getExtrapolatedPredictorGradientIndex());
@@ -512,12 +512,16 @@ void exahype::solvers::ADERDGSolver::ensureNecessaryMemoryIsAllocated(
     std::fill_n(static_cast<double*>(cellDescription.getExtrapolatedPredictor()),dataPerBnd,std::numeric_limits<double>::quiet_NaN());
     std::fill_n(static_cast<double*>(cellDescription.getExtrapolatedPredictorAverages()),boundaryData,std::numeric_limits<double>::quiet_NaN());
 
-    // gradients of extrapolated predictor
-    const int gradientSizePerBnd = _numberOfVariables * power(_nodesPerCoordinateAxis, DIMENSIONS - 1) * DIMENSIONS_TIMES_TWO * DIMENSIONS;
-    cellDescription.setExtrapolatedPredictorGradientIndex( DataHeap::getInstance().createData(gradientSizePerBnd, gradientSizePerBnd) );
-    cellDescription.setExtrapolatedPredictorGradient( getDataHeapEntries(cellDescription.getExtrapolatedPredictorGradientIndex()).data() ) ;
-       // touch the memory
-    std::fill_n(static_cast<double*>(cellDescription.getExtrapolatedPredictorGradient()),gradientSizePerBnd,std::numeric_limits<double>::quiet_NaN());
+    if (isUseViscousFlux()) {
+      // gradients of extrapolated predictor
+      const int gradientSizePerBnd = _numberOfVariables * power(_nodesPerCoordinateAxis, DIMENSIONS - 1) * DIMENSIONS_TIMES_TWO * DIMENSIONS;
+      cellDescription.setExtrapolatedPredictorGradientIndex( DataHeap::getInstance().createData(gradientSizePerBnd, gradientSizePerBnd) );
+      cellDescription.setExtrapolatedPredictorGradient( getDataHeapEntries(cellDescription.getExtrapolatedPredictorGradientIndex()).data() ) ;
+      // touch the memory
+      std::fill_n(static_cast<double*>(cellDescription.getExtrapolatedPredictorGradient()),gradientSizePerBnd,std::numeric_limits<double>::quiet_NaN());
+    } else {
+      cellDescription.setExtrapolatedPredictorGradientIndex(-1);
+    }
 
     //
     // fluctuations

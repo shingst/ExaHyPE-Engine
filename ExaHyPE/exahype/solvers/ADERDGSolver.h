@@ -187,6 +187,7 @@ public:
    * @return if this an ADER-DG solver which is not able to solve nonlinear problems.
    */
   virtual bool isLinear() const = 0;
+  virtual bool isUseViscousFlux() const = 0;
 
 private:
 

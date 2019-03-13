@@ -57,6 +57,7 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver {
     double constexpr_getCFLNumber()       const { return CFL; };
   
     bool isLinear() const override { return {{isLinear_s}}; }
+    bool isUseViscousFlux() const override { return {{useViscousFlux_s}}; }
     
     class VariableMetrics;
     class Variables;
