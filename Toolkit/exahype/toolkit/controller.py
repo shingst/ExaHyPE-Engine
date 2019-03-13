@@ -18,6 +18,7 @@ from .configuration import Configuration
 from .solverController import SolverController
 from .models import *
 
+from tools import tools
 
 class Controller:
     def header(self):
@@ -63,6 +64,9 @@ class Controller:
         logging.basicConfig(format="%(filename)s:%(lineno)s(%(funcName)s):%(levelname)s %(message)s")
         self.log = logging.getLogger()
 
+        # init tools
+        tools.initRegistry(self.log)
+
         # parse command line arguments
         args = self.parseArgs()
         
@@ -94,6 +98,19 @@ class Controller:
         rawSpec = self.getSpec(args.specfile, args.format)
         self.spec = self.validateAndSetDefaults(rawSpec, args.validate_only)
 
+        self.runTools(args)
+        
+    def runTools(self,args):
+      """
+      Run all tools selected by the user.
+      """
+      keys = list(vars(args))
+      previousLevel = self.log.level
+      self.log.setLevel(logging.INFO)
+      for tool in tools.tools:
+         if tool.id() in keys:
+            tool.run(self.spec)            
+      self.log.setLevel(previousLevel)
 
     def run(self):
         try:
@@ -156,7 +173,6 @@ class Controller:
         self.checkEnvVariable()
         self.log.info(makefileMessage)
     
-    
     def parseArgs(self):
         parser = argparse.ArgumentParser(
             description="This is the ExaHyPE toolkit, a small python command line tool for generating the glue code and make system for ExaHyPE applications. It fulfills the purpose of the 'configure' step in some tools and comes before the compilation.",
@@ -182,6 +198,11 @@ class Controller:
         
         generator = parser.add_argument_group("Generator-specific glue code generation options which should actually be part of the specification files")
         generator.add_argument("-s", "--strict-json", action="store_true", default=False, help="Generate a specification file parser which does not call the toolkit as an external process during runtime but instead only accepts proper JSON as input")
+
+        # add tools
+        utils = parser.add_argument_group("Additional tools")
+        for tool in tools.tools:
+          utils.add_argument("--%s" % tool.id(),help=tool.help(),action="store_true")
 
         parser.add_argument('specfile',
             type=argparse.FileType('r'),
