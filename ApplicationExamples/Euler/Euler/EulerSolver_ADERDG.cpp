@@ -112,8 +112,8 @@ void Euler::EulerSolver_ADERDG::flux(const double* const Q, double** const F) {
   #endif
 }
 
-void Euler::EulerSolver_ADERDG::riemannSolver(double* const FL,double* const FR,const double* const QL,const double* const QR,const double t,const double dt,const int direction,bool isBoundaryFace, int faceIndex) {
-  AbstractEulerSolver_ADERDG::riemannSolver(FL, FR, QL, QR, t, dt, direction, isBoundaryFace, faceIndex);
+void Euler::EulerSolver_ADERDG::riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double t, const double dt,const tarch::la::Vector<DIMENSIONS, double>& dx, const int direction, bool isBoundaryFace, int faceIndex) {
+  AbstractEulerSolver_ADERDG::riemannSolver(FL, FR, QL, QR, t, dt, dx, direction, isBoundaryFace, faceIndex);
   //kernels::aderdg::generic::c::generalisedOsherSolomon<false,true,3>(*static_cast<EulerSolver_ADERDG*>(this), FL, FR, QL, QR, t, dt, direction);
 }
 
@@ -488,10 +488,9 @@ Euler::EulerSolver_ADERDG::refinementCriterion(
   return exahype::solvers::Solver::RefinementControl::Keep;
 }
 
-void Euler::EulerSolver_ADERDG::boundaryValues(const double* const x, const double t,const double dt,
-    const int faceIndex,const int direction,
-    const double* const fluxIn,const double* const stateIn,
-    double* const fluxOut, double* const stateOut) {
+void Euler::EulerSolver_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int direction,
+					const double * const fluxIn,const double* const stateIn, const double* const gradStateIn,
+  double *fluxOut,double* stateOut) {
   switch (ReferenceChoice) {
   case Reference::SphericalExplosion:
   case Reference::RarefactionWave:

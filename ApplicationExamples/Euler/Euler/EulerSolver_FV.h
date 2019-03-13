@@ -134,7 +134,7 @@ public:
   /**
    * Use generalised Osher Solomon flux.
    */
-  double riemannSolver(double* const fL, double* const fR, const double* const qL, const double* const qR, int direction)  final override;
+  double riemannSolver(double* fL, double *fR, const double* qL, const double* qR, const double* gradQL, const double* gradQR, const double* cellSize, int direction)  final override;
 
   /**
    * Compute the eigenvectors of the jacobian matrix (coefficient matrix of derivative in direction @direction).
@@ -188,7 +188,7 @@ public:
    * \param[inout] QOut      the conserved variables at point x from outside of the domain
    *                         and time-averaged (over [t,t+dt]) as C array (already allocated).
    */
-  void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double* const stateIn,double* const stateOut);
+  void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int direction,const double* const QIn,double* const QOut);
 };
 
 
