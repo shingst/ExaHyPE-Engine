@@ -58,7 +58,7 @@ class MeshInfo:
     level = 0 
     currentMeshSize = 1e20
     while currentMeshSize>self.userMeshSize:
-      currentMeshSize = largestExtent / 3**level
+      currentMeshSize = float(largestExtent) / 3.0**level
       level += 1
     level -= 1 # currentMeshSize was computed with previous level (= new level -1 )
     return currentMeshSize, level
@@ -93,7 +93,8 @@ class MeshInfo:
       self.boundingBoxMeshSize = -1
       boundingBoxScaling  = 0
       level = unscaledMeshLevel; # level=0 means a single cell
-      while level < 10 and ( self.boundingBoxMeshSize < 0 or self.boundingBoxMeshSize > self.userMeshSize ):
+      while self.boundingBoxMeshSize < 0 or\
+            self.boundingBoxMeshSize > self.userMeshSize:
         self.boundingBoxMeshCells = 3**level;
         if self.oneThirdOfBoundingBoxCellsOutside:
           self.boundingBoxOutsideCells = self.boundingBoxMeshCells/3 + 2
@@ -109,6 +110,8 @@ class MeshInfo:
         self.boundingBoxOffset[d] -= self.boundingBoxOutsideCellsLeft*self.boundingBoxMeshSize
     
     else: # not scale bounding box
-      self.boundingBoxMeshSize = unscaledMeshSize
+      self.boundingBoxMeshSize    = unscaledMeshSize
+      self.boundingBoxMeshCells   = 3**self.boundingBoxMeshLevel;
+      self.boundingBoxInsideCells = self.boundingBoxMeshCells
 
     self.domainSize = self.determineScaledDomainSize(self.boundingBoxMeshSize)

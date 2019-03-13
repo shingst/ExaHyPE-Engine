@@ -101,7 +101,7 @@ class MeshInfoTool(Tool):
     self.log.info("cells on coarsest grid (per coordinate direction) : %d"     % info.boundingBoxInsideCells)          
     self.log.info("---------------------------------------------------------------------------------------------")
     self.log.info("bounding box offset                                                  : [ %s ]" % ", ".join([str(i) for i in info.boundingBoxOffset]))
-    self.log.info("bounding box size                         (per coordinate direction) : %f" % info.boundingBoxSize)          
+    self.log.info("bounding box size                         (per coordinate direction) : %s" % str(info.boundingBoxSize))          
     self.log.info("bounding box outside cells                (per coordinate direction) : %d" % info.boundingBoxOutsideCells)
     self.log.info("bounding box outside cells on 'left' side (per coordinate direction) : %d" % info.boundingBoxOutsideCellsLeft)      
     self.log.info("is one third of bounding box cells outside                           : %s" % str(info.oneThirdOfBoundingBoxCellsOutside))
@@ -117,12 +117,13 @@ class MeshInfoTool(Tool):
   
       # count inside cells in each coordinate direction
       insideCells = []
+      padding = 0 if info.boundingBoxOutsideCells is 0 else 2
       for d in range(0,dim):
         insideCells.append(int(round(info.domainSize[d]/info.boundingBoxMeshSize)))
       for i in range(1,info.boundingBoxMeshLevel):
         level = info.boundingBoxMeshLevel-i
         for d in range(0,dim):
-          ranks[level-1].append(math.ceil((insideCells[d]+2)/3.0**i))
+          ranks[level-1].append(math.ceil((insideCells[d]+padding)/3.0**i))
     
       #compute optimal rank counts
       optimalRankNumbers = [1,2]
