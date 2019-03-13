@@ -276,18 +276,11 @@ exahype::solvers::Solver::RefinementControl NavierStokes::NavierStokesSolver_ADE
     const tarch::la::Vector<DIMENSIONS, double>& dx,
     const double t,
     const int level) {
-  // TODO(Lukas) Dont do this!
-  if (center[0] > 500) {
-    return exahype::solvers::Solver::RefinementControl::Refine;
-  } else {
-    return exahype::solvers::Solver::RefinementControl::Keep;
-  }
-  
   if (!amrSettings.useAMR) {
     // Default: Delete cells.
     // This is useful when one wants to use limiting-guided refinement
     // without another source of AMR.
-    return exahype::solvers::Solver::RefinementControl::Keep;
+    return exahype::solvers::Solver::RefinementControl::Erase;
   }
 
   if (t == 0) {
@@ -311,12 +304,10 @@ exahype::solvers::Solver::RefinementControl NavierStokes::NavierStokesSolver_ADE
   const auto lo = meanGlobal + factorCoarse * stdGlobal;
 
   if (curTv > hi) {
-    std::cout << "Refine" << std::endl;
     return exahype::solvers::Solver::RefinementControl::Refine;
   }
 
   if (curTv < lo) {
-    //if (curTv < lo && refineTime != t) {
     return exahype::solvers::Solver::RefinementControl::Erase;
   }
 
