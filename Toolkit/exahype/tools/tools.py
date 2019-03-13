@@ -98,7 +98,7 @@ class MeshInfoTool(Tool):
     self.log.info("domain size (may be scaled if non-cubic domain)   : [ %s ]" % ", ".join([str(i) for i in info.domainSize]))
     self.log.info("coarsest mesh size                                : %s"     % str(info.boundingBoxMeshSize))       
     self.log.info("coarsest mesh level                               : %d"     % info.boundingBoxMeshLevel)       
-    self.log.info("cells on coarsest grid (per coordinate direction) : %d"     % info.boundingBoxInsideCells)          
+    self.log.info("cells on coarsest grid                            : [ %s ]" % ", ".join([str(int(i/info.boundingBoxMeshSize)) for i in info.domainSize]))          
     self.log.info("---------------------------------------------------------------------------------------------")
     self.log.info("bounding box offset                                                  : [ %s ]" % ", ".join([str(i) for i in info.boundingBoxOffset]))
     self.log.info("bounding box size                         (per coordinate direction) : %s" % str(info.boundingBoxSize))          
