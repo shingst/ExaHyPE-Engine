@@ -307,7 +307,8 @@ bool exahype::stealing::StealingManager::progressRequestsOfType( RequestType typ
 //  	}
 //	 }
 // }
-  
+  if(type==RequestType::send)
+     logInfo("progressRequestsOfType()", "progressing sends");
   //TODO: keine Statusse
   int ierr = MPI_Testsome(nRequests,&_currentOutstandingRequests[mapId][0], &outcount, &arrOfIndices[0], MPI_STATUSES_IGNORE);
 
@@ -561,7 +562,7 @@ bool exahype::stealing::StealingManager::ProgressSendJob::operator()() {
    int mapId = StealingManager::requestTypeToMap(RequestType::send);
 //   bool reschedule=StealingManager::getInstance()._requests[mapId].unsafe_size()>0;
  
-   while(StealingManager::getInstance()._requests[mapId].unsafe_size()>0) {
+   while(StealingManager::getInstance()._requests[mapId].unsafe_size()>0 || StealingManager::getInstance()._currentOutstandingRequests[mapId].size()>0) {
      getInstance().progressRequestsOfType(RequestType::send);
    }
  
