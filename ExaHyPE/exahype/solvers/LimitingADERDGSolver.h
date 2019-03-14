@@ -1535,7 +1535,14 @@ public:
 
   CellProcessingTimes measureCellProcessingTimes(const int numberOfRuns=100) override;
 
+  int getGeometricLoadBalancingWeight(
+      const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+      const tarch::la::Vector<DIMENSIONS,double>& cellSize) final override {
+    return _solver->getGeometricLoadBalancingWeight(cellCentre,cellSize);
+  }
+
 protected:
+
   /** @name Plugin points for derived solvers.
    *
    *  These are the macro kernels solvers derived from

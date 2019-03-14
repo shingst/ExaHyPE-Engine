@@ -139,7 +139,11 @@ void exahype::mappings::LoadBalancing::enterCell(
   if ( 
     fineGridVerticesEnumerator.getLevel() <= LastLevelToPopulateUniformly
   ) {
-    _numberOfLocalCells++;
+    // The user can use this call back to give a hint on how the final mesh will look like
+    for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
+       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
+       _numberOfLocalCells += solver->computeGeometricLoadBalancingWeight(fineGridVerticesEnumerator.getCellCenter(),fineGridVerticesEnumerator.getCellSize());
+    }
   } else if ( fineGridVerticesEnumerator.getLevel() == 2 ) {
     // do not compute any weights on level 2 if it does not belong to the coarse grid. 
     // It does not make sense to distribute it then.
@@ -217,7 +221,10 @@ void exahype::mappings::LoadBalancing::prepareSendToMaster(
   if ( // do not count the root cell
     verticesEnumerator.getLevel() <= LastLevelToPopulateUniformly
   ) {
-    _numberOfLocalCells--;
+    for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
+      auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
+      _numberOfLocalCells -= solver->computeGeometricLoadBalancingWeight(verticesEnumerator.getCellCenter(),verticesEnumerator.getCellSize());
+    }
   } else {
     _numberOfLocalCells -= exahype::solvers::ADERDGSolver::computeWeight(localCell.getCellDescriptionsIndex());
     _numberOfLocalCells -= exahype::solvers::FiniteVolumesSolver::computeWeight(localCell.getCellDescriptionsIndex());

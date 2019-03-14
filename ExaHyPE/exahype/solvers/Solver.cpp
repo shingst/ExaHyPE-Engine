@@ -695,6 +695,16 @@ void exahype::solvers::Solver::toString(std::ostream& out) const {
 
 #ifdef Parallel
 
+int exahype::solvers::Solver::computeGeometricLoadBalancingWeight(
+    const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+    const tarch::la::Vector<DIMENSIONS,double>& cellSize) {
+  if ( tarch::la::equals(getMinTimeStamp(),0) ) {
+    return computeGeometricLoadBalancingWeight(cellCentre,cellSize);
+  } else {
+    return 1;
+  }
+}
+
 // Neighbours TODO(Dominic): Move in exahype::Vertex
 
 exahype::MetadataHeap::HeapEntries exahype::gatherNeighbourCommunicationMetadata(
