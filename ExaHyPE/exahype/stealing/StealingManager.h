@@ -57,6 +57,8 @@ class exahype::stealing::StealingManager {
      */
     std::atomic<int> _nextGroupId;
 
+    std::atomic<int> _numProgressSendJobs;
+
     std::atomic<bool> _runningAndReceivingBack;
 
     // queues for each message type
@@ -88,7 +90,7 @@ class exahype::stealing::StealingManager {
     /*
      * Maps a request type to an integer that defines message queue.
      */
-    int requestTypeToMap(RequestType requestType);
+    static int requestTypeToMap(RequestType requestType);
 
     bool hasOutstandingRequestOfType(RequestType requestType);
     /*
