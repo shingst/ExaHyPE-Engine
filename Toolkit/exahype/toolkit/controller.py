@@ -104,11 +104,11 @@ class Controller:
       """
       Run all tools selected by the user.
       """
-      keys = list(vars(args))
+      argDict = vars(args)
       previousLevel = self.log.level
       self.log.setLevel(logging.INFO)
       for tool in tools.tools:
-         if tool.id() in keys:
+         if argDict[tool.id()]:
             tool.run(self.spec)            
       self.log.setLevel(previousLevel)
 
