@@ -57,7 +57,10 @@ class exahype::stealing::StealingManager {
      */
     std::atomic<int> _nextGroupId;
 
+    std::atomic<int> _numProgressJobs;
     std::atomic<int> _numProgressSendJobs;
+    std::atomic<int> _numProgressReceiveJobs;
+    std::atomic<int> _numProgressReceiveBackJobs;
 
     std::atomic<bool> _runningAndReceivingBack;
 
@@ -126,10 +129,31 @@ class exahype::stealing::StealingManager {
         bool operator()();
     };
 
+    class ProgressJob
+    {
+      public:
+        ProgressJob();
+        bool operator()();
+    };
+
     class ProgressSendJob
     {
       public:
         ProgressSendJob();
+        bool operator()();
+    };
+
+    class ProgressReceiveJob
+    {
+      public:
+        ProgressReceiveJob();
+        bool operator()();
+    };
+
+    class ProgressReceiveBackJob
+    {
+      public:
+        ProgressReceiveBackJob();
         bool operator()();
     };
 
@@ -151,6 +175,7 @@ class exahype::stealing::StealingManager {
 		exahype::solvers::Solver *solver,
 		bool block=false);
     void progressRequests();
+    void progressAnyRequests();
 
     void createMPICommunicator();
     void destroyMPICommunicator();

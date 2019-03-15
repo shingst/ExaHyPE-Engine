@@ -872,6 +872,14 @@ private:
 	  ADERDGSolver& _solver;
 	  State 	_state;
   };
+
+  class ReceiveJob{
+    public: 
+        ReceiveJob(ADERDGSolver& solver);
+        bool operator()();
+    private:
+        ADERDGSolver& _solver;
+  };
  
   /**
    * This class encapsulates all the data that a victim rank
