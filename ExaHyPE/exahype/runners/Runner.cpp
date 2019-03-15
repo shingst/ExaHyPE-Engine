@@ -238,8 +238,9 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
         peano::parallel::loadbalancing::Oracle::getInstance().setOracle(
             new mpibalancing::HotspotBalancing(
               false,
-			  // @todo Dominic Bitte nochmal ansehen
-              0 /* 0 means no admistrative ranks; previous: tarch::parallel::Node::getInstance().getNumberOfNodes()/THREE_POWER_D */
+              (_parser.getMaxForksPerLoadBalancingStep() > 0 ) ?
+                  _parser.getMaxForksPerLoadBalancingStep() :
+                  static_cast<int>(peano::parallel::loadbalancing::LoadBalancingFlag::ForkGreedy)
             )
         );
         break;

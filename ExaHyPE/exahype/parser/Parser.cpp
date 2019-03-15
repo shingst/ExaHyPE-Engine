@@ -574,6 +574,14 @@ bool exahype::parser::Parser::compareMPILoadBalancingStrategy(const std::string&
   return getStringFromPath("/distributed_memory/load_balancing_strategy","hotspot",isOptional).compare(strategy)==0;
 }
 
+/**
+ * @return the number of forks the load balancing
+ * mapping is allowed to trigger per mesh refinement iteration.
+ */
+int exahype::parser::Parser::getMaxForksPerLoadBalancingStep() const {
+  return getIntFromPath("/distributed_memory/max_forks_at_once", -1, isOptional);
+}
+
 int exahype::parser::Parser::getMPIBufferSize() const {
   int result = getIntFromPath("/distributed_memory/buffer_size");
 
