@@ -237,9 +237,9 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
         }
         peano::parallel::loadbalancing::Oracle::getInstance().setOracle(
             new mpibalancing::HotspotBalancing(
-                false,
-                std::numeric_limits<int>::max(), /* getFinestUniformGridLevelForLoadBalancing(_boundingBoxSize), boundary regularity*/
-                0 /* 0 means no admistrative ranks; previous: tarch::parallel::Node::getInstance().getNumberOfNodes()/THREE_POWER_D */
+              false,
+			  // @todo Dominic Bitte nochmal ansehen
+              0 /* 0 means no admistrative ranks; previous: tarch::parallel::Node::getInstance().getNumberOfNodes()/THREE_POWER_D */
             )
         );
         break;
