@@ -38,7 +38,7 @@ exahype::stealing::StealingManager::StealingManager() :
 	_stealingComm(MPI_COMM_NULL),
 	_stealingCommMapped(MPI_COMM_NULL),
     _emergencyTriggered(false),
-    _numProgressJobs(0),
+    _numProgressJobs(0)
     //_numProgressSendJobs(0),
     //_numProgressReceiveJobs(0),
     //_numProgressReceiveBackJobs(0)
@@ -169,7 +169,7 @@ void exahype::stealing::StealingManager::submitRequests(
     _requests[mapId].push(id);
   }
 
-  if(_numProgressJobs==0) {
+  if(_numProgressJobs==0 && type==RequestType::send) {
     logInfo("submitRequests()", "spawning progress job (high priority)");
     _numProgressJobs++;
     ProgressJob *job = new ProgressJob();
@@ -633,14 +633,16 @@ bool exahype::stealing::StealingManager::ProgressJob::operator()() {
    int flag;
    logInfo("submitRequests()", "executing progress job (high priority)");
 
-   while(StealingManager::getInstance()._requests[0].unsafe_size()>0 || StealingManager::getInstance()._currentOutstandingRequests[0].size()>0
-        || StealingManager::getInstance()._requests[1].unsafe_size()>0 || StealingManager::getInstance()._currentOutstandingRequests[1].size()>0
-        || StealingManager::getInstance()._requests[2].unsafe_size()>0 || StealingManager::getInstance()._currentOutstandingRequests[2].size()>0
-        || StealingManager::getInstance()._requests[3].unsafe_size()>0 || StealingManager::getInstance()._currentOutstandingRequests[3].size()>0
-   ) 
-//   while(true)
+   int mapId = StealingManager::requestTypeToMap(RequestType::send);
+//   while(StealingManager::getInstance()._requests[0].unsafe_size()>0 || StealingManager::getInstance()._currentOutstandingRequests[0].size()>0
+//        || StealingManager::getInstance()._requests[1].unsafe_size()>0 || StealingManager::getInstance()._currentOutstandingRequests[1].size()>0
+//        || StealingManager::getInstance()._requests[2].unsafe_size()>0 || StealingManager::getInstance()._currentOutstandingRequests[2].size()>0
+//        || StealingManager::getInstance()._requests[3].unsafe_size()>0 || StealingManager::getInstance()._currentOutstandingRequests[3].size()>0
+//   ) 
+   while(StealingManager::getInstance()._requests[mapId].unsafe_size()>0 || StealingManager::getInstance()._currentOutstandingRequests[mapId].size()>0)
    {
-     getInstance().progressAnyRequests();
+     //getInstance().progressAnyRequests();
+     getInstance().progressRequestsOfType(RequestType::send);
      MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, StealingManager::getInstance()._stealingComm, &flag, MPI_STATUS_IGNORE);
      MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, StealingManager::getInstance()._stealingCommMapped, &flag, MPI_STATUS_IGNORE);
    }
