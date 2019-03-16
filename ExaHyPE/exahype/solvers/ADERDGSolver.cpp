@@ -3355,8 +3355,10 @@ bool exahype::solvers::ADERDGSolver::sendCellDescriptions(
       if ( !cellDescription.getHasCompletedLastStep() ) {
         peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
       }
+      int numberOfBackgroundJobsToProcess = 1;
       while ( !cellDescription.getHasCompletedLastStep() ) {
-        tarch::multicore::jobs::processBackgroundJobs(1);
+        tarch::multicore::jobs::processBackgroundJobs(numberOfBackgroundJobsToProcess);
+        numberOfBackgroundJobsToProcess++;
       }
       oneSolverRequiresVerticalCommunication &=
           cellDescription.getType()==CellDescription::Type::Descendant && cellDescription.getHasVirtualChildren();
