@@ -267,6 +267,12 @@ class exahype::parser::Parser {
   bool compareMPILoadBalancingStrategy(const std::string& strategy) const;
 
   /**
+   * @return the number of forks the load balancing
+   * mapping is allowed to trigger per mesh refinement iteration.
+   */
+  int getMaxForksPerLoadBalancingStep() const;
+
+  /**
    * @note It is important to scale the bounding box if MPI
    * experiments are run as this prevents communication
    * with rank 0. More importantly, it prevents that the

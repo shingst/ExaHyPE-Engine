@@ -440,6 +440,11 @@
           "title" : "Buffer size in bytes per MPI package", 
           "default" : 64,
           "old_format" : { "token_after" : "buffer-size" }
+        },
+        "max_forks_at_once" : {
+          "type" : "integer", 
+          "title" : "The number of forks the load balancing can perform at once on the critical worker (a number < 1 mean that no limit is applied).",
+          "default": -1
         }
       }
     }, 

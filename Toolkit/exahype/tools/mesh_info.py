@@ -106,7 +106,6 @@ class MeshInfo:
       self.boundingBoxMeshLevel = level - 1; # decrement result since bounding box was computed using level-1
 
       for d in range(0,self.dim):
-        self.boundingBoxSize      *= boundingBoxScaling
         self.boundingBoxOffset[d] -= self.boundingBoxOutsideCellsLeft*self.boundingBoxMeshSize
     
     else: # not scale bounding box
