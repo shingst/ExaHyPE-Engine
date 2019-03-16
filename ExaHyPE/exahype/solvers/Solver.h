@@ -1147,15 +1147,10 @@ class exahype::solvers::Solver {
   #endif
  }
 
- /**
-  * Submit a Prediction- or FusedTimeStepJob.
-  *
-  * @param[in] isSkeletonJob is is a skeleton job?
-  */
- static tarch::multicore::jobs::JobType getTaskType(bool isSkeletonJob) {
-//    return isSkeletonJob ? tarch::multicore::jobs::JobType::RunTaskAsSoonAsPossible : tarch::multicore::jobs::JobType::BackgroundTask;
-    return tarch::multicore::jobs::JobType::BackgroundTask;
- }
+ static int getTaskPriority( bool isSkeletonJob );
+ static int getCompressionTaskPriority();
+ static int getHighPrioritiesJobTaskPriority();
+ static int getStandardBackgroundTaskPriority();
 
  /**
   * Return a string representation for the type @p param.

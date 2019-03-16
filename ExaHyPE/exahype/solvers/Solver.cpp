@@ -850,3 +850,27 @@ void exahype::solvers::Solver::mergeWithWorkerMeshUpdateEvent(
   }
 }
 #endif
+
+
+int exahype::solvers::Solver::getTaskPriority( bool isSkeletonJob ) {
+  return isSkeletonJob ? tarch::multicore::DefaultPriority/4 : tarch::multicore::DefaultPriority;
+}
+
+
+int exahype::solvers::Solver::getCompressionTaskPriority() {
+  assertion( tarch::multicore::DefaultPriority>8 );
+  return tarch::multicore::DefaultPriority/8;
+}
+
+
+int exahype::solvers::Solver::getHighPrioritiesJobTaskPriority() {
+  assertion( tarch::multicore::DefaultPriority>4 );
+  return tarch::multicore::DefaultPriority/4;
+}
+
+
+int exahype::solvers::Solver::getStandardBackgroundTaskPriority() {
+  return tarch::multicore::DefaultPriority*2;
+}
+
+

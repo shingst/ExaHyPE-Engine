@@ -4333,7 +4333,7 @@ exahype::solvers::ADERDGSolver::CompressionJob::CompressionJob(
   const ADERDGSolver& solver,
   CellDescription&    cellDescription,
   const bool          isSkeletonJob):
-  tarch::multicore::jobs::Job(Solver::getTaskType(isSkeletonJob),0,tarch::multicore::DefaultPriority/4),
+  tarch::multicore::jobs::Job(tarch::multicore::jobs::JobType::BackgroundTask,0,getTaskPriority(isSkeletonJob)),
   _solver(solver),
   _cellDescription(cellDescription),
   _isSkeletonJob(isSkeletonJob) {

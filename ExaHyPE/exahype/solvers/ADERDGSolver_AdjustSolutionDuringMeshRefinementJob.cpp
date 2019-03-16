@@ -4,7 +4,7 @@ exahype::solvers::ADERDGSolver::AdjustSolutionDuringMeshRefinementJob::AdjustSol
   ADERDGSolver&    solver,
   CellDescription& cellDescription,
   const bool       isInitialMeshRefinement):
-  tarch::multicore::jobs::Job( Solver::getTaskType(false), 0, tarch::multicore::DefaultPriority ),
+  tarch::multicore::jobs::Job( tarch::multicore::jobs::JobType::BackgroundTask,0,getHighPrioritiesJobTaskPriority() ),
   _solver(solver),
   _cellDescription(cellDescription),
   _isInitialMeshRefinement(isInitialMeshRefinement)
