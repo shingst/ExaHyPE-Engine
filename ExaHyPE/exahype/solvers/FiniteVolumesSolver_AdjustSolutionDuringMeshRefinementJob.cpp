@@ -4,7 +4,7 @@ exahype::solvers::FiniteVolumesSolver::AdjustSolutionDuringMeshRefinementJob::Ad
   FiniteVolumesSolver& solver,
   CellDescription&     cellDescription,
   const bool           isInitialMeshRefinement):
-  tarch::multicore::jobs::Job(Solver::getTaskType(false),0),
+  tarch::multicore::jobs::Job(Solver::getTaskType(false),0, tarch::multicore::DefaultPriority),
   _solver(solver),
   _cellDescription(cellDescription),
   _isInitialMeshRefinement(isInitialMeshRefinement)

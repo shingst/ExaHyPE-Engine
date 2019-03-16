@@ -345,6 +345,7 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
       _parser.getMinBackgroundJobsInARush(), _parser.getMaxBackgroundJobsInARush() );
 
   if ( _parser.getProcessHighPriorityBackgroundJobsInAnRush() ) { // high priority behaviour
+/*
     if ( _parser.getRunLowPriorityJobsOnlyIfNoHighPriorityJobIsLeft() ) { // low priority behaviour
       tarch::multicore::jobs::setHighPriorityJobBehaviour(
           tarch::multicore::jobs::HighPriorityTaskProcessing::ProcessAllHighPriorityTasksInARushAndRunBackgroundTasksOnlyIfNoHighPriorityTasksAreLeft);
@@ -352,6 +353,7 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
       tarch::multicore::jobs::setHighPriorityJobBehaviour(
           tarch::multicore::jobs::HighPriorityTaskProcessing::ProcessAllHighPriorityTasksInARush);
     }
+*/
   } else if ( _parser.getSpawnHighPriorityBackgroundJobsAsATask() ) {
     if ( _parser.getRunLowPriorityJobsOnlyIfNoHighPriorityJobIsLeft() ) { // low priority behaviour
       if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
@@ -359,6 +361,7 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
                    "Fall back to 'run_always' low priority job processing strategy.");
       }
     }
+/*
     if ( _parser.getSpawnLowPriorityBackgroundJobsAsATask() ){
       tarch::multicore::jobs::setHighPriorityJobBehaviour(
           tarch::multicore::jobs::HighPriorityTaskProcessing::MapHighPriorityAndBackgroundTasksToRealTBBTasks);
@@ -366,8 +369,10 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
       tarch::multicore::jobs::setHighPriorityJobBehaviour(
           tarch::multicore::jobs::HighPriorityTaskProcessing::MapHighPriorityTasksToRealTBBTasks);
     }
+*/
   }
   else {
+/*
     if ( _parser.getRunLowPriorityJobsOnlyIfNoHighPriorityJobIsLeft() ) {
       tarch::multicore::jobs::setHighPriorityJobBehaviour(
           tarch::multicore::jobs::HighPriorityTaskProcessing::ProcessOneHighPriorityTasksAtATimeAndRunBackgroundTasksOnlyIfNoHighPriorityTasksAreLeft);
@@ -375,6 +380,7 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
       tarch::multicore::jobs::setHighPriorityJobBehaviour(
           tarch::multicore::jobs::HighPriorityTaskProcessing::ProcessOneHighPriorityTasksAtATime);
     }
+*/
   }
   #endif
 

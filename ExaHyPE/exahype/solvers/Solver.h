@@ -1139,11 +1139,7 @@ class exahype::solvers::Solver {
      if ( receiveDanglingMessages ) {
        tarch::parallel::Node::getInstance().receiveDanglingMessages();
      }
-     if ( waitForHighPriorityJob ) {
-       tarch::multicore::jobs::processHighPriorityJobs(1);
-     } else {
-       tarch::multicore::jobs::processBackgroundJobs(1);
-     }
+     tarch::multicore::jobs::processBackgroundJobs(1);
    }
 
   #ifdef USE_ITAC
@@ -1157,17 +1153,9 @@ class exahype::solvers::Solver {
   * @param[in] isSkeletonJob is is a skeleton job?
   */
  static tarch::multicore::jobs::JobType getTaskType(bool isSkeletonJob) {
-    return isSkeletonJob ? tarch::multicore::jobs::JobType::RunTaskAsSoonAsPossible : tarch::multicore::jobs::JobType::BackgroundTask;
+//    return isSkeletonJob ? tarch::multicore::jobs::JobType::RunTaskAsSoonAsPossible : tarch::multicore::jobs::JobType::BackgroundTask;
+    return tarch::multicore::jobs::JobType::BackgroundTask;
  }
-/*
- static void submitJob(tarch::multicore::jobs::Job* job,const bool isSkeletonJob) {
-   if ( isSkeletonJob ) {
-     peano::datatraversal::TaskSet spawnedSet( job, peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible  );
-   } else {
-     peano::datatraversal::TaskSet spawnedSet( job, peano::datatraversal::TaskSet::TaskType::Background  );
-   }
- }
-*/
 
  /**
   * Return a string representation for the type @p param.

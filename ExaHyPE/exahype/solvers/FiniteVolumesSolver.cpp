@@ -909,8 +909,8 @@ void exahype::solvers::FiniteVolumesSolver::mergeNeighboursData(
        uncompress(cellDescription2);
        return false;
      },
-     peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
-     peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
+     peano::datatraversal::TaskSet::TaskType::Background,
+     peano::datatraversal::TaskSet::TaskType::Background,
      true
      );
     }
@@ -1676,9 +1676,9 @@ void exahype::solvers::FiniteVolumesSolver::putUnknownsIntoByteStream(
       );
       return false;
       },
-	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
-	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
-	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
+	peano::datatraversal::TaskSet::TaskType::Background,
+	peano::datatraversal::TaskSet::TaskType::Background,
+	peano::datatraversal::TaskSet::TaskType::Background,
     true
   );
 
@@ -1806,9 +1806,9 @@ void exahype::solvers::FiniteVolumesSolver::putUnknownsIntoByteStream(
       }
       return false;
     },
-	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
-	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
-	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
+	peano::datatraversal::TaskSet::TaskType::Background,
+	peano::datatraversal::TaskSet::TaskType::Background,
+	peano::datatraversal::TaskSet::TaskType::Background,
     true
   );
 }
@@ -1916,9 +1916,9 @@ void exahype::solvers::FiniteVolumesSolver::pullUnknownsFromByteStream(
       }
       return false;
     },
-	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
-	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
-	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
+	peano::datatraversal::TaskSet::TaskType::Background,
+	peano::datatraversal::TaskSet::TaskType::Background,
+	peano::datatraversal::TaskSet::TaskType::Background,
 	true
   );
 }
@@ -2063,7 +2063,7 @@ exahype::solvers::FiniteVolumesSolver::CompressionJob::CompressionJob(
   CellDescription&           cellDescription,
   const bool                 isSkeletonJob)
   :
-  tarch::multicore::jobs::Job(Solver::getTaskType(isSkeletonJob),0),
+  tarch::multicore::jobs::Job(Solver::getTaskType(isSkeletonJob), 0, tarch::multicore::DefaultPriority),
   _solver(solver),
   _cellDescription(cellDescription),
   _isSkeletonJob(isSkeletonJob) {
