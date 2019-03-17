@@ -12,6 +12,8 @@ void TOV::TOVSolver::TOV_C_Allocate()
   TOV_R_Surface = new double[TOV_Num_TOVs];
   TOV_RProp_Surface = new double[TOV_Num_TOVs];
 
+  //TODO find better way than storing these as
+  //TOV_Num_Radial = 40000000
   TOV_rbar_1d = new double[TOV_Num_Radial * TOV_Num_TOVs];
   TOV_press_1d = new double[TOV_Num_Radial * TOV_Num_TOVs];
   TOV_phi_1d = new double[TOV_Num_Radial * TOV_Num_TOVs];
