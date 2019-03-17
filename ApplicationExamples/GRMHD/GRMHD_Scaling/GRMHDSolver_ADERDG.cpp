@@ -23,11 +23,6 @@ tarch::logging::Log GRMHD::GRMHDSolver_ADERDG::_log("GRMHDSolver_ADERDG");
 #include <fenv.h>
 
 void GRMHD::GRMHDSolver_ADERDG::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
-  // NAN checker
-  //  feenableexcept(FE_INVALID | FE_OVERFLOW);  // Enable all floating point exceptions but FE_INEXACT
-	
-  //std::string id_default = "TOVSolver";
-  //std::string bc_default = "left:exact,right:exact,top:exact,bottom:exact,front:exact,back:exact";
   prepare_id("TOVSolver");
 }
 

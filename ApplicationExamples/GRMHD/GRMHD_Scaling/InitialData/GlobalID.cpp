@@ -1,4 +1,5 @@
-#include "InitialData/InitialData.h"
+#include "InitialData.h"
+#include "TovSolverAdapter.h"
 
 idobj *id = nullptr; // storage
 
@@ -9,7 +10,7 @@ bool prepare_id(std::string idname) {
 		// id already prepared
 		return true;
 	}
-	
+
     id = new TovSolverAdapter();
     return true;
 }

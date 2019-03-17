@@ -60,7 +60,7 @@
       "name": "GRMHDSolver",
       "order": 3,
       "maximum_mesh_size": 18.0,
-      "maximum_mesh_depth": 0,
+      "maximum_mesh_depth": 1,
       "time_stepping": "global",
       "aderdg_kernel": {
         "language": "C",

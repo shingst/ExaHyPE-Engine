@@ -6,16 +6,16 @@ constexpr int nVar = GRMHD::AbstractGRMHDSolver_ADERDG::NumberOfVariables;
 using namespace GRMHD::GRMHDSolver_ADERDG_Variables::shortcuts;
 
 // Trivial inlined interface to the C++ TovSolver which is included in the code
-
 #include "../tovsolver_lib/tov.h"
 
 TovSolverAdapter::TovSolverAdapter() {
 	tov = new TOV::TOVSolver();
 	
 	// well, that could be then passed by the parameters one day, right...
+	
 	tov->TOV_Rho_Central[0]     = 1.28e-3 ;
 	tov->TOV_Combine_Method = "maximum"   ;
-	tov->TOV_Num_Radial     = 4000000;  //40000000    ;
+	tov->TOV_Num_Radial     = 40000000    ;
 	tov->TOV_dr[0]          = 0.00001     ;
 	tov->Perturb[0]         = false       ;
 	tov->Perturb_Pressure[0]   = false    ;
@@ -28,10 +28,8 @@ void TovSolverAdapter::Interpolate(const double* const x, double t, double* cons
 	double V[nVar];
 	
 	TOV::idvars id;
-
     auto params = new TOV::Parameters();
 	tov->Interpolate(x, id);
-
 	
 	V[rho] = id.rho;
 	V[E] = id.press;
@@ -58,5 +56,4 @@ void TovSolverAdapter::Interpolate(const double* const x, double t, double* cons
 	pdeprim2cons_(Q, V);
 
     delete params;
-
 }
