@@ -18,10 +18,11 @@ class CloudScenario : public Scenario {
     const double size;     // [m]
     const double decay;    // [m]
     const double centerX;  // [m]
+    const double centerY;  // [m], currently always equal to centerX
     const double centerZ;  // [m]
     const BubbleType bubbleType;
 
-    double evaluatePerturbation(double posX, double posZ) const;
+    double evaluatePerturbation(double posX, double posY, double posZ) const;
   };
 
   void initialValues(const double* const x, const PDE& ns,

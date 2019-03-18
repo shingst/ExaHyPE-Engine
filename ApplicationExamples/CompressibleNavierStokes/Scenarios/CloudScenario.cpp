@@ -9,14 +9,20 @@ NavierStokes::CloudScenario::Bubble::Bubble(
       size(size),
       decay(decay),
       centerX(centerX),
+      centerY(centerX), // TODO(Lukas) extend this.
       centerZ(centerZ) {}
 
 double NavierStokes::CloudScenario::Bubble::evaluatePerturbation(
-    double posX, double posZ) const {
+			    double posX, double posY, double posZ) const {
   auto perturbation = 0.0;
   const auto distX = posX - centerX;
+#if DIMENSIONS == 2
+  const auto distY = 0.0
+#else
+  const auto distY = posY - centerY;
+#endif
   const auto distZ = posZ - centerZ;
-  const auto distanceToCenter = std::sqrt(distX * distX + distZ * distZ);
+  const auto distanceToCenter = std::sqrt(distX * distX +  distY * distY + distZ * distZ);
 
   if (bubbleType == BubbleType::smooth) {
     if (distanceToCenter <= size) {
@@ -47,6 +53,7 @@ void NavierStokes::CloudScenario::initialValues(const double* const x,
                                                 const PDE& ns, Variables& vars,
                                                 double initialZ) {
   const auto posX = x[0];
+  const auto posY = (DIMENSIONS == 2) ? 0.0 : x[1];
   const auto posZ = (DIMENSIONS == 2) ? x[1] : x[2];
 
   double potentialT = getBackgroundPotentialTemperature();
@@ -54,8 +61,8 @@ void NavierStokes::CloudScenario::initialValues(const double* const x,
   double Z = 0.0;  // Only used for coupling test!
 
   for (const auto& bubble : bubbles) {
-    potentialT += bubble.evaluatePerturbation(posX, posZ);
-    Z += bubble.evaluatePerturbation(posX, posZ);  // TODO(Lukas): Fix value.
+    potentialT += bubble.evaluatePerturbation(posX, posY, posZ);
+    Z += bubble.evaluatePerturbation(posX, posY, posZ);  // TODO(Lukas): Fix value.
   }
 
   // Air is initially at rest.
