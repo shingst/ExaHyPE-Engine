@@ -628,7 +628,7 @@ bool exahype::stealing::StealingManager::RequestHandlerJob::operator()() {
 
 
 exahype::stealing::StealingManager::ProgressJob::ProgressJob() :
-   tarch::multicore::jobs::Job(tarch::multicore::jobs::JobType::BackgroundTask, 0, 2000)
+   tarch::multicore::jobs::Job(tarch::multicore::jobs::JobType::BackgroundTask, 0, tarch::multicore::DefaultPriority*8)
  {}
 
 bool exahype::stealing::StealingManager::ProgressJob::run() {

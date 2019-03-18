@@ -5232,7 +5232,7 @@ exahype::solvers::ADERDGSolver::StealablePredictionJob::StealablePredictionJob(
 	double *center,
     const int originRank,
     const int tag) :
-       tarch::multicore::jobs::Job(tarch::multicore::jobs::JobType::BackgroundTask, 0, tarch::multicore::DefaultPriority/4), //this is a remotely executed job -> high priority
+       tarch::multicore::jobs::Job(tarch::multicore::jobs::JobType::BackgroundTask, 0, tarch::multicore::DefaultPriority*4), //this is a remotely executed job -> high priority
         _solver(solver),
         _cellDescriptionsIndex(cellDescriptionsIndex),
         _element(element),
