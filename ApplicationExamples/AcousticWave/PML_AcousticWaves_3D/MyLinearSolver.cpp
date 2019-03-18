@@ -193,9 +193,7 @@ void Linear::MyLinearSolver::nonConservativeProduct(const double* const Q,const 
 }
 
 
-void Linear::MyLinearSolver::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,
-  const double * const fluxIn,const double* const stateIn,
-  double* const fluxOut,double* const stateOut) {
+void Linear::MyLinearSolver::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double* const fluxIn,const double* const stateIn,const double* const gradStateIn,double* const fluxOut,double* const stateOut) {
   // Dimensions             = 3
   // Number of variables    = 11 + #parameters
 

@@ -124,7 +124,7 @@ class {{project}}::{{solver}} : public {{project}}::{{abstractSolver}} {
      * @param[inout] FOut      the normal fluxes at point x from outside of the domain;
      *                         range: [0,nVar-1], already allocated.
      */
-    void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int direction,const double* const fluxIn,const double* const stateIn,double* const fluxOut,double* const stateOut) final override;
+    void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int direction,const double * const fluxIn,const double* const stateIn, const double* const gradStateIn,double *fluxOut,double* stateOut) final override;
     
     /**
      * Evaluate the refinement criterion within a cell.
@@ -199,11 +199,13 @@ class {{project}}::{{solver}} : public {{project}}::{{abstractSolver}} {
      * again seperately the nonConservativeProduct function and the algebraicSource
      * function.
      *
+     * @param[in]    x physical position
+     * @param[in]    t physical time
      * @param[in]    Q vector of state variables (plus material 
      *                 parameters); range: [0,nVar+nPar-1], already allocated.
      * @param[inout] S source term; range: [0,nVar-1], already allocated.
      */
-    void algebraicSource(const double* const Q,double* const S) final override;
+    void algebraicSource(const tarch::la::Vector<DIMENSIONS, double>& x, double t, const double *const Q, double *S) override;
 {% else %}
 /* algebraicSource() function not included, as requested by the specification file */
 {% endif %}

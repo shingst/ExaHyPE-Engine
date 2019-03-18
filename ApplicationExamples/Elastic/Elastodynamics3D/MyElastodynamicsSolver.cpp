@@ -103,9 +103,7 @@ void Elastodynamics::MyElastodynamicsSolver::flux(const double* const Q,double**
   F[2][8] = 0.0;
 }
 
-void Elastodynamics::MyElastodynamicsSolver::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,
-  const double * const fluxIn,const double* const stateIn,
-  double* const fluxOut,double* const stateOut) {
+void Elastodynamics::MyElastodynamicsSolver::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double* const fluxIn,const double* const stateIn,const double* const gradStateIn,double* const fluxOut,double* const stateOut) {
   // Dimensions             = 3
   // Number of variables    = 9 + #parameters
 

@@ -122,9 +122,7 @@ void HybridInterfaceDemonstration::DummySolver_ADERDG::adjustPointSolution(const
   }
 }
 
-void HybridInterfaceDemonstration::DummySolver_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,
-  const double* const fluxIn,const double* const stateIn,
-  double* const fluxOut,double* const stateOut) {
+void HybridInterfaceDemonstration::DummySolver_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double* const fluxIn,const double* const stateIn,const double* const gradStateIn,double* const fluxOut,double* const stateOut) {
   // Tip: You find documentation for this method in header file "HybridInterfaceDemonstration::DummySolver_ADERDG.h".
   // Tip: See header file "HybridInterfaceDemonstration::AbstractDummySolver_ADERDG.h" for toolkit generated compile-time 
   //      constants such as Order, NumberOfVariables, and NumberOfParameters.

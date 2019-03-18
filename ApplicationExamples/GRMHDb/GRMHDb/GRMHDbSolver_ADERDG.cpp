@@ -82,14 +82,7 @@ void GRMHDb::GRMHDbSolver_ADERDG::adjustPointSolution(const double* const x,cons
 	}
 }
 
-void GRMHDb::GRMHDbSolver_ADERDG::boundaryValues(
-		const double* const x,
-		const double t,const double dt,
-		const int faceIndex,
-		const int normalNonZero,
-		const double * const fluxIn,
-		const double* const stateIn,
-		double* const fluxOut,double* const stateOut) {
+void GRMHDb::GRMHDbSolver_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double* const fluxIn,const double* const stateIn,const double* const gradStateIn,double* const fluxOut,double* const stateOut) {
 	const int nVar = GRMHDb::AbstractGRMHDbSolver_ADERDG::NumberOfVariables;
 	const int order = GRMHDb::AbstractGRMHDbSolver_ADERDG::Order;
 	const int basisSize = order + 1;

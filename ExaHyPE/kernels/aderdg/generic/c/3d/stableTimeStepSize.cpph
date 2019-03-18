@@ -55,15 +55,15 @@ double kernels::aderdg::generic::c::stableTimeStepSize(
 
                       double maxEigenvalueV = 0.0;
                       for (int ivar = 0; ivar < numberOfVariables; ivar++) {
-                          maxEigenvalueV = std::max(fabs(lambda[ivar]), maxEigenvalue);
+                          maxEigenvalueV = std::max(fabs(lambda[ivar]), maxEigenvalueV);
                       }
-                      maxEigenvalue += maxEigenvalueV * 2.0 * PNPM[order] * invDx[d];
+                      maxEigenvalue += maxEigenvalueV * (2.0/PNPM[order]) * invDx[d];
                   }
                   denominator += maxEigenvalue * invDx[d];
               }
 
               dt = std::min(dt, cflFactor * PNPM[order] / 
-                      denominator);  // order N = basisSize-1
+                      denominator);
           }
       }
   }

@@ -1,0 +1,128 @@
+{
+    "project_name": "NavierStokes",
+    "paths": {
+	"peano_kernel_path": "./Peano/",
+	"exahype_path": "./ExaHyPE",
+	"output_directory": "./ApplicationExamples/CompressibleNavierStokes" },
+    "computational_domain": {
+	"dimension": 2,
+	"end_time": 0.41,
+	"offset": [
+	    -1.0,
+	    -1.0
+	],
+	"width": [
+	    2.0,
+	    2.0
+	]
+    },
+    "shared_memory": {
+	"cores": 8,
+	"properties_file": "sharedmemory.properties",
+	"autotuning_strategy": "dummy"
+    },
+    "optimisation": {
+	"fuse_algorithmic_steps": "most",
+	"fuse_algorithmic_steps_rerun_factor": 0.99,
+	"spawn_predictor_as_background_thread": true,
+	"spawn_amr_background_threads": true,
+	"disable_vertex_exchange_in_time_steps": false,
+	"time_step_batch_factor": 0.0,
+	"disable_metadata_exchange_in_batched_time_steps": false,
+	"double_compression": 0.0,
+	"spawn_double_compression_as_background_thread": false
+    },
+    "solvers": [
+	{
+	    "type": "Limiting-ADER-DG",
+	    "name": "NavierStokesSolver",
+	    "order": 3,
+	    "maximum_mesh_size": 0.07,
+	    "maximum_mesh_depth": 0,
+	    "time_stepping": "global",
+	    "aderdg_kernel": {
+		"language": "C",
+		"nonlinear": true,
+		"terms": [
+		    "flux",
+		    "viscous_flux",
+		    "source"
+		],
+		"space_time_predictor": {},
+		"optimised_terms": [],
+		"optimised_kernel_debugging": [],
+		"implementation": "generic"
+	    },
+	    "fv_kernel": {
+		"language": "C",
+		"scheme": "musclhancock",
+		"terms": [
+		    "flux",
+		    "viscous_flux",
+		    "source"
+		],
+		"implementation": "generic"
+	    },
+	    "limiter": {
+		"dmp_observables": 3,
+		"dmp_relaxation_parameter": 1e-4,
+		"dmp_difference_scaling": 1e-3,
+		"helper_layers": 1
+	    },
+	    "point_sources": 0,
+	    "variables": [
+		{
+		    "name": "rho",
+		    "multiplicity": 1
+		},
+		{
+		    "name": "j",
+		    "multiplicity": 2
+		},
+		{
+		    "name": "E",
+		    "multiplicity": 1
+		},
+		{
+		    "name": "Z",
+		    "multiplicity": 1
+		}
+	    ],
+	    "global_observables": [
+		{
+		    "name": "gobs",
+		    "multiplicity": 0
+		}
+	    ],
+	    "parameters": {
+		"viscosity": 0.0,
+		"scenario": "detonation",
+		"use-amr": false,
+		"use-tv-amr": true,
+		"use-tv-volume-correction": true,
+		"amr-indicator": "Z",
+		"amr-factor-refine": 2.0,
+		"amr-factor-erase": -0.5
+	    },
+	    "plotters": [
+		{
+		    "type": "vtu::Cartesian::vertices::limited::ascii",
+		    "name": "Plotter_Limiting",
+		    "time": 0.0,
+		    "repeat": 0.05,
+		    "output": "./results/solution",
+		    "variables": 6
+		},
+		{
+		    "type": "vtk::Cartesian::subcells::limited::ascii",
+		    "name": "Plotter_Limiting",
+		    "time": 10000.0000001,
+		    "repeat": 0.1,
+		    "output": "./results/solution_fv",
+		    "variables": 6
+		}
+
+	    ]
+	}
+    ]
+}

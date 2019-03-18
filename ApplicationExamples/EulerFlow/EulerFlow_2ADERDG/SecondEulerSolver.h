@@ -44,7 +44,7 @@ class Euler::SecondEulerSolver: public exahype::solvers::ADERDGSolver {
     static void eigenvalues(const double* const Q, const int normalNonZeroIndex, double* const lambda);
     static void flux(const double* const Q, double** const F);
     static void source(const double* const Q, double* const S);
-    static void boundaryValues(const double* const x,const double t, const int faceIndex, const int normalNonZero, const double * const fluxIn, const double* const stateIn, double* const fluxOut, double* const stateOut);
+    static void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double* const fluxIn,const double* const stateIn,const double* const gradStateIn,double* const fluxOut,double* const stateOut);
     static void adjustedSolutionValues(const double* const x,const double w,const double t,const double dt,double* const Q);
 };
 

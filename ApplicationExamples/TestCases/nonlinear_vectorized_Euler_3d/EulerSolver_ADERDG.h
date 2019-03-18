@@ -110,7 +110,7 @@ public:
    * \param[inout] FOut      the normal fluxes at point x from outside of the domain
    *                         and time-averaged (over [t,t+dt]) as C array (already allocated).
    */
-  void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double * const fluxIn,const double* const stateIn,double* const fluxOut,double* const stateOut);
+  void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double* const fluxIn,const double* const stateIn,const double* const gradStateIn,double* const fluxOut,double* const stateOut);
 
   /**
    * Evaluate the refinement criterion within a cell.

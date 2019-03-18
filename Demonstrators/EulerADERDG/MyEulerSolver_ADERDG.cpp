@@ -60,9 +60,7 @@ void EulerADERDG::MyEulerSolver_ADERDG::adjustPointSolution(const double* const 
   vars.rho() = density;
 }
 
-void EulerADERDG::MyEulerSolver_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,
-  const double * const fluxIn,const double* const stateIn,
-  double* const fluxOut,double* const stateOut) {
+void EulerADERDG::MyEulerSolver_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double* const fluxIn,const double* const stateIn,const double* const gradStateIn,double* const fluxOut,double* const stateOut) {
 /*
   stateOut[0] = stateIn[0];
   stateOut[1] = stateIn[1];
