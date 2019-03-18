@@ -313,15 +313,9 @@ class SpecFile1Reader():
                     found_token=True
             for term in ["cerkguess","notimeavg","maxpicarditer","split_ck"]:
                 if token_s.startswith(term):
-                    if term=="maxpicarditer":
-                        try:
-                            context[stp][term]=int(token_s.split(":")[-1])
-                            found_token=True
-                        except:
-                            raise SpecFile1ParserError("Parameter 'maxpicarditer' could not be parsed in original ExaHyPE specification file (is: '%s'. expected: 'maxpicarditer':<int>)!" % token_s)
-                    else:
-                        context[stp][term]=True
-                        found_token=True
+                    mappedTerm = term.replace("maxpicarditer","fix_picard_iterations")
+                    context[stp][mappedTerm]=True
+                    found_token=True
             if not found_token:
                 raise SpecFile1ParserError("Could not map value '%s' extracted from option 'optimisation'. Is it spelt correctly?" % token_s)
         return context

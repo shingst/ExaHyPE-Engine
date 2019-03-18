@@ -692,10 +692,11 @@
                     "available-for" : ["generic"],
                     "title" : "I have no clue, but generic kernels support it."
                   },
-                  "maxpicarditer" : {
-                    "type" : "number",
+                  "fix_picard_iterations" : {
+                    "type" : "boolean",
                     "available-for" : ["optimised","generic"],
-                    "title" : "Maximum Picard Iterations to run"
+                    "title" : "Fix the number of picard iterations to 'order'+1. Otherwise, the iterations are terminated in each cell based on a relative tolerance.",
+                    "default": false
                   },
                   "cerkguess" : {
                     "type" : "boolean",
