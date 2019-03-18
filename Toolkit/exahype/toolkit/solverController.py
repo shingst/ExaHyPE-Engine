@@ -152,8 +152,7 @@ class SolverController:
     def buildADERDGKernelContext(self, kernel):
         context = {}
         context["implementation"]          = kernel.get("implementation","generic")
-        context["useMaxPicardIterations"]  = kernel.get("space_time_predictor",{}).get("maxpicarditer",0)!=0
-        context["maxPicardIterations"]     = kernel.get("space_time_predictor",{}).get("maxpicarditer",-1)
+        context["useMaxPicardIterations"]  = kernel.get("space_time_predictor",{}).get("fix_picard_iterations",False)!=False
         context["tempVarsOnStack"]         = kernel.get("allocate_temporary_arrays","heap")=="stack" 
         context["patchwiseAdjust"]         = kernel.get("adjust_solution","pointwise")=="patchwise" 
         context["language"]                = kernel.get("language","C").lower()
