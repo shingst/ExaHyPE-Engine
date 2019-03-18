@@ -40,6 +40,7 @@
 #include "kernels/KernelUtils.h"
 
 #include "tarch/multicore/Jobs.h"
+#include "tarch/la/Vector.h"
 
 #if defined(SharedTBB) && !defined(noTBBPrefetchesJobData)
 #include <immintrin.h>
@@ -378,6 +379,15 @@ void exahype::solvers::ADERDGSolver::ensureNoUnnecessaryMemoryIsAllocated(
     cellDescription.setExtrapolatedPredictorAveragesIndex(-1);
     cellDescription.setExtrapolatedPredictorAverages(nullptr);
 
+    // gradient of extrapolated predictor
+    if (isUseViscousFlux() && cellDescription.getExtrapolatedPredictorGradientIndex() >= 0) {
+      assertion(DataHeap::getInstance().isValidIndex(cellDescription.getExtrapolatedPredictorGradientIndex()));
+
+      DataHeap::getInstance().deleteData(cellDescription.getExtrapolatedPredictorGradientIndex());
+      cellDescription.setExtrapolatedPredictorGradientIndex(-1);
+      cellDescription.setExtrapolatedPredictorGradient(nullptr);
+    }
+
     // fluctuations
     if ( cellDescription.getFluctuationIndex()>=0 ) {
       assertion(DataHeap::getInstance().isValidIndex(cellDescription.getFluctuationIndex()));
@@ -502,6 +512,17 @@ void exahype::solvers::ADERDGSolver::ensureNecessaryMemoryIsAllocated(
     std::fill_n(static_cast<double*>(cellDescription.getExtrapolatedPredictor()),dataPerBnd,std::numeric_limits<double>::quiet_NaN());
     std::fill_n(static_cast<double*>(cellDescription.getExtrapolatedPredictorAverages()),boundaryData,std::numeric_limits<double>::quiet_NaN());
 
+    if (isUseViscousFlux()) {
+      // gradients of extrapolated predictor
+      const int gradientSizePerBnd = _numberOfVariables * power(_nodesPerCoordinateAxis, DIMENSIONS - 1) * DIMENSIONS_TIMES_TWO * DIMENSIONS;
+      cellDescription.setExtrapolatedPredictorGradientIndex( DataHeap::getInstance().createData(gradientSizePerBnd, gradientSizePerBnd) );
+      cellDescription.setExtrapolatedPredictorGradient( getDataHeapEntries(cellDescription.getExtrapolatedPredictorGradientIndex()).data() ) ;
+      // touch the memory
+      std::fill_n(static_cast<double*>(cellDescription.getExtrapolatedPredictorGradient()),gradientSizePerBnd,std::numeric_limits<double>::quiet_NaN());
+    } else {
+      cellDescription.setExtrapolatedPredictorGradientIndex(-1);
+    }
+
     //
     // fluctuations
     //
@@ -567,6 +588,7 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
     const std::string& identifier,
     const int numberOfVariables,
     const int numberOfParameters,
+    const int numberOfGlobalObservables,
     const int basisSize,
     const double maximumMeshSize,
     const int maximumAdaptiveMeshDepth,
@@ -576,7 +598,7 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
     const int DMPObservables,
     std::unique_ptr<profilers::Profiler> profiler)
     : Solver(identifier, Solver::Type::ADERDG, numberOfVariables,
-             numberOfParameters, basisSize,
+             numberOfParameters, numberOfGlobalObservables, basisSize,
              maximumMeshSize, maximumAdaptiveMeshDepth,
              timeStepping, std::move(profiler)),
      _previousMinTimeStamp( std::numeric_limits<double>::infinity() ),
@@ -589,8 +611,7 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
      _DMPObservables(DMPObservables),
      _minRefinementStatusForTroubledCell(_refineOrKeepOnFineGrid+3),
      _checkForNaNs(true),
-     _meshUpdateEvent(MeshUpdateEvent::None)
-{
+      _meshUpdateEvent(MeshUpdateEvent::None) {
   // register tags with profiler
   for (const char* tag : tags) {
     _profiler->registerTag(tag);
@@ -742,6 +763,7 @@ void exahype::solvers::ADERDGSolver::kickOffTimeStep(const bool isFirstTimeStepO
   }
 
   // call user code
+  _globalObservables = resetGlobalObservables();
   beginTimeStep(_minTimeStamp,isFirstTimeStepOfBatchOrNoBatch);
 }
 
@@ -762,7 +784,6 @@ void exahype::solvers::ADERDGSolver::wrapUpTimeStep(const bool isFirstTimeStepOf
         if ( _estimatedTimeStepSize > _admissibleTimeStepSize ) { // rerun
           _minTimeStepSize       = FusedTimeSteppingRerunFactor * _admissibleTimeStepSize;
           _estimatedTimeStepSize = _minTimeStepSize;
-
           _stabilityConditionWasViolated = true;
         } else {
           _minTimeStepSize       = _estimatedTimeStepSize; // as we have computed the predictor with an estimate, we have to use the estimated time step size to perform the face integral
@@ -797,6 +818,8 @@ void exahype::solvers::ADERDGSolver::rollbackToPreviousTimeStep() {
 
   _previousMinTimeStamp    = std::numeric_limits<double>::infinity();
   _previousMinTimeStepSize = std::numeric_limits<double>::infinity();
+
+  // TODO(Lukas) Maybe also rollback global observables?
 }
 
 double exahype::solvers::ADERDGSolver::getMinTimeStamp() const {
@@ -861,7 +884,7 @@ void exahype::solvers::ADERDGSolver::initSolver(
 
   _meshUpdateEvent = MeshUpdateEvent::InitialRefinementRequested;
 
-
+  _globalObservables = resetGlobalObservables();
 
   init(cmdlineargs,parserView); // call user define initalisiation
 }
@@ -2201,7 +2224,9 @@ int exahype::solvers::ADERDGSolver::predictionAndVolumeIntegralBody(
   double* luh    = static_cast<double*>(cellDescription.getSolution());
   double* lduh   = static_cast<double*>(cellDescription.getUpdate());
   double* lQhbnd = static_cast<double*>(cellDescription.getExtrapolatedPredictor());
+  double* lGradQhbnd = static_cast<double*>(cellDescription.getExtrapolatedPredictorGradient());
   double* lFhbnd = static_cast<double*>(cellDescription.getFluctuation());
+
 
   #ifdef Asserts
   for (int i=0; i<getDataPerCell(); i++) {
@@ -2220,8 +2245,12 @@ int exahype::solvers::ADERDGSolver::predictionAndVolumeIntegralBody(
   counter++;
   #endif
 
+  // TODO(Lukas) Is this really the corrector timestamp?
+  const auto correctorTimeStamp = cellDescription.getTimeStamp();
+  const auto correctorTimeStepSize = cellDescription.getTimeStepSize();
+
   const int numberOfPicardIterations = fusedSpaceTimePredictorVolumeIntegral(
-      lduh,lQhbnd,lFhbnd,
+      lduh,lQhbnd,lGradQhbnd,lFhbnd,
       luh,
       cellDescription.getOffset()+0.5*cellDescription.getSize(),
       cellDescription.getSize(),
@@ -3212,6 +3241,7 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
       FL,FR,QL,QR,
       std::get<0>(timeStepData),
       std::get<1>(timeStepData),
+      pLeft.getSize(),
       face._direction, false, -1); // TODO(Dominic): Merge Riemann solver directly with the face integral and push the result on update
                                    // does not make sense to overwrite the flux when performing local time stepping; coarse grid flux must be constant, or not?
 
@@ -3286,7 +3316,9 @@ void exahype::solvers::ADERDGSolver::applyBoundaryConditions(CellDescription& p,
 
   const int dataPerFace = getBndFaceSize();
   const int dofsPerFace = getBndFluxSize();
+  const int gradientDataPerFace = _numberOfVariables * power(_nodesPerCoordinateAxis, DIMENSIONS - 1) * DIMENSIONS;
   double* QIn = static_cast<double*>(p.getExtrapolatedPredictor()) +  dataPerFace * face._faceIndex;
+  double* gradQIn = static_cast<double*>(p.getExtrapolatedPredictorGradient()) +  gradientDataPerFace * face._faceIndex;
   double* FIn = static_cast<double*>(p.getFluctuation())           +  dofsPerFace * face._faceIndex;
   const double* luh = static_cast<double*>(p.getSolution());
 
@@ -3309,7 +3341,7 @@ void exahype::solvers::ADERDGSolver::applyBoundaryConditions(CellDescription& p,
 
   std::tuple<double,double> timeStepData = getRiemannSolverTimeStepData(p,p);
   boundaryConditions(
-      FIn,QIn,
+      FIn,QIn, gradQIn,
       luh,
       p.getOffset() + 0.5*p.getSize(),
       p.getSize(),
@@ -4046,7 +4078,7 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
     const double* const QR = static_cast<double*>( cellDescription.getExtrapolatedPredictor()) + dataPerFace * face._faceIndex;
     double* FR             = static_cast<double*>( cellDescription.getFluctuation())           + dofsPerFace * face._faceIndex;
     // TODO const-correct kernels
-    
+
     #ifdef Asserts
     std::string inputDataL = riemannDataToString(QL,FL,"L");
     std::string inputDataR = riemannDataToString(QR,FR,"R");
@@ -4054,9 +4086,8 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
 
     riemannSolver(
         FL, FR, QL, QR,
-        cellDescription.getTimeStamp(),
-        cellDescription.getTimeStepSize(),face._direction,false,face._faceIndex);
-    
+	cellDescription.getTimeStamp(), cellDescription.getTimeStepSize(),
+	cellDescription.getSize(), face._direction,false,face._faceIndex);
     #ifdef Asserts
     if ( _checkForNaNs ) {
       for (int ii = 0; ii<dofsPerFace; ii++) {
@@ -4072,7 +4103,7 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
     const double* const QL = static_cast<double*>(cellDescription.getExtrapolatedPredictor()) + dataPerFace * face._faceIndex;
     double* FR = const_cast<double*>(lFhbnd); // TODO const-correct kernels
     double* FL = static_cast<double*>(cellDescription.getFluctuation()) + dofsPerFace * face._faceIndex; // TODO const-correct kernels
-    
+
     #ifdef Asserts
     std::string inputDataL = riemannDataToString(QL,FL,"L");
     std::string inputDataR = riemannDataToString(QR,FR,"R");
@@ -4083,6 +4114,7 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
         FL, FR, QL, QR,
         std::get<0>(timeStepData),
         std::get<1>(timeStepData),
+	cellDescription.getSize(),
         face._direction,false,face._faceIndex);
     
     #ifdef Asserts
@@ -4152,13 +4184,18 @@ void exahype::solvers::ADERDGSolver::sendDataToMaster(
 
 exahype::DataHeap::HeapEntries
 exahype::solvers::ADERDGSolver::compileMessageForMaster(const int capacity) const {
+  const auto messageSize = 2 + _numberOfGlobalObservables;
   DataHeap::HeapEntries message;
-  message.reserve(std::max(2,capacity));
+  message.reserve(std::max(messageSize,capacity));
 
   message.push_back(_admissibleTimeStepSize);
   message.push_back(convertToDouble(_meshUpdateEvent));
 
-  assertion1(message.size()==2,message.size());
+  for (const auto observable : _globalObservables) {
+    message.push_back(observable);
+  }
+
+  assertion1(message.size()==messageSize,message.size());
   assertion1(std::isfinite(message[0]),message[0]);
   return message;
 }
@@ -4174,7 +4211,8 @@ void exahype::solvers::ADERDGSolver::mergeWithWorkerData(
     const int                                    workerRank,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const int                                    level) {
-  DataHeap::HeapEntries messageFromWorker(2);
+  const auto messageSize = 2 + _numberOfGlobalObservables;
+  DataHeap::HeapEntries messageFromWorker(messageSize);
 
   //  MPI_Recv(
   //    messageFromWorker.data(), messageFromWorker.size(),
@@ -4210,6 +4248,12 @@ void exahype::solvers::ADERDGSolver::mergeWithWorkerData(const DataHeap::HeapEnt
   int index=0; // post update
   _admissibleTimeStepSize = std::min( _admissibleTimeStepSize, message[index++] );
   _meshUpdateEvent       = mergeMeshUpdateEvents(_meshUpdateEvent,convertToMeshUpdateEvent(message[index++]));
+  auto observablesFromWorker = std::vector<double>(_numberOfGlobalObservables);
+  for (int i = 0; i < _numberOfGlobalObservables; ++i) {
+    observablesFromWorker[i] = message[index++];
+  }
+  reduceGlobalObservables(_globalObservables, observablesFromWorker);
+
 }
 
 ///////////////////////////////////
@@ -4217,6 +4261,7 @@ void exahype::solvers::ADERDGSolver::mergeWithWorkerData(const DataHeap::HeapEnt
 ///////////////////////////////////
 exahype::DataHeap::HeapEntries
 exahype::solvers::ADERDGSolver::compileMessageForWorker(const int capacity) const {
+  const auto messageSize = 5 + _numberOfGlobalObservables;
   DataHeap::HeapEntries message;
   message.reserve(std::max(5,capacity));
 
@@ -4226,7 +4271,11 @@ exahype::solvers::ADERDGSolver::compileMessageForWorker(const int capacity) cons
   message.push_back(convertToDouble(_meshUpdateEvent));
   message.push_back(_stabilityConditionWasViolated ? 1.0 : -1.0);
 
-  assertion1(message.size()==5,message.size());
+  for (const auto observable : _globalObservables) {
+    message.push_back(observable);
+  }
+
+  assertion1(message.size()==messageSize,message.size());
   return message;
 }
 
@@ -4266,16 +4315,19 @@ void exahype::solvers::ADERDGSolver::mergeWithMasterData(const DataHeap::HeapEnt
   _meshUpdateEvent               = convertToMeshUpdateEvent(message[index++]);
   _stabilityConditionWasViolated = (message[index++] > 0.0) ? true : false;
 
-  logDebug("mergeWithMasterData(...)","_meshUpdateEvent="<<Solver::toString(getMeshUpdateEvent()));
-  logDebug("mergeWithMasterData(...)","_stabilityConditionWasViolated="<< _stabilityConditionWasViolated);
+  for (int i = 0; i < _numberOfGlobalObservables; ++i) {
+    _globalObservables[i] = message[index++];
+  }
 }
 
 void exahype::solvers::ADERDGSolver::mergeWithMasterData(
     const int                                    masterRank,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const int                                    level) {
-  DataHeap::HeapEntries messageFromMaster(5);
-  
+  //const auto messageSize = 7 + _numberOfGlobalObservables;
+  // TODO(Lukas) Used to be 7+...
+  const auto messageSize = 5 + _numberOfGlobalObservables;
+  DataHeap::HeapEntries messageFromMaster(messageSize);
   // MPI_Recv(
   //     messageFromMaster.data(), messageFromMaster.size(),
   //     MPI_DOUBLE,
@@ -4287,7 +4339,7 @@ void exahype::solvers::ADERDGSolver::mergeWithMasterData(
       messageFromMaster.data(), messageFromMaster.size(),
       masterRank,x,level,peano::heap::MessageType::MasterWorkerCommunication);
 
-  assertion1(messageFromMaster.size()==5,messageFromMaster.size());
+  assertion1(messageFromMaster.size()==messageSize,messageFromMaster.size());
   mergeWithMasterData(messageFromMaster);
 
   if ( !tarch::parallel::Node::getInstance().isGlobalMaster() ) {
@@ -4989,6 +5041,28 @@ void exahype::solvers::ADERDGSolver::pullUnknownsFromByteStream(
     peano::datatraversal::TaskSet::TaskType::Background,
     true
   );
+}
+
+void exahype::solvers::ADERDGSolver::reduceGlobalObservables(
+        std::vector<double>& globalObservables,
+        CellInfo cellInfo, int solverNumber) const {
+  tarch::multicore::Lock lock(ReductionSemaphore);
+  if (globalObservables.empty()) {
+    return;
+  }
+  const auto element = cellInfo.indexOfADERDGCellDescription(solverNumber);
+  if (element != NotFound ) {
+    CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[element];
+    if (cellDescription.getType() != CellDescription::Type::Cell) {
+      return;
+    }
+    assert(cellDescription.getType()==CellDescription::Type::Cell);
+    double* luh  = static_cast<double*>(cellDescription.getSolution());
+    const auto& dx = cellDescription.getSize();
+    const auto curGlobalObservables = mapGlobalObservables(luh, dx);
+    reduceGlobalObservables(globalObservables, curGlobalObservables);
+  }
+  lock.free();
 }
 
 ///////////////////////

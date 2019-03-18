@@ -107,6 +107,7 @@ std::atomic_ulong {{project}}::{{abstractSolver}}::volumeUnknownsRestriction_c =
       "{{solver}}",
       {{optNamespace}}::getNumberOfVariable(),
       {{optNamespace}}::getNumberOfParameter(),
+      {{optNamespace}}::getNumberOfGlobalObservables(),
       {{optNamespace}}::getBasisSize(),
       maximumMeshSize,
       maximumMeshDepth,
@@ -128,7 +129,7 @@ void {{project}}::{{abstractSolver}}::constantsToString(std::ostream& os) {
 
 
 
-int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(double* const lduh,double* const lQhbnd,double* const lFhbnd,double* const luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,const double t,const double dt,const bool addVolumeIntegralResultToUpdate) {
+int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(double* lduh, double* lQhbnd, double* lGradQhbnd, double* lFhbnd, double* const luh, const tarch::la::Vector<DIMENSIONS, double>& center, const tarch::la::Vector<DIMENSIONS, double>& dx, const double t ,const double dt,const bool addVolumeIntegralResultToUpdate) {
 {% if enableProfiler %}
   _profiler->start("fusedSpaceTimePredictorVolumeIntegral");
 {% endif %}
@@ -373,8 +374,7 @@ void {{project}}::{{abstractSolver}}::faceIntegral(double* const out/*may be sol
 }
 
 
-
-void {{project}}::{{abstractSolver}}::riemannSolver(double* const FL,double* const FR,const double* const QL,const double* const QR,const double t,const double dt,const int direction,bool isBoundaryFace, int faceIndex) {
+void {{project}}::{{abstractSolver}}::riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double t,const double dt, const tarch::la::Vector<DIMENSIONS, double>& dx, const int direction, bool isBoundaryFace, int faceIndex) {
   assertion2(direction>=0,dt,direction);
   assertion2(direction<DIMENSIONS,dt,direction);
 {% if enableProfiler %}
@@ -405,7 +405,7 @@ void {{project}}::{{abstractSolver}}::riemannSolver(double* const FL,double* con
 
 
 
-void {{project}}::{{abstractSolver}}::boundaryConditions(double* const fluxIn,const double* const stateIn,const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const int direction,const int orientation) {
+void {{project}}::{{abstractSolver}}::boundaryConditions(double* const fluxIn,const double* const stateIn,const double* const gradStateIn, const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const int direction,const int orientation) {
 {% if enableProfiler %}
   _profiler->start("boundaryConditions");
 {% endif %}
@@ -427,6 +427,7 @@ void {{project}}::{{abstractSolver}}::boundaryConditions(double* const fluxIn,co
 
   const int faceIndex = 2*direction+orientation;
 
+  // TODO(JMG): Pass gradient here for viscous flux.
   {{optNamespace}}::boundaryConditions(*static_cast<{{solver}}*>(this), fluxOut, stateOut, fluxIn, stateIn, &cellCentre[0], &cellSize[0], t, dt, faceIndex, direction);
 
 {% if countFlops %}
@@ -441,10 +442,10 @@ void {{project}}::{{abstractSolver}}::boundaryConditions(double* const fluxIn,co
 {% endif %}
   
   if (orientation == 0) {
-    riemannSolver(fluxOut,fluxIn,stateOut,stateIn,t,dt,direction,true,faceIndex);
+    riemannSolver(fluxOut,fluxIn,stateOut,stateIn,t,dt,cellSize,direction,true,faceIndex);
   }
   else {
-    riemannSolver(fluxIn,fluxOut,stateIn,stateOut,t,dt,direction,true,faceIndex);
+    riemannSolver(fluxIn,fluxOut,stateIn,stateOut,t,dt,cellSize,direction,true,faceIndex);
   }
   
 {% if not tempVarsOnStack %}
@@ -606,7 +607,7 @@ void {{project}}::{{abstractSolver}}::flux(const double* const Q,double** const 
   abortWithMsg("If this operation is entered (flux), you have activated the corresponding guard. Then you have to re-implement this routine, too." );
 }
 
-void {{project}}::{{abstractSolver}}::algebraicSource(const double* const Q,double* const S) {
+void {{project}}::{{abstractSolver}}::algebraicSource(const tarch::la::Vector<DIMENSIONS, double>& x, double t, const double *const Q, double *S) {
   abortWithMsg("If this operation is entered (algebraicSource), you have activated the corresponding guard. Then you have to re-implement this routine, too." );
 }
 
@@ -632,4 +633,18 @@ void {{project}}::{{abstractSolver}}::viscousFlux(const double* const Q,const do
 
 void {{project}}::{{abstractSolver}}::viscousEigenvalues(const double* const Q,const int d,double* const lambda) {
       abortWithMsg("viscous eigenvalues: If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
+}
+
+std::vector<double> {{project}}::{{abstractSolver}}::mapGlobalObservables(const double* const Q, const tarch::la::Vector<DIMENSIONS, double> &dx) const {
+  return {};
+}
+
+std::vector<double> {{project}}::{{abstractSolver}}::resetGlobalObservables() const {
+  return {};
+}
+
+void {{project}}::{{abstractSolver}}::reduceGlobalObservables(
+	std::vector<double>& reducedGlobalObservables,
+	const std::vector<double>& curGlobalObservables) const {
+  // NOP
 }

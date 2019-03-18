@@ -32,14 +32,8 @@ namespace c {
  * It is not a good Riemann solver for the Shallow Water Equations (SWE) e.g.
  */
 template <bool useNCP, bool useFlux, bool useViscousFlux, typename SolverType>
-double rusanov(
-    SolverType&         solver,
-    double* const       fnL,
-    double* const       fnR,
-    const double* const qL,
-    const double* const qR,
-    const int           direction);
-
+double rusanov(SolverType& solver, double* fL, double *fR, const double* qL, const double* qR,
+             const double* gradQL, const double* gradQR, const double* cellSize, int direction);
 /**
  * Implements a generalised osher type flux.
  *

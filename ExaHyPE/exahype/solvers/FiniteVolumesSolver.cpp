@@ -80,13 +80,15 @@ exahype::solvers::FiniteVolumesSolver::FiniteVolumesSolver(
     const std::string& identifier,
     const int numberOfVariables,
     const int numberOfParameters,
+    const int numberOfGlobalObservables,
     const int basisSize,
     const int ghostLayerWidth,
     const double maximumMeshSize,
     const exahype::solvers::Solver::TimeStepping timeStepping,
     std::unique_ptr<profilers::Profiler> profiler)
     : Solver(identifier, exahype::solvers::Solver::Type::FiniteVolumes,
-             numberOfVariables, numberOfParameters, basisSize,
+             numberOfVariables, numberOfParameters, numberOfGlobalObservables,
+             basisSize,
              maximumMeshSize, 0,
              timeStepping, std::move(profiler)),
             _previousMinTimeStamp( std::numeric_limits<double>::infinity() ),
@@ -821,7 +823,12 @@ void exahype::solvers::FiniteVolumesSolver::updateSolution(
   validateNoNansInFiniteVolumesSolution(cellDescription,cellDescriptionsIndex,"updateSolution[pre]");
 
   double admissibleTimeStepSize=std::numeric_limits<double>::infinity();
-  solutionUpdate(solution,cellDescription.getSize(),cellDescription.getTimeStepSize(),admissibleTimeStepSize);
+  solutionUpdate(solution,
+		 cellDescription.getOffset() + 0.5*cellDescription.getSize(),
+		 cellDescription.getSize(),
+		 cellDescription.getTimeStamp(),
+		 cellDescription.getTimeStepSize(),
+		 admissibleTimeStepSize);
 
   if ( !tarch::la::equals(cellDescription.getTimeStepSize(), 0.0) && tarch::la::smaller(admissibleTimeStepSize,cellDescription.getTimeStepSize()) ) {
     logWarning("updateSolution(...)","Finite volumes solver time step size harmed CFL condition. dt="<<
@@ -2091,6 +2098,23 @@ bool exahype::solvers::FiniteVolumesSolver::CompressionJob::run() {
     assertion( NumberOfEnclaveJobs.load()>=0 );
   }
   return false;
+}
+
+ void exahype::solvers::FiniteVolumesSolver::reduceGlobalObservables(
+             std::vector<double> &globalObservables,
+    Solver::CellInfo cellInfo, int solverNumber) const {
+   const auto element = cellInfo.indexOfFiniteVolumesCellDescription(solverNumber);
+  if (element != NotFound ) {
+    CellDescription& cellDescription = cellInfo._FiniteVolumesCellDescriptions[element];
+    if (cellDescription.getType() != CellDescription::Type::Cell) {
+      return;
+    }
+    assert(cellDescription.getType()==CellDescription::Type::Cell);
+    double* luh  = static_cast<double*>(cellDescription.getSolution());
+    const auto& dx = cellDescription.getSize();
+    const auto curGlobalObservables = mapGlobalObservables(luh, dx);
+    reduceGlobalObservables(globalObservables, curGlobalObservables);
+  }
 }
 
 ///////////////////////

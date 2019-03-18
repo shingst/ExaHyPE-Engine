@@ -147,6 +147,7 @@ void exahype::mappings::UpdateAndReduce::leaveCell(
         solver->updateMeshUpdateEvent(result._meshUpdateEvent);
         solver->updateAdmissibleTimeStepSize(result._timeStepSize);
       }
+        solver->reduceGlobalObservables(solver->getGlobalObservables(), cellInfo, solverNumber);
     }
 
     Cell::resetNeighbourMergePerformedFlags(cellInfo,fineGridVertices,fineGridVerticesEnumerator);

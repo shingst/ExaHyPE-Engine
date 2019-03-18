@@ -49,6 +49,7 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver {
     double constexpr_getCFLNumber()          const { return CFL; };
     
     bool isLinear() const override { return {{isLinear_s}}; }  
+    bool isUseViscousFlux() const override { return {{useViscousFlux_s}}; }
     
     class VariableMetrics;
     class Variables;
@@ -70,10 +71,10 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver {
       const int DMPObservables
     {% if enableProfiler %},std::unique_ptr<exahype::profilers::Profiler> profiler{% endif %});
     
-    int fusedSpaceTimePredictorVolumeIntegral(double* const lduh,double* const lQhbnd,double* const lFhbnd,double* const luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,const double t,const double dt,const bool addVolumeIntegralResultToUpdate) override;
+    int fusedSpaceTimePredictorVolumeIntegral(double* const lduh,double* const lQhbnd, double* lGradQhbnd, double* const lFhbnd,double* const luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,const double t,const double dt,const bool addVolumeIntegralResultToUpdate) override;
     void addUpdateToSolution(double* const luh,const double* const luhOld,const double* const lduh,const double dt) override;
-    void riemannSolver(double* const FL,double* const FR,const double* const QL,const double* const QR,const double t,const double dt,const int direction, bool isBoundaryFace, int faceIndex) override;
-    void boundaryConditions(double* const fluxIn,const double* const stateIn,const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const int direction,const int orientation) override;
+    void riemannSolver(double* const FL,double* const FR,const double* const QL,const double* const QR,const double t,const double dt, const tarch::la::Vector<DIMENSIONS, double>& lengthScale,const int direction, bool isBoundaryFace, int faceIndex) override;
+    void boundaryConditions(double* const fluxIn,const double* const stateIn,const double* const gradStateIn, const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const int direction,const int orientation) override;
     void faceIntegral(double* const out,const double* const lFhbnd,const int direction, const int orientation,const tarch::la::Vector<DIMENSIONS-1,int>& subfaceIndex,const int levelDelta,const tarch::la::Vector<DIMENSIONS, double>& cellSize,const double dt,const bool addToUpdate) override;    
     double stableTimeStepSize(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& dx) override;
 {% if patchwiseAdjust %}
@@ -126,6 +127,12 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver {
         std::copy_n(Q,NumberOfDMPObservables,observables);
       }
     }
+
+    std::vector<double> mapGlobalObservables(const double* const Q, const tarch::la::Vector<DIMENSIONS, double> &dx) const override;
+    std::vector<double> resetGlobalObservables() const override;
+    void reduceGlobalObservables(
+            std::vector<double>& reducedGlobalObservables,
+            const std::vector<double>& curGlobalObservables) const override;
     
     /**
      * Default implementation. Please overwrite.
@@ -171,8 +178,7 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver {
      * \param[inout] FOut      the normal fluxes at point x from outside of the domain
      *                         and time-averaged (over [t,t+dt]) as C array (already allocated).
      */
-
-    virtual void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double* const fluxIn,const double* const stateIn,double* const fluxOut,double* const stateOut) = 0;
+  virtual void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double * const fluxIn,const double* const stateIn,const double* const gradStateIn, double *fluxOut,double* stateOut) = 0;
 
     /**
      * Adjust the conserved variables and parameters (together: Q) at a given time t at the (quadrature) point x.
@@ -210,11 +216,13 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver {
      * again seperately the nonConservativeProduct function and the algebraicSource
      * function.
      *
+     * \param[in]    x         the physical coordinate
+     * \param[in]    t         the start of the time interval.
      * \param[in]    Q the conserved variables (and parameters) associated with a quadrature point
      *                 as C array (already allocated).
      * \param[inout] S the source point as C array (already allocated).
      */
-    virtual void algebraicSource(const double* const Q,double* const S);
+    virtual void algebraicSource(const tarch::la::Vector<DIMENSIONS, double>& x, double t, const double *const Q, double *S);
     
     /**
      * Compute the nonconservative term $B(Q) \nabla Q$.
