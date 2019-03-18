@@ -228,6 +228,7 @@ void exahype::solvers::FiniteVolumesSolver::kickOffTimeStep(const bool isFirstTi
   }
 
   // call user code
+  _globalObservables = resetGlobalObservables();
   beginTimeStep(_minTimeStamp,isFirstTimeStepOfBatchOrNoBatch);
 }
 
@@ -2100,20 +2101,25 @@ bool exahype::solvers::FiniteVolumesSolver::CompressionJob::run() {
   return false;
 }
 
- void exahype::solvers::FiniteVolumesSolver::reduceGlobalObservables(
-             std::vector<double> &globalObservables,
-    Solver::CellInfo cellInfo, int solverNumber) const {
-   const auto element = cellInfo.indexOfFiniteVolumesCellDescription(solverNumber);
-  if (element != NotFound ) {
-    CellDescription& cellDescription = cellInfo._FiniteVolumesCellDescriptions[element];
-    if (cellDescription.getType() != CellDescription::Type::Cell) {
-      return;
+void exahype::solvers::FiniteVolumesSolver::reduceGlobalObservables(
+    std::vector<double>& globalObservables,
+    Solver::CellInfo     cellInfo,
+    int                  solverNumber) const {
+  if ( !globalObservables.empty() ) {
+    const auto element = cellInfo.indexOfADERDGCellDescription(solverNumber);
+    if (element != NotFound ) {
+      CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[element];
+      const bool isCell = cellDescription.getType() == CellDescription::Type::Cell;
+      if ( isCell ) {
+        assert(cellDescription.getType()==CellDescription::Type::Cell);
+        double* luh  = static_cast<double*>(cellDescription.getSolution());
+        const auto& dx = cellDescription.getSize();
+        const auto curGlobalObservables = mapGlobalObservables(luh, dx);
+        tarch::multicore::Lock lock(ReductionSemaphore);
+        reduceGlobalObservables(globalObservables, curGlobalObservables);
+        lock.free();
+      }
     }
-    assert(cellDescription.getType()==CellDescription::Type::Cell);
-    double* luh  = static_cast<double*>(cellDescription.getSolution());
-    const auto& dx = cellDescription.getSize();
-    const auto curGlobalObservables = mapGlobalObservables(luh, dx);
-    reduceGlobalObservables(globalObservables, curGlobalObservables);
   }
 }
 

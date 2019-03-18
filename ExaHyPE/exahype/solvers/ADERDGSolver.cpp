@@ -5044,25 +5044,24 @@ void exahype::solvers::ADERDGSolver::pullUnknownsFromByteStream(
 }
 
 void exahype::solvers::ADERDGSolver::reduceGlobalObservables(
-        std::vector<double>& globalObservables,
-        CellInfo cellInfo, int solverNumber) const {
-  tarch::multicore::Lock lock(ReductionSemaphore);
-  if (globalObservables.empty()) {
-    return;
-  }
-  const auto element = cellInfo.indexOfADERDGCellDescription(solverNumber);
-  if (element != NotFound ) {
-    CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[element];
-    if (cellDescription.getType() != CellDescription::Type::Cell) {
-      return;
+    const int solverNumber
+    CellInfo& cellInfo) const {
+  if ( !globalObservables.empty() ) {
+    const auto element = cellInfo.indexOfADERDGCellDescription(solverNumber);
+    if (element != NotFound ) {
+      CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[element];
+      const bool isCell = cellDescription.getType() == CellDescription::Type::Cell;
+      if ( isCell ) {
+        assert(cellDescription.getType()==CellDescription::Type::Cell);
+        double* luh  = static_cast<double*>(cellDescription.getSolution());
+        const auto& dx = cellDescription.getSize();
+        const auto curGlobalObservables = mapGlobalObservables(luh, dx);
+        tarch::multicore::Lock lock(ReductionSemaphore);
+        reduceGlobalObservables(globalObservables, curGlobalObservables);
+        lock.free();
+      }
     }
-    assert(cellDescription.getType()==CellDescription::Type::Cell);
-    double* luh  = static_cast<double*>(cellDescription.getSolution());
-    const auto& dx = cellDescription.getSize();
-    const auto curGlobalObservables = mapGlobalObservables(luh, dx);
-    reduceGlobalObservables(globalObservables, curGlobalObservables);
   }
-  lock.free();
 }
 
 ///////////////////////

@@ -1538,13 +1538,13 @@ void updateNextGlobalObservables(
  std::vector<double> mapGlobalObservables(const double* const Q, const tarch::la::Vector<DIMENSIONS, double> &dx) const override;
  std::vector<double> resetGlobalObservables() const override;
  void reduceGlobalObservables(
-                           std::vector<double>& reducedGlobalObservables,
-                           const std::vector<double>& curGlobalObservables) const override;
+     std::vector<double>& reducedGlobalObservables,
+     const std::vector<double>& curGlobalObservables) const override;
 
   using Solver::reduceGlobalObservables;
-  void reduceGlobalObservables(std::vector<double>& globalObservables,
-                           Solver::CellInfo cellInfo,
-                           int solverNumber) const override;
+  void reduceGlobalObservables(
+      const int solverNumber,
+      Solver::CellInfo cellInfo,) const override;
 
   ///////////////////////
   // PROFILING

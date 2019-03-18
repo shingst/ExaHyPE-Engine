@@ -2277,10 +2277,10 @@ public:
   void compress( CellDescription& cellDescription, const bool isSkeletonCell ) const;
 
   using Solver::reduceGlobalObservables;
-  void reduceGlobalObservables(std::vector<double>& globalObservables,
-                               CellInfo cellInfo,
-                               int solverNumber) const override;
-  
+  void reduceGlobalObservables(
+      const int solverNumber,
+      CellInfo& cellInfo) const final override;
+
   ///////////////////////
   // PROFILING
   ///////////////////////

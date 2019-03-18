@@ -156,10 +156,16 @@ bool exahype::solvers::LimitingADERDGSolver::isMergingMetadata(
 
 void exahype::solvers::LimitingADERDGSolver::kickOffTimeStep(const bool isFirstTimeStepOfBatchOrNoBatch) {
   _solver->kickOffTimeStep(isFirstTimeStepOfBatchOrNoBatch);
+  _limiter->kickOffTimeStep(isFirstTimeStepOfBatchOrNoBatch);
 }
 
 void exahype::solvers::LimitingADERDGSolver::wrapUpTimeStep(const bool isFirstTimeStepOfBatchOrNoBatch,const bool isLastTimeStepOfBatchOrNoBatch) {
   _solver->wrapUpTimeStep(isFirstTimeStepOfBatchOrNoBatch,isLastTimeStepOfBatchOrNoBatch);
+  _limiter->wrapUpTimeStep(isFirstTimeStepOfBatchOrNoBatch,isLastTimeStepOfBatchOrNoBatch);
+  _globalObservables.clear();
+  _globalObservables.reserve(
+  std::copy(_solver->getGlobalObservables().begin(),_solver->getGlobalObservables().end(),getGlobalObservables().begin());
+
 }
 
 void exahype::solvers::LimitingADERDGSolver::synchroniseTimeStepping(
@@ -1888,41 +1894,34 @@ std::vector<double> exahype::solvers::LimitingADERDGSolver::resetGlobalObservabl
 }
 
 void exahype::solvers::LimitingADERDGSolver::reduceGlobalObservables(
-            std::vector<double>& reducedGlobalObservables,
+            std::vector<double>&       reducedGlobalObservables,
             const std::vector<double>& curGlobalObservables) const {
   _solver->reduceGlobalObservables(reducedGlobalObservables, curGlobalObservables);
 }
 
 void exahype::solvers::LimitingADERDGSolver::reduceGlobalObservables(
-    std::vector<double> &globalObservables,
-    Solver::CellInfo cellInfo, int solverNumber) const {
-  tarch::multicore::Lock lock(ReductionSemaphore);
-  if (globalObservables.empty()) {
-    return;
-  }
+    const int         solverNumber,
+    Solver::CellInfo& cellInfo) const {
+  if ( !getGlobalObservables().empty() ) {
+    const int solverElement = cellInfo.indexOfADERDGCellDescription(solverNumber);
+    if ( solverElement != NotFound ) {
+      SolverPatch& solverPatch = cellInfo._ADERDGCellDescriptions[solverElement];
 
-  const int solverElement = cellInfo.indexOfADERDGCellDescription(solverNumber);
-  if (solverElement != NotFound ) {
-    SolverPatch& solverPatch = cellInfo._ADERDGCellDescriptions[solverElement];
+      const bool isCell                         = solverPatch.getType==SolverPatch::Type::Cell;
+      const bool isTroubledCellWithLimiterPatch = isCell &&
+          solverPatch.getRefinementStatus()>=_solver->_minRefinementStatusForTroubledCell &&
+          solverPatch.getPreviousRefinementStatus()>=_solver->_minRefinementStatusForTroubledCell-2;
 
-    // TODO(Lukas) Maybe use previous refinement status? Depends on update time.
-    //   bool isUnlimited = solverPatch.getPreviousRefinementStatus() < _solver->getMinRefinementStatusForBufferCell();
-    return;
-    bool isUnlimited = true; // TODO(Lukas) Fix this!
-    if (isUnlimited) {
-      // Solution is saved in DG-Space.
-      // TODO(Lukas) Maybe pass solverPatch directly?
-      _solver->reduceGlobalObservables(globalObservables, cellInfo, solverNumber);
-    } else {
-      const int limiterElement = cellInfo.indexOfFiniteVolumesCellDescription(solverNumber);
-      assertion1(limiterElement != NotFound, "Limiter element not found!");
-      if (limiterElement != NotFound) {
+      if ( isTroubledCellWithLimiterPatch ) {
+        const int limiterElement = cellInfo.indexOfFiniteVolumesCellDescription(solverNumber);
+        assertion1(limiterElement != NotFound, "Limiter element not found!");
         LimiterPatch& limiterPatch = cellInfo._FiniteVolumesCellDescriptions[limiterElement];
-        _limiter->reduceGlobalObservables(globalObservables, cellInfo, solverNumber);
+        _limiter->reduceGlobalObservables(solverNumber,cellInfo); // call must be thread-safe
+      } else if ( isCell ) {
+        _solver->reduceGlobalObservables(cellInfo, solverNumber); // call must be thread-safe
       }
     }
   }
-  lock.free();
 }
 
 exahype::solvers::Solver::CellProcessingTimes exahype::solvers::LimitingADERDGSolver::measureCellProcessingTimes(const int numberOfRuns) {
