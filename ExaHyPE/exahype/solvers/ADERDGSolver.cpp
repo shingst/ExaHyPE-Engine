@@ -4491,12 +4491,12 @@ void exahype::solvers::ADERDGSolver::submitOrSendStealablePredictionJob(Stealabl
          luh,
          lduh,
          lQhbnd,
-	     lFhbnd,
+	 lFhbnd,
          destRank,
-	     tag,
-		 exahype::stealing::StealingManager::getInstance().getMPICommunicator(),
-	     sendRequests,
-	     metadata);
+	 tag,
+	 exahype::stealing::StealingManager::getInstance().getMPICommunicator(),
+	 sendRequests,
+	 metadata);
 
      //logInfo("submitOrSendStealablePredictionJob"," there is "<<tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs()<<" background job ");
 
@@ -4526,7 +4526,7 @@ void exahype::solvers::ADERDGSolver::submitOrSendStealablePredictionJob(Stealabl
      delete job;
   }
   else {
-    peano::datatraversal::TaskSet spawnedSet( job, peano::datatraversal::TaskSet::TaskType::Background );
+    peano::datatraversal::TaskSet spawnedSet( job );
   }
 }
 
@@ -4913,15 +4913,17 @@ bool exahype::solvers::ADERDGSolver::ReceiveJob::operator()() {
   return false;
 }
 
-exahype::solvers::ADERDGSolver::StealingManagerJob::StealingManagerJob(ADERDGSolver& solver)
-: _solver(solver), _state(State::Running) {}
+exahype::solvers::ADERDGSolver::StealingManagerJob::StealingManagerJob(ADERDGSolver& solver) :
+  tarch::multicore::jobs::Job(tarch::multicore::jobs::JobType::BackgroundTask, 0, tarch::multicore::DefaultPriority),
+  _solver(solver),
+  _state(State::Running) {}
 
 exahype::solvers::ADERDGSolver::StealingManagerJob::~StealingManagerJob() {}
 
-bool exahype::solvers::ADERDGSolver::StealingManagerJob::operator()() {
+/*bool exahype::solvers::ADERDGSolver::StealingManagerJob::operator()() {
   return run();
   //return true;
-}
+}*/
 
 tbb::task* exahype::solvers::ADERDGSolver::StealingManagerJob::execute() {
    while(run()) {};
@@ -4976,7 +4978,7 @@ void exahype::solvers::ADERDGSolver::startStealingManager() {
   tbb::task::enqueue(*_stealingManagerJob);
 #else
   _stealingManagerJob = new StealingManagerJob(*this);
-  peano::datatraversal::TaskSet spawnedSet(_stealingManagerJob, peano::datatraversal::TaskSet::TaskType::Background);
+  peano::datatraversal::TaskSet spawnedSet(_stealingManagerJob);
   //peano::datatraversal::TaskSet spawnedSet(_stealingManagerJob, peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible);
 #endif
 }
@@ -5202,6 +5204,7 @@ exahype::solvers::ADERDGSolver::StealablePredictionJob::StealablePredictionJob(
     const int element,
     const double predictorTimeStamp,
     const double predictorTimeStepSize) :
+       tarch::multicore::jobs::Job(tarch::multicore::jobs::JobType::BackgroundTask, 0, tarch::multicore::DefaultPriority),  //this is a locally executed job
         _solver(solver),
         _cellDescriptionsIndex(cellDescriptionsIndex),
         _element(element),
@@ -5229,6 +5232,7 @@ exahype::solvers::ADERDGSolver::StealablePredictionJob::StealablePredictionJob(
 	double *center,
     const int originRank,
     const int tag) :
+       tarch::multicore::jobs::Job(tarch::multicore::jobs::JobType::BackgroundTask, 0, tarch::multicore::DefaultPriority/4), //this is a remotely executed job -> high priority
         _solver(solver),
         _cellDescriptionsIndex(cellDescriptionsIndex),
         _element(element),
@@ -5254,7 +5258,7 @@ exahype::solvers::ADERDGSolver::StealablePredictionJob::StealablePredictionJob(
 exahype::solvers::ADERDGSolver::StealablePredictionJob::~StealablePredictionJob() {};
 
 //Caution: Compression and restriction are not supported yet!
-bool exahype::solvers::ADERDGSolver::StealablePredictionJob::operator()() {
+bool exahype::solvers::ADERDGSolver::StealablePredictionJob::run() {
 
 #ifdef USE_ITAC
       VT_begin(event_stp);
@@ -5347,13 +5351,13 @@ bool exahype::solvers::ADERDGSolver::StealablePredictionJob::handleLocalExecutio
     MPI_Request sendBackRequests[4];
     //logInfo("handleLocalExecution()", "postSendBack");
     _solver.isendStealablePredictionJob(_luh,
-    		                            _lduh,
-										_lQhbnd,
-										_lFhbnd,
-										_originRank,
-										_tag,
-										exahype::stealing::StealingManager::getInstance().getMPICommunicatorMapped(),
-									    sendBackRequests);
+    		                        _lduh,
+					_lQhbnd,
+				        _lFhbnd,
+					_originRank,
+					_tag,
+					exahype::stealing::StealingManager::getInstance().getMPICommunicatorMapped(),
+					sendBackRequests);
     exahype::stealing::StealingManager::getInstance().submitRequests(sendBackRequests, 4, _tag, _originRank, sendBackHandler, exahype::stealing::RequestType::sendBack, &_solver);
 
 #if defined(PerformanceAnalysisStealing)
@@ -5392,7 +5396,7 @@ void exahype::solvers::ADERDGSolver::StealablePredictionJob::receiveHandler(exah
   a_tagRankToData.release();
 
   StealablePredictionJob *job= static_cast<exahype::solvers::ADERDGSolver*> (solver)->createFromData(data, remoteRank, tag);
-  peano::datatraversal::TaskSet spawnedSet(job, peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible);
+  peano::datatraversal::TaskSet spawnedSet(job);
 
   exahype::stealing::StealingProfiler::getInstance().notifyReceivedTask(remoteRank);
 }

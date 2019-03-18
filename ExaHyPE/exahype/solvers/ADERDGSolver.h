@@ -855,7 +855,7 @@ private:
 #ifdef StealingUseProgressThread
   class StealingManagerJob : public tbb::task{
 #else
-  class StealingManagerJob{
+  class StealingManagerJob : public tarch::multicore::jobs::Job {
 #endif
     public:
       enum class State {
@@ -866,7 +866,6 @@ private:
 	  ~StealingManagerJob();
 	  bool run();
           tbb::task* execute();
-          bool operator()();
 	  void terminate();
     private:
 	  ADERDGSolver& _solver;
@@ -920,7 +919,7 @@ private:
    * executed remotely on a different rank than the one were it
    * was spawned.
    */
-  class StealablePredictionJob {
+  class StealablePredictionJob : public tarch::multicore::jobs::Job {
     friend class exahype::solvers::ADERDGSolver;
     private:
       ADERDGSolver&    				_solver;
@@ -960,7 +959,7 @@ private:
 		  double *luh, double *lduh,
 		  double *lQhbnd, double *lFhbnd,
 		  double *dx, double *center,
-          const int originRank,
+                  const int originRank,
 		  const int tag
       );
   
@@ -988,7 +987,7 @@ private:
 		  int tag,
 		  int rank);
 
-      bool operator()();
+      bool run() override;
   };
 
   /**

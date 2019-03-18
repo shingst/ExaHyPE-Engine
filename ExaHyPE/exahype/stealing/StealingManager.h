@@ -129,11 +129,11 @@ class exahype::stealing::StealingManager {
         bool operator()();
     };
 
-    class ProgressJob
+    class ProgressJob : public tarch::multicore::jobs::Job
     {
       public:
         ProgressJob();
-        bool operator()();
+        bool run() override;
     };
 
     class ProgressSendJob

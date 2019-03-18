@@ -173,7 +173,7 @@ void exahype::stealing::StealingManager::submitRequests(
     logInfo("submitRequests()", "spawning progress job (high priority)");
     _numProgressJobs++;
     ProgressJob *job = new ProgressJob();
-    peano::datatraversal::TaskSet spawnedSet( job, peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible);
+    peano::datatraversal::TaskSet spawnedSet( job);
   }
  /* if(type==RequestType::send && _numProgressSendJobs==0) {
     logInfo("submitRequests()", "spawning progress send job (high priority)");
@@ -627,9 +627,11 @@ bool exahype::stealing::StealingManager::RequestHandlerJob::operator()() {
 }
 
 
-exahype::stealing::StealingManager::ProgressJob::ProgressJob() {}
+exahype::stealing::StealingManager::ProgressJob::ProgressJob() :
+   tarch::multicore::jobs::Job(tarch::multicore::jobs::JobType::BackgroundTask, 0, -2)
+ {}
 
-bool exahype::stealing::StealingManager::ProgressJob::operator()() {
+bool exahype::stealing::StealingManager::ProgressJob::run() {
    int flag;
    logInfo("submitRequests()", "executing progress job (high priority)");
 

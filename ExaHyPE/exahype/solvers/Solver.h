@@ -52,6 +52,7 @@
 #include "exahype/records/FiniteVolumesCellDescription.h"
 
 #include <functional>
+#include <limits>
 
 #if defined(CompilerICC) && defined(SharedTBB)
 // See: https://www.threadingbuildingblocks.org/tutorial-intel-tbb-scalable-memory-allocator
@@ -1224,7 +1225,7 @@ class exahype::solvers::Solver {
 #endif
        }
 #endif
-     }
+     //}
    }
 #if defined(DistributedStealing) && !defined(StealingUseProgressThread)
    exahype::solvers::ADERDGSolver::setMaxNumberOfIprobesInProgressStealing( std::numeric_limits<int>::max() );
@@ -1237,7 +1238,7 @@ class exahype::solvers::Solver {
 
 
 #ifdef USE_ITAC
-	  VT_end(waitUntilCompletedLastStepHandle);
+   VT_end(waitUntilCompletedLastStepHandle);
 #endif
  }
 
