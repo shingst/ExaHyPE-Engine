@@ -8,7 +8,7 @@ which $ffmpeg &>/dev/null || { echo -e "Suitable ffmpeg version not found"; exit
 for movie in "$@"; do
 
 threads=$(nproc)
-time $ffmpeg -i $movie  -acodec libvorbis -aq 5 -ac 1 -qmax 25 -threads $threads ${movie%.*}.webm &
+time $ffmpeg -i "$movie"  -acodec libvorbis -aq 5 -ac 1 -qmax 25 -threads $threads "${movie%.*}.webm" &
 
 done
 wait

@@ -61,7 +61,7 @@ class ConfigurationParametersModel(AbstractModelBaseClass):
         self.context["gradQSize"] =   -1
         self.context["PSiSize"]   =   -1
         if self.context["isLinear"]:
-            if(self.context["useSplitCK"]):
+            if(self.context["useSplitCKScalar"]):
                 # Linear + split CK
                 self.context["lQiSize"]   = nVarPad*(nDof**nDim)
                 self.context["lQiNextSize"] = nVarPad*(nDof**nDim)
@@ -70,6 +70,15 @@ class ConfigurationParametersModel(AbstractModelBaseClass):
                 self.context["lFhiSize"]  = nVarPad*(nDof**nDim)
                 self.context["gradQSize"] = nVarPad*(nDof**nDim)
                 self.context["PSiSize"]   = nDof*(nDof**nDim)*nVarPad
+            elif(self.context["useSplitCKVect"]):
+                # Linear + split CK
+                self.context["lQiSize"]   = nDof3D*nDof*nVar*nDofPad
+                self.context["lQiNextSize"] = nDof3D*nDof*nVar*nDofPad
+                self.context["lPiSize"]   = nDof3D*nDof*nPar*nDofPad
+                self.context["lQhiSize"]  = nDof3D*nDof*nVar*nDofPad
+                self.context["lFhiSize"]  = nDof3D*nDof*nVar*nDofPad
+                self.context["gradQSize"] = nDof3D*nDof*nVar*nDofPad
+                self.context["PSiSize"]   = nDof*nDof3D*nDof*nVar*nDofPad
             else: 
                 # default linear
                 self.context["lQiSize"]   = nDataPad*(nDof**nDim)*(1+nDof)

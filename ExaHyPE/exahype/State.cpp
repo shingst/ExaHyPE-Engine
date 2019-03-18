@@ -24,6 +24,8 @@
 
 #include <limits>
 
+#include "exahype/mappings/MeshRefinement.h"
+
 tarch::logging::Log exahype::State::_log("exahype::State");
 
 int exahype::State::CurrentBatchIteration   = 0;
@@ -48,39 +50,37 @@ bool exahype::State::getVerticalExchangeOfSolverDataRequired() const {
   return _stateData.getVerticalExchangeOfSolverDataRequired();
 }
 
-/**
- * \see exahype/State.def
- */
-void exahype::State::setAllSolversAttainedStableStateInPreviousIteration(const bool state) {
-  _stateData.setAllSolversAttainedStableStateInPreviousIteration(state);
-}
-/**
- * \see exahype/State.def
- */
-bool exahype::State::getAllSolversAttainedStableStateInPreviousIteration() const {
-  return _stateData.getAllSolversAttainedStableStateInPreviousIteration();
+void exahype::State::setAllSolversAttainedStableState(const bool state) {
+  _stateData.setAllSolversAttainedStableState(state);
 }
 
-/**
- * \see exahype/State.def
- */
-void exahype::State::setMeshRefinementHasConverged(const bool state) {
-  _stateData.setMeshRefinementHasConverged(state);
+bool exahype::State::getAllSolversAttainedStableState() const {
+  return _stateData.getAllSolversAttainedStableState();
 }
-/**
- * \see exahype/State.def
- */
-bool exahype::State::getMeshRefinementHasConverged() const {
-  return _stateData.getMeshRefinementHasConverged();
+
+void exahype::State::setMeshRefinementIsInRefiningMode(const bool state) {
+  _stateData.setMeshRefinementIsInRefiningMode(state);
+}
+
+bool exahype::State::getMeshRefinementIsInRefiningMode() const {
+  return _stateData.getMeshRefinementIsInRefiningMode();
+}
+
+void exahype::State::setStableIterationsInARow(const int value) {
+  _stateData.setStableIterationsInARow(value);
+}
+
+int exahype::State::getStableIterationsInARow() const {
+  return _stateData.getStableIterationsInARow();
 }
 
 void exahype::State::mergeWithMaster(const exahype::State& anotherState) {
   _stateData.setVerticalExchangeOfSolverDataRequired(
       _stateData.getVerticalExchangeOfSolverDataRequired() ||
       anotherState._stateData.getVerticalExchangeOfSolverDataRequired());
-  _stateData.setAllSolversAttainedStableStateInPreviousIteration(
-      _stateData.getAllSolversAttainedStableStateInPreviousIteration() &&
-      anotherState._stateData.getAllSolversAttainedStableStateInPreviousIteration());
+  _stateData.setAllSolversAttainedStableState(
+      _stateData.getAllSolversAttainedStableState() &&
+      anotherState._stateData.getAllSolversAttainedStableState());
 }
 
 void exahype::State::writeToCheckpoint(
@@ -191,8 +191,41 @@ exahype::State::RefinementAnswer exahype::State::mayRefine(bool isCreationalEven
 }
 
 
-bool exahype::State::continueToConstructGrid() const {
-  return !_stateData.getMeshRefinementHasConverged();
+bool exahype::State::continueToConstructGrid() {
+  static const int iterationsForErasingToConverge =
+      exahype::solvers::Solver::getMaximumAdaptiveMeshLevelOfAllSolvers() -
+      exahype::solvers::Solver::getCoarsestMeshLevelOfAllSolvers();
+  static const int iterationsForRefiningToConverge =
+      iterationsForErasingToConverge +
+      std::max(exahype::solvers::Solver::getMaxRefinementStatus(),1);
+
+  // convergence analysis
+  if ( getAllSolversAttainedStableState() ) {
+    setStableIterationsInARow( getStableIterationsInARow()+1 );
+    if (  getMeshRefinementIsInRefiningMode() &&
+        getStableIterationsInARow() > iterationsForRefiningToConverge ) {
+      setMeshRefinementIsInRefiningMode(false);
+    }
+  } else {
+    setStableIterationsInARow(0);
+  }
+  const bool meshRefinementHasConverged =
+      isGridBalanced()                     &&
+      !getMeshRefinementIsInRefiningMode() &&
+      (mappings::MeshRefinement::IsInitialMeshRefinement ||
+          getStableIterationsInARow() > iterationsForErasingToConverge);
+
+  if (!meshRefinementHasConverged) {
+    logInfo( "continueToConstructGrid(...)",
+        "grid construction not yet finished. grid balanced=" << isGridBalanced() <<
+        ", grid stationary=" << isGridStationary() <<
+        ", still in refining mode=" << getMeshRefinementIsInRefiningMode() <<
+        ", initial refinement=" << mappings::MeshRefinement::IsInitialMeshRefinement <<
+        ", stable iterations in a row=" << getStableIterationsInARow() <<
+        ", all solvers attained stable state=" << getAllSolversAttainedStableState()
+    );
+  }
+  return !meshRefinementHasConverged;
 }
 
 bool exahype::State::isEvenBatchIteration() {

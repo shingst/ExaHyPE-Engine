@@ -14,7 +14,7 @@ exahype::solvers::ADERDGSolver::PredictionJob::PredictionJob(
     const bool       uncompressBefore,
     const bool       isSkeletonJob,
     const bool       addVolumeIntegralResultToUpdate):
-    tarch::multicore::jobs::Job(Solver::getTaskType(isSkeletonJob),0),
+    tarch::multicore::jobs::Job(tarch::multicore::jobs::JobType::BackgroundTask,0,getTaskPriority(isSkeletonJob)),
     _solver(solver),
     _cellDescription(cellDescription),
     _cellDescriptionsIndex(cellDescriptionsIndex),

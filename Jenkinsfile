@@ -63,6 +63,9 @@ pipeline {
         }
     post {
 	always {
+            script{
+              email = load "Miscellaneous/Jenkins/Email.groovy"
+            }
 	    cleanWs()
 	}
 	success {
@@ -70,6 +73,14 @@ pipeline {
 	}
 	failure {
 	    updateGitlabCommitStatus(name: BRANCH_NAME, state: 'failed')
+            script {
+              if ( GIT_BRANCH == "master" ){     
+                emailext body:email.body(),
+                subject:email.subject(),
+                to:'''exahype_jenkins@mailsccs.informatik.tu-muenchen.de''',
+                from:'''di57wuf@lrz.tu-muenchen.de'''
+              }
+            }
 	}
     }
     options {

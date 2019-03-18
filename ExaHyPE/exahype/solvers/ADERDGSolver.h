@@ -2594,6 +2594,32 @@ public:
       const tarch::la::Vector<DIMENSIONS,double>& dx,
       const double                                timeStamp) const = 0;
 
+
+  /**
+   * With this function the discrete maximum principle's decision that
+   * a cell is troubled can be vetoed.
+   *
+   * @note this function is only called if the DMP indicated a troubled cell.
+   *
+   * @param[in] solution                      all of the cell's solution values
+   * @param[in] localObservablesMin           the minimum value of the cell local observables.
+   * @param[in] localObservablesMax           the maximum value of the cell local observables.
+   * @param[in] wasTroubledInPreviousTimeStep indicates if the cell was troubled in a previous time step
+   * @param[in] center                        cell center
+   * @param[in] dx                            cell extents
+   * @param[in] timeStamp                     post-update time stamp during time stepping.  Current time stamp during the mesh refinement iterations.
+   *
+   * @return true if the DMP's decision that the cell is troubled should be ignored.
+   */
+  virtual bool vetoDiscreteMaximumPrincipleDecision(
+      const double* const                         solution,
+      const double* const                         localObservablesMin,
+      const double* const                         localObservablesMax,
+      const bool                                  wasTroubledInPreviousTimeStep,
+      const tarch::la::Vector<DIMENSIONS,double>& center,
+      const tarch::la::Vector<DIMENSIONS,double>& dx,
+      const double                                timeStamp) const = 0;
+
   /**
    * Maps the solution values Q to
    * the discrete maximum principle observables.

@@ -10,7 +10,7 @@ exahype::solvers::FiniteVolumesSolver::UpdateJob::UpdateJob(
   CellDescription& cellDescription,
   CellInfo&        cellInfo,
   const bool       isAtRemoteBoundary):
-  tarch::multicore::jobs::Job(tarch::multicore::jobs::JobType::RunTaskAsSoonAsPossible,0), // !! always high priority
+  tarch::multicore::jobs::Job(tarch::multicore::jobs::JobType::BackgroundTask,0,getHighPrioritiesJobTaskPriority()),
   _solver(solver),
   _cellDescription(cellDescription),
   _cellInfo(cellInfo),

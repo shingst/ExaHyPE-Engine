@@ -267,28 +267,43 @@ class exahype::parser::Parser {
   bool compareMPILoadBalancingStrategy(const std::string& strategy) const;
 
   /**
-   * @return if the bounding box should be scaled
-   * such that exactly two cells lie outside of the domain in
-   * each coordinate direction.
-   *
+   * @return the number of forks the load balancing
+   * mapping is allowed to trigger per mesh refinement iteration.
+   */
+  int getMaxForksPerLoadBalancingStep() const;
+
+  /**
    * @note It is important to scale the bounding box if MPI
    * experiments are run as this prevents communication
    * with rank 0. More importantly, it prevents that the
-   * global master traverses its outside cells.
+   * global master has too many outside cells which it traverses
+   * before and after sending a kick off message to its workers.
    *
-   * If the global master has too many outside cells
-   *
-   * @note We scale the bounding box by default.
+   * @return number of cells placed outside of the domain per coordinate axis.
    */
-  bool getScaleBoundingBox() const;
+  int getOutsideCells() const;
 
   /**
-   * 2+3*i cells are placed outside of the domain per coordinate axis if
-   * the bounding box is scaled.
-   *
-   * @return the multiplier i which should be used.
+   * @return number of outside cells which should be placed on the "left" side
+   * in each coordinate direction. Default is getOutsideCells()/2.
    */
-  int getScaleBoundingBoxMultiplier() const;
+  int getOutsideCellsLeft() const;
+
+  /**
+   * Places one third of the bounding box cells per coordinate direction (plus 2 cells)
+   * outside of the domain.
+   *
+   * This way we can put 2^d ranks on the coarsest grid (cubic domains).
+   * This flag overrules the 'outside_cells' and 'outside_cells_left' parameters.
+   *
+   * @return true if the feature is enabled.
+   */
+  bool getPlaceOneThirdOfCellsOuside() const;
+
+  /**
+   * @return if the bounding box is scaled in any way.
+   */
+  bool getScaleBoundingBox() const;
 
   int getMPIBufferSize() const;
 
@@ -612,28 +627,10 @@ class exahype::parser::Parser {
   int getNumberOfBackgroundJobConsumerTasks();
 
   /**
-   * @return If multiple high priority background jobs should be consumed in a rush
-   * or if they should be processed one at a time.
+   * @return Return if every job should be directly mapped to a task.
    */
-  bool getProcessHighPriorityBackgroundJobsInAnRush();
+  bool getMapBackgroundJobsToTasks();
 
-  /**
-   * @return Return if every single high priority job should be spawned
-   * as a task.
-   */
-  bool getSpawnHighPriorityBackgroundJobsAsATask();
-
-  /**
-   * @return Return if every single low priority job should be spawned
-   * as a task.
-   */
-  bool getSpawnLowPriorityBackgroundJobsAsATask();
-
-  /**
-   * @return If the consumer tasks should process any low priority tasks
-   * if there are still high priority tasks left.
-   */
-  bool getRunLowPriorityJobsOnlyIfNoHighPriorityJobIsLeft();
   /**
    * @return Minimum number of background jobs a consumer grabs from the queue in a single rush (default: 1).
    */

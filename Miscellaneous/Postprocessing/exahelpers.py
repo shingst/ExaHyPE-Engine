@@ -41,6 +41,15 @@ cleandoc = lambda obj: inspect.cleandoc(obj.__doc__) if obj.__doc__ else None
 def is_headless():
 	return not 'DISPLAY' in os.environ
 
+def is_xml_file(fname):
+	"""
+	Determine whether a file is XML (VTU) or not (VTK) by inspecting
+	the first character.
+	"""
+	with open(fname) as unknown_file:
+		c = unknown_file.read(1)
+		return c == '<'
+
 class fileformat:
 	"""
 	A class representing a number of functions to read in or
@@ -119,8 +128,13 @@ def vectorize_concatenate(func):
 				return func(fnames[0], *args_without_fname, **kwargs)
 
 			outputs = [func(f, *args_without_fname, **kwargs) for i,f in enumerate(fnames)]
-			# vstack does not really work (any more, for some reason) for my
-			# recarrays.
+			# filter out "None" outputs which are invalid
+			outputs = [o for o in outputs if o is not None]
+			if len(outputs) == 0:
+				logger.error("There where no data which can be concatenated.")
+				return None
+			# vstack does not really work (any more, for some reason) for my recarrays.
+			# Note: This works for my old test data pretty well.
 			whateverworks = 1
 			if whateverworks == 1:
 				return np.vstack(tuple(outputs)).flatten()
@@ -132,6 +146,27 @@ def vectorize_concatenate(func):
 		else:
 			return func(*args, **kwargs)
 	return func_wrapper
+
+def find_nearest(array, value):
+	"Comes from https://stackoverflow.com/a/2566508/1656042"
+	array = np.asarray(array)
+	idx = (np.abs(array - value)).argmin()
+	return array[idx]
+
+def close_mask(array, value):
+	"""
+	Will give a mask of all entries which are as close to the required value
+	as the nearest value in the list, but with the same sign. Example:
+	
+	>>> close_mask([1,2,-2,-1], 0)
+	array([ True, False, False, False])
+	"""
+	array = np.asarray(array)
+	nearest = find_nearest(array, value)
+	if nearest < value:
+		return (nearest <= array)&(array <= value)
+	else:
+		return (value <= array)&(array <= nearest)
 
 class ExaVerbosity:
 	"""

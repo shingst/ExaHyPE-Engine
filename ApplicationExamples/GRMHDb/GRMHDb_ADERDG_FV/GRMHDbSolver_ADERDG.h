@@ -191,6 +191,21 @@ class GRMHDb::GRMHDbSolver_ADERDG : public GRMHDb::AbstractGRMHDbSolver_ADERDG {
 		const tarch::la::Vector<DIMENSIONS, double>& dx,
 		const double t) const override;
 
+	/**
+	 * Default implementation. Please overwrite.
+	 *
+	 * See superclass for function's semantics.
+	 */
+	bool vetoDiscreteMaximumPrincipleDecision(
+		const double* const                         solution,
+		const double* const                         localObservablesMin,
+		const double* const                         localObservablesMax,
+		const bool                                  wasTroubledInPreviousTimeStep,
+		const tarch::la::Vector<DIMENSIONS, double>& center,
+		const tarch::la::Vector<DIMENSIONS, double>& dx,
+		const double                                timeStamp) const override;
+
+
 #ifdef OPT_KERNELS
 	void riemannSolver(double* const FL, double* const FR, const double* const QL, const double* const QR, const double t, const double dt, const int direction, bool isBoundaryFace, int faceIndex) override;
 #else

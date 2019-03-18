@@ -14,10 +14,10 @@ exahype::solvers::LimitingADERDGSolver::FusedTimeStepJob::FusedTimeStepJob(
   const bool            isLastTimeStepOfBatch,
   const bool            isSkeletonJob):
   tarch::multicore::jobs::Job(
-      isLastTimeStepOfBatch ?
-          tarch::multicore::jobs::JobType::RunTaskAsSoonAsPossible :
-          Solver::getTaskType(isSkeletonJob),
-  0),
+    tarch::multicore::jobs::JobType::BackgroundTask,
+	0,
+	isLastTimeStepOfBatch ? tarch::multicore::DefaultPriority / 8 : tarch::multicore::DefaultPriority
+  ),
   _solver(solver),
   _solverPatch(solverPatch),
   _cellInfo(cellInfo),

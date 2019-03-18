@@ -46,6 +46,10 @@ update_Peano() {
 			cd "$scriptDir" #move back
 		fi
 	fi
+        cd $pathToTopLevel
+        cd Toolkit
+        ln -sf $pathToTopLevel/Submodules/Peano/src/peano/performanceanalysis/domaindecompositionanalysis.py .
+        cd $scriptDir
 }
 
 update_others() {

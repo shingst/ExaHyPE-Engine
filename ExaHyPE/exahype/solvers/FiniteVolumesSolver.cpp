@@ -916,8 +916,8 @@ void exahype::solvers::FiniteVolumesSolver::mergeNeighboursData(
        uncompress(cellDescription2);
        return false;
      },
-     peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
-     peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
+     peano::datatraversal::TaskSet::TaskType::Background,
+     peano::datatraversal::TaskSet::TaskType::Background,
      true
      );
     }
@@ -996,8 +996,10 @@ void exahype::solvers::FiniteVolumesSolver::sendCellDescriptions(
       if ( !cellDescription.getHasCompletedLastStep() ) {
         peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
       }
+      int numberOfBackgroundJobsToProcess = 1;
       while ( !cellDescription.getHasCompletedLastStep() ) {
-        tarch::multicore::jobs::processBackgroundJobs(1);
+        tarch::multicore::jobs::processBackgroundJobs(numberOfBackgroundJobsToProcess);
+        numberOfBackgroundJobsToProcess++;
       }
     }
     Heap::getInstance().sendData(cellDescriptionsIndex,toRank,x,level,messageType);
@@ -1683,9 +1685,9 @@ void exahype::solvers::FiniteVolumesSolver::putUnknownsIntoByteStream(
       );
       return false;
       },
-	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
-	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
-	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
+	peano::datatraversal::TaskSet::TaskType::Background,
+	peano::datatraversal::TaskSet::TaskType::Background,
+	peano::datatraversal::TaskSet::TaskType::Background,
     true
   );
 
@@ -1813,9 +1815,9 @@ void exahype::solvers::FiniteVolumesSolver::putUnknownsIntoByteStream(
       }
       return false;
     },
-	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
-	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
-	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
+	peano::datatraversal::TaskSet::TaskType::Background,
+	peano::datatraversal::TaskSet::TaskType::Background,
+	peano::datatraversal::TaskSet::TaskType::Background,
     true
   );
 }
@@ -1923,9 +1925,9 @@ void exahype::solvers::FiniteVolumesSolver::pullUnknownsFromByteStream(
       }
       return false;
     },
-	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
-	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
-	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
+	peano::datatraversal::TaskSet::TaskType::Background,
+	peano::datatraversal::TaskSet::TaskType::Background,
+	peano::datatraversal::TaskSet::TaskType::Background,
 	true
   );
 }
@@ -2070,7 +2072,7 @@ exahype::solvers::FiniteVolumesSolver::CompressionJob::CompressionJob(
   CellDescription&           cellDescription,
   const bool                 isSkeletonJob)
   :
-  tarch::multicore::jobs::Job(Solver::getTaskType(isSkeletonJob),0),
+  tarch::multicore::jobs::Job(tarch::multicore::jobs::JobType::BackgroundTask,0,getTaskPriority(isSkeletonJob)),
   _solver(solver),
   _cellDescription(cellDescription),
   _isSkeletonJob(isSkeletonJob) {

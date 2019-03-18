@@ -237,9 +237,10 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
         }
         peano::parallel::loadbalancing::Oracle::getInstance().setOracle(
             new mpibalancing::HotspotBalancing(
-                false,
-                std::numeric_limits<int>::max(), /* getFinestUniformGridLevelForLoadBalancing(_boundingBoxSize), boundary regularity*/
-                0 /* 0 means no admistrative ranks; previous: tarch::parallel::Node::getInstance().getNumberOfNodes()/THREE_POWER_D */
+              false,
+              (_parser.getMaxForksPerLoadBalancingStep() > 0 ) ?
+                  _parser.getMaxForksPerLoadBalancingStep() :
+                  static_cast<int>(peano::parallel::loadbalancing::LoadBalancingFlag::ForkGreedy)
             )
         );
         break;
@@ -343,37 +344,16 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
   tarch::multicore::jobs::setMinMaxNumberOfJobsToConsumeInOneRush(
       _parser.getMinBackgroundJobsInARush(), _parser.getMaxBackgroundJobsInARush() );
 
-  if ( _parser.getProcessHighPriorityBackgroundJobsInAnRush() ) { // high priority behaviour
-    if ( _parser.getRunLowPriorityJobsOnlyIfNoHighPriorityJobIsLeft() ) { // low priority behaviour
-      tarch::multicore::jobs::setHighPriorityJobBehaviour(
-          tarch::multicore::jobs::HighPriorityTaskProcessing::ProcessAllHighPriorityTasksInARushAndRunBackgroundTasksOnlyIfNoHighPriorityTasksAreLeft);
-    } else {
-      tarch::multicore::jobs::setHighPriorityJobBehaviour(
-          tarch::multicore::jobs::HighPriorityTaskProcessing::ProcessAllHighPriorityTasksInARush);
+  if ( _parser.getMapBackgroundJobsToTasks() ) {
+    if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+      logInfo("initSharedMemoryConfiguration(...)","Map background jobs to plain tasks.");
     }
-  } else if ( _parser.getSpawnHighPriorityBackgroundJobsAsATask() ) {
-    if ( _parser.getRunLowPriorityJobsOnlyIfNoHighPriorityJobIsLeft() ) { // low priority behaviour
-      if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
-        logWarning("initSharedMemoryConfiguration()","There exists no high priority job queue if we spawn high priority jobs directly as TBB tasks. "<<
-                   "Fall back to 'run_always' low priority job processing strategy.");
-      }
+    tarch::multicore::jobs::setTaskProcessingScheme(tarch::multicore::jobs::TaskProcessingScheme::MapToPlainTBBTasks);
+  } else {
+    if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+      logInfo("initSharedMemoryConfiguration(...)","Let Peano's job system handle the jobs.");
     }
-    if ( _parser.getSpawnLowPriorityBackgroundJobsAsATask() ){
-      tarch::multicore::jobs::setHighPriorityJobBehaviour(
-          tarch::multicore::jobs::HighPriorityTaskProcessing::MapHighPriorityAndBackgroundTasksToRealTBBTasks);
-    } else {
-      tarch::multicore::jobs::setHighPriorityJobBehaviour(
-          tarch::multicore::jobs::HighPriorityTaskProcessing::MapHighPriorityTasksToRealTBBTasks);
-    }
-  }
-  else {
-    if ( _parser.getRunLowPriorityJobsOnlyIfNoHighPriorityJobIsLeft() ) {
-      tarch::multicore::jobs::setHighPriorityJobBehaviour(
-          tarch::multicore::jobs::HighPriorityTaskProcessing::ProcessOneHighPriorityTasksAtATimeAndRunBackgroundTasksOnlyIfNoHighPriorityTasksAreLeft);
-    } else {
-      tarch::multicore::jobs::setHighPriorityJobBehaviour(
-          tarch::multicore::jobs::HighPriorityTaskProcessing::ProcessOneHighPriorityTasksAtATime);
-    }
+    tarch::multicore::jobs::setTaskProcessingScheme(tarch::multicore::jobs::TaskProcessingScheme::UseCustomTBBWrapper);
   }
   #endif
 
@@ -637,8 +617,13 @@ exahype::repositories::Repository* exahype::runners::Runner::createRepository() 
   int boundingBoxMeshLevel = coarsestUserMeshLevel;
   tarch::la::Vector<DIMENSIONS,double> boundingBoxOffset = _domainOffset;
 
+  // scale bounding box
   if ( _parser.getScaleBoundingBox() ) {
-    const int cellsOutside = 2*(1+3*_parser.getScaleBoundingBoxMultiplier());
+    int  cellsOutside   = _parser.getOutsideCells();
+    int cellsOutsideLeft = _parser.getOutsideCellsLeft(); // if we only cut from one side, we need less ranks on the coarsest grid.
+    if ( _parser.getPlaceOneThirdOfCellsOuside() ) {
+      cellsOutsideLeft = 1;
+    }
 
     const double coarsestUserMeshSpacing =
         exahype::solvers::Solver::getCoarsestMaximumMeshSizeOfAllSolvers();
@@ -649,19 +634,22 @@ exahype::repositories::Repository* exahype::runners::Runner::createRepository() 
     double boundingBoxExtent  = 0;
     int level = coarsestUserMeshLevel; // level=1 means a single cell
     while (_boundingBoxMeshSize < 0 || _boundingBoxMeshSize > coarsestUserMeshSpacing) {
-      const double boundingBoxMeshCells = std::pow(3,level-1);
-      boundingBoxScaling                = boundingBoxMeshCells / ( boundingBoxMeshCells - cellsOutside ); // two cells are removed on each side
+      const int boundingBoxMeshCells = std::pow(3,level-1);
+      if ( _parser.getPlaceOneThirdOfCellsOuside() ) {
+        cellsOutside = boundingBoxMeshCells/3 + 2;
+      }
+      boundingBoxScaling                = static_cast<double>(boundingBoxMeshCells) / ( boundingBoxMeshCells - cellsOutside ); // two cells are removed on each side
       boundingBoxExtent                 = boundingBoxScaling * maxDomainExtent;
-      _boundingBoxMeshSize            = boundingBoxExtent/boundingBoxMeshCells;
+      _boundingBoxMeshSize              = boundingBoxExtent/boundingBoxMeshCells;
       level++;
     }
-    level--; // decrement result since boundingBox was computed using level-1
+    level--; // decrement result since bounding box was computed using level-1
     boundingBoxMeshLevel = level;
 
     assertion6(boundingBoxScaling>=1.0,boundingBoxScaling,boundingBoxExtent,_boundingBoxMeshSize,boundingBoxMeshLevel,coarsestUserMeshSpacing,maxDomainExtent);
 
     _boundingBoxSize    *= boundingBoxScaling;
-    boundingBoxOffset   -= 0.5*cellsOutside*_boundingBoxMeshSize;
+    boundingBoxOffset   -= cellsOutsideLeft*_boundingBoxMeshSize;
   } else {
     _boundingBoxMeshSize = determineCoarsestMeshSize(_domainSize);
   }
@@ -965,11 +953,16 @@ bool exahype::runners::Runner::createMesh(exahype::repositories::Repository& rep
   bool meshUpdate = false;
 
   repository.switchToMeshRefinement();
-  repository.getState().setMeshRefinementHasConverged(false);
+  repository.getState().setAllSolversAttainedStableState(false);
+  repository.getState().setMeshRefinementIsInRefiningMode(true);
+  repository.getState().setStableIterationsInARow(0);
 
   const int MaxIterations = _parser.getMaxMeshSetupIterations();
   int meshSetupIterations=0;
-  while ( repository.getState().continueToConstructGrid() and meshSetupIterations<MaxIterations) {
+  while (
+      repository.getState().continueToConstructGrid() &&
+      meshSetupIterations < MaxIterations
+  ) {
     repository.iterate(1,true);
     meshSetupIterations++;
 

@@ -961,10 +961,8 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInEnterCell(
   bool newComputeCell = false;
 
   // Fine grid cell based uniform mesh refinement.
-  const int fineGridElement =
-      tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
-  const int coarseGridElement =
-      tryGetElement(coarseGridCell.getCellDescriptionsIndex(),solverNumber);
+  const int fineGridElement   = tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
+  const int coarseGridElement = tryGetElement(coarseGridCell.getCellDescriptionsIndex(),solverNumber);
   if (
       fineGridElement==exahype::solvers::Solver::NotFound &&
       fineGridVerticesEnumerator.getLevel()==_coarsestMeshLevel
@@ -979,8 +977,7 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInEnterCell(
     newComputeCell = true;
   }
   else if ( fineGridElement!=exahype::solvers::Solver::NotFound ) {
-    CellDescription& fineGridCellDescription =
-        getCellDescription(fineGridCell.getCellDescriptionsIndex(),fineGridElement);
+    CellDescription& fineGridCellDescription = getCellDescription(fineGridCell.getCellDescriptionsIndex(),fineGridElement);
 
     // wait for background jobs to complete
     waitUntilCompletedLastStep(fineGridCellDescription,false,false);
@@ -1456,7 +1453,7 @@ bool exahype::solvers::ADERDGSolver::attainedStableState(
       cellDescription.getLevel() != getMaximumAdaptiveMeshLevel() ||
       cellDescription.getRefinementStatus()<=0);
 
-      if (!stable) {
+      if ( !stable ) {
         #ifdef MonitorMeshRefinement
         logInfo("attainedStableState(...)","cell has not attained stable state (yet):");
         logInfo("attainedStableState(...)","type="<<cellDescription.toString(cellDescription.getType()));
@@ -1468,6 +1465,13 @@ bool exahype::solvers::ADERDGSolver::attainedStableState(
         logInfo("attainedStableState(...)","getFacewiseAugmentationStatus="<<cellDescription.getFacewiseAugmentationStatus());
         logInfo("attainedStableState(...)","getFacewiseCommunicationStatus="<<cellDescription.getFacewiseCommunicationStatus());
         logInfo("attainedStableState(...)","getFacewiseRefinementStatus="<<cellDescription.getFacewiseRefinementStatus());
+        #ifdef Asserts
+        logInfo("attainedStableState(...)","cellDescription.getCreation()="<<cellDescription.toString(cellDescription.getCreation()));
+        #endif
+        logInfo("attainedStableState(...)","fineGridCell.getCellDescriptionsIndex()="<<fineGridCell.getCellDescriptionsIndex());
+        logInfo("attainedStableState(...)","solver.getCoarsestMeshLevel="<<getCoarsestMeshLevel());
+        logInfo("attainedStableState(...)","solver.getMaximumAdaptiveMeshLevel="<<getMaximumAdaptiveMeshLevel());
+        logInfo("attainedStableState(...)","solver.getMaximumAdaptiveMeshDepth="<<getMaximumAdaptiveMeshDepth());
         #endif
         if (
             !stillInRefiningMode &&
@@ -3145,8 +3149,8 @@ void exahype::solvers::ADERDGSolver::mergeNeighboursData(
           uncompress(cellDescription1);
           return false;
         },
-        peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
-        peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
+        peano::datatraversal::TaskSet::TaskType::Background,
+        peano::datatraversal::TaskSet::TaskType::Background,
         true
         );
       }
@@ -3383,8 +3387,10 @@ bool exahype::solvers::ADERDGSolver::sendCellDescriptions(
       if ( !cellDescription.getHasCompletedLastStep() ) {
         peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
       }
+      int numberOfBackgroundJobsToProcess = 1;
       while ( !cellDescription.getHasCompletedLastStep() ) {
-        tarch::multicore::jobs::processBackgroundJobs(1);
+        tarch::multicore::jobs::processBackgroundJobs(numberOfBackgroundJobsToProcess);
+        numberOfBackgroundJobsToProcess++;
       }
       oneSolverRequiresVerticalCommunication &=
           cellDescription.getType()==CellDescription::Type::Descendant && cellDescription.getHasVirtualChildren();
@@ -4381,7 +4387,7 @@ exahype::solvers::ADERDGSolver::CompressionJob::CompressionJob(
   const ADERDGSolver& solver,
   CellDescription&    cellDescription,
   const bool          isSkeletonJob):
-  tarch::multicore::jobs::Job(Solver::getTaskType(isSkeletonJob),0),
+  tarch::multicore::jobs::Job(tarch::multicore::jobs::JobType::BackgroundTask,0,getTaskPriority(isSkeletonJob)),
   _solver(solver),
   _cellDescription(cellDescription),
   _isSkeletonJob(isSkeletonJob) {
@@ -4652,11 +4658,11 @@ void exahype::solvers::ADERDGSolver::putUnknownsIntoByteStream(
       );
       return false;
       },
-	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
-	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
-	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
-	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
-	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
+	peano::datatraversal::TaskSet::TaskType::Background,
+	peano::datatraversal::TaskSet::TaskType::Background,
+	peano::datatraversal::TaskSet::TaskType::Background,
+	peano::datatraversal::TaskSet::TaskType::Background,
+	peano::datatraversal::TaskSet::TaskType::Background,
     true
   );
 
@@ -4859,11 +4865,11 @@ void exahype::solvers::ADERDGSolver::putUnknownsIntoByteStream(
       }
       return false;
     },
-	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
-	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
-	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
-	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
-	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
+	peano::datatraversal::TaskSet::TaskType::Background,
+	peano::datatraversal::TaskSet::TaskType::Background,
+	peano::datatraversal::TaskSet::TaskType::Background,
+	peano::datatraversal::TaskSet::TaskType::Background,
+	peano::datatraversal::TaskSet::TaskType::Background,
     true
   );
 }
@@ -5028,11 +5034,11 @@ void exahype::solvers::ADERDGSolver::pullUnknownsFromByteStream(
       }
       return false;
     },
-    peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
-    peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
-    peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
-    peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
-    peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
+    peano::datatraversal::TaskSet::TaskType::Background,
+    peano::datatraversal::TaskSet::TaskType::Background,
+    peano::datatraversal::TaskSet::TaskType::Background,
+    peano::datatraversal::TaskSet::TaskType::Background,
+    peano::datatraversal::TaskSet::TaskType::Background,
     true
   );
 }

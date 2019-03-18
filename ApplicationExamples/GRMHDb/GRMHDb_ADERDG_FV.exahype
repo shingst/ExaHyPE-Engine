@@ -20,24 +20,22 @@ exahype-project GRMHDb
   
   peano-kernel-path const          = ./Peano
   exahype-path const               = ./ExaHyPE
-  output-directory const           = ./ApplicationExamples/GRMHDb/GRMHDb_TEST
-  architecture const               = hsw
+  output-directory const           = ./ApplicationExamples/GRMHDb/GRMHDb_ADERDG_FV
+  architecture const               = skx
   log-file                         = whatever.log
   
   computational-domain
      dimension const                = 3
-     //width                        = 27.0, 27.0, 27.0 
-     //offset                       = 3., 3., 3.		 
-     width                          = 10.0 , 10.0, 10.0	 
-     offset                         = -5.0, -5.0, -5.0 
-     //end-time                       = 1000.0000001 
-     time-steps                     = 100		
+     width                          = 49.0 , 49.0, 49.0	 
+     offset                         = -24.5, -24.5, -24.5 
+     end-time                       = 1000.0000001 
+     //time-steps                     = 100		
   end computational-domain
   
   shared-memory
     identifier               = dummy
-    configure                = {background-tasks:14,manual-pinning}
-    cores                    = 28
+    configure                = {background-tasks:20,manual-pinning}
+    cores                    = 40
     properties-file          = sharedmemory.properties
   end shared-memory  
   
@@ -70,25 +68,25 @@ exahype-project GRMHDb
     //maximum-mesh-size              = 1.0
     //maximum-mesh-size              = 0.88888888888888888888888888888889
     //maximum-mesh-size              = 0.2962962962962962962962962962963
-    maximum-mesh-size              = 1.1111111111111111112
-    maximum-mesh-depth             = 0
+    maximum-mesh-size              = 7.00000000000001
+    maximum-mesh-depth             = 2
     time-stepping                  = global
     type const = nonlinear
     terms const = flux,ncp
-    optimisation const = generic
-//   optimisation const = optimised
+    //optimisation const = generic
+    optimisation const = optimised
     language const                 = C
-    limiter-type const         = musclhancock
+    limiter-type const         = robustmusclhancock
     limiter-optimisation const = generic
     limiter-language const     = C
     dmp-observables  const         = 10
-	dmp-relaxation-parameter = 1e4
-	dmp-difference-scaling = 1e3 
+    dmp-relaxation-parameter = 1e4
+    dmp-difference-scaling = 1e3 
 
    plot user::defined ErrorWriter
        variables const = 19
        time            = 0.0 
-       repeat          = 0.1
+       repeat          = 10.0
        output          = ./output/errors
      end plot
 
@@ -105,7 +103,7 @@ exahype-project GRMHDb
 */
 
 
-
+/*
     plot vtu::Cartesian::vertices::ascii PrimitiveWriter
       // abserrorl1percell[nvar],q[nvar],qanalytical[nvar]
       variables const = 19
@@ -133,27 +131,27 @@ exahype-project GRMHDb
     plot vtk::Cartesian::subcells::limited::ascii PrimitiveWriterSubcellVTK
       variables const = 19
       time            = 0.0
-      repeat          = 0.5
+      repeat          = 10.0
       output          = ./vtksub/vtksub
     end plot
-
+*/
 
     plot user::defined TecplotWriter
        variables const = 19
        time            = 0.0
-       repeat          = 0.5
+       repeat          = 10.0
        output          = ./output/tecplot
      end plot
 
-/*
+
    plot probe::ascii ProbeWriter_0
       variables const = 19
       time            = 0.0
-      repeat          = 0.02
+      repeat          = 0.5
       output          = ./output/rhoc
       select          = x:0.000000000000001,y:0.000000000000001,z:0.000000000000001
     end plot
-*/
+
   end solver
 
 

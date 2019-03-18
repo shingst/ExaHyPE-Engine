@@ -34,7 +34,7 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver {
     static constexpr int NumberOfParameters        = {{numberOfMaterialParameters}};
     static constexpr int NumberOfGlobalObservables = {{numberOfGlobalObservables}};
     static constexpr int NumberOfDMPObservables    = {{numberOfDMPObservables}}; // only of interest if this ADERDGSolver is a component of a LimitingADERDSolver 
-    static constexpr int MaxPicardIterations       = {{maxPicardIterations}};
+    static constexpr int MaxPicardIterations       = Order+1;
     static constexpr bool UseMaxPicardIterations   = {{"true" if useMaxPicardIterations else "false"}};
     static constexpr double CFL                    = 0.9;
 {% if usePointSources %}
@@ -95,12 +95,27 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver {
      * See superclass for function's semantics.
      */
     bool isPhysicallyAdmissible(
-      const double* const solution,
-      const double* const observablesMin,const double* const observablesMax,
-      const bool wasTroubledInPreviousTimeStep,
-      const tarch::la::Vector<DIMENSIONS,double>& center,
-      const tarch::la::Vector<DIMENSIONS,double>& dx,
-      const double t) const override { return true; }
+        const double* const                         solution,
+        const double* const                         observablesMin,
+        const double* const                         observablesMax,
+        const bool                                  wasTroubledInPreviousTimeStep,
+        const tarch::la::Vector<DIMENSIONS,double>& center,
+        const tarch::la::Vector<DIMENSIONS,double>& dx,
+        const double                                timeStamp) const override { return true; }
+    
+    /**
+     * Default implementation. Please overwrite.
+     *
+     * See superclass for function's semantics.
+     */
+    bool vetoDiscreteMaximumPrincipleDecision(
+        const double* const                         solution,
+        const double* const                         localObservablesMin,
+        const double* const                         localObservablesMax,
+        const bool                                  wasTroubledInPreviousTimeStep,
+        const tarch::la::Vector<DIMENSIONS,double>& center,
+        const tarch::la::Vector<DIMENSIONS,double>& dx,
+        const double                                timeStamp) const override { return false; /* do not veto DMP*/ } 
     
     /**
      * Default implementation. Please overwrite.
@@ -118,6 +133,17 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver {
     void reduceGlobalObservables(
             std::vector<double>& reducedGlobalObservables,
             const std::vector<double>& curGlobalObservables) const override;
+    
+    /**
+     * Default implementation. Please overwrite.
+     *
+     * See superclass exahype::solvers::Solver for function's semantics.
+     */
+    int getGeometricLoadBalancingWeight(
+        const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+        const tarch::la::Vector<DIMENSIONS,double>& cellSize) override {
+      return 1;
+    }
     
     /**
      * @defgroup User PDE kernels

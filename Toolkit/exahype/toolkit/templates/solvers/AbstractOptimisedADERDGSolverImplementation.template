@@ -154,7 +154,7 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
 {% endif %}
 
 {% if isLinear %}
-{% if useSplitCK %}
+{% if useSplitCKScalar or useSplitCKVect %}
 {% set SPTbufferSignature="lQi, lQi_next, lPi, lQhi, lFhi, gradQ, PSi" %}
   double* lQi     = memory + {{optNamespace}}::getlQiShift();
   double* lQi_next= memory + {{optNamespace}}::getlQiNextShift();
@@ -193,7 +193,7 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
   constexpr double* PSi = nullptr;
   constexpr double* PSderivatives = nullptr;
   {% endif %}
-{% endif %}{# useSplitCK #}
+{% endif %}{# useSplitCKScalar or useSplitCKVect #}
 {% else %}{# nonlinear case #}
   double* lQi = memory + {{optNamespace}}::getlQiShift();
   double* lQhi = memory + {{optNamespace}}::getlQhiShift();

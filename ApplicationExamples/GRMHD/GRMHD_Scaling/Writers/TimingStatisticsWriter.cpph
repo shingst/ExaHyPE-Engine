@@ -1,0 +1,180 @@
+#include <stdio.h>
+
+#include <stdio.h>
+#include "tarch/parallel/Node.h" // for MPI
+
+// Posix/Linux time measurement
+#include <time.h>
+#include <sys/time.h>
+
+class PosixTimer {
+public:
+	// Posix/Linux time measurement
+	static double get_wall_time(){
+		// gives back epoche in us resolution
+		struct timeval time;
+		if (gettimeofday(&time,NULL)){
+			//  Handle error
+			return 0;
+		}
+		return (double)time.tv_sec + (double)time.tv_usec * .000001;
+	}
+	static double get_cpu_time(){
+		return (double)clock() / CLOCKS_PER_SEC;
+	}
+	
+	static char* current_time() {
+		// allocates a string, don't use too often
+		// contains newline at end.
+		time_t rawtime;
+		time (&rawtime);
+		return ctime(&rawtime);
+	}
+	
+	double start_time;
+	
+	PosixTimer& start() {
+		start_time = get_wall_time();
+		return *this;
+	}
+	
+	double read() { // aka stop, pause, ...
+		return get_wall_time() - start_time;
+	}
+	
+	PosixTimer() { start(); }
+};
+
+// C++11 timing
+#include <chrono> 
+
+class ChronoTimer {
+public:
+	std::chrono::high_resolution_clock::time_point start_time;
+	
+	ChronoTimer& start() {
+		start_time = std::chrono::high_resolution_clock::now();
+		return *this;
+	}
+	
+	// return seconds
+	double read() { // aka stop, pause, ...
+		auto elapsed = std::chrono::high_resolution_clock::now() - start_time;
+		long long microseconds = std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count(); \
+		return ((double)microseconds/1e6);
+	}
+	
+	ChronoTimer() { start(); }
+};
+
+/**
+ * Here in the TimingStatisticsWriter we track to kind of times: The simulation
+ * time (could also be called: "physical time") and the real time (also refered
+ * to as walltime, computer time). These two times are brought into relation
+ * for measuring code performance.
+ * 
+ **/
+class TimingStatisticsWriter {
+public:
+	FILE* asc;
+	const std::string filename;
+	bool master;
+	
+	int unknownsPerPatch; // something like numberOfVariables*(basisSize**DIMENSIONS)
+	int numberOfPatches; // to be filled by calling class
+	
+	enum index                          { iter=0    , sim_time=1, real_time=2     , mph=3        , real_per_sim=4   , ncells=5 , us_per_dof=6, LEN=7 };
+	const char * const colnames[LEN]  = {"it"       , "sim_time", "real_time"     ,"MassPerHour", "secPerIt"        , "ncells" , "usPerDOF" };
+	const char * const colformat[LEN] = {"%.0f\t"   , "%f\t"    , "%.2f\t"        , "%f\t"       , "%.2f\t"         , "%.0f\t" , "%.1f"};
+	const char * const desc[LEN] = {
+		"Iteration counter",
+		"Simulation time since start",
+		"Real time (walltime) since start in seconds",
+		"Mass per Hour, ie. how much real time passes per simulation time 1.0 advance",
+		"Seconds per Iteration, ie. how much seconds pass for one iteration",
+		"Number of Cells captured by this writer",
+		"Microseconds per Degree of Freedom update"
+	};
+	double data[LEN];
+	
+	//double start_time, last_time;
+	ChronoTimer wall_timer, iter_timer;
+	
+	TimingStatisticsWriter(const std::string& _filename, int _unknownsPerPatch=0) :
+	   filename(_filename), unknownsPerPatch(_unknownsPerPatch), numberOfPatches(0) {
+		master = tarch::parallel::Node::getInstance().isGlobalMaster();
+		
+		openFile();
+		initTimeStep();
+	}
+	
+	void openFile() {
+		if(!master) return;
+		
+		const char* fn = filename.c_str();
+		asc = fopen(fn, "w");
+		if(asc == NULL) {
+			fprintf(stderr, "ASCII writer: Could not open output file '%s'\n", fn);
+			exit(-1);
+		}
+	
+		// print a header meta line
+		fprintf(asc, "# ExaHyPE started at %s"/* sic, no newline */, PosixTimer::current_time());
+		if(unknownsPerPatch>0)
+			fprintf(asc, "# Unknowns per Cell/Patch: %i\n", unknownsPerPatch);
+
+		for(int i=0; i<LEN; i++) {
+			fputs(colnames[i], asc);
+			fputs("\t", asc);
+		}
+		fprintf(asc, "\n");
+	}
+	
+	void writeRow() {
+		for(int i=0; i<LEN; i++) {
+			fprintf(asc, colformat[i], data[i]);
+		}
+		fprintf(asc, "\n");
+		fflush(asc); // write out this line immediately
+	}
+	
+	void initTimeStep() {
+		data[iter] = 0.0;
+		data[sim_time] = 0.0;
+		iter_timer.start();
+		wall_timer.start();
+	}
+	
+	void newTimeStep(double t) {
+		if(!master) return;
+		
+		data[iter] += 1.0;
+		data[sim_time] = t;
+		
+		// Real wallclock seconds passed since start
+		data[real_time] = wall_timer.read();
+		
+		// Seconds per Iteration
+		data[real_per_sim] = data[real_time] / data[iter];
+
+		// Mass per Hour as typical astro measure: simulation time is measured in units M=1,
+		// this quantity says how much physical time passed per simulation time.
+		// Here we compute globally.
+		const double hours = 60*60; // sec -> hours
+		data[mph] = data[sim_time] / (data[real_time]/hours);
+		
+		// we could mph also from timestep to timestep.
+		data[ncells] = numberOfPatches;
+		
+		if(unknownsPerPatch>0 && numberOfPatches>0) {
+			const double usec = 1e6; // sec -> micro seconds
+			data[us_per_dof] = data[real_per_sim] * usec / (numberOfPatches*unknownsPerPatch);
+		} else {
+			data[us_per_dof] = -1;
+		}
+		
+		writeRow();
+	}
+
+};
+

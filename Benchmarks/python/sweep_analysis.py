@@ -166,7 +166,11 @@ def parseResultFile(filePath):
     stats["unrefined_inner_cells_avg"] = 0.0
     stats["communication_time_total"] = 0.0
     stats["communication_occurences"] = 0
-    stats["communication_time_avg"] = 0.0
+    stats["communication_time_avg"]   = 0.0
+    stats["mesh_refinements"]     = 0.0   
+    stats["local_recomputations"] = 0.0   
+    stats["predictor_reruns"]     = 0.0   
+
     occurrences = 0   
  
     adapters      = {}
@@ -210,7 +214,15 @@ def parseResultFile(filePath):
             if isPassedGridSetup and "endToPrepareAsynchronousHeapDataExchange()" in line:
                 stats["communication_occurences"] += 1
                 stats["communication_time_total"] += float(commTimeRegex.search(line).group(0).split("=")[1])
-   
+           
+            # ex: nuber of mesh refinements = 0 
+            if "number of mesh refinements" in line:
+                stats["mesh_refinements"]     = line.split("=")[1].strip()
+            if "number of local recomputations" in line:
+                stats["local_recomputations"] = line.split("=")[1].strip()
+            if "number of predictor reruns" in line:
+                stats["predictor_reruns"]     = line.split("=")[1].strip()
+ 
             anchor = '|'
             header = '||'
             if anchor in line and header not in line:
@@ -307,6 +319,9 @@ def parseAdapterTimes(resultsFolderPath,projectName,compressTable):
                         header.append("inner_cells_avg")
                         header.append("run_time_steps")
                         header.append("communication_time_total")
+                        header.append("mesh_refinements")   
+                        header.append("local_recomputations")
+                        header.append("predictor_reruns")
                         header.append("file")
                         csvwriter.writerow(header)
                         firstFile=False
@@ -359,6 +374,9 @@ def parseAdapterTimes(resultsFolderPath,projectName,compressTable):
                         row.append(str( stats["inner_cells_avg"] ))
                         row.append(str( stats["run_time_steps"] ))
                         row.append(str( stats["communication_time_total"] ))
+                        row.append(str( stats["mesh_refinements"]    ))   
+                        row.append(str( stats["local_recomputations"]))   
+                        row.append(str( stats["predictor_reruns"]    ))   
                         row.append(fileName)
                         csvwriter.writerow(row)
                 else:
@@ -377,6 +395,9 @@ def parseAdapterTimes(resultsFolderPath,projectName,compressTable):
                         row.append(cores)
                         row.append(consumerTasks)
                         row.append(run)
+                        row.append("missing")
+                        row.append("missing")
+                        row.append("missing")
                         row.append("missing")
                         row.append("missing")
                         row.append("missing")

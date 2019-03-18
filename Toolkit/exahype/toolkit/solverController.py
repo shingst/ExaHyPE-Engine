@@ -159,8 +159,7 @@ class SolverController:
     def buildADERDGKernelContext(self, kernel):
         context = {}
         context["implementation"]          = kernel.get("implementation","generic")
-        context["useMaxPicardIterations"]  = kernel.get("space_time_predictor",{}).get("maxpicarditer",0)!=0
-        context["maxPicardIterations"]     = kernel.get("space_time_predictor",{}).get("maxpicarditer",-1)
+        context["useMaxPicardIterations"]  = kernel.get("space_time_predictor",{}).get("fix_picard_iterations",False)!=False
         context["tempVarsOnStack"]         = kernel.get("allocate_temporary_arrays","heap")=="stack" 
         context["patchwiseAdjust"]         = kernel.get("adjust_solution","pointwise")=="patchwise" 
         context["language"]                = kernel.get("language","C").lower()
@@ -171,7 +170,8 @@ class SolverController:
         context["linearOrNonlinear"]       = "Linear" if context["isLinear"] else "Nonlinear"
         context["isFortran"]               = kernel.get("language",False)=="Fortran" 
         context["useCERK"]                 = kernel.get("space_time_predictor",{}).get("cerkguess",False)
-        context["useSplitCK"]              = kernel.get("space_time_predictor",{}).get("split_ck",False)
+        context["useSplitCKScalar"]        = kernel.get("space_time_predictor",{}).get("split_ck","disabled") == "scalar"
+        context["useSplitCKVect"]          = kernel.get("space_time_predictor",{}).get("split_ck","disabled") == "vectorised"
         context["noTimeAveraging"]         = kernel.get("space_time_predictor",{}).get("notimeavg",False)
         context["noTimeAveraging_s"]       = "true" if kernel.get("space_time_predictor",{}).get("notimeavg",False) else "false"
         context.update(self.buildKernelTermsContext(kernel["terms"]))

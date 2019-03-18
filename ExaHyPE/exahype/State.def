@@ -22,11 +22,17 @@ class exahype::dastgen::State {
    * All solvers attained a stable state in the last mesh 
    * refinement iteration.
    */
-  persistent parallelise bool allSolversAttainedStableStateInPreviousIteration;
+  persistent parallelise bool allSolversAttainedStableState;
   
   /**
-   * Indicates the runner that the mesh refinement iterations (refining and erasing)
-   * have converged.
+   * Number of stable mesh refinement iterations in a row.
+   * Used to switch from refining to erasing mode.
    */
-  persistent bool meshRefinementHasConverged;
+  persistent int stableIterationsInARow;
+    
+  /**
+   * Used by the global master to signal 
+   * the workers that they currently have to refine (or erase).
+   */
+  parallelise persistent bool meshRefinementIsInRefiningMode;
 };
