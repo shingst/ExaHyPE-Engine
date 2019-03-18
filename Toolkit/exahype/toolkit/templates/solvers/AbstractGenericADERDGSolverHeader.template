@@ -128,6 +128,17 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver {
     }
     
     /**
+     * Default implementation. Please overwrite.
+     *
+     * See superclass exahype::solvers::Solver for function's semantics.
+     */
+    int getGeometricLoadBalancingWeight(
+        const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+        const tarch::la::Vector<DIMENSIONS,double>& cellSize) override {
+      return 1;
+    }
+    
+    /**
      * @defgroup User PDE kernels
      */
     ///@{

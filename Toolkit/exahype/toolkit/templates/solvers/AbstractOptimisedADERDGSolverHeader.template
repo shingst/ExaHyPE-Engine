@@ -215,6 +215,17 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver {
       	std::copy_n(Q,NumberOfDMPObservables,observables);
       }
   	}
+    
+    /**
+     * Default implementation. Please overwrite.
+     *
+     * See superclass exahype::solvers::Solver for function's semantics.
+     */
+    int getGeometricLoadBalancingWeight(
+        const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+        const tarch::la::Vector<DIMENSIONS,double>& cellSize) override {
+      return 1;
+    }
      
     int fusedSpaceTimePredictorVolumeIntegral(double* const lduh,double* const lQhbnd,double* const lFhbnd,double* const luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,const double t,const double dt,const bool addVolumeIntegralResultToUpdate) override; 
     void addUpdateToSolution(double* const luh,const double* const luhOld,const double* const lduh,const double dt) override;

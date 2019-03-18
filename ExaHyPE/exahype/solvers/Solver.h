@@ -1147,8 +1147,7 @@ class exahype::solvers::Solver {
  template <typename CellDescription>
  void waitUntilCompletedLastStep(
      const CellDescription& cellDescription,const bool waitForHighPriorityJob,const bool receiveDanglingMessages) {
-
-#ifdef USE_ITAC
+  #ifdef USE_ITAC
   VT_begin(waitUntilCompletedLastStepHandle);
   static int event_emergency = -1;
   static const char *event_name_emergency = "trigger_emergency";
@@ -1192,9 +1191,6 @@ class exahype::solvers::Solver {
      if ( receiveDanglingMessages ) {
        tarch::parallel::Node::getInstance().receiveDanglingMessages();
      }
-     if ( waitForHighPriorityJob ) {
-       hasProcessed = tarch::multicore::jobs::processHighPriorityJobs(1);
-     } else {
        hasProcessed = tarch::multicore::jobs::processBackgroundJobs(1);
  
 #if defined(DistributedStealing) 
@@ -1245,23 +1241,10 @@ class exahype::solvers::Solver {
 #endif
  }
 
- /**
-  * Submit a Prediction- or FusedTimeStepJob.
-  *
-  * @param[in] isSkeletonJob is is a skeleton job?
-  */
- static tarch::multicore::jobs::JobType getTaskType(bool isSkeletonJob) {
-    return isSkeletonJob ? tarch::multicore::jobs::JobType::RunTaskAsSoonAsPossible : tarch::multicore::jobs::JobType::BackgroundTask;
- }
-/*
- static void submitJob(tarch::multicore::jobs::Job* job,const bool isSkeletonJob) {
-   if ( isSkeletonJob ) {
-     peano::datatraversal::TaskSet spawnedSet( job, peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible  );
-   } else {
-     peano::datatraversal::TaskSet spawnedSet( job, peano::datatraversal::TaskSet::TaskType::Background  );
-   }
- }
-*/
+ static int getTaskPriority( bool isSkeletonJob );
+ static int getCompressionTaskPriority();
+ static int getHighPrioritiesJobTaskPriority();
+ static int getStandardBackgroundTaskPriority();
 
  /**
   * Return a string representation for the type @p param.
@@ -1738,7 +1721,7 @@ class exahype::solvers::Solver {
    *
    * @note Has no const modifier since kernels are not const functions yet.
    */
-    virtual double updateTimeStepSize(const int solverNumber,CellInfo& cellInfo) = 0;
+  virtual double updateTimeStepSize(const int solverNumber,CellInfo& cellInfo) = 0;
 
   /**
    * Impose initial conditions and mark for refinement.
@@ -1870,6 +1853,20 @@ class exahype::solvers::Solver {
   ///////////////////////////////////
 
   #ifdef Parallel
+  /**
+   * On coarser grids, the solver can hint on the eventual load and memory distribution
+   * with this function.
+   *
+   * @note Only called on coarser grids by LoadBalancing mapping.
+   * @note Only invokes user callback during initial mesh refinement.
+   *
+   * @param  cellCentre the cell centre.
+   * @param  cellSize   the cell size.
+   * @return Estimate of the load based on the geometry.
+   */
+  int computeGeometricLoadBalancingWeight(
+      const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+      const tarch::la::Vector<DIMENSIONS,double>& cellSize);
 
   /**
    * If a cell description was allocated at heap address @p cellDescriptionsIndex
@@ -2145,6 +2142,25 @@ class exahype::solvers::Solver {
    *  Hooks for user solvers
    *  @{
    */
+
+ protected:
+  /**
+   * On coarser grids, the solver can hint on the eventual load or memory distribution
+   * with this function.
+   *
+   * @note Only called on coarser grids by LoadBalancing mapping.
+   * @note Only invokes user callback during initial mesh refinement (time stamp = 0).
+   * @note LimitingADERDGSolver will invoke the main solvers routine.
+   *
+   * @param  cellCentre the cell centre.
+   * @param  cellSize   the cell size.
+   * @return Estimate of the load based on the geometry.
+   */
+  virtual int getGeometricLoadBalancingWeight(
+      const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+      const tarch::la::Vector<DIMENSIONS,double>& cellSize) { return 1; }
+
+ public:
   /**
    * Signals a user solver that ExaHyPE just started a new time step.
    *

@@ -267,6 +267,12 @@ class exahype::parser::Parser {
   bool compareMPILoadBalancingStrategy(const std::string& strategy) const;
 
   /**
+   * @return the number of forks the load balancing
+   * mapping is allowed to trigger per mesh refinement iteration.
+   */
+  int getMaxForksPerLoadBalancingStep() const;
+
+  /**
    * @note It is important to scale the bounding box if MPI
    * experiments are run as this prevents communication
    * with rank 0. More importantly, it prevents that the
@@ -621,28 +627,10 @@ class exahype::parser::Parser {
   int getNumberOfBackgroundJobConsumerTasks();
 
   /**
-   * @return If multiple high priority background jobs should be consumed in a rush
-   * or if they should be processed one at a time.
+   * @return Return if every job should be directly mapped to a task.
    */
-  bool getProcessHighPriorityBackgroundJobsInAnRush();
+  bool getMapBackgroundJobsToTasks();
 
-  /**
-   * @return Return if every single high priority job should be spawned
-   * as a task.
-   */
-  bool getSpawnHighPriorityBackgroundJobsAsATask();
-
-  /**
-   * @return Return if every single low priority job should be spawned
-   * as a task.
-   */
-  bool getSpawnLowPriorityBackgroundJobsAsATask();
-
-  /**
-   * @return If the consumer tasks should process any low priority tasks
-   * if there are still high priority tasks left.
-   */
-  bool getRunLowPriorityJobsOnlyIfNoHighPriorityJobIsLeft();
   /**
    * @return Minimum number of background jobs a consumer grabs from the queue in a single rush (default: 1).
    */

@@ -574,6 +574,14 @@ bool exahype::parser::Parser::compareMPILoadBalancingStrategy(const std::string&
   return getStringFromPath("/distributed_memory/load_balancing_strategy","hotspot",isOptional).compare(strategy)==0;
 }
 
+/**
+ * @return the number of forks the load balancing
+ * mapping is allowed to trigger per mesh refinement iteration.
+ */
+int exahype::parser::Parser::getMaxForksPerLoadBalancingStep() const {
+  return getIntFromPath("/distributed_memory/max_forks_at_once", -1, isOptional);
+}
+
 int exahype::parser::Parser::getMPIBufferSize() const {
   int result = getIntFromPath("/distributed_memory/buffer_size");
 
@@ -1212,24 +1220,9 @@ int exahype::parser::Parser::getNumberOfBackgroundJobConsumerTasks() {
   return result;
 }
 
-bool exahype::parser::Parser::getProcessHighPriorityBackgroundJobsInAnRush() {
-  return getStringFromPath("/shared_memory/high_priority_background_job_processing","one_at_a_time",isOptional).
-      compare("all_in_a_rush")==0;
-}
-
-bool exahype::parser::Parser::getSpawnHighPriorityBackgroundJobsAsATask() {
-  return getStringFromPath("/shared_memory/high_priority_background_job_processing","one_at_a_time",isOptional).
-      compare("spawn_as_a_task")==0;
-}
-
-bool exahype::parser::Parser::getRunLowPriorityJobsOnlyIfNoHighPriorityJobIsLeft() {
-  return getStringFromPath("/shared_memory/low_priority_background_job_processing","run_if_no_high_priority_job_left",isOptional).
-      compare("run_if_no_high_priority_job_left")==0;
-}
-
-bool exahype::parser::Parser::getSpawnLowPriorityBackgroundJobsAsATask() {
-  return getStringFromPath("/shared_memory/low_priority_background_job_processing","one_at_a_time",isOptional).
-      compare("spawn_as_a_task")==0;
+bool exahype::parser::Parser::getMapBackgroundJobsToTasks() {
+  return getStringFromPath("/shared_memory/background_job_processing","job_system",isOptional).
+      compare("spawn_tasks")==0;
 }
 
 int exahype::parser::Parser::getMaxBackgroundJobsInARush() {

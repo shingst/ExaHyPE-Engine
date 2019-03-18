@@ -250,9 +250,10 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
         }
         peano::parallel::loadbalancing::Oracle::getInstance().setOracle(
             new mpibalancing::HotspotBalancing(
-                false,
-                std::numeric_limits<int>::max(), /* getFinestUniformGridLevelForLoadBalancing(_boundingBoxSize), boundary regularity*/
-                0 /* 0 means no admistrative ranks; previous: tarch::parallel::Node::getInstance().getNumberOfNodes()/THREE_POWER_D */
+              false,
+              (_parser.getMaxForksPerLoadBalancingStep() > 0 ) ?
+                  _parser.getMaxForksPerLoadBalancingStep() :
+                  static_cast<int>(peano::parallel::loadbalancing::LoadBalancingFlag::ForkGreedy)
             )
         );
         break;
@@ -395,37 +396,16 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
   tarch::multicore::jobs::setMinMaxNumberOfJobsToConsumeInOneRush(
       _parser.getMinBackgroundJobsInARush(), _parser.getMaxBackgroundJobsInARush() );
 
-  if ( _parser.getProcessHighPriorityBackgroundJobsInAnRush() ) { // high priority behaviour
-    if ( _parser.getRunLowPriorityJobsOnlyIfNoHighPriorityJobIsLeft() ) { // low priority behaviour
-      tarch::multicore::jobs::setHighPriorityJobBehaviour(
-          tarch::multicore::jobs::HighPriorityTaskProcessing::ProcessAllHighPriorityTasksInARushAndRunBackgroundTasksOnlyIfNoHighPriorityTasksAreLeft);
-    } else {
-      tarch::multicore::jobs::setHighPriorityJobBehaviour(
-          tarch::multicore::jobs::HighPriorityTaskProcessing::ProcessAllHighPriorityTasksInARush);
+  if ( _parser.getMapBackgroundJobsToTasks() ) {
+    if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+      logInfo("initSharedMemoryConfiguration(...)","Map background jobs to plain tasks.");
     }
-  } else if ( _parser.getSpawnHighPriorityBackgroundJobsAsATask() ) {
-    if ( _parser.getRunLowPriorityJobsOnlyIfNoHighPriorityJobIsLeft() ) { // low priority behaviour
-      if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
-        logWarning("initSharedMemoryConfiguration()","There exists no high priority job queue if we spawn high priority jobs directly as TBB tasks. "<<
-                   "Fall back to 'run_always' low priority job processing strategy.");
-      }
+    tarch::multicore::jobs::setTaskProcessingScheme(tarch::multicore::jobs::TaskProcessingScheme::MapToPlainTBBTasks);
+  } else {
+    if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+      logInfo("initSharedMemoryConfiguration(...)","Let Peano's job system handle the jobs.");
     }
-    if ( _parser.getSpawnLowPriorityBackgroundJobsAsATask() ){
-      tarch::multicore::jobs::setHighPriorityJobBehaviour(
-          tarch::multicore::jobs::HighPriorityTaskProcessing::MapHighPriorityAndBackgroundTasksToRealTBBTasks);
-    } else {
-      tarch::multicore::jobs::setHighPriorityJobBehaviour(
-          tarch::multicore::jobs::HighPriorityTaskProcessing::MapHighPriorityTasksToRealTBBTasks);
-    }
-  }
-  else {
-    if ( _parser.getRunLowPriorityJobsOnlyIfNoHighPriorityJobIsLeft() ) {
-      tarch::multicore::jobs::setHighPriorityJobBehaviour(
-          tarch::multicore::jobs::HighPriorityTaskProcessing::ProcessOneHighPriorityTasksAtATimeAndRunBackgroundTasksOnlyIfNoHighPriorityTasksAreLeft);
-    } else {
-      tarch::multicore::jobs::setHighPriorityJobBehaviour(
-          tarch::multicore::jobs::HighPriorityTaskProcessing::ProcessOneHighPriorityTasksAtATime);
-    }
+    tarch::multicore::jobs::setTaskProcessingScheme(tarch::multicore::jobs::TaskProcessingScheme::UseCustomTBBWrapper);
   }
   #endif
 

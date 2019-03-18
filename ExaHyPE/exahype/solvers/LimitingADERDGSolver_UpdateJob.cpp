@@ -10,7 +10,7 @@ exahype::solvers::LimitingADERDGSolver::UpdateJob::UpdateJob(
   SolverPatch&           solverPatch,
   CellInfo&              cellInfo,
   const bool             isAtRemoteBoundary):
-  tarch::multicore::jobs::Job(tarch::multicore::jobs::JobType::RunTaskAsSoonAsPossible,0), // !! always high priority
+  tarch::multicore::jobs::Job(tarch::multicore::jobs::JobType::BackgroundTask,0, tarch::multicore::DefaultPriority/4), // !! always high priority
   _solver(solver),
   _solverPatch(solverPatch),
   _cellInfo(cellInfo),

@@ -177,18 +177,12 @@ void exahype::solvers::Solver::ensureAllJobsHaveTerminated(JobType jobType) {
     peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
   }
 
+  int numberOfBackgroundJobsToProcess = 1;
   while ( !finishedWait ) {
     // do some work myself
     tarch::parallel::Node::getInstance().receiveDanglingMessages();
-    if (
-        jobType == JobType::SkeletonJob ||
-        jobType == JobType::ReductionJob
-    ) { // TODO(Dominic): Use background job queue here as well
-       tarch::multicore::jobs::processHighPriorityJobs(1);
-    } else {
-      tarch::multicore::jobs::processBackgroundJobs(1);
-    }
-
+    tarch::multicore::jobs::processBackgroundJobs(numberOfBackgroundJobsToProcess);
+    numberOfBackgroundJobsToProcess++;
     queuedJobs = getNumberOfQueuedJobs(jobType);
     finishedWait = queuedJobs == 0;
     if (NumberOfRemoteJobs > 0 && NumberOfRemoteJobs == NumberOfEnclaveJobs
@@ -711,6 +705,16 @@ void exahype::solvers::Solver::toString(std::ostream& out) const {
 
 #ifdef Parallel
 
+int exahype::solvers::Solver::computeGeometricLoadBalancingWeight(
+    const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+    const tarch::la::Vector<DIMENSIONS,double>& cellSize) {
+  if ( tarch::la::equals(getMinTimeStamp(),0) ) {
+    return getGeometricLoadBalancingWeight(cellCentre,cellSize);
+  } else {
+    return 1;
+  }
+}
+
 // Neighbours TODO(Dominic): Move in exahype::Vertex
 
 exahype::MetadataHeap::HeapEntries exahype::gatherNeighbourCommunicationMetadata(
@@ -864,3 +868,27 @@ void exahype::solvers::Solver::mergeWithWorkerMeshUpdateEvent(
   }
 }
 #endif
+
+
+int exahype::solvers::Solver::getTaskPriority( bool isSkeletonJob ) {
+  return isSkeletonJob ? tarch::multicore::DefaultPriority/4 : tarch::multicore::DefaultPriority;
+}
+
+
+int exahype::solvers::Solver::getCompressionTaskPriority() {
+  assertion( tarch::multicore::DefaultPriority>8 );
+  return tarch::multicore::DefaultPriority/8;
+}
+
+
+int exahype::solvers::Solver::getHighPrioritiesJobTaskPriority() {
+  assertion( tarch::multicore::DefaultPriority>4 );
+  return tarch::multicore::DefaultPriority/4;
+}
+
+
+int exahype::solvers::Solver::getStandardBackgroundTaskPriority() {
+  return tarch::multicore::DefaultPriority*2;
+}
+
+

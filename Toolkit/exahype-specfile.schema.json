@@ -299,6 +299,12 @@
           "exclusiveMinimum" : false,
           "old_format" : { "token_after" : "cores" }
         },
+        "background_job_processing" : {
+          "type" : "string", 
+          "title" : "How to process priority background jobs",
+          "enum" : [ "job_system", "spawn_tasks" ],
+          "default" : "job_system"
+        },
         "background_job_consumers" : {
           "type" : "integer", 
           "title" : "Number of background job consumer threads to run during a mesh traversal", 
@@ -306,18 +312,6 @@
           "exclusiveMinimum" : false,
           "default" : 1,
           "old_format" : { "token_after" : "background-tasks" }
-        },
-       	"low_priority_background_job_processing" : {
-          "type" : "string", 
-          "title" : "How to process low priority background jobs",
-          "enum" : [ "run_if_no_high_priority_job_left", "run_always", "spawn_as_a_task" ],
-          "default" : "run_always" 
-        },
-        "high_priority_background_job_processing" : {
-          "type" : "string", 
-          "title" : "How to process high-priority background jobs",
-          "enum" : [ "all_in_a_rush", "one_at_a_time", "spawn_as_a_task" ],
-          "default" : "all_in_a_rush" 
         },
         "min_background_jobs_in_one_rush" : {
           "type" : "integer", 
@@ -482,6 +476,11 @@
           "title" : "Buffer size in bytes per MPI package", 
           "default" : 64,
           "old_format" : { "token_after" : "buffer-size" }
+        },
+        "max_forks_at_once" : {
+          "type" : "integer", 
+          "title" : "The number of forks the load balancing can perform at once on the critical worker (a number < 1 mean that no limit is applied).",
+          "default": -1
         }
       }
     }, 

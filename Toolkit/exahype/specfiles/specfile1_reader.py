@@ -108,6 +108,7 @@ class SpecFile1Reader():
             "time_steps",\
             "buffer_size",\
             "timeout",\
+            "max_forks_at_once",\
             "cores",\
             "measure_cell_processing_times_iter",\
             "outside_cells",\
