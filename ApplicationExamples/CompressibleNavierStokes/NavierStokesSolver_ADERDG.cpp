@@ -60,9 +60,7 @@ void NavierStokes::NavierStokesSolver_ADERDG::algebraicSource(const tarch::la::V
    scenario->source(x, t, ns, Q, S);
 }
 
-void NavierStokes::NavierStokesSolver_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,
-					const double * const fluxIn,const double* const stateIn, const double* const gradStateIn,
-  double *fluxOut,double* stateOut) {
+void NavierStokes::NavierStokesSolver_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double* const fluxIn,const double* const stateIn,const double* const gradStateIn,double* const fluxOut,double* const stateOut)
   constexpr auto basisSize = Order + 1;
   constexpr auto gradSize = NumberOfVariables * DIMENSIONS;
   constexpr auto NumberOfData = NumberOfVariables + NumberOfParameters;

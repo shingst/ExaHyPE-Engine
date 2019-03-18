@@ -49,7 +49,7 @@ class MHDSolver::MHDSolver: public exahype::solvers::ADERDGSolver {
     void eigenvalues(const double* const Q,const int normalNonZeroIndex,double* const lambda);
     void flux(const double* const Q,double** const F);
     void source(const double* const Q,double* const S);
-    void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double * const fluxIn,const double* const stateIn,double* const fluxOut,double* const stateOut);
+    void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double* const fluxIn,const double* const stateIn,const double* const gradStateIn,double* const fluxOut,double* const stateOut);
     void adjustedSolutionValues(const double* const x,const double w,const double t,const double dt,double* const Q);
     void ncp(const double* const Q,const double* const gradQ,double* const BgradQ);
     void matrixb(const double* const Q,const int normalNonZero,double* const Bn);

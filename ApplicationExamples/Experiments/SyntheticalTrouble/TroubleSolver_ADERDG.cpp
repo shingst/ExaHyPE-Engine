@@ -53,9 +53,7 @@ void Synthetical::TroubleSolver_ADERDG::adjustPointSolution(const double* const 
   if (tarch::la::equals(t,0.0)) InitialData(x,t,Q);
 }
 
-void Synthetical::TroubleSolver_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,
-  const double * const fluxIn,const double* const stateIn,
-  double* const fluxOut,double* const stateOut) {
+void Synthetical::TroubleSolver_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double* const fluxIn,const double* const stateIn,const double* const gradStateIn,double* const fluxOut,double* const stateOut) {
 
   // trivial BC.
 

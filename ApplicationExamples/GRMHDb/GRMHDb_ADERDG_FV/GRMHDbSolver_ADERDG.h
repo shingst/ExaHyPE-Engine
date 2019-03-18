@@ -102,7 +102,7 @@ class GRMHDb::GRMHDbSolver_ADERDG : public GRMHDb::AbstractGRMHDbSolver_ADERDG {
      * @param[inout] FOut      the normal fluxes at point x from outside of the domain;
      *                         range: [0,nVar-1], already allocated.
      */
-    void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int direction,const double* const fluxIn,const double* const stateIn,double* const fluxOut,double* const stateOut) final override;
+    void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double* const fluxIn,const double* const stateIn,const double* const gradStateIn,double* const fluxOut,double* const stateOut) final override;
     
     /**
      * Evaluate the refinement criterion within a cell.

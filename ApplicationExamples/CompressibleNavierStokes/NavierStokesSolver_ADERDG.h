@@ -102,7 +102,7 @@ class NavierStokes::NavierStokesSolver_ADERDG : public NavierStokes::AbstractNav
      * \param[inout] FOut      the normal fluxes at point x from outside of the domain
      *                         and time-averaged (over [t,t+dt]) as C array (already allocated).
      */
-  void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double * const fluxIn,const double* const stateIn, const double* const gradStateIn,double *fluxOut,double* stateOut) final override;
+  void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double* const fluxIn,const double* const stateIn,const double* const gradStateIn,double* const fluxOut,double* const stateOut) final override;
 
   void boundaryConditions(
           double* const fluxIn,
