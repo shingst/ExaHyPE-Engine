@@ -29,10 +29,8 @@ void GPR::GPRSolver_ADERDG::adjustPointSolution(const double* const x,const doub
   }
 }
 
-void GPR::GPRSolver_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,
-  const double * const fluxIn,const double* const stateIn,
-  double* const fluxOut,double* const stateOut) {
-const int nVar = GPR::AbstractGPRSolver_ADERDG::NumberOfVariables;
+void GPR::GPRSolver_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double* const fluxIn,const double* const stateIn,const double* const gradStateIn,double* const fluxOut,double* const stateOut) {
+  const int nVar = GPR::AbstractGPRSolver_ADERDG::NumberOfVariables;
   const int order = GPR::AbstractGPRSolver_ADERDG::Order;
   const int basisSize = order + 1;
   const int nDim = DIMENSIONS;
@@ -107,7 +105,7 @@ void GPR::GPRSolver_ADERDG::flux(const double* const Q,double** const F) {
 
 
 //You can either implement this method or modify fusedSource
-void GPR::GPRSolver_ADERDG::algebraicSource(const double* const Q,double* const S) {
+void GPR::GPRSolver_ADERDG::algebraicSource(const tarch::la::Vector<DIMENSIONS, double>& x, double t, const double *const Q, double *S) {
   // @todo Please implement/augment if required
   pdesource_(S, Q);
 }

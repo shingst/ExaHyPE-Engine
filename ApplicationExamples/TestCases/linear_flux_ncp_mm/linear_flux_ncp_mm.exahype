@@ -33,22 +33,6 @@ exahype-project  Elastic
     time-steps               = 100
   end computational-domain
 
-  shared-memory
-    identifier               = dummy
-    configure                = {background-tasks:28}	
-    cores                    = 28
-    properties-file          = sharedmemory.properties
-  end shared-memory
- 
-
-//   distributed-memory
-//     identifier               = static_load_balancing
-//     configure                = {greedy-naive,FCFS}
-// //    configure                = {hotspot,fair,ranks-per-node:4}
-//     buffer-size              = 64
-//     timeout                  = 60
-//   end distributed-memory
-
   global-optimisation
     fuse-algorithmic-steps          = all
     fuse-algorithmic-steps-rerun-factor   = 0.99

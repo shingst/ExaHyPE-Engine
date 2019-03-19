@@ -108,8 +108,11 @@ class SpecFile1Reader():
             "time_steps",\
             "buffer_size",\
             "timeout",\
+            "max_forks_at_once",\
             "cores",\
             "measure_cell_processing_times_iter",\
+            "outside_cells",\
+            "outside_cells_left",\
             "order",\
             "patch_size",\
             "halo_cells",\
@@ -310,15 +313,9 @@ class SpecFile1Reader():
                     found_token=True
             for term in ["cerkguess","notimeavg","maxpicarditer","split_ck"]:
                 if token_s.startswith(term):
-                    if term=="maxpicarditer":
-                        try:
-                            context[stp][term]=int(token_s.split(":")[-1])
-                            found_token=True
-                        except:
-                            raise SpecFile1ParserError("Parameter 'maxpicarditer' could not be parsed in original ExaHyPE specification file (is: '%s'. expected: 'maxpicarditer':<int>)!" % token_s)
-                    else:
-                        context[stp][term]=True
-                        found_token=True
+                    mappedTerm = term.replace("maxpicarditer","fix_picard_iterations")
+                    context[stp][mappedTerm]=True
+                    found_token=True
             if not found_token:
                 raise SpecFile1ParserError("Could not map value '%s' extracted from option 'optimisation'. Is it spelt correctly?" % token_s)
         return context
@@ -413,7 +410,7 @@ class SpecFile1Reader():
             if option in ["log_file","peano_kernel_path","peano_toolbox_path","exahype_path","output_directory","plotter_subdirectory"]:
                 context["paths"][option] = context.pop(option)
         self.map_computational_domain(context["computational_domain"])
-        for section in ["optimisation","profiling","distributed_memory"]:
+        for section in ["optimisation","profiling","distributed_memory","computational_domain"]:
             if section in context:
                 for option in context[section]:
                     if context[section][option] in ["on","off"]:

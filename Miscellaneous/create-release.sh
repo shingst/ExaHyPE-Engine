@@ -29,8 +29,7 @@ for i in ${files[@]}; do
 done
 
 
-#peanoVersion="Peano-$(git log --format="%h" -n 1 Peano/peano)"
-exaVersion="ExaHyPE-"$2"-$(git log --format="%h" -n 1)"
+exaVersion="ExaHyPE-"$2"-$(date +%Y-%m-%d)-$(git log --format="%h" -n 1)"
 tarName="$exaVersion.tar.gz"
 
 echo $tarName 

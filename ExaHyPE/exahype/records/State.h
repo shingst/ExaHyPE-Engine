@@ -33,7 +33,7 @@ namespace exahype {
     *
     * 		   build date: 09-02-2014 14:40
     *
-    * @date   04/03/2019 18:12
+    * @date   11/03/2019 20:06
     */
    class exahype::records::State { 
       
@@ -44,8 +44,9 @@ namespace exahype {
          struct PersistentRecords {
             int _maxRefinementLevelAllowed;
             bool _verticalExchangeOfSolverDataRequired;
-            bool _allSolversAttainedStableStateInPreviousIteration;
-            bool _meshRefinementHasConverged;
+            bool _allSolversAttainedStableState;
+            int _stableIterationsInARow;
+            bool _meshRefinementIsInRefiningMode;
             bool _hasRefined;
             bool _hasTriggeredRefinementForNextIteration;
             bool _hasErased;
@@ -63,7 +64,7 @@ namespace exahype {
             /**
              * Generated
              */
-            PersistentRecords(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& allSolversAttainedStableStateInPreviousIteration, const bool& meshRefinementHasConverged, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const int& totalNumberOfBatchIterations, const int& batchIteration);
+            PersistentRecords(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& allSolversAttainedStableState, const int& stableIterationsInARow, const bool& meshRefinementIsInRefiningMode, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const int& totalNumberOfBatchIterations, const int& batchIteration);
             
             
             inline int getMaxRefinementLevelAllowed() const 
@@ -106,42 +107,62 @@ namespace exahype {
             
             
             
-            inline bool getAllSolversAttainedStableStateInPreviousIteration() const 
+            inline bool getAllSolversAttainedStableState() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               return _allSolversAttainedStableStateInPreviousIteration;
+               return _allSolversAttainedStableState;
             }
             
             
             
-            inline void setAllSolversAttainedStableStateInPreviousIteration(const bool& allSolversAttainedStableStateInPreviousIteration) 
+            inline void setAllSolversAttainedStableState(const bool& allSolversAttainedStableState) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               _allSolversAttainedStableStateInPreviousIteration = allSolversAttainedStableStateInPreviousIteration;
+               _allSolversAttainedStableState = allSolversAttainedStableState;
             }
             
             
             
-            inline bool getMeshRefinementHasConverged() const 
+            inline int getStableIterationsInARow() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               return _meshRefinementHasConverged;
+               return _stableIterationsInARow;
             }
             
             
             
-            inline void setMeshRefinementHasConverged(const bool& meshRefinementHasConverged) 
+            inline void setStableIterationsInARow(const int& stableIterationsInARow) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               _meshRefinementHasConverged = meshRefinementHasConverged;
+               _stableIterationsInARow = stableIterationsInARow;
+            }
+            
+            
+            
+            inline bool getMeshRefinementIsInRefiningMode() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _meshRefinementIsInRefiningMode;
+            }
+            
+            
+            
+            inline void setMeshRefinementIsInRefiningMode(const bool& meshRefinementIsInRefiningMode) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _meshRefinementIsInRefiningMode = meshRefinementIsInRefiningMode;
             }
             
             
@@ -344,7 +365,7 @@ namespace exahype {
             /**
              * Generated
              */
-            State(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& allSolversAttainedStableStateInPreviousIteration, const bool& meshRefinementHasConverged, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const int& totalNumberOfBatchIterations, const int& batchIteration);
+            State(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& allSolversAttainedStableState, const int& stableIterationsInARow, const bool& meshRefinementIsInRefiningMode, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const int& totalNumberOfBatchIterations, const int& batchIteration);
             
             /**
              * Generated
@@ -392,42 +413,62 @@ namespace exahype {
             
             
             
-            inline bool getAllSolversAttainedStableStateInPreviousIteration() const 
+            inline bool getAllSolversAttainedStableState() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               return _persistentRecords._allSolversAttainedStableStateInPreviousIteration;
+               return _persistentRecords._allSolversAttainedStableState;
             }
             
             
             
-            inline void setAllSolversAttainedStableStateInPreviousIteration(const bool& allSolversAttainedStableStateInPreviousIteration) 
+            inline void setAllSolversAttainedStableState(const bool& allSolversAttainedStableState) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               _persistentRecords._allSolversAttainedStableStateInPreviousIteration = allSolversAttainedStableStateInPreviousIteration;
+               _persistentRecords._allSolversAttainedStableState = allSolversAttainedStableState;
             }
             
             
             
-            inline bool getMeshRefinementHasConverged() const 
+            inline int getStableIterationsInARow() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               return _persistentRecords._meshRefinementHasConverged;
+               return _persistentRecords._stableIterationsInARow;
             }
             
             
             
-            inline void setMeshRefinementHasConverged(const bool& meshRefinementHasConverged) 
+            inline void setStableIterationsInARow(const int& stableIterationsInARow) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               _persistentRecords._meshRefinementHasConverged = meshRefinementHasConverged;
+               _persistentRecords._stableIterationsInARow = stableIterationsInARow;
+            }
+            
+            
+            
+            inline bool getMeshRefinementIsInRefiningMode() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _persistentRecords._meshRefinementIsInRefiningMode;
+            }
+            
+            
+            
+            inline void setMeshRefinementIsInRefiningMode(const bool& meshRefinementIsInRefiningMode) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _persistentRecords._meshRefinementIsInRefiningMode = meshRefinementIsInRefiningMode;
             }
             
             
@@ -684,7 +725,7 @@ namespace exahype {
     *
     * 		   build date: 09-02-2014 14:40
     *
-    * @date   04/03/2019 18:12
+    * @date   11/03/2019 20:06
     */
    class exahype::records::StatePacked { 
       
@@ -693,8 +734,9 @@ namespace exahype {
          struct PersistentRecords {
             int _maxRefinementLevelAllowed;
             bool _verticalExchangeOfSolverDataRequired;
-            bool _allSolversAttainedStableStateInPreviousIteration;
-            bool _meshRefinementHasConverged;
+            bool _allSolversAttainedStableState;
+            int _stableIterationsInARow;
+            bool _meshRefinementIsInRefiningMode;
             bool _isTraversalInverted;
             int _totalNumberOfBatchIterations;
             int _batchIteration;
@@ -718,7 +760,7 @@ namespace exahype {
             /**
              * Generated
              */
-            PersistentRecords(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& allSolversAttainedStableStateInPreviousIteration, const bool& meshRefinementHasConverged, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const int& totalNumberOfBatchIterations, const int& batchIteration);
+            PersistentRecords(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& allSolversAttainedStableState, const int& stableIterationsInARow, const bool& meshRefinementIsInRefiningMode, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const int& totalNumberOfBatchIterations, const int& batchIteration);
             
             
             inline int getMaxRefinementLevelAllowed() const 
@@ -761,42 +803,62 @@ namespace exahype {
             
             
             
-            inline bool getAllSolversAttainedStableStateInPreviousIteration() const 
+            inline bool getAllSolversAttainedStableState() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               return _allSolversAttainedStableStateInPreviousIteration;
+               return _allSolversAttainedStableState;
             }
             
             
             
-            inline void setAllSolversAttainedStableStateInPreviousIteration(const bool& allSolversAttainedStableStateInPreviousIteration) 
+            inline void setAllSolversAttainedStableState(const bool& allSolversAttainedStableState) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               _allSolversAttainedStableStateInPreviousIteration = allSolversAttainedStableStateInPreviousIteration;
+               _allSolversAttainedStableState = allSolversAttainedStableState;
             }
             
             
             
-            inline bool getMeshRefinementHasConverged() const 
+            inline int getStableIterationsInARow() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               return _meshRefinementHasConverged;
+               return _stableIterationsInARow;
             }
             
             
             
-            inline void setMeshRefinementHasConverged(const bool& meshRefinementHasConverged) 
+            inline void setStableIterationsInARow(const int& stableIterationsInARow) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               _meshRefinementHasConverged = meshRefinementHasConverged;
+               _stableIterationsInARow = stableIterationsInARow;
+            }
+            
+            
+            
+            inline bool getMeshRefinementIsInRefiningMode() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _meshRefinementIsInRefiningMode;
+            }
+            
+            
+            
+            inline void setMeshRefinementIsInRefiningMode(const bool& meshRefinementIsInRefiningMode) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _meshRefinementIsInRefiningMode = meshRefinementIsInRefiningMode;
             }
             
             
@@ -1017,7 +1079,7 @@ namespace exahype {
             /**
              * Generated
              */
-            StatePacked(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& allSolversAttainedStableStateInPreviousIteration, const bool& meshRefinementHasConverged, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const int& totalNumberOfBatchIterations, const int& batchIteration);
+            StatePacked(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& allSolversAttainedStableState, const int& stableIterationsInARow, const bool& meshRefinementIsInRefiningMode, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const int& totalNumberOfBatchIterations, const int& batchIteration);
             
             /**
              * Generated
@@ -1065,42 +1127,62 @@ namespace exahype {
             
             
             
-            inline bool getAllSolversAttainedStableStateInPreviousIteration() const 
+            inline bool getAllSolversAttainedStableState() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               return _persistentRecords._allSolversAttainedStableStateInPreviousIteration;
+               return _persistentRecords._allSolversAttainedStableState;
             }
             
             
             
-            inline void setAllSolversAttainedStableStateInPreviousIteration(const bool& allSolversAttainedStableStateInPreviousIteration) 
+            inline void setAllSolversAttainedStableState(const bool& allSolversAttainedStableState) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               _persistentRecords._allSolversAttainedStableStateInPreviousIteration = allSolversAttainedStableStateInPreviousIteration;
+               _persistentRecords._allSolversAttainedStableState = allSolversAttainedStableState;
             }
             
             
             
-            inline bool getMeshRefinementHasConverged() const 
+            inline int getStableIterationsInARow() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               return _persistentRecords._meshRefinementHasConverged;
+               return _persistentRecords._stableIterationsInARow;
             }
             
             
             
-            inline void setMeshRefinementHasConverged(const bool& meshRefinementHasConverged) 
+            inline void setStableIterationsInARow(const int& stableIterationsInARow) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               _persistentRecords._meshRefinementHasConverged = meshRefinementHasConverged;
+               _persistentRecords._stableIterationsInARow = stableIterationsInARow;
+            }
+            
+            
+            
+            inline bool getMeshRefinementIsInRefiningMode() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _persistentRecords._meshRefinementIsInRefiningMode;
+            }
+            
+            
+            
+            inline void setMeshRefinementIsInRefiningMode(const bool& meshRefinementIsInRefiningMode) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _persistentRecords._meshRefinementIsInRefiningMode = meshRefinementIsInRefiningMode;
             }
             
             
@@ -1371,7 +1453,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   04/03/2019 18:12
+       * @date   11/03/2019 20:06
        */
       class exahype::records::State { 
          
@@ -1386,8 +1468,9 @@ namespace exahype {
             struct PersistentRecords {
                int _maxRefinementLevelAllowed;
                bool _verticalExchangeOfSolverDataRequired;
-               bool _allSolversAttainedStableStateInPreviousIteration;
-               bool _meshRefinementHasConverged;
+               bool _allSolversAttainedStableState;
+               int _stableIterationsInARow;
+               bool _meshRefinementIsInRefiningMode;
                #ifdef UseManualAlignment
                tarch::la::Vector<DIMENSIONS,double> _minMeshWidth __attribute__((aligned(VectorisationAlignment)));
                #else
@@ -1430,7 +1513,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& allSolversAttainedStableStateInPreviousIteration, const bool& meshRefinementHasConverged, const tarch::la::Vector<DIMENSIONS,double>& minMeshWidth, const tarch::la::Vector<DIMENSIONS,double>& maxMeshWidth, const double& numberOfInnerVertices, const double& numberOfBoundaryVertices, const double& numberOfOuterVertices, const double& numberOfInnerCells, const double& numberOfOuterCells, const double& numberOfInnerLeafVertices, const double& numberOfBoundaryLeafVertices, const double& numberOfOuterLeafVertices, const double& numberOfInnerLeafCells, const double& numberOfOuterLeafCells, const int& maxLevel, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork, const BoundaryRefinement& refineArtificiallyOutsideDomain, const int& totalNumberOfBatchIterations, const int& batchIteration);
+               PersistentRecords(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& allSolversAttainedStableState, const int& stableIterationsInARow, const bool& meshRefinementIsInRefiningMode, const tarch::la::Vector<DIMENSIONS,double>& minMeshWidth, const tarch::la::Vector<DIMENSIONS,double>& maxMeshWidth, const double& numberOfInnerVertices, const double& numberOfBoundaryVertices, const double& numberOfOuterVertices, const double& numberOfInnerCells, const double& numberOfOuterCells, const double& numberOfInnerLeafVertices, const double& numberOfBoundaryLeafVertices, const double& numberOfOuterLeafVertices, const double& numberOfInnerLeafCells, const double& numberOfOuterLeafCells, const int& maxLevel, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork, const BoundaryRefinement& refineArtificiallyOutsideDomain, const int& totalNumberOfBatchIterations, const int& batchIteration);
                
                
                inline int getMaxRefinementLevelAllowed() const 
@@ -1473,42 +1556,62 @@ namespace exahype {
                
                
                
-               inline bool getAllSolversAttainedStableStateInPreviousIteration() const 
+               inline bool getAllSolversAttainedStableState() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  return _allSolversAttainedStableStateInPreviousIteration;
+                  return _allSolversAttainedStableState;
                }
                
                
                
-               inline void setAllSolversAttainedStableStateInPreviousIteration(const bool& allSolversAttainedStableStateInPreviousIteration) 
+               inline void setAllSolversAttainedStableState(const bool& allSolversAttainedStableState) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  _allSolversAttainedStableStateInPreviousIteration = allSolversAttainedStableStateInPreviousIteration;
+                  _allSolversAttainedStableState = allSolversAttainedStableState;
                }
                
                
                
-               inline bool getMeshRefinementHasConverged() const 
+               inline int getStableIterationsInARow() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  return _meshRefinementHasConverged;
+                  return _stableIterationsInARow;
                }
                
                
                
-               inline void setMeshRefinementHasConverged(const bool& meshRefinementHasConverged) 
+               inline void setStableIterationsInARow(const int& stableIterationsInARow) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  _meshRefinementHasConverged = meshRefinementHasConverged;
+                  _stableIterationsInARow = stableIterationsInARow;
+               }
+               
+               
+               
+               inline bool getMeshRefinementIsInRefiningMode() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _meshRefinementIsInRefiningMode;
+               }
+               
+               
+               
+               inline void setMeshRefinementIsInRefiningMode(const bool& meshRefinementIsInRefiningMode) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _meshRefinementIsInRefiningMode = meshRefinementIsInRefiningMode;
                }
                
                
@@ -2127,7 +2230,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               State(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& allSolversAttainedStableStateInPreviousIteration, const bool& meshRefinementHasConverged, const tarch::la::Vector<DIMENSIONS,double>& minMeshWidth, const tarch::la::Vector<DIMENSIONS,double>& maxMeshWidth, const double& numberOfInnerVertices, const double& numberOfBoundaryVertices, const double& numberOfOuterVertices, const double& numberOfInnerCells, const double& numberOfOuterCells, const double& numberOfInnerLeafVertices, const double& numberOfBoundaryLeafVertices, const double& numberOfOuterLeafVertices, const double& numberOfInnerLeafCells, const double& numberOfOuterLeafCells, const int& maxLevel, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork, const BoundaryRefinement& refineArtificiallyOutsideDomain, const int& totalNumberOfBatchIterations, const int& batchIteration);
+               State(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& allSolversAttainedStableState, const int& stableIterationsInARow, const bool& meshRefinementIsInRefiningMode, const tarch::la::Vector<DIMENSIONS,double>& minMeshWidth, const tarch::la::Vector<DIMENSIONS,double>& maxMeshWidth, const double& numberOfInnerVertices, const double& numberOfBoundaryVertices, const double& numberOfOuterVertices, const double& numberOfInnerCells, const double& numberOfOuterCells, const double& numberOfInnerLeafVertices, const double& numberOfBoundaryLeafVertices, const double& numberOfOuterLeafVertices, const double& numberOfInnerLeafCells, const double& numberOfOuterLeafCells, const int& maxLevel, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork, const BoundaryRefinement& refineArtificiallyOutsideDomain, const int& totalNumberOfBatchIterations, const int& batchIteration);
                
                /**
                 * Generated
@@ -2175,42 +2278,62 @@ namespace exahype {
                
                
                
-               inline bool getAllSolversAttainedStableStateInPreviousIteration() const 
+               inline bool getAllSolversAttainedStableState() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  return _persistentRecords._allSolversAttainedStableStateInPreviousIteration;
+                  return _persistentRecords._allSolversAttainedStableState;
                }
                
                
                
-               inline void setAllSolversAttainedStableStateInPreviousIteration(const bool& allSolversAttainedStableStateInPreviousIteration) 
+               inline void setAllSolversAttainedStableState(const bool& allSolversAttainedStableState) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  _persistentRecords._allSolversAttainedStableStateInPreviousIteration = allSolversAttainedStableStateInPreviousIteration;
+                  _persistentRecords._allSolversAttainedStableState = allSolversAttainedStableState;
                }
                
                
                
-               inline bool getMeshRefinementHasConverged() const 
+               inline int getStableIterationsInARow() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  return _persistentRecords._meshRefinementHasConverged;
+                  return _persistentRecords._stableIterationsInARow;
                }
                
                
                
-               inline void setMeshRefinementHasConverged(const bool& meshRefinementHasConverged) 
+               inline void setStableIterationsInARow(const int& stableIterationsInARow) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  _persistentRecords._meshRefinementHasConverged = meshRefinementHasConverged;
+                  _persistentRecords._stableIterationsInARow = stableIterationsInARow;
+               }
+               
+               
+               
+               inline bool getMeshRefinementIsInRefiningMode() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._meshRefinementIsInRefiningMode;
+               }
+               
+               
+               
+               inline void setMeshRefinementIsInRefiningMode(const bool& meshRefinementIsInRefiningMode) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._meshRefinementIsInRefiningMode = meshRefinementIsInRefiningMode;
                }
                
                
@@ -2945,7 +3068,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   04/03/2019 18:12
+       * @date   11/03/2019 20:06
        */
       class exahype::records::StatePacked { 
          
@@ -2956,8 +3079,9 @@ namespace exahype {
             struct PersistentRecords {
                int _maxRefinementLevelAllowed;
                bool _verticalExchangeOfSolverDataRequired;
-               bool _allSolversAttainedStableStateInPreviousIteration;
-               bool _meshRefinementHasConverged;
+               bool _allSolversAttainedStableState;
+               int _stableIterationsInARow;
+               bool _meshRefinementIsInRefiningMode;
                tarch::la::Vector<DIMENSIONS,double> _minMeshWidth;
                tarch::la::Vector<DIMENSIONS,double> _maxMeshWidth;
                double _numberOfInnerVertices;
@@ -2998,7 +3122,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& allSolversAttainedStableStateInPreviousIteration, const bool& meshRefinementHasConverged, const tarch::la::Vector<DIMENSIONS,double>& minMeshWidth, const tarch::la::Vector<DIMENSIONS,double>& maxMeshWidth, const double& numberOfInnerVertices, const double& numberOfBoundaryVertices, const double& numberOfOuterVertices, const double& numberOfInnerCells, const double& numberOfOuterCells, const double& numberOfInnerLeafVertices, const double& numberOfBoundaryLeafVertices, const double& numberOfOuterLeafVertices, const double& numberOfInnerLeafCells, const double& numberOfOuterLeafCells, const int& maxLevel, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork, const BoundaryRefinement& refineArtificiallyOutsideDomain, const int& totalNumberOfBatchIterations, const int& batchIteration);
+               PersistentRecords(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& allSolversAttainedStableState, const int& stableIterationsInARow, const bool& meshRefinementIsInRefiningMode, const tarch::la::Vector<DIMENSIONS,double>& minMeshWidth, const tarch::la::Vector<DIMENSIONS,double>& maxMeshWidth, const double& numberOfInnerVertices, const double& numberOfBoundaryVertices, const double& numberOfOuterVertices, const double& numberOfInnerCells, const double& numberOfOuterCells, const double& numberOfInnerLeafVertices, const double& numberOfBoundaryLeafVertices, const double& numberOfOuterLeafVertices, const double& numberOfInnerLeafCells, const double& numberOfOuterLeafCells, const int& maxLevel, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork, const BoundaryRefinement& refineArtificiallyOutsideDomain, const int& totalNumberOfBatchIterations, const int& batchIteration);
                
                
                inline int getMaxRefinementLevelAllowed() const 
@@ -3041,42 +3165,62 @@ namespace exahype {
                
                
                
-               inline bool getAllSolversAttainedStableStateInPreviousIteration() const 
+               inline bool getAllSolversAttainedStableState() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  return _allSolversAttainedStableStateInPreviousIteration;
+                  return _allSolversAttainedStableState;
                }
                
                
                
-               inline void setAllSolversAttainedStableStateInPreviousIteration(const bool& allSolversAttainedStableStateInPreviousIteration) 
+               inline void setAllSolversAttainedStableState(const bool& allSolversAttainedStableState) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  _allSolversAttainedStableStateInPreviousIteration = allSolversAttainedStableStateInPreviousIteration;
+                  _allSolversAttainedStableState = allSolversAttainedStableState;
                }
                
                
                
-               inline bool getMeshRefinementHasConverged() const 
+               inline int getStableIterationsInARow() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  return _meshRefinementHasConverged;
+                  return _stableIterationsInARow;
                }
                
                
                
-               inline void setMeshRefinementHasConverged(const bool& meshRefinementHasConverged) 
+               inline void setStableIterationsInARow(const int& stableIterationsInARow) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  _meshRefinementHasConverged = meshRefinementHasConverged;
+                  _stableIterationsInARow = stableIterationsInARow;
+               }
+               
+               
+               
+               inline bool getMeshRefinementIsInRefiningMode() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _meshRefinementIsInRefiningMode;
+               }
+               
+               
+               
+               inline void setMeshRefinementIsInRefiningMode(const bool& meshRefinementIsInRefiningMode) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _meshRefinementIsInRefiningMode = meshRefinementIsInRefiningMode;
                }
                
                
@@ -3731,7 +3875,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               StatePacked(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& allSolversAttainedStableStateInPreviousIteration, const bool& meshRefinementHasConverged, const tarch::la::Vector<DIMENSIONS,double>& minMeshWidth, const tarch::la::Vector<DIMENSIONS,double>& maxMeshWidth, const double& numberOfInnerVertices, const double& numberOfBoundaryVertices, const double& numberOfOuterVertices, const double& numberOfInnerCells, const double& numberOfOuterCells, const double& numberOfInnerLeafVertices, const double& numberOfBoundaryLeafVertices, const double& numberOfOuterLeafVertices, const double& numberOfInnerLeafCells, const double& numberOfOuterLeafCells, const int& maxLevel, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork, const BoundaryRefinement& refineArtificiallyOutsideDomain, const int& totalNumberOfBatchIterations, const int& batchIteration);
+               StatePacked(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& allSolversAttainedStableState, const int& stableIterationsInARow, const bool& meshRefinementIsInRefiningMode, const tarch::la::Vector<DIMENSIONS,double>& minMeshWidth, const tarch::la::Vector<DIMENSIONS,double>& maxMeshWidth, const double& numberOfInnerVertices, const double& numberOfBoundaryVertices, const double& numberOfOuterVertices, const double& numberOfInnerCells, const double& numberOfOuterCells, const double& numberOfInnerLeafVertices, const double& numberOfBoundaryLeafVertices, const double& numberOfOuterLeafVertices, const double& numberOfInnerLeafCells, const double& numberOfOuterLeafCells, const int& maxLevel, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork, const BoundaryRefinement& refineArtificiallyOutsideDomain, const int& totalNumberOfBatchIterations, const int& batchIteration);
                
                /**
                 * Generated
@@ -3779,42 +3923,62 @@ namespace exahype {
                
                
                
-               inline bool getAllSolversAttainedStableStateInPreviousIteration() const 
+               inline bool getAllSolversAttainedStableState() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  return _persistentRecords._allSolversAttainedStableStateInPreviousIteration;
+                  return _persistentRecords._allSolversAttainedStableState;
                }
                
                
                
-               inline void setAllSolversAttainedStableStateInPreviousIteration(const bool& allSolversAttainedStableStateInPreviousIteration) 
+               inline void setAllSolversAttainedStableState(const bool& allSolversAttainedStableState) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  _persistentRecords._allSolversAttainedStableStateInPreviousIteration = allSolversAttainedStableStateInPreviousIteration;
+                  _persistentRecords._allSolversAttainedStableState = allSolversAttainedStableState;
                }
                
                
                
-               inline bool getMeshRefinementHasConverged() const 
+               inline int getStableIterationsInARow() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  return _persistentRecords._meshRefinementHasConverged;
+                  return _persistentRecords._stableIterationsInARow;
                }
                
                
                
-               inline void setMeshRefinementHasConverged(const bool& meshRefinementHasConverged) 
+               inline void setStableIterationsInARow(const int& stableIterationsInARow) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  _persistentRecords._meshRefinementHasConverged = meshRefinementHasConverged;
+                  _persistentRecords._stableIterationsInARow = stableIterationsInARow;
+               }
+               
+               
+               
+               inline bool getMeshRefinementIsInRefiningMode() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._meshRefinementIsInRefiningMode;
+               }
+               
+               
+               
+               inline void setMeshRefinementIsInRefiningMode(const bool& meshRefinementIsInRefiningMode) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._meshRefinementIsInRefiningMode = meshRefinementIsInRefiningMode;
                }
                
                
@@ -4582,7 +4746,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   04/03/2019 18:12
+       * @date   11/03/2019 20:06
        */
       class exahype::records::State { 
          
@@ -4593,8 +4757,9 @@ namespace exahype {
             struct PersistentRecords {
                int _maxRefinementLevelAllowed;
                bool _verticalExchangeOfSolverDataRequired;
-               bool _allSolversAttainedStableStateInPreviousIteration;
-               bool _meshRefinementHasConverged;
+               bool _allSolversAttainedStableState;
+               int _stableIterationsInARow;
+               bool _meshRefinementIsInRefiningMode;
                #ifdef UseManualAlignment
                tarch::la::Vector<DIMENSIONS,double> _minMeshWidth __attribute__((aligned(VectorisationAlignment)));
                #else
@@ -4633,7 +4798,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& allSolversAttainedStableStateInPreviousIteration, const bool& meshRefinementHasConverged, const tarch::la::Vector<DIMENSIONS,double>& minMeshWidth, const tarch::la::Vector<DIMENSIONS,double>& maxMeshWidth, const double& numberOfInnerVertices, const double& numberOfBoundaryVertices, const double& numberOfOuterVertices, const double& numberOfInnerCells, const double& numberOfOuterCells, const double& numberOfInnerLeafVertices, const double& numberOfBoundaryLeafVertices, const double& numberOfOuterLeafVertices, const double& numberOfInnerLeafCells, const double& numberOfOuterLeafCells, const int& maxLevel, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const int& totalNumberOfBatchIterations, const int& batchIteration);
+               PersistentRecords(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& allSolversAttainedStableState, const int& stableIterationsInARow, const bool& meshRefinementIsInRefiningMode, const tarch::la::Vector<DIMENSIONS,double>& minMeshWidth, const tarch::la::Vector<DIMENSIONS,double>& maxMeshWidth, const double& numberOfInnerVertices, const double& numberOfBoundaryVertices, const double& numberOfOuterVertices, const double& numberOfInnerCells, const double& numberOfOuterCells, const double& numberOfInnerLeafVertices, const double& numberOfBoundaryLeafVertices, const double& numberOfOuterLeafVertices, const double& numberOfInnerLeafCells, const double& numberOfOuterLeafCells, const int& maxLevel, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const int& totalNumberOfBatchIterations, const int& batchIteration);
                
                
                inline int getMaxRefinementLevelAllowed() const 
@@ -4676,42 +4841,62 @@ namespace exahype {
                
                
                
-               inline bool getAllSolversAttainedStableStateInPreviousIteration() const 
+               inline bool getAllSolversAttainedStableState() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  return _allSolversAttainedStableStateInPreviousIteration;
+                  return _allSolversAttainedStableState;
                }
                
                
                
-               inline void setAllSolversAttainedStableStateInPreviousIteration(const bool& allSolversAttainedStableStateInPreviousIteration) 
+               inline void setAllSolversAttainedStableState(const bool& allSolversAttainedStableState) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  _allSolversAttainedStableStateInPreviousIteration = allSolversAttainedStableStateInPreviousIteration;
+                  _allSolversAttainedStableState = allSolversAttainedStableState;
                }
                
                
                
-               inline bool getMeshRefinementHasConverged() const 
+               inline int getStableIterationsInARow() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  return _meshRefinementHasConverged;
+                  return _stableIterationsInARow;
                }
                
                
                
-               inline void setMeshRefinementHasConverged(const bool& meshRefinementHasConverged) 
+               inline void setStableIterationsInARow(const int& stableIterationsInARow) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  _meshRefinementHasConverged = meshRefinementHasConverged;
+                  _stableIterationsInARow = stableIterationsInARow;
+               }
+               
+               
+               
+               inline bool getMeshRefinementIsInRefiningMode() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _meshRefinementIsInRefiningMode;
+               }
+               
+               
+               
+               inline void setMeshRefinementIsInRefiningMode(const bool& meshRefinementIsInRefiningMode) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _meshRefinementIsInRefiningMode = meshRefinementIsInRefiningMode;
                }
                
                
@@ -5250,7 +5435,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               State(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& allSolversAttainedStableStateInPreviousIteration, const bool& meshRefinementHasConverged, const tarch::la::Vector<DIMENSIONS,double>& minMeshWidth, const tarch::la::Vector<DIMENSIONS,double>& maxMeshWidth, const double& numberOfInnerVertices, const double& numberOfBoundaryVertices, const double& numberOfOuterVertices, const double& numberOfInnerCells, const double& numberOfOuterCells, const double& numberOfInnerLeafVertices, const double& numberOfBoundaryLeafVertices, const double& numberOfOuterLeafVertices, const double& numberOfInnerLeafCells, const double& numberOfOuterLeafCells, const int& maxLevel, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const int& totalNumberOfBatchIterations, const int& batchIteration);
+               State(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& allSolversAttainedStableState, const int& stableIterationsInARow, const bool& meshRefinementIsInRefiningMode, const tarch::la::Vector<DIMENSIONS,double>& minMeshWidth, const tarch::la::Vector<DIMENSIONS,double>& maxMeshWidth, const double& numberOfInnerVertices, const double& numberOfBoundaryVertices, const double& numberOfOuterVertices, const double& numberOfInnerCells, const double& numberOfOuterCells, const double& numberOfInnerLeafVertices, const double& numberOfBoundaryLeafVertices, const double& numberOfOuterLeafVertices, const double& numberOfInnerLeafCells, const double& numberOfOuterLeafCells, const int& maxLevel, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const int& totalNumberOfBatchIterations, const int& batchIteration);
                
                /**
                 * Generated
@@ -5298,42 +5483,62 @@ namespace exahype {
                
                
                
-               inline bool getAllSolversAttainedStableStateInPreviousIteration() const 
+               inline bool getAllSolversAttainedStableState() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  return _persistentRecords._allSolversAttainedStableStateInPreviousIteration;
+                  return _persistentRecords._allSolversAttainedStableState;
                }
                
                
                
-               inline void setAllSolversAttainedStableStateInPreviousIteration(const bool& allSolversAttainedStableStateInPreviousIteration) 
+               inline void setAllSolversAttainedStableState(const bool& allSolversAttainedStableState) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  _persistentRecords._allSolversAttainedStableStateInPreviousIteration = allSolversAttainedStableStateInPreviousIteration;
+                  _persistentRecords._allSolversAttainedStableState = allSolversAttainedStableState;
                }
                
                
                
-               inline bool getMeshRefinementHasConverged() const 
+               inline int getStableIterationsInARow() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  return _persistentRecords._meshRefinementHasConverged;
+                  return _persistentRecords._stableIterationsInARow;
                }
                
                
                
-               inline void setMeshRefinementHasConverged(const bool& meshRefinementHasConverged) 
+               inline void setStableIterationsInARow(const int& stableIterationsInARow) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  _persistentRecords._meshRefinementHasConverged = meshRefinementHasConverged;
+                  _persistentRecords._stableIterationsInARow = stableIterationsInARow;
+               }
+               
+               
+               
+               inline bool getMeshRefinementIsInRefiningMode() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._meshRefinementIsInRefiningMode;
+               }
+               
+               
+               
+               inline void setMeshRefinementIsInRefiningMode(const bool& meshRefinementIsInRefiningMode) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._meshRefinementIsInRefiningMode = meshRefinementIsInRefiningMode;
                }
                
                
@@ -5978,7 +6183,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   04/03/2019 18:12
+       * @date   11/03/2019 20:06
        */
       class exahype::records::StatePacked { 
          
@@ -5987,8 +6192,9 @@ namespace exahype {
             struct PersistentRecords {
                int _maxRefinementLevelAllowed;
                bool _verticalExchangeOfSolverDataRequired;
-               bool _allSolversAttainedStableStateInPreviousIteration;
-               bool _meshRefinementHasConverged;
+               bool _allSolversAttainedStableState;
+               int _stableIterationsInARow;
+               bool _meshRefinementIsInRefiningMode;
                tarch::la::Vector<DIMENSIONS,double> _minMeshWidth;
                tarch::la::Vector<DIMENSIONS,double> _maxMeshWidth;
                double _numberOfInnerVertices;
@@ -6025,7 +6231,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& allSolversAttainedStableStateInPreviousIteration, const bool& meshRefinementHasConverged, const tarch::la::Vector<DIMENSIONS,double>& minMeshWidth, const tarch::la::Vector<DIMENSIONS,double>& maxMeshWidth, const double& numberOfInnerVertices, const double& numberOfBoundaryVertices, const double& numberOfOuterVertices, const double& numberOfInnerCells, const double& numberOfOuterCells, const double& numberOfInnerLeafVertices, const double& numberOfBoundaryLeafVertices, const double& numberOfOuterLeafVertices, const double& numberOfInnerLeafCells, const double& numberOfOuterLeafCells, const int& maxLevel, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const int& totalNumberOfBatchIterations, const int& batchIteration);
+               PersistentRecords(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& allSolversAttainedStableState, const int& stableIterationsInARow, const bool& meshRefinementIsInRefiningMode, const tarch::la::Vector<DIMENSIONS,double>& minMeshWidth, const tarch::la::Vector<DIMENSIONS,double>& maxMeshWidth, const double& numberOfInnerVertices, const double& numberOfBoundaryVertices, const double& numberOfOuterVertices, const double& numberOfInnerCells, const double& numberOfOuterCells, const double& numberOfInnerLeafVertices, const double& numberOfBoundaryLeafVertices, const double& numberOfOuterLeafVertices, const double& numberOfInnerLeafCells, const double& numberOfOuterLeafCells, const int& maxLevel, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const int& totalNumberOfBatchIterations, const int& batchIteration);
                
                
                inline int getMaxRefinementLevelAllowed() const 
@@ -6068,42 +6274,62 @@ namespace exahype {
                
                
                
-               inline bool getAllSolversAttainedStableStateInPreviousIteration() const 
+               inline bool getAllSolversAttainedStableState() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  return _allSolversAttainedStableStateInPreviousIteration;
+                  return _allSolversAttainedStableState;
                }
                
                
                
-               inline void setAllSolversAttainedStableStateInPreviousIteration(const bool& allSolversAttainedStableStateInPreviousIteration) 
+               inline void setAllSolversAttainedStableState(const bool& allSolversAttainedStableState) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  _allSolversAttainedStableStateInPreviousIteration = allSolversAttainedStableStateInPreviousIteration;
+                  _allSolversAttainedStableState = allSolversAttainedStableState;
                }
                
                
                
-               inline bool getMeshRefinementHasConverged() const 
+               inline int getStableIterationsInARow() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  return _meshRefinementHasConverged;
+                  return _stableIterationsInARow;
                }
                
                
                
-               inline void setMeshRefinementHasConverged(const bool& meshRefinementHasConverged) 
+               inline void setStableIterationsInARow(const int& stableIterationsInARow) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  _meshRefinementHasConverged = meshRefinementHasConverged;
+                  _stableIterationsInARow = stableIterationsInARow;
+               }
+               
+               
+               
+               inline bool getMeshRefinementIsInRefiningMode() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _meshRefinementIsInRefiningMode;
+               }
+               
+               
+               
+               inline void setMeshRefinementIsInRefiningMode(const bool& meshRefinementIsInRefiningMode) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _meshRefinementIsInRefiningMode = meshRefinementIsInRefiningMode;
                }
                
                
@@ -6660,7 +6886,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               StatePacked(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& allSolversAttainedStableStateInPreviousIteration, const bool& meshRefinementHasConverged, const tarch::la::Vector<DIMENSIONS,double>& minMeshWidth, const tarch::la::Vector<DIMENSIONS,double>& maxMeshWidth, const double& numberOfInnerVertices, const double& numberOfBoundaryVertices, const double& numberOfOuterVertices, const double& numberOfInnerCells, const double& numberOfOuterCells, const double& numberOfInnerLeafVertices, const double& numberOfBoundaryLeafVertices, const double& numberOfOuterLeafVertices, const double& numberOfInnerLeafCells, const double& numberOfOuterLeafCells, const int& maxLevel, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const int& totalNumberOfBatchIterations, const int& batchIteration);
+               StatePacked(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& allSolversAttainedStableState, const int& stableIterationsInARow, const bool& meshRefinementIsInRefiningMode, const tarch::la::Vector<DIMENSIONS,double>& minMeshWidth, const tarch::la::Vector<DIMENSIONS,double>& maxMeshWidth, const double& numberOfInnerVertices, const double& numberOfBoundaryVertices, const double& numberOfOuterVertices, const double& numberOfInnerCells, const double& numberOfOuterCells, const double& numberOfInnerLeafVertices, const double& numberOfBoundaryLeafVertices, const double& numberOfOuterLeafVertices, const double& numberOfInnerLeafCells, const double& numberOfOuterLeafCells, const int& maxLevel, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const int& totalNumberOfBatchIterations, const int& batchIteration);
                
                /**
                 * Generated
@@ -6708,42 +6934,62 @@ namespace exahype {
                
                
                
-               inline bool getAllSolversAttainedStableStateInPreviousIteration() const 
+               inline bool getAllSolversAttainedStableState() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  return _persistentRecords._allSolversAttainedStableStateInPreviousIteration;
+                  return _persistentRecords._allSolversAttainedStableState;
                }
                
                
                
-               inline void setAllSolversAttainedStableStateInPreviousIteration(const bool& allSolversAttainedStableStateInPreviousIteration) 
+               inline void setAllSolversAttainedStableState(const bool& allSolversAttainedStableState) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  _persistentRecords._allSolversAttainedStableStateInPreviousIteration = allSolversAttainedStableStateInPreviousIteration;
+                  _persistentRecords._allSolversAttainedStableState = allSolversAttainedStableState;
                }
                
                
                
-               inline bool getMeshRefinementHasConverged() const 
+               inline int getStableIterationsInARow() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  return _persistentRecords._meshRefinementHasConverged;
+                  return _persistentRecords._stableIterationsInARow;
                }
                
                
                
-               inline void setMeshRefinementHasConverged(const bool& meshRefinementHasConverged) 
+               inline void setStableIterationsInARow(const int& stableIterationsInARow) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  _persistentRecords._meshRefinementHasConverged = meshRefinementHasConverged;
+                  _persistentRecords._stableIterationsInARow = stableIterationsInARow;
+               }
+               
+               
+               
+               inline bool getMeshRefinementIsInRefiningMode() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._meshRefinementIsInRefiningMode;
+               }
+               
+               
+               
+               inline void setMeshRefinementIsInRefiningMode(const bool& meshRefinementIsInRefiningMode) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._meshRefinementIsInRefiningMode = meshRefinementIsInRefiningMode;
                }
                
                
@@ -7403,7 +7649,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   04/03/2019 18:12
+       * @date   11/03/2019 20:06
        */
       class exahype::records::State { 
          
@@ -7418,8 +7664,9 @@ namespace exahype {
             struct PersistentRecords {
                int _maxRefinementLevelAllowed;
                bool _verticalExchangeOfSolverDataRequired;
-               bool _allSolversAttainedStableStateInPreviousIteration;
-               bool _meshRefinementHasConverged;
+               bool _allSolversAttainedStableState;
+               int _stableIterationsInARow;
+               bool _meshRefinementIsInRefiningMode;
                bool _hasRefined;
                bool _hasTriggeredRefinementForNextIteration;
                bool _hasErased;
@@ -7441,7 +7688,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& allSolversAttainedStableStateInPreviousIteration, const bool& meshRefinementHasConverged, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork, const BoundaryRefinement& refineArtificiallyOutsideDomain, const int& totalNumberOfBatchIterations, const int& batchIteration);
+               PersistentRecords(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& allSolversAttainedStableState, const int& stableIterationsInARow, const bool& meshRefinementIsInRefiningMode, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork, const BoundaryRefinement& refineArtificiallyOutsideDomain, const int& totalNumberOfBatchIterations, const int& batchIteration);
                
                
                inline int getMaxRefinementLevelAllowed() const 
@@ -7484,42 +7731,62 @@ namespace exahype {
                
                
                
-               inline bool getAllSolversAttainedStableStateInPreviousIteration() const 
+               inline bool getAllSolversAttainedStableState() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  return _allSolversAttainedStableStateInPreviousIteration;
+                  return _allSolversAttainedStableState;
                }
                
                
                
-               inline void setAllSolversAttainedStableStateInPreviousIteration(const bool& allSolversAttainedStableStateInPreviousIteration) 
+               inline void setAllSolversAttainedStableState(const bool& allSolversAttainedStableState) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  _allSolversAttainedStableStateInPreviousIteration = allSolversAttainedStableStateInPreviousIteration;
+                  _allSolversAttainedStableState = allSolversAttainedStableState;
                }
                
                
                
-               inline bool getMeshRefinementHasConverged() const 
+               inline int getStableIterationsInARow() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  return _meshRefinementHasConverged;
+                  return _stableIterationsInARow;
                }
                
                
                
-               inline void setMeshRefinementHasConverged(const bool& meshRefinementHasConverged) 
+               inline void setStableIterationsInARow(const int& stableIterationsInARow) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  _meshRefinementHasConverged = meshRefinementHasConverged;
+                  _stableIterationsInARow = stableIterationsInARow;
+               }
+               
+               
+               
+               inline bool getMeshRefinementIsInRefiningMode() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _meshRefinementIsInRefiningMode;
+               }
+               
+               
+               
+               inline void setMeshRefinementIsInRefiningMode(const bool& meshRefinementIsInRefiningMode) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _meshRefinementIsInRefiningMode = meshRefinementIsInRefiningMode;
                }
                
                
@@ -7802,7 +8069,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               State(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& allSolversAttainedStableStateInPreviousIteration, const bool& meshRefinementHasConverged, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork, const BoundaryRefinement& refineArtificiallyOutsideDomain, const int& totalNumberOfBatchIterations, const int& batchIteration);
+               State(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& allSolversAttainedStableState, const int& stableIterationsInARow, const bool& meshRefinementIsInRefiningMode, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork, const BoundaryRefinement& refineArtificiallyOutsideDomain, const int& totalNumberOfBatchIterations, const int& batchIteration);
                
                /**
                 * Generated
@@ -7850,42 +8117,62 @@ namespace exahype {
                
                
                
-               inline bool getAllSolversAttainedStableStateInPreviousIteration() const 
+               inline bool getAllSolversAttainedStableState() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  return _persistentRecords._allSolversAttainedStableStateInPreviousIteration;
+                  return _persistentRecords._allSolversAttainedStableState;
                }
                
                
                
-               inline void setAllSolversAttainedStableStateInPreviousIteration(const bool& allSolversAttainedStableStateInPreviousIteration) 
+               inline void setAllSolversAttainedStableState(const bool& allSolversAttainedStableState) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  _persistentRecords._allSolversAttainedStableStateInPreviousIteration = allSolversAttainedStableStateInPreviousIteration;
+                  _persistentRecords._allSolversAttainedStableState = allSolversAttainedStableState;
                }
                
                
                
-               inline bool getMeshRefinementHasConverged() const 
+               inline int getStableIterationsInARow() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  return _persistentRecords._meshRefinementHasConverged;
+                  return _persistentRecords._stableIterationsInARow;
                }
                
                
                
-               inline void setMeshRefinementHasConverged(const bool& meshRefinementHasConverged) 
+               inline void setStableIterationsInARow(const int& stableIterationsInARow) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  _persistentRecords._meshRefinementHasConverged = meshRefinementHasConverged;
+                  _persistentRecords._stableIterationsInARow = stableIterationsInARow;
+               }
+               
+               
+               
+               inline bool getMeshRefinementIsInRefiningMode() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._meshRefinementIsInRefiningMode;
+               }
+               
+               
+               
+               inline void setMeshRefinementIsInRefiningMode(const bool& meshRefinementIsInRefiningMode) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._meshRefinementIsInRefiningMode = meshRefinementIsInRefiningMode;
                }
                
                
@@ -8232,7 +8519,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   04/03/2019 18:12
+       * @date   11/03/2019 20:06
        */
       class exahype::records::StatePacked { 
          
@@ -8243,8 +8530,9 @@ namespace exahype {
             struct PersistentRecords {
                int _maxRefinementLevelAllowed;
                bool _verticalExchangeOfSolverDataRequired;
-               bool _allSolversAttainedStableStateInPreviousIteration;
-               bool _meshRefinementHasConverged;
+               bool _allSolversAttainedStableState;
+               int _stableIterationsInARow;
+               bool _meshRefinementIsInRefiningMode;
                bool _isTraversalInverted;
                int _totalNumberOfBatchIterations;
                int _batchIteration;
@@ -8272,7 +8560,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& allSolversAttainedStableStateInPreviousIteration, const bool& meshRefinementHasConverged, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork, const BoundaryRefinement& refineArtificiallyOutsideDomain, const int& totalNumberOfBatchIterations, const int& batchIteration);
+               PersistentRecords(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& allSolversAttainedStableState, const int& stableIterationsInARow, const bool& meshRefinementIsInRefiningMode, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork, const BoundaryRefinement& refineArtificiallyOutsideDomain, const int& totalNumberOfBatchIterations, const int& batchIteration);
                
                
                inline int getMaxRefinementLevelAllowed() const 
@@ -8315,42 +8603,62 @@ namespace exahype {
                
                
                
-               inline bool getAllSolversAttainedStableStateInPreviousIteration() const 
+               inline bool getAllSolversAttainedStableState() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  return _allSolversAttainedStableStateInPreviousIteration;
+                  return _allSolversAttainedStableState;
                }
                
                
                
-               inline void setAllSolversAttainedStableStateInPreviousIteration(const bool& allSolversAttainedStableStateInPreviousIteration) 
+               inline void setAllSolversAttainedStableState(const bool& allSolversAttainedStableState) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  _allSolversAttainedStableStateInPreviousIteration = allSolversAttainedStableStateInPreviousIteration;
+                  _allSolversAttainedStableState = allSolversAttainedStableState;
                }
                
                
                
-               inline bool getMeshRefinementHasConverged() const 
+               inline int getStableIterationsInARow() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  return _meshRefinementHasConverged;
+                  return _stableIterationsInARow;
                }
                
                
                
-               inline void setMeshRefinementHasConverged(const bool& meshRefinementHasConverged) 
+               inline void setStableIterationsInARow(const int& stableIterationsInARow) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  _meshRefinementHasConverged = meshRefinementHasConverged;
+                  _stableIterationsInARow = stableIterationsInARow;
+               }
+               
+               
+               
+               inline bool getMeshRefinementIsInRefiningMode() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _meshRefinementIsInRefiningMode;
+               }
+               
+               
+               
+               inline void setMeshRefinementIsInRefiningMode(const bool& meshRefinementIsInRefiningMode) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _meshRefinementIsInRefiningMode = meshRefinementIsInRefiningMode;
                }
                
                
@@ -8669,7 +8977,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               StatePacked(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& allSolversAttainedStableStateInPreviousIteration, const bool& meshRefinementHasConverged, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork, const BoundaryRefinement& refineArtificiallyOutsideDomain, const int& totalNumberOfBatchIterations, const int& batchIteration);
+               StatePacked(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& allSolversAttainedStableState, const int& stableIterationsInARow, const bool& meshRefinementIsInRefiningMode, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork, const BoundaryRefinement& refineArtificiallyOutsideDomain, const int& totalNumberOfBatchIterations, const int& batchIteration);
                
                /**
                 * Generated
@@ -8717,42 +9025,62 @@ namespace exahype {
                
                
                
-               inline bool getAllSolversAttainedStableStateInPreviousIteration() const 
+               inline bool getAllSolversAttainedStableState() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  return _persistentRecords._allSolversAttainedStableStateInPreviousIteration;
+                  return _persistentRecords._allSolversAttainedStableState;
                }
                
                
                
-               inline void setAllSolversAttainedStableStateInPreviousIteration(const bool& allSolversAttainedStableStateInPreviousIteration) 
+               inline void setAllSolversAttainedStableState(const bool& allSolversAttainedStableState) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  _persistentRecords._allSolversAttainedStableStateInPreviousIteration = allSolversAttainedStableStateInPreviousIteration;
+                  _persistentRecords._allSolversAttainedStableState = allSolversAttainedStableState;
                }
                
                
                
-               inline bool getMeshRefinementHasConverged() const 
+               inline int getStableIterationsInARow() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  return _persistentRecords._meshRefinementHasConverged;
+                  return _persistentRecords._stableIterationsInARow;
                }
                
                
                
-               inline void setMeshRefinementHasConverged(const bool& meshRefinementHasConverged) 
+               inline void setStableIterationsInARow(const int& stableIterationsInARow) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  _persistentRecords._meshRefinementHasConverged = meshRefinementHasConverged;
+                  _persistentRecords._stableIterationsInARow = stableIterationsInARow;
+               }
+               
+               
+               
+               inline bool getMeshRefinementIsInRefiningMode() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._meshRefinementIsInRefiningMode;
+               }
+               
+               
+               
+               inline void setMeshRefinementIsInRefiningMode(const bool& meshRefinementIsInRefiningMode) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._meshRefinementIsInRefiningMode = meshRefinementIsInRefiningMode;
                }
                
                

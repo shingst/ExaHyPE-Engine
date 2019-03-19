@@ -18,6 +18,7 @@
 #include "peano/utils/Globals.h"
 #include "tarch/logging/Log.h"
 #include "tarch/tests/TestCase.h"
+#include "tarch/la/Vector.h"
 
 namespace exahype {
 namespace tests {
@@ -61,9 +62,13 @@ class GenericEulerKernelTest : public tarch::tests::TestCase {
  public:
   static void flux(const double* const Q, double** F);
 
-  static void algebraicSource(const double* Q, double* S);
+  static void flux(const double* const Q, const double* const gradQ, double** F);
+
+  static void algebraicSource(const tarch::la::Vector<DIMENSIONS, double>& x, double t, const double *const Q,
+          double *S);
 
   static void eigenvalues(const double* const Q, const int normalNonZeroIndex, double* lambda);
+  static void viscousEigenvalues(const double* const Q, const int normalNonZeroIndex, double* lambda);
 
   static void nonConservativeProduct(const double* const Q, const double* const gradQ, double* BgradQ);
 

@@ -215,20 +215,29 @@ class exahype::State : public peano::grid::State<exahype::records::State> {
   /**
    * \see exahype/State.def
    */
-  void setAllSolversAttainedStableStateInPreviousIteration(const bool state);
+  void setAllSolversAttainedStableState(const bool state);
   /**
    * \see exahype/State.def
    */
-  bool getAllSolversAttainedStableStateInPreviousIteration() const;
+  bool getAllSolversAttainedStableState() const;
 
   /**
    * \see exahype/State.def
    */
-  void setMeshRefinementHasConverged(const bool state);
+  void setMeshRefinementIsInRefiningMode(const bool state);
   /**
    * \see exahype/State.def
    */
-  bool getMeshRefinementHasConverged() const;
+  bool getMeshRefinementIsInRefiningMode() const;
+
+  /**
+   * \see exahype/State.def
+   */
+  void setStableIterationsInARow(const int value);
+  /**
+   * \see exahype/State.def
+   */
+  int getStableIterationsInARow() const;
 
 
 /**
@@ -259,7 +268,7 @@ void endedGridConstructionIteration(int finestGridLevelPossible);
    * We do not follow Peao guidebook Section 6.3.2 as
    * we have other convergence checks in place.
    */
-  bool continueToConstructGrid() const;
+  bool continueToConstructGrid();
 
   /**
    * @return if we are in an even batch iterations, i.e.

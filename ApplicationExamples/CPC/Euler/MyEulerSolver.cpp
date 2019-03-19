@@ -73,13 +73,7 @@ void EulerFV::MyEulerSolver::flux(const double* const Q, double** const F) {
 }
 
 
-void EulerFV::MyEulerSolver::boundaryValues(
-    const double* const x,
-    const double t,const double dt,
-    const int faceIndex,
-    const int normalNonZero,
-    const double* const stateInside,
-    double* const stateOutside) {
+void EulerFV::MyEulerSolver::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double* const fluxIn,const double* const stateIn,const double* const gradStateIn,double* const fluxOut,double* const stateOut) {
   ReadOnlyVariables varsInside(stateInside);
   Variables         varsOutside(stateOutside);
 

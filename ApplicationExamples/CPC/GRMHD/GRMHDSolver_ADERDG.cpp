@@ -37,8 +37,7 @@ void GRMHD::GRMHDSolver_ADERDG::flux(const double* const Q,double** const F) {
   pdeflux_(F[0], F[1], F[2], Q);
 }
 
-void GRMHD::GRMHDSolver_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int d,
-  const double * const fluxIn,const double* const stateIn, double* const fluxOut,double* const stateOut) {
+void GRMHD::GRMHDSolver_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double* const fluxIn,const double* const stateIn,const double* const gradStateIn,double* const fluxOut,double* const stateOut)
   double Qgp[nVar];
   std::memset(stateOut, 0, nVar * sizeof(double));
   std::memset(fluxOut, 0, nVar * sizeof(double));

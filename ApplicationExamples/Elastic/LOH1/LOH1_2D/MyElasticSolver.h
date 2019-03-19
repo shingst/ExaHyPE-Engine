@@ -35,9 +35,7 @@ class Elastic::MyElasticSolver : public exahype::solvers::ADERDGSolver {
   void surfaceIntegral(
       double* const lduh, const double* const lFhbnd,
       const tarch::la::Vector<DIMENSIONS, double>& dx) override;
-  void riemannSolver(double* const FL, double* const FR, const double* const QL,
-                     const double* const QR, const double dt,
-                     const int normalNonZeroIndex) override;
+  void riemannSolver(double* const FL,double* const FR,const double* const QL,const double* const QR,const double t,const double dt, const tarch::la::Vector<DIMENSIONS, double>& lengthScale,const int direction, bool isBoundaryFace, int faceIndex) override;
   void boundaryConditions(
       double* const fluxOut, double* const stateOut, const double* const fluxIn,
       const double* const stateIn,
@@ -83,11 +81,7 @@ class Elastic::MyElasticSolver : public exahype::solvers::ADERDGSolver {
                           double* const lambda);
   static void flux(const double* const Q, double** const F);
   static void source(const double* const Q, double* const S);
-  static void boundaryValues(const double* const x, const double t,
-                             const int faceIndex, const int normalNonZero,
-                             const double* const fluxIn,
-                             const double* const stateIn, double* const fluxOut,
-                             double* const stateOut);
+  static void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double* const fluxIn,const double* const stateIn,const double* const gradStateIn,double* const fluxOut,double* const stateOut);
   static void adjustedSolutionValues(const double* const x, const double w,
                                      const double t, const double dt,
                                      double* const Q);

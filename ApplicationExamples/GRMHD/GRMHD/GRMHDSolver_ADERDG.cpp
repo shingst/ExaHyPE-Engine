@@ -75,7 +75,15 @@ void __attribute__((optimize("O0"))) GRMHD::GRMHDSolver_ADERDG::adjustPointSolut
   bool insideExcisionBall = false;
   bool hastoadjust = tarch::la::equals(t,0.0) || insideExcisionBall;
 
-  if (hastoadjust) initialData(x,t,dt,Q);
+  using namespace tarch::la;
+  if(equals(t,0.0)) {
+    initialData(x, t, dt, Q); 
+    if( (x[1] > -0.1) && (x[1]  < 0.1)) {
+      if( (x[2] > -0.1) && (x[2]  < 0.1)) {
+        printf("adjusting ADERDG:  Q[0]=%.5e , x,y,z = %f,%f,%f, t= %f\n",Q[0],x[0],x[1],x[2],t);
+      }
+    }
+  }
 }
 
 void __attribute__((optimize("O0"))) GRMHD::GRMHDSolver_ADERDG::eigenvalues(const double* const Q,const int d,double* const lambda) {
@@ -97,8 +105,7 @@ void __attribute__((optimize("O0"))) GRMHD::GRMHDSolver_ADERDG::algebraicSource(
 */
 
 
-void GRMHD::GRMHDSolver_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int d,
-  const double * const fluxIn,const double* const stateIn, double* const fluxOut,double* const stateOut) {
+void GRMHD::GRMHDSolver_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double* const fluxIn,const double* const stateIn,const double* const gradStateIn,double* const fluxOut,double* const stateOut) {
 	 // for debugging, to make sure BC are set correctly
 	double snan = std::numeric_limits<double>::signaling_NaN();
 	double weird_number = -1.234567;
@@ -128,7 +135,7 @@ void GRMHD::GRMHDSolver_ADERDG::boundaryValues(const double* const x,const doubl
     
     for(int m=0; m < nVar; m++) {
       stateOut[m] += weight * Qgp[m];
-      fluxOut[m] += weight * Fs[d][m];
+      fluxOut[m] += weight * Fs[normalNonZero][m];
     }
   }
   ///// EXACT
@@ -172,6 +179,7 @@ void GRMHD::GRMHDSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(double* c
 }
 */
 
+
 /*
 void GRMHD::GRMHDSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(
   double* const observables, const int NumberOfVariables,
@@ -192,31 +200,13 @@ bool GRMHD::GRMHDSolver_ADERDG::isPhysicallyAdmissible(
       const tarch::la::Vector<DIMENSIONS,double>& dx,
       const double t) const {
 
-//	double radius = 8.12514;
 	double radius = 8.12514;
-//	// lower left, upper right radius of cell
-//  double radius = 0.0;
 	double cen = tarch::la::norm2(center);
-	double dr = 0.5;
-//	bool shouldLimit = (cen > (radius -dr) ) && ( cen  <= (radius+dr) ); 
-//  bool shouldLimit = cen <= (1.0+dr);
-//  double dr=2.0;
-//  bool shouldLimit =  cen <= (radius +dr);
+	double dr = 1.5;
 
-    bool shouldLimit = cen <= (1.5);
-//  if(isAdmissible) {
-//    printf("Cell has centre = %f => isAdmissible=%s\n",cen,isAdmissible?"true":"false");
-//  }
-//  printf("Cell has l=%f,r=%f => isAdmissible=%s\n", l, r, isAdmissible?"true":"false");
-  
-
+  bool shouldLimit = (cen > (radius -dr) ) && ( cen  <= (radius+dr) ); 
   // return TRUE if the cell does not need limited
 	return !shouldLimit;
-//  return true;
-
- // return false;
- // return true;
-
 
 }
 
@@ -227,15 +217,15 @@ bool GRMHD::GRMHDSolver_ADERDG::isPhysicallyAdmissible(
 void __attribute__((optimize("O0"))) GRMHD::GRMHDSolver_ADERDG::nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ) {
   pdencp_(BgradQ, Q, gradQ);
   
-  for(int i=0; i<NumberOfVariables; i++) {
-	if(!std::isfinite(BgradQ[i])) {
-		printf("NCP NAN in BgradQ[%d]=>%f\n", i, BgradQ[i]);
-		for(int j=0; j<NumberOfVariables; j++) {
-			printf("Q[%d]=%f\n", j, Q[j]);
-			printf("BgradQ[%d]=%f\n", j, BgradQ[j]);
-		}
-	}
-  }
+//  for(int i=0; i<NumberOfVariables; i++) {
+//	if(!std::isfinite(BgradQ[i])) {
+//		printf("NCP NAN in BgradQ[%d]=>%f\n", i, BgradQ[i]);
+//		for(int j=0; j<NumberOfVariables; j++) {
+//			printf("Q[%d]=%f\n", j, Q[j]);
+//			printf("BgradQ[%d]=%f\n", j, BgradQ[j]);
+//		}
+//	}
+//  }
 }
 
 /*

@@ -117,7 +117,9 @@ public:
    */
   static int adjustSolutionHandle;
   static int fusedTimeStepBodyHandle;
+  static int fusedTimeStepBodyHandleSkeleton;
   static int predictorBodyHandle;
+  static int predictorBodyHandleSkeleton;
   static int updateBodyHandle;
   static int mergeNeighboursHandle;
   static int prolongateFaceDataToDescendantHandle;
@@ -187,6 +189,7 @@ public:
    * @return if this an ADER-DG solver which is not able to solve nonlinear problems.
    */
   virtual bool isLinear() const = 0;
+  virtual bool isUseViscousFlux() const = 0;
 
 private:
 
@@ -1218,6 +1221,7 @@ public:
       const std::string& identifier,
       const int numberOfVariables,
       const int numberOfParameters,
+      const int numberOfGlobalObservables,
       const int basisSize,
       const double maximumMeshSize,
       const int maximumAdaptiveMeshDepth,
@@ -2274,6 +2278,11 @@ public:
    */
   void compress( CellDescription& cellDescription, const bool isSkeletonCell ) const;
 
+  using Solver::reduceGlobalObservables;
+  void reduceGlobalObservables(std::vector<double>& globalObservables,
+                               CellInfo cellInfo,
+                               int solverNumber) const override;
+  
   ///////////////////////
   // PROFILING
   ///////////////////////
@@ -2374,6 +2383,7 @@ protected:
    * @param[in]    dt             time step size
    * @param[in]    direction      Index of the nonzero normal vector component,
    *                              i.e., 0 for e_x, 1 for e_y, and 2 for e_z.
+   * @param[in]    lengthScale    physical size of the element
    * @param[in]    isBoundaryFace if the Riemann solver is called at the domain boundary
    * @param[in]    faceIndex      the index of the face, @p faceIndex=2*direction+f, where f is 0 ("left face") or 1 ("right face").
    */
@@ -2384,6 +2394,7 @@ protected:
       const double* const  QR,
       const double         t,
       const double         dt,
+      const tarch::la::Vector<DIMENSIONS, double>& lengthScale,
       const int            direction,
       bool                 isBoundaryFace,
       int                  faceIndex) = 0;
@@ -2409,6 +2420,7 @@ protected:
   virtual void boundaryConditions(
       double* const                                fluxIn,
       const double* const                          stateIn,
+      const double* const                          gradStateIn,
       const double* const                          luh,
       const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
       const tarch::la::Vector<DIMENSIONS,double>&  cellSize,
@@ -2440,6 +2452,7 @@ protected:
   virtual int fusedSpaceTimePredictorVolumeIntegral(
       double* const                                lduh,
       double* const                                lQhbnd,
+      double*                                      lGradQhbnd,
       double* const                                lFhbnd,
       double* const                                luh,
       const tarch::la::Vector<DIMENSIONS, double>& center,
@@ -2575,6 +2588,32 @@ public:
    * @return true if the solution is admissible.
    */
   virtual bool isPhysicallyAdmissible(
+      const double* const                         solution,
+      const double* const                         localObservablesMin,
+      const double* const                         localObservablesMax,
+      const bool                                  wasTroubledInPreviousTimeStep,
+      const tarch::la::Vector<DIMENSIONS,double>& center,
+      const tarch::la::Vector<DIMENSIONS,double>& dx,
+      const double                                timeStamp) const = 0;
+
+
+  /**
+   * With this function the discrete maximum principle's decision that
+   * a cell is troubled can be vetoed.
+   *
+   * @note this function is only called if the DMP indicated a troubled cell.
+   *
+   * @param[in] solution                      all of the cell's solution values
+   * @param[in] localObservablesMin           the minimum value of the cell local observables.
+   * @param[in] localObservablesMax           the maximum value of the cell local observables.
+   * @param[in] wasTroubledInPreviousTimeStep indicates if the cell was troubled in a previous time step
+   * @param[in] center                        cell center
+   * @param[in] dx                            cell extents
+   * @param[in] timeStamp                     post-update time stamp during time stepping.  Current time stamp during the mesh refinement iterations.
+   *
+   * @return true if the DMP's decision that the cell is troubled should be ignored.
+   */
+  virtual bool vetoDiscreteMaximumPrincipleDecision(
       const double* const                         solution,
       const double* const                         localObservablesMin,
       const double* const                         localObservablesMax,

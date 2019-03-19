@@ -133,9 +133,7 @@ void GRMHDb::GRMHDbSolver_ADERDG::adjustPointSolution(const double* const x,cons
   }
 }
 
-void GRMHDb::GRMHDbSolver_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,
-  const double * const fluxIn,const double* const stateIn,
-  double* const fluxOut,double* const stateOut) {
+void GRMHDb::GRMHDbSolver_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double* const fluxIn,const double* const stateIn,const double* const gradStateIn,double* const fluxOut,double* const stateOut) {
   // Tip: You find documentation for this method in header file "GRMHDb::GRMHDbSolver_ADERDG.h".
   // Tip: See header file "GRMHDb::AbstractGRMHDbSolver_ADERDG.h" for toolkit generated compile-time 
   //      constants such as Order, NumberOfVariables, and NumberOfParameters.
@@ -263,6 +261,13 @@ exahype::solvers::Solver::RefinementControl GRMHDb::GRMHDbSolver_ADERDG::refinem
         if(radiusC > 0.){
                 radiusC = sqrt(radiusC);
         }
+        
+        
+        if (radiusC + 0.5*dr > 8.05 && radiusC-0.5*dr < 8.35) {
+            return exahype::solvers::Solver::RefinementControl::Refine;
+        }
+
+        
         if (radiusC-0.5*dr < 8.33) {
           if (radiusC + 0.5*dr > 7.95) {
             return exahype::solvers::Solver::RefinementControl::Refine;
@@ -474,6 +479,40 @@ void GRMHDb::GRMHDbSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(
 	}*/
 }
 
+
+
+bool GRMHDb::GRMHDbSolver_ADERDG::vetoDiscreteMaximumPrincipleDecision(
+		const double* const                         solution,
+		const double* const                         localObservablesMin,
+		const double* const                         localObservablesMax,
+		const bool                                  wasTroubledInPreviousTimeStep,
+		const tarch::la::Vector<DIMENSIONS, double>& center,
+		const tarch::la::Vector<DIMENSIONS, double>& dx,
+		const double                                timeStamp) const {
+	//int limvalue;
+	//int NumberOfObservables;
+	//NumberOfObservables=1;
+	//pdelimitervalue_(&limvalue,&center[0]);
+	//pdelimitervalue_(&limvalue,&center[0],&NumberOfObservables, observablesMin, observablesMax);
+	//if(limvalue>0){
+	  //  return false;
+	//}else{
+	  //  return true;
+	//};
+	  //return false;
+	double dr = dx[0] * dx[0] + dx[1] * dx[1] + dx[2] * dx[2];
+	dr = sqrt(dr);
+	double radiusC = center[0] * center[0] + center[1] * center[1] + center[2] * center[2];
+	if (radiusC > 0.) {
+		radiusC = sqrt(radiusC);
+	}
+	if (radiusC + 0.5*dr < 8.05) {
+		return false;
+	}
+	else {
+		return true;
+	}
+}
 
 bool GRMHDb::GRMHDbSolver_ADERDG::isPhysicallyAdmissible(
 	const double* const solution,

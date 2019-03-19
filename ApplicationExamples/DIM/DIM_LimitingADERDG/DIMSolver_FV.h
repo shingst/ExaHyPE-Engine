@@ -82,7 +82,7 @@ class DIM::DIMSolver_FV : public DIM::AbstractDIMSolver_FV {
      */
     // void flux(const double* const Q,double** const F) override;
 
-    double riemannSolver(double* const fL, double* const fR, const double* const qL, const double* const qR, int normalNonZero) override;
+    double riemannSolver(double* fL, double *fR, const double* qL, const double* qR, const double* gradQL, const double* gradQR, const double* cellSize, int normalNonZero) override;
     
 };
 

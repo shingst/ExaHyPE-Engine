@@ -103,9 +103,7 @@ void Elastodynamics::MyElastodynamicsSolver::flux(const double* const Q,double**
   F[2][8] = 0.0;
 }
 
-void Elastodynamics::MyElastodynamicsSolver::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,
-  const double * const fluxIn,const double* const stateIn,
-  double* const fluxOut,double* const stateOut) {
+void Elastodynamics::MyElastodynamicsSolver::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double* const fluxIn,const double* const stateIn,const double* const gradStateIn,double* const fluxOut,double* const stateOut) {
   // Dimensions             = 3
   // Number of variables    = 9 + #parameters
 
@@ -343,7 +341,7 @@ void Elastodynamics::MyElastodynamicsSolver::coefficientMatrix(const double* con
 
 
 
-void Elastodynamics::MyElastodynamicsSolver::riemannSolver(double* const FL,double* const FR,const double* const QL,const double* const QR,double* const tempFaceUnknownsArray,double** const tempStateSizedVectors,double** const tempStateSizedSquareMatrices,const double dt,const int normalNonZeroIndex){
+void Elastodynamics::MyElastodynamicsSolver::riemannSolver(double* const FL,double* const FR,const double* const QL,const double* const QR,const double t,const double dt, const tarch::la::Vector<DIMENSIONS, double>& lengthScale,const int direction, bool isBoundaryFace, int faceIndex){
 
   constexpr int numberOfVariables  = MyElastodynamicsSolver::NumberOfVariables;
   constexpr int numberOfVariables2 = numberOfVariables*numberOfVariables;

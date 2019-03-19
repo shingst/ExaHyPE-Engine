@@ -1,0 +1,158 @@
+{
+  "project_name": "GRMHD",
+  "paths": {
+    "peano_kernel_path": "./Peano",
+    "exahype_path": "./ExaHyPE",
+    "output_directory": "./ApplicationExamples/GRMHD/GRMHD_Scaling",
+    "plotter_subdirectory": "Writers"
+  },
+  "architecture": "hsw",
+  "computational_domain": {
+    "dimension": 3,
+    "end_time": 1000.0,
+    "offset": [
+      -25.0,
+      -25.0,
+      -25.0
+    ],
+    "width": [
+      50.0,
+      50.0,
+      50.0
+    ],
+    "outside_cells"      : 0,
+    "outside_cells_left" : 0
+  },
+  "shared_memory": {
+    "cores": 2,
+    "background_job_consumers": 1,
+    "high_priority_background_job_processing" : "one_at_a_time",
+    "low_priority_background_job_processing" : "run_if_no_high_priority_job_left",
+    "min_background_jobs_in_one_rush" : 2,
+    "max_background_jobs_in_one_rush" : 8,
+    "properties_file": "sharedmemory.properties",
+    "autotuning_strategy": "dummy"
+  },
+  "distributed_memory": {
+    "timeout": 600,
+    "load_balancing_type": "static",
+    "buffer_size": 64,
+    "load_balancing_strategy": "hotspot",
+    "node_pool_strategy": "fair",
+    "ranks_per_node": 1
+  },
+  "optimisation": {
+    "fuse_algorithmic_steps": "all",
+    "fuse_algorithmic_steps_rerun_factor": 0.99,
+    "fuse_algorithmic_steps_diffusion_factor": 0.99,
+    "spawn_predictor_as_background_thread": true,
+    "spawn_update_as_background_thread": true,
+    "spawn_amr_background_threads": true,
+    "disable_vertex_exchange_in_time_steps": true,
+    "time_step_batch_factor": 0.0,
+    "disable_metadata_exchange_in_batched_time_steps": true,
+    "double_compression": 0.0,
+    "spawn_double_compression_as_background_thread": false,
+    "mesh_refinement": "static",
+    "limiting": "static"
+  },
+  "solvers": [
+    {
+      "type": "Limiting-ADER-DG",
+      "name": "GRMHDSolver",
+      "order": 3,
+      "maximum_mesh_size": 15.0,
+      "maximum_mesh_depth": 3,
+      "time_stepping": "global",
+      "aderdg_kernel": {
+        "language": "C",
+        "nonlinear": true,
+        "terms": [
+          "flux",
+          "ncp"
+        ],
+        "space_time_predictor": {},
+        "optimised_terms": [],
+        "optimised_kernel_debugging": [],
+        "implementation": "optimised"
+      },
+      "point_sources": 0,
+      "limiter": {
+        "dmp_observables": 2,
+        "dmp_relaxation_parameter": 0.01,
+        "dmp_difference_scaling": 0.001,
+        "steps_till_cured": 0,
+        "implementation": "optimised"
+      },
+      "fv_kernel": {
+        "language": "C",
+        "terms": [
+          "flux",
+          "ncp"
+        ],
+        "scheme": "musclhancock",
+        "implementation": "generic"
+      },
+      "variables": [
+        {
+          "name": "rho",
+          "multiplicity": 1
+        },
+        {
+          "name": "vel",
+          "multiplicity": 3
+        },
+        {
+          "name": "E",
+          "multiplicity": 1
+        },
+        {
+          "name": "B",
+          "multiplicity": 3
+        },
+        {
+          "name": "psi",
+          "multiplicity": 1
+        },
+        {
+          "name": "lapse",
+          "multiplicity": 1
+        },
+        {
+          "name": "shift",
+          "multiplicity": 3
+        },
+        {
+          "name": "gij",
+          "multiplicity": 6
+        }
+      ],
+      "plotters": [
+        {
+          "type": "vtk::Cartesian::cells::ascii",
+          "name": "IntegralsWriter",
+          "time": 0.0,
+          "repeat": 0.05,
+          "output": "./outputL/global-integrals",
+          "variables": 0
+        },
+        {
+          "type": "vtu::Cartesian::vertices::limited::ascii",
+          "name": "ConservedWriter",
+          "time": 0.0,
+          "repeat": 1.0,
+          "output": "./vtk-outputL/limited",
+          "variables": 1
+        },
+        {
+          "type": "user::defined",
+          "name": "TimingStatistics_DG",
+          "time": 0.0,
+          "repeat": 0.05,
+          "output": "./outputL/timing-benchmarks",
+          "variables": 0
+        }
+      ]
+    }
+  ]
+}

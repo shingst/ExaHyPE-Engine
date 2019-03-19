@@ -1139,11 +1139,7 @@ class exahype::solvers::Solver {
      if ( receiveDanglingMessages ) {
        tarch::parallel::Node::getInstance().receiveDanglingMessages();
      }
-     if ( waitForHighPriorityJob ) {
-       tarch::multicore::jobs::processHighPriorityJobs(1);
-     } else {
-       tarch::multicore::jobs::processBackgroundJobs(1);
-     }
+     tarch::multicore::jobs::processBackgroundJobs(1);
    }
 
   #ifdef USE_ITAC
@@ -1151,23 +1147,10 @@ class exahype::solvers::Solver {
   #endif
  }
 
- /**
-  * Submit a Prediction- or FusedTimeStepJob.
-  *
-  * @param[in] isSkeletonJob is is a skeleton job?
-  */
- static tarch::multicore::jobs::JobType getTaskType(bool isSkeletonJob) {
-    return isSkeletonJob ? tarch::multicore::jobs::JobType::RunTaskAsSoonAsPossible : tarch::multicore::jobs::JobType::BackgroundTask;
- }
-/*
- static void submitJob(tarch::multicore::jobs::Job* job,const bool isSkeletonJob) {
-   if ( isSkeletonJob ) {
-     peano::datatraversal::TaskSet spawnedSet( job, peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible  );
-   } else {
-     peano::datatraversal::TaskSet spawnedSet( job, peano::datatraversal::TaskSet::TaskType::Background  );
-   }
- }
-*/
+ static int getTaskPriority( bool isSkeletonJob );
+ static int getCompressionTaskPriority();
+ static int getHighPrioritiesJobTaskPriority();
+ static int getStandardBackgroundTaskPriority();
 
  /**
   * Return a string representation for the type @p param.
@@ -1212,6 +1195,11 @@ class exahype::solvers::Solver {
    * The number of parameters, e.g, material parameters.
    */
   const int _numberOfParameters;
+
+  /**
+   * The number of global observables, e.g. indicators used by AMR.
+   */
+  const int _numberOfGlobalObservables ;
 
   /**
    * The number of nodal basis functions that are employed in each
@@ -1264,6 +1252,11 @@ class exahype::solvers::Solver {
   int _coarsestMeshLevel;
 
   /**
+   * The reduced global observables over the entire domain.
+   */
+  std::vector<double> _globalObservables;
+
+  /*
    * The coarsest mesh size this solver is using, i.e.
    * the mesh size chosen for the uniform base grid.
    *
@@ -1279,6 +1272,7 @@ class exahype::solvers::Solver {
  public:
   Solver(const std::string& identifier, exahype::solvers::Solver::Type type,
          int numberOfVariables, int numberOfParameters,
+         int numberOfGlobalObservables,
          int nodesPerCoordinateAxis,
          double maximumMeshSize,
          int maximumAdaptiveMeshDepth,
@@ -1373,6 +1367,11 @@ class exahype::solvers::Solver {
   int getNumberOfParameters() const;
 
   /**
+   * Returns the number of global observables, e.g. indicators for AMR.
+   */
+  int getNumberOfGlobalObservables() const;
+
+  /**
    * If you use a higher order method, then this operation returns the
    * polynomial degree plus one. If you use a Finite Volume method, it
    * returns the number of cells within a patch per coordinate axis.
@@ -1436,6 +1435,18 @@ class exahype::solvers::Solver {
    * to search for a minimum over all cells.
    */
   virtual void resetAdmissibleTimeStepSize() = 0;
+
+  // TODO(Lukas) Is this still needed?
+  /*
+  virtual void updateNextGlobalObservables(const std::vector<double>& globalObservables);
+  */
+
+  virtual std::vector<double>& getGlobalObservables();
+  // TODO(Lukas) Is this still needed?
+  /*
+  virtual std::vector<double>& getNextGlobalObservables();
+  */
+
 
   /**
    * Initialise the solver's time stamps and time step sizes.
@@ -1644,7 +1655,7 @@ class exahype::solvers::Solver {
    *
    * @note Has no const modifier since kernels are not const functions yet.
    */
-    virtual double updateTimeStepSize(const int solverNumber,CellInfo& cellInfo) = 0;
+  virtual double updateTimeStepSize(const int solverNumber,CellInfo& cellInfo) = 0;
 
   /**
    * Impose initial conditions and mark for refinement.
@@ -1776,6 +1787,20 @@ class exahype::solvers::Solver {
   ///////////////////////////////////
 
   #ifdef Parallel
+  /**
+   * On coarser grids, the solver can hint on the eventual load and memory distribution
+   * with this function.
+   *
+   * @note Only called on coarser grids by LoadBalancing mapping.
+   * @note Only invokes user callback during initial mesh refinement.
+   *
+   * @param  cellCentre the cell centre.
+   * @param  cellSize   the cell size.
+   * @return Estimate of the load based on the geometry.
+   */
+  int computeGeometricLoadBalancingWeight(
+      const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+      const tarch::la::Vector<DIMENSIONS,double>& cellSize);
 
   /**
    * If a cell description was allocated at heap address @p cellDescriptionsIndex
@@ -2002,6 +2027,48 @@ class exahype::solvers::Solver {
       const int                                    level) = 0;
   #endif
 
+
+     /**
+   * Maps the solution values Q to
+   * the global observables.
+   *
+   * As we can observe all state variables,
+   * we interpret an 'observable' here as
+   * 'worthy to be observed'.
+   *
+   *\param[inout] globalObservables The mapped observables.
+   *\param[in]    Q           The state variables.
+   */
+   virtual std::vector<double> mapGlobalObservables(const double* const Q,
+           const tarch::la::Vector<DIMENSIONS,double>& dx) const = 0;
+
+   /**
+   * Resets the vector of global observables to some suitable initial value, e.g.
+   * the smallest possible double if one wants to compute the maximum.
+   *
+   *\param[out] globalObservables The mapped observables.
+   */
+   virtual std::vector<double> resetGlobalObservables() const = 0;
+
+   /**
+   * Function that reduces the global observables.
+   * For example, if one wants to compute the maximum of global variables
+   * one should set
+   * reducedGlobalObservables[0] = std::max(reducucedGlobalObservables[i],
+   * curGlobalObservables[0])
+   *
+   * and so on.
+   *
+   *\param[inout] reducedGlobalObservables The reduced observables.
+   *\param[in]    curGlobalObservables The current vector of global observables.
+   */
+   virtual void reduceGlobalObservables(
+            std::vector<double>& reducedGlobalObservables,
+            const std::vector<double>& curGlobalObservables) const = 0;
+
+   virtual void reduceGlobalObservables(std::vector<double>& globalObservables,
+                                        CellInfo cellInfo,
+                                        int solverNumber) const = 0;
   ///////////////////////
   // PROFILING
   ///////////////////////
@@ -2051,6 +2118,25 @@ class exahype::solvers::Solver {
    *  Hooks for user solvers
    *  @{
    */
+
+ protected:
+  /**
+   * On coarser grids, the solver can hint on the eventual load or memory distribution
+   * with this function.
+   *
+   * @note Only called on coarser grids by LoadBalancing mapping.
+   * @note Only invokes user callback during initial mesh refinement (time stamp = 0).
+   * @note LimitingADERDGSolver will invoke the main solvers routine.
+   *
+   * @param  cellCentre the cell centre.
+   * @param  cellSize   the cell size.
+   * @return Estimate of the load based on the geometry.
+   */
+  virtual int getGeometricLoadBalancingWeight(
+      const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+      const tarch::la::Vector<DIMENSIONS,double>& cellSize) { return 1; }
+
+ public:
   /**
    * Signals a user solver that ExaHyPE just started a new time step.
    *

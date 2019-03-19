@@ -46,9 +46,7 @@ void GPRDIM::DIMSolver_ADERDG::adjustPointSolution(const double* const x,const d
 	}*/
 }
 
-void GPRDIM::DIMSolver_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,
-  const double * const fluxIn,const double* const stateIn,
-  double* const fluxOut,double* const stateOut) {
+void GPRDIM::DIMSolver_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double* const fluxIn,const double* const stateIn,const double* const gradStateIn,double* const fluxOut,double* const stateOut)
 	// Local variables
 	const int nVar = GPRDIM::AbstractDIMSolver_ADERDG::NumberOfVariables;
 	const int order = GPRDIM::AbstractDIMSolver_ADERDG::Order;

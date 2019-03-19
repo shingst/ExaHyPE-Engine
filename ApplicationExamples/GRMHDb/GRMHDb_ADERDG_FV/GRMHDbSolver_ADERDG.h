@@ -102,7 +102,7 @@ class GRMHDb::GRMHDbSolver_ADERDG : public GRMHDb::AbstractGRMHDbSolver_ADERDG {
      * @param[inout] FOut      the normal fluxes at point x from outside of the domain;
      *                         range: [0,nVar-1], already allocated.
      */
-    void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int direction,const double* const fluxIn,const double* const stateIn,double* const fluxOut,double* const stateOut) final override;
+    void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double* const fluxIn,const double* const stateIn,const double* const gradStateIn,double* const fluxOut,double* const stateOut) final override;
     
     /**
      * Evaluate the refinement criterion within a cell.
@@ -191,10 +191,25 @@ class GRMHDb::GRMHDbSolver_ADERDG : public GRMHDb::AbstractGRMHDbSolver_ADERDG {
 		const tarch::la::Vector<DIMENSIONS, double>& dx,
 		const double t) const override;
 
+	/**
+	 * Default implementation. Please overwrite.
+	 *
+	 * See superclass for function's semantics.
+	 */
+	bool vetoDiscreteMaximumPrincipleDecision(
+		const double* const                         solution,
+		const double* const                         localObservablesMin,
+		const double* const                         localObservablesMax,
+		const bool                                  wasTroubledInPreviousTimeStep,
+		const tarch::la::Vector<DIMENSIONS, double>& center,
+		const tarch::la::Vector<DIMENSIONS, double>& dx,
+		const double                                timeStamp) const override;
+
+
 #ifdef OPT_KERNELS
-	void riemannSolver(double* const FL, double* const FR, const double* const QL, const double* const QR, const double t, const double dt, const int direction, bool isBoundaryFace, int faceIndex) override;
+	void riemannSolver(double* const FL,double* const FR,const double* const QL,const double* const QR,const double t,const double dt, const tarch::la::Vector<DIMENSIONS, double>& lengthScale,const int direction, bool isBoundaryFace, int faceIndex) override;
 #else
-	void riemannSolver(double* const FL, double* const FR, const double* const QL, const double* const QR, const double t, const double dt, const int direction, bool isBoundaryFace, int faceIndex) override;
+	void riemannSolver(double* const FL,double* const FR,const double* const QL,const double* const QR,const double t,const double dt, const tarch::la::Vector<DIMENSIONS, double>& lengthScale,const int direction, bool isBoundaryFace, int faceIndex) override;
 #endif
 
 

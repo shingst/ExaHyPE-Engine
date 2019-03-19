@@ -1,0 +1,161 @@
+{
+  "project_name": "GRMHD",
+  "paths": {
+    "peano_kernel_path": "./Peano",
+    "exahype_path": "./ExaHyPE",
+    "output_directory": "./ApplicationExamples/GRMHD/GRMHD",
+    "log_file": "whatever.log",
+    "plotter_subdirectory": "Writers"
+  },
+  "architecture": "hsw",
+  "computational_domain": {
+    "dimension": 3,
+    "end_time": 10000.0,
+    "offset": [
+      -15.0,
+      -15.0,
+      -15.0
+    ],
+    "width": [
+      30.0,
+      30.0,
+      30.0
+    ]
+  },
+  "shared_memory": {
+    "cores": 4,
+    "properties_file": "sharedmemory.properties",
+    "thread_stack_size": 8000000,
+    "autotuning_strategy": "dummy",
+    "background_job_consumers": 3
+  },
+  "distributed_memory": {
+    "timeout": 3600,
+    "load_balancing_type": "static",
+    "buffer_size": 64000,
+    "load_balancing_strategy": "hotspot",
+    "node_pool_strategy": "fair",
+    "ranks_per_node": 6
+  },
+  "optimisation": {
+    "limiting" : "static",
+    "mesh_refinement" : "static",
+    "fuse_algorithmic_steps": "all",
+    "fuse_algorithmic_steps_rerun_factor": 0.99,
+    "fuse_algorithmic_steps_diffusion_factor": 0.99,
+    "spawn_predictor_as_background_thread": false,
+    "spawn_amr_background_threads": false,
+    "disable_vertex_exchange_in_time_steps": true,
+    "time_step_batch_factor": 0.5,
+    "disable_metadata_exchange_in_batched_time_steps": true,
+    "double_compression": 0.0,
+    "spawn_double_compression_as_background_thread": false
+  },
+  "solvers": [
+    {
+      "type": "Limiting-ADER-DG",
+      "name": "GRMHDSolver",
+      "order": 3,
+      "maximum_mesh_size": 1.21,
+      "maximum_mesh_depth": 0,
+      "time_stepping": "global",
+      "aderdg_kernel": {
+        "language": "C",
+        "nonlinear": true,
+        "terms": [
+          "flux",
+          "ncp"
+        ],
+        "space_time_predictor": {},
+        "optimised_terms": [],
+        "optimised_kernel_debugging": [],
+        "implementation": "optimised"
+      },
+      "point_sources": 0,
+      "limiter": {
+        "dmp_observables": 10,
+        "dmp_relaxation_parameter": 0.0001,
+        "dmp_difference_scaling": 0.001,
+        "steps_till_cured": 0,
+        "implementation": "optimised"
+      },
+      "fv_kernel": {
+        "language": "C",
+        "terms": [
+          "flux",
+          "ncp"
+        ],
+        "scheme": "musclhancock",
+        "implementation": "generic"
+      },
+      "variables": [
+        {
+          "name": "rho",
+          "multiplicity": 1
+        },
+        {
+          "name": "vel",
+          "multiplicity": 3
+        },
+        {
+          "name": "E",
+          "multiplicity": 1
+        },
+        {
+          "name": "B",
+          "multiplicity": 3
+        },
+        {
+          "name": "psi",
+          "multiplicity": 1
+        },
+        {
+          "name": "lapse",
+          "multiplicity": 1
+        },
+        {
+          "name": "shift",
+          "multiplicity": 3
+        },
+        {
+          "name": "gij",
+          "multiplicity": 6
+        }
+      ],
+      "plotters": [
+        {
+          "type": "vtu::Cartesian::vertices::limited::ascii",
+          "name": "ConservedWriter",
+          "time": 0.0,
+          "repeat": 1.0,
+          "output": "./vtk-output/conserved",
+          "variables": 1
+        },
+        {
+          "type": "vtu::Cartesian::vertices::ascii",
+          "name": "PrimitiveWriter",
+          "time": 0.0,
+          "repeat": 1.0,
+          "output": "./vtk-output/primitive",
+          "variables": 1
+        },
+        {
+          "type": "vtk::Cartesian::cells::ascii",
+          "name": "IntegralsWriter",
+          "time": 0.0,
+          "repeat": 0.1,
+          "output": "./output/global-integrals",
+          "variables": 0
+        },
+        {
+          "type": "user::defined",
+          "name": "TimingStatistics_DG",
+          "time": 0.0,
+          "repeat": 0.1,
+          "output": "./output/timing-benchmarks",
+          "variables": 0
+        }
+      ]
+    }
+  ]
+}

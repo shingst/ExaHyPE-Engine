@@ -64,8 +64,7 @@ void CCZ4::CCZ4Solver_ADERDG::adjustPointSolution(const double* const x,const do
 	AdjustPointSolution(x,t,dt,Q);
 }
 
-void CCZ4::CCZ4Solver_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int d,
-  const double * const fluxIn,const double* const stateIn, double* const fluxOut,double* const stateOut) {
+void CCZ4::CCZ4Solver_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double* const fluxIn,const double* const stateIn,const double* const gradStateIn,double* const fluxOut,double* const stateOut) {
 	double Qgp[nVar];
 
 	// Impose exact boundary conditions

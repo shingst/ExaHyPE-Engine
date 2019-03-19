@@ -2325,9 +2325,9 @@ RECURSIVE SUBROUTINE PDEEigenvaluesGRMHD(L,Q,n)
    !
     !
     L = 0.0
-    L(1) = -1.0    
-    L(2) = +1.0    
-       RETURN  
+    !L(1) = -1.0    
+    !L(2) = +1.0    
+    !   RETURN  
     
    !****************************************************
     CALL PDECons2PrimGRMHD(V,Q,iErr)
@@ -2395,13 +2395,13 @@ RECURSIVE SUBROUTINE PDEEigenvaluesGRMHD(L,Q,n)
     sft    = shift(1)*n(1) + shift(2)*n(2) + shift(3)*n(3) 
     gg     = g_contr(1,1)*ABS(n(1)) + g_contr(2,2)*ABS(n(2)) + g_contr(3,3)*ABS(n(3))
     den    = 1.0/(1.0 - v2*cs2)
-    IF(SUM(n**2).EQ.0.) THEN  
-        u = SQRT( v2) 
-        WRITE(*,*)'Impossible error!'
-        STOP
-    ELSE
+    !IF(SUM(n**2).EQ.0.) THEN  
+    !    u = SQRT( v2) 
+    !    WRITE(*,*)'Impossible error!'
+    !        STOP
+    !ELSE
         u = vn
-    ENDIF
+    !ENDIF
     L(1)   = ( u*(1.0-cs2) - SQRT( cs2*lf2m*( (1.0-v2*cs2)*gg - u**2*(1.0-cs2) )) )*den
     L(2:4) = u
     L(5)   = ( u*(1.0-cs2) + SQRT( cs2*lf2m*( (1.0-v2*cs2)*gg - u**2*(1.0-cs2) )) )*den 
@@ -2428,16 +2428,19 @@ RECURSIVE SUBROUTINE PDEEigenvaluesGRMHD(L,Q,n)
     L(6:8) = u
     L(11)  = ( u*(1.0-cs2) + SQRT( cs2*lf2m*( (1.0-v2*cs2)*gg2 - u**2*(1.0-cs2) )) )*den 
     L(6:11)   = lapse*L(6:11) - sft2
-    ! 
-    L(9) =  EQN%DivCleaning_a   ! 1.  !EQN%ch
     !
-    FLAG = .FALSE.
-    IF(MAXVAL(ABS(L)).GT.1.01) THEN
-        FLAG = .TRUE.
-        continue
-    ENDIF
+    RETURN
+    ! 
+    !L(9) =  EQN%DivCleaning_a   ! 1.  !EQN%ch
+    !
+    !FLAG = .FALSE.
+    !IF(MAXVAL(ABS(L)).GT.1.01) THEN
+    !    FLAG = .TRUE.
+    !    continue
+    !ENDIF
     ! 
     !
+    
     !
 	!
 	continue

@@ -34,7 +34,7 @@ peano::CommunicationSpecification
 exahype::mappings::UpdateAndReduce::communicationSpecification() const {
   return peano::CommunicationSpecification(
       peano::CommunicationSpecification::ExchangeMasterWorkerData::MaskOutMasterWorkerDataAndStateExchange,
-      peano::CommunicationSpecification::ExchangeWorkerMasterData::SendDataAndStateAfterLastTouchVertexLastTime,false);
+      peano::CommunicationSpecification::ExchangeWorkerMasterData::SendDataAndStateAfterLastTouchVertexLastTime,true);
 }
 
 peano::MappingSpecification
@@ -147,6 +147,7 @@ void exahype::mappings::UpdateAndReduce::leaveCell(
         solver->updateMeshUpdateEvent(result._meshUpdateEvent);
         solver->updateAdmissibleTimeStepSize(result._timeStepSize);
       }
+        solver->reduceGlobalObservables(solver->getGlobalObservables(), cellInfo, solverNumber);
     }
 
     Cell::resetNeighbourMergePerformedFlags(cellInfo,fineGridVertices,fineGridVerticesEnumerator);

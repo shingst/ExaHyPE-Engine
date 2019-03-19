@@ -100,7 +100,7 @@ void GPR::GPRSolver_FV::flux(const double* const Q,double** const F) {
 
 
 //You can either implement this method or modify fusedSource
-void GPR::GPRSolver_FV::algebraicSource(const double* const Q,double* const S) {
+void GPR::GPRSolver_FV::algebraicSource(const tarch::la::Vector<DIMENSIONS, double>& x, double t, const double *const Q, double *S) {
   // @todo Please implement/augment if required
   pdesource_(S, Q);
 }

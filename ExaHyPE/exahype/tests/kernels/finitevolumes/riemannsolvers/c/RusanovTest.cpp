@@ -58,6 +58,13 @@ exahype::tests::kernels::finitevolumes::riemannsolvers::c::ZeroFluxZeroNCP::eige
   std::fill_n(lambda, NumberOfVariables, 1.0);
 }
 
+void
+exahype::tests::kernels::finitevolumes::riemannsolvers::c::ZeroFluxZeroNCP::viscousEigenvalues(
+    const double* const Q,const int normalNonZeroIndex, double* lambda) {
+  // always return 0.0
+  std::fill_n(lambda, NumberOfVariables, 0.0);
+}
+
 bool
 exahype::tests::kernels::finitevolumes::riemannsolvers::c::ZeroFluxZeroNCP::useNonConservativeProduct() {
   return true;
@@ -89,11 +96,16 @@ void exahype::tests::kernels::finitevolumes::riemannsolvers::c::RusanovTest::run
 
   double fL[ZeroFluxZeroNCP::NumberOfVariables];
   double fR[ZeroFluxZeroNCP::NumberOfVariables];
+  double cellSize[2] = {1.0, 1.0};
+  double gradQ[ZeroFluxZeroNCP::NumberOfVariables * DIMENSIONS] = {0.0};
   ::kernels::finitevolumes::riemannsolvers::c::rusanov<false,true,false,ZeroFluxZeroNCP>(
       mockupSolver,
       fL,fR,
       qL,
       qR,
+      gradQ,
+      gradQ,
+      cellSize,
       0 // this test is independent of the dimension since non-conservative product and flux are zero
   );
   #endif

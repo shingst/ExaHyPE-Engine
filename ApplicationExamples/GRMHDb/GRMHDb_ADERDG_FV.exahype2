@@ -9,7 +9,7 @@
   "architecture": "skx",
   "computational_domain": {
     "dimension": 3,
-    "end_time": 1000.0,
+    "end_time": 1000.0000001,
     "offset": [
       -24.5,
       -24.5,
@@ -22,10 +22,10 @@
     ]
   },
   "shared_memory": {
-    "cores": 28,
+    "cores": 72,
     "properties_file": "sharedmemory.properties",
     "autotuning_strategy": "dummy",
-    "background_job_consumers": 14,
+    "background_job_consumers": 36,
     "manual_pinning": true
   },
   "distributed_memory": {
@@ -55,7 +55,7 @@
       "type": "Limiting-ADER-DG",
       "name": "GRMHDbSolver",
       "order": 3,
-      "maximum_mesh_size": 7.0000001,
+      "maximum_mesh_size": 7.00000000000001,
       "maximum_mesh_depth": 2,
       "time_stepping": "global",
       "aderdg_kernel": {
@@ -65,20 +65,17 @@
           "flux",
           "ncp"
         ],
-        "space_time_predictor": {
-          "maxpicarditer": 5
-        },
+        "space_time_predictor": {},
         "optimised_terms": [],
         "optimised_kernel_debugging": [],
-        "implementation": "generic"
+        "implementation": "optimised"
       },
       "point_sources": 0,
       "limiter": {
         "dmp_observables": 5,
-        "dmp_relaxation_parameter": 10000.0,
-        "dmp_difference_scaling": 1000.0,
-        "helper_layers": 1,
-        "implementation": "generic"
+        "dmp_relaxation_parameter": 0.0001,
+        "dmp_difference_scaling": 0.001,
+        "implementation": "optimised"
       },
       "fv_kernel": {
         "language": "C",
@@ -144,7 +141,7 @@
           "type": "probe::ascii",
           "name": "ProbeWriter_0",
           "time": 0.0,
-          "repeat": 0.1,
+          "repeat": 0.5,
           "output": "./output/rhoc",
           "variables": 19,
           "select": {

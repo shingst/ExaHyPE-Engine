@@ -95,7 +95,7 @@ class Elastodynamics::MyElastodynamicsSolver: public Elastodynamics::AbstractMyE
      * \param[inout] FOut      the normal fluxes at point x from outside of the domain
      *                         and time-averaged (over [t,t+dt]) as C array (already allocated).
      */
-    void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double * const fluxIn,const double* const stateIn,double* const fluxOut,double* const stateOut);
+    void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double* const fluxIn,const double* const stateIn,const double* const gradStateIn,double* const fluxOut,double* const stateOut);
     
     /**
      * Evaluate the refinement criterion within a cell.
@@ -119,7 +119,7 @@ class Elastodynamics::MyElastodynamicsSolver: public Elastodynamics::AbstractMyE
     virtual void coefficientMatrix(const double* const Q,const int d,double* const Bn);
     virtual void pointSource(const double* const x,const double t,const double dt, double* const forceVector, double* const x0);
 
-    void riemannSolver(double* const FL,double* const FR,const double* const QL,const double* const QR,double* const tempFaceUnknownsArray,double** const tempStateSizedVectors,double** const tempStateSizedSquareMatrices,const double dt,const int normalNonZeroIndex) override;
+    void riemannSolver(double* const FL,double* const FR,const double* const QL,const double* const QR,const double t,const double dt, const tarch::la::Vector<DIMENSIONS, double>& lengthScale,const int direction, bool isBoundaryFace, int faceIndex) override;
 
     void riemannSolver_Nodal(double v_p,double v_m, double sigma_p, double sigma_m, double z_p , double z_m, double& v_hat_p , double& v_hat_m, double& sigma_hat_p, double& sigma_hat_m);
     void localBasis(double* const n, double* const m, double* const l, int d);
