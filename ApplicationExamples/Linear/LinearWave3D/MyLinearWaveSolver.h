@@ -136,9 +136,9 @@ class Linear::MyLinearWaveSolver : public Linear::AbstractMyLinearWaveSolver {
     **/
     void pointSource(const double* const x,const double t,const double dt, double* const forceVector, double* const x0, int n) final override;
 
-    //    void riemannSolver(double* const FL,double* const FR,const double* const QL,const double* const QR,const double dt,const int normalNonZeroIndex, bool isBoundaryFace, int faceIndex) override;
+    //    void riemannSolver(double* const FL,double* const FR,const double* const QL,const double* const QR,const double t,const double dt, const tarch::la::Vector<DIMENSIONS, double>& lengthScale,const int direction, bool isBoundaryFace, int faceIndex) override;
 
-    //void riemannSolver(double* const FL,double* const FR,const double* const QL,const double* const QR,double* const tempFaceUnknownsArray,double** const tempStateSizedVectors,double** const tempStateSizedSquareMatrices,const double dt,const int normalNonZeroIndex,bool isBoundaryFace, int faceIndex) override;
+    //void riemannSolver(double* const FL,double* const FR,const double* const QL,const double* const QR,const double t,const double dt, const tarch::la::Vector<DIMENSIONS, double>& lengthScale,const int direction, bool isBoundaryFace, int faceIndex) override;
 
 
     /**

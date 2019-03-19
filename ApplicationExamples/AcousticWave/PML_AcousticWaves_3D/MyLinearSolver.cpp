@@ -349,7 +349,7 @@ void Linear::MyLinearSolver::multiplyMaterialParameterMatrix(const double* const
   
 }
 
-void Linear::MyLinearSolver::riemannSolver(double* const FL,double* const FR,const double* const QL,const double* const QR,double* const tempFaceUnknownsArray,double** const tempStateSizedVectors,double** const tempStateSizedSquareMatrices,const double dt,const int normalNonZeroIndex,bool isBoundaryFace, int faceIndex){
+void Linear::MyLinearSolver::riemannSolver(double* const FL,double* const FR,const double* const QL,const double* const QR,const double t,const double dt, const tarch::la::Vector<DIMENSIONS, double>& lengthScale,const int direction, bool isBoundaryFace, int faceIndex){
 
   constexpr int numberOfVariables  = MyLinearSolver::NumberOfVariables;
   constexpr int numberOfVariables2 = numberOfVariables*numberOfVariables;

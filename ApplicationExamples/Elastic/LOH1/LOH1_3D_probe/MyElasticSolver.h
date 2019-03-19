@@ -35,9 +35,7 @@ class Elastic::MyElasticSolver : public exahype::solvers::ADERDGSolver {
   void surfaceIntegral(
       double* const lduh, const double* const lFhbnd,
       const tarch::la::Vector<DIMENSIONS, double>& dx) override;
-  void riemannSolver(double* const FL, double* const FR, const double* const QL,
-                     const double* const QR, const double dt,
-                     const int normalNonZeroIndex) override;
+  void riemannSolver(double* const FL,double* const FR,const double* const QL,const double* const QR,const double t,const double dt, const tarch::la::Vector<DIMENSIONS, double>& lengthScale,const int direction, bool isBoundaryFace, int faceIndex) override;
   void boundaryConditions(
       double* const fluxOut, double* const stateOut, const double* const fluxIn,
       const double* const stateIn,

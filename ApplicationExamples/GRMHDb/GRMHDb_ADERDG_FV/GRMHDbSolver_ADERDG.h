@@ -207,9 +207,9 @@ class GRMHDb::GRMHDbSolver_ADERDG : public GRMHDb::AbstractGRMHDbSolver_ADERDG {
 
 
 #ifdef OPT_KERNELS
-	void riemannSolver(double* const FL, double* const FR, const double* const QL, const double* const QR, const double t, const double dt, const int direction, bool isBoundaryFace, int faceIndex) override;
+	void riemannSolver(double* const FL,double* const FR,const double* const QL,const double* const QR,const double t,const double dt, const tarch::la::Vector<DIMENSIONS, double>& lengthScale,const int direction, bool isBoundaryFace, int faceIndex) override;
 #else
-	void riemannSolver(double* const FL, double* const FR, const double* const QL, const double* const QR, const double t, const double dt, const int direction, bool isBoundaryFace, int faceIndex) override;
+	void riemannSolver(double* const FL,double* const FR,const double* const QL,const double* const QR,const double t,const double dt, const tarch::la::Vector<DIMENSIONS, double>& lengthScale,const int direction, bool isBoundaryFace, int faceIndex) override;
 #endif
 
 
