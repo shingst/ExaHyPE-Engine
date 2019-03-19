@@ -763,7 +763,8 @@ void exahype::solvers::ADERDGSolver::kickOffTimeStep(const bool isFirstTimeStepO
   }
 
   // call user code
-  _globalObservables = resetGlobalObservables();
+
+  _nextGlobalObservables = resetGlobalObservables();
   beginTimeStep(_minTimeStamp,isFirstTimeStepOfBatchOrNoBatch);
 }
 

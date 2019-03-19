@@ -1252,9 +1252,15 @@ class exahype::solvers::Solver {
   int _coarsestMeshLevel;
 
   /**
-   * The reduced global observables over the entire domain.
+   * The global observables from the previous time step.
    */
   std::vector<double> _globalObservables;
+
+  /**
+   * The global observables which are reduced in this
+   * iteration.
+   */
+  std::vector<double> _nextGlobalObservables;
 
   /*
    * The coarsest mesh size this solver is using, i.e.
@@ -2027,47 +2033,6 @@ class exahype::solvers::Solver {
       const int                                    level) = 0;
   #endif
 
-
-  /**
-   * Maps the solution values Q to
-   * the global observables.
-   *
-   *\param[in] Q  The state variables.
-   *\param[in] dx The size of a cell.
-   *\return globalObservables The mapped observables.
-   */
-   virtual std::vector<double> mapGlobalObservables(
-       const double* const                         Q,
-       const tarch::la::Vector<DIMENSIONS,double>& dx) const = 0;
-
-   /**
-    * Resets the vector of global observables to some suitable initial value, e.g.
-    * the smallest possible double if one wants to compute the maximum.
-    *
-    *\param[out] globalObservables The mapped observables.
-    */
-   virtual std::vector<double> resetGlobalObservables() const = 0;
-
-   /**
-    * This method merges two vectors of global observables.
-    *
-    * Function that reduces the global observables.
-    * For example, if one wants to compute the maximum of global variables
-    * one should set
-    * reducedGlobalObservables[0] = std::max(reducucedGlobalObservables[i],
-    * curGlobalObservables[0])
-    *
-    * and so on.
-    *
-    * @note Implementation must ensure thread-safety.
-    *
-    *\param[inout] reducedGlobalObservables The reduced observables.
-    *\param[in]    curGlobalObservables     The current vector of global observables.
-    */
-   virtual void reduceGlobalObservables(
-       std::vector<double>&       reducedGlobalObservables,
-       const std::vector<double>& curGlobalObservables) const = 0;
-
    /**
     * Cell-wise method to compute observables per cell and merge
     * them with the current ones.
@@ -2149,6 +2114,44 @@ class exahype::solvers::Solver {
       const tarch::la::Vector<DIMENSIONS,double>& cellSize) { return 1; }
 
  public:
+  /**
+   * Maps the solution values Q to
+   * the global observables.
+   *
+   *\param[in]                Q  The state variables.
+   *\param[in]                dx The size of a cell.
+   *\return globalObservables The mapped observables.
+   */
+   virtual std::vector<double> mapGlobalObservables(
+       const double* const                         Q,
+       const tarch::la::Vector<DIMENSIONS,double>& dx) const = 0;
+
+   /**
+    * Resets the vector of global observables to some suitable initial value, e.g.
+    * the smallest possible double if one wants to compute the maximum.
+    *
+    *\param[out] globalObservables The mapped observables.
+    */
+   virtual std::vector<double> resetGlobalObservables() const = 0;
+
+   /**
+    * This method merges two vectors of global observables.
+    *
+    * Function that reduces the global observables.
+    * For example, if one wants to compute the maximum of global variables,
+    * one should set
+    *
+    * reducedGlobalObservables[i] = std::max( reducucedGlobalObservables[i], curGlobalObservables[i])
+    *
+    * and so on.
+    *
+    *\param[inout] reducedGlobalObservables The reduced observables.
+    *\param[in]    curGlobalObservables     The current vector of global observables.
+    */
+   virtual void reduceGlobalObservables(
+       std::vector<double>&       reducedGlobalObservables,
+       const std::vector<double>& curGlobalObservables) const = 0;
+
   /**
    * Signals a user solver that ExaHyPE just started a new time step.
    *

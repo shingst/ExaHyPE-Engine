@@ -38,6 +38,8 @@ bool exahype::solvers::FiniteVolumesSolver::FusedTimeStepJob::run() {
   if (_isLastTimeStepOfBatch) {
     _solver.updateMeshUpdateEvent(result._meshUpdateEvent);
     _solver.updateAdmissibleTimeStepSize(result._timeStepSize);
+
+    _solver->reduceGlobalObservables(_cellDescription,_isAtRemoteBoundary);
   }
 
   NumberOfReductionJobs.fetch_sub(1);

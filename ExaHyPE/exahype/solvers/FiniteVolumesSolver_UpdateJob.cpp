@@ -28,6 +28,8 @@ bool exahype::solvers::FiniteVolumesSolver::UpdateJob::run() {
   assertion( NumberOfReductionJobs.load()>=0 );
 
   _solver.updateAdmissibleTimeStepSize(result._timeStepSize);
+
+  _solver->reduceGlobalObservables(_cellDescription,_isAtRemoteBoundary);
   return false;
 }
 

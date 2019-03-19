@@ -26,6 +26,8 @@ bool exahype::solvers::LimitingADERDGSolver::UpdateJob::run() {
   _solver.updateMeshUpdateEvent(result._meshUpdateEvent);
   _solver.updateAdmissibleTimeStepSize(result._timeStepSize);
 
+  _solver.reduceGlobalObservables(_solverPatch,_cellInfo,_isAtRemoteBoundary);
+
   NumberOfReductionJobs.fetch_sub(1);
   assertion( NumberOfReductionJobs.load()>=0 );
 
