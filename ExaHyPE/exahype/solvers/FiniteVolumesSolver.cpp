@@ -1370,93 +1370,43 @@ void exahype::solvers::FiniteVolumesSolver::dropNeighbourData(
 // WORKER->MASTER
 ///////////////////////////////////
 
-/*
- * At the time of sending data to the master,
- * we have already performed a time step update locally
- * on the rank. We thus need to communicate the
- * current min predictor time step size to the master.
- * The next min predictor time step size is
- * already reset locally to the maximum double value.
- *
- * However on the master's side, we need to
- * merge the received time step size with
- * the next min predictor time step size since
- * the master has not yet performed a time step update
- * (i.e. called TimeStepSizeComputation::endIteration()).
- */
 void exahype::solvers::FiniteVolumesSolver::sendDataToMaster(
     const int                                    masterRank,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const int                                    level) const {
   DataHeap::HeapEntries messageForMaster(0,1);
-  messageForMaster.push_back(_minTimeStamp);
-  messageForMaster.push_back(_minTimeStepSize);
+  messageForMaster.push_back(_admissibleTimeStepSize);
 
   assertion1(std::isfinite(messageForMaster[0]),messageForMaster[0]);
-  assertion1(std::isfinite(messageForMaster[1]),messageForMaster[0]);
-
   if ( !tarch::parallel::Node::getInstance().isGlobalMaster() ) {
-    logDebug("sendDataToMaster(...)","Sending time step data: " <<
-      "data[0]=" << messageForMaster[0] << ","
-      "data[1]=" << messageForMaster[1]);
+    logDebug("sendDataToMaster(...)","Sending time step data: " << "data[0]=" << messageForMaster[0]);
   }
-
-  // MPI_Send(
-  //     messageForMaster.data(), messageForMaster.size(),
-  //     MPI_DOUBLE,
-  //     masterRank,
-  //     MasterWorkerCommunicationTag,
-  //     tarch::parallel::Node::getInstance().getCommunicator());
 
   DataHeap::getInstance().sendData(
       messageForMaster.data(), messageForMaster.size(),
       masterRank,x,level,peano::heap::MessageType::MasterWorkerCommunication);
 }
 
-/**
- * At the time of the merging,
- * the workers and the master have already performed
- * at local update of the next predictor time step size
- * and of the predictor time stamp.
- * We thus need to minimise over both quantities.
- */
 void exahype::solvers::FiniteVolumesSolver::mergeWithWorkerData(
     const int                                    workerRank,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const int                                    level) {
-  DataHeap::HeapEntries messageFromWorker(2);
-
-  if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
-    logDebug("mergeWithWorkerData(...)","Receiving time step data [pre] from rank " << workerRank);
-  }
-
-  // MPI_Recv(
-  //     messageFromWorker.data(), messageFromWorker.size(),
-  //     MPI_DOUBLE,
-  //     workerRank,
-  //     MasterWorkerCommunicationTag,
-  //     tarch::parallel::Node::getInstance().getCommunicator(),
-  //     MPI_STATUS_IGNORE);
+  DataHeap::HeapEntries messageFromWorker(1);
 
   DataHeap::getInstance().receiveData(
       messageFromWorker.data(), messageFromWorker.size(),
       workerRank,x,level,peano::heap::MessageType::MasterWorkerCommunication);
 
   assertion1(std::isfinite(messageFromWorker[0]),messageFromWorker[0]);
-  assertion1(std::isfinite(messageFromWorker[1]),messageFromWorker[1]);
 
   int index=0;
-  _minTimeStamp    = std::min( _minTimeStamp,    messageFromWorker[index++] );
-  _minTimeStepSize = std::min( _minTimeStepSize, messageFromWorker[index++] );
+  _admissibleTimeStepSize = std::min( _admissibleTimeStepSize, messageFromWorker[index++] );
 
   if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
-    logDebug("mergeWithWorkerData(...)","Receiving time step data: " <<
-             "data[0]=" << messageFromWorker[0] << "," <<
-             "data[1]=" << messageFromWorker[1]);
-
-    logDebug("mergeWithWorkerData(...)","Updated time step fields: " <<
-             "_minTimeStamp="    << _minTimeStamp << "," <<
-             "_minTimeStepSize=" << _minTimeStepSize);
+    logDebug("mergeWithWorkerData(...)","Received data: " <<
+             "data[0]=" << messageFromWorker[0]);
+    logDebug("mergeWithWorkerData(...)","Updated fields: " <<
+             "_admissibleTimeStepSize=" << _admissibleTimeStepSize);
   }
 }
 
@@ -1486,13 +1436,6 @@ void exahype::solvers::FiniteVolumesSolver::sendDataToWorker(
     logDebug("sendDataWorker(...)","_minNextTimeStepSize="<<_admissibleTimeStepSize);
   }
 
-  // MPI_Send(
-  //     messageForWorker.data(), messageForWorker.size(),
-  //     MPI_DOUBLE,
-  //     workerRank,
-  //     MasterWorkerCommunicationTag,
-  //     tarch::parallel::Node::getInstance().getCommunicator());
-
   DataHeap::getInstance().sendData(
       messageForWorker.data(), messageForWorker.size(),
       workerRank,x,level,peano::heap::MessageType::MasterWorkerCommunication);
@@ -1504,12 +1447,6 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithMasterData(
     const int                                    level) {
   std::vector<double> messageFromMaster(2);
 
-  // MPI_Recv(
-  //     messageFromMaster.data(), messageFromMaster.size(),
-  //     MPI_DOUBLE,
-  //     masterRank,
-  //     MasterWorkerCommunicationTag,
-  //     tarch::parallel::Node::getInstance().getCommunicator(),MPI_STATUS_IGNORE);
   DataHeap::getInstance().receiveData(
       messageFromMaster.data(), messageFromMaster.size(),
       masterRank,x,level,peano::heap::MessageType::MasterWorkerCommunication);

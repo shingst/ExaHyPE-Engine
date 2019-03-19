@@ -7,11 +7,14 @@
 // ========================
 // ==============================================
 // Please do not change the implementations below
-// ==============================================
+// =============================---==============
 #include "GRMHDSolver.h"
 
-#include "kernels/limiter/generic/Limiter.h"
+#include "kernels/GRMHD_GRMHDSolver_ADERDG/Kernels.h"
 
+
+
+// Just call parent constructor
 GRMHD::GRMHDSolver::GRMHDSolver(
         const double maximumMeshSize,
         const int maximumMeshDepth,
@@ -20,8 +23,7 @@ GRMHD::GRMHDSolver::GRMHDSolver(
         const exahype::solvers::Solver::TimeStepping timeStepping,
         const int DMPObservables,
         const double DMPRelaxationParameter,
-        const double DMPDifferenceScaling,
-        const int iterationsToCureTroubledCell 
+        const double DMPDifferenceScaling
 ) :
   exahype::solvers::LimitingADERDGSolver::LimitingADERDGSolver(
       "GRMHDSolver",
@@ -30,24 +32,40 @@ GRMHD::GRMHDSolver::GRMHDSolver(
     new GRMHD::GRMHDSolver_FV(
       maximumMeshSize, timeStepping),
     DMPRelaxationParameter,
-    DMPDifferenceScaling,
-    iterationsToCureTroubledCell) {}
+    DMPDifferenceScaling) {}
 
 void GRMHD::GRMHDSolver::projectOnFVLimiterSpace(const double* const luh, double* const lim) const {
-  kernels::limiter::generic::c::projectOnFVLimiterSpace<Order+1,NumberOfVariables+NumberOfParameters,GhostLayerWidth>(luh, lim);
+  
+  GRMHD::GRMHDSolver_ADERDG_kernels::aderdg::projectOnFVLimiterSpace(luh, lim);
+
+ 
 }
 
 void GRMHD::GRMHDSolver::projectOnDGSpace(const double* const lim, double* const luh) const {
-  kernels::limiter::generic::c::projectOnDGSpace<Order+1,NumberOfVariables+NumberOfParameters,GhostLayerWidth>(lim, luh);
+  
+  GRMHD::GRMHDSolver_ADERDG_kernels::aderdg::projectOnDGSpace(lim, luh);
+
+ 
 }
 
 bool GRMHD::GRMHDSolver::discreteMaximumPrincipleAndMinAndMaxSearch(const double* const luh, double* const boundaryMinPerVariables, double* const boundaryMaxPerVariables) {
-  return kernels::limiter::generic::c::discreteMaximumPrincipleAndMinAndMaxSearch<AbstractGRMHDSolver_ADERDG, NumberOfDMPObservables, GhostLayerWidth>(luh, *static_cast<AbstractGRMHDSolver_ADERDG*>(_solver.get()), _DMPMaximumRelaxationParameter, _DMPDifferenceScaling, boundaryMinPerVariables, boundaryMaxPerVariables);
+  
+  const bool r =  GRMHD::GRMHDSolver_ADERDG_kernels::aderdg::discreteMaximumPrincipleAndMinAndMaxSearch(luh, _solver.get(), _DMPMaximumRelaxationParameter, _DMPDifferenceScaling, boundaryMinPerVariables, boundaryMaxPerVariables);
+
+
+  return r;
 }
 
 void GRMHD::GRMHDSolver::findCellLocalMinAndMax(const double* const luh, double* const localMinPerVariables, double* const localMaxPerVariable) {
-  kernels::limiter::generic::c::findCellLocalMinAndMax<AbstractGRMHDSolver_ADERDG, NumberOfDMPObservables>(luh, *static_cast<AbstractGRMHDSolver_ADERDG*>(_solver.get()), localMinPerVariables, localMaxPerVariable);
+  
+  GRMHD::GRMHDSolver_ADERDG_kernels::aderdg::findCellLocalMinAndMax(luh, _solver.get(), localMinPerVariables, localMaxPerVariable);
+
+ 
 }
+
 void GRMHD::GRMHDSolver::findCellLocalLimiterMinAndMax(const double* const lim, double* const localMinPerObservable, double* const localMaxPerObservable) {
-  kernels::limiter::generic::c::findCellLocalLimiterMinAndMax<AbstractGRMHDSolver_ADERDG, NumberOfDMPObservables, GhostLayerWidth>(lim, *static_cast<AbstractGRMHDSolver_ADERDG*>(_solver.get()), localMinPerObservable,localMaxPerObservable);
+  
+  GRMHD::GRMHDSolver_ADERDG_kernels::aderdg::findCellLocalLimiterMinAndMax(lim, _solver.get(), localMinPerObservable,localMaxPerObservable);
+
+ 
 }

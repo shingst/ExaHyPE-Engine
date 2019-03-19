@@ -600,6 +600,8 @@ RECURSIVE SUBROUTINE PDEEigenvalues(L,Q,n)
 	DO i=6,nVar
 		L(i)   = 0.
 	ENDDO
+
+  return 
     !
     ! SAFE MODE: define also 'covariant' eigenvalues! (we may use the remaining free slots in L, L(6:8), L(10:19)
     !

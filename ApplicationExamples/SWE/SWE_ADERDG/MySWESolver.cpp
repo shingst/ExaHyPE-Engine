@@ -41,7 +41,7 @@ void SWE::MySWESolver::adjustPointSolution(const double* const x,const double t,
 }
 
 void SWE::MySWESolver::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,
-    const double * const fluxIn,const double* const stateIn,
+    const double * const fluxIn,const double* const stateIn, const double* const gradStateIn,
     double* const fluxOut,double* const stateOut) {
     // Dimensions                        = 2
     // Number of variables + parameters  = 4 + 0

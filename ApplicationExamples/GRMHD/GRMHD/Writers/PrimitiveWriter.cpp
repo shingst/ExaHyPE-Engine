@@ -51,9 +51,20 @@ void GRMHD::PrimitiveWriter::mapQuantities(
     double* Q,
     double* outputQuantities,
     double timeStamp
-) {
+    ) {
+
+  constexpr int nVar = GRMHD::AbstractGRMHDSolver_ADERDG::NumberOfVariables;
+
   const int writtenUnknowns = 1;
-  for (int i=0; i<writtenUnknowns; i++){ 
-    outputQuantities[i] = Q[i];
-  }
+
+  // reduce the primitive quantities
+  double V[nVar];
+  int err;
+  pdecons2prim_(V, Q, &err);
+//  for (int i=0; i<writtenUnknowns; i++){ 
+    //  outputQuantities[i] = Q[i];
+    //density 
+    outputQuantities[0] = V[0];
+//    outputQuantities[1] = V[1];
+//  }
 }
