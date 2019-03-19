@@ -679,6 +679,18 @@ void exahype::solvers::FiniteVolumesSolver::adjustSolution(CellDescription& cell
   #endif
 }
 
+void exahype::solvers::FiniteVolumesSolver::reduceGlobalObservables(CellDescription& cellDescription) const {
+  if ( !_globalObservables.empty() ) {
+    assert(cellDescription.getType()==CellDescription::Type::Cell);
+    double* luh  = static_cast<double*>(cellDescription.getSolution());
+    const auto& dx = cellDescription.getSize();
+    const auto curGlobalObservables = mapGlobalObservables(luh, dx);
+    tarch::multicore::Lock lock(ReductionSemaphore);
+    reduceGlobalObservables(_nextGlobalObservables, curGlobalObservables);
+    lock.free();
+  }
+}
+
 exahype::solvers::Solver::UpdateResult exahype::solvers::FiniteVolumesSolver::updateBody(
     CellDescription&                                           cellDescription,
     CellInfo&                                                  cellInfo,
@@ -696,6 +708,8 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::FiniteVolumesSolver::up
   updateSolution(cellDescription,neighbourMergePerformed,cellInfo._cellDescriptionsIndex,isFirstTimeStepOfBatch);
   UpdateResult result;
   result._timeStepSize = startNewTimeStep(cellDescription,isFirstTimeStepOfBatch);
+
+  reduceGlobalObservables(cellDescription);
 
   compress(cellDescription,isAtRemoteBoundary);
 
@@ -2041,28 +2055,6 @@ bool exahype::solvers::FiniteVolumesSolver::CompressionJob::run() {
     assertion( NumberOfEnclaveJobs.load()>=0 );
   }
   return false;
-}
-
-void exahype::solvers::FiniteVolumesSolver::reduceGlobalObservables(
-    std::vector<double>& globalObservables,
-    Solver::CellInfo     cellInfo,
-    int                  solverNumber) const {
-  if ( !globalObservables.empty() ) {
-    const auto element = cellInfo.indexOfADERDGCellDescription(solverNumber);
-    if (element != NotFound ) {
-      CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[element];
-      const bool isCell = cellDescription.getType() == CellDescription::Type::Cell;
-      if ( isCell ) {
-        assert(cellDescription.getType()==CellDescription::Type::Cell);
-        double* luh  = static_cast<double*>(cellDescription.getSolution());
-        const auto& dx = cellDescription.getSize();
-        const auto curGlobalObservables = mapGlobalObservables(luh, dx);
-        tarch::multicore::Lock lock(ReductionSemaphore);
-        reduceGlobalObservables(globalObservables, curGlobalObservables);
-        lock.free();
-      }
-    }
-  }
 }
 
 ///////////////////////
