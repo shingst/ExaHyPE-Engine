@@ -2077,7 +2077,11 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
   }
 
   #ifdef USE_ITAC
-  VT_end(fusedTimeStepBodyHandle);
+  if ( isSkeletonCell ) {
+    VT_end(fusedTimeStepBodyHandleSkeleton);
+  } else {
+    VT_end(fusedTimeStepBodyHandle);
+  }
   #endif
   return result;
 }
@@ -2159,11 +2163,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::updateBod
   cellDescription.setHasCompletedLastStep(true); // required as prediction checks the flag too. Field should be renamed "setHasCompletedLastOperation(...)".
 
   #ifdef USE_ITAC
-  if ( isSkeletonCell ) {
-    VT_end(fusedTimeStepBodyHandleSkeleton);
-  } else {
-    VT_end(fusedTimeStepBodyHandle);
-  }
+  VT_end(updateBodyHandle);
   #endif
   return result;
 }
