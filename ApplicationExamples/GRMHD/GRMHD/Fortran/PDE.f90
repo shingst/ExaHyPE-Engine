@@ -530,9 +530,9 @@ RECURSIVE SUBROUTINE PDEEigenvalues(L,Q,n)
   Pi = ACOS(-1.0)
     !
     L = 0.0
-    L(1) = -1.0    
-    L(2) = +1.0    
-    RETURN 
+!    L(1) = -1.0    
+!    L(2) = +1.0    
+!    RETURN 
 
     xg(1) = 0.
     xg(2) = 0.
