@@ -261,6 +261,13 @@ exahype::solvers::Solver::RefinementControl GRMHDb::GRMHDbSolver_ADERDG::refinem
         if(radiusC > 0.){
                 radiusC = sqrt(radiusC);
         }
+        
+        
+        if (radiusC + 0.5*dr > 8.05 && radiusC-0.5*dr < 8.35) {
+            return exahype::solvers::Solver::RefinementControl::Refine;
+        }
+
+        
         if (radiusC-0.5*dr < 8.33) {
           if (radiusC + 0.5*dr > 7.95) {
             return exahype::solvers::Solver::RefinementControl::Refine;

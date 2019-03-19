@@ -153,7 +153,7 @@ class GRMHD::GRMHDSolver_ADERDG : public GRMHD::AbstractGRMHDSolver_ADERDG {
     void nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ) final override;
 
     // Fake Material parameters
-    void riemannSolver(double* const FL,double* const FR,const double* const QL,const double* const QR,const double dt,const int normalNonZeroIndex,bool isBoundaryFace, int faceIndex) final override;
+    void riemannSolver(double* const FL,double* const FR,const double* const QL,const double* const QR,const double t,const double dt, const tarch::la::Vector<DIMENSIONS, double>& lengthScale,const int direction, bool isBoundaryFace, int faceIndex) final override;
 
     // Limiting driver functions
     bool isPhysicallyAdmissible(

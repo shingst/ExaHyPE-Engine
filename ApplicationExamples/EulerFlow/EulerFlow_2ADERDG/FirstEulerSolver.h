@@ -29,7 +29,7 @@ class Euler::FirstEulerSolver: public exahype::solvers::ADERDGSolver {
     void solutionUpdate(double* const luh, const double* const lduh, const double dt) override;
     void volumeIntegral(double* const lduh, const double* const lFhi, const tarch::la::Vector<DIMENSIONS,double>& dx) override;
     void surfaceIntegral(double* const lduh, const double* const lFhbnd, const tarch::la::Vector<DIMENSIONS,double>& dx) override;
-    void riemannSolver(double* const FL, double* const FR, const double* const QL, const double* const QR, double* const tempFaceUnknownsArray, double** const tempStateSizedVectors, double** const tempStateSizedSquareMatrices, const double dt, const int normalNonZeroIndex) override;
+    void riemannSolver(double* const FL,double* const FR,const double* const QL,const double* const QR,const double t,const double dt, const tarch::la::Vector<DIMENSIONS, double>& lengthScale,const int direction, bool isBoundaryFace, int faceIndex) override;
     void boundaryConditions(double* const fluxOut, double* const stateOut, const double* const fluxIn, const double* const stateIn, const tarch::la::Vector<DIMENSIONS, double>& cellCentre, const tarch::la::Vector<DIMENSIONS,double>& cellSize, const double t,const double dt, const int faceIndex, const int normalNonZero) override;
     double stableTimeStepSize(const double* const luh, double* const tempEigenvalues, const tarch::la::Vector<DIMENSIONS,double>& dx) override;
     void solutionAdjustment(double* const luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,double dt) override;

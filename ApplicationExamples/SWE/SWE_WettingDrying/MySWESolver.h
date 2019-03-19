@@ -83,7 +83,7 @@ class SWE::MySWESolver : public SWE::AbstractMySWESolver {
      */
     void flux(const double* const Q,double** const F) override;
 
-    double riemannSolver(double* const fL, double* const fR, const double* const qL, const double* const qR, int direction) override;
+    double riemannSolver(double* const FL,double* const FR,const double* const QL,const double* const QR,const double t,const double dt, const tarch::la::Vector<DIMENSIONS, double>& lengthScale,const int direction, bool isBoundaryFace, int faceIndex) override;
 
     /* algebraicSource() function not included, as requested by the specification file */
 

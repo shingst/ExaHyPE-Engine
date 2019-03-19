@@ -118,7 +118,7 @@ class Elastodynamics::MyElastodynamicsSolver: public Elastodynamics::AbstractMyE
     virtual void coefficientMatrix(const double* const Q,const int d,double* const Bn);
     virtual void pointSource(const double* const x,const double t,const double dt, double* const forceVector, double* const x0);
 
-    void riemannSolver(double* const FL,double* const FR,const double* const QL,const double* const QR,double* const tempFaceUnknownsArray,double** const tempStateSizedVectors,double** const tempStateSizedSquareMatrices,const double dt,const int normalNonZeroIndex,bool isBounaryFace) override;
+    void riemannSolver(double* const FL,double* const FR,const double* const QL,const double* const QR,const double t,const double dt, const tarch::la::Vector<DIMENSIONS, double>& lengthScale,const int direction, bool isBoundaryFace, int faceIndex) override;
 
     void riemannSolver_Nodal(double v_p,double v_m, double sigma_p, double sigma_m, double z_p , double z_m, double& v_hat_p , double& v_hat_m, double& sigma_hat_p, double& sigma_hat_m);
     void localBasis(double* const n, double* const m, double* const l, int d);
