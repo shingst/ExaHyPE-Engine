@@ -70,7 +70,9 @@ namespace {
 #ifdef USE_ITAC
 int exahype::solvers::ADERDGSolver::adjustSolutionHandle                 = 0;
 int exahype::solvers::ADERDGSolver::fusedTimeStepBodyHandle              = 0;
+int exahype::solvers::ADERDGSolver::fusedTimeStepBodyHandleSkeleton      = 0;
 int exahype::solvers::ADERDGSolver::predictorBodyHandle                  = 0;
+int exahype::solvers::ADERDGSolver::predictorBodyHandleSkeleton          = 0;
 int exahype::solvers::ADERDGSolver::updateBodyHandle                     = 0;
 int exahype::solvers::ADERDGSolver::mergeNeighboursHandle                = 0;
 int exahype::solvers::ADERDGSolver::prolongateFaceDataToDescendantHandle = 0;
@@ -2043,7 +2045,11 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
     const bool                                                 isSkeletonCell,
     const bool                                                 mustBeDoneImmediately) {
   #ifdef USE_ITAC
-  VT_begin(fusedTimeStepBodyHandle);
+  if ( isSkeletonCell ) {
+    VT_begin(fusedTimeStepBodyHandleSkeleton);
+  } else {
+    VT_begin(fusedTimeStepBodyHandle);
+  }
   #endif
 
   correction(cellDescription,neighbourMergePerformed,isFirstTimeStepOfBatch,isFirstTimeStepOfBatch/*addSurfaceIntegralContributionToUpdate*/);
@@ -2153,7 +2159,11 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::updateBod
   cellDescription.setHasCompletedLastStep(true); // required as prediction checks the flag too. Field should be renamed "setHasCompletedLastOperation(...)".
 
   #ifdef USE_ITAC
-  VT_end(updateBodyHandle);
+  if ( isSkeletonCell ) {
+    VT_end(fusedTimeStepBodyHandleSkeleton);
+  } else {
+    VT_end(fusedTimeStepBodyHandle);
+  }
   #endif
   return result;
 }
@@ -2215,7 +2225,11 @@ int exahype::solvers::ADERDGSolver::predictionAndVolumeIntegralBody(
     const bool   isSkeletonCell,
     const bool   addVolumeIntegralResultToUpdate) {
   #ifdef USE_ITAC
-  VT_begin(predictorBodyHandle);
+  if ( isSkeletonCell ) {
+    VT_begin(predictorBodyHandleSkeleton);
+  } else {
+    VT_begin(predictorBodyHandle);
+  }
   #endif
   if (uncompressBefore) { uncompress(cellDescription); }
 
@@ -2246,8 +2260,8 @@ int exahype::solvers::ADERDGSolver::predictionAndVolumeIntegralBody(
   #endif
 
   // TODO(Lukas) Is this really the corrector timestamp?
-  const auto correctorTimeStamp = cellDescription.getTimeStamp();
-  const auto correctorTimeStepSize = cellDescription.getTimeStepSize();
+  const auto correctorTimeStamp    = cellDescription.getTimeStamp();
+  const auto correctorTimeStepSize = cellDescription.getTimeStepSize(); // TODO(Dominic): where is this used?
 
   const int numberOfPicardIterations = fusedSpaceTimePredictorVolumeIntegral(
       lduh,lQhbnd,lGradQhbnd,lFhbnd,
@@ -2266,7 +2280,11 @@ int exahype::solvers::ADERDGSolver::predictionAndVolumeIntegralBody(
 
   
   #ifdef USE_ITAC
-  VT_end(predictorBodyHandle);
+  if ( isSkeletonCell ) {
+    VT_end(predictorBodyHandleSkeleton);
+  } else {
+    VT_end(predictorBodyHandle);
+  }
   #endif
 
   return numberOfPicardIterations;

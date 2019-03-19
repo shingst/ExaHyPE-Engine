@@ -43,11 +43,10 @@ constexpr const char* tags[]{"solutionUpdate", "stableTimeStepSize"};
 }  // namespace
 
 #ifdef USE_ITAC
-int exahype::solvers::FiniteVolumesSolver::adjustSolutionHandle    = 0;
-int exahype::solvers::FiniteVolumesSolver::fusedTimeStepBodyHandle = 0;
-int exahype::solvers::FiniteVolumesSolver::predictorBodyHandle     = 0;
-int exahype::solvers::FiniteVolumesSolver::updateBodyHandle        = 0;
-int exahype::solvers::FiniteVolumesSolver::mergeNeighboursHandle   = 0;
+int exahype::solvers::FiniteVolumesSolver::adjustSolutionHandle     = 0;
+int exahype::solvers::FiniteVolumesSolver::updateBodyHandle         = 0;
+int exahype::solvers::FiniteVolumesSolver::updateBodyHandleSkeleton = 0;
+int exahype::solvers::FiniteVolumesSolver::mergeNeighboursHandle    = 0;
 #endif
 
 tarch::logging::Log exahype::solvers::FiniteVolumesSolver::_log( "exahype::solvers::FiniteVolumesSolver");
@@ -682,7 +681,11 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::FiniteVolumesSolver::up
     const bool                                                 isAtRemoteBoundary,
     const bool                                                 uncompressBefore) {
   #ifdef USE_ITAC
-  VT_begin(updateBodyHandle);
+  if ( isAtRemoteBoundary ) {
+    VT_begin(updateBodyHandleSkeleton);
+  } else {
+    VT_begin(updateBodyHandle);
+  }
   #endif
 
   if ( uncompressBefore ) { uncompress(cellDescription); }
@@ -696,7 +699,11 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::FiniteVolumesSolver::up
   cellDescription.setHasCompletedLastStep(true); // last step of the FV update
 
   #ifdef USE_ITAC
-  VT_end(updateBodyHandle);
+  if ( isAtRemoteBoundary ) {
+    VT_end(updateBodyHandleSkeleton);
+  } else {
+    VT_end(updateBodyHandle);
+  }
   #endif
   return result;
 }
