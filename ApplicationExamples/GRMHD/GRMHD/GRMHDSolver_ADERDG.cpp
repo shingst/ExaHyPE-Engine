@@ -75,7 +75,15 @@ void __attribute__((optimize("O0"))) GRMHD::GRMHDSolver_ADERDG::adjustPointSolut
   bool insideExcisionBall = false;
   bool hastoadjust = tarch::la::equals(t,0.0) || insideExcisionBall;
 
-  if (hastoadjust) initialData(x,t,dt,Q);
+  using namespace tarch::la;
+  if(equals(t,0.0)) {
+    initialData(x, t, dt, Q); 
+    if( (x[1] > -0.1) && (x[1]  < 0.1)) {
+      if( (x[2] > -0.1) && (x[2]  < 0.1)) {
+        printf("adjusting ADERDG:  Q[0]=%.5e , x,y,z = %f,%f,%f, t= %f\n",Q[0],x[0],x[1],x[2],t);
+      }
+    }
+  }
 }
 
 void __attribute__((optimize("O0"))) GRMHD::GRMHDSolver_ADERDG::eigenvalues(const double* const Q,const int d,double* const lambda) {
@@ -171,7 +179,6 @@ void GRMHD::GRMHDSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(double* c
 }
 */
 
-/*
 void GRMHD::GRMHDSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(
   double* const observables, const int NumberOfVariables,
   const double* const Q) const {
@@ -179,7 +186,6 @@ void GRMHD::GRMHDSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(
     observables[i] = Q[i];
   }
 }
-*/
 
 
 
@@ -191,31 +197,12 @@ bool GRMHD::GRMHDSolver_ADERDG::isPhysicallyAdmissible(
       const tarch::la::Vector<DIMENSIONS,double>& dx,
       const double t) const {
 
-//	double radius = 8.12514;
 	double radius = 8.12514;
-//	// lower left, upper right radius of cell
-//  double radius = 0.0;
 	double cen = tarch::la::norm2(center);
-	double dr = 0.5;
-//	bool shouldLimit = (cen > (radius -dr) ) && ( cen  <= (radius+dr) ); 
-//  bool shouldLimit = cen <= (1.0+dr);
-//  double dr=2.0;
-//  bool shouldLimit =  cen <= (radius +dr);
-
-    bool shouldLimit = cen <= (1.5);
-//  if(isAdmissible) {
-//    printf("Cell has centre = %f => isAdmissible=%s\n",cen,isAdmissible?"true":"false");
-//  }
-//  printf("Cell has l=%f,r=%f => isAdmissible=%s\n", l, r, isAdmissible?"true":"false");
-  
+	double dr = 1.5;
 
   // return TRUE if the cell does not need limited
 	return !shouldLimit;
-//  return true;
-
- // return false;
- // return true;
-
 
 }
 
