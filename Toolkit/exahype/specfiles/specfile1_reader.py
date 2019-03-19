@@ -474,6 +474,9 @@ class SpecFile1Reader():
                     solver["fv_kernel"]["terms"]=solver["aderdg_kernel"]["terms"] # copy ADER-DG terms
                 if "limiter_optimisation" in solver:
                     fv_kernel_opts    = solver.pop("limiter_optimisation")
+                if "limiter_slope_limiter" in solver:
+                    solver["fv_kernel"]["slope_limiter"]=solver.pop("limiter_slope_limiter")
+
             
             # fv
             if solver["type"]=="Finite-Volumes":
