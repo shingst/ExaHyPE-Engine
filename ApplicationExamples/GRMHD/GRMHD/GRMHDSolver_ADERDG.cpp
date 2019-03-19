@@ -217,15 +217,15 @@ bool GRMHD::GRMHDSolver_ADERDG::isPhysicallyAdmissible(
 void __attribute__((optimize("O0"))) GRMHD::GRMHDSolver_ADERDG::nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ) {
   pdencp_(BgradQ, Q, gradQ);
   
-  for(int i=0; i<NumberOfVariables; i++) {
-	if(!std::isfinite(BgradQ[i])) {
-		printf("NCP NAN in BgradQ[%d]=>%f\n", i, BgradQ[i]);
-		for(int j=0; j<NumberOfVariables; j++) {
-			printf("Q[%d]=%f\n", j, Q[j]);
-			printf("BgradQ[%d]=%f\n", j, BgradQ[j]);
-		}
-	}
-  }
+//  for(int i=0; i<NumberOfVariables; i++) {
+//	if(!std::isfinite(BgradQ[i])) {
+//		printf("NCP NAN in BgradQ[%d]=>%f\n", i, BgradQ[i]);
+//		for(int j=0; j<NumberOfVariables; j++) {
+//			printf("Q[%d]=%f\n", j, Q[j]);
+//			printf("BgradQ[%d]=%f\n", j, BgradQ[j]);
+//		}
+//	}
+//  }
 }
 
 /*
