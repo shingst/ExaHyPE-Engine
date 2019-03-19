@@ -243,6 +243,8 @@ void exahype::solvers::FiniteVolumesSolver::wrapUpTimeStep(const bool isFirstTim
     _minTimeStepSize = _admissibleTimeStepSize;
   }
 
+  std::copy_n(_nextGlobalObservables.begin(),_nextGlobalObservables.end(),_globalObservables.begin());
+
   // call user code
   endTimeStep(_minTimeStamp,isLastTimeStepOfBatchOrNoBatch);
 }

@@ -162,10 +162,10 @@ void exahype::solvers::LimitingADERDGSolver::kickOffTimeStep(const bool isFirstT
 void exahype::solvers::LimitingADERDGSolver::wrapUpTimeStep(const bool isFirstTimeStepOfBatchOrNoBatch,const bool isLastTimeStepOfBatchOrNoBatch) {
   _solver->wrapUpTimeStep(isFirstTimeStepOfBatchOrNoBatch,isLastTimeStepOfBatchOrNoBatch);
   _limiter->wrapUpTimeStep(isFirstTimeStepOfBatchOrNoBatch,isLastTimeStepOfBatchOrNoBatch);
-  _globalObservables.clear();
-  _globalObservables.reserve(
-  std::copy(_solver->getGlobalObservables().begin(),_solver->getGlobalObservables().end(),getGlobalObservables().begin());
-
+  // compare solver and limiter global observables
+  _solver->reduceGlobalObservables(_solver->_globalObservables,_limiter->getGlobalObservables());
+  std::copy(_solver->_globalObservables.begin(),_solver->_globalObservables.end(),
+            _limiter->_globalObservables.begin());
 }
 
 void exahype::solvers::LimitingADERDGSolver::synchroniseTimeStepping(
@@ -1867,6 +1867,9 @@ void exahype::solvers::LimitingADERDGSolver::mergeWithMasterData(
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const int                                    level) {
   _solver->mergeWithMasterData(masterRank,x,level);
+  // copy solver observables to limiter
+  std::copy(_solver->_globalObservables.begin(),_solver->_globalObservables.end(),
+            _limiter->_globalObservables.begin());
 }
 #endif
 

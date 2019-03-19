@@ -798,6 +798,8 @@ void exahype::solvers::ADERDGSolver::wrapUpTimeStep(const bool isFirstTimeStepOf
     } // else if linear do not change the time step size at all
   }
 
+  std::copy_n(_nextGlobalObservables.begin(),_nextGlobalObservables.end(),_globalObservables.begin());
+
   // call user code
   endTimeStep(_minTimeStamp,isLastTimeStepOfBatchOrNoBatch);
 }

@@ -749,8 +749,19 @@ void updateNextGlobalObservables(
       const std::vector<std::string>&             cmdlineargs,
       const exahype::parser::ParserView&          parserView) final override;
 
-  void wrapUpTimeStep(const bool isFirstTimeStepOfBatchOrNoBatch,const bool isLastTimeStepOfBatchOrNoBatch) final override;
+  /** @copydoc Solver::kickOffTimeStep
+   *
+   * Kick off time step on solver and limiter.
+   */
   void kickOffTimeStep(const bool isFirstTimeStepOfBatchOrNoBatch) final override;
+
+  /** @copydoc Solver::kickOffTimeStep
+   *
+   * Wrap up solver and limiter time step.
+   * Compare the global observables of both and
+   * copy the result to both solver.s
+   */
+  void wrapUpTimeStep(const bool isFirstTimeStepOfBatchOrNoBatch,const bool isLastTimeStepOfBatchOrNoBatch) final override;
 
   bool isPerformingPrediction(const exahype::State::AlgorithmSection& section) const final override;
   bool isMergingMetadata(const exahype::State::AlgorithmSection& section) const final override;
@@ -1496,6 +1507,17 @@ void updateNextGlobalObservables(
   ///////////////////////////////////
   // WORKER->MASTER
   ///////////////////////////////////
+
+  /** @copydoc Solver::mergeWithMasterData
+   *
+   * Send the solver's global observables to the
+   * the master rank.
+   *
+   * @note Solver and limiter observables have been merged in
+   * wrapUpTimeStep.
+   *
+   * @see wrapUpTimeStep
+   */
   void sendDataToMaster(
       const int                                    masterRank,
       const tarch::la::Vector<DIMENSIONS, double>& x,
@@ -1514,6 +1536,13 @@ void updateNextGlobalObservables(
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level) const final override;
 
+  /** @copydoc Solver::mergeWithMasterData
+   *
+   * Overwrites the limiter's global observables with global observables
+   * received by the solver.
+   *
+   * @see wrapUpTimeStep
+   */
   void mergeWithMasterData(
       const                                        int masterRank,
       const tarch::la::Vector<DIMENSIONS, double>& x,
