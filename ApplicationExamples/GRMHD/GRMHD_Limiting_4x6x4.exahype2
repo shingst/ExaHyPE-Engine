@@ -56,7 +56,7 @@
       "type": "Limiting-ADER-DG",
       "name": "GRMHDSolver",
       "order": 3,
-      "maximum_mesh_size": 1.11111112,
+      "maximum_mesh_size": 1.21,
       "maximum_mesh_depth": 0,
       "time_stepping": "global",
       "aderdg_kernel": {

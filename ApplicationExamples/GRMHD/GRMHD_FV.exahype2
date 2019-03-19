@@ -55,7 +55,7 @@
       "type": "Finite-Volumes",
       "name": "GRMHDSolver_FV",
       "patch_size": 7,
-      "maximum_mesh_size": 1.2,
+      "maximum_mesh_size": 1.21,
       "time_stepping": "global",
       "fv_kernel": {
         "language": "C",
