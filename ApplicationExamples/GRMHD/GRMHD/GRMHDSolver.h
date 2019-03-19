@@ -26,17 +26,18 @@ class GRMHD::GRMHDSolver: public exahype::solvers::LimitingADERDGSolver {
     static constexpr int Order                  = GRMHD::AbstractGRMHDSolver_ADERDG::Order;
     static constexpr int NumberOfDMPObservables = GRMHD::AbstractGRMHDSolver_ADERDG::NumberOfDMPObservables;
     static constexpr int GhostLayerWidth        = GRMHD::AbstractGRMHDSolver_FV::GhostLayerWidth;
-      
+  
     GRMHDSolver(
         const double maximumMeshSize,
         const int maximumMeshDepth,
         const int haloCells,
         const int regularisedFineGridLevels,
-        const exahype::solvers::Solver::TimeStepping timeStepping,const int DMPObservables,
+        const exahype::solvers::Solver::TimeStepping timeStepping,
+        const int DMPObservables,
         const double DMPRelaxationParameter,
-        const double DMPDifferenceScaling,
-        const int iterationsToCureTroubledCell
+        const double DMPDifferenceScaling
 );
+    
     
     void projectOnFVLimiterSpace(const double* const luh, double* const lim) const override;
     void projectOnDGSpace(const double* const lim, double* const luh) const override;
