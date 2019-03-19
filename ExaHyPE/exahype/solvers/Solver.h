@@ -2028,47 +2028,59 @@ class exahype::solvers::Solver {
   #endif
 
 
-     /**
+  /**
    * Maps the solution values Q to
    * the global observables.
    *
-   * As we can observe all state variables,
-   * we interpret an 'observable' here as
-   * 'worthy to be observed'.
-   *
-   *\param[inout] globalObservables The mapped observables.
-   *\param[in]    Q           The state variables.
+   *\param[in] Q  The state variables.
+   *\param[in] dx The size of a cell.
+   *\return globalObservables The mapped observables.
    */
-   virtual std::vector<double> mapGlobalObservables(const double* const Q,
-           const tarch::la::Vector<DIMENSIONS,double>& dx) const = 0;
+   virtual std::vector<double> mapGlobalObservables(
+       const double* const                         Q,
+       const tarch::la::Vector<DIMENSIONS,double>& dx) const = 0;
 
    /**
-   * Resets the vector of global observables to some suitable initial value, e.g.
-   * the smallest possible double if one wants to compute the maximum.
-   *
-   *\param[out] globalObservables The mapped observables.
-   */
+    * Resets the vector of global observables to some suitable initial value, e.g.
+    * the smallest possible double if one wants to compute the maximum.
+    *
+    *\param[out] globalObservables The mapped observables.
+    */
    virtual std::vector<double> resetGlobalObservables() const = 0;
 
    /**
-   * Function that reduces the global observables.
-   * For example, if one wants to compute the maximum of global variables
-   * one should set
-   * reducedGlobalObservables[0] = std::max(reducucedGlobalObservables[i],
-   * curGlobalObservables[0])
-   *
-   * and so on.
-   *
-   *\param[inout] reducedGlobalObservables The reduced observables.
-   *\param[in]    curGlobalObservables The current vector of global observables.
-   */
+    * This method merges two vectors of global observables.
+    *
+    * Function that reduces the global observables.
+    * For example, if one wants to compute the maximum of global variables
+    * one should set
+    * reducedGlobalObservables[0] = std::max(reducucedGlobalObservables[i],
+    * curGlobalObservables[0])
+    *
+    * and so on.
+    *
+    * @note Implementation must ensure thread-safety.
+    *
+    *\param[inout] reducedGlobalObservables The reduced observables.
+    *\param[in]    curGlobalObservables     The current vector of global observables.
+    */
    virtual void reduceGlobalObservables(
-            std::vector<double>& reducedGlobalObservables,
-            const std::vector<double>& curGlobalObservables) const = 0;
+       std::vector<double>&       reducedGlobalObservables,
+       const std::vector<double>& curGlobalObservables) const = 0;
 
-   virtual void reduceGlobalObservables(std::vector<double>& globalObservables,
-                                        CellInfo cellInfo,
-                                        int solverNumber) const = 0;
+   /**
+    * Cell-wise method to compute observables per cell and merge
+    * them with the current ones.
+    *
+    * @note Implementation must ensure thread-safety.
+    *
+    * @param solverNumber identification number of a solver
+    * @param cellInfo     links to the data associated with a mesh cell
+    */
+   virtual void reduceGlobalObservables(
+       const int solverNumber,
+       CellInfo& cellInfo) const = 0;
+
   ///////////////////////
   // PROFILING
   ///////////////////////
