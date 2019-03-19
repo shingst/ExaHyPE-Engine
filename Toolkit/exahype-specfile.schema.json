@@ -758,6 +758,12 @@
                 "title" : "The underlying FV solver scheme", 
                 "enum" : ["musclhancock","godunov","robustmusclhancock"],
                 "default" : "godunov"
+              },
+              "slope_limiter" : {
+                "type" : "string",
+                "title" : "Slope/Flux limiter for high order FV (not applicable with godunov scheme)",
+                "enum" : ["minmod","koren"],
+                "default" : "minmod"
               }
             }
           }, 

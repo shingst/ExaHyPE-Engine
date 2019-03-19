@@ -10,7 +10,7 @@
  * Released under the BSD 3 Open Source License.
  * For the full license text, see LICENSE.txt
  **/
-#include <cassert>
+#include <tarch/Assertions.h>
 #include <cmath>
 #include <limits>
 #include <utility>
@@ -20,24 +20,10 @@
 #include "tarch/la/Vector.h"
 #include "kernels/KernelUtils.h"
 
+#include "kernels/finitevolumes/commons/c/slope-limiters.h"
 #include "kernels/finitevolumes/riemannsolvers/c/riemannsolvers.h"
 
 #if DIMENSIONS == 3
-
-inline double kernels::finitevolumes::musclhancock::c::minmod(double a, double b) {
-  assert(std::isfinite(a));
-  assert(std::isfinite(b));
-
-  if (a * b < 0.0) {  // sign is different (alternative: std::signbit and xor)
-    return 0.0;
-  } else {
-    if (std::abs(a) < std::abs(b)) {
-      return a;
-    } else {
-      return b;
-    }
-  }
-}
 
 // TODO(Dominic): Work in progress
 /**
@@ -46,7 +32,12 @@ inline double kernels::finitevolumes::musclhancock::c::minmod(double a, double b
  * new solution.
  * Finally add the source terms.
  */
-template <bool useSource, bool useNCP, bool useFlux, bool useViscousFlux, bool robustDiagonalLimiting, typename SolverType>
+template <
+	bool useSource, bool useNCP, bool useFlux, bool useViscousFlux, 
+	bool robustDiagonalLimiting,
+	kernels::finitevolumes::commons::c::slope_limiter slope_limiter,
+	typename SolverType
+	>
 double kernels::finitevolumes::musclhancock::c::solutionUpdate(
     SolverType& solver,double* luh,
     const tarch::la::Vector<DIMENSIONS, double>& cellCenter,
@@ -90,7 +81,7 @@ double kernels::finitevolumes::musclhancock::c::solutionUpdate(
       for (int k = patchBegin-1; k < patchEnd+1; k++) { // x
         for (int l = 0; l < numberOfData; l++) {
           slope[idx_slope(i, j, k, 0, l)] =
-              minmod(luhOld[idx(i, j, k + 1, l)] - luhOld[idx(i, j, k, l)],
+              slope_limiter(luhOld[idx(i, j, k + 1, l)] - luhOld[idx(i, j, k, l)],
                   luhOld[idx(i, j, k, l)] - luhOld[idx(i, j, k - 1, l)]) * invCellSize[0];
         }
       }
@@ -102,7 +93,7 @@ double kernels::finitevolumes::musclhancock::c::solutionUpdate(
       for (int k = patchBegin-1; k < patchEnd+1; k++) { // x
         for (int l = 0; l < numberOfData; l++) {
           slope[idx_slope(i, j, k, 1, l)] = 
-              minmod(luhOld[idx(i, j + 1, k, l)] - luhOld[idx(i, j, k, l)],
+              slope_limiter(luhOld[idx(i, j + 1, k, l)] - luhOld[idx(i, j, k, l)],
                   luhOld[idx(i, j, k, l)] - luhOld[idx(i, j - 1, k, l)]) * invCellSize[1];
         }
       }
@@ -114,7 +105,7 @@ double kernels::finitevolumes::musclhancock::c::solutionUpdate(
       for (int k = patchBegin-1; k < patchEnd+1; k++) { // x TODO new
         for (int l = 0; l < numberOfData; l++) {
           slope[idx_slope(i, j, k, 2, l)] = 
-              minmod(luhOld[idx(i + 1, j, k, l)] - luhOld[idx(i, j, k, l)],
+              slope_limiter(luhOld[idx(i + 1, j, k, l)] - luhOld[idx(i, j, k, l)],
                   luhOld[idx(i, j, k, l)] - luhOld[idx(i -1, j, k, l)]) * invCellSize[2];
         }
       }

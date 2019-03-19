@@ -184,6 +184,7 @@ class SolverController:
         context["finiteVolumesType"]           = kernel["scheme"].replace("robust","")
         context["ghostLayerWidth"]             = ghostLayerWidth[context["finiteVolumesType"]]
         context["useRobustDiagonalLimiting_s"] = "true" if "robust" in kernel["scheme"] else "false"
+        context["slopeLimiter"]   = kernel.get("slope_limiter","minmod")
 
         context["implementation"]  = kernel.get("implementation","generic")
         context["tempVarsOnStack"] = kernel.get("allocate_temporary_arrays","heap")=="stack" 

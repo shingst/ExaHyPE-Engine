@@ -484,6 +484,8 @@ class SpecFile1Reader():
                     fv_kernel_type    = old_type
                 if "terms" in solver:
                     fv_kernel_terms = solver.pop("terms")
+                if "slope_limiter" in solver:
+                    solver["fv_kernel"]["slope_limiter"]=solver.pop("slope_limiter")
                 # fv terms
                 result, n_point_sources = self.map_kernel_terms(fv_kernel_terms)
                 solver["fv_kernel"]["terms"]=result

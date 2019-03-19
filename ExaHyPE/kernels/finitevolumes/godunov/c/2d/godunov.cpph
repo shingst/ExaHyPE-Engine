@@ -30,7 +30,12 @@
  * new solution. 
  * Finally add the source terms.
  */
-template <bool useSource, bool useNCP, bool useFlux, bool useViscousFlux, bool robustDiagonalLimiting, typename SolverType>
+template <
+	bool useSource, bool useNCP, bool useFlux, bool useViscousFlux, 
+	bool robustDiagonalLimiting, // not used in 1st order Godunov
+	kernels::finitevolumes::commons::c::slope_limiter slope_limiter, // not used in 1st order Godunov
+	typename SolverType
+	>
 double kernels::finitevolumes::godunov::c::solutionUpdate(
     SolverType& solver,double* luh,
     const tarch::la::Vector<DIMENSIONS, double>& cellCenter,
