@@ -865,7 +865,9 @@ private:
 	  StealingManagerJob(ADERDGSolver& solver);
 	  ~StealingManagerJob();
 	  bool run();
+#ifdef StealingUseProgressThread
           tbb::task* execute();
+#endif
 	  void terminate();
     private:
 	  ADERDGSolver& _solver;

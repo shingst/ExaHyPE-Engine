@@ -4641,6 +4641,8 @@ void exahype::solvers::ADERDGSolver::progressStealing(exahype::solvers::ADERDGSo
   MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, comm, &receivedTask, &stat);
   MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, commMapped, &receivedTaskBack, &statMapped);
 
+  double time = -MPI_Wtime();
+
   while( (receivedTask || receivedTaskBack) && iprobesCounter<MaxIprobesInStealingProgress ) {
     iprobesCounter++;
     if(receivedTaskBack) {
@@ -4742,6 +4744,11 @@ void exahype::solvers::ADERDGSolver::progressStealing(exahype::solvers::ADERDGSo
     }
     MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, comm, &receivedTask, &stat);
     tarch::parallel::Node::getInstance().receiveDanglingMessages(); 
+  }
+  time+= MPI_Wtime();
+ 
+  if(time>0.01) {
+    logInfo("progressStealing","Iprobe loop took "<<time<<"s");
   }
   // now, a different thread can progress the stealing
   exahype::stealing::StealingManager::getInstance().resetRunningAndReceivingBack();
@@ -4912,7 +4919,9 @@ bool exahype::solvers::ADERDGSolver::ReceiveJob::operator()() {
 }
 
 exahype::solvers::ADERDGSolver::StealingManagerJob::StealingManagerJob(ADERDGSolver& solver) :
-  tarch::multicore::jobs::Job(tarch::multicore::jobs::JobType::BackgroundTask, 0, tarch::multicore::DefaultPriority),
+#ifndef StealingUseProgressThread  
+ tarch::multicore::jobs::Job(tarch::multicore::jobs::JobType::BackgroundTask, 0, tarch::multicore::DefaultPriority/16),
+#endif
   _solver(solver),
   _state(State::Running) {}
 
@@ -4923,24 +4932,27 @@ exahype::solvers::ADERDGSolver::StealingManagerJob::~StealingManagerJob() {}
   //return true;
 }*/
 
+#if defined(StealingUseProgressThread)  
 tbb::task* exahype::solvers::ADERDGSolver::StealingManagerJob::execute() {
    while(run()) {};
    return nullptr;
 }
+#endif
 
 bool exahype::solvers::ADERDGSolver::StealingManagerJob::run() {
 // static bool terminated = false;
   bool result=true;
 #ifdef USE_ITAC
-  //VT_begin(event_stealingManager);
+  VT_begin(event_stealingManager);
 #endif
-   //logInfo("stealingManager", " running... ");
+  //logInfo("run()", "starting... ");
 
   switch (_state) {
     case State::Running:
     {
      // tarch::parallel::Node::getInstance().receiveDanglingMessages();
       exahype::solvers::ADERDGSolver::progressStealing(&_solver);
+    //  logInfo("run()", "reschedule... ");
       break;
     }
     case State::Terminate:
@@ -4957,7 +4969,7 @@ bool exahype::solvers::ADERDGSolver::StealingManagerJob::run() {
     }
   }
 #ifdef USE_ITAC
-  //VT_end(event_stealingManager);
+  VT_end(event_stealingManager);
 #endif
   return result;
 };

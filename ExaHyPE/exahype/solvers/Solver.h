@@ -1160,8 +1160,8 @@ class exahype::solvers::Solver {
   double time_background = -MPI_Wtime();
 #endif
 
-#if defined(DistributedStealing)
   bool hasProcessed = false;
+#if defined(DistributedStealing)
   bool hasTriggeredEmergency = false;
   exahype::solvers::ADERDGSolver* solver = static_cast<exahype::solvers::ADERDGSolver*>(const_cast<exahype::solvers::Solver*>(this));
 #if !defined(StealingUseProgressThread)
@@ -1185,7 +1185,7 @@ class exahype::solvers::Solver {
      if (this->getType()==exahype::solvers::Solver::Type::ADERDG && responsibleRank!=myRank) {
        progress= exahype::solvers::ADERDGSolver::tryToReceiveTaskBack(solver);
      }
-#else
+#elif defined(DistributedStealing) && defined(StealingUseProgressThread)
      progress = false;
 #endif
      // do some work myself

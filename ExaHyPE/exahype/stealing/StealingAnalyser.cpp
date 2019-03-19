@@ -32,7 +32,7 @@ exahype::stealing::StealingAnalyser::StealingAnalyser():
   _waitForMasterDataWatch("exahype::stealing::StealingAnalyser", "-", false,false),
   _waitForGlobalMasterDataWatch("exahype::stealing::StealingAnalyser", "-", false,false),
   _waitForOtherRank(0),
-  _currentZeroThreshold(0),
+  _currentZeroThreshold(0.002),
   _iterationCounter(0),
   _currentAccumulatedWorkerTime(0)
 {
@@ -45,7 +45,7 @@ exahype::stealing::StealingAnalyser::StealingAnalyser():
   std::fill(&_currentFilteredWaitingTimesSnapshot[0], &_currentFilteredWaitingTimesSnapshot[nnodes*nnodes], 0);
 
   for(int i=0; i<nnodes; i++) 
-     _waitForOtherRank.push_back(tarch::timing::GlidingAverageMeasurement(0.01,16));
+     _waitForOtherRank.push_back(tarch::timing::GlidingAverageMeasurement(0.1,16));
 }
 
 
@@ -90,7 +90,26 @@ void exahype::stealing::StealingAnalyser::updateZeroTresholdAndFilteredSnapshot(
 #if !defined(AnalyseWaitingTimes)
   const double* currentWaitingTimesSnapshot = exahype::stealing::PerformanceMonitor::getInstance().getWaitingTimesSnapshot();
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
+
+  //check if valid: there is an entry>0 for every rank
+  bool isValid = true;
+  for(int i=0; i<nnodes; i++) {
+    bool hasEntry = false;
+    for(int j=0; j<nnodes; j++) {
+      double currentWaitingTime = currentWaitingTimesSnapshot[i*nnodes+j];
+      if(currentWaitingTime>0) {
+        hasEntry = true;
+        break;
+      }
+    }
+    if(!hasEntry) {
+       isValid=false;
+       break;
+    }
+  }
   
+  if(!isValid) return;
+
   double min, max;
   min = std::numeric_limits<double>::max();
   max = std::numeric_limits<double>::min();
