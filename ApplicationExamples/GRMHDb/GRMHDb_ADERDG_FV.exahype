@@ -34,8 +34,8 @@ exahype-project GRMHDb
   
   shared-memory
     identifier               = dummy
-    configure                = {background-tasks:20,manual-pinning}
-    cores                    = 40
+    configure                = {background-tasks:36,manual-pinning}
+    cores                    = 72
     properties-file          = sharedmemory.properties
   end shared-memory  
   
@@ -59,6 +59,8 @@ exahype-project GRMHDb
     disable-metadata-exchange-in-batched-time-steps = off
     double-compression = 0.0
     spawn-double-compression-as-background-thread = off
+    limiting                 = dynamic
+    mesh_refinement         = static
   end global-optimisation
 
   solver Limiting-ADER-DG GRMHDbSolver
@@ -79,9 +81,9 @@ exahype-project GRMHDb
     limiter-type const         = robustmusclhancock
     limiter-optimisation const = generic
     limiter-language const     = C
-    dmp-observables  const         = 10
-    dmp-relaxation-parameter = 1e4
-    dmp-difference-scaling = 1e3 
+    dmp-observables  const         = 5
+    dmp-relaxation-parameter = 1e-4
+    dmp-difference-scaling = 1e-3 
 
    plot user::defined ErrorWriter
        variables const = 19

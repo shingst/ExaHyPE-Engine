@@ -57,7 +57,7 @@ class {{project}}::{{abstractSolver}} : public exahype::solvers::FiniteVolumesSo
         const exahype::solvers::Solver::TimeStepping timeStepping
         {% if enableProfiler %},std::unique_ptr<exahype::profilers::Profiler> profiler{% endif %});
     
-    void solutionUpdate(double* const luh,const tarch::la::Vector<DIMENSIONS,double>& dx,const double dt,double& maxAdmissibleDt) override;
+    void solutionUpdate(double* luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx, const double t, const double dt,double& maxAdmissibleDt) override;
     
     double stableTimeStepSize(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& dx) override;
     void adjustSolution(double* const luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,double dt) override;
@@ -67,8 +67,14 @@ class {{project}}::{{abstractSolver}} : public exahype::solvers::FiniteVolumesSo
     void boundaryLayerExtraction(double* const luhbnd,const double* const luh,const tarch::la::Vector<DIMENSIONS,int>& boundaryPosition) override;
     void boundaryConditions(double* const luh,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const tarch::la::Vector<DIMENSIONS, int>& posCell,const tarch::la::Vector<DIMENSIONS, int>& posBoundary) override;
 
+    std::vector<double> mapGlobalObservables(const double* const Q, const tarch::la::Vector<DIMENSIONS, double> &dx) const override;
+    std::vector<double> resetGlobalObservables() const override;
+    void reduceGlobalObservables(
+            std::vector<double>& reducedGlobalObservables,
+            const std::vector<double>& curGlobalObservables) const override;
+    
     /// Apr 18, Coding Week: Riemann Solvers in FV. Hopefully inlined as evaluated point wise.
-    double riemannSolver(double* const fL, double* const fR, const double* const qL, const double* const qR, int direction) override;
+    double riemannSolver(double* fL, double *fR, const double* qL, const double* qR, const double* gradQL, const double* gradQR, const double* cellSize, int normalNonZero) override;
 
     static void constantsToString(std::ostream& os);
     static void abortWithMsg(const char* const msg);
@@ -130,8 +136,8 @@ class {{project}}::{{abstractSolver}} : public exahype::solvers::FiniteVolumesSo
      *                 as C array (already allocated).
      * \param[inout] S the source point as C array (already allocated).
      */
-    virtual void algebraicSource(const double* const Q,double* const S) {}
-    
+    virtual void algebraicSource(const tarch::la::Vector<DIMENSIONS, double>& x, double t, const double *const Q, double *S) {}
+
     /**
      * Compute the nonconservative term $B(Q) \nabla Q$.
      * 

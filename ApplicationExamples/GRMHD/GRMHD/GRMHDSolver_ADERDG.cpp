@@ -97,8 +97,7 @@ void __attribute__((optimize("O0"))) GRMHD::GRMHDSolver_ADERDG::algebraicSource(
 */
 
 
-void GRMHD::GRMHDSolver_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int d,
-  const double * const fluxIn,const double* const stateIn, double* const fluxOut,double* const stateOut) {
+void GRMHD::GRMHDSolver_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double* const fluxIn,const double* const stateIn,const double* const gradStateIn,double* const fluxOut,double* const stateOut) {
 	 // for debugging, to make sure BC are set correctly
 	double snan = std::numeric_limits<double>::signaling_NaN();
 	double weird_number = -1.234567;
@@ -128,7 +127,7 @@ void GRMHD::GRMHDSolver_ADERDG::boundaryValues(const double* const x,const doubl
     
     for(int m=0; m < nVar; m++) {
       stateOut[m] += weight * Qgp[m];
-      fluxOut[m] += weight * Fs[d][m];
+      fluxOut[m] += weight * Fs[normalNonZero][m];
     }
   }
   ///// EXACT

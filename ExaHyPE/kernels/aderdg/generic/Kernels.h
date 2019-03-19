@@ -150,13 +150,14 @@ void solutionAdjustment(SolverType& solver, double* luh,
  * @param dt
  * @param direction
  */
-template <bool useNCP, typename SolverType>
+template <bool useNCP, bool useViscousFlux, typename SolverType>
 void riemannSolverNonlinear(
-    SolverType& solver,
-    double* FL, double* FR, const double* const QL,
+    SolverType& solver, double* FL, double* FR,
+    const double* const QL,
     const double* const QR,
     const double t,
     const double dt,
+    const tarch::la::Vector<DIMENSIONS, double>& dx,
     const int direction);
 
 
@@ -195,16 +196,19 @@ void generalisedOsherSolomon(
     const double        dt,
     const int           direction);
 
-template <typename SolverType>
+template <bool useGradientFlux, typename SolverType>
 void boundaryConditions(
     SolverType& solver,
-    double* fluxOut, double* stateOut,
-    const double* const fluxIn, const double* const stateIn, // TODO(Dominic): Inconsistent order of arguments w.r.t to riemannSolver
+    double* fluxOut,
+    double* stateOut,
+    const double* const fluxIn,
+    const double* const stateIn,
+    const double* const gradStateIn,
     const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
-    const tarch::la::Vector<DIMENSIONS, double>& cellSize,
-    const double t, const double dt, const int faceIndex,
+    const tarch::la::Vector<DIMENSIONS,double>& cellSize,
+    const double t,const double dt,
+    const int faceIndex,
     const int direction);
-
 
 template <typename SolverType,bool useViscousFlux>
 double stableTimeStepSize(SolverType& solver, const double* const luh,

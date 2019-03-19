@@ -50,6 +50,7 @@
       "{{solver}}",
       NumberOfVariables,
       NumberOfParameters,
+      NumberOfGlobalObservables,
       Order+1,
       maximumMeshSize,
       maximumMeshDepth,
@@ -75,7 +76,7 @@ void {{project}}::{{abstractSolver}}::abortWithMsg(const char* const msg) {
   abort();
 }
 
-int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(double* const lduh,double* const lQhbnd,double* const lFhbnd,double* const luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,const double t,const double dt,const bool addVolumeIntegralResultToUpdate) {
+int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(double* lduh, double* lQhbnd, double* lGradQhbnd, double* lFhbnd, double* const luh, const tarch::la::Vector<DIMENSIONS, double>& center, const tarch::la::Vector<DIMENSIONS, double>& dx, const double t ,const double dt,const bool addVolumeIntegralResultToUpdate) {
 {% if enableProfiler %}
   _profiler->start("fusedSpaceTimePredictorVolumeIntegral");
 {% endif %}
@@ -123,12 +124,12 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
    
   if(pointSources != nullptr) {
     kernels::aderdg::generic::c::deltaDistribution<{{solver}}>(*static_cast<{{solver}}*>(this), luh, t, dt, center, dx, pointSources, PSi);
-    kernels::aderdg::generic::c::spaceTimePredictorLinear<true , {{useSource_s}}, {{useFlux_s}}, {{useNCP_s}}, {{useMaterialParameters_s}}, {{solver}}>(*static_cast<{{solver}}*>(this),lQhbnd,lFhbnd,lQi,lFi,gradQ,PSi,PSderivatives,tmp_PSderivatives,lQhi,lFhi,luh,tarch::la::invertEntries(dx), dt);
+    kernels::aderdg::generic::c::spaceTimePredictorLinear<true , {{useSource_s}}, {{useFlux_s}}, {{useNCP_s}}, {{useMaterialParameters_s}}, {{solver}}>(*static_cast<{{solver}}*>(this),lQhbnd,lFhbnd,lQi,lFi,gradQ,PSi,PSderivatives,tmp_PSderivatives,lQhi,lFhi,luh,center, tarch::la::invertEntries(dx), t, dt);
   }else{
-    kernels::aderdg::generic::c::spaceTimePredictorLinear<false, {{useSource_s}}, {{useFlux_s}}, {{useNCP_s}}, {{useMaterialParameters_s}}, {{solver}}>(*static_cast<{{solver}}*>(this),lQhbnd,lFhbnd,lQi,lFi,gradQ,PSi,PSderivatives,tmp_PSderivatives,lQhi,lFhi,luh,tarch::la::invertEntries(dx), dt);
+    kernels::aderdg::generic::c::spaceTimePredictorLinear<false, {{useSource_s}}, {{useFlux_s}}, {{useNCP_s}}, {{useMaterialParameters_s}}, {{solver}}>(*static_cast<{{solver}}*>(this),lQhbnd,lFhbnd,lQi,lFi,gradQ,PSi,PSderivatives,tmp_PSderivatives,lQhi,lFhi,luh,center,tarch::la::invertEntries(dx),t, dt);
   }
 {% else %}
-  kernels::aderdg::generic::c::spaceTimePredictorLinear<{{usePointSources_s}}, {{useSource_s}}, {{useFlux_s}}, {{useNCP_s}}, {{useMaterialParameters_s}}, {{solver}}>(*static_cast<{{solver}}*>(this),lQhbnd,lFhbnd,lQi,lFi,gradQ,PSi,PSderivatives,tmp_PSderivatives,lQhi,lFhi,luh,tarch::la::invertEntries(dx), dt);
+ kernels::aderdg::generic::c::spaceTimePredictorLinear<{{usePointSources_s}}, {{useSource_s}}, {{useFlux_s}}, {{useNCP_s}}, {{useMaterialParameters_s}}, {{solver}}>(*static_cast<{{solver}}*>(this),lQhbnd,lFhbnd,lQi,lFi,gradQ,PSi,PSderivatives,tmp_PSderivatives,lQhi,lFhi,luh,center,tarch::la::invertEntries(dx),t, dt);
 {%   endif %}
   if ( addVolumeIntegralResultToUpdate ) {
     kernels::aderdg::generic::c::volumeIntegralLinear<{{useSource_s}}, {{useFlux_s}}, NumberOfVariables, Order+1>(lduh,lFhi,dx);
@@ -173,9 +174,8 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
   double* lQhi = memory; memory+=sizeLQhi;
   double* lFhi = memory; memory+=sizeLFhi;
 {%   endif %}
-
-  const int picardIterations = kernels::aderdg::generic::c::spaceTimePredictorNonlinear<{{useSource_s}}, {{useFlux_s}}, {{useViscousFlux_s}}, {{useNCP_s}}, {{noTimeAveraging_s}}, {{solver}}>(*static_cast<{{solver}}*>(this), lQhbnd, lFhbnd, lQi, rhs, lFi, gradQ, lQhi, lFhi, luh, tarch::la::invertEntries(dx), dt);
-  
+ const int picardIterations = kernels::aderdg::generic::c::spaceTimePredictorNonlinear<{{useSource_s}}, {{useFlux_s}}, {{useViscousFlux_s}}, {{useNCP_s}}, {{noTimeAveraging_s}}, {{solver}}>(*static_cast<{{solver}}*>(this), lQhbnd, lGradQhbnd, lFhbnd, lQi, rhs, lFi, gradQ, lQhi, lFhi, luh, center, tarch::la::invertEntries(dx), t, dt);
+ 
   if ( addVolumeIntegralResultToUpdate ) {
     kernels::aderdg::generic::c::volumeIntegralNonlinear<{{ 'true' if (useSource or useNCP) else 'false' }}, {{useFlux_s}}, {{noTimeAveraging_s}}, NumberOfVariables, Order+1>(lduh,lFhi,dx); 
   } else { // directly add the result to the solution
@@ -238,7 +238,7 @@ void {{project}}::{{abstractSolver}}::faceIntegral(double* const out/*may be sol
 {% endif %}
 }
 
-void {{project}}::{{abstractSolver}}::riemannSolver(double* const FL,double* const FR,const double* const QL,const double* const QR,const double t,const double dt,const int direction,bool isBoundaryFace, int faceIndex) {
+void {{project}}::{{abstractSolver}}::riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double t,const double dt, const tarch::la::Vector<DIMENSIONS, double>& dx, const int direction, bool isBoundaryFace, int faceIndex) {
   assertion2(direction>=0,dt,direction);
   assertion2(direction<DIMENSIONS,dt,direction);
 {% if enableProfiler %}
@@ -250,7 +250,7 @@ void {{project}}::{{abstractSolver}}::riemannSolver(double* const FL,double* con
   {% if isLinear %}
     kernels::aderdg::generic::c::riemannSolverLinear<{{useFlux_s}},{{useNCP_s}},{{useMaterialParameters_s}},{{solver}}>(*static_cast<{{solver}}*>(this),FL,FR,QL,QR,t,dt,direction);
   {% else %}
-    kernels::aderdg::generic::c::riemannSolverNonlinear<{{useNCP_s}},{{solver}}>(*static_cast<{{solver}}*>(this),FL,FR,QL,QR,t,dt,direction);
+kernels::aderdg::generic::c::riemannSolverNonlinear<{{useNCP_s}},{{useViscousFlux_s}}, {{solver}}>(*static_cast<{{solver}}*>(this),FL,FR,QL,QR,t,dt,dx,direction);
   {% endif %}
 {% endif %}
 {% if enableProfiler %}
@@ -258,7 +258,7 @@ void {{project}}::{{abstractSolver}}::riemannSolver(double* const FL,double* con
 {% endif %}
 }
 
-void {{project}}::{{abstractSolver}}::boundaryConditions(double* const fluxIn,const double* const stateIn,const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const int direction,const int orientation) {
+void {{project}}::{{abstractSolver}}::boundaryConditions(double* const fluxIn,const double* const stateIn,const double* const gradStateIn, const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const int direction,const int orientation) {
 {% if enableProfiler %}
   _profiler->start("boundaryConditions");
 {% endif %}
@@ -282,19 +282,18 @@ void {{project}}::{{abstractSolver}}::boundaryConditions(double* const fluxIn,co
   double* fluxOut  = memory; memory+=sizeFluxOut;
 
   const int faceIndex = 2*direction+orientation;
-  
-  kernels::aderdg::generic::c::boundaryConditions<{{solver}}>(*static_cast<{{solver}}*>(this),fluxOut,stateOut,fluxIn,stateIn,cellCentre,cellSize,t,dt,faceIndex,direction);
+    kernels::aderdg::generic::c::boundaryConditions<{{useViscousFlux_s}}, {{solver}}>(*static_cast<{{solver}}*>(this),fluxOut,stateOut,fluxIn,stateIn,gradStateIn,cellCentre,cellSize,t,dt,faceIndex,direction);
   if ( orientation==0 ) {
     double* FL = fluxOut; const double* const QL = stateOut;
     double* FR = fluxIn;  const double* const QR = stateIn;
   
-    riemannSolver(FL,FR,QL,QR,t,dt,direction,true,faceIndex);
+    riemannSolver(FL,FR,QL,QR,t,dt,cellSize,direction,true,faceIndex);
   }
   else {
     double* FL = fluxIn;  const double* const QL = stateIn;
     double* FR = fluxOut; const double* const QR = stateOut;
 
-    riemannSolver(FL,FR,QL,QR,t,dt,direction,true,faceIndex);
+    riemannSolver(FL,FR,QL,QR,t,dt,cellSize,direction,true,faceIndex);
   }
 {%if tempVarsOnStack==False %}
   delete[] block;
@@ -314,7 +313,6 @@ double {{project}}::{{abstractSolver}}::stableTimeStepSize(const double* const l
 {% endif %}
   return d;
 }
-
 {%if patchwiseAdjust==False %}
 void {{project}}::{{abstractSolver}}::adjustSolution(double* const luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,double dt) {
 {% if enableProfiler %}
@@ -369,7 +367,7 @@ void {{project}}::{{abstractSolver}}::viscousEigenvalues(const double* const Q,c
       abortWithMsg("viscous eigenvalues: If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
 }
 
-void {{project}}::{{abstractSolver}}::algebraicSource(const double* const Q,double* const S) {
+void {{project}}::{{abstractSolver}}::algebraicSource(const tarch::la::Vector<DIMENSIONS, double>& x, double t, const double *const Q, double *S) {
       abortWithMsg("algebraicSource: If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
 }
 
@@ -388,6 +386,22 @@ void {{project}}::{{abstractSolver}}::multiplyMaterialParameterMatrix(const doub
 void {{project}}::{{abstractSolver}}::pointSource(const double* const Q,const double* const x,const double t,const double dt, double* const forceVector,int n) {
       abortWithMsg("pointSource: If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
 }
+
+std::vector<double> {{project}}::{{abstractSolver}}::mapGlobalObservables(const double* const Q, const tarch::la::Vector<DIMENSIONS, double> &dx) const {
+  return {};
+}
+
+std::vector<double> {{project}}::{{abstractSolver}}::resetGlobalObservables() const {
+  return {};
+}
+
+void {{project}}::{{abstractSolver}}::reduceGlobalObservables(
+	std::vector<double>& reducedGlobalObservables,
+	const std::vector<double>& curGlobalObservables) const {
+  // NOP
+}
+
+
 
 /**
  * Fallback implementations of joined functions. Users can either safely ignore this

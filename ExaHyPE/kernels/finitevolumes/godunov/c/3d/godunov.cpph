@@ -32,10 +32,13 @@
  * new solution. 
  * Finally add the source terms.
  */
-template <bool useSource, bool useNCP, bool useFlux, bool robustDiagonalLimiting, typename SolverType>
+template <bool useSource, bool useNCP, bool useFlux, bool useViscousFlux, bool robustDiagonalLimiting, typename SolverType>
 double kernels::finitevolumes::godunov::c::solutionUpdate(
     SolverType& solver,double* luh,
-    const tarch::la::Vector<DIMENSIONS, double>& dx,double dt) {
+    const tarch::la::Vector<DIMENSIONS, double>& cellCenter,
+    const tarch::la::Vector<DIMENSIONS, double>& dx,
+    const double t,
+    double dt) {
   constexpr int numberOfVariables  = SolverType::NumberOfVariables;
   constexpr int numberOfParameters = SolverType::NumberOfParameters;
   constexpr int numberOfData       = numberOfVariables+numberOfParameters;
@@ -54,7 +57,59 @@ double kernels::finitevolumes::godunov::c::solutionUpdate(
   
   const double cellSize[3]           = {dx[0]/patchSize, dx[1]/patchSize, dx[2]/patchSize};
   const double invCellSizeTimesDt[3] = {dt/cellSize[0], dt/cellSize[1], dt/cellSize[2]};
-  
+
+  tarch::la::Vector<DIMENSIONS, double> x; // Location of volume.
+
+   // Compute full gradients by finite differences.
+  idx5 idxGradQ(patchSize+2*ghostLayerWidth,patchSize+2*ghostLayerWidth,
+          patchSize+2*ghostLayerWidth, DIMENSIONS,numberOfVariables);
+  const auto cellsPerPatch = patchSize+2*ghostLayerWidth;
+  const auto gradQSize = cellsPerPatch * cellsPerPatch * DIMENSIONS * numberOfVariables;
+  double* gradQ = new double[gradQSize];
+
+  if (useViscousFlux) {
+    // x direction
+    for (int i = patchBegin; i < patchEnd; i++) {
+      for (int j = patchBegin; j < patchEnd; j++) {
+        for (int k = patchBegin-1; k < patchEnd; k++) {  // We have patchSize+1 faces in each coordinate direction
+          for (int l = 0; l < numberOfVariables; l++) {
+            const double qAvgL = (luh[idx(i,j,k-1,l)] + luh[idx(i,j,k,l)]) / 2;
+            const double qAvgR = (luh[idx(i,j,k,l)] + luh[idx(i,j,k+1,l)]) / 2;
+            gradQ[idxGradQ(i,j,k,0,l)] = (qAvgR - qAvgL) / cellSize[0];
+            }
+          }
+      }
+    }
+
+    // y direction
+    for (int i = patchBegin; i < patchEnd; i++) {
+      for (int j = patchBegin; j < patchEnd; j++) {
+        for (int k = patchBegin-1; k < patchEnd; k++) {  // We have patchSize+1 faces in each coordinate direction
+          for (int l = 0; l < numberOfVariables; l++) {
+            const double qAvgL = (luh[idx(i,j-1,k,l)] + luh[idx(i,j,k,l)]) / 2;
+            const double qAvgR = (luh[idx(i,j,k,l)] + luh[idx(i,j+1,k,l)]) / 2;
+            gradQ[idxGradQ(i,j,k,1,l)] = (qAvgR - qAvgL) / cellSize[1];
+            }
+          }
+      }
+    }
+
+    // z direction
+    for (int i = patchBegin; i < patchEnd; i++) {
+      for (int j = patchBegin; j < patchEnd; j++) {
+        for (int k = patchBegin-1; k < patchEnd; k++) {  // We have patchSize+1 faces in each coordinate direction
+          for (int l = 0; l < numberOfVariables; l++) {
+            const double qAvgL = (luh[idx(i-1,j,k,l)] + luh[idx(i,j,k,l)]) / 2;
+            const double qAvgR = (luh[idx(i,j,k,l)] + luh[idx(i+1,j,k,l)]) / 2;
+            gradQ[idxGradQ(i,j,k,2,l)] = (qAvgR - qAvgL) / cellSize[2];
+           }
+        }
+      }
+    }
+  } else {
+    std::fill_n(gradQ, gradQSize, 0.0);
+  }
+
   // Solve Riemann problems
   double dt_max_allowed = std::numeric_limits<double>::max();
   
@@ -68,7 +123,10 @@ double kernels::finitevolumes::godunov::c::solutionUpdate(
         solver.riemannSolver(
             fL, fR,
             luhOld + idx(i,j, k, 0),
-            luhOld + idx(i,j, k+1, 0), 
+            luhOld + idx(i,j, k+1, 0),
+            gradQ + idxGradQ(i, j, k, 0, 0),
+            gradQ + idxGradQ(i, j, k+1, 0, 0),
+            cellSize,
             0/*x-axis*/);
     // TODO(guera): Improve. I'm quite sure this is not the correct/best
     // formula. TODO(Dominic): The division by DIMENSIONS might make sure that C_x+C_y < 1
@@ -91,7 +149,10 @@ double kernels::finitevolumes::godunov::c::solutionUpdate(
       solver.riemannSolver(
         fL, fR,
         luhOld + idx(i, j, k,0),
-        luhOld + idx(i, j+1, k,0), 
+        luhOld + idx(i, j+1, k,0),
+        gradQ + idxGradQ(i, j, k, 0, 0),
+        gradQ + idxGradQ(i, j+1, k, 0, 0),
+        cellSize,
         1/*y-axis*/);
     dt_max_allowed = std::min(
         dt_max_allowed, cflFactor / DIMENSIONS * cellSize[1] / s_max_y);
@@ -112,7 +173,10 @@ double kernels::finitevolumes::godunov::c::solutionUpdate(
       solver.riemannSolver(
         fL, fR,
         luhOld + idx(i, j,k,0),
-        luhOld + idx(i+1, j,k,0), 
+        luhOld + idx(i+1, j,k,0),
+        gradQ + idxGradQ(i, j, k, 0, 0),
+        gradQ + idxGradQ(i+1, j, k, 0, 0),
+        cellSize,
         2/*z-axis*/);
     dt_max_allowed = std::min(
         dt_max_allowed, cflFactor / DIMENSIONS * cellSize[2] / s_max_z);
@@ -130,10 +194,16 @@ double kernels::finitevolumes::godunov::c::solutionUpdate(
     double  source[numberOfVariables] = {0.0};
     
     for (int i = patchBegin; i < patchEnd; i++) {
+    const double qi = (2.0*(i-patchBegin)+1.0)/(2.0*patchSize);
     for (int j = patchBegin; j < patchEnd; j++) {
+    const double qj = (2.0*(j-patchBegin)+1.0)/(2.0*patchSize);
     for (int k = patchBegin; k < patchEnd; k++) {
+      const double qk = (2.0*(k-patchBegin)+1.0)/(2.0*patchSize);
+      x[2] = cellCenter[2] + dx[2] * (qi - 0.5);
+      x[1] = cellCenter[1] + dx[1] * (qj - 0.5);
+      x[0] = cellCenter[0] + dx[0] * (qk - 0.5);
       // TODO: Probably call fusedSource here instead with gradQ=0.
-      solver.algebraicSource(&luhOld[idx(i,j,k,0)], source);
+      solver.algebraicSource(x, t, &luhOld[idx(i,j,k,0)], source);
 
       for (int l = 0; l < numberOfVariables; l++) {
         // No BgradQ contribution as this is first order, cf. 2D godunov.

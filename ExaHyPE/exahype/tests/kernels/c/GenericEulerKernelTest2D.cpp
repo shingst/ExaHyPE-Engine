@@ -52,7 +52,7 @@ void GenericEulerKernelTest::flux(const double *Q, double **F) {
 
 void GenericEulerKernelTest::viscousFlux(const double *Q, double* gradQ, double **F) {}
 
-void GenericEulerKernelTest::algebraicSource(const double* const Q, double *S) {
+void GenericEulerKernelTest::algebraicSource(const tarch::la::Vector<DIMENSIONS, double>& x, double t, const double *const Q, double *S) {
   S[0] = 0.0;
   S[1] = 0.0;
   S[2] = 0.0;
@@ -497,11 +497,12 @@ void GenericEulerKernelTest::testRiemannSolverNonlinear() {
     double FL[nVar*basisSize] = {0.0}; // ~nVar
     double FR[nVar*basisSize] = {0.0};
 
-    kernels::aderdg::generic::c::riemannSolverNonlinear<false,GenericEulerKernelTest>(
+    kernels::aderdg::generic::c::riemannSolverNonlinear<false,false,GenericEulerKernelTest>(
         *this,
         FL, FR, QL, QR,
         0,   // t
         0.0, // dt
+        tarch::la::Vector<DIMENSIONS, double>(0.5, 0.5), // dx
         0    // direction
         );
 
@@ -540,11 +541,12 @@ void GenericEulerKernelTest::testRiemannSolverNonlinear() {
                         testRiemannSolverNonlinear::FR_1_in,
                 20 * sizeof(double));
 
-    kernels::aderdg::generic::c::riemannSolverNonlinear<false,GenericEulerKernelTest>(
+    kernels::aderdg::generic::c::riemannSolverNonlinear<false,false,GenericEulerKernelTest>(
         *this,
         FL, FR, QL, QR,
         0,     // t
         0.0,  // dt
+        tarch::la::Vector<DIMENSIONS, double>(0.5, 0.5), // dx
         0     // direction
         );
 
@@ -592,11 +594,12 @@ void GenericEulerKernelTest::testRiemannSolverNonlinear() {
                         testRiemannSolverNonlinear::FR_2_in,
                 20 * sizeof(double));
 
-    kernels::aderdg::generic::c::riemannSolverNonlinear<false,GenericEulerKernelTest>(
+    kernels::aderdg::generic::c::riemannSolverNonlinear<false,false,GenericEulerKernelTest>(
         *this,
         FL, FR, QL, QR,
         0,   // t
         0.0, // dt
+        tarch::la::Vector<DIMENSIONS, double>(0.5, 0.5), // dx
         1    // direction
         );
 
@@ -752,6 +755,11 @@ void GenericEulerKernelTest::testSpaceTimePredictorLinear() {
   const tarch::la::Vector<DIMENSIONS, double> dx(0.5, 0.5);
   const double dt = 1.267423918681417E-002;
 
+   // These values are only used if the source depends on x or t.
+  // Hence, the actual values do not matter here.
+  const tarch::la::Vector<DIMENSIONS, double> x(0.0, 0.0);
+  const double t = 0.0;
+
   // Inputs:
   double lQi[400];  // lQi; nVar * nDOFx * nDOFy * (nDOFt+1); nDOF+1 only here
   double PSi[400];  // point sources
@@ -773,7 +781,7 @@ void GenericEulerKernelTest::testSpaceTimePredictorLinear() {
       lQhbnd, lFhbnd,
       lQi,lFi,gradQ,PSi,PSderivatives,tmp_PSderivatives,lQhi,lFhi,
       ::exahype::tests::testdata::generic_euler::testSpaceTimePredictorLinear::luh,
-      dx, dt);
+      x, dx, t, dt);
 
   _setNcpAndMatrixBToZero = false;
 
@@ -817,6 +825,11 @@ void GenericEulerKernelTest::testSpaceTimePredictorNonlinear() {
   const tarch::la::Vector<DIMENSIONS, double> dx(5e-02, 5e-02);
   const double dt = 1.686854344081342E-003;
 
+  // These values are only used if the source depends on x or t.
+  // Hence, the actual values do not matter here.
+  const tarch::la::Vector<DIMENSIONS, double> x(0.0, 0.0);
+  const double t = 0.0;
+
   constexpr int nVar       = NumberOfVariables;
   constexpr int nPar       = NumberOfParameters;
   constexpr int nData      = nVar+nPar;
@@ -853,12 +866,15 @@ void GenericEulerKernelTest::testSpaceTimePredictorNonlinear() {
   double lFhbnd[4 * nData*basisSize];  // nData * nDOFy * 4
 
   _setNcpAndMatrixBToZero = true;
-  kernels::aderdg::generic::c::spaceTimePredictorNonlinear<true,true,true,false,false,GenericEulerKernelTest>(
+  kernels::aderdg::generic::c::spaceTimePredictorNonlinear<true,true,false,true,false,GenericEulerKernelTest>(
       *this,
-      lQhbnd, lFhbnd,
+      lQhbnd, nullptr, lFhbnd,
       lQi, rhs, lFi, gradQ, lQhi, lFhi,
       luh,
-      tarch::la::invertEntries(dx), dt);
+      x,
+      tarch::la::invertEntries(dx),
+      t,
+      dt);
 
   _setNcpAndMatrixBToZero = false;
 

@@ -49,7 +49,8 @@ exahype::solvers::LimitingADERDGSolver::LimitingADERDGSolver(
     const int iterationsToCureTroubledCell)
     :
     exahype::solvers::Solver(identifier, Solver::Type::LimitingADERDG, solver->getNumberOfVariables(),
-        solver->getNumberOfParameters(), solver->getNodesPerCoordinateAxis(), solver->getMaximumMeshSize(),
+        solver->getNumberOfParameters(), solver->getNumberOfGlobalObservables(), solver->getNodesPerCoordinateAxis(),
+  solver->getMaximumMeshSize(),
         solver->getMaximumAdaptiveMeshDepth(),
         solver->getTimeStepping()),
         _solver(std::move(solver)),
@@ -124,6 +125,7 @@ void exahype::solvers::LimitingADERDGSolver::initSolver(
 
   resetMeshUpdateEvent();
 
+  _globalObservables = resetGlobalObservables();
   _solver->initSolver(timeStamp, domainOffset, domainSize, boundingBoxSize, boundingBoxMeshSize, cmdlineargs, parserView);
   _limiter->initSolver(timeStamp, domainOffset, domainSize, boundingBoxSize, boundingBoxMeshSize, cmdlineargs, parserView);
 }
@@ -183,6 +185,17 @@ void exahype::solvers::LimitingADERDGSolver::rollbackToPreviousTimeStep() {
   _solver->rollbackToPreviousTimeStep();
   ensureLimiterTimeStepDataIsConsistent();
 }
+
+// TODO(Lukas) Is this still needed?
+/*
+void exahype::solvers::LimitingADERDGSolver::updateNextGlobalObservables(
+      const std::vector<double>& globalObservables) {
+  Solver::updateNextGlobalObservables(globalObservables);
+  _solver->updateNextGlobalObservables(globalObservables);
+  // TODO(Lukas) Update for Limiter necessary?
+  //_limiter->updateNextGlobalObservables(globalObservables);
+}
+*/
 
 exahype::solvers::LimitingADERDGSolver::LimiterPatch& exahype::solvers::LimitingADERDGSolver::getLimiterPatch(
     const SolverPatch& solverPatch,CellInfo& cellInfo) const {
@@ -312,6 +325,8 @@ void exahype::solvers::LimitingADERDGSolver::finaliseStateUpdates(
 double exahype::solvers::LimitingADERDGSolver::startNewTimeStep(SolverPatch& solverPatch,CellInfo& cellInfo,const bool isFirstTimeStepOfBatch) {
   double admissibleTimeStepSize = _solver->startNewTimeStep(solverPatch,isFirstTimeStepOfBatch);
   ensureLimiterPatchTimeStepDataIsConsistent(solverPatch,cellInfo);
+
+  // TODO(Lukas) Do we need to do anything with global observables here?
   return admissibleTimeStepSize;
 }
 
@@ -1860,6 +1875,54 @@ void exahype::solvers::LimitingADERDGSolver::toString (std::ostream& out) const 
   out << _solver->toString() << "}\n";
   out << getIdentifier() << "{_FV: ";
   out << _limiter->toString() << "}";
+}
+std::vector<double> exahype::solvers::LimitingADERDGSolver::mapGlobalObservables(
+        const double* const Q,
+        const tarch::la::Vector<DIMENSIONS, double> &dx) const {
+  assertion1(false, "LimitingADERDGSolver::mapGlobalObservables should never be called!");
+  return _solver->mapGlobalObservables(Q, dx); // unreachable
+}
+
+std::vector<double> exahype::solvers::LimitingADERDGSolver::resetGlobalObservables() const {
+  return _solver->resetGlobalObservables();
+}
+
+void exahype::solvers::LimitingADERDGSolver::reduceGlobalObservables(
+            std::vector<double>& reducedGlobalObservables,
+            const std::vector<double>& curGlobalObservables) const {
+  _solver->reduceGlobalObservables(reducedGlobalObservables, curGlobalObservables);
+}
+
+void exahype::solvers::LimitingADERDGSolver::reduceGlobalObservables(
+    std::vector<double> &globalObservables,
+    Solver::CellInfo cellInfo, int solverNumber) const {
+  tarch::multicore::Lock lock(ReductionSemaphore);
+  if (globalObservables.empty()) {
+    return;
+  }
+
+  const int solverElement = cellInfo.indexOfADERDGCellDescription(solverNumber);
+  if (solverElement != NotFound ) {
+    SolverPatch& solverPatch = cellInfo._ADERDGCellDescriptions[solverElement];
+
+    // TODO(Lukas) Maybe use previous refinement status? Depends on update time.
+    //   bool isUnlimited = solverPatch.getPreviousRefinementStatus() < _solver->getMinRefinementStatusForBufferCell();
+    return;
+    bool isUnlimited = true; // TODO(Lukas) Fix this!
+    if (isUnlimited) {
+      // Solution is saved in DG-Space.
+      // TODO(Lukas) Maybe pass solverPatch directly?
+      _solver->reduceGlobalObservables(globalObservables, cellInfo, solverNumber);
+    } else {
+      const int limiterElement = cellInfo.indexOfFiniteVolumesCellDescription(solverNumber);
+      assertion1(limiterElement != NotFound, "Limiter element not found!");
+      if (limiterElement != NotFound) {
+        LimiterPatch& limiterPatch = cellInfo._FiniteVolumesCellDescriptions[limiterElement];
+        _limiter->reduceGlobalObservables(globalObservables, cellInfo, solverNumber);
+      }
+    }
+  }
+  lock.free();
 }
 
 exahype::solvers::Solver::CellProcessingTimes exahype::solvers::LimitingADERDGSolver::measureCellProcessingTimes(const int numberOfRuns) {

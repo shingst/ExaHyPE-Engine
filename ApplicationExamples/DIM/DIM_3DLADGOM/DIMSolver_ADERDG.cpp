@@ -35,9 +35,7 @@ void DIM::DIMSolver_ADERDG::adjustPointSolution(const double* const x,const doub
   Q[13]=1.0;
 }
 
-void DIM::DIMSolver_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,
-  const double * const fluxIn,const double* const stateIn,
-  double* const fluxOut,double* const stateOut) {
+void DIM::DIMSolver_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double* const fluxIn,const double* const stateIn,const double* const gradStateIn,double* const fluxOut,double* const stateOut)
 const int nVar = DIM::AbstractDIMSolver_ADERDG::NumberOfVariables;
   const int order = DIM::AbstractDIMSolver_ADERDG::Order;
   const int basisSize = order + 1;

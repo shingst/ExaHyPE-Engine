@@ -150,7 +150,7 @@ class {{project}}::{{solver}} : public {{project}}::{{abstractSolver}} {
     *                 parameters); range: [0,nVar+nPar-1], already allocated.
     * @param[inout] S source term; range: [0,nVar-1], already allocated.
     */
-    void algebraicSource(const double* const Q,double* const S) override;
+    void algebraicSource(const tarch::la::Vector<DIMENSIONS, double>& x, double t, const double *const Q, double *S) override;
     {% else %}
     /* algebraicSource() function not included, as requested by the specification file */
     {% endif %}

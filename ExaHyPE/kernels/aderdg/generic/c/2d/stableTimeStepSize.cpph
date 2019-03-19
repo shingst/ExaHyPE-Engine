@@ -44,11 +44,12 @@ double kernels::aderdg::generic::c::stableTimeStepSize(
         }
         if(useViscousFlux){
             solver.viscousEigenvalues(&luh[idx_luh(i,j,0)], d, lambda);
+
             double maxEigenvalueV = 0.0;
             for (int ivar = 0; ivar < numberOfVariables; ivar++) {
-                maxEigenvalueV = std::max(std::abs(lambda[ivar]), maxEigenvalue);
+                maxEigenvalueV = std::max(std::abs(lambda[ivar]), maxEigenvalueV);
             }
-            maxEigenvalue += maxEigenvalueV * 2.0 * PNPM[order] * invDx[d];
+            maxEigenvalue += maxEigenvalueV * (2.0/PNPM[order]) * invDx[d];
         }
         denominator += maxEigenvalue * invDx[d];
       }
