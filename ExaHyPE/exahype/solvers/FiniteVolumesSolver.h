@@ -138,6 +138,16 @@ private:
       const bool isInitialMeshRefinement);
 
   /**
+   * Calls the mapGlobalObservables function of the user solver,
+   * and merges the result with _nextGlobalObservables variable.
+   *
+   * @note Can be called from the LimitingADERDGSolver.
+   *
+   * @param cellDescription a cell description of type Cell.
+   */
+  void reduceGlobalObservables(CellDescription& cellDescription) const;
+
+  /**
    * This routine is called from the update(...) and
    * fusedTimeStep(...) functions.
    *

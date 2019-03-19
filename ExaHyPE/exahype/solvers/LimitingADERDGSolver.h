@@ -362,6 +362,18 @@ private:
       const SolverPatch& solverPatch, LimiterPatch& limiterPatch);
 
   /**
+   * Calls the reduceGlobalObservables on the solver if the
+   * cell is not troubled. Otherwise, calls the routine
+   * on the limiter.
+   *
+   * @param solverPatch a solver patch of type Cell.
+   * @param cellInfo    struct referring to all cell descriptions registered for a cell
+   */
+  void reduceGlobalObservables(
+      SolverPatch&     solverPatch,
+      Solver::CellInfo cellInfo) const;
+
+  /**
    * Body of LimitingADERDGSolver::fusedTimeStepOrRestrict(...).
    *
    * <h2> Order of operations</h2>
@@ -1564,28 +1576,31 @@ void updateNextGlobalObservables(
     return _solver;
   }
 
- std::vector<double> mapGlobalObservables(const double* const Q, const tarch::la::Vector<DIMENSIONS, double> &dx) const override;
- std::vector<double> resetGlobalObservables() const override;
- void reduceGlobalObservables(
-     std::vector<double>& reducedGlobalObservables,
-     const std::vector<double>& curGlobalObservables) const override;
-
-  using Solver::reduceGlobalObservables;
-  void reduceGlobalObservables(
-      const int solverNumber,
-      Solver::CellInfo cellInfo,) const override;
-
   ///////////////////////
   // PROFILING
   ///////////////////////
 
   CellProcessingTimes measureCellProcessingTimes(const int numberOfRuns=100) override;
 
+  /////////////////////////////////
+  // USER HOOKS - Make inaccessible
+  /////////////////////////////////
+
   int getGeometricLoadBalancingWeight(
       const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
       const tarch::la::Vector<DIMENSIONS,double>& cellSize) final override {
     return _solver->getGeometricLoadBalancingWeight(cellCentre,cellSize);
   }
+
+  std::vector<double> mapGlobalObservables(
+      const double* const                         luh,
+      const tarch::la::Vector<DIMENSIONS, double> &dx) const final override;
+
+  std::vector<double> resetGlobalObservables() const final override;
+
+  void reduceGlobalObservables(
+      std::vector<double>& reducedGlobalObservables,
+      const std::vector<double>& curGlobalObservables) const final override;
 
 protected:
 

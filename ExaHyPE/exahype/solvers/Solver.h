@@ -2033,19 +2033,6 @@ class exahype::solvers::Solver {
       const int                                    level) = 0;
   #endif
 
-   /**
-    * Cell-wise method to compute observables per cell and merge
-    * them with the current ones.
-    *
-    * @note Implementation must ensure thread-safety.
-    *
-    * @param solverNumber identification number of a solver
-    * @param cellInfo     links to the data associated with a mesh cell
-    */
-   virtual void reduceGlobalObservables(
-       const int solverNumber,
-       CellInfo& cellInfo) const = 0;
-
   ///////////////////////
   // PROFILING
   ///////////////////////
@@ -2118,12 +2105,12 @@ class exahype::solvers::Solver {
    * Maps the solution values Q to
    * the global observables.
    *
-   *\param[in]                Q  The state variables.
-   *\param[in]                dx The size of a cell.
+   *\param[in]                luh The solution array.
+   *\param[in]                dx  The size of a cell.
    *\return globalObservables The mapped observables.
    */
    virtual std::vector<double> mapGlobalObservables(
-       const double* const                         Q,
+       const double* const                         luh,
        const tarch::la::Vector<DIMENSIONS,double>& dx) const = 0;
 
    /**

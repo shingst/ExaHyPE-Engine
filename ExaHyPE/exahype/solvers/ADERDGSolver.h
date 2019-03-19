@@ -751,6 +751,83 @@ private:
 
   void adjustSolutionAfterUpdate(CellDescription& CellDescription);
 
+  /**
+   * Calls the mapGlobalObservables function of the user solver,
+   * and merges the result with _nextGlobalObservables variable.
+   *
+   * @note Can be called from the LimitingADERDGSolver.
+   *
+   * @param cellDescription a cell description of type Cell.
+   */
+  void reduceGlobalObservables(CellDescription& cellDescription) const;
+
+  /**
+   * Calls the mapGlobalObservables function of the user solver,
+   * and merges the result with _nextGlobalObservables variable.
+   *
+   * @note Can be called from the LimitingADERDGSolver.
+   *
+   * @param cellDescription a cell description of type Cell.
+   */
+
+  /**
+   * Perform a fused time step, i.e. perform the update, update time step data, mark
+   * for refinement and then compute the new space-time predictor.
+   *
+   * Order of operations
+   * -------------------
+   * Data stored on a patch must be compressed by the last operation touching
+   * the patch. If we spawn the prediction as background job, it is very likely
+   * that it is executed last. In order to have a deterministic order of
+   * operations, we thus always run the prediction last.
+   *
+   * This decision implies that the time step data is updated before running the prediction.
+   * We thus need to memorise the prediction time stamp and time step size before performing
+   * the time step update. Fortunately, it is already memorised as it is copied
+   * into the correction time step data fields of the patch
+   * after the time step data update.
+   *
+   * @param cellDescription         an ADER-DG cell description of type Cell
+   * @param cellInfo                struct referring to all cell descriptions registered for a cell
+   * @param neighbourMergePerformed flag indicating where a neighbour merge has been performed (at spawn time if run by job)
+   * @param isFirstTimeStepOfBatch  if this the first time step in a batch (at spawn time if run by job)
+   * @param isLastTimeStepOfBatch   if this the last time step in a batch  (at spawn time if run by job)
+   * @param predictionTimeStamp     the time stamp which should be used for the prediction (at spawn time if run by job)
+   * @param predictionTimeStepSize  the time step size which should be used for the prediction (at spawn time if run by job)
+   * @param isSkeletonCell          if this cell description belongs to the MPI or AMR skeleton.
+   * @param mustBeDoneImmediately   if the prediction has to be performed immediately and cannot be spawned as background job
+   *
+   * @note Might be called by background task. Do not synchronise time step data here.
+   */
+  UpdateResult fusedTimeStepBody(
+        CellDescription&                                           cellDescription,
+        CellInfo&                                                  cellInfo,
+        const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
+        const double                                               predictionTimeStamp,
+        const double                                               predictionTimeStepSize,
+        const bool                                                 isFirstTimeStepOfBatch,
+        const bool                                                 isLastTimeStepOfBatch,
+        const bool                                                 isSkeletonCell,
+        const bool                                                 mustBeDoneImmediately);
+
+  /**
+   * If the cell description is of type Cell, update the solution, evaluate the refinement criterion,
+   * and compute an admissible time step size.
+   *
+   * @note Not const as kernels are not const.
+   *
+   * @param cellDescription a cell description
+   * @return a struct containing a mesh update event triggered by this cell,
+   * and a new time step size.
+   *
+   * @note Might be called by background task. Do not synchronise time step data here.
+   */
+  UpdateResult updateBody(
+      CellDescription&                                           cellDescription,
+      CellInfo&                                                  cellInfo,
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
+      const bool                                                 isAtRemoteBoundary);
+
 #ifdef Parallel
   /**
    * Data messages per neighbour communication.
@@ -1672,64 +1749,6 @@ public:
       const bool isFirstTimeStepOfBatch);
 
   double updateTimeStepSize(const int solverNumber,CellInfo& cellInfo) final override;
-
-  /**
-   * Perform a fused time step, i.e. perform the update, update time step data, mark
-   * for refinement and then compute the new space-time predictor.
-   *
-   * Order of operations
-   * -------------------
-   * Data stored on a patch must be compressed by the last operation touching
-   * the patch. If we spawn the prediction as background job, it is very likely
-   * that it is executed last. In order to have a deterministic order of
-   * operations, we thus always run the prediction last.
-   *
-   * This decision implies that the time step data is updated before running the prediction.
-   * We thus need to memorise the prediction time stamp and time step size before performing
-   * the time step update. Fortunately, it is already memorised as it is copied
-   * into the correction time step data fields of the patch
-   * after the time step data update.
-   *
-   * @param cellDescription         an ADER-DG cell description of type Cell
-   * @param cellInfo                struct referring to all cell descriptions registered for a cell
-   * @param neighbourMergePerformed flag indicating where a neighbour merge has been performed (at spawn time if run by job)
-   * @param isFirstTimeStepOfBatch  if this the first time step in a batch (at spawn time if run by job)
-   * @param isLastTimeStepOfBatch   if this the last time step in a batch  (at spawn time if run by job)
-   * @param predictionTimeStamp     the time stamp which should be used for the prediction (at spawn time if run by job)
-   * @param predictionTimeStepSize  the time step size which should be used for the prediction (at spawn time if run by job)
-   * @param isSkeletonCell          if this cell description belongs to the MPI or AMR skeleton.
-   * @param mustBeDoneImmediately   if the prediction has to be performed immediately and cannot be spawned as background job
-   *
-   * @note Might be called by background task. Do not synchronise time step data here.
-   */
-  UpdateResult fusedTimeStepBody(
-        CellDescription&                                           cellDescription,
-        CellInfo&                                                  cellInfo,
-        const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
-        const double                                               predictionTimeStamp,
-        const double                                               predictionTimeStepSize,
-        const bool                                                 isFirstTimeStepOfBatch,
-        const bool                                                 isLastTimeStepOfBatch,
-        const bool                                                 isSkeletonCell,
-        const bool                                                 mustBeDoneImmediately);
-
-  /**
-   * If the cell description is of type Cell, update the solution, evaluate the refinement criterion,
-   * and compute an admissible time step size.
-   *
-   * @note Not const as kernels are not const.
-   *
-   * @param cellDescription a cell description
-   * @return a struct containing a mesh update event triggered by this cell,
-   * and a new time step size.
-   *
-   * @note Might be called by background task. Do not synchronise time step data here.
-   */
-  UpdateResult updateBody(
-      CellDescription&                                           cellDescription,
-      CellInfo&                                                  cellInfo,
-      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
-      const bool                                                 isAtRemoteBoundary);
 
   UpdateResult fusedTimeStepOrRestrict(
       const int  solverNumber,

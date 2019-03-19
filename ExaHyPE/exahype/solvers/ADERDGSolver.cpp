@@ -2063,6 +2063,8 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
   cellDescription.setPreviousRefinementStatus(cellDescription.getRefinementStatus());
   result._meshUpdateEvent = evaluateRefinementCriteriaAfterSolutionUpdate(cellDescription,neighbourMergePerformed);
 
+  reduceGlobalObservables(cellDescription);
+
   if (
       SpawnPredictionAsBackgroundJob &&
       !mustBeDoneImmediately &&
@@ -2143,6 +2145,18 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
   }
 }
 
+void exahype::solvers::ADERDGSolver::reduceGlobalObservables(CellDescription& cellDescription) const {
+  if ( !_globalObservables.empty() ) {
+    assert(cellDescription.getType()==CellDescription::Type::Cell);
+    double* luh  = static_cast<double*>(cellDescription.getSolution());
+    const auto& dx = cellDescription.getSize();
+    const auto curGlobalObservables = mapGlobalObservables(luh, dx);
+    tarch::multicore::Lock lock(ReductionSemaphore);
+    reduceGlobalObservables(_nextGlobalObservables, curGlobalObservables);
+    lock.free();
+  }
+}
+
 exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::updateBody(
     CellDescription&                                           cellDescription,
     CellInfo&                                                  cellInfo,
@@ -2161,6 +2175,8 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::updateBod
   result._timeStepSize    = startNewTimeStep(cellDescription,true);
   cellDescription.setPreviousRefinementStatus(cellDescription.getRefinementStatus());
   result._meshUpdateEvent = evaluateRefinementCriteriaAfterSolutionUpdate(cellDescription,neighbourMergePerformed);
+
+  reduceGlobalObservables(cellDescription);
 
   compress(cellDescription,isAtRemoteBoundary);
 
@@ -5063,27 +5079,6 @@ void exahype::solvers::ADERDGSolver::pullUnknownsFromByteStream(
     peano::datatraversal::TaskSet::TaskType::Background,
     true
   );
-}
-
-void exahype::solvers::ADERDGSolver::reduceGlobalObservables(
-    const int solverNumber
-    CellInfo& cellInfo) const {
-  if ( !globalObservables.empty() ) {
-    const auto element = cellInfo.indexOfADERDGCellDescription(solverNumber);
-    if (element != NotFound ) {
-      CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[element];
-      const bool isCell = cellDescription.getType() == CellDescription::Type::Cell;
-      if ( isCell ) {
-        assert(cellDescription.getType()==CellDescription::Type::Cell);
-        double* luh  = static_cast<double*>(cellDescription.getSolution());
-        const auto& dx = cellDescription.getSize();
-        const auto curGlobalObservables = mapGlobalObservables(luh, dx);
-        tarch::multicore::Lock lock(ReductionSemaphore);
-        reduceGlobalObservables(globalObservables, curGlobalObservables);
-        lock.free();
-      }
-    }
-  }
 }
 
 ///////////////////////
