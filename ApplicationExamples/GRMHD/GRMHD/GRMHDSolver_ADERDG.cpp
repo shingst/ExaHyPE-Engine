@@ -179,6 +179,8 @@ void GRMHD::GRMHDSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(double* c
 }
 */
 
+
+/*
 void GRMHD::GRMHDSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(
   double* const observables, const int NumberOfVariables,
   const double* const Q) const {
@@ -186,6 +188,7 @@ void GRMHD::GRMHDSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(
     observables[i] = Q[i];
   }
 }
+*/
 
 
 
@@ -201,6 +204,7 @@ bool GRMHD::GRMHDSolver_ADERDG::isPhysicallyAdmissible(
 	double cen = tarch::la::norm2(center);
 	double dr = 1.5;
 
+  bool shouldLimit = (cen > (radius -dr) ) && ( cen  <= (radius+dr) ); 
   // return TRUE if the cell does not need limited
 	return !shouldLimit;
 
