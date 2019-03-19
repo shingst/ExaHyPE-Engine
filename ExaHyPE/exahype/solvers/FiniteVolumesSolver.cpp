@@ -196,6 +196,9 @@ void exahype::solvers::FiniteVolumesSolver::initSolver(
 
   _meshUpdateEvent = MeshUpdateEvent::InitialRefinementRequested;
 
+  _globalObservables     = resetGlobalObservables();
+  _nextGlobalObservables = resetGlobalObservables();
+
   init(cmdlineargs,parserView); // call user defined initalisation
 }
 
@@ -228,7 +231,7 @@ void exahype::solvers::FiniteVolumesSolver::kickOffTimeStep(const bool isFirstTi
   }
 
   // call user code
-  _globalObservables = resetGlobalObservables();
+  _nextGlobalObservables = resetGlobalObservables();
   beginTimeStep(_minTimeStamp,isFirstTimeStepOfBatchOrNoBatch);
 }
 

@@ -887,7 +887,8 @@ void exahype::solvers::ADERDGSolver::initSolver(
 
   _meshUpdateEvent = MeshUpdateEvent::InitialRefinementRequested;
 
-  _globalObservables = resetGlobalObservables();
+  _globalObservables     = resetGlobalObservables();
+  _nextGlobalObservables = resetGlobalObservables();
 
   init(cmdlineargs,parserView); // call user define initalisiation
 }
