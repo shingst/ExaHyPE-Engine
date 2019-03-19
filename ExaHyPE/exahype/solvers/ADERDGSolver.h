@@ -117,7 +117,9 @@ public:
    */
   static int adjustSolutionHandle;
   static int fusedTimeStepBodyHandle;
+  static int fusedTimeStepBodyHandleSkeleton;
   static int predictorBodyHandle;
+  static int predictorBodyHandleSkeleton;
   static int updateBodyHandle;
   static int mergeNeighboursHandle;
   static int prolongateFaceDataToDescendantHandle;

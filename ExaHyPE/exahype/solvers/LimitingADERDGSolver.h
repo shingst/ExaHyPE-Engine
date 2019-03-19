@@ -89,7 +89,7 @@ public:
    */
   static int adjustSolutionHandle;
   static int fusedTimeStepBodyHandle;
-  static int predictorBodyHandle;
+  static int fusedTimeStepBodyHandleSkeleton;
   static int updateBodyHandle;
   static int mergeNeighboursHandle;
   #endif

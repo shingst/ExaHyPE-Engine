@@ -31,11 +31,11 @@ namespace solvers {
 } /* namespace exahype */
 
 #ifdef USE_ITAC
-int exahype::solvers::LimitingADERDGSolver::adjustSolutionHandle    = 0;
-int exahype::solvers::LimitingADERDGSolver::fusedTimeStepBodyHandle = 0;
-int exahype::solvers::LimitingADERDGSolver::predictorBodyHandle     = 0;
-int exahype::solvers::LimitingADERDGSolver::updateBodyHandle        = 0;
-int exahype::solvers::LimitingADERDGSolver::mergeNeighboursHandle   = 0;
+int exahype::solvers::LimitingADERDGSolver::adjustSolutionHandle            = 0;
+int exahype::solvers::LimitingADERDGSolver::fusedTimeStepBodyHandle         = 0;
+int exahype::solvers::LimitingADERDGSolver::fusedTimeStepBodyHandleSkeleton = 0;
+int exahype::solvers::LimitingADERDGSolver::updateBodyHandle                = 0;
+int exahype::solvers::LimitingADERDGSolver::mergeNeighboursHandle           = 0;
 #endif
 
 tarch::logging::Log exahype::solvers::LimitingADERDGSolver::_log("exahype::solvers::LimitingADERDGSolver");
@@ -483,7 +483,11 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
     const bool                                                 isSkeletonCell,
     const bool                                                 mustBeDoneImmediately) {
   #ifdef USE_ITAC
-  VT_begin(fusedTimeStepBodyHandle);
+  if ( isSkeletonCell ) {
+    VT_begin(fusedTimeStepBodyHandleSkeleton);
+  } else {
+    VT_begin(fusedTimeStepBodyHandle);
+  }
   #endif
 
   UpdateResult result;
@@ -519,7 +523,11 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
   }
 
   #ifdef USE_ITAC
-  VT_end(fusedTimeStepBodyHandle);
+  if ( isSkeletonCell ) {
+    VT_end(fusedTimeStepBodyHandleSkeleton);
+  } else {
+    VT_end(fusedTimeStepBodyHandle);
+  }
   #endif
   return result;
 }
