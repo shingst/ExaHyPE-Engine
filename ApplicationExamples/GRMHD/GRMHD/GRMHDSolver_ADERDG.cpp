@@ -127,7 +127,7 @@ void GRMHD::GRMHDSolver_ADERDG::boundaryValues(const double* const x,const doubl
     
     for(int m=0; m < nVar; m++) {
       stateOut[m] += weight * Qgp[m];
-      fluxOut[m] += weight * Fs[d][m];
+      fluxOut[m] += weight * Fs[normalNonZero][m];
     }
   }
   ///// EXACT
