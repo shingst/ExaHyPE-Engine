@@ -54,7 +54,7 @@ inline double kernels::finitevolumes::commons::c::superbee(double a, double b) {
     return 0.0;
   } else {
     double r=a/b;
-    double phi=std::max(0.0, std::min(std::min(2.0*r ,1.), std::min(r,2.0)));
+    double phi=std::max(0.0, std::max(std::min(2.0*r ,1.), std::min(r,2.0)));
     return phi*b;
   }
 }
