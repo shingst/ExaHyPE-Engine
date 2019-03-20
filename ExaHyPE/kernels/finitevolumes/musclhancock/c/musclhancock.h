@@ -15,6 +15,8 @@
 
 #include "tarch/la/Vector.h"
 
+#include "kernels/finitevolumes/commons/c/slope-limiters.h"
+
 namespace kernels {
 namespace finitevolumes {
 namespace musclhancock {
@@ -84,7 +86,12 @@ namespace c {
    * @param dt      the used time step size
    * @return the actual admissible time step size obtained from the Riemann solves.
    */
-  template <bool useSource, bool useNCP, bool useFlux, bool useViscousFlux, bool robustDiagonalLimiting, typename SolverType>
+  template <
+    bool useSource, bool useNCP, bool useFlux, bool useViscousFlux,
+    bool robustDiagonalLimiting,
+    kernels::finitevolumes::commons::c::slope_limiter slope_limiter,
+    typename SolverType
+    >
   double solutionUpdate(
       SolverType& solver,double* luh,
       const tarch::la::Vector<DIMENSIONS, double>& cellCenter,

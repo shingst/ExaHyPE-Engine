@@ -20,7 +20,6 @@
 #include "tarch/la/Vector.h"
 #include "kernels/KernelUtils.h"
 
-#include "kernels/finitevolumes/commons/c/slope-limiters.h"
 #include "kernels/finitevolumes/riemannsolvers/c/riemannsolvers.h"
 
 #if DIMENSIONS == 3
