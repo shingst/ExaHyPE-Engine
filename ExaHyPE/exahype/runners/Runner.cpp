@@ -353,7 +353,7 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
     if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
       logInfo("initSharedMemoryConfiguration(...)","Let Peano's job system handle the jobs. Use two separate concurrent queues, one for high and one for low priority jobs");
     }
-    //tarch::multicore::jobs::setTaskProcessingScheme(tarch::multicore::jobs::TaskProcessingScheme::UseCustomTBBWrapperWithoutPriorities);
+    tarch::multicore::jobs::setTaskProcessingScheme(tarch::multicore::jobs::TaskProcessingScheme::UseCustomTBBWrapperWithoutPriorities);
   } else {
     if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
       logInfo("initSharedMemoryConfiguration(...)","Let Peano's job system handle the jobs. Use TBB concurrent priority queue.");
