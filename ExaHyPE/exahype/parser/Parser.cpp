@@ -1220,9 +1220,9 @@ int exahype::parser::Parser::getNumberOfBackgroundJobConsumerTasks() {
   return result;
 }
 
-bool exahype::parser::Parser::getMapBackgroundJobsToTasks() {
+bool exahype::parser::Parser::compareBackgroundJobProcessing(const std::string& strategy) const {
   return getStringFromPath("/shared_memory/background_job_processing","job_system",isOptional).
-      compare("spawn_tasks")==0;
+      compare(strategy)==0;
 }
 
 int exahype::parser::Parser::getMaxBackgroundJobsInARush() {
