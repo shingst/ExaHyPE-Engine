@@ -762,7 +762,7 @@
               "slope_limiter" : {
                 "type" : "string",
                 "title" : "Slope/Flux limiter for high order FV (not applicable with godunov scheme)",
-                "enum" : ["minmod","koren","superbee","vanalbada"],
+                "enum" : ["minmod","koren","superbee","vanalbada","mclim"],
                 "default" : "minmod"
               }
             }

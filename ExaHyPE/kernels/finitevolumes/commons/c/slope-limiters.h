@@ -34,6 +34,7 @@ namespace c {
 	double koren(double a, double b);
   double vanalbada(double a, double b);
   double superbee(double a, double b);
+  double mclim(double a,double b);
 
 } // ns c
 } // ns commons
