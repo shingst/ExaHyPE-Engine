@@ -56,8 +56,9 @@ exahype-project GRMHD
   end distributed-memory
 
   global-optimisation
-    fuse-algorithmic-steps          = on
-    fuse-algorithmic-steps-factor   = 0.99
+    fuse-algorithmic-steps          = all
+    fuse-algorithmic-steps-rerun-factor   = 0.99
+    fuse-algorithmic-steps-diffusion-factor   = 0.99
     spawn-predictor-as-background-thread = on
     spawn-update-as-background-thread = on
     spawn-amr-background-threads         = on
@@ -71,7 +72,7 @@ exahype-project GRMHD
   solver Limiting-ADER-DG GRMHDSolver
     variables const                = rho:1,vel:3,E:1,B:3,psi:1,lapse:1,shift:3,gij:6
     order const                    = 3
-    maximum-mesh-size              = 1.11111112
+    maximum-mesh-size              = 1.21
 //    maximum-mesh-size              = 0.23
     maximum-mesh-depth             = 0
     time-stepping                  = global
@@ -81,6 +82,9 @@ exahype-project GRMHD
     language const                 = C
 
     limiter-type const             = musclhancock
+    limiter-slope-limiter const  = koren
+
+  
 //    limiter-type const             = godunov
     limiter-optimisation const     = generic
     limiter-language const         = C

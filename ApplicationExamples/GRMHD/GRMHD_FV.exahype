@@ -70,9 +70,10 @@ exahype-project GRMHD
   solver Finite-Volumes GRMHDSolver_FV
     variables const                = rho:1,vel:3,E:1,B:3,psi:1,lapse:1,shift:3,gij:6
     patch-size const               = 7
-    maximum-mesh-size              = 1.2
+    maximum-mesh-size              = 1.21
     time-stepping                  = global
     type const         = musclhancock
+    slope-limiter const  = koren
     //type const  = godunov
     terms const        = flux,ncp
     optimisation const = generic
