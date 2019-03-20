@@ -84,7 +84,7 @@
           "flux",
           "ncp"
         ],
-        "slope_limiter": "koren",
+        "slope_limiter": "mclim",
         "scheme": "musclhancock",
         "implementation": "generic"
       },

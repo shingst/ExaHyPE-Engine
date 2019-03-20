@@ -59,7 +59,7 @@
       "time_stepping": "global",
       "fv_kernel": {
         "language": "C",
-        "slope_limiter": "koren",
+        "slope_limiter": "mclim",
         "terms": [
           "flux",
           "ncp"
@@ -120,10 +120,18 @@
         },
         {
           "type": "vtu::Cartesian::vertices::ascii",
+          "name": "PrimitiveWriter",
+          "time": 0.0,
+          "repeat": 1.0,
+          "output": "./vtk-output/primitive",
+          "variables": 1
+        },
+        {
+          "type": "vtu::Cartesian::vertices::ascii",
           "name": "ConservedWriter",
           "time": 0.0,
-          "repeat": 0.5,
-          "output": "./vtk-output/primitive",
+          "repeat": 1.0,
+          "output": "./vtk-output/conserved",
           "variables": 1
         }
       ]

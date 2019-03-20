@@ -82,7 +82,7 @@ exahype-project GRMHD
     language const                 = C
 
     limiter-type const             = musclhancock
-    limiter-slope-limiter const  = koren
+    limiter-slope-limiter const  = mclim
 
   
 //    limiter-type const             = godunov
