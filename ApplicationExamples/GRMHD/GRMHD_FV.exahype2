@@ -59,6 +59,7 @@
       "time_stepping": "global",
       "fv_kernel": {
         "language": "C",
+        "slope_limiter": "koren",
         "terms": [
           "flux",
           "ncp"
