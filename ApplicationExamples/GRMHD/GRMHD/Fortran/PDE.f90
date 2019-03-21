@@ -583,6 +583,7 @@ RECURSIVE SUBROUTINE PDEEigenvalues(L,Q,n)
     sft    = shift(1)*n(1) + shift(2)*n(2) + shift(3)*n(3) 
     gg     = g_contr(1,1)*ABS(n(1)) + g_contr(2,2)*ABS(n(2)) + g_contr(3,3)*ABS(n(3))
     den    = 1.0/(1.0 - v2*cs2)
+
     IF(SUM(n**2).EQ.0.) THEN  
         u = SQRT( v2) 
         WRITE(*,*)'Impossible error!'
@@ -601,9 +602,20 @@ RECURSIVE SUBROUTINE PDEEigenvalues(L,Q,n)
 		L(i)   = 0.
 	ENDDO
 
+  
+  !if any abs(lambda) > 1 for any, set to +-1 
+  DO i=1,5
+    if( abs(L(i)) > 1) then
+      L(1)= -1.0
+      L(2)= +1.0
+    endif
+  enddo
+
+ 
+  ! if atmo is small, set the eigenvalues to +- 0.5
   if(Q(1) < 1.e-9) then 
-    L(1) = -0.5    
-    L(2) = +0.5    
+    L(1) = -1.0    
+    L(2) = +1.0    
   endif
 
   return 
