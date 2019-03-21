@@ -133,7 +133,9 @@ std::atomic<int> exahype::solvers::ADERDGSolver::NumberOfReceiveJobs = 0;
 
 std::atomic<int> exahype::solvers::ADERDGSolver::NumberOfReceiveBackJobs = 0;
 
+#ifdef StealingUseProgressTask
 std::unordered_set<int> exahype::solvers::ADERDGSolver::ActiveSenders;
+#endif
 #endif
 
 
@@ -4680,6 +4682,7 @@ void exahype::solvers::ADERDGSolver::progressStealing(exahype::solvers::ADERDGSo
     }
     MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, commMapped, &receivedTaskBack, &statMapped);
     if(receivedTask) {
+#ifdef StealingUseProgressTask
        ActiveSenders.insert(stat.MPI_SOURCE);
        if(NumberOfReceiveJobs==0) {
           NumberOfReceiveJobs++;
@@ -4688,6 +4691,7 @@ void exahype::solvers::ADERDGSolver::progressStealing(exahype::solvers::ADERDGSo
           peano::datatraversal::TaskSet spawnedSet(receiveJob);     
           terminateImmediately = true; // we'll receive this task but then terminate to give the receive job the opportunity to run
        }
+#endif
 
       exahype::stealing::StealingManager::getInstance().triggerVictimFlag();
       int msgLen = -1;
@@ -4862,7 +4866,7 @@ bool exahype::solvers::ADERDGSolver::tryToReceiveTaskBack(exahype::solvers::ADER
   return exahype::stealing::StealingManager::getInstance().hasOutstandingRequestOfType(exahype::stealing::RequestType::receiveBack);
 }
 
-#ifndef StealingUseProgressThread
+#ifdef StealingUseProgessTask
 //TODO: may not be needed but left for now
 exahype::solvers::ADERDGSolver::ReceiveJob::ReceiveJob(ADERDGSolver& solver)
   :  tarch::multicore::jobs::Job(tarch::multicore::jobs::JobType::BackgroundTask, 0, tarch::multicore::DefaultPriority*8),
@@ -5119,6 +5123,7 @@ void exahype::solvers::ADERDGSolver::startStealingManager() {
 #endif
 }
 
+#ifndef StealingUseProgressThread
 void exahype::solvers::ADERDGSolver::pauseStealingManager() {
   //logInfo("pauseStealingManager", "pausing ");
   _stealingManagerJob->pause();
@@ -5131,6 +5136,7 @@ void exahype::solvers::ADERDGSolver::resumeStealingManager() {
   _stealingManagerJob->resume();
   peano::datatraversal::TaskSet spawnedSet(_stealingManagerJob);
 }
+#endif
 
 void exahype::solvers::ADERDGSolver::stopStealingManager() {
   logInfo("stopStealingManager", " stopping ");
@@ -5143,12 +5149,14 @@ void exahype::solvers::ADERDGSolver::stopStealingManager() {
   //delete _stealingManagerJob;
 }
 
+#ifdef StealingUseProgressTask
 void exahype::solvers::ADERDGSolver::spawnReceiveBackJob() {
   if(NumberOfReceiveBackJobs==0) {
     NumberOfReceiveBackJobs++;
     peano::datatraversal::TaskSet spawnedSet(new ReceiveBackJob(*this));
   }
 }
+#endif
 
 int exahype::solvers::ADERDGSolver::getResponsibleRankForCellDescription(const void* cellDescription) {
   int resultRank = -1;

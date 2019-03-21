@@ -88,8 +88,10 @@ PROJECT_CFLAGS += -DDistributedStealing -DStealingStrategyHybrid
 {% elif stealing=="static_hardcoded" %}
 PROJECT_CFLAGS += -DDistributedStealing -DStealingStrategyStaticHardcoded
 {% endif %}
-{% if useStealingProgress %}
+{% if stealingProgress=="progress_thread" %}
 PROJECT_CFLAGS += -DStealingUseProgressThread
+{% elif stealingProgress=="progress_task" %}
+PROJECT_CFLAGS += -DStealingUseProgressTask
 {% endif %}
 
 # If using TBB only, link pthread (comment this if you want to link a specific pthread)

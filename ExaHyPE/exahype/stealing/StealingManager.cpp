@@ -175,6 +175,7 @@ void exahype::stealing::StealingManager::submitRequests(
     _requests[mapId].push(id);
   }
 
+#ifdef StealingUseProgressTask
   if(_numProgressJobs==0 && type==RequestType::send) {
     //logInfo("submitRequests()", "spawning progress job (high priority)");
     _numProgressJobs++;
@@ -201,6 +202,7 @@ void exahype::stealing::StealingManager::submitRequests(
     ProgressReceiveBackJob *job = new ProgressReceiveBackJob();
     peano::datatraversal::TaskSet spawnedSet( job, peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible);
   }*/
+#endif
 }
 
 void exahype::stealing::StealingManager::createRequestArray(
@@ -610,6 +612,7 @@ bool exahype::stealing::StealingManager::selectVictimRank(int& victim) {
 #endif
 }
 
+#ifdef StealingUseProgressTask
 void exahype::stealing::StealingManager::resetHasNotifiedSendCompleted() {
   _hasNotifiedSendCompleted = false;
 }
@@ -637,6 +640,7 @@ void exahype::stealing::StealingManager::notifyAllVictimsSendCompletedIfNotNotif
   }
 #endif
 }
+#endif
 
 exahype::stealing::StealingManager::RequestHandlerJob::RequestHandlerJob(
     std::function<void(exahype::solvers::Solver*, int, int)> handleRequest,
@@ -661,6 +665,7 @@ bool exahype::stealing::StealingManager::RequestHandlerJob::operator()() {
 }
 
 
+#ifdef StealingUseProgressTask
 exahype::stealing::StealingManager::ProgressJob::ProgressJob() :
    tarch::multicore::jobs::Job(tarch::multicore::jobs::JobType::BackgroundTask, 0, tarch::multicore::DefaultPriority*8)
  {}
@@ -733,6 +738,6 @@ bool exahype::stealing::StealingManager::ProgressReceiveBackJob::operator()() {
    StealingManager::getInstance()._numProgressReceiveBackJobs--;
    return false;
 };
-
+#endif
 
 #endif

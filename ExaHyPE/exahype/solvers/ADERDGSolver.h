@@ -847,8 +847,10 @@ private:
   void deduceChildCellErasingEvents(CellDescription& cellDescription) const;
 
 #if defined(DistributedStealing)
+#ifdef StealingUseProgressTask
   static std::unordered_set<int> ActiveSenders; //only to be modified with lock on 
                                                 //stealing semaphore!
+#endif
 
   /**
    * A helper job that should run on every rank in the background while stealing
@@ -877,8 +879,10 @@ private:
 #ifdef StealingUseProgressThread
           tbb::task* execute();
 #endif
+#ifndef StealingUseProgressTask
          void pause();
          void resume();
+#endif
 	  void terminate();
     private:
 	  ADERDGSolver& _solver;
@@ -2534,14 +2538,18 @@ public:
    * Spawns a stealing manager job and submits it as a TBB task.
    */
   void startStealingManager();
+#ifndef StealingUseProgressThread
   void pauseStealingManager();
   void resumeStealingManager();
+#endif
   /*
    * Tells the stealing manager job that it's time for termination.
    */
   void stopStealingManager();
 
+#ifdef StealingUseProgressTask
   void spawnReceiveBackJob();
+#endif
 
   int getResponsibleRankForCellDescription(const void* cellDescription);
 

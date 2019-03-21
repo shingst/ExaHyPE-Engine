@@ -477,8 +477,10 @@ bool exahype::stealing::AggressiveHybridDistributor::selectVictimRank(int& victi
   }
   rank_cnt=l_rank;
 
+#ifdef StealingUseProgressTask
   if(victim == myRank) 
     exahype::stealing::StealingManager::getInstance().notifyAllVictimsSendCompletedIfNotNotified();
+#endif
 
   int threshold = 1+std::max(1, tarch::multicore::Core::getInstance().getNumberOfThreads()-1)*tarch::multicore::jobs::internal::_minimalNumberOfJobsPerConsumerRun;
   threshold = std::max(threshold, 20);

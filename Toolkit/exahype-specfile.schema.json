@@ -436,10 +436,11 @@
           "default" : "none",
           "old_format" : { "token_after" : "stealing" }
 	 },
-        "stealing_use_progress_thread": {
-          "type" : "boolean",
-          "title": "If true spawn MPI progress as separate TBB task.",
-          "default" : false
+        "stealing_progress": {
+          "type" : "string",
+          "title": "Enable progress in MPI for stealing communication.",
+          "enum" : ["none","progress_task","progress_thread"],
+          "default": "progress_task"
         },
         "stealing_CCP_temperature" : {
               "type" : "number",

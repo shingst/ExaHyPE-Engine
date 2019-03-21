@@ -130,6 +130,7 @@ class exahype::stealing::StealingManager {
         bool operator()();
     };
 
+#ifdef StealingUseProgressTask
     class ProgressJob : public tarch::multicore::jobs::Job
     {
       public:
@@ -157,6 +158,7 @@ class exahype::stealing::StealingManager {
         ProgressReceiveBackJob();
         bool operator()();
     };
+#endif
 
   public:
     int getStealingTag();
@@ -197,10 +199,12 @@ class exahype::stealing::StealingManager {
      */
     bool selectVictimRank(int& victim);
 
+#ifdef StealingUseProgressTask
     void resetHasNotifiedSendCompleted();
     void notifySendCompleted(int rank);
     void receiveCompleted(int rank); 
     void notifyAllVictimsSendCompletedIfNotNotified();
+#endif
 
     void triggerVictimFlag();
     void resetVictimFlag();
