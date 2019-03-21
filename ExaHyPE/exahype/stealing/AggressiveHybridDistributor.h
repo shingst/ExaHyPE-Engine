@@ -6,6 +6,7 @@
 
 #include <mpi.h>
 #include <atomic>
+#include <vector>
 
 namespace exahype {
   namespace stealing {
@@ -75,6 +76,8 @@ class exahype::stealing::AggressiveHybridDistributor {
     void printOffloadingStatistics();
     // return next victim rank
     bool selectVictimRank(int& victim);
+
+    void getAllVictimRanks(std::vector<int>& victimRanks);
  
     void updateLoadDistribution();
     void handleEmergencyOnRank(int rank);

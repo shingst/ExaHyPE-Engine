@@ -33,12 +33,13 @@ tarch::logging::Log exahype::stealing::StealingManager::_log( "exahype::stealing
 
 exahype::stealing::StealingManager::StealingManager() :
     _nextRequestId(0),
-	_nextGroupId(0),
-	_runningAndReceivingBack(false),
-	_stealingComm(MPI_COMM_NULL),
-	_stealingCommMapped(MPI_COMM_NULL),
+    _nextGroupId(0),
+    _runningAndReceivingBack(false),
+    _stealingComm(MPI_COMM_NULL),
+    _stealingCommMapped(MPI_COMM_NULL),
     _emergencyTriggered(false),
-    _numProgressJobs(0)
+    _numProgressJobs(0),
+    _hasNotifiedSendCompleted(false)
     //_numProgressSendJobs(0),
     //_numProgressReceiveJobs(0),
     //_numProgressReceiveBackJobs(0)
@@ -109,6 +110,11 @@ exahype::stealing::StealingManager& exahype::stealing::StealingManager::getInsta
 
 int exahype::stealing::StealingManager::requestTypeToMap( RequestType requestType ) {
   return static_cast<int> (requestType);
+}
+
+int exahype::stealing::StealingManager::getStealingTag() {
+  static std::atomic<int> counter = 1; //0 is reserved for status
+  return counter.fetch_add(1);
 }
 
 void exahype::stealing::StealingManager::submitRequests(
@@ -600,6 +606,34 @@ bool exahype::stealing::StealingManager::selectVictimRank(int& victim) {
   else {
      logInfo("stealingManager", "could not select victim remaining load ratio "<<remainingLoadRatio);
     return false;
+  }
+#endif
+}
+
+void exahype::stealing::StealingManager::resetHasNotifiedSendCompleted() {
+  _hasNotifiedSendCompleted = false;
+}
+
+void exahype::stealing::StealingManager::notifySendCompleted(int rank) {
+  char send = 1;
+  MPI_Send(&send, 1, MPI_CHAR, rank, 0, getMPICommunicator());
+  logInfo("notifySendCompleted()","sent status message to "<<rank);
+}
+
+void exahype::stealing::StealingManager::receiveCompleted(int rank) {
+  char receive = 0;
+  MPI_Recv(&receive, 1, MPI_CHAR, rank, 0, getMPICommunicator(), MPI_STATUS_IGNORE);
+  logInfo("receiveCompleted()","received status message from "<<rank);
+}
+
+void exahype::stealing::StealingManager::notifyAllVictimsSendCompletedIfNotNotified() {
+#if defined(StealingStrategyAggressiveHybrid)
+  if(!_hasNotifiedSendCompleted) {
+    _hasNotifiedSendCompleted = true;
+    std::vector<int> victimRanks;
+    exahype::stealing::AggressiveHybridDistributor::getInstance().getAllVictimRanks(victimRanks);
+    for(auto victim : victimRanks) 
+      notifySendCompleted(victim);
   }
 #endif
 }

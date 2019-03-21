@@ -444,8 +444,14 @@ void exahype::stealing::AggressiveHybridDistributor::updateLoadDistributionDiffu
 
 }
 
-bool exahype::stealing::AggressiveHybridDistributor::selectVictimRank(int& victim) {
+void exahype::stealing::AggressiveHybridDistributor::getAllVictimRanks(std::vector<int> &victims ) {
+  int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
+  for(int i=0; i<nnodes; i++) {
+    if(_tasksToOffload[i]>0 && _notOffloaded[i]!=_tasksToOffload[i] ) victims.push_back(i);
+  }
+}
 
+bool exahype::stealing::AggressiveHybridDistributor::selectVictimRank(int& victim) {
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
   int myRank = tarch::parallel::Node::getInstance().getRank();
   victim = myRank;
@@ -455,18 +461,24 @@ bool exahype::stealing::AggressiveHybridDistributor::selectVictimRank(int& victi
   int l_rank = rank_cnt;
 
   for(int i=0; i<nnodes; i++) {
-    if(l_rank!=myRank && _remainingTasksToOffload[l_rank].fetch_sub(1)>0) {
-      victim = l_rank;
-      l_rank = (l_rank + 1)%nnodes;
-      break;
+    if(l_rank!=myRank) {
+      int lastVal = _remainingTasksToOffload[l_rank].fetch_sub(1);
+      if(lastVal>0) {
+        victim = l_rank;
+        l_rank = (l_rank + 1)%nnodes;
+        break;
+      }
+      else
+        _remainingTasksToOffload[l_rank]=0;
     }
-    else
-    _remainingTasksToOffload[l_rank]=0;
+    //else
+    //  _remainingTasksToOffload[l_rank]=0;
     l_rank = (l_rank + 1)%nnodes;
   }
   rank_cnt=l_rank;
- 
-  //logInfo("selectVictimRank", "chose victim "<<victim<<" _remainingTasksToOffload "<<_remainingTasksToOffload[victim]);
+
+  if(victim == myRank) 
+    exahype::stealing::StealingManager::getInstance().notifyAllVictimsSendCompletedIfNotNotified();
 
   int threshold = 1+std::max(1, tarch::multicore::Core::getInstance().getNumberOfThreads()-1)*tarch::multicore::jobs::internal::_minimalNumberOfJobsPerConsumerRun;
   threshold = std::max(threshold, 20);
@@ -480,8 +492,8 @@ bool exahype::stealing::AggressiveHybridDistributor::selectVictimRank(int& victi
     _notOffloaded[victim]++;
     victim = myRank;
   }
-  //if(victim!=myRank)
-  // logInfo("selectVictimRank", "chose victim "<<victim<<" _remainingTasksToOffload "<<_remainingTasksToOffload[victim]);
+  if(victim!=myRank)
+   logInfo("selectVictimRank", "chose victim "<<victim<<" _remainingTasksToOffload "<<_remainingTasksToOffload[victim]);
   
   return victim != myRank;
 }

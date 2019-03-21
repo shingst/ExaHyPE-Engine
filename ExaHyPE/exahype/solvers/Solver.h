@@ -1148,7 +1148,7 @@ class exahype::solvers::Solver {
  template <typename CellDescription>
  void waitUntilCompletedLastStep(
      const CellDescription& cellDescription,const bool waitForHighPriorityJob,const bool receiveDanglingMessages) {
-  #ifdef USE_ITAC
+#ifdef USE_ITAC
   VT_begin(waitUntilCompletedLastStepHandle);
   static int event_emergency = -1;
   static const char *event_name_emergency = "trigger_emergency";
@@ -1176,6 +1176,7 @@ class exahype::solvers::Solver {
      peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
 #if defined(DistributedStealing) && !defined(StealingUseProgressThread)
      if (this->getType()==exahype::solvers::Solver::Type::ADERDG && responsibleRank!=myRank) {
+       solver->pauseStealingManager();
        exahype::solvers::ADERDGSolver::tryToReceiveTaskBack(solver) ;
      }
 #endif
@@ -1184,6 +1185,7 @@ class exahype::solvers::Solver {
 #if defined(DistributedStealing) && !defined(StealingUseProgressThread)
      if (this->getType()==exahype::solvers::Solver::Type::ADERDG && responsibleRank!=myRank) {
        progress= exahype::solvers::ADERDGSolver::tryToReceiveTaskBack(solver);
+       //solver->spawnReceiveBackJob();
      }
 #elif defined(DistributedStealing) && defined(StealingUseProgressThread)
      progress = false;
@@ -1195,19 +1197,20 @@ class exahype::solvers::Solver {
        hasProcessed = tarch::multicore::jobs::processBackgroundJobs(1);
  
 #if defined(DistributedStealing) 
-     if( !cellDescription.getHasCompletedLastStep()
-         && !hasProcessed) {
-        logInfo("waitUntilCompletedTimeStep()","EMERGENCY?: missing from rank "<<responsibleRank);
-     }
+     //if( !cellDescription.getHasCompletedLastStep()
+     //    && !hasProcessed
+     //    && responsibleRank!=myRank) {
+       //logInfo("waitUntilCompletedTimeStep()","EMERGENCY?: missing from rank "<<responsibleRank);
+     //}
 
- 
 #if !defined(StealingUseProgressThread)
        if( !cellDescription.getHasCompletedLastStep()
-         && tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs()==1
+         //&& tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs()==1
          && !hasTriggeredEmergency
-         && myRank!=responsibleRank
          && !progress
-         && !exahype::stealing::StealingManager::getInstance().getRunningAndReceivingBack())
+         && myRank!=responsibleRank)
+         //&& exahype::solvers::ADERDGSolver::NumberOfReceiveBackJobs==0)
+         //&& !exahype::stealing::StealingManager::getInstance().getRunningAndReceivingBack())
 #else
        if( !cellDescription.getHasCompletedLastStep()
          && !hasTriggeredEmergency
@@ -1215,19 +1218,22 @@ class exahype::solvers::Solver {
 #endif
        {
 #ifdef USE_ITAC
-	 //VT_begin(event_emergency);
+	 VT_begin(event_emergency);
 #endif
          hasTriggeredEmergency = true;
-         logInfo("waitUntilCompletedTimeStep()","EMERGENCY: missing from rank "<<responsibleRank);
+         //logInfo("waitUntilCompletedTimeStep()","EMERGENCY: missing from rank "<<responsibleRank);
          exahype::stealing::StealingManager::getInstance().triggerEmergencyForRank(responsibleRank);
 #ifdef USE_ITAC
-	 //VT_end(event_emergency);
+	 VT_end(event_emergency);
 #endif
        }
 #endif
      //}
    }
 #if defined(DistributedStealing) && !defined(StealingUseProgressThread)
+   if (this->getType()==exahype::solvers::Solver::Type::ADERDG && responsibleRank!=myRank) {
+     solver->resumeStealingManager();
+   }
    exahype::solvers::ADERDGSolver::setMaxNumberOfIprobesInProgressStealing( std::numeric_limits<int>::max() );
 #endif
 
@@ -1235,7 +1241,6 @@ class exahype::solvers::Solver {
   time_background += MPI_Wtime();
   exahype::stealing::StealingProfiler::getInstance().endWaitForTasks(time_background);
 #endif
-
 
 #ifdef USE_ITAC
    VT_end(waitUntilCompletedLastStepHandle);

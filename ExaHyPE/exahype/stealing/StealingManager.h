@@ -85,6 +85,8 @@ class exahype::stealing::StealingManager {
     std::atomic<bool> _emergencyTriggered;
     double  *_emergencyHeatMap;
 
+    bool _hasNotifiedSendCompleted;
+
     StealingManager();
     /*
      * This method makes progress on all current requests of the given request type.
@@ -95,7 +97,6 @@ class exahype::stealing::StealingManager {
      */
     static int requestTypeToMap(RequestType requestType);
 
-    bool hasOutstandingRequestOfType(RequestType requestType);
     /*
      * This method pop's all current requests of a given type from the request queue and
      * inserts them into an array on which MPI can make progress.
@@ -158,6 +159,7 @@ class exahype::stealing::StealingManager {
     };
 
   public:
+    int getStealingTag();
     /*
      * Submit a group of MPI requests with a given MPI message tag.
      * The handler call back function will be called when the MPI
@@ -176,6 +178,7 @@ class exahype::stealing::StealingManager {
 		bool block=false);
     void progressRequests();
     void progressAnyRequests();
+    bool hasOutstandingRequestOfType(RequestType requestType);
 
     void createMPICommunicator();
     void destroyMPICommunicator();
@@ -193,6 +196,11 @@ class exahype::stealing::StealingManager {
      * improve the load balance.
      */
     bool selectVictimRank(int& victim);
+
+    void resetHasNotifiedSendCompleted();
+    void notifySendCompleted(int rank);
+    void receiveCompleted(int rank); 
+    void notifyAllVictimsSendCompletedIfNotNotified();
 
     void triggerVictimFlag();
     void resetVictimFlag();

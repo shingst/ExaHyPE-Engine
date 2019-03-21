@@ -203,13 +203,16 @@ bool exahype::stealing::StaticDistributor::selectVictimRank(int& victim) {
   int l_rank = rank_cnt;
 
   for(int i=0; i<nnodes; i++) {
-    if(l_rank!=myRank && _remainingTasksToOffload[l_rank].fetch_sub(1)>0) {
-      victim = l_rank;
-      l_rank = (l_rank + 1)%nnodes;
-      break;
+    if(l_rank!=myRank) {
+      int lastVal = _remainingTasksToOffload[l_rank].fetch_sub(1);
+      if(lastVal>0) {
+        victim = l_rank;
+        l_rank = (l_rank + 1)%nnodes;
+        break;
+      }
+      else 
+        _remainingTasksToOffload[l_rank]=0;
     }
-    else
-    _remainingTasksToOffload[l_rank]=0;
     l_rank = (l_rank + 1)%nnodes;
   }
   rank_cnt=l_rank;

@@ -39,6 +39,7 @@
 #include <tbb/concurrent_queue.h>
 #include <tbb/task.h>
 #include <tbb/task_group.h>
+#include <unordered_set>
 #endif
 
 namespace exahype {
@@ -188,6 +189,9 @@ public:
    * stealing progress.
    */
   static tarch::multicore::BooleanSemaphore StealingSemaphore;
+
+  static std::atomic<int> NumberOfReceiveJobs;
+  static std::atomic<int> NumberOfReceiveBackJobs;
 #endif
 
   /**
@@ -843,6 +847,9 @@ private:
   void deduceChildCellErasingEvents(CellDescription& cellDescription) const;
 
 #if defined(DistributedStealing)
+  static std::unordered_set<int> ActiveSenders; //only to be modified with lock on 
+                                                //stealing semaphore!
+
   /**
    * A helper job that should run on every rank in the background while stealing
    * is active. There should be exactly one single StealingManagerJob per rank.
@@ -860,7 +867,9 @@ private:
     public:
       enum class State {
         Running,
-		Terminate
+        Resume,
+        Paused,
+	 Terminate
       };
 	  StealingManagerJob(ADERDGSolver& solver);
 	  ~StealingManagerJob();
@@ -868,16 +877,26 @@ private:
 #ifdef StealingUseProgressThread
           tbb::task* execute();
 #endif
+         void pause();
+         void resume();
 	  void terminate();
     private:
 	  ADERDGSolver& _solver;
 	  State 	_state;
   };
 
-  class ReceiveJob{
+  class ReceiveJob : public tarch::multicore::jobs::Job {
     public: 
         ReceiveJob(ADERDGSolver& solver);
-        bool operator()();
+        bool run();
+    private:
+        ADERDGSolver& _solver;
+  };
+
+  class ReceiveBackJob : public tarch::multicore::jobs::Job {
+    public: 
+        ReceiveBackJob(ADERDGSolver& solver);
+        bool run();
     private:
         ADERDGSolver& _solver;
   };
@@ -1062,8 +1081,6 @@ private:
     MPI_Comm comm,
     double *metadata =nullptr);
 
-  // returns a unique (locally) tag that is  used when sending away tasks
-  int getStealingTag();
 
   /* If a StealablePredictionJob has been spawned by the master thread,
    * it can either be submitted to Peano's job system or sent away
@@ -2517,10 +2534,14 @@ public:
    * Spawns a stealing manager job and submits it as a TBB task.
    */
   void startStealingManager();
+  void pauseStealingManager();
+  void resumeStealingManager();
   /*
    * Tells the stealing manager job that it's time for termination.
    */
   void stopStealingManager();
+
+  void spawnReceiveBackJob();
 
   int getResponsibleRankForCellDescription(const void* cellDescription);
 
