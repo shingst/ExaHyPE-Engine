@@ -15,7 +15,7 @@
 
 #include <stdio.h>
 #include <cstdlib> // abort()
-#include "kernels/KernelUtils.h" // idx
+#include "kernels/KernelUtils.h" // icellSize
 
 #include "exahype/disableOptimization.h" // we experience compiler bugs sometimes.
 
@@ -44,22 +44,22 @@ void {{project}}::{{abstractSolver}}::abortWithMsg(const char* const msg) {
 	abort();
 }
 
-void {{project}}::{{abstractSolver}}::solutionUpdate(double* luh,const tarch::la::Vector<DIMENSIONS,double>& cellCenter,const tarch::la::Vector<DIMENSIONS,double>& dx,const double t, const double dt,double& maxAdmissibleDt) {
+void {{project}}::{{abstractSolver}}::solutionUpdate(double* luh,const tarch::la::Vector<DIMENSIONS,double>& cellCenter,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t, const double dt,double& maxAdmissibleDt) {
   maxAdmissibleDt = kernels::finitevolumes::{{finiteVolumesType}}::c::solutionUpdate<
     {{useSource_s}}, {{useNCP_s}}, {{useFlux_s}}, {{useViscousFlux_s}}, {{useRobustDiagonalLimiting_s}},
     kernels::finitevolumes::commons::c::{{slopeLimiter}},
     {{solver}}
-    >(*static_cast<{{solver}}*>(this),luh,cellCenter,dx,t,dt);
+    >(*static_cast<{{solver}}*>(this),luh,cellCenter,cellSize,t,dt);
 }
 
 
-double {{project}}::{{abstractSolver}}::stableTimeStepSize(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& dx) {
-  double maxAdmissibleDt = kernels::finitevolumes::commons::c::stableTimeStepSize<{{solver}},{{useViscousFlux_s}}>(*static_cast<{{solver}}*>(this),luh,dx);
+double {{project}}::{{abstractSolver}}::stableTimeStepSize(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& cellSize) {
+  double maxAdmissibleDt = kernels::finitevolumes::commons::c::stableTimeStepSize<{{solver}},{{useViscousFlux_s}}>(*static_cast<{{solver}}*>(this),luh,cellSize);
   return maxAdmissibleDt;
 }
 
-void {{project}}::{{abstractSolver}}::adjustSolution(double* const luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,const double t,const double dt) {
-  kernels::finitevolumes::commons::c::solutionAdjustment<{{solver}}>(*static_cast<{{solver}}*>(this),luh,center,dx,t,dt);
+void {{project}}::{{abstractSolver}}::adjustSolution(double* const luh,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt) {
+  kernels::finitevolumes::commons::c::solutionAdjustment<{{solver}}>(*static_cast<{{solver}}*>(this),luh,cellCentre,cellSize,t,dt);
 }
 
 void {{project}}::{{abstractSolver}}::boundaryConditions(double* const luh,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const tarch::la::Vector<DIMENSIONS, int>& posCell,const tarch::la::Vector<DIMENSIONS, int>& posBoundary) {
@@ -110,14 +110,14 @@ void {{project}}::{{abstractSolver}}::boundaryLayerExtraction(double* const luhb
 }
 
 
-double {{project}}::{{abstractSolver}}::riemannSolver(double* fL, double *fR, const double* qL, const double* qR, const double* gradQL, const double* gradQR, const double* cellSize, int normalNonZero) {
+double {{project}}::{{abstractSolver}}::riemannSolver(double* fL, double *fR, const double* qL, const double* qR, const double* gradQL, const double* gradQR, const double* cellSize, int direction) {
   // Default FV Riemann Solver
-  return kernels::finitevolumes::riemannsolvers::c::rusanov<{{useNCP_s}}, {{useFlux_s}}, {{useViscousFlux_s}}, {{solver}}>(*static_cast<{{solver}}*>(this), fL,fR,qL,qR,gradQL, gradQR, cellSize, normalNonZero);
+  return kernels::finitevolumes::riemannsolvers::c::rusanov<{{useNCP_s}}, {{useFlux_s}}, {{useViscousFlux_s}}, {{solver}}>(*static_cast<{{solver}}*>(this), fL,fR,qL,qR,gradQL, gradQR, cellSize, direction);
 
 }
 
 
-std::vector<double> {{project}}::{{abstractSolver}}::mapGlobalObservables(const double* const Q, const tarch::la::Vector<DIMENSIONS, double> &dx) const {
+std::vector<double> {{project}}::{{abstractSolver}}::mapGlobalObservables(const double* const Q, const tarch::la::Vector<DIMENSIONS, double> &cellSize) const {
   return {};
 }
 
