@@ -216,6 +216,21 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver {
       	std::copy_n(Q,NumberOfDMPObservables,observables);
       }
     }
+    
+    /**
+     * Default implementation. Please overwrite.
+     *
+     * See superclass for function's semantics.
+     */
+    double getDiscreteMaximumPrincipleRelaxationParameter(
+        const double& specifiedRelaxationParameter,
+        const int&    observable,
+        const double& localMin,
+        const double& localMax,
+        const double& boundaryMinPerObservable,
+        const double& previousMax) const override {
+       return specifiedRelaxationParameter;
+    }
 
     std::vector<double> mapGlobalObservables(const double* const Q, const tarch::la::Vector<DIMENSIONS, double> &cellSize) const override;
     std::vector<double> resetGlobalObservables() const override;
