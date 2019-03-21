@@ -344,14 +344,19 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
   tarch::multicore::jobs::setMinMaxNumberOfJobsToConsumeInOneRush(
       _parser.getMinBackgroundJobsInARush(), _parser.getMaxBackgroundJobsInARush() );
 
-  if ( _parser.getMapBackgroundJobsToTasks() ) {
+  if ( _parser.compareBackgroundJobProcessing( "spawn_tasks" ) ) {
     if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
       logInfo("initSharedMemoryConfiguration(...)","Map background jobs to plain tasks.");
     }
     tarch::multicore::jobs::setTaskProcessingScheme(tarch::multicore::jobs::TaskProcessingScheme::MapToPlainTBBTasks);
+  } else if ( _parser.compareBackgroundJobProcessing( "job_system_without_priorities" ) ) {
+    if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+      logInfo("initSharedMemoryConfiguration(...)","Let Peano's job system handle the jobs. Use two separate concurrent queues, one for high and one for low priority jobs");
+    }
+    tarch::multicore::jobs::setTaskProcessingScheme(tarch::multicore::jobs::TaskProcessingScheme::UseCustomTBBWrapperWithoutPriorities);
   } else {
     if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
-      logInfo("initSharedMemoryConfiguration(...)","Let Peano's job system handle the jobs.");
+      logInfo("initSharedMemoryConfiguration(...)","Let Peano's job system handle the jobs. Use TBB concurrent priority queue.");
     }
     tarch::multicore::jobs::setTaskProcessingScheme(tarch::multicore::jobs::TaskProcessingScheme::UseCustomTBBWrapper);
   }

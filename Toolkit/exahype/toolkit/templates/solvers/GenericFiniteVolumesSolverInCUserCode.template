@@ -37,7 +37,7 @@ void {{project}}::{{solver}}::boundaryValues(
     const double* const x,
     const double t,const double dt,
     const int faceIndex,
-    const int d,
+    const int direction,
     const double* const stateInside,
     double* const stateOutside) {
   // Tip: You find documentation for this method in header file "{{project}}::{{solver}}.h".

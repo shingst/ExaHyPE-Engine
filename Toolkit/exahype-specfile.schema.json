@@ -302,7 +302,7 @@
         "background_job_processing" : {
           "type" : "string", 
           "title" : "How to process priority background jobs",
-          "enum" : [ "job_system", "spawn_tasks" ],
+          "enum" : [ "job_system", "job_system_without_priorities","spawn_tasks" ],
           "default" : "job_system"
         },
         "background_job_consumers" : {
@@ -762,7 +762,7 @@
               "slope_limiter" : {
                 "type" : "string",
                 "title" : "Slope/Flux limiter for high order FV (not applicable with godunov scheme)",
-                "enum" : ["minmod","koren"],
+                "enum" : ["minmod","koren","superbee","vanalbada","mclim"],
                 "default" : "minmod"
               }
             }

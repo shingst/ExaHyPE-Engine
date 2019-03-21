@@ -2656,6 +2656,29 @@ public:
   virtual void mapDiscreteMaximumPrincipleObservables(
       double* const       observables,
       const double* const Q) const = 0;
+
+
+  /**
+   * @return a relaxation parameter.
+   *
+   * @note The default implementation just returns the parameter specificed in the specification file.
+   *
+   * @param[in] specifiedRelaxationParameter the relaxation parameter as specified in the specification file.
+   * @param[in] observable                   index of the observable.
+   * @param[in] localMin                     minimum for currently processed DMP observable, computed from values of the currently processed cell in this time step.
+   * @param[in] localMax                     maximum for currently processed DMP observable, computed from values of the currently processed cell in this time step.
+   * @param[in] previousMin                  minimum for currently processed DMP observable, computed during the last time step from values of the currently processed cell and its direct neighbours.
+   * @param[in] previousMax                  maximum for currently processed DMP observable, computed during the last time step from values of the currently processed cell and its direct neighbours.
+   */
+  virtual double getDiscreteMaximumPrincipleRelaxationParameter(
+      const double& specifiedRelaxationParameter,
+      const int&    observable,
+      const double& localMin,
+      const double& localMax,
+      const double& boundaryMinPerObservable,
+      const double& previousMax) const {
+     return specifiedRelaxationParameter;
+  }
 };
 
 #endif

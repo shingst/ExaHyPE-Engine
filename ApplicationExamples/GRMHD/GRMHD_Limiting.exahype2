@@ -38,16 +38,15 @@
     "ranks_per_node": 6
   },
   "optimisation": {
-    "limiting" : "static",
-    "mesh_refinement" : "static",
     "fuse_algorithmic_steps": "all",
     "fuse_algorithmic_steps_rerun_factor": 0.99,
     "fuse_algorithmic_steps_diffusion_factor": 0.99,
-    "spawn_predictor_as_background_thread": false,
-    "spawn_amr_background_threads": false,
+    "spawn_predictor_as_background_thread": true,
+    "spawn_update_as_background_thread": true,
+    "spawn_amr_background_threads": true,
     "disable_vertex_exchange_in_time_steps": true,
-    "time_step_batch_factor": 0.5,
-    "disable_metadata_exchange_in_batched_time_steps": true,
+    "time_step_batch_factor": 0.0,
+    "disable_metadata_exchange_in_batched_time_steps": false,
     "double_compression": 0.0,
     "spawn_double_compression_as_background_thread": false
   },
@@ -58,7 +57,7 @@
       "order": 3,
       "maximum_mesh_size": 1.21,
       "maximum_mesh_depth": 0,
-      "time_stepping": "global",
+      "time_stepping": "globalfixed",
       "aderdg_kernel": {
         "language": "C",
         "nonlinear": true,
@@ -85,6 +84,7 @@
           "flux",
           "ncp"
         ],
+        "slope_limiter": "mclim",
         "scheme": "musclhancock",
         "implementation": "generic"
       },

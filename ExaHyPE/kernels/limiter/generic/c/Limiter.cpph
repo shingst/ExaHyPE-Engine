@@ -171,10 +171,16 @@ bool kernels::limiter::generic::c::discreteMaximumPrincipleAndMinAndMaxSearch(
       for (int i=1; i<DIMENSIONS_TIMES_TWO; i++) {
         boundaryMax = std::max( boundaryMax, boundaryMaxPerObservable[i*numberOfObservables+v] );
       }
-      double scaledDifference = (boundaryMax - boundaryMin) * differenceScaling;
 
+
+      const double scaledRelaxationParameter =
+          solver.getDiscreteMaximumPrincipleRelaxationParameter(
+              relaxationParameter, v,
+              localMinPerObservable[v],localMaxPerObservable[v],
+              boundaryMin,boundaryMax);
+      double scaledDifference = (boundaryMax - boundaryMin) * differenceScaling;
       assertion5(tarch::la::greaterEquals(scaledDifference,0.0),scaledDifference,boundaryMin,boundaryMax,localMinPerObservable[v],localMaxPerObservable[v]);
-      scaledDifference = std::max( scaledDifference, relaxationParameter );
+      scaledDifference = std::max( scaledDifference, scaledRelaxationParameter );
 
       if((localMinPerObservable[v] < (boundaryMin - scaledDifference)) ||
          (localMaxPerObservable[v] > (boundaryMax + scaledDifference))) {

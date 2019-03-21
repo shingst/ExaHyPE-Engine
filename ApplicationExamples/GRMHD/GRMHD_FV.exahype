@@ -70,9 +70,11 @@ exahype-project GRMHD
   solver Finite-Volumes GRMHDSolver_FV
     variables const                = rho:1,vel:3,E:1,B:3,psi:1,lapse:1,shift:3,gij:6
     patch-size const               = 7
-    maximum-mesh-size              = 1.2
-    time-stepping                  = global
+    maximum-mesh-size              = 1.21
+//    time-stepping                  = global
+    time-stepping                  = globalfixed
     type const         = musclhancock
+    slope-limiter const  = mclim
     //type const  = godunov
     terms const        = flux,ncp
     optimisation const = generic
@@ -93,11 +95,18 @@ exahype-project GRMHD
       output = ./output/timing-benchmarks
     end plot
 
+    plot vtu::Cartesian::vertices::ascii PrimitiveWriter
+         variables const = 1
+         time      = 0.0
+         repeat    = 1.0
+         output    = ./vtk-output/primitive
+    end plot
+
     plot vtu::Cartesian::vertices::ascii ConservedWriter
          variables const = 1
          time      = 0.0
-         repeat    = 0.5
-         output    = ./vtk-output/primitive
+         repeat    = 1.0
+         output    = ./vtk-output/conserved
     end plot
 
 

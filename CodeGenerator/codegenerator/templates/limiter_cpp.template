@@ -125,7 +125,7 @@ bool {{codeNamespace}}::discreteMaximumPrincipleAndMinAndMaxSearch(
 
   // 1. Determine the new cell-local -minimum and maximummin and max
   findCellLocalMinAndMax(luh,solver,localMinPerObservable,localMaxPerObservable);
-
+  
   // 2. Compare to the boundary minimum and maximum
   bool discreteMaximumPrincipleSatisfied=true;
   for(int v = 0; v < {{nObs}}; v++) {
@@ -137,9 +137,14 @@ bool {{codeNamespace}}::discreteMaximumPrincipleAndMinAndMaxSearch(
     for (int i=1; i<{{2*nDim}}; i++) {
       boundaryMax = std::max( boundaryMax, boundaryMaxPerObservable[i*{{nObs}}+v] );
     }
+    
+    const double scaledRelaxationParameter =
+        solver->getDiscreteMaximumPrincipleRelaxationParameter(
+            relaxationParameter, v,
+            localMinPerObservable[v],localMaxPerObservable[v],
+            boundaryMin,boundaryMax);
     double scaledDifference = (boundaryMax - boundaryMin) * differenceScaling;
-
-    scaledDifference = std::max( scaledDifference, relaxationParameter );
+    scaledDifference = std::max( scaledDifference, scaledRelaxationParameter );
 
     if((localMinPerObservable[v] < (boundaryMin - scaledDifference)) ||
        (localMaxPerObservable[v] > (boundaryMax + scaledDifference))) {

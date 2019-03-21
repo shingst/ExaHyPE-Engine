@@ -15,6 +15,8 @@
 
 #include "tarch/la/Vector.h"
 
+#include "kernels/finitevolumes/commons/c/slope-limiters.h"
+
 namespace kernels {
 namespace finitevolumes {
 namespace godunov {
@@ -26,16 +28,27 @@ namespace c {
    *
    * @note robustDiagonalLimiting has no effect on the algorithm.
    *
-   * @param solver a user solver implementing the PDE kernels
-   * @param luh     the current (and then new) solution
-   * @param dx      the dimensions of a cell
-   * @param dt      the used time step size
+   * @param solver     a user solver implementing the PDE kernels.
+   * @param solution   the current (and then new) solution.
+   * @param cellCentre the centre of the cell holding the FV subgrid.
+   * @param cellSize   the dimensions of the cell holding the FV subgrid.
+   * @param t          the time stamp.
+   * @param dt         the used time step size.
    * @return the actual admissible time step size obtained from the Riemann solves.
    */
-  template <bool useSource, bool useNCP, bool useFlux, bool robustDiagonalLimiting, typename SolverType>
+  template <
+    bool useSource, bool useNCP, bool useFlux, bool useViscousFlux,
+    bool robustDiagonalLimiting, // not used in 1st order Godunov
+    kernels::finitevolumes::commons::c::slope_limiter slope_limiter, // not used in 1st order Godunov
+    typename SolverType
+  >
   double solutionUpdate(
-      SolverType& solver,double* luh,
-      const tarch::la::Vector<DIMENSIONS, double>& dx,double dt);
+      SolverType&                                  solver,
+      double* const                                solution,
+      const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
+      const tarch::la::Vector<DIMENSIONS, double>& cellSize,
+      const double                                 t,
+      const double                                 dt);
 }  // namespace c
 }  // namespace godunov
 }  // namespace finitevolumes

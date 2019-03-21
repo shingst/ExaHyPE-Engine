@@ -11,17 +11,17 @@
   // @todo Please implement/augment if required
 }
 
-double {{Project}}::{{Solver}}::stableTimeStepSize(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& dx) {
+double {{Project}}::{{Solver}}::stableTimeStepSize(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& cellSize) {
   // @todo Please implement/augment if required
   return std::numeric_limits<double>::max();
 }
 
-void {{Project}}::{{Solver}}::solutionUpdate(double* const luhNew,const double* const luh,const tarch::la::Vector<DIMENSIONS, double>& dx,const double dt, double& maxAdmissibleDt) {
+void {{Project}}::{{Solver}}::solutionUpdate(double* const luhNew,const double* const luh,const tarch::la::Vector<DIMENSIONS, double>& cellSize,const double dt, double& maxAdmissibleDt) {
   // @todo Please implement/augment if required
   maxAdmissibleDt = std::numeric_limits<double>::max();
 }
 
-void {{Project}}::{{Solver}}::adjustSolution(double* const luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,const double t,const double dt) {
+void {{Project}}::{{Solver}}::adjustSolution(double* const luh,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt) {
   // @todo Please implement/augment if required
 }
 
@@ -37,11 +37,11 @@ void {{Project}}::{{Solver}}::boundaryLayerExtraction(double* const luhbnd,const
   // @todo Please implement/augment if required
 }
 
-void {{Project}}::{{Solver}}::boundaryConditions(double* const stateOut,const double* const stateIn,const tarch::la::Vector<DIMENSIONS, double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const int faceIndex,const int normalNonZero) {
+void {{Project}}::{{Solver}}::boundaryConditions(double* const stateOut,const double* const stateIn,const tarch::la::Vector<DIMENSIONS, double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const int faceIndex,const int direction) {
   // @todo Please implement/augment if required
 }
 
-exahype::solvers::Solver::RefinementControl {{Project}}::{{Solver}}::refinementCriterion(const double* const luh, const tarch::la::Vector<DIMENSIONS, double>& center,const tarch::la::Vector<DIMENSIONS, double>& dx, double t,const int level) {
+exahype::solvers::Solver::RefinementControl {{Project}}::{{Solver}}::refinementCriterion(const double* const luh, const tarch::la::Vector<DIMENSIONS, double>& cellCentre,const tarch::la::Vector<DIMENSIONS, double>& cellSize, double t,const int level) {
   // @todo Please implement/augment if required
   return exahype::solvers::Solver::RefinementControl::Keep;
 }
