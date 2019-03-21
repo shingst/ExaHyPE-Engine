@@ -125,7 +125,12 @@ void exahype::solvers::LimitingADERDGSolver::initSolver(
 
   resetMeshUpdateEvent();
 
-  _globalObservables = resetGlobalObservables();
+  // global observables
+  _globalObservables.resize(_solver->_numberOfGlobalObservables);
+  _nextGlobalObservables.resize(_solver->_numberOfGlobalObservables);
+  _solver->resetGlobalObservables(_globalObservables.data()    );
+  _solver->resetGlobalObservables(_nextGlobalObservables.data());
+
   _solver->initSolver(timeStamp, domainOffset, domainSize, boundingBoxSize, boundingBoxMeshSize, cmdlineargs, parserView);
   _limiter->initSolver(timeStamp, domainOffset, domainSize, boundingBoxSize, boundingBoxMeshSize, cmdlineargs, parserView);
 }
@@ -416,7 +421,7 @@ void exahype::solvers::LimitingADERDGSolver::copyTimeStepDataFromSolverPatch(
   limiterPatch.setTimeStepSize(solverPatch.getTimeStepSize());
 }
 
-exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::fusedTimeStepOrRestrict(
+void exahype::solvers::LimitingADERDGSolver::fusedTimeStepOrRestrict(
     const int  solverNumber,
     CellInfo&  cellInfo,
     const bool isFirstTimeStepOfBatch,
@@ -631,7 +636,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::u
   return result;
 }
 
-exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::updateOrRestrict(
+void exahype::solvers::LimitingADERDGSolver::updateOrRestrict(
       const int  solverNumber,
       CellInfo&  cellInfo,
       const bool isAtRemoteBoundary) {

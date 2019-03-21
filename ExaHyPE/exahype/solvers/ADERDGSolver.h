@@ -755,11 +755,12 @@ private:
    * Calls the mapGlobalObservables function of the user solver,
    * and merges the result with _nextGlobalObservables variable.
    *
-   * @note Can be called from the LimitingADERDGSolver.
-   *
-   * @param cellDescription a cell description of type Cell.
+   * @param[in[ cellDescription a cell description of type Cell.
+   * @param[in[ updateResult    see update result.
    */
-  void reduceGlobalObservables(CellDescription& cellDescription) const;
+  void reduce(
+      const CellDescription& cellDescription,
+      const UpdateResult&    updateResult);
 
   /**
    * Calls the mapGlobalObservables function of the user solver,
@@ -799,16 +800,16 @@ private:
    *
    * @note Might be called by background task. Do not synchronise time step data here.
    */
-  UpdateResult fusedTimeStepBody(
-        CellDescription&                                           cellDescription,
-        CellInfo&                                                  cellInfo,
-        const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
-        const double                                               predictionTimeStamp,
-        const double                                               predictionTimeStepSize,
-        const bool                                                 isFirstTimeStepOfBatch,
-        const bool                                                 isLastTimeStepOfBatch,
-        const bool                                                 isSkeletonCell,
-        const bool                                                 mustBeDoneImmediately);
+  void fusedTimeStepBody(
+      CellDescription&                                           cellDescription,
+      CellInfo&                                                  cellInfo,
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
+      const double                                               predictionTimeStamp,
+      const double                                               predictionTimeStepSize,
+      const bool                                                 isFirstTimeStepOfBatch,
+      const bool                                                 isLastTimeStepOfBatch,
+      const bool                                                 isSkeletonCell,
+      const bool                                                 mustBeDoneImmediately);
 
   /**
    * If the cell description is of type Cell, update the solution, evaluate the refinement criterion,
@@ -817,12 +818,10 @@ private:
    * @note Not const as kernels are not const.
    *
    * @param cellDescription a cell description
-   * @return a struct containing a mesh update event triggered by this cell,
-   * and a new time step size.
    *
    * @note Might be called by background task. Do not synchronise time step data here.
    */
-  UpdateResult updateBody(
+  void updateBody(
       CellDescription&                                           cellDescription,
       CellInfo&                                                  cellInfo,
       const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
@@ -1750,14 +1749,14 @@ public:
 
   double updateTimeStepSize(const int solverNumber,CellInfo& cellInfo) final override;
 
-  UpdateResult fusedTimeStepOrRestrict(
+  void fusedTimeStepOrRestrict(
       const int  solverNumber,
       CellInfo&  cellInfo,
       const bool isFirstTimeStepOfBatch,
       const bool isLastTimeStepOfBatch,
       const bool isAtRemoteBoundary) final override;
 
-  UpdateResult updateOrRestrict(
+  void updateOrRestrict(
       const int  solverNumber,
       CellInfo&  cellInfo,
       const bool isAtRemoteBoundary) final override;

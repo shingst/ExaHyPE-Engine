@@ -967,17 +967,17 @@ void updateNextGlobalObservables(
       CellInfo& cellInfo,
       const bool isAtRemoteBoundary);
 
-  UpdateResult fusedTimeStepOrRestrict(
+  void fusedTimeStepOrRestrict(
       const int  solverNumber,
       CellInfo&  cellInfo,
       const bool isFirstTimeStepOfBatch,
       const bool isLastTimeStepOfBatch,
       const bool isAtRemoteBoundary) final override;
 
-  UpdateResult updateOrRestrict(
-        const int  solverNumber,
-        CellInfo&  cellInfo,
-        const bool isAtRemoteBoundary) final override;
+  void updateOrRestrict(
+      const int  solverNumber,
+      CellInfo&  cellInfo,
+      const bool isAtRemoteBoundary) final override;
 
   void compress(
       const int  solverNumber,

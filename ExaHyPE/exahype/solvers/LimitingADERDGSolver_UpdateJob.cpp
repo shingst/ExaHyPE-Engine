@@ -20,20 +20,13 @@ exahype::solvers::LimitingADERDGSolver::UpdateJob::UpdateJob(
 }
 
 bool exahype::solvers::LimitingADERDGSolver::UpdateJob::run() {
-  UpdateResult result =
-      _solver.updateBody(_solverPatch,_cellInfo,_neighbourMergePerformed,_isAtRemoteBoundary);
-
-  _solver.updateMeshUpdateEvent(result._meshUpdateEvent);
-  _solver.updateAdmissibleTimeStepSize(result._timeStepSize);
-
-  _solver.reduceGlobalObservables(_solverPatch,_cellInfo,_isAtRemoteBoundary);
+  _solver.updateBody(_solverPatch,_cellInfo,_neighbourMergePerformed,_isAtRemoteBoundary);
 
   NumberOfReductionJobs.fetch_sub(1);
   assertion( NumberOfReductionJobs.load()>=0 );
 
   return false;
 }
-
 
 //
 // @see UpdateJob

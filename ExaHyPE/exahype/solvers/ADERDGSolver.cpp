@@ -608,6 +608,7 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
      _minTimeStamp( std::numeric_limits<double>::infinity() ),
      _minTimeStepSize( std::numeric_limits<double>::infinity() ),
      _estimatedTimeStepSize( std::numeric_limits<double>::infinity() ),
+     _admissibleTimeStepSize( std::numeric_limits<double>::infinity() ),
      _stabilityConditionWasViolated( false ),
      _refineOrKeepOnFineGrid(1+haloCells),
      _DMPObservables(DMPObservables),
@@ -889,8 +890,11 @@ void exahype::solvers::ADERDGSolver::initSolver(
 
   _meshUpdateEvent = MeshUpdateEvent::InitialRefinementRequested;
 
-  _globalObservables     = resetGlobalObservables();
-  _nextGlobalObservables = resetGlobalObservables();
+  // global observables
+  _globalObservables.resize(_numberOfGlobalObservables);
+  _nextGlobalObservables.resize(_numberOfGlobalObservables);
+  resetGlobalObservables(_globalObservables.data()    );
+  resetGlobalObservables(_nextGlobalObservables.data());
 
   init(cmdlineargs,parserView); // call user define initalisiation
 }
@@ -2038,7 +2042,7 @@ exahype::solvers::ADERDGSolver::evaluateRefinementCriteriaAfterSolutionUpdate(
   }
 }
 
-exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTimeStepBody(
+void exahype::solvers::ADERDGSolver::fusedTimeStepBody(
     CellDescription&                                           cellDescription,
     CellInfo&                                                  cellInfo,
     const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
@@ -2063,7 +2067,9 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
   cellDescription.setPreviousRefinementStatus(cellDescription.getRefinementStatus());
   result._meshUpdateEvent = evaluateRefinementCriteriaAfterSolutionUpdate(cellDescription,neighbourMergePerformed);
 
-  reduceGlobalObservables(cellDescription);
+  if ( isLastTimeStepOfBatch ) {
+    reduce(cellDescription,result);
+  }
 
   if (
       SpawnPredictionAsBackgroundJob &&
@@ -2089,10 +2095,9 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
     VT_end(fusedTimeStepBodyHandle);
   }
   #endif
-  return result;
 }
 
-exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTimeStepOrRestrict(
+void exahype::solvers::ADERDGSolver::fusedTimeStepOrRestrict(
     const int  solverNumber,
     CellInfo&  cellInfo,
     const bool isFirstTimeStepOfBatch,
@@ -2118,15 +2123,13 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
             *this, cellDescription, cellInfo,
             std::get<0>(predictionTimeStepData),std::get<1>(predictionTimeStepData),
             isFirstTimeStepOfBatch, isLastTimeStepOfBatch, isSkeletonCell) );
-        return UpdateResult();
       } else {
         const auto predictionTimeStepData = getPredictionTimeStepData(cellDescription,true);
-        return
-            fusedTimeStepBody(
-                cellDescription,cellInfo,cellDescription.getNeighbourMergePerformed(),
-                std::get<0>(predictionTimeStepData),std::get<1>(predictionTimeStepData),
-                isFirstTimeStepOfBatch,isLastTimeStepOfBatch,
-                isSkeletonCell,mustBeDoneImmediately );
+        fusedTimeStepBody(
+            cellDescription,cellInfo,cellDescription.getNeighbourMergePerformed(),
+            std::get<0>(predictionTimeStepData),std::get<1>(predictionTimeStepData),
+            isFirstTimeStepOfBatch,isLastTimeStepOfBatch,
+            isSkeletonCell,mustBeDoneImmediately );
       }
     } else if (
         cellDescription.getType()==CellDescription::Type::Descendant &&
@@ -2135,29 +2138,33 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
       restrictToTopMostParent(cellDescription,isFirstTimeStepOfBatch/*addToCoarseGridUpdate*/);
       cellDescription.setHasCompletedLastStep(true);
       // TODO(Dominic): Evaluate ref crit here too // halos
-      return UpdateResult();
     } else {
       cellDescription.setHasCompletedLastStep(true);
-      return UpdateResult();
     }
-  } else {
-    return UpdateResult();
   }
 }
 
-void exahype::solvers::ADERDGSolver::reduceGlobalObservables(CellDescription& cellDescription) const {
-  if ( !_globalObservables.empty() ) {
+void exahype::solvers::ADERDGSolver::reduce(
+    const CellDescription& cellDescription,
+    const UpdateResult&    result) {
+  updateMeshUpdateEvent(result._meshUpdateEvent);
+  updateAdmissibleTimeStepSize(result._timeStepSize);
+
+  if ( _numberOfGlobalObservables > 0 ) {
     assert(cellDescription.getType()==CellDescription::Type::Cell);
-    double* luh  = static_cast<double*>(cellDescription.getSolution());
-    const auto& dx = cellDescription.getSize();
-    const auto curGlobalObservables = mapGlobalObservables(luh, dx);
+    const double* const luh         = static_cast<double*>(cellDescription.getSolution());
+    const auto& cellSize            = cellDescription.getSize();
+
+    std::vector<double> localObservables; // TODO(Dominic): Move allocation into abstract solver
+    localObservables.resize(_numberOfGlobalObservables);
+    localObservables(luh, cellSize);
     tarch::multicore::Lock lock(ReductionSemaphore);
-    reduceGlobalObservables(_nextGlobalObservables, curGlobalObservables);
+    mergeGlobalObservables(_nextGlobalObservables.data(), localObservables.data());
     lock.free();
   }
 }
 
-exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::updateBody(
+void exahype::solvers::ADERDGSolver::updateBody(
     CellDescription&                                           cellDescription,
     CellInfo&                                                  cellInfo,
     const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
@@ -2176,7 +2183,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::updateBod
   cellDescription.setPreviousRefinementStatus(cellDescription.getRefinementStatus());
   result._meshUpdateEvent = evaluateRefinementCriteriaAfterSolutionUpdate(cellDescription,neighbourMergePerformed);
 
-  reduceGlobalObservables(cellDescription);
+  reduce(cellDescription,result);
 
   compress(cellDescription,isAtRemoteBoundary);
 
@@ -2185,10 +2192,9 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::updateBod
   #ifdef USE_ITAC
   VT_end(updateBodyHandle);
   #endif
-  return result;
 }
 
-exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::updateOrRestrict(
+void exahype::solvers::ADERDGSolver::updateOrRestrict(
       const int  solverNumber,
       CellInfo&  cellInfo,
       const bool isAtRemoteBoundary){
@@ -2200,10 +2206,9 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::updateOrR
 
     if ( cellDescription.getType()==CellDescription::Type::Cell && SpawnUpdateAsBackgroundJob ) {
       peano::datatraversal::TaskSet ( new UpdateJob( *this, cellDescription, cellInfo, isAtRemoteBoundary ) );
-      return UpdateResult();
     }
     else if ( cellDescription.getType()==CellDescription::Type::Cell ) {
-      return updateBody(cellDescription,cellInfo,cellDescription.getNeighbourMergePerformed(),isAtRemoteBoundary);
+      updateBody(cellDescription,cellInfo,cellDescription.getNeighbourMergePerformed(),isAtRemoteBoundary);
     }
     else if ( // TODO(Dominic): Evaluate ref crit here too // halos
         cellDescription.getType()==CellDescription::Type::Descendant &&
@@ -2211,15 +2216,10 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::updateOrR
     ) {
       restrictToTopMostParent(cellDescription,false/*effect: add face integral result directly to solution*/);
       cellDescription.setHasCompletedLastStep(true);
-      return UpdateResult();
     }
     else {
       cellDescription.setHasCompletedLastStep(true);
-      return UpdateResult();
     }
-  }
-  else {
-    return UpdateResult();
   }
 }
 

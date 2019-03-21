@@ -195,8 +195,11 @@ void exahype::solvers::FiniteVolumesSolver::initSolver(
 
   _meshUpdateEvent = MeshUpdateEvent::InitialRefinementRequested;
 
-  _globalObservables     = resetGlobalObservables();
-  _nextGlobalObservables = resetGlobalObservables();
+  // global observables
+  _globalObservables.resize(_numberOfGlobalObservables);
+  _nextGlobalObservables.resize(_numberOfGlobalObservables);
+  resetGlobalObservables(_globalObservables.data()    );
+  resetGlobalObservables(_nextGlobalObservables.data());
 
   init(cmdlineargs,parserView); // call user defined initalisation
 }
@@ -678,19 +681,26 @@ void exahype::solvers::FiniteVolumesSolver::adjustSolution(CellDescription& cell
   #endif
 }
 
-void exahype::solvers::FiniteVolumesSolver::reduceGlobalObservables(CellDescription& cellDescription) const {
-  if ( !_globalObservables.empty() ) {
+void exahype::solvers::FiniteVolumesSolver::reduce(
+    const CellDescription& cellDescription,
+    const UpdateResult&    result) {
+  updateAdmissibleTimeStepSize(result._timeStepSize);
+
+  if ( _numberOfGlobalObservables > 0 ) {
     assert(cellDescription.getType()==CellDescription::Type::Cell);
-    double* luh  = static_cast<double*>(cellDescription.getSolution());
-    const auto& dx = cellDescription.getSize();
-    const auto curGlobalObservables = mapGlobalObservables(luh, dx);
+    const double* const luh         = static_cast<double*>(cellDescription.getSolution());
+    const auto& cellSize            = cellDescription.getSize();
+
+    std::vector<double> localObservables; // TODO(Dominic): Move allocation into abstract solver
+    localObservables.resize(_numberOfGlobalObservables);
+    localObservables(luh, cellSize);
     tarch::multicore::Lock lock(ReductionSemaphore);
-    reduceGlobalObservables(_nextGlobalObservables, curGlobalObservables);
+    mergeGlobalObservables(_nextGlobalObservables.data(), localObservables.data());
     lock.free();
   }
 }
 
-exahype::solvers::Solver::UpdateResult exahype::solvers::FiniteVolumesSolver::updateBody(
+void exahype::solvers::FiniteVolumesSolver::updateBody(
     CellDescription&                                           cellDescription,
     CellInfo&                                                  cellInfo,
     const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
@@ -712,7 +722,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::FiniteVolumesSolver::up
   UpdateResult result;
   result._timeStepSize = startNewTimeStep(cellDescription,isFirstTimeStepOfBatch);
 
-  reduceGlobalObservables(cellDescription);
+  reduce(cellDescription,result);
 
   compress(cellDescription,isAtRemoteBoundary);
 
@@ -725,10 +735,9 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::FiniteVolumesSolver::up
     VT_end(updateBodyHandle);
   }
   #endif
-  return result;
 }
 
-exahype::solvers::Solver::UpdateResult exahype::solvers::FiniteVolumesSolver::fusedTimeStepOrRestrict(
+void exahype::solvers::FiniteVolumesSolver::fusedTimeStepOrRestrict(
     const int solverNumber,
     CellInfo& cellInfo,
     const bool isFirstTimeStepOfBatch,
@@ -748,23 +757,18 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::FiniteVolumesSolver::fu
         *this, cellDescription, cellInfo,
         isFirstTimeStepOfBatch, isLastTimeStepOfBatch,
         isSkeletonCell ) );
-    return UpdateResult();
   }
   else if ( element != NotFound ) {
     CellDescription& cellDescription = cellInfo._FiniteVolumesCellDescriptions[element];
     synchroniseTimeStepping(cellDescription);
     cellDescription.setHasCompletedLastStep(false);
-    return updateBody(
+    updateBody(
         cellDescription,cellInfo,cellDescription.getNeighbourMergePerformed(),
         isFirstTimeStepOfBatch,isLastTimeStepOfBatch,isAtRemoteBoundary,false/*uncompressBefore*/);
-
-  }
-  else {
-    return UpdateResult();
   }
 }
 
-exahype::solvers::Solver::UpdateResult exahype::solvers::FiniteVolumesSolver::updateOrRestrict(
+void exahype::solvers::FiniteVolumesSolver::updateOrRestrict(
       const int  solverNumber,
       CellInfo&  cellInfo,
       const bool isAtRemoteBoundary){
@@ -776,18 +780,15 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::FiniteVolumesSolver::up
 
     peano::datatraversal::TaskSet(
         new UpdateJob(*this,cellDescription,cellInfo,isAtRemoteBoundary) );
-    return UpdateResult();
   }
   else if ( element!=NotFound ) {
     CellDescription& cellDescription = cellInfo._FiniteVolumesCellDescriptions[element];
     synchroniseTimeStepping(cellDescription);
     cellDescription.setHasCompletedLastStep(false);
 
-    return updateBody(
+    updateBody(
         cellDescription,cellInfo,cellDescription.getNeighbourMergePerformed(),
         true,true,isAtRemoteBoundary,true/*uncompressBefore*/);
-  } else {
-    return UpdateResult();
   }
 }
 

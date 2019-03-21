@@ -29,18 +29,10 @@ exahype::solvers::FiniteVolumesSolver::FusedTimeStepJob::FusedTimeStepJob(
 }
 
 bool exahype::solvers::FiniteVolumesSolver::FusedTimeStepJob::run() {
-  UpdateResult result =
-      _solver.updateBody(
-          _cellDescription,_cellInfo,_neighbourMergePerformed,
-          _isFirstTimeStepOfBatch,_isLastTimeStepOfBatch,
-          _isSkeletonJob,false/*uncompressBefore*/);
-
-  if (_isLastTimeStepOfBatch) {
-    _solver.updateMeshUpdateEvent(result._meshUpdateEvent);
-    _solver.updateAdmissibleTimeStepSize(result._timeStepSize);
-
-    _solver->reduceGlobalObservables(_cellDescription,_isAtRemoteBoundary);
-  }
+  _solver.updateBody(
+      _cellDescription,_cellInfo,_neighbourMergePerformed,
+      _isFirstTimeStepOfBatch,_isLastTimeStepOfBatch,
+      _isSkeletonJob,false/*uncompressBefore*/);
 
   NumberOfReductionJobs.fetch_sub(1);
   assertion( NumberOfReductionJobs.load()>=0 );

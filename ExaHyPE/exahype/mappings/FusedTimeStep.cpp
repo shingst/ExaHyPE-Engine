@@ -277,18 +277,17 @@ void exahype::mappings::FusedTimeStep::leaveCell(
       // this operates only on compute cells
       plotters::plotPatchIfAPlotterIsActive(solverNumber,cellInfo); // TODO(Dominic) potential for IO overlap?
 
-      solvers::Solver::UpdateResult result;
       switch ( solver->getType() ) {
         case solvers::Solver::Type::ADERDG:
-          result = static_cast<solvers::ADERDGSolver*>(solver)->fusedTimeStepOrRestrict(
+          static_cast<solvers::ADERDGSolver*>(solver)->fusedTimeStepOrRestrict(
               solverNumber,cellInfo,exahype::State::isFirstIterationOfBatchOrNoBatch(),isLastTimeStep,isAtRemoteBoundary);
           break;
         case solvers::Solver::Type::LimitingADERDG:
-          result = static_cast<solvers::LimitingADERDGSolver*>(solver)->fusedTimeStepOrRestrict(
+          static_cast<solvers::LimitingADERDGSolver*>(solver)->fusedTimeStepOrRestrict(
               solverNumber,cellInfo,exahype::State::isFirstIterationOfBatchOrNoBatch(),isLastTimeStep,isAtRemoteBoundary);
           break;
         case solvers::Solver::Type::FiniteVolumes:
-          result = static_cast<solvers::FiniteVolumesSolver*>(solver)->fusedTimeStepOrRestrict(
+          static_cast<solvers::FiniteVolumesSolver*>(solver)->fusedTimeStepOrRestrict(
               solverNumber,cellInfo,exahype::State::isFirstIterationOfBatchOrNoBatch(),isLastTimeStep,isAtRemoteBoundary);
           break;
         default:
@@ -296,13 +295,6 @@ void exahype::mappings::FusedTimeStep::leaveCell(
           logError("mergeWithBoundaryDataIfNotDoneYet(...)","Unrecognised solver type: "<<solvers::Solver::toString(solver->getType()));
           std::abort();
           break;
-      }
-
-      // mesh refinement events, cell sizes (for AMR), time
-      if ( isLastTimeStep && !exahype::solvers::Solver::SpawnUpdateAsBackgroundJob ) {
-        solver->updateMeshUpdateEvent(result._meshUpdateEvent);
-        solver->updateAdmissibleTimeStepSize(result._timeStepSize);
-        solver->reduceGlobalObservables(solverNumber,cellInfo);
       }
     }
 

@@ -20,16 +20,12 @@ exahype::solvers::FiniteVolumesSolver::UpdateJob::UpdateJob(
 }
 
 bool exahype::solvers::FiniteVolumesSolver::UpdateJob::run() {
-  UpdateResult result =
-      _solver.updateBody(
-          _cellDescription,_cellInfo,_neighbourMergePerformed,
-          true,true,_isAtRemoteBoundary,true);
+  _solver.updateBody(
+      _cellDescription,_cellInfo,_neighbourMergePerformed,
+      true,true,_isAtRemoteBoundary,true);
+
   NumberOfReductionJobs.fetch_sub(1);
   assertion( NumberOfReductionJobs.load()>=0 );
-
-  _solver.updateAdmissibleTimeStepSize(result._timeStepSize);
-
-  _solver.reduceGlobalObservables(_cellDescription,_isAtRemoteBoundary);
   return false;
 }
 

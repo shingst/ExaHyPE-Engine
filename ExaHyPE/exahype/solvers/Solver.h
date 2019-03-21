@@ -1726,7 +1726,7 @@ class exahype::solvers::Solver {
    * @param[in] isAtRemoteBoundary Flag indicating that the cell hosting the
    *                                    cell description is adjacent to a remote rank.
    */
-  virtual UpdateResult fusedTimeStepOrRestrict(
+  virtual void fusedTimeStepOrRestrict(
       const int  solverNumber,
       CellInfo&  cellInfo,
       const bool isFirstIterationOfBatch,
@@ -1759,12 +1759,11 @@ class exahype::solvers::Solver {
    * @param cellInfo           links to the data associated with the mesh cell
    * @param solverNumber       id of a solver
    * @param isAtRemoteBoundary indicates if this cell is adjacent to the domain of another rank
-   * @return see UpdateResult
    */
-  virtual UpdateResult updateOrRestrict(
-          const int solverNumber,
-          CellInfo& cellInfo,
-          const bool isAtRemoteBoundary) = 0;
+  virtual void updateOrRestrict(
+      const int solverNumber,
+      CellInfo& cellInfo,
+      const bool isAtRemoteBoundary) = 0;
 
   /**
    * Go back to previous time step with
@@ -2102,42 +2101,42 @@ class exahype::solvers::Solver {
 
  public:
   /**
-   * Maps the solution values Q to
-   * the global observables.
+   * Computes the observables from a cell's solution value which
+   * will then
    *
-   *\param[in]                luh The solution array.
-   *\param[in]                dx  The size of a cell.
-   *\return globalObservables The mapped observables.
+   *\param[inout] globalObservables The mapped observables.
+   *\param[in]    luh               The solution array.
+   *\param[in]    cellSize          The size of a cell.
    */
    virtual std::vector<double> mapGlobalObservables(
+       double* const                               observables,
        const double* const                         luh,
-       const tarch::la::Vector<DIMENSIONS,double>& dx) const = 0;
+       const tarch::la::Vector<DIMENSIONS,double>& cellSize) const = 0;
 
    /**
     * Resets the vector of global observables to some suitable initial value, e.g.
     * the smallest possible double if one wants to compute the maximum.
     *
-    *\param[out] globalObservables The mapped observables.
+    *\param[inout] observables The reset (global) observables.
     */
-   virtual std::vector<double> resetGlobalObservables() const = 0;
+   virtual void resetGlobalObservables(double* const observables) const = 0;
 
    /**
-    * This method merges two vectors of global observables.
+    * This method merges two vectors of (global) observables.
     *
-    * Function that reduces the global observables.
-    * For example, if one wants to compute the maximum of global variables,
+    * For example, if one wants to compute the maximum of global variable i,
     * one should set
     *
-    * reducedGlobalObservables[i] = std::max( reducucedGlobalObservables[i], curGlobalObservables[i])
+    * observables[i] = std::max( observables[i], otherObservables[i])
     *
     * and so on.
     *
-    *\param[inout] reducedGlobalObservables The reduced observables.
-    *\param[in]    curGlobalObservables     The current vector of global observables.
+    *\param[inout] observables      The (merged) observables.
+    *\param[in]    otherObservables other observables we want to merge with the first argument.
     */
-   virtual void reduceGlobalObservables(
-       std::vector<double>&       reducedGlobalObservables,
-       const std::vector<double>& curGlobalObservables) const = 0;
+   virtual void mergeGlobalObservables(
+       double* const       observables,
+       const double* const otherObservables) const = 0;
 
   /**
    * Signals a user solver that ExaHyPE just started a new time step.
