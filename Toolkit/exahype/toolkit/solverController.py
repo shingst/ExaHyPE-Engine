@@ -108,7 +108,9 @@ class SolverController:
         context["variablesMapSize"] = len(context["variablesMap"])
         context["variables_as_str"] = ToolkitHelper.variables_to_str(solver,"variables")
         context["material_parameters_as_str"]  = ToolkitHelper.variables_to_str(solver,"material_parameters")
-        context["global_observables_as_str"]   = ToolkitHelper.variables_to_str(solver,"global_observables")
+        
+        context["globaObservablesMap"]       = ToolkitHelper.parse_variables(solver,"global_observables")
+        context["global_observables_as_str"] = ToolkitHelper.variables_to_str(solver,"global_observables")
         
         context["range_0_nVar"]          = range(0,nVar)
         context["range_0_nVarParam"]     = range(0,nVar+nParam)
