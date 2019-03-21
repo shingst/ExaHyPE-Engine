@@ -111,7 +111,7 @@ ifeq ($(call tolower,$(MODE)),release)
 else ifeq ($(call tolower,$(MODE)),debug)
 	# Settings for the Debug mode
 	# --------------------------------------------
-	COMPILER_CFLAGS += -DDebug -DAsserts -DTrackGridStatistics
+	COMPILER_CFLAGS += -DDebug -DAsserts -DTrackGridStatistics -DTBB_USE_ASSERTS
 	#COMPILER_LFLAGS +=
 	
 else ifeq ($(call tolower,$(MODE)),asserts)
@@ -121,6 +121,7 @@ else ifeq ($(call tolower,$(MODE)),asserts)
 	#COMPILER_LFLAGS +=
 	
 else ifeq ($(call tolower,$(MODE)),profile)
+	COMPILER_CFLAGS += -DTrackGridStatistics -DTBB_USE_THREADING_TOOLS
 	# Settings for the Profile mode
 	# --------------------------------------------
 	#COMPILER_CFLAGS += 
