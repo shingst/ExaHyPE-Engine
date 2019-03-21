@@ -176,13 +176,13 @@ void exahype::stealing::StealingManager::submitRequests(
   }
 
   if(_numProgressJobs==0 && type==RequestType::send) {
-    logInfo("submitRequests()", "spawning progress job (high priority)");
+    //logInfo("submitRequests()", "spawning progress job (high priority)");
     _numProgressJobs++;
     ProgressJob *job = new ProgressJob();
     peano::datatraversal::TaskSet spawnedSet( job);
   }
  /* if(type==RequestType::send && _numProgressSendJobs==0) {
-    logInfo("submitRequests()", "spawning progress send job (high priority)");
+    //logInfo("submitRequests()", "spawning progress send job (high priority)");
     _numProgressSendJobs++;
     ProgressSendJob *job = new ProgressSendJob();
     peano::datatraversal::TaskSet spawnedSet( job, peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible);
@@ -617,13 +617,13 @@ void exahype::stealing::StealingManager::resetHasNotifiedSendCompleted() {
 void exahype::stealing::StealingManager::notifySendCompleted(int rank) {
   char send = 1;
   MPI_Send(&send, 1, MPI_CHAR, rank, 0, getMPICommunicator());
-  logInfo("notifySendCompleted()","sent status message to "<<rank);
+  //logInfo("notifySendCompleted()","sent status message to "<<rank);
 }
 
 void exahype::stealing::StealingManager::receiveCompleted(int rank) {
   char receive = 0;
   MPI_Recv(&receive, 1, MPI_CHAR, rank, 0, getMPICommunicator(), MPI_STATUS_IGNORE);
-  logInfo("receiveCompleted()","received status message from "<<rank);
+  //logInfo("receiveCompleted()","received status message from "<<rank);
 }
 
 void exahype::stealing::StealingManager::notifyAllVictimsSendCompletedIfNotNotified() {
@@ -667,7 +667,7 @@ exahype::stealing::StealingManager::ProgressJob::ProgressJob() :
 
 bool exahype::stealing::StealingManager::ProgressJob::run() {
    int flag;
-   logInfo("submitRequests()", "executing progress job (high priority)");
+   //logInfo("submitRequests()", "executing progress job (high priority)");
 
    int mapId = StealingManager::requestTypeToMap(RequestType::send);
 //   while(StealingManager::getInstance()._requests[0].unsafe_size()>0 || StealingManager::getInstance()._currentOutstandingRequests[0].size()>0
@@ -682,7 +682,8 @@ bool exahype::stealing::StealingManager::ProgressJob::run() {
      MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, StealingManager::getInstance()._stealingComm, &flag, MPI_STATUS_IGNORE);
      MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, StealingManager::getInstance()._stealingCommMapped, &flag, MPI_STATUS_IGNORE);
    }
-   logInfo("submitRequests()", "terminated progress job (high priority)");
+   //logInfo("submitRequests()", "terminated progress job (high priority)");
+
 
 
    StealingManager::getInstance()._numProgressJobs--;

@@ -492,8 +492,8 @@ bool exahype::stealing::AggressiveHybridDistributor::selectVictimRank(int& victi
     _notOffloaded[victim]++;
     victim = myRank;
   }
-  if(victim!=myRank)
-   logInfo("selectVictimRank", "chose victim "<<victim<<" _remainingTasksToOffload "<<_remainingTasksToOffload[victim]);
+  //if(victim!=myRank)
+  // logInfo("selectVictimRank", "chose victim "<<victim<<" _remainingTasksToOffload "<<_remainingTasksToOffload[victim]);
   
   return victim != myRank;
 }
