@@ -10,7 +10,7 @@
   "architecture": "hsw",
   "computational_domain": {
     "dimension": 3,
-    "end_time": 100.001,
+    "end_time": 10000.0,
     "offset": [
       -15.0,
       -15.0,
@@ -52,18 +52,39 @@
   },
   "solvers": [
     {
-      "type": "Finite-Volumes",
-      "name": "GRMHDSolver_FV",
-      "patch_size": 7,
+      "type": "Limiting-ADER-DG",
+      "name": "GRMHDSolver",
+      "order": 3,
       "maximum_mesh_size": 1.21,
+      "maximum_mesh_depth": 0,
       "time_stepping": "globalfixed",
-      "fv_kernel": {
+      "aderdg_kernel": {
         "language": "C",
-        "slope_limiter": "mclim",
+        "nonlinear": true,
         "terms": [
           "flux",
           "ncp"
         ],
+        "space_time_predictor": {},
+        "optimised_terms": [],
+        "optimised_kernel_debugging": [],
+        "implementation": "optimised"
+      },
+      "point_sources": 0,
+      "limiter": {
+        "dmp_observables": 10,
+        "dmp_relaxation_parameter": 0.0001,
+        "dmp_difference_scaling": 0.001,
+        "steps_till_cured": 0,
+        "implementation": "optimised"
+      },
+      "fv_kernel": {
+        "language": "C",
+        "terms": [
+          "flux",
+          "ncp"
+        ],
+        "slope_limiter": "mclim",
         "scheme": "musclhancock",
         "implementation": "generic"
       },
@@ -103,20 +124,12 @@
       ],
       "plotters": [
         {
-          "type": "vtk::Cartesian::cells::ascii",
-          "name": "IntegralsWriter",
+          "type": "vtu::Cartesian::vertices::limited::ascii",
+          "name": "ConservedWriter",
           "time": 0.0,
-          "repeat": 0.1,
-          "output": "./output/global-integrals",
-          "variables": 0
-        },
-        {
-          "type": "user::defined",
-          "name": "TimingStatistics_FV",
-          "time": 0.0,
-          "repeat": 0.1,
-          "output": "./output/timing-benchmarks",
-          "variables": 0
+          "repeat": 1.0,
+          "output": "./vtk-output/conserved",
+          "variables": 1
         },
         {
           "type": "vtu::Cartesian::vertices::ascii",
@@ -127,12 +140,20 @@
           "variables": 1
         },
         {
-          "type": "vtu::Cartesian::vertices::ascii",
-          "name": "ConservedWriter",
+          "type": "vtk::Cartesian::cells::ascii",
+          "name": "IntegralsWriter",
           "time": 0.0,
-          "repeat": 1.0,
-          "output": "./vtk-output/conserved",
-          "variables": 1
+          "repeat": 0.1,
+          "output": "./output/global-integrals",
+          "variables": 0
+        },
+        {
+          "type": "user::defined",
+          "name": "TimingStatistics_DG",
+          "time": 0.0,
+          "repeat": 0.1,
+          "output": "./output/timing-benchmarks",
+          "variables": 0
         }
       ]
     }
