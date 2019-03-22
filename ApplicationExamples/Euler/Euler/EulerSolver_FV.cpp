@@ -96,7 +96,7 @@ void Euler::EulerSolver_FV::flux(const double* const Q, double** const F) {
 /**
  * Use generalised Osher Solomon flux.
  */
-double Euler::EulerSolver_FV::riemannSolver(double* fL, double *fR, const double* qL, const double* qR, const double* gradQL, const double* gradQR, const double* cellSize, int normalNonZero) {
+double Euler::EulerSolver_FV::riemannSolver(double* fL, double *fR, const double* qL, const double* qR, const double* gradQL, const double* gradQR, const double* cellSize, int direction) {
   if ( 
       (ReferenceChoice == Reference::ShuOsher ||
       ReferenceChoice  == Reference::SodShockTube) &&
