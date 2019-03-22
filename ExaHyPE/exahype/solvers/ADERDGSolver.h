@@ -879,7 +879,7 @@ private:
 #ifdef StealingUseProgressThread
           tbb::task* execute();
 #endif
-#ifndef StealingUseProgressTask
+#ifndef StealingUseProgressThread
          void pause();
          void resume();
 #endif
