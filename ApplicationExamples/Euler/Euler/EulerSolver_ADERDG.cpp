@@ -112,11 +112,6 @@ void Euler::EulerSolver_ADERDG::flux(const double* const Q, double** const F) {
   #endif
 }
 
-void Euler::EulerSolver_ADERDG::riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double t, const double dt,const tarch::la::Vector<DIMENSIONS, double>& dx, const int direction, bool isBoundaryFace, int faceIndex) {
-  AbstractEulerSolver_ADERDG::riemannSolver(FL, FR, QL, QR, t, dt, dx, direction, isBoundaryFace, faceIndex);
-  //kernels::aderdg::generic::c::generalisedOsherSolomon<false,true,3>(*static_cast<EulerSolver_ADERDG*>(this), FL, FR, QL, QR, t, dt, direction);
-}
-
 void Euler::EulerSolver_ADERDG::eigenvectors(
     const double* const Q,const int in, const int is, const int it,
     double (&R)[NumberOfVariables][NumberOfVariables],double (&eigvals)[NumberOfVariables], double (&iR)[NumberOfVariables][NumberOfVariables]) {

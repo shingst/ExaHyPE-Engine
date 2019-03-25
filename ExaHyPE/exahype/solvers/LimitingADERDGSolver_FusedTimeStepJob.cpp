@@ -14,9 +14,8 @@ exahype::solvers::LimitingADERDGSolver::FusedTimeStepJob::FusedTimeStepJob(
   const bool            isLastTimeStepOfBatch,
   const bool            isSkeletonJob):
   tarch::multicore::jobs::Job(
-    tarch::multicore::jobs::JobType::BackgroundTask,
-	0,
-	isLastTimeStepOfBatch ? tarch::multicore::DefaultPriority / 8 : tarch::multicore::DefaultPriority
+      tarch::multicore::jobs::JobType::BackgroundTask,0,
+      getTaskPriority(isLastTimeStepOfBatch)
   ),
   _solver(solver),
   _solverPatch(solverPatch),

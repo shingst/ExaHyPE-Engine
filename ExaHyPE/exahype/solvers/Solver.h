@@ -701,7 +701,6 @@ class exahype::solvers::Solver {
    */
   static bool SpawnAMRBackgroundJobs;
 
-
   /**
    * If this is set, we can skip sending metadata around during
    * batching iterations.
@@ -1101,7 +1100,8 @@ class exahype::solvers::Solver {
  /**
   * Waits until the @p cellDescription has completed its time step.
   *
-  * <h2> Thread-safety </h2>
+  * Thread-safety
+  * -------------
   *
   * We only read (sample) the hasCompletedLastStep flag and thus do not need any locks.
   * If this flag were to assume an undefined state, this would happen after the job working processing the
@@ -1112,10 +1112,19 @@ class exahype::solvers::Solver {
   * As the job cannot be processed before it is spawned, setting the flag
   * is thread-safe.
   *
-  * <h2> MPI </h2>
+  * MPI
+  * ---
   *
   * Tries to receive dangling MPI messages while waiting if this
   * is specified by the user.
+  *
+  * Work Stealing
+  * -------------
+  *
+  * Assume this rank has stolen jobs from another rank.
+  * If this routine actually waits, this indicates it has to wait for a local job
+  * and not for a stolen one.
+  * Therefore, we exclude stolen jobs from being processed by this routine.
   *
   * @note Only use receiveDanglingMessages=true if the routine
   * is called from a serial context.
@@ -1139,7 +1148,11 @@ class exahype::solvers::Solver {
      if ( receiveDanglingMessages ) {
        tarch::parallel::Node::getInstance().receiveDanglingMessages();
      }
-     tarch::multicore::jobs::processBackgroundJobs(1);
+     if ( waitForHighPriorityJob ) {
+       tarch::multicore::jobs::processBackgroundJobs( 1, getHighPriorityTaskPriority() );
+     } else {
+       tarch::multicore::jobs::processBackgroundJobs( 1, getDefaultTaskPriority() );
+     }
    }
 
   #ifdef USE_ITAC
@@ -1147,10 +1160,31 @@ class exahype::solvers::Solver {
   #endif
  }
 
- static int getTaskPriority( bool isSkeletonJob );
- static int getCompressionTaskPriority();
- static int getHighPrioritiesJobTaskPriority();
- static int getStandardBackgroundTaskPriority();
+ /**
+  * @return the default priority.
+  */
+ static int getDefaultTaskPriority() {
+   return tarch::multicore::DefaultPriority;
+ }
+ /**
+  * @return a high priority.
+  */
+ static int getHighPriorityTaskPriority() {
+   return tarch::multicore::DefaultPriority*2;
+ }
+ /**
+  * @return a high priority if the argument is set to true. Otherwise,
+  * the default priority.
+  */
+ static int getTaskPriority( const bool isHighPriorityJob ) {
+   return isHighPriorityJob ? getHighPriorityTaskPriority() : getDefaultTaskPriority();
+ }
+ /**
+  * @return a very high priority.
+  */
+ static int  getCompressionTaskPriority() {
+   return tarch::multicore::DefaultPriority*8;
+ }
 
  /**
   * Return a string representation for the type @p param.

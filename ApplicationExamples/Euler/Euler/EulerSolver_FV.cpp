@@ -93,21 +93,6 @@ void Euler::EulerSolver_FV::flux(const double* const Q, double** const F) {
   #endif
 }
 
-/**
- * Use generalised Osher Solomon flux.
- */
-double Euler::EulerSolver_FV::riemannSolver(double* fL, double *fR, const double* qL, const double* qR, const double* gradQL, const double* gradQR, const double* cellSize, int direction) {
-  if ( 
-      (ReferenceChoice == Reference::ShuOsher ||
-      ReferenceChoice  == Reference::SodShockTube) &&
-      direction!=0 
-  ) {
-  return kernels::finitevolumes::riemannsolvers::c::rusanov<false, true, false, EulerSolver_FV>(*static_cast<EulerSolver_FV*>(this), fL,fR,qL,qR,gradQL, gradQR, cellSize, direction);
-  } else {
-    return kernels::finitevolumes::riemannsolvers::c::generalisedOsherSolomon<false, true, false, 3, EulerSolver_FV>(*static_cast<EulerSolver_FV*>(this), fL,fR,qL,qR,direction);
-  }
-}
-
 void Euler::EulerSolver_FV::eigenvectors(
     const double* const Q,const int in, const int is, const int it,
     double (&R)[NumberOfVariables][NumberOfVariables],double (&eigvals)[NumberOfVariables], double (&iR)[NumberOfVariables][NumberOfVariables]) {

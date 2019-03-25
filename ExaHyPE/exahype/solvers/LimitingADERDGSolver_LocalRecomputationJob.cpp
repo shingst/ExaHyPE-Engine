@@ -11,7 +11,10 @@ exahype::solvers::LimitingADERDGSolver::LocalRecomputationJob::LocalRecomputatio
   CellInfo&                                                  cellInfo,
   const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& limiterNeighbourMergePerformed,
   const bool                                                 isAtRemoteBoundary):
-  tarch::multicore::jobs::Job(tarch::multicore::jobs::JobType::BackgroundTask,0,tarch::multicore::DefaultPriority/2), // !! always high priority
+  tarch::multicore::jobs::Job(
+      tarch::multicore::jobs::JobType::BackgroundTask,0,
+      getHighPriorityTaskPriority()
+  ), // ! always high priority
   _solver(solver),
   _solverPatch(solverPatch),
   _cellInfo(cellInfo),
