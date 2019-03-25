@@ -435,6 +435,11 @@
           "default" : 64,
           "old_format" : { "token_after" : "buffer-size" }
         },
+        "node_pool_timeout" : {
+          "type" : "number", 
+          "title" : "Specify a node pool answering time that is regarded as time out.", 
+          "default" : 60
+        },
         "max_forks_at_once" : {
           "type" : "integer", 
           "title" : "The number of forks the load balancing can perform at once on the critical worker (a number < 1 mean that no limit is applied).",

@@ -557,7 +557,7 @@ exahype::parser::Parser::MPILoadBalancingType exahype::parser::Parser::getMPILoa
 }
 
 double exahype::parser::Parser::getNodePoolAnsweringTimeout() const {
-  const std::string path = "/distributed_memory/max_node_pool_answering_time";
+  const std::string path = "/distributed_memory/node_pool_timeout";
   const double defaultResult = 1e-2;
   double result = getDoubleFromPath(path, defaultResult, true);
   if(tarch::la::equals(defaultResult, result)) {
