@@ -7,6 +7,7 @@
 
 #include "tarch/multicore/Lock.h"
 #include "tarch/multicore/Core.h"
+#include "tarch/multicore/Jobs.h"
 
 #include <thread>
 #include <limits>
@@ -34,7 +35,9 @@ exahype::stealing::StealingAnalyser::StealingAnalyser():
   _waitForOtherRank(0),
   _currentZeroThreshold(0.002),
   _iterationCounter(0),
-  _currentAccumulatedWorkerTime(0)
+  _currentAccumulatedWorkerTime(0),
+  _estimatedWtimeForPendingJobs(0),
+  _lateSTPJobs(0)
 {
   enable(true);
 #ifdef USE_ITAC
@@ -206,6 +209,11 @@ void exahype::stealing::StealingAnalyser::printWaitingTimes() {
 void exahype::stealing::StealingAnalyser::beginToReceiveDataFromWorker() {
   if (_isSwitchedOn) {
     _waitForWorkerDataWatch.startTimer();
+    int pendingJobs  = tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs();
+    _lateSTPJobs = 0;
+    _estimatedWtimeForPendingJobs = pendingJobs * getTimePerSTP() / tarch::multicore::Core::getInstance().getNumberOfThreads();
+    logInfo("beginToReceiveDataFromWorker()","there are "<<pendingJobs<<" jobs left, estimated time "<<_estimatedWtimeForPendingJobs);
+
 #ifdef USE_ITAC
     VT_begin(event_waitForWorker);
 #endif
@@ -226,7 +234,9 @@ void exahype::stealing::StealingAnalyser::endToReceiveDataFromWorker( int fromRa
     VT_end(event_waitForWorker);
 #endif
     _waitForWorkerDataWatch.stopTimer();
-    const double elapsedTime = _waitForWorkerDataWatch.getCalendarTime();
+    double estimatedTimeForLateSTPs = _lateSTPJobs * getTimePerSTP()/ tarch::multicore::Core::getInstance().getNumberOfThreads();
+    const double elapsedTime = std::max(0.0,_waitForWorkerDataWatch.getCalendarTime()-_estimatedWtimeForPendingJobs
+                                            -estimatedTimeForLateSTPs);
 
     if(elapsedTime>_currentZeroThreshold) {
       _currentAccumulatedWorkerTime += elapsedTime;
@@ -306,6 +316,12 @@ void exahype::stealing::StealingAnalyser::endToSendDataToMaster() {
     _waitForMasterDataWatch.startTimer();
   }*/
   if (_isSwitchedOn && !_waitForMasterDataWatch.isOn()) {
+    int pendingJobs  = tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs();
+    
+
+    _estimatedWtimeForPendingJobs = pendingJobs * getTimePerSTP() / tarch::multicore::Core::getInstance().getNumberOfThreads();
+    _lateSTPJobs = 0;
+    logInfo("endToSendDataToMaster()","there are "<<pendingJobs<<" left estimated time "<<_estimatedWtimeForPendingJobs); 
     _waitForMasterDataWatch.startTimer();
   }
 }
@@ -335,6 +351,10 @@ void exahype::stealing::StealingAnalyser::endToSendDataToWorker(int worker) {
   }
 }
 
+void exahype::stealing::StealingAnalyser::notifyReceivedSTPJob() {
+  _lateSTPJobs++;
+}
+
 void exahype::stealing::StealingAnalyser::beginToReceiveDataFromGlobalMaster() {
   //if (_isSwitchedOn && !_waitForGlobalMasterDataWatch.isOn()) {
     //_waitForGlobalMasterDataWatch.startTimer();
@@ -345,7 +365,12 @@ void exahype::stealing::StealingAnalyser::beginToReceiveDataFromGlobalMaster() {
 void exahype::stealing::StealingAnalyser::endToReceiveDataFromGlobalMaster() {
   if (_isSwitchedOn && _waitForMasterDataWatch.isOn()) {
     _waitForMasterDataWatch.stopTimer();
-    const double elapsedTime = _waitForMasterDataWatch.getCalendarTime();
+    double estimatedTimeForLateSTPs = _lateSTPJobs * getTimePerSTP()/ tarch::multicore::Core::getInstance().getNumberOfThreads();
+    logInfo("endToReceiveDataFromGlobalMaster()","estimate for late STPs "<<estimatedTimeForLateSTPs<<"s  estimate for pending jobs "<<_estimatedWtimeForPendingJobs); 
+    const double elapsedTime = std::max(0.0, _waitForMasterDataWatch.getCalendarTime()-_estimatedWtimeForPendingJobs
+                                            -estimatedTimeForLateSTPs);
+    _estimatedWtimeForPendingJobs = 0;
+    _lateSTPJobs = 0;
     int myMaster = 0;
     
     _waitForOtherRank[0].setValue(elapsedTime); //0 is global master

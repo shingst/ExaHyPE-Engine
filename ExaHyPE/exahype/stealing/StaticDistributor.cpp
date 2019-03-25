@@ -192,6 +192,14 @@ void exahype::stealing::StaticDistributor::resetRemainingTasksToOffload() {
   }
 }
 
+void exahype::stealing::StaticDistributor::getAllVictimRanks(std::vector<int> &victims ) {
+  int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
+  for(int i=0; i<nnodes; i++) {
+    if(_tasksToOffload[i]>0 ) victims.push_back(i);
+  }
+}
+
+
 bool exahype::stealing::StaticDistributor::selectVictimRank(int& victim) {
 
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();

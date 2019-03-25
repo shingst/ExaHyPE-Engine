@@ -5559,6 +5559,7 @@ void exahype::solvers::ADERDGSolver::StealablePredictionJob::receiveHandler(exah
   data = a_tagRankToData->second;
   a_tagRankToData.release();
 
+  exahype::stealing::StealingAnalyser::getInstance().notifyReceivedSTPJob();
   StealablePredictionJob *job= static_cast<exahype::solvers::ADERDGSolver*> (solver)->createFromData(data, remoteRank, tag);
   peano::datatraversal::TaskSet spawnedSet(job);
 

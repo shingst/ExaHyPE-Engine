@@ -13,7 +13,7 @@
 #include "tarch/multicore/BooleanSemaphore.h"
 
 #include <vector>
-
+#include <atomic>
 
 namespace exahype {
   namespace stealing {
@@ -40,7 +40,11 @@ class exahype::stealing::StealingAnalyser {
     int _iterationCounter;
     double _currentAccumulatedWorkerTime;
 
+    double _estimatedWtimeForPendingJobs;
+
     double *_currentFilteredWaitingTimesSnapshot;
+
+    std::atomic<int> _lateSTPJobs;
 
     void updateZeroTresholdAndFilteredSnapshot();
 
@@ -49,6 +53,8 @@ class exahype::stealing::StealingAnalyser {
     virtual ~StealingAnalyser();
 
     const double* getFilteredWaitingTimesSnapshot();
+
+    void notifyReceivedSTPJob();    
 
     void printWaitingTimes();
 

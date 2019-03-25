@@ -4,6 +4,7 @@
 #include "tarch/logging/Log.h"
 #include "tarch/multicore/BooleanSemaphore.h"
 
+#include <vector>
 #include <mpi.h>
 #include <atomic>
 
@@ -48,6 +49,7 @@ class exahype::stealing::StaticDistributor {
     void computeNewLoadDistribution(int enclaveCells, int skeletonCells);
 
     void resetRemainingTasksToOffload();
+    void getAllVictimRanks(std::vector<int>& victims);
     // return next victim rank
     bool selectVictimRank(int& victim);
 

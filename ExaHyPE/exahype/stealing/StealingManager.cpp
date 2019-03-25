@@ -630,15 +630,17 @@ void exahype::stealing::StealingManager::receiveCompleted(int rank) {
 }
 
 void exahype::stealing::StealingManager::notifyAllVictimsSendCompletedIfNotNotified() {
-#if defined(StealingStrategyAggressiveHybrid)
   if(!_hasNotifiedSendCompleted) {
     _hasNotifiedSendCompleted = true;
     std::vector<int> victimRanks;
+#if defined(StealingStrategyAggressiveHybrid) 
     exahype::stealing::AggressiveHybridDistributor::getInstance().getAllVictimRanks(victimRanks);
+#elif defined(StealingStrategyStaticHardcoded)
+    exahype::stealing::StaticDistributor::getInstance().getAllVictimRanks(victimRanks);
+#endif
     for(auto victim : victimRanks) 
       notifySendCompleted(victim);
   }
-#endif
 }
 #endif
 
