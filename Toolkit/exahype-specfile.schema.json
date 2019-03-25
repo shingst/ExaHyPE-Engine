@@ -437,8 +437,8 @@
         },
         "node_pool_timeout" : {
           "type" : "number", 
-          "title" : "Specify a node pool answering time that is regarded as time out.", 
-          "default" : 60
+          "title" : "The timeout for receiving an answer message from the node pool (seconds).", 
+          "default" : 1
         },
         "max_forks_at_once" : {
           "type" : "integer", 
