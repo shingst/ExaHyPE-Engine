@@ -235,7 +235,7 @@ void exahype::stealing::StealingAnalyser::endToReceiveDataFromWorker( int fromRa
 #endif
     _waitForWorkerDataWatch.stopTimer();
     double estimatedTimeForLateSTPs = _lateSTPJobs * getTimePerSTP()/ tarch::multicore::Core::getInstance().getNumberOfThreads();
-    const double elapsedTime = std::max(0.0,_waitForWorkerDataWatch.getCalendarTime()-_estimatedWtimeForPendingJobs
+    const double elapsedTime = std::max(0.000001,_waitForWorkerDataWatch.getCalendarTime()-_estimatedWtimeForPendingJobs
                                             -estimatedTimeForLateSTPs);
 
     if(elapsedTime>_currentZeroThreshold) {
@@ -367,7 +367,7 @@ void exahype::stealing::StealingAnalyser::endToReceiveDataFromGlobalMaster() {
     _waitForMasterDataWatch.stopTimer();
     double estimatedTimeForLateSTPs = _lateSTPJobs * getTimePerSTP()/ tarch::multicore::Core::getInstance().getNumberOfThreads();
     logInfo("endToReceiveDataFromGlobalMaster()","estimate for late STPs "<<estimatedTimeForLateSTPs<<"s  estimate for pending jobs "<<_estimatedWtimeForPendingJobs); 
-    const double elapsedTime = std::max(0.0, _waitForMasterDataWatch.getCalendarTime()-_estimatedWtimeForPendingJobs
+    const double elapsedTime = std::max(0.000001, _waitForMasterDataWatch.getCalendarTime()-_estimatedWtimeForPendingJobs
                                             -estimatedTimeForLateSTPs);
     _estimatedWtimeForPendingJobs = 0;
     _lateSTPJobs = 0;

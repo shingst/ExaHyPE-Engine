@@ -6,12 +6,9 @@ import matplotlib.image as mpimg
 import matplotlib.animation as animation
 
 import re
-import sys
+import sys,getopt
 import time
 
-file = open(sys.argv[1], 'r')
-
-ranks = int(sys.argv[2])
 timestep_pattern = re.compile(".([0-9]+\.[0-9]+).*step ([0-9]+).*t_min.*")
 task_offload_pattern = re.compile(".*rank:([0-9]+).*printOffloadingStatistics.* target tasks to rank ([0-9]+) ntasks ([0-9]+) not offloaded ([0-9]+).*")
 temperatureCCP_pattern = re.compile(".*rank:([0-9]+).*printOffloadingStatistics.* temperature value CCP ([0-9]+\.?[0-9]*).*")
@@ -21,8 +18,45 @@ waiting_times_pattern = re.compile(".*rank:0.*printWaitingTimes\(\) rank ([0-9]+
 critical_rank_pattern = re.compile(".*rank:([0-9]+).*updateLoadDistribution.*\(\).*optimal victim: ([0-9]+) critical rank:([0-9]+)")
 critical_rank_pattern2 = re.compile(".*rank:([0-9]+).*updateLoadDistribution\(\).*current critical rank:([0-9]+)")
 
+filename = ''
+ranks = -1
+animate = 0 
 
-animate = sys.argv[3].lower() in ("yes", "true", "t", "1")
+plot_waiting_times = 14
+plot_tasks = 1
+plot_ccp_temp = 1
+plot_diffusion_temp = 1
+plot_bval = 1
+
+try: 
+  opts, args = getopt.getopt(sys.argv[1:],"hf:r:a",["nowaittimes","notasks","noccptemp","nodifftemp","nobval"])
+except getopt.GetoptError:
+  print ('plot_waiting_times_graph.py -f input -r nranks [-a]')
+  sys.exit(2)
+for opt, arg in opts:
+  if opt == '-h':
+    print ('plot_waiting_times_graph.py -f input -r nranks [-a]')
+    sys.exit(2)
+  elif opt in ("-f"):
+    print (arg)
+    filename = arg
+  elif opt in ("-r"):
+    ranks = int(arg)
+  elif opt in ("-a"):
+    animate = 1
+  elif opt in ("--nowaittimes"):
+    plot_waiting_times = 0
+  elif opt in ("--notasks"):
+    plot_tasks = 0
+  elif opt in ("--noccptemp"):
+    plot_ccp_temp = 0
+  elif opt in ("--nodifftemp"):
+    plot_diffusion_temp = 0
+  elif opt in ("--nobval"):
+    plot_bval = 0
+
+file = open(filename, 'r')
+#animate = sys.argv[3].lower() in ("yes", "true", "t", "1")
 
 if animate:
   fig, ax = plt.subplots()
@@ -68,14 +102,14 @@ for line in file:
   if m:
     #print (line)
     tasksoffloaded = int(m.group(3)) - int(m.group(4))
-    if tasksoffloaded>0:
+    if tasksoffloaded>0 and plot_tasks:
       dot.add_edge(m.group(1),m.group(2), label=str(tasksoffloaded)+"/"+m.group(3))
   m=waiting_times_pattern.match(line)
   if m:
     src = int(m.group(1))
     dest = int(m.group(3))
     time = float(m.group(2))
-    if time>zero_threshold:
+    if time>zero_threshold and plot_waiting_times:
      current_waiting_times[int(m.group(1))][int(m.group(3))]= float(m.group(2))
      dot.add_edge(src, dest, label=str(time),fontcolor="red", color="red")
   m = critical_rank_pattern.match(line)
@@ -106,19 +140,20 @@ for line in file:
     #print float(m.group(2))
     if float(m.group(2))>0.5:
       n = dot.get_node(int(m.group(1)))
-      n.attr['label']= m.group(1)+" bval="+m.group(2)
+      if plot_bval:
+        n.attr['label']= m.group(1)+" bval="+m.group(2)
       n.attr['fillcolor'] = 'grey'
       n.attr['style'] = 'filled'
     #cur_blacklist_values[int(m.group(1))]=float(m.group(2))
   m=temperatureCCP_pattern.match(line)
-  if m and current_step>0:
+  if m and current_step>0 and plot_ccp_temp:
     n = dot.get_node(int(m.group(1)))
     if(n.attr['label'] ==None):
       n.attr['label']=m.group(1)
     print (str(n.attr['label'])+" tempCCP="+m.group(2))
     n.attr['label']= str(n.attr['label'])+ " tempCCP="+m.group(2)
   m=temperatureDiffusion_pattern.match(line)
-  if m and current_step>0:
+  if m and current_step>0 and plot_diffusion_temp:
     n = dot.get_node(int(m.group(1)))
     if(n.attr['label'] ==None):
       n.attr['label']=m.group(1)
