@@ -872,23 +872,3 @@ void exahype::solvers::Solver::mergeWithWorkerMeshUpdateEvent(
 #endif
 
 
-int exahype::solvers::Solver::getTaskPriority( bool isSkeletonJob ) {
-  return isSkeletonJob ? tarch::multicore::DefaultPriority*2 : tarch::multicore::DefaultPriority;
-}
-
-
-int exahype::solvers::Solver::getCompressionTaskPriority() {
-  return tarch::multicore::DefaultPriority*8;
-}
-
-
-int exahype::solvers::Solver::getHighPrioritiesJobTaskPriority() {
-  return tarch::multicore::DefaultPriority*2;
-}
-
-
-int exahype::solvers::Solver::getStandardBackgroundTaskPriority() {
-  return tarch::multicore::DefaultPriority/2;
-}
-
-
