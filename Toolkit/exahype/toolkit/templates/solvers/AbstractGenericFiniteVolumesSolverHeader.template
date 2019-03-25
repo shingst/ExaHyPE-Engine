@@ -66,12 +66,46 @@ class {{project}}::{{abstractSolver}} : public exahype::solvers::FiniteVolumesSo
     void ghostLayerFillingAtBoundary(double* const luh,const double* const luhbnd,const tarch::la::Vector<DIMENSIONS,int>& boundaryPosition) override;
     void boundaryLayerExtraction(double* const luhbnd,const double* const luh,const tarch::la::Vector<DIMENSIONS,int>& boundaryPosition) override;
     void boundaryConditions(double* const luh,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const tarch::la::Vector<DIMENSIONS, int>& posCell,const tarch::la::Vector<DIMENSIONS, int>& posBoundary) override;
+    
+    /**
+     * @return the global observables computed in the last time step.
+     */
+    GlobalObservables getGlobalObservables() const {
+      return GlobalObservables(_globalObservables.data());
+    }
 
-    std::vector<double> mapGlobalObservables(const double* const Q, const tarch::la::Vector<DIMENSIONS, double> &cellSize) const override;
-    std::vector<double> resetGlobalObservables() const override;
-    void reduceGlobalObservables(
-            std::vector<double>& reducedGlobalObservables,
-            const std::vector<double>& curGlobalObservables) const override;
+    /**
+     * @see exahype::solvers::Solver::resetGlobalObservables
+     */
+    void resetGlobalObservables(double* const globalObservables) final override {
+      GlobalObservables wrappedGlobalObservables(globalObservables);
+      resetGlobalObservables(wrappedGlobalObservables);
+    }
+
+    /**
+     * @see exahype::solvers::Solver::updateGlobalObservables
+     */
+    void updateGlobalObservables(
+        double* const                               globalObservables,
+        const double* const                         luh,
+        const tarch::la::Vector<DIMENSIONS,double>& cellSize) final override {
+      double mappedObservables[NumberOfGlobalObservables];
+      GlobalObservables wrappedMappedObservables(mappedObservables);
+      mapGlobalObservables(wrappedMappedObservables,luh,cellSize);
+      GlobalObservables wrappedGlobalObservables(globalObservables);
+      tarch::multicore::Lock lock(ReductionSemaphore);
+      mergeGlobalObservables(wrappedGlobalObservables,wrappedMappedObservables);
+      lock.free();
+    }
+
+    /**
+     * @see exahype::solvers::Solver::mergeGlobalObservables
+     */
+    void mergeGlobalObservables(double* const globalObservables,const double* const otherObservables) final override {
+      GlobalObservables wrappedGlobalObservables(globalObservables);
+      GlobalObservables wrappedOtherObservables(otherObservables);
+      mergeGlobalObservables(wrappedGlobalObservables,wrappedOtherObservables);
+    }
     
     /// Apr 18, Coding Week: Riemann Solvers in FV. Hopefully inlined as evaluated point wise.
     double riemannSolver(double* fL, double *fR, const double* qL, const double* qR, const double* gradQL, const double* gradQR, const double* cellSize, int direction) override;
@@ -187,6 +221,50 @@ class {{project}}::{{abstractSolver}} : public exahype::solvers::FiniteVolumesSo
     virtual void viscousFlux(const double* const Q, const double* const gradQ, double** const F) {}
     
     virtual void viscousEigenvalues(const double* const Q,const int direction,double* const lambda) {}
+    
+    /**
+     * Resets the vector of global observables to some suitable initial value, e.g.
+     * the smallest possible double if one wants to compute the maximum.
+     *
+     *\param[inout] globalObservables The global observables that we want to reset.
+     */
+    virtual void resetGlobalObservables(GlobalObservables& globalObservables) {
+      // do nothing
+    }
+
+    /**
+     * Computes observables from a cell's solution values.
+     * The result will be merged with the global observables.
+     *
+     *\param[inout] globalObservables The mapped observables.
+     *\param[in]    luh               The solution array.
+     *\param[in]    cellSize          The size of a cell.
+     */
+    virtual void mapGlobalObservables(
+        GlobalObservables&                          globalObservables,
+        const double* const                         luh,
+        const tarch::la::Vector<DIMENSIONS,double>& cellSize) {
+      // do nothing
+    }
+
+    /**
+     * This method merges two vectors of (global) observables.
+     *
+     * For example, if one wants to compute the maximum of global variable i,
+     * one should set
+     *
+     * observables[i] = std::max( globalObservables[i], otherObservables[i])
+     *
+     * and so on.
+     *
+     *\param[inout] globalObservables  The (merged) observables.
+     *\param[in]    otherObservables   other observables that we want to merge with the first argument.
+     */
+    virtual void mergeGlobalObservables(
+        GlobalObservables&       globalObservables,
+        const GlobalObservables& otherObservables) {
+      // do nothing
+    }
     ///@}
 };
 

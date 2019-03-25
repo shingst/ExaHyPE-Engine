@@ -2154,13 +2154,7 @@ void exahype::solvers::ADERDGSolver::reduce(
     assert(cellDescription.getType()==CellDescription::Type::Cell);
     const double* const luh         = static_cast<double*>(cellDescription.getSolution());
     const auto& cellSize            = cellDescription.getSize();
-
-    std::vector<double> localObservables; // TODO(Dominic): Move allocation into abstract solver
-    localObservables.resize(_numberOfGlobalObservables);
-    localObservables(luh, cellSize);
-    tarch::multicore::Lock lock(ReductionSemaphore);
-    mergeGlobalObservables(_nextGlobalObservables.data(), localObservables.data());
-    lock.free();
+    updateGlobalObservables(_nextGlobalObservables.data(),luh,cellSize);
   }
 }
 
@@ -2413,16 +2407,14 @@ double exahype::solvers::ADERDGSolver::startNewTimeStep(
   }
 }
 
-double exahype::solvers::ADERDGSolver::updateTimeStepSize(const int solverNumber,CellInfo& cellInfo) {
+void exahype::solvers::ADERDGSolver::updateTimeStepSize(const int solverNumber,CellInfo& cellInfo) {
   const int element = cellInfo.indexOfADERDGCellDescription(solverNumber);
   if ( element != NotFound ) {
     CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[element];
     const double admissibleTimeStepSize = computeTimeStepSize(cellDescription);
     cellDescription.setTimeStepSize( admissibleTimeStepSize );
     cellDescription.setHasCompletedLastStep(true);
-    return admissibleTimeStepSize;
-  } else {
-    return std::numeric_limits<double>::infinity();
+    updateAdmissibleTimeStepSize(admissibleTimeStepSize);
   }
 }
 
@@ -4197,26 +4189,19 @@ void exahype::solvers::ADERDGSolver::sendDataToMaster(
     const int                                    masterRank,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const int                                    level) const {
-  DataHeap::HeapEntries messageForMaster = compileMessageForMaster();
+  DataHeap::HeapEntries message = compileMessageForMaster();
 
   if ( !tarch::parallel::Node::getInstance().isGlobalMaster() ) {
     logDebug("sendDataToMaster(...)","Sending data to master: " <<
-        "data[0]=" << messageForMaster[0] << "," <<
-        "data[1]=" << messageForMaster[1] << "," <<
+        "data[0]=" << message[0] << "," <<
+        "data[1]=" << message[1] << "," <<
         "to rank " << masterRank <<
-        ", message size="<<messageForMaster.size()
+        ", message size="<<message.size()
     );
   }
 
-  // MPI_Send(
-  //   messageForMaster.data(), messageForMaster.size(),
-  //   MPI_DOUBLE,
-  //   masterRank,
-  //   MasterWorkerCommunicationTag,
-  //   tarch::parallel::Node::getInstance().getCommunicator());
-
   DataHeap::getInstance().sendData(
-      messageForMaster.data(), messageForMaster.size(),
+      message.data(), message.size(),
       masterRank,x,level,peano::heap::MessageType::MasterWorkerCommunication);
 }
 
@@ -4250,30 +4235,22 @@ void exahype::solvers::ADERDGSolver::mergeWithWorkerData(
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const int                                    level) {
   const auto messageSize = 2 + _numberOfGlobalObservables;
-  DataHeap::HeapEntries messageFromWorker(messageSize);
-
-  //  MPI_Recv(
-  //    messageFromWorker.data(), messageFromWorker.size(),
-  //    MPI_DOUBLE,
-  //    workerRank,
-  //    MasterWorkerCommunicationTag,
-  //    tarch::parallel::Node::getInstance().getCommunicator(),
-  //    MPI_STATUS_IGNORE);
+  DataHeap::HeapEntries message(messageSize);
 
   DataHeap::getInstance().receiveData(
-      messageFromWorker.data(), messageFromWorker.size(),
+      message.data(), message.size(),
       workerRank,x,level,peano::heap::MessageType::MasterWorkerCommunication);
 
   if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
     logDebug("mergeWithWorkerData(...)","Receive data from worker rank: " <<
-             "data[0]=" << messageFromWorker[0] << "," <<
-             "data[1]=" << messageFromWorker[1] << "," <<
+             "data[0]=" << message[0] << "," <<
+             "data[1]=" << message[1] << "," <<
              "from worker " << workerRank << "," <<
-             "message size="<<messageFromWorker.size());
+             "message size="<<message.size());
    }
 
-  assertion1(messageFromWorker.size()==2,messageFromWorker.size());
-  mergeWithWorkerData(messageFromWorker);
+  assertion1(message.size()==2,message.size());
+  mergeWithWorkerData(message);
 
   if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
     logDebug("mergeWithWorkerData(...)","Updated fields: " <<
@@ -4286,12 +4263,11 @@ void exahype::solvers::ADERDGSolver::mergeWithWorkerData(const DataHeap::HeapEnt
   int index=0; // post update
   _admissibleTimeStepSize = std::min( _admissibleTimeStepSize, message[index++] );
   _meshUpdateEvent       = mergeMeshUpdateEvents(_meshUpdateEvent,convertToMeshUpdateEvent(message[index++]));
-  auto observablesFromWorker = std::vector<double>(_numberOfGlobalObservables);
+  DataHeap::HeapEntries observablesFromWorker = DataHeap::HeapEntries(_numberOfGlobalObservables);
   for (int i = 0; i < _numberOfGlobalObservables; ++i) {
     observablesFromWorker[i] = message[index++];
   }
-  reduceGlobalObservables(_globalObservables, observablesFromWorker);
-
+  mergeGlobalObservables(_nextGlobalObservables.data(), observablesFromWorker.data()); // !  master hasn't wrapped up time step yet
 }
 
 ///////////////////////////////////
@@ -4321,27 +4297,20 @@ void exahype::solvers::ADERDGSolver::sendDataToWorker(
     const int                                    workerRank,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const int                                    level) const {
-  DataHeap::HeapEntries messageForWorker = compileMessageForWorker();
+  DataHeap::HeapEntries message = compileMessageForWorker();
 
   if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
     logDebug(
         "sendDataToWorker(...)","Broadcasting time step data: " <<
-        "data[0]=" << messageForWorker[0] << "," <<
-        "data[1]=" << messageForWorker[1] << "," <<
-        "data[2]=" << messageForWorker[2] << "," <<
-        "data[3]=" << messageForWorker[3] << "," <<
-        "data[4]=" << messageForWorker[4]);
+        "data[0]=" << message[0] << "," <<
+        "data[1]=" << message[1] << "," <<
+        "data[2]=" << message[2] << "," <<
+        "data[3]=" << message[3] << "," <<
+        "data[4]=" << message[4]);
   }
-  
-  // MPI_Send(
-  //   messageForWorker.data(), messageForWorker.size(),
-  //   MPI_DOUBLE,
-  //   workerRank,
-  //   MasterWorkerCommunicationTag,
-  //   tarch::parallel::Node::getInstance().getCommunicator());
 
   DataHeap::getInstance().sendData(
-      messageForWorker.data(), messageForWorker.size(),
+      message.data(), message.size(),
       workerRank,x,level,peano::heap::MessageType::MasterWorkerCommunication);
 }
 
@@ -4362,32 +4331,24 @@ void exahype::solvers::ADERDGSolver::mergeWithMasterData(
     const int                                    masterRank,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const int                                    level) {
-  //const auto messageSize = 7 + _numberOfGlobalObservables;
-  // TODO(Lukas) Used to be 7+...
   const auto messageSize = 5 + _numberOfGlobalObservables;
-  DataHeap::HeapEntries messageFromMaster(messageSize);
-  // MPI_Recv(
-  //     messageFromMaster.data(), messageFromMaster.size(),
-  //     MPI_DOUBLE,
-  //     masterRank,
-  //     MasterWorkerCommunicationTag,
-  //     tarch::parallel::Node::getInstance().getCommunicator(),MPI_STATUS_IGNORE);
+  DataHeap::HeapEntries message(messageSize);
 
   DataHeap::getInstance().receiveData(
-      messageFromMaster.data(), messageFromMaster.size(),
+      message.data(), message.size(),
       masterRank,x,level,peano::heap::MessageType::MasterWorkerCommunication);
 
-  assertion1(messageFromMaster.size()==messageSize,messageFromMaster.size());
-  mergeWithMasterData(messageFromMaster);
+  assertion1(message.size()==messageSize,message.size());
+  mergeWithMasterData(message);
 
   if ( !tarch::parallel::Node::getInstance().isGlobalMaster() ) {
     logDebug(
         "mergeWithMasterData(...)","Received message from master: " <<
-        "data[0]=" << messageFromMaster[0] << "," <<
-        "data[1]=" << messageFromMaster[1] << "," <<
-        "data[2]=" << messageFromMaster[2] << "," <<
-        "data[3]=" << messageFromMaster[3] << "," <<
-        "data[4]=" << messageFromMaster[4]);
+        "data[0]=" << message[0] << "," <<
+        "data[1]=" << message[1] << "," <<
+        "data[2]=" << message[2] << "," <<
+        "data[3]=" << message[3] << "," <<
+        "data[4]=" << message[4]);
   }
 }
 #endif

@@ -617,7 +617,7 @@ public:
   ///////////////////////////////////
   // CELL-LOCAL
   //////////////////////////////////
-  double updateTimeStepSize(const int solverNumber,CellInfo& cellInfo) final override;
+  void updateTimeStepSize(const int solverNumber,CellInfo& cellInfo) final override;
 
   double startNewTimeStep(CellDescription& cellDescription,const bool isFirstTimeStepOfBatch);
 
@@ -946,11 +946,6 @@ public:
   std::string toString() const override;
 
   void toString (std::ostream& out) const override;
-
-  using Solver::reduceGlobalObservables;
-  void reduceGlobalObservables(
-      const int solverNumber,
-      CellInfo& cellInfo) const final override;
 
   
   ///////////////////////

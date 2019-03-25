@@ -117,7 +117,7 @@ void exahype::mappings::FinaliseMeshRefinement::beginIteration(exahype::State& s
   OneSolverRequestedMeshUpdate =
       exahype::solvers::Solver::oneSolverRequestedMeshRefinement();
 
-  // reset the time step size
+  // reset the time step size; keep the refinement event and the
   for (auto* solver : exahype::solvers::RegisteredSolvers) {
     solver->resetAdmissibleTimeStepSize();
   }
@@ -159,9 +159,7 @@ void exahype::mappings::FinaliseMeshRefinement::enterCell(
           solver->rollbackSolutionGlobally(solverNumber,cellInfo);
         }
         // compute a new time step size
-        double admissibleTimeStepSize  = solver->updateTimeStepSize(solverNumber,cellInfo);
-        solver->updateAdmissibleTimeStepSize(admissibleTimeStepSize);
-        solver->reduceGlobalObservables(solverNumber,cellInfo);
+        solver->updateTimeStepSize(solverNumber,cellInfo);
 
         // determine min and max for LimitingADERDGSolver
         if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {

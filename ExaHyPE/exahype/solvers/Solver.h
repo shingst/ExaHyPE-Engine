@@ -1695,7 +1695,7 @@ class exahype::solvers::Solver {
    *
    * @note Has no const modifier since kernels are not const functions yet.
    */
-  virtual double updateTimeStepSize(const int solverNumber,CellInfo& cellInfo) = 0;
+  virtual void updateTimeStepSize(const int solverNumber,CellInfo& cellInfo) = 0;
 
   /**
    * Impose initial conditions and mark for refinement.
@@ -2133,27 +2133,23 @@ class exahype::solvers::Solver {
       const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
       const tarch::la::Vector<DIMENSIONS,double>& cellSize) { return 1; }
 
- public:
   /**
-   * Computes the observables from a cell's solution value which
-   * will then
+   * Resets the vector of global observables to some suitable initial value, e.g.
+   * the smallest possible double if one wants to compute the maximum.
+   */
+  virtual void resetGlobalObservables(double* const globalObservables) = 0;
+
+  /**
+   * Computes the observables from a cell's solution values
+   * and merges the result with the global observables.
    *
-   *\param[inout] globalObservables The mapped observables.
    *\param[in]    luh               The solution array.
    *\param[in]    cellSize          The size of a cell.
    */
-   virtual std::vector<double> mapGlobalObservables(
-       double* const                               observables,
+   virtual void updateGlobalObservables(
+       double* const                               globalObservables,
        const double* const                         luh,
-       const tarch::la::Vector<DIMENSIONS,double>& cellSize) const = 0;
-
-   /**
-    * Resets the vector of global observables to some suitable initial value, e.g.
-    * the smallest possible double if one wants to compute the maximum.
-    *
-    *\param[inout] observables The reset (global) observables.
-    */
-   virtual void resetGlobalObservables(double* const observables) const = 0;
+       const tarch::la::Vector<DIMENSIONS,double>& cellSize) = 0;
 
    /**
     * This method merges two vectors of (global) observables.
@@ -2169,8 +2165,9 @@ class exahype::solvers::Solver {
     *\param[in]    otherObservables other observables we want to merge with the first argument.
     */
    virtual void mergeGlobalObservables(
-       double* const       observables,
-       const double* const otherObservables) const = 0;
+       double* const       globalObservables,
+       const double* const otherObservables) = 0;
+ public:
 
   /**
    * Signals a user solver that ExaHyPE just started a new time step.

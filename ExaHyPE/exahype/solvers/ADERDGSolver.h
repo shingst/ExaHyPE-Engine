@@ -1747,7 +1747,7 @@ public:
       CellDescription& cellDescription,
       const bool isFirstTimeStepOfBatch);
 
-  double updateTimeStepSize(const int solverNumber,CellInfo& cellInfo) final override;
+  void updateTimeStepSize(const int solverNumber,CellInfo& cellInfo) final override;
 
   void fusedTimeStepOrRestrict(
       const int  solverNumber,

@@ -362,16 +362,17 @@ private:
       const SolverPatch& solverPatch, LimiterPatch& limiterPatch);
 
   /**
-   * Calls the reduceGlobalObservables on the solver if the
+   * Calls the updateGlobalObservables on the solver if the
    * cell is not troubled. Otherwise, calls the routine
    * on the limiter.
    *
    * @param solverPatch a solver patch of type Cell.
    * @param cellInfo    struct referring to all cell descriptions registered for a cell
    */
-  void reduceGlobalObservables(
-      SolverPatch&     solverPatch,
-      Solver::CellInfo cellInfo) const;
+  void reduce(
+      const SolverPatch&  cellDescription,
+      CellInfo&           cellInfo,
+      const UpdateResult& updateResult);
 
   /**
    * Body of LimitingADERDGSolver::fusedTimeStepOrRestrict(...).
@@ -400,7 +401,7 @@ private:
    *
    * @note Might be called by background task. Do not synchronise time step data here.
    */
-  UpdateResult fusedTimeStepBody(
+  void fusedTimeStepBody(
       SolverPatch&                                               solverPatch,
       CellInfo&                                                  cellInfo,
       const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
@@ -420,7 +421,7 @@ private:
    *
    * @return an admissible time step size and a mesh update event for the solver patch
    */
-  UpdateResult updateBody(
+  void updateBody(
       SolverPatch&                                               solverPatch,
       CellInfo&                                                  cellInfo,
       const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
@@ -953,7 +954,7 @@ void updateNextGlobalObservables(
       SolverPatch& solverPatch,Solver::CellInfo& cellInfo,
       const bool isFirstTimeStepOfBatch);
 
-  double updateTimeStepSize(const int solverNumber,CellInfo& cellInfo) final override;
+  void updateTimeStepSize(const int solverNumber,CellInfo& cellInfo) final override;
 
   /**
    * Mostly identical but slightly different to the ADER-DG equivalent
@@ -1592,15 +1593,16 @@ void updateNextGlobalObservables(
     return _solver->getGeometricLoadBalancingWeight(cellCentre,cellSize);
   }
 
-  std::vector<double> mapGlobalObservables(
+  void resetGlobalObservables(double* const globalObservables) final override;
+
+  void updateGlobalObservables(
+      double* const                               globalObservables,
       const double* const                         luh,
-      const tarch::la::Vector<DIMENSIONS, double> &dx) const final override;
+      const tarch::la::Vector<DIMENSIONS,double>& cellSize) final override;
 
-  std::vector<double> resetGlobalObservables() const final override;
-
-  void reduceGlobalObservables(
-      std::vector<double>& reducedGlobalObservables,
-      const std::vector<double>& curGlobalObservables) const final override;
+  void mergeGlobalObservables(
+      double* const       globalObservables,
+      const double* const otherObservables) final override;
 
 protected:
 

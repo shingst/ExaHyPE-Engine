@@ -233,7 +233,7 @@ void exahype::solvers::FiniteVolumesSolver::kickOffTimeStep(const bool isFirstTi
   }
 
   // call user code
-  _nextGlobalObservables = resetGlobalObservables();
+  resetGlobalObservables(_nextGlobalObservables.data());
   beginTimeStep(_minTimeStamp,isFirstTimeStepOfBatchOrNoBatch);
 }
 
@@ -612,7 +612,7 @@ double exahype::solvers::FiniteVolumesSolver::startNewTimeStep(CellDescription& 
   }
 }
 
-double exahype::solvers::FiniteVolumesSolver::updateTimeStepSize(const int solverNumber,CellInfo& cellInfo) {
+void exahype::solvers::FiniteVolumesSolver::updateTimeStepSize(const int solverNumber,CellInfo& cellInfo) {
   const int element = cellInfo.indexOfFiniteVolumesCellDescription(solverNumber);
   if ( element != NotFound ) {
     CellDescription& cellDescription = cellInfo._FiniteVolumesCellDescriptions[element];
@@ -620,14 +620,9 @@ double exahype::solvers::FiniteVolumesSolver::updateTimeStepSize(const int solve
       double* solution = static_cast<double*>(cellDescription.getSolution());
       double admissibleTimeStepSize = stableTimeStepSize(solution, cellDescription.getSize());
       assertion1(std::isfinite(admissibleTimeStepSize),cellDescription.toString());
-
       cellDescription.setTimeStepSize(admissibleTimeStepSize);
-      return admissibleTimeStepSize;
-    } else {
-      return std::numeric_limits<double>::infinity();
+      updateAdmissibleTimeStepSize(admissibleTimeStepSize);
     }
-  } else {
-    return std::numeric_limits<double>::infinity();
   }
 }
 
@@ -690,13 +685,7 @@ void exahype::solvers::FiniteVolumesSolver::reduce(
     assert(cellDescription.getType()==CellDescription::Type::Cell);
     const double* const luh         = static_cast<double*>(cellDescription.getSolution());
     const auto& cellSize            = cellDescription.getSize();
-
-    std::vector<double> localObservables; // TODO(Dominic): Move allocation into abstract solver
-    localObservables.resize(_numberOfGlobalObservables);
-    localObservables(luh, cellSize);
-    tarch::multicore::Lock lock(ReductionSemaphore);
-    mergeGlobalObservables(_nextGlobalObservables.data(), localObservables.data());
-    lock.free();
+    updateGlobalObservables(_nextGlobalObservables.data(),luh,cellSize);
   }
 }
 
@@ -1396,16 +1385,21 @@ void exahype::solvers::FiniteVolumesSolver::sendDataToMaster(
     const int                                    masterRank,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const int                                    level) const {
-  DataHeap::HeapEntries messageForMaster(0,1);
-  messageForMaster.push_back(_admissibleTimeStepSize);
+  const auto messageSize = 1 + _numberOfGlobalObservables;
+  DataHeap::HeapEntries message;
+  message.reserve(messageSize);
+  message.push_back(_admissibleTimeStepSize);
+  for (const auto observable : _globalObservables) {
+    message.push_back(observable);
+  }
 
-  assertion1(std::isfinite(messageForMaster[0]),messageForMaster[0]);
+  assertion1(std::isfinite(message[0]),message[0]);
   if ( !tarch::parallel::Node::getInstance().isGlobalMaster() ) {
-    logDebug("sendDataToMaster(...)","Sending time step data: " << "data[0]=" << messageForMaster[0]);
+    logDebug("sendDataToMaster(...)","Sending time step data: " << "data[0]=" << message[0]);
   }
 
   DataHeap::getInstance().sendData(
-      messageForMaster.data(), messageForMaster.size(),
+      message.data(), message.size(),
       masterRank,x,level,peano::heap::MessageType::MasterWorkerCommunication);
 }
 
@@ -1413,20 +1407,27 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithWorkerData(
     const int                                    workerRank,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const int                                    level) {
-  DataHeap::HeapEntries messageFromWorker(1);
+  const auto messageSize = 1 + _numberOfGlobalObservables;
+  DataHeap::HeapEntries message(1);
 
   DataHeap::getInstance().receiveData(
-      messageFromWorker.data(), messageFromWorker.size(),
+      message.data(), message.size(),
       workerRank,x,level,peano::heap::MessageType::MasterWorkerCommunication);
 
-  assertion1(std::isfinite(messageFromWorker[0]),messageFromWorker[0]);
+  assertion1(std::isfinite(message[0]),message[0]);
+
 
   int index=0;
-  _admissibleTimeStepSize = std::min( _admissibleTimeStepSize, messageFromWorker[index++] );
+  _admissibleTimeStepSize = std::min( _admissibleTimeStepSize, message[index++] );
+  DataHeap::HeapEntries observablesFromWorker = DataHeap::HeapEntries(_numberOfGlobalObservables);
+  for (int i = 0; i < _numberOfGlobalObservables; ++i) {
+    observablesFromWorker[i] = message[index++];
+  }
+  mergeGlobalObservables(_nextGlobalObservables.data(), observablesFromWorker.data()); // !  master hasn't wrapped up time step yet
 
   if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
     logDebug("mergeWithWorkerData(...)","Received data: " <<
-             "data[0]=" << messageFromWorker[0]);
+             "data[0]=" << message[0]);
     logDebug("mergeWithWorkerData(...)","Updated fields: " <<
              "_admissibleTimeStepSize=" << _admissibleTimeStepSize);
   }
@@ -1439,27 +1440,22 @@ void exahype::solvers::FiniteVolumesSolver::sendDataToWorker(
     const int                                    workerRank,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const int                                    level) const {
-  std::vector<double> messageForWorker(0,2);
-  messageForWorker.push_back(_minTimeStamp);
-  messageForWorker.push_back(_minTimeStepSize);
-
-  assertion1(std::isfinite(messageForWorker[0]),messageForWorker[0]);
-  assertion1(std::isfinite(messageForWorker[1]),messageForWorker[1]);
-
-  if (_timeStepping==TimeStepping::Global) {
-    assertionEquals1(_admissibleTimeStepSize,std::numeric_limits<double>::infinity(),
-        tarch::parallel::Node::getInstance().getRank());
+  std::vector<double> message(0,2);
+  message.push_back(_minTimeStamp);
+  message.push_back(_minTimeStepSize);
+  for (const auto observable : _globalObservables) {
+    message.push_back(observable);
   }
 
   if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
     logDebug("sendDataToWorker(...)","Broadcasting time step data: " <<
-        " data[0]=" << messageForWorker[0] <<
-        ",data[1]=" << messageForWorker[1]);
+        " data[0]=" << message[0] <<
+        ",data[1]=" << message[1]);
     logDebug("sendDataWorker(...)","_minNextTimeStepSize="<<_admissibleTimeStepSize);
   }
 
   DataHeap::getInstance().sendData(
-      messageForWorker.data(), messageForWorker.size(),
+      message.data(), message.size(),
       workerRank,x,level,peano::heap::MessageType::MasterWorkerCommunication);
 }
 
@@ -1467,24 +1463,25 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithMasterData(
     const int                                    masterRank,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const int                                    level) {
-  std::vector<double> messageFromMaster(2);
+  const auto messageSize = 5 + _numberOfGlobalObservables;
+  DataHeap::HeapEntries message(messageSize);
 
   DataHeap::getInstance().receiveData(
-      messageFromMaster.data(), messageFromMaster.size(),
+      message.data(), message.size(),
       masterRank,x,level,peano::heap::MessageType::MasterWorkerCommunication);
-
-  if (_timeStepping==TimeStepping::Global) {
-    assertion1(!std::isfinite(_admissibleTimeStepSize),_admissibleTimeStepSize);
-  }
 
   if ( !tarch::parallel::Node::getInstance().isGlobalMaster() ) {
     logDebug("mergeWithMasterData(...)","Received message from master: " <<
-        "data[0]=" << messageFromMaster[0] << "," <<
-        "data[1]=" << messageFromMaster[1]);
+        "data[0]=" << message[0] << "," <<
+        "data[1]=" << message[1]);
   }
 
-  _minTimeStamp    = messageFromMaster[0];
-  _minTimeStepSize = messageFromMaster[1];
+  int index = 0;
+  _minTimeStamp    = message[index++];
+  _minTimeStepSize = message[index++];
+  for (int i = 0; i < _numberOfGlobalObservables; ++i) {
+    _globalObservables[i] = message[index++];
+  }
 }
 #endif
 
