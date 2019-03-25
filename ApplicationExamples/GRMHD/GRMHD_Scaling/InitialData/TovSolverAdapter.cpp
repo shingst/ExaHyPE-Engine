@@ -6,6 +6,7 @@ constexpr int nVar = GRMHD::AbstractGRMHDSolver_ADERDG::NumberOfVariables;
 using namespace GRMHD::GRMHDSolver_ADERDG_Variables::shortcuts;
 
 // Trivial inlined interface to the C++ TovSolver which is included in the code
+
 #include "../tovsolver_lib/tov.h"
 
 TovSolverAdapter::TovSolverAdapter() {
@@ -15,8 +16,8 @@ TovSolverAdapter::TovSolverAdapter() {
 	
 	tov->TOV_Rho_Central[0]     = 1.28e-3 ;
 	tov->TOV_Combine_Method = "maximum"   ;
-	tov->TOV_Num_Radial     = 40000000    ;
-	tov->TOV_dr[0]          = 0.00001     ;
+	tov->TOV_Num_Radial     = 10000       ;
+	tov->TOV_dr[0]          = 0.001       ;
 	tov->Perturb[0]         = false       ;
 	tov->Perturb_Pressure[0]   = false    ;
 	tov->Pert_Press_Amplitude[0] = 0.01   ;
@@ -28,8 +29,9 @@ void TovSolverAdapter::Interpolate(const double* const x, double t, double* cons
 	double V[nVar];
 	
 	TOV::idvars id;
-    auto params = new TOV::Parameters();
+
 	tov->Interpolate(x, id);
+
 	
 	V[rho] = id.rho;
 	V[E] = id.press;
@@ -42,8 +44,11 @@ void TovSolverAdapter::Interpolate(const double* const x, double t, double* cons
 	V[lapse] = id.alp;
 	
 	// Floor atmosphere
-	if(V[rho] < params->atmo_rho) V[rho] = params->atmo_rho;
-	if(V[E] < params->atmo_press) V[E] = params->atmo_press;
+  
+	if(V[rho] < tov->atmo_rho) V[rho] = tov->atmo_rho;
+	if(V[E] < tov->atmo_press) V[E] = tov->atmo_press;
+//	if(V[rho] < TOV::Parameters.atmo_rho) V[rho] = TOV::Parameters.atmo_rho;
+//	if(V[E] < TOV::Parameters.atmo_press) V[E] = TOV::Parameters.atmo_press;
 	
 	// Caveats with the ordering, here it is Tensish (C)
 	V[gij + 0] = id.gam[0][0];  // gxx
@@ -53,7 +58,11 @@ void TovSolverAdapter::Interpolate(const double* const x, double t, double* cons
 	V[gij + 4] = id.gam[1][2];  // gyz
 	V[gij + 5] = id.gam[2][2];  // gzz
 
+//	printf("At x=(%lf,%lf,%lf), rho=%lf\n", x[0],x[1],x[2],V[rho]);
+//  std::cout << "Before p2c V = " << std::endl;; 
+//  for(int i=0; i<nVar; i++) {
+//    std::cout << i << " = " << V[i] << std::endl;
+//  }
+	
 	pdeprim2cons_(Q, V);
-
-    delete params;
 }

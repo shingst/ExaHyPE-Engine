@@ -488,7 +488,7 @@ Euler::EulerSolver_ADERDG::refinementCriterion(
   return exahype::solvers::Solver::RefinementControl::Keep;
 }
 
-void Euler::EulerSolver_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double* const fluxIn,const double* const stateIn,const double* const gradStateIn,double* const fluxOut,double* const stateOut)
+void Euler::EulerSolver_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int direction,const double* const fluxIn,const double* const stateIn,const double* const gradStateIn,double* const fluxOut,double* const stateOut){
   switch (ReferenceChoice) {
   case Reference::SphericalExplosion:
   case Reference::RarefactionWave:

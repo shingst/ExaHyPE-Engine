@@ -21,11 +21,12 @@ namespace GRMHD{
 
 class GRMHD::GRMHDSolver: public exahype::solvers::LimitingADERDGSolver {  
   public:
-    static constexpr int NumberOfVariables      = GRMHD::AbstractGRMHDSolver_ADERDG::NumberOfVariables;
-    static constexpr int NumberOfParameters     = GRMHD::AbstractGRMHDSolver_ADERDG::NumberOfParameters;
-    static constexpr int Order                  = GRMHD::AbstractGRMHDSolver_ADERDG::Order;
-    static constexpr int NumberOfDMPObservables = GRMHD::AbstractGRMHDSolver_ADERDG::NumberOfDMPObservables;
-    static constexpr int GhostLayerWidth        = GRMHD::AbstractGRMHDSolver_FV::GhostLayerWidth;
+    static constexpr int NumberOfVariables         = GRMHD::AbstractGRMHDSolver_ADERDG::NumberOfVariables;
+    static constexpr int NumberOfParameters        = GRMHD::AbstractGRMHDSolver_ADERDG::NumberOfParameters;
+    static constexpr int Order                     = GRMHD::AbstractGRMHDSolver_ADERDG::Order;
+    static constexpr int NumberOfGlobalObservables = GRMHD::AbstractGRMHDSolver_ADERDG::NumberOfGlobalObservables;
+    static constexpr int NumberOfDMPObservables    = GRMHD::AbstractGRMHDSolver_ADERDG::NumberOfDMPObservables;
+    static constexpr int GhostLayerWidth           = GRMHD::AbstractGRMHDSolver_FV::GhostLayerWidth;
       
     GRMHDSolver(
         const double maximumMeshSize,
