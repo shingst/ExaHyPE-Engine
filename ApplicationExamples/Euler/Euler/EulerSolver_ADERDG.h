@@ -144,12 +144,6 @@ public:
    */
   virtual void flux(const double* const Q,double** const F);
 
-
-  /**
-   * Use the generalised Osher Solomon flux
-   */
-  void riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double t, const double dt, const tarch::la::Vector<DIMENSIONS, double>& lengthScale, const int direction, bool isBoundaryFace, int faceIndex) final override;
-
   /**
    * Compute the eigenvectors of the jacobian matrix (coefficient matrix of derivative in direction @direction).
    *

@@ -132,11 +132,6 @@ public:
   void adjustSolution(const double* const x,const double t,const double dt, double* const Q) override;
 
   /**
-   * Use generalised Osher Solomon flux.
-   */
-  double riemannSolver(double* fL, double *fR, const double* qL, const double* qR, const double* gradQL, const double* gradQR, const double* cellSize, int normalNonZero)  final override;
-
-  /**
    * Compute the eigenvectors of the jacobian matrix (coefficient matrix of derivative in direction @direction).
    *
    * This function also returns eigenvalues as numerical packages often compute eigenvalues and 
