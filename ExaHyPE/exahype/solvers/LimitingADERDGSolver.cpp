@@ -160,6 +160,11 @@ bool exahype::solvers::LimitingADERDGSolver::isMergingMetadata(
 }
 
 void exahype::solvers::LimitingADERDGSolver::kickOffTimeStep(const bool isFirstTimeStepOfBatchOrNoBatch) {
+  // copy solver observables to limiter (might be MPI comm. before)
+  // TODO add to docu: During mesh refinement, we only require the observables on the main solver
+  std::copy(_solver->_globalObservables.begin(),_solver->_globalObservables.end(),
+            _limiter->_globalObservables.begin());
+
   _solver->kickOffTimeStep(isFirstTimeStepOfBatchOrNoBatch);
   _limiter->kickOffTimeStep(isFirstTimeStepOfBatchOrNoBatch);
 }
@@ -167,12 +172,11 @@ void exahype::solvers::LimitingADERDGSolver::kickOffTimeStep(const bool isFirstT
 void exahype::solvers::LimitingADERDGSolver::wrapUpTimeStep(const bool isFirstTimeStepOfBatchOrNoBatch,const bool isLastTimeStepOfBatchOrNoBatch) {
   _solver->wrapUpTimeStep(isFirstTimeStepOfBatchOrNoBatch,isLastTimeStepOfBatchOrNoBatch);
   _limiter->wrapUpTimeStep(isFirstTimeStepOfBatchOrNoBatch,isLastTimeStepOfBatchOrNoBatch);
+
   // compare solver and limiter global observables
-  _solver->reduceGlobalObservables(_solver->_globalObservables,_limiter->_globalObservables);
+  _solver->mergeGlobalObservables(_solver->_globalObservables.data(),_limiter->_globalObservables.data());
   std::copy(_solver->_globalObservables.begin(),_solver->_globalObservables.end(),
             _limiter->_globalObservables.begin());
-
-  // TODO(Dominic): Where is the admissible time step size actually reset before running the FinaliseMeshRefinement adapter?
 }
 
 void exahype::solvers::LimitingADERDGSolver::synchroniseTimeStepping(
@@ -1916,9 +1920,6 @@ void exahype::solvers::LimitingADERDGSolver::mergeWithMasterData(
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const int                                    level) {
   _solver->mergeWithMasterData(masterRank,x,level);
-  // copy solver observables to limiter
-  std::copy(_solver->_globalObservables.begin(),_solver->_globalObservables.end(),
-            _limiter->_globalObservables.begin());
 }
 #endif
 
