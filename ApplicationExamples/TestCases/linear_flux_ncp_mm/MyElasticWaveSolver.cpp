@@ -84,8 +84,7 @@ void Elastic::MyElasticWaveSolver::adjustSolution(double* const luh, const tarch
   }
 }
 void Elastic::MyElasticWaveSolver::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,
-					const double * const fluxIn,const double* const stateIn, const double* const gradStateIn,
-  double *fluxOut,double* stateOut)
+                                                  const double * const fluxIn,const double* const stateIn, const double* const gradStateIn, double *fluxOut,double* stateOut){
   // Dimensions                        = 3
   // Number of variables + parameters  = 9 + 16
   constexpr int numberOfVariables  = MyElasticWaveSolver::NumberOfVariables;
