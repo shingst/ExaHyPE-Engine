@@ -117,6 +117,11 @@ void exahype::mappings::FinaliseMeshRefinement::beginIteration(exahype::State& s
   OneSolverRequestedMeshUpdate =
       exahype::solvers::Solver::oneSolverRequestedMeshRefinement();
 
+  // reset the time step size
+  for (auto* solver : exahype::solvers::RegisteredSolvers) {
+    solver->resetAdmissibleTimeStepSize();
+  }
+
   exahype::mappings::MeshRefinement::IsFirstIteration = true;
 
   #ifdef Parallel
