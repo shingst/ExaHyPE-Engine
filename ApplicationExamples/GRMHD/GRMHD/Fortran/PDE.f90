@@ -530,9 +530,9 @@ RECURSIVE SUBROUTINE PDEEigenvalues(L,Q,n)
   Pi = ACOS(-1.0)
     !
     L = 0.0
-    L(1) = -1.0    
-    L(2) = +1.0    
-    RETURN 
+!    L(1) = -1.0    
+!    L(2) = +1.0    
+!    RETURN 
 
     xg(1) = 0.
     xg(2) = 0.
@@ -583,6 +583,7 @@ RECURSIVE SUBROUTINE PDEEigenvalues(L,Q,n)
     sft    = shift(1)*n(1) + shift(2)*n(2) + shift(3)*n(3) 
     gg     = g_contr(1,1)*ABS(n(1)) + g_contr(2,2)*ABS(n(2)) + g_contr(3,3)*ABS(n(3))
     den    = 1.0/(1.0 - v2*cs2)
+
     IF(SUM(n**2).EQ.0.) THEN  
         u = SQRT( v2) 
         WRITE(*,*)'Impossible error!'
@@ -600,31 +601,49 @@ RECURSIVE SUBROUTINE PDEEigenvalues(L,Q,n)
 	DO i=6,nVar
 		L(i)   = 0.
 	ENDDO
-    !
-    ! SAFE MODE: define also 'covariant' eigenvalues! (we may use the remaining free slots in L, L(6:8), L(10:19)
-    !
-    shift_cov = MATMUL(g_cov,shift)
-    !
-    vn2  = v_cov(1)*n(1) + v_cov(2)*n(2) + v_cov(3)*n(3)
-    sft2 = shift_cov(1)*n(1) + shift_cov(2)*n(2) + shift_cov(3)*n(3) 
-    gg2  = g_cov(1,1)*ABS(n(1)) + g_cov(2,2)*ABS(n(2)) + g_cov(3,3)*ABS(n(3))
-    den  = 1.0/(1.0 - v2*cs2)
-    !
-    u = vn2 
-    !
-    L(10)  = ( u*(1.0-cs2) - SQRT( cs2*lf2m*( (1.0-v2*cs2)*gg2 - u**2*(1.0-cs2) )) )*den
-    L(6:8) = u
-    L(11)  = ( u*(1.0-cs2) + SQRT( cs2*lf2m*( (1.0-v2*cs2)*gg2 - u**2*(1.0-cs2) )) )*den 
-    L(6:11)   = lapse*L(6:11) - sft2
-    ! 
-    L(9) =  DivCleaning_a   ! 1.  !ch
-    !
-    FLAG = .FALSE.
-    IF(MAXVAL(ABS(L)).GT.1.01) THEN
-        FLAG = .TRUE.
-        continue
-    ENDIF
-    !  
+
+  
+  !if any abs(lambda) > 1 for any, set to +-1 
+  DO i=1,5
+    if( abs(L(i)) > 1) then
+      L(1)= -1.0
+      L(2)= +1.0
+    endif
+  enddo
+
+ 
+  ! if atmo is small, set the eigenvalues to +- 0.5
+  if(Q(1) < 1.e-9) then 
+    L(1) = -1.0    
+    L(2) = +1.0    
+  endif
+
+  return 
+!     !
+!     ! SAFE MODE: define also 'covariant' eigenvalues! (we may use the remaining free slots in L, L(6:8), L(10:19)
+!     !
+!     shift_cov = MATMUL(g_cov,shift)
+!     !
+!     vn2  = v_cov(1)*n(1) + v_cov(2)*n(2) + v_cov(3)*n(3)
+!     sft2 = shift_cov(1)*n(1) + shift_cov(2)*n(2) + shift_cov(3)*n(3) 
+!     gg2  = g_cov(1,1)*ABS(n(1)) + g_cov(2,2)*ABS(n(2)) + g_cov(3,3)*ABS(n(3))
+!     den  = 1.0/(1.0 - v2*cs2)
+!     !
+!     u = vn2 
+!     !
+!     L(10)  = ( u*(1.0-cs2) - SQRT( cs2*lf2m*( (1.0-v2*cs2)*gg2 - u**2*(1.0-cs2) )) )*den
+!     L(6:8) = u
+!     L(11)  = ( u*(1.0-cs2) + SQRT( cs2*lf2m*( (1.0-v2*cs2)*gg2 - u**2*(1.0-cs2) )) )*den 
+!     L(6:11)   = lapse*L(6:11) - sft2
+!     ! 
+!     L(9) =  DivCleaning_a   ! 1.  !ch
+!     !
+!     FLAG = .FALSE.
+!     IF(MAXVAL(ABS(L)).GT.1.01) THEN
+!         FLAG = .TRUE.
+!         continue
+!     ENDIF
+!     !  
 	continue
 	!
 END SUBROUTINE PDEEigenvalues

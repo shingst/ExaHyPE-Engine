@@ -134,7 +134,7 @@ public:
   /**
    * Use generalised Osher Solomon flux.
    */
-  double riemannSolver(double* const fL, double* const fR, const double* const qL, const double* const qR, int direction)  final override;
+  double riemannSolver(double* fL, double *fR, const double* qL, const double* qR, const double* gradQL, const double* gradQR, const double* cellSize, int normalNonZero)  final override;
 
   /**
    * Compute the eigenvectors of the jacobian matrix (coefficient matrix of derivative in direction @direction).

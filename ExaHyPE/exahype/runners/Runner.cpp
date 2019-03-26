@@ -205,10 +205,10 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
 
   // load balancing strategy
   // basically a switch-case
-  if ( _parser.compareMPILoadBalancingStrategy( "greedy-naive" )) {
+  if ( _parser.compareMPILoadBalancingStrategy( "greedy_naive" )) {
     exahype::mappings::LoadBalancing::setLoadBalancingAnalysis( exahype::mappings::LoadBalancing::LoadBalancingAnalysis::Greedy );
   }
-  else if ( _parser.compareMPILoadBalancingStrategy( "greedy-regular" )) {
+  else if ( _parser.compareMPILoadBalancingStrategy( "greedy_regular" )) {
     exahype::mappings::LoadBalancing::setLoadBalancingAnalysis( exahype::mappings::LoadBalancing::LoadBalancingAnalysis::GreedyWithRegularityAnalysis );
   }
   else if ( _parser.compareMPILoadBalancingStrategy( "hotspot" )) {
@@ -396,14 +396,19 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
   tarch::multicore::jobs::setMinMaxNumberOfJobsToConsumeInOneRush(
       _parser.getMinBackgroundJobsInARush(), _parser.getMaxBackgroundJobsInARush() );
 
-  if ( _parser.getMapBackgroundJobsToTasks() ) {
+  if ( _parser.compareBackgroundJobProcessing( "spawn_tasks" ) ) {
     if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
       logInfo("initSharedMemoryConfiguration(...)","Map background jobs to plain tasks.");
     }
     tarch::multicore::jobs::setTaskProcessingScheme(tarch::multicore::jobs::TaskProcessingScheme::MapToPlainTBBTasks);
+  } else if ( _parser.compareBackgroundJobProcessing( "job_system_without_priorities" ) ) {
+    if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+      logInfo("initSharedMemoryConfiguration(...)","Let Peano's job system handle the jobs. Use two separate concurrent queues, one for high and one for low priority jobs");
+    }
+    tarch::multicore::jobs::setTaskProcessingScheme(tarch::multicore::jobs::TaskProcessingScheme::UseCustomTBBWrapperWithoutPriorities);
   } else {
     if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
-      logInfo("initSharedMemoryConfiguration(...)","Let Peano's job system handle the jobs.");
+      logInfo("initSharedMemoryConfiguration(...)","Let Peano's job system handle the jobs. Use TBB concurrent priority queue.");
     }
     tarch::multicore::jobs::setTaskProcessingScheme(tarch::multicore::jobs::TaskProcessingScheme::UseCustomTBBWrapper);
   }
@@ -796,25 +801,26 @@ void exahype::runners::Runner::initHPCEnvironment() {
   //
   #ifdef USE_ITAC
   int ierr=0;
-  ierr=VT_funcdef("Solver::waitUntilCompletedLastStepHandle"          , VT_NOCLASS, &exahype::solvers::Solver::waitUntilCompletedLastStepHandle          ); assertion(ierr==0);
-  ierr=VT_funcdef("Solver::ensureAllJobsHaveTerminatedHandle"         , VT_NOCLASS, &exahype::solvers::Solver::ensureAllJobsHaveTerminatedHandle         ); assertion(ierr==0);
-  ierr=VT_funcdef("ADERDGSolver::adjustSolutionHandle"                , VT_NOCLASS, &exahype::solvers::ADERDGSolver::adjustSolutionHandle                ); assertion(ierr==0);
-  ierr=VT_funcdef("ADERDGSolver::fusedTimeStepBodyHandle"             , VT_NOCLASS, &exahype::solvers::ADERDGSolver::fusedTimeStepBodyHandle             ); assertion(ierr==0);
-  ierr=VT_funcdef("ADERDGSolver::predictorBodyHandle"                 , VT_NOCLASS, &exahype::solvers::ADERDGSolver::predictorBodyHandle                 ); assertion(ierr==0);
-  ierr=VT_funcdef("ADERDGSolver::updateBodyHandle"                    , VT_NOCLASS, &exahype::solvers::ADERDGSolver::updateBodyHandle                    ); assertion(ierr==0);
-  ierr=VT_funcdef("ADERDGSolver::mergeNeighboursHandle"               , VT_NOCLASS, &exahype::solvers::ADERDGSolver::mergeNeighboursHandle               ); assertion(ierr==0);
-  ierr=VT_funcdef("ADERDGSolver::prolongateFaceDataToDescendantHandle", VT_NOCLASS, &exahype::solvers::ADERDGSolver::prolongateFaceDataToDescendantHandle); assertion(ierr==0);
-  ierr=VT_funcdef("ADERDGSolver::restrictToTopMostParentHandle"       , VT_NOCLASS, &exahype::solvers::ADERDGSolver::restrictToTopMostParentHandle       ); assertion(ierr==0);
-  ierr=VT_funcdef("LimitingADERDGSolver::adjustSolutionHandle"        , VT_NOCLASS, &exahype::solvers::LimitingADERDGSolver::adjustSolutionHandle        ); assertion(ierr==0);
-  ierr=VT_funcdef("LimitingADERDGSolver::fusedTimeStepBodyHandle"     , VT_NOCLASS, &exahype::solvers::LimitingADERDGSolver::fusedTimeStepBodyHandle     ); assertion(ierr==0);
-  ierr=VT_funcdef("LimitingADERDGSolver::predictorBodyHandle"         , VT_NOCLASS, &exahype::solvers::LimitingADERDGSolver::predictorBodyHandle         ); assertion(ierr==0);
-  ierr=VT_funcdef("LimitingADERDGSolver::updateBodyHandle"            , VT_NOCLASS, &exahype::solvers::LimitingADERDGSolver::updateBodyHandle            ); assertion(ierr==0);
-  ierr=VT_funcdef("LimitingADERDGSolver::mergeNeighboursHandle"       , VT_NOCLASS, &exahype::solvers::LimitingADERDGSolver::mergeNeighboursHandle       ); assertion(ierr==0);
-  ierr=VT_funcdef("FiniteVolumesSolver::adjustSolutionHandle"         , VT_NOCLASS, &exahype::solvers::FiniteVolumesSolver::adjustSolutionHandle         ); assertion(ierr==0);
-  ierr=VT_funcdef("FiniteVolumesSolver::fusedTimeStepBodyHandle"      , VT_NOCLASS, &exahype::solvers::FiniteVolumesSolver::fusedTimeStepBodyHandle      ); assertion(ierr==0);
-  ierr=VT_funcdef("FiniteVolumesSolver::predictorBodyHandle"          , VT_NOCLASS, &exahype::solvers::FiniteVolumesSolver::predictorBodyHandle          ); assertion(ierr==0);
-  ierr=VT_funcdef("FiniteVolumesSolver::updateBodyHandle"             , VT_NOCLASS, &exahype::solvers::FiniteVolumesSolver::updateBodyHandle             ); assertion(ierr==0);
-  ierr=VT_funcdef("FiniteVolumesSolver::mergeNeighboursHandle"        , VT_NOCLASS, &exahype::solvers::FiniteVolumesSolver::mergeNeighboursHandle        ); assertion(ierr==0);
+  ierr=VT_funcdef("Solver::waitUntilCompletedLastStepHandle"              , VT_NOCLASS, &exahype::solvers::Solver::waitUntilCompletedLastStepHandle             ); assertion(ierr==0);
+  ierr=VT_funcdef("Solver::ensureAllJobsHaveTerminatedHandle"             , VT_NOCLASS, &exahype::solvers::Solver::ensureAllJobsHaveTerminatedHandle            ); assertion(ierr==0);
+  ierr=VT_funcdef("ADERDGSolver::adjustSolutionHandle"                    , VT_NOCLASS, &exahype::solvers::ADERDGSolver::adjustSolutionHandle                   ); assertion(ierr==0);
+  ierr=VT_funcdef("ADERDGSolver::fusedTimeStepBodyHandle"                 , VT_NOCLASS, &exahype::solvers::ADERDGSolver::fusedTimeStepBodyHandle                ); assertion(ierr==0);
+  ierr=VT_funcdef("ADERDGSolver::fusedTimeStepBodyHandleSkeleton"         , VT_NOCLASS, &exahype::solvers::ADERDGSolver::fusedTimeStepBodyHandleSkeleton        ); assertion(ierr==0);
+  ierr=VT_funcdef("ADERDGSolver::predictorBodyHandle"                     , VT_NOCLASS, &exahype::solvers::ADERDGSolver::predictorBodyHandle                    ); assertion(ierr==0);
+  ierr=VT_funcdef("ADERDGSolver::predictorBodyHandleSkeleton"             , VT_NOCLASS, &exahype::solvers::ADERDGSolver::predictorBodyHandleSkeleton            ); assertion(ierr==0);
+  ierr=VT_funcdef("ADERDGSolver::updateBodyHandle"                        , VT_NOCLASS, &exahype::solvers::ADERDGSolver::updateBodyHandle                       ); assertion(ierr==0);
+  ierr=VT_funcdef("ADERDGSolver::mergeNeighboursHandle"                   , VT_NOCLASS, &exahype::solvers::ADERDGSolver::mergeNeighboursHandle                  ); assertion(ierr==0);
+  ierr=VT_funcdef("ADERDGSolver::prolongateFaceDataToDescendantHandle"    , VT_NOCLASS, &exahype::solvers::ADERDGSolver::prolongateFaceDataToDescendantHandle   ); assertion(ierr==0);
+  ierr=VT_funcdef("ADERDGSolver::restrictToTopMostParentHandle"           , VT_NOCLASS, &exahype::solvers::ADERDGSolver::restrictToTopMostParentHandle          ); assertion(ierr==0);
+  ierr=VT_funcdef("LimitingADERDGSolver::adjustSolutionHandle"            , VT_NOCLASS, &exahype::solvers::LimitingADERDGSolver::adjustSolutionHandle           ); assertion(ierr==0);
+  ierr=VT_funcdef("LimitingADERDGSolver::fusedTimeStepBodyHandle"         , VT_NOCLASS, &exahype::solvers::LimitingADERDGSolver::fusedTimeStepBodyHandle        ); assertion(ierr==0);
+  ierr=VT_funcdef("LimitingADERDGSolver::fusedTimeStepBodyHandleSkeleton" , VT_NOCLASS, &exahype::solvers::LimitingADERDGSolver::fusedTimeStepBodyHandleSkeleton); assertion(ierr==0);
+  ierr=VT_funcdef("LimitingADERDGSolver::updateBodyHandle"                , VT_NOCLASS, &exahype::solvers::LimitingADERDGSolver::updateBodyHandle               ); assertion(ierr==0);
+  ierr=VT_funcdef("LimitingADERDGSolver::mergeNeighboursHandle"           , VT_NOCLASS, &exahype::solvers::LimitingADERDGSolver::mergeNeighboursHandle          ); assertion(ierr==0);
+  ierr=VT_funcdef("FiniteVolumesSolver::adjustSolutionHandle"             , VT_NOCLASS, &exahype::solvers::FiniteVolumesSolver::adjustSolutionHandle            ); assertion(ierr==0);
+  ierr=VT_funcdef("FiniteVolumesSolver::updateBodyHandle"                 , VT_NOCLASS, &exahype::solvers::FiniteVolumesSolver::updateBodyHandle                ); assertion(ierr==0);
+  ierr=VT_funcdef("FiniteVolumesSolver::updateBodyHandleSkeleton"         , VT_NOCLASS, &exahype::solvers::FiniteVolumesSolver::updateBodyHandleSkeleton        ); assertion(ierr==0);
+  ierr=VT_funcdef("FiniteVolumesSolver::mergeNeighboursHandle"            , VT_NOCLASS, &exahype::solvers::FiniteVolumesSolver::mergeNeighboursHandle           ); assertion(ierr==0);
   #endif
 }
 

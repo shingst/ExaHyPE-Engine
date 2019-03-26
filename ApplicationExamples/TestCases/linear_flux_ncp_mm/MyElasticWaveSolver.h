@@ -54,7 +54,7 @@ class Elastic::MyElasticWaveSolver : public Elastic::AbstractMyElasticWaveSolver
      */
     void eigenvalues(const double* const Q,const int d,double* const lambda) final override;
     
-    /**
+     /**
      * Impose boundary conditions at a point on a boundary face
      * within the time interval [t,t+dt].
      *
@@ -73,8 +73,8 @@ class Elastic::MyElasticWaveSolver : public Elastic::AbstractMyElasticWaveSolver
      * \param[inout] FOut      the normal fluxes at point x from outside of the domain
      *                         and time-averaged (over [t,t+dt]) as C array (already allocated).
      */
-    void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double * const fluxIn,const double* const stateIn,double* const fluxOut,double* const stateOut) final override;
-    
+  void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double* const fluxIn,const double* const stateIn,const double* const gradStateIn,double* const fluxOut,double* const stateOut) final override;
+   
     /**
      * Evaluate the refinement criterion within a cell.
      *
@@ -141,7 +141,8 @@ class Elastic::MyElasticWaveSolver : public Elastic::AbstractMyElasticWaveSolver
 			       double& q_x,double& q_y,double& q_z,
 			       double& r_x,double& r_y,double& r_z,
 			       double& s_x,double& s_y,double& s_z);
-    void riemannSolver(double* const FL,double* const FR,const double* const QL,const double* const QR,const double t,const double dt,const int normalNonZeroIndex, bool isBoundaryFace, int faceIndex) override;
+
+  void riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double t, const double dt, const tarch::la::Vector<DIMENSIONS, double>& lengthScale, const int direction, bool isBoundaryFace, int faceIndex) final override;
     void riemannSolver_Nodal(double v_p,double v_m, double sigma_p, double sigma_m, double z_p , double z_m, double& v_hat_p , double& v_hat_m, double& sigma_hat_p, double& sigma_hat_m);
     void riemannSolver_boundary(int faceIndex,double r, double vn , double vm , double vl, double Tn , double Tm ,double Tl , double zp, double zs,  double& vn_hat , double& vm_hat ,double& vl_hat , double& Tn_hat , double& Tm_hat ,double& Tl_hat);
     

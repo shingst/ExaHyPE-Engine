@@ -302,7 +302,7 @@
         "background_job_processing" : {
           "type" : "string", 
           "title" : "How to process priority background jobs",
-          "enum" : [ "job_system", "spawn_tasks" ],
+          "enum" : [ "job_system", "job_system_without_priorities","spawn_tasks" ],
           "default" : "job_system"
         },
         "background_job_consumers" : {
@@ -477,6 +477,11 @@
           "title" : "Buffer size in bytes per MPI package", 
           "default" : 64,
           "old_format" : { "token_after" : "buffer-size" }
+        },
+        "node_pool_timeout" : {
+          "type" : "number", 
+          "title" : "The timeout for receiving an answer message from the node pool (seconds).", 
+          "default" : 1
         },
         "max_forks_at_once" : {
           "type" : "integer", 
@@ -801,6 +806,12 @@
                 "title" : "The underlying FV solver scheme", 
                 "enum" : ["musclhancock","godunov","robustmusclhancock"],
                 "default" : "godunov"
+              },
+              "slope_limiter" : {
+                "type" : "string",
+                "title" : "Slope/Flux limiter for high order FV (not applicable with godunov scheme)",
+                "enum" : ["minmod","koren","superbee","vanalbada","mclim"],
+                "default" : "minmod"
               }
             }
           }, 

@@ -9,10 +9,9 @@ exahype::solvers::FiniteVolumesSolver::FusedTimeStepJob::FusedTimeStepJob(
   const bool           isSkeletonJob)
   :
   tarch::multicore::jobs::Job(
-		    tarch::multicore::jobs::JobType::BackgroundTask,
-			0,
-			isLastTimeStepOfBatch ? tarch::multicore::DefaultPriority / 8 : tarch::multicore::DefaultPriority
-		  ),
+      tarch::multicore::jobs::JobType::BackgroundTask,0,
+      getTaskPriority(isLastTimeStepOfBatch)
+  ),
   _solver(solver),
   _cellDescription(cellDescription),
   _cellInfo(cellInfo),

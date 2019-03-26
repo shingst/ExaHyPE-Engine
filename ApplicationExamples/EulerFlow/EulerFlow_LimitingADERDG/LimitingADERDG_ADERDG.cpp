@@ -17,9 +17,7 @@ void Euler::LimitingADERDG_ADERDG::adjustPointSolution(const double* const x,con
   }
 }
 
-void Euler::LimitingADERDG_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,
-  const double * const fluxIn,const double* const stateIn,
-  double *fluxOut,double* stateOut) {
+void Euler::LimitingADERDG_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double* const fluxIn,const double* const stateIn,const double* const gradStateIn,double* const fluxOut,double* const stateOut)
   fluxOut[0] = fluxIn[0];
   fluxOut[1] = fluxIn[1];
   fluxOut[2] = fluxIn[2];

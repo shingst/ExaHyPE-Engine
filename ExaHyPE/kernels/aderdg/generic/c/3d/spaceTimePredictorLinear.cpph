@@ -34,7 +34,9 @@ void spaceTimePredictorLinear(SolverType& solver,
     double* PSi, double* PSderivatives, double* tmp_PSderivatives,
     double* lQhi,double* lFhi,
     const double* const luh,
+    const tarch::la::Vector<DIMENSIONS, double>& cellCenter,
     const tarch::la::Vector<DIMENSIONS, double>& invDx,
+    const double t,
     const double dt
 ) {
   
@@ -344,7 +346,12 @@ void spaceTimePredictorLinear(SolverType& solver,
       for (int j = 0; j < basisSize; j++) {
         for (int k = 0; k < basisSize; k++) {
           for (int l = 0; l < basisSize; l++) {
-            solver.algebraicSource(&lQi[idx_lQi(i, j, k, l, 0)], &lFi[idx_lFi(i, j, k, l, sourceIndex, 0)]);
+            const double ti = t + kernels::gaussLegendreNodes[order][i] * dt;
+            const double x = cellCenter[0] + (1./invDx[0]) * (kernels::gaussLegendreNodes[order][l] - 0.5);
+            const double y = cellCenter[1] + (1./invDx[1]) * (kernels::gaussLegendreNodes[order][k] - 0.5);
+            const double z = cellCenter[2] + (1./invDx[2]) * (kernels::gaussLegendreNodes[order][j] - 0.5);
+            tarch::la::Vector<DIMENSIONS, double> coords = {x, y, z};
+            solver.algebraicSource(coords, ti, &lQi[idx_lQi(i, j, k, l, 0)], &lFi[idx_lFi(i, j, k, l, sourceIndex, 0)]);
           }
         }
       }

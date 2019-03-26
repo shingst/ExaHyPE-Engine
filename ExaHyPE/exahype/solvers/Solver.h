@@ -720,7 +720,6 @@ class exahype::solvers::Solver {
    */
   static bool SpawnAMRBackgroundJobs;
 
-
   /**
    * If this is set, we can skip sending metadata around during
    * batching iterations.
@@ -1122,7 +1121,8 @@ class exahype::solvers::Solver {
  /**
   * Waits until the @p cellDescription has completed its time step.
   *
-  * <h2> Thread-safety </h2>
+  * Thread-safety
+  * -------------
   *
   * We only read (sample) the hasCompletedLastStep flag and thus do not need any locks.
   * If this flag were to assume an undefined state, this would happen after the job working processing the
@@ -1133,10 +1133,19 @@ class exahype::solvers::Solver {
   * As the job cannot be processed before it is spawned, setting the flag
   * is thread-safe.
   *
-  * <h2> MPI </h2>
+  * MPI
+  * ---
   *
   * Tries to receive dangling MPI messages while waiting if this
   * is specified by the user.
+  *
+  * Work Stealing
+  * -------------
+  *
+  * Assume this rank has stolen jobs from another rank.
+  * If this routine actually waits, this indicates it has to wait for a local job
+  * and not for a stolen one.
+  * Therefore, we exclude stolen jobs from being processed by this routine.
   *
   * @note Only use receiveDanglingMessages=true if the routine
   * is called from a serial context.
@@ -1194,8 +1203,12 @@ class exahype::solvers::Solver {
      if ( receiveDanglingMessages ) {
        tarch::parallel::Node::getInstance().receiveDanglingMessages();
      }
-       hasProcessed = tarch::multicore::jobs::processBackgroundJobs(1);
- 
+     if ( waitForHighPriorityJob ) {
+       hasProcessed = tarch::multicore::jobs::processBackgroundJobs( 1, getHighPriorityTaskPriority() );
+     } else {
+       hasProcessed = tarch::multicore::jobs::processBackgroundJobs( 1, getDefaultTaskPriority() );
+     }
+
 #if defined(DistributedStealing) 
      //if( !cellDescription.getHasCompletedLastStep()
      //    && !hasProcessed
@@ -1247,10 +1260,31 @@ class exahype::solvers::Solver {
 #endif
  }
 
- static int getTaskPriority( bool isSkeletonJob );
- static int getCompressionTaskPriority();
- static int getHighPrioritiesJobTaskPriority();
- static int getStandardBackgroundTaskPriority();
+ /**
+  * @return the default priority.
+  */
+ static int getDefaultTaskPriority() {
+   return tarch::multicore::DefaultPriority;
+ }
+ /**
+  * @return a high priority.
+  */
+ static int getHighPriorityTaskPriority() {
+   return tarch::multicore::DefaultPriority*2;
+ }
+ /**
+  * @return a high priority if the argument is set to true. Otherwise,
+  * the default priority.
+  */
+ static int getTaskPriority( const bool isHighPriorityJob ) {
+   return isHighPriorityJob ? getHighPriorityTaskPriority() : getDefaultTaskPriority();
+ }
+ /**
+  * @return a very high priority.
+  */
+ static int  getCompressionTaskPriority() {
+   return tarch::multicore::DefaultPriority*8;
+ }
 
  /**
   * Return a string representation for the type @p param.
@@ -1295,6 +1329,11 @@ class exahype::solvers::Solver {
    * The number of parameters, e.g, material parameters.
    */
   const int _numberOfParameters;
+
+  /**
+   * The number of global observables, e.g. indicators used by AMR.
+   */
+  const int _numberOfGlobalObservables ;
 
   /**
    * The number of nodal basis functions that are employed in each
@@ -1347,6 +1386,11 @@ class exahype::solvers::Solver {
   int _coarsestMeshLevel;
 
   /**
+   * The reduced global observables over the entire domain.
+   */
+  std::vector<double> _globalObservables;
+
+  /*
    * The coarsest mesh size this solver is using, i.e.
    * the mesh size chosen for the uniform base grid.
    *
@@ -1362,6 +1406,7 @@ class exahype::solvers::Solver {
  public:
   Solver(const std::string& identifier, exahype::solvers::Solver::Type type,
          int numberOfVariables, int numberOfParameters,
+         int numberOfGlobalObservables,
          int nodesPerCoordinateAxis,
          double maximumMeshSize,
          int maximumAdaptiveMeshDepth,
@@ -1456,6 +1501,11 @@ class exahype::solvers::Solver {
   int getNumberOfParameters() const;
 
   /**
+   * Returns the number of global observables, e.g. indicators for AMR.
+   */
+  int getNumberOfGlobalObservables() const;
+
+  /**
    * If you use a higher order method, then this operation returns the
    * polynomial degree plus one. If you use a Finite Volume method, it
    * returns the number of cells within a patch per coordinate axis.
@@ -1519,6 +1569,18 @@ class exahype::solvers::Solver {
    * to search for a minimum over all cells.
    */
   virtual void resetAdmissibleTimeStepSize() = 0;
+
+  // TODO(Lukas) Is this still needed?
+  /*
+  virtual void updateNextGlobalObservables(const std::vector<double>& globalObservables);
+  */
+
+  virtual std::vector<double>& getGlobalObservables();
+  // TODO(Lukas) Is this still needed?
+  /*
+  virtual std::vector<double>& getNextGlobalObservables();
+  */
+
 
   /**
    * Initialise the solver's time stamps and time step sizes.
@@ -2099,6 +2161,48 @@ class exahype::solvers::Solver {
       const int                                    level) = 0;
   #endif
 
+
+     /**
+   * Maps the solution values Q to
+   * the global observables.
+   *
+   * As we can observe all state variables,
+   * we interpret an 'observable' here as
+   * 'worthy to be observed'.
+   *
+   *\param[inout] globalObservables The mapped observables.
+   *\param[in]    Q           The state variables.
+   */
+   virtual std::vector<double> mapGlobalObservables(const double* const Q,
+           const tarch::la::Vector<DIMENSIONS,double>& dx) const = 0;
+
+   /**
+   * Resets the vector of global observables to some suitable initial value, e.g.
+   * the smallest possible double if one wants to compute the maximum.
+   *
+   *\param[out] globalObservables The mapped observables.
+   */
+   virtual std::vector<double> resetGlobalObservables() const = 0;
+
+   /**
+   * Function that reduces the global observables.
+   * For example, if one wants to compute the maximum of global variables
+   * one should set
+   * reducedGlobalObservables[0] = std::max(reducucedGlobalObservables[i],
+   * curGlobalObservables[0])
+   *
+   * and so on.
+   *
+   *\param[inout] reducedGlobalObservables The reduced observables.
+   *\param[in]    curGlobalObservables The current vector of global observables.
+   */
+   virtual void reduceGlobalObservables(
+            std::vector<double>& reducedGlobalObservables,
+            const std::vector<double>& curGlobalObservables) const = 0;
+
+   virtual void reduceGlobalObservables(std::vector<double>& globalObservables,
+                                        CellInfo cellInfo,
+                                        int solverNumber) const = 0;
   ///////////////////////
   // PROFILING
   ///////////////////////

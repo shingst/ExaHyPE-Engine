@@ -245,11 +245,7 @@ Euler::EulerSolver_ADERDG::refinementCriterion(
   return exahype::solvers::Solver::RefinementControl::Keep;
 }
 
-void Euler::EulerSolver_ADERDG::boundaryValues(const double* const x, const double t,const double dt,
-    const int faceIndex,const int direction,
-    const double* const fluxIn,const double* const stateIn,
-    double* const fluxOut, double* const stateOut) 
-{
+void Euler::EulerSolver_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double* const fluxIn,const double* const stateIn,const double* const gradStateIn,double* const fluxOut,double* const stateOut) {
   // Dirichlet conditions
   double Q[NumberOfVariables]     = {0.0};
   double _F[3][NumberOfVariables] = {0.0};
@@ -264,7 +260,7 @@ void Euler::EulerSolver_ADERDG::boundaryValues(const double* const x, const doub
     flux(Q,F);
     for (int v=0; v<NumberOfVariables; v++) {
       stateOut[v] += Q[v]            * kernels::gaussLegendreWeights[Order][i];
-      fluxOut[v]  += F[direction][v] * kernels::gaussLegendreWeights[Order][i];
+      fluxOut[v]  += F[faceIndex][v] * kernels::gaussLegendreWeights[Order][i];
     }
   }
   

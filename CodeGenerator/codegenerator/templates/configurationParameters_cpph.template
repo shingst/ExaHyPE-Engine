@@ -21,6 +21,9 @@ namespace {{namespaceName}} {
   
   constexpr int getNumberOfParameter()       {return {{nPar}};}
   constexpr int getNumberOfParameterPadded() {return {{nParPad}};}
+
+  // TODO(JMG): Please implement.
+  constexpr int getNumberOfGlobalObservables()       {return {{0}};}
   
   constexpr int getNumberOfData()            {return {{nData}};}
   constexpr int getNumberOfDataPadded()      {return {{nDataPad}};}

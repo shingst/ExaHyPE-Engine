@@ -557,8 +557,8 @@ exahype::parser::Parser::MPILoadBalancingType exahype::parser::Parser::getMPILoa
 }
 
 double exahype::parser::Parser::getNodePoolAnsweringTimeout() const {
-  const std::string path = "/distributed_memory/max_node_pool_answering_time";
-  const double defaultResult = 1e-2;
+  const std::string path = "/distributed_memory/node_pool_timeout";
+  const double defaultResult = 1;
   double result = getDoubleFromPath(path, defaultResult, true);
   if(tarch::la::equals(defaultResult, result)) {
     logWarning( "getNodePoolAnsweringTimeout()", path << " not specified for MPI configuration so use default timeout of " << defaultResult );
@@ -1220,9 +1220,9 @@ int exahype::parser::Parser::getNumberOfBackgroundJobConsumerTasks() {
   return result;
 }
 
-bool exahype::parser::Parser::getMapBackgroundJobsToTasks() {
+bool exahype::parser::Parser::compareBackgroundJobProcessing(const std::string& strategy) const {
   return getStringFromPath("/shared_memory/background_job_processing","job_system",isOptional).
-      compare("spawn_tasks")==0;
+      compare(strategy)==0;
 }
 
 int exahype::parser::Parser::getMaxBackgroundJobsInARush() {

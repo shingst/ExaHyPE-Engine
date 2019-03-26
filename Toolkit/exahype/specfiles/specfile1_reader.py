@@ -108,6 +108,7 @@ class SpecFile1Reader():
             "time_steps",\
             "buffer_size",\
             "timeout",\
+            "node_pool_timeout",
             "max_forks_at_once",\
             "cores",\
             "measure_cell_processing_times_iter",\
@@ -474,6 +475,9 @@ class SpecFile1Reader():
                     solver["fv_kernel"]["terms"]=solver["aderdg_kernel"]["terms"] # copy ADER-DG terms
                 if "limiter_optimisation" in solver:
                     fv_kernel_opts    = solver.pop("limiter_optimisation")
+                if "limiter_slope_limiter" in solver:
+                    solver["fv_kernel"]["slope_limiter"]=solver.pop("limiter_slope_limiter")
+
             
             # fv
             if solver["type"]=="Finite-Volumes":
@@ -484,6 +488,8 @@ class SpecFile1Reader():
                     fv_kernel_type    = old_type
                 if "terms" in solver:
                     fv_kernel_terms = solver.pop("terms")
+                if "slope_limiter" in solver:
+                    solver["fv_kernel"]["slope_limiter"]=solver.pop("slope_limiter")
                 # fv terms
                 result, n_point_sources = self.map_kernel_terms(fv_kernel_terms)
                 solver["fv_kernel"]["terms"]=result

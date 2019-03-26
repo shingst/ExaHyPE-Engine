@@ -127,7 +127,9 @@ public:
    */
   static int adjustSolutionHandle;
   static int fusedTimeStepBodyHandle;
+  static int fusedTimeStepBodyHandleSkeleton;
   static int predictorBodyHandle;
+  static int predictorBodyHandleSkeleton;
   static int updateBodyHandle;
   static int mergeNeighboursHandle;
   static int prolongateFaceDataToDescendantHandle;
@@ -208,6 +210,7 @@ public:
    * @return if this an ADER-DG solver which is not able to solve nonlinear problems.
    */
   virtual bool isLinear() const = 0;
+  virtual bool isUseViscousFlux() const = 0;
 
 private:
 
@@ -1492,6 +1495,7 @@ public:
       const std::string& identifier,
       const int numberOfVariables,
       const int numberOfParameters,
+      const int numberOfGlobalObservables,
       const int basisSize,
       const double maximumMeshSize,
       const int maximumAdaptiveMeshDepth,
@@ -2579,6 +2583,11 @@ public:
    */
   void compress( CellDescription& cellDescription, const bool isSkeletonCell ) const;
 
+  using Solver::reduceGlobalObservables;
+  void reduceGlobalObservables(std::vector<double>& globalObservables,
+                               CellInfo cellInfo,
+                               int solverNumber) const override;
+  
   ///////////////////////
   // PROFILING
   ///////////////////////
@@ -2679,6 +2688,7 @@ protected:
    * @param[in]    dt             time step size
    * @param[in]    direction      Index of the nonzero normal vector component,
    *                              i.e., 0 for e_x, 1 for e_y, and 2 for e_z.
+   * @param[in]    lengthScale    physical size of the element
    * @param[in]    isBoundaryFace if the Riemann solver is called at the domain boundary
    * @param[in]    faceIndex      the index of the face, @p faceIndex=2*direction+f, where f is 0 ("left face") or 1 ("right face").
    */
@@ -2689,6 +2699,7 @@ protected:
       const double* const  QR,
       const double         t,
       const double         dt,
+      const tarch::la::Vector<DIMENSIONS, double>& lengthScale,
       const int            direction,
       bool                 isBoundaryFace,
       int                  faceIndex) = 0;
@@ -2714,6 +2725,7 @@ protected:
   virtual void boundaryConditions(
       double* const                                fluxIn,
       const double* const                          stateIn,
+      const double* const                          gradStateIn,
       const double* const                          luh,
       const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
       const tarch::la::Vector<DIMENSIONS,double>&  cellSize,
@@ -2745,6 +2757,7 @@ protected:
   virtual int fusedSpaceTimePredictorVolumeIntegral(
       double* const                                lduh,
       double* const                                lQhbnd,
+      double*                                      lGradQhbnd,
       double* const                                lFhbnd,
       double* const                                luh,
       const tarch::la::Vector<DIMENSIONS, double>& center,
@@ -2929,6 +2942,29 @@ public:
   virtual void mapDiscreteMaximumPrincipleObservables(
       double* const       observables,
       const double* const Q) const = 0;
+
+
+  /**
+   * @return a relaxation parameter.
+   *
+   * @note The default implementation just returns the parameter specificed in the specification file.
+   *
+   * @param[in] specifiedRelaxationParameter the relaxation parameter as specified in the specification file.
+   * @param[in] observable                   index of the observable.
+   * @param[in] localMin                     minimum for currently processed DMP observable, computed from values of the currently processed cell in this time step.
+   * @param[in] localMax                     maximum for currently processed DMP observable, computed from values of the currently processed cell in this time step.
+   * @param[in] previousMin                  minimum for currently processed DMP observable, computed during the last time step from values of the currently processed cell and its direct neighbours.
+   * @param[in] previousMax                  maximum for currently processed DMP observable, computed during the last time step from values of the currently processed cell and its direct neighbours.
+   */
+  virtual double getDiscreteMaximumPrincipleRelaxationParameter(
+      const double& specifiedRelaxationParameter,
+      const int&    observable,
+      const double& localMin,
+      const double& localMax,
+      const double& boundaryMinPerObservable,
+      const double& previousMax) const {
+     return specifiedRelaxationParameter;
+  }
 };
 
 #endif

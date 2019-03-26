@@ -22,10 +22,10 @@
     ]
   },
   "shared_memory": {
-    "cores": 40,
+    "cores": 72,
     "properties_file": "sharedmemory.properties",
     "autotuning_strategy": "dummy",
-    "background_job_consumers": 20,
+    "background_job_consumers": 36,
     "manual_pinning": true
   },
   "distributed_memory": {
@@ -46,7 +46,9 @@
     "time_step_batch_factor": 0.0,
     "disable_metadata_exchange_in_batched_time_steps": false,
     "double_compression": 0.0,
-    "spawn_double_compression_as_background_thread": false
+    "spawn_double_compression_as_background_thread": false,
+    "limiting": "dynamic",
+    "mesh_refinement": "static"
   },
   "solvers": [
     {
@@ -70,9 +72,9 @@
       },
       "point_sources": 0,
       "limiter": {
-        "dmp_observables": 10,
-        "dmp_relaxation_parameter": 10000.0,
-        "dmp_difference_scaling": 1000.0,
+        "dmp_observables": 5,
+        "dmp_relaxation_parameter": 0.0001,
+        "dmp_difference_scaling": 0.001,
         "implementation": "optimised"
       },
       "fv_kernel": {

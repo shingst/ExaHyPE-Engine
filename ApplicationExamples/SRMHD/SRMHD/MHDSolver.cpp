@@ -61,7 +61,7 @@ exahype::solvers::Solver::RefinementControl SRMHD::MHDSolver::refinementCriterio
   return exahype::solvers::Solver::RefinementControl::Keep;
 }
 
-void SRMHD::MHDSolver::boundaryValues(const double* const x,const double t, const double dt, const int faceIndex, const int normalNonZero, const double * const fluxIn, const double* const stateIn, double* const fluxOut, double* const stateOut) {
+void SRMHD::MHDSolver::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double* const fluxIn,const double* const stateIn,const double* const gradStateIn,double* const fluxOut,double* const stateOut) {
 /*  
   // These are the no-boundary conditions:
   for(int i=0; i < SRMHD::MHDSolver::numberOfVariables; i++) {

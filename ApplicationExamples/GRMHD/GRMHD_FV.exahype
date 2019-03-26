@@ -31,11 +31,11 @@ exahype-project GRMHD
 
   computational-domain
     dimension const                = 3
-//    width                          = 30.0, 30.0, 30.0
-//    offset                         = -15., -15., -15. 
-    width                          = 10.0,10.0,10.0
-    offset                         = -5.0, -5.0, -5.0
-    end-time                       = 10.001
+    width                          = 30.0, 30.0, 30.0
+    offset                         = -15., -15., -15. 
+//    width                          = 6.0, 6.0, 6.0
+//    offset                         = -3.0, -3.0, -3.0
+  end-time                       = 100.001
   end computational-domain
   
   shared-memory
@@ -69,48 +69,17 @@ exahype-project GRMHD
 
   solver Finite-Volumes GRMHDSolver_FV
     variables const                = rho:1,vel:3,E:1,B:3,psi:1,lapse:1,shift:3,gij:6
-    patch-size const               = 5
-    maximum-mesh-size              = 1.2
-    time-stepping                  = global
-    //type const         = musclhancock
-    type const  = godunov
+    patch-size const               = 7
+    maximum-mesh-size              = 1.21
+//    time-stepping                  = global
+    time-stepping                  = globalfixed
+    type const         = musclhancock
+    slope-limiter const  = mclim
+    //type const  = godunov
     terms const        = flux,ncp
     optimisation const = generic
     language const                 = C
 
-
-/*
-    plot vtk::Cartesian::vertices::ascii ConservedWriter
-      variables const = 19
-      time      = 0.0
-      repeat    = 0.00590278
-      output    = ./vtk-output/conserved
-    end plot
-    plot vtk::Cartesian::vertices::ascii ConservedWriter
-      variables const = 19
-      time      = 10000.0
-      repeat    = 0.00590278
-      output    = ./vtk-output/cartesian-2d
-      select    = z:0.0
-    end plot
-
-*/
-
-   plot vtk::Cartesian::cells::ascii Density
-      variables const = 2
-      time      = 0.0001
-      repeat    = 0.5
-      output    = ./vtk-output/density
-    end plot
-
-/*
-    plot vtk::Cartesian::cells::ascii PrimitiveWriter
-      variables const = 19
-      time      = 0.0
-      repeat    = 0.1
-      output    = ./vtk-output/primitive
-    end plot
-*/
 
     plot vtk::Cartesian::cells::ascii IntegralsWriter
        variables const = 0
@@ -126,46 +95,20 @@ exahype-project GRMHD
       output = ./output/timing-benchmarks
     end plot
 
-    plot vtu::Cartesian::vertices::ascii ConservedWriter
+    plot vtu::Cartesian::vertices::ascii PrimitiveWriter
          variables const = 1
          time      = 0.0
-         repeat    = 0.5
+         repeat    = 1.0
          output    = ./vtk-output/primitive
     end plot
 
-
-    plot Carpet::Cartesian::Vertices::hdf5 PrimitiveWriter
-      variables const = 19
-      time = 0.0
-      repeat = 0.01
-      select = one_file_per_timestep:False,all_unknowns_in_one_file:False
-      output = ./hdf5-output/fv-prims3d
+    plot vtu::Cartesian::vertices::ascii ConservedWriter
+         variables const = 1
+         time      = 0.0
+         repeat    = 1.0
+         output    = ./vtk-output/conserved
     end plot
 
-
-    plot Carpet::Cartesian::Vertices::hdf5 H5Writer
-      variables const = 9
-      time = 0.0
-      repeat = 0.01
-      select = one_file_per_timestep:False,all_unknowns_in_one_file:False
-      output = ./hdf5-output/fv-demo3d
-    end plot
-    
-    plot Carpet::Cartesian::Vertices::hdf5 H5Writer
-      variables const = 9
-      time = 0.0
-      repeat = 0.01
-      select = z:0,one_file_per_timestep:False,all_unknowns_in_one_file:False
-      output = ./hdf5-output/fv-demo2d
-    end plot
-    
-    plot Carpet::Cartesian::Vertices::hdf5 H5Writer
-      variables const = 9
-      time = 0.0
-      repeat = 0.01
-      select = y:0,z:0,one_file_per_timestep:False,all_unknowns_in_one_file:False
-      output = ./hdf5-output/fv-demo1d
-    end plot
 
   end solver
 

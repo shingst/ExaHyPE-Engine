@@ -90,6 +90,7 @@ class SolverController:
         nPointSources = solver["point_sources"] if type(solver.get("point_sources",[])) is int else len(solver.get("point_sources",[]))
         
         context["numberOfVariables"]          = nVar
+        context["numberOfParameters"]          = nParam
         context["numberOfMaterialParameters"] = nParam
         context["numberOfGlobalObservables"]  = nGlobalObs
         context["numberOfPointSources"]       = nPointSources
@@ -97,7 +98,13 @@ class SolverController:
         # variables access class
         context["variablesMap"]  = ToolkitHelper.parse_variables(solver,"variables")
         if nParam>0:
-            context["variablesMap"] += ToolkitHelper.parse_variables(solver,"material_parameters")
+            parametersMap = ToolkitHelper.parse_variables(solver,"material_parameters")
+            # Increase offset of parameters, they are located directly after variables.
+            def increaseOffset(param):
+                param["offset"] += nVar
+                return param
+            parametersMap = [increaseOffset(param) for param in parametersMap]
+            context["variablesMap"] += parametersMap
         context["variablesMapSize"] = len(context["variablesMap"])
         context["variables_as_str"] = ToolkitHelper.variables_to_str(solver,"variables")
         context["material_parameters_as_str"]  = ToolkitHelper.variables_to_str(solver,"material_parameters")
@@ -121,7 +128,7 @@ class SolverController:
         self.addCodegeneratorPathAndNamespace(context)
         
         context["order"]                  = solver["order"]
-        context["numberOfDMPObservables"] = -1 # overwrite if called from LimitingADERDGSolver creation
+        context["numberOfDMPObservables"] = 0 # overwrite if called from LimitingADERDGSolver creation
         
         return context
 
@@ -177,6 +184,7 @@ class SolverController:
         context["finiteVolumesType"]           = kernel["scheme"].replace("robust","")
         context["ghostLayerWidth"]             = ghostLayerWidth[context["finiteVolumesType"]]
         context["useRobustDiagonalLimiting_s"] = "true" if "robust" in kernel["scheme"] else "false"
+        context["slopeLimiter"]   = kernel.get("slope_limiter","minmod")
 
         context["implementation"]  = kernel.get("implementation","generic")
         context["tempVarsOnStack"] = kernel.get("allocate_temporary_arrays","heap")=="stack" 

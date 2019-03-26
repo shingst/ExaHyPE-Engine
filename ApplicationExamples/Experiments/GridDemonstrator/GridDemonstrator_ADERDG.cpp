@@ -146,9 +146,7 @@ void GridDemonstrator::GridDemonstrator_ADERDG::adjustPointSolution(const double
   Q[0] = randId->interpolate(x,t);
 }
 
-void GridDemonstrator::GridDemonstrator_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,
-  const double * const fluxIn,const double* const stateIn,
-  double *fluxOut,double* stateOut) {
+void GridDemonstrator::GridDemonstrator_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double* const fluxIn,const double* const stateIn,const double* const gradStateIn,double* const fluxOut,double* const stateOut) {
   // Dimensions                        = 2
   // Number of variables + parameters  = 1 + 0
 

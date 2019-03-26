@@ -30,9 +30,7 @@ void GPR::GPRSolver_ADERDG::adjustPointSolution(const double* const x,const doub
   }
 }
 
-void GPR::GPRSolver_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,
-  const double * const fluxIn,const double* const stateIn,
-  double* const fluxOut,double* const stateOut) {
+void GPR::GPRSolver_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double* const fluxIn,const double* const stateIn,const double* const gradStateIn,double* const fluxOut,double* const stateOut) {
 const int nVar = GPR::AbstractGPRSolver_ADERDG::NumberOfVariables;
   const int order = GPR::AbstractGPRSolver_ADERDG::Order;
   const int basisSize = order + 1;

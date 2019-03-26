@@ -57,9 +57,7 @@ void GenericEulerKernelTest::flux(const double *const Q, double **F) {
   h[4] = irho * Q[3] * (Q[4] + p);
 }
 
-void GenericEulerKernelTest::viscousFlux(const double *Q, double* gradQ, double **F) {}
-
-void GenericEulerKernelTest::algebraicSource(const double *const Q, double *S) {
+void GenericEulerKernelTest::algebraicSource(const tarch::la::Vector<DIMENSIONS, double>& cellCenter, double t, const double *const Q, double *S) {
   S[0] = 0.0;
   S[1] = 0.0;
   S[2] = 0.0;
@@ -435,12 +433,12 @@ void GenericEulerKernelTest::testRiemannSolverNonlinear() {
       QR[i_Qbnd]= ::exahype::tests::testdata::generic_euler::testRiemannSolver::QR[i_Qbnd_testdata];
     }
   }
-
-  kernels::aderdg::generic::c::riemannSolverNonlinear<false,GenericEulerKernelTest>(
+  kernels::aderdg::generic::c::riemannSolverNonlinear<false,false,GenericEulerKernelTest>(
       *this,
       FL, FR, QL, QR,
-      dt,
       t,
+      dt,
+      tarch::la::Vector<DIMENSIONS, double>(0.5, 0.5), // dx
       1  // normalNonZero
   );
 
@@ -515,6 +513,11 @@ void GenericEulerKernelTest::testSpaceTimePredictorLinear() {
   // exahype::tests::testdata::generic_euler::testSpaceTimePredictor::luh[320 =
   // nVar * nDOFx * nDOFy * nDOFz]
 
+  // Actual values for cellCenter/t do not matter, they are only used for
+  // source terms that depend on time/space.
+  const tarch::la::Vector<DIMENSIONS, double> cellCenter(0.0, 0.0, 0.0);
+  const double t = 0.0;
+
   const tarch::la::Vector<DIMENSIONS, double> dx(0.5, 0.5, 0.5);
   const double dt = 1.267423918681417E-002;
 
@@ -539,7 +542,8 @@ void GenericEulerKernelTest::testSpaceTimePredictorLinear() {
       lQi,lFi,gradQ,PSi,PSderivatives,tmp_PSderivatives,lQhi,lFhi,
       ::exahype::tests::testdata::generic_euler::
        testSpaceTimePredictor::luh, // TODO(Dominic): Rename namespace to testSpaceTimePredictorLinear?
-       tarch::la::invertEntries(dx), dt
+       cellCenter, tarch::la::invertEntries(dx),
+       t, dt
   );
 
   for (int i = 0; i < 320; i++) {
@@ -588,6 +592,11 @@ void GenericEulerKernelTest::testSpaceTimePredictorNonlinear() {
   const tarch::la::Vector<DIMENSIONS, double> dx(0.05, 0.05, 0.05);
   const double timeStepSize = 1.083937460199773E-003;
 
+  // These values are only used if the source depends on x or t.
+  // Hence, the actual values do not matter here.
+  const tarch::la::Vector<DIMENSIONS, double> x(0.0, 0.0);
+  const double t = 0.0;
+
   constexpr int nVar       = NumberOfVariables;
   constexpr int nPar       = NumberOfParameters;
   constexpr int nData      = nVar+nPar;
@@ -626,12 +635,14 @@ void GenericEulerKernelTest::testSpaceTimePredictorNonlinear() {
   double lFhbnd[6 * nData*basisSize2] = {0.0};  // nData * nDOFy * nDOF_z * 6
 
   _setNcpAndMatrixBToZero = true;
-  kernels::aderdg::generic::c::spaceTimePredictorNonlinear<true,true,true,false,false,GenericEulerKernelTest>(
+  kernels::aderdg::generic::c::spaceTimePredictorNonlinear<true,true,false, true,false,GenericEulerKernelTest>(
       *this,
-      lQhbnd, lFhbnd,
+      lQhbnd, nullptr, lFhbnd,
       lQi, rhs, lFi, gradQ, lQhi, lFhi,
       luh,
-      tarch::la::invertEntries(dx), timeStepSize
+      x,
+      tarch::la::invertEntries(dx),
+      t, timeStepSize
   );
   _setNcpAndMatrixBToZero = false;
 

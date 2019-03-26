@@ -102,12 +102,12 @@ void GRMHD::GRMHDSolver_FV::adjustSolution(const double* const x,const double t,
     if(!doneOnce) { printf("Calling ID on FV grid\n"); doneOnce=true; }
     initialData_FV(x, t, dt, Q);
 
-    if( (x[1] > -1.e-10) && (x[1]  < 1.e-10)) {
-      if( (x[2] > -1.e-10) && (x[2]  < 1.e-10)) {
-//        std::cout << "adjusting FV at : " <<   x[0]  << " t = " << t <<  " Q[0] = " << Q[0] << std::endl;
-        printf("adjusting FV at : %.5e , %.5e\n",x[0],Q[0]);
-      }
-    }
+//    if( (x[1] > -1.e-10) && (x[1]  < 1.e-10)) {
+//      if( (x[2] > -1.e-10) && (x[2]  < 1.e-10)) {
+////        std::cout << "adjusting FV at : " <<   x[0]  << " t = " << t <<  " Q[0] = " << Q[0] << std::endl;
+//        printf("adjusting FV at : %.5e , %.5e\n",x[0],Q[0]);
+//      }
+//    }
   }
 }
 

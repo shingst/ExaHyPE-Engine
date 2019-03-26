@@ -499,7 +499,14 @@ RECURSIVE SUBROUTINE ElementTECPLOTPLOTTER_ADERDG(wh,lx0,ldx,limiter)
 	    
 	    Element_c = Element_c + 1
 	    Element_c_ADERDG = Element_c_ADERDG + 1
-
+        
+        IF(nRealNodes.GT.nRealNodes_max.OR.nSubPlotElem.GT.nSubPlotElem_max) THEN
+            PRINT *,"FATAL ERROR in ElementTECPLOTPLOTTER_ADERDG!"
+            PRINT *,"nRealNodes, nRealNodes_max = ",nRealNodes,nRealNodes_max
+            PRINT *,"nSubPlotElem, nSubPlotElem_max = ",nSubPlotElem,nSubPlotElem_max
+            PRINT *,"Element_c_ADERDG, Element_c_FV = ",Element_c_ADERDG,Element_c_FV
+            STOP
+        ENDIF
 	    !print *,' ELEMENTS tecplot:',nPlotElem, Element_c_ADERDG,Element_c_FV
 	    !print *,'ADERDG - Element,',nPlotElem, '->', lx0(1:nDim),'dx=',ldx(1:nDim)
 	    !print *, 'nVar = ', nVar
@@ -584,6 +591,13 @@ RECURSIVE SUBROUTINE ElementTECPLOTPLOTTER_FV(wh,lx0,ldx,limiter)
 	    Element_c = Element_c + 1
 	    Element_c_FV = Element_c_FV + 1
         
+        IF(nRealNodes.GT.nRealNodes_max.OR.nSubPlotElem.GT.nSubPlotElem_max) THEN
+            PRINT *,"FATAL ERROR in ElementTECPLOTPLOTTER_FV!"
+            PRINT *,"nRealNodes, nRealNodes_max = ",nRealNodes,nRealNodes_max
+            PRINT *,"nSubPlotElem, nSubPlotElem_max = ",nSubPlotElem,nSubPlotElem_max 
+            PRINT *,"Element_c_ADERDG, Element_c_FV = ",Element_c_ADERDG,Element_c_FV
+            STOP
+        ENDIF
 	    !print *,'(FV) ELEMENTS tecplot:',nPlotElem, Element_c_ADERDG,Element_c_FV
 	    !print *,'Element,',nPlotElem, '->', lx0(1:nDim),'dx=',ldx(1:nDim)
 	    !print *, 'nVar = ', nVar

@@ -27,13 +27,14 @@
 
 #if DIMENSIONS == 2
 
-template <typename SolverType>
+template <bool useGradientFlux, typename SolverType>
 void kernels::aderdg::generic::c::boundaryConditions(
                         SolverType& solver,
                         double* FOut,
                         double* QOut,
                         const double* const FIn,
                         const double* const QIn,
+                        const double* const gradQIn,
                         const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
                         const tarch::la::Vector<DIMENSIONS,double>& cellSize,
                         const double t,const double dt,
@@ -62,7 +63,8 @@ void kernels::aderdg::generic::c::boundaryConditions(
   }
 
   idx2 idx_Q(basisSize, numberOfVariables+numberOfParameters);
-  
+  idx3 idx_gradQ(basisSize, DIMENSIONS, numberOfVariables);
+
   idx2 idx_F(basisSize, numberOfVariables);
  
   double x[DIMENSIONS];
@@ -76,11 +78,22 @@ void kernels::aderdg::generic::c::boundaryConditions(
 #endif      
     
     x[d1] = cellCentre[d1] + cellSize[d1] * (node - 0.5);
-    solver.boundaryValues(
-        x,t,dt,faceIndex,normalNonZero,
-        FIn  + idx_F(i,0), QIn  + idx_Q(i,0),
-        FOut + idx_F(i,0), QOut + idx_Q(i,0)
-    );
+
+    if (useGradientFlux) {
+      assertion1(gradQIn != nullptr, useGradientFlux);
+        // TODO(Lukas) Make more elegant if NOT using gradient.
+        solver.boundaryValues(
+                x,t,dt,faceIndex,normalNonZero,
+                FIn  + idx_F(i,0), QIn  + idx_Q(i,0), gradQIn + idx_gradQ(i,0, 0),
+                FOut + idx_F(i,0), QOut + idx_Q(i,0)
+        );
+      } else {
+        solver.boundaryValues(
+                x,t,dt,faceIndex,normalNonZero,
+                FIn  + idx_F(i,0), QIn  + idx_Q(i,0), nullptr,
+                FOut + idx_F(i,0), QOut + idx_Q(i,0)
+        );
+      }
   }
 }
 

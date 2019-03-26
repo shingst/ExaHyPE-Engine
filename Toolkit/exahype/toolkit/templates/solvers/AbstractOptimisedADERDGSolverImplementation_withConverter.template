@@ -77,13 +77,13 @@ void {{project}}::{{abstractSolver}}::spaceTimePredictor(double* const lQhbnd,do
 if(useGeneric) {
   
 #if DIMENSIONS==2
-  double dx[2];
+  double cellSize[2];
 #else
-  double dx[3];
-  dx[2] = 1.0/inverseDx[2];
+  double cellSize[3];
+  cellSize[2] = 1.0/inverseDx[2];
 #endif
-  dx[0] = 1.0/inverseDx[0];
-  dx[1] = 1.0/inverseDx[1];
+  cellSize[0] = 1.0/inverseDx[0];
+  cellSize[1] = 1.0/inverseDx[1];
   
   double* lQhi = new double[{{optNamespace}}::converter::getQhiGenArraySize()];
   double* lFhi = new double[{{optNamespace}}::converter::getFhiGenArraySize()];
@@ -105,9 +105,9 @@ if(useGeneric) {
   
   
 {% if  isLinear %}
-  kernels::aderdg::generic::c::spaceTimePredictorLinear<{{usePointSources_s}}, {{useSource_s}}, {{useFlux_s}}, {{useNCP_s}}, {{useMaterialParameters}}, {{solver}}>(*static_cast<{{solver}}*>(this), Qbnd, Fbnd, tempSpaceTimeUnknowns, tempSpaceTimeFluxUnknowns, lQhi, lFhi, luh, &dx[0], dt, pointForceSources_g);
+  kernels::aderdg::generic::c::spaceTimePredictorLinear<{{usePointSources_s}}, {{useSource_s}}, {{useFlux_s}}, {{useNCP_s}}, {{useMaterialParameters}}, {{solver}}>(*static_cast<{{solver}}*>(this), Qbnd, Fbnd, tempSpaceTimeUnknowns, tempSpaceTimeFluxUnknowns, lQhi, lFhi, luh, &cellSize[0], dt, pointForceSources_g);
 {% else %}
-  kernels::aderdg::generic::c::spaceTimePredictorNonlinear<{{useSource_s}}, {{useFlux_s}}, {{useNCP_s}}, {{noTimeAveraging}}, {{solver}}>(*static_cast<{{solver}}*>(this), Qbnd, Fbnd, tempSpaceTimeUnknowns, tempSpaceTimeFluxUnknowns, lQhi, lFhi, luh, &dx[0], dt);
+  kernels::aderdg::generic::c::spaceTimePredictorNonlinear<{{useSource_s}}, {{useFlux_s}}, {{useNCP_s}}, {{noTimeAveraging}}, {{solver}}>(*static_cast<{{solver}}*>(this), Qbnd, Fbnd, tempSpaceTimeUnknowns, tempSpaceTimeFluxUnknowns, lQhi, lFhi, luh, &cellSize[0], dt);
 {% endif %}
   
   {{optNamespace}}::converter::Qhi_generic2optimised(lQhi, tempUnknowns);
@@ -184,20 +184,20 @@ void {{project}}::{{abstractSolver}}::volumeIntegral(double* const lduh,const do
 if(useGeneric) {
   
 #if DIMENSIONS==2
-  double dx[2];
+  double cellSize[2];
 #else
-  double dx[3];
-  dx[2] = 1.0/inverseDx[2];
+  double cellSize[3];
+  cellSize[2] = 1.0/inverseDx[2];
 #endif
-  dx[0] = 1.0/inverseDx[0];
-  dx[1] = 1.0/inverseDx[1];
+  cellSize[0] = 1.0/inverseDx[0];
+  cellSize[1] = 1.0/inverseDx[1];
   
   double* lFhi_g = new double[{{optNamespace}}::converter::getFhiGenArraySize()];
   {{optNamespace}}::converter::Fhi_optimised2generic(lFhi, lFhi_g);
 {% if isLinear %}
-  kernels::aderdg::generic::c::volumeIntegralLinear<{{useSource_s}}, {{useFlux_s}}, NumberOfVariables, Order+1>(lduh,lFhi_g,&dx[0]);
+  kernels::aderdg::generic::c::volumeIntegralLinear<{{useSource_s}}, {{useFlux_s}}, NumberOfVariables, Order+1>(lduh,lFhi_g,&cellSize[0]);
 {% else %}  
-  kernels::aderdg::generic::c::volumeIntegralNonlinear<{{useSource_s}}, {{useFlux_s}}, {{noTimeAveraging}}, NumberOfVariables, Order+1>(lduh,nullptr,lFhi_g,&dx[0]);
+  kernels::aderdg::generic::c::volumeIntegralNonlinear<{{useSource_s}}, {{useFlux_s}}, {{noTimeAveraging}}, NumberOfVariables, Order+1>(lduh,nullptr,lFhi_g,&cellSize[0]);
 {% endif %}
 
   delete[] lFhi_g;
@@ -251,20 +251,20 @@ void {{project}}::{{abstractSolver}}::surfaceIntegral(double* const lduh,const d
 if(useGeneric) {
   
 #if DIMENSIONS==2
-  double dx[2];
+  double cellSize[2];
 #else
-  double dx[3];
-  dx[2] = 1.0/inverseDx[2];
+  double cellSize[3];
+  cellSize[2] = 1.0/inverseDx[2];
 #endif
-  dx[0] = 1.0/inverseDx[0];
-  dx[1] = 1.0/inverseDx[1];
+  cellSize[0] = 1.0/inverseDx[0];
+  cellSize[1] = 1.0/inverseDx[1];
   
   double* lFhbnd_g = new double[{{optNamespace}}::converter::getFhbndGenArraySize()];
   {{optNamespace}}::converter::Fhbnd_optimised2generic(lFhbnd, lFhbnd_g);
 {% if isLinear %}
-  kernels::aderdg::generic::c::surfaceIntegralLinear<NumberOfVariables, Order+1>(lduh,lFhbnd_g,&dx[0]);
+  kernels::aderdg::generic::c::surfaceIntegralLinear<NumberOfVariables, Order+1>(lduh,lFhbnd_g,&cellSize[0]);
 {% else %}
-  kernels::aderdg::generic::c::surfaceIntegralNonlinear<NumberOfVariables, Order+1>(lduh,lFhbnd_g,&dx[0]);
+  kernels::aderdg::generic::c::surfaceIntegralNonlinear<NumberOfVariables, Order+1>(lduh,lFhbnd_g,&cellSize[0]);
 {% endif %}
   
   delete[] lFhbnd_g;
@@ -327,11 +327,11 @@ if(useGeneric) {
 
 
 
-void {{project}}::{{abstractSolver}}::boundaryConditions(double* const fluxOut,double* const stateOut,const double* const fluxIn,const double* const stateIn,const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const int faceIndex,const int normalNonZero) {
+void {{project}}::{{abstractSolver}}::boundaryConditions(double* const fluxOut,double* const stateOut,const double* const fluxIn,const double* const stateIn,const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const int faceIndex,const int direction) {
 {% if enableProfiler %}
   _profiler->start("boundaryConditions");
 {% endif %}
-  {{optNamespace}}::boundaryConditions(*static_cast<{{solver}}*>(this), fluxOut, stateOut, fluxIn, stateIn, cellCentre, cellSize, t, dt, faceIndex, normalNonZero );
+  {{optNamespace}}::boundaryConditions(*static_cast<{{solver}}*>(this), fluxOut, stateOut, fluxIn, stateIn, cellCentre, cellSize, t, dt, faceIndex, direction );
 {% if enableProfiler %}
   _profiler->stop("boundaryConditions");
 {% endif %}
@@ -353,11 +353,11 @@ double {{project}}::{{abstractSolver}}::stableTimeStepSize(const double* const l
 
 
 {% if !patchwiseAdjust %}
-void {{project}}::{{abstractSolver}}::adjustSolution(double* const luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,double dt) {
+void {{project}}::{{abstractSolver}}::adjustSolution(double* const luh,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,double t,double dt) {
 {% if enableProfiler %}
   _profiler->start("solutionAdjustment");
 {% endif %}
-  {{optNamespace}}::solutionAdjustment(*static_cast<{{solver}}*>(this), luh, center, dx, t, dt );
+  {{optNamespace}}::solutionAdjustment(*static_cast<{{solver}}*>(this), luh, cellCentre, cellSize, t, dt );
 {% if enableProfiler %}
   _profiler->stop("solutionAdjustment");
 {% endif %}
@@ -365,7 +365,7 @@ void {{project}}::{{abstractSolver}}::adjustSolution(double* const luh,const tar
 {% endif %}
 
 
-void {{project}}::{{abstractSolver}}::deltaDistribution(const double t,const double dt, const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx, double** const tempPointForceSources) {
+void {{project}}::{{abstractSolver}}::deltaDistribution(const double t,const double dt, const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize, double** const tempPointForceSources) {
 {% if usePointSources %}
 {% if enableProfiler %}
   _profiler->start("deltaDistribution");
@@ -376,7 +376,7 @@ void {{project}}::{{abstractSolver}}::deltaDistribution(const double t,const dou
     double** tmp = new double*[2];
     tmp[0] = new double[{{optNamespace}}::converter::getPSiGenArraySize()];
     tmp[1] = new double[{{optNamespace}}::converter::getPSiGenArraySize()];
-    kernels::aderdg::generic::c::deltaDistribution<{{solver}}>(*static_cast<{{solver}}*>(this), t, dt, center, dx,getNodesPerCoordinateAxis(), tmp);
+    kernels::aderdg::generic::c::deltaDistribution<{{solver}}>(*static_cast<{{solver}}*>(this), t, dt, cellCentre, cellSize,getNodesPerCoordinateAxis(), tmp);
     
     {{optNamespace}}::converter::PSi_generic2optimised(tmp[0],tempPointForceSources[0]);
     
@@ -384,7 +384,7 @@ void {{project}}::{{abstractSolver}}::deltaDistribution(const double t,const dou
     delete[] tmp[1];
     delete[] tmp;
   } else {
-    {{optNamespace}}::deltaDistribution(*static_cast<{{solver}}*>(this), t, dt, center, dx, tempPointForceSources);
+    {{optNamespace}}::deltaDistribution(*static_cast<{{solver}}*>(this), t, dt, cellCentre, cellSize, tempPointForceSources);
   }
 {% if enableProfiler %}
   _profiler->stop("deltaDistribution");

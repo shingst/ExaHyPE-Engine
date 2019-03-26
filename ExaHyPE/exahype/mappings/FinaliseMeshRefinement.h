@@ -63,6 +63,24 @@ class exahype::mappings::FinaliseMeshRefinement {
   int _numberOfSkeletonCells;
 
   /**
+<<<<<<< HEAD
+   * A minimum time step size for each solver.
+   */
+  std::vector<double> _minTimeStepSizes;
+
+  /**
+   * The maximum level occupied by cells of a solver.
+   */
+  std::vector<int> _maxLevels;
+
+   /**
+   * A vector of reduced global observables for each solver.
+   */
+  std::vector<std::vector<double>> _reducedGlobalObservables;
+
+  /**
+=======
+>>>>>>> master
    * Indicates that the background tasks have terminated.
    * No further checks are required in this case.
    *

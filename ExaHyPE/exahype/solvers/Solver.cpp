@@ -223,6 +223,7 @@ exahype::solvers::Solver::Solver(
   exahype::solvers::Solver::Type         type,
   int                                    numberOfVariables,
   int                                    numberOfParameters,
+  int                                    numberOfGlobalObservables,
   int                                    nodesPerCoordinateAxis,
   double                                 maximumMeshSize,
   int                                    maximumAdaptiveMeshDepth,
@@ -232,6 +233,7 @@ exahype::solvers::Solver::Solver(
       _type(type),
       _numberOfVariables(numberOfVariables),
       _numberOfParameters(numberOfParameters),
+      _numberOfGlobalObservables(numberOfGlobalObservables),
       _nodesPerCoordinateAxis(nodesPerCoordinateAxis),
       _domainOffset(std::numeric_limits<double>::infinity()),
       _domainSize(std::numeric_limits<double>::infinity()),
@@ -389,6 +391,11 @@ int exahype::solvers::Solver::getNumberOfParameters() const {
   return _numberOfParameters;
 }
 
+int exahype::solvers::Solver::getNumberOfGlobalObservables() const {
+  return _numberOfGlobalObservables;
+}
+
+
 int exahype::solvers::Solver::getNodesPerCoordinateAxis() const {
   return _nodesPerCoordinateAxis;
 }
@@ -412,6 +419,17 @@ int exahype::solvers::Solver::getMaximumAdaptiveMeshDepth() const {
 int exahype::solvers::Solver::getMaximumAdaptiveMeshLevel() const {
   return _coarsestMeshLevel+_maximumAdaptiveMeshDepth;
 }
+
+std::vector<double>& exahype::solvers::Solver::getGlobalObservables() {
+  return _globalObservables;
+}
+
+// TODO(Lukas) Is this still needed?
+/*
+std::vector<double>& exahype::solvers::Solver::getNextGlobalObservables() {
+  return _nextGlobalObservables;
+}
+*/
 
 bool exahype::solvers::Solver::hasRequestedAnyMeshRefinement() const {
   return getMeshUpdateEvent()==MeshUpdateEvent::RefinementRequested ||
@@ -868,25 +886,5 @@ void exahype::solvers::Solver::mergeWithWorkerMeshUpdateEvent(
   }
 }
 #endif
-
-
-int exahype::solvers::Solver::getTaskPriority( bool isSkeletonJob ) {
-  return isSkeletonJob ? tarch::multicore::DefaultPriority*2 : tarch::multicore::DefaultPriority;
-}
-
-
-int exahype::solvers::Solver::getCompressionTaskPriority() {
-  return tarch::multicore::DefaultPriority*8;
-}
-
-
-int exahype::solvers::Solver::getHighPrioritiesJobTaskPriority() {
-  return tarch::multicore::DefaultPriority*2;
-}
-
-
-int exahype::solvers::Solver::getStandardBackgroundTaskPriority() {
-  return tarch::multicore::DefaultPriority/2;
-}
 
 

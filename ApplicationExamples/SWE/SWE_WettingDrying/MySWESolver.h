@@ -72,7 +72,7 @@ class SWE::MySWESolver : public SWE::AbstractMySWESolver {
      * \param[inout] QOut      the conserved variables at point x from outside of the domain
      *                         and time-averaged (over [t,t+dt]) as C array (already allocated).
      */
-    void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double* const stateIn,double* const stateOut) override;
+    void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double* const fluxIn,const double* const stateIn,const double* const gradStateIn,double* const fluxOut,double* const stateOut) override;
     
     /**
      * Compute the flux tensor.
@@ -83,7 +83,7 @@ class SWE::MySWESolver : public SWE::AbstractMySWESolver {
      */
     void flux(const double* const Q,double** const F) override;
 
-    double riemannSolver(double* const fL, double* const fR, const double* const qL, const double* const qR, int direction) override;
+    double riemannSolver(double* const FL,double* const FR,const double* const QL,const double* const QR,const double t,const double dt, const tarch::la::Vector<DIMENSIONS, double>& lengthScale,const int direction, bool isBoundaryFace, int faceIndex) override;
 
     /* algebraicSource() function not included, as requested by the specification file */
 

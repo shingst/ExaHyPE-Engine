@@ -49,9 +49,8 @@ public:
    * These handles are used to trace solver events with Intel Trace Analyzer and Collector.
    */
   static int adjustSolutionHandle;
-  static int fusedTimeStepBodyHandle;
-  static int predictorBodyHandle;
   static int updateBodyHandle;
+  static int updateBodyHandleSkeleton;
   static int mergeNeighboursHandle;
   #endif
 
@@ -430,6 +429,7 @@ public:
       const std::string& identifier,
       const int numberOfVariables,
       const int numberOfParameters,
+      const int numberOfGlobalObservables,
       const int basisSize,
       const int ghostLayerWidth,
       const double maximumMeshSize,
@@ -934,6 +934,11 @@ public:
 
   void toString (std::ostream& out) const override;
 
+  using Solver::reduceGlobalObservables;
+  void reduceGlobalObservables(std::vector<double>& globalObservables,
+                                   CellInfo cellInfo,
+                                   int solverNumber) const override;
+  
   ///////////////////////
   // PROFILING
   ///////////////////////
@@ -1072,6 +1077,9 @@ protected:
       double* const       fR,
       const double* const qL,
       const double* const qR,
+      const double* gradQL,
+      const double* gradQR,
+      const double* cellSize,
       const int     direction) = 0;
 
   /**
@@ -1084,7 +1092,9 @@ protected:
    */
   virtual void solutionUpdate(
       double* const                                      luh,
+      const tarch::la::Vector<DIMENSIONS, double>& center,
       const tarch::la::Vector<DIMENSIONS, double>& dx,
+      const double t,
       const double dt, double&                     maxAdmissibleDt) = 0;
 
   /**

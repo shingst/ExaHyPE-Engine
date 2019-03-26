@@ -118,9 +118,7 @@ void ElasticWave::MyElasticWaveSolver::algebraicSource(const double* const Q,dou
 }
 
 
-void ElasticWave::MyElasticWaveSolver::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,
-  const double * const fluxIn,const double* const stateIn,
-  double* const fluxOut,double* const stateOut) {
+void ElasticWave::MyElasticWaveSolver::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double* const fluxIn,const double* const stateIn,const double* const gradStateIn,double* const fluxOut,double* const stateOut) {
   // Dimensions             = 3
   // Number of variables    = 9 (#unknowns + #parameters)
 

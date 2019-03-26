@@ -89,7 +89,7 @@ public:
    */
   static int adjustSolutionHandle;
   static int fusedTimeStepBodyHandle;
-  static int predictorBodyHandle;
+  static int fusedTimeStepBodyHandleSkeleton;
   static int updateBodyHandle;
   static int mergeNeighboursHandle;
   #endif
@@ -727,6 +727,12 @@ public:
   void updateMeshUpdateEvent(MeshUpdateEvent meshUpdateEvent) final override;
   void resetMeshUpdateEvent() final override;
   MeshUpdateEvent getMeshUpdateEvent() const final override;
+
+  // TODO(Lukas) Still needed?
+  /*
+void updateNextGlobalObservables(
+          const std::vector<double>& globalObservables) override;
+  */
 
   double getMinTimeStamp() const final override;
   double getMinTimeStepSize() const final override;
@@ -1534,6 +1540,17 @@ public:
   getSolver () const {
     return _solver;
   }
+
+ std::vector<double> mapGlobalObservables(const double* const Q, const tarch::la::Vector<DIMENSIONS, double> &dx) const override;
+ std::vector<double> resetGlobalObservables() const override;
+ void reduceGlobalObservables(
+                           std::vector<double>& reducedGlobalObservables,
+                           const std::vector<double>& curGlobalObservables) const override;
+
+  using Solver::reduceGlobalObservables;
+  void reduceGlobalObservables(std::vector<double>& globalObservables,
+                           Solver::CellInfo cellInfo,
+                           int solverNumber) const override;
 
   ///////////////////////
   // PROFILING

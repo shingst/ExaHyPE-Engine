@@ -127,7 +127,7 @@ void  GPRDIM::DIMSolver_FV::nonConservativeProduct(const double* const Q,const d
 	pdencp_(BgradQ, Q, gradQ);
 }
 
-double GPRDIM::DIMSolver_FV::riemannSolver(double* const fL, double* const fR, const double* const qL, const double* const qR, int direction) {
+double GPRDIM::DIMSolver_FV::riemannSolver(double* fL, double *fR, const double* qL, const double* qR, const double* gradQL, const double* gradQR, const double* cellSize, int normalNonZero) {
   const int numberOfVariables  = GPRDIM::AbstractDIMSolver_FV::NumberOfVariables;
   const int numberOfParameters = GPRDIM::AbstractDIMSolver_FV::NumberOfParameters;
   const int numberOfData       = numberOfVariables+numberOfParameters;

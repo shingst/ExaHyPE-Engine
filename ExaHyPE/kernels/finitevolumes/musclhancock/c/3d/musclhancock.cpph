@@ -10,7 +10,7 @@
  * Released under the BSD 3 Open Source License.
  * For the full license text, see LICENSE.txt
  **/
-#include <cassert>
+#include <tarch/Assertions.h>
 #include <cmath>
 #include <limits>
 #include <utility>
@@ -24,21 +24,6 @@
 
 #if DIMENSIONS == 3
 
-inline double kernels::finitevolumes::musclhancock::c::minmod(double a, double b) {
-  assert(std::isfinite(a));
-  assert(std::isfinite(b));
-
-  if (a * b < 0.0) {  // sign is different (alternative: std::signbit and xor)
-    return 0.0;
-  } else {
-    if (std::abs(a) < std::abs(b)) {
-      return a;
-    } else {
-      return b;
-    }
-  }
-}
-
 // TODO(Dominic): Work in progress
 /**
  * Solves all the Riemann problems that do only require
@@ -46,10 +31,18 @@ inline double kernels::finitevolumes::musclhancock::c::minmod(double a, double b
  * new solution.
  * Finally add the source terms.
  */
-template <bool useSource, bool useNCP, bool useFlux, bool robustDiagonalLimiting, typename SolverType>
+template <
+	bool useSource, bool useNCP, bool useFlux, bool useViscousFlux, 
+	bool robustDiagonalLimiting,
+	kernels::finitevolumes::commons::c::slope_limiter slope_limiter,
+	typename SolverType
+	>
 double kernels::finitevolumes::musclhancock::c::solutionUpdate(
     SolverType& solver,double* luh,
-    const tarch::la::Vector<DIMENSIONS, double>& dx,double dt) {
+    const tarch::la::Vector<DIMENSIONS, double>& cellCenter,
+    const tarch::la::Vector<DIMENSIONS, double>& dx,
+    const double t,
+    double dt) {
   constexpr int numberOfVariables  = SolverType::NumberOfVariables;
   constexpr int numberOfParameters = SolverType::NumberOfParameters;
   constexpr int numberOfData       = numberOfVariables+numberOfParameters;
@@ -63,6 +56,8 @@ double kernels::finitevolumes::musclhancock::c::solutionUpdate(
   const double invCellSize[3]        = {1./cellSize[0],1./cellSize[1],1./cellSize[2]};
   const double invCellSizeTimesDt[3] = {dt*invCellSize[0], dt*invCellSize[1], dt*invCellSize[2]};
 
+  tarch::la::Vector<DIMENSIONS, double> x; // Location of volume.
+
   // 0. Copy old solution into temporary variable
   constexpr int stride       = patchSize+2*ghostLayerWidth;
   constexpr int dataPerPatch = stride*stride*stride*numberOfData;
@@ -73,7 +68,8 @@ double kernels::finitevolumes::musclhancock::c::solutionUpdate(
 
   // 2. Compute slopes TODO(Dominic): Make sure to only consider parameters in luh
   idx4 idx(stride, stride, stride, numberOfData);
-  idx5 idx_slope(stride,stride,stride,DIMENSIONS,numberOfData);
+  idx5 idx_slope(stride,stride,stride,DIMENSIONS,numberOfVariables);
+
   constexpr int variablesPerPatch = stride*stride*stride*numberOfData;
   double slope[variablesPerPatch*DIMENSIONS] = {0.0};
 
@@ -84,7 +80,7 @@ double kernels::finitevolumes::musclhancock::c::solutionUpdate(
       for (int k = patchBegin-1; k < patchEnd+1; k++) { // x
         for (int l = 0; l < numberOfData; l++) {
           slope[idx_slope(i, j, k, 0, l)] =
-              minmod(luhOld[idx(i, j, k + 1, l)] - luhOld[idx(i, j, k, l)],
+              slope_limiter(luhOld[idx(i, j, k + 1, l)] - luhOld[idx(i, j, k, l)],
                   luhOld[idx(i, j, k, l)] - luhOld[idx(i, j, k - 1, l)]) * invCellSize[0];
         }
       }
@@ -96,7 +92,7 @@ double kernels::finitevolumes::musclhancock::c::solutionUpdate(
       for (int k = patchBegin-1; k < patchEnd+1; k++) { // x
         for (int l = 0; l < numberOfData; l++) {
           slope[idx_slope(i, j, k, 1, l)] = 
-              minmod(luhOld[idx(i, j + 1, k, l)] - luhOld[idx(i, j, k, l)],
+              slope_limiter(luhOld[idx(i, j + 1, k, l)] - luhOld[idx(i, j, k, l)],
                   luhOld[idx(i, j, k, l)] - luhOld[idx(i, j - 1, k, l)]) * invCellSize[1];
         }
       }
@@ -108,7 +104,7 @@ double kernels::finitevolumes::musclhancock::c::solutionUpdate(
       for (int k = patchBegin-1; k < patchEnd+1; k++) { // x TODO new
         for (int l = 0; l < numberOfData; l++) {
           slope[idx_slope(i, j, k, 2, l)] = 
-              minmod(luhOld[idx(i + 1, j, k, l)] - luhOld[idx(i, j, k, l)],
+              slope_limiter(luhOld[idx(i + 1, j, k, l)] - luhOld[idx(i, j, k, l)],
                   luhOld[idx(i, j, k, l)] - luhOld[idx(i -1, j, k, l)]) * invCellSize[2];
         }
       }
@@ -220,8 +216,11 @@ double kernels::finitevolumes::musclhancock::c::solutionUpdate(
 //    for (int j = patchBegin; j < patchEnd; j++) {
 //      for (int k = patchBegin; k < patchEnd; k++) {
     for(int i = patchBegin-1; i < patchEnd+1; i++) {
+      const double qi = (2.0*(i-patchBegin)+1.0)/(2.0*patchSize); //linspace;
       for (int j = patchBegin-1; j < patchEnd+1; j++) {
+        const double qj = (2.0*(j-patchBegin)+1.0)/(2.0*patchSize); //linspace;
         for (int k = patchBegin-1; k < patchEnd+1; k++) {
+        const double qk = (2.0*(k-patchBegin)+1.0)/(2.0*patchSize); //linspace;
         if (
             (j==patchBegin-1 && k==patchBegin-1) ||
             (j==patchBegin-1 && k==patchEnd) ||
@@ -247,7 +246,10 @@ double kernels::finitevolumes::musclhancock::c::solutionUpdate(
           if(useSource || useNCP) {
             // Old code (for reference): solver.fusedSource(luh + idx(i, j, k, 0), gradQ, Qt);
             if(useSource) {
-              solver.algebraicSource(luhOld + idx(i, j, k, 0), Qt);
+              x[2] = cellCenter[2] + dx[2] * (qi - 0.5);
+              x[1] = cellCenter[1] + dx[1] * (qj - 0.5);
+              x[0] = cellCenter[0] + dx[0] * (qk - 0.5);
+              solver.algebraicSource(x, t, luhOld + idx(i, j, k, 0), Qt);
             } else {
               std::fill_n(Qt, numberOfVariables, 0.0);
             }
@@ -265,7 +267,35 @@ double kernels::finitevolumes::musclhancock::c::solutionUpdate(
             }
           }
 
-          if(useFlux) {
+          if (useViscousFlux) {
+            // x fluxes
+            solver.viscousFlux(wLx + idx_w(i, j, k, 0), slope + idx_slope(i, j, k, 0, 0), F); // FLx
+            for (int l = 0; l < numberOfVariables; l++) {
+              Qt[l] += F[0][l] * invCellSize[0];
+            }
+            solver.viscousFlux(wRx + idx_w(i, j, k, 0), slope + idx_slope(i, j, k, 0, 0), F); // FRx
+            for (int l = 0; l < numberOfVariables; l++) {
+              Qt[l] -= F[0][l] * invCellSize[0];
+            }
+            // y fluxes
+            solver.viscousFlux(wLy + idx_w(i, j, k, 0), slope + idx_slope(i, j, k, 0, 0),  F); // FLy
+            for (int l = 0; l < numberOfVariables; l++) {
+              Qt[l] += F[1][l] * invCellSize[1];
+            }
+            solver.viscousFlux(wRy + idx_w(i, j, k, 0), slope + idx_slope(i, j, k, 0, 0),  F); // FRy
+            for (int l = 0; l < numberOfVariables; l++) {
+              Qt[l] -= F[1][l] * invCellSize[1];
+            }
+            // z fluxes
+            solver.viscousFlux(wLz + idx_w(i, j, k, 0), slope + idx_slope(i, j, k, 0, 0),  F); // FLz
+            for (int l = 0; l < numberOfVariables; l++) {
+              Qt[l] += F[2][l] * invCellSize[2];
+            }
+            solver.viscousFlux(wRz + idx_w(i, j, k, 0), slope + idx_slope(i, j, k, 0, 0),  F); // FRz
+            for (int l = 0; l < numberOfVariables; l++) {
+              Qt[l] -= F[2][l] * invCellSize[2];
+            }
+          } else if (useFlux) {
             // x fluxes
             solver.flux(wLx + idx_w(i, j, k, 0), F); // FLx
             for (int l = 0; l < numberOfVariables; l++) {
@@ -322,6 +352,9 @@ double kernels::finitevolumes::musclhancock::c::solutionUpdate(
                 fL, fR,
                 wRx + idx_w(i, j, k, 0),
                 wLx + idx_w(i, j, k+1, 0),
+                slope + idx_slope(i,j,k,0,0),
+                slope + idx_slope(i,j,k+1,0,0),
+                cellSize,
                 0
             );
         dt_max_allowed = std::min(
@@ -343,6 +376,9 @@ double kernels::finitevolumes::musclhancock::c::solutionUpdate(
             fL, fR,
             wRy + idx_w(i, j, k, 0),
             wLy + idx_w(i, j+1, k, 0),
+            slope + idx_slope(i,j,k,0,0),
+            slope + idx_slope(i,j+1,k,0,0),
+            cellSize,
             1
         );
         dt_max_allowed = std::min(
@@ -364,6 +400,9 @@ double kernels::finitevolumes::musclhancock::c::solutionUpdate(
             fL, fR,
             wRz + idx_w(i, j, k, 0),
             wLz + idx_w(i+1, j, k, 0),
+            slope + idx_slope(i,j,k,0,0),
+            slope + idx_slope(i+1,j,k,0,0),
+            cellSize,
             2
         );
         dt_max_allowed = std::min(
@@ -385,8 +424,11 @@ double kernels::finitevolumes::musclhancock::c::solutionUpdate(
     double src[numberOfVariables] = {0.0};
 
     for (int i= patchBegin; i < patchEnd; i++) {
+      const double qi = (2.0*(i-patchBegin)+1.0)/(2.0*patchSize);
       for (int j = patchBegin; j < patchEnd; j++) {
+        const double qj = (2.0*(j-patchBegin)+1.0)/(2.0*patchSize);
         for (int k = patchBegin; k < patchEnd; k++) {
+          const double qk = (2.0*(k-patchBegin)+1.0)/(2.0*patchSize);
           std::copy_n(luhOld + idx(i,j,k,0),numberOfData,ws); // copy the material parameters over
           for (int l = 0; l < numberOfVariables; l++) {
             ws[l] += 0.5 * dt * slopet[idx_w(i,j,k,l)]; // idx_w ~ idx_slopet
@@ -395,7 +437,10 @@ double kernels::finitevolumes::musclhancock::c::solutionUpdate(
           double* gradQ = slope + idx_slope(i, j, k, 0, 0); // const in time
           // Old code (for reference): solver.fusedSource(ws, gradQ, src);
           if(useSource) {
-            solver.algebraicSource(ws, src);
+            x[2] = cellCenter[2] + dx[2] * (qi - 0.5);
+            x[1] = cellCenter[1] + dx[1] * (qj - 0.5);
+            x[0] = cellCenter[0] + dx[0] * (qk - 0.5);
+            solver.algebraicSource(x, t + 0.5 * dt, ws, src);
           } else {
             std::fill_n(src, numberOfVariables, 0.0);
           }

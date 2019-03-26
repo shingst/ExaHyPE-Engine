@@ -627,9 +627,9 @@ class exahype::parser::Parser {
   int getNumberOfBackgroundJobConsumerTasks();
 
   /**
-   * @return Return if every job should be directly mapped to a task.
+   * @return If the given @p strategy matches the one specified in the specification file.
    */
-  bool getMapBackgroundJobsToTasks();
+  bool compareBackgroundJobProcessing(const std::string& strategy) const;
 
   /**
    * @return Minimum number of background jobs a consumer grabs from the queue in a single rush (default: 1).

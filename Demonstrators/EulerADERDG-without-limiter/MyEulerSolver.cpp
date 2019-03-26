@@ -88,9 +88,7 @@ void EulerADERDG::MyEulerSolver::adjustPointSolution(const double* const x,const
 }
 
 
-void EulerADERDG::MyEulerSolver::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,
-  const double * const fluxIn,const double* const stateIn,
-  double* const fluxOut,double* const stateOut) {
+void EulerADERDG::MyEulerSolver::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double* const fluxIn,const double* const stateIn,const double* const gradStateIn,double* const fluxOut,double* const stateOut) {
   std::copy_n(stateIn, NumberOfVariables, stateOut);
   stateOut[1+normalNonZero] =  -stateOut[1+normalNonZero];
   double _F[3][NumberOfVariables]={0.0};
