@@ -131,6 +131,7 @@ void NavierStokes::NavierStokesSolver_FV::algebraicSource(const tarch::la::Vecto
   scenario->source(x, t, ns, Q, S);
 }
 
+/*
 std::vector<double> NavierStokes::NavierStokesSolver_FV::mapGlobalObservables(const double *const Q,
         const tarch::la::Vector<DIMENSIONS,double>& dx) const {
   // TODO(Lukas): Implementation is really slow but should work.
@@ -149,4 +150,21 @@ void NavierStokes::NavierStokesSolver_FV::reduceGlobalObservables(
     ::NavierStokes::reduceGlobalObservables(reducedGlobalObservables, curGlobalObservables,
             NumberOfGlobalObservables);
 }
+*/
 
+void NavierStokes::NavierStokesSolver_FV::resetGlobalObservables(GlobalObservables& globalObservables)  {
+  NavierStokes::resetGlobalObservables(globalObservables);
+}
+
+void NavierStokes::NavierStokesSolver_FV::mapGlobalObservables(
+    GlobalObservables&                          globalObservables,
+    const double* const                         luh,
+    const tarch::la::Vector<DIMENSIONS,double>& cellSize)  {
+  NavierStokes::mapGlobalObservablesDG(globalObservables,luh,cellSize);
+}
+
+void NavierStokes::NavierStokesSolver_FV::mergeGlobalObservables(
+    GlobalObservables&         globalObservables,
+    ReadOnlyGlobalObservables& otherObservables)  {
+  NavierStokes::mergeGlobalObservables(globalObservables,otherObservables);
+}

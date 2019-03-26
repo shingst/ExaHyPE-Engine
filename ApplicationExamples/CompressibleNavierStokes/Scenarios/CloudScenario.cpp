@@ -17,7 +17,7 @@ double NavierStokes::CloudScenario::Bubble::evaluatePerturbation(
   auto perturbation = 0.0;
   const auto distX = posX - centerX;
 #if DIMENSIONS == 2
-  const auto distY = 0.0
+  const auto distY = 0.0;
 #else
   const auto distY = posY - centerY;
 #endif

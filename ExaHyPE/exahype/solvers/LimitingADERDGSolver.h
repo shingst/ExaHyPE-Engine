@@ -370,7 +370,7 @@ private:
    * @param cellInfo    struct referring to all cell descriptions registered for a cell
    */
   void reduce(
-      const SolverPatch&  cellDescription,
+      const SolverPatch&  solverPatch,
       CellInfo&           cellInfo,
       const UpdateResult& updateResult);
 
@@ -955,6 +955,8 @@ void updateNextGlobalObservables(
       const bool isFirstTimeStepOfBatch);
 
   void updateTimeStepSize(const int solverNumber,CellInfo& cellInfo) final override;
+
+  void updateGlobalObservables(const int solverNumber,CellInfo& cellInfo) final override;
 
   /**
    * Mostly identical but slightly different to the ADER-DG equivalent

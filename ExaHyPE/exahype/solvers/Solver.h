@@ -207,11 +207,6 @@ namespace exahype {
   void moveDataHeapEntries(const int fromIndex,const int toIndex,bool recycleFromArray);
 
   /**
-   * @see waitUntilAllBackgroundTasksHaveTerminated()
-   */
-  extern tarch::multicore::BooleanSemaphore ReductionSemaphore;
-
-  /**
    * A semaphore for serialising heap access.
    */
   extern tarch::multicore::BooleanSemaphore HeapSemaphore;
@@ -384,17 +379,17 @@ namespace exahype {
  * Describes one solver.
  */
 class exahype::solvers::Solver {
- private:
+private:
   /**
    * Log device.
    */
   static tarch::logging::Log _log;
 
- protected:
+protected:
   void tearApart(int numberOfEntries, int normalHeapIndex, int compressedHeapIndex, int bytesForMantissa) const;
   void glueTogether(int numberOfEntries, int normalHeapIndex, int compressedHeapIndex, int bytesForMantissa) const;
 
- public:
+public:
   #ifdef USE_ITAC
   /**
    * These handles are used to trace solver events with Intel Trace Analyzer and Collector.
@@ -1213,6 +1208,11 @@ class exahype::solvers::Solver {
 
  protected:
 
+   /**
+    * A semphare for conducting reductions.
+    */
+   tarch::multicore::BooleanSemaphore _reductionSemaphore;
+
   /**
    * Each solver has an identifier/name. It is used for debug purposes only.
    */
@@ -1476,6 +1476,14 @@ class exahype::solvers::Solver {
    */
   virtual void resetAdmissibleTimeStepSize() = 0;
 
+  /**
+   * Reset the global observables to an appropriate
+   * initial value in order to determine them again.
+   */
+  void resetGlobalObservables() {
+    resetGlobalObservables(_nextGlobalObservables.data());
+  }
+
   // TODO(Lukas) Is this still needed?
   /*
   virtual void updateNextGlobalObservables(const std::vector<double>& globalObservables);
@@ -1696,6 +1704,15 @@ class exahype::solvers::Solver {
    * @note Has no const modifier since kernels are not const functions yet.
    */
   virtual void updateTimeStepSize(const int solverNumber,CellInfo& cellInfo) = 0;
+
+  /**
+   * Merge the global observables with the cell-wise observables
+   * that are computed by this function.
+   *
+   * @param[in] solverNumber identifier for a solver
+   * @param[in] cellInfo           links to the data associated with the mesh cell
+   */
+  virtual void updateGlobalObservables(const int solverNumber,CellInfo& cellInfo) = 0;
 
   /**
    * Impose initial conditions and mark for refinement.
@@ -2142,6 +2159,8 @@ class exahype::solvers::Solver {
   /**
    * Computes the observables from a cell's solution values
    * and merges the result with the global observables.
+   *
+   * @note Implementation must be thread-safe.
    *
    *\param[in]    luh               The solution array.
    *\param[in]    cellSize          The size of a cell.

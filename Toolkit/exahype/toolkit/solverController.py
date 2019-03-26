@@ -109,7 +109,7 @@ class SolverController:
         context["variables_as_str"] = ToolkitHelper.variables_to_str(solver,"variables")
         context["material_parameters_as_str"]  = ToolkitHelper.variables_to_str(solver,"material_parameters")
         
-        context["globaObservablesMap"]       = ToolkitHelper.parse_variables(solver,"global_observables")
+        context["globalObservablesMap"]      = ToolkitHelper.parse_variables(solver,"global_observables")
         context["global_observables_as_str"] = ToolkitHelper.variables_to_str(solver,"global_observables")
         
         context["range_0_nVar"]          = range(0,nVar)
@@ -137,14 +137,14 @@ class SolverController:
 
     def buildLimitingADERDGSolverContext(self, solver):
         context = self.buildBaseSolverContext(solver)
-        context["type"] = "Limiting-ADER-DG"
+        context["type"]                   = "Limiting-ADER-DG"
         context["order"]                  = solver["order"]
         context["numberOfDMPObservables"] = solver["limiter"]["dmp_observables"]
         context["implementation"]         = solver["limiter"].get("implementation","generic")
-        context["ADERDGSolver"]         = solver["name"]+"_ADERDG"
-        context["FVSolver"]             = solver["name"]+"_FV"
-        context["ADERDGAbstractSolver"] = "Abstract"+solver["name"]+"_ADERDG"
-        context["FVAbstractSolver"]     = "Abstract"+solver["name"]+"_FV"
+        context["ADERDGSolver"]           = solver["name"]+"_ADERDG"
+        context["FVSolver"]               = solver["name"]+"_FV"
+        context["ADERDGAbstractSolver"]   = "Abstract"+solver["name"]+"_ADERDG"
+        context["FVAbstractSolver"]       = "Abstract"+solver["name"]+"_FV"
         
         return context
 

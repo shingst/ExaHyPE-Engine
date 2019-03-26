@@ -587,14 +587,16 @@ class {{project}}::{{abstractSolver}}::{{name | capitalize}} {
 };
 {% endfor %}
 
+{% if numberOfGlobalObservables > 0 %}
 //
 // Global Observables
 //
-
 class {{project}}::{{abstractSolver}}::ReadOnlyGlobalObservables {
   private:
     const double* const _observables;
   public:
+    static constexpr int Size = {{numberOfGlobalObservables}};
+    
     ReadOnlyGlobalObservables(const double* const observables) : _observables(observables) {}
     
     double operator [] (int index) const {
@@ -706,6 +708,8 @@ class {{project}}::{{abstractSolver}}::GlobalObservables {
     
 {% endif %}
 {% endfor %}
-}; // end of GlobalObservables
+}; 
+// end of GlobalObservables
+{% endif %}
 
 #endif

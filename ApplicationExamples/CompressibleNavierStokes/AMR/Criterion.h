@@ -10,6 +10,44 @@
 #include "kernels/limiter/generic/Limiter.h"
 
 namespace NavierStokes {
+
+/** NEW **/
+template <typename GlobalObservables>
+void resetGlobalObservables(GlobalObservables& obs)  {
+  obs.gobs(0)=-1.0;
+  obs.gobs(1)=-1.0;
+  obs.gobs(2)=0.0;
+}
+
+template <
+  typename GlobalObservables,
+  typename ReadOnlyGlobalObservables
+>
+void mergeGlobalObservables(
+    GlobalObservables&         obs,
+    ReadOnlyGlobalObservables& other)  {
+  obs.gobs(0)=std::max( obs.gobs(0), other.gobs(0) ); 
+  obs.gobs(1)=std::max( obs.gobs(1), other.gobs(1) );
+  obs.gobs(2)=std::max( obs.gobs(2), other.gobs(2) );
+}
+
+template <typename GlobalObservables>
+void mapGlobalObservablesDG(
+    GlobalObservables&                          globalObservables,
+    const double* const                         luh,
+    const tarch::la::Vector<DIMENSIONS,double>& cellSize)  {
+  // TODO(Lukas): Please implement
+}
+
+template <typename GlobalObservables>
+void mapGlobalObservablesFV(
+    GlobalObservables&                          globalObservables,
+    const double* const                         luh,
+    const tarch::la::Vector<DIMENSIONS,double>& cellSize)  {
+  // TODO(Lukas): Please implement
+}
+/** NEW - END **/
+
 std::vector<double> resetGlobalObservables(int NumberOfGlobalObservables);
 
 std::vector<double> mapGlobalObservables(

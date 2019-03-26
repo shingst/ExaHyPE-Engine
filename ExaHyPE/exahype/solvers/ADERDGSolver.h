@@ -1749,6 +1749,8 @@ public:
 
   void updateTimeStepSize(const int solverNumber,CellInfo& cellInfo) final override;
 
+  void updateGlobalObservables(const int solverNumber,CellInfo& cellInfo) final override;
+
   void fusedTimeStepOrRestrict(
       const int  solverNumber,
       CellInfo&  cellInfo,
@@ -2296,11 +2298,6 @@ public:
    */
   void compress( CellDescription& cellDescription, const bool isSkeletonCell ) const;
 
-  using Solver::reduceGlobalObservables;
-  void reduceGlobalObservables(
-      const int solverNumber,
-      CellInfo& cellInfo) const final override;
-
   ///////////////////////
   // PROFILING
   ///////////////////////
@@ -2308,6 +2305,9 @@ public:
   CellProcessingTimes measureCellProcessingTimes(const int numberOfRuns=100) override;
 
 protected:
+  // make super class virtual function accessible
+  using Solver::updateGlobalObservables;
+
   /** @name Plugin points for derived solvers.
    *
    *  These are the macro kernels solvers derived from

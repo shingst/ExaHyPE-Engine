@@ -11,6 +11,7 @@
 #include "{{abstractSolver}}.h"
 #include "{{optKernelPath}}/Kernels.h"
 
+#include "{{solver}}_Variables.h"
 #include "{{solver}}.h" // Have to include a proper declaration. Cannot use forward declared classes in static_cast.
 
 #include <stdio.h>
@@ -595,6 +596,39 @@ void {{project}}::{{abstractSolver}}::volumeUnknownsRestriction(double* const lu
 {% endif %}
 }
 
+{% if numberOfGlobalObservables > 0 %}
+{{project}}::{{abstractSolver}}::ReadOnlyGlobalObservables {{project}}::{{abstractSolver}}::getGlobalObservables() const {
+  return ReadOnlyGlobalObservables(_globalObservables.data());
+}
+
+void {{project}}::{{abstractSolver}}::resetGlobalObservables(double* const globalObservables) {
+  GlobalObservables wrappedGlobalObservables(globalObservables);
+  static_cast<{{solver}}*>(this)->resetGlobalObservables(wrappedGlobalObservables);
+}
+
+void {{project}}::{{abstractSolver}}::updateGlobalObservables(
+    double* const                               globalObservables,
+    const double* const                         luh,
+    const tarch::la::Vector<DIMENSIONS,double>& cellSize) {
+  // map
+  double mappedObservables[NumberOfGlobalObservables];
+  GlobalObservables wrappedMappedObservables(mappedObservables);
+  static_cast<{{solver}}*>(this)->mapGlobalObservables(wrappedMappedObservables,luh,cellSize);
+  // reduce
+  GlobalObservables         wrappedGlobalObservables(globalObservables);
+  ReadOnlyGlobalObservables wrappedOtherObservables(mappedObservables);
+  tarch::multicore::Lock lock(_reductionSemaphore);
+  static_cast<{{solver}}*>(this)->mergeGlobalObservables(wrappedGlobalObservables,wrappedOtherObservables);
+  lock.free();
+}
+
+void {{project}}::{{abstractSolver}}::mergeGlobalObservables(double* const globalObservables,const double* const otherObservables) {
+  GlobalObservables         wrappedGlobalObservables(globalObservables);
+  ReadOnlyGlobalObservables wrappedOtherObservables(otherObservables);
+  static_cast<{{solver}}*>(this)->mergeGlobalObservables(wrappedGlobalObservables,wrappedOtherObservables);
+}
+{% endif %}
+
 //--------
 
 void {{project}}::{{abstractSolver}}::abortWithMsg(const char* const msg) {
@@ -635,16 +669,21 @@ void {{project}}::{{abstractSolver}}::viscousEigenvalues(const double* const Q,c
       abortWithMsg("viscous eigenvalues: If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
 }
 
-std::vector<double> {{project}}::{{abstractSolver}}::mapGlobalObservables(const double* const Q, const tarch::la::Vector<DIMENSIONS, double> &cellSize) const {
-  return {};
+{% if numberOfGlobalObservables > 0 %}
+void {{project}}::{{abstractSolver}}::resetGlobalObservables(GlobalObservables& globalObservables) {
+  abortWithMsg("If this operation is entered (resetGlobalObservables), you have specified global observables. Then you have to re-implement this routine, too." );
 }
 
-std::vector<double> {{project}}::{{abstractSolver}}::resetGlobalObservables() const {
-  return {};
+void {{project}}::{{abstractSolver}}::mapGlobalObservables(
+    GlobalObservables&                          globalObservables,
+    const double* const                         luh,
+    const tarch::la::Vector<DIMENSIONS,double>& cellSize) {
+  abortWithMsg("If this operation is entered (mapGlobalObservables), you have specified global observables. Then you have to re-implement this routine, too." );
 }
 
-void {{project}}::{{abstractSolver}}::reduceGlobalObservables(
-	std::vector<double>& reducedGlobalObservables,
-	const std::vector<double>& curGlobalObservables) const {
-  // NOP
+void {{project}}::{{abstractSolver}}::mergeGlobalObservables(
+    GlobalObservables&         globalObservables,
+    ReadOnlyGlobalObservables& otherObservables) {
+  abortWithMsg("If this operation is entered (mergeGlobalObservables), you have specified global observables. Then you have to re-implement this routine, too." );
 }
+{% endif %}

@@ -59,6 +59,7 @@ public:
   bool isLinear() const override { return {{isLinear_s}}; }
   bool isUseViscousFlux() const override { return {{useViscousFlux_s}}; }
 
+  // Access Objects
   class VariableMetrics;
   class Variables;
   class ReadOnlyVariables;
@@ -69,6 +70,10 @@ public:
   {% for className in namingSchemes %}
   class {{className}};
   {% endfor %}
+  {% if numberOfGlobalObservables > 0 %}
+  class GlobalObservables;
+  class ReadOnlyGlobalObservables;
+  {% endif %}
 
   {{abstractSolver}}(
       const double maximumMeshSize,
@@ -233,46 +238,6 @@ public:
   }
 
   /**
-   * @return the global observables computed in the last time step.
-   */
-  GlobalObservables getGlobalObservables() const {
-    return GlobalObservables(_globalObservables.data());
-  }
-
-  /**
-   * @see exahype::solvers::Solver::resetGlobalObservables
-   */
-  void resetGlobalObservables(double* const globalObservables) final override {
-    GlobalObservables wrappedGlobalObservables(globalObservables);
-    resetGlobalObservables(wrappedGlobalObservables);
-  }
-
-  /**
-   * @see exahype::solvers::Solver::updateGlobalObservables
-   */
-  void updateGlobalObservables(
-      double* const                               globalObservables,
-      const double* const                         luh,
-      const tarch::la::Vector<DIMENSIONS,double>& cellSize) final override {
-    double mappedObservables[NumberOfGlobalObservables];
-    GlobalObservables wrappedMappedObservables(mappedObservables);
-    mapGlobalObservables(wrappedMappedObservables,luh,cellSize);
-    GlobalObservables wrappedGlobalObservables(globalObservables);
-    tarch::multicore::Lock lock(ReductionSemaphore);
-    mergeGlobalObservables(wrappedGlobalObservables,wrappedMappedObservables);
-    lock.free();
-  }
-
-  /**
-   * @see exahype::solvers::Solver::mergeGlobalObservables
-   */
-  void mergeGlobalObservables(double* const globalObservables,const double* const otherObservables) final override {
-    GlobalObservables wrappedGlobalObservables(globalObservables);
-    GlobalObservables wrappedOtherObservables(otherObservables);
-    mergeGlobalObservables(wrappedGlobalObservables,wrappedOtherObservables);
-  }
-
-  /**
    * Default implementation. Please overwrite.
    *
    * See superclass exahype::solvers::Solver for function's semantics.
@@ -300,8 +265,21 @@ public:
   void faceUnknownsProlongation(double* const lQhbndFine,double* const lFhbndFine,const double* const lQhbndCoarse,const double* const lFhbndCoarse,const int coarseGridLevel,const int fineGridLevel,const tarch::la::Vector<DIMENSIONS-1,int>& subfaceIndex) override;
   //old: void faceUnknownsRestriction(double* const lQhbndCoarse,double* const lFhbndCoarse,const double* const lQhbndFine,const double* const lFhbndFine,const int coarseGridLevel,const int fineGridLevel,const tarch::la::Vector<DIMENSIONS-1,int>& subfaceIndex) override;
   void volumeUnknownsProlongation(double* const luhFine,const double* const luhCoarse,const int coarseGridLevel,const int fineGridLevel,const tarch::la::Vector<DIMENSIONS,int>& subcellIndex) override;
-  void volumeUnknownsRestriction(double* const luhCoarse,const double* const luhFine,const int coarseGridLevel,const int fineGridLevel,const tarch::la::Vector<DIMENSIONS,int>& subcellIndex) override;
-
+  void volumeUnknownsRestriction(double* const luhCoarse,const double* const luhFine,const int coarseGridLevel,const int fineGridLevel,const tarch::la::Vector<DIMENSIONS,int>& subcellIndex) override; 
+  {% if numberOfGlobalObservables > 0 %}
+  /**
+   * @return the global observables computed in the last time step.
+   */
+  ReadOnlyGlobalObservables getGlobalObservables() const;
+  void resetGlobalObservables(double* const globalObservables) final override;
+  void updateGlobalObservables(
+      double* const                               globalObservables,
+      const double* const                         luh,
+      const tarch::la::Vector<DIMENSIONS,double>& cellSize) final override;
+  void mergeGlobalObservables(double* const globalObservables,const double* const otherObservables) final override;
+  {% endif %}
+  
+  
   static void constantsToString(std::ostream& os);
   static void abortWithMsg(const char* const msg);
 
@@ -457,16 +435,15 @@ public:
   virtual void viscousFlux(const double* const Q, const double* const gradQ, double** const F);
   virtual void viscousEigenvalues(const double* const Q,const int direction,double* const lambda);
 
+  {% if numberOfGlobalObservables > 0 %}
   /**
    * Resets the vector of global observables to some suitable initial value, e.g.
    * the smallest possible double if one wants to compute the maximum.
    *
    *\param[inout] globalObservables The global observables that we want to reset.
    */
-  virtual void resetGlobalObservables(GlobalObservables& globalObservables) {
-    // do nothing
-  }
-
+  virtual void resetGlobalObservables(GlobalObservables& globalObservables);
+  
   /**
    * Computes observables from a cell's solution values.
    * The result will be merged with the global observables.
@@ -478,9 +455,7 @@ public:
   virtual void mapGlobalObservables(
       GlobalObservables&                          globalObservables,
       const double* const                         luh,
-      const tarch::la::Vector<DIMENSIONS,double>& cellSize) {
-    // do nothing
-  }
+      const tarch::la::Vector<DIMENSIONS,double>& cellSize);
 
   /**
    * This method merges two vectors of (global) observables.
@@ -496,10 +471,9 @@ public:
    *\param[in]    otherObservables   other observables that we want to merge with the first argument.
    */
   virtual void mergeGlobalObservables(
-      GlobalObservables&       globalObservables,
-      const GlobalObservables& otherObservables) {
-    // do nothing
-  }
+      GlobalObservables&         globalObservables,
+      ReadOnlyGlobalObservables& otherObservables);
+  {% endif %}
   ///@}
 
   //helper function

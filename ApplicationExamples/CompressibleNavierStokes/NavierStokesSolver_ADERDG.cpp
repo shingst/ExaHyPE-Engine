@@ -60,7 +60,7 @@ void NavierStokes::NavierStokesSolver_ADERDG::algebraicSource(const tarch::la::V
    scenario->source(x, t, ns, Q, S);
 }
 
-void NavierStokes::NavierStokesSolver_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double* const fluxIn,const double* const stateIn,const double* const gradStateIn,double* const fluxOut,double* const stateOut)
+void NavierStokes::NavierStokesSolver_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double* const fluxIn,const double* const stateIn,const double* const gradStateIn,double* const fluxOut,double* const stateOut) {
   constexpr auto basisSize = Order + 1;
   constexpr auto gradSize = NumberOfVariables * DIMENSIONS;
   constexpr auto NumberOfData = NumberOfVariables + NumberOfParameters;
@@ -286,13 +286,17 @@ exahype::solvers::Solver::RefinementControl NavierStokes::NavierStokesSolver_ADE
     return exahype::solvers::Solver::RefinementControl::Keep;
   }
 
-  const auto curObservables = mapGlobalObservables(luh, dx);
-  const auto curTv = curObservables[0];
+  double data[NumberOfGlobalObservables];
+  GlobalObservables curObs(data);
+  mapGlobalObservables(curObs,luh, dx);
+  
+  const auto curTv = curObs.gobs(0);
 
-  const auto countGlobal = _globalObservables[2];
-  const auto meanGlobal = _globalObservables[0];
+  ReadOnlyGlobalObservables gobs = getGlobalObservables();
+  const auto countGlobal = gobs.gobs(2);
+  const auto meanGlobal  = gobs.gobs(0);
   // Merging computes sample variance (Bessel's correction), we need population variance.
-  const auto varianceGlobal = ((countGlobal - 1)/countGlobal) * _globalObservables[1];
+  const auto varianceGlobal = ((countGlobal - 1)/countGlobal) * gobs.gobs(1);
   const auto stdGlobal = std::sqrt(varianceGlobal);
 
   const auto factorRefine = amrSettings.factorRefine;
@@ -401,6 +405,7 @@ void NavierStokes::NavierStokesSolver_ADERDG::boundaryConditions( double* const 
   delete[] block;
 }
 
+/**
 std::vector<double> NavierStokes::NavierStokesSolver_ADERDG::mapGlobalObservables(const double *const Q,
         const tarch::la::Vector<DIMENSIONS,double>& dx) const {
   return ::NavierStokes::mapGlobalObservables(Q, dx, scenarioName, ns, amrSettings,
@@ -416,4 +421,22 @@ void NavierStokes::NavierStokesSolver_ADERDG::reduceGlobalObservables(
         const std::vector<double> &curGlobalObservables) const {
     ::NavierStokes::reduceGlobalObservables(reducedGlobalObservables,
             curGlobalObservables, NumberOfGlobalObservables);
+}
+*/
+
+void NavierStokes::NavierStokesSolver_ADERDG::resetGlobalObservables(GlobalObservables& globalObservables)  {
+  NavierStokes::resetGlobalObservables(globalObservables);
+}
+
+void NavierStokes::NavierStokesSolver_ADERDG::mapGlobalObservables(
+    GlobalObservables&                          globalObservables,
+    const double* const                         luh,
+    const tarch::la::Vector<DIMENSIONS,double>& cellSize)  {
+  NavierStokes::mapGlobalObservablesDG(globalObservables,luh,cellSize);
+}
+
+void NavierStokes::NavierStokesSolver_ADERDG::mergeGlobalObservables(
+    GlobalObservables&         globalObservables,
+    ReadOnlyGlobalObservables& otherObservables)  {
+  NavierStokes::mergeGlobalObservables(globalObservables,otherObservables);
 }

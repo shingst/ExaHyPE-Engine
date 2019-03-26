@@ -42,8 +42,6 @@ std::vector<exahype::solvers::Solver*> exahype::solvers::RegisteredSolvers;
 exahype::DataHeap::HeapEntries exahype::EmptyDataHeapMessage(0);
 #endif
 
-tarch::multicore::BooleanSemaphore exahype::ReductionSemaphore;
-
 tarch::multicore::BooleanSemaphore exahype::HeapSemaphore;
 
 exahype::DataHeap::HeapEntries& exahype::getDataHeapEntries(const int index) {
