@@ -60,7 +60,7 @@ void NavierStokes::NavierStokesSolver_ADERDG::algebraicSource(const tarch::la::V
    scenario->source(x, t, ns, Q, S);
 }
 
-void NavierStokes::NavierStokesSolver_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double* const fluxIn,const double* const stateIn,const double* const gradStateIn,double* const fluxOut,double* const stateOut)
+void NavierStokes::NavierStokesSolver_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double* const fluxIn,const double* const stateIn,const double* const gradStateIn,double* const fluxOut,double* const stateOut) {
   constexpr auto basisSize = Order + 1;
   constexpr auto gradSize = NumberOfVariables * DIMENSIONS;
   constexpr auto NumberOfData = NumberOfVariables + NumberOfParameters;
@@ -250,7 +250,7 @@ bool NavierStokes::NavierStokesSolver_ADERDG::isPhysicallyAdmissible(
 }
 
 void NavierStokes::NavierStokesSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(double* observables,const double* const Q) const {
-  if (NumberOfDMPObservables > 0) {
+  if (ns.useAdvection) {
     // TODO(Lukas) Remove this.
     std::fill_n(observables, NumberOfDMPObservables, 0.0);
     assert(NumberOfDMPObservables >= 2);
@@ -264,6 +264,19 @@ void NavierStokes::NavierStokesSolver_ADERDG::mapDiscreteMaximumPrincipleObserva
     if (ns.useAdvection) {
       observables[2] = ns.getZ(Q) / Q[0];
     }
+  } else if (scenarioName == std::string("two-bubbles")) {
+    assert(DIMENSIONS == 2 && NumberOfDMPObservables == 2);
+    const auto vars = ReadOnlyVariables{Q};
+    const auto pressure = ns.evaluatePressure(vars.E(),
+                                         vars.rho(),
+                                         vars.j(),
+                                         ns.getZ(Q),
+                                         ns.getHeight(Q));
+    const auto temperature = ns.evaluateTemperature(vars.rho(), pressure);
+    const auto potT = ns.evaluatePotentialTemperature(temperature, pressure);
+    observables[0] = vars.rho();
+    observables[1] = pressure;
+    observables[2] = potT;
   }
 }
 
