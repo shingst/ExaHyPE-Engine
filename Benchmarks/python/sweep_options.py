@@ -281,6 +281,42 @@ export MP_TASK_AFFINITY=core:{{coresPerRank}}
 
 {{body}}"""
         print(template)
+    elif machine=="supermuc-skx":
+        template="""#!/bin/bash
+# Mandatory parameters are:
+# time, ranks, nodes,
+# job_name, output_file, error_file, 
+# body
+# 
+# Optional parameters are:
+# tasks, coresPerRank, mail
+
+# see: https://doku.lrz.de/display/PUBLIC/Job+Processing+with+SLURM+on+SuperMUC-NG
+
+#SBATCH --job-name={{job_name}}
+#SBATCH -o {{output_file}}
+#SBATCH -e {{error_file}}
+#SBATCH -t {{time}}
+#SBATCH --partition={{class}}
+#SBATCH --ntasks={{ranks}}
+#SBATCH --nodes={{nodes}}
+#SBATCH --exclusive
+#SBATCH --mem=MaxMemPerNode
+#SBATCH --mail-user={{mail}}
+#SBATCH --mail-type=END
+#SBATCH --export=NONE
+#SBATCH --account=pr48ma
+#SBATCH --chdir ./
+
+module load intel/19.0
+module load gcc/7
+module load tbb/2019
+module load mpi.intel/2019
+
+export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
+export OMP_PLACES=cores
+
+{{body}}"""
     elif machine=="hamilton":
         template="""#!/bin/bash
 # Mandatory parameters are:
