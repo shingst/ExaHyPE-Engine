@@ -9,7 +9,10 @@ exahype::solvers::ADERDGSolver::ProlongationJob::ProlongationJob(
   CellDescription& cellDescription,
   const CellDescription& parentCellDescription,
   const tarch::la::Vector<DIMENSIONS,int>& subcellIndex):
-  tarch::multicore::jobs::Job(tarch::multicore::jobs::JobType::BackgroundTask,0,getHighPrioritiesJobTaskPriority()),
+  tarch::multicore::jobs::Job(
+      tarch::multicore::jobs::JobType::BackgroundTask,0,
+      getHighPriorityTaskPriority() // ! always high priority
+  ),
   _solver(solver),
   _cellDescription(cellDescription),
   _parentCellDescription(parentCellDescription),
