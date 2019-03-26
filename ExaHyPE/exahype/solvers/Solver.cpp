@@ -166,11 +166,14 @@ void exahype::solvers::Solver::ensureAllJobsHaveTerminated(JobType jobType) {
     peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
   }
 
-  int numberOfBackgroundJobsToProcess = 1;
+  const int numberOfBackgroundJobsToProcess = 1;
+  const bool processHighPriorityJobs =
+      jobType==JobType::SkeletonJob ||
+      jobType==JobType::ReductionJob;
   while ( !finishedWait ) {
     // do some work myself
     tarch::parallel::Node::getInstance().receiveDanglingMessages();
-    tarch::multicore::jobs::processBackgroundJobs(numberOfBackgroundJobsToProcess);
+    tarch::multicore::jobs::processBackgroundJobs(numberOfBackgroundJobsToProcess,getTaskPriority(processHighPriorityJobs));
     numberOfBackgroundJobsToProcess++;
     queuedJobs = getNumberOfQueuedJobs(jobType);
     finishedWait = queuedJobs == 0;
