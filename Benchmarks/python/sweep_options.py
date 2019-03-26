@@ -317,6 +317,7 @@ export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 export OMP_PLACES=cores
 
 {{body}}"""
+        print(template)
     elif machine=="hamilton":
         template="""#!/bin/bash
 # Mandatory parameters are:
