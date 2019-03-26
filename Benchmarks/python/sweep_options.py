@@ -353,7 +353,7 @@ export I_MPI_FABRICS="tmi"
 {{body}}"""
         print(template)
     else:
-        print("ERROR: No job template found for machine {}. Available options: '{}'".format(machine,"','".join(["supermuc","hamilton"])),file=sys.stderr)
+        print("ERROR: No job template found for machine {}. Available options: '{}'".format(machine,"','".join(["supermuc","supermuc-skx","hamilton"])),file=sys.stderr)
 
 def printOptionsFileTemplate():
     template="""[general]
