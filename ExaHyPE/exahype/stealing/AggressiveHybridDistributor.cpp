@@ -76,7 +76,7 @@ void exahype::stealing::AggressiveHybridDistributor::computeIdealLoadDistributio
   int totalCells   = enclaveCells + skeletonCells;
   MPI_Allgather(&totalCells, 1, MPI_INTEGER, _initialLoadPerRank, 1, MPI_INTEGER, MPI_COMM_WORLD);
 
-#if defined(STEALING_USE_MASTER)
+#if defined(StealingUseMaster)
   int input_r=0, input_l=0;
   int output_r=0, output_l=0;
 #else
@@ -87,7 +87,7 @@ void exahype::stealing::AggressiveHybridDistributor::computeIdealLoadDistributio
   int total_l=0;
   total_l = std::accumulate(&_initialLoadPerRank[0], &_initialLoadPerRank[nnodes], total_l);
 
-#if defined(STEALING_USE_MASTER)
+#if defined(StealingUseMaster)
   int avg_l = total_l / nnodes;
 #else
   int avg_l = total_l / (nnodes-1);
@@ -242,8 +242,14 @@ void exahype::stealing::AggressiveHybridDistributor::determineOptimalVictim(int 
     k+= nnodes;
   }
 
+#ifndef StealingUseMaster
+  if(currentOptimalVictim!=0) {
+#endif
   optimalVictim = currentOptimalVictim;
   waitingTimeOptimalVictim = currentLongestWaitTimeVictim;
+#ifndef StealingUseMaster
+  }
+#endif
 
   delete[] isWaitingForSomeone;
   delete[] waitingRanks;
@@ -412,11 +418,13 @@ void exahype::stealing::AggressiveHybridDistributor::updateLoadDistributionDiffu
 
   int currentCriticalRank = determineCriticalRank();
 
-  int currentOptimalVictim;
-  double currentLongestWaitTimeVictim;
+  int currentOptimalVictim=-1;
+  double currentLongestWaitTimeVictim=-1;
   determineOptimalVictim(currentOptimalVictim, currentLongestWaitTimeVictim);
 
   logInfo("updateLoadDistributionDiffusive()", "optimal victim: "<<currentOptimalVictim<<" critical rank:"<<currentCriticalRank);
+
+#ifndef DistributedStealingDisable
 
   bool isVictim = exahype::stealing::StealingManager::getInstance().isVictim();
   if(currentOptimalVictim>=0 && myRank == currentCriticalRank && currentCriticalRank!=currentOptimalVictim) {
@@ -439,7 +447,7 @@ void exahype::stealing::AggressiveHybridDistributor::updateLoadDistributionDiffu
     _optimalTasksPerRank[currentCriticalRank] = 0;
     _tasksToOffload[currentCriticalRank] = (1-_temperatureDiffusion)*_tasksToOffload[currentCriticalRank];
   }
-
+#endif
   resetRemainingTasksToOffload();
 
 }
