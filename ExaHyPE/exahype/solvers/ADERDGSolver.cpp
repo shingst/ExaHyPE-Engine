@@ -657,7 +657,6 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
         ,_stealingManagerJob(nullptr)
 #endif
 {
-      _meshUpdateEvent(MeshUpdateEvent::None) {
   // register tags with profiler
   for (const char* tag : tags) {
     _profiler->registerTag(tag);
@@ -5539,8 +5538,9 @@ bool exahype::solvers::ADERDGSolver::StealablePredictionJob::handleLocalExecutio
     double *lQhbnd = static_cast<double*>(cellDescription.getExtrapolatedPredictor());
     double *lFhbnd = static_cast<double*>(cellDescription.getFluctuation());
 
+    //TODO: add support for lGradQhbnd
     _solver.fusedSpaceTimePredictorVolumeIntegral(
-        lduh,lQhbnd,lFhbnd,
+        lduh,lQhbnd,nullptr, lFhbnd,
         luh,
         cellDescription.getOffset()+0.5*cellDescription.getSize(),
         cellDescription.getSize(),
@@ -5552,8 +5552,9 @@ bool exahype::solvers::ADERDGSolver::StealablePredictionJob::handleLocalExecutio
     exahype::stealing::PerformanceMonitor::getInstance().decRemainingTasks();
   }
   else {
+    //TODO: support for lGradQhbnd
     _solver.fusedSpaceTimePredictorVolumeIntegral(
-        _lduh,_lQhbnd,_lFhbnd,
+        _lduh,_lQhbnd,nullptr,_lFhbnd,
         _luh,
         _center,
         _dx,
