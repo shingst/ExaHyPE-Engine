@@ -1,4 +1,3 @@
-#!usr/bin/env bash
 git clone https://gitlab.lrz.de/gi26det/Peano.git
 git clone https://github.com/pallets/jinja.git
 git clone https://github.com/pallets/markupsafe.git
