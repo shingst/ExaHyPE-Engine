@@ -40,6 +40,7 @@ double NavierStokes::CloudScenario::Bubble::evaluatePerturbation(
           tempDifference / 2 * (1 + std::cos((pi * distanceToCenter) / size));
     }
   }
+  assertion3(std::isfinite(perturbation), posX, posY, posZ);
   return perturbation;
 }
 

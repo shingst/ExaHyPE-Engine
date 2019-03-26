@@ -63,7 +63,7 @@ double linearInterpolationCoarse(double x, double y, std::vector<double> a){
 
 double SWE::bathymetry(double x, double y) {
     std::vector<double> a;
-    readCsv("Input/bathymetry.csv", &a);
+    readCsv("Input/parameters.csv", &a);
     return linearInterpolationCoarse(x,y,a);
 }
 
