@@ -12,7 +12,7 @@
  *
  * \author Dominic E. Charrier, Tobias Weinzierl
  **/
- 
+
 #ifndef _EXAHYPE_SOLVERS_SOLVER_H_
 #define _EXAHYPE_SOLVERS_SOLVER_H_
 
@@ -81,335 +81,335 @@ constexpr int addPadding(const int originalSize) {
 #endif
 
 namespace exahype {
-  // Forward declarations
-  class Cell;
-  class Vertex;
+// Forward declarations
+class Cell;
+class Vertex;
 
-  namespace parser {
-  class ParserView;
-  }  // namespace parser
-  /**
-   * We store the degrees of freedom associated with the ADERDGCellDescription and FiniteVolumesCellDescription
-   * instances on this heap.
-   * We further use this heap to send and receive face data from one MPI rank to the other.
-   *
-   * !!! CreateCopiesOfSentData
-   *
-   * All solvers must store the face data they send to neighbours at persistent addresses.
-   */
-  #ifdef ALIGNMENT
-  #if defined(CompilerICC) && defined(SharedTBB)
-  typedef tbb::cache_aligned_allocator<double> AlignedAllocator;
-  typedef tbb::cache_aligned_allocator<char> AlignedCharAllocator;
-  #else
-  typedef peano::heap::HeapAllocator<double, ALIGNMENT > AlignedAllocator;
-  typedef peano::heap::HeapAllocator<char, ALIGNMENT > AlignedCharAllocator;
-  #endif
-  typedef peano::heap::AlignedDoubleSendReceiveTask<ALIGNMENT> AlignedDoubleSendReceiveTask;
-  typedef peano::heap::AlignedCharSendReceiveTask<ALIGNMENT>   AlignedCharSendReceiveTask;
-  #endif
+namespace parser {
+class ParserView;
+}  // namespace parser
+/**
+ * We store the degrees of freedom associated with the ADERDGCellDescription and FiniteVolumesCellDescription
+ * instances on this heap.
+ * We further use this heap to send and receive face data from one MPI rank to the other.
+ *
+ * !!! CreateCopiesOfSentData
+ *
+ * All solvers must store the face data they send to neighbours at persistent addresses.
+ */
+#ifdef ALIGNMENT
+#if defined(CompilerICC) && defined(SharedTBB)
+typedef tbb::cache_aligned_allocator<double> AlignedAllocator;
+typedef tbb::cache_aligned_allocator<char> AlignedCharAllocator;
+#else
+typedef peano::heap::HeapAllocator<double, ALIGNMENT > AlignedAllocator;
+typedef peano::heap::HeapAllocator<char, ALIGNMENT > AlignedCharAllocator;
+#endif
+typedef peano::heap::AlignedDoubleSendReceiveTask<ALIGNMENT> AlignedDoubleSendReceiveTask;
+typedef peano::heap::AlignedCharSendReceiveTask<ALIGNMENT>   AlignedCharSendReceiveTask;
+#endif
 
-  #if defined(UsePeanosSymmetricBoundaryExchanger) and defined(UsePeanosRLEBoundaryExchanger)
-    #error UsePeanosSymmetricBoundaryExchanger and UsePeanosRLEBoundaryExchanger must not be defined at the same time!
-  #endif
+#if defined(UsePeanosSymmetricBoundaryExchanger) and defined(UsePeanosRLEBoundaryExchanger)
+#error UsePeanosSymmetricBoundaryExchanger and UsePeanosRLEBoundaryExchanger must not be defined at the same time!
+#endif
 
-  // aligned data -> AlignedDoubleSendReceiveTask
-  #if defined(ALIGNMENT) and defined(UsePeanosSymmetricBoundaryExchanger)
-  typedef peano::heap::DoubleHeap<
+// aligned data -> AlignedDoubleSendReceiveTask
+#if defined(ALIGNMENT) and defined(UsePeanosSymmetricBoundaryExchanger)
+typedef peano::heap::DoubleHeap<
     peano::heap::SynchronousDataExchanger< double, true, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
     peano::heap::SynchronousDataExchanger< double, true, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
     peano::heap::SymmetricBoundaryDataExchanger< double, false, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
     std::vector< double, AlignedAllocator >
-  >     DataHeap;
-  typedef peano::heap::CharHeap<
+>     DataHeap;
+typedef peano::heap::CharHeap<
     peano::heap::SynchronousDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedCharAllocator > >,
     peano::heap::SynchronousDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedCharAllocator > >,
     peano::heap::SymmetricBoundaryDataExchanger< char, false, AlignedCharSendReceiveTask, std::vector< char, AlignedCharAllocator > >,
     std::vector< char, AlignedCharAllocator >
-  >     CompressedDataHeap;
-  #elif defined(ALIGNMENT) and defined(UsePeanosRLEBoundaryExchanger)
-  typedef peano::heap::DoubleHeap<
+>     CompressedDataHeap;
+#elif defined(ALIGNMENT) and defined(UsePeanosRLEBoundaryExchanger)
+typedef peano::heap::DoubleHeap<
     peano::heap::SynchronousDataExchanger< double, true, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
     peano::heap::SynchronousDataExchanger< double, true, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
     peano::heap::AggregationBoundaryDataExchanger< double, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
     std::vector< double, AlignedAllocator >
-  >     DataHeap;
-  typedef peano::heap::CharHeap<
+>     DataHeap;
+typedef peano::heap::CharHeap<
     peano::heap::SynchronousDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedCharAllocator > >,
     peano::heap::SynchronousDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedCharAllocator > >,
     peano::heap::AggregationBoundaryDataExchanger< char, AlignedCharSendReceiveTask, std::vector< char, AlignedCharAllocator > >,
     std::vector< char, AlignedCharAllocator >
-  >     CompressedDataHeap;
-  #elif defined(ALIGNMENT) // Default: AggregationBoundaryDataExchanger
-  typedef peano::heap::DoubleHeap<
+>     CompressedDataHeap;
+#elif defined(ALIGNMENT) // Default: AggregationBoundaryDataExchanger
+typedef peano::heap::DoubleHeap<
     peano::heap::SynchronousDataExchanger< double, true, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
     peano::heap::SynchronousDataExchanger< double, true, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
     peano::heap::AggregationBoundaryDataExchanger< double, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
     std::vector< double, AlignedAllocator >
-  >     DataHeap;
-  typedef peano::heap::CharHeap<
+>     DataHeap;
+typedef peano::heap::CharHeap<
     peano::heap::SynchronousDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedCharAllocator > >,
     peano::heap::SynchronousDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedCharAllocator > >,
     peano::heap::AggregationBoundaryDataExchanger< char, AlignedCharSendReceiveTask, std::vector< char, AlignedCharAllocator > >,
     std::vector< char, AlignedCharAllocator >
-  >     CompressedDataHeap;
-  #endif
-  // non-aligned data -> SendReceiveTask
-  #if !defined(ALIGNMENT) and defined(UsePeanosSymmetricBoundaryExchanger)
-  typedef peano::heap::DoubleHeap<
+>     CompressedDataHeap;
+#endif
+// non-aligned data -> SendReceiveTask
+#if !defined(ALIGNMENT) and defined(UsePeanosSymmetricBoundaryExchanger)
+typedef peano::heap::DoubleHeap<
     peano::heap::SynchronousDataExchanger< double, true,  peano::heap::SendReceiveTask<double> >,
     peano::heap::SynchronousDataExchanger< double, true,  peano::heap::SendReceiveTask<double> >,
     peano::heap::SymmetricBoundaryDataExchanger< double, false, peano::heap::SendReceiveTask<double> >
-  >     DataHeap;
-  typedef peano::heap::CharHeap<
+>     DataHeap;
+typedef peano::heap::CharHeap<
     peano::heap::SynchronousDataExchanger< char, true,  peano::heap::SendReceiveTask<char> >,
     peano::heap::SynchronousDataExchanger< char, true,  peano::heap::SendReceiveTask<char> >,
     peano::heap::SymmetricBoundaryDataExchanger< char, false, peano::heap::SendReceiveTask<char> >
-  >     CompressedDataHeap;
-  #elif !defined(ALIGNMENT) and defined(UsePeanosRLEBoundaryExchanger)
-  typedef peano::heap::DoubleHeap<
+>     CompressedDataHeap;
+#elif !defined(ALIGNMENT) and defined(UsePeanosRLEBoundaryExchanger)
+typedef peano::heap::DoubleHeap<
     peano::heap::SynchronousDataExchanger< double, true,  peano::heap::SendReceiveTask<double> >,
     peano::heap::SynchronousDataExchanger< double, true,  peano::heap::SendReceiveTask<double> >,
     peano::heap::RLEBoundaryDataExchanger< double, false, peano::heap::SendReceiveTask<double> >
-  >     DataHeap;
-  typedef peano::heap::CharHeap<
+>     DataHeap;
+typedef peano::heap::CharHeap<
     peano::heap::SynchronousDataExchanger< char, true,  peano::heap::SendReceiveTask<char> >,
     peano::heap::SynchronousDataExchanger< char, true,  peano::heap::SendReceiveTask<char> >,
     peano::heap::RLEBoundaryDataExchanger< char, false, peano::heap::SendReceiveTask<char> >
-  >     CompressedDataHeap;
-  #elif !defined(ALIGNMENT) // Default: AggregationBoundaryDataExchanger
-  typedef peano::heap::DoubleHeap<
+>     CompressedDataHeap;
+#elif !defined(ALIGNMENT) // Default: AggregationBoundaryDataExchanger
+typedef peano::heap::DoubleHeap<
     peano::heap::SynchronousDataExchanger< double, true,  peano::heap::SendReceiveTask<double> >,
     peano::heap::SynchronousDataExchanger< double, true,  peano::heap::SendReceiveTask<double> >,
     peano::heap::AggregationBoundaryDataExchanger< double, peano::heap::SendReceiveTask<double>, std::vector<double> >
-  >     DataHeap;
-  typedef peano::heap::CharHeap<
+>     DataHeap;
+typedef peano::heap::CharHeap<
     peano::heap::SynchronousDataExchanger< char, true,  peano::heap::SendReceiveTask<char> >,
     peano::heap::SynchronousDataExchanger< char, true,  peano::heap::SendReceiveTask<char> >,
     peano::heap::AggregationBoundaryDataExchanger< char, peano::heap::SendReceiveTask<char>, std::vector<char> >
-  >     CompressedDataHeap;
-  #endif
+>     CompressedDataHeap;
+#endif
 
-  /**
-   * @return a data heap array as vector.
-   *
-   * @param index heap index of the array.
-   */
-  DataHeap::HeapEntries& getDataHeapEntries(const int index);
+/**
+ * @return a data heap array as vector.
+ *
+ * @param index heap index of the array.
+ */
+DataHeap::HeapEntries& getDataHeapEntries(const int index);
 
-  const DataHeap::HeapEntries& getDataHeapEntriesForReadOnlyAccess(const int index);
+const DataHeap::HeapEntries& getDataHeapEntriesForReadOnlyAccess(const int index);
 
-  /**
-   * Moves a DataHeap array, i.e. copies the found
-   * data at "fromIndex" to the array at "toIndex" and
-   * deletes the "fromIndex" array afterwards.
-   */
-  void moveDataHeapEntries(const int fromIndex,const int toIndex,bool recycleFromArray);
+/**
+ * Moves a DataHeap array, i.e. copies the found
+ * data at "fromIndex" to the array at "toIndex" and
+ * deletes the "fromIndex" array afterwards.
+ */
+void moveDataHeapEntries(const int fromIndex,const int toIndex,bool recycleFromArray);
 
-  /**
-   * @see waitUntilAllBackgroundTasksHaveTerminated()
-   */
-  extern tarch::multicore::BooleanSemaphore ReductionSemaphore;
+/**
+ * @see waitUntilAllBackgroundTasksHaveTerminated()
+ */
+extern tarch::multicore::BooleanSemaphore ReductionSemaphore;
 
-  /**
-   * A semaphore for serialising heap access.
-   */
-  extern tarch::multicore::BooleanSemaphore HeapSemaphore;
+/**
+ * A semaphore for serialising heap access.
+ */
+extern tarch::multicore::BooleanSemaphore HeapSemaphore;
 
 #ifdef Parallel
-  /**
-   * An empty DataHeap message.
-   *
-   * !!! CreateCopiesOfSentData
-   *
-   * If we have set CreateCopiesOfSentData to
-   * false for the DataHeap, all messages need to
-   * have a fixed address as long as the send
-   * process takes.
-   *
-   * Has to be declared extern in C++ standard as
-   * it is instantiated in the corresponding cpp file.
-   */
-  extern DataHeap::HeapEntries EmptyDataHeapMessage;
+/**
+ * An empty DataHeap message.
+ *
+ * !!! CreateCopiesOfSentData
+ *
+ * If we have set CreateCopiesOfSentData to
+ * false for the DataHeap, all messages need to
+ * have a fixed address as long as the send
+ * process takes.
+ *
+ * Has to be declared extern in C++ standard as
+ * it is instantiated in the corresponding cpp file.
+ */
+extern DataHeap::HeapEntries EmptyDataHeapMessage;
 
-  /**
-   * We abuse this heap to send and receive metadata from one MPI rank to the other.
-   * We never actually store data on this heap.
-   *
-   * !!! CreateCopiesOfSentData
-   *
-   * It is assumed by the metadata send routines of the solvers that
-   * all data exchangers of the MetadataHeap create copies of the data to send.
-   *
-   * <h2> Implementation </h2>
-   *
-   * These meta data are not symmetric, i..e we can use the Aggregation heap but we
-   * may not use any symmetric heap.
-   */
-  #if defined(UsePeanosSymmetricBoundaryExchangerForMetaData) and defined(UsePeanosRLEBoundaryExchangerForMetaData)
-    #error UsePeanosSymmetricBoundaryExchangerForMetaData and UsePeanosRLEBoundaryExchangerForMetaData must not be defined at the same time!
-  #endif
+/**
+ * We abuse this heap to send and receive metadata from one MPI rank to the other.
+ * We never actually store data on this heap.
+ *
+ * !!! CreateCopiesOfSentData
+ *
+ * It is assumed by the metadata send routines of the solvers that
+ * all data exchangers of the MetadataHeap create copies of the data to send.
+ *
+ * <h2> Implementation </h2>
+ *
+ * These meta data are not symmetric, i..e we can use the Aggregation heap but we
+ * may not use any symmetric heap.
+ */
+#if defined(UsePeanosSymmetricBoundaryExchangerForMetaData) and defined(UsePeanosRLEBoundaryExchangerForMetaData)
+#error UsePeanosSymmetricBoundaryExchangerForMetaData and UsePeanosRLEBoundaryExchangerForMetaData must not be defined at the same time!
+#endif
 
-  #if defined(UsePeanosSymmetricBoundaryExchangerForMetaData)
-  typedef peano::heap::CharHeap<
+#if defined(UsePeanosSymmetricBoundaryExchangerForMetaData)
+typedef peano::heap::CharHeap<
     peano::heap::SynchronousDataExchanger< char, true,  peano::heap::SendReceiveTask<char> >,
     peano::heap::SynchronousDataExchanger< char, true,  peano::heap::SendReceiveTask<char> >,
     peano::heap::SymmetricBoundaryDataExchanger< char, true,  peano::heap::SendReceiveTask<char> >
-  >     MetadataHeap;
-  #elif defined(UsePeanosRLEBoundaryExchangerForMetaData)
-  typedef peano::heap::CharHeap<
-      peano::heap::SynchronousDataExchanger< char, true,  peano::heap::SendReceiveTask<char> >,
-      peano::heap::SynchronousDataExchanger< char, true,  peano::heap::SendReceiveTask<char> >,
-      peano::heap::RLEBoundaryDataExchanger< char, true, peano::heap::SendReceiveTask<char> >
-  >     MetadataHeap;
-  #else
-  typedef peano::heap::CharHeap<
+>     MetadataHeap;
+#elif defined(UsePeanosRLEBoundaryExchangerForMetaData)
+typedef peano::heap::CharHeap<
+    peano::heap::SynchronousDataExchanger< char, true,  peano::heap::SendReceiveTask<char> >,
+    peano::heap::SynchronousDataExchanger< char, true,  peano::heap::SendReceiveTask<char> >,
+    peano::heap::RLEBoundaryDataExchanger< char, true, peano::heap::SendReceiveTask<char> >
+>     MetadataHeap;
+#else
+typedef peano::heap::CharHeap<
     peano::heap::SynchronousDataExchanger< char, true,  peano::heap::SendReceiveTask<char> >,
     peano::heap::SynchronousDataExchanger< char, true,  peano::heap::SendReceiveTask<char> >,
     peano::heap::AggregationBoundaryDataExchanger< char, peano::heap::SendReceiveTask<char>, std::vector<char> >
-  >     MetadataHeap;
-  #endif
+>     MetadataHeap;
+#endif
 
-  /**
-   * Defines an invalid metadata entry.
-   */
-  static constexpr int InvalidMetadataEntry = -10;
+/**
+ * Defines an invalid metadata entry.
+ */
+static constexpr int InvalidMetadataEntry = -10;
 
-  /**
-   * Defines the length of the metadata
-   * we send out per solver.
-   *
-   * First entry is the cell (description) type.
-   * Second entry is the augmentation status,
-   * third the helper status and the fourth the
-   * limiter status.
-   */
-  static constexpr int NeighbourCommunicationMetadataPerSolver           = 4;
+/**
+ * Defines the length of the metadata
+ * we send out per solver.
+ *
+ * First entry is the cell (description) type.
+ * Second entry is the augmentation status,
+ * third the helper status and the fourth the
+ * limiter status.
+ */
+static constexpr int NeighbourCommunicationMetadataPerSolver           = 4;
 
-  static constexpr int NeighbourCommunicationMetadataCellType            = 0;
-  static constexpr int NeighbourCommunicationMetadataAugmentationStatus  = 1;
-  static constexpr int NeighbourCommunicationMetadataCommunicationStatus = 2;
-  static constexpr int NeighbourCommunicationMetadataLimiterStatus       = 3;
+static constexpr int NeighbourCommunicationMetadataCellType            = 0;
+static constexpr int NeighbourCommunicationMetadataAugmentationStatus  = 1;
+static constexpr int NeighbourCommunicationMetadataCommunicationStatus = 2;
+static constexpr int NeighbourCommunicationMetadataLimiterStatus       = 3;
 
-  static constexpr int MasterWorkerCommunicationMetadataPerSolver        = 5;
+static constexpr int MasterWorkerCommunicationMetadataPerSolver        = 5;
 
-  static constexpr int MasterWorkerCommunicationMetadataCellType            = 0;
-  static constexpr int MasterWorkerCommunicationMetadataAugmentationStatus  = 1;
-  static constexpr int MasterWorkerCommunicationMetadataCommunicationStatus = 2;
-  static constexpr int MasterWorkerCommunicationMetadataLimiterStatus       = 3;
-  static constexpr int MasterWorkerCommunicationMetadataSendReceiveData     = 4;
-  /**
-   * TODO(Dominic): Docu is outdated
-   *
-   * Encodes the metadata as integer sequence.
-   *
-   * The first element refers to the number of
-   * ADERDGCellDescriptions associated with this cell (nADERG).
-   * The next 2*nADERG elements store a pair of
-   * solver number, and cell description type (encoded as int)
-   * for each ADERDGCellDescription associated with this cell (description).
-   *
-   * The element 1+2*nADERDG refers to the number of
-   * FiniteVolumesCellDescriptions associated with this cell (nFV).
-   * The remaining 2*nFV elements store a pair of
-   * solver number, and cell description type (encoded as int)
-   * for each FiniteVolumesCellDescription associated with this cell
-   * (description).
-   */
-  MetadataHeap::HeapEntries gatherNeighbourCommunicationMetadata(
-      const int cellDescriptionsIndex,
-      const tarch::la::Vector<DIMENSIONS,int>& src,
-      const tarch::la::Vector<DIMENSIONS,int>& dest);
+static constexpr int MasterWorkerCommunicationMetadataCellType            = 0;
+static constexpr int MasterWorkerCommunicationMetadataAugmentationStatus  = 1;
+static constexpr int MasterWorkerCommunicationMetadataCommunicationStatus = 2;
+static constexpr int MasterWorkerCommunicationMetadataLimiterStatus       = 3;
+static constexpr int MasterWorkerCommunicationMetadataSendReceiveData     = 4;
+/**
+ * TODO(Dominic): Docu is outdated
+ *
+ * Encodes the metadata as integer sequence.
+ *
+ * The first element refers to the number of
+ * ADERDGCellDescriptions associated with this cell (nADERG).
+ * The next 2*nADERG elements store a pair of
+ * solver number, and cell description type (encoded as int)
+ * for each ADERDGCellDescription associated with this cell (description).
+ *
+ * The element 1+2*nADERDG refers to the number of
+ * FiniteVolumesCellDescriptions associated with this cell (nFV).
+ * The remaining 2*nFV elements store a pair of
+ * solver number, and cell description type (encoded as int)
+ * for each FiniteVolumesCellDescription associated with this cell
+ * (description).
+ */
+MetadataHeap::HeapEntries gatherNeighbourCommunicationMetadata(
+    const int cellDescriptionsIndex,
+    const tarch::la::Vector<DIMENSIONS,int>& src,
+    const tarch::la::Vector<DIMENSIONS,int>& dest);
 
-  /**
-   * Send metadata to rank @p toRank.
-   */
-  void sendNeighbourCommunicationMetadata(
-      const int                                   toRank,
-      const int                                   cellDescriptionsIndex,
-      const tarch::la::Vector<DIMENSIONS,int>&    src,
-      const tarch::la::Vector<DIMENSIONS,int>&    dest,
-      const tarch::la::Vector<DIMENSIONS,double>& x,
-      const int                                   level);
+/**
+ * Send metadata to rank @p toRank.
+ */
+void sendNeighbourCommunicationMetadata(
+    const int                                   toRank,
+    const int                                   cellDescriptionsIndex,
+    const tarch::la::Vector<DIMENSIONS,int>&    src,
+    const tarch::la::Vector<DIMENSIONS,int>&    dest,
+    const tarch::la::Vector<DIMENSIONS,double>& x,
+    const int                                   level);
 
-  /**
-   * Receive metadata to rank @p toRank.
-   *
-   * @note Clears and enlarges the buffer
-   * if necessary.
-   *
-   * @param[in] doNotReceiveAndFillBufferWithInvalidEntries Within batches, we sometimes do not want to receive metadata.
-   *
-   * \return The index of the received metadata message
-   * on the exahype::MetadataHeap.
-   */
-  void receiveNeighbourCommunicationMetadata(
-      MetadataHeap::HeapEntries&                  buffer,
-      const int                                   fromRank,
-      const tarch::la::Vector<DIMENSIONS,double>& x,
-      const int                                   level);
+/**
+ * Receive metadata to rank @p toRank.
+ *
+ * @note Clears and enlarges the buffer
+ * if necessary.
+ *
+ * @param[in] doNotReceiveAndFillBufferWithInvalidEntries Within batches, we sometimes do not want to receive metadata.
+ *
+ * \return The index of the received metadata message
+ * on the exahype::MetadataHeap.
+ */
+void receiveNeighbourCommunicationMetadata(
+    MetadataHeap::HeapEntries&                  buffer,
+    const int                                   fromRank,
+    const tarch::la::Vector<DIMENSIONS,double>& x,
+    const int                                   level);
 
-  /**
-   * Send a metadata sequence filled with InvalidMetadataEntry
-   * to rank @p toRank.
-   */
-  void sendNeighbourCommunicationMetadataSequenceWithInvalidEntries(
-      const int                                   toRank,
-      const tarch::la::Vector<DIMENSIONS,double>& x,
-      const int                                   level);
+/**
+ * Send a metadata sequence filled with InvalidMetadataEntry
+ * to rank @p toRank.
+ */
+void sendNeighbourCommunicationMetadataSequenceWithInvalidEntries(
+    const int                                   toRank,
+    const tarch::la::Vector<DIMENSIONS,double>& x,
+    const int                                   level);
 
-  /**
-   * Drop metadata sent by rank @p fromRank.
-   */
-  void dropMetadata(
-      const int                                   fromRank,
-      const peano::heap::MessageType&             messageType,
-      const tarch::la::Vector<DIMENSIONS,double>& x,
-      const int                                   level);
-  #endif
+/**
+ * Drop metadata sent by rank @p fromRank.
+ */
+void dropMetadata(
+    const int                                   fromRank,
+    const peano::heap::MessageType&             messageType,
+    const tarch::la::Vector<DIMENSIONS,double>& x,
+    const int                                   level);
+#endif
 
-  namespace solvers {
-    class Solver;
+namespace solvers {
+class Solver;
 
-    typedef std::vector<Solver*> RegisteredSolversEntries;
-    /**
-     * All the registered solvers. Has to be declared extern in C++ standard as
-     * it is instantiated in the corresponding cpp file.
-     */
-    extern std::vector<Solver*> RegisteredSolvers;
-  }
+typedef std::vector<Solver*> RegisteredSolversEntries;
+/**
+ * All the registered solvers. Has to be declared extern in C++ standard as
+ * it is instantiated in the corresponding cpp file.
+ */
+extern std::vector<Solver*> RegisteredSolvers;
+}
 }
 
 /**
  * Describes one solver.
  */
 class exahype::solvers::Solver {
- private:
+private:
   /**
    * Log device.
    */
   static tarch::logging::Log _log;
 
- protected:
+protected:
   void tearApart(int numberOfEntries, int normalHeapIndex, int compressedHeapIndex, int bytesForMantissa) const;
   void glueTogether(int numberOfEntries, int normalHeapIndex, int compressedHeapIndex, int bytesForMantissa) const;
 
- public:
-  #ifdef USE_ITAC
+public:
+#ifdef USE_ITAC
   /**
    * These handles are used to trace solver events with Intel Trace Analyzer and Collector.
    */
   static int waitUntilCompletedLastStepHandle;
   static int ensureAllJobsHaveTerminatedHandle;
-  #endif
+#endif
 
 
-  #ifdef Parallel
+#ifdef Parallel
   /**
    * Tag used for master worker communication.
    */
   static int MasterWorkerCommunicationTag;
-  #endif
+#endif
 
   /**
    * Default return value of function getElement(...)
@@ -449,7 +449,7 @@ class exahype::solvers::Solver {
      * @return if no data was found for the cell.
      */
     bool empty() const {
-       return _ADERDGCellDescriptions.empty() && _FiniteVolumesCellDescriptions.empty();
+      return _ADERDGCellDescriptions.empty() && _FiniteVolumesCellDescriptions.empty();
     }
 
     /**
@@ -522,14 +522,14 @@ class exahype::solvers::Solver {
 
     InterfaceInfo(const tarch::la::Vector<DIMENSIONS,int>& pos1,const tarch::la::Vector<DIMENSIONS,int>& pos2)
     :
-    _direction     (tarch::la::equalsReturnIndex(pos1, pos2)),
-    _orientation1  ((1 + pos2(_direction) - pos1(_direction))/2),
-    _orientation2  (1-_orientation1),
-    _faceIndex1    (2*_direction+_orientation1),
-    _faceIndex2    (2*_direction+_orientation2),
-    _faceIndexLeft (2*_direction+1),
-    _faceIndexRight(2*_direction+0) {
-        assertionEquals(tarch::la::countEqualEntries(pos1,pos2),DIMENSIONS-1);
+      _direction     (tarch::la::equalsReturnIndex(pos1, pos2)),
+      _orientation1  ((1 + pos2(_direction) - pos1(_direction))/2),
+      _orientation2  (1-_orientation1),
+      _faceIndex1    (2*_direction+_orientation1),
+      _faceIndex2    (2*_direction+_orientation2),
+      _faceIndexLeft (2*_direction+1),
+      _faceIndexRight(2*_direction+0) {
+      assertionEquals(tarch::la::countEqualEntries(pos1,pos2),DIMENSIONS-1);
     }
 
     std::string toString() {
@@ -561,9 +561,9 @@ class exahype::solvers::Solver {
 
     BoundaryFaceInfo(const tarch::la::Vector<DIMENSIONS,int>& posCell,const tarch::la::Vector<DIMENSIONS,int>& posBoundary)
     :
-    _direction  (tarch::la::equalsReturnIndex(posCell, posBoundary)),
-    _orientation((1 + posBoundary(_direction) - posCell(_direction))/2),
-    _faceIndex  (2*_direction+_orientation) {
+      _direction  (tarch::la::equalsReturnIndex(posCell, posBoundary)),
+      _orientation((1 + posBoundary(_direction) - posCell(_direction))/2),
+      _faceIndex  (2*_direction+_orientation) {
       assertionEquals(tarch::la::countEqualEntries(posCell,posBoundary),DIMENSIONS-1);
     }
 
@@ -582,16 +582,16 @@ class exahype::solvers::Solver {
    * TrackGridStatistics is a flag from Peano that I "misuse" here as these
    * data also are grid statistics.
    */
-  #ifdef TrackGridStatistics
+#ifdef TrackGridStatistics
   static double PipedUncompressedBytes;
   static double PipedCompressedBytes;
-  #endif
+#endif
 
   /** @name Global profiling options
    *
    * Global profiling options which are set via the parser.
    */
-   ///@{
+  ///@{
   /**
    * The solvers need to do adjust some operations slightly
    * when those are run multiple times after each other in isolation.
@@ -599,10 +599,10 @@ class exahype::solvers::Solver {
   static bool ProfileUpdate;
   ///@}
 
- /** @name Global solver optimisations
-  *
-  * Global solver optimisations which are set via the parser.
-  */
+  /** @name Global solver optimisations
+   *
+   * Global solver optimisations which are set via the parser.
+   */
   ///@{
 
   /**
@@ -714,6 +714,13 @@ class exahype::solvers::Solver {
 
   enum class JobType { AMRJob, ReductionJob, EnclaveJob, SkeletonJob };
 
+  enum class JobSystemWaitBehaviourType { ProcessAnyJobs, ProcessJobsWithSamePriority, OnlyPollMPI };
+
+  /**
+   * What to do whenever the job system needs to wait until a
+   * job is completed.
+   */
+  static JobSystemWaitBehaviourType JobSystemWaitBehaviour;
   /**
    * \see ensureAllBackgroundJobsHaveTerminated
    */
@@ -783,45 +790,45 @@ class exahype::solvers::Solver {
      */
     None = 0,
 
-    /**
-     * The limiter domain of this solver changed in an irregular
-     * fashion, i.e. a troubled cell appeared suddenly.
-     * Its appearance was not anticipated
-     *
-     * During the consequent refinement
-     * status spreading, if we observe that
-     * we also need to update the mesh,
-     * this event is changed to RefinementRequested.
-     */
-    IrregularLimiterDomainChange = 1,
+        /**
+         * The limiter domain of this solver changed in an irregular
+         * fashion, i.e. a troubled cell appeared suddenly.
+         * Its appearance was not anticipated
+         *
+         * During the consequent refinement
+         * status spreading, if we observe that
+         * we also need to update the mesh,
+         * this event is changed to RefinementRequested.
+         */
+        IrregularLimiterDomainChange = 1,
 
-    /**
-     * Scenario 1:
-     * A cell which is not directly next to a troubled cell
-     * has newly been marked as troubled.
-     * The cell is not on the finest mesh level.
-     *
-     * Scenario 2:
-     * A cell of type Descendant/EmptyDescendant
-     * was marked with LimiterStatus other than Ok.
-     * The cell is on the finest mesh level.
-     *
-     * <h2>Consequences</h2>
-     * The runner must then refine the mesh accordingly, and perform a
-     * rollback in all cells to the previous solution. It computes
-     * a new time step size in all cells. Next, it recomputes the predictor in all
-     * cells, troubled or not. Finally, it reruns the whole ADERDG time step in
-     * all cells, troubled or not.
-     *
-     * This can potentially be relaxed for anarchic time stepping where
-     * each cell has its own time step size and stamp.
-     */
-    RefinementRequested = 2,
+        /**
+         * Scenario 1:
+         * A cell which is not directly next to a troubled cell
+         * has newly been marked as troubled.
+         * The cell is not on the finest mesh level.
+         *
+         * Scenario 2:
+         * A cell of type Descendant/EmptyDescendant
+         * was marked with LimiterStatus other than Ok.
+         * The cell is on the finest mesh level.
+         *
+         * <h2>Consequences</h2>
+         * The runner must then refine the mesh accordingly, and perform a
+         * rollback in all cells to the previous solution. It computes
+         * a new time step size in all cells. Next, it recomputes the predictor in all
+         * cells, troubled or not. Finally, it reruns the whole ADERDG time step in
+         * all cells, troubled or not.
+         *
+         * This can potentially be relaxed for anarchic time stepping where
+         * each cell has its own time step size and stamp.
+         */
+        RefinementRequested = 2,
 
-    /**
-     * The initial mesh will be created.
-     */
-    InitialRefinementRequested = 3
+        /**
+         * The initial mesh will be created.
+         */
+        InitialRefinementRequested = 3
   };
 
 
@@ -898,31 +905,31 @@ class exahype::solvers::Solver {
      * of type exahype::records::ADERDGCellDescription::Cell.
      */
     NextToCell = 0,
-    /**
-     * Indicates that a spacetree cell is next to another spacetree cell
-     * of type exahype::records::ADERDGCellDescription::Ancestor or
-     * exahype::records::ADERDGCellDescription::EmptyAncestor.
-     */
-    NextToAncestor = 1,
-    /**
-     * Indicates that a spacetree cell is both, next to another spacetree cell
-     * of type exahype::records::ADERDGCellDescription::Ancestor or
-     * exahype::records::ADERDGCellDescription::EmptyAncestor, and
-     * a spacetree cell of type
-     * exahype::records::ADERDGCellDescription::Cell.
-     */
-    NextToCellAndAncestor = 2,
-    /**
-     * Indicates that a spacetree cell is neither, next to another spacetree cell
-     * of type exahype::records::ADERDGCellDescription::Ancestor or
-     * exahype::records::ADERDGCellDescription::EmptyAncestor, nor
-     * next to a spacetree cell of type exahype::records::ADERDGCellDescription::Cell.
-     *
-     * A cell of type exahype::records::ADERDGCellDescription::Descendant can then request erasing.
-     * A cell of type exahype::records::ADERDGCellDescription::Cell does then not need
-     * to request augmenting.
-     */
-     Default = 3
+        /**
+         * Indicates that a spacetree cell is next to another spacetree cell
+         * of type exahype::records::ADERDGCellDescription::Ancestor or
+         * exahype::records::ADERDGCellDescription::EmptyAncestor.
+         */
+        NextToAncestor = 1,
+        /**
+         * Indicates that a spacetree cell is both, next to another spacetree cell
+         * of type exahype::records::ADERDGCellDescription::Ancestor or
+         * exahype::records::ADERDGCellDescription::EmptyAncestor, and
+         * a spacetree cell of type
+         * exahype::records::ADERDGCellDescription::Cell.
+         */
+        NextToCellAndAncestor = 2,
+        /**
+         * Indicates that a spacetree cell is neither, next to another spacetree cell
+         * of type exahype::records::ADERDGCellDescription::Ancestor or
+         * exahype::records::ADERDGCellDescription::EmptyAncestor, nor
+         * next to a spacetree cell of type exahype::records::ADERDGCellDescription::Cell.
+         *
+         * A cell of type exahype::records::ADERDGCellDescription::Descendant can then request erasing.
+         * A cell of type exahype::records::ADERDGCellDescription::Cell does then not need
+         * to request augmenting.
+         */
+        Default = 3
   };
 
   /**
@@ -1097,121 +1104,130 @@ class exahype::solvers::Solver {
    */
   static void ensureAllJobsHaveTerminated(JobType jobType);
 
- /**
-  * Waits until the @p cellDescription has completed its time step.
-  *
-  * Thread-safety
-  * -------------
-  *
-  * We only read (sample) the hasCompletedLastStep flag and thus do not need any locks.
-  * If this flag were to assume an undefined state, this would happen after the job working processing the
-  * cell description was completed. This routine will then do an extra iteration or finish.
-  * Either is fine.
-  *
-  * The flag is modified before a job is spawned and after it was processed.
-  * As the job cannot be processed before it is spawned, setting the flag
-  * is thread-safe.
-  *
-  * MPI
-  * ---
-  *
-  * Tries to receive dangling MPI messages while waiting if this
-  * is specified by the user.
-  *
-  * Work Stealing
-  * -------------
-  *
-  * Assume this rank has stolen jobs from another rank.
-  * If this routine actually waits, this indicates it has to wait for a local job
-  * and not for a stolen one.
-  * Therefore, we exclude stolen jobs from being processed by this routine.
-  *
-  * @note Only use receiveDanglingMessages=true if the routine
-  * is called from a serial context.
-  *
-  * @param cellDescription a cell description
-  * @param waitForHighPriorityJob a cell description's task was spawned as high priority job
-  * @param receiveDanglingMessages receive dangling messages while waiting
-  */
- template <typename CellDescription>
- void waitUntilCompletedLastStep(
-     const CellDescription& cellDescription,const bool waitForHighPriorityJob,const bool receiveDanglingMessages) {
-  #ifdef USE_ITAC
-  VT_begin(waitUntilCompletedLastStepHandle);
-  #endif
+  /**
+   * Waits until the @p cellDescription has completed its time step.
+   *
+   * Thread-safety
+   * -------------
+   *
+   * We only read (sample) the hasCompletedLastStep flag and thus do not need any locks.
+   * If this flag were to assume an undefined state, this would happen after the job working processing the
+   * cell description was completed. This routine will then do an extra iteration or finish.
+   * Either is fine.
+   *
+   * The flag is modified before a job is spawned and after it was processed.
+   * As the job cannot be processed before it is spawned, setting the flag
+   * is thread-safe.
+   *
+   * MPI
+   * ---
+   *
+   * Tries to receive dangling MPI messages while waiting if this
+   * is specified by the user.
+   *
+   * Work Stealing
+   * -------------
+   *
+   * Assume this rank has stolen jobs from another rank.
+   * If this routine actually waits, this indicates it has to wait for a local job
+   * and not for a stolen one.
+   * Therefore, we exclude stolen jobs from being processed by this routine.
+   *
+   * @note Only use receiveDanglingMessages=true if the routine
+   * is called from a serial context.
+   *
+   * @param cellDescription a cell description
+   * @param waitForHighPriorityJob a cell description's task was spawned as high priority job
+   * @param receiveDanglingMessages receive dangling messages while waiting
+   */
+  template <typename CellDescription>
+  void waitUntilCompletedLastStep(
+      const CellDescription& cellDescription,const bool waitForHighPriorityJob,const bool receiveDanglingMessages) {
+    #ifdef USE_ITAC
+    VT_begin(waitUntilCompletedLastStepHandle);
+    #endif
 
-   if ( !cellDescription.getHasCompletedLastStep() ) {
-     peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
-   }
-   while ( !cellDescription.getHasCompletedLastStep() ) {
-     // do some work myself
-     if ( receiveDanglingMessages ) {
-       tarch::parallel::Node::getInstance().receiveDanglingMessages();
-     }
-     if ( waitForHighPriorityJob ) {
-       tarch::multicore::jobs::processBackgroundJobs( 1, getHighPriorityTaskPriority() );
-     } else {
-       tarch::multicore::jobs::processBackgroundJobs( 1, getDefaultTaskPriority() );
-     }
-   }
+    if ( !cellDescription.getHasCompletedLastStep() ) {
+      peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
+    }
+    while ( !cellDescription.getHasCompletedLastStep() ) {
+      #ifdef Parallel
+      {
+        tarch::multicore::RecursiveLock lock( tarch::services::Service::receiveDanglingMessagesSemaphore );
+        tarch::parallel::Node::getInstance().receiveDanglingMessages();
+        lock.free();
+      }
+      #endif
 
-  #ifdef USE_ITAC
-  VT_end(waitUntilCompletedLastStepHandle);
-  #endif
- }
+      switch ( JobSystemWaitBehaviour ) {
+      case JobSystemWaitBehaviourType::ProcessJobsWithSamePriority:
+        tarch::multicore::jobs::processBackgroundJobs( 1, getTaskPriority(waitForHighPriorityJob) );
+        break;
+      case JobSystemWaitBehaviourType::ProcessAnyJobs:
+        tarch::multicore::jobs::processBackgroundJobs( 1 );
+        break;
+      default:
+        break;
+      }
+    }
 
- /**
-  * @return the default priority.
-  */
- static int getDefaultTaskPriority() {
-   return tarch::multicore::DefaultPriority;
- }
- /**
-  * @return a high priority.
-  */
- static int getHighPriorityTaskPriority() {
-   return tarch::multicore::DefaultPriority*2;
- }
- /**
-  * @return a high priority if the argument is set to true. Otherwise,
-  * the default priority.
-  */
- static int getTaskPriority( const bool isHighPriorityJob ) {
-   return isHighPriorityJob ? getHighPriorityTaskPriority() : getDefaultTaskPriority();
- }
- /**
-  * @return a very high priority.
-  */
- static int  getCompressionTaskPriority() {
-   return tarch::multicore::DefaultPriority*8;
- }
+    #ifdef USE_ITAC
+    VT_end(waitUntilCompletedLastStepHandle);
+    #endif
+  }
 
- /**
-  * Return a string representation for the type @p param.
-  */
- static std::string toString(const exahype::solvers::Solver::Type& param);
+  /**
+   * @return the default priority.
+   */
+  static int getDefaultTaskPriority() {
+    return tarch::multicore::DefaultPriority;
+  }
+  /**
+   * @return a high priority.
+   */
+  static int getHighPriorityTaskPriority() {
+    return tarch::multicore::DefaultPriority*2;
+  }
+  /**
+   * @return a high priority if the argument is set to true. Otherwise,
+   * the default priority.
+   */
+  static int getTaskPriority( const bool isHighPriorityJob ) {
+    return isHighPriorityJob ? getHighPriorityTaskPriority() : getDefaultTaskPriority();
+  }
+  /**
+   * @return a very high priority.
+   */
+  static int  getCompressionTaskPriority() {
+    return tarch::multicore::DefaultPriority*8;
+  }
 
- /**
-  * Return a string representation for the time stepping mode @p param.
-  */
- static std::string toString(const exahype::solvers::Solver::TimeStepping& param);
+  /**
+   * Return a string representation for the type @p param.
+   */
+  static std::string toString(const exahype::solvers::Solver::Type& param);
 
- /**
-  * @return mesh resolution and mesh level (incremented by 1) such that
-  * @p boundingBoxSize / 3^level <= @p meshSize.
-  *
-  * @note The domain root cell is actually at Peano mesh level 1
-  * as the domain itself is embedded in a 3^d mesh in Peano.
-  *
-  * @note Load balancing makes only sense for a Peano mesh with
-  * at least 3 (Peano) levels. This is not ensured or checked in this routine.
-  *
-  * @param meshSize        the coarsest allowed mesh size.
-  * @param boundingBoxSize size of the bounding box.
-  */
- static std::pair<double,int> computeCoarsestMeshSizeAndLevel(double meshSize, double boundingBoxSize);
+  /**
+   * Return a string representation for the time stepping mode @p param.
+   */
+  static std::string toString(const exahype::solvers::Solver::TimeStepping& param);
 
- protected:
+  /**
+   * @return mesh resolution and mesh level (incremented by 1) such that
+   * @p boundingBoxSize / 3^level <= @p meshSize.
+   *
+   * @note The domain root cell is actually at Peano mesh level 1
+   * as the domain itself is embedded in a 3^d mesh in Peano.
+   *
+   * @note Load balancing makes only sense for a Peano mesh with
+   * at least 3 (Peano) levels. This is not ensured or checked in this routine.
+   *
+   * @param meshSize        the coarsest allowed mesh size.
+   * @param boundingBoxSize size of the bounding box.
+   */
+  static std::pair<double,int> computeCoarsestMeshSizeAndLevel(double meshSize, double boundingBoxSize);
+
+protected:
 
   /**
    * Each solver has an identifier/name. It is used for debug purposes only.
@@ -1303,17 +1319,17 @@ class exahype::solvers::Solver {
    */
   std::unique_ptr<profilers::Profiler> _profiler;
 
- public:
+public:
   Solver(const std::string& identifier, exahype::solvers::Solver::Type type,
-         int numberOfVariables, int numberOfParameters,
-         int numberOfGlobalObservables,
-         int nodesPerCoordinateAxis,
-         double maximumMeshSize,
-         int maximumAdaptiveMeshDepth,
-         exahype::solvers::Solver::TimeStepping timeStepping,
-         std::unique_ptr<profilers::Profiler> profiler =
-             std::unique_ptr<profilers::Profiler>(
-                 new profilers::simple::NoOpProfiler("")));
+      int numberOfVariables, int numberOfParameters,
+      int numberOfGlobalObservables,
+      int nodesPerCoordinateAxis,
+      double maximumMeshSize,
+      int maximumAdaptiveMeshDepth,
+      exahype::solvers::Solver::TimeStepping timeStepping,
+      std::unique_ptr<profilers::Profiler> profiler =
+          std::unique_ptr<profilers::Profiler>(
+              new profilers::simple::NoOpProfiler("")));
 
   virtual ~Solver() { _profiler->writeToConfiguredOutput(); }
 
@@ -1473,13 +1489,13 @@ class exahype::solvers::Solver {
   // TODO(Lukas) Is this still needed?
   /*
   virtual void updateNextGlobalObservables(const std::vector<double>& globalObservables);
-  */
+   */
 
   virtual std::vector<double>& getGlobalObservables();
   // TODO(Lukas) Is this still needed?
   /*
   virtual std::vector<double>& getNextGlobalObservables();
-  */
+   */
 
 
   /**
@@ -1790,9 +1806,9 @@ class exahype::solvers::Solver {
    * @return see UpdateResult
    */
   virtual UpdateResult updateOrRestrict(
-          const int solverNumber,
-          CellInfo& cellInfo,
-          const bool isAtRemoteBoundary) = 0;
+      const int solverNumber,
+      CellInfo& cellInfo,
+      const bool isAtRemoteBoundary) = 0;
 
   /**
    * Go back to previous time step with
@@ -1820,7 +1836,7 @@ class exahype::solvers::Solver {
   // NEIGHBOUR
   ///////////////////////////////////
 
-  #ifdef Parallel
+#ifdef Parallel
   /**
    * On coarser grids, the solver can hint on the eventual load and memory distribution
    * with this function.
@@ -1884,11 +1900,11 @@ class exahype::solvers::Solver {
    * depending on the refinement event.
    */
   virtual void receiveDataFromMasterIfProlongating(
-        const int masterRank,
-        const int receivedCellDescriptionsIndex,
-        const int receivedElement,
-        const tarch::la::Vector<DIMENSIONS,double>& x,
-        const int level) const = 0;
+      const int masterRank,
+      const int receivedCellDescriptionsIndex,
+      const int receivedElement,
+      const tarch::la::Vector<DIMENSIONS,double>& x,
+      const int level) const = 0;
 
   /**
    * Finish prolongation operations started on the master.
@@ -1904,10 +1920,10 @@ class exahype::solvers::Solver {
    * operations.
    */
   virtual void progressMeshRefinementInPrepareSendToMaster(
-        const int masterRank,
-        const int cellDescriptionsIndex, const int element,
-        const tarch::la::Vector<DIMENSIONS,double>& x,
-        const int level) const = 0;
+      const int masterRank,
+      const int cellDescriptionsIndex, const int element,
+      const tarch::la::Vector<DIMENSIONS,double>& x,
+      const int level) const = 0;
 
   /**
    * Finish erasing operations started on the master which
@@ -2059,10 +2075,10 @@ class exahype::solvers::Solver {
       const int                                    masterRank,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level) = 0;
-  #endif
+#endif
 
 
-     /**
+  /**
    * Maps the solution values Q to
    * the global observables.
    *
@@ -2073,18 +2089,18 @@ class exahype::solvers::Solver {
    *\param[inout] globalObservables The mapped observables.
    *\param[in]    Q           The state variables.
    */
-   virtual std::vector<double> mapGlobalObservables(const double* const Q,
-           const tarch::la::Vector<DIMENSIONS,double>& dx) const = 0;
+  virtual std::vector<double> mapGlobalObservables(const double* const Q,
+      const tarch::la::Vector<DIMENSIONS,double>& dx) const = 0;
 
-   /**
+  /**
    * Resets the vector of global observables to some suitable initial value, e.g.
    * the smallest possible double if one wants to compute the maximum.
    *
    *\param[out] globalObservables The mapped observables.
    */
-   virtual std::vector<double> resetGlobalObservables() const = 0;
+  virtual std::vector<double> resetGlobalObservables() const = 0;
 
-   /**
+  /**
    * Function that reduces the global observables.
    * For example, if one wants to compute the maximum of global variables
    * one should set
@@ -2096,13 +2112,13 @@ class exahype::solvers::Solver {
    *\param[inout] reducedGlobalObservables The reduced observables.
    *\param[in]    curGlobalObservables The current vector of global observables.
    */
-   virtual void reduceGlobalObservables(
-            std::vector<double>& reducedGlobalObservables,
-            const std::vector<double>& curGlobalObservables) const = 0;
+  virtual void reduceGlobalObservables(
+      std::vector<double>& reducedGlobalObservables,
+      const std::vector<double>& curGlobalObservables) const = 0;
 
-   virtual void reduceGlobalObservables(std::vector<double>& globalObservables,
-                                        CellInfo cellInfo,
-                                        int solverNumber) const = 0;
+  virtual void reduceGlobalObservables(std::vector<double>& globalObservables,
+      CellInfo cellInfo,
+      int solverNumber) const = 0;
   ///////////////////////
   // PROFILING
   ///////////////////////
@@ -2153,7 +2169,7 @@ class exahype::solvers::Solver {
    *  @{
    */
 
- protected:
+protected:
   /**
    * On coarser grids, the solver can hint on the eventual load or memory distribution
    * with this function.
@@ -2170,7 +2186,7 @@ class exahype::solvers::Solver {
       const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
       const tarch::la::Vector<DIMENSIONS,double>& cellSize) { return 1; }
 
- public:
+public:
   /**
    * Signals a user solver that ExaHyPE just started a new time step.
    *

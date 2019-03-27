@@ -344,6 +344,7 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
   tarch::multicore::jobs::setMinMaxNumberOfJobsToConsumeInOneRush(
       _parser.getMinBackgroundJobsInARush(), _parser.getMaxBackgroundJobsInARush() );
 
+  // processing scheme
   if ( _parser.compareBackgroundJobProcessing( "spawn_tasks" ) ) {
     if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
       logInfo("initSharedMemoryConfiguration(...)","Map background jobs to plain tasks.");
@@ -354,11 +355,38 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
       logInfo("initSharedMemoryConfiguration(...)","Let Peano's job system handle the jobs. Use two separate concurrent queues, one for high and one for low priority jobs");
     }
     tarch::multicore::jobs::setTaskProcessingScheme(tarch::multicore::jobs::TaskProcessingScheme::UseCustomTBBWrapperWithoutPriorities);
-  } else {
+  } else { // job_system
+    if ( !_parser.compareBackgroundJobProcessing( "job_system" ) ) {
+      logError("initSharedMemoryConfiguration","Unknown background job processing strategy. Abort.");
+      std::abort();
+    }
+
     if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
       logInfo("initSharedMemoryConfiguration(...)","Let Peano's job system handle the jobs. Use TBB concurrent priority queue.");
     }
     tarch::multicore::jobs::setTaskProcessingScheme(tarch::multicore::jobs::TaskProcessingScheme::UseCustomTBBWrapper);
+  }
+
+
+  // wait behaviour
+  if ( _parser.compareBackgroundJobProcessing( "spawn_tasks" ) ) {
+    solvers::Solver::JobSystemWaitBehaviour = solvers::Solver::JobSystemWaitBehaviourType::OnlyPollMPI;
+  } else if ( _parser.compareBackgroundJobProcessing( "job_system_without_priorities" ) ) {
+    solvers::Solver::JobSystemWaitBehaviour = solvers::Solver::JobSystemWaitBehaviourType::ProcessAnyJobs;
+    if ( _parser.compareJobSystemWaitBehaviour( "only_poll_mpi" ) ) {
+      solvers::Solver::JobSystemWaitBehaviour = solvers::Solver::JobSystemWaitBehaviourType::OnlyPollMPI;
+    }
+  } else { // job_system
+    if ( !_parser.compareBackgroundJobProcessing( "job_system" ) ) {
+      logError("initSharedMemoryConfiguration","Unknown background job processing strategy. Abort.");
+      std::abort();
+    }
+    solvers::Solver::JobSystemWaitBehaviour = solvers::Solver::JobSystemWaitBehaviourType::ProcessAnyJobs;
+    if ( _parser.compareJobSystemWaitBehaviour( "only_poll_mpi" ) ) {
+      solvers::Solver::JobSystemWaitBehaviour = solvers::Solver::JobSystemWaitBehaviourType::OnlyPollMPI;
+    } else if ( _parser.compareJobSystemWaitBehaviour( "process_jobs_with_same_priority" ) ) {
+      solvers::Solver::JobSystemWaitBehaviour = solvers::Solver::JobSystemWaitBehaviourType::ProcessJobsWithSamePriority;
+    }
   }
   #endif
 
