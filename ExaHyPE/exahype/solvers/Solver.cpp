@@ -119,6 +119,8 @@ bool exahype::solvers::Solver::SpawnAMRBackgroundJobs = false;
 double exahype::solvers::Solver::CompressionAccuracy = 0.0;
 bool exahype::solvers::Solver::SpawnCompressionAsBackgroundJob = false;
 
+exahype::solvers::Solver::JobSystemWaitBehaviourType exahype::solvers::Solver::JobSystemWaitBehaviour;
+
 std::atomic<int> exahype::solvers::Solver::NumberOfAMRBackgroundJobs(0);
 std::atomic<int> exahype::solvers::Solver::NumberOfReductionJobs(0);
 std::atomic<int> exahype::solvers::Solver::NumberOfEnclaveJobs(0);
@@ -166,14 +168,30 @@ void exahype::solvers::Solver::ensureAllJobsHaveTerminated(JobType jobType) {
     peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
   }
 
-  const int maxNumberOfJobsAtOnce = 2; // allows prefetching one
+  const int maxNumberOfJobsAtOnce = 2; // allows prefetching next job's data
   const bool processHighPriorityJobs =
       jobType==JobType::SkeletonJob ||
       jobType==JobType::ReductionJob;
   while ( !finishedWait ) {
-    // do some work myself
-    tarch::parallel::Node::getInstance().receiveDanglingMessages();
-    tarch::multicore::jobs::processBackgroundJobs(maxNumberOfJobsAtOnce,getTaskPriority(processHighPriorityJobs));
+    // do some work myself; basically same body as waitUntil... method
+    #ifdef Parallel
+    {
+      tarch::multicore::RecursiveLock lock( tarch::services::Service::receiveDanglingMessagesSemaphore );
+      tarch::parallel::Node::getInstance().receiveDanglingMessages();
+      lock.free();
+    }
+    #endif
+
+    switch ( JobSystemWaitBehaviour ) {
+    case JobSystemWaitBehaviourType::ProcessJobsWithSamePriority:
+      tarch::multicore::jobs::processBackgroundJobs( maxNumberOfJobsAtOnce, getTaskPriority(processHighPriorityJobs) );
+      break;
+    case JobSystemWaitBehaviourType::ProcessAnyJobs:
+      tarch::multicore::jobs::processBackgroundJobs( maxNumberOfJobsAtOnce );
+      break;
+    default:
+      break;
+    }
     queuedJobs = getNumberOfQueuedJobs(jobType);
     finishedWait = queuedJobs == 0;
   }
