@@ -5171,6 +5171,7 @@ void exahype::solvers::ADERDGSolver::StealingManagerJob::terminate() {
   _state = State::Terminate;
 };
 
+#ifndef StealingUseProgressThread
 void exahype::solvers::ADERDGSolver::StealingManagerJob::pause() {
   _state = State::Paused;
 };
@@ -5178,6 +5179,7 @@ void exahype::solvers::ADERDGSolver::StealingManagerJob::pause() {
 void exahype::solvers::ADERDGSolver::StealingManagerJob::resume() {
   _state = State::Resume;
 };
+#endif
 
 void exahype::solvers::ADERDGSolver::startStealingManager() {
   logInfo("startStealingManager", " starting ");

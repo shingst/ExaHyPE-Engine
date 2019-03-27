@@ -1180,6 +1180,8 @@ class exahype::solvers::Solver {
   int myRank = tarch::parallel::Node::getInstance().getRank();
   bool progress = false;
 #endif
+   //if(responsibleRank==myRank)
+   //  logInfo("waitUntilCompletedTimeStep()"," begin new wait for local task ");
 
    if ( !cellDescription.getHasCompletedLastStep() ) {
      peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
@@ -1211,10 +1213,10 @@ class exahype::solvers::Solver {
 
 #if defined(DistributedStealing) 
      //if( !cellDescription.getHasCompletedLastStep()
-     //    && !hasProcessed
-     //    && responsibleRank!=myRank) {
-       //logInfo("waitUntilCompletedTimeStep()","EMERGENCY?: missing from rank "<<responsibleRank);
-     //}
+      //   && !hasProcessed
+      //   && responsibleRank==myRank) {
+      // logInfo("waitUntilCompletedTimeStep()"," missing from rank "<<responsibleRank);
+    // }
 
 #if !defined(StealingUseProgressThread)
        if( !cellDescription.getHasCompletedLastStep()
