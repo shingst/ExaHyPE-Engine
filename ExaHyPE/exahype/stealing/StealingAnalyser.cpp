@@ -48,7 +48,8 @@ exahype::stealing::StealingAnalyser::StealingAnalyser():
   std::fill(&_currentFilteredWaitingTimesSnapshot[0], &_currentFilteredWaitingTimesSnapshot[nnodes*nnodes], 0);
 
   for(int i=0; i<nnodes; i++) 
-     _waitForOtherRank.push_back(tarch::timing::GlidingAverageMeasurement(0.1,16));
+     //_waitForOtherRank.push_back(tarch::timing::GlidingAverageMeasurement(0.1,16));
+     _waitForOtherRank.push_back(tarch::timing::GlidingAverageMeasurement());
 }
 
 
