@@ -61,6 +61,15 @@ exahype::stealing::StealingManager::StealingManager() :
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
   _emergencyHeatMap = new double[nnodes];
   std::fill(&_emergencyHeatMap[0], &_emergencyHeatMap[nnodes], 0);
+
+  _postedSendsPerRank = new std::atomic<int>[nnodes];
+  std::fill(&_postedSendsPerRank[0], &_postedSendsPerRank[nnodes], 0);
+  _postedReceivesPerRank = new std::atomic<int>[nnodes];
+  std::fill(&_postedReceivesPerRank[0], &_postedReceivesPerRank[nnodes], 0);
+  _postedSendBacksPerRank = new std::atomic<int>[nnodes];
+  std::fill(&_postedSendBacksPerRank[0], &_postedSendBacksPerRank[nnodes], 0);
+  _postedReceiveBacksPerRank = new std::atomic<int>[nnodes];
+  std::fill(&_postedReceiveBacksPerRank[0], &_postedReceiveBacksPerRank[nnodes], 0);
 }
 
 exahype::stealing::StealingManager::~StealingManager()
@@ -92,6 +101,32 @@ void exahype::stealing::StealingManager::destroyMPICommunicator() {
   assertion(ierr==MPI_SUCCESS);
   ierr = MPI_Comm_free(&_stealingCommMapped);
   assertion(ierr==MPI_SUCCESS);
+}
+
+void exahype::stealing::StealingManager::resetPostedRequests() {
+  logInfo("resetPostedRequests","resetting posted requests statistics");
+  int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
+  std::fill(&_postedSendsPerRank[0], &_postedSendsPerRank[nnodes], 0);
+  std::fill(&_postedReceivesPerRank[0], &_postedReceivesPerRank[nnodes], 0);
+  std::fill(&_postedSendBacksPerRank[0], &_postedSendBacksPerRank[nnodes], 0);
+  std::fill(&_postedReceiveBacksPerRank[0], &_postedReceiveBacksPerRank[nnodes], 0);
+
+}
+
+void exahype::stealing::StealingManager::printPostedRequests() {
+  int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
+  for(int i=0; i<nnodes; i++) {
+      std::string str="for rank "+std::to_string(i)+":";
+      if(_postedSendsPerRank[i]>0) 
+         str = str + "posted sends: "+std::to_string(_postedSendsPerRank[i]);
+      if(_postedReceivesPerRank[i]>0) 
+         str = str + "posted receives: "+std::to_string(_postedReceivesPerRank[i]);
+      if(_postedReceiveBacksPerRank[i]>0) 
+         str = str + "posted receiveBacks: "+std::to_string(_postedReceiveBacksPerRank[i]);
+      if(_postedSendBacksPerRank[i]>0) 
+         str = str + "posted sendBacks: "+std::to_string(_postedSendBacksPerRank[i]);
+      logInfo("printPostedRequests()", str);
+  }
 }
 
 int exahype::stealing::StealingManager::getNumberOfOutstandingRequests( RequestType type ) {
@@ -131,7 +166,19 @@ void exahype::stealing::StealingManager::submitRequests(
     RequestType type,
 	exahype::solvers::Solver *solver,
 	bool block ) {
-    
+   
+  switch(type) {
+    case RequestType::send:
+       _postedSendsPerRank[remoteRank]++; break;
+    case RequestType::receive:
+       _postedReceivesPerRank[remoteRank]++; break;
+    case RequestType::sendBack:
+       _postedSendBacksPerRank[remoteRank]++; break;
+    case RequestType::receiveBack:
+       _postedReceiveBacksPerRank[remoteRank]++; break;
+  
+  }
+ 
   //static std::atomic<int> submitted[4];
   int finished = -1;
   MPI_Testall(nRequests, requests, &finished, MPI_STATUSES_IGNORE);
@@ -245,6 +292,7 @@ void exahype::stealing::StealingManager::progressRequests() {
   
   if(lastOutputTimeStamp==0 || (MPI_Wtime()-lastOutputTimeStamp)>10) {
     lastOutputTimeStamp = MPI_Wtime();
+    printPostedRequests();
     logInfo("progressRequests()", "there are "<<getNumberOfOutstandingRequests(RequestType::send)<< " send requests remaining "
                                  <<","<<getNumberOfOutstandingRequests(RequestType::receive)<<" receive requests remaining" 
                                  <<","<<getNumberOfOutstandingRequests(RequestType::sendBack)<<" sendBack requests remaining" 

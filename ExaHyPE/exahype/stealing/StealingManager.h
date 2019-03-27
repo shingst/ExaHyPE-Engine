@@ -79,6 +79,12 @@ class exahype::stealing::StealingManager {
     std::vector<MPI_Request> _currentOutstandingRequests[4];
     std::unordered_map<int, int> _currentOutstandingVecIdxToReqid[4];
 
+    std::atomic<int> *_postedSendsPerRank;
+    std::atomic<int> *_postedReceivesPerRank;
+    std::atomic<int> *_postedSendBacksPerRank;
+    std::atomic<int> *_postedReceiveBacksPerRank;
+   
+
     int _zeroThreshold;
 
     std::atomic<bool> _isVictim;
@@ -163,6 +169,8 @@ class exahype::stealing::StealingManager {
     int getNumberOfOutstandingRequests(RequestType type);
 
   public:
+    void printPostedRequests();
+    void resetPostedRequests();
     int getStealingTag();
     /*
      * Submit a group of MPI requests with a given MPI message tag.

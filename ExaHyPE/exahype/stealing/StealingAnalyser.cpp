@@ -187,6 +187,7 @@ void exahype::stealing::StealingAnalyser::endIteration() {
   exahype::stealing::AggressiveHybridDistributor::getInstance().updateLoadDistribution();
 #endif
   exahype::stealing::StealingManager::getInstance().printBlacklist();
+  exahype::stealing::StealingManager::getInstance().resetPostedRequests();
 
   _iterationCounter++;
 #endif
