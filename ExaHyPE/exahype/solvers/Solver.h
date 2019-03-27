@@ -1212,10 +1212,10 @@ if ( !cellDescription.getHasCompletedLastStep() ) {
      }
 
 #if defined(DistributedStealing) 
-    // if( !cellDescription.getHasCompletedLastStep()
-    //     && !hasProcessed
-     //    && responsibleRank==myRank) {
-       //logInfo("waitUntilCompletedTimeStep()"," missing from local rank "<<responsibleRank);
+     //if( !cellDescription.getHasCompletedLastStep()
+      //   && !hasProcessed
+      //   && responsibleRank==myRank) {
+      // logInfo("waitUntilCompletedTimeStep()"," missing from rank "<<responsibleRank);
     // }
 
 #if !defined(StealingUseProgressThread)
