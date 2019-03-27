@@ -591,6 +591,11 @@ build:  $(FOBJECTS) mergeipoobjects $(COBJECTS)
 	@echo run code with ./$(EXECUTABLE) and pass config file as argument
 
 link_muq:   header buildinfo ffiles.mk cfiles.mk cipofiles.mk $(FOBJECTS) mergeipoobjects $(COBJECTS)
+ifeq (,$(findstring EXAHYPE_LATE_TAKEOVER,$(COMPILER_CFLAGS)))
+	@echo
+	@echo
+	$(error To use MUQ the flag EXAHYPE_LATE_TAKEOVER must be set)
+endif
 ifneq ($(FMODULEOBJECTS),)
 		$(MAKE) $(FMODULEOBJECTS)
 endif

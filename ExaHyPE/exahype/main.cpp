@@ -34,6 +34,8 @@
 #include <iostream>
 #include <cstdio>
 
+#ifndef EXAHYPE_LATE_TAKEOVER
+
 tarch::logging::Log _log("exahype");
 
 int exahype::main(int argc, char** argv) {
@@ -249,6 +251,7 @@ int exahype::main(int argc, char** argv) {
   return programExitCode;
 }
 
+#endif
 
 void exahype::help(const std::string& programname) {
   std::cout << "Usage: " << programname << " [-hvt] <YourApplication.exahype>\n";
@@ -270,7 +273,6 @@ void exahype::help(const std::string& programname) {
 
 
 #ifndef EXAHYPE_LATE_TAKEOVER
-
 /**
  * By default, ExaHyPE provides the main function entrance of the program.
  * If you want to embed ExaHyPE however as an engine in some other program,
