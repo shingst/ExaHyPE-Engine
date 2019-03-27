@@ -1027,8 +1027,8 @@ private:
     int destRank;
 	int cellDescriptionsIndex;
 	int element;
-	int predictorTimeStamp;
-	int predictorTimeStepSize;
+        double predictorTimeStamp;
+	double predictorTimeStepSize;
   };
 
   // queue for outstanding offloads

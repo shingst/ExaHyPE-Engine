@@ -4544,7 +4544,7 @@ void exahype::solvers::ADERDGSolver::submitOrSendStealablePredictionJob(Stealabl
 
    if(myRank!=destRank) {
 //    sends++;
-
+    // logInfo("submitOrSendStealablePredictionJob","element "<<job->_element<<" predictor time stamp"<<job->_predictorTimeStamp<<" predictor time step size "<<job->_predictorTimeStepSize);
      OffloadEntry entry = {destRank, job->_cellDescriptionsIndex, job->_element, job->_predictorTimeStamp, job->_predictorTimeStepSize};
      //_outstandingOffloads.push( entry );
      auto& cellDescription = getCellDescription(job->_cellDescriptionsIndex, job->_element);
@@ -5294,6 +5294,8 @@ void exahype::solvers::ADERDGSolver::packMetadataToBuffer(
   offset+=1;
   memcpy(buf+offset, &entry.predictorTimeStepSize, sizeof(double));
   offset+=1;
+
+//  logInfo("packMetadata","center "<<center_src[0]<<" dx "<<dx_src[0]<<" predictorTmeStamp "<< entry.predictorTimeStamp << " predictorTimeStepSize "<< entry.predictorTimeStepSize);
 }
 
 exahype::solvers::ADERDGSolver::StealablePredictionJob* exahype::solvers::ADERDGSolver::createFromData(
@@ -5648,9 +5650,10 @@ void exahype::solvers::ADERDGSolver::StealablePredictionJob::receiveBackHandler(
   logInfo("receiveBackHandler","successful receiveBack request, cnt "<<cnt);
 #endif
 
-  //logInfo("receiveBackHandler","successful receiveBack request");
+ // logInfo("receiveBackHandler","successful receiveBack request");
   tbb::concurrent_hash_map<int, CellDescription*>::accessor a_tagToCellDesc;
   bool found = static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagToCellDesc.find(a_tagToCellDesc, tag);
+ // assert(found);
   assertion(found);
   auto cellDescription = a_tagToCellDesc->second;
   static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagToCellDesc.erase(a_tagToCellDesc);
