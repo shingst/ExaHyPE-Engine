@@ -20,7 +20,7 @@ exahype-project Euler
     dimension const  = 2
     width            = 1.0, 1.0, 1.0
     offset           = 0.0, 0.0, 0.0
-    end-time         = 0.2
+    end-time         = 0.1
   end computational-domain
   
   shared-memory
