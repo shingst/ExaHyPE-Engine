@@ -94,6 +94,11 @@ void exahype::stealing::StealingManager::destroyMPICommunicator() {
   assertion(ierr==MPI_SUCCESS);
 }
 
+int exahype::stealing::StealingManager::getNumberOfOutstandingRequests( RequestType type ) {
+  
+  int mapId = requestTypeToMap(type);
+  return _outstandingReqsForGroup[mapId].size() + _requests[mapId].unsafe_size(); 
+}
 
 MPI_Comm exahype::stealing::StealingManager::getMPICommunicator() {
   return _stealingComm;
@@ -236,6 +241,15 @@ bool exahype::stealing::StealingManager::hasOutstandingRequestOfType(RequestType
 }
 
 void exahype::stealing::StealingManager::progressRequests() {
+  static double lastOutputTimeStamp = 0;
+  
+  if(lastOutputTimeStamp==0 || (MPI_Wtime()-lastOutputTimeStamp)>10) {
+    lastOutputTimeStamp = MPI_Wtime();
+    logInfo("progressRequests()", "there are "<<getNumberOfOutstandingRequests(RequestType::send)<< " send requests remaining "
+                                 <<","<<getNumberOfOutstandingRequests(RequestType::receive)<<" receive requests remaining" 
+                                 <<","<<getNumberOfOutstandingRequests(RequestType::sendBack)<<" sendBack requests remaining" 
+                                <<","<<getNumberOfOutstandingRequests(RequestType::receiveBack)<<" receiveBack requests remaining" );
+  } 
 
   if(hasOutstandingRequestOfType(RequestType::send)) {
 #ifdef USE_ITAC

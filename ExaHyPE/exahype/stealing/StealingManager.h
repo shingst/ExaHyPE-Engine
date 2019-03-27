@@ -160,6 +160,8 @@ class exahype::stealing::StealingManager {
     };
 #endif
 
+    int getNumberOfOutstandingRequests(RequestType type);
+
   public:
     int getStealingTag();
     /*
