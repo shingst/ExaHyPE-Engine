@@ -162,8 +162,10 @@ bool exahype::solvers::LimitingADERDGSolver::isMergingMetadata(
 void exahype::solvers::LimitingADERDGSolver::kickOffTimeStep(const bool isFirstTimeStepOfBatchOrNoBatch) {
   // copy solver observables to limiter (might be MPI comm. before)
   // TODO add to docu: During mesh refinement, we only require the observables on the main solver
-  std::copy(_solver->_globalObservables.begin(),_solver->_globalObservables.end(),
-            _limiter->_globalObservables.begin());
+  if ( isFirstTimeStepOfBatchOrNoBatch ) {
+    std::copy(_solver->_globalObservables.begin(),_solver->_globalObservables.end(),
+              _limiter->_globalObservables.begin());
+  }
 
   _solver->kickOffTimeStep(isFirstTimeStepOfBatchOrNoBatch);
   _limiter->kickOffTimeStep(isFirstTimeStepOfBatchOrNoBatch);
@@ -528,7 +530,9 @@ void exahype::solvers::LimitingADERDGSolver::fusedTimeStepBody(
   result._timeStepSize    = startNewTimeStep(solverPatch,cellInfo,isFirstTimeStepOfBatch);
   result._meshUpdateEvent = determineRefinementStatusAfterSolutionUpdate(solverPatch,cellInfo,isTroubled,neighbourMergePerformed);
 
-  reduce(solverPatch,cellInfo,result);
+  if ( isLastTimeStepOfBatch ) {
+    reduce(solverPatch,cellInfo,result);
+  }
 
   if (
       solverPatch.getRefinementStatus()<_solver->_minRefinementStatusForTroubledCell &&

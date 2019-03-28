@@ -230,10 +230,10 @@ void exahype::solvers::FiniteVolumesSolver::kickOffTimeStep(const bool isFirstTi
   if ( isFirstTimeStepOfBatchOrNoBatch ) {
     _meshUpdateEvent        = MeshUpdateEvent::None;
     _admissibleTimeStepSize = std::numeric_limits<double>::infinity();
+    resetGlobalObservables(_nextGlobalObservables.data());
   }
 
   // call user code
-  resetGlobalObservables(_nextGlobalObservables.data());
   beginTimeStep(_minTimeStamp,isFirstTimeStepOfBatchOrNoBatch);
 }
 
@@ -248,7 +248,9 @@ void exahype::solvers::FiniteVolumesSolver::wrapUpTimeStep(const bool isFirstTim
     _minTimeStepSize = _admissibleTimeStepSize;
   }
 
-  std::copy(_nextGlobalObservables.begin(),_nextGlobalObservables.end(),_globalObservables.begin());
+  if ( isLastTimeStepOfBatchOrNoBatch ) {
+    std::copy(_nextGlobalObservables.begin(),_nextGlobalObservables.end(),_globalObservables.begin());
+  }
 
   // call user code
   endTimeStep(_minTimeStamp,isLastTimeStepOfBatchOrNoBatch);
@@ -725,7 +727,9 @@ void exahype::solvers::FiniteVolumesSolver::updateBody(
   UpdateResult result;
   result._timeStepSize = startNewTimeStep(cellDescription,isFirstTimeStepOfBatch);
 
-  reduce(cellDescription,result);
+  if ( isLastTimeStepOfBatch ) {
+    reduce(cellDescription,result);
+  }
 
   compress(cellDescription,isAtRemoteBoundary);
 

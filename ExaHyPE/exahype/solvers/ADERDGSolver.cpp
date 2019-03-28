@@ -763,10 +763,10 @@ void exahype::solvers::ADERDGSolver::kickOffTimeStep(const bool isFirstTimeStepO
     _meshUpdateEvent               = MeshUpdateEvent::None;
     _admissibleTimeStepSize        = std::numeric_limits<double>::infinity();
     _stabilityConditionWasViolated = false;
+    resetGlobalObservables(_nextGlobalObservables.data());
   }
 
   // call user code
-  resetGlobalObservables(_nextGlobalObservables.data());
   beginTimeStep(_minTimeStamp,isFirstTimeStepOfBatchOrNoBatch);
 }
 
@@ -800,7 +800,9 @@ void exahype::solvers::ADERDGSolver::wrapUpTimeStep(const bool isFirstTimeStepOf
     } // else if linear do not change the time step size at all
   }
 
-  std::copy(_nextGlobalObservables.begin(),_nextGlobalObservables.end(),_globalObservables.begin());
+  if ( isLastTimeStepOfBatchOrNoBatch ) {
+    std::copy(_nextGlobalObservables.begin(),_nextGlobalObservables.end(),_globalObservables.begin());
+  }
 
   // call user code
   endTimeStep(_minTimeStamp,isLastTimeStepOfBatchOrNoBatch);
