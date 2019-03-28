@@ -1,6 +1,6 @@
 ! GRMHD PDE.f90
 ! Trento (EQNTYPE4)
-
+!!!#define DEBUGGONE
 
 RECURSIVE SUBROUTINE PDEPrim2Cons(Q,V)
   USE Parameters, ONLY: nVar
@@ -10,6 +10,12 @@ RECURSIVE SUBROUTINE PDEPrim2Cons(Q,V)
   REAL :: Q(nVar), V(nVar)
   INTENT(IN)  :: V
   INTENT(OUT) :: Q 
+  !
+#ifdef DEBUGGONE
+  Q = V
+  STOP
+  RETURN
+#endif
   !
   CALL PDEPrim2ConsGRMHD(Q,V)
   !
@@ -28,6 +34,13 @@ RECURSIVE SUBROUTINE PDECons2Prim(V,Q,iErr)
   INTENT(IN)  :: Q 
   INTENT(OUT) :: V  
   INTENT(INOUT) :: iErr 
+  !
+#ifdef DEBUGGONE
+  V = Q
+  iErr = 0
+  STOP
+  RETURN
+#endif
   !
   CALL PDECons2PrimGRMHD(V,Q,iErr)
   !
@@ -55,10 +68,34 @@ RECURSIVE SUBROUTINE PDEFlux(f,g,h,Q)
   !REAL :: V(nVar)
   REAL, PARAMETER :: epsilon = 1e-14 
   !
+#ifdef DEBUGGONE
+  f = 0.0
+  g = 0.0
+  h = 0.0
+  !FF = 0.
+  STOP
+  RETURN
+#endif
+  !
+!IF(ANY(Q(6:8).NE.0)) THEN
+!    PRINT *, "PDEFlux Q(6:8)",Q(6:8)
+!    continue
+!ENDIF
+!
+  !PRINT *, '*************************************'
   !PRINT *, 'PDEFluxGRMHD'
+  !PRINT *, FF(:,1)
+  !PRINT *, FF(:,2)
+  !PRINT *, nDim
+  !PRINT *, '*************************************'
   CALL PDEFluxGRMHD(FF,Q)
   !FF = 0.
-  !
+!IF(ANY(FF(6:8,:).NE.0)) THEN
+!    PRINT *, "PDEFlux FF(6:8,1)",FF(6:8,1)
+!    PRINT *, "PDEFlux FF(6:8,2)",FF(6:8,2)
+!    continue
+!ENDIF
+  ! 
 #if defined(Dim2)
   DO i=1,nVar
 		f(i)=FF(i,1)
@@ -98,12 +135,6 @@ RECURSIVE SUBROUTINE PDEFlux(f,g,h,Q)
 !		PRINT *,' PDEFlux NAN ' 
 !		STOP
 !	ENDIF 
-!#if defined(Dim3)
-!	IF( ANY( ISNAN(h) )) THEN
-!		PRINT *,' PDEFlux NAN ' 
-!		STOP
-!	ENDIF
-!#endif
 !	IF(ANY(Q(6:8).NE.0.0)) THEN
 !        PRINT *, Q(6:8)
 !        PRINT *, "I feel magnetized :-("
@@ -129,9 +160,14 @@ RECURSIVE SUBROUTINE PDENCP(BgradQ,Q,gradQ)
   STOP
    RETURN
 #endif
-	!
+   !
+!IF(ANY(Q(6:8).NE.0)) THEN
+!    PRINT *, "PDENCP Q(6:8)",Q(6:8) 
+!    continue
+!ENDIF
+  !PRINT *, 'PDENCPGRMHD'
    CALL PDENCPGRMHD(BgradQ,Q,gradQ)
-
+   
 !IF(ANY(BgradQ(6:8).NE.0)) THEN
 !    PRINT *, "PDENCP BgradQ(6:8)",BgradQ(6:8) 
 !    continue
@@ -166,12 +202,6 @@ RECURSIVE SUBROUTINE PDENCP(BgradQ,Q,gradQ)
 !		PRINT *,'---------------' 
 !		STOP
 !	ENDIF 
-!#if defined(Dim3)
-!	IF( ANY( ISNAN(gradQ(:,3)) )) THEN
-!		PRINT *,'gradQ, PDENCP NAN ' 
-!		STOP
-!	ENDIF 
-!#endif
 !	IF( ANY( ISNAN(BgradQ) )) THEN
 !		PRINT *,'BgradQ,  PDENCP NAN ' 
 !		WRITE(*,*) Q(1:5)
@@ -223,7 +253,10 @@ RECURSIVE SUBROUTINE PDEEigenvalues(L,Q,n)
   INTENT(OUT) :: L 
   ! Local variables
   
-
+!IF(ANY(Q(6:8).NE.0)) THEN
+!    PRINT *, "PDEEigenvalues Q(6:8)",Q(6:8) 
+!    continue
+!ENDIF
   !
   L(:) = 0
   !
@@ -261,6 +294,12 @@ RECURSIVE SUBROUTINE PDESource(S,Q)
   INTENT(IN)  :: Q 
   INTENT(OUT) :: S
   ! --------------------------------------------
+  !
+#ifdef DEBUGGONE
+  S = 0.
+  STOP
+  RETURN
+#endif
   !
   CALL PDESourceGRMHD(S,Q) 
   !S = 0.
@@ -310,7 +349,7 @@ RECURSIVE SUBROUTINE PDEMatrixB(An,Q,nv)
   ! Local variables
   ! Linear elasticity variables
   REAL :: A(nVar,nVar), B(nVar,nVar), C(nVar,nVar), Vp(nVar)
-  ! 
+  !
   An = 0.
 #ifdef DEBUGGONE
   STOP
@@ -320,6 +359,10 @@ RECURSIVE SUBROUTINE PDEMatrixB(An,Q,nv)
   ! we use this only for the Roe Matrix
 	! --------------------------------------------
 	!
+!IF(ANY(Q(6:8).NE.0)) THEN
+!    PRINT *, "PDEMatrixB Q(6:8)",Q(6:8) 
+!    continue
+!ENDIF
 	CALL PDEMatrixBGRMHD(An,Q,nv)  
 	!
 	continue
@@ -355,6 +398,11 @@ RECURSIVE SUBROUTINE PDEAuxVar(aux,V,x)
   ! Local Variables 
   !
   IF(nAux.GT.0) THEN
+#ifdef DEBUGGONE
+        STOP
+   		aux = 0.
+   		RETURN
+#endif
 		CALL PDEAuxVarGRMHD(aux,V,x)
   ENDIF
   !
@@ -517,7 +565,9 @@ ENDIF
   !deltaL = 0.
   absA = absA - sR*sL/(sR-sL)*MATMUL( RL, MATMUL(deltaL, iRL) )  ! HLLEM anti-diffusion  
   !    
+  !PRINT *, "RoeMatrix"
   CALL RoeMatrix(ARoe,QL,QR,nv)
+  !PRINT *, "RoeMatrix done!"
   !
   ARoem = -sL*ARoe/(sR-sL)
   ARoep = +sR*ARoe/(sR-sL)
@@ -572,7 +622,7 @@ ENDIF
   ! q_i^{n+1} = q_i^n - FL              .... i.e. F_=F_{i+1/2}_ right flux
   ! q_{i+1}^{n+1} = q_i^n + FR             .... i.e. FR=F_{i+1/2} left flux
   ! see musclhancock.cpph after "// 4. Solve Riemann problems"
-  !
+  ! 
     END SUBROUTINE HLLEMFluxFV
 
     
@@ -588,6 +638,13 @@ IF(ANY(Q(6:8).NE.0)) THEN
     PRINT *, "PDEEigenvectors Q(6:8)",Q(6:8)
     STOP
 ENDIF
+#ifdef DEBUGGONE
+  R = 0.
+  L = 1.0
+  iR = 0.
+  STOP
+  RETURN
+#endif
   !
   CALL PDEEigenVectorsGRMHD(R,L,iR,Q,nv)
   !

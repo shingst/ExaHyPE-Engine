@@ -1,0 +1,85 @@
+/**
+ * This file is part of the ExaHyPE project.
+ * Copyright (c) 2016  http://exahype.eu
+ * All rights reserved.
+ *
+ * The project has received funding from the European Union's Horizon 
+ * 2020 research and innovation programme under grant agreement
+ * No 671698. For copyrights and licensing, please consult the webpage.
+ *
+ * Released under the BSD 3 Open Source License.
+ * For the full license text, see LICENSE.txt
+ **/
+ 
+/**
+
+ GRMHD, General Relativistic Magneto HydroDynamics
+
+ */
+exahype-project GRMHDb 
+  
+  peano-kernel-path const          = ./Peano
+  exahype-path const               = ./ExaHyPE
+  output-directory const           = ./ApplicationExamples/GRMHDb/GRMHDb_ADERDG_FV_2D_clean
+  architecture const               = skx
+  log-file                         = whatever.log
+  
+  computational-domain
+     dimension const                = 2
+     width                          = 1.0 , 1.0 
+     offset                         = 0.0, 0.0 
+     end-time                       = 0.4 
+     //time-steps                     = 100		
+  end computational-domain
+  
+  shared-memory
+    identifier               = dummy
+    configure                = {background-tasks:1}
+    cores                    = 1
+    properties-file          = sharedmemory.properties
+    // ** NEW **: 16 MB of stack memory; high order limiter needs it    
+    thread_stack_size        = 16777216
+  end shared-memory  
+  
+  distributed-memory
+    identifier       = static_load_balancing
+    configure        = {hotspot,fair,ranks-per-node:1}
+    buffer-size      = 6400
+    timeout          = 480
+  end distributed-memory
+
+  global-optimisation
+	//
+
+  end global-optimisation
+
+  solver Limiting-ADER-DG GRMHDbSolver
+    variables const                = rho:1,vel:3,p:1,B:3,psi:1,lapse:1,shift:3,gamma:6
+    order const                    = 3
+    maximum-mesh-size              = 0.1
+    maximum-mesh-depth             = 0
+    time-stepping                  = global
+    type const = nonlinear
+    terms const = flux,ncp
+    optimisation const = generic, maxpicarditer:5
+    //optimisation const = optimised, usestack, maxpicarditer:5
+    language const                 = C
+    limiter-type const         = musclhancock
+    limiter-optimisation const = generic
+    limiter-language const     = C
+    dmp-observables  const         = 5
+    dmp-relaxation-parameter = 1e-4
+    dmp-difference-scaling = 1e-3 
+
+    plot user::defined TecplotWriter
+       variables const = 19
+       time            = 0.0
+       repeat          = 0.01
+       output          = ./output/tecplot
+     end plot
+
+
+  end solver
+
+
+end exahype-project
