@@ -530,9 +530,7 @@ void exahype::solvers::LimitingADERDGSolver::fusedTimeStepBody(
   result._timeStepSize    = startNewTimeStep(solverPatch,cellInfo,isFirstTimeStepOfBatch);
   result._meshUpdateEvent = determineRefinementStatusAfterSolutionUpdate(solverPatch,cellInfo,isTroubled,neighbourMergePerformed);
 
-  if ( isLastTimeStepOfBatch ) {
-    reduce(solverPatch,cellInfo,result);
-  }
+  reduce(solverPatch,cellInfo,result);
 
   if (
       solverPatch.getRefinementStatus()<_solver->_minRefinementStatusForTroubledCell &&

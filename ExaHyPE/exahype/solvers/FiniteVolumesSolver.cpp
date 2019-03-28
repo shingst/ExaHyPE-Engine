@@ -727,9 +727,7 @@ void exahype::solvers::FiniteVolumesSolver::updateBody(
   UpdateResult result;
   result._timeStepSize = startNewTimeStep(cellDescription,isFirstTimeStepOfBatch);
 
-  if ( isLastTimeStepOfBatch ) {
-    reduce(cellDescription,result);
-  }
+  reduce(cellDescription,result);
 
   compress(cellDescription,isAtRemoteBoundary);
 

@@ -2068,9 +2068,7 @@ void exahype::solvers::ADERDGSolver::fusedTimeStepBody(
   cellDescription.setPreviousRefinementStatus(cellDescription.getRefinementStatus());
   result._meshUpdateEvent = evaluateRefinementCriteriaAfterSolutionUpdate(cellDescription,neighbourMergePerformed);
 
-  if ( isLastTimeStepOfBatch ) {
-    reduce(cellDescription,result);
-  }
+  reduce(cellDescription,result);
 
   if (
       SpawnPredictionAsBackgroundJob &&
