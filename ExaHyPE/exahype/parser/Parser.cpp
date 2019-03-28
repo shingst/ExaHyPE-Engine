@@ -482,7 +482,7 @@ int exahype::parser::Parser::getNumberOfThreads() const {
 }
 
 int exahype::parser::Parser::getThreadStackSize() const {
-  return getIntFromPath("/shared_memory/thread_stack_size",8388608,isOptional);
+  return getIntFromPath("/shared_memory/thread_stack_size",12582912,isOptional);
 }
 
 tarch::la::Vector<DIMENSIONS, double> exahype::parser::Parser::getDomainSize() const {
@@ -1222,6 +1222,11 @@ int exahype::parser::Parser::getNumberOfBackgroundJobConsumerTasks() {
 
 bool exahype::parser::Parser::compareBackgroundJobProcessing(const std::string& strategy) const {
   return getStringFromPath("/shared_memory/background_job_processing","job_system",isOptional).
+      compare(strategy)==0;
+}
+
+bool exahype::parser::Parser::compareJobSystemWaitBehaviour(const std::string& strategy) const {
+  return getStringFromPath("/shared_memory/job_system_wait_behaviour","process_any_jobs",isOptional).
       compare(strategy)==0;
 }
 

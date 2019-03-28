@@ -4,7 +4,7 @@
 #include <vector>
 
 void readCsv(std::string filename, std::vector<double>* a){
-
+    a->resize(0);
    std::ifstream infile(filename);
    if(! infile)
        throw std::runtime_error("Could not open file " + filename);

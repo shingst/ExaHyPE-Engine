@@ -709,6 +709,14 @@ public:
 
   enum class JobType { AMRJob, ReductionJob, EnclaveJob, SkeletonJob };
 
+  enum class JobSystemWaitBehaviourType { ProcessAnyJobs, ProcessJobsWithSamePriority, OnlyPollMPI };
+
+  /**
+   * What to do whenever the job system needs to wait until a
+   * job is completed.
+   */
+  static JobSystemWaitBehaviourType JobSystemWaitBehaviour;
+
   /**
    * \see ensureAllBackgroundJobsHaveTerminated
    */
@@ -1092,94 +1100,103 @@ public:
    */
   static void ensureAllJobsHaveTerminated(JobType jobType);
 
- /**
-  * Waits until the @p cellDescription has completed its time step.
-  *
-  * Thread-safety
-  * -------------
-  *
-  * We only read (sample) the hasCompletedLastStep flag and thus do not need any locks.
-  * If this flag were to assume an undefined state, this would happen after the job working processing the
-  * cell description was completed. This routine will then do an extra iteration or finish.
-  * Either is fine.
-  *
-  * The flag is modified before a job is spawned and after it was processed.
-  * As the job cannot be processed before it is spawned, setting the flag
-  * is thread-safe.
-  *
-  * MPI
-  * ---
-  *
-  * Tries to receive dangling MPI messages while waiting if this
-  * is specified by the user.
-  *
-  * Work Stealing
-  * -------------
-  *
-  * Assume this rank has stolen jobs from another rank.
-  * If this routine actually waits, this indicates it has to wait for a local job
-  * and not for a stolen one.
-  * Therefore, we exclude stolen jobs from being processed by this routine.
-  *
-  * @note Only use receiveDanglingMessages=true if the routine
-  * is called from a serial context.
-  *
-  * @param cellDescription a cell description
-  * @param waitForHighPriorityJob a cell description's task was spawned as high priority job
-  * @param receiveDanglingMessages receive dangling messages while waiting
-  */
- template <typename CellDescription>
- void waitUntilCompletedLastStep(
-     const CellDescription& cellDescription,const bool waitForHighPriorityJob,const bool receiveDanglingMessages) {
-  #ifdef USE_ITAC
-  VT_begin(waitUntilCompletedLastStepHandle);
-  #endif
 
-   if ( !cellDescription.getHasCompletedLastStep() ) {
-     peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
-   }
-   while ( !cellDescription.getHasCompletedLastStep() ) {
-     // do some work myself
-     if ( receiveDanglingMessages ) {
-       tarch::parallel::Node::getInstance().receiveDanglingMessages();
-     }
-     if ( waitForHighPriorityJob ) {
-       tarch::multicore::jobs::processBackgroundJobs( 1, getHighPriorityTaskPriority() );
-     } else {
-       tarch::multicore::jobs::processBackgroundJobs( 1, getDefaultTaskPriority() );
-     }
-   }
+  /**
+   * Waits until the @p cellDescription has completed its time step.
+   *
+   * Thread-safety
+   * -------------
+   *
+   * We only read (sample) the hasCompletedLastStep flag and thus do not need any locks.
+   * If this flag were to assume an undefined state, this would happen after the job working processing the
+   * cell description was completed. This routine will then do an extra iteration or finish.
+   * Either is fine.
+   *
+   * The flag is modified before a job is spawned and after it was processed.
+   * As the job cannot be processed before it is spawned, setting the flag
+   * is thread-safe.
+   *
+   * MPI
+   * ---
+   *
+   * Tries to receive dangling MPI messages while waiting if this
+   * is specified by the user.
+   *
+   * Work Stealing
+   * -------------
+   *
+   * Assume this rank has stolen jobs from another rank.
+   * If this routine actually waits, this indicates it has to wait for a local job
+   * and not for a stolen one.
+   * Therefore, we exclude stolen jobs from being processed by this routine.
+   *
+   * @note Only use receiveDanglingMessages=true if the routine
+   * is called from a serial context.
+   *
+   * @param cellDescription a cell description
+   * @param waitForHighPriorityJob a cell description's task was spawned as high priority job
+   * @param receiveDanglingMessages receive dangling messages while waiting
+   */
+  template <typename CellDescription>
+  void waitUntilCompletedLastStep(
+      const CellDescription& cellDescription,const bool waitForHighPriorityJob,const bool receiveDanglingMessages) {
+    #ifdef USE_ITAC
+    VT_begin(waitUntilCompletedLastStepHandle);
+    #endif
 
-  #ifdef USE_ITAC
-  VT_end(waitUntilCompletedLastStepHandle);
-  #endif
- }
+    if ( !cellDescription.getHasCompletedLastStep() ) {
+      peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
+    }
+    while ( !cellDescription.getHasCompletedLastStep() ) {
+      #ifdef Parallel
+      {
+        tarch::multicore::RecursiveLock lock( tarch::services::Service::receiveDanglingMessagesSemaphore );
+        tarch::parallel::Node::getInstance().receiveDanglingMessages();
+        lock.free();
+      }
+      #endif
 
- /**
-  * @return the default priority.
-  */
- static int getDefaultTaskPriority() {
-   return tarch::multicore::DefaultPriority;
- }
- /**
-  * @return a high priority.
-  */
- static int getHighPriorityTaskPriority() {
-   return tarch::multicore::DefaultPriority*2;
- }
- /**
-  * @return a high priority if the argument is set to true. Otherwise,
-  * the default priority.
-  */
- static int getTaskPriority( const bool isHighPriorityJob ) {
-   return isHighPriorityJob ? getHighPriorityTaskPriority() : getDefaultTaskPriority();
- }
- /**
-  * @return a very high priority.
-  */
- static int  getCompressionTaskPriority() {
-   return tarch::multicore::DefaultPriority*8;
- }
+      switch ( JobSystemWaitBehaviour ) {
+        case JobSystemWaitBehaviourType::ProcessJobsWithSamePriority:
+          tarch::multicore::jobs::processBackgroundJobs( 1, getTaskPriority(waitForHighPriorityJob) );
+          break;
+        case JobSystemWaitBehaviourType::ProcessAnyJobs:
+          tarch::multicore::jobs::processBackgroundJobs( 1 );
+          break;
+        default:
+          break;
+      }
+    }
+    #ifdef USE_ITAC
+    VT_end(waitUntilCompletedLastStepHandle);
+    #endif
+  }
+
+  /**
+   * @return the default priority.
+   */
+  static int getDefaultTaskPriority() {
+    return tarch::multicore::DefaultPriority;
+  }
+  /**
+   * @return a high priority.
+   */
+  static int getHighPriorityTaskPriority() {
+    return tarch::multicore::DefaultPriority*2;
+  }
+  /**
+   * @return a high priority if the argument is set to true. Otherwise,
+   * the default priority.
+   */
+  static int getTaskPriority( const bool isHighPriorityJob ) {
+    return isHighPriorityJob ? getHighPriorityTaskPriority() : getDefaultTaskPriority();
+  }
+  /**
+   * @return a very high priority.
+   */
+  static int  getCompressionTaskPriority() {
+    return tarch::multicore::DefaultPriority*8;
+  }
 
  /**
   * Return a string representation for the type @p param.

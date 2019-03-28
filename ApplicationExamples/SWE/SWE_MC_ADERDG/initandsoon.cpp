@@ -34,11 +34,16 @@
 #include <iostream>
 #include <cstdio>
 
-#ifndef EXAHYPE_LATE_TAKEOVER
+#include <exahype/main.h>
 
 tarch::logging::Log _log("exahype");
 
-int exahype::main(int argc, char** argv) {
+namespace muq{
+
+      exahype::parser::Parser parser;
+      std::vector<std::string> cmdlineargs;
+
+int init(int argc, char** argv) {
   //
   //   Parse config file
   // =====================
@@ -51,7 +56,8 @@ int exahype::main(int argc, char** argv) {
   }
 
   // cmdlineargs contains all argv expect the progname.
-  std::vector<std::string> cmdlineargs(argv + 1, argv + argc);
+  std::vector<std::string> cmd_copy(argv + 1, argv + argc);
+  cmdlineargs = cmd_copy;
   std::string firstarg = cmdlineargs[0];
 
   bool showHelp    = firstarg == "-h" || firstarg == "--help";
@@ -67,12 +73,12 @@ int exahype::main(int argc, char** argv) {
   //
 
   if(showHelp) {
-    help(progname);
-    return EXIT_SUCCESS;
+      exahype::help(progname);
+      return EXIT_SUCCESS;
   }
 
   if(showVersion) {
-    std::cout << version(progname);
+    std::cout << exahype::version(progname);
     return EXIT_SUCCESS;
   }
   
@@ -115,7 +121,7 @@ int exahype::main(int argc, char** argv) {
   }
 
   if (runPingPong) {
-    return pingPongTest();
+    return exahype::pingPongTest();
   }
 
   if (runTests) {
@@ -149,7 +155,6 @@ int exahype::main(int argc, char** argv) {
   // =====================================
   //
 
-  exahype::parser::Parser parser;
 
   std::stringstream specfile;
   std::string specFileName;
@@ -225,11 +230,21 @@ int exahype::main(int argc, char** argv) {
         ::tarch::logging::CommandLineLogger::FilterListEntry("debug", -1,
                                                              "exahype", false));
 */
+  return 0;
+  }
 
+  int run_exahype(){
 
-  exahype::runners::Runner runner(parser, cmdlineargs); // TODO Make runner singleton?
+  exahype::runners::Runner runner(parser, cmdlineargs); 
+  std::cout << "starting first run" << std::endl;
   int programExitCode = runner.run();
+  assert(programExitCode == 0);
+  std::cout << "done run" << std::endl;
+    return programExitCode;
+  }
 
+int finalize(){
+    int programExitCode = 0;
   if (programExitCode == 0) {
 #ifdef Parallel
     if (tarch::parallel::Node::getInstance().isGlobalMaster()) {
@@ -251,39 +266,4 @@ int exahype::main(int argc, char** argv) {
   return programExitCode;
 }
 
-#endif
-
-void exahype::help(const std::string& programname) {
-  std::cout << "Usage: " << programname << " [-hvt] <YourApplication.exahype>\n";
-  std::cout << "\n";
-  std::cout << "   where YourApplication.exahype is an ExaHyPE specification file.\n";
-  std::cout << "   Note that you should have compiled ExaHyPE with this file as there\n";
-  std::cout << "   are some compile time constants.\n";
-  std::cout << "\n";
-  std::cout << "   Other possible parameters:\n";
-  std::cout << "\n";
-  std::cout << "    --help     | -h      Show this help message\n";
-  std::cout << "    --version  | -v      Show version and other hard coded information\n";
-  std::cout << "    --tests    | -t      Run the unit tests\n";
-  std::cout << "    --pingpong | -p      Run only a simple MPI Ping Pong test\n";
-  std::cout << "    --show-specfile      Show the specification file the binary was built with\n";
-  std::cout << "    --built-in-specfile  Run with the spec. file the binary was built with\n";
-  std::cout << "\n";
 }
-
-
-#ifndef EXAHYPE_LATE_TAKEOVER
-/**
- * By default, ExaHyPE provides the main function entrance of the program.
- * If you want to embed ExaHyPE however as an engine in some other program,
- * you can call the exahype::main(argc,argv) at any later time.
- *
- * Thus you can treat ExaHyPE similar to a GUI toolkit or game engine even loop.
- * To do so, just define EXAHYPE_LATE_TAKEOVER. Don't forget to start ExaHyPE
- * finally with calling exahype::main on yourself.
- **/
-int main(int argc, char**argv) {
-	exahype::main(argc, argv);
-}
-
-#endif

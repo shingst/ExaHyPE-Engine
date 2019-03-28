@@ -5,8 +5,7 @@
 
 namespace SWE {
 
-    double bathymetry(double x, double y);
-    double linearInterpolation(double x, double y);
+    double linearInterpolation(double x, double y,std::vector<double>& a);
 }
 
 #endif
