@@ -1424,7 +1424,7 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithWorkerData(
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const int                                    level) {
   const auto messageSize = 1 + _numberOfGlobalObservables;
-  DataHeap::HeapEntries message(1);
+  DataHeap::HeapEntries message(messageSize);
 
   DataHeap::getInstance().receiveData(
       message.data(), message.size(),
