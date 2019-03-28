@@ -482,7 +482,7 @@ int exahype::parser::Parser::getNumberOfThreads() const {
 }
 
 int exahype::parser::Parser::getThreadStackSize() const {
-  return getIntFromPath("/shared_memory/thread_stack_size",8388608,isOptional);
+  return getIntFromPath("/shared_memory/thread_stack_size",12582912,isOptional);
 }
 
 tarch::la::Vector<DIMENSIONS, double> exahype::parser::Parser::getDomainSize() const {
