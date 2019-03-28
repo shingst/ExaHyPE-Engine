@@ -168,7 +168,7 @@ void exahype::solvers::Solver::ensureAllJobsHaveTerminated(JobType jobType) {
     peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
   }
 
-  const int maxNumberOfJobsAtOnce = 2; // allows prefetching next job's data
+  int maxNumberOfJobsAtOnce = 1; // allows prefetching next job's data
   const bool processHighPriorityJobs =
       jobType==JobType::SkeletonJob ||
       jobType==JobType::ReductionJob;
@@ -194,6 +194,7 @@ void exahype::solvers::Solver::ensureAllJobsHaveTerminated(JobType jobType) {
     }
     queuedJobs = getNumberOfQueuedJobs(jobType);
     finishedWait = queuedJobs == 0;
+    maxNumberOfJobsAtOnce++;
   }
 
   #ifdef USE_ITAC
