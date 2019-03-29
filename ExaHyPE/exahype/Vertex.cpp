@@ -717,7 +717,7 @@ void exahype::Vertex::sendToNeighbourLoopBody(
     }
 
     // metadata is sent and received as block
-    const bool sendMetadata = solvers::Solver::DisableMetadataExchangeDuringTimeSteps;
+    const bool sendMetadata = !solvers::Solver::DisableMetadataExchangeDuringTimeSteps;
     if ( sendMetadata && validIndex ){
       sendNeighbourCommunicationMetadata(
           toRank,srcCellDescriptionsIndex,src,dest,x,level);
@@ -759,7 +759,7 @@ void exahype::Vertex::receiveNeighbourDataLoopBody(
     const tarch::la::Vector<DIMENSIONS, double>& baryCentre,
     const int                                    level) {
   if ( hasToReceiveMetadata(fromRank,srcScalar,destScalar,adjacentRanks) ) {
-    logDebug("mergeOnlyWithNeighbourMetadata(...)","from rank="<<fromRank<<",x="<<baryCentre.toString()<<",level="<<level<<",adjacentRanks="<<adjacentRanks);
+    logDebug("receiveNeighbourDataLoopBody(...)","from rank="<<fromRank<<",x="<<baryCentre.toString()<<",level="<<level<<",adjacentRanks="<<adjacentRanks);
     const tarch::la::Vector<DIMENSIONS,int> src  = delineariseIndex2(srcScalar);
     const tarch::la::Vector<DIMENSIONS,int> dest = delineariseIndex2(destScalar);
     assertion(tarch::la::countEqualEntries(dest, src) == (DIMENSIONS-1));
@@ -778,7 +778,6 @@ void exahype::Vertex::receiveNeighbourDataLoopBody(
       solvers::Solver::BoundaryFaceInfo face(dest,src); // dest and src are swapped
 
       if ( hasToMergeAtFace(cellInfo,face._faceIndex,true/*prefetchADERDGFaceData*/) ) {
-//        return; // TODO remove
         for(unsigned int solverNumber = solvers::RegisteredSolvers.size(); solverNumber-- > 0;) {
           auto* solver = solvers::RegisteredSolvers[solverNumber];
           const int begin = exahype::NeighbourCommunicationMetadataPerSolver*solverNumber;
@@ -835,7 +834,7 @@ void exahype::Vertex::receiveNeighbourData(
     const tarch::la::Vector<DIMENSIONS, double>& h,
     const int                                    level) const {
   if ( hasToCommunicate(level) ) {
-    const bool receiveMetadata = solvers::Solver::DisableMetadataExchangeDuringTimeSteps;
+    const bool receiveMetadata = !solvers::Solver::DisableMetadataExchangeDuringTimeSteps;
 
     const tarch::la::Vector<DIMENSIONS,int> lowerLeft(0);
     #if DIMENSIONS==3
