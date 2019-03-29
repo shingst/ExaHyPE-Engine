@@ -262,6 +262,11 @@ void exahype::solvers::FiniteVolumesSolver::updateTimeStepSize() {
   _admissibleTimeStepSize = std::numeric_limits<double>::infinity();
 }
 
+void exahype::solvers::FiniteVolumesSolver::updateGlobalObservables() {
+  std::copy(_nextGlobalObservables.begin(),_nextGlobalObservables.end(),
+            _globalObservables.begin());
+}
+
 void exahype::solvers::FiniteVolumesSolver::rollbackToPreviousTimeStep() {
   _minTimeStamp            = _previousMinTimeStamp;
 

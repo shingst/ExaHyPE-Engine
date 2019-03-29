@@ -1590,9 +1590,15 @@ public:
    *
    * It simply updates the time step size.
    *
-   * This method is used after a mesh refinement.
+   * This method is used after a mesh adaption.
    */
   virtual void updateTimeStepSize() = 0;
+
+  /**
+   * Update the global observables after
+   * a mesh adaptation.
+   */
+  virtual void updateGlobalObservables() = 0;
 
   /**
    * Roll back the minimum time stamp to the one of

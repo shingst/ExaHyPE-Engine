@@ -470,6 +470,7 @@ public:
   void wrapUpTimeStep(const bool isFirstTimeStepOfBatchOrNoBatch,const bool isLastTimeStepOfBatchOrNoBatch) final override;
 
   void updateTimeStepSize()      override;
+  void updateGlobalObservables() final override;
   void rollbackToPreviousTimeStep() final override;
 
   void updateMeshUpdateEvent(MeshUpdateEvent meshUpdateEvent) final override;

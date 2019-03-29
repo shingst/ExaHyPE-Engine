@@ -190,6 +190,7 @@ void exahype::mappings::FinaliseMeshRefinement::endIteration(
       for (auto* solver : solvers::RegisteredSolvers) {
         if ( solver->hasRequestedAnyMeshRefinement() ) {
           solver->updateTimeStepSize();
+          solver->updateGlobalObservables();
         }
       }
     }

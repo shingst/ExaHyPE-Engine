@@ -1473,12 +1473,9 @@ public:
   void kickOffTimeStep(const bool isFirstTimeStepOfBatchOrNoBatch) final override;
   void wrapUpTimeStep(const bool isFirstTimeStepOfBatchOrNoBatch,const bool isLastTimeStepOfBatchOrNoBatch) final override;
 
-  /**
-   * \copydoc Solver::updateTimeStepSizes
-   *
-   * Does not advance the predictor time stamp in time.
-   */
   void updateTimeStepSize() final override;
+
+  void updateGlobalObservables() final override;
 
   void rollbackToPreviousTimeStep() final override;
 

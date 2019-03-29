@@ -808,6 +808,8 @@ void updateNextGlobalObservables(
 
   void updateTimeStepSize() final override;
 
+  void updateGlobalObservables() final override;
+
   /**
    * Roll back the time step data to the
    * ones of the previous time step.

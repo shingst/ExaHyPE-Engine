@@ -163,6 +163,7 @@ void exahype::solvers::LimitingADERDGSolver::kickOffTimeStep(const bool isFirstT
   }
 
   _solver->kickOffTimeStep(isFirstTimeStepOfBatchOrNoBatch);
+  ensureLimiterTimeStepDataIsConsistent();
   _limiter->kickOffTimeStep(isFirstTimeStepOfBatchOrNoBatch);
 }
 
@@ -173,6 +174,7 @@ void exahype::solvers::LimitingADERDGSolver::wrapUpTimeStep(const bool isFirstTi
               _limiter->_globalObservables.begin());
   }
   _limiter->wrapUpTimeStep(isFirstTimeStepOfBatchOrNoBatch,isLastTimeStepOfBatchOrNoBatch);
+  ensureLimiterTimeStepDataIsConsistent();
 }
 
 void exahype::solvers::LimitingADERDGSolver::synchroniseTimeStepping(
@@ -192,10 +194,13 @@ void exahype::solvers::LimitingADERDGSolver::ensureLimiterTimeStepDataIsConsiste
 void exahype::solvers::LimitingADERDGSolver::updateTimeStepSize()  {
   _solver->updateTimeStepSize();
   ensureLimiterTimeStepDataIsConsistent();
+}
 
+void exahype::solvers::LimitingADERDGSolver::updateGlobalObservables() {
   _solver->mergeGlobalObservables(_solver->_nextGlobalObservables.data(),_limiter->_nextGlobalObservables.data());
-  std::copy(_solver->_nextGlobalObservables.begin(),_solver->_nextGlobalObservables.end(),
-            _limiter->_nextGlobalObservables.begin());
+  _solver->updateGlobalObservables();
+  std::copy(_solver->_globalObservables.begin(),_solver->_globalObservables.end(),
+            _limiter->_globalObservables.begin());
 }
 
 void exahype::solvers::LimitingADERDGSolver::rollbackToPreviousTimeStep() {
@@ -359,7 +364,6 @@ double exahype::solvers::LimitingADERDGSolver::computeTimeStepSize(SolverPatch& 
 
 double exahype::solvers::LimitingADERDGSolver::startNewTimeStep(SolverPatch& solverPatch,CellInfo& cellInfo,const bool isFirstTimeStepOfBatch) {
   assertion1(solverPatch.getType()==SolverPatch::Type::Cell,solverPatch.toString());
-  double admissibleTimeStepSize = std::numeric_limits<double>::infinity();
   // n-1
   if ( isFirstTimeStepOfBatch ) {
     solverPatch.setPreviousTimeStamp(solverPatch.getTimeStamp());
@@ -367,9 +371,10 @@ double exahype::solvers::LimitingADERDGSolver::startNewTimeStep(SolverPatch& sol
   }
   // n
   solverPatch.setTimeStamp(solverPatch.getTimeStamp()+solverPatch.getTimeStepSize());
-  solverPatch.setTimeStepSize( computeTimeStepSize(solverPatch,cellInfo) );
-  ensureLimiterPatchTimeStepDataIsConsistent(solverPatch,cellInfo);
 
+  double admissibleTimeStepSize = computeTimeStepSize(solverPatch,cellInfo);
+  solverPatch.setTimeStepSize( admissibleTimeStepSize );
+  ensureLimiterPatchTimeStepDataIsConsistent(solverPatch,cellInfo);
   return admissibleTimeStepSize;
 }
 
@@ -650,9 +655,8 @@ void exahype::solvers::LimitingADERDGSolver::reduce(
     const UpdateResult& result) {
   // all reductions are written to the solver's global fields
   // the limiter's fields are synchronised in kickOffTimeStep
-  _solver->updateAdmissibleTimeStepSize(result._timeStepSize);
-  _solver->updateMeshUpdateEvent(result._meshUpdateEvent);
-
+  updateAdmissibleTimeStepSize(result._timeStepSize);
+  updateMeshUpdateEvent(result._meshUpdateEvent);
   updateGlobalObservables(solverPatch.getSolverNumber(),cellInfo);
 }
 
@@ -1258,7 +1262,7 @@ void exahype::solvers::LimitingADERDGSolver::localRecomputation(
 
     _limiter->rollbackToPreviousTimeStep(limiterPatch);
     _limiter->updateSolution(limiterPatch,limiterNeighbourMergePerformed,cellInfo._cellDescriptionsIndex,true);
-    copyTimeStepDataFromSolverPatch(solverPatch,limiterPatch);
+    copyTimeStepDataFromSolverPatch(solverPatch,limiterPatch); // restore pre-rollback limiter patch time stamp and step size
     projectFVSolutionOnDGSpace(solverPatch,limiterPatch);
   }
   else {
@@ -1280,10 +1284,12 @@ double exahype::solvers::LimitingADERDGSolver::localRecomputationBody(
     localRecomputation(solverPatch,cellInfo,limiterNeighbourMergePerformed);
   }
 
-  // 2. Compute a new time step size in ALL Cells
+  // 2. Re-compute a new time step size in ALL Cells
   double admissibleTimeStepSize = std::numeric_limits<double>::infinity();
   if ( solverPatch.getType()==SolverPatch::Type::Cell ) {
     admissibleTimeStepSize = computeTimeStepSize(solverPatch,cellInfo);
+    solverPatch.setTimeStepSize(admissibleTimeStepSize);
+    ensureLimiterPatchTimeStepDataIsConsistent(solverPatch,cellInfo);
   }
 
   // 3. Recompute the predictor in certain cells if fused time stepping is used.

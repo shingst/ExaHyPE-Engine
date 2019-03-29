@@ -820,6 +820,11 @@ void exahype::solvers::ADERDGSolver::updateTimeStepSize() {
   _stabilityConditionWasViolated = false;
 }
 
+void exahype::solvers::ADERDGSolver::updateGlobalObservables() {
+  std::copy(_nextGlobalObservables.begin(),_nextGlobalObservables.end(),
+            _globalObservables.begin());
+}
+
 void exahype::solvers::ADERDGSolver::rollbackToPreviousTimeStep() {
   _minTimeStamp    = _previousMinTimeStamp;
   _minTimeStepSize = _previousMinTimeStepSize;
@@ -2423,13 +2428,7 @@ void exahype::solvers::ADERDGSolver::updateGlobalObservables(const int solverNum
   if ( element != NotFound ) {
     CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[element];
 
-    if ( _numberOfGlobalObservables > 0 ) {
-      // TODO(Dominic): Is this correct?
-      if (cellDescription.getType() != CellDescription::Type::Cell) {
-	return;
-      }
-      //assert(cellDescription.getType()==CellDescription::Type::Cell);
-
+    if ( _numberOfGlobalObservables > 0 && cellDescription.getType() != CellDescription::Type::Cell ) {
       const double* const luh         = static_cast<double*>(cellDescription.getSolution());
       const auto& cellSize            = cellDescription.getSize();
       updateGlobalObservables(_nextGlobalObservables.data(),luh,cellSize);
