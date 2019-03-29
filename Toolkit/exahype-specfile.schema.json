@@ -852,6 +852,12 @@
             "$comment" : "With pure DG, this value is ignored. With Limiter, this value is determined by the order",
             "scope" : "compile-time"
           },
+          "cfl" : {
+            "type" : "number",
+            "title" : "Override the CFL number used. By default 0.9",
+            "scope" : "compile-time",
+            "default" : 0.9
+          },
           "halo_cells" : {
             "type" : "integer", 
             "title" : "Number of halo cells around finest grid cell which requests further refinement or wants to be kept.",

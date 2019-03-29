@@ -36,7 +36,7 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver {
     static constexpr int NumberOfDMPObservables    = {{numberOfDMPObservables}}; // only of interest if this ADERDGSolver is a component of a LimitingADERDSolver 
     static constexpr int MaxPicardIterations       = Order+1;
     static constexpr bool UseMaxPicardIterations   = {{"true" if useMaxPicardIterations else "false"}};
-    static constexpr double CFL                    = 0.9;
+    static constexpr double CFL                    = {{CFL}};
 {% if usePointSources %}
     static constexpr int NumberOfPointSources = {{numberOfPointSources}};
     double pointSourceLocation[NumberOfPointSources][DIMENSIONS];
