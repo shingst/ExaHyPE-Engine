@@ -363,7 +363,7 @@
           "title" : "Specify the stack size of each thread (in bytes) [default: 0]. If you specify 0, the default is chosen. (Changing the stack size with ulimit does not apply to TBB worker threads. This makes this parameter necessary.)",
           "minimum" : 0,
           "exclusiveMinimum" : false,
-          "default: 12582912
+          "default": 12582912
         }
       }
     }, 
