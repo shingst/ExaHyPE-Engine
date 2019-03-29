@@ -587,7 +587,6 @@ class {{project}}::{{abstractSolver}}::{{name | capitalize}} {
 };
 {% endfor %}
 
-{% if numberOfGlobalObservables > 0 %}
 //
 // Global Observables
 //
@@ -622,7 +621,7 @@ class {{project}}::{{abstractSolver}}::ReadOnlyGlobalObservables {
     // getter and setter for {{var.name}}
     double {{var.name}}() const {return _observables[{{var.offset}}];}
         
-{% else %}
+{% elif var.multiplicity > 1%}
     // getters for {{var.name}} 
     double {{var.name}}(int index) const {
       assertion(index >= 0 && index<{{var.multiplicity}});
@@ -681,7 +680,7 @@ class {{project}}::{{abstractSolver}}::GlobalObservables {
     double {{var.name}}() const {return _observables[{{var.offset}}];}
     double& {{var.name}}() {return _observables[{{var.offset}}];}
     
-{% else %}
+{% elif var.multiplicity > 1%}
     // getters for {{var.name}} 
     double {{var.name}}(int index) const {
       assertion(index >= 0 && index<{{var.multiplicity}});
@@ -710,6 +709,5 @@ class {{project}}::{{abstractSolver}}::GlobalObservables {
 {% endfor %}
 }; 
 // end of GlobalObservables
-{% endif %}
 
 #endif

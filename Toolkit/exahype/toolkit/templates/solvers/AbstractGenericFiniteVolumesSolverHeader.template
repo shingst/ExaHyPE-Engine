@@ -52,10 +52,8 @@ class {{project}}::{{abstractSolver}} : public exahype::solvers::FiniteVolumesSo
     {% for className in namingSchemes %}
     class {{className}};
     {% endfor %}
-    {% if numberOfGlobalObservables > 0 %}
     class GlobalObservables;
     class ReadOnlyGlobalObservables;
-    {% endif %}
     
     {{abstractSolver}}(
         const double maximumMeshSize,
@@ -71,12 +69,12 @@ class {{project}}::{{abstractSolver}} : public exahype::solvers::FiniteVolumesSo
     void ghostLayerFillingAtBoundary(double* const luh,const double* const luhbnd,const tarch::la::Vector<DIMENSIONS,int>& boundaryPosition) override;
     void boundaryLayerExtraction(double* const luhbnd,const double* const luh,const tarch::la::Vector<DIMENSIONS,int>& boundaryPosition) override;
     void boundaryConditions(double* const luh,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const tarch::la::Vector<DIMENSIONS, int>& posCell,const tarch::la::Vector<DIMENSIONS, int>& posBoundary) override;
-    
     {% if numberOfGlobalObservables > 0 %}
     /**
      * @return the global observables computed in the last time step.
      */
     ReadOnlyGlobalObservables getGlobalObservables() const;
+    {% endif %}
     void resetGlobalObservables(double* const globalObservables) final override;
     void updateGlobalObservables(
         double* const                               globalObservables,
@@ -84,7 +82,6 @@ class {{project}}::{{abstractSolver}} : public exahype::solvers::FiniteVolumesSo
         const tarch::la::Vector<DIMENSIONS,double>& cellSize) final override;
     void mergeGlobalObservables(double* const globalObservables,const double* const otherObservables) final override;
     void wrapUpGlobalObservables(double* const globalObservables) final override;
-    {% endif %}
     
     /// Apr 18, Coding Week: Riemann Solvers in FV. Hopefully inlined as evaluated point wise.
     double riemannSolver(double* fL, double *fR, const double* qL, const double* qR, const double* gradQL, const double* gradQR, const double* cellSize, int direction) override;
@@ -201,7 +198,6 @@ class {{project}}::{{abstractSolver}} : public exahype::solvers::FiniteVolumesSo
     
     virtual void viscousEigenvalues(const double* const Q,const int direction,double* const lambda) {}
 
-    {% if numberOfGlobalObservables > 0 %}
     /**
      * Resets the vector of global observables to some suitable initial value, e.g.
      * the smallest possible double if one wants to compute the maximum.
@@ -254,7 +250,6 @@ class {{project}}::{{abstractSolver}} : public exahype::solvers::FiniteVolumesSo
      *\param[inout] observables  The global observables.
      */
     virtual void wrapUpGlobalObservables(GlobalObservables& globalObservables) const;
-    {% endif %}
     
     /**
      * Signals a user solver that ExaHyPE just started a new time step.

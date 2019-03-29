@@ -62,10 +62,8 @@ public:
   {% for className in namingSchemes %}
   class {{className}};
   {% endfor %}
-  {% if numberOfGlobalObservables > 0 %}
   class GlobalObservables;
   class ReadOnlyGlobalObservables;
-  {% endif %}
 
   {{abstractSolver}}(
       const double maximumMeshSize,
@@ -95,6 +93,7 @@ public:
    * @return the global observables computed in the last time step.
    */
   ReadOnlyGlobalObservables getGlobalObservables() const;
+  {% endif %}
   void resetGlobalObservables(double* const globalObservables) final override;
   void updateGlobalObservables(
       double* const                               globalObservables,
@@ -102,7 +101,6 @@ public:
       const tarch::la::Vector<DIMENSIONS,double>& cellSize) final override;
   void mergeGlobalObservables(double* const globalObservables,const double* const otherObservables) final override;
   void wrapUpGlobalObservables(double* const globalObservables) final override;
-  {% endif %} 
 
   static void constantsToString(std::ostream& os);
   static void abortWithMsg(const char* const msg);
@@ -305,7 +303,6 @@ public:
   virtual void viscousFlux(const double* const Q, const double* const gradQ, double** const F);
   virtual void viscousEigenvalues(const double* const Q,const int direction,double* const lambda);
 
-  {% if numberOfGlobalObservables > 0 %}
   /**
    * Resets the vector of global observables to some suitable initial value, e.g.
    * the smallest possible double if one wants to compute the maximum.
@@ -313,7 +310,6 @@ public:
    *\param[inout] globalObservables The global observables that we want to reset.
    */
   virtual void resetGlobalObservables(GlobalObservables& globalObservables) const;
-
   /**
    * Computes observables from a cell's solution values.
    * The result will be merged with the global observables.
@@ -326,7 +322,6 @@ public:
       GlobalObservables&                          globalObservables,
       const double* const                         luh,
       const tarch::la::Vector<DIMENSIONS,double>& cellSize) const;
-
   /**
    * This method merges two vectors of (global) observables.
    *
@@ -343,7 +338,6 @@ public:
   virtual void mergeGlobalObservables(
       GlobalObservables&         globalObservables,
       ReadOnlyGlobalObservables& otherObservables) const;
-
   /**
    * Wrap up the global observables, e.g. finalise an L^2 integral
    * by applying a square root.
@@ -354,7 +348,6 @@ public:
    *\param[inout] observables  The global observables.
    */
   virtual void wrapUpGlobalObservables(GlobalObservables& globalObservables) const;
-  {% endif %}
 
   ///@}
 

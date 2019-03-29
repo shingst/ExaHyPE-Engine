@@ -70,10 +70,8 @@ public:
   {% for className in namingSchemes %}
   class {{className}};
   {% endfor %}
-  {% if numberOfGlobalObservables > 0 %}
   class GlobalObservables;
   class ReadOnlyGlobalObservables;
-  {% endif %}
 
   {{abstractSolver}}(
       const double maximumMeshSize,
@@ -265,12 +263,13 @@ public:
   void faceUnknownsProlongation(double* const lQhbndFine,double* const lFhbndFine,const double* const lQhbndCoarse,const double* const lFhbndCoarse,const int coarseGridLevel,const int fineGridLevel,const tarch::la::Vector<DIMENSIONS-1,int>& subfaceIndex) override;
   //old: void faceUnknownsRestriction(double* const lQhbndCoarse,double* const lFhbndCoarse,const double* const lQhbndFine,const double* const lFhbndFine,const int coarseGridLevel,const int fineGridLevel,const tarch::la::Vector<DIMENSIONS-1,int>& subfaceIndex) override;
   void volumeUnknownsProlongation(double* const luhFine,const double* const luhCoarse,const int coarseGridLevel,const int fineGridLevel,const tarch::la::Vector<DIMENSIONS,int>& subcellIndex) override;
-  void volumeUnknownsRestriction(double* const luhCoarse,const double* const luhFine,const int coarseGridLevel,const int fineGridLevel,const tarch::la::Vector<DIMENSIONS,int>& subcellIndex) override; 
+  void volumeUnknownsRestriction(double* const luhCoarse,const double* const luhFine,const int coarseGridLevel,const int fineGridLevel,const tarch::la::Vector<DIMENSIONS,int>& subcellIndex) override;
   {% if numberOfGlobalObservables > 0 %}
   /**
    * @return the global observables computed in the last time step.
    */
   ReadOnlyGlobalObservables getGlobalObservables() const;
+  {% endif %}
   void resetGlobalObservables(double* const globalObservables) final override;
   void updateGlobalObservables(
       double* const                               globalObservables,
@@ -278,8 +277,6 @@ public:
       const tarch::la::Vector<DIMENSIONS,double>& cellSize) final override;
   void mergeGlobalObservables(double* const globalObservables,const double* const otherObservables) final override;
   void wrapUpGlobalObservables(double* const globalObservables) final override;
-  {% endif %}
-
 
   static void constantsToString(std::ostream& os);
   static void abortWithMsg(const char* const msg);
@@ -435,8 +432,7 @@ public:
    */
   virtual void viscousFlux(const double* const Q, const double* const gradQ, double** const F);
   virtual void viscousEigenvalues(const double* const Q,const int direction,double* const lambda);
-
-  {% if numberOfGlobalObservables > 0 %}
+  
   /**
    * Resets the vector of global observables to some suitable initial value, e.g.
    * the smallest possible double if one wants to compute the maximum.
@@ -485,7 +481,6 @@ public:
    *\param[inout] observables  The global observables.
    */
   virtual void wrapUpGlobalObservables(GlobalObservables& globalObservables) const;
-  {% endif %}
 
   /**
    * Signals a user solver that ExaHyPE just started a new time step.
