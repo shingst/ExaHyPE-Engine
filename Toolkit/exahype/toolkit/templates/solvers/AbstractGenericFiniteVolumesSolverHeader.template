@@ -32,7 +32,7 @@ class {{project}}::{{abstractSolver}} : public exahype::solvers::FiniteVolumesSo
     static constexpr int NumberOfGlobalObservables = {{numberOfGlobalObservables}};
     static constexpr int PatchSize                 = {{patchSize}};
     static constexpr int GhostLayerWidth           = {{ghostLayerWidth}};
-    static constexpr double CFL                    = 0.9;
+    static constexpr double CFL                    = {{CFL}};
     
     // virtual getters for the constexpr's ; TODO(Dominic): Who uses these methods?
     int constexpr_getNumberOfVariables()  const { return NumberOfVariables; };

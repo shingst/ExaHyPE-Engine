@@ -110,48 +110,48 @@ RECURSIVE SUBROUTINE PDEFluxGRMHD(F,Q)
     REAL :: rhoeps,dd,tau,s2,sm_cov(3),sm(3)
     !
     F = 0.0 
-    !
+    ! 
     !PRINT *,"SIZE(F)",SIZE(F)
 	!IF( ANY( ISNAN(Q) )) THEN
 	!	PRINT *,' Q NAN ',nVar
- !       PRINT *, Q
-	!	STOP
- !   ENDIF 
- !   !
-	!IF(ANY(Q(6:8).NE.0.0)) THEN
- !       PRINT *, Q(6:8)
- !       PRINT *, "I feel magnetized :-( PDEFluxGRMHD in"
- !       ERROR STOP
- !   ENDIF
+    !       PRINT *, Q
+   	!	STOP
+    !   ENDIF 
+    !   !
+   	!IF(ANY(Q(6:8).NE.0.0)) THEN
+    !       PRINT *, Q(6:8)
+    !       PRINT *, "I feel magnetized :-( PDEFluxGRMHD in"
+    !       ERROR STOP
+    !   ENDIF
     !
-  CALL PDECons2PrimGRMHD(V,Q,iErr)
-  !
+    CALL PDECons2PrimGRMHD(V,Q,iErr)
+    !
     !F(1,1) = V(1)*V(2)
     !RETURN
 	!IF(ANY(Q(6:8).NE.0.0)) THEN
- !       PRINT *, Q(6:8)
- !       PRINT *, "I feel magnetized :-( PDEFluxGRMHD in 2"
- !       ERROR STOP
- !   ENDIF
+    !       PRINT *, Q(6:8)
+    !       PRINT *, "I feel magnetized :-( PDEFluxGRMHD in 2"
+    !       ERROR STOP
+    !   ENDIF
     !
-  gamma1 = EQN%gamma/(EQN%gamma-1.0)
-  rho    = V(1)
-  !
+    gamma1 = EQN%gamma/(EQN%gamma-1.0)
+    rho    = V(1)
+    !
 	!IF( ANY( ISNAN(Q) )) THEN
 	!	PRINT *,' Q NAN ',iErr,nVar
- !       PRINT *, Q
-	!	ERROR STOP
- !   ENDIF 
- !   !
-	!IF( ANY( ISNAN(V) )) THEN
-	!	PRINT *,' V NAN ',iErr ,nVar
- !       PRINT *, V
-	!	PRINT *,' Q:' 
- !       PRINT *, Q
- !       !i=20
- !       !V(i) = Q(1)/(Q(2)-Q(2))
-	!	ERROR STOP
- !   ENDIF 
+    !       PRINT *, Q
+    	!	ERROR STOP
+    !   ENDIF 
+    !   !
+    	!IF( ANY( ISNAN(V) )) THEN
+    	!	PRINT *,' V NAN ',iErr ,nVar
+    !       PRINT *, V
+    	!	PRINT *,' Q:' 
+    !       PRINT *, Q
+    !       !i=20
+    !       !V(i) = Q(1)/(Q(2)-Q(2))
+    	!	ERROR STOP
+    !   ENDIF 
     
   DO i=1,3
 	  v_cov(i) = V(1+i)
@@ -334,7 +334,7 @@ RECURSIVE SUBROUTINE PDEFluxGRMHD(F,Q)
   F(9,2)   = lapse*F(9,2) - shift(2)*Q(9)
 #ifdef Dim3  
   F(9,3)   = lapse*F(9,3) - shift(3)*Q(9)
-#endif 
+#endif  
 #endif 
   !!
   !F(2:nVar,1:3) = 0.
@@ -349,8 +349,8 @@ RECURSIVE SUBROUTINE PDEFluxGRMHD(F,Q)
   !      PRINT *,"uem", uem
   !      PRINT *,"p", p  
   !      PRINT *, "I feel strange :-( PDEFluxGRMHD "
- !       ERROR STOP
- !   ENDIF
+  !      ERROR STOP
+  !  ENDIF
     !
   CONTINUE      
   !
@@ -574,7 +574,7 @@ RECURSIVE  SUBROUTINE PDEFluxPrimGRMHD(F,V,Q)
   F(9,2)   = lapse*F(9,1) - shift(2)*Q(9)
 #ifdef Dim3
   F(9,3)   = lapse*F(9,1) - shift(3)*Q(9)
-#endif 
+#endif
 #endif 
   !
   CONTINUE      
@@ -822,7 +822,7 @@ RECURSIVE SUBROUTINE PDEFluxPrimVectorGRMHD(F,V,Q)
   F(:,9,2)   = lapse(:)*F(:,9,1) - shift(:,2)*Q(:,9)
 #ifdef Dim3
   F(:,9,3)   = lapse(:)*F(:,9,1) - shift(:,3)*Q(:,9)
-#endif 
+#endif
 #endif 
   !
   CONTINUE    
@@ -868,7 +868,7 @@ RECURSIVE SUBROUTINE PDENCPGRMHD(BgradQ,Q,gradQIn)
     !    ERROR STOP
     !ENDIF
     !
-    !
+	!
     !BgradQ = 0.0 
 	DO i=1,nVar
         BgradQ(i) = 0.
@@ -891,7 +891,7 @@ RECURSIVE SUBROUTINE PDENCPGRMHD(BgradQ,Q,gradQIn)
 	shift(3) = Q(13)
 	!
 	DO i=1,6
-	gammaij(i) = Q(13+i) 
+	    gammaij(i) = Q(13+i) 
 	ENDDO
 	g_cov(1,1) = Q(14)
 	g_cov(1,2) = Q(15)
@@ -1107,7 +1107,7 @@ RECURSIVE SUBROUTINE PDENCPGRMHD(BgradQ,Q,gradQIn)
 	!
 	DO i=1,nVar
 		BgradQ(i) = AQx(i) + BQy(i) + CQz(i)  
-	ENDDO
+    ENDDO
 	!
     
     IF(ABS(BgradQ(2)).gt.1e-8) THEN
@@ -1148,7 +1148,7 @@ RECURSIVE SUBROUTINE PDENCPPrimGRMHD(BgradQ,Vc,Q,gradQ)
 	REAL :: AQx(nVar), BQy(nVar), CQz(nVar) 
 	REAL :: lapse, shift(3), gammaij(6), delta(3,3), B_cov(3), vxB_cov(3), vxb_contr(3), psi, S_contr(3), qb_contr(3), B_contr(3) 
 	REAL :: v2,v_contr(3),uem,b2,e2,gp,gm,lf,w,ww,gamma1,rho,v_cov(3), w_ij, wim    
-	INTEGER :: i,j,k,l,m,iErr, ccount    
+	INTEGER :: i,j,k,l,m,iErr, ccount
 	!
 !    DO dim=1,nDim
 !	    DO i =1,nVar
@@ -2382,7 +2382,7 @@ RECURSIVE SUBROUTINE PDEEigenvaluesGRMHD(L,Q,normal)
     g_cov(2,1) = V(15)
     g_cov(3,1) = V(16)
     g_cov(3,2) = V(18)
-    !
+    ! 
     CALL MatrixInverse3x3(g_cov,g_contr,gp)
     gp = SQRT(gp)
     gm = 1./gp
@@ -2559,7 +2559,7 @@ RECURSIVE SUBROUTINE PDEEigenvectorsGRMHD(R,L,iR,Q,normal)
 		shift = VP(10+i)
 	ENDDO
     p      = VP(5)
-    ! 
+    !
     psi = VP(9)
     lapse = VP(10)
     !
@@ -2572,7 +2572,7 @@ RECURSIVE SUBROUTINE PDEEigenvectorsGRMHD(R,L,iR,Q,normal)
     g_cov(2,1) = VP(15)
     g_cov(3,1) = VP(16)
     g_cov(3,2) = VP(18)
-    !
+    !  
     CALL MatrixInverse3x3(g_cov,g_contr,gp)
     gp = SQRT(gp)
     gm = 1./gp
@@ -2996,10 +2996,10 @@ RECURSIVE SUBROUTINE PDEMatrixBGRMHD(Bn,Q,normal)
   A = 0.
   B = 0.
   C = 0.
-    !
-    ccount=0
-    ! 
-    DO i=1,3
+  !
+  ccount=0
+  ! 
+  DO i=1,3
         ! shift
         !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         j=1
@@ -3083,9 +3083,9 @@ RECURSIVE SUBROUTINE PDEMatrixBGRMHD(Bn,Q,normal)
                 ENDIF
 #endif  		
                 ! 
-            ENDIF
-          ENDDO
-      ENDDO
+          ENDIF
+        ENDDO
+    ENDDO
     !lapse
     !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     j=1
@@ -3142,7 +3142,7 @@ RECURSIVE SUBROUTINE PDEMatrixBGRMHD(Bn,Q,normal)
 #endif
   !
   Bn = A*nv(1) + B*nv(2) + C*nv(3) 
-  !  
+  !   
 END SUBROUTINE PDEMatrixBGRMHD  
     
 
@@ -3177,8 +3177,8 @@ RECURSIVE SUBROUTINE PDECons2PrimGRMHD(V,Q,iErr)
 	LOGICAL :: FAILED
 	!  
 	iErr = 0     
-        tol = 1.0e-18
-        !
+    tol = 1.0e-18
+    !
 	!V = Q
 	!RETURN
 	V=0.

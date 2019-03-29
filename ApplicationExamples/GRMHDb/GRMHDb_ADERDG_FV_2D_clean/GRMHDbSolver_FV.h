@@ -149,7 +149,6 @@ class GRMHDb::GRMHDbSolver_FV : public GRMHDb::AbstractGRMHDbSolver_FV {
     void nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ) override;
 
     /* pointSource() function not included, as requested in the specification file */
-
 	double riemannSolver(double* fL, double *fR, const double* qL, const double* qR, const double* gradQL, const double* gradQR, const double* cellSize, int normalNonZero) override;
 };
 

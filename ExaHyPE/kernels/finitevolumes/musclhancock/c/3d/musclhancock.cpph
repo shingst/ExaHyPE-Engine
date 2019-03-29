@@ -68,7 +68,7 @@ double kernels::finitevolumes::musclhancock::c::solutionUpdate(
 
   // 2. Compute slopes TODO(Dominic): Make sure to only consider parameters in luh
   idx4 idx(stride, stride, stride, numberOfData);
-  idx5 idx_slope(stride,stride,stride,DIMENSIONS,numberOfVariables);
+  idx5 idx_slope(stride,stride,stride,DIMENSIONS,numberOfData);
 
   constexpr int variablesPerPatch = stride*stride*stride*numberOfData;
   double slope[variablesPerPatch*DIMENSIONS] = {0.0};

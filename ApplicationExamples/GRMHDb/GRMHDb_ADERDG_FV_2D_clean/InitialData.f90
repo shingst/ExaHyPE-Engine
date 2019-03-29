@@ -1,7 +1,7 @@
 ! GRMHDb Initial Data
 
 #define GRMHD
-#define RNSTOV
+#define NoRNSTOV
 
 RECURSIVE SUBROUTINE PDESetup(myrank)
 	USE, INTRINSIC :: ISO_C_BINDING
@@ -67,7 +67,7 @@ RECURSIVE SUBROUTINE PDESetup(myrank)
     CASE('Sod')
     	EQN%gamma = 5.0/3.0
     CASE('Riemann0')
-        EQN%gamma = 5.0/3.0
+    	EQN%gamma = 5.0/3.0
 	CASE('GRMHDAccretion')
 		EQN%gamma = 4./3. 
 	CASE('GRMHDTOV')
@@ -287,6 +287,7 @@ RECURSIVE SUBROUTINE InitialField(xGP,tGP,u0)
             v0(17) = 1.0
             v0(19) = 1.0 
         ENDIF
+        v0(2)=0.2
         !
     CASE('GRMHDAlfvenWave') 
        rho0 = 1.

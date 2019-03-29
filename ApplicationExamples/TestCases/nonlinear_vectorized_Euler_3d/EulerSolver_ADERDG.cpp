@@ -260,7 +260,7 @@ void Euler::EulerSolver_ADERDG::boundaryValues(const double* const x,const doubl
     flux(Q,F);
     for (int v=0; v<NumberOfVariables; v++) {
       stateOut[v] += Q[v]            * kernels::gaussLegendreWeights[Order][i];
-      fluxOut[v]  += F[faceIndex][v] * kernels::gaussLegendreWeights[Order][i];
+      fluxOut[v]  += F[normalNonZero][v] * kernels::gaussLegendreWeights[Order][i];
     }
   }
   

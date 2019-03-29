@@ -6,13 +6,14 @@ MODULE TECPLOTPLOTTERmod
     ! ---------------------------------------------
     !PRIVATE
     ! ---------------------------------------------
-    INTEGER :: M,nSub_DG  !
+    INTEGER :: M,nSub_DG,nSub_DG_node  !
     INTEGER :: FVbasisSize,FVGhostLayerWidth
     !INTEGER :: nGPMC
-    INTEGER :: nSubLimV(3),nSubLimV_GL(3)
+    INTEGER :: nSubLimV(3),nSubLimV_GL(3),nSubLim_patch
     INTEGER :: nGPM, nGPVM(3)
     INTEGER :: nFace, nVertex
     INTEGER :: ReferenceElement(1:3,1:8)
+    INTEGER :: nSub_DGV(3), nSub_DG_nodeV(3), nSubLim_nodeV(3),nSubLim_patchV(3)
     INTEGER, ALLOCATABLE :: idxn_lim(:,:,:)
     INTEGER, ALLOCATABLE :: subtri_lim(:,:)
     REAL, ALLOCATABLE :: allsubxi_lim(:,:)
@@ -39,7 +40,7 @@ MODULE TECPLOTPLOTTERmod
     PUBLIC
     ! ---------------------------------------------
     INTEGER :: nDOFm
-    INTEGER :: nSubLim,nSubLim_GL
+    INTEGER :: nSubLim,nSubLim_GL,nSubLim_node
 ! ------------------------------------------
 INTERFACE 
 
@@ -453,7 +454,7 @@ RECURSIVE SUBROUTINE ElementTECPLOTPLOTTER(wh,lx0,ldx,limiter)
 	   QN(:) = LocNode(:,j)
 	   xvec = lx0 + allsubxi(:,j)*ldx
 	   CALL PDECons2Prim(VN,QN,iErr)
-	   CALL PDEAuxVar(AuxNode,QN,xvec)
+	   CALL PDEAuxVar(AuxNode,QN,xvec(1:nDim))
 	   !AuxNode=0.
 	   !print *, 'Node of elem=',Element_c,'=', xvec(1:nDim)
 	     
@@ -545,7 +546,7 @@ RECURSIVE SUBROUTINE ElementTECPLOTPLOTTER_ADERDG(wh,lx0,ldx,limiter)
 	       QN(:) = LocNode(:,j)
 	       xvec = lx0 + allsubxi(:,j)*ldx
 	       CALL PDECons2Prim(VN,QN,iErr)
-	       CALL PDEAuxVar(AuxNode,QN,xvec)
+	       CALL PDEAuxVar(AuxNode,QN,xvec(1:nDim))
 	       !AuxNode=0.
 	       !print *, 'Node of elem=',Element_c,'=', xvec(1:nDim)
 	         
@@ -621,7 +622,7 @@ RECURSIVE SUBROUTINE ElementTECPLOTPLOTTER_FV(wh,lx0,ldx,limiter)
 	       xvec = lx0 + allsubxi_lim(:,j)*ldx
            !WRITE(*,'(i5.2,E16.6,E16.6,E16.6)') j,xvec
 	       CALL PDECons2Prim(VN,QN,iErr)
-	       CALL PDEAuxVar(AuxNode,QN,xvec)
+	       CALL PDEAuxVar(AuxNode,QN,xvec(1:nDim))
 	       !AuxNode=0.
 	       !print *, 'Node of elem=',Element_c,'=', xvec(1:nDim)
 	         
@@ -699,7 +700,9 @@ RECURSIVE SUBROUTINE GetSubcell_wh(LocNode,wh)
      !   ENDDO
      !ENDDO
      !Stencil=nSubLimV(3)+1
+#ifdef Dim3
    DO kk = 1, nSubLimV(3)+1   ! this is wrong in 2D
+#endif
     DO jj = 1, nSubLimV(2)+1
      DO ii = 1, nSubLimV(1)+1
          ccc=ccc+1
@@ -739,7 +742,9 @@ RECURSIVE SUBROUTINE GetSubcell_wh(LocNode,wh)
     ENDDO
          !STOP
     !STOP
-    ENDDO
+#ifdef Dim3
+   ENDDO
+#endif
          !STOP
    !
    DO ccc = 1,totsubel 
@@ -939,6 +944,7 @@ RECURSIVE SUBROUTINE SetMainParameters(N_in,basisSize,Ghostlayers)
     M=N_in
     !
 	nSub_DG=M+1    ! I want to plot (N+1)^nDim subelements for an unlimited DG element.
+	nSub_DG_node=nSub_DG+1    ! I want to plot (N+1)^nDim subelements for an unlimited DG element.
 	!nSubnodes_DG=nSub_DG+1  
     FVbasisSize = basisSize
     FVGhostLayerWidth = Ghostlayers
@@ -947,33 +953,63 @@ RECURSIVE SUBROUTINE SetMainParameters(N_in,basisSize,Ghostlayers)
 	!nDOF = M+1
 	nDOFm = (M+1)**nDim
 	nSubLim = FVbasisSize !2*M+1
+    nSubLim_node = FVbasisSize+1
 	nSubLim_GL = FVGhostLayerWidth !2*M+1
+    nSubLim_patch=nSubLim+2*nSubLim_GL
 	nGPM  = M + 1
     PRINT *, ' zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz'
     PRINT *, '     SET MAIN PARAMETERS '
     PRINT *, ' vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv'
     PRINT *, ' nSubLim = ', nSubLim
     PRINT *, ' nSubLim_GL = ', nSubLim_GL
+    PRINT *, ' nSubLim_GL = ', nSubLim_GL
+    PRINT *, ' nSubLim_GL = ', nSubLim_GL
+    PRINT *, ' nSubLim_GL = ', nSubLim_GL
+    PRINT *, ' nSubLim_GL = ', nSubLim_GL
 	if(nDim .eq. 3) then
 		nSubLimV(1) = nSubLim
 		nSubLimV(2) = nSubLim
 		nSubLimV(3) = nSubLim
+		nSubLim_nodeV(1) = nSubLim_node
+		nSubLim_nodeV(2) = nSubLim_node
+		nSubLim_nodeV(3) = nSubLim_node
 		nSubLimV_GL(1) = nSubLim_GL
 		nSubLimV_GL(2) = nSubLim_GL
 		nSubLimV_GL(3) = nSubLim_GL
+		nSubLim_patchV(1) = nSubLim_patch
+		nSubLim_patchV(2) = nSubLim_patch
+		nSubLim_patchV(3) = nSubLim_patch 
 		nGPVM(1)=nGPM
 		nGPVM(2)=nGPM
 		nGPVM(3)=nGPM
+		nSub_DGV(1)=nSub_DG
+		nSub_DGV(2)=nSub_DG
+		nSub_DGV(3)=nSub_DG
+		nSub_DG_nodeV(1)=nSub_DG_node
+		nSub_DG_nodeV(2)=nSub_DG_node
+		nSub_DG_nodeV(3)=nSub_DG_node
 	else
 		nSubLimV(1) = nSubLim
 		nSubLimV(2) = nSubLim
 		nSubLimV(3) = 1
+		nSubLim_nodeV(1) = nSubLim_node
+		nSubLim_nodeV(2) = nSubLim_node
+		nSubLim_nodeV(3) = 1
 		nSubLimV_GL(1) = nSubLim_GL
 		nSubLimV_GL(2) = nSubLim_GL
-		nSubLimV_GL(3) = 0 
+		nSubLimV_GL(3) = 1 
+		nSubLim_patchV(1) = nSubLim_patch
+		nSubLim_patchV(2) = nSubLim_patch
+		nSubLim_patchV(3) = 1 
 		nGPVM(1)=nGPM
 		nGPVM(2)=nGPM
 		nGPVM(3)=1
+		nSub_DGV(1)=nSub_DG
+		nSub_DGV(2)=nSub_DG
+		nSub_DGV(3)=1
+		nSub_DG_nodeV(1)=nSub_DG_node
+		nSub_DG_nodeV(2)=nSub_DG_node
+		nSub_DG_nodeV(3)=1
 	end if
     PRINT *, ' nSubLimV = ', nSubLimV
     PRINT *, ' nSubLimV_GL = ', nSubLimV_GL
@@ -1055,11 +1091,12 @@ RECURSIVE SUBROUTINE ComputeOutputMatrices
 	real	:: aux(3)
 	integer, allocatable :: idxn(:,:,:)
 	
-	ALLOCATE(SubOutputMatrix(nGPM**3,(nSub_DG+1)**3), SubGradOutputMatrix(nGPM**3,(nSub_DG+1)**3,3)) ! First allocate the Outputmatrices
+	ALLOCATE(SubOutputMatrix(nGPM**nDim,(nSub_DG+1)**nDim), SubGradOutputMatrix(nGPM**nDim,(nSub_DG+1)**nDim,nDim)) ! First allocate the Outputmatrices
 	
 	DO i = 1, nSub_DG+1 
 		subxi(i) = REAL(i-1)/REAL(nSub_DG) 
     ENDDO
+    Print *,"nSub_DG_nodeV:", nSub_DG_nodeV
 	!print *, subxi
 	!stop
     !
@@ -1068,9 +1105,9 @@ RECURSIVE SUBROUTINE ComputeOutputMatrices
     !                =  A_ml*p_l           => A_ml    = { phi_l(x_m) }^T
     !                = p_l*{A^T}_lm        =>{A^T}_lm =   phi_l(x_m)  
 	cnt = 0
-     DO k = 1, nSub_DG+1
-        DO j = 1, nSub_DG+1 
-           DO i = 1, nSub_DG+1  
+     DO k = 1, nSub_DG_nodeV(3)
+        DO j = 1, nSub_DG_nodeV(2)
+           DO i = 1, nSub_DG_nodeV(1)
               cnt = cnt + 1 
               CALL MBaseFunc1D(psi_i,psi_xi,subxi(i))
               CALL MBaseFunc1D(psi_j,psi_xj,subxi(j))
@@ -1094,10 +1131,12 @@ RECURSIVE SUBROUTINE ComputeOutputMatrices
 					   aux(2)=psi_xj(jj)
 					   aux(3)=psi_k(kk)
                        SubGradOutputMatrix(counter,cnt,2) = PRODUCT( aux(1:nDim) )
+#ifdef Dim3                       
 					   aux(1)=psi_i(ii)
 					   aux(2)=psi_j(jj)
 					   aux(3)=psi_xk(kk) 
                        SubGradOutputMatrix(counter,cnt,3) = PRODUCT( aux(1:nDim) )
+#endif                       
                     ENDDO
                     !PRINT *, SubOutputMatrix(counter,cnt)
                  ENDDO
@@ -1108,13 +1147,13 @@ RECURSIVE SUBROUTINE ComputeOutputMatrices
 
 	
 	! Compute subtri
-	ALLOCATE( idxn(nSub_DG+1,nSub_DG+1,nSub_DG+1),subtri(8,nSub_DG**3),allsubxi(3,(nSub_DG+1)**3)) !,allsubxi_GL(3,(M+1)**3) )
+	ALLOCATE( idxn(nSub_DG_nodeV(1),nSub_DG_nodeV(2),nSub_DG_nodeV(3)),subtri(8,nSub_DGV(1)*nSub_DGV(2)*nSub_DGV(3)),allsubxi(3,nSub_DG_nodeV(1)*nSub_DG_nodeV(2)*nSub_DG_nodeV(3))) !,allsubxi_GL(3,(M+1)**3) )
      idxn = 0 
      !allsubxi_GL=0.
      c = 0 
-     DO k = 1, nSub_DG+1
-        DO j = 1, nSub_DG+1 
-           DO i = 1, nSub_DG+1 
+     DO k = 1, nSub_DG_nodeV(3)
+        DO j = 1, nSub_DG_nodeV(2)
+           DO i = 1, nSub_DG_nodeV(1)
               c = c + 1 
               idxn(i,j,k) = c
 			  allsubxi(1,c) = REAL(i-1)/REAL(nSub_DG)
@@ -1123,13 +1162,15 @@ RECURSIVE SUBROUTINE ComputeOutputMatrices
            ENDDO
         ENDDO
      ENDDO
+     
+    Print *,"nSubLim_nodeV:", nSubLim_nodeV
 	! Compute subtri
-	ALLOCATE( idxn_lim(nSubLim+1,nSubLim+1,nSubLim+1),subtri_lim(8,nSubLim**3),allsubxi_lim(3,(nSubLim+1)**3) )
+	ALLOCATE( idxn_lim(nSubLim_nodeV(1),nSubLim_nodeV(2),nSubLim_nodeV(3)),subtri_lim(8,nSubLimV(1)*nSubLimV(2)*nSubLimV(3)),allsubxi_lim(3,nSubLim_nodeV(1)*nSubLim_nodeV(2)*nSubLim_nodeV(3)) )
      idxn_lim = 0 
      c = 0 
-     DO k = 1, nSubLim+1
-        DO j = 1, nSubLim+1 
-           DO i = 1, nSubLim+1 
+     DO k = 1, nSubLim_nodeV(3)
+        DO j = 1, nSubLim_nodeV(2)
+           DO i = 1, nSubLim_nodeV(1)
               c = c + 1 
               idxn_lim(i,j,k) = c
 			  allsubxi_lim(1,c) = REAL(i-1)/REAL(nSubLim)
@@ -1139,51 +1180,59 @@ RECURSIVE SUBROUTINE ComputeOutputMatrices
         ENDDO
      ENDDO
 
+    Print *,"nSub_DGV:", nSub_DGV
      c = 0 
-     DO k = 1, nSub_DG 
-        DO j = 1, nSub_DG
-           DO i = 1, nSub_DG 
+     DO k = 1, nSub_DGV(3) 
+        DO j = 1, nSub_DGV(2) 
+           DO i = 1, nSub_DGV(1)  
               c = c + 1 
 			  subtri(1,c) =idxn(i,j,k)
 			  subtri(2,c) =idxn(i+1,j,k)
 			  subtri(3,c) =idxn(i+1,j+1,k)
 			  subtri(4,c) =idxn(i,j+1,k)
+#ifdef Dim3              
 			  subtri(5,c) =idxn(i,j,k+1)
 			  subtri(6,c) =idxn(i+1,j,k+1)
 			  subtri(7,c) =idxn(i+1,j+1,k+1)
 			  subtri(8,c) =idxn(i,j+1,k+1)        
+#endif              
            ENDDO
         ENDDO
      ENDDO
 
+    Print *,"nSubLimV:", nSubLimV
      c = 0 
-     DO k = 1, nSubLim 
-        DO j = 1, nSubLim
-           DO i = 1, nSubLim 
+     DO k = 1, nSubLimV(3) 
+        DO j = 1,  nSubLimV(2) 
+           DO i = 1,  nSubLimV(1)  
               c = c + 1 
 			  subtri_lim(1,c) =idxn_lim(i  ,j  ,k  )
 			  subtri_lim(2,c) =idxn_lim(i+1,j  ,k  )
 			  subtri_lim(3,c) =idxn_lim(i+1,j+1,k  )
 			  subtri_lim(4,c) =idxn_lim(i  ,j+1,k  )
+#ifdef Dim3              
 			  subtri_lim(5,c) =idxn_lim(i  ,j  ,k+1)
 			  subtri_lim(6,c) =idxn_lim(i+1,j  ,k+1)
 			  subtri_lim(7,c) =idxn_lim(i+1,j+1,k+1)
 			  subtri_lim(8,c) =idxn_lim(i  ,j+1,k+1)        
+#endif              
            ENDDO
         ENDDO
      ENDDO
 
+    Print *,"nSubLim_patchV:", nSubLim_patchV
     !PRINT *, " matrix NOT ALLOCATED ZZZZZZZZZZZZZZZZZZZZ"
-	ALLOCATE( idxn_Lim_S2U(nSubLim+2*nSubLim_GL,nSubLim+2*nSubLim_GL,nSubLim+2*nSubLim_GL), idxn_Lim_U2S(3,(nSubLim+2*nSubLim_GL)**3),subtri_lim_Exa(8,(nSubLim+1)**3), Corner_Vtx(8,(nSubLim+1)**3) )
+	ALLOCATE( idxn_Lim_S2U(nSubLim_patchV(1),nSubLim_patchV(2),nSubLim_patchV(3)))
+    ALLOCATE( idxn_Lim_U2S(3,nSubLim_patchV(1)*nSubLim_patchV(2)*nSubLim_patchV(3)),subtri_lim_Exa(8,nSubLim_nodeV(1)*nSubLim_nodeV(2)*nSubLim_nodeV(3)), Corner_Vtx(8,nSubLim_nodeV(1)*nSubLim_nodeV(2)*nSubLim_nodeV(3)) )
     !PRINT *, " matrix ALLOCATED ZZZZZZZZZZZZZZZZZZZZ"
      !idxn_lim = 0 
      c = 0 
      idxn_Lim_u2S=0
      idxn_Lim_S2U=0
      Corner_Vtx=.FALSE.
-     DO k = 1, nSubLim+2*nSubLim_GL
-        DO j = 1, nSubLim+2*nSubLim_GL
-           DO i = 1, nSubLim+2*nSubLim_GL
+     DO k = 1, nSubLim_patchV(3)
+        DO j = 1, nSubLim_patchV(2)
+           DO i = 1, nSubLim_patchV(1)
               c = c + 1 
               idxn_Lim_S2U(i,j,k) = c	
               idxn_Lim_u2S(1,c) = i	  
@@ -1193,107 +1242,126 @@ RECURSIVE SUBROUTINE ComputeOutputMatrices
         ENDDO
      ENDDO
 
+    ! Print *,"idxn_Lim_u2S: DONE!" 
     !PRINT *, " matrix DEFINED: 1st block ZZZZZZZZZZZZZZZZZZZZ"
      c = 0 
      subtri_lim_Exa=0
-     DO k = 1, nSubLim+1
-        DO j = 1, nSubLim+1
-           DO i = 1, nSubLim+1 
+     DO k = 1, nSubLim_nodeV(3)
+        DO j = 1, nSubLim_nodeV(2)
+           DO i = 1, nSubLim_nodeV(1)
               c = c + 1 
-			  subtri_lim_Exa(1,c) =idxn_Lim_S2U(nSubLim_GL+i-1,nSubLim_GL+j-1,nSubLim_GL+k-1)
-			  subtri_lim_Exa(2,c) =idxn_Lim_S2U(nSubLim_GL+i  ,nSubLim_GL+j-1,nSubLim_GL+k-1)
-			  subtri_lim_Exa(3,c) =idxn_Lim_S2U(nSubLim_GL+i  ,nSubLim_GL+j  ,nSubLim_GL+k-1)
-			  subtri_lim_Exa(4,c) =idxn_Lim_S2U(nSubLim_GL+i-1,nSubLim_GL+j  ,nSubLim_GL+k-1)
-			  subtri_lim_Exa(5,c) =idxn_Lim_S2U(nSubLim_GL+i-1,nSubLim_GL+j-1,nSubLim_GL+k  )
-			  subtri_lim_Exa(6,c) =idxn_Lim_S2U(nSubLim_GL+i  ,nSubLim_GL+j-1,nSubLim_GL+k  )
-			  subtri_lim_Exa(7,c) =idxn_Lim_S2U(nSubLim_GL+i  ,nSubLim_GL+j  ,nSubLim_GL+k  )
-			  subtri_lim_Exa(8,c) =idxn_Lim_S2U(nSubLim_GL+i-1,nSubLim_GL+j  ,nSubLim_GL+k  )
+#ifdef Dim3              
+			  subtri_lim_Exa(1,c) =idxn_Lim_S2U(nSubLimV_GL(1)+i-1,nSubLimV_GL(2)+j-1,nSubLimV_GL(3)+k-1)
+			  subtri_lim_Exa(2,c) =idxn_Lim_S2U(nSubLimV_GL(1)+i  ,nSubLimV_GL(2)+j-1,nSubLimV_GL(3)+k-1)
+			  subtri_lim_Exa(3,c) =idxn_Lim_S2U(nSubLimV_GL(1)+i  ,nSubLimV_GL(2)+j  ,nSubLimV_GL(3)+k-1)
+			  subtri_lim_Exa(4,c) =idxn_Lim_S2U(nSubLimV_GL(1)+i-1,nSubLimV_GL(2)+j  ,nSubLimV_GL(3)+k-1)
+			  subtri_lim_Exa(5,c) =idxn_Lim_S2U(nSubLimV_GL(1)+i-1,nSubLimV_GL(2)+j-1,nSubLimV_GL(3)+k  )
+			  subtri_lim_Exa(6,c) =idxn_Lim_S2U(nSubLimV_GL(1)+i  ,nSubLimV_GL(2)+j-1,nSubLimV_GL(3)+k  )
+			  subtri_lim_Exa(7,c) =idxn_Lim_S2U(nSubLimV_GL(1)+i  ,nSubLimV_GL(2)+j  ,nSubLimV_GL(3)+k  )
+			  subtri_lim_Exa(8,c) =idxn_Lim_S2U(nSubLimV_GL(1)+i-1,nSubLimV_GL(2)+j  ,nSubLimV_GL(3)+k  )
+#else
+			  subtri_lim_Exa(1,c) =idxn_Lim_S2U(nSubLimV_GL(1)+i-1,nSubLimV_GL(2)+j-1,nSubLimV_GL(3)+k-1)
+			  subtri_lim_Exa(2,c) =idxn_Lim_S2U(nSubLimV_GL(1)+i  ,nSubLimV_GL(2)+j-1,nSubLimV_GL(3)+k-1)
+			  subtri_lim_Exa(3,c) =idxn_Lim_S2U(nSubLimV_GL(1)+i  ,nSubLimV_GL(2)+j  ,nSubLimV_GL(3)+k-1)
+			  subtri_lim_Exa(4,c) =idxn_Lim_S2U(nSubLimV_GL(1)+i-1,nSubLimV_GL(2)+j  ,nSubLimV_GL(3)+k-1) 
+			  subtri_lim_Exa(5,c) =idxn_Lim_S2U(nSubLimV_GL(1)+i-1,nSubLimV_GL(2)+j-1,nSubLimV_GL(3)+k-1)
+			  subtri_lim_Exa(6,c) =idxn_Lim_S2U(nSubLimV_GL(1)+i  ,nSubLimV_GL(2)+j-1,nSubLimV_GL(3)+k-1)
+			  subtri_lim_Exa(7,c) =idxn_Lim_S2U(nSubLimV_GL(1)+i  ,nSubLimV_GL(2)+j  ,nSubLimV_GL(3)+k-1)
+			  subtri_lim_Exa(8,c) =idxn_Lim_S2U(nSubLimV_GL(1)+i-1,nSubLimV_GL(2)+j  ,nSubLimV_GL(3)+k-1) 
+#endif
            ENDDO
         ENDDO
      ENDDO
+    !Print *,"subtri_lim_Exa: DONE!" 
     !PRINT *, " matrix DEFINED: 2nd block ZZZZZZZZZZZZZZZZZZZZ" 
      i=1
      j=1
-     DO k=1,nSubLim+1 
+     DO k=1,nSubLim_nodeV(3)
          c=idxn_lim(i,j,k)
 		 Corner_Vtx(1,c) = .TRUE. !
 		 Corner_Vtx(5,c) = .TRUE. !
      ENDDO
-     i=nSubLim+1
+     i=nSubLim_nodeV(1)
      j=1
-     DO k=1,nSubLim+1
+     DO k=1,nSubLim_nodeV(3)
          c=idxn_lim(i,j,k)
 		 Corner_Vtx(2,c) = .TRUE. !
 		 Corner_Vtx(6,c) = .TRUE. !
      ENDDO
-     i=nSubLim+1
-     j=nSubLim+1
-     DO k=1,nSubLim+1
+     !Print *,"Corner_Vtx: 1!" 
+     i=nSubLim_nodeV(1)
+     j=nSubLim_nodeV(2)
+     DO k=1,nSubLim_nodeV(3)
          c=idxn_lim(i,j,k)
 		 Corner_Vtx(3,c) = .TRUE. !
 		 Corner_Vtx(7,c) = .TRUE. !
      ENDDO
      i=1
-     j=nSubLim+1
-     DO k=1,nSubLim+1
+     j=nSubLim_nodeV(2)
+     DO k=1,nSubLim_nodeV(3)
          c=idxn_lim(i,j,k)
+            !Print *,"Corner_Vtx: 2.1:",k,c
 		 Corner_Vtx(4,c) = .TRUE. !
 		 Corner_Vtx(8,c) = .TRUE. !
      ENDDO 
+    !Print *,"Corner_Vtx: 2!" 
      i=1
      j=1
-     DO k=1,nSubLim+1
+     DO k=1,nSubLim_nodeV(2)
          c=idxn_lim(i,k,j)
 		 Corner_Vtx(1,c) = .TRUE. !
 		 Corner_Vtx(4,c) = .TRUE. !
      ENDDO
-     i=nSubLim+1
+     i=nSubLim_nodeV(1)
      j=1
-     DO k=1,nSubLim+1
+     DO k=1,nSubLim_nodeV(2)
          c=idxn_lim(i,k,j)
 		 Corner_Vtx(2,c) = .TRUE. !
 		 Corner_Vtx(3,c) = .TRUE. !
      ENDDO
-     i=nSubLim+1
-     j=nSubLim+1
-     DO k=1,nSubLim+1
+    !Print *,"Corner_Vtx: 3!" 
+     i=nSubLim_nodeV(1)
+     j=nSubLim_nodeV(3)
+     DO k=1,nSubLim_nodeV(2)
          c=idxn_lim(i,k,j)
 		 Corner_Vtx(6,c) = .TRUE. !
 		 Corner_Vtx(7,c) = .TRUE. !
      ENDDO
      i=1
-     j=nSubLim+1
-     DO k=1,nSubLim+1
+     j=nSubLim_nodeV(3)
+     DO k=1,nSubLim_nodeV(2)
          c=idxn_lim(i,k,j)
 		 Corner_Vtx(5,c) = .TRUE. !
 		 Corner_Vtx(8,c) = .TRUE. !
      ENDDO
       
+    !Print *,"Corner_Vtx: 4!" 
      
      i=1
      j=1
-     DO k=1,nSubLim+1
+     DO k=1,nSubLim_nodeV(1)
          c=idxn_lim(k,i,j)
 		 Corner_Vtx(1,c) = .TRUE. !
 		 Corner_Vtx(2,c) = .TRUE. !
      ENDDO
-     i=nSubLim+1
+     i=nSubLim_nodeV(2)
      j=1
-     DO k=1,nSubLim+1
+     DO k=1,nSubLim_nodeV(1)
          c=idxn_lim(k,i,j)
 		 Corner_Vtx(3,c) = .TRUE. !
 		 Corner_Vtx(4,c) = .TRUE. !
      ENDDO
-     i=nSubLim+1
-     j=nSubLim+1
-     DO k=1,nSubLim+1
+    !Print *,"Corner_Vtx: 5!" 
+     i=nSubLim_nodeV(2)
+     j=nSubLim_nodeV(3)
+     DO k=1,nSubLim_nodeV(1)
          c=idxn_lim(k,i,j)
 		 Corner_Vtx(7,c) = .TRUE. !
 		 Corner_Vtx(8,c) = .TRUE. !
      ENDDO
      i=1
-     j=nSubLim+1
-     DO k=1,nSubLim+1
+     j=nSubLim_nodeV(3)
+     DO k=1,nSubLim_nodeV(1)
          c=idxn_lim(k,i,j)
 		 Corner_Vtx(5,c) = .TRUE. !
 		 Corner_Vtx(6,c) = .TRUE. !

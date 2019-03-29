@@ -90,11 +90,12 @@ class SolverController:
         nPointSources = solver["point_sources"] if type(solver.get("point_sources",[])) is int else len(solver.get("point_sources",[]))
         
         context["numberOfVariables"]          = nVar
-        context["numberOfParameters"]          = nParam
+        context["numberOfParameters"]         = nParam
         context["numberOfMaterialParameters"] = nParam
         context["numberOfGlobalObservables"]  = nGlobalObs
         context["numberOfPointSources"]       = nPointSources
-        
+        context["CFL"]                        = solver["cfl"] # default value is 0.9
+
         # variables access class
         context["variablesMap"]  = ToolkitHelper.parse_variables(solver,"variables")
         if nParam>0:
