@@ -128,6 +128,7 @@ class SpecFile1Reader():
         numbers=[\
             "end_time",\
             "maximum_mesh_size",\
+            "cfl",\
             "time",\
             "repeat",\
             "fuse_algorithmic_steps_rerun_factor",\
