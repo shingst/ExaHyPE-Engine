@@ -423,10 +423,6 @@ int exahype::solvers::Solver::getMaximumAdaptiveMeshLevel() const {
   return _coarsestMeshLevel+_maximumAdaptiveMeshDepth;
 }
 
-std::vector<double>& exahype::solvers::Solver::getGlobalObservables() {
-  return _globalObservables;
-}
-
 // TODO(Lukas) Is this still needed?
 /*
 std::vector<double>& exahype::solvers::Solver::getNextGlobalObservables() {

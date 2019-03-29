@@ -1305,13 +1305,13 @@ public:
   /**
    * The global observables from the previous time step.
    */
-  std::vector<double> _globalObservables;
+  DataHeap::HeapEntries _globalObservables;
 
   /**
    * The global observables which are reduced in this
    * iteration.
    */
-  std::vector<double> _nextGlobalObservables;
+  DataHeap::HeapEntries _nextGlobalObservables;
 
   /*
    * The coarsest mesh size this solver is using, i.e.
@@ -1500,18 +1500,6 @@ public:
   void resetGlobalObservables() {
     resetGlobalObservables(_nextGlobalObservables.data());
   }
-
-  // TODO(Lukas) Is this still needed?
-  /*
-  virtual void updateNextGlobalObservables(const std::vector<double>& globalObservables);
-  */
-
-  virtual std::vector<double>& getGlobalObservables();
-  // TODO(Lukas) Is this still needed?
-  /*
-  virtual std::vector<double>& getNextGlobalObservables();
-  */
-
 
   /**
    * Initialise the solver's time stamps and time step sizes.
