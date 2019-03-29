@@ -238,7 +238,7 @@ class {{project}}::{{abstractSolver}} : public exahype::solvers::FiniteVolumesSo
      */
     virtual void mergeGlobalObservables(
         GlobalObservables&         globalObservables,
-        ReadOnlyGlobalObservables& otherObservables);
+        ReadOnlyGlobalObservables& otherObservables) const;
     
     /**
      * Wrap up the global observables, e.g. finalise an L^2 integral
@@ -253,7 +253,7 @@ class {{project}}::{{abstractSolver}} : public exahype::solvers::FiniteVolumesSo
      *
      *\param[inout] observables  The global observables.
      */
-    virtual void wrapUpGlobalObservables(GlobalObservables& globalObservables);
+    virtual void wrapUpGlobalObservables(GlobalObservables& globalObservables) const;
     {% endif %}
     
     /**

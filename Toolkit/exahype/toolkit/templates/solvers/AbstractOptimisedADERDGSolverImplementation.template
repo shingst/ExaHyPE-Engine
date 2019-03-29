@@ -675,24 +675,24 @@ std::atomic_ulong {{project}}::{{abstractSolver}}::volumeUnknownsRestriction_c =
           }
 
           {% if numberOfGlobalObservables > 0 %}
-          void {{project}}::{{abstractSolver}}::resetGlobalObservables(GlobalObservables& globalObservables) {
+          void {{project}}::{{abstractSolver}}::resetGlobalObservables(GlobalObservables& globalObservables) const {
             abortWithMsg("If this operation is entered (resetGlobalObservables), you have specified global observables. Then you have to re-implement this routine, too." );
           }
 
           void {{project}}::{{abstractSolver}}::mapGlobalObservables(
               GlobalObservables&                          globalObservables,
               const double* const                         luh,
-              const tarch::la::Vector<DIMENSIONS,double>& cellSize) {
+              const tarch::la::Vector<DIMENSIONS,double>& cellSize) const {
             abortWithMsg("If this operation is entered (mapGlobalObservables), you have specified global observables. Then you have to re-implement this routine, too." );
           }
 
           void {{project}}::{{abstractSolver}}::mergeGlobalObservables(
               GlobalObservables&         globalObservables,
-              ReadOnlyGlobalObservables& otherObservables) {
+              ReadOnlyGlobalObservables& otherObservables) const {
             abortWithMsg("If this operation is entered (mergeGlobalObservables), you have specified global observables. Then you have to re-implement this routine, too." );
           }
 
-          void {{project}}::{{abstractSolver}}::wrapUpGlobalObservables(GlobalObservables& globalObservables) {
+          void {{project}}::{{abstractSolver}}::wrapUpGlobalObservables(GlobalObservables& globalObservables) const {
             // Please re-implement if required.
           }
           {% endif %}

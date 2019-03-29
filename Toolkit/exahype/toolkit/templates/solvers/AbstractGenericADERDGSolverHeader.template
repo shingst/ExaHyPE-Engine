@@ -342,7 +342,7 @@ public:
    */
   virtual void mergeGlobalObservables(
       GlobalObservables&         globalObservables,
-      ReadOnlyGlobalObservables& otherObservables);
+      ReadOnlyGlobalObservables& otherObservables) const;
 
   /**
    * Wrap up the global observables, e.g. finalise an L^2 integral
@@ -353,7 +353,7 @@ public:
    *
    *\param[inout] observables  The global observables.
    */
-  virtual void wrapUpGlobalObservables(GlobalObservables& globalObservables);
+  virtual void wrapUpGlobalObservables(GlobalObservables& globalObservables) const;
   {% endif %}
 
   ///@}

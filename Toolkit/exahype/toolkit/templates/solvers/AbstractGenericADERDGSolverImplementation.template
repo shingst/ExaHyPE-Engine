@@ -445,7 +445,7 @@ void {{project}}::{{abstractSolver}}::mergeGlobalObservables(
   abortWithMsg("If this operation is entered (mergeGlobalObservables), you have specified global observables. Then you have to re-implement this routine, too." );
 }
 
-void {{project}}::{{abstractSolver}}::wrapUpGlobalObservables(GlobalObservables& globalObservables) {
+void {{project}}::{{abstractSolver}}::wrapUpGlobalObservables(GlobalObservables& globalObservables) const {
   // Please re-implement if required.
 }
 {% endif %}
