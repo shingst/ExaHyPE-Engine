@@ -4934,7 +4934,8 @@ bool exahype::solvers::ADERDGSolver::tryToReceiveTaskBack(exahype::solvers::ADER
 
   // now, a different thread can progress the stealing
   lock.free();
-  return exahype::stealing::StealingManager::getInstance().hasOutstandingRequestOfType(exahype::stealing::RequestType::receiveBack);
+  return false;
+  //return exahype::stealing::StealingManager::getInstance().hasOutstandingRequestOfType(exahype::stealing::RequestType::receiveBack);
 }
 
 #ifdef StealingUseProgressTask

@@ -12,6 +12,7 @@
 #include "exahype/stealing/StealingProfiler.h"
 #include "exahype/stealing/PerformanceMonitor.h"
 #include "exahype/stealing/StealingAnalyser.h"
+#include "exahype/solvers/ADERDGSolver.h"
 #include "tarch/multicore/Core.h"
 #include "tarch/multicore/tbb/Jobs.h"
 
@@ -491,19 +492,22 @@ bool exahype::stealing::AggressiveHybridDistributor::selectVictimRank(int& victi
 #endif
 
   int threshold = 1+std::max(1, tarch::multicore::Core::getInstance().getNumberOfThreads()-1)*tarch::multicore::jobs::internal::_minimalNumberOfJobsPerConsumerRun;
+  logInfo("selectVicimtRank", "threshold "<<threshold);
   threshold = std::max(threshold, 20);
   //threshold = 0; //TODO:test
 
-//  logInfo("selectVictimRank","waiting "<<tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs()<<" criterion "<<threshold);
+  //logInfo("selectVictimRank","waiting "<<tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs()<<" criterion "<<threshold);
  
-  if(tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs()<
+  //if(tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs()<
+  //      threshold) {
+  if(exahype::solvers::ADERDGSolver::NumberOfEnclaveJobs<
         threshold) {
     //logInfo("selectVictimRank", "number of running consumers: "<<tarch::multicore::jobs::internal::_numberOfRunningJobConsumerTasks.load()<<" max running "<<tarch::multicore::Core::getInstance().getNumberOfThreads()-1);
     _notOffloaded[victim]++;
     victim = myRank;
   }
   //if(victim!=myRank)
-  // logInfo("selectVictimRank", "chose victim "<<victim<<" _remainingTasksToOffload "<<_remainingTasksToOffload[victim]);
+   logInfo("selectVictimRank", "chose victim "<<victim<<" _remainingTasksToOffload "<<_remainingTasksToOffload[victim]);
   
   return victim != myRank;
 }
