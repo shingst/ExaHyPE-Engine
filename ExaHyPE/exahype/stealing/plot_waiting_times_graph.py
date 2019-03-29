@@ -86,7 +86,7 @@ for line in file:
     duration_arr.append(duration)
   
     print ("step: ", current_step)
-    output_file = "test_graph%03d.png" % current_step
+    output_file = "test_graph%03d.pdf" % current_step
     dot.draw(output_file, prog="dot")    
 
     if animate:
@@ -158,7 +158,7 @@ for line in file:
     if(n.attr['label'] ==None):
       n.attr['label']=m.group(1)
     print (str(n.attr['label'])+" tempDif="+m.group(2))
-    n.attr['label']= str(n.attr['label'])+ " tempDif="+m.group(2)
+    n.attr['label']= str(n.attr['label'])+", "+u'\u03C9'+"="+m.group(2)
 
 if animate:
     ani = animation.ArtistAnimation(fig, ims, interval=5000, blit=True, repeat_delay=1000)
