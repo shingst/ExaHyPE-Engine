@@ -325,6 +325,21 @@ private:
   void ensureLimiterTimeStepDataIsConsistent() const;
 
   /**
+   * Compute a new admissible time step size.
+   * Depending on the refinement status, either the
+   * limiter or solver solution's eigenvalues are
+   * used.
+   *
+   * @param solverPatch solver patch linking to the data
+   * @param cellInfo    refers to all cell descriptions/patches found in the cell holding the solver patch
+   *
+   * @note Doesn't have const modifier as kernels are not const yet.
+   *
+   * @return an admissible time step size.
+   */
+  double computeTimeStepSize(SolverPatch& solverPatch,CellInfo& cellInfo);
+
+  /**
    * If a limiter patch is allocated for the solver patch,
    * ensure that it's time step data is consistent
    * with the solver patch's time step data.
@@ -1137,15 +1152,13 @@ void updateNextGlobalObservables(
   /**
    * Invoke ::localRecomputationBody(...)
    *
-   * \return a time step size computed with the new solution.
-   *
    * Fused Time Stepping
    * -------------------
    *
    * Recomputes a new predictor as well if necessary.
    * Further see ::fusedTimeBody regarding order of operations.
    */
-  double localRecomputation(
+  void localRecomputation(
       const int         solverNumber,
       Solver::CellInfo& cellInfo,
       const bool        isAtRemoteBoundary);

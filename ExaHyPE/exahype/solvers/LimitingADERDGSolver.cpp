@@ -126,11 +126,6 @@ void exahype::solvers::LimitingADERDGSolver::initSolver(
   resetMeshUpdateEvent();
 
   // global observables
-  _globalObservables.resize(_solver->_numberOfGlobalObservables);
-  _nextGlobalObservables.resize(_solver->_numberOfGlobalObservables);
-  _solver->resetGlobalObservables(_globalObservables.data()    );
-  _solver->resetGlobalObservables(_nextGlobalObservables.data());
-
   _solver->initSolver(timeStamp, domainOffset, domainSize, boundingBoxSize, boundingBoxMeshSize, cmdlineargs, parserView);
   _limiter->initSolver(timeStamp, domainOffset, domainSize, boundingBoxSize, boundingBoxMeshSize, cmdlineargs, parserView);
 }
@@ -344,6 +339,24 @@ void exahype::solvers::LimitingADERDGSolver::finaliseStateUpdates(
 ///////////////////////////////////
 // CELL-LOCAL
 //////////////////////////////////
+
+double exahype::solvers::LimitingADERDGSolver::computeTimeStepSize(SolverPatch& solverPatch,CellInfo& cellInfo) {
+  if ( getTimeStepping() == TimeStepping::GlobalFixed ) {
+    return solverPatch.getTimeStepSize();
+  } else if ( solverPatch.getRefinementStatus() < _solver->_minRefinementStatusForTroubledCell ) {
+      return _solver->computeTimeStepSize(solverPatch);
+  } else {
+    const int limiterElement = cellInfo.indexOfFiniteVolumesCellDescription(solverPatch.getSolverNumber());
+    if ( limiterElement != NotFound ) { // refinement status might have changed just now
+      LimiterPatch& limiterPatch = getLimiterPatch(solverPatch,cellInfo);
+      double* limiterSolution    = static_cast<double*>(limiterPatch.getSolution());
+      return _limiter->stableTimeStepSize(limiterSolution, limiterPatch.getSize());
+    } else {
+      return _solver->computeTimeStepSize(solverPatch);
+    }
+  }
+}
+
 double exahype::solvers::LimitingADERDGSolver::startNewTimeStep(SolverPatch& solverPatch,CellInfo& cellInfo,const bool isFirstTimeStepOfBatch) {
   assertion1(solverPatch.getType()==SolverPatch::Type::Cell,solverPatch.toString());
   double admissibleTimeStepSize = std::numeric_limits<double>::infinity();
@@ -354,19 +367,7 @@ double exahype::solvers::LimitingADERDGSolver::startNewTimeStep(SolverPatch& sol
   }
   // n
   solverPatch.setTimeStamp(solverPatch.getTimeStamp()+solverPatch.getTimeStepSize());
-  if ( getTimeStepping() != TimeStepping::GlobalFixed ) {
-    if ( solverPatch.getRefinementStatus()>=_solver->_minRefinementStatusForTroubledCell ) {
-      admissibleTimeStepSize = _solver->computeTimeStepSize(solverPatch);
-    } else {
-      LimiterPatch& limiterPatch = getLimiterPatch(solverPatch,cellInfo);
-      double* limiterSolution    = static_cast<double*>(limiterPatch.getSolution());
-      admissibleTimeStepSize = _limiter->stableTimeStepSize(limiterSolution, limiterPatch.getSize());
-      // TODO(Dominic): Hide details in FV solver
-    }
-    solverPatch.setTimeStepSize(admissibleTimeStepSize);
-  } else {
-    admissibleTimeStepSize = solverPatch.getTimeStepSize();
-  }
+  solverPatch.setTimeStepSize( computeTimeStepSize(solverPatch,cellInfo) );
   ensureLimiterPatchTimeStepDataIsConsistent(solverPatch,cellInfo);
 
   return admissibleTimeStepSize;
@@ -393,7 +394,7 @@ void exahype::solvers::LimitingADERDGSolver::updateGlobalObservables(const int s
         solverPatch.getRefinementStatus()>=_solver->_minRefinementStatusForTroubledCell &&
         solverPatch.getPreviousRefinementStatus()>=_solver->_minRefinementStatusForTroubledCell-2;
 
-    if ( _solver->_numberOfGlobalObservables > 0 && isTroubledCellWithLimiterPatch ) {
+    if ( _solver->_numberOfGlobalObservables > 0 && isTroubledCellWithLimiterPatch ) { // TODO(Dominic): Have virtual function; Reassess all that parameter stuff where we need information from user solver; This should just be virtual functions
       const int limiterElement = cellInfo.indexOfFiniteVolumesCellDescription(solverPatch.getSolverNumber());
       assertion1(limiterElement != NotFound, "Limiter element not found!");
       LimiterPatch& limiterPatch = cellInfo._FiniteVolumesCellDescriptions[limiterElement];
@@ -1282,7 +1283,7 @@ double exahype::solvers::LimitingADERDGSolver::localRecomputationBody(
   // 2. Compute a new time step size in ALL Cells
   double admissibleTimeStepSize = std::numeric_limits<double>::infinity();
   if ( solverPatch.getType()==SolverPatch::Type::Cell ) {
-    admissibleTimeStepSize = startNewTimeStep(solverPatch,cellInfo,true);
+    admissibleTimeStepSize = computeTimeStepSize(solverPatch,cellInfo);
   }
 
   // 3. Recompute the predictor in certain cells if fused time stepping is used.
@@ -1315,7 +1316,7 @@ double exahype::solvers::LimitingADERDGSolver::localRecomputationBody(
 }
 
 
-double exahype::solvers::LimitingADERDGSolver::localRecomputation(
+void exahype::solvers::LimitingADERDGSolver::localRecomputation(
     const int         solverNumber,
     Solver::CellInfo& cellInfo,
     const bool        isAtRemoteBoundary) {
@@ -1332,13 +1333,11 @@ double exahype::solvers::LimitingADERDGSolver::localRecomputation(
     if ( SpawnUpdateAsBackgroundJob ) {
       peano::datatraversal::TaskSet( new LocalRecomputationJob(
           *this, solverPatch,cellInfo,limiterNeighbourMergePerformed,isAtRemoteBoundary ) );
-      return std::numeric_limits<double>::infinity();
     } else {
-      return localRecomputationBody(
+      double admissibleTimeStepSize = localRecomputationBody(
           solverPatch,cellInfo,limiterNeighbourMergePerformed,isAtRemoteBoundary);
+      updateAdmissibleTimeStepSize(admissibleTimeStepSize);
     }
-  } else {
-    return std::numeric_limits<double>::infinity();
   }
 }
 

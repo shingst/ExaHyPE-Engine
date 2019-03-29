@@ -1250,7 +1250,7 @@ public:
   /**
    * The number of global observables, e.g. indicators used by AMR.
    */
-  const int _numberOfGlobalObservables ;
+  const int _numberOfGlobalObservables;
 
   /**
    * The number of nodal basis functions that are employed in each

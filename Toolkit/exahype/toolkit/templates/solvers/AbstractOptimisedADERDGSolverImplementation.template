@@ -108,7 +108,7 @@ std::atomic_ulong {{project}}::{{abstractSolver}}::volumeUnknownsRestriction_c =
             "{{solver}}",
             {{optNamespace}}::getNumberOfVariable(),
             {{optNamespace}}::getNumberOfParameter(),
-            {{optNamespace}}::getNumberOfGlobalObservables(),
+            NumberOfGlobalObservables, // optimisations do not make sense here
             {{optNamespace}}::getBasisSize(),
             maximumMeshSize,
             maximumMeshDepth,
