@@ -207,7 +207,7 @@ class {{project}}::{{abstractSolver}} : public exahype::solvers::FiniteVolumesSo
      *
      *\param[inout] globalObservables The global observables that we want to reset.
      */
-    virtual void resetGlobalObservables(GlobalObservables& globalObservables);
+    virtual void resetGlobalObservables(GlobalObservables& globalObservables) const;
     
     /**
      * Computes observables from a cell's solution values.
@@ -220,7 +220,7 @@ class {{project}}::{{abstractSolver}} : public exahype::solvers::FiniteVolumesSo
     virtual void mapGlobalObservables(
         GlobalObservables&                          globalObservables,
         const double* const                         luh,
-        const tarch::la::Vector<DIMENSIONS,double>& cellSize);
+        const tarch::la::Vector<DIMENSIONS,double>& cellSize) const;
 
     /**
      * This method merges two vectors of (global) observables.
@@ -237,7 +237,7 @@ class {{project}}::{{abstractSolver}} : public exahype::solvers::FiniteVolumesSo
      */
     virtual void mergeGlobalObservables(
         GlobalObservables&         globalObservables,
-        ReadOnlyGlobalObservables& otherObservables);
+        ReadOnlyGlobalObservables& otherObservables) const;
     {% endif %}
     ///@}
 };

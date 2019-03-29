@@ -2423,7 +2423,12 @@ void exahype::solvers::ADERDGSolver::updateGlobalObservables(const int solverNum
     CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[element];
 
     if ( _numberOfGlobalObservables > 0 ) {
-      assert(cellDescription.getType()==CellDescription::Type::Cell);
+      // TODO(Dominic): Is this correct?
+      if (cellDescription.getType() != CellDescription::Type::Cell) {
+	return;
+      }
+      //assert(cellDescription.getType()==CellDescription::Type::Cell);
+
       const double* const luh         = static_cast<double*>(cellDescription.getSolution());
       const auto& cellSize            = cellDescription.getSize();
       updateGlobalObservables(_nextGlobalObservables.data(),luh,cellSize);
