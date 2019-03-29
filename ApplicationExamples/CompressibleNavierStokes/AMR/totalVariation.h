@@ -53,4 +53,45 @@ double totalVariation(const double* Q, int order, int numberOfVariables,
 
   return totalVariation(observable.data(), order, 1, 0, dx, correctForVolume);
 }
+
+inline double forwardDiff(double l, double c, double h) {
+  assert(std::isfinite( (1./h) * (l - c)));
+  return (1./h) * (l - c);
+}
+
+inline double centralDiff(double l, double r, double h) {
+  assert(std::isfinite( (1./(2*h)) * (r - l)));
+  return (1./(2 * h)) * (r - l);
+}
+
+inline double backwardDiff(double c, double r, double h) {
+  assert(std::isfinite( (1./h) * (c - r)));
+  return (1./h) * (c - r);
+}
+
+inline double stableDiff(double l,
+		  double c,
+		  double r,
+		  int idxC,  
+		  double h,
+		  size_t ghostLayerWidth,
+		  size_t patchSize) {
+  // TODO(Lukas) Check for off by one errors
+  // TODO(Lukas) Use central differences for center?
+  // TODO(Lukas) Check if order of arguments is correct.
+  
+  // idxC must be signed to avoid underflow!
+  const auto idxL = idxC - 1;
+  const auto idxR = idxC + 1;
+  
+  //std::cout << idxC << std::endl;
+  if (idxL <= static_cast<int>(ghostLayerWidth)) {
+    return backwardDiff(c, r, h);
+  } else if (idxR >= static_cast<int>(patchSize + ghostLayerWidth)) {
+    return forwardDiff(l, c, h);
+  } else {
+    return centralDiff(l, r, h);
+  }
+}
+
 #endif  // COMPRESSIBLENAVIERSTOKES_TOTALVARIATION_H

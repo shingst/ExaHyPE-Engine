@@ -77,7 +77,7 @@ exahype::solvers::LimitingADERDGSolver::LimitingADERDGSolver(
 }
 /** Wire through to limiting ADER-DG solver */
 void exahype::solvers::LimitingADERDGSolver::updateMeshUpdateEvent(exahype::solvers::Solver::MeshUpdateEvent meshUpdateEvent) {
-  return _solver->updateMeshUpdateEvent(meshUpdateEvent);
+  _solver->updateMeshUpdateEvent(meshUpdateEvent);
 }
 void exahype::solvers::LimitingADERDGSolver::resetMeshUpdateEvent() {
   _solver->resetMeshUpdateEvent();
@@ -125,7 +125,7 @@ void exahype::solvers::LimitingADERDGSolver::initSolver(
 
   resetMeshUpdateEvent();
 
-  _globalObservables = resetGlobalObservables();
+  // global observables
   _solver->initSolver(timeStamp, domainOffset, domainSize, boundingBoxSize, boundingBoxMeshSize, cmdlineargs, parserView);
   _limiter->initSolver(timeStamp, domainOffset, domainSize, boundingBoxSize, boundingBoxMeshSize, cmdlineargs, parserView);
 }
@@ -155,11 +155,26 @@ bool exahype::solvers::LimitingADERDGSolver::isMergingMetadata(
 }
 
 void exahype::solvers::LimitingADERDGSolver::kickOffTimeStep(const bool isFirstTimeStepOfBatchOrNoBatch) {
+  // copy solver observables to limiter (might be MPI comm. before)
+  // TODO add to docu: During mesh refinement, we only require the observables on the main solver
+  if ( isFirstTimeStepOfBatchOrNoBatch ) {
+    std::copy(_solver->_globalObservables.begin(),_solver->_globalObservables.end(),
+              _limiter->_globalObservables.begin());
+  }
+
   _solver->kickOffTimeStep(isFirstTimeStepOfBatchOrNoBatch);
+  ensureLimiterTimeStepDataIsConsistent();
+  _limiter->kickOffTimeStep(isFirstTimeStepOfBatchOrNoBatch);
 }
 
 void exahype::solvers::LimitingADERDGSolver::wrapUpTimeStep(const bool isFirstTimeStepOfBatchOrNoBatch,const bool isLastTimeStepOfBatchOrNoBatch) {
   _solver->wrapUpTimeStep(isFirstTimeStepOfBatchOrNoBatch,isLastTimeStepOfBatchOrNoBatch);
+  if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) { // have consistent data when limiter's wrap up routine is called.
+    std::copy(_solver->_globalObservables.begin(),_solver->_globalObservables.end(),
+              _limiter->_globalObservables.begin());
+  }
+  _limiter->wrapUpTimeStep(isFirstTimeStepOfBatchOrNoBatch,isLastTimeStepOfBatchOrNoBatch);
+  ensureLimiterTimeStepDataIsConsistent();
 }
 
 void exahype::solvers::LimitingADERDGSolver::synchroniseTimeStepping(
@@ -179,6 +194,13 @@ void exahype::solvers::LimitingADERDGSolver::ensureLimiterTimeStepDataIsConsiste
 void exahype::solvers::LimitingADERDGSolver::updateTimeStepSize()  {
   _solver->updateTimeStepSize();
   ensureLimiterTimeStepDataIsConsistent();
+}
+
+void exahype::solvers::LimitingADERDGSolver::updateGlobalObservables() {
+  _solver->mergeGlobalObservables(_solver->_nextGlobalObservables.data(),_limiter->_nextGlobalObservables.data());
+  _solver->updateGlobalObservables();
+  std::copy(_solver->_globalObservables.begin(),_solver->_globalObservables.end(),
+            _limiter->_globalObservables.begin());
 }
 
 void exahype::solvers::LimitingADERDGSolver::rollbackToPreviousTimeStep() {
@@ -322,24 +344,75 @@ void exahype::solvers::LimitingADERDGSolver::finaliseStateUpdates(
 ///////////////////////////////////
 // CELL-LOCAL
 //////////////////////////////////
-double exahype::solvers::LimitingADERDGSolver::startNewTimeStep(SolverPatch& solverPatch,CellInfo& cellInfo,const bool isFirstTimeStepOfBatch) {
-  double admissibleTimeStepSize = _solver->startNewTimeStep(solverPatch,isFirstTimeStepOfBatch);
-  ensureLimiterPatchTimeStepDataIsConsistent(solverPatch,cellInfo);
 
-  // TODO(Lukas) Do we need to do anything with global observables here?
+double exahype::solvers::LimitingADERDGSolver::computeTimeStepSize(SolverPatch& solverPatch,CellInfo& cellInfo) {
+  if ( getTimeStepping() == TimeStepping::GlobalFixed ) {
+    return solverPatch.getTimeStepSize();
+  } else if ( solverPatch.getRefinementStatus() < _solver->_minRefinementStatusForTroubledCell ) {
+      return _solver->computeTimeStepSize(solverPatch);
+  } else {
+    const int limiterElement = cellInfo.indexOfFiniteVolumesCellDescription(solverPatch.getSolverNumber());
+    if ( limiterElement != NotFound ) { // refinement status might have changed just now
+      LimiterPatch& limiterPatch = getLimiterPatch(solverPatch,cellInfo);
+      double* limiterSolution    = static_cast<double*>(limiterPatch.getSolution());
+      return _limiter->stableTimeStepSize(limiterSolution, limiterPatch.getSize());
+    } else {
+      return _solver->computeTimeStepSize(solverPatch);
+    }
+  }
+}
+
+double exahype::solvers::LimitingADERDGSolver::startNewTimeStep(SolverPatch& solverPatch,CellInfo& cellInfo,const bool isFirstTimeStepOfBatch) {
+  assertion1(solverPatch.getType()==SolverPatch::Type::Cell,solverPatch.toString());
+  // n-1
+  if ( isFirstTimeStepOfBatch ) {
+    solverPatch.setPreviousTimeStamp(solverPatch.getTimeStamp());
+    solverPatch.setPreviousTimeStepSize(solverPatch.getTimeStepSize());
+  }
+  // n
+  solverPatch.setTimeStamp(solverPatch.getTimeStamp()+solverPatch.getTimeStepSize());
+
+  double admissibleTimeStepSize = computeTimeStepSize(solverPatch,cellInfo);
+  solverPatch.setTimeStepSize( admissibleTimeStepSize );
+  ensureLimiterPatchTimeStepDataIsConsistent(solverPatch,cellInfo);
   return admissibleTimeStepSize;
 }
 
-double exahype::solvers::LimitingADERDGSolver::updateTimeStepSize(const int solverNumber,CellInfo& cellInfo) {
+void exahype::solvers::LimitingADERDGSolver::updateTimeStepSize(
+    const int solverNumber,
+    CellInfo& cellInfo) {
   const int solverElement = cellInfo.indexOfADERDGCellDescription(solverNumber);
   if ( solverElement != Solver::NotFound ) {
     SolverPatch& solverPatch = cellInfo._ADERDGCellDescriptions[solverElement];
-    double admissibleTimeStepSize = _solver->updateTimeStepSize(solverNumber,cellInfo);
+    _solver->updateTimeStepSize(solverNumber,cellInfo);
     ensureLimiterPatchTimeStepDataIsConsistent(solverPatch,cellInfo);
-    return admissibleTimeStepSize;
   }
-  else {
-    return std::numeric_limits<double>::infinity();
+}
+
+void exahype::solvers::LimitingADERDGSolver::updateGlobalObservables(const int solverNumber,CellInfo& cellInfo) {
+  const int solverElement = cellInfo.indexOfADERDGCellDescription(solverNumber);
+  if ( solverElement != Solver::NotFound ) {
+    SolverPatch& solverPatch = cellInfo._ADERDGCellDescriptions[solverElement];
+
+    const bool isCell                         = solverPatch.getType()==SolverPatch::Type::Cell;
+    const bool isTroubledCellWithLimiterPatch = isCell &&
+        solverPatch.getRefinementStatus()>=_solver->_minRefinementStatusForTroubledCell &&
+        solverPatch.getPreviousRefinementStatus()>=_solver->_minRefinementStatusForTroubledCell-2;
+
+    if ( _solver->_numberOfGlobalObservables > 0 && isTroubledCellWithLimiterPatch ) { // TODO(Dominic): Have virtual function; Reassess all that parameter stuff where we need information from user solver; This should just be virtual functions
+      const int limiterElement = cellInfo.indexOfFiniteVolumesCellDescription(solverPatch.getSolverNumber());
+      assertion1(limiterElement != NotFound, "Limiter element not found!");
+      LimiterPatch& limiterPatch = cellInfo._FiniteVolumesCellDescriptions[limiterElement];
+      _limiter->updateGlobalObservables(
+          _solver->_nextGlobalObservables.data(),
+          static_cast<double*>(limiterPatch.getSolution()),
+          solverPatch.getSize()); // call must be thread-safe
+    } else if ( _solver->_numberOfGlobalObservables > 0 && isCell ) {
+      _solver->updateGlobalObservables(
+          _solver->_nextGlobalObservables.data(),
+          static_cast<double*>(solverPatch.getSolution()),
+          solverPatch.getSize()); // call must be thread-safe
+    }
   }
 }
 
@@ -404,7 +477,7 @@ void exahype::solvers::LimitingADERDGSolver::copyTimeStepDataFromSolverPatch(
   limiterPatch.setTimeStepSize(solverPatch.getTimeStepSize());
 }
 
-exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::fusedTimeStepOrRestrict(
+void exahype::solvers::LimitingADERDGSolver::fusedTimeStepOrRestrict(
     const int  solverNumber,
     CellInfo&  cellInfo,
     const bool isFirstTimeStepOfBatch,
@@ -433,10 +506,9 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
             *this,solverPatch,cellInfo,
             std::get<0>(predictionTimeStepData),std::get<1>(predictionTimeStepData),
             isFirstTimeStepOfBatch,isLastTimeStepOfBatch,isSkeletonCell) );
-        return UpdateResult();
       } else {
         const auto predictionTimeStepData = _solver->getPredictionTimeStepData(solverPatch,true/*duringFusedTimeStep*/);
-        return fusedTimeStepBody(
+        fusedTimeStepBody(
             solverPatch, cellInfo,
             solverPatch.getNeighbourMergePerformed(),
             std::get<0>(predictionTimeStepData),std::get<1>(predictionTimeStepData),
@@ -446,7 +518,6 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
       }
     }
     else { // other cell types
-      UpdateResult result;
       if (
           solverPatch.getType()==SolverPatch::Type::Descendant &&
           solverPatch.getCommunicationStatus()>=ADERDGSolver::MinimumCommunicationStatusForNeighbourCommunication
@@ -455,18 +526,15 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
       }
       ensureNoLimiterPatchIsAllocatedOnHelperCell(solverPatch,cellInfo);
       _solver->updateRefinementStatus(solverPatch,solverPatch.getNeighbourMergePerformed());
-      result._meshUpdateEvent = _solver->evaluateRefinementCriteriaAfterSolutionUpdate(
+      MeshUpdateEvent meshUpdateEvent = _solver->evaluateRefinementCriteriaAfterSolutionUpdate(
           solverPatch,solverPatch.getNeighbourMergePerformed()); // must be done by all cell types TODO(Dominic): Clean up
-
       solverPatch.setHasCompletedLastStep(true);
-      return result;
+      updateMeshUpdateEvent(meshUpdateEvent);
     }
-  } else {
-    return UpdateResult();
   }
 }
 
-exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::fusedTimeStepBody(
+void exahype::solvers::LimitingADERDGSolver::fusedTimeStepBody(
     SolverPatch&                                               solverPatch,
     CellInfo&                                                  cellInfo,
     const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
@@ -492,13 +560,15 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
   result._timeStepSize    = startNewTimeStep(solverPatch,cellInfo,isFirstTimeStepOfBatch);
   result._meshUpdateEvent = determineRefinementStatusAfterSolutionUpdate(solverPatch,cellInfo,isTroubled,neighbourMergePerformed);
 
+  reduce(solverPatch,cellInfo,result);
+
   if (
       solverPatch.getRefinementStatus()<_solver->_minRefinementStatusForTroubledCell &&
       SpawnPredictionAsBackgroundJob &&
       !mustBeDoneImmediately         &&
       isLastTimeStepOfBatch  // may only spawned in last iteration
   ) {
-    const int element                          = cellInfo.indexOfADERDGCellDescription(solverPatch.getSolverNumber());
+    const int element = cellInfo.indexOfADERDGCellDescription(solverPatch.getSolverNumber());
     peano::datatraversal::TaskSet( new ADERDGSolver::PredictionJob(
         *_solver.get(),solverPatch/*the reductions are delegated to _solver anyway*/,
         cellInfo._cellDescriptionsIndex,element,
@@ -523,7 +593,6 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
     VT_end(fusedTimeStepBodyHandle);
   }
   #endif
-  return result;
 }
 
 void exahype::solvers::LimitingADERDGSolver::predictionAndVolumeIntegral(
@@ -552,7 +621,46 @@ void exahype::solvers::LimitingADERDGSolver::predictionAndVolumeIntegral(
   }
 }
 
-exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::updateBody(
+void exahype::solvers::LimitingADERDGSolver::resetGlobalObservables(
+    double* const globalObservables) {
+  // refers call to the wrapped solvers
+  _solver->resetGlobalObservables();
+  _limiter->resetGlobalObservables();
+}
+
+void exahype::solvers::LimitingADERDGSolver::updateGlobalObservables(
+    double* const                               globalObservables,
+    const double* const                         luh,
+    const tarch::la::Vector<DIMENSIONS,double>& cellSize) {
+  logError("resetGlobalObservables(...)","routine never be called!");
+  std::abort();
+}
+
+void exahype::solvers::LimitingADERDGSolver::mergeGlobalObservables(
+    double* const       globalObservables,
+    const double* const otherObservables) {
+  logError("mergeGlobalObservables(...)","routine should never be called!");
+  std::abort();
+}
+
+void exahype::solvers::LimitingADERDGSolver::wrapUpGlobalObservables(
+    double* const globalObservables) {
+  logError("wrapUpGlobalObservables(...)","routine should never be called!");
+  std::abort();
+}
+
+void exahype::solvers::LimitingADERDGSolver::reduce(
+    const SolverPatch&  solverPatch,
+    CellInfo&           cellInfo,
+    const UpdateResult& result) {
+  // all reductions are written to the solver's global fields
+  // the limiter's fields are synchronised in kickOffTimeStep
+  updateAdmissibleTimeStepSize(result._timeStepSize);
+  updateMeshUpdateEvent(result._meshUpdateEvent);
+  updateGlobalObservables(solverPatch.getSolverNumber(),cellInfo);
+}
+
+void exahype::solvers::LimitingADERDGSolver::updateBody(
     SolverPatch&                                               solverPatch,
     CellInfo&                                                  cellInfo,
     const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
@@ -570,6 +678,8 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::u
   result._timeStepSize    = startNewTimeStep(solverPatch,cellInfo,true); // uses DG solution to compute time step size; might be result of FV->DG projection
   result._meshUpdateEvent = determineRefinementStatusAfterSolutionUpdate(solverPatch,cellInfo,isTroubled,neighbourMergePerformed);
 
+  reduce(solverPatch,cellInfo,result);
+
   if (CompressionAccuracy>0.0) { compress(solverPatch,cellInfo,isAtRemoteBoundary); }
 
   solverPatch.setHasCompletedLastStep(true); // required as prediction checks the flag too. Field should be renamed "setHasCompletedLastOperation(...)".
@@ -577,11 +687,9 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::u
   #ifdef USE_ITAC
   VT_end(updateBodyHandle);
   #endif
-
-  return result;
 }
 
-exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::updateOrRestrict(
+void exahype::solvers::LimitingADERDGSolver::updateOrRestrict(
       const int  solverNumber,
       CellInfo&  cellInfo,
       const bool isAtRemoteBoundary) {
@@ -594,13 +702,11 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::u
     if ( solverPatch.getType()==SolverPatch::Type::Cell && SpawnUpdateAsBackgroundJob ) {
       peano::datatraversal::TaskSet( new UpdateJob(
           *this, solverPatch,cellInfo,isAtRemoteBoundary ) );
-      return UpdateResult();
     }
     else if ( solverPatch.getType()==SolverPatch::Type::Cell ) {
-      return updateBody(solverPatch,cellInfo,solverPatch.getNeighbourMergePerformed(),isAtRemoteBoundary);
+      updateBody(solverPatch,cellInfo,solverPatch.getNeighbourMergePerformed(),isAtRemoteBoundary);
     }
     else { // other cell types
-      UpdateResult result;
       if (
           solverPatch.getType()==SolverPatch::Type::Descendant &&
           solverPatch.getCommunicationStatus()>=ADERDGSolver::MinimumCommunicationStatusForNeighbourCommunication
@@ -609,13 +715,11 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::u
       }
       ensureNoLimiterPatchIsAllocatedOnHelperCell(solverPatch,cellInfo);
       _solver->updateRefinementStatus(solverPatch,solverPatch.getNeighbourMergePerformed());
-      result._meshUpdateEvent = _solver->evaluateRefinementCriteriaAfterSolutionUpdate(
+      MeshUpdateEvent meshUpdateEvent = _solver->evaluateRefinementCriteriaAfterSolutionUpdate(
           solverPatch,solverPatch.getNeighbourMergePerformed()); // must be done by all cell types
       solverPatch.setHasCompletedLastStep(true);
-      return result;
+      updateMeshUpdateEvent(meshUpdateEvent);
     }
-  } else {
-    return UpdateResult();
   }
 }
 
@@ -1158,7 +1262,7 @@ void exahype::solvers::LimitingADERDGSolver::localRecomputation(
 
     _limiter->rollbackToPreviousTimeStep(limiterPatch);
     _limiter->updateSolution(limiterPatch,limiterNeighbourMergePerformed,cellInfo._cellDescriptionsIndex,true);
-    copyTimeStepDataFromSolverPatch(solverPatch,limiterPatch);
+    copyTimeStepDataFromSolverPatch(solverPatch,limiterPatch); // restore pre-rollback limiter patch time stamp and step size
     projectFVSolutionOnDGSpace(solverPatch,limiterPatch);
   }
   else {
@@ -1180,10 +1284,12 @@ double exahype::solvers::LimitingADERDGSolver::localRecomputationBody(
     localRecomputation(solverPatch,cellInfo,limiterNeighbourMergePerformed);
   }
 
-  // 2. Compute a new time step size in ALL Cells
+  // 2. Re-compute a new time step size in ALL Cells
   double admissibleTimeStepSize = std::numeric_limits<double>::infinity();
   if ( solverPatch.getType()==SolverPatch::Type::Cell ) {
-    admissibleTimeStepSize = startNewTimeStep(solverPatch,cellInfo,true);
+    admissibleTimeStepSize = computeTimeStepSize(solverPatch,cellInfo);
+    solverPatch.setTimeStepSize(admissibleTimeStepSize);
+    ensureLimiterPatchTimeStepDataIsConsistent(solverPatch,cellInfo);
   }
 
   // 3. Recompute the predictor in certain cells if fused time stepping is used.
@@ -1216,7 +1322,7 @@ double exahype::solvers::LimitingADERDGSolver::localRecomputationBody(
 }
 
 
-double exahype::solvers::LimitingADERDGSolver::localRecomputation(
+void exahype::solvers::LimitingADERDGSolver::localRecomputation(
     const int         solverNumber,
     Solver::CellInfo& cellInfo,
     const bool        isAtRemoteBoundary) {
@@ -1233,13 +1339,11 @@ double exahype::solvers::LimitingADERDGSolver::localRecomputation(
     if ( SpawnUpdateAsBackgroundJob ) {
       peano::datatraversal::TaskSet( new LocalRecomputationJob(
           *this, solverPatch,cellInfo,limiterNeighbourMergePerformed,isAtRemoteBoundary ) );
-      return std::numeric_limits<double>::infinity();
     } else {
-      return localRecomputationBody(
+      double admissibleTimeStepSize = localRecomputationBody(
           solverPatch,cellInfo,limiterNeighbourMergePerformed,isAtRemoteBoundary);
+      updateAdmissibleTimeStepSize(admissibleTimeStepSize);
     }
-  } else {
-    return std::numeric_limits<double>::infinity();
   }
 }
 
@@ -1884,54 +1988,6 @@ void exahype::solvers::LimitingADERDGSolver::toString (std::ostream& out) const 
   out << getIdentifier() << "{_FV: ";
   out << _limiter->toString() << "}";
 }
-std::vector<double> exahype::solvers::LimitingADERDGSolver::mapGlobalObservables(
-        const double* const Q,
-        const tarch::la::Vector<DIMENSIONS, double> &dx) const {
-  assertion1(false, "LimitingADERDGSolver::mapGlobalObservables should never be called!");
-  return _solver->mapGlobalObservables(Q, dx); // unreachable
-}
-
-std::vector<double> exahype::solvers::LimitingADERDGSolver::resetGlobalObservables() const {
-  return _solver->resetGlobalObservables();
-}
-
-void exahype::solvers::LimitingADERDGSolver::reduceGlobalObservables(
-            std::vector<double>& reducedGlobalObservables,
-            const std::vector<double>& curGlobalObservables) const {
-  _solver->reduceGlobalObservables(reducedGlobalObservables, curGlobalObservables);
-}
-
-void exahype::solvers::LimitingADERDGSolver::reduceGlobalObservables(
-    std::vector<double> &globalObservables,
-    Solver::CellInfo cellInfo, int solverNumber) const {
-  tarch::multicore::Lock lock(ReductionSemaphore);
-  if (globalObservables.empty()) {
-    return;
-  }
-
-  const int solverElement = cellInfo.indexOfADERDGCellDescription(solverNumber);
-  if (solverElement != NotFound ) {
-    SolverPatch& solverPatch = cellInfo._ADERDGCellDescriptions[solverElement];
-
-    // TODO(Lukas) Maybe use previous refinement status? Depends on update time.
-    //   bool isUnlimited = solverPatch.getPreviousRefinementStatus() < _solver->getMinRefinementStatusForBufferCell();
-    return;
-    bool isUnlimited = true; // TODO(Lukas) Fix this!
-    if (isUnlimited) {
-      // Solution is saved in DG-Space.
-      // TODO(Lukas) Maybe pass solverPatch directly?
-      _solver->reduceGlobalObservables(globalObservables, cellInfo, solverNumber);
-    } else {
-      const int limiterElement = cellInfo.indexOfFiniteVolumesCellDescription(solverNumber);
-      assertion1(limiterElement != NotFound, "Limiter element not found!");
-      if (limiterElement != NotFound) {
-        LimiterPatch& limiterPatch = cellInfo._FiniteVolumesCellDescriptions[limiterElement];
-        _limiter->reduceGlobalObservables(globalObservables, cellInfo, solverNumber);
-      }
-    }
-  }
-  lock.free();
-}
 
 exahype::solvers::Solver::CellProcessingTimes exahype::solvers::LimitingADERDGSolver::measureCellProcessingTimes(const int numberOfRuns) {
   // Setup
@@ -1950,7 +2006,8 @@ exahype::solvers::Solver::CellProcessingTimes exahype::solvers::LimitingADERDGSo
 
   adjustSolutionDuringMeshRefinementBody(solverPatch,cellInfo,true);
   solverPatch.setRefinementEvent(SolverPatch::RefinementEvent::None);
-  double dt = updateTimeStepSize(0,cellInfo);
+  updateTimeStepSize(0,cellInfo);
+  const double dt = _solver->_admissibleTimeStepSize;
   _solver->_minTimeStepSize       = dt;
   _solver->_estimatedTimeStepSize = dt;
 

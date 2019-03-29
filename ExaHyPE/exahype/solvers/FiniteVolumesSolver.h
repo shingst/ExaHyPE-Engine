@@ -138,6 +138,19 @@ private:
       const bool isInitialMeshRefinement);
 
   /**
+   * Merges the updateResult quantities with the solver's
+   * global quantities.
+   * Furthermore, the mapGlobalObservables function of the user solver,
+   * and merges the result with _nextGlobalObservables variable.
+   *
+   * @param[in[ cellDescription a cell description of type Cell.
+   * @param[in[ updateResult    see update result.
+   */
+  void reduce(
+      const CellDescription& cellDescription,
+      const UpdateResult&    updateResult);
+
+  /**
    * This routine is called from the update(...) and
    * fusedTimeStep(...) functions.
    *
@@ -153,7 +166,7 @@ private:
    *
    * @note Might be called by background task. Do not synchronise time step data here.
    */
-  UpdateResult updateBody(
+  void updateBody(
       CellDescription&                                           cellDescription,
       CellInfo&                                                  cellInfo,
       const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
@@ -457,6 +470,7 @@ public:
   void wrapUpTimeStep(const bool isFirstTimeStepOfBatchOrNoBatch,const bool isLastTimeStepOfBatchOrNoBatch) final override;
 
   void updateTimeStepSize()      override;
+  void updateGlobalObservables() final override;
   void rollbackToPreviousTimeStep() final override;
 
   void updateMeshUpdateEvent(MeshUpdateEvent meshUpdateEvent) final override;
@@ -604,7 +618,9 @@ public:
   ///////////////////////////////////
   // CELL-LOCAL
   //////////////////////////////////
-  double updateTimeStepSize(const int solverNumber,CellInfo& cellInfo) final override;
+  void updateTimeStepSize(const int solverNumber,CellInfo& cellInfo) final override;
+
+  void updateGlobalObservables(const int solverNumber,CellInfo& cellInfo) final override;
 
   double startNewTimeStep(CellDescription& cellDescription,const bool isFirstTimeStepOfBatch);
 
@@ -620,17 +636,17 @@ public:
    * The "hasCompletedLastStep" flag must only be unset when
    * a background job is spawned.
    */
-  UpdateResult fusedTimeStepOrRestrict(
+  void fusedTimeStepOrRestrict(
       const int solverNumber,
       CellInfo& cellInfo,
       const bool isFirstTimeStepOfBatch,
       const bool isLastTimeStepOfBatch,
       const bool isAtRemoteBoundary) final override;
 
-  UpdateResult updateOrRestrict(
-        const int  solverNumber,
-        CellInfo&  cellInfo,
-        const bool isAtRemoteBoundary) final override;
+  void updateOrRestrict(
+      const int  solverNumber,
+      CellInfo&  cellInfo,
+      const bool isAtRemoteBoundary) final override;
 
   void adjustSolutionDuringMeshRefinement(const int solverNumber,CellInfo& cellInfo) final override;
 
@@ -934,10 +950,6 @@ public:
 
   void toString (std::ostream& out) const override;
 
-  using Solver::reduceGlobalObservables;
-  void reduceGlobalObservables(std::vector<double>& globalObservables,
-                                   CellInfo cellInfo,
-                                   int solverNumber) const override;
   
   ///////////////////////
   // PROFILING
@@ -946,6 +958,9 @@ public:
   CellProcessingTimes measureCellProcessingTimes(const int numberOfRuns=100) override;
 
 protected:
+  // make super class virtual function accessible
+  using Solver::updateGlobalObservables;
+
   /** @name Plugin points for derived solvers.
    *
    *  These are the macro kernels and user hooks solvers derived from

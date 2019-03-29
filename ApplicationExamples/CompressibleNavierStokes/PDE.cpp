@@ -174,7 +174,8 @@ void NavierStokes::PDE::evaluateDiffusiveEigenvalues(const double* const Q, cons
 }
 
 void NavierStokes::PDE::evaluateFlux(const double* Q, const double* gradQ, double** F, bool useViscosity,
-        bool reconstructGradT, double reconstructedGradT) const {
+				     bool reconstructGradT, double reconstructedGradT,
+				     bool gradContainsParameters) const {
   // Variable shortcuts
   const auto rho = NavierStokesSolver_ADERDG_Variables::shortcuts::rho;
   const auto j = NavierStokesSolver_ADERDG_Variables::shortcuts::j;
@@ -184,7 +185,13 @@ void NavierStokes::PDE::evaluateFlux(const double* Q, const double* gradQ, doubl
   ReadOnlyVariables vars(Q);
 
   auto idxF = kernels::idx2(vars.SizeVariables, DIMENSIONS);
-  auto idxGradQ = kernels::idx2(DIMENSIONS, vars.SizeVariables);
+
+  // gradQ contains params for FV solver but not for DG.
+  auto sizeGrad = vars.SizeVariables;
+  if (gradContainsParameters) {
+    sizeGrad += vars.SizeParameters;
+  }
+  auto idxGradQ = kernels::idx2(DIMENSIONS, sizeGrad);
 
   const auto invRho = 1/vars.rho(); // Q(1)/(Q(1)*Q(1)+epsilon)
 
