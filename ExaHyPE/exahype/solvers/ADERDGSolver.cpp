@@ -4268,7 +4268,7 @@ void exahype::solvers::ADERDGSolver::mergeWithWorkerData(
              "message size="<<message.size());
    }
 
-  assertion1(message.size()==2,message.size());
+  assertion1(message.size()==messageSize,message.size());
   mergeWithWorkerData(message);
 
   if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
