@@ -456,7 +456,7 @@ public:
   virtual void mapGlobalObservables(
       GlobalObservables&                          globalObservables,
       const double* const                         luh,
-      const tarch::la::Vector<DIMENSIONS,double>& cellSize);
+      const tarch::la::Vector<DIMENSIONS,double>& cellSize) const;
 
   /**
    * This method merges two vectors of (global) observables.

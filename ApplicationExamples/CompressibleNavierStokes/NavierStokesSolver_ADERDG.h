@@ -165,16 +165,16 @@ class NavierStokes::NavierStokesSolver_ADERDG : public NavierStokes::AbstractNav
 
 /* multiplyMaterialParameterMatrix() not included, as requested in the specification file */
 
-    void resetGlobalObservables(GlobalObservables& globalObservables) final override;
+    void resetGlobalObservables(GlobalObservables& globalObservables) const final override;
     
     void mapGlobalObservables(
         GlobalObservables&                          globalObservables,
         const double* const                         luh,
-        const tarch::la::Vector<DIMENSIONS,double>& cellSize) final override;
+        const tarch::la::Vector<DIMENSIONS,double>& cellSize) const final override;
 
     void mergeGlobalObservables(
         GlobalObservables&         globalObservables,
-        ReadOnlyGlobalObservables& otherObservables) final override;
+        ReadOnlyGlobalObservables& otherObservables) const final override;
 };
 
 #endif // __NavierStokesSolverDG_CLASS_HEADER__
