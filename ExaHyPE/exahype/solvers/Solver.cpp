@@ -99,7 +99,7 @@ bool exahype::solvers::Solver::FuseAllADERDGPhases                = false;
 double exahype::solvers::Solver::FusedTimeSteppingRerunFactor     = 0.99;
 double exahype::solvers::Solver::FusedTimeSteppingDiffusionFactor = 0.99;
 
-bool exahype::solvers::Solver::DisableMetaDataExchangeInBatchedTimeSteps = false;
+bool exahype::solvers::Solver::DisableMetadataExchangeDuringTimeSteps = false;
 bool exahype::solvers::Solver::DisablePeanoNeighbourExchangeInTimeSteps = false;
 
 int exahype::solvers::Solver::MaxNumberOfRunningBackgroundJobConsumerTasksDuringTraversal = 0;

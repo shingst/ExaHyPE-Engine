@@ -700,7 +700,7 @@ public:
    * If this is set, we can skip sending metadata around during
    * batching iterations.
    */
-  static bool DisableMetaDataExchangeInBatchedTimeSteps;
+  static bool DisableMetadataExchangeDuringTimeSteps;
   /**
    * If this is set, we can skip Peano vertex neighbour exchange during batching iterations.
    */
