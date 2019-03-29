@@ -4225,7 +4225,7 @@ void exahype::solvers::ADERDGSolver::sendDataToMaster(
 
 exahype::DataHeap::HeapEntries
 exahype::solvers::ADERDGSolver::compileMessageForMaster(const int capacity) const {
-  const auto messageSize = 2 + _numberOfGlobalObservables;
+  const int messageSize = 2 + _numberOfGlobalObservables;
   DataHeap::HeapEntries message;
   message.reserve(std::max(messageSize,capacity));
 
@@ -4237,7 +4237,7 @@ exahype::solvers::ADERDGSolver::compileMessageForMaster(const int capacity) cons
     message.push_back(observable);
   }
 
-  assertion1(message.size()==messageSize,message.size());
+  assertion1(static_cast<int>(message.size())==messageSize,message.size());
   assertion1(std::isfinite(message[0]),message[0]);
   return message;
 }
@@ -4268,7 +4268,7 @@ void exahype::solvers::ADERDGSolver::mergeWithWorkerData(
              "message size="<<message.size());
    }
 
-  assertion1(message.size()==messageSize,message.size());
+  assertion1(static_cast<int>(message.size())==messageSize,message.size());
   mergeWithWorkerData(message);
 
   if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
@@ -4308,7 +4308,7 @@ exahype::solvers::ADERDGSolver::compileMessageForWorker(const int capacity) cons
     message.push_back(observable);
   }
 
-  assertion1(message.size()==messageSize,message.size());
+  assertion1(static_cast<int>(message.size())==messageSize,message.size());
   return message;
 }
 
@@ -4357,7 +4357,7 @@ void exahype::solvers::ADERDGSolver::mergeWithMasterData(
       message.data(), message.size(),
       masterRank,x,level,peano::heap::MessageType::MasterWorkerCommunication);
 
-  assertion1(message.size()==messageSize,message.size());
+  assertion1(static_cast<int>(message.size())==messageSize,message.size());
   mergeWithMasterData(message);
 
   if ( !tarch::parallel::Node::getInstance().isGlobalMaster() ) {
