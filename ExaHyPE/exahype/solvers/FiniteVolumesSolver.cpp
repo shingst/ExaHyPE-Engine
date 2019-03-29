@@ -250,6 +250,7 @@ void exahype::solvers::FiniteVolumesSolver::wrapUpTimeStep(const bool isFirstTim
 
   if ( isLastTimeStepOfBatchOrNoBatch ) {
     std::copy(_nextGlobalObservables.begin(),_nextGlobalObservables.end(),_globalObservables.begin());
+    wrapUpGlobalObservables(_globalObservables.data());
   }
 
   // call user code
@@ -1431,7 +1432,6 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithWorkerData(
       workerRank,x,level,peano::heap::MessageType::MasterWorkerCommunication);
 
   assertion1(std::isfinite(message[0]),message[0]);
-
 
   int index=0;
   _admissibleTimeStepSize = std::min( _admissibleTimeStepSize, message[index++] );

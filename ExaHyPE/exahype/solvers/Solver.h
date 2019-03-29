@@ -2203,6 +2203,17 @@ public:
    virtual void mergeGlobalObservables(
        double* const       globalObservables,
        const double* const otherObservables) = 0;
+
+   /**
+    * Wrap up the global observables, e.g. finalise an L^2 integral
+    * by applying a square root.
+    *
+    * @note This routine is only called on the global master, after
+    * the reduction has completed.
+    *
+    *\param[inout] observables  The global observables.
+    */
+   virtual void wrapUpGlobalObservables(double* const globalObservables) = 0;
  public:
 
   /**

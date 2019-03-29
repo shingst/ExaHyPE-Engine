@@ -101,8 +101,9 @@ public:
       const double* const                         luh,
       const tarch::la::Vector<DIMENSIONS,double>& cellSize) final override;
   void mergeGlobalObservables(double* const globalObservables,const double* const otherObservables) final override;
+  void wrapUpGlobalObservables(double* const globalObservables) final override;
   {% endif %} 
-  
+
   static void constantsToString(std::ostream& os);
   static void abortWithMsg(const char* const msg);
 
@@ -159,7 +160,7 @@ public:
       const double& previousMax) const override {
     return specifiedRelaxationParameter;
   }
-  
+
   /**
    * Default implementation. Please overwrite.
    *
@@ -303,7 +304,7 @@ public:
    */
   virtual void viscousFlux(const double* const Q, const double* const gradQ, double** const F);
   virtual void viscousEigenvalues(const double* const Q,const int direction,double* const lambda);
-  
+
   {% if numberOfGlobalObservables > 0 %}
   /**
    * Resets the vector of global observables to some suitable initial value, e.g.
@@ -342,8 +343,19 @@ public:
   virtual void mergeGlobalObservables(
       GlobalObservables&         globalObservables,
       ReadOnlyGlobalObservables& otherObservables);
+
+  /**
+   * Wrap up the global observables, e.g. finalise an L^2 integral
+   * by applying a square root.
+   *
+   * @note This routine is only called on the global master, after
+   * the reduction has completed.
+   *
+   *\param[inout] observables  The global observables.
+   */
+  virtual void wrapUpGlobalObservables(GlobalObservables& globalObservables);
   {% endif %}
-   
+
   ///@}
 
   //override the size of unused data storage to -1 to not allocate it
@@ -367,6 +379,39 @@ public:
   //lFi, needs to be (basisSize, basisSize, basisSize, basisSize, 2*DIMENSIONS+1, numberOfVariables) (note: one less basisSize in 2d)
   int getTempSpaceTimeFluxUnknowns0Size() const {return _numberOfVariables * power(_nodesPerCoordinateAxis, DIMENSIONS+1) * (2*DIMENSIONS+1);} 
   {% endif %}
+
+  /**
+   * Signals a user solver that ExaHyPE just started a new time step.
+   *
+   * @param[in] minTimeStamp the minimum time stamp (over all cells)
+   *
+   * @note This function is invoked before the first predictor computation
+   * when the non fused time stepping is run. Otherwise, it is invoked after
+   * the first predictor computation. It will always be called before
+   * "adjustSolution" is invoked.
+   *
+   * @note [MPI] For convenient reductions consider to specify "global_observables" in
+   * the specification file.
+   * 
+   * @param isFirstTimeStepOfBatchOrNoBatch  if this is the first time step of a batch or no batch is run.
+   */
+  virtual void beginTimeStep(const double minTimeStamp,const bool isFirstTimeStepOfBatchOrNoBatch) {}
+
+  /**
+   * Signals a user solver that ExaHyPE just finished a time step.
+   *
+   * @param[in] minTimeStamp the minimum time stamp (over all cells)
+   *
+   * @note This function is invoked after the solution was updated in all
+   * cells.
+   *
+   * @note [MPI] For convenient reductions consider to specify "global_observables" in
+   * the specification file. 
+   *
+   * @param isFirstTimeStepOfBatchOrNoBatch  if this is the first time step of a batch or no batch is run.
+   * @param isLastTimeStepOfBatchOrNoBatch   if this is the last time step of a batch or if no batch is run.
+   */
+  virtual void endTimeStep(const double minTimeStamp,const bool isLastTimeStepOfBatchOrNoBatch)   {}
 };
 
 #endif // __{{abstractSolver}}_CLASS_HEADER__

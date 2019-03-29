@@ -147,6 +147,11 @@ void {{project}}::{{abstractSolver}}::mergeGlobalObservables(double* const globa
   ReadOnlyGlobalObservables wrappedOtherObservables(otherObservables);
   static_cast<{{solver}}*>(this)->mergeGlobalObservables(wrappedGlobalObservables,wrappedOtherObservables);
 }
+
+void {{project}}::{{abstractSolver}}::wrapUpGlobalObservables(double* const globalObservables) {
+  GlobalObservables wrappedGlobalObservables(globalObservables);
+  static_cast<{{solver}}*>(this)->wrapUpGlobalObservables(wrappedGlobalObservables);
+}
 {% endif %}
 
 {% if numberOfGlobalObservables > 0 %}
@@ -166,6 +171,10 @@ void {{project}}::{{abstractSolver}}::mergeGlobalObservables(
     GlobalObservables&         globalObservables,
     ReadOnlyGlobalObservables& otherObservables) {
   abortWithMsg("If this operation is entered (mergeGlobalObservables), you have specified global observables. Then you have to re-implement this routine, too." );
+}
+
+void {{project}}::{{abstractSolver}}::wrapUpGlobalObservables(GlobalObservables& globalObservables) {
+  // Please re-implement if required.
 }
 {% endif %}
 

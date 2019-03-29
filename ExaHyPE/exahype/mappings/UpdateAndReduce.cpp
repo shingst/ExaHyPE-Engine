@@ -97,10 +97,8 @@ void exahype::mappings::UpdateAndReduce::endIteration(
     exahype::State& state) {
   logTraceInWith1Argument("endIteration(State)", state);
 
-  if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
-    for (auto* solver : solvers::RegisteredSolvers) {
-      solver->wrapUpTimeStep(true,true);
-    }
+  for (auto* solver : solvers::RegisteredSolvers) {
+    solver->wrapUpTimeStep(true,true);
   }
 
   // background threads

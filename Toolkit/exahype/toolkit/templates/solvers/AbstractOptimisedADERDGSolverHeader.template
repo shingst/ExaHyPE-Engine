@@ -277,9 +277,10 @@ public:
       const double* const                         luh,
       const tarch::la::Vector<DIMENSIONS,double>& cellSize) final override;
   void mergeGlobalObservables(double* const globalObservables,const double* const otherObservables) final override;
+  void wrapUpGlobalObservables(double* const globalObservables) final override;
   {% endif %}
-  
-  
+
+
   static void constantsToString(std::ostream& os);
   static void abortWithMsg(const char* const msg);
 
@@ -443,7 +444,7 @@ public:
    *\param[inout] globalObservables The global observables that we want to reset.
    */
   virtual void resetGlobalObservables(GlobalObservables& globalObservables);
-  
+
   /**
    * Computes observables from a cell's solution values.
    * The result will be merged with the global observables.
@@ -473,7 +474,51 @@ public:
   virtual void mergeGlobalObservables(
       GlobalObservables&         globalObservables,
       ReadOnlyGlobalObservables& otherObservables);
+
+  /**
+   * Wrap up the global observables, e.g. finalise an L^2 integral
+   * by applying a square root.
+   *
+   * @note This routine is only called on the global master, after
+   * the reduction has completed.
+   *
+   *\param[inout] observables  The global observables.
+   */
+  virtual void wrapUpGlobalObservables(GlobalObservables& globalObservables);
   {% endif %}
+
+  /**
+   * Signals a user solver that ExaHyPE just started a new time step.
+   *
+   * @param[in] minTimeStamp the minimum time stamp (over all cells)
+   *
+   * @note This function is invoked before the first predictor computation
+   * when the non fused time stepping is run. Otherwise, it is invoked after
+   * the first predictor computation. It will always be called before
+   * "adjustSolution" is invoked.
+   *
+   * @note [MPI] For convenient reductions consider to specify "global_observables" in
+   * the specification file.
+   * 
+   * @param isFirstTimeStepOfBatchOrNoBatch  if this is the first time step of a batch or no batch is run.
+   */
+  virtual void beginTimeStep(const double minTimeStamp,const bool isFirstTimeStepOfBatchOrNoBatch) {}
+
+  /**
+   * Signals a user solver that ExaHyPE just finished a time step.
+   *
+   * @param[in] minTimeStamp the minimum time stamp (over all cells)
+   *
+   * @note This function is invoked after the solution was updated in all
+   * cells.
+   *
+   * @note [MPI] For convenient reductions consider to specify "global_observables" in
+   * the specification file. 
+   *
+   * @param isFirstTimeStepOfBatchOrNoBatch  if this is the first time step of a batch or no batch is run.
+   * @param isLastTimeStepOfBatchOrNoBatch   if this is the last time step of a batch or if no batch is run.
+   */
+  virtual void endTimeStep(const double minTimeStamp,const bool isLastTimeStepOfBatchOrNoBatch)   {}
   ///@}
 
   //helper function

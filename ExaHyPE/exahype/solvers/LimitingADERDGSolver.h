@@ -1606,6 +1606,9 @@ void updateNextGlobalObservables(
       double* const       globalObservables,
       const double* const otherObservables) final override;
 
+  void wrapUpGlobalObservables(
+      double* const globalObservables) final override;
+
 protected:
 
   /** @name Plugin points for derived solvers.

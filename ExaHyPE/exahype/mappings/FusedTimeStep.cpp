@@ -176,14 +176,12 @@ void exahype::mappings::FusedTimeStep::endIteration(
       exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::ReductionJob);
     }
 
-    if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
-      const bool endOfFirstFusedTimeStepInBatch =
-          ( exahype::solvers::Solver::PredictionSweeps == 1 ) ?
-              state.isFirstIterationOfBatchOrNoBatch() :
-              state.isSecondIterationOfBatchOrNoBatch();
-      for (auto* solver : solvers::RegisteredSolvers) {
-        solver->wrapUpTimeStep(endOfFirstFusedTimeStepInBatch,state.isLastIterationOfBatchOrNoBatch());
-      }
+    const bool endOfFirstFusedTimeStepInBatch =
+        ( exahype::solvers::Solver::PredictionSweeps == 1 ) ?
+            state.isFirstIterationOfBatchOrNoBatch() :
+            state.isSecondIterationOfBatchOrNoBatch();
+    for (auto* solver : solvers::RegisteredSolvers) {
+      solver->wrapUpTimeStep(endOfFirstFusedTimeStepInBatch,state.isLastIterationOfBatchOrNoBatch());
     }
   }
   logTraceOutWith1Argument("endIteration(State)", state);

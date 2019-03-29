@@ -173,6 +173,10 @@ void exahype::solvers::LimitingADERDGSolver::kickOffTimeStep(const bool isFirstT
 
 void exahype::solvers::LimitingADERDGSolver::wrapUpTimeStep(const bool isFirstTimeStepOfBatchOrNoBatch,const bool isLastTimeStepOfBatchOrNoBatch) {
   _solver->wrapUpTimeStep(isFirstTimeStepOfBatchOrNoBatch,isLastTimeStepOfBatchOrNoBatch);
+  if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) { // have consistent data when limiter's wrap up routine is called.
+    std::copy(_solver->_globalObservables.begin(),_solver->_globalObservables.end(),
+              _limiter->_globalObservables.begin());
+  }
   _limiter->wrapUpTimeStep(isFirstTimeStepOfBatchOrNoBatch,isLastTimeStepOfBatchOrNoBatch);
 }
 
@@ -341,10 +345,30 @@ void exahype::solvers::LimitingADERDGSolver::finaliseStateUpdates(
 // CELL-LOCAL
 //////////////////////////////////
 double exahype::solvers::LimitingADERDGSolver::startNewTimeStep(SolverPatch& solverPatch,CellInfo& cellInfo,const bool isFirstTimeStepOfBatch) {
-  double admissibleTimeStepSize = _solver->startNewTimeStep(solverPatch,isFirstTimeStepOfBatch);
+  assertion1(solverPatch.getType()==SolverPatch::Type::Cell,solverPatch.toString());
+  double admissibleTimeStepSize = std::numeric_limits<double>::infinity();
+  // n-1
+  if ( isFirstTimeStepOfBatch ) {
+    solverPatch.setPreviousTimeStamp(solverPatch.getTimeStamp());
+    solverPatch.setPreviousTimeStepSize(solverPatch.getTimeStepSize());
+  }
+  // n
+  solverPatch.setTimeStamp(solverPatch.getTimeStamp()+solverPatch.getTimeStepSize());
+  if ( getTimeStepping() != TimeStepping::GlobalFixed ) {
+    if ( solverPatch.getRefinementStatus()>=_solver->_minRefinementStatusForTroubledCell ) {
+      admissibleTimeStepSize = _solver->computeTimeStepSize(solverPatch);
+    } else {
+      LimiterPatch& limiterPatch = getLimiterPatch(solverPatch,cellInfo);
+      double* limiterSolution    = static_cast<double*>(limiterPatch.getSolution());
+      admissibleTimeStepSize = _limiter->stableTimeStepSize(limiterSolution, limiterPatch.getSize());
+      // TODO(Dominic): Hide details in FV solver
+    }
+    solverPatch.setTimeStepSize(admissibleTimeStepSize);
+  } else {
+    admissibleTimeStepSize = solverPatch.getTimeStepSize();
+  }
   ensureLimiterPatchTimeStepDataIsConsistent(solverPatch,cellInfo);
 
-  // TODO(Lukas) Do we need to do anything with global observables here?
   return admissibleTimeStepSize;
 }
 
@@ -610,6 +634,12 @@ void exahype::solvers::LimitingADERDGSolver::mergeGlobalObservables(
     double* const       globalObservables,
     const double* const otherObservables) {
   logError("mergeGlobalObservables(...)","routine should never be called!");
+  std::abort();
+}
+
+void exahype::solvers::LimitingADERDGSolver::wrapUpGlobalObservables(
+    double* const globalObservables) {
+  logError("wrapUpGlobalObservables(...)","routine should never be called!");
   std::abort();
 }
 

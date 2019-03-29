@@ -802,6 +802,7 @@ void exahype::solvers::ADERDGSolver::wrapUpTimeStep(const bool isFirstTimeStepOf
 
   if ( isLastTimeStepOfBatchOrNoBatch ) {
     std::copy(_nextGlobalObservables.begin(),_nextGlobalObservables.end(),_globalObservables.begin());
+    wrapUpGlobalObservables(_globalObservables.data());
   }
 
   // call user code
@@ -4228,6 +4229,7 @@ exahype::solvers::ADERDGSolver::compileMessageForMaster(const int capacity) cons
   message.push_back(convertToDouble(_meshUpdateEvent));
 
   for (const auto observable : _globalObservables) {
+    logDebug("sendDataToMaster(...)","Sending data to master: " << "entry=" << observable);
     message.push_back(observable);
   }
 
@@ -4290,7 +4292,7 @@ exahype::DataHeap::HeapEntries
 exahype::solvers::ADERDGSolver::compileMessageForWorker(const int capacity) const {
   const auto messageSize = 5 + _numberOfGlobalObservables;
   DataHeap::HeapEntries message;
-  message.reserve(std::max(5,capacity));
+  message.reserve(std::max(messageSize,capacity));
 
   message.push_back(_minTimeStamp);
   message.push_back(_minTimeStepSize);
