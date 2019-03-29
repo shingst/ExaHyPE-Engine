@@ -131,13 +131,13 @@ namespace exahype {
   typedef peano::heap::DoubleHeap<
     peano::heap::SynchronousDataExchanger< double, true, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
     peano::heap::SynchronousDataExchanger< double, true, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
-    peano::heap::AggregationBoundaryDataExchanger< double, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
+    peano::heap::RLEBoundaryDataExchanger< double, false, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
     std::vector< double, AlignedAllocator >
   >     DataHeap;
   typedef peano::heap::CharHeap<
     peano::heap::SynchronousDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedCharAllocator > >,
     peano::heap::SynchronousDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedCharAllocator > >,
-    peano::heap::AggregationBoundaryDataExchanger< char, AlignedCharSendReceiveTask, std::vector< char, AlignedCharAllocator > >,
+    peano::heap::RLEBoundaryDataExchanger< char, false, AlignedCharSendReceiveTask, std::vector< char, AlignedCharAllocator > >,
     std::vector< char, AlignedCharAllocator >
   >     CompressedDataHeap;
   #elif defined(ALIGNMENT) // Default: AggregationBoundaryDataExchanger
