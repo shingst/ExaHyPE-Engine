@@ -269,12 +269,12 @@ RECURSIVE SUBROUTINE PDEEigenvalues(L,Q,n)
   !
   ! L = 1.0
   CALL PDEEigenvaluesGRMHD(L,Q,n)
-  CALL PDECons2PrimGRMHD(Vp,Q,iErr)
+  !CALL PDECons2PrimGRMHD(Vp,Q,iErr)
   !
-      WRITE(*,'(a,f18.10,f18.10)') "n(1),n(2):",n(1),n(2)
-  DO i = 1, nVar
-      WRITE(*,'(a,i9,E16.6,E16.6,E16.6)') "i,Q(i),Vp(i),L(i):",i,Q(i),Vp(i),L(i)
-  ENDDO 
+  !    WRITE(*,'(a,f18.10,f18.10)') "n(1),n(2):",n(1),n(2)
+  !DO i = 1, nVar
+  !    WRITE(*,'(a,i9,E16.6,E16.6,E16.6)') "i,Q(i),Vp(i),L(i):",i,Q(i),Vp(i),L(i)
+  !ENDDO 
 	!IF( ANY( ISNAN(L) )) THEN
 	!	PRINT *,' PDEEigenvalues NAN ' 
 	!	STOP
@@ -509,36 +509,36 @@ RECURSIVE SUBROUTINE HLLEMFluxFV(FL,FR,QL,QR,QavL,QavR,NormalNonZero)
   fR = f1R*nv(1)+g1R*nv(2)+h1R*nv(3)
   fL = f1L*nv(1)+g1L*nv(2)+h1L*nv(3)
   !
-IF(ANY(fR(6:8).NE.0)) THEN
-     PRINT *,"f1R",f1R
-     PRINT *,"g1R",g1R
-     PRINT *,"h1R",h1R
-     PRINT *,"f1L",f1L
-     PRINT *,"g1L",g1L
-     PRINT *,"h1L",h1L
-     PRINT *,"dQ",dQ
-     PRINT *,"QR",QR
-     PRINT *,"QL",QL
-     PRINT *,"dQ",dQ
-     PRINT *,"BEFORE: fR(6:8).NE.0",fR(6:8)
-    STOP
-ENDIF
-IF(ANY(fl(6:8).NE.0)) THEN
-     PRINT *,"QR",QR
-     PRINT *,"QL",QL
-     PRINT *,"dQ",dQ
-     PRINT *,"BEFORE: fl(6:8).NE.0",fl(6:8)
-    STOP
-ENDIF
+!IF(ANY(fR(6:8).NE.0)) THEN
+!     PRINT *,"f1R",f1R
+!     PRINT *,"g1R",g1R
+!     PRINT *,"h1R",h1R
+!     PRINT *,"f1L",f1L
+!     PRINT *,"g1L",g1L
+!     PRINT *,"h1L",h1L
+!     PRINT *,"dQ",dQ
+!     PRINT *,"QR",QR
+!     PRINT *,"QL",QL
+!     PRINT *,"dQ",dQ
+!     PRINT *,"BEFORE: fR(6:8).NE.0",fR(6:8)
+!    STOP
+!ENDIF
+!IF(ANY(fl(6:8).NE.0)) THEN
+!     PRINT *,"QR",QR
+!     PRINT *,"QL",QL
+!     PRINT *,"dQ",dQ
+!     PRINT *,"BEFORE: fl(6:8).NE.0",fl(6:8)
+!    STOP
+!ENDIF
   !USE Parameters, ONLY : d,nVar,ndim 
   QM = 0.5*(QL+QR) 
   CALL PDECons2PrimGRMHD(VM,QM,iErr)
   CALL PDEEigenvalues(LL,QL,nv)  
   CALL PDEEigenvalues(LR,QR,nv)  
-IF(ANY(QM(6:8).NE.0)) THEN
-    PRINT *, "HLLEMFluxFV QM(6:8)",QM(6:8)
-    STOP
-ENDIF
+!IF(ANY(QM(6:8).NE.0)) THEN
+!    PRINT *, "HLLEMFluxFV QM(6:8)",QM(6:8)
+!    STOP
+!ENDIF
   CALL PDEEigenvalues(LM,QM,nv)  
   sL = MIN( 0., MINVAL(LL(:)), MINVAL(LM(:)) ) 
   sR = MAX( 0., MAXVAL(LR(:)), MAXVAL(LM(:)) ) 
@@ -546,26 +546,26 @@ ENDIF
   !DO i=1,nVar
   !  WRITE(*,'(E16.6)'), QM(i)
   !ENDDO
-  print *,"*********************************************"
-  WRITE(*,'(a,f18.10,f18.10,f18.10)')    "***** nv:",nv(1),nv(2),nv(3)
+  !print *,"*********************************************"
+  !WRITE(*,'(a,f18.10,f18.10,f18.10)')    "***** nv:",nv(1),nv(2),nv(3)
   CALL PDEIntermediateFields(RL,LLin,iRL,QM,nv) 
   !PRINT *, "PDEIntermediateFields finished"
   Lam = 0.5*(LLin-ABS(LLin))
   Lap = 0.5*(LLin+ABS(LLin)) 
   deltaL = 0.0
-  print *,"*********************************************"
-  !print *,"*****LLin, QR(1),nv",QM(1),NormalNonZero
-  WRITE(*,'(a,E16.6,i9)')    "***** LLin, QR(1),nv",QM(1),NormalNonZero
-  print *,"**********************************************"
+  !print *,"*********************************************"
+  !!print *,"*****LLin, QR(1),nv",QM(1),NormalNonZero
+  !WRITE(*,'(a,E16.6,i9)')    "***** LLin, QR(1),nv",QM(1),NormalNonZero
+  !print *,"**********************************************"
 
   DO i = 1, nLin
       deltaL(i,i) = (1. - Lam(i,i)/(sL-1e-14) - Lap(i,i)/(sR+1e-14) )*flattener(i)  
       !print *,"i,DeltaL(i,i):",i,DeltaL(i,i)
-      WRITE(*,'(a,i9,E16.6,E16.6,E16.6,E16.6,E16.6)') "i,QM(i),VM(i),DeltaL(i,i),LM(i):",i,QM(i),VM(i),DeltaL(i,i),LLin(i,i),LM(i)
+      !WRITE(*,'(a,i9,E16.6,E16.6,E16.6,E16.6,E16.6)') "i,QM(i),VM(i),DeltaL(i,i),LM(i):",i,QM(i),VM(i),DeltaL(i,i),LLin(i,i),LM(i)
       !WRITE(*,'(a, i9, f18.10, f16.5, f16.5, i9)') 
   ENDDO    
-  print *,"**********************************************"
-  STOP
+  !print *,"**********************************************"
+  !STOP
 #ifdef VISCOUS
   CALL PDEViscEigenvalues(LL,QL,nv)  
   CALL PDEViscEigenvalues(LR,QR,nv)
@@ -610,38 +610,38 @@ ENDIF
   fR = fL - Dp
   fL = fL + Dm
   ! 
-IF(ANY(Dp(6:8).NE.0)) THEN
-     PRINT *,"QR",QR
-     PRINT *,"QL",QL
-     PRINT *,"dQ",dQ
-     PRINT *,"Dp(6:8).NE.0",Dp(6:8)
-    STOP
-ENDIF
-IF(ANY(Dm(6:8).NE.0)) THEN
-     PRINT *,"QR",QR
-     PRINT *,"QL",QL
-     PRINT *,"dQ",dQ
-     PRINT *,"Dm(6:8).NE.0",Dm(6:8)
-    STOP
-ENDIF
-IF(ANY(fR(6:8).NE.0)) THEN
-     PRINT *,"QR",QR
-     PRINT *,"QL",QL
-     PRINT *,"dQ",dQ
-     PRINT *,"fR(6:8).NE.0",fR(6:8)
-    STOP
-ENDIF
-IF(ANY(fl(6:8).NE.0)) THEN
-     PRINT *,"QR",QR
-     PRINT *,"QL",QL
-     PRINT *,"dQ",dQ
-     PRINT *,"fl(6:8).NE.0",fl(6:8)
-    STOP
-ENDIF
-  ! REMEMBER THE FOLLOWING: we are recursively updating qh as
-  ! q_i^{n+1} = q_i^n - FL              .... i.e. F_=F_{i+1/2}_ right flux
-  ! q_{i+1}^{n+1} = q_i^n + FR             .... i.e. FR=F_{i+1/2} left flux
-  ! see musclhancock.cpph after "// 4. Solve Riemann problems"
+!IF(ANY(Dp(6:8).NE.0)) THEN
+!     PRINT *,"QR",QR
+!     PRINT *,"QL",QL
+!     PRINT *,"dQ",dQ
+!     PRINT *,"Dp(6:8).NE.0",Dp(6:8)
+!    STOP
+!ENDIF
+!IF(ANY(Dm(6:8).NE.0)) THEN
+!     PRINT *,"QR",QR
+!     PRINT *,"QL",QL
+!     PRINT *,"dQ",dQ
+!     PRINT *,"Dm(6:8).NE.0",Dm(6:8)
+!    STOP
+!ENDIF
+!IF(ANY(fR(6:8).NE.0)) THEN
+!     PRINT *,"QR",QR
+!     PRINT *,"QL",QL
+!     PRINT *,"dQ",dQ
+!     PRINT *,"fR(6:8).NE.0",fR(6:8)
+!    STOP
+!ENDIF
+!IF(ANY(fl(6:8).NE.0)) THEN
+!     PRINT *,"QR",QR
+!     PRINT *,"QL",QL
+!     PRINT *,"dQ",dQ
+!     PRINT *,"fl(6:8).NE.0",fl(6:8)
+!    STOP
+!ENDIF
+!  ! REMEMBER THE FOLLOWING: we are recursively updating qh as
+!  ! q_i^{n+1} = q_i^n - FL              .... i.e. F_=F_{i+1/2}_ right flux
+!  ! q_{i+1}^{n+1} = q_i^n + FR             .... i.e. FR=F_{i+1/2} left flux
+!  ! see musclhancock.cpph after "// 4. Solve Riemann problems"
   ! 
     END SUBROUTINE HLLEMFluxFV
 

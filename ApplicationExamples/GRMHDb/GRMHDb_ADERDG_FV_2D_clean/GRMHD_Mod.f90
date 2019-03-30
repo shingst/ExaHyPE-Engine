@@ -2382,17 +2382,17 @@ RECURSIVE SUBROUTINE PDEEigenvaluesGRMHD(L,Q,normal)
     g_cov(2,1) = V(15)
     g_cov(3,1) = V(16)
     g_cov(3,2) = V(18)
-    ! 
-    IF(ABS(V(2)-0.2).LT.1e-4) THEN 
-      WRITE(*,'(a,f18.10,f18.10)') "n(1),n(2):",n(1),n(2)
-          DO i = 1, nVar
-              WRITE(*,'(a,i9,E16.6,E16.6,E16.6)') "i,Q(i),V(i),L(i):",i,Q(i),V(i),L(i)
-          ENDDO 
-          WRITE(*,'(a,E16.6,E16.6,E16.6,E16.6,E16.6)')  ",u,cs2,l2m,gg,den: ",u,cs2,lf2m,gg,den
-          WRITE(*,'(a,E16.6,E16.6,E16.6)')  ",v_cov(1),v_cov(2),v_cov(3): ",v_cov(1),v_cov(2),v_cov(3)
-          WRITE(*,'(a,E16.6,E16.6,E16.6)')  ",v_contr(1),v_contr(2),v_contr(3): ",v_contr(1),v_contr(2),v_contr(3) 
-          WRITE(*,'(a,E16.6,E16.6,E16.6)')  ",n(1),n(2),n(3): ",n(1),n(2),n(3) 
-    ENDIF
+    !! 
+    !IF(ABS(V(2)-0.2).LT.1e-4) THEN 
+    !  WRITE(*,'(a,f18.10,f18.10)') "n(1),n(2):",n(1),n(2)
+    !      DO i = 1, nVar
+    !          WRITE(*,'(a,i9,E16.6,E16.6,E16.6)') "i,Q(i),V(i),L(i):",i,Q(i),V(i),L(i)
+    !      ENDDO 
+    !      WRITE(*,'(a,E16.6,E16.6,E16.6,E16.6,E16.6)')  ",u,cs2,l2m,gg,den: ",u,cs2,lf2m,gg,den
+    !      WRITE(*,'(a,E16.6,E16.6,E16.6)')  ",v_cov(1),v_cov(2),v_cov(3): ",v_cov(1),v_cov(2),v_cov(3)
+    !      WRITE(*,'(a,E16.6,E16.6,E16.6)')  ",v_contr(1),v_contr(2),v_contr(3): ",v_contr(1),v_contr(2),v_contr(3) 
+    !      WRITE(*,'(a,E16.6,E16.6,E16.6)')  ",n(1),n(2),n(3): ",n(1),n(2),n(3) 
+    !ENDIF
     CALL MatrixInverse3x3(g_cov,g_contr,gp)
     gp = SQRT(gp)
     gm = 1./gp
@@ -2460,17 +2460,17 @@ RECURSIVE SUBROUTINE PDEEigenvaluesGRMHD(L,Q,normal)
     ENDDO
     !
     
-    IF(ABS(V(2)-0.2).LT.1e-4) THEN 
-      WRITE(*,'(a,f18.10,f18.10)') "n(1),n(2):",n(1),n(2)
-          DO i = 1, nVar
-              WRITE(*,'(a,i9,E16.6,E16.6,E16.6)') "i,Q(i),Vp(i),L(i):",i,Q(i),V(i),L(i)
-          ENDDO 
-          WRITE(*,'(a,E16.6,E16.6,E16.6,E16.6,E16.6)')  ",u,cs2,l2m,gg,den: ",u,cs2,lf2m,gg,den
-          WRITE(*,'(a,E16.6,E16.6,E16.6)')  ",v_cov(1),v_cov(2),v_cov(3): ",v_cov(1),v_cov(2),v_cov(3)
-          WRITE(*,'(a,E16.6,E16.6,E16.6)')  ",v_contr(1),v_contr(2),v_contr(3): ",v_contr(1),v_contr(2),v_contr(3) 
-          WRITE(*,'(a,E16.6,E16.6,E16.6)')  ",n(1),n(2),n(3): ",n(1),n(2),n(3) 
-    ENDIF
-    STOP
+    !IF(ABS(V(2)-0.2).LT.1e-4) THEN 
+    !  WRITE(*,'(a,f18.10,f18.10)') "n(1),n(2):",n(1),n(2)
+    !      DO i = 1, nVar
+    !          WRITE(*,'(a,i9,E16.6,E16.6,E16.6)') "i,Q(i),Vp(i),L(i):",i,Q(i),V(i),L(i)
+    !      ENDDO 
+    !      WRITE(*,'(a,E16.6,E16.6,E16.6,E16.6,E16.6)')  ",u,cs2,l2m,gg,den: ",u,cs2,lf2m,gg,den
+    !      WRITE(*,'(a,E16.6,E16.6,E16.6)')  ",v_cov(1),v_cov(2),v_cov(3): ",v_cov(1),v_cov(2),v_cov(3)
+    !      WRITE(*,'(a,E16.6,E16.6,E16.6)')  ",v_contr(1),v_contr(2),v_contr(3): ",v_contr(1),v_contr(2),v_contr(3) 
+    !      WRITE(*,'(a,E16.6,E16.6,E16.6)')  ",n(1),n(2),n(3): ",n(1),n(2),n(3) 
+    !ENDIF
+    !STOP
     
     RETURN
     !
@@ -2577,9 +2577,9 @@ RECURSIVE SUBROUTINE PDEEigenvectorsGRMHD(R,L,iR,Q,normal)
     CALL PDECons2PrimGRMHD(VP,Q,iErr)
     rho    = VP(1)
 	DO i=1,3
-		v_cov = VP(1+i)
+		v_cov(i) = VP(1+i)
 		B_contr(i) = VP(5+i)
-		shift = VP(10+i)
+		shift(i) = VP(10+i)
 	ENDDO
     p      = VP(5)
     !
