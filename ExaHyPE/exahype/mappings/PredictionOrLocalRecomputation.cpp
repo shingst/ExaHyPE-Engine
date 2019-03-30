@@ -155,9 +155,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::enterCell(
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
       if ( performLocalRecomputation( solver ) && exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
         auto* limitingADERDG = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
-        double admissibleTimeStepSize =
-            limitingADERDG->localRecomputation(solverNumber,cellInfo,isAtRemoteBoundary);
-        solver->updateAdmissibleTimeStepSize(admissibleTimeStepSize);
+        limitingADERDG->localRecomputation(solverNumber,cellInfo,isAtRemoteBoundary);
       }
       else if ( performPrediction(solver) && exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
         switch ( solver->getType() ) {

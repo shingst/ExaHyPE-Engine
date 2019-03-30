@@ -25,6 +25,7 @@
   },
   "optimisation": {
     "fuse_algorithmic_steps": "all",
+    "fuse_algorithmic_steps_diffusion_factor": 0.99,
     "fuse_algorithmic_steps_rerun_factor": 0.99,
     "spawn_predictor_as_background_thread": true,
     "spawn_amr_background_threads": true,
@@ -77,7 +78,7 @@
           "name": "height",
           "multiplicity": 1
         },
-	{
+        {
           "name": "backgroundstate",
           "multiplicity": 2
         }
@@ -85,20 +86,20 @@
       "global_observables": [
         {
           "name": "gobs",
-	  "multiplicity": 3
+          "multiplicity": 3
         }
       ],
       "parameters": {
-	"use-gravity": true,
-	"use-background-state": true,
+        "use-gravity": true,
+        "use-background-state": true,
         "viscosity": 0.0,
         "scenario": "two-bubbles",
-	"use-amr": true,
-	"use-tv-amr": true,
-	"use-tv-volume-correction": true,
-	"amr-indicator": "potential-temperature",
-	"amr-factor-refine": 2.5,
-	"amr-factor-erase": -10.5
+        "use-amr": true,
+        "use-tv-amr": true,
+        "use-tv-volume-correction": true,
+        "amr-indicator": "potential-temperature",
+        "amr-factor-refine": 2.5,
+        "amr-factor-erase": -10.5
       },
       "plotters": [
         {
@@ -117,8 +118,8 @@
           "output": "./results/solution",
           "variables": 5
         },
-	{
-	  "type": "user::defined ErrorWriter",
+       {  
+          "type": "user::defined ErrorWriter",
           "name": "ErrorWriter",
           "time": 0.5,
           "repeat": 1.0,

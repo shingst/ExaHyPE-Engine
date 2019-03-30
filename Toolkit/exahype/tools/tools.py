@@ -3,6 +3,8 @@
 import os,collections,math,logging
 import argparse
 
+import json
+
 from . import mesh_info
 
 #
@@ -33,11 +35,31 @@ class Tool():
     """
     return ""
 
-  def run(self,spec):
+  def run(self,context):
     """
     Run the tool.
     """
     pass
+
+class PrettyPrintTool(Tool):
+  """
+  Pretty print a JSON spec file.
+  """
+  def __init__(self,log=None):
+    super().__init__(log)
+    self.log.info("registered tool: {} (id='{}')".format(__name__,self.id()))
+
+  def id(self):
+    return "pretty_print"
+
+  def help(self):
+    return "Pretty Print - Pretty print a JSON spec file. NOTE: Writes to the original file and does not check if the original file is actually a JSON file!"
+
+  def run(self,context):
+    spec         = context["spec"]
+    specfilePath = context["specfilePath"]
+    with open(specfilePath, 'wt') as out:
+      json.dump(spec, out, indent=2)
 
 class MeshInfoTool(Tool):
   """
@@ -54,10 +76,11 @@ class MeshInfoTool(Tool):
   def help(self):
     return "Mesh Info - Gives information about the mesh ExaHyPE will construct and suggests optimal MPI rank numbers to distribute the coarsest base grid."
 
-  def run(self,spec):
+  def run(self,context):
     """
     Create an instance of MeshInfo from the specification file.
     """
+    spec = context["spec"]
     specDomain = spec.get("computational_domain")
 
     dim                     = specDomain.get("dimension")
@@ -160,3 +183,4 @@ def register(tool):
 
 def initRegistry(log=False):
   register(MeshInfoTool(log))
+  register(PrettyPrintTool(log))

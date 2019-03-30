@@ -42,8 +42,6 @@ std::vector<exahype::solvers::Solver*> exahype::solvers::RegisteredSolvers;
 exahype::DataHeap::HeapEntries exahype::EmptyDataHeapMessage(0);
 #endif
 
-tarch::multicore::BooleanSemaphore exahype::ReductionSemaphore;
-
 tarch::multicore::BooleanSemaphore exahype::HeapSemaphore;
 
 exahype::DataHeap::HeapEntries& exahype::getDataHeapEntries(const int index) {
@@ -101,7 +99,7 @@ bool exahype::solvers::Solver::FuseAllADERDGPhases                = false;
 double exahype::solvers::Solver::FusedTimeSteppingRerunFactor     = 0.99;
 double exahype::solvers::Solver::FusedTimeSteppingDiffusionFactor = 0.99;
 
-bool exahype::solvers::Solver::DisableMetaDataExchangeInBatchedTimeSteps = false;
+bool exahype::solvers::Solver::DisableMetadataExchangeDuringTimeSteps = false;
 bool exahype::solvers::Solver::DisablePeanoNeighbourExchangeInTimeSteps = false;
 
 int exahype::solvers::Solver::MaxNumberOfRunningBackgroundJobConsumerTasksDuringTraversal = 0;
@@ -423,10 +421,6 @@ int exahype::solvers::Solver::getMaximumAdaptiveMeshDepth() const {
 
 int exahype::solvers::Solver::getMaximumAdaptiveMeshLevel() const {
   return _coarsestMeshLevel+_maximumAdaptiveMeshDepth;
-}
-
-std::vector<double>& exahype::solvers::Solver::getGlobalObservables() {
-  return _globalObservables;
 }
 
 // TODO(Lukas) Is this still needed?

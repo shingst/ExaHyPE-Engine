@@ -117,6 +117,12 @@ void exahype::mappings::FinaliseMeshRefinement::beginIteration(exahype::State& s
   OneSolverRequestedMeshUpdate =
       exahype::solvers::Solver::oneSolverRequestedMeshRefinement();
 
+  // reduce time step size and global observables; keep refinement event
+  for (auto* solver : exahype::solvers::RegisteredSolvers) {
+    solver->resetAdmissibleTimeStepSize();
+    solver->resetGlobalObservables();
+  }
+
   exahype::mappings::MeshRefinement::IsFirstIteration = true;
 
   #ifdef Parallel
@@ -153,9 +159,9 @@ void exahype::mappings::FinaliseMeshRefinement::enterCell(
         if ( solver->getMeshUpdateEvent()==exahype::solvers::Solver::MeshUpdateEvent::RefinementRequested ) { // is not the same as the above check
           solver->rollbackSolutionGlobally(solverNumber,cellInfo);
         }
-        // compute a new time step size
-        double admissibleTimeStepSize   = solver->updateTimeStepSize(solverNumber,cellInfo);
-        solver->updateAdmissibleTimeStepSize(admissibleTimeStepSize);
+        // reduce time step size and global observables; keep refinement event
+        solver->updateTimeStepSize(solverNumber,cellInfo);
+        solver->updateGlobalObservables(solverNumber,cellInfo);
 
         // determine min and max for LimitingADERDGSolver
         if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
@@ -184,6 +190,7 @@ void exahype::mappings::FinaliseMeshRefinement::endIteration(
       for (auto* solver : solvers::RegisteredSolvers) {
         if ( solver->hasRequestedAnyMeshRefinement() ) {
           solver->updateTimeStepSize();
+          solver->updateGlobalObservables();
         }
       }
     }

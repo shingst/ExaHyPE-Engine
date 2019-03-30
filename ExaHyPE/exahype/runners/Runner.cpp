@@ -813,7 +813,7 @@ void exahype::runners::Runner::initOptimisations() const {
 
   exahype::solvers::Solver::DisablePeanoNeighbourExchangeInTimeSteps =
       _parser.getDisablePeanoNeighbourExchangeInTimeSteps();
-  exahype::solvers::Solver::DisableMetaDataExchangeInBatchedTimeSteps =
+  exahype::solvers::Solver::DisableMetadataExchangeDuringTimeSteps =
       _parser.getDisableMetadataExchangeInBatchedTimeSteps();
 
   if ( tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getGlobalMasterRank() ) {
@@ -834,7 +834,7 @@ void exahype::runners::Runner::initOptimisations() const {
       logInfo("parseOptimisations()","\t\tall solvers use 'globalfixed' time stepping="<<
           ( exahype::solvers::Solver::allSolversUseTimeSteppingScheme(exahype::solvers::Solver::TimeStepping::GlobalFixed)
           ? "yes" : "no" ) );
-      logInfo("parseOptimisations()","\tdisable-metadata-exchange-in-batched-time-steps="<<(exahype::solvers::Solver::DisableMetaDataExchangeInBatchedTimeSteps ? "on" : "off"));
+      logInfo("parseOptimisations()","\tdisable-metadata-exchange-in-batched-time-steps="<<(exahype::solvers::Solver::DisableMetadataExchangeDuringTimeSteps ? "on" : "off"));
   }
 }
 
