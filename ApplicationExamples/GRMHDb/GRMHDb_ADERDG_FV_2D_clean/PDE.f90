@@ -249,6 +249,7 @@ RECURSIVE SUBROUTINE PDEEigenvalues(L,Q,n)
    USE GRMHD_Mod
   IMPLICIT NONE
   REAL :: L(nVar), n(nDim), Q(nVar), Vp(nVar)
+  INTEGER :: i,iErr
   INTENT(IN)  :: Q,n
   INTENT(OUT) :: L 
   ! Local variables
@@ -268,7 +269,12 @@ RECURSIVE SUBROUTINE PDEEigenvalues(L,Q,n)
   !
   ! L = 1.0
   CALL PDEEigenvaluesGRMHD(L,Q,n)
+  CALL PDECons2PrimGRMHD(Vp,Q,iErr)
   !
+      WRITE(*,'(a,f18.10,f18.10)') "n(1),n(2):",n(1),n(2)
+  DO i = 1, nVar
+      WRITE(*,'(a,i9,E16.6,E16.6,E16.6)') "i,Q(i),Vp(i),L(i):",i,Q(i),Vp(i),L(i)
+  ENDDO 
 	!IF( ANY( ISNAN(L) )) THEN
 	!	PRINT *,' PDEEigenvalues NAN ' 
 	!	STOP
@@ -472,6 +478,7 @@ END SUBROUTINE RoeMatrix
 RECURSIVE SUBROUTINE HLLEMFluxFV(FL,FR,QL,QR,QavL,QavR,NormalNonZero) 
   USE Parameters, ONLY : nVar, nDim, nLin
   USE iso_c_binding 
+  USE GRMHD_Mod
   ! Local variables
   INTEGER, INTENT(IN)   :: NormalNonZero
   REAL, INTENT(IN)     :: QL(nVar)
@@ -480,7 +487,7 @@ RECURSIVE SUBROUTINE HLLEMFluxFV(FL,FR,QL,QR,QavL,QavR,NormalNonZero)
   REAL, INTENT(INOUT)  :: FR(nVar)
   REAL    :: QavL(nVar), QavR(nVar)  
     ! Local variables 
-  INTEGER           :: i,j,k,l, ml(1)  
+  INTEGER           :: i,j,k,l, ml(1)  ,iErr
   REAL              :: smax, Qav(nVar)
   REAL              ::  nv(nDim), flattener(nLin)
   REAL    :: absA(nVar,nVar), amax  
@@ -489,12 +496,12 @@ RECURSIVE SUBROUTINE HLLEMFluxFV(FL,FR,QL,QR,QavL,QavR,NormalNonZero)
   REAL    :: RL(nVar,nLin),iRL(nLin,nVar),LLin(nLin,nLin) 
   REAL    :: Aroe(nVar,nVar),Aroep(nVar,nVar), Aroem(nVar,nVar), Dm(nVar), Dp(nVar), dQ(nVar)
   REAL :: f1R(nVar), g1R(nVar), h1R(nVar) 
-  REAL :: f1L(nVar), g1L(nVar), h1L(nVar) 
+  REAL :: f1L(nVar), g1L(nVar), h1L(nVar) , VM(nVar) 
   !  
   nv(:)=0.
   nv(NormalNonZero+1)=1.
   !
-  flattener=1.
+  flattener=1.0 !0.8
   !
   CALL PDEFlux(f1L,g1L,h1L,QL)
   CALL PDEFlux(f1R,g1R,h1R,QR)
@@ -525,6 +532,7 @@ IF(ANY(fl(6:8).NE.0)) THEN
 ENDIF
   !USE Parameters, ONLY : d,nVar,ndim 
   QM = 0.5*(QL+QR) 
+  CALL PDECons2PrimGRMHD(VM,QM,iErr)
   CALL PDEEigenvalues(LL,QL,nv)  
   CALL PDEEigenvalues(LR,QR,nv)  
 IF(ANY(QM(6:8).NE.0)) THEN
@@ -538,14 +546,26 @@ ENDIF
   !DO i=1,nVar
   !  WRITE(*,'(E16.6)'), QM(i)
   !ENDDO
+  print *,"*********************************************"
+  WRITE(*,'(a,f18.10,f18.10,f18.10)')    "***** nv:",nv(1),nv(2),nv(3)
   CALL PDEIntermediateFields(RL,LLin,iRL,QM,nv) 
   !PRINT *, "PDEIntermediateFields finished"
   Lam = 0.5*(LLin-ABS(LLin))
   Lap = 0.5*(LLin+ABS(LLin)) 
   deltaL = 0.0
+  print *,"*********************************************"
+  !print *,"*****LLin, QR(1),nv",QM(1),NormalNonZero
+  WRITE(*,'(a,E16.6,i9)')    "***** LLin, QR(1),nv",QM(1),NormalNonZero
+  print *,"**********************************************"
+
   DO i = 1, nLin
       deltaL(i,i) = (1. - Lam(i,i)/(sL-1e-14) - Lap(i,i)/(sR+1e-14) )*flattener(i)  
+      !print *,"i,DeltaL(i,i):",i,DeltaL(i,i)
+      WRITE(*,'(a,i9,E16.6,E16.6,E16.6,E16.6,E16.6)') "i,QM(i),VM(i),DeltaL(i,i),LM(i):",i,QM(i),VM(i),DeltaL(i,i),LLin(i,i),LM(i)
+      !WRITE(*,'(a, i9, f18.10, f16.5, f16.5, i9)') 
   ENDDO    
+  print *,"**********************************************"
+  STOP
 #ifdef VISCOUS
   CALL PDEViscEigenvalues(LL,QL,nv)  
   CALL PDEViscEigenvalues(LR,QR,nv)

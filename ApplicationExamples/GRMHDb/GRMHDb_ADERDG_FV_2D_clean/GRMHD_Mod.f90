@@ -2364,9 +2364,9 @@ RECURSIVE SUBROUTINE PDEEigenvaluesGRMHD(L,Q,normal)
     CALL PDECons2PrimGRMHD(V,Q,iErr)
     rho    = V(1)
 	DO i=1,3
-		v_cov = V(1+i)
+		v_cov(i) = V(1+i)
 		B_contr(i) = V(5+i)
-		shift = V(10+i)
+		shift(i) = V(10+i)
 	ENDDO
     p      = V(5)
     !
@@ -2383,6 +2383,16 @@ RECURSIVE SUBROUTINE PDEEigenvaluesGRMHD(L,Q,normal)
     g_cov(3,1) = V(16)
     g_cov(3,2) = V(18)
     ! 
+    IF(ABS(V(2)-0.2).LT.1e-4) THEN 
+      WRITE(*,'(a,f18.10,f18.10)') "n(1),n(2):",n(1),n(2)
+          DO i = 1, nVar
+              WRITE(*,'(a,i9,E16.6,E16.6,E16.6)') "i,Q(i),V(i),L(i):",i,Q(i),V(i),L(i)
+          ENDDO 
+          WRITE(*,'(a,E16.6,E16.6,E16.6,E16.6,E16.6)')  ",u,cs2,l2m,gg,den: ",u,cs2,lf2m,gg,den
+          WRITE(*,'(a,E16.6,E16.6,E16.6)')  ",v_cov(1),v_cov(2),v_cov(3): ",v_cov(1),v_cov(2),v_cov(3)
+          WRITE(*,'(a,E16.6,E16.6,E16.6)')  ",v_contr(1),v_contr(2),v_contr(3): ",v_contr(1),v_contr(2),v_contr(3) 
+          WRITE(*,'(a,E16.6,E16.6,E16.6)')  ",n(1),n(2),n(3): ",n(1),n(2),n(3) 
+    ENDIF
     CALL MatrixInverse3x3(g_cov,g_contr,gp)
     gp = SQRT(gp)
     gm = 1./gp
@@ -2449,6 +2459,19 @@ RECURSIVE SUBROUTINE PDEEigenvaluesGRMHD(L,Q,normal)
 		L(i)   = 0.
     ENDDO
     !
+    
+    IF(ABS(V(2)-0.2).LT.1e-4) THEN 
+      WRITE(*,'(a,f18.10,f18.10)') "n(1),n(2):",n(1),n(2)
+          DO i = 1, nVar
+              WRITE(*,'(a,i9,E16.6,E16.6,E16.6)') "i,Q(i),Vp(i),L(i):",i,Q(i),V(i),L(i)
+          ENDDO 
+          WRITE(*,'(a,E16.6,E16.6,E16.6,E16.6,E16.6)')  ",u,cs2,l2m,gg,den: ",u,cs2,lf2m,gg,den
+          WRITE(*,'(a,E16.6,E16.6,E16.6)')  ",v_cov(1),v_cov(2),v_cov(3): ",v_cov(1),v_cov(2),v_cov(3)
+          WRITE(*,'(a,E16.6,E16.6,E16.6)')  ",v_contr(1),v_contr(2),v_contr(3): ",v_contr(1),v_contr(2),v_contr(3) 
+          WRITE(*,'(a,E16.6,E16.6,E16.6)')  ",n(1),n(2),n(3): ",n(1),n(2),n(3) 
+    ENDIF
+    STOP
+    
     RETURN
     !
     ! SAFE MODE: define also 'covariant' eigenvalues! (we may use the remaining free slots in L, L(6:8), L(10:19)

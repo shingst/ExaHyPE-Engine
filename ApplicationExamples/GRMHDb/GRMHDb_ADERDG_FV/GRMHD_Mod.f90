@@ -2364,9 +2364,9 @@ RECURSIVE SUBROUTINE PDEEigenvaluesGRMHD(L,Q,normal)
     CALL PDECons2PrimGRMHD(V,Q,iErr)
     rho    = V(1)
 	DO i=1,3
-		v_cov = V(1+i)
+		v_cov(i) = V(1+i)
 		B_contr(i) = V(5+i)
-		shift = V(10+i)
+		shift(i) = V(10+i)
 	ENDDO
     p      = V(5)
     !
@@ -2554,9 +2554,9 @@ RECURSIVE SUBROUTINE PDEEigenvectorsGRMHD(R,L,iR,Q,normal)
     CALL PDECons2PrimGRMHD(VP,Q,iErr)
     rho    = VP(1)
 	DO i=1,3
-		v_cov = VP(1+i)
-		B_contr(i) = VP(5+i)
-		shift = VP(10+i)
+		v_cov(i) = V(1+i)
+		B_contr(i) = V(5+i)
+		shift(i) = V(10+i)
 	ENDDO
     p      = VP(5)
     ! 
