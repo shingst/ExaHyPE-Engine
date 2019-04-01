@@ -132,11 +132,6 @@ public:
   void adjustSolution(const double* const x,const double t,const double dt, double* const Q) override;
 
   /**
-   * Use generalised Osher Solomon flux.
-   */
-  double riemannSolver(double* fL, double *fR, const double* qL, const double* qR, const double* gradQL, const double* gradQR, const double* cellSize, int normalNonZero)  final override;
-
-  /**
    * Compute the eigenvectors of the jacobian matrix (coefficient matrix of derivative in direction @direction).
    *
    * This function also returns eigenvalues as numerical packages often compute eigenvalues and 
@@ -189,6 +184,17 @@ public:
    *                         and time-averaged (over [t,t+dt]) as C array (already allocated).
    */
   void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int direction,const double* const QIn,double* const QOut);
+  
+  void resetGlobalObservables(GlobalObservables& globalObservables) const final override;
+
+  void mapGlobalObservables(
+      GlobalObservables&                          globalObservables,
+      const double* const                         luh,
+      const tarch::la::Vector<DIMENSIONS,double>& cellSize) const final override;
+
+  void mergeGlobalObservables(
+      GlobalObservables&         globalObservables,
+      ReadOnlyGlobalObservables& otherObservables) const final override;
 };
 
 

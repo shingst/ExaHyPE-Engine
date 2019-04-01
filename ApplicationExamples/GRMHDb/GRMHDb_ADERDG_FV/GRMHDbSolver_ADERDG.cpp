@@ -88,6 +88,7 @@ void GRMHDb::GRMHDbSolver_ADERDG::adjustPointSolution(const double* const x,cons
   // @todo Please implement/augment if required
 	//const int numberOfData = GRMHDb::AbstractGRMHDbSolver_ADERDG::NumberOfVariables;
   if (tarch::la::equals(t,0.0)) {
+  
     Q[0] = 0.0;
     Q[1] = 0.0;
     Q[2] = 0.0;
@@ -116,6 +117,12 @@ void GRMHDb::GRMHDbSolver_ADERDG::adjustPointSolution(const double* const x,cons
 	// everything in here is thread-safe w.r.t. the lock
 	// call Fortran routines
 	/***********************/
+	/*
+	double x3D[3] = {0.};
+	for(int i=0;i<DIMENSIONS;i++){
+	    x3D[i]=x[i];
+        }*/
+
     initialdata_(x, &t, Q);
 
 	/************/
@@ -133,7 +140,10 @@ void GRMHDb::GRMHDbSolver_ADERDG::adjustPointSolution(const double* const x,cons
   }
 }
 
-void GRMHDb::GRMHDbSolver_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double* const fluxIn,const double* const stateIn,const double* const gradStateIn,double* const fluxOut,double* const stateOut) {
+
+void GRMHDb::GRMHDbSolver_ADERDG::boundaryValues(const double* const x, const double t, const double dt, const int faceIndex, const int normalNonZero, 
+	const double * const fluxIn, const double* const stateIn, const double* const gradStateIn, 
+	double *fluxOut, double* stateOut) {
   // Tip: You find documentation for this method in header file "GRMHDb::GRMHDbSolver_ADERDG.h".
   // Tip: See header file "GRMHDb::AbstractGRMHDbSolver_ADERDG.h" for toolkit generated compile-time 
   //      constants such as Order, NumberOfVariables, and NumberOfParameters.
@@ -206,6 +216,8 @@ void GRMHDb::GRMHDbSolver_ADERDG::boundaryValues(const double* const x,const dou
   }*/
  
  
+ //// STANDARD ANALYTICAL BOUNDARY CONDITIONS:
+
  for(int dd=0; dd<nDim; dd++) F[dd] = Fs[dd];
 
  for(int i=0; i < basisSize; i++)  { // i == time
@@ -221,6 +233,34 @@ void GRMHDb::GRMHDbSolver_ADERDG::boundaryValues(const double* const x,const dou
 		  fluxOut[m] += weight * Fs[normalNonZero][m];
 	  }
  }
+
+/*
+  // THIS IS FOR THE 1D Riemann problems (invisicd reflective boundary conditions at the y boundaries)
+  if (normalNonZero == 0) {
+	  // STANDARD ANALYTICAL BOUNDARY CONDITIONS:
+	  for (int dd = 0; dd < nDim; dd++) F[dd] = Fs[dd];
+
+	  for (int i = 0; i < basisSize; i++) { // i == time
+		  const double weight = kernels::gaussLegendreWeights[order][i];
+		  const double xi = kernels::gaussLegendreNodes[order][i];
+		  double ti = t + xi * dt;
+
+		  initialdata_(x, &ti, Qgp);
+		  //pdeflux_(F[0], F[1], F[2], Qgp);
+		  flux(Qgp, F);
+		  for (int m = 0; m < numberOfData; m++) {
+			  stateOut[m] += weight * Qgp[m];
+			  fluxOut[m] += weight * Fs[normalNonZero][m];
+		  }
+	  }
+  }
+  else { // inviscid wall boundary conditions (pure reflection)
+	  std::copy_n(stateIn, numberOfVariables, stateOut);
+	  stateOut[1 + normalNonZero] = -stateOut[1 + normalNonZero]; 
+	  flux(stateOut, F); 
+	  std::copy_n(F[normalNonZero], numberOfVariables, fluxOut);
+  }
+*/
 
   /*
 	for(int m=0; m < numberOfData; m++) {
@@ -255,19 +295,32 @@ exahype::solvers::Solver::RefinementControl GRMHDb::GRMHDbSolver_ADERDG::refinem
 	//const int basisSize = order + 1;
 	//const int nDim = DIMENSIONS; 
         
-        double dr = dx[0]*dx[0] +  dx[1]*dx[1] +  dx[2]*dx[2];
-        dr = sqrt(dr);
-        double radiusC = center[0] * center[0] + center[1] * center[1] + center[2] * center[2];
-        if(radiusC > 0.){
-                radiusC = sqrt(radiusC);
-        }
-        
-        
-        if (radiusC + 0.5*dr > 8.05 && radiusC-0.5*dr < 8.35) {
-            return exahype::solvers::Solver::RefinementControl::Refine;
+        //printf("\n******* refinementCriterion *****************");
+	
+	
+        //return exahype::solvers::Solver::RefinementControl::Keep;
+
+	
+	double dr;
+    if(DIMENSIONS == 2){
+        dr = dx[0] * dx[0] + dx[1] * dx[1];
+    }else{
+        dr = dx[0] * dx[0] + dx[1] * dx[1] + dx[2] * dx[2];
         }
 
         
+        dr = sqrt(dr);
+        
+        double radiusC;
+    if(DIMENSIONS == 2){
+        radiusC = center[0] * center[0] + center[1] * center[1];
+    }else{
+        radiusC = center[0] * center[0] + center[1] * center[1] + center[2] * center[2];
+        }
+
+        if(radiusC > 0.){
+                radiusC = sqrt(radiusC);
+        }
         if (radiusC-0.5*dr < 8.33) {
           if (radiusC + 0.5*dr > 7.95) {
             return exahype::solvers::Solver::RefinementControl::Refine;
@@ -304,6 +357,14 @@ void GRMHDb::GRMHDbSolver_ADERDG::eigenvalues(const double* const Q,const int d,
   // Dimensions                        = 3
   // Number of variables + parameters  = 19 + 0
   
+	constexpr int numberOfVariables = AbstractGRMHDbSolver_ADERDG::NumberOfVariables;
+	constexpr int numberOfParameters = AbstractGRMHDbSolver_ADERDG::NumberOfParameters;
+	constexpr int numberOfData = numberOfVariables + numberOfParameters;
+	//for (int i = 5; i < 8; i++) {
+	//	printf("\nQ[%d]=%f", i, Q[i]);
+	//	assertion(!std::isnan(Q[i]));
+	//}
+	//printf("\n******* ADERDG::eigenvalues *****************");
   // @todo Please implement/augment if required
   lambda[0] = 1.0;
   lambda[1] = 1.0;
@@ -324,8 +385,11 @@ void GRMHDb::GRMHDbSolver_ADERDG::eigenvalues(const double* const Q,const int d,
   lambda[16] = 1.0;
   lambda[17] = 1.0;
   lambda[18] = 1.0;
-  double nv[3] = {0.};
-  nv[d] = 1;
+
+  //return;
+
+  double nv[DIMENSIONS] = {0.};
+  nv[d] = 1.0;
   pdeeigenvalues_(lambda, Q, nv);
 }
 
@@ -342,6 +406,14 @@ void GRMHDb::GRMHDbSolver_ADERDG::referenceSolution(const double* const x,double
 	double Qcons[numberOfData];
 	iErr = 0;
 
+       // printf("\n******* :referenceSolution  *****************");
+/*
+        double x3D[3]={0.};
+        for(int i=0;i<DIMENSIONS;i++){
+          x3D[i]=x[i];
+        }*/
+        //printf("x3d_ADERDG:  %f,  %f",x3D[0],x3D[1]);
+	//printf("\nSONO QUI IN referenceSolution ADERDG");
 	initialdata_(x, &t, &Qcons[0]);
 	
 	//// test:
@@ -403,6 +475,7 @@ void GRMHDb::GRMHDbSolver_ADERDG::flux(const double* const Q,double** const F) {
   F[1][17] = 0.0;
   F[1][18] = 0.0;
   
+#ifdef Dim3
   F[2][0] = 0.0;
   F[2][1] = 0.0;
   F[2][2] = 0.0;
@@ -422,7 +495,7 @@ void GRMHDb::GRMHDbSolver_ADERDG::flux(const double* const Q,double** const F) {
   F[2][16] = 0.0;
   F[2][17] = 0.0;
   F[2][18] = 0.0;
-  
+#endif
   
     if(DIMENSIONS == 2){
 		constexpr int numberOfVariables = AbstractGRMHDbSolver_ADERDG::NumberOfVariables;
@@ -434,6 +507,9 @@ void GRMHDb::GRMHDbSolver_ADERDG::flux(const double* const Q,double** const F) {
 		pdeflux_(F[0], F[1],F[2], Q);
 	}
    
+
+  //pdeflux_(&F[0][0], Q);
+ 
 }
 
 
@@ -489,6 +565,12 @@ bool GRMHDb::GRMHDbSolver_ADERDG::vetoDiscreteMaximumPrincipleDecision(
 		const tarch::la::Vector<DIMENSIONS, double>& center,
 		const tarch::la::Vector<DIMENSIONS, double>& dx,
 		const double                                timeStamp) const {
+	
+
+  //printf("\n ************* vetoDiscreteMaximumPrincipleDecision ***************");
+
+	return false; // do not veto = false; veto = true;	
+
 	//int limvalue;
 	//int NumberOfObservables;
 	//NumberOfObservables=1;
@@ -500,9 +582,21 @@ bool GRMHDb::GRMHDbSolver_ADERDG::vetoDiscreteMaximumPrincipleDecision(
 	  //  return true;
 	//};
 	  //return false;
-	double dr = dx[0] * dx[0] + dx[1] * dx[1] + dx[2] * dx[2];
+	  
+	  
+	  double dr;
+    if(DIMENSIONS == 2){
+        dr = dx[0] * dx[0] + dx[1] * dx[1];
+    }else{
+    	dr = dx[0] * dx[0] + dx[1] * dx[1] + dx[2] * dx[2];
+    	}
 	dr = sqrt(dr);
-	double radiusC = center[0] * center[0] + center[1] * center[1] + center[2] * center[2];
+	double radiusC;
+    if(DIMENSIONS == 2){
+        radiusC = center[0] * center[0] + center[1] * center[1];
+    }else{
+        radiusC = center[0] * center[0] + center[1] * center[1] + center[2] * center[2];
+        }
 	if (radiusC > 0.) {
 		radiusC = sqrt(radiusC);
 	}
@@ -512,6 +606,7 @@ bool GRMHDb::GRMHDbSolver_ADERDG::vetoDiscreteMaximumPrincipleDecision(
 	else {
 		return true;
 	}
+	
 }
 
 bool GRMHDb::GRMHDbSolver_ADERDG::isPhysicallyAdmissible(
@@ -521,6 +616,11 @@ bool GRMHDb::GRMHDbSolver_ADERDG::isPhysicallyAdmissible(
 	const tarch::la::Vector<DIMENSIONS, double>& center,
 	const tarch::la::Vector<DIMENSIONS, double>& dx,
 	const double t) const {
+	
+	
+  //printf("\n ************* isPhysicallyAdmissible ***************");
+
+	return false; // false = limit all
   //int limvalue;
   //int NumberOfObservables;
   //NumberOfObservables=1;
@@ -532,9 +632,12 @@ bool GRMHDb::GRMHDbSolver_ADERDG::isPhysicallyAdmissible(
 	//  return true;
   //};
 	//return false;
-        double dr = dx[0]*dx[0] +  dx[1]*dx[1] +  dx[2]*dx[2];
+#ifdef Dim2
+	double dr;
+	dr = dx[0] * dx[0] + dx[1] * dx[1];
         dr = sqrt(dr);
-	double radiusC = center[0] * center[0] + center[1] * center[1] + center[2] * center[2];
+	double radiusC;
+		radiusC = center[0] * center[0] + center[1] * center[1];
 	if (radiusC > 0.) {
 		radiusC = sqrt(radiusC);		
 	}		
@@ -545,6 +648,23 @@ bool GRMHDb::GRMHDbSolver_ADERDG::isPhysicallyAdmissible(
 	else {
 		return true;
 	}
+#else
+	double dr;
+	dr = dx[0] * dx[0] + dx[1] * dx[1] + dx[2] * dx[2];
+	dr = sqrt(dr);
+	double radiusC;
+	radiusC = center[0] * center[0] + center[1] * center[1] + center[2] * center[2];
+	if (radiusC > 0.) {
+		radiusC = sqrt(radiusC);
+	}
+	if (radiusC + 0.5*dr > 8.05 && radiusC - 0.5*dr < 8.35) {
+		//if (radiusC > 7.6 && radiusC < 8.5) {
+		return false;
+	}
+	else {
+		return true;
+	}
+#endif
 }
 
 #ifdef OPT_KERNELS
@@ -554,16 +674,28 @@ bool GRMHDb::GRMHDbSolver_ADERDG::isPhysicallyAdmissible(
 
 using namespace GRMHDb::GRMHDbSolver_ADERDG_kernels::aderdg;
 
-
-void GRMHDb::GRMHDbSolver_ADERDG::riemannSolver(double* const FL, double* const FR, const double* const QL, const double* const QR, const double t, const double dt, const int direction, bool isBoundaryFace, int faceIndex) {
+void GRMHDb::GRMHDbSolver_ADERDG::riemannSolver(double* const FL, double* const FR, const double* const QL, const double* const QR, const double t, const double dt, const tarch::la::Vector<DIMENSIONS, double>& lengthScale, const int direction, bool isBoundaryFace, int faceIndex) {
 	assertion2(direction >= 0, dt, direction);
-	assertion2(direction < DIMENSIONS, dt, direction);
+	assertion2(direction<DIMENSIONS, dt, direction);
 	GRMHDb::GRMHDbSolver_ADERDG_kernels::aderdg::riemannSolver(*static_cast<GRMHDbSolver_ADERDG*>(this), FL, FR, QL, QR, t, dt, direction);
-
 	constexpr int order = GRMHDb::AbstractGRMHDbSolver_ADERDG::Order;
 	constexpr int basisSize = order + 1;
 	constexpr int numberOfVariables = GRMHDb::GRMHDbSolver_ADERDG_kernels::aderdg::getNumberOfVariablePadded();   //              AbstractGRMHDbSolver_ADERDG::NumberOfVariables;
 	// avoid spurious numerical diffusion (ony for Cowling approximation)
+	
+#ifdef Dim2
+	kernels::idx2 idx_FLR(basisSize, numberOfVariables);
+        for (int i = 0; i < basisSize; i++) {
+                        //resetNumericalDiffusionOnADM(FL + idx_FLR(i, j, 0));
+                        //resetNumericalDiffusionOnADM(FR + idx_FLR(i, j, 0));
+                        double* FLL = FL + idx_FLR(i, 0);
+                        double* FRR = FR + idx_FLR(i, 0);
+                        for (int m = 9; m < numberOfVariables; m++) {
+                                FLL[m] = 0.0;
+                                FRR[m] = 0.0;
+                }
+        }
+#else
 	kernels::idx3 idx_FLR(basisSize, basisSize, numberOfVariables);
 	for (int i = 0; i < basisSize; i++) {
 		for (int j = 0; j < basisSize; j++) {
@@ -577,23 +709,40 @@ void GRMHDb::GRMHDbSolver_ADERDG::riemannSolver(double* const FL, double* const 
 			}
 		}
 	}
+#endif
 
 }
 
 
 #else
 
-#include "kernels/aderdg/generic/Kernels.h"
-void GRMHDb::GRMHDbSolver_ADERDG::riemannSolver(double* const FL, double* const FR, const double* const QL, const double* const QR, const double t, const double dt, const int direction, bool isBoundaryFace, int faceIndex) {
+#include "kernels/aderdg/generic/Kernels.h" 
+void GRMHDb::GRMHDbSolver_ADERDG::riemannSolver(double* const FL, double* const FR, const double* const QL, const double* const QR, const double t, const double dt, const tarch::la::Vector<DIMENSIONS, double>& dx, const int direction, bool isBoundaryFace, int faceIndex) {
 	assertion2(direction >= 0, dt, direction);
-	assertion2(direction < DIMENSIONS, dt, direction);
-	kernels::aderdg::generic::c::riemannSolverNonlinear<true, GRMHDbSolver_ADERDG>(*static_cast<GRMHDbSolver_ADERDG*>(this), FL, FR, QL, QR, t, dt, direction);
-
+	assertion2(direction<DIMENSIONS, dt, direction);
+	kernels::aderdg::generic::c::riemannSolverNonlinear<true, false, GRMHDbSolver_ADERDG>(*static_cast<GRMHDbSolver_ADERDG*>(this), FL, FR, QL, QR, t, dt, dx, direction);
+ 
 
 	constexpr int order = GRMHDb::AbstractGRMHDbSolver_ADERDG::Order;
 	constexpr int basisSize = order + 1;
 	constexpr int numberOfVariables = AbstractGRMHDbSolver_ADERDG::NumberOfVariables;
 	// avoid spurious numerical diffusion (ony for Cowling approximation)
+	
+	//printf("\n******* RIEMANN SOLVER *****************");
+	
+#ifdef Dim2	
+	kernels::idx2 idx_FLR(basisSize, numberOfVariables);
+	for (int i = 0; i < basisSize; i++) {
+			//resetNumericalDiffusionOnADM(FL + idx_FLR(i, j, 0));
+			//resetNumericalDiffusionOnADM(FR + idx_FLR(i, j, 0));
+			double* FLL = FL + idx_FLR(i, 0);
+			double* FRR = FR + idx_FLR(i, 0);
+			for (int m = 9; m < numberOfVariables; m++) {
+				FLL[m] = 0.0;
+				FRR[m] = 0.0;
+		}
+	}
+#else
 	kernels::idx3 idx_FLR(basisSize, basisSize, numberOfVariables);
 	for (int i = 0; i < basisSize; i++) {
 		for (int j = 0; j < basisSize; j++) {
@@ -607,6 +756,8 @@ void GRMHDb::GRMHDbSolver_ADERDG::riemannSolver(double* const FL, double* const 
 			}
 		}
 	}
+#endif
+
 
 }
 #endif

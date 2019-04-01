@@ -144,12 +144,6 @@ public:
    */
   virtual void flux(const double* const Q,double** const F);
 
-
-  /**
-   * Use the generalised Osher Solomon flux
-   */
-  void riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double t, const double dt, const tarch::la::Vector<DIMENSIONS, double>& lengthScale, const int direction, bool isBoundaryFace, int faceIndex) final override;
-
   /**
    * Compute the eigenvectors of the jacobian matrix (coefficient matrix of derivative in direction @direction).
    *
@@ -217,13 +211,26 @@ public:
 
   void mapDiscreteMaximumPrincipleObservables(double* const observables, const double* const Q) const override;
 
-      bool isPhysicallyAdmissible(
+  bool isPhysicallyAdmissible(
       const double* const solution,
       const double* const observablesMin,const double* const observablesMax,
       const bool wasTroubledInPreviousTimeStep,
       const tarch::la::Vector<DIMENSIONS,double>& center,
       const tarch::la::Vector<DIMENSIONS,double>& dx,
       const double t) const override;
+  
+  void resetGlobalObservables(GlobalObservables& globalObservables) const final override;
+
+  void mapGlobalObservables(
+      GlobalObservables&                          globalObservables,
+      const double* const                         luh,
+      const tarch::la::Vector<DIMENSIONS,double>& cellSize) const final override;
+
+  void mergeGlobalObservables(
+      GlobalObservables&         globalObservables,
+      ReadOnlyGlobalObservables& otherObservables) const final override;
+  
+  void beginTimeStep(const double minTimeStamp,const bool isFirstTimeStepOfBatchOrNoBatch) final override;
 };
 
 #endif // __EulerSolver_ADERDG_CLASS_HEADER__

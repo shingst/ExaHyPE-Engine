@@ -14,9 +14,8 @@ exahype::solvers::LimitingADERDGSolver::FusedTimeStepJob::FusedTimeStepJob(
   const bool            isLastTimeStepOfBatch,
   const bool            isSkeletonJob):
   tarch::multicore::jobs::Job(
-    tarch::multicore::jobs::JobType::BackgroundTask,
-	0,
-	isLastTimeStepOfBatch ? tarch::multicore::DefaultPriority / 8 : tarch::multicore::DefaultPriority
+      tarch::multicore::jobs::JobType::BackgroundTask,0,
+      getTaskPriority(isLastTimeStepOfBatch)
   ),
   _solver(solver),
   _solverPatch(solverPatch),
@@ -36,17 +35,11 @@ exahype::solvers::LimitingADERDGSolver::FusedTimeStepJob::FusedTimeStepJob(
 }
 
 bool exahype::solvers::LimitingADERDGSolver::FusedTimeStepJob::run() {
-  UpdateResult result =
-      _solver.fusedTimeStepBody(
-          _solverPatch,_cellInfo,_neighbourMergePerformed,
-          _predictionTimeStamp,_predictionTimeStepSize,
-          _isFirstTimeStepOfBatch,_isLastTimeStepOfBatch,
-          _isSkeletonJob,false/*mustBeDoneImmedetially*/);
-
-  if (_isLastTimeStepOfBatch) {
-    _solver.updateMeshUpdateEvent(result._meshUpdateEvent);
-    _solver.updateAdmissibleTimeStepSize(result._timeStepSize);
-  }
+  _solver.fusedTimeStepBody(
+      _solverPatch,_cellInfo,_neighbourMergePerformed,
+      _predictionTimeStamp,_predictionTimeStepSize,
+      _isFirstTimeStepOfBatch,_isLastTimeStepOfBatch,
+      _isSkeletonJob,false/*mustBeDoneImmedetially*/);
 
   NumberOfReductionJobs.fetch_sub(1);
   assertion( NumberOfReductionJobs.load()>=0 );

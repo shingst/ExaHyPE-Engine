@@ -108,6 +108,7 @@ class SpecFile1Reader():
             "time_steps",\
             "buffer_size",\
             "timeout",\
+            "node_pool_timeout",
             "max_forks_at_once",\
             "cores",\
             "measure_cell_processing_times_iter",\
@@ -127,6 +128,7 @@ class SpecFile1Reader():
         numbers=[\
             "end_time",\
             "maximum_mesh_size",\
+            "cfl",\
             "time",\
             "repeat",\
             "fuse_algorithmic_steps_rerun_factor",\

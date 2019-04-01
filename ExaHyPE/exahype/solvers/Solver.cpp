@@ -42,8 +42,6 @@ std::vector<exahype::solvers::Solver*> exahype::solvers::RegisteredSolvers;
 exahype::DataHeap::HeapEntries exahype::EmptyDataHeapMessage(0);
 #endif
 
-tarch::multicore::BooleanSemaphore exahype::ReductionSemaphore;
-
 tarch::multicore::BooleanSemaphore exahype::HeapSemaphore;
 
 exahype::DataHeap::HeapEntries& exahype::getDataHeapEntries(const int index) {
@@ -101,7 +99,7 @@ bool exahype::solvers::Solver::FuseAllADERDGPhases                = false;
 double exahype::solvers::Solver::FusedTimeSteppingRerunFactor     = 0.99;
 double exahype::solvers::Solver::FusedTimeSteppingDiffusionFactor = 0.99;
 
-bool exahype::solvers::Solver::DisableMetaDataExchangeInBatchedTimeSteps = false;
+bool exahype::solvers::Solver::DisableMetadataExchangeDuringTimeSteps = false;
 bool exahype::solvers::Solver::DisablePeanoNeighbourExchangeInTimeSteps = false;
 
 int exahype::solvers::Solver::MaxNumberOfRunningBackgroundJobConsumerTasksDuringTraversal = 0;
@@ -118,6 +116,8 @@ bool exahype::solvers::Solver::SpawnAMRBackgroundJobs = false;
 
 double exahype::solvers::Solver::CompressionAccuracy = 0.0;
 bool exahype::solvers::Solver::SpawnCompressionAsBackgroundJob = false;
+
+exahype::solvers::Solver::JobSystemWaitBehaviourType exahype::solvers::Solver::JobSystemWaitBehaviour;
 
 std::atomic<int> exahype::solvers::Solver::NumberOfAMRBackgroundJobs(0);
 std::atomic<int> exahype::solvers::Solver::NumberOfReductionJobs(0);
@@ -166,14 +166,33 @@ void exahype::solvers::Solver::ensureAllJobsHaveTerminated(JobType jobType) {
     peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
   }
 
-  int numberOfBackgroundJobsToProcess = 1;
+  int maxNumberOfJobsAtOnce = 1; // allows prefetching next job's data
+  const bool processHighPriorityJobs =
+      jobType==JobType::SkeletonJob ||
+      jobType==JobType::ReductionJob;
   while ( !finishedWait ) {
-    // do some work myself
-    tarch::parallel::Node::getInstance().receiveDanglingMessages();
-    tarch::multicore::jobs::processBackgroundJobs(numberOfBackgroundJobsToProcess);
-    numberOfBackgroundJobsToProcess++;
+    // do some work myself; basically same body as waitUntil... method
+    #ifdef Parallel
+    {
+      tarch::multicore::RecursiveLock lock( tarch::services::Service::receiveDanglingMessagesSemaphore );
+      tarch::parallel::Node::getInstance().receiveDanglingMessages();
+      lock.free();
+    }
+    #endif
+
+    switch ( JobSystemWaitBehaviour ) {
+    case JobSystemWaitBehaviourType::ProcessJobsWithSamePriority:
+      tarch::multicore::jobs::processBackgroundJobs( maxNumberOfJobsAtOnce, getTaskPriority(processHighPriorityJobs) );
+      break;
+    case JobSystemWaitBehaviourType::ProcessAnyJobs:
+      tarch::multicore::jobs::processBackgroundJobs( maxNumberOfJobsAtOnce );
+      break;
+    default:
+      break;
+    }
     queuedJobs = getNumberOfQueuedJobs(jobType);
     finishedWait = queuedJobs == 0;
+    maxNumberOfJobsAtOnce++;
   }
 
   #ifdef USE_ITAC
@@ -402,10 +421,6 @@ int exahype::solvers::Solver::getMaximumAdaptiveMeshDepth() const {
 
 int exahype::solvers::Solver::getMaximumAdaptiveMeshLevel() const {
   return _coarsestMeshLevel+_maximumAdaptiveMeshDepth;
-}
-
-std::vector<double>& exahype::solvers::Solver::getGlobalObservables() {
-  return _globalObservables;
 }
 
 // TODO(Lukas) Is this still needed?
@@ -870,25 +885,5 @@ void exahype::solvers::Solver::mergeWithWorkerMeshUpdateEvent(
   }
 }
 #endif
-
-
-int exahype::solvers::Solver::getTaskPriority( bool isSkeletonJob ) {
-  return isSkeletonJob ? tarch::multicore::DefaultPriority*2 : tarch::multicore::DefaultPriority;
-}
-
-
-int exahype::solvers::Solver::getCompressionTaskPriority() {
-  return tarch::multicore::DefaultPriority*8;
-}
-
-
-int exahype::solvers::Solver::getHighPrioritiesJobTaskPriority() {
-  return tarch::multicore::DefaultPriority*2;
-}
-
-
-int exahype::solvers::Solver::getStandardBackgroundTaskPriority() {
-  return tarch::multicore::DefaultPriority/2;
-}
 
 

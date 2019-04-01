@@ -131,13 +131,13 @@ namespace exahype {
   typedef peano::heap::DoubleHeap<
     peano::heap::SynchronousDataExchanger< double, true, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
     peano::heap::SynchronousDataExchanger< double, true, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
-    peano::heap::AggregationBoundaryDataExchanger< double, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
+    peano::heap::RLEBoundaryDataExchanger< double, false, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
     std::vector< double, AlignedAllocator >
   >     DataHeap;
   typedef peano::heap::CharHeap<
     peano::heap::SynchronousDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedCharAllocator > >,
     peano::heap::SynchronousDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedCharAllocator > >,
-    peano::heap::AggregationBoundaryDataExchanger< char, AlignedCharSendReceiveTask, std::vector< char, AlignedCharAllocator > >,
+    peano::heap::RLEBoundaryDataExchanger< char, false, AlignedCharSendReceiveTask, std::vector< char, AlignedCharAllocator > >,
     std::vector< char, AlignedCharAllocator >
   >     CompressedDataHeap;
   #elif defined(ALIGNMENT) // Default: AggregationBoundaryDataExchanger
@@ -205,11 +205,6 @@ namespace exahype {
    * deletes the "fromIndex" array afterwards.
    */
   void moveDataHeapEntries(const int fromIndex,const int toIndex,bool recycleFromArray);
-
-  /**
-   * @see waitUntilAllBackgroundTasksHaveTerminated()
-   */
-  extern tarch::multicore::BooleanSemaphore ReductionSemaphore;
 
   /**
    * A semaphore for serialising heap access.
@@ -384,17 +379,17 @@ namespace exahype {
  * Describes one solver.
  */
 class exahype::solvers::Solver {
- private:
+private:
   /**
    * Log device.
    */
   static tarch::logging::Log _log;
 
- protected:
+protected:
   void tearApart(int numberOfEntries, int normalHeapIndex, int compressedHeapIndex, int bytesForMantissa) const;
   void glueTogether(int numberOfEntries, int normalHeapIndex, int compressedHeapIndex, int bytesForMantissa) const;
 
- public:
+public:
   #ifdef USE_ITAC
   /**
    * These handles are used to trace solver events with Intel Trace Analyzer and Collector.
@@ -701,12 +696,11 @@ class exahype::solvers::Solver {
    */
   static bool SpawnAMRBackgroundJobs;
 
-
   /**
    * If this is set, we can skip sending metadata around during
    * batching iterations.
    */
-  static bool DisableMetaDataExchangeInBatchedTimeSteps;
+  static bool DisableMetadataExchangeDuringTimeSteps;
   /**
    * If this is set, we can skip Peano vertex neighbour exchange during batching iterations.
    */
@@ -714,6 +708,14 @@ class exahype::solvers::Solver {
   ///@}
 
   enum class JobType { AMRJob, ReductionJob, EnclaveJob, SkeletonJob };
+
+  enum class JobSystemWaitBehaviourType { ProcessAnyJobs, ProcessJobsWithSamePriority, OnlyPollMPI };
+
+  /**
+   * What to do whenever the job system needs to wait until a
+   * job is completed.
+   */
+  static JobSystemWaitBehaviourType JobSystemWaitBehaviour;
 
   /**
    * \see ensureAllBackgroundJobsHaveTerminated
@@ -1098,59 +1100,103 @@ class exahype::solvers::Solver {
    */
   static void ensureAllJobsHaveTerminated(JobType jobType);
 
- /**
-  * Waits until the @p cellDescription has completed its time step.
-  *
-  * <h2> Thread-safety </h2>
-  *
-  * We only read (sample) the hasCompletedLastStep flag and thus do not need any locks.
-  * If this flag were to assume an undefined state, this would happen after the job working processing the
-  * cell description was completed. This routine will then do an extra iteration or finish.
-  * Either is fine.
-  *
-  * The flag is modified before a job is spawned and after it was processed.
-  * As the job cannot be processed before it is spawned, setting the flag
-  * is thread-safe.
-  *
-  * <h2> MPI </h2>
-  *
-  * Tries to receive dangling MPI messages while waiting if this
-  * is specified by the user.
-  *
-  * @note Only use receiveDanglingMessages=true if the routine
-  * is called from a serial context.
-  *
-  * @param cellDescription a cell description
-  * @param waitForHighPriorityJob a cell description's task was spawned as high priority job
-  * @param receiveDanglingMessages receive dangling messages while waiting
-  */
- template <typename CellDescription>
- void waitUntilCompletedLastStep(
-     const CellDescription& cellDescription,const bool waitForHighPriorityJob,const bool receiveDanglingMessages) {
-  #ifdef USE_ITAC
-  VT_begin(waitUntilCompletedLastStepHandle);
-  #endif
 
-   if ( !cellDescription.getHasCompletedLastStep() ) {
-     peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
-   }
-   while ( !cellDescription.getHasCompletedLastStep() ) {
-     // do some work myself
-     if ( receiveDanglingMessages ) {
-       tarch::parallel::Node::getInstance().receiveDanglingMessages();
-     }
-     tarch::multicore::jobs::processBackgroundJobs(1);
-   }
+  /**
+   * Waits until the @p cellDescription has completed its time step.
+   *
+   * Thread-safety
+   * -------------
+   *
+   * We only read (sample) the hasCompletedLastStep flag and thus do not need any locks.
+   * If this flag were to assume an undefined state, this would happen after the job working processing the
+   * cell description was completed. This routine will then do an extra iteration or finish.
+   * Either is fine.
+   *
+   * The flag is modified before a job is spawned and after it was processed.
+   * As the job cannot be processed before it is spawned, setting the flag
+   * is thread-safe.
+   *
+   * MPI
+   * ---
+   *
+   * Tries to receive dangling MPI messages while waiting if this
+   * is specified by the user.
+   *
+   * Work Stealing
+   * -------------
+   *
+   * Assume this rank has stolen jobs from another rank.
+   * If this routine actually waits, this indicates it has to wait for a local job
+   * and not for a stolen one.
+   * Therefore, we exclude stolen jobs from being processed by this routine.
+   *
+   * @note Only use receiveDanglingMessages=true if the routine
+   * is called from a serial context.
+   *
+   * @param cellDescription a cell description
+   * @param waitForHighPriorityJob a cell description's task was spawned as high priority job
+   * @param receiveDanglingMessages receive dangling messages while waiting
+   */
+  template <typename CellDescription>
+  void waitUntilCompletedLastStep(
+      const CellDescription& cellDescription,const bool waitForHighPriorityJob,const bool receiveDanglingMessages) {
+    #ifdef USE_ITAC
+    VT_begin(waitUntilCompletedLastStepHandle);
+    #endif
 
-  #ifdef USE_ITAC
-  VT_end(waitUntilCompletedLastStepHandle);
-  #endif
- }
+    if ( !cellDescription.getHasCompletedLastStep() ) {
+      peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
+    }
+    while ( !cellDescription.getHasCompletedLastStep() ) {
+      #ifdef Parallel
+      {
+        tarch::multicore::RecursiveLock lock( tarch::services::Service::receiveDanglingMessagesSemaphore );
+        tarch::parallel::Node::getInstance().receiveDanglingMessages();
+        lock.free();
+      }
+      #endif
 
- static int getTaskPriority( bool isSkeletonJob );
- static int getCompressionTaskPriority();
- static int getHighPrioritiesJobTaskPriority();
- static int getStandardBackgroundTaskPriority();
+      switch ( JobSystemWaitBehaviour ) {
+        case JobSystemWaitBehaviourType::ProcessJobsWithSamePriority:
+          tarch::multicore::jobs::processBackgroundJobs( 1, getTaskPriority(waitForHighPriorityJob) );
+          break;
+        case JobSystemWaitBehaviourType::ProcessAnyJobs:
+          tarch::multicore::jobs::processBackgroundJobs( 1 );
+          break;
+        default:
+          break;
+      }
+    }
+    #ifdef USE_ITAC
+    VT_end(waitUntilCompletedLastStepHandle);
+    #endif
+  }
+
+  /**
+   * @return the default priority.
+   */
+  static int getDefaultTaskPriority() {
+    return tarch::multicore::DefaultPriority;
+  }
+  /**
+   * @return a high priority.
+   */
+  static int getHighPriorityTaskPriority() {
+    return tarch::multicore::DefaultPriority*2;
+  }
+  /**
+   * @return a high priority if the argument is set to true. Otherwise,
+   * the default priority.
+   */
+  static int getTaskPriority( const bool isHighPriorityJob ) {
+    return isHighPriorityJob ? getHighPriorityTaskPriority() : getDefaultTaskPriority();
+  }
+  /**
+   * @return a very high priority.
+   */
+  static int  getCompressionTaskPriority() {
+    return tarch::multicore::DefaultPriority*8;
+  }
 
  /**
   * Return a string representation for the type @p param.
@@ -1179,6 +1225,11 @@ class exahype::solvers::Solver {
 
  protected:
 
+   /**
+    * A semphare for conducting reductions.
+    */
+   tarch::multicore::BooleanSemaphore _reductionSemaphore;
+
   /**
    * Each solver has an identifier/name. It is used for debug purposes only.
    */
@@ -1199,7 +1250,7 @@ class exahype::solvers::Solver {
   /**
    * The number of global observables, e.g. indicators used by AMR.
    */
-  const int _numberOfGlobalObservables ;
+  const int _numberOfGlobalObservables;
 
   /**
    * The number of nodal basis functions that are employed in each
@@ -1252,9 +1303,15 @@ class exahype::solvers::Solver {
   int _coarsestMeshLevel;
 
   /**
-   * The reduced global observables over the entire domain.
+   * The global observables from the previous time step.
    */
-  std::vector<double> _globalObservables;
+  DataHeap::HeapEntries _globalObservables;
+
+  /**
+   * The global observables which are reduced in this
+   * iteration.
+   */
+  DataHeap::HeapEntries _nextGlobalObservables;
 
   /*
    * The coarsest mesh size this solver is using, i.e.
@@ -1436,17 +1493,13 @@ class exahype::solvers::Solver {
    */
   virtual void resetAdmissibleTimeStepSize() = 0;
 
-  // TODO(Lukas) Is this still needed?
-  /*
-  virtual void updateNextGlobalObservables(const std::vector<double>& globalObservables);
-  */
-
-  virtual std::vector<double>& getGlobalObservables();
-  // TODO(Lukas) Is this still needed?
-  /*
-  virtual std::vector<double>& getNextGlobalObservables();
-  */
-
+  /**
+   * Reset the global observables to an appropriate
+   * initial value in order to determine them again.
+   */
+  void resetGlobalObservables() {
+    resetGlobalObservables(_nextGlobalObservables.data());
+  }
 
   /**
    * Initialise the solver's time stamps and time step sizes.
@@ -1525,9 +1578,15 @@ class exahype::solvers::Solver {
    *
    * It simply updates the time step size.
    *
-   * This method is used after a mesh refinement.
+   * This method is used after a mesh adaption.
    */
   virtual void updateTimeStepSize() = 0;
+
+  /**
+   * Update the global observables after
+   * a mesh adaptation.
+   */
+  virtual void updateGlobalObservables() = 0;
 
   /**
    * Roll back the minimum time stamp to the one of
@@ -1655,7 +1714,16 @@ class exahype::solvers::Solver {
    *
    * @note Has no const modifier since kernels are not const functions yet.
    */
-  virtual double updateTimeStepSize(const int solverNumber,CellInfo& cellInfo) = 0;
+  virtual void updateTimeStepSize(const int solverNumber,CellInfo& cellInfo) = 0;
+
+  /**
+   * Merge the global observables with the cell-wise observables
+   * that are computed by this function.
+   *
+   * @param[in] solverNumber identifier for a solver
+   * @param[in] cellInfo           links to the data associated with the mesh cell
+   */
+  virtual void updateGlobalObservables(const int solverNumber,CellInfo& cellInfo) = 0;
 
   /**
    * Impose initial conditions and mark for refinement.
@@ -1720,7 +1788,7 @@ class exahype::solvers::Solver {
    * @param[in] isAtRemoteBoundary Flag indicating that the cell hosting the
    *                                    cell description is adjacent to a remote rank.
    */
-  virtual UpdateResult fusedTimeStepOrRestrict(
+  virtual void fusedTimeStepOrRestrict(
       const int  solverNumber,
       CellInfo&  cellInfo,
       const bool isFirstIterationOfBatch,
@@ -1753,12 +1821,11 @@ class exahype::solvers::Solver {
    * @param cellInfo           links to the data associated with the mesh cell
    * @param solverNumber       id of a solver
    * @param isAtRemoteBoundary indicates if this cell is adjacent to the domain of another rank
-   * @return see UpdateResult
    */
-  virtual UpdateResult updateOrRestrict(
-          const int solverNumber,
-          CellInfo& cellInfo,
-          const bool isAtRemoteBoundary) = 0;
+  virtual void updateOrRestrict(
+      const int solverNumber,
+      CellInfo& cellInfo,
+      const bool isAtRemoteBoundary) = 0;
 
   /**
    * Go back to previous time step with
@@ -2027,48 +2094,6 @@ class exahype::solvers::Solver {
       const int                                    level) = 0;
   #endif
 
-
-     /**
-   * Maps the solution values Q to
-   * the global observables.
-   *
-   * As we can observe all state variables,
-   * we interpret an 'observable' here as
-   * 'worthy to be observed'.
-   *
-   *\param[inout] globalObservables The mapped observables.
-   *\param[in]    Q           The state variables.
-   */
-   virtual std::vector<double> mapGlobalObservables(const double* const Q,
-           const tarch::la::Vector<DIMENSIONS,double>& dx) const = 0;
-
-   /**
-   * Resets the vector of global observables to some suitable initial value, e.g.
-   * the smallest possible double if one wants to compute the maximum.
-   *
-   *\param[out] globalObservables The mapped observables.
-   */
-   virtual std::vector<double> resetGlobalObservables() const = 0;
-
-   /**
-   * Function that reduces the global observables.
-   * For example, if one wants to compute the maximum of global variables
-   * one should set
-   * reducedGlobalObservables[0] = std::max(reducucedGlobalObservables[i],
-   * curGlobalObservables[0])
-   *
-   * and so on.
-   *
-   *\param[inout] reducedGlobalObservables The reduced observables.
-   *\param[in]    curGlobalObservables The current vector of global observables.
-   */
-   virtual void reduceGlobalObservables(
-            std::vector<double>& reducedGlobalObservables,
-            const std::vector<double>& curGlobalObservables) const = 0;
-
-   virtual void reduceGlobalObservables(std::vector<double>& globalObservables,
-                                        CellInfo cellInfo,
-                                        int solverNumber) const = 0;
   ///////////////////////
   // PROFILING
   ///////////////////////
@@ -2136,7 +2161,55 @@ class exahype::solvers::Solver {
       const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
       const tarch::la::Vector<DIMENSIONS,double>& cellSize) { return 1; }
 
+  /**
+   * Resets the vector of global observables to some suitable initial value, e.g.
+   * the smallest possible double if one wants to compute the maximum.
+   */
+  virtual void resetGlobalObservables(double* const globalObservables) = 0;
+
+  /**
+   * Computes the observables from a cell's solution values
+   * and merges the result with the global observables.
+   *
+   * @note Implementation must be thread-safe.
+   *
+   *\param[in]    luh               The solution array.
+   *\param[in]    cellSize          The size of a cell.
+   */
+   virtual void updateGlobalObservables(
+       double* const                               globalObservables,
+       const double* const                         luh,
+       const tarch::la::Vector<DIMENSIONS,double>& cellSize) = 0;
+
+   /**
+    * This method merges two vectors of (global) observables.
+    *
+    * For example, if one wants to compute the maximum of global variable i,
+    * one should set
+    *
+    * observables[i] = std::max( observables[i], otherObservables[i])
+    *
+    * and so on.
+    *
+    *\param[inout] observables      The (merged) observables.
+    *\param[in]    otherObservables other observables we want to merge with the first argument.
+    */
+   virtual void mergeGlobalObservables(
+       double* const       globalObservables,
+       const double* const otherObservables) = 0;
+
+   /**
+    * Wrap up the global observables, e.g. finalise an L^2 integral
+    * by applying a square root.
+    *
+    * @note This routine is only called on the global master, after
+    * the reduction has completed.
+    *
+    *\param[inout] observables  The global observables.
+    */
+   virtual void wrapUpGlobalObservables(double* const globalObservables) = 0;
  public:
+
   /**
    * Signals a user solver that ExaHyPE just started a new time step.
    *

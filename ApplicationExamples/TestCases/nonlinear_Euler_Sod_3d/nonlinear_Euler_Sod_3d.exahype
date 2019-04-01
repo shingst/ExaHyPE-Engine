@@ -20,7 +20,7 @@ exahype-project Euler
     dimension const  = 2
     width            = 1.0, 1.0, 1.0
     offset           = 0.0, 0.0, 0.0
-    end-time         = 0.2
+    end-time         = 0.1
   end computational-domain
   
   shared-memory
@@ -45,6 +45,7 @@ exahype-project Euler
  
   solver Limiting-ADER-DG EulerSolver
     variables const            = rho:1,j:3,E:1
+    global-observables const   = dgcells:1,fvcells:1
     order const                = 6
     maximum-mesh-size          = 0.4
     maximum-mesh-depth         = 3

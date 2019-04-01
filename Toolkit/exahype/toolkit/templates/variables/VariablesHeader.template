@@ -204,7 +204,7 @@ class {{project}}::{{abstractSolver}}::ReadOnlyVariables : public {{project}}::{
 
 class {{project}}::{{abstractSolver}}::Variables : public {{project}}::{{abstractSolver}}::VariableMetrics{
   private:
-    double* _Q;
+    double* const _Q;
   public:
     static constexpr int SizeVariables  = {{numberOfVariables}};
     static constexpr int SizeParameters = {{numberOfMaterialParameters}};
@@ -287,7 +287,7 @@ class {{project}}::{{abstractSolver}}::Variables : public {{project}}::{{abstrac
 
 class {{project}}::{{abstractSolver}}::Fluxes : public {{project}}::{{abstractSolver}}::VariableMetrics {
   private:
-    double** _F;
+    double** const _F;
   public:
     Fluxes(double** const F) : _F(F) {}
     
@@ -586,5 +586,128 @@ class {{project}}::{{abstractSolver}}::{{name | capitalize}} {
 {% endfor %}
 };
 {% endfor %}
+
+//
+// Global Observables
+//
+class {{project}}::{{abstractSolver}}::ReadOnlyGlobalObservables {
+  private:
+    const double* const _observables;
+  public:
+    static constexpr int Size = {{numberOfGlobalObservables}};
+    
+    ReadOnlyGlobalObservables(const double* const observables) : _observables(observables) {}
+    
+    double operator [] (int index) const {
+      assertion(index>=0 && index < Size);
+      return _observables[index];
+    }
+    
+    double operator () (int index) const {
+      assertion(index>=0 && index < Size);
+      return _observables[index];
+    }
+    
+    const double* data() const {
+      return _observables;
+    }
+    
+    int size() const {
+      return Size;
+    }
+
+{% for var in globalObservablesMap %}
+{% if var.multiplicity == 1%}
+    // getter and setter for {{var.name}}
+    double {{var.name}}() const {return _observables[{{var.offset}}];}
+        
+{% elif var.multiplicity > 1%}
+    // getters for {{var.name}} 
+    double {{var.name}}(int index) const {
+      assertion(index >= 0 && index<{{var.multiplicity}});
+      return _observables[{{var.offset}}+index];
+    }
+    tarch::la::Vector<{{var.multiplicity}},double> {{var.name}}() const {
+      tarch::la::Vector<{{var.multiplicity}},double> values;
+{% set comma=joiner(",") %}
+      values={%for i in range(var.multiplicity)%}{{comma()}}_observables[{{var.offset+i}}]{%endfor%};
+      return values;
+    }
+        
+{% endif %}
+{% endfor %}
+}; // end of ReadOnlyGlobalObservables
+
+
+class {{project}}::{{abstractSolver}}::GlobalObservables {
+  private:
+    double* const _observables;
+  public:
+    static constexpr int Size = {{numberOfGlobalObservables}};
+  
+    GlobalObservables(double* const observables) : _observables(observables) {}
+    
+    void operator = (GlobalObservables& observables) {
+      std::copy(observables.data(),observables.data()+Size,_observables);
+    }
+    
+    void operator = (ReadOnlyGlobalObservables& observables) {
+      assertion(observables.size()==Size);
+      std::copy(observables.data(),observables.data()+Size,_observables);
+    }
+    
+    double& operator [] (int index) {
+      assertion(index>=0 && index < Size);
+      return _observables[index];
+    }
+    
+    double& operator () (int index) {
+      assertion(index>=0 && index < Size);
+      return _observables[index];
+    }
+    
+    double* data() {
+      return _observables;
+    }
+    
+    int size() const {
+      return Size;
+    }
+
+{% for var in globalObservablesMap %}
+{% if var.multiplicity == 1%}
+    // getter and setter for {{var.name}}
+    double {{var.name}}() const {return _observables[{{var.offset}}];}
+    double& {{var.name}}() {return _observables[{{var.offset}}];}
+    
+{% elif var.multiplicity > 1%}
+    // getters for {{var.name}} 
+    double {{var.name}}(int index) const {
+      assertion(index >= 0 && index<{{var.multiplicity}});
+      return _observables[{{var.offset}}+index];
+    }
+    tarch::la::Vector<{{var.multiplicity}},double> {{var.name}}() const {
+      tarch::la::Vector<{{var.multiplicity}},double> values;
+      values={%for i in range(var.multiplicity - 1)%}_observables[{{var.offset+i}}],{%endfor%}_observables[{{var.offset+var.multiplicity-1}}];
+      return values;
+    }
+    // setters for {{var.name}}
+    double& {{var.name}}(int index) {return _observables[{{var.offset}}+index];}
+    void {{var.name}}(const tarch::la::Vector<{{var.multiplicity}},double>& values) const {
+{%for i in range(var.multiplicity)%}
+      _observables[{{var.offset+i}}] = values[{{i}}];
+{%endfor%}
+    }
+{% set comma = joiner(",") %}
+    void {{var.name}}({%for i in range(var.multiplicity)%}{{comma()}}double {{var.name}}{{i}}{%endfor%}) {
+{%for i in range(var.multiplicity)%}
+      _observables[{{var.offset+i}}] = {{var.name}}{{i}};
+{%endfor%}
+    }
+    
+{% endif %}
+{% endfor %}
+}; 
+// end of GlobalObservables
 
 #endif

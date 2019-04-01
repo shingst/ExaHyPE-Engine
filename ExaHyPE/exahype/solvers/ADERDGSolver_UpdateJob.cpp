@@ -10,7 +10,10 @@ exahype::solvers::ADERDGSolver::UpdateJob::UpdateJob(
   CellDescription& cellDescription,
   CellInfo&        cellInfo,
   const bool       isAtRemoteBoundary):
-  tarch::multicore::jobs::Job(tarch::multicore::jobs::JobType::BackgroundTask,0,tarch::multicore::DefaultPriority/4), // !! always high priority
+  tarch::multicore::jobs::Job(
+      tarch::multicore::jobs::JobType::BackgroundTask,0,
+      getHighPriorityTaskPriority()
+  ), // ! always high priority
   _solver(solver),
   _cellDescription(cellDescription),
   _cellInfo(cellInfo),
@@ -19,11 +22,7 @@ exahype::solvers::ADERDGSolver::UpdateJob::UpdateJob(
 }
 
 bool exahype::solvers::ADERDGSolver::UpdateJob::run() {
-  UpdateResult result =
-      _solver.updateBody(_cellDescription,_cellInfo,_neighbourMergePerformed,_isAtRemoteBoundary);
-
-  _solver.updateMeshUpdateEvent(result._meshUpdateEvent);
-  _solver.updateAdmissibleTimeStepSize(result._timeStepSize);
+  _solver.updateBody(_cellDescription,_cellInfo,_neighbourMergePerformed,_isAtRemoteBoundary);
 
   NumberOfReductionJobs.fetch_sub(1);
   assertion( NumberOfReductionJobs.load()>=0 );

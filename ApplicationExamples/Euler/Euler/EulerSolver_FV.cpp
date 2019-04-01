@@ -93,21 +93,6 @@ void Euler::EulerSolver_FV::flux(const double* const Q, double** const F) {
   #endif
 }
 
-/**
- * Use generalised Osher Solomon flux.
- */
-double Euler::EulerSolver_FV::riemannSolver(double* fL, double *fR, const double* qL, const double* qR, const double* gradQL, const double* gradQR, const double* cellSize, int normalNonZero) {
-  if ( 
-      (ReferenceChoice == Reference::ShuOsher ||
-      ReferenceChoice  == Reference::SodShockTube) &&
-      direction!=0 
-  ) {
-  return kernels::finitevolumes::riemannsolvers::c::rusanov<false, true, false, EulerSolver_FV>(*static_cast<EulerSolver_FV*>(this), fL,fR,qL,qR,gradQL, gradQR, cellSize, direction);
-  } else {
-    return kernels::finitevolumes::riemannsolvers::c::generalisedOsherSolomon<false, true, false, 3, EulerSolver_FV>(*static_cast<EulerSolver_FV*>(this), fL,fR,qL,qR,direction);
-  }
-}
-
 void Euler::EulerSolver_FV::eigenvectors(
     const double* const Q,const int in, const int is, const int it,
     double (&R)[NumberOfVariables][NumberOfVariables],double (&eigvals)[NumberOfVariables], double (&iR)[NumberOfVariables][NumberOfVariables]) {
@@ -495,4 +480,24 @@ void Euler::EulerSolver_FV::boundaryValues(
     }
     break;
   }
+}
+
+void Euler::EulerSolver_FV::resetGlobalObservables(GlobalObservables& globalObservables) const {
+  globalObservables.dgcells() = 0;
+  globalObservables.fvcells() = 0;
+}
+
+void Euler::EulerSolver_FV::mapGlobalObservables(
+    GlobalObservables&                          globalObservables,
+    const double* const                         luh,
+    const tarch::la::Vector<DIMENSIONS,double>& cellSize) const {
+  globalObservables.dgcells() = 0;
+  globalObservables.fvcells() = 1;
+}
+
+void Euler::EulerSolver_FV::mergeGlobalObservables(
+    GlobalObservables&         globalObservables,
+    ReadOnlyGlobalObservables& otherObservables) const {
+  globalObservables.dgcells() += otherObservables.dgcells();
+  globalObservables.fvcells() += otherObservables.fvcells();
 }

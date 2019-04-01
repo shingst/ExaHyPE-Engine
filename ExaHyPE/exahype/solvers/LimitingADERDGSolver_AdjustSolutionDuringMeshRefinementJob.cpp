@@ -5,7 +5,10 @@ exahype::solvers::LimitingADERDGSolver::AdjustSolutionDuringMeshRefinementJob::A
   SolverPatch&          solverPatch,
   CellInfo&             cellInfo,
   const bool            isInitialMeshRefinement):
-  tarch::multicore::jobs::Job(tarch::multicore::jobs::JobType::BackgroundTask,0,getStandardBackgroundTaskPriority()),
+  tarch::multicore::jobs::Job(
+      tarch::multicore::jobs::JobType::BackgroundTask,0,
+      getDefaultTaskPriority()
+  ),
   _solver(solver),
   _solverPatch(solverPatch),
   _cellInfo(cellInfo),

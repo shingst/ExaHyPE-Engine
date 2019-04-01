@@ -545,9 +545,9 @@ RECURSIVE SUBROUTINE PDEEigenvalues(L,Q,n)
     CALL PDECons2Prim(V,Q,iErr)
     rho    = V(1)
 	DO i=1,3
-		v_cov = V(1+i)
-		B_contr(1:3) = V(5+i)
-		shift = V(10+i)
+		v_cov(i) = V(1+i)
+		B_contr(i) = V(5+i)
+		shift(i) = V(10+i)
 	ENDDO
     p      = V(5)
     !

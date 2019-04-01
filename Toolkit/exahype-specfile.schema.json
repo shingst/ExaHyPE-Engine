@@ -302,8 +302,14 @@
         "background_job_processing" : {
           "type" : "string", 
           "title" : "How to process priority background jobs",
-          "enum" : [ "job_system", "job_system_without_priorities","spawn_tasks" ],
+          "enum" : [ "job_system", "job_system_without_priorities", "spawn_tasks" ],
           "default" : "job_system"
+        },
+        "job_system_wait_behaviour" : {
+          "type" : "string", 
+          "title" : "What to do when a job of a given priority has not completed yet.",
+          "enum" : [ "process_any_jobs", "process_jobs_with_same_priority", "only_poll_mpi" ],
+          "default" : "process_any_jobs"
         },
         "background_job_consumers" : {
           "type" : "integer", 
@@ -356,7 +362,8 @@
           "type": "integer",
           "title" : "Specify the stack size of each thread (in bytes) [default: 0]. If you specify 0, the default is chosen. (Changing the stack size with ulimit does not apply to TBB worker threads. This makes this parameter necessary.)",
           "minimum" : 0,
-          "exclusiveMinimum" : false
+          "exclusiveMinimum" : false,
+          "default": 12582912
         }
       }
     }, 
@@ -434,6 +441,11 @@
           "title" : "Buffer size in bytes per MPI package", 
           "default" : 64,
           "old_format" : { "token_after" : "buffer-size" }
+        },
+        "node_pool_timeout" : {
+          "type" : "number", 
+          "title" : "The timeout for receiving an answer message from the node pool (seconds).", 
+          "default" : 1
         },
         "max_forks_at_once" : {
           "type" : "integer", 
@@ -639,7 +651,7 @@
                 "type" : "string",
                 "title" : "Where to allocate storage in the solver kernel interface. Heap known to be safer for large PDEs",
                 "enum" : ["stack","heap"],
-                "default" : "heap"
+                "default" : "stack"
               },
               "space_time_predictor" : {
                 "type" : "object",
@@ -839,6 +851,12 @@
             "title" : "Number of subcells per coordinate direction (no ghost)",
             "$comment" : "With pure DG, this value is ignored. With Limiter, this value is determined by the order",
             "scope" : "compile-time"
+          },
+          "cfl" : {
+            "type" : "number",
+            "title" : "Override the CFL number used. By default 0.9",
+            "scope" : "compile-time",
+            "default" : 0.9
           },
           "halo_cells" : {
             "type" : "integer", 

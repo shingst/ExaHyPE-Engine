@@ -9,10 +9,9 @@ exahype::solvers::FiniteVolumesSolver::FusedTimeStepJob::FusedTimeStepJob(
   const bool           isSkeletonJob)
   :
   tarch::multicore::jobs::Job(
-		    tarch::multicore::jobs::JobType::BackgroundTask,
-			0,
-			isLastTimeStepOfBatch ? tarch::multicore::DefaultPriority / 8 : tarch::multicore::DefaultPriority
-		  ),
+      tarch::multicore::jobs::JobType::BackgroundTask,0,
+      getTaskPriority(isLastTimeStepOfBatch)
+  ),
   _solver(solver),
   _cellDescription(cellDescription),
   _cellInfo(cellInfo),
@@ -29,16 +28,10 @@ exahype::solvers::FiniteVolumesSolver::FusedTimeStepJob::FusedTimeStepJob(
 }
 
 bool exahype::solvers::FiniteVolumesSolver::FusedTimeStepJob::run() {
-  UpdateResult result =
-      _solver.updateBody(
-          _cellDescription,_cellInfo,_neighbourMergePerformed,
-          _isFirstTimeStepOfBatch,_isLastTimeStepOfBatch,
-          _isSkeletonJob,false/*uncompressBefore*/);
-
-  if (_isLastTimeStepOfBatch) {
-    _solver.updateMeshUpdateEvent(result._meshUpdateEvent);
-    _solver.updateAdmissibleTimeStepSize(result._timeStepSize);
-  }
+  _solver.updateBody(
+      _cellDescription,_cellInfo,_neighbourMergePerformed,
+      _isFirstTimeStepOfBatch,_isLastTimeStepOfBatch,
+      _isSkeletonJob,false/*uncompressBefore*/);
 
   NumberOfReductionJobs.fetch_sub(1);
   assertion( NumberOfReductionJobs.load()>=0 );

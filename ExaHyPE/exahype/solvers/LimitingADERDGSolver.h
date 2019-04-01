@@ -325,6 +325,21 @@ private:
   void ensureLimiterTimeStepDataIsConsistent() const;
 
   /**
+   * Compute a new admissible time step size.
+   * Depending on the refinement status, either the
+   * limiter or solver solution's eigenvalues are
+   * used.
+   *
+   * @param solverPatch solver patch linking to the data
+   * @param cellInfo    refers to all cell descriptions/patches found in the cell holding the solver patch
+   *
+   * @note Doesn't have const modifier as kernels are not const yet.
+   *
+   * @return an admissible time step size.
+   */
+  double computeTimeStepSize(SolverPatch& solverPatch,CellInfo& cellInfo);
+
+  /**
    * If a limiter patch is allocated for the solver patch,
    * ensure that it's time step data is consistent
    * with the solver patch's time step data.
@@ -362,6 +377,19 @@ private:
       const SolverPatch& solverPatch, LimiterPatch& limiterPatch);
 
   /**
+   * Calls the updateGlobalObservables on the solver if the
+   * cell is not troubled. Otherwise, calls the routine
+   * on the limiter.
+   *
+   * @param solverPatch a solver patch of type Cell.
+   * @param cellInfo    struct referring to all cell descriptions registered for a cell
+   */
+  void reduce(
+      const SolverPatch&  solverPatch,
+      CellInfo&           cellInfo,
+      const UpdateResult& updateResult);
+
+  /**
    * Body of LimitingADERDGSolver::fusedTimeStepOrRestrict(...).
    *
    * <h2> Order of operations</h2>
@@ -388,7 +416,7 @@ private:
    *
    * @note Might be called by background task. Do not synchronise time step data here.
    */
-  UpdateResult fusedTimeStepBody(
+  void fusedTimeStepBody(
       SolverPatch&                                               solverPatch,
       CellInfo&                                                  cellInfo,
       const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
@@ -408,7 +436,7 @@ private:
    *
    * @return an admissible time step size and a mesh update event for the solver patch
    */
-  UpdateResult updateBody(
+  void updateBody(
       SolverPatch&                                               solverPatch,
       CellInfo&                                                  cellInfo,
       const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
@@ -749,8 +777,19 @@ void updateNextGlobalObservables(
       const std::vector<std::string>&             cmdlineargs,
       const exahype::parser::ParserView&          parserView) final override;
 
-  void wrapUpTimeStep(const bool isFirstTimeStepOfBatchOrNoBatch,const bool isLastTimeStepOfBatchOrNoBatch) final override;
+  /** @copydoc Solver::kickOffTimeStep
+   *
+   * Kick off time step on solver and limiter.
+   */
   void kickOffTimeStep(const bool isFirstTimeStepOfBatchOrNoBatch) final override;
+
+  /** @copydoc Solver::kickOffTimeStep
+   *
+   * Wrap up solver and limiter time step.
+   * Compare the global observables of both and
+   * copy the result to both solver.s
+   */
+  void wrapUpTimeStep(const bool isFirstTimeStepOfBatchOrNoBatch,const bool isLastTimeStepOfBatchOrNoBatch) final override;
 
   bool isPerformingPrediction(const exahype::State::AlgorithmSection& section) const final override;
   bool isMergingMetadata(const exahype::State::AlgorithmSection& section) const final override;
@@ -768,6 +807,8 @@ void updateNextGlobalObservables(
   void synchroniseTimeStepping(SolverPatch& solverPatch,Solver::CellInfo& cellInfo) const;
 
   void updateTimeStepSize() final override;
+
+  void updateGlobalObservables() final override;
 
   /**
    * Roll back the time step data to the
@@ -930,7 +971,9 @@ void updateNextGlobalObservables(
       SolverPatch& solverPatch,Solver::CellInfo& cellInfo,
       const bool isFirstTimeStepOfBatch);
 
-  double updateTimeStepSize(const int solverNumber,CellInfo& cellInfo) final override;
+  void updateTimeStepSize(const int solverNumber,CellInfo& cellInfo) final override;
+
+  void updateGlobalObservables(const int solverNumber,CellInfo& cellInfo) final override;
 
   /**
    * Mostly identical but slightly different to the ADER-DG equivalent
@@ -944,17 +987,17 @@ void updateNextGlobalObservables(
       CellInfo& cellInfo,
       const bool isAtRemoteBoundary);
 
-  UpdateResult fusedTimeStepOrRestrict(
+  void fusedTimeStepOrRestrict(
       const int  solverNumber,
       CellInfo&  cellInfo,
       const bool isFirstTimeStepOfBatch,
       const bool isLastTimeStepOfBatch,
       const bool isAtRemoteBoundary) final override;
 
-  UpdateResult updateOrRestrict(
-        const int  solverNumber,
-        CellInfo&  cellInfo,
-        const bool isAtRemoteBoundary) final override;
+  void updateOrRestrict(
+      const int  solverNumber,
+      CellInfo&  cellInfo,
+      const bool isAtRemoteBoundary) final override;
 
   void compress(
       const int  solverNumber,
@@ -1111,15 +1154,13 @@ void updateNextGlobalObservables(
   /**
    * Invoke ::localRecomputationBody(...)
    *
-   * \return a time step size computed with the new solution.
-   *
    * Fused Time Stepping
    * -------------------
    *
    * Recomputes a new predictor as well if necessary.
    * Further see ::fusedTimeBody regarding order of operations.
    */
-  double localRecomputation(
+  void localRecomputation(
       const int         solverNumber,
       Solver::CellInfo& cellInfo,
       const bool        isAtRemoteBoundary);
@@ -1496,6 +1537,17 @@ void updateNextGlobalObservables(
   ///////////////////////////////////
   // WORKER->MASTER
   ///////////////////////////////////
+
+  /** @copydoc Solver::mergeWithMasterData
+   *
+   * Send the solver's global observables to the
+   * the master rank.
+   *
+   * @note Solver and limiter observables have been merged in
+   * wrapUpTimeStep.
+   *
+   * @see wrapUpTimeStep
+   */
   void sendDataToMaster(
       const int                                    masterRank,
       const tarch::la::Vector<DIMENSIONS, double>& x,
@@ -1514,6 +1566,13 @@ void updateNextGlobalObservables(
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level) const final override;
 
+  /** @copydoc Solver::mergeWithMasterData
+   *
+   * Overwrites the limiter's global observables with global observables
+   * received by the solver.
+   *
+   * @see wrapUpTimeStep
+   */
   void mergeWithMasterData(
       const                                        int masterRank,
       const tarch::la::Vector<DIMENSIONS, double>& x,
@@ -1535,28 +1594,35 @@ void updateNextGlobalObservables(
     return _solver;
   }
 
- std::vector<double> mapGlobalObservables(const double* const Q, const tarch::la::Vector<DIMENSIONS, double> &dx) const override;
- std::vector<double> resetGlobalObservables() const override;
- void reduceGlobalObservables(
-                           std::vector<double>& reducedGlobalObservables,
-                           const std::vector<double>& curGlobalObservables) const override;
-
-  using Solver::reduceGlobalObservables;
-  void reduceGlobalObservables(std::vector<double>& globalObservables,
-                           Solver::CellInfo cellInfo,
-                           int solverNumber) const override;
-
   ///////////////////////
   // PROFILING
   ///////////////////////
 
   CellProcessingTimes measureCellProcessingTimes(const int numberOfRuns=100) override;
 
+  /////////////////////////////////
+  // USER HOOKS - Make inaccessible
+  /////////////////////////////////
+
   int getGeometricLoadBalancingWeight(
       const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
       const tarch::la::Vector<DIMENSIONS,double>& cellSize) final override {
     return _solver->getGeometricLoadBalancingWeight(cellCentre,cellSize);
   }
+
+  void resetGlobalObservables(double* const globalObservables) final override;
+
+  void updateGlobalObservables(
+      double* const                               globalObservables,
+      const double* const                         luh,
+      const tarch::la::Vector<DIMENSIONS,double>& cellSize) final override;
+
+  void mergeGlobalObservables(
+      double* const       globalObservables,
+      const double* const otherObservables) final override;
+
+  void wrapUpGlobalObservables(
+      double* const globalObservables) final override;
 
 protected:
 
