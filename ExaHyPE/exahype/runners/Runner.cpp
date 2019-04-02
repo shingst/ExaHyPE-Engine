@@ -304,7 +304,8 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
        _parser.getDoubleFromPath("/distributed_memory/stealing_diffusion_temperature"),
        _parser.getIntFromPath("/distributed_memory/stealing_CCP_frequency"),
        _parser.getIntFromPath("/distributed_memory/stealing_CCP_steps"),
-       _parser.getBoolFromPath("/distributed_memory/stealing_update_temperature")
+       _parser.getBoolFromPath("/distributed_memory/stealing_update_temperature"),
+       _parser.getDoubleFromPath("/distributed_memory/stealing_increase_temp_threshold")
     );
 #endif
 

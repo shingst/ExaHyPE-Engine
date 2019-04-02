@@ -265,19 +265,22 @@ exahype::stealing::AggressiveHybridDistributor& exahype::stealing::AggressiveHyb
 void exahype::stealing::AggressiveHybridDistributor::configure(
                    double startTempCCP, double startTempDiffusion,
                    int CCPFrequency, int CCPStepsPerPhase,
-                   bool adaptTemperature) {
+                   bool adaptTemperature,
+                   double thresholdTempAdaptation) {
 
   logInfo("configure", "start temp CCP: "<<startTempCCP<<
                        " start temp diffusion: "<<startTempDiffusion<<
                        " CCP frequency: "<<CCPFrequency<<
                        " CCP steps per phase: "<<CCPStepsPerPhase<<
-                       " adapt temperature: "<<adaptTemperature );
+                       " adapt temperature: "<<adaptTemperature<<
+                       " adapt temperature threshold:"<<thresholdTempAdaptation );
 
   _temperatureCCP = startTempCCP;
   _temperatureDiffusion = startTempDiffusion;
   _adaptTemperature = adaptTemperature;
   _CCPFrequency = CCPFrequency;
   _CCPStepsPerPhase = CCPStepsPerPhase;
+  _thresholdTempAdaptation = thresholdTempAdaptation;
 }
 
 void exahype::stealing::AggressiveHybridDistributor::printOffloadingStatistics() {
@@ -384,7 +387,7 @@ void exahype::stealing::AggressiveHybridDistributor::updateLoadDistributionCCP()
   int myRank = tarch::parallel::Node::getInstance().getRank();
 
   if(_incrementPrevious>0 && _incrementCurrent>0 && _adaptTemperature) {
-    if((_incrementCurrent*1.0f/_incrementPrevious)>1)
+    if((_incrementCurrent*1.0f/_incrementPrevious)>_thresholdTempAdaptation)
       _temperatureCCP = std::min(1.1, _temperatureCCP*1.1);
     else 
       _temperatureCCP = std::max(0.1, _temperatureCCP*0.9);
@@ -411,7 +414,7 @@ void exahype::stealing::AggressiveHybridDistributor::updateLoadDistributionDiffu
   int myRank = tarch::parallel::Node::getInstance().getRank();
 
   if(_incrementPrevious>0 && _incrementCurrent>0 && _adaptTemperature) {
-    if((_incrementCurrent*1.0f/_incrementPrevious)>1)
+    if((_incrementCurrent*1.0f/_incrementPrevious)>_thresholdTempAdaptation)
       _temperatureDiffusion = std::min(1.1, _temperatureDiffusion*1.1);
     else 
       _temperatureDiffusion = std::max(0.1, _temperatureDiffusion*0.9);

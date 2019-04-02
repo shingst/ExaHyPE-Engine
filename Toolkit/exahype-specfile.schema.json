@@ -452,6 +452,11 @@
               "title" : "The initial temperature for diffusion.",
               "default" : 0.5
         },
+        "stealing_increase_temp_threshold" : {
+              "type" : "number",
+              "title" : "The threshold in the increment ratio, above which temperature is increased.",
+              "default" : 1.0
+        },
         "stealing_CCP_frequency" : {
               "type" : "integer",
               "title" : "Frequency after how many steps CCP is restarted.",

@@ -158,6 +158,7 @@ void exahype::stealing::StealingAnalyser::beginIteration() {
 
 void exahype::stealing::StealingAnalyser::endIteration() {
 #if !defined(AnalyseWaitingTimes)
+  exahype::stealing::StealingManager::getInstance().printBlacklist();
   if(_iterationCounter%2 !=0) {
      _iterationCounter++; 
      return;
@@ -187,7 +188,7 @@ void exahype::stealing::StealingAnalyser::endIteration() {
   exahype::stealing::AggressiveHybridDistributor::getInstance().updateLoadDistribution();
 #endif
   exahype::stealing::StealingManager::getInstance().printBlacklist();
-  exahype::stealing::StealingManager::getInstance().resetPostedRequests();
+  //exahype::stealing::StealingManager::getInstance().resetPostedRequests();
 
   _iterationCounter++;
 #endif
