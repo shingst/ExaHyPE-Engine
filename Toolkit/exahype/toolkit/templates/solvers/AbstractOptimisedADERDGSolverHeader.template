@@ -188,8 +188,8 @@ public:
    */
   bool isPhysicallyAdmissible(
       const double* const                         solution,
-      const double* const                         observablesMin,
-      const double* const                         observablesMax,
+      const double* const                         localDMPObservablesMin,
+      const double* const                         localDMPObservablesMax,
       const bool                                  wasTroubledInPreviousTimeStep,
       const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
       const tarch::la::Vector<DIMENSIONS,double>& cellSize,
@@ -202,8 +202,8 @@ public:
    */
   bool vetoDiscreteMaximumPrincipleDecision(
       const double* const                         solution,
-      const double* const                         localObservablesMin,
-      const double* const                         localObservablesMax,
+      const double* const                         localDMPObservablesMin,
+      const double* const                         localDMPObservablesMax,
       const bool                                  wasTroubledInPreviousTimeStep,
       const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
       const tarch::la::Vector<DIMENSIONS,double>& cellSize,
