@@ -308,6 +308,10 @@ export MP_TASK_AFFINITY=core:{{coresPerRank}}
 #SBATCH --account=pr48ma
 #SBATCH --chdir ./
 
+# due to the fact that SLURM performs settings of certain variables in its prologue that can cause MPI crashes, 
+# and cannot be overridden in the default module mechanism, the following module should be loaded in SLURM scripts before executing parallel programs:
+module load slurm_setup
+
 module load intel/19.0
 module load gcc/7
 module load tbb/2019
