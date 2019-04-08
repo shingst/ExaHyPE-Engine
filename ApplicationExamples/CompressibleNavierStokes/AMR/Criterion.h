@@ -124,53 +124,54 @@ void mapGlobalObservablesDG(
   }
 }
 
-template <typename GlobalObservables>
+ template <typename Solver, typename GlobalObservables>
 void mapGlobalObservablesFV(
-    GlobalObservables&                          globalObservables,
-    const double* const                         luh,
+    Solver *solver,			    
+    GlobalObservables& globalObservables,
+    const double* const luh,
     const tarch::la::Vector<DIMENSIONS,double>& cellSize)  {
-  // TODO(Lukas): Please implement
-}
+   constexpr unsigned int NumberOfVariables = Solver::NumberOfVariables;
+   constexpr unsigned int NumberOfParameters = Solver::NumberOfParameters;
+   constexpr auto numberOfData = NumberOfVariables + NumberOfParameters;
+   constexpr unsigned int PatchSize = Solver::PatchSize;
+   constexpr unsigned int GhostLayerWidth = Solver::GhostLayerWidth;
 
-template <typename GlobalObservables, int PatchSize, int GhostLayerWidth,
-	  int NumberOfVariables, int NumberOfParameters>
-void mapGlobalObservablesFV(
-					   GlobalObservables& globalObservables,
-					   const double* const Q,
-					   const tarch::la::Vector<DIMENSIONS, double>& dx,
-					   const std::string& scenarioName,
-					   const PDE& ns,
-					   const AMRSettings& amrSettings) {
-  // Idea: Map FV-Data to DG-Representation, and compute global variables there.
-  // This way, we can use the same implementation of total variance for both
-  // solvers. Additionally, we have the same TV before and after limiting. It is
-  // really slow though, so it might be a good idea to approximate TV
-  // differently.
-  // TODO(Lukas) Skip mapping if not using TV, e.g. non-gradient based crit.
-  if (globalObservables.size() == 0) {
-    return;
-  }
+   constexpr auto variablesPerPatch = (PatchSize+2*GhostLayerWidth)*(PatchSize+2*GhostLayerWidth)*numberOfData;
+   constexpr int patchBegin = GhostLayerWidth; // patchBegin cell is inside domain
+   constexpr int patchEnd = patchBegin+PatchSize; // patchEnd cell is outside domain
+   kernels::idx3 idx_slope(PatchSize+2*GhostLayerWidth,
+			   PatchSize+2*GhostLayerWidth,
+			   DIMENSIONS);
 
-  assert((PatchSize - 1) % 2 == 0);
-  constexpr int Order = (PatchSize - 1) / 2;
-  constexpr int NumberOfData = NumberOfVariables + NumberOfParameters;
+   double slopes[variablesPerPatch*DIMENSIONS] = {0.0};
 
-  // TODO(Lukas) Stack allocate this?
-  auto QDG =
-      std::vector<double>(std::pow(Order + 1, DIMENSIONS) * NumberOfData);
-  kernels::limiter::generic::c::projectOnDGSpace<Order + 1,
-       NumberOfData, GhostLayerWidth>(Q, QDG.data());
+   totalVariationFV(solver, luh, cellSize, slopes);
+   
+   double meanReduced = -1.0;
+   double varReduced = -1.0;
+   double n = 0.0;
+   
+   for (int i = patchBegin - 1; i < patchEnd; ++i) {
+     for (int j = patchBegin-1; j < patchEnd; ++j) {
+       for (int d = 0; d < DIMENSIONS; ++d) {
+	 const auto curTv = slopes[idx_slope(i,j,d)];
+	 std::tie(meanReduced, varReduced) = mergeVariance(meanReduced,
+							   curTv,
+							   varReduced,
+							   0.0, n,
+							   1);
+	 n += 1;
+       }
+     }
+   }
 
-  NavierStokes::mapGlobalObservablesDG(globalObservables,
-				       QDG.data(),
-				       dx,
-				       scenarioName,
-				       ns,
-				       amrSettings,
-				       Order,
-				       NumberOfVariables,
-				       NumberOfParameters);
-}
+
+
+   auto *rawGlobalObservables = globalObservables.data();
+   rawGlobalObservables[0] = meanReduced;
+   rawGlobalObservables[1] = varReduced;
+   rawGlobalObservables[2] = n;
+ }
 
 }  // namespace NavierStokes
 
