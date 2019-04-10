@@ -68,7 +68,7 @@ double kernels::finitevolumes::musclhancock::c::solutionUpdate(
 
   // 2. Compute slopes TODO(Dominic): Make sure to only consider parameters in luh
   idx3 idx(patchSize+2*ghostLayerWidth,patchSize+2*ghostLayerWidth,numberOfData);
-  idx4 idx_slope(patchSize+2*ghostLayerWidth,patchSize+2*ghostLayerWidth,DIMENSIONS,numberOfVariables);
+  idx4 idx_slope(patchSize+2*ghostLayerWidth,patchSize+2*ghostLayerWidth,DIMENSIONS,numberOfData);
   constexpr int variablesPerPatch = (patchSize+2*ghostLayerWidth)*(patchSize+2*ghostLayerWidth)*numberOfData;
   //double slopex[variablesPerPatch] = {0.0};
   //double slopey[variablesPerPatch] = {0.0};
