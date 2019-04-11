@@ -16,9 +16,12 @@ namespace NavierStokes {
 /** NEW **/
 template <typename GlobalObservables>
 void resetGlobalObservables(GlobalObservables& obs)  {
-  obs.gobs(0) = -1.0;
-  obs.gobs(1) = -1.0;
-  obs.gobs(2) = 0.0;
+  if (obs.size() != 0) {
+    auto *obsRaw = obs.data();
+    obsRaw[0] = -1.0;
+    obsRaw[1] = -1.0;
+    obsRaw[2] = 0.0;
+  }
 }
 
 template <
@@ -29,8 +32,8 @@ void mergeGlobalObservables(
     GlobalObservables&         obs,
     ReadOnlyGlobalObservables& other)  {
     if (obs.size() == 0) {
-    return;
-  }
+      return;
+    }
 
   assertion2(obs.size() == other.size(),
              obs.size(), other.size());
@@ -130,6 +133,9 @@ void mapGlobalObservablesFV(
     GlobalObservables& globalObservables,
     const double* const luh,
     const tarch::la::Vector<DIMENSIONS,double>& cellSize)  {
+   if (globalObservables.size() == 0) {
+     return;
+   }
    constexpr unsigned int NumberOfVariables = Solver::NumberOfVariables;
    constexpr unsigned int NumberOfParameters = Solver::NumberOfParameters;
    constexpr auto numberOfData = NumberOfVariables + NumberOfParameters;
