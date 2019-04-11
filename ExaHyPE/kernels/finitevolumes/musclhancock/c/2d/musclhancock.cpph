@@ -78,7 +78,7 @@ double kernels::finitevolumes::musclhancock::c::solutionUpdate(
   //  for (int j = patchBegin; j < patchEnd; j++) { // y TODO(Dominic): Previous. Takes no ghost layer corners into account.
   for (int j = patchBegin-1; j < patchEnd+1; j++) { // y TODO(Dominic): New. Takes corners of ghost layers into account. Assumes them to be set to zero.
     for (int k = patchBegin-1; k < patchEnd+1; k++) { // x
-      for (int l = 0; l < numberOfVariables; l++) {
+      for (int l = 0; l < numberOfData; l++) {
         slope[idx_slope(j, k, 0, l)] =
             slope_limiter(luhOld[idx(j, k + 1, l)] - luhOld[idx(j, k, l)],
                 luhOld[idx(j, k, l)] - luhOld[idx(j, k - 1, l)]) * invCellSize[0];
@@ -89,7 +89,7 @@ double kernels::finitevolumes::musclhancock::c::solutionUpdate(
   for (int j = patchBegin-1; j < patchEnd+1; j++) { // y
   //    for (int k = patchBegin; k < patchEnd; k++) { // x TODO(Dominic): Previous. Takes no ghost layer corners into account.
     for (int k = patchBegin-1; k < patchEnd+1; k++) { // x TODO(Dominic): New. Takes corners of ghost layers into account. Assumes them to be set to zero.
-      for (int l = 0; l < numberOfVariables; l++) {
+      for (int l = 0; l < numberOfData; l++) {
         slope[idx_slope(j, k, 1, l)] =
             slope_limiter(luhOld[idx(j + 1, k, l)] - luhOld[idx(j, k, l)],
                 luhOld[idx(j, k, l)] - luhOld[idx(j - 1, k, l)]) * invCellSize[1];
