@@ -252,17 +252,20 @@ bool NavierStokes::NavierStokesSolver_ADERDG::isPhysicallyAdmissible(
   double data[NumberOfGlobalObservables];
   GlobalObservables curObs(data);
   mapGlobalObservables(curObs,solution, dx);
+  const auto *curObsRaw = curObs.data();
   
-  const auto curTv = curObs.gobs(0);
+  const auto curTv = curObsRaw[0];
 
-  ReadOnlyGlobalObservables gobs = getGlobalObservables();
-  const auto countGlobal = gobs.gobs(2);
-  const auto meanGlobal  = gobs.gobs(0);
+  auto gobs = ReadOnlyGlobalObservables(_globalObservables.data());
+  const auto *gobsRaw = gobs.data();
+
+  const auto countGlobal = gobsRaw[2];
+  const auto meanGlobal  = gobsRaw[0];
   // Merging computes sample variance (Bessel's correction), we need population variance.
-  const auto varianceGlobal = ((countGlobal - 1)/countGlobal) * gobs.gobs(1);
+  const auto varianceGlobal = ((countGlobal - 1)/countGlobal) * gobsRaw[1];
   const auto stdGlobal = std::sqrt(varianceGlobal);
 
-  const auto factorLimit = 4.0;
+  const auto factorLimit = 4.0; // TODO: Remove or make configurable.
 
   const auto hi = meanGlobal + factorLimit * stdGlobal;
 
@@ -326,14 +329,17 @@ exahype::solvers::Solver::RefinementControl NavierStokes::NavierStokesSolver_ADE
   double data[NumberOfGlobalObservables];
   GlobalObservables curObs(data);
   mapGlobalObservables(curObs,luh, dx);
+  const auto *curObsRaw = curObs.data();
   
-  const auto curTv = curObs.gobs(0);
+  const auto curTv = curObsRaw[0];
 
-  ReadOnlyGlobalObservables gobs = getGlobalObservables();
-  const auto countGlobal = gobs.gobs(2);
-  const auto meanGlobal  = gobs.gobs(0);
+  auto gobs = ReadOnlyGlobalObservables(_globalObservables.data());
+  const auto *gobsRaw = gobs.data();
+
+  const auto countGlobal = gobsRaw[2];
+  const auto meanGlobal  = gobsRaw[0];
   // Merging computes sample variance (Bessel's correction), we need population variance.
-  const auto varianceGlobal = ((countGlobal - 1)/countGlobal) * gobs.gobs(1);
+  const auto varianceGlobal = ((countGlobal - 1)/countGlobal) * gobsRaw[1];
   const auto stdGlobal = std::sqrt(varianceGlobal);
 
   const auto factorRefine = amrSettings.factorRefine;
