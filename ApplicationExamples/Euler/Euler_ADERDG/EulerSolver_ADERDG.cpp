@@ -327,11 +327,48 @@ void Euler::EulerSolver_ADERDG::referenceSolution(const double* const x,double t
   }
 }
 
-void Euler::EulerSolver_ADERDG::adjustPointSolution(const double* const x,const double t,const double dt, double* const Q) {
+/*void Euler::EulerSolver_ADERDG::adjustPointSolution(const double* const x,const double t,const double dt, double* const Q) {
   if (tarch::la::equals(t, 0.0)) {
     referenceSolution(x,0.0,Q);
   }
+}*/
+
+void Euler::EulerSolver_ADERDG::adjustSolution(double* const luh, const tarch::la::Vector<DIMENSIONS,double>& center, const tarch::la::Vector<DIMENSIONS,double>& dx,double t,double dt) {
+    // Dimensions                        = 2
+    // Number of variables + parameters  = 4 + 0
+    if (tarch::la::equals(t,0.0)) {
+        constexpr int basisSize = MySWESolver::Order+1;
+        constexpr int numberOfData=MySWESolver::NumberOfParameters+MySWESolver::NumberOfVariables;
+
+        kernels::idx3 id_xyf(basisSize,basisSize,numberOfData);
+        kernels::idx2 id_xy(basisSize,basisSize);
+
+        int num_nodes = basisSize;
+
+        double offset_x=center[0]-0.5*dx[0];
+        double offset_y=center[1]-0.5*dx[1];
+
+        for (int i=0; i< num_nodes; i++){
+            for (int j=0; j< num_nodes; j++){
+
+                double x  =  (offset_x+dx[0]*kernels::gaussLegendreNodes[basisSize-1][i]);
+                double y  =  (offset_y+dx[1]*kernels::gaussLegendreNodes[basisSize-1][j]);
+                const tarch::la::Vector<DIMENSIONS, double>& point;
+                point[0] = x; point[1] = y; point[2] = 0.0;
+
+                double Q[5];
+                referenceSolution(x,0.0, Q);
+
+                luh[id_xyf(i,j,0)] = Q[0]; //rho
+                luh[id_xyf(i,j,1)] = Q[1]; //u
+                luh[id_xyf(i,j,2)] = Q[2]; //v
+                luh[id_xyf(i,j,3)] = Q[3]; //0
+                luh[id_xyf(i,j,4)] = Q[4]; //E
+            }
+        }
+    }
 }
+
 
 exahype::solvers::Solver::RefinementControl
 Euler::EulerSolver_ADERDG::refinementCriterion(
