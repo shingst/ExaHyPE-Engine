@@ -134,7 +134,8 @@ public:
    *                         as C array (already allocated).
    */
   void adjustPointSolution(const double* const x,const double t,const double dt,double* const Q) override;
-
+  //void adjustSolution(double* const luh, const tarch::la::Vector<DIMENSIONS,double>& center, const tarch::la::Vector<DIMENSIONS,double>& dx,double t,double dt) final override;
+  
   /**
    * Compute the flux tensor.
    *
@@ -219,7 +220,7 @@ public:
       const tarch::la::Vector<DIMENSIONS,double>& dx,
       const double t) const override;
   
-  void resetGlobalObservables(GlobalObservables& globalObservables) const final override;
+  /*void resetGlobalObservables(GlobalObservables& globalObservables) const final override;
 
   void mapGlobalObservables(
       GlobalObservables&                          globalObservables,
@@ -231,6 +232,7 @@ public:
       ReadOnlyGlobalObservables& otherObservables) const final override;
   
   void beginTimeStep(const double minTimeStamp,const bool isFirstTimeStepOfBatchOrNoBatch) final override;
-};
+*/
+  };
 
 #endif // __EulerSolver_ADERDG_CLASS_HEADER__

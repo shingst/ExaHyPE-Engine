@@ -472,6 +472,30 @@ void Euler::EulerSolver_ADERDG::adjustPointSolution(const double* const x,const 
   }
 }
 
+/*void Euler::EulerSolver_ADERDG::adjustSolution(double* const luh, const tarch::la::Vector<DIMENSIONS,double>& center, const tarch::la::Vector<DIMENSIONS,double>& dx,double t,double dt) {
+    // Dimensions                        = 2
+    // Number of variables + parameters  = 4 + 0
+
+    // Initial data
+    if (tarch::la::equals(t,0.0)) {
+        constexpr int basisSize = EulerSolver_ADERDG::Order+1;
+        constexpr int numberOfData= EulerSolver_ADERDG::NumberOfVariables;
+
+        kernels::idx3 id_xyf(basisSize,basisSize,numberOfData);
+
+        double offset_x=center[0]-0.5*dx[0];
+        double offset_y=center[1]-0.5*dx[1];
+
+            for (int j=0; j< basisSize; j++){
+                double x = center[0] + dx[0] * (kernels::gaussLegendreNodes[basisSize-1][j] - 0.5);
+                double point[2]= {x,0.0};
+
+                for (int i=0; i< basisSize; i++)
+                    referenceSolution(point,0.0,luh + id_xyf(i,j,0));
+        }
+    }
+}*/
+
 exahype::solvers::Solver::RefinementControl
 Euler::EulerSolver_ADERDG::refinementCriterion(
     const double* const luh, const tarch::la::Vector<DIMENSIONS, double>& center,
@@ -565,7 +589,7 @@ bool Euler::EulerSolver_ADERDG::isPhysicallyAdmissible(
          (observablesMin[1] >= 0.0);
 }
 
-void Euler::EulerSolver_ADERDG::resetGlobalObservables(GlobalObservables& globalObservables) const {
+/*void Euler::EulerSolver_ADERDG::resetGlobalObservables(GlobalObservables& globalObservables) const {
   globalObservables.dgcells() = 0;
   globalObservables.fvcells() = 0;
 }
@@ -589,4 +613,4 @@ void Euler::EulerSolver_ADERDG::beginTimeStep(const double minTimeStamp,const bo
   ReadOnlyGlobalObservables observables = getGlobalObservables();
   logInfo("beginTimeStep(...)","observables.dgcells()="<<observables.dgcells());
   logInfo("beginTimeStep(...)","observables.fvcells()="<<observables.fvcells());
-}
+}*/

@@ -185,7 +185,7 @@ public:
    */
   void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int direction,const double* const QIn,double* const QOut);
   
-  void resetGlobalObservables(GlobalObservables& globalObservables) const final override;
+  /*void resetGlobalObservables(GlobalObservables& globalObservables) const final override;
 
   void mapGlobalObservables(
       GlobalObservables&                          globalObservables,
@@ -195,6 +195,7 @@ public:
   void mergeGlobalObservables(
       GlobalObservables&         globalObservables,
       ReadOnlyGlobalObservables& otherObservables) const final override;
+*/
 };
 
 
