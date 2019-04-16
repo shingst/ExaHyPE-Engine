@@ -21,14 +21,14 @@ exahype-project  SWE
   peano-kernel-path const = ./Peano
   exahype-path const      = ./ExaHyPE
   output-directory const  = ./ApplicationExamples/SWE/SWE_WD_ADERDG
-  architecture const      = noarch
+  architecture const      = snb
   log-file                = mylogfile.log
 
   computational-domain
     dimension const          = 2
-    width = 4.0, 4.0
-    offset = -2.0, -2.0
-    end-time                 = 5.0
+    width                    = 4.0, 4.0
+    offset                   = -2.0, -2.0
+    end-time                 = 3.0
   end computational-domain
 
   shared-memory
@@ -54,27 +54,27 @@ exahype-project  SWE
 
   solver Limiting-ADER-DG MySWESolver
     variables const = h:1,hu:1,hv:1,b:1
-    //parameters const = b:1
     order const = 3
-    maximum-mesh-size = 0.5
-    maximum-mesh-depth = 2
-    time-stepping = global
-    type const = nonlinear
-    terms const = flux,ncp
-    optimisation const = generic
-    language const = C
+    maximum-mesh-size = 1.5
+    maximum-mesh-depth = 3
+    time-stepping      = global
+    type const         = nonlinear
+    terms const        = flux,ncp
+    optimisation const = generic, usestack
+    language const     = C
     limiter-type const = godunov
     limiter-optimisation const = generic, usestack
     limiter-language const = C
     dmp-observables const = 0
-    dmp-relaxation-parameter = 100000000.0
-    dmp-difference-scaling = 100000000.0
-    constants = grav:9.81, epsilon:1e-3, scenario:11
+    dmp-relaxation-parameter = 1e-3
+    dmp-difference-scaling = 1e-2
+    helper-layers = 3
+    constants = grav:9.81, epsilon:1e-5, scenario:11
 
-    plot vtu::Cartesian::cells::limited::ascii ConservedWriter
-      variables const = 6
-      time            = 0.0
-      repeat          = 0.1
+    plot vtk::Cartesian::cells::limited::ascii ConservedWriter
+      variables const = 7
+      time            = 0.0005
+      repeat          = 0.01
       output          = ./output/conserved
     end plot
   end solver
