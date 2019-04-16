@@ -248,6 +248,11 @@ bool NavierStokes::NavierStokesSolver_ADERDG::isPhysicallyAdmissible(
     std::abort();
 #endif
 
+  if (scenarioName != "two-bubbles" ||
+    scenarioName != "cosine-bubble") {
+    return true;
+  }
+
   // Now also check if TV is too high!
   double data[NumberOfGlobalObservables];
   GlobalObservables curObs(data);
@@ -319,11 +324,6 @@ exahype::solvers::Solver::RefinementControl NavierStokes::NavierStokesSolver_ADE
     // This is useful when one wants to use limiting-guided refinement
     // without another source of AMR.
     return exahype::solvers::Solver::RefinementControl::Erase;
-  }
-
-  if (t == 0) {
-    // Global observables are reduced after first timestep!
-    return exahype::solvers::Solver::RefinementControl::Keep;
   }
 
   double data[NumberOfGlobalObservables];
