@@ -367,7 +367,6 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
     tarch::multicore::jobs::setTaskProcessingScheme(tarch::multicore::jobs::TaskProcessingScheme::UseCustomTBBWrapper);
   }
 
-
   // wait behaviour
   if ( _parser.compareBackgroundJobProcessing( "spawn_tasks" ) ) {
     solvers::Solver::JobSystemWaitBehaviour = solvers::Solver::JobSystemWaitBehaviourType::OnlyPollMPI;
