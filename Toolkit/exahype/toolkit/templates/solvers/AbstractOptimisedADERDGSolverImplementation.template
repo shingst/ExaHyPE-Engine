@@ -259,7 +259,11 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
   for ( int direction=0; direction<DIMENSIONS; direction++ ) {
     for ( int orientation=0; orientation<1; orientation++ ) {
       const int faceIndex = 2*direction + orientation;
-      static_cast<{{solver}}*>(this)->preProcessRiemannSolverInputs(lQhbnd,lGradQhbnd,lFhbnd,direction,faceIndex);
+      static_cast<{{solver}}*>(this)->preProcessRiemannSolverInputs(
+          lQhbnd     + faceIndex * {{optNamespace}}::getBndFaceSize(),
+          lGradQhbnd + faceIndex * DIMENSIONS*{{optNamespace}}::getBndFluxSize(),
+          lFhbnd     + faceIndex * {{optNamespace}}::getBndFluxSize(),
+          direction,faceIndex);
     }
   }
   {% endif %}

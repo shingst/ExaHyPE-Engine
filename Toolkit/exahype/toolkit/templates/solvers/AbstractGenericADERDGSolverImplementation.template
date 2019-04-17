@@ -186,11 +186,16 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
   }
   
 {% if transformRiemannData %}
+  constexpr int faceBasisSize = spaceBasisSize / (Order+1);
   // pre-processing done here as predictor is done cell-wisely
   for ( int direction=0; direction<DIMENSIONS; direction++ ) {
     for ( int orientation=0; orientation<1; orientation++ ) {
       const int faceIndex = 2*direction + orientation;
-      static_cast<{{solver}}*>(this)->preProcessRiemannSolverInputs(lQhbnd,lGradQhbnd,lFhbnd,direction,faceIndex);
+      static_cast<{{solver}}*>(this)->preProcessRiemannSolverInputs(
+          lQhbnd     + faceIndex*sizeLQhi/(Order+1),
+          lGradQhbnd + faceIndex*sizeGradQ/(Order+1),
+          lFhbnd     + faceIndex*sizeLFhi/(Order+1),
+          direction,faceIndex);
     }
   }
 {% endif %}
