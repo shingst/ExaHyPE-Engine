@@ -205,6 +205,7 @@ bool exahype::State::continueToConstructGrid() {
     if (  getMeshRefinementIsInRefiningMode() &&
         getStableIterationsInARow() > iterationsForRefiningToConverge ) {
       setMeshRefinementIsInRefiningMode(false);
+      setStableIterationsInARow(0);
     }
   } else {
     setStableIterationsInARow(0);
