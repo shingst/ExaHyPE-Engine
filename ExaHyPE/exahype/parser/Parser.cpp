@@ -727,11 +727,11 @@ double exahype::parser::Parser::getFuseAlgorithmicStepsDiffusionFactor() const {
 }
 
 bool exahype::parser::Parser::getSpawnPredictionAsBackgroundThread() const {
-  return getBoolFromPath("/optimisation/spawn_predictor_as_background_thread", false, isOptional);
+  return getBoolFromPath("/optimisation/spawn_predictor_as_background_thread", true, isOptional);
 }
 
 bool exahype::parser::Parser::getSpawnUpdateAsBackgroundThread() const {
-  return getBoolFromPath("/optimisation/spawn_update_as_background_thread", false, isOptional);
+  return getBoolFromPath("/optimisation/spawn_update_as_background_thread", true, isOptional);
 }
 
 bool exahype::parser::Parser::getSpawnProlongationAsBackgroundThread() const {
@@ -739,7 +739,7 @@ bool exahype::parser::Parser::getSpawnProlongationAsBackgroundThread() const {
 }
 
 bool exahype::parser::Parser::getSpawnAMRBackgroundThreads() const {
-  return getBoolFromPath("/optimisation/spawn_amr_background_threads", false, isOptional);
+  return getBoolFromPath("/optimisation/spawn_amr_background_threads", true, isOptional);
 }
 
 bool exahype::parser::Parser::getSpawnNeighbourMergeAsThread() const {
@@ -1214,8 +1214,8 @@ int exahype::parser::Parser::getRanksPerNode() {
 int exahype::parser::Parser::getNumberOfBackgroundJobConsumerTasks() {
   int result = getIntFromPath("/shared_memory/background_job_consumers",0,isOptional);
   if (result<=0) {
-    logInfo("getNumberOfBackgroundTasks()", "no number of background tasks specified. Use default: #consumers = #threads / 4.");
-    result = getNumberOfThreads()/4;
+    logInfo("getNumberOfBackgroundTasks()", "no number of background tasks specified. Use default: #consumers = #threads-1.");
+    result = getNumberOfThreads()-1;
   }
   return result;
 }

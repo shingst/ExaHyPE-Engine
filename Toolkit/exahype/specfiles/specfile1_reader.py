@@ -229,7 +229,9 @@ class SpecFile1Reader():
     ##
     # TODO
     def map_shared_memory(self,shared_memory):
-        shared_memory["autotuning_strategy"]=shared_memory.pop("identifier")
+        # autotuning strategy
+        if "identifier" in shared_memory:
+            shared_memory["autotuning_strategy"]=shared_memory.pop("identifier")
         # configure
         if "configure" in shared_memory:
             configure = shared_memory.pop("configure").replace("{","").replace("}","")

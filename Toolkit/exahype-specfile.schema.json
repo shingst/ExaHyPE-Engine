@@ -67,7 +67,7 @@
       "type" : "object", 
       "scope" : "compile-time",
       "used-by" : "toolkit",
-      "required" : [ "output_directory", "peano_kernel_path", "exahype_path" ],
+      "required" : [ "output_directory" ],
       "additionalProperties" : false,
       "properties" : {
         "output_directory" : {
@@ -492,23 +492,23 @@
         "spawn_predictor_as_background_thread" : {
           "type" : "boolean", 
           "title" : "Whether to spawn the predictor or the first and intermediate fused time steps as background jobs.",
-          "default" : false,
+          "default" : true,
           "old_format" : { "token_after" : "spawn-predictor-as-background-thread" }
         },
         "spawn_update_as_background_thread" : {
           "type" : "boolean", 
-          "title" : "Wether to spawn the update or the last fused time step in a batch as a background job",
-          "default" : false
+          "title" : "Whether to spawn the update or the last fused time step in a batch as a background job",
+          "default" : true
         },
         "spawn_prolongation_as_background_thread" : {
           "type" : "boolean", 
-          "title" : "Wether to spawn the face data prolongation as a background thread, or so.",
+          "title" : "Whether to spawn the face data prolongation as a background thread, or so.",
           "default" : false
         },
         "spawn_amr_background_threads" : {
           "type" : "boolean", 
-          "title" : "Wether to spawn the predictor as a background thread, or so.",
-          "default" : false,
+          "title" : "Whether to spawn the predictor as a background thread, or so.",
+          "default" : true,
           "old_format" : { "token_after" : "spawn-amr-background-threads" }
         }, 
         "spawn_neighbour_merge_as_thread" : {
@@ -643,7 +643,7 @@
               },
               "adjust_solution" : {
                 "type" : "string",
-                "title" : "Wether to adjust solutions per patch (DG cell / FV patch) or per point (DG node, FV subcell) )",
+                "title" : "Whether to adjust solutions per patch (DG cell / FV patch) or per point (DG node, FV subcell) )",
                 "enum" : ["patchwise", "pointwise"],
                 "default" : "pointwise"
               },
@@ -709,7 +709,7 @@
               },
               "language" : {
                 "type" : "string", 
-                "title" : "The walking dead",
+                "title" : "Language the kernels are implemented in.",
                 "enum" : ["C","Fortran"],
                 "default" : "C"
               }, 
@@ -740,7 +740,7 @@
               },
               "adjust_solution" : {
                 "type" : "string",
-                "title" : "Wether to adjust solutions per patch (FV patch) or per point (FV subcell) )",
+                "title" : "Whether to adjust solutions per patch (FV patch) or per point (FV subcell) )",
                 "enum" : ["patchwise", "pointwise"],
                 "default" : "pointwise"
               },
@@ -761,7 +761,7 @@
               },
               "language" : {
                 "type" : "string", 
-                "title" : "The walking dead",
+                "title" : "Language the kernels are implemented in.",
                 "enum" : ["C","Fortran"],
                 "default" : "C"
               }, 
