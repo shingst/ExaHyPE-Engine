@@ -17,6 +17,7 @@ exahype::solvers::ADERDGSolver::UpdateJob::UpdateJob(
   _solver(solver),
   _cellDescription(cellDescription),
   _cellInfo(cellInfo),
+  _neighbourMergePerformed(cellDescription.getNeighbourMergePerformed()),
   _isAtRemoteBoundary(isAtRemoteBoundary) {
   NumberOfReductionJobs.fetch_add(1);
 }
