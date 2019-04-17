@@ -130,7 +130,7 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
     kernels::aderdg::generic::c::spaceTimePredictorLinear<false, {{useSource_s}}, {{useFlux_s}}, {{useNCP_s}}, {{useMaterialParameters_s}}, {{solver}}>(*static_cast<{{solver}}*>(this),lQhbnd,lFhbnd,lQi,lFi,gradQ,PSi,PSderivatives,tmp_PSderivatives,lQhi,lFhi,luh,cellCentre,tarch::la::invertEntries(cellSize),t, dt);
   }
 {% else %}
- kernels::aderdg::generic::c::spaceTimePredictorLinear<{{usePointSources_s}}, {{useSource_s}}, {{useFlux_s}}, {{useNCP_s}}, {{useMaterialParameters_s}}, {{solver}}>(*static_cast<{{solver}}*>(this),lQhbnd,lFhbnd,lQi,lFi,gradQ,PSi,PSderivatives,tmp_PSderivatives,lQhi,lFhi,luh,cellCentre,tarch::la::invertEntries(cellSize),t, dt);
+  kernels::aderdg::generic::c::spaceTimePredictorLinear<{{usePointSources_s}}, {{useSource_s}}, {{useFlux_s}}, {{useNCP_s}}, {{useMaterialParameters_s}}, {{solver}}>(*static_cast<{{solver}}*>(this),lQhbnd,lFhbnd,lQi,lFi,gradQ,PSi,PSderivatives,tmp_PSderivatives,lQhi,lFhi,luh,cellCentre,tarch::la::invertEntries(cellSize),t, dt);
 {%   endif %}
   if ( addVolumeIntegralResultToUpdate ) {
     kernels::aderdg::generic::c::volumeIntegralLinear<{{useSource_s}}, {{useFlux_s}}, NumberOfVariables, Order+1>(lduh,lFhi,cellSize);
@@ -175,7 +175,7 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
   double* lQhi = memory; memory+=sizeLQhi;
   double* lFhi = memory; memory+=sizeLFhi;
 {%   endif %}
- const int picardIterations = kernels::aderdg::generic::c::spaceTimePredictorNonlinear<{{useSource_s}}, {{useFlux_s}}, {{useViscousFlux_s}}, {{useNCP_s}}, {{noTimeAveraging_s}}, {{solver}}>(*static_cast<{{solver}}*>(this), lQhbnd, lGradQhbnd, lFhbnd, lQi, rhs, lFi, gradQ, lQhi, lFhi, luh, cellCentre, tarch::la::invertEntries(cellSize), t, dt);
+  const int picardIterations = kernels::aderdg::generic::c::spaceTimePredictorNonlinear<{{useSource_s}}, {{useFlux_s}}, {{useViscousFlux_s}}, {{useNCP_s}}, {{noTimeAveraging_s}}, {{solver}}>(*static_cast<{{solver}}*>(this), lQhbnd, lGradQhbnd, lFhbnd, lQi, rhs, lFi, gradQ, lQhi, lFhi, luh, cellCentre, tarch::la::invertEntries(cellSize), t, dt);
  
   if ( addVolumeIntegralResultToUpdate ) {
     kernels::aderdg::generic::c::volumeIntegralNonlinear<{{ 'true' if (useSource or useNCP) else 'false' }}, {{useFlux_s}}, {{noTimeAveraging_s}}, NumberOfVariables, Order+1>(lduh,lFhi,cellSize); 
@@ -184,6 +184,16 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
     kernels::aderdg::generic::c::volumeIntegralNonlinear<{{ 'true' if (useSource or useNCP) else 'false' }}, {{useFlux_s}}, {{noTimeAveraging_s}}, NumberOfVariables, Order+1>(tempUpdate,lFhi,cellSize);
     addUpdateToSolution(luh,luh,tempUpdate,dt);
   }
+  
+{% if transformRiemannData %}
+  // pre-processing done here as predictor is done cell-wisely
+  for ( int direction=0; direction<DIMENSIONS; direction++ ) {
+    for ( int orientation=0; orientation<1; orientation++ ) {
+      const int faceIndex = 2*direction + orientation;
+      static_cast<{{solver}}*>(this)->preProcessRiemannSolverInputs(lQhbnd,lGradQhbnd,lFhbnd,direction,faceIndex);
+    }
+  }
+{% endif %}
 
 {% endif %}
 {%if tempVarsOnStack==False %}
@@ -205,7 +215,7 @@ void {{project}}::{{abstractSolver}}::addUpdateToSolution(double* const luh,cons
 {% endif %}
 }
 
-void {{project}}::{{abstractSolver}}::faceIntegral(double* const out/*may be solution or update vector*/,const double* const lFhbnd,const int direction, const int orientation,const tarch::la::Vector<DIMENSIONS-1,int>& subfaceIndex,const int levelDelta,const tarch::la::Vector<DIMENSIONS, double>& cellSize,const double dt,const bool addToUpdate) {
+void {{project}}::{{abstractSolver}}::faceIntegral(double* const out/*may be solution or update vector*/,double* const lFhbnd,const int direction, const int orientation,const tarch::la::Vector<DIMENSIONS-1,int>& subfaceIndex,const int levelDelta,const tarch::la::Vector<DIMENSIONS, double>& cellSize,const double dt,const bool addToUpdate) {
 {% if enableProfiler %}
   _profiler->start("faceIntegral");
 {% endif %}
@@ -217,6 +227,12 @@ void {{project}}::{{abstractSolver}}::faceIntegral(double* const out/*may be sol
   constexpr int basisSize3 = basisSize2*(Order+1);
   constexpr int sizeUpdate = NumberOfVariables*basisSize3;
 
+{% if transformRiemannData %}
+  // post-processing done here as face integral is done cell-wisely
+  const int fineGridFaceIndex = 2*direction + orientation;
+  static_cast<{{solver}}*>(this)->postProcessRiemannSolution(lFhbnd,direction,fineGridFaceIndex);
+{% endif %}
+  
   if ( levelDelta > 0 ) {
     constexpr int sizeFlux = NumberOfVariables*basisSize2;
     double lFhbndCoarse[sizeFlux];
@@ -457,6 +473,16 @@ void {{project}}::{{abstractSolver}}::mergeGlobalObservables(
 void {{project}}::{{abstractSolver}}::wrapUpGlobalObservables(GlobalObservables& globalObservables) const {
   // Please re-implement if required.
 }
+
+{% if transformRiemannData %}
+void {{project}}::{{abstractSolver}}::preProcessRiemannSolverInputs(double* const lQhbnd,double* const lGradQhbnd,double* const lFhbnd,const int direction,const int faceIndex) const {
+  abortWithMsg("If this operation is entered (preProcessRiemannSolverInputs), you have specified Riemann solver input and output transformations. Then you have to re-implement this routine, too." );
+}
+
+void {{project}}::{{abstractSolver}}::postProcessRiemannSolution(double* const lFhbnd,const int direction,const int fineGridFaceIndex) const {
+  abortWithMsg("If this operation is entered (postProcessRiemannSolution), you have specified Riemann solver input and output transformations. Then you have to re-implement this routine, too." );
+}
+{% endif %}
 
 /**
  * Fallback implementations of joined functions. Users can either safely ignore this

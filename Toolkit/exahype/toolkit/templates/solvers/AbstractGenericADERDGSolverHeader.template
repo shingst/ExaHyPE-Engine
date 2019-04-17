@@ -78,7 +78,7 @@ public:
   void addUpdateToSolution(double* const luh,const double* const luhOld,const double* const lduh,const double dt) override;
   void riemannSolver(double* const FL,double* const FR,const double* const QL,const double* const QR,const double t,const double dt, const tarch::la::Vector<DIMENSIONS, double>& cellSize,const int direction, bool isBoundaryFace, int faceIndex) override;
   void boundaryConditions(double* const fluxIn,const double* const stateIn,const double* const gradStateIn, const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const int direction,const int orientation) override;
-  void faceIntegral(double* const out,const double* const lFhbnd,const int direction, const int orientation,const tarch::la::Vector<DIMENSIONS-1,int>& subfaceIndex,const int levelDelta,const tarch::la::Vector<DIMENSIONS, double>& cellSize,const double dt,const bool addToUpdate) override;    
+  void faceIntegral(double* const out,double* const lFhbnd,const int direction, const int orientation,const tarch::la::Vector<DIMENSIONS-1,int>& subfaceIndex,const int levelDelta,const tarch::la::Vector<DIMENSIONS, double>& cellSize,const double dt,const bool addToUpdate) override;    
   double stableTimeStepSize(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& cellSize) override;
   {% if patchwiseAdjust %}
   // adjustSolution is implemented by the user solver as patchwise adjust option was used 
@@ -372,7 +372,44 @@ public:
   //lFi, needs to be (basisSize, basisSize, basisSize, basisSize, 2*DIMENSIONS+1, numberOfVariables) (note: one less basisSize in 2d)
   int getTempSpaceTimeFluxUnknowns0Size() const {return _numberOfVariables * power(_nodesPerCoordinateAxis, DIMENSIONS+1) * (2*DIMENSIONS+1);} 
   {% endif %}
-
+  
+  {% if transformRiemannData %}
+  /**
+   * Pre-process extrapolated predictor, gradient and volume flux degrees of freedom (DOFs)
+   * for the face with index @p faceIndex before
+   * they are piped into the Riemann solver.
+   * 
+   * This function is used to move physical-space-to-reference-space rotations
+   * out of the face-wise Riemann solver and behind the space-time predictor.
+   * 
+   * @note All DoFs per face are passed to this function, not just pointwise values.   
+   * 
+   * @param[inout] lQbhnd     the predictor DOFs extrapolated to the face.
+   * @param[inout] lGradQhbnd the DoF of the predictor's gradient extrapolated to the face.
+   * @param[inout] lFhbnd     the volume flux DOFs extrapolated to the face.
+   * @param[in]    direction  direction of the face
+   * @param[in]    faceIndex  index of the face: 2*direction+orientation, where orientation is 1 if the normal vector of the face points
+   *                          in positive direction. Otherwise, orientation is zero.
+   */
+  virtual void preProcessRiemannSolverInputs(double* const lQhbnd,double* const lGradQhbnd,double* const lFhbnd,const int direction,const int faceIndex) const;
+  
+  /**
+   * Post-process the Riemann solution before performing the face integral,
+   * which is part of the corrector step.
+   * 
+   * This function is used to move reference-space-to-physical-space rotations
+   * out of the face-wise Riemann solver and before the face integral.
+   * 
+   * @note All DoFs per face are passed to this function, not just pointwise values.   
+   * 
+   * @param[inout] lFhbnd     the Riemann solution (in reference space_
+   * @param[in]    direction  direction of the face
+   * @param[in]    faceIndex  index of the face: 2*direction+orientation, where orientation is 1 if the normal vector of the face points
+   *                          in positive direction. Otherwise, orientation is zero.
+   */
+  virtual void postProcessRiemannSolution(double* const lFhbnd,const int direction,const int fineGridFaceIndex) const;
+  {% endif %}
+  
   /**
    * Signals a user solver that ExaHyPE just started a new time step.
    *

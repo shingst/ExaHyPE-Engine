@@ -165,6 +165,7 @@ class SolverController:
         context["useMaxPicardIterations"]  = kernel.get("space_time_predictor",{}).get("fix_picard_iterations",False)!=False
         context["tempVarsOnStack"]         = kernel.get("allocate_temporary_arrays","heap")=="stack" 
         context["patchwiseAdjust"]         = kernel.get("adjust_solution","pointwise")=="patchwise" 
+        context["transformRiemannData"]    = kernel.get("transform_riemann_data",False)==True
         context["language"]                = kernel.get("language","C").lower()
         context["basis"]                   = kernel.get("basis","Legendre").lower()
         context["isLinear"]                = not kernel.get("nonlinear",True)

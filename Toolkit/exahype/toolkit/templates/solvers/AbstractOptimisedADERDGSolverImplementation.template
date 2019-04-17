@@ -254,6 +254,16 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
     addUpdateToSolution(luh,luh,update,dt);
   }
 
+  {% if transformRiemannData %}
+  // pre-processing done here as predictor is done cell-wisely
+  for ( int direction=0; direction<DIMENSIONS; direction++ ) {
+    for ( int orientation=0; orientation<1; orientation++ ) {
+      const int faceIndex = 2*direction + orientation;
+      static_cast<{{solver}}*>(this)->preProcessRiemannSolverInputs(lQhbnd,lGradQhbnd,lFhbnd,direction,faceIndex);
+    }
+  }
+  {% endif %}
+  
   {% if not tempVarsOnStack %}
   //exahype::DataHeap::getInstance().deleteData(index,true);
   freeArray(memory);
@@ -334,13 +344,20 @@ void {{project}}::{{abstractSolver}}::surfaceIntegral(double* const lduh,const d
 
 
 
-void {{project}}::{{abstractSolver}}::faceIntegral(double* const out/*may be solution or update vector*/,const double* const lFhbnd,const int direction, const int orientation,const tarch::la::Vector<DIMENSIONS-1,int>& subfaceIndex,const int levelDelta,const tarch::la::Vector<DIMENSIONS, double>& cellSize,const double dt,const bool addToUpdate) {
+void {{project}}::{{abstractSolver}}::faceIntegral(double* const out/*may be solution or update vector*/,double* const lFhbnd,const int direction, const int orientation,const tarch::la::Vector<DIMENSIONS-1,int>& subfaceIndex,const int levelDelta,const tarch::la::Vector<DIMENSIONS, double>& cellSize,const double dt,const bool addToUpdate) {
   {% if enableProfiler %}
   _profiler->start("faceIntegral");
   {% endif %}
   {% if countFlops %}
   const std::chrono::high_resolution_clock::time_point timeStart = std::chrono::high_resolution_clock::now();
   {% endif %}
+  
+  {% if transformRiemannData %}
+    // post-processing done here as face integral is done cell-wisely
+    const int fineGridFaceIndex = 2*direction + orientation;
+    static_cast<{{solver}}*>(this)->postProcessRiemannSolution(lFhbnd,direction,fineGridFaceIndex);
+  {% endif %}
+  
   if ( levelDelta > 0 ) {
     double lFhbndCoarse[{{optNamespace}}::getBndFluxSize()] __attribute__((aligned(ALIGNMENT)));
     {{optNamespace}}::faceFluxRestriction(lFhbndCoarse,lFhbnd,&subfaceIndex[0],levelDelta);
@@ -701,3 +718,13 @@ void {{project}}::{{abstractSolver}}::mergeGlobalObservables(
 void {{project}}::{{abstractSolver}}::wrapUpGlobalObservables(GlobalObservables& globalObservables) const {
   // Please re-implement if required.
 }
+
+{% if transformRiemannData %}
+void {{project}}::{{abstractSolver}}::preProcessRiemannSolverInputs(double* const lQhbnd,double* const lGradQhbnd,double* const lFhbnd,const int direction,const int faceIndex) const {
+  abortWithMsg("If this operation is entered (preProcessRiemannSolverInputs), you have specified Riemann solver input and output transformations. Then you have to re-implement this routine, too." );
+}
+
+void {{project}}::{{abstractSolver}}::postProcessRiemannSolution(double* const lFhbnd,const int direction,const int fineGridFaceIndex) const {
+  abortWithMsg("If this operation is entered (postProcessRiemannSolution), you have specified Riemann solver input and output transformations. Then you have to re-implement this routine, too." );
+}
+{% endif %}

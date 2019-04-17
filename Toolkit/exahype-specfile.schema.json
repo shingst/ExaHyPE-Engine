@@ -653,6 +653,11 @@
                 "enum" : ["stack","heap"],
                 "default" : "stack"
               },
+              "transform_riemann_data" : {
+                "type" : "boolean",
+                "title" : "Pre- and post-process Riemann inputs and solution.",
+                "default" : false
+              },
               "space_time_predictor" : {
                 "type" : "object",
                 "title" : "Turn certain features on/off for the space time predictor",

@@ -2362,7 +2362,7 @@ protected:
    *
    * @param[inout] out          Cell-local update or solution vector.
    * @param[in]    lFhbnd       Cell-local DoF of the boundary extrapolated fluxes for the face
-   *                            with the given direction and the given geometry.
+   *                            with the given direction and the given geometry. No const modifier as it might get post-processed.
    * @param[in]    direction    Coordinate direction the normal vector is aligned with.
    * @param[in]    orientation  Orientation of the normal vector (0: negative sign, 1: positive sign).
    * @param[in[    levelDelta   The difference in levels up to a cell description of type Cell.
@@ -2375,7 +2375,7 @@ protected:
    */
   virtual void faceIntegral(
       double* const                                lduh,
-      const double* const                          lFhbnd,
+      double* const                                lFhbnd,
       const int                                    direction,
       const int                                    orientation,
       const tarch::la::Vector<DIMENSIONS-1,int>&   subfaceIndex,

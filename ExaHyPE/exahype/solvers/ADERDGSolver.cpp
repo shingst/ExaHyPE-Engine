@@ -2624,7 +2624,7 @@ void exahype::solvers::ADERDGSolver::surfaceIntegral(
     for (int orientation=0; orientation<2; orientation++) {
       const int faceIndex=2*direction+orientation;
       if ( cellDescription.getFacewiseAugmentationStatus(faceIndex)<MaximumAugmentationStatus ) { // ignore Ancestors
-        const double* const lFhbnd = static_cast<double*>(cellDescription.getFluctuation()) + dofsPerFace * faceIndex;
+        double* const lFhbnd = static_cast<double*>(cellDescription.getFluctuation()) + dofsPerFace * faceIndex;
         faceIntegral(output,lFhbnd,direction,orientation,0/*implicit conversion*/,0,cellDescription.getSize(),
                      cellDescription.getTimeStepSize(),addToUpdate);
       }
@@ -2925,7 +2925,7 @@ void exahype::solvers::ADERDGSolver::restrictToTopMostParent(const CellDescripti
       assertion1(exahype::amr::faceIsOnBoundaryOfParent(faceIndex,subcellIndex,levelDelta),cellDescription.toString());
       assertion1(SpawnProlongationAsBackgroundJob || cellDescription.getNeighbourMergePerformed(faceIndex),cellDescription.toString());// necessary but not sufficient
 
-      const double* const lFhbnd = static_cast<double*>(cellDescription.getFluctuation()) + dofsPerFace * faceIndex;
+      double* const lFhbnd = static_cast<double*>(cellDescription.getFluctuation()) + dofsPerFace * faceIndex;
       faceIntegral(updateFine,lFhbnd,direction,orientation,subfaceIndex,levelDelta,cellDescription.getSize(),dt,addToCoarseGridUpdate);
 
       logDebug("restrictToTopMostParent(...)","cell=" << cellDescription.getOffset() <<
