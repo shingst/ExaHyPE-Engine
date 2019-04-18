@@ -8,24 +8,24 @@ exahype-project Euler
   computational-domain
     dimension const = 2
     offset          = 0.0, 0.0, 0.0 
-    width           = 3.0, 1.0, 1.0
+    width           = 2.0, 1.0, 1.0
     end-time        = 1.0
   end computational-domain
 
   solver ADER-DG EulerSolver_ADERDG
     variables const     = rho:1,j:2,E:1
-    order const         = 5
-    maximum-mesh-size   = 0.4
-    maximum-mesh-depth  = 2
+    order const         = 3
+    maximum-mesh-size   = 0.12
+    maximum-mesh-depth  = 0
     time-stepping const = global
     type const          = nonlinear
     terms const         = flux
     optimisation const  = generic
     
-    plot vtk::Cartesian::vertices::ascii Plotter
+    plot vtu::Cartesian::vertices::ascii Plotter
       variables const = 4
       time            = 0.0
-      repeat          = 1e-2
+      repeat          = 1e-1
       output          = ./solution
     end plot
   end solver

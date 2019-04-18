@@ -36,16 +36,6 @@ public:
   void init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) final override;
 
   /**
-   * (Smooth solution)
-   *
-   * Entropy wave is a moving Gaussian matter distribution where it is simple
-   * to give an analytic result.
-   *
-   * See also chapter 7.13.2 in "I do like CFD, VOL.1" by Katate Masatsuka.
-   */
-  static void referenceSolution(const double* const x, const double t, double* const Q);
-
-  /**
    * Adjust the conserved variables and parameters (together: Q) at a given time t at the (quadrature) point x.
    *
    * \note Use this function and ::useAdjustSolution to set initial conditions.

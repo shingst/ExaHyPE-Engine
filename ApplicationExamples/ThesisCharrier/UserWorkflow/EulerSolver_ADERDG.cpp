@@ -69,22 +69,34 @@ void Euler::EulerSolver_ADERDG::eigenvalues(const double* const Q,
   lambda[3] = u_n + c;
 }
 
+/**
+ * (Smooth solution)
+ *
+ * Entropy wave is a moving Gaussian matter distribution where it is simple
+ * to give an analytic result.
+ *
+ * See also chapter 7.13.2 in "I do like CFD, VOL.1" by Katate Masatsuka.
+ */
+void referenceSolution(const double* const x,const double t,double* const Q) {
+  const double gamma     = 1.4;
+  constexpr double width = 0.3;
+  
+  tarch::la::Vector<DIMENSIONS,double> xVec(x[0],x[1]);
+  tarch::la::Vector<DIMENSIONS,double> v0(0.5,0.0);
+  tarch::la::Vector<DIMENSIONS,double> x0(0.5,0.5);
+  const double distance = tarch::la::norm2( xVec - x0 - v0 * t );
+  
+  Q[0] = 0.5 + 1.0 * std::exp(-distance / std::pow(width, DIMENSIONS));
+  Q[1] = Q[0] * v0[0];
+  Q[2] = Q[0] * v0[1];
+  // total energy = internal energy + kinetic energy
+  const double p = 1.;
+  Q[3] = p / (gamma-1)  +  0.5*Q[0] * (v0[0]*v0[0]+v0[1]*v0[1]); 
+}
+
 void Euler::EulerSolver_ADERDG::adjustPointSolution(const double* const x,const double t,const double dt, double* const Q) {
   if (tarch::la::equals(t, 0.0)) {
-    const double gamma     = 1.4;
-    constexpr double width = 0.3;
-    
-    tarch::la::Vector<DIMENSIONS,double> xVec(x[0],x[1]);
-    tarch::la::Vector<DIMENSIONS,double> v0(0.5,0.0);
-    tarch::la::Vector<DIMENSIONS,double> x0(0.5,0.5);
-    const double distance  = tarch::la::norm2( xVec - x0 - v0 * t );
-    
-    Q[0] = 0.5 + 1.0 * std::exp(-distance / std::pow(width, DIMENSIONS));
-    Q[1] = Q[0] * v0[0];
-    Q[2] = Q[0] * v0[1];
-    // total energy = internal energy + kinetic energy
-    const double p = 1.;
-    Q[3] = p / (gamma-1)  +  0.5*Q[0] * (v0[0]*v0[0]+v0[1]*v0[1]); 
+    referenceSolution(x,t,Q);
   }
 }
 
@@ -107,13 +119,11 @@ Euler::EulerSolver_ADERDG::refinementCriterion(
 }
 
 void Euler::EulerSolver_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int direction,const double* const fluxIn,const double* const stateIn,const double* const gradStateIn,double* const fluxOut,double* const stateOut) {
-  for (int i=0; i<NumberOfVariables; i++) {
-    stateOut[i] = stateIn[i];
-  }
+  referenceSolution(x,t+0.5*dt,stateOut);
+  
   double _F[3][NumberOfVariables]={0.0};
   double* F[3] = {_F[0], _F[1], _F[2]};
   flux(stateOut,F);
-  
   for (int i=0; i<NumberOfVariables; i++) {
     fluxOut[i] = F[direction][i];
   }
