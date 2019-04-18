@@ -218,12 +218,17 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
   constexpr double* lSi = nullptr;
   constexpr double* lShi = nullptr;
   {% endif %}
-  {% if useNCP %}
+  {% if useNCP or useViscousFlux %}
   double* gradQ = memory + {{optNamespace}}::getgradQShift();
   {% else %}
   constexpr double* gradQ = nullptr;
   {% endif %}
-  {% endif %}
+    {% if useViscousFlux %}
+  double* gradQAvg = memory + {{optNamespace}}::getgradQAvgShift();
+    {% else %}
+  double* gradQAvg = nullptr;
+    {% endif %}
+  {% endif %}{# if case useNCP or useViscousFlux #}
 
   // this switch should probably moved into the fusedSpaceTimePredictorVolumeIntegral kernel
   double  tempUpdate[{{optNamespace}}::getUpdateSize()] __attribute__((aligned(ALIGNMENT))); // TODO no heap variant implemented
@@ -253,7 +258,7 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
   {% endif %}
 
   {% else %}{# case non linear #}
-  const int picardIt = {{optNamespace}}::fusedSpaceTimePredictorVolumeIntegral(*static_cast<{{solver}}*>(this), update, lQhbnd, lFhbnd, lQi, rhs, lFi, lSi, lQhi, lFhi, lShi, gradQ, luh, 1./cellSize[0] /*inverseDx*/, dt);
+  const int picardIt = {{optNamespace}}::fusedSpaceTimePredictorVolumeIntegral(*static_cast<{{solver}}*>(this), update, lQhbnd, lGradQhbnd, lFhbnd, lQi, rhs, lFi, lSi, lQhi, lFhi, lShi, gradQ, gradQAvg, luh, 1./cellSize[0] /*inverseDx*/, dt);
   {% endif %}
 
   // this switch should probably moved into the fusedSpaceTimePredictorVolumeIntegral kernel

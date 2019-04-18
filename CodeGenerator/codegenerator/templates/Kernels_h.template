@@ -110,6 +110,7 @@ namespace {{namespaceName}} {
     {{solverName}}& solver,
     double* restrict lduh,
     double* restrict lQhbnd,
+    double* restrict lGradQhbnd,
     double* restrict lFhbnd,
     double* restrict lQi,
     double* restrict rhs,
@@ -118,7 +119,8 @@ namespace {{namespaceName}} {
     double* restrict lQhi,
     double* restrict lFhi,
     double* restrict lShi,  // for NCP or Source
-    double* restrict gradQ, // for NCP or Source
+    double* restrict gradQ, // for NCP or Source or viscousFlux
+    double* restrict gradQVg, // for viscousFlux
     const double* const restrict luh,
     const double inverseDx, //Assume dx[0] == dx[1] == dx[2]
     const double dt
