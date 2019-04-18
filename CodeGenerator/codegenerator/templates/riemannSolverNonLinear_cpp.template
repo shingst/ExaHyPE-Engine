@@ -89,8 +89,7 @@ void {{codeNamespace}}::riemannSolver(
   const auto pi = std::acos(-1); // not constexpr for intel compilers
   const double factor = 2 * (2 * {{nDof - 1}} + 1) / (dx[direction] * std::sqrt(0.5 * pi));
   smax += factor * maxViscousEigenvalue;
-  
-  {% endif %} // useViscousFlux
+  {% endif %}{# useViscousFlux #} 
   
   
   for (int xy = 0; xy < {{nDof*nDof3D}}; xy++){
