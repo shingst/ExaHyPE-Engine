@@ -19,6 +19,8 @@
 #endif
 #include <vector>
 
+#include "tarch/la/Vector.h"
+
 //forward declaration of the user solver
 namespace {{solverNamespace}} {
   class {{solverClass}};
@@ -161,6 +163,7 @@ namespace {{namespaceName}} {
     const double* restrict const QR,
     const double t,
     const double dt,
+    const tarch::la::Vector<{{nDim}}, double>& dx,
     const int direction
   );
 
@@ -176,6 +179,7 @@ namespace {{namespaceName}} {
     double* stateOut, 
     const double* const fluxIn, 
     const double* const stateIn, 
+    const double* const gradStateIn, 
     const double* const cellCentre, 
     const double* const cellSize, 
     const double t,const double dt, 

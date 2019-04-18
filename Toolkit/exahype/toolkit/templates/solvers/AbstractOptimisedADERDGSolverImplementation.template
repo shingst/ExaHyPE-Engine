@@ -410,7 +410,7 @@ void {{project}}::{{abstractSolver}}::riemannSolver(double* FL,double* FR,const 
   {% if countFlops %}
   const std::chrono::high_resolution_clock::time_point timeStart = std::chrono::high_resolution_clock::now();
   {% endif %}
-  {{optNamespace}}::riemannSolver(*static_cast<{{solver}}*>(this), FL, FR, QL, QR, t, dt, direction);
+  {{optNamespace}}::riemannSolver(*static_cast<{{solver}}*>(this), FL, FR, QL, QR, t, dt, cellSize, direction);
   {% if countFlops %}
   double time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-timeStart).count();
   {% if isLinear %}
@@ -454,8 +454,7 @@ void {{project}}::{{abstractSolver}}::boundaryConditions(double* const fluxIn,co
 
   const int faceIndex = 2*direction+orientation;
 
-  // TODO(JMG): Pass gradient here for viscous flux.
-  {{optNamespace}}::boundaryConditions(*static_cast<{{solver}}*>(this), fluxOut, stateOut, fluxIn, stateIn, &cellCentre[0], &cellSize[0], t, dt, faceIndex, direction);
+  {{optNamespace}}::boundaryConditions(*static_cast<{{solver}}*>(this), fluxOut, stateOut, fluxIn, stateIn, gradStateIn, &cellCentre[0], &cellSize[0], t, dt, faceIndex, direction);
 
   {% if countFlops %}
   double time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-timeStart).count();
@@ -745,4 +744,3 @@ void {{project}}::{{abstractSolver}}::preProcessRiemannSolverInputs(double* cons
 void {{project}}::{{abstractSolver}}::postProcessRiemannSolution(double* const lFhbnd,const int direction,const int fineGridFaceIndex) const {
   abortWithMsg("If this operation is entered (postProcessRiemannSolution), you have specified Riemann solver input and output transformations. Then you have to re-implement this routine, too." );
 }
-{% endif %}

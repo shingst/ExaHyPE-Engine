@@ -25,6 +25,7 @@ void {{codeNamespace}}::boundaryConditions(
                         double* stateOut,
                         const double* const fluxIn,
                         const double* const stateIn,
+			const double* const gradStateIn,
                         const double* const cellCentre,
                         const double* const cellSize,
                         const double t,const double dt,
@@ -55,7 +56,7 @@ void {{codeNamespace}}::boundaryConditions(
     // TODO(JMG): Pass gradient here in case of viscous flux
     solver.{{solverName}}::boundaryValues(x,t,dt,faceIndex,normalNonZero,
                           &fluxIn[(jj*{{nDof3D}}+ii)*{{nVarPad}}], &stateIn[(jj*{{nDof3D}}+ii)*{{nDataPad}}],
-					  nullptr,
+					  gradStateIn,
                           &fluxOut[(jj*{{nDof3D}}+ii)*{{nVarPad}}],&stateOut[(jj*{{nDof3D}}+ii)*{{nDataPad}}]);   
     }
   }

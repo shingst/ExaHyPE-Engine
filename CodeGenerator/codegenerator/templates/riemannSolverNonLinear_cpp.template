@@ -28,6 +28,7 @@ void {{codeNamespace}}::riemannSolver(
   const double* restrict const QL, const double* restrict const QR,
   const double t,
   const double dt,
+  const tarch::la::Vector<DIMENSIONS, double>& dx,
   const int direction
 {% if useDeepProfiler %}
   , exahype::profilers::Profiler* profiler
