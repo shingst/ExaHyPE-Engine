@@ -83,7 +83,7 @@ void referenceSolution(const double* const x,const double t,double* const Q) {
   constexpr double v0    = 0.5;
   constexpr double width = 0.3;
 
-  const double distX    = x[0] - 0.5 - 0.5 * t;
+  const double distX    = x[0] - 0.5 - v0 * t;
   const double distY    = x[1] - 0.5;
   const double distance = std::sqrt(distX*distX + distY*distY); 
   
