@@ -8,15 +8,15 @@ exahype-project Euler
   computational-domain
     dimension const = 2
     offset          = 0.0, 0.0, 0.0 
-    width           = 2.0, 1.0, 1.0
+    width           = 1.5, 1.0, 1.0
     end-time        = 1.0
   end computational-domain
 
   solver ADER-DG EulerSolver_ADERDG
     variables const     = rho:1,j:2,E:1
     order const         = 3
-    maximum-mesh-size   = 0.12
-    maximum-mesh-depth  = 0
+    maximum-mesh-size   = 0.9
+    maximum-mesh-depth  = 2
     time-stepping const = global
     type const          = nonlinear
     terms const         = flux

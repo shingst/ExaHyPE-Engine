@@ -78,20 +78,20 @@ void Euler::EulerSolver_ADERDG::eigenvalues(const double* const Q,
  * See also chapter 7.13.2 in "I do like CFD, VOL.1" by Katate Masatsuka.
  */
 void referenceSolution(const double* const x,const double t,double* const Q) {
-  const double gamma     = 1.4;
+  constexpr double gamma = 1.4;
+  constexpr double p     = 1.0;
+  constexpr double v0    = 0.5;
   constexpr double width = 0.3;
-  
-  tarch::la::Vector<DIMENSIONS,double> xVec(x[0],x[1]);
-  tarch::la::Vector<DIMENSIONS,double> v0(0.5,0.0);
-  tarch::la::Vector<DIMENSIONS,double> x0(0.5,0.5);
-  const double distance = tarch::la::norm2( xVec - x0 - v0 * t );
+
+  const double distX    = x[0] - 0.5 - 0.5 * t;
+  const double distY    = x[1] - 0.5;
+  const double distance = std::sqrt(distX*distX + distY*distY); 
   
   Q[0] = 0.5 + 1.0 * std::exp(-distance / std::pow(width, DIMENSIONS));
-  Q[1] = Q[0] * v0[0];
-  Q[2] = Q[0] * v0[1];
+  Q[1] = Q[0] * v0;
+  Q[2] = 0;
   // total energy = internal energy + kinetic energy
-  const double p = 1.;
-  Q[3] = p / (gamma-1)  +  0.5*Q[0] * (v0[0]*v0[0]+v0[1]*v0[1]); 
+  Q[3] = p / (gamma-1)  +  0.5*Q[0] * (v0*v0); 
 }
 
 void Euler::EulerSolver_ADERDG::adjustPointSolution(const double* const x,const double t,const double dt, double* const Q) {
@@ -111,9 +111,9 @@ Euler::EulerSolver_ADERDG::refinementCriterion(
     largestRho  = std::max (largestRho,   Q[0]);
   }
   
-  if ( largestRho > 0.95 ) { // maximum is 1.0
+  if ( largestRho/1.5 > 0.75 ) { // maximum is 1.5
     return RefinementControl::Refine;
-  } else if ( largestRho < 0.85 ) {
+  } else if ( largestRho/1.5 < 0.6 ) {
     return RefinementControl::Erase;
   }
 }
