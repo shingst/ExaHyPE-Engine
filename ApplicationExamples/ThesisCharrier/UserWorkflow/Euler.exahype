@@ -15,8 +15,8 @@ exahype-project Euler
   solver ADER-DG EulerSolver_ADERDG
     variables const     = rho:1,j:2,E:1
     order const         = 3
-    maximum-mesh-size   = 0.9
-    maximum-mesh-depth  = 2
+    maximum-mesh-size   = 0.12
+    maximum-mesh-depth  = 0
     time-stepping const = global
     type const          = nonlinear
     terms const         = flux
