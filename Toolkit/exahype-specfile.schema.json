@@ -404,7 +404,7 @@
           "type" : "string", 
           "title" : "Determines ranks with too much load",
           "enum" : ["hotspot","greedy_naive","greedy_regular"],
-          "default" : "fair",
+          "default" : "hotspot",
           "old_format" : [
             { "token_after" : "configure" },
             { "filter_token" : ["hotspot", "greedy-naive", "greedy-regular"] }
