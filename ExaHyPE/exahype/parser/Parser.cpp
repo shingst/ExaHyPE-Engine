@@ -583,7 +583,7 @@ int exahype::parser::Parser::getMaxForksPerLoadBalancingStep() const {
 }
 
 int exahype::parser::Parser::getMPIBufferSize() const {
-  int result = getIntFromPath("/distributed_memory/buffer_size");
+  int result = getIntFromPath("/distributed_memory/buffer_size", 64, isOptional);
 
   // Apparently, in former days an invalid value just yielded in a non-fatal error.
   // all non-castable ints resulted in negative numbers.
@@ -598,7 +598,7 @@ int exahype::parser::Parser::getMPIBufferSize() const {
 }
 
 int exahype::parser::Parser::getMPITimeOut() const {
-  double result = getIntFromPath("/distributed_memory/timeout");
+  double result = getIntFromPath("/distributed_memory/timeout", 60, isOptional);
 
   // Apparently, in former days an invalid value just yielded in a non-fatal error.
   // all non-castable doubles resulted in negative numbers.
