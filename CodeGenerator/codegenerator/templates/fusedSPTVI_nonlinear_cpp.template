@@ -439,10 +439,6 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
             lFhi[n+{{nVarPad}}*(x+{{nDof}}*yz)] * FRCoeff[x];
 
 {% endif %}{# useFlux #}
-{% if useViscousFlux %}
-   // TODO(Lukas) implement!
- 
- {% endif %}{# useViscousFlux #}
       }
     }
   }
@@ -517,8 +513,48 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
       }
     }
   }
-  {% endif %}
-
+{% endif %}
+{% if useViscousFlux %}
+  // x-direction: face 1 (left) and face 2 (right)
+  for (int dzy = 0; dzy < {{nDof*nDof3D*nDim}}; dzy++) {
+    // Matrix-Vector Products
+    for (int x = 0; x < {{nDof}}; x++) {
+      #pragma omp simd aligned(lGradQhbnd,gradQAvg:ALIGNMENT)
+      for (int n = 0; n < {{nVarPad}}; n++) {
+        lGradQhbnd[dzy*{{nVarPad}}+n+{{0*nDim*nDof*nDof3D*nVarPad}}] += gradQAvg[(dzy*{{nDof}}+x)*{{nVarPad}}+n] * FLCoeff[x];
+        lGradQhbnd[dzy*{{nVarPad}}+n+{{1*nDim*nDof*nDof3D*nVarPad}}] += gradQAvg[(dzy*{{nDof}}+x)*{{nVarPad}}+n] * FRCoeff[x];
+      }
+    }
+  }
+  // y-direction: face 3 (left) and face 4 (right)
+  for (int dz = 0; dzy < {{nDof3D*nDim}}; dz++) {
+    // Matrix-Vector Products
+    for (int x = 0; x < {{nDof}}; x++) {
+      for (int y = 0; y < {{nDof}}; y++) {
+        #pragma omp simd aligned(lGradQhbnd,gradQAvg:ALIGNMENT)
+        for (int n = 0; n < {{nVarPad}}; n++) {
+          lGradQhbnd[(dz*{{nDof}}+x)*{{nVarPad}}+n+{{2*nDim*nDof*nDof3D*nVarPad}}] += gradQAvg[((dz*{{nDof}}+y)*{{nDof}}+x)*{{nVarPad}}+n] * FLCoeff[y];
+          lGradQhbnd[(dz*{{nDof}}+x)*{{nVarPad}}+n+{{3*nDim*nDof*nDof3D*nVarPad}}] += gradQAvg[((dz*{{nDof}}+y)*{{nDof}}+x)*{{nVarPad}}+n] * FRCoeff[y];
+        }
+      }
+    }
+  }
+{% if nDim==3 %}
+  // z-direction: face 5 (left) and face 6 (right)
+  for (int d = 0; dz < {{nDim}}; d++) {
+    // Matrix-Vector Products
+    for (int yx = 0; yx < {{nDof*nDof}}; yx++) {
+      for (int z = 0; z < {{nDof}}; z++) {
+        #pragma omp simd aligned(lGradQhbnd,gradQAvg:ALIGNMENT)
+        for (int n = 0; n < {{nVarPad}}; n++) {
+          lGradQhbnd[(d*{{nDof*nDof}}+yx)*{{nVarPad}}+n+{{4*nDim*nDof*nDof3D*nVarPad}}] += gradQAvg[((d*{{nDof}}+z)*{{nDof*nDof}}+yx)*{{nVarPad}}+n] * FLCoeff[z];
+          lGradQhbnd[(d*{{nDof*nDof}}+yx)*{{nVarPad}}+n+{{5*nDim*nDof*nDof3D*nVarPad}}] += gradQAvg[((d*{{nDof}}+z)*{{nDof*nDof}}+yx)*{{nVarPad}}+n] * FRCoeff[z];
+        }
+      }
+    }
+  }
+{% endif %}{# nDim == 3#}
+{% endif %}{# useViscousFlux #}
   
   //*****************************
   //****** Volume Integral ******
