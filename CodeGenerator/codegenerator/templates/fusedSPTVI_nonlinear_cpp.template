@@ -176,13 +176,12 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
   // 2. Discrete Picard iterations
   constexpr int MaxIterations = {% if useCERKGuess %}{% if nDof-3 <= 1 %}1; //cannot be lower than 1{% else %}{{nDof-3}}; //nDof-3{% endif %}{% else %}{{2*nDof+1}};{% endif %}
 
- {% if useViscousFlux %}
+  int iter = 0;
+  for (; iter < MaxIterations; iter++) {
+{% if useViscousFlux %}
       //set gradQAvg to 0
       std::memset(gradQAvg, 0, {{(nDof**nDim)*nVarPad*nDim}} * sizeof(double));
 {% endif %}
- 
-  int iter = 0;
-  for (; iter < MaxIterations; iter++) {
     for (int t = 0; t < {{nDof}}; t++) {  // time DOF
 
 
