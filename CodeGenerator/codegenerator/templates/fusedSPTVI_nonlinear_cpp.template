@@ -541,7 +541,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
   }
 {% if nDim==3 %}
   // z-direction: face 5 (left) and face 6 (right)
-  for (int d = 0; dz < {{nDim}}; d++) {
+  for (int d = 0; d < {{nDim}}; d++) {
     // Matrix-Vector Products
     for (int yx = 0; yx < {{nDof*nDof}}; yx++) {
       for (int z = 0; z < {{nDof}}; z++) {
