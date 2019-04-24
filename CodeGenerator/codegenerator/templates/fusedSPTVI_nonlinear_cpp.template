@@ -227,7 +227,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
 // Compute time-avg gradQ
 // TODO(JMG): Maybe compute after Picard its?
 #pragma omp simd aligned(gradQAvg,gradQ:ALIGNMENT)
-    for (int it = 0; it < {{nDim * (nDof**nDim) * nVarPad}}, it++) {
+    for (int it = 0; it < {{nDim * (nDof**nDim) * nVarPad}}; it++) {
       gradQAvg[it] += weights1[t] * gradQ[it];
     }
 {% endif %}
@@ -527,7 +527,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
     }
   }
   // y-direction: face 3 (left) and face 4 (right)
-  for (int dz = 0; dzy < {{nDof3D*nDim}}; dz++) {
+  for (int dz = 0; dz < {{nDof3D*nDim}}; dz++) {
     // Matrix-Vector Products
     for (int x = 0; x < {{nDof}}; x++) {
       for (int y = 0; y < {{nDof}}; y++) {
