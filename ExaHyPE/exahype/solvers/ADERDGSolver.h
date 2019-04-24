@@ -2383,6 +2383,8 @@ protected:
   virtual int getBndTotalSize()                   const {return getDataPerCellBoundary();} // TODO function should be renamed
   virtual int getBndFluxSize()                    const {return getUnknownsPerFace();} // TODO function should be renamed
   virtual int getBndFluxTotalSize()               const {return getUnknownsPerCellBoundary();} // TODO function should be renamed
+  virtual int getBndGradQSize()                   const {return getUnknownsPerFace() * DIMENSIONS;}
+  virtual int getBndGradQTotalSize()              const {return 2 * DIMENSIONS * getBndGradQSize();}
   virtual int getUpdateSize()                     const {return getUnknownsPerCell();}
 
   virtual bool alignTempArray()                   const {return false;}

@@ -59,6 +59,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
   __assume_aligned(FLCoeff, ALIGNMENT); // == F0
   __assume_aligned(Kxi, ALIGNMENT);
   __assume_aligned(iK1_T, ALIGNMENT);
+  __assume_aligned(weights1, ALIGNMENT);
   __assume_aligned(weights3, ALIGNMENT);
   __assume_aligned(iweights3, ALIGNMENT);
   __assume_aligned(luh, ALIGNMENT); //luh should be aligned, see Solver.h
@@ -68,6 +69,10 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
 {% if useNCP or useViscousFlux %}
   __assume_aligned(gradQ, ALIGNMENT);
 {% endif %}
+{% if useViscousFlux %}
+  __assume_aligned(gradQAvg, ALIGNMENT);
+{% endif %}
+
 #endif
 
   // 0. Allocate local variable
@@ -170,7 +175,12 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
   
   // 2. Discrete Picard iterations
   constexpr int MaxIterations = {% if useCERKGuess %}{% if nDof-3 <= 1 %}1; //cannot be lower than 1{% else %}{{nDof-3}}; //nDof-3{% endif %}{% else %}{{2*nDof+1}};{% endif %}
-  
+
+ {% if useViscousFlux %}
+      //set gradQAvg to 0
+      std::memset(gradQAvg, 0, {{(nDof**nDim)*nVarPad*nDim}} * sizeof(double));
+{% endif %}
+ 
   int iter = 0;
   for (; iter < MaxIterations; iter++) {
     for (int t = 0; t < {{nDof}}; t++) {  // time DOF
@@ -181,12 +191,6 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
       //set gradQ to 0
       std::memset(gradQ, 0, {{(nDof**nDim)*nVarPad*nDim}} * sizeof(double));
 {% endif %}
-{% if useNCP or useViscousFlux %}
-      // TODO(Lukas): Compute time-avg gradQ and extrapolate
-      //set gradQAvg to 0
-      std::memset(gradQAvg, 0, {{(nDof**nDim)*nVarPad*nDim}} * sizeof(double));
-{% endif %}
-
       
       // Compute the "derivatives" (contributions of the stiffness matrix)      
       // x direction (independent from the y and z derivatives)
@@ -218,6 +222,15 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
       }
 {% endif %}
 
+
+{% if useViscousFlux %}
+// Compute time-avg gradQ
+// TODO(JMG): Maybe compute after Picard its?
+#pragma omp simd aligned(gradQAvg,gradQ:ALIGNMENT)
+    for (int it = 0; it < {{nDim * (nDof**nDim) * nVarPad}}, it++) {
+      gradQAvg[it] += weights1[t] * gradQ[it];
+    }
+{% endif %}
 
 
 {% if useFlux %}
@@ -380,7 +393,9 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
   
 #ifdef __INTEL_COMPILER
   __assume_aligned(lQhi, ALIGNMENT);
+{% if useViscousFlux %}
   __assume_aligned(lQhbnd, ALIGNMENT);
+{% endif %}
 {% if useFlux %}
   __assume_aligned(lFhi, ALIGNMENT);
   __assume_aligned(lFhbnd, ALIGNMENT);
@@ -390,7 +405,11 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
 #endif
   
   std::memset(lQhbnd, 0, {{2*nDim*nDataPad*nDof*nDof3D}} * sizeof(double));
-  std::memset(lFhbnd, 0, {{2*nDim*nVarPad*nDof*nDof3D }} * sizeof(double));
+  std::memset(lFhbnd, 0, {{2*nDim*nDataPad*nDof*nDof3D}} * sizeof(double));
+
+  {% if useViscousFlux %}
+  std::memset(lGradQhbnd, 0, {{2*nDim*nVarPad*nDof*nDof3D*nDim}} * sizeof(double));
+  {% endif %}
 
   // x-direction: face 1 (left) and face 2 (right)
   for (int yz = 0; yz < {{nDof*nDof3D}}; yz++) {
@@ -418,7 +437,12 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
         // Fortran: lFhbnd(:,j,i,2) = lFhi_x(:,:,j,i) * FRCoeff(:)
         lFhbnd[n+{{nVarPad}}*yz+{{1*nVarPad*nDof*nDof3D}}] +=
             lFhi[n+{{nVarPad}}*(x+{{nDof}}*yz)] * FRCoeff[x];
+
 {% endif %}{# useFlux #}
+{% if useViscousFlux %}
+   // TODO(Lukas) implement!
+ 
+ {% endif %}{# useViscousFlux #}
       }
     }
   }

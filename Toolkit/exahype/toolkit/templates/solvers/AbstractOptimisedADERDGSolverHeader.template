@@ -302,6 +302,7 @@ public:
   int getTempPointForceSourcesSize()      const {return {{optNamespace}}::getPSiSize();          }
   int getBndFaceSize()                    const {return {{optNamespace}}::getBndFaceSize();      }
   int getBndTotalSize()                   const {return {{optNamespace}}::getBndFaceTotalSize(); }
+  int getBndGradQSize()                   const {return {{optNamespace}}::getBndGradQSize();     }
   int getBndFluxSize()                    const {return {{optNamespace}}::getBndFluxSize();      }
   int getBndFluxTotalSize()               const {return {{optNamespace}}::getBndFluxTotalSize(); }
   int getUpdateSize()                     const {return {{optNamespace}}::getUpdateSize(); }
