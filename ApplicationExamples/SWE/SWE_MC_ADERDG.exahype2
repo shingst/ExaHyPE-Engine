@@ -6,7 +6,7 @@
             "output_directory": "./ApplicationExamples/SWE/SWE_MC_ADERDG",
             "log_file": "mylogfile.log"
         },
-        "architecture": "hsw",
+        "architecture": "skx",
         "computational_domain": {
             "dimension": 2,
             "end_time": 0.1,
@@ -15,22 +15,30 @@
                 0.0
             ],
             "width": [
-                1.0,
-            1.0
+		    1.0,
+	    	    1.0
             ]
         },
         "shared_memory": {
-            "cores": 3,
+            "cores": 2,
             "properties_file": "sharedmemory.properties",
             "autotuning_strategy": "dummy",
-            "background_job_consumers": 0
+            "background_job_consumers": 2
         },
+	"distributed_memory": {
+		"timeout": 3600,
+		"load_balancing_type": "static",
+		"buffer_size": 640000,
+		"load_balancing_strategy": "hotspot",
+		"node_pool_strategy": "fair",
+		"ranks_per_node": 4
+	},
         "solvers": [
         {
             "type": "Limiting-ADER-DG",
             "name": "MySWESolver",
             "order": 1,
-            "maximum_mesh_size": 0.02,
+            "maximum_mesh_size": 0.2,
             "maximum_mesh_depth": 0,
             "time_stepping": "global",
             "aderdg_kernel": {
