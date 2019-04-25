@@ -255,7 +255,7 @@ def printJobTemplate(machine):
 # Optional parameters are:
 # tasks, coresPerRank, mail
 
-#@ job_type     = parallel
+#@ job_type     = MPICH
 #@ class        = {{class}}
 #@ total_tasks  = {{ranks}}
 #@ node         = {{nodes}}
@@ -272,12 +272,18 @@ def printJobTemplate(machine):
 #@ queue
 . /etc/profile
 . /etc/profile.d/modules.sh
-module switch intel/18.0
-module switch tbb/2018
-module switch gcc/5
 
+module unload mpi.intel
+module unload mpi.ibm
+module load mpi.intel/2018
+module load tbb/2018
+module load gcc/5
+
+export MP_PE_AFFINITY=yes
 export OMP_NUM_THREADS={{coresPerRank}}
 export MP_TASK_AFFINITY=core:{{coresPerRank}}
+
+# use mpiexec
 
 {{body}}"""
         print(template)
