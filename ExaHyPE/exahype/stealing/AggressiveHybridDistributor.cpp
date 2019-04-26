@@ -70,6 +70,9 @@ void exahype::stealing::AggressiveHybridDistributor::computeIdealLoadDistributio
 
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
   int myRank = tarch::parallel::Node::getInstance().getRank();
+  
+  if(nnodes<=1)
+    return;
 
   int *newLoadDist = new int[nnodes];
   std::fill(&newLoadDist[0], &newLoadDist[nnodes], 0);
