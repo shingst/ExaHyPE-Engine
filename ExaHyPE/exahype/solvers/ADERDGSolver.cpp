@@ -2130,8 +2130,11 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
 
   if (
       SpawnPredictionAsBackgroundJob &&
-      !mustBeDoneImmediately &&
+      !mustBeDoneImmediately 
+#ifndef DistributedStealing
+      &&
       isLastTimeStepOfBatch // only spawned in last iteration if a FusedTimeStepJob was spawned before
+#endif
   ) {
     const int element = cellInfo.indexOfADERDGCellDescription(cellDescription.getSolverNumber());
 #ifdef DistributedStealing 
