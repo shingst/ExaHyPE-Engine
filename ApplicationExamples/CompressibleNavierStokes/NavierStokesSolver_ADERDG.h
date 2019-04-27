@@ -153,9 +153,6 @@ class NavierStokes::NavierStokesSolver_ADERDG : public NavierStokes::AbstractNav
   //void flux(const double* const Q,double** F) final override;
   void viscousFlux(const double* const Q, const double* const gradQ, double** F) final override;
 
-  double stableTimeStepSize(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& dx) final override;
-  void riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double t, const double dt, const tarch::la::Vector<DIMENSIONS, double>& lengthScale, const int direction, bool isBoundaryFace, int faceIndex) final override;
-
   // TODO(Lukas) Add to toolkit!
     void algebraicSource(const tarch::la::Vector<DIMENSIONS, double>& x, double t, const double *const Q, double *S) override;
 

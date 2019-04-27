@@ -15,15 +15,14 @@
 
 #include "AMR/Criterion.h"
 
-#include "stableDiffusiveTimeStepSize.h"
-#if DIMENSIONS == 2
-#include "diffusiveRiemannSolver2d.h"
-#elif DIMENSIONS == 3
-#include "diffusiveRiemannSolver3d.h"
-#endif
-
 #include "kernels/aderdg/generic/Kernels.h"
 #include "kernels/KernelUtils.h"
+
+//#ifdef OPT_KERNELS
+#include "kernels/NavierStokes_NavierStokesSolver_ADERDG/Kernels.h"
+//using namespace Elastic::MyElasticWaveSolver_kernels::aderdg;
+//#endif
+
 
 #include "Scenarios/Atmosphere.h"
 
@@ -89,7 +88,7 @@ void NavierStokes::NavierStokesSolver_ADERDG::boundaryValues(const double* const
   for (int i = 0; i < NumberOfVariables; i++) {
     assertion2(std::isfinite(stateIn[i]), stateIn[i], i);
   }
-  assertion1(stateIn[0] > 0, stateIn[0]);
+  //assertion1(stateIn[0] > 0, stateIn[0]);
 
   if (scenario->getBoundaryType(faceIndex) == NavierStokes::BoundaryType::analytical) {
     // Integrate over time.
@@ -380,17 +379,41 @@ void NavierStokes::NavierStokesSolver_ADERDG::viscousFlux(const double *const Q,
   ns.evaluateFlux(Q, gradQ, F, true);
 }
 
-double NavierStokes::NavierStokesSolver_ADERDG::stableTimeStepSize(const double* const luh, const tarch::la::Vector<DIMENSIONS,double>& dx) {
-  return (0.7/0.9) * kernels::aderdg::generic::c::stableTimeStepSize<NavierStokesSolver_ADERDG,true>(*static_cast<NavierStokesSolver_ADERDG*>(this),luh,dx);
-}
-
-void NavierStokes::NavierStokesSolver_ADERDG::riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double t, const double dt,const tarch::la::Vector<DIMENSIONS, double>& dx, const int direction, bool isBoundaryFace, int faceIndex) {
-  assertion2(direction>=0,dt,direction);
-  assertion2(direction<DIMENSIONS,dt,direction);
-  kernels::aderdg::generic::c::riemannSolverNonlinear<false,true, NavierStokesSolver_ADERDG>(*static_cast<NavierStokesSolver_ADERDG*>(this),FL,FR,QL,QR,t,dt,dx,direction);
-}
-
 void NavierStokes::NavierStokesSolver_ADERDG::boundaryConditions( double* const fluxIn, const double* const stateIn, const double* const gradStateIn, const double* const luh, const tarch::la::Vector<DIMENSIONS, double>& cellCentre, const tarch::la::Vector<DIMENSIONS,double>&  cellSize, const double t,const double dt, const int direction, const int orientation) {
+
+  double stateOut[NavierStokes::NavierStokesSolver_ADERDG_kernels::aderdg::getBndFaceSize()] __attribute__((aligned(ALIGNMENT)));
+  double fluxOut[ NavierStokes::NavierStokesSolver_ADERDG_kernels::aderdg::getBndFluxSize()] __attribute__((aligned(ALIGNMENT)));
+  const int faceIndex = 2*direction+orientation;
+
+  NavierStokes::NavierStokesSolver_ADERDG_kernels::aderdg::boundaryConditions(*static_cast<NavierStokesSolver_ADERDG*>(this), fluxOut, stateOut, fluxIn, stateIn, gradStateIn, &cellCentre[0], &cellSize[0], t, dt, faceIndex, direction);
+
+
+  if (orientation == 0) {
+    riemannSolver(fluxOut,fluxIn,stateOut,stateIn,t,dt,cellSize,direction,true,faceIndex);
+  }
+  else {
+    riemannSolver(fluxIn,fluxOut,stateIn,stateOut,t,dt,cellSize,direction,true,faceIndex);
+  }
+#if DIMENSIONS == 2
+  static_assert("Opt not supp for 2D curr", false);
+    kernels::idx2 idx_F(Order + 1, NumberOfVariables);
+    for (int i = 0; i < (Order + 1); ++i) {
+      // Set energy flux to zero!
+      fluxIn[idx_F(i, NavierStokesSolver_ADERDG_Variables::shortcuts::E)] = 0.0;
+      //ns.setZ(fluxIn + idx_F(i, 0), 0.0);
+    }
+#else
+   // TODO(Lukas) Is this correct for 3D? Untested!
+    kernels::idx3 idx_F(Order + 1, Order + 1, 8);
+    for (int i = 0; i < (Order + 1); ++i) {
+      for (int j = 0; j < (Order + 1); ++j) {
+        // Set energy flux to zero!
+        fluxIn[idx_F(i, j, 4)] = 0.0;
+      }
+    }
+#endif
+
+  /*
 #if DIMENSIONS == 2
   constexpr int basisSize     = (Order+1);
 #else
@@ -447,6 +470,9 @@ void NavierStokes::NavierStokesSolver_ADERDG::boundaryConditions( double* const 
   }
 
   delete[] block;
+  */
+
+  
 }
 
 void NavierStokes::NavierStokesSolver_ADERDG::resetGlobalObservables(GlobalObservables& globalObservables) const  {

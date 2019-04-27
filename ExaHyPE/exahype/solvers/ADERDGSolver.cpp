@@ -1857,7 +1857,7 @@ void exahype::solvers::ADERDGSolver::applyBoundaryConditions(CellDescription& p,
 
   const int dataPerFace = getBndFaceSize();
   const int dofsPerFace = getBndFluxSize();
-  const int gradientDataPerFace = _numberOfVariables * power(_nodesPerCoordinateAxis, DIMENSIONS - 1) * DIMENSIONS;
+  const int gradientDataPerFace = getBndGradQSize();
   double* QIn = static_cast<double*>(p.getExtrapolatedPredictor()) +  dataPerFace * face._faceIndex;
   double* gradQIn = static_cast<double*>(p.getExtrapolatedPredictorGradient()) +  gradientDataPerFace * face._faceIndex;
   double* FIn = static_cast<double*>(p.getFluctuation())           +  dofsPerFace * face._faceIndex;

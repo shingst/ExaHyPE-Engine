@@ -404,7 +404,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
 #endif
   
   std::memset(lQhbnd, 0, {{2*nDim*nDataPad*nDof*nDof3D}} * sizeof(double));
-  std::memset(lFhbnd, 0, {{2*nDim*nDataPad*nDof*nDof3D}} * sizeof(double));
+  std::memset(lFhbnd, 0, {{2*nDim*nVarPad*nDof*nDof3D}} * sizeof(double));
 
   {% if useViscousFlux %}
   std::memset(lGradQhbnd, 0, {{2*nDim*nVarPad*nDof*nDof3D*nDim}} * sizeof(double));

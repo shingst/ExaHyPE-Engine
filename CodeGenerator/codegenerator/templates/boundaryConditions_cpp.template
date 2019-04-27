@@ -58,9 +58,9 @@ void {{codeNamespace}}::boundaryConditions(
   // Remove padding to use the same user function as generic kernel
   double gradQ_PDE[{{nVar*nDim}}]; 
   std::copy_n(gradStateIn+{{nVarPad}}*(jj*{{nDof}}+ii), {{nVar}}, gradQ_PDE); //x
-  std::copy_n(gradStateIn+{{nVarPad}}*(jj*{{nDof}}+ii) + {{1 * nVarPad * nDof + nDof3D}}, {{nVar}}, gradQ_PDE + {{1 * nVar}}); //y
+  std::copy_n(gradStateIn+{{nVarPad}}*(jj*{{nDof}}+ii) + {{1 * nVarPad * nDof * nDof3D}}, {{nVar}}, gradQ_PDE + {{1 * nVar}}); //y
 {% if nDim==3 %}
-  std::copy_n(gradStateIn+{{nVarPad}}*(jj*{{nDof}}+ii) + {{2 * nVarPad * nDof + nDof3D}}, {{nVar}}, gradQ_PDE + {{2 * nVar}}); //z
+  std::copy_n(gradStateIn+{{nVarPad}}*(jj*{{nDof}}+ii) + {{2 * nVarPad * nDof * nDof3D}}, {{nVar}}, gradQ_PDE + {{2 * nVar}}); //z
 {% endif %}
 {% endif %}{# useNCP #}
 
