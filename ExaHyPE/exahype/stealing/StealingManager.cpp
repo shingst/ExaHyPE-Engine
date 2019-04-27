@@ -677,6 +677,7 @@ bool exahype::stealing::StealingManager::selectVictimRank(int& victim) {
 #ifdef StealingUseProgressTask
 void exahype::stealing::StealingManager::resetHasNotifiedSendCompleted() {
   _hasNotifiedSendCompleted = false;
+    logInfo("resetHasNotifiedSendCompleted","resetting flag");
 }
 
 void exahype::stealing::StealingManager::notifySendCompleted(int rank) {
@@ -693,6 +694,7 @@ void exahype::stealing::StealingManager::receiveCompleted(int rank) {
 
 void exahype::stealing::StealingManager::notifyAllVictimsSendCompletedIfNotNotified() {
   if(!_hasNotifiedSendCompleted) {
+    logInfo("notifyAllVictimsSendCompleted","notifying that last job was sent to victims");
     _hasNotifiedSendCompleted = true;
     std::vector<int> victimRanks;
 #if defined(StealingStrategyAggressiveHybrid) 

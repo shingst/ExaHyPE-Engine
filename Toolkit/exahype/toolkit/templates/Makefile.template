@@ -91,7 +91,7 @@ PROJECT_CFLAGS += -DDistributedStealing -DStealingStrategyStaticHardcoded
 {% if stealingProgress=="progress_thread" %}
 PROJECT_CFLAGS += -DStealingUseProgressThread
 {% elif stealingProgress=="progress_task" %}
-PROJECT_CFLAGS += -DStealingUseProgressTask
+PROJECT_CFLAGS += -DStealingUseProgressTask -DnoMPIWaitsProcessJobs
 {% endif %}
 
 # If using TBB only, link pthread (comment this if you want to link a specific pthread)

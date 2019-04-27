@@ -497,7 +497,7 @@ bool exahype::stealing::AggressiveHybridDistributor::selectVictimRank(int& victi
 #endif
 
   int threshold = 1+std::max(1, tarch::multicore::Core::getInstance().getNumberOfThreads()-1)*tarch::multicore::jobs::internal::_minimalNumberOfJobsPerConsumerRun;
-  logInfo("selectVicimtRank", "threshold "<<threshold);
+  logInfo("selectVictimRank", "threshold "<<threshold);
   threshold = std::max(threshold, 20);
   //threshold = 0; //TODO:test
 

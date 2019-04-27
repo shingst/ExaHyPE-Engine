@@ -4754,10 +4754,12 @@ void exahype::solvers::ADERDGSolver::progressStealing(exahype::solvers::ADERDGSo
     MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, commMapped, &receivedTaskBack, &statMapped);
     if(receivedTask) {
 #ifdef StealingUseProgressTask
+       logInfo("progressStealing()","inserting active sender "<<stat.MPI_SOURCE);
        ActiveSenders.insert(stat.MPI_SOURCE);
        if(NumberOfReceiveJobs==0) {
           NumberOfReceiveJobs++;
-          //logInfo("progressStealing()","spawning receive job");
+          assert(NumberOfReceiveJobs<=1);
+          logInfo("progressStealing()","spawning receive job, receive jobs "<<NumberOfReceiveJobs);
           ReceiveJob *receiveJob = new ReceiveJob(*solver);
           peano::datatraversal::TaskSet spawnedSet(receiveJob);     
           terminateImmediately = true; // we'll receive this task but then terminate to give the receive job the opportunity to run
@@ -4960,7 +4962,7 @@ bool exahype::solvers::ADERDGSolver::ReceiveJob::run() {
   }
   int itcount = 0;
 
-  //logInfo("run()","receive job running");  
+  logInfo("run()","receive job running");  
 
   while(ActiveSenders.size()>0) {
        exahype::stealing::StealingManager::getInstance().progressRequests();
@@ -4976,14 +4978,14 @@ bool exahype::solvers::ADERDGSolver::ReceiveJob::run() {
      
        if(receivedTask && stat.MPI_TAG==0) {
          int terminatedSender = stat.MPI_SOURCE;
-         //logInfo("run()","active sender "<<terminatedSender<<" has sent termination signal ");
+         logInfo("run()","active sender "<<terminatedSender<<" has sent termination signal ");
          exahype::stealing::StealingManager::getInstance().receiveCompleted(terminatedSender);
          ActiveSenders.erase(terminatedSender);
          MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, comm, &receivedTask, &stat);
        }
  
        if(receivedTask) {
-         //logInfo("run()","adding active sender "<<stat.MPI_SOURCE);
+         logInfo("run()","adding active sender "<<stat.MPI_SOURCE<< " tag "<<stat.MPI_TAG);
          ActiveSenders.insert(stat.MPI_SOURCE);
          exahype::stealing::StealingManager::getInstance().triggerVictimFlag();
          int msgLen = -1;
@@ -5041,7 +5043,7 @@ bool exahype::solvers::ADERDGSolver::ReceiveJob::run() {
       //tarch::parallel::Node::getInstance().receiveDanglingMessages(); 
       itcount++;
   }
-  //logInfo("run()","terminated receive job after "<<itcount<<" iterations");
+  logInfo("run()","terminated receive job after "<<itcount<<" iterations");
 
   NumberOfReceiveJobs--;
   lock.free();
