@@ -193,6 +193,31 @@ const exahype::State& exahype::repositories::RepositorySTDStack::getState() cons
   return _solverState;
 }
 
+/**
+ * @return if the current rank should traverse the mesh given the current iteration and
+ * the current repository state.
+ *
+ * Essentially, we mask out the global master from performing
+ * iterations.
+ *
+ * @param currentIteration   The current iteration.
+ * @param numberOfIterations The total number of iterations.
+ * @param repositoryState    The repository state.
+ */
+bool runIteration(int currentIteration,int numberOfIterations,exahype::records::RepositoryState& repositoryState) {
+  #ifndef Parallel
+  return true;
+  #else
+  return
+      repositoryState.getExchangeBoundaryVertices() ||                     // boundary vertices are exchanged with the global master
+      repositoryState.getAction() != exahype::records::RepositoryState::UseAdapterFusedTimeStep || // not fused time step adapter chosen
+      tarch::parallel::Node::getInstance().getNumberOfNodes()==1 ||        // there is only the global master
+      !tarch::parallel::Node::getInstance().isGlobalMaster() ||            // run on all except global master
+      currentIteration == 0 ||                                             // run on global master if first or last iteration
+      currentIteration == numberOfIterations-1 ||
+      (numberOfIterations % 2 != 0 && currentIteration == 1);              // run on global master if number of iterations are odd and its second iteration
+  #endif
+}
 
 void exahype::repositories::RepositorySTDStack::iterate(int numberOfIterations, bool exchangeBoundaryVertices) {
   SCOREP_USER_REGION( (std::string("exahype::repositories::RepositorySTDStack::iterate() - ") + _repositoryState.toString( _repositoryState.getAction() )).c_str(), SCOREP_USER_REGION_TYPE_FUNCTION)
@@ -252,7 +277,9 @@ void exahype::repositories::RepositorySTDStack::iterate(int numberOfIterations, 
     VT_begin(handle);
     #endif
 
-    switch ( _repositoryState.getAction()) {
+
+    if ( runIteration(i,numberOfIterations,_repositoryState) ) {
+      switch ( _repositoryState.getAction()) {
       case exahype::records::RepositoryState::UseAdapterMeshRefinement: watch.startTimer(); _gridWithMeshRefinement.iterate(); watch.stopTimer(); _measureMeshRefinementCPUTime.setValue( watch.getCPUTime() ); _measureMeshRefinementCalendarTime.setValue( watch.getCalendarTime() ); break;
       case exahype::records::RepositoryState::UseAdapterMeshRefinementAndPlotTree: watch.startTimer(); _gridWithMeshRefinementAndPlotTree.iterate(); watch.stopTimer(); _measureMeshRefinementAndPlotTreeCPUTime.setValue( watch.getCPUTime() ); _measureMeshRefinementAndPlotTreeCalendarTime.setValue( watch.getCalendarTime() ); break;
       case exahype::records::RepositoryState::UseAdapterFinaliseMeshRefinement: watch.startTimer(); _gridWithFinaliseMeshRefinement.iterate(); watch.stopTimer(); _measureFinaliseMeshRefinementCPUTime.setValue( watch.getCPUTime() ); _measureFinaliseMeshRefinementCalendarTime.setValue( watch.getCalendarTime() ); break;
@@ -283,6 +310,9 @@ void exahype::repositories::RepositorySTDStack::iterate(int numberOfIterations, 
       case exahype::records::RepositoryState::WriteCheckpoint:
         assertionMsg( false, "not implemented yet" );
         break;
+      }
+    } else {
+      logInfo("iterate(...)","skip spacetree traversal on global master.");
     }
 
     #ifdef USE_ITAC 
