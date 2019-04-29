@@ -175,6 +175,12 @@ class NavierStokes::NavierStokesSolver_ADERDG : public NavierStokes::AbstractNav
     void mergeGlobalObservables(
         GlobalObservables&         globalObservables,
         ReadOnlyGlobalObservables& otherObservables) const final override;
+
+
+  double stableTimeStepSize(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& dx) final override;
+  void riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double t, const double dt, const tarch::la::Vector<DIMENSIONS, double>& lengthScale, const int direction, bool isBoundaryFace, int faceIndex) final override;
+
 };
+
 
 #endif // __NavierStokesSolverDG_CLASS_HEADER__
