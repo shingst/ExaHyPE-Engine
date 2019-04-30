@@ -115,6 +115,8 @@ Euler::EulerSolver_ADERDG::refinementCriterion(
     return RefinementControl::Refine;
   } else if ( largestRho/1.5 < 0.6 ) {
     return RefinementControl::Erase;
+  } else {
+    return RefinementControl::Keep;
   }
 }
 
