@@ -88,7 +88,7 @@ exahype::mappings::UpdateAndReduce::descendSpecification(int level) const {
 void exahype::mappings::UpdateAndReduce::beginIteration(
     exahype::State& solverState) {
   #ifdef Parallel
-  // hack to enforce reductions
+  // enforce reductions from worker side
   solverState.setReduceStateAndCell(true);
   #endif
 }
@@ -154,10 +154,8 @@ void exahype::mappings::UpdateAndReduce::prepareSendToMaster(
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
     const exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
-  if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
-    const int masterRank = tarch::parallel::NodePool::getInstance().getMasterRank();
-    exahype::State::reduceGlobalDataToMaster(masterRank,0.0,0);
-  }
+  const int masterRank = tarch::parallel::NodePool::getInstance().getMasterRank();
+  exahype::State::reduceGlobalDataToMaster(masterRank,0.0,0);
 }
 
 void exahype::mappings::UpdateAndReduce::mergeWithMaster(
@@ -172,9 +170,7 @@ void exahype::mappings::UpdateAndReduce::mergeWithMaster(
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
     int workerRank, const exahype::State& workerState,
     exahype::State& masterState) {
-  if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
-    exahype::State::mergeWithGlobalDataFromWorker(workerRank,0.0,0);
-  }
+  exahype::State::mergeWithGlobalDataFromWorker(workerRank,0.0,0);
 }
 
 //

@@ -204,20 +204,20 @@ const exahype::State& exahype::repositories::RepositorySTDStack::getState() cons
  * @param numberOfIterations The total number of iterations.
  * @param repositoryState    The repository state.
  */
-bool runIteration(int currentIteration,int numberOfIterations,exahype::records::RepositoryState& repositoryState) {
-  #ifndef Parallel
-  return true;
-  #else
-  return
-      repositoryState.getExchangeBoundaryVertices() ||                     // boundary vertices are exchanged with the global master
-      repositoryState.getAction() != exahype::records::RepositoryState::UseAdapterFusedTimeStep || // not fused time step adapter chosen
-      tarch::parallel::Node::getInstance().getNumberOfNodes()==1 ||        // there is only the global master
-      !tarch::parallel::Node::getInstance().isGlobalMaster() ||            // run on all except global master
-      currentIteration == 0 ||                                             // run on global master if first or last iteration
-      currentIteration == numberOfIterations-1 ||
-      (numberOfIterations % 2 != 0 && currentIteration == 1);              // run on global master if number of iterations are odd and its second iteration
-  #endif
-}
+//bool runIteration(int currentIteration,int numberOfIterations,exahype::records::RepositoryState& repositoryState) {
+//  #ifndef Parallel
+//  return true;
+//  #else
+//  return
+//      repositoryState.getExchangeBoundaryVertices() ||                     // boundary vertices are exchanged with the global master
+//      repositoryState.getAction() != exahype::records::RepositoryState::UseAdapterFusedTimeStep || // not fused time step adapter chosen
+//      tarch::parallel::Node::getInstance().getNumberOfNodes()==1 ||        // there is only the global master
+//      !tarch::parallel::Node::getInstance().isGlobalMaster() ||            // run on all except global master
+//      currentIteration == 0 ||                                             // run on global master if first or last iteration
+//      currentIteration == numberOfIterations-1 ||
+//      (numberOfIterations % 2 != 0 && currentIteration == 1);              // run on global master if number of iterations are odd and its second iteration
+//  #endif
+//}
 
 void exahype::repositories::RepositorySTDStack::iterate(int numberOfIterations, bool exchangeBoundaryVertices) {
   SCOREP_USER_REGION( (std::string("exahype::repositories::RepositorySTDStack::iterate() - ") + _repositoryState.toString( _repositoryState.getAction() )).c_str(), SCOREP_USER_REGION_TYPE_FUNCTION)
@@ -284,13 +284,9 @@ void exahype::repositories::RepositorySTDStack::iterate(int numberOfIterations, 
     case exahype::records::RepositoryState::UseAdapterFinaliseMeshRefinementOrLocalRollback: watch.startTimer(); _gridWithFinaliseMeshRefinementOrLocalRollback.iterate(); watch.stopTimer(); _measureFinaliseMeshRefinementOrLocalRollbackCPUTime.setValue( watch.getCPUTime() ); _measureFinaliseMeshRefinementOrLocalRollbackCalendarTime.setValue( watch.getCalendarTime() ); break;
     case exahype::records::RepositoryState::UseAdapterInitialPrediction: watch.startTimer(); _gridWithInitialPrediction.iterate(); watch.stopTimer(); _measureInitialPredictionCPUTime.setValue( watch.getCPUTime() ); _measureInitialPredictionCalendarTime.setValue( watch.getCalendarTime() ); break;
     case exahype::records::RepositoryState::UseAdapterFusedTimeStep:
-      if ( runIteration(i,numberOfIterations,_repositoryState) ) {
-        if ( i == 0 ) { watch.startTimer(); }
-        _gridWithFusedTimeStep.iterate();
-        if ( i==numberOfIterations-1 ) { watch.stopTimer(); }
-      } else {
-        logInfo("iterate(...)","skip spacetree traversal on global master.");
-      }
+      watch.startTimer();
+      _gridWithFusedTimeStep.iterate();
+      watch.stopTimer();
       _measureFusedTimeStepCPUTime.setValue( watch.getCPUTime() );
       _measureFusedTimeStepCalendarTime.setValue( watch.getCalendarTime() );
       break;

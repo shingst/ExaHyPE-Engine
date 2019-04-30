@@ -126,7 +126,7 @@ void exahype::mappings::FinaliseMeshRefinement::beginIteration(exahype::State& s
   exahype::mappings::MeshRefinement::IsFirstIteration = true;
 
   #ifdef Parallel
-  // hack to enforce reductions
+  // enforce reductions from worker side
   solverState.setReduceStateAndCell(true);
   #endif
 

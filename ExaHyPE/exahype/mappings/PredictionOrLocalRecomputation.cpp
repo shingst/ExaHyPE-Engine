@@ -90,10 +90,8 @@ void exahype::mappings::PredictionOrLocalRecomputation::beginIteration(
   logTraceInWith1Argument("beginIteration(State)", solverState);
 
   #ifdef Parallel
-  if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
-    // ensure reductions are inititated from worker side
-    solverState.setReduceStateAndCell(true);
-  }
+  // enforce reductions from worker side in last step; turns off reductions in other iterations
+  solverState.setReduceStateAndCell( exahype::State::isLastIterationOfBatchOrNoBatch() );
   #endif
 
   if (
