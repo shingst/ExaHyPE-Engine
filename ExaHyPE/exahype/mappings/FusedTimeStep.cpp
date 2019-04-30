@@ -156,7 +156,7 @@ void exahype::mappings::FusedTimeStep::beginIteration(
 
   #ifdef Parallel
   if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
-    // ensure reductions are inititated from worker side
+    // ensure reductions are initiated from worker side
     solverState.setReduceStateAndCell(true);
   }
   #endif
@@ -355,6 +355,7 @@ void exahype::mappings::FusedTimeStep::prepareSendToMaster(
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
   if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
     const int masterRank = tarch::parallel::NodePool::getInstance().getMasterRank();
+    logInfo("prepareSendToMaster(...)","reduce global data to master");
     exahype::State::reduceGlobalDataToMaster(masterRank,0.0,0);
   }
 }
@@ -379,6 +380,7 @@ void exahype::mappings::FusedTimeStep::mergeWithMaster(
   }
 
   if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
+    logInfo("mergeWithMaster(...)","merge with global data from worker");
     exahype::State::mergeWithGlobalDataFromWorker(workerRank,0.0,0);
   }
 }

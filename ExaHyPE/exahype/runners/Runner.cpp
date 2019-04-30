@@ -332,10 +332,6 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
     }
     #endif
   }
-
-  // neighbour merge task sets
-  exahype::Vertex::SpawnNeighbourMergeAsThread = _parser.getSpawnNeighbourMergeAsThread();
-
   // background jobs
   solvers::Solver::MaxNumberOfRunningBackgroundJobConsumerTasksDuringTraversal = _parser.getNumberOfBackgroundJobConsumerTasks();
   tarch::multicore::jobs::Job::setMaxNumberOfRunningBackgroundThreads(solvers::Solver::MaxNumberOfRunningBackgroundJobConsumerTasksDuringTraversal);
@@ -800,20 +796,21 @@ void exahype::runners::Runner::initOptimisations() const {
   exahype::solvers::Solver::FusedTimeSteppingRerunFactor     = _parser.getFuseAlgorithmicStepsRerunFactor();
   exahype::solvers::Solver::FusedTimeSteppingDiffusionFactor = _parser.getFuseAlgorithmicStepsDiffusionFactor();
 
-  exahype::solvers::Solver::configurePredictionPhase(
-      _parser.getSpawnPredictionAsBackgroundThread(),
-      _parser.getSpawnProlongationAsBackgroundThread());
+  #ifdef OnePredictionSweep
+  exahype::solvers::Solver::PredictionSweeps = 1;
+  #else
+  exahype::solvers::Solver::PredictionSweeps = 2;
+  #endif
 
-  exahype::solvers::Solver::SpawnUpdateAsBackgroundJob =
-      _parser.getSpawnUpdateAsBackgroundThread();
+  exahype::solvers::Solver::SpawnPredictionAsBackgroundJob   = _parser.getSpawnPredictionAsBackgroundThread();
+  exahype::solvers::Solver::SpawnProlongationAsBackgroundJob = _parser.getSpawnProlongationAsBackgroundThread();
+  exahype::solvers::Solver::SpawnUpdateAsBackgroundJob       = _parser.getSpawnUpdateAsBackgroundThread();
+  exahype::solvers::Solver::SpawnAMRBackgroundJobs           = _parser.getSpawnAMRBackgroundThreads();
 
-  exahype::solvers::Solver::SpawnAMRBackgroundJobs =
-      _parser.getSpawnAMRBackgroundThreads();
+  exahype::Vertex::SpawnNeighbourMergeAsThread = _parser.getSpawnNeighbourMergeAsThread();
 
-  exahype::solvers::Solver::DisablePeanoNeighbourExchangeInTimeSteps =
-      _parser.getDisablePeanoNeighbourExchangeInTimeSteps();
-  exahype::solvers::Solver::DisableMetadataExchangeDuringTimeSteps =
-      _parser.getDisableMetadataExchangeInBatchedTimeSteps();
+  exahype::solvers::Solver::DisablePeanoNeighbourExchangeInTimeSteps = _parser.getDisablePeanoNeighbourExchangeInTimeSteps();
+  exahype::solvers::Solver::DisableMetadataExchangeDuringTimeSteps = _parser.getDisableMetadataExchangeInBatchedTimeSteps();
 
   if ( tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getGlobalMasterRank() ) {
     logInfo("parseOptimisations()","use the following global optimisations:");

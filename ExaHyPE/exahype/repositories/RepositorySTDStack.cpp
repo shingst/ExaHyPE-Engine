@@ -277,45 +277,50 @@ void exahype::repositories::RepositorySTDStack::iterate(int numberOfIterations, 
     VT_begin(handle);
     #endif
 
-
-    if ( runIteration(i,numberOfIterations,_repositoryState) ) {
-      switch ( _repositoryState.getAction()) {
-      case exahype::records::RepositoryState::UseAdapterMeshRefinement: watch.startTimer(); _gridWithMeshRefinement.iterate(); watch.stopTimer(); _measureMeshRefinementCPUTime.setValue( watch.getCPUTime() ); _measureMeshRefinementCalendarTime.setValue( watch.getCalendarTime() ); break;
-      case exahype::records::RepositoryState::UseAdapterMeshRefinementAndPlotTree: watch.startTimer(); _gridWithMeshRefinementAndPlotTree.iterate(); watch.stopTimer(); _measureMeshRefinementAndPlotTreeCPUTime.setValue( watch.getCPUTime() ); _measureMeshRefinementAndPlotTreeCalendarTime.setValue( watch.getCalendarTime() ); break;
-      case exahype::records::RepositoryState::UseAdapterFinaliseMeshRefinement: watch.startTimer(); _gridWithFinaliseMeshRefinement.iterate(); watch.stopTimer(); _measureFinaliseMeshRefinementCPUTime.setValue( watch.getCPUTime() ); _measureFinaliseMeshRefinementCalendarTime.setValue( watch.getCalendarTime() ); break;
-      case exahype::records::RepositoryState::UseAdapterFinaliseMeshRefinementOrLocalRollback: watch.startTimer(); _gridWithFinaliseMeshRefinementOrLocalRollback.iterate(); watch.stopTimer(); _measureFinaliseMeshRefinementOrLocalRollbackCPUTime.setValue( watch.getCPUTime() ); _measureFinaliseMeshRefinementOrLocalRollbackCalendarTime.setValue( watch.getCalendarTime() ); break;
-      case exahype::records::RepositoryState::UseAdapterInitialPrediction: watch.startTimer(); _gridWithInitialPrediction.iterate(); watch.stopTimer(); _measureInitialPredictionCPUTime.setValue( watch.getCPUTime() ); _measureInitialPredictionCalendarTime.setValue( watch.getCalendarTime() ); break;
-      case exahype::records::RepositoryState::UseAdapterFusedTimeStep: watch.startTimer(); _gridWithFusedTimeStep.iterate(); watch.stopTimer(); _measureFusedTimeStepCPUTime.setValue( watch.getCPUTime() ); _measureFusedTimeStepCalendarTime.setValue( watch.getCalendarTime() ); break;
-      case exahype::records::RepositoryState::UseAdapterPredictionRerun: watch.startTimer(); _gridWithPredictionRerun.iterate(); watch.stopTimer(); _measurePredictionRerunCPUTime.setValue( watch.getCPUTime() ); _measurePredictionRerunCalendarTime.setValue( watch.getCalendarTime() ); break;
-      case exahype::records::RepositoryState::UseAdapterBroadcastAndDropNeighbourMessages: watch.startTimer(); _gridWithBroadcastAndDropNeighbourMessages.iterate(); watch.stopTimer(); _measureBroadcastAndDropNeighbourMessagesCPUTime.setValue( watch.getCPUTime() ); _measureBroadcastAndDropNeighbourMessagesCalendarTime.setValue( watch.getCalendarTime() ); break;
-      case exahype::records::RepositoryState::UseAdapterRefinementStatusSpreading: watch.startTimer(); _gridWithRefinementStatusSpreading.iterate(); watch.stopTimer(); _measureRefinementStatusSpreadingCPUTime.setValue( watch.getCPUTime() ); _measureRefinementStatusSpreadingCalendarTime.setValue( watch.getCalendarTime() ); break;
-      case exahype::records::RepositoryState::UseAdapterPredictionOrLocalRecomputation: watch.startTimer(); _gridWithPredictionOrLocalRecomputation.iterate(); watch.stopTimer(); _measurePredictionOrLocalRecomputationCPUTime.setValue( watch.getCPUTime() ); _measurePredictionOrLocalRecomputationCalendarTime.setValue( watch.getCalendarTime() ); break;
-      case exahype::records::RepositoryState::UseAdapterMergeNeighbours: watch.startTimer(); _gridWithMergeNeighbours.iterate(); watch.stopTimer(); _measureMergeNeighboursCPUTime.setValue( watch.getCPUTime() ); _measureMergeNeighboursCalendarTime.setValue( watch.getCalendarTime() ); break;
-      case exahype::records::RepositoryState::UseAdapterUpdateAndReduce: watch.startTimer(); _gridWithUpdateAndReduce.iterate(); watch.stopTimer(); _measureUpdateAndReduceCPUTime.setValue( watch.getCPUTime() ); _measureUpdateAndReduceCalendarTime.setValue( watch.getCalendarTime() ); break;
-      case exahype::records::RepositoryState::UseAdapterPrediction: watch.startTimer(); _gridWithPrediction.iterate(); watch.stopTimer(); _measurePredictionCPUTime.setValue( watch.getCPUTime() ); _measurePredictionCalendarTime.setValue( watch.getCalendarTime() ); break;
-      case exahype::records::RepositoryState::UseAdapterCorrection: watch.startTimer(); _gridWithCorrection.iterate(); watch.stopTimer(); _measureCorrectionCPUTime.setValue( watch.getCPUTime() ); _measureCorrectionCalendarTime.setValue( watch.getCalendarTime() ); break;
-
-      case exahype::records::RepositoryState::Terminate:
-        assertionMsg( false, "this branch/state should never be reached" ); 
-        break;
-      case exahype::records::RepositoryState::NumberOfAdapters:
-        assertionMsg( false, "this branch/state should never be reached" ); 
-        break;
-      case exahype::records::RepositoryState::RunOnAllNodes:
-        assertionMsg( false, "this branch/state should never be reached" ); 
-        break;
-      case exahype::records::RepositoryState::ReadCheckpoint:
-        assertionMsg( false, "not implemented yet" );
-        break;
-      case exahype::records::RepositoryState::WriteCheckpoint:
-        assertionMsg( false, "not implemented yet" );
-        break;
+    switch ( _repositoryState.getAction()) {
+    case exahype::records::RepositoryState::UseAdapterMeshRefinement: watch.startTimer(); _gridWithMeshRefinement.iterate(); watch.stopTimer(); _measureMeshRefinementCPUTime.setValue( watch.getCPUTime() ); _measureMeshRefinementCalendarTime.setValue( watch.getCalendarTime() ); break;
+    case exahype::records::RepositoryState::UseAdapterMeshRefinementAndPlotTree: watch.startTimer(); _gridWithMeshRefinementAndPlotTree.iterate(); watch.stopTimer(); _measureMeshRefinementAndPlotTreeCPUTime.setValue( watch.getCPUTime() ); _measureMeshRefinementAndPlotTreeCalendarTime.setValue( watch.getCalendarTime() ); break;
+    case exahype::records::RepositoryState::UseAdapterFinaliseMeshRefinement: watch.startTimer(); _gridWithFinaliseMeshRefinement.iterate(); watch.stopTimer(); _measureFinaliseMeshRefinementCPUTime.setValue( watch.getCPUTime() ); _measureFinaliseMeshRefinementCalendarTime.setValue( watch.getCalendarTime() ); break;
+    case exahype::records::RepositoryState::UseAdapterFinaliseMeshRefinementOrLocalRollback: watch.startTimer(); _gridWithFinaliseMeshRefinementOrLocalRollback.iterate(); watch.stopTimer(); _measureFinaliseMeshRefinementOrLocalRollbackCPUTime.setValue( watch.getCPUTime() ); _measureFinaliseMeshRefinementOrLocalRollbackCalendarTime.setValue( watch.getCalendarTime() ); break;
+    case exahype::records::RepositoryState::UseAdapterInitialPrediction: watch.startTimer(); _gridWithInitialPrediction.iterate(); watch.stopTimer(); _measureInitialPredictionCPUTime.setValue( watch.getCPUTime() ); _measureInitialPredictionCalendarTime.setValue( watch.getCalendarTime() ); break;
+    case exahype::records::RepositoryState::UseAdapterFusedTimeStep:
+      if ( runIteration(i,numberOfIterations,_repositoryState) ) {
+        if ( i == 0 ) { watch.startTimer(); }
+        _gridWithFusedTimeStep.iterate();
+        if ( i==numberOfIterations-1 ) { watch.stopTimer(); }
+      } else {
+        logInfo("iterate(...)","skip spacetree traversal on global master.");
       }
-    } else {
-      logInfo("iterate(...)","skip spacetree traversal on global master.");
+      _measureFusedTimeStepCPUTime.setValue( watch.getCPUTime() );
+      _measureFusedTimeStepCalendarTime.setValue( watch.getCalendarTime() );
+      break;
+    case exahype::records::RepositoryState::UseAdapterPredictionRerun: watch.startTimer(); _gridWithPredictionRerun.iterate(); watch.stopTimer(); _measurePredictionRerunCPUTime.setValue( watch.getCPUTime() ); _measurePredictionRerunCalendarTime.setValue( watch.getCalendarTime() ); break;
+    case exahype::records::RepositoryState::UseAdapterBroadcastAndDropNeighbourMessages: watch.startTimer(); _gridWithBroadcastAndDropNeighbourMessages.iterate(); watch.stopTimer(); _measureBroadcastAndDropNeighbourMessagesCPUTime.setValue( watch.getCPUTime() ); _measureBroadcastAndDropNeighbourMessagesCalendarTime.setValue( watch.getCalendarTime() ); break;
+    case exahype::records::RepositoryState::UseAdapterRefinementStatusSpreading: watch.startTimer(); _gridWithRefinementStatusSpreading.iterate(); watch.stopTimer(); _measureRefinementStatusSpreadingCPUTime.setValue( watch.getCPUTime() ); _measureRefinementStatusSpreadingCalendarTime.setValue( watch.getCalendarTime() ); break;
+    case exahype::records::RepositoryState::UseAdapterPredictionOrLocalRecomputation: watch.startTimer(); _gridWithPredictionOrLocalRecomputation.iterate(); watch.stopTimer(); _measurePredictionOrLocalRecomputationCPUTime.setValue( watch.getCPUTime() ); _measurePredictionOrLocalRecomputationCalendarTime.setValue( watch.getCalendarTime() ); break;
+    case exahype::records::RepositoryState::UseAdapterMergeNeighbours: watch.startTimer(); _gridWithMergeNeighbours.iterate(); watch.stopTimer(); _measureMergeNeighboursCPUTime.setValue( watch.getCPUTime() ); _measureMergeNeighboursCalendarTime.setValue( watch.getCalendarTime() ); break;
+    case exahype::records::RepositoryState::UseAdapterUpdateAndReduce: watch.startTimer(); _gridWithUpdateAndReduce.iterate(); watch.stopTimer(); _measureUpdateAndReduceCPUTime.setValue( watch.getCPUTime() ); _measureUpdateAndReduceCalendarTime.setValue( watch.getCalendarTime() ); break;
+    case exahype::records::RepositoryState::UseAdapterPrediction: watch.startTimer(); _gridWithPrediction.iterate(); watch.stopTimer(); _measurePredictionCPUTime.setValue( watch.getCPUTime() ); _measurePredictionCalendarTime.setValue( watch.getCalendarTime() ); break;
+    case exahype::records::RepositoryState::UseAdapterCorrection: watch.startTimer(); _gridWithCorrection.iterate(); watch.stopTimer(); _measureCorrectionCPUTime.setValue( watch.getCPUTime() ); _measureCorrectionCalendarTime.setValue( watch.getCalendarTime() ); break;
+
+    case exahype::records::RepositoryState::Terminate:
+      assertionMsg( false, "this branch/state should never be reached" );
+      break;
+    case exahype::records::RepositoryState::NumberOfAdapters:
+      assertionMsg( false, "this branch/state should never be reached" );
+      break;
+    case exahype::records::RepositoryState::RunOnAllNodes:
+      assertionMsg( false, "this branch/state should never be reached" );
+      break;
+    case exahype::records::RepositoryState::ReadCheckpoint:
+      assertionMsg( false, "not implemented yet" );
+      break;
+    case exahype::records::RepositoryState::WriteCheckpoint:
+      assertionMsg( false, "not implemented yet" );
+      break;
     }
 
-    #ifdef USE_ITAC 
+    #ifdef USE_ITAC
     VT_end(handle);
     #endif
 

@@ -1076,13 +1076,6 @@ public:
    */
   static int getMaxRefinementStatus();
 
-  /**
-   * Specify if solvers spawn background jobs and
-   * configure the number of sweeps run by the adapters FusedTimeStep, Prediction, PredictionRerun,
-   * and PredictorOrLocalRecomputation.
-   */
-  static void configurePredictionPhase(const bool usePredictionBackgroundJobs, bool useProlongationBackgroundJobs);
-
 
   static std::string toString(const JobType& jobType);
 

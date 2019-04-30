@@ -200,27 +200,6 @@ void exahype::solvers::Solver::ensureAllJobsHaveTerminated(JobType jobType) {
   #endif
 }
 
-void exahype::solvers::Solver::configurePredictionPhase(const bool usePredictionBackgroundJobs, bool useProlongationBackgroundJobs) {
-  exahype::solvers::Solver::SpawnPredictionAsBackgroundJob   = usePredictionBackgroundJobs;
-  exahype::solvers::Solver::SpawnProlongationAsBackgroundJob = useProlongationBackgroundJobs;
-
-  #ifdef OnePredictionSweep
-  exahype::solvers::Solver::PredictionSweeps = 1;
-  #else
-  exahype::solvers::Solver::PredictionSweeps = ( 
-         !allSolversPerformOnlyUniformRefinement() || // prolongations are done in second sweep
-         usePredictionBackgroundJobs ) ? 
-         2 : 1;
-  #endif
-
-  if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
-    logInfo("configurePredictionPhase()","prediction sweeps                   ="<<exahype::solvers::Solver::PredictionSweeps);
-    logInfo("configurePredictionPhase()","spawn prediction as background job  ="<<exahype::solvers::Solver::SpawnPredictionAsBackgroundJob);
-    logInfo("configurePredictionPhase()","spawn prolongation as background job="<<exahype::solvers::Solver::SpawnProlongationAsBackgroundJob);
-  }
-}
-
-
 exahype::solvers::Solver::Solver(
   const std::string&                     identifier,
   exahype::solvers::Solver::Type         type,
