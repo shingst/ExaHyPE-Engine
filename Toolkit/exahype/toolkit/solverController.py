@@ -11,7 +11,7 @@ class SolverController:
         self.baseContext = baseContext
 
 
-    def processModelOutput(self, output, contextsList, logger):
+    def processModelOutput(self, output, contextsList, logger, silentCodeGen = False):
         """Standard model output is (paths, context)
         
         Log the path of the generated file (== not None) using the logger and
@@ -22,7 +22,7 @@ class SolverController:
         paths, context = output
         for path in filter(None, paths):
             logger.info("Generated '"+path+"'")
-        if "codegeneratorContext" in context:
+        if "codegeneratorContext" in context and not silentCodeGen:
             logger.info("Codegenerator used, command line to get the same result: "+context["codegeneratorContext"]["commandLine"])
         contextsList.append(context)
         
@@ -64,7 +64,7 @@ class SolverController:
                 if "codegeneratorContext" in context["aderdgContext"]:
                     context["codegeneratorContext"] = context["aderdgContext"]["codegeneratorContext"] #move codegencontext one up if it exists
                 model = solverModel.SolverModel(context)
-                solverContext = self.processModelOutput(model.generateCode(), solverContextsList, logger)
+                solverContext = self.processModelOutput(model.generateCode(), solverContextsList, logger, True) # silence the code gen output since it happend earlier
                 
             solverContext["plotters"] = []
             for j, plotter in enumerate(solver.get("plotters",[])):
