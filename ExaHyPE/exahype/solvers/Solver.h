@@ -1213,13 +1213,10 @@ if ( !cellDescription.getHasCompletedLastStep() ) {
      }
 
 #if defined(DistributedStealing) 
-     if((MPI_Wtime()-startTime)>10.0 && responsibleRank!=myRank)
-        logInfo("waitUntilCompletedTimeStep()","warning: rank waiting too long for missing task from rank "<<responsibleRank<< " outstanding jobs:"<<NumberOfRemoteJobs);
-     //if( !cellDescription.getHasCompletedLastStep()
-      //   && !hasProcessed
-      //   && responsibleRank==myRank) {
-      // logInfo("waitUntilCompletedTimeStep()"," missing from rank "<<responsibleRank);
-    // }
+     if((MPI_Wtime()-startTime)>10.0 && responsibleRank!=myRank) {
+       startTime = MPI_Wtime();
+       logInfo("waitUntilCompletedTimeStep()","warning: rank waiting too long for missing task from rank "<<responsibleRank<< " outstanding jobs:"<<NumberOfRemoteJobs);
+     }
 
 #if !defined(StealingUseProgressThread)
        if( !cellDescription.getHasCompletedLastStep()
