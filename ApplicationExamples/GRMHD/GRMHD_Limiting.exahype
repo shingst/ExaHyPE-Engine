@@ -49,8 +49,7 @@ exahype-project GRMHD
   
   distributed-memory
     identifier       = static_load_balancing
-    configure        = {hotspot,fair,ranks-per-node:6}
-//    configure        = {hotspot,fair,ranks-per-node:1}
+    ranks_per_node   = 6
     buffer-size      = 64000
     timeout          = 3600
   end distributed-memory
