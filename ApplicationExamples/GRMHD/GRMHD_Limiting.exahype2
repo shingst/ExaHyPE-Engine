@@ -39,8 +39,6 @@
   },
   "optimisation": {
     "fuse_algorithmic_steps": "all",
-    "fuse_algorithmic_steps_rerun_factor": 0.99,
-    "fuse_algorithmic_steps_diffusion_factor": 0.99,
     "spawn_predictor_as_background_thread": true,
     "spawn_update_as_background_thread": true,
     "spawn_amr_background_threads": true,
@@ -57,7 +55,7 @@
       "order": 3,
       "maximum_mesh_size": 1.21,
       "maximum_mesh_depth": 0,
-      "time_stepping": "globalfixed",
+      "time_stepping": "global",
       "aderdg_kernel": {
         "language": "C",
         "nonlinear": true,
@@ -84,7 +82,6 @@
           "flux",
           "ncp"
         ],
-        "slope_limiter": "mclim",
         "scheme": "musclhancock",
         "implementation": "generic"
       },
@@ -123,30 +120,6 @@
         }
       ],
       "plotters": [
-        {
-          "type": "vtu::Cartesian::vertices::limited::ascii",
-          "name": "ConservedWriter",
-          "time": 0.0,
-          "repeat": 1.0,
-          "output": "./vtk-output/conserved",
-          "variables": 1
-        },
-        {
-          "type": "vtu::Cartesian::vertices::ascii",
-          "name": "PrimitiveWriter",
-          "time": 0.0,
-          "repeat": 1.0,
-          "output": "./vtk-output/primitive",
-          "variables": 1
-        },
-        {
-          "type": "vtk::Cartesian::cells::ascii",
-          "name": "IntegralsWriter",
-          "time": 0.0,
-          "repeat": 0.1,
-          "output": "./output/global-integrals",
-          "variables": 0
-        },
         {
           "type": "user::defined",
           "name": "TimingStatistics_DG",
