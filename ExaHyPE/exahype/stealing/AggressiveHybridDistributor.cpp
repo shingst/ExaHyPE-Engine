@@ -365,7 +365,7 @@ void exahype::stealing::AggressiveHybridDistributor::updateLoadDistribution() {
   for(int i=0; i<nnodes; i++) {
     if(_emergenciesPerRank[i]>0) {   
       _optimalTasksPerRank[i] = 0; 
-      _tasksToOffload[i] = (1-*temperature)* _tasksToOffload[i];
+      _tasksToOffload[i] = std::max( (1-*temperature)* _tasksToOffload[i], 0.0);
       _emergenciesPerRank[i] = 0;
     }
     _totalTasksOffloaded += _tasksToOffload[i];
@@ -448,13 +448,13 @@ void exahype::stealing::AggressiveHybridDistributor::updateLoadDistributionDiffu
       logInfo("updateLoadDistributionDiffusive()", "optimal tasks to offload "<<optimalTasksToOffload);
 
       _optimalTasksPerRank[currentOptimalVictim] = optimalTasksToOffload;
-      _tasksToOffload[currentOptimalVictim] = (1-_temperatureDiffusion)*_tasksToOffload[currentOptimalVictim] 
+      _tasksToOffload[currentOptimalVictim] = std::max((1-_temperatureDiffusion), 0.0)*_tasksToOffload[currentOptimalVictim] 
                                              + _temperatureDiffusion*optimalTasksToOffload;
      }
   }
   else if(_tasksToOffload[currentCriticalRank]>0) {
     _optimalTasksPerRank[currentCriticalRank] = 0;
-    _tasksToOffload[currentCriticalRank] = (1-_temperatureDiffusion)*_tasksToOffload[currentCriticalRank];
+    _tasksToOffload[currentCriticalRank] = std::max( (1-_temperatureDiffusion), 0.0)*_tasksToOffload[currentCriticalRank];
   }
 #endif
   resetRemainingTasksToOffload();
