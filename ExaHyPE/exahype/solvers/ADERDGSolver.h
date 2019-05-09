@@ -855,6 +855,7 @@ private:
                                                 //stealing semaphore!
 #endif
 
+
   /**
    * A helper job that should run on every rank in the background while stealing
    * is active. There should be exactly one single StealingManagerJob per rank.
@@ -941,6 +942,9 @@ private:
   tbb::concurrent_hash_map<int, double*> _mapTagToMetaData;
   // Used in order to time offloaded tasks.
   tbb::concurrent_hash_map<int, double> _mapTagToOffloadTime;
+  
+  std::vector<int> _lastReceiveTag;
+  std::vector<int> _lastReceiveBackTag;
 
   /**
    * A StealablePredictionJob represent a PredictionJob that can be
