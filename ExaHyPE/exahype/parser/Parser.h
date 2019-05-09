@@ -632,6 +632,11 @@ class exahype::parser::Parser {
   bool compareBackgroundJobProcessing(const std::string& strategy) const;
 
   /**
+   * @return If the given @p strategy matches the one specified in the specification file.
+   */
+  bool compareJobSystemWaitBehaviour(const std::string& strategy) const;
+
+  /**
    * @return Minimum number of background jobs a consumer grabs from the queue in a single rush (default: 1).
    */
   int getMinBackgroundJobsInARush();

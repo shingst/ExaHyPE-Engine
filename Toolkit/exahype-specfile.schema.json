@@ -67,7 +67,7 @@
       "type" : "object", 
       "scope" : "compile-time",
       "used-by" : "toolkit",
-      "required" : [ "output_directory", "peano_kernel_path", "exahype_path" ],
+      "required" : [ "output_directory" ],
       "additionalProperties" : false,
       "properties" : {
         "output_directory" : {
@@ -302,8 +302,14 @@
         "background_job_processing" : {
           "type" : "string", 
           "title" : "How to process priority background jobs",
-          "enum" : [ "job_system", "job_system_without_priorities","spawn_tasks" ],
+          "enum" : [ "job_system", "job_system_without_priorities", "spawn_tasks" ],
           "default" : "job_system"
+        },
+        "job_system_wait_behaviour" : {
+          "type" : "string", 
+          "title" : "What to do when a job of a given priority has not completed yet.",
+          "enum" : [ "process_any_jobs", "process_jobs_with_same_priority", "only_poll_mpi" ],
+          "default" : "process_any_jobs"
         },
         "background_job_consumers" : {
           "type" : "integer", 
@@ -356,7 +362,8 @@
           "type": "integer",
           "title" : "Specify the stack size of each thread (in bytes) [default: 0]. If you specify 0, the default is chosen. (Changing the stack size with ulimit does not apply to TBB worker threads. This makes this parameter necessary.)",
           "minimum" : 0,
-          "exclusiveMinimum" : false
+          "exclusiveMinimum" : false,
+          "default": 12582912
         }
       }
     }, 
@@ -397,7 +404,7 @@
           "type" : "string", 
           "title" : "Determines ranks with too much load",
           "enum" : ["hotspot","greedy_naive","greedy_regular"],
-          "default" : "fair",
+          "default" : "hotspot",
           "old_format" : [
             { "token_after" : "configure" },
             { "filter_token" : ["hotspot", "greedy-naive", "greedy-regular"] }
@@ -533,23 +540,23 @@
         "spawn_predictor_as_background_thread" : {
           "type" : "boolean", 
           "title" : "Whether to spawn the predictor or the first and intermediate fused time steps as background jobs.",
-          "default" : false,
+          "default" : true,
           "old_format" : { "token_after" : "spawn-predictor-as-background-thread" }
         },
         "spawn_update_as_background_thread" : {
           "type" : "boolean", 
-          "title" : "Wether to spawn the update or the last fused time step in a batch as a background job",
-          "default" : false
+          "title" : "Whether to spawn the update or the last fused time step in a batch as a background job",
+          "default" : true
         },
         "spawn_prolongation_as_background_thread" : {
           "type" : "boolean", 
-          "title" : "Wether to spawn the face data prolongation as a background thread, or so.",
+          "title" : "Whether to spawn the face data prolongation as a background thread, or so.",
           "default" : false
         },
         "spawn_amr_background_threads" : {
           "type" : "boolean", 
-          "title" : "Wether to spawn the predictor as a background thread, or so.",
-          "default" : false,
+          "title" : "Whether to spawn the predictor as a background thread, or so.",
+          "default" : true,
           "old_format" : { "token_after" : "spawn-amr-background-threads" }
         }, 
         "spawn_neighbour_merge_as_thread" : {
@@ -684,7 +691,7 @@
               },
               "adjust_solution" : {
                 "type" : "string",
-                "title" : "Wether to adjust solutions per patch (DG cell / FV patch) or per point (DG node, FV subcell) )",
+                "title" : "Whether to adjust solutions per patch (DG cell / FV patch) or per point (DG node, FV subcell) )",
                 "enum" : ["patchwise", "pointwise"],
                 "default" : "pointwise"
               },
@@ -692,7 +699,12 @@
                 "type" : "string",
                 "title" : "Where to allocate storage in the solver kernel interface. Heap known to be safer for large PDEs",
                 "enum" : ["stack","heap"],
-                "default" : "heap"
+                "default" : "stack"
+              },
+              "transform_riemann_data" : {
+                "type" : "boolean",
+                "title" : "Pre- and post-process Riemann inputs and solution.",
+                "default" : false
               },
               "space_time_predictor" : {
                 "type" : "object",
@@ -750,7 +762,7 @@
               },
               "language" : {
                 "type" : "string", 
-                "title" : "The walking dead",
+                "title" : "Language the kernels are implemented in.",
                 "enum" : ["C","Fortran"],
                 "default" : "C"
               }, 
@@ -781,7 +793,7 @@
               },
               "adjust_solution" : {
                 "type" : "string",
-                "title" : "Wether to adjust solutions per patch (FV patch) or per point (FV subcell) )",
+                "title" : "Whether to adjust solutions per patch (FV patch) or per point (FV subcell) )",
                 "enum" : ["patchwise", "pointwise"],
                 "default" : "pointwise"
               },
@@ -802,7 +814,7 @@
               },
               "language" : {
                 "type" : "string", 
-                "title" : "The walking dead",
+                "title" : "Language the kernels are implemented in.",
                 "enum" : ["C","Fortran"],
                 "default" : "C"
               }, 
@@ -872,7 +884,9 @@
             "type" : "number", 
             "title" : "Minimum size of finest cell in the overall grid",
             "scope" : "run-time",
-            "old_format" : { "token_after" : "maximum-mesh-size" }
+            "old_format" : { "token_after" : "maximum-mesh-size" },
+            "minimum" : 0.0,
+            "exclusiveMinimum" : true
           },
           "maximum_mesh_depth" : {
             "type" : "integer", 
@@ -892,6 +906,12 @@
             "title" : "Number of subcells per coordinate direction (no ghost)",
             "$comment" : "With pure DG, this value is ignored. With Limiter, this value is determined by the order",
             "scope" : "compile-time"
+          },
+          "cfl" : {
+            "type" : "number",
+            "title" : "Override the CFL number used. By default 0.9",
+            "scope" : "compile-time",
+            "default" : 0.9
           },
           "halo_cells" : {
             "type" : "integer", 

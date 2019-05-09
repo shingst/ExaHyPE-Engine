@@ -205,18 +205,6 @@ class exahype::runners::Runner {
   void initHPCEnvironment();
 
   /**
-   * Initialise the heaps for storing and exchanging
-   * degrees of freedom, solver metadata, and solver
-   * patches.
-   */
-  void initHeaps();
-
-  /**
-   * Shutdown all heaps.
-   */
-  void shutdownHeaps();
-
-  /**
    * Print minimum of current solver time stamps and time step sizes.
    *
    * The solver time stamp and step sizes are computed as
@@ -453,6 +441,18 @@ class exahype::runners::Runner {
  public:
   explicit Runner(exahype::parser::Parser& parser, std::vector<std::string>& cmdlineargs);
   virtual ~Runner();
+
+  /**
+   * Initialise the heaps for storing and exchanging
+   * degrees of freedom, solver metadata, and solver
+   * patches.
+   */
+  static void initHeaps();
+
+  /**
+   * Shutdown all heaps.
+   */
+  static void shutdownHeaps();
 
   // Disallow copy and assignment
   Runner(const Runner& other) = delete;

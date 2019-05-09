@@ -26,24 +26,26 @@ exahype-project GRMHDb
   
   computational-domain
      dimension const                = 3
-     width                          = 49.0 , 49.0, 49.0	 
-     offset                         = -24.5, -24.5, -24.5 
+     width                          = 30.0 , 30.0, 30.0	 
+     offset                         = -15.0, -15.0, -15.0 
      end-time                       = 1000.0000001 
      //time-steps                     = 100		
   end computational-domain
   
   shared-memory
     identifier               = dummy
-    configure                = {background-tasks:36,manual-pinning}
-    cores                    = 72
+    configure                = {background-tasks:7}
+    cores                    = 14
     properties-file          = sharedmemory.properties
+    // ** NEW **: 16 MB of stack memory; high order limiter needs it    
+    thread_stack_size        = 16777216
   end shared-memory  
   
   distributed-memory
     identifier       = static_load_balancing
     configure        = {hotspot,fair,ranks-per-node:1}
     buffer-size      = 6400
-    timeout          = 6000
+    timeout          = 480
   end distributed-memory
 
   global-optimisation
@@ -51,16 +53,16 @@ exahype-project GRMHDb
     fuse-algorithmic-steps-rerun-factor   = 0.99
     fuse-algorithmic-steps-diffusion-factor   = 0.99
     spawn-predictor-as-background-thread = on
+    // ** NEW ** This improves the speed tasks are spawned, helps with many threads    
+    spawn-update-as-background-thread         = on
     // spawn-predictor-as-background-thread = off
     spawn-amr-background-threads         = on
     /* 0.0 und 0.8 sind schon mal zwei Faktoren */
     disable-vertex-exchange-in-time-steps = on
     time-step-batch-factor           = 0.0
-    disable-metadata-exchange-in-batched-time-steps = off
+    disable-metadata-exchange-in-batched-time-steps = on
     double-compression = 0.0
     spawn-double-compression-as-background-thread = off
-    limiting                 = dynamic
-    mesh_refinement         = static
   end global-optimisation
 
   solver Limiting-ADER-DG GRMHDbSolver
@@ -70,13 +72,13 @@ exahype-project GRMHDb
     //maximum-mesh-size              = 1.0
     //maximum-mesh-size              = 0.88888888888888888888888888888889
     //maximum-mesh-size              = 0.2962962962962962962962962962963
-    maximum-mesh-size              = 7.00000000000001
-    maximum-mesh-depth             = 2
+    maximum-mesh-size              = 1.2
+    maximum-mesh-depth             = 0
     time-stepping                  = global
     type const = nonlinear
     terms const = flux,ncp
     //optimisation const = generic
-    optimisation const = optimised
+    optimisation const = optimised, usestack
     language const                 = C
     limiter-type const         = robustmusclhancock
     limiter-optimisation const = generic

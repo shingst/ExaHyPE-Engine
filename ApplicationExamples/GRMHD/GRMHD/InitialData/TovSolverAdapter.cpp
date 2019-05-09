@@ -64,7 +64,6 @@ void TovSolverAdapter::Interpolate(const double* const x, double t, double* cons
 //    std::cout << i << " = " << V[i] << std::endl;
 //  }
 	
-	pdeprim2cons_(Q, V);
+	pdeprim2cons_(Q, V); 
 
-//  delete[] V;
 }

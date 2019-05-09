@@ -71,7 +71,7 @@ class exahype::repositories::RepositorySTDStack: public exahype::repositories::R
     peano::grid::Grid<exahype::Vertex,exahype::Cell,exahype::State,VertexStack,CellStack,exahype::adapters::Correction> _gridWithCorrection;
 
      
-   exahype::records::RepositoryState               _repositoryState;
+   exahype::records::RepositoryState _repositoryState;
    
     tarch::timing::Measurement _measureMeshRefinementCPUTime;
     tarch::timing::Measurement _measureMeshRefinementAndPlotTreeCPUTime;

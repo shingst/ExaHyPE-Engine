@@ -40,7 +40,7 @@ exahype-project GPR
   
   distributed-memory
     identifier               = static_load_balancing
-    configure                = {hotspot,fair,ranks-per-node:1}
+    ranks_per_node           = 1
     buffer-size              = 6400
     timeout                  = 6000
   end distributed-memory

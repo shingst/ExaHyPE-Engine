@@ -7,7 +7,7 @@
   },
   "computational_domain": {
     "dimension": 3,
-    "end_time": 600,
+    "end_time": 401,
     "offset": [
       0.0,
       0.0,
@@ -17,24 +17,34 @@
       1000.0,
       1000.0,
       1000.0
-    ]
+    ],
+    "outside_cells": 11
   },
   "architecture": "hsw",
   "shared_memory": {
-    "cores": 6,
-    "background_job_consumers": 3,  
+    "cores": 7,
+    "background_job_consumers": -1,
     "properties_file": "sharedmemory.properties",
     "autotuning_strategy": "dummy"
   },
+ "distributed_memory": {
+      "ranks_per_node": 4,
+      "load_balancing_strategy": "hotspot",
+      "load_balancing_type": "static",
+      "node_pool_strategy": "fair",
+      "timeout": 6000,
+      "buffer_size": 1600
+  },
   "optimisation": {
     "fuse_algorithmic_steps": "all",
+    "fuse_algorithmic_steps_diffusion_factor": 0.99,
     "fuse_algorithmic_steps_rerun_factor": 0.99,
     "spawn_predictor_as_background_thread": true,
     "spawn_amr_background_threads": true,
     "spawn_update_as_background_thread": true,
-    "disable_vertex_exchange_in_time_steps": true,
-    "time_step_batch_factor": 0.0,
+    "time_step_batch_factor": 1.0,
     "disable_metadata_exchange_in_batched_time_steps": true,
+    "disable_vertex_exchange_in_time_steps": true,
     "double_compression": 0.0,
     "spawn_double_compression_as_background_thread": false
   },
@@ -42,10 +52,10 @@
     {
       "type": "ADER-DG",
       "name": "NavierStokesSolver_ADERDG",
-      "order": 4,
-      "maximum_mesh_size": 400,
+      "order": 3,
+      "maximum_mesh_size": 142,
       "maximum_mesh_depth": 0,
-      "time_stepping": "global",
+      "time_stepping": "globalfixed",
       "halo_cells": 0,
       "aderdg_kernel": {
         "language": "C",
@@ -80,53 +90,39 @@
           "name": "height",
           "multiplicity": 1
         },
-	{
+         {
           "name": "backgroundstate",
           "multiplicity": 2
         }
-      ],      
-      "global_observables": [
-        {
-          "name": "gobs",
-	  "multiplicity": 3
-        }
       ],
       "parameters": {
-	"use-gravity": true,
-	"use-background-state": true,
+        "use-gravity": true,
+        "use-background-state": true,
         "viscosity": 0.1,
         "scenario": "cosine-bubble",
-	"use-amr": true,
-	"use-tv-amr": true,
-	"use-tv-volume-correction": false,
-	"amr-indicator": "potential-temperature",
-	"amr-factor-refine": 2.5,
-	"amr-factor-erase": -1.5
+        "use-amr": false,
+        "use-tv-amr": true,
+        "use-tv-volume-correction": false,
+        "amr-indicator": "potential-temperature",
+        "amr-factor-refine": 2.5,
+        "amr-factor-erase": -1.5
       },
       "plotters": [
         {
           "type": "vtu::Cartesian::vertices::ascii",
           "name": "Plotter",
-          "time": 0.00001,
+          "time": 0.0,
           "repeat": 30,
-          "output": "./results/solution_cartesian",
+          "output": "/gpfs/work/pr83no/ga24dib2/exahype_bench/results/3D/solution_cartesian",
           "variables": 6
         },
         {
           "type": "vtu::Legendre::vertices::ascii",
           "name": "Plotter",
-          "time": 0.00001,
+          "time": 0.0,
           "repeat": 30,
-          "output": "./results/solution",
+          "output": "/gpfs/work/pr83no/ga24dib2/exahype_bench/results/3D/solution",
           "variables": 6
-        },
-	{
-	  "type": "user::defined ErrorWriter",
-          "name": "ErrorWriter",
-          "time": 500000,
-          "repeat": 1.0,
-          "output": "./results/solution",
-          "variables": 0
         }
       ]
     }

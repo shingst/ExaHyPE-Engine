@@ -11,7 +11,7 @@ class SolverController:
         self.baseContext = baseContext
 
 
-    def processModelOutput(self, output, contextsList, logger):
+    def processModelOutput(self, output, contextsList, logger, silentCodeGen = False):
         """Standard model output is (paths, context)
         
         Log the path of the generated file (== not None) using the logger and
@@ -22,7 +22,7 @@ class SolverController:
         paths, context = output
         for path in filter(None, paths):
             logger.info("Generated '"+path+"'")
-        if "codegeneratorContext" in context:
+        if "codegeneratorContext" in context and not silentCodeGen:
             logger.info("Codegenerator used, command line to get the same result: "+context["codegeneratorContext"]["commandLine"])
         contextsList.append(context)
         
@@ -64,7 +64,7 @@ class SolverController:
                 if "codegeneratorContext" in context["aderdgContext"]:
                     context["codegeneratorContext"] = context["aderdgContext"]["codegeneratorContext"] #move codegencontext one up if it exists
                 model = solverModel.SolverModel(context)
-                solverContext = self.processModelOutput(model.generateCode(), solverContextsList, logger)
+                solverContext = self.processModelOutput(model.generateCode(), solverContextsList, logger, True) # silence the code gen output since it happend earlier
                 
             solverContext["plotters"] = []
             for j, plotter in enumerate(solver.get("plotters",[])):
@@ -90,11 +90,12 @@ class SolverController:
         nPointSources = solver["point_sources"] if type(solver.get("point_sources",[])) is int else len(solver.get("point_sources",[]))
         
         context["numberOfVariables"]          = nVar
-        context["numberOfParameters"]          = nParam
+        context["numberOfParameters"]         = nParam
         context["numberOfMaterialParameters"] = nParam
         context["numberOfGlobalObservables"]  = nGlobalObs
         context["numberOfPointSources"]       = nPointSources
-        
+        context["CFL"]                        = solver["cfl"] # default value is 0.9
+
         # variables access class
         context["variablesMap"]  = ToolkitHelper.parse_variables(solver,"variables")
         if nParam>0:
@@ -108,7 +109,9 @@ class SolverController:
         context["variablesMapSize"] = len(context["variablesMap"])
         context["variables_as_str"] = ToolkitHelper.variables_to_str(solver,"variables")
         context["material_parameters_as_str"]  = ToolkitHelper.variables_to_str(solver,"material_parameters")
-        context["global_observables_as_str"]   = ToolkitHelper.variables_to_str(solver,"global_observables")
+        
+        context["globalObservablesMap"]      = ToolkitHelper.parse_variables(solver,"global_observables")
+        context["global_observables_as_str"] = ToolkitHelper.variables_to_str(solver,"global_observables")
         
         context["range_0_nVar"]          = range(0,nVar)
         context["range_0_nVarParam"]     = range(0,nVar+nParam)
@@ -135,14 +138,14 @@ class SolverController:
 
     def buildLimitingADERDGSolverContext(self, solver):
         context = self.buildBaseSolverContext(solver)
-        context["type"] = "Limiting-ADER-DG"
+        context["type"]                   = "Limiting-ADER-DG"
         context["order"]                  = solver["order"]
         context["numberOfDMPObservables"] = solver["limiter"]["dmp_observables"]
         context["implementation"]         = solver["limiter"].get("implementation","generic")
-        context["ADERDGSolver"]         = solver["name"]+"_ADERDG"
-        context["FVSolver"]             = solver["name"]+"_FV"
-        context["ADERDGAbstractSolver"] = "Abstract"+solver["name"]+"_ADERDG"
-        context["FVAbstractSolver"]     = "Abstract"+solver["name"]+"_FV"
+        context["ADERDGSolver"]           = solver["name"]+"_ADERDG"
+        context["FVSolver"]               = solver["name"]+"_FV"
+        context["ADERDGAbstractSolver"]   = "Abstract"+solver["name"]+"_ADERDG"
+        context["FVAbstractSolver"]       = "Abstract"+solver["name"]+"_FV"
         
         return context
 
@@ -162,6 +165,7 @@ class SolverController:
         context["useMaxPicardIterations"]  = kernel.get("space_time_predictor",{}).get("fix_picard_iterations",False)!=False
         context["tempVarsOnStack"]         = kernel.get("allocate_temporary_arrays","heap")=="stack" 
         context["patchwiseAdjust"]         = kernel.get("adjust_solution","pointwise")=="patchwise" 
+        context["transformRiemannData"]    = kernel.get("transform_riemann_data",False)==True
         context["language"]                = kernel.get("language","C").lower()
         context["basis"]                   = kernel.get("basis","Legendre").lower()
         context["isLinear"]                = not kernel.get("nonlinear",True)

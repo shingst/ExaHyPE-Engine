@@ -1,0 +1,297 @@
+{
+    "project_name": "SWE",
+        "paths": {
+            "peano_kernel_path": "./Peano",
+            "exahype_path": "./ExaHyPE",
+            "output_directory": "./ApplicationExamples/SWE/SWE_MC_ADERDG",
+            "log_file": "mylogfile.log"
+        },
+        "architecture": "skx",
+        "computational_domain": {
+            "dimension": 2,
+            "end_time": 0.1,
+            "offset": [
+                0.0,
+                0.0
+            ],
+            "width": [
+		    1.0,
+	    	    1.0
+            ]
+        },
+        "shared_memory": {
+            "cores": 2,
+            "properties_file": "sharedmemory.properties",
+            "autotuning_strategy": "dummy",
+            "background_job_consumers": 2
+        },
+	"distributed_memory": {
+		"timeout": 3600,
+		"load_balancing_type": "static",
+		"buffer_size": 640000,
+		"load_balancing_strategy": "hotspot",
+		"node_pool_strategy": "fair",
+		"ranks_per_node": 4
+	},
+        "solvers": [
+        {
+            "type": "Limiting-ADER-DG",
+            "name": "MySWESolver",
+            "order": 1,
+            "maximum_mesh_size": 0.2,
+            "maximum_mesh_depth": 0,
+            "time_stepping": "global",
+            "aderdg_kernel": {
+                "language": "C",
+                "nonlinear": true,
+                "terms": [
+                    "flux",
+                    "ncp"
+                ],
+                "space_time_predictor": {},
+                "optimised_terms": [],
+                "optimised_kernel_debugging": [],
+                "implementation": "optimised",
+                "adjust_solution": "patchwise",
+                "allocate_temporary_arrays": "stack"
+            },
+            "point_sources": 0,
+            "limiter": {
+                "dmp_observables": 0,
+                "dmp_relaxation_parameter": 100000000.0,
+                "dmp_difference_scaling": 100000000.0,
+                "implementation": "generic"
+            },
+            "fv_kernel": {
+                "language": "C",
+                "terms": [
+                    "flux",
+                    "ncp"
+                ],
+                "scheme": "godunov",
+                "implementation": "generic",
+                "allocate_temporary_arrays": "stack"
+            },
+            "variables": [
+            {
+                "name": "h",
+                "multiplicity": 1
+            },
+            {
+                "name": "hu",
+                "multiplicity": 1
+            },
+            {
+                "name": "hv",
+                "multiplicity": 1
+            },
+            {
+                "name": "b",
+                "multiplicity": 1
+            }
+            ],
+            "plotters": [
+            {
+                "type": "probe::ascii",
+                "name": "ProbeWriter1",
+                "time": 0.0,
+                "repeat": 0.001,
+                "output": "./Output/waveheight1",
+                "variables": 2,
+                "select": {
+                    "x": 0.2,
+                    "y": 0.2
+                }
+            },
+            {
+                "type": "probe::ascii",
+                "name": "ProbeWriter2",
+                "time": 0.0,
+                "repeat": 0.001,
+                "output": "./Output/waveheight2",
+                "variables": 2,
+                "select": {
+                    "x": 0.4,
+                    "y": 0.2
+                }
+            },
+            {
+                "type": "probe::ascii",
+                "name": "ProbeWriter3",
+                "time": 0.0,
+                "repeat": 0.001,
+                "output": "./Output/waveheight3",
+                "variables": 2,
+                "select": {
+                    "x": 0.6,
+                    "y": 0.2
+                }
+            },
+            {
+                "type": "probe::ascii",
+                "name": "ProbeWriter4",
+                "time": 0.0,
+                "repeat": 0.001,
+                "output": "./Output/waveheight4",
+                "variables": 2,
+                "select": {
+                    "x": 0.8,
+                    "y": 0.2
+                }
+            },
+            {
+                "type": "probe::ascii",
+                "name": "ProbeWriter5",
+                "time": 0.0,
+                "repeat": 0.001,
+                "output": "./Output/waveheight5",
+                "variables": 2,
+                "select": {
+                    "x": 0.2,
+                    "y": 0.4
+                }
+            },
+{
+                "type": "probe::ascii",
+                "name": "ProbeWriter6",
+                "time": 0.0,
+                "repeat": 0.001,
+                "output": "./Output/waveheight6",
+                "variables": 2,
+                "select": {
+                    "x": 0.4,
+                    "y": 0.4
+                }
+            },
+            {
+                "type": "probe::ascii",
+                "name": "ProbeWriter7",
+                "time": 0.0,
+                "repeat": 0.001,
+                "output": "./Output/waveheight7",
+                "variables": 2,
+                "select": {
+                    "x": 0.6,
+                    "y": 0.4
+                }
+            },
+            {
+                "type": "probe::ascii",
+                "name": "ProbeWriter8",
+                "time": 0.0,
+                "repeat": 0.001,
+                "output": "./Output/waveheight8",
+                "variables": 2,
+                "select": {
+                    "x": 0.8,
+                    "y": 0.4
+                }
+            },
+            {
+                "type": "probe::ascii",
+                "name": "ProbeWriter9",
+                "time": 0.0,
+                "repeat": 0.001,
+                "output": "./Output/waveheight9",
+                "variables": 2,
+                "select": {
+                    "x": 0.2,
+                    "y": 0.6
+                }
+            },
+            {
+                "type": "probe::ascii",
+                "name": "ProbeWriter16",
+                "time": 0.0,
+                "repeat": 0.001,
+                "output": "./Output/waveheight10",
+                "variables": 2,
+                "select": {
+                    "x": 0.4,
+                    "y": 0.6
+                }
+            },
+            {
+                "type": "probe::ascii",
+                "name": "ProbeWriter10",
+                "time": 0.0,
+                "repeat": 0.001,
+                "output": "./Output/waveheight11",
+                "variables": 2,
+                "select": {
+                    "x": 0.6,
+                    "y": 0.6
+                }
+            },
+            {
+                "type": "probe::ascii",
+                "name": "ProbeWriter11",
+                "time": 0.0,
+                "repeat": 0.001,
+                "output": "./Output/waveheight12",
+                "variables": 2,
+                "select": {
+                    "x": 0.8,
+                    "y": 0.6
+                }
+            },
+            {
+                "type": "probe::ascii",
+                "name": "ProbeWriter12",
+                "time": 0.0,
+                "repeat": 0.001,
+                "output": "./Output/waveheight13",
+                "variables": 2,
+                "select": {
+                    "x": 0.2,
+                    "y": 0.8
+                }
+            },
+            {
+                "type": "probe::ascii",
+                "name": "ProbeWriter13",
+                "time": 0.0,
+                "repeat": 0.001,
+                "output": "./Output/waveheight14",
+                "variables": 2,
+                "select": {
+                    "x": 0.4,
+                    "y": 0.8
+                }
+            },
+            {
+                "type": "probe::ascii",
+                "name": "ProbeWriter14",
+                "time": 0.0,
+                "repeat": 0.001,
+                "output": "./Output/waveheight15",
+                "variables": 2,
+                "select": {
+                    "x": 0.6,
+                    "y": 0.8
+                }
+            },
+            {
+                "type": "probe::ascii",
+                "name": "ProbeWriter15",
+                "time": 0.0,
+                "repeat": 0.001,
+                "output": "./Output/waveheight16",
+                "variables": 2,
+                "select": {
+                    "x": 0.8,
+                    "y": 0.8
+                }
+            },
+            {
+                "type": "vtk::Cartesian::cells::ascii",
+                "name": "ConservedWriter",
+                "time": 0.0,
+                "repeat": 0.01,
+                "output": "./vtk-output/conserved",
+                "variables": 5
+            }
+            ]
+        }
+    ]
+}

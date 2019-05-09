@@ -159,18 +159,22 @@ void GRMHDb::GRMHDbSolver_FV::eigenvalues(const double* const Q, const int dInde
   lambda[16] = 1.0;
   lambda[17] = 1.0;
   lambda[18] = 1.0;
-  double nv[3] = {0.};
+  //return;
+
+
+  double nv[DIMENSIONS] = {0.};
   nv[dIndex] = 1;
   pdeeigenvalues_(lambda, Q, nv);
 }
 
+
 void GRMHDb::GRMHDbSolver_FV::boundaryValues(
-    const double* const x,
-    const double t,const double dt,
-    const int faceIndex,
-    const int d,
-    const double* const stateInside,
-    double* const stateOutside) {
+	const double* const x, 
+	const double t, const double dt, 
+	const int faceIndex, 
+	const int d,
+	const double* const stateInside,
+	double* const stateOutside) {
   // Tip: You find documentation for this method in header file "GRMHDb::GRMHDbSolver_FV.h".
   // Tip: See header file "GRMHDb::AbstractGRMHDbSolver_FV.h" for toolkit generated compile-time 
   //      constants such as PatchSize, NumberOfVariables, and NumberOfParameters.
@@ -181,7 +185,7 @@ void GRMHDb::GRMHDbSolver_FV::boundaryValues(
 	constexpr int numberOfVariables = AbstractGRMHDbSolver_FV::NumberOfVariables;
 	constexpr int numberOfParameters = AbstractGRMHDbSolver_FV::NumberOfParameters;
 	constexpr int numberOfData = numberOfVariables + numberOfParameters;
-	double Qgp[numberOfData];
+	double Qtmp[numberOfData];
   stateOutside[0] = stateInside[0];
   stateOutside[1] = stateInside[1];
   stateOutside[2] = stateInside[2];
@@ -202,11 +206,38 @@ void GRMHDb::GRMHDbSolver_FV::boundaryValues(
   stateOutside[17] = stateInside[17];
   stateOutside[18] = stateInside[18];
 
+
+// THIS IS FOR ANALYTICAL BOUNDARY CONDITIONS:
   double ti = t + 0.5 * dt;
   initialdata_(x, &ti, &Qgp[0]);
   for(int m=0; m < numberOfData; m++) {
         stateOutside[m] = Qgp[m];
   }
+/*
+  // THIS IS FOR 1D Riemann problems. (inviscid reflection at the y boundaries)
+  if (d==0) {
+	  double ti = t + 0.5 * dt; 
+	  initialdata_(x, &ti, &Qtmp[0]);
+	  for (int m = 0; m < numberOfData; m++) {
+		  stateOutside[m] = Qtmp[m];
+	  }
+  }
+  else {
+	  int iErr;
+	  double VtmpIn[numberOfData];
+	  double VtmpOut[numberOfData];
+	  for (int i = 0; i < numberOfData; i++) {
+		  Qtmp[i] = stateInside[i];
+	  }
+	  pdecons2prim_(&VtmpIn[0], &Qtmp[0], &iErr);
+	  for (int i = 0; i < numberOfData; i++) {
+		  VtmpOut[i] = VtmpIn[i];
+	  }
+	  VtmpOut[1 + d] = -VtmpIn[1 + d];
+	  pdeprim2cons_(&stateOutside[0], &VtmpOut[0]);
+	  //stateOutside[1 + d] = -stateInside[1 + d];
+  }
+*/
 
 
   /*stateOutside[0] = exp(-(x[0] * x[0] + x[1] * x[1] + x[2] * x[2]) / 8.0);
@@ -277,6 +308,7 @@ void GRMHDb::GRMHDbSolver_FV::flux(const double* const Q,double** const F) {
   F[1][17] = 0.0;
   F[1][18] = 0.0;
   
+#ifdef Dim3
   F[2][0] = 0.0;
   F[2][1] = 0.0;
   F[2][2] = 0.0;
@@ -295,7 +327,9 @@ void GRMHDb::GRMHDbSolver_FV::flux(const double* const Q,double** const F) {
   F[2][15] = 0.0;
   F[2][16] = 0.0;
   F[2][17] = 0.0;
-  F[2][18] = 0.0;
+  F[2][18] = 0.0; 
+#endif
+   
   
   
     if(DIMENSIONS == 2){
@@ -362,17 +396,48 @@ void GRMHDb::GRMHDbSolver_FV::referenceSolution(const double* const x, double t,
 
 
 #include "kernels/finitevolumes/riemannsolvers/c/riemannsolvers.h"
-
-double GRMHDb::GRMHDbSolver_FV::riemannSolver(double* const fL, double* const fR, const double* const qL, const double* const qR, int direction) {
+double GRMHDb::GRMHDbSolver_FV::riemannSolver(double* fL, double *fR, const double* qL, const double* qR, const double* gradQL, const double* gradQR, const double* cellSize, int direction) {
+//double GRMHDb::GRMHDbSolver_FV::riemannSolver(double* const fL, double* const fR, const double* const qL, const double* const qR, const double* gradQL, const double* gradQR, int direction) {
 	//// Default FV Riemann Solver
-	//return kernels::finitevolumes::riemannsolvers::c::rusanov<true, true, false, GRMHDbSolver_FV>(*static_cast<GRMHDbSolver_FV*>(this), fL, fR, qL, qR, direction);
+    //return kernels::finitevolumes::riemannsolvers::c::rusanov<true, true, false, GRMHDbSolver_FV>(*static_cast<GRMHDbSolver_FV*>(this), fL,fR,qL,qR,gradQL, gradQR, cellSize, direction);
 	constexpr int numberOfVariables = AbstractGRMHDbSolver_FV::NumberOfVariables;
-	double lambda = kernels::finitevolumes::riemannsolvers::c::rusanov<true, true, false, GRMHDbSolver_FV>(*static_cast<GRMHDbSolver_FV*>(this), fL, fR, qL, qR, direction);
 
+	/* HLLEM */
+	
+	//const int numberOfVariables = GRMHDb::AbstractGRMHDbSolver_FV::NumberOfVariables;
+	const int numberOfParameters = GRMHDb::AbstractGRMHDbSolver_FV::NumberOfParameters;
+	const int numberOfData = numberOfVariables + numberOfParameters;
+	const int order = 0;  // for finite volume we use one single d.o.f., i.e. the cell average.
+	const int basisSize = order + 1;
+	// Compute the average variables and parameters from the left and the right
+	double QavL[numberOfData] = { 0.0 }; // ~(numberOfVariables+numberOfParameters)
+	double QavR[numberOfData] = { 0.0 }; // ~(numberOfVariables+numberOfParameters)
+
+										 // std::cout << "opened ---------------------"<< std::endl;
+
+	kernels::idx2 idx_QLR(basisSize, numberOfData);
+	for (int j = 0; j < basisSize; j++) {
+		const double weight = kernels::gaussLegendreWeights[order][j];
+
+		for (int k = 0; k < numberOfData; k++) {
+			QavL[k] += weight * qL[idx_QLR(j, k)];
+			QavR[k] += weight * qR[idx_QLR(j, k)];
+		}
+	}
+	 
+	double lambda = 2.0;
+	hllemfluxfv_(fL, fR, qL, qR, QavL, QavR, &direction);
+
+	/* OSHER */
+	//double lambda = kernels::finitevolumes::riemannsolvers::c::generalisedOsherSolomon<false, true, false, 3, EulerSolver_FV>(*static_cast<EulerSolver_FV*>(this), fL, fR, qL, qR, direction);
+	/* RUSANOV */
+	//double lambda = kernels::finitevolumes::riemannsolvers::c::rusanov<true, true, false, GRMHDbSolver_FV>(*static_cast<GRMHDbSolver_FV*>(this), fL, fR, qL, qR, gradQL, gradQR, cellSize, direction);
 	// avoid spurious numerical diffusion (ony for Cowling approximation)
 	for (int m = 9; m < numberOfVariables; m++) {
 		fL[m] = 0.0;
 		fR[m] = 0.0;
 	}
-	return lambda;
+	return lambda; 
 }
+
+

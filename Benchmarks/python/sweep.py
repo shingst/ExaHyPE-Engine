@@ -884,7 +884,7 @@ available subprograms:
 * cleanResults          - remove the results subfolder
 * cleanHistory          - clean the submission history
 * iniTemplate          - print out template for ini file
-* jobTemplate <machine> - print out job template file for supercomputer. Supported: "supermuc","hamilton"
+* jobTemplate <machine> - print out job template file for supercomputer. Supported: "supermuc", "supermuc-skx", "hamilton"
 
 2) typical workflow:
 

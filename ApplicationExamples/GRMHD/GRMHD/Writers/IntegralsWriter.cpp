@@ -31,35 +31,55 @@ GRMHD::IntegralsWriter::IntegralsWriter() :
 	statistics("output/volform"),
 	masschange("output/massdt")
 {
-	conserved.add(0, "dens");
-	conserved.add(1, "sconx");
-	conserved.add(2, "scony");
-	conserved.add(3, "sconz");
-	conserved.add(4, "ener");
-	conserved.add(5, "bx");
-	conserved.add(6, "by");
-	conserved.add(7, "bz");
-	conserved.add(8, "psi");
+// 	conserved.add(0, "dens");
+// 	conserved.add(1, "sconx");
+// 	conserved.add(2, "scony");
+// 	conserved.add(3, "sconz");
+// 	conserved.add(4, "ener");
+// 	conserved.add(5, "bx");
+// 	conserved.add(6, "by");
+// 	conserved.add(7, "bz");
+// 	conserved.add(8, "psi");
 		
 	primitives.add(0, "rho"); // V[0]=Q[0]
 	primitives.add(1, "velx");
-	primitives.add(2, "vely");
-	primitives.add(3, "velz");
+//	primitives.add(2, "vely");
+//	primitives.add(3, "velz");
 	primitives.add(4, "press");
-	primitives.add(5, "bx");
-	primitives.add(6, "by");
-	primitives.add(7, "bz");
-	primitives.add(8, "psi");
+//	primitives.add(5, "bx");
+//	primitives.add(6, "by");
+//	primitives.add(7, "bz");
+//	primitives.add(8, "psi");
+	primitives.add(9, "alp");
+	primitives.add(10, "betax");
+//	primitives.add(11, "betay");
+//	primitives.add(12, "betaz");
+	primitives.add(13, "gxx");
+//	primitives.add(14, "gxy");
+//	primitives.add(15, "gxz");
+//	primitives.add(16, "gyy");
+//	primitives.add(17, "gyz");
+//	primitives.add(18, "gzz");
 	
-	errors.add(0, "rho");
-	errors.add(1, "velx");
-	errors.add(2, "vely");
-	errors.add(3, "velz");
-	errors.add(4, "press");
-	errors.add(5, "bx");
-	errors.add(6, "by");
-	errors.add(7, "bz");
-	errors.add(8, "psi");
+// 	errors.add(0, "rho");
+// 	errors.add(1, "velx");
+// 	errors.add(2, "vely");
+// 	errors.add(3, "velz");
+// 	errors.add(4, "press");
+// 	errors.add(5, "bx");
+// 	errors.add(6, "by");
+// 	errors.add(7, "bz");
+// 	errors.add(8, "psi");
+// 	errors.add(9, "alp");
+// 	errors.add(10, "betax");
+// 	errors.add(11, "betay");
+// 	errors.add(12, "betaz");
+// 	errors.add(13, "gxx");
+// 	errors.add(14, "gxy");
+// 	errors.add(15, "gxz");
+// 	errors.add(16, "gyy");
+// 	errors.add(17, "gyz");
+// 	errors.add(18, "gzz");
 }
 
 

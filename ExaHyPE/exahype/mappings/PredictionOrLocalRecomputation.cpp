@@ -90,10 +90,8 @@ void exahype::mappings::PredictionOrLocalRecomputation::beginIteration(
   logTraceInWith1Argument("beginIteration(State)", solverState);
 
   #ifdef Parallel
-  if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
-    // ensure reductions are inititated from worker side
-    solverState.setReduceStateAndCell(true);
-  }
+  // enforce reductions from worker side in last step; turns off reductions in other iterations
+  solverState.setReduceStateAndCell( exahype::State::isLastIterationOfBatchOrNoBatch() );
   #endif
 
   if (
@@ -155,9 +153,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::enterCell(
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
       if ( performLocalRecomputation( solver ) && exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
         auto* limitingADERDG = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
-        double admissibleTimeStepSize =
-            limitingADERDG->localRecomputation(solverNumber,cellInfo,isAtRemoteBoundary);
-        solver->updateAdmissibleTimeStepSize(admissibleTimeStepSize);
+        limitingADERDG->localRecomputation(solverNumber,cellInfo,isAtRemoteBoundary);
       }
       else if ( performPrediction(solver) && exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
         switch ( solver->getType() ) {

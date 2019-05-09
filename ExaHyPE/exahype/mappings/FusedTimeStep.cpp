@@ -177,10 +177,8 @@ void exahype::mappings::FusedTimeStep::beginIteration(
 #endif 
 #endif
 
-  if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
     // ensure reductions are inititated from worker side
-    solverState.setReduceStateAndCell(true);
-  }
+  solverState.setReduceStateAndCell( exahype::State::isLastIterationOfBatchOrNoBatch() );
 
 #endif
   logTraceOutWith1Argument("beginIteration(State)", solverState);
@@ -198,14 +196,12 @@ void exahype::mappings::FusedTimeStep::endIteration(
       exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::ReductionJob);
     }
 
-    if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
-      const bool endOfFirstFusedTimeStepInBatch =
-          ( exahype::solvers::Solver::PredictionSweeps == 1 ) ?
-              state.isFirstIterationOfBatchOrNoBatch() :
-              state.isSecondIterationOfBatchOrNoBatch();
-      for (auto* solver : solvers::RegisteredSolvers) {
-        solver->wrapUpTimeStep(endOfFirstFusedTimeStepInBatch,state.isLastIterationOfBatchOrNoBatch());
-      }
+    const bool endOfFirstFusedTimeStepInBatch =
+        ( exahype::solvers::Solver::PredictionSweeps == 1 ) ?
+            state.isFirstIterationOfBatchOrNoBatch() :
+            state.isSecondIterationOfBatchOrNoBatch();
+    for (auto* solver : solvers::RegisteredSolvers) {
+      solver->wrapUpTimeStep(endOfFirstFusedTimeStepInBatch,state.isLastIterationOfBatchOrNoBatch());
     }
   }
 
@@ -312,18 +308,17 @@ void exahype::mappings::FusedTimeStep::leaveCell(
       // this operates only on compute cells
       plotters::plotPatchIfAPlotterIsActive(solverNumber,cellInfo); // TODO(Dominic) potential for IO overlap?
 
-      solvers::Solver::UpdateResult result;
       switch ( solver->getType() ) {
         case solvers::Solver::Type::ADERDG:
-          result = static_cast<solvers::ADERDGSolver*>(solver)->fusedTimeStepOrRestrict(
+          static_cast<solvers::ADERDGSolver*>(solver)->fusedTimeStepOrRestrict(
               solverNumber,cellInfo,exahype::State::isFirstIterationOfBatchOrNoBatch(),isLastTimeStep,isAtRemoteBoundary);
           break;
         case solvers::Solver::Type::LimitingADERDG:
-          result = static_cast<solvers::LimitingADERDGSolver*>(solver)->fusedTimeStepOrRestrict(
+          static_cast<solvers::LimitingADERDGSolver*>(solver)->fusedTimeStepOrRestrict(
               solverNumber,cellInfo,exahype::State::isFirstIterationOfBatchOrNoBatch(),isLastTimeStep,isAtRemoteBoundary);
           break;
         case solvers::Solver::Type::FiniteVolumes:
-          result = static_cast<solvers::FiniteVolumesSolver*>(solver)->fusedTimeStepOrRestrict(
+          static_cast<solvers::FiniteVolumesSolver*>(solver)->fusedTimeStepOrRestrict(
               solverNumber,cellInfo,exahype::State::isFirstIterationOfBatchOrNoBatch(),isLastTimeStep,isAtRemoteBoundary);
           break;
         default:
@@ -331,15 +326,6 @@ void exahype::mappings::FusedTimeStep::leaveCell(
           logError("mergeWithBoundaryDataIfNotDoneYet(...)","Unrecognised solver type: "<<solvers::Solver::toString(solver->getType()));
           std::abort();
           break;
-      }
-
-      // mesh refinement events, cell sizes (for AMR), time
-      if ( isLastTimeStep && !exahype::solvers::Solver::SpawnUpdateAsBackgroundJob ) {
-        solver->updateMeshUpdateEvent(result._meshUpdateEvent);
-        solver->updateAdmissibleTimeStepSize(result._timeStepSize);
-      }
-      if (isLastTimeStep) {
-	solver->reduceGlobalObservables(solver->getGlobalObservables(), cellInfo, solverNumber);
       }
     }
 
@@ -400,10 +386,10 @@ void exahype::mappings::FusedTimeStep::prepareSendToMaster(
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
     const exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
-  if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
-    const int masterRank = tarch::parallel::NodePool::getInstance().getMasterRank();
-    exahype::State::reduceGlobalDataToMaster(masterRank,0.0,0);
-  }
+  assertion( exahype::State::isLastIterationOfBatchOrNoBatch() );
+  logInfo("prepareSendToMaster(...)","reduce global data to master");
+  const int masterRank = tarch::parallel::NodePool::getInstance().getMasterRank();
+  exahype::State::reduceGlobalDataToMaster(masterRank,0.0,0);
 }
 
 void exahype::mappings::FusedTimeStep::mergeWithMaster(
@@ -418,16 +404,15 @@ void exahype::mappings::FusedTimeStep::mergeWithMaster(
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
     int workerRank, const exahype::State& workerState,
     exahype::State& masterState) {
+  assertion( exahype::State::isLastIterationOfBatchOrNoBatch() );
   if (
       tarch::parallel::Node::getInstance().isGlobalMaster() &&
       tarch::parallel::Node::getInstance().getNumberOfNodes()>1
   ) {
     logInfo("mergeWithMaster(...)","end traversal on global master (before reduction).");
   }
-
-  if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
-    exahype::State::mergeWithGlobalDataFromWorker(workerRank,0.0,0);
-  }
+  logInfo("mergeWithMaster(...)","merge with global data from worker");
+  exahype::State::mergeWithGlobalDataFromWorker(workerRank,0.0,0);
 }
 
 //

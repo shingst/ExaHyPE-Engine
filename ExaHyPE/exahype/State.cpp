@@ -209,6 +209,7 @@ bool exahype::State::continueToConstructGrid() {
     if (  getMeshRefinementIsInRefiningMode() &&
         getStableIterationsInARow() > iterationsForRefiningToConverge ) {
       setMeshRefinementIsInRefiningMode(false);
+      setStableIterationsInARow(0);
     }
   } else {
     setStableIterationsInARow(0);
@@ -293,7 +294,9 @@ void exahype::State::kickOffIteration(exahype::records::RepositoryState& reposit
   NumberOfBatchIterations = repositoryState.getNumberOfIterations();
 
   // the following must come after the global batch iteration variables are set
-  kickOffIteration(repositoryState.getAction(),currentBatchIteration,repositoryState.getNumberOfIterations());
+  if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+    kickOffIteration(repositoryState.getAction(),currentBatchIteration,repositoryState.getNumberOfIterations());
+  }
 
   #ifdef Parallel
   if ( currentBatchIteration % 2 ==0 ) { // synchronises the ranks before every time step
@@ -321,6 +324,9 @@ void exahype::State::kickOffIteration(exahype::records::RepositoryState& reposit
       default:
         break;
     }
+  }
+  if ( !tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+    kickOffIteration(repositoryState.getAction(),currentBatchIteration,repositoryState.getNumberOfIterations());
   }
   #endif
 }

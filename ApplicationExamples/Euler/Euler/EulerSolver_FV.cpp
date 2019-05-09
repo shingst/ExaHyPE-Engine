@@ -481,3 +481,23 @@ void Euler::EulerSolver_FV::boundaryValues(
     break;
   }
 }
+
+/*void Euler::EulerSolver_FV::resetGlobalObservables(GlobalObservables& globalObservables) const {
+  globalObservables.dgcells() = 0;
+  globalObservables.fvcells() = 0;
+}
+
+void Euler::EulerSolver_FV::mapGlobalObservables(
+    GlobalObservables&                          globalObservables,
+    const double* const                         luh,
+    const tarch::la::Vector<DIMENSIONS,double>& cellSize) const {
+  globalObservables.dgcells() = 0;
+  globalObservables.fvcells() = 1;
+}
+
+void Euler::EulerSolver_FV::mergeGlobalObservables(
+    GlobalObservables&         globalObservables,
+    ReadOnlyGlobalObservables& otherObservables) const {
+  globalObservables.dgcells() += otherObservables.dgcells();
+  globalObservables.fvcells() += otherObservables.fvcells();
+}*/

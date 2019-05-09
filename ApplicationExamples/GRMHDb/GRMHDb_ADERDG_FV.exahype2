@@ -11,25 +11,25 @@
     "dimension": 3,
     "end_time": 1000.0000001,
     "offset": [
-      -24.5,
-      -24.5,
-      -24.5
+      -15.0,
+      -15.0,
+      -15.0
     ],
     "width": [
-      49.0,
-      49.0,
-      49.0
+      30.0,
+      30.0,
+      30.0
     ]
   },
   "shared_memory": {
-    "cores": 72,
+    "cores": 14,
     "properties_file": "sharedmemory.properties",
+    "thread_stack_size": 16777216,
     "autotuning_strategy": "dummy",
-    "background_job_consumers": 36,
-    "manual_pinning": true
+    "background_job_consumers": 7
   },
   "distributed_memory": {
-    "timeout": 6000,
+    "timeout": 480,
     "load_balancing_type": "static",
     "buffer_size": 6400,
     "load_balancing_strategy": "hotspot",
@@ -41,22 +41,21 @@
     "fuse_algorithmic_steps_rerun_factor": 0.99,
     "fuse_algorithmic_steps_diffusion_factor": 0.99,
     "spawn_predictor_as_background_thread": true,
+    "spawn_update_as_background_thread": true,
     "spawn_amr_background_threads": true,
     "disable_vertex_exchange_in_time_steps": true,
     "time_step_batch_factor": 0.0,
-    "disable_metadata_exchange_in_batched_time_steps": false,
+    "disable_metadata_exchange_in_batched_time_steps": true,
     "double_compression": 0.0,
-    "spawn_double_compression_as_background_thread": false,
-    "limiting": "dynamic",
-    "mesh_refinement": "static"
+    "spawn_double_compression_as_background_thread": false
   },
   "solvers": [
     {
       "type": "Limiting-ADER-DG",
       "name": "GRMHDbSolver",
       "order": 3,
-      "maximum_mesh_size": 7.00000000000001,
-      "maximum_mesh_depth": 2,
+      "maximum_mesh_size": 1.2,
+      "maximum_mesh_depth": 0,
       "time_stepping": "global",
       "aderdg_kernel": {
         "language": "C",
@@ -68,7 +67,8 @@
         "space_time_predictor": {},
         "optimised_terms": [],
         "optimised_kernel_debugging": [],
-        "implementation": "optimised"
+        "implementation": "optimised",
+        "allocate_temporary_arrays": "stack"
       },
       "point_sources": 0,
       "limiter": {

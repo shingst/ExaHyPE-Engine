@@ -84,8 +84,8 @@ bool exahype::mappings::RefinementStatusSpreading::spreadRefinementStatus(exahyp
 
 void exahype::mappings::RefinementStatusSpreading::beginIteration(exahype::State& solverState) {
   #ifdef Parallel
-  // hack to enforce reductions
-  solverState.setReduceStateAndCell(true);
+  // enforce reductions from worker side in last step; turns off reductions in other iterations
+  solverState.setReduceStateAndCell( exahype::State::isLastIterationOfBatchOrNoBatch() );
   #endif
 }
 
@@ -211,12 +211,11 @@ void exahype::mappings::RefinementStatusSpreading::prepareSendToMaster(
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
     const exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
-  if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
-    const int masterRank = tarch::parallel::NodePool::getInstance().getMasterRank();
-    for (auto* solver : exahype::solvers::RegisteredSolvers) {
-      if ( solver->getMeshUpdateEvent()!=exahype::solvers::Solver::MeshUpdateEvent::None ) {
-        solver->sendMeshUpdateEventToMaster(masterRank,0.0,0);
-      }
+  assertion( exahype::State::isLastIterationOfBatchOrNoBatch() );
+  const int masterRank = tarch::parallel::NodePool::getInstance().getMasterRank();
+  for (auto* solver : exahype::solvers::RegisteredSolvers) {
+    if ( solver->getMeshUpdateEvent()!=exahype::solvers::Solver::MeshUpdateEvent::None ) {
+      solver->sendMeshUpdateEventToMaster(masterRank,0.0,0);
     }
   }
 }
@@ -233,11 +232,10 @@ void exahype::mappings::RefinementStatusSpreading::mergeWithMaster(
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
     int workerRank, const exahype::State& workerState,
     exahype::State& masterState) {
-  if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
-    for (auto* solver : exahype::solvers::RegisteredSolvers) {
-      if ( solver->getMeshUpdateEvent()!=exahype::solvers::Solver::MeshUpdateEvent::None ) {
-        solver->mergeWithWorkerMeshUpdateEvent(workerRank,0.0,0);
-      }
+  assertion( exahype::State::isLastIterationOfBatchOrNoBatch() );
+  for (auto* solver : exahype::solvers::RegisteredSolvers) {
+    if ( solver->getMeshUpdateEvent()!=exahype::solvers::Solver::MeshUpdateEvent::None ) {
+      solver->mergeWithWorkerMeshUpdateEvent(workerRank,0.0,0);
     }
   }
 }

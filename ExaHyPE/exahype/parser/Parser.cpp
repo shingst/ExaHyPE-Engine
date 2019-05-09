@@ -482,7 +482,7 @@ int exahype::parser::Parser::getNumberOfThreads() const {
 }
 
 int exahype::parser::Parser::getThreadStackSize() const {
-  return getIntFromPath("/shared_memory/thread_stack_size",8388608,isOptional);
+  return getIntFromPath("/shared_memory/thread_stack_size",12582912,isOptional);
 }
 
 tarch::la::Vector<DIMENSIONS, double> exahype::parser::Parser::getDomainSize() const {
@@ -583,7 +583,7 @@ int exahype::parser::Parser::getMaxForksPerLoadBalancingStep() const {
 }
 
 int exahype::parser::Parser::getMPIBufferSize() const {
-  int result = getIntFromPath("/distributed_memory/buffer_size");
+  int result = getIntFromPath("/distributed_memory/buffer_size", 64, isOptional);
 
   // Apparently, in former days an invalid value just yielded in a non-fatal error.
   // all non-castable ints resulted in negative numbers.
@@ -598,7 +598,7 @@ int exahype::parser::Parser::getMPIBufferSize() const {
 }
 
 int exahype::parser::Parser::getMPITimeOut() const {
-  double result = getIntFromPath("/distributed_memory/timeout");
+  double result = getIntFromPath("/distributed_memory/timeout", 60, isOptional);
 
   // Apparently, in former days an invalid value just yielded in a non-fatal error.
   // all non-castable doubles resulted in negative numbers.
@@ -727,11 +727,11 @@ double exahype::parser::Parser::getFuseAlgorithmicStepsDiffusionFactor() const {
 }
 
 bool exahype::parser::Parser::getSpawnPredictionAsBackgroundThread() const {
-  return getBoolFromPath("/optimisation/spawn_predictor_as_background_thread", false, isOptional);
+  return getBoolFromPath("/optimisation/spawn_predictor_as_background_thread", true, isOptional);
 }
 
 bool exahype::parser::Parser::getSpawnUpdateAsBackgroundThread() const {
-  return getBoolFromPath("/optimisation/spawn_update_as_background_thread", false, isOptional);
+  return getBoolFromPath("/optimisation/spawn_update_as_background_thread", true, isOptional);
 }
 
 bool exahype::parser::Parser::getSpawnProlongationAsBackgroundThread() const {
@@ -739,7 +739,7 @@ bool exahype::parser::Parser::getSpawnProlongationAsBackgroundThread() const {
 }
 
 bool exahype::parser::Parser::getSpawnAMRBackgroundThreads() const {
-  return getBoolFromPath("/optimisation/spawn_amr_background_threads", false, isOptional);
+  return getBoolFromPath("/optimisation/spawn_amr_background_threads", true, isOptional);
 }
 
 bool exahype::parser::Parser::getSpawnNeighbourMergeAsThread() const {
@@ -1214,14 +1214,19 @@ int exahype::parser::Parser::getRanksPerNode() {
 int exahype::parser::Parser::getNumberOfBackgroundJobConsumerTasks() {
   int result = getIntFromPath("/shared_memory/background_job_consumers",0,isOptional);
   if (result<=0) {
-    logInfo("getNumberOfBackgroundTasks()", "no number of background tasks specified. Use default: #consumers = #threads / 4.");
-    result = getNumberOfThreads()/4;
+    logInfo("getNumberOfBackgroundTasks()", "no number of background tasks specified. Use default: #consumers = #threads-1.");
+    result = getNumberOfThreads()-1;
   }
   return result;
 }
 
 bool exahype::parser::Parser::compareBackgroundJobProcessing(const std::string& strategy) const {
   return getStringFromPath("/shared_memory/background_job_processing","job_system",isOptional).
+      compare(strategy)==0;
+}
+
+bool exahype::parser::Parser::compareJobSystemWaitBehaviour(const std::string& strategy) const {
+  return getStringFromPath("/shared_memory/job_system_wait_behaviour","process_any_jobs",isOptional).
       compare(strategy)==0;
 }
 

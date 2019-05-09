@@ -69,7 +69,27 @@ class GRMHDb::GRMHDbSolver_FV : public GRMHDb::AbstractGRMHDbSolver_FV {
      *                          range: [0,nVar-1], already allocated.
      */
     void eigenvalues(const double* const Q,const int d,double* const lambda) override;
-        
+      
+
+	/**
+	* Compute the eigenvectors of the jacobian matrix (coefficient matrix of derivative in direction @direction).
+	*
+	* This function also returns eigenvalues as numerical packages often compute eigenvalues and
+	* eigenvectors together.
+	*
+	* see: https://www3.nd.edu/~dbalsara/Numerical-PDE-Course/Appendix_LesHouches/LesHouches_Lecture_5_Approx_RS.pdf
+	*
+	* @param[in]    Q       state variables and parameters; range: [0,nVar+nData].
+	* @param[in]    in      the normal direction; index of the x-axis in reference space.
+	* @param[in]    is      index of the y-axis in reference space.
+	* @param[in]    it      index of the z-axis in reference space.
+	* @param[inout] R       the right eigenvectors (each column stores an eigenvector); initialised to zero; range: [0,nVar]^2.
+	* @param[inout] eigvals the right eigenvectors (each column stores an eigenvector); range: [0,nVar].
+	* @param[inout] iR      the left eigenvectors  (inverse of RM); initialised to zero; range: [0,nVar]^2.
+	*/
+	void eigenvectors(const double* const Q, const int in, const int is, const int it, double(&RM)[NumberOfVariables][NumberOfVariables], double(&eigvals)[NumberOfVariables], double(&iRM)[NumberOfVariables][NumberOfVariables]);
+
+
 	static void referenceSolution(const double* const x, const double t, double* const Q);
     /**
      * Impose boundary conditions at a point on a boundary face
@@ -90,8 +110,8 @@ class GRMHDb::GRMHDbSolver_FV : public GRMHDb::AbstractGRMHDbSolver_FV {
      * makes it easier to implement certain boundary conditions where a velocity, e.g., 
      * needs to change its sign compared to the inside state.
      */
-    void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int direction,const double* const QIn,double* const QOut) override;
-    
+	void boundaryValues(const double* const x, const double t, const double dt, const int faceIndex, const int normalNonZero, const double* const stateIn, double* const stateOut) override;
+
     /**
      * Compute the flux tensor.
      *
@@ -130,8 +150,7 @@ class GRMHDb::GRMHDbSolver_FV : public GRMHDb::AbstractGRMHDbSolver_FV {
 
     /* pointSource() function not included, as requested in the specification file */
 
-
-	double riemannSolver(double* const fL, double* const fR, const double* const qL, const double* const qR, int direction) override;
+	double riemannSolver(double* fL, double *fR, const double* qL, const double* qR, const double* gradQL, const double* gradQR, const double* cellSize, int normalNonZero) override;
 };
 
 

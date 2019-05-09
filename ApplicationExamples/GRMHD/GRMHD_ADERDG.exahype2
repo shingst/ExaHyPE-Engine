@@ -10,16 +10,16 @@
   "architecture": "hsw",
   "computational_domain": {
     "dimension": 3,
-    "end_time": 1.0,
+    "end_time": 10.01,
     "offset": [
-      -15.0,
-      -15.0,
-      -15.0
+      -5.0,
+      -5.0,
+      -5.0
     ],
     "width": [
-      30.0,
-      30.0,
-      30.0
+      10.0,
+      10.0,
+      10.0
     ]
   },
   "shared_memory": {
@@ -39,7 +39,6 @@
   },
   "optimisation": {
     "fuse_algorithmic_steps": true,
-    "fuse_algorithmic_steps_factor": 0.99,
     "spawn_predictor_as_background_thread": true,
     "spawn_update_as_background_thread": true,
     "spawn_amr_background_threads": true,
@@ -54,7 +53,7 @@
       "type": "ADER-DG",
       "name": "GRMHDSolver_ADERDG",
       "order": 3,
-      "maximum_mesh_size": 1.11111112,
+      "maximum_mesh_size": 0.373738,
       "maximum_mesh_depth": 0,
       "time_stepping": "global",
       "aderdg_kernel": {
@@ -124,9 +123,87 @@
           "type": "vtu::Cartesian::vertices::ascii",
           "name": "ConservedWriter",
           "time": 0.0,
-          "repeat": 0.1,
+          "repeat": 0.5,
           "output": "./vtk-output/primitive",
           "variables": 1
+        },
+        {
+          "type": "Carpet::Cartesian::Vertices::hdf5",
+          "name": "PrimitiveWriter",
+          "time": 0.0,
+          "repeat": 0.01,
+          "output": "./hdf5-output/prims1d",
+          "variables": 19,
+          "select": {
+            "y": 0,
+            "z": 0,
+            "one_file_per_timestep": false,
+            "all_unknowns_in_one_file": false
+          }
+        },
+        {
+          "type": "Carpet::Cartesian::Vertices::hdf5",
+          "name": "PrimitiveWriter",
+          "time": 0.0,
+          "repeat": 0.01,
+          "output": "./hdf5-output/prims2d",
+          "variables": 19,
+          "select": {
+            "z": 0,
+            "one_file_per_timestep": false,
+            "all_unknowns_in_one_file": false
+          }
+        },
+        {
+          "type": "Carpet::Cartesian::Vertices::hdf5",
+          "name": "PrimitiveWriter",
+          "time": 0.0,
+          "repeat": 0.01,
+          "output": "./hdf5-output/prims3d",
+          "variables": 19,
+          "select": {
+            "one_file_per_timestep": false,
+            "all_unknowns_in_one_file": false
+          }
+        },
+        {
+          "type": "Carpet::Cartesian::Vertices::hdf5",
+          "name": "H5Writer",
+          "time": 0.0,
+          "repeat": 0.01,
+          "output": "./hdf5-output/demo1d",
+          "variables": 9,
+          "select": {
+            "y": 0,
+            "z": 0,
+            "one_file_per_timestep": false,
+            "all_unknowns_in_one_file": false
+          }
+        },
+        {
+          "type": "Carpet::Cartesian::Vertices::hdf5",
+          "name": "H5Writer",
+          "time": 0.0,
+          "repeat": 0.01,
+          "output": "./hdf5-output/demo2d",
+          "variables": 9,
+          "select": {
+            "z": 0,
+            "one_file_per_timestep": false,
+            "all_unknowns_in_one_file": false
+          }
+        },
+        {
+          "type": "Carpet::Cartesian::Vertices::hdf5",
+          "name": "H5Writer",
+          "time": 0.0,
+          "repeat": 0.01,
+          "output": "./hdf5-output/demo3d",
+          "variables": 9,
+          "select": {
+            "one_file_per_timestep": false,
+            "all_unknowns_in_one_file": false
+          }
         }
       ]
     }

@@ -10,7 +10,7 @@
 SUBROUTINE RTSAFE_C2P_RMHD1(v2,X1,X2,XACC,gam,d,e,s2,b2,sb2,w,FAILED)
   USE parameters, ONLY : nVar ! DebugFile,,DebugPrint
   IMPLICIT NONE
-  INTEGER, PARAMETER    :: MAXIT=400
+  INTEGER, PARAMETER    :: MAXIT=600
   INTEGER               :: J,i
   REAL                  :: v2 
   REAL                  :: X1,X2,XACC,gam,d,e,s2,b2,sb2,w

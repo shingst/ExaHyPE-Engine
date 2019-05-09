@@ -88,7 +88,7 @@ exahype::mappings::UpdateAndReduce::descendSpecification(int level) const {
 void exahype::mappings::UpdateAndReduce::beginIteration(
     exahype::State& solverState) {
   #ifdef Parallel
-  // hack to enforce reductions
+  // enforce reductions from worker side
   solverState.setReduceStateAndCell(true);
   #endif
 }
@@ -97,10 +97,8 @@ void exahype::mappings::UpdateAndReduce::endIteration(
     exahype::State& state) {
   logTraceInWith1Argument("endIteration(State)", state);
 
-  if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
-    for (auto* solver : solvers::RegisteredSolvers) {
-      solver->wrapUpTimeStep(true,true);
-    }
+  for (auto* solver : solvers::RegisteredSolvers) {
+    solver->wrapUpTimeStep(true,true);
   }
 
   // background threads
@@ -125,16 +123,15 @@ void exahype::mappings::UpdateAndReduce::leaveCell(
     for (int solverNumber=0; solverNumber<static_cast<int>(solvers::RegisteredSolvers.size()); solverNumber++) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
 
-      solvers::Solver::UpdateResult result;
       switch ( solver->getType() ) {
         case solvers::Solver::Type::ADERDG:
-          result = static_cast<solvers::ADERDGSolver*>(solver)->updateOrRestrict(solverNumber,cellInfo,isAtRemoteBoundary);
+          static_cast<solvers::ADERDGSolver*>(solver)->updateOrRestrict(solverNumber,cellInfo,isAtRemoteBoundary);
           break;
         case solvers::Solver::Type::LimitingADERDG:
-          result = static_cast<solvers::LimitingADERDGSolver*>(solver)->updateOrRestrict(solverNumber,cellInfo,isAtRemoteBoundary);
+          static_cast<solvers::LimitingADERDGSolver*>(solver)->updateOrRestrict(solverNumber,cellInfo,isAtRemoteBoundary);
           break;
         case solvers::Solver::Type::FiniteVolumes:
-          result = static_cast<solvers::FiniteVolumesSolver*>(solver)->updateOrRestrict(solverNumber,cellInfo,isAtRemoteBoundary);
+          static_cast<solvers::FiniteVolumesSolver*>(solver)->updateOrRestrict(solverNumber,cellInfo,isAtRemoteBoundary);
           break;
         default:
           assertionMsg(false,"Unrecognised solver type: "<<solvers::Solver::toString(solver->getType()));
@@ -142,12 +139,6 @@ void exahype::mappings::UpdateAndReduce::leaveCell(
           std::abort();
           break;
       }
-
-      if ( !exahype::solvers::Solver::SpawnUpdateAsBackgroundJob ) {
-        solver->updateMeshUpdateEvent(result._meshUpdateEvent);
-        solver->updateAdmissibleTimeStepSize(result._timeStepSize);
-      }
-        solver->reduceGlobalObservables(solver->getGlobalObservables(), cellInfo, solverNumber);
     }
 
     Cell::resetNeighbourMergePerformedFlags(cellInfo,fineGridVertices,fineGridVerticesEnumerator);
@@ -163,10 +154,8 @@ void exahype::mappings::UpdateAndReduce::prepareSendToMaster(
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
     const exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
-  if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
-    const int masterRank = tarch::parallel::NodePool::getInstance().getMasterRank();
-    exahype::State::reduceGlobalDataToMaster(masterRank,0.0,0);
-  }
+  const int masterRank = tarch::parallel::NodePool::getInstance().getMasterRank();
+  exahype::State::reduceGlobalDataToMaster(masterRank,0.0,0);
 }
 
 void exahype::mappings::UpdateAndReduce::mergeWithMaster(
@@ -181,9 +170,7 @@ void exahype::mappings::UpdateAndReduce::mergeWithMaster(
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
     int workerRank, const exahype::State& workerState,
     exahype::State& masterState) {
-  if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
-    exahype::State::mergeWithGlobalDataFromWorker(workerRank,0.0,0);
-  }
+  exahype::State::mergeWithGlobalDataFromWorker(workerRank,0.0,0);
 }
 
 //

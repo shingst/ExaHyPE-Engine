@@ -64,6 +64,10 @@ RECURSIVE SUBROUTINE PDESetup(myrank)
 	! 
 	!
 	SELECT CASE(TRIM(ICTYPE))
+    CASE('Sod')
+    	EQN%gamma = 5.0/3.0
+    CASE('Riemann0')
+        EQN%gamma = 5.0/3.0
 	CASE('GRMHDAccretion')
 		EQN%gamma = 4./3. 
 	CASE('GRMHDTOV')
@@ -203,11 +207,11 @@ RECURSIVE SUBROUTINE InitialField(xGP,tGP,u0)
 #endif
     IMPLICIT NONE
     ! Argument list 
-    REAL, INTENT(IN ) :: xGP(d), tGP        ! spatial position vector and time 
+    REAL, INTENT(IN ) :: xGP(nDim), tGP        ! spatial position vector and time 
     REAL, INTENT(OUT) :: u0(nVar)           ! initial data vector in terms of conserved variables 
     ! Local variables 
     INTEGER :: i,j,k,l,nm,iNewton,Maxnewton
-    REAL :: VBase(nVar), ampl(nVar), sigma(d) 
+    REAL :: VBase(nVar), ampl(nVar), sigma(d) ,xGP3D(d)
     REAL :: V0(nVar),r,VLL(nVar),VRR(nVar), VZ4(54),V70(70)  
     REAL :: de,u0_test(nVar),v0_tesT(nVar)
     REAL :: du,dv,drho,dTemp,dp,epsilon,xc(d),rbar
@@ -229,10 +233,61 @@ RECURSIVE SUBROUTINE InitialField(xGP,tGP,u0)
     Maxnewton = 50 
     u0  = 0.0 
     !
+    xGP3D = 0.
+    xGP3D(1:nDim) = xGP(1:nDim)
     ! no local material parameters for Euler equations 
     ! Gaussian perturbation 
     SELECT CASE(TRIM(ICType)) 
 #if defined(GRMHD) 
+    CASE('Sod')
+        !CALL Curved2Cartesian(xGP_loc,xGP3D)          ! no effects if you are in Cartesian coordiantes
+        !CALL Cartesian2Spherical(xGP_sph,xGP_loc)   ! here we convert Cartesian to Spherical, independently on the chosen coordiantes
+        !PRINT *,"SOD"
+        r=xGP3D(1)
+        if(r.LT.0.5) THEN
+            v0 = 0.
+            v0(1) = 1.0
+            v0(5) = 1.0
+            v0(10) = 1.0
+            v0(14) = 1.0
+            v0(17) = 1.0
+            v0(19) = 1.0  
+        ELSE
+            v0 = 0.
+            v0(1) = 0.125
+            v0(5) = 0.1
+            v0(10) = 1.0
+            v0(14) = 1.0
+            v0(17) = 1.0
+            v0(19) = 1.0   
+        ENDIF
+        !
+        !v0(2) = 0.05        
+        
+       ! PRINT *,"r, rho", r,V0(1)
+        !
+    CASE('Riemann0')
+        !CALL Curved2Cartesian(xGP_loc,xGP3D)          ! no effects if you are in Cartesian coordiantes
+        !CALL Cartesian2Spherical(xGP_sph,xGP_loc)   ! here we convert Cartesian to Spherical, independently on the chosen coordiantes
+        r=xGP3D(1)
+        if(r.LT.0.5) THEN
+            v0 = 0.
+            v0(1) = 1.0
+            v0(5) = 1.0
+            v0(10) = 1.0
+            v0(14) = 1.0
+            v0(17) = 1.0
+            v0(19) = 1.0 
+        ELSE
+            v0 = 0.
+            v0(1) = 0.125
+            v0(5) = 1.0
+            v0(10) = 1.0
+            v0(14) = 1.0
+            v0(17) = 1.0
+            v0(19) = 1.0 
+        ENDIF
+        !
     CASE('GRMHDAlfvenWave') 
        rho0 = 1.
        p0   = 1.
@@ -247,8 +302,8 @@ RECURSIVE SUBROUTINE InitialField(xGP,tGP,u0)
        vax = sqrt ( va2) 
        !
        BV(1) = B0
-       BV(2) = eta * B0 * COS( xGP(1) - vax*tGP)
-       BV(3) = eta * B0 * SIN( xGP(1) - vax*tGP)
+       BV(2) = eta * B0 * COS( xGP3D(1) - vax*tGP)
+       BV(3) = eta * B0 * SIN( xGP3D(1) - vax*tGP)
        !
        VV(1)   = 0.0
        VV(2:3) = - vax * BV(2:3) / B0
@@ -286,7 +341,7 @@ RECURSIVE SUBROUTINE InitialField(xGP,tGP,u0)
        !
     CASE('GRMHDTOV')
 #ifdef RNSTOV
-        CALL Curved2Cartesian(xGP_loc,xGP)          ! no effects if you are in Cartesian coordiantes
+        CALL Curved2Cartesian(xGP_loc,xGP3D)          ! no effects if you are in Cartesian coordiantes
         CALL Cartesian2Spherical(xGP_sph,xGP_loc)   ! here we convert Cartesian to Spherical, independently on the chosen coordiantes
         r=XGP_sph(1)
         ! 
@@ -309,8 +364,8 @@ RECURSIVE SUBROUTINE InitialField(xGP,tGP,u0)
         VV_cov(1:3) = 0.
         BV_contr(1:3) = 0.
         !
-        CALL METRIC(  xGP, alpha,  gp, gm, shift, Kex, g_cov, g_contr, phi )
-        CALL DMETRIC( xGP, AA, BB, DD, ddet )
+        CALL METRIC(  xGP3D, alpha,  gp, gm, shift, Kex, g_cov, g_contr, phi )
+        CALL DMETRIC( xGP3D, AA, BB, DD, ddet )
         V0(20)  = AA(1) 
         !! 
         gammaij(1) = g_cov(1,1)
@@ -390,7 +445,7 @@ RECURSIVE SUBROUTINE InitialField(xGP,tGP,u0)
             V0(13+i) = gammaij(i)
         ENDDO
         !
-        !V0(9)=exp(-(xGP(1)**2 + xGP(2)**2 + xGP(3)**2) / 8.0)*0.002
+        !V0(9)=exp(-(xGP3D(1)**2 + xGP3D(2)**2 + xGP3D(3)**2) / 8.0)*0.002
         !PRINT *,'V0=',V0
 #else
         PRINT *,' GRMHDTOV not implemented for your PDE'
@@ -401,7 +456,7 @@ RECURSIVE SUBROUTINE InitialField(xGP,tGP,u0)
        !
     CASE('GRMHDTOV_perturbed')
 #ifdef RNSTOV
-        CALL Curved2Cartesian(xGP_loc,xGP)          ! no effects if you are in Cartesian coordiantes
+        CALL Curved2Cartesian(xGP_loc,xGP3D)          ! no effects if you are in Cartesian coordiantes
         CALL Cartesian2Spherical(xGP_sph,xGP_loc)   ! here we convert Cartesian to Spherical, independently on the chosen coordiantes
         r=XGP_sph(1)
         ! 
@@ -425,8 +480,8 @@ RECURSIVE SUBROUTINE InitialField(xGP,tGP,u0)
         VV_cov(1:3) = 0.
         BV_contr(1:3) = 0.
         !
-        CALL METRIC(  xGP, alpha,  gp, gm, shift, Kex, g_cov, g_contr, phi )
-        CALL DMETRIC( xGP, AA, BB, DD, ddet )
+        CALL METRIC(  xGP3D, alpha,  gp, gm, shift, Kex, g_cov, g_contr, phi )
+        CALL DMETRIC( xGP3D, AA, BB, DD, ddet )
         V0(20)  = AA(1) 
         !! 
         gammaij(1) = g_cov(1,1)
@@ -515,7 +570,7 @@ RECURSIVE SUBROUTINE InitialField(xGP,tGP,u0)
        !
 #ifdef TORUS        
     CASE('GRMHDTorus')
-       xloc = xGP 
+       xloc = xGP3D 
        !
        minR = 0.8*ExcisionRadius
        !
@@ -604,14 +659,14 @@ RECURSIVE SUBROUTINE InitialField(xGP,tGP,u0)
         ! 
         V0 = 0.0
         ! Compute the metric and its derivatives 
-        CALL METRIC(  xGP, alpha,  gp, gm, beta, Kex, g_cov, g_contr, phi )
-        CALL DMETRIC( xGP, AA, BB, DD, PP )
+        CALL METRIC(  xGP3D, alpha,  gp, gm, beta, Kex, g_cov, g_contr, phi )
+        CALL DMETRIC( xGP3D, AA, BB, DD, PP )
         test = matmul(g_cov,g_contr)
         detg = g_cov(1,1)*g_cov(2,2)*g_cov(3,3)-g_cov(1,1)*g_cov(2,3)*g_cov(3,2)-g_cov(2,1)*g_cov(1,2)*g_cov(3,3)+g_cov(2,1)*g_cov(1,3)*g_cov(3,2)+g_cov(3,1)*g_cov(1,2)*g_cov(2,3)-g_cov(3,1)*g_cov(1,3)*g_cov(2,2)
         !phi = detg**(-1./6.) 
         !
 #ifdef RNSID   
-        CALL RNSID_Interpolate(xGP, V70) 
+        CALL RNSID_Interpolate(xGP3D, V70) 
         rho         = MAX( 1e-12, V70(60) ) 
         VV_cov(1:3) = V70(61:63) 
         p           = MAX( 1e-12, V70(64) ) 
@@ -645,8 +700,8 @@ RECURSIVE SUBROUTINE InitialField(xGP,tGP,u0)
        !
        ! flat metric: contr and cov are the same in Cartesian
        BV_contr(1) = B0
-       BV_contr(2) = eta * B0 * COS( xGP(1) - vax*tGP)
-       BV_contr(3) = eta * B0 * SIN( xGP(1) - vax*tGP)
+       BV_contr(2) = eta * B0 * COS( xGP3D(1) - vax*tGP)
+       BV_contr(3) = eta * B0 * SIN( xGP3D(1) - vax*tGP)
        !
        VV_cov(1)   = 0.0
        VV_cov(2:3) = - vax * BV_contr(2:3) / B0
@@ -669,16 +724,16 @@ RECURSIVE SUBROUTINE InitialField(xGP,tGP,u0)
        rc   = 8.0 
        rhoc = 1./16.
        B0 = 0. 
-       xloc = xGP
+       xloc = xGP3D
        IF ( aom > 0.0) THEN 
            WRITE(*,*)'SPHERICAL Accretion solution is only for a = 0!'
            STOP
        ENDIF 
        !
        ! The Following is for Kerr-Schild Cartesian coordinates
-       r      = SQRT( xGP(1)**2 + xGP(2)**2 + xGP(3)**2) 
-       theta  = ACOS( xGP(3)/r)
-       phi2    = ATAN2( xGP(2), xGP(1))
+       r      = SQRT( xGP3D(1)**2 + xGP3D(2)**2 + xGP3D(3)**2) 
+       theta  = ACOS( xGP3D(3)/r)
+       phi2    = ATAN2( xGP3D(2), xGP3D(1))
        !
        !IF ( r .LT. 0.0001) THEN ! RETURN
        !    lapse = 1.0
@@ -715,7 +770,7 @@ RECURSIVE SUBROUTINE InitialField(xGP,tGP,u0)
        !
        !
        !
-       !phi2    = ACOS( xGP(1) / (r*SIN(theta)))
+       !phi2    = ACOS( xGP3D(1) / (r*SIN(theta)))
        zz     = 2.0/r   ! we are computing the solution at theta=pi/2
        betaru = zz/(1.0 + zz)
        g_tt   = zz - 1.0
@@ -806,8 +861,8 @@ RECURSIVE SUBROUTINE InitialField(xGP,tGP,u0)
 #endif           
            !
            BV_contr(1:3) = 0.
-           BV_contr(1) = lapse*B0*DCOS(xGP(2))
-           BV_contr(2) = -  lapse*B0*DSIN(xGP(2))/xGP(1) 
+           BV_contr(1) = lapse*B0*DCOS(xGP3D(2))
+           BV_contr(2) = -  lapse*B0*DSIN(xGP3D(2))/xGP3D(1) 
            !
            !BV(1:3) = MATMUL(g_cov,BV(1:3))
            ! 
@@ -876,6 +931,7 @@ RECURSIVE SUBROUTINE InitialField(xGP,tGP,u0)
         ERROR STOP
     ENDIF
     !
+        !PRINT *,"xGP(1), u0", xGP(1), u0
     !V0_test=v0
     !CALL PDECons2Prim(V0_test,u0,iErr) 
     !!

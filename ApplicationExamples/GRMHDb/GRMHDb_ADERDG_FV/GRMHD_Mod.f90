@@ -65,12 +65,15 @@ MODULE GRMHD_Mod
 	INTERFACE  PDEAuxVarGRMHD
 		MODULE PROCEDURE PDEAuxVarGRMHD
 	END INTERFACE 
+	INTERFACE  PDEEigenVectorsGRMHD
+		MODULE PROCEDURE PDEEigenVectorsGRMHD
+	END INTERFACE 
 	
 	
 	PUBLIC :: PDEFluxGRMHD, PDESourceGRMHD,PDENCPGRMHD,PDEMatrixBGRMHD,PDECons2PrimGRMHD,PDEPrim2ConsGRMHD,  PDEEigenvaluesGRMHD, &
  PDEFluxPrimGRMHD, PDEFluxPrimVectorGRMHD, PDENCPPrimGRMHD, PDENCPPrimVectorGRMHD,   &
 PDECons2PrimVectorGRMHD, PDEPrim2ConsGRMHDvector,PDESourcePrimGRMHD, &
-RTSAFE_C2P_RMHD1,PDEVarNameGRMHD,PDEAuxVarGRMHD,PDEAuxNameGRMHD
+RTSAFE_C2P_RMHD1,PDEVarNameGRMHD,PDEAuxVarGRMHD,PDEAuxNameGRMHD,PDEEigenVectorsGRMHD
 				
 
 CONTAINS
@@ -94,7 +97,7 @@ RECURSIVE SUBROUTINE PDEFluxGRMHD(F,Q)
 #endif
     ! Argument list 
     REAL, INTENT(IN)  :: Q(nVar) 
-    REAL, INTENT(OUT) :: F(nVar,d) 
+    REAL, INTENT(OUT) :: F(nVar,ndim) 
     ! Local variables 
     INTEGER :: iErr 
     INTEGER :: i,j,k,m
@@ -108,6 +111,7 @@ RECURSIVE SUBROUTINE PDEFluxGRMHD(F,Q)
     !
     F = 0.0 
     !
+    !PRINT *,"SIZE(F)",SIZE(F)
 	!IF( ANY( ISNAN(Q) )) THEN
 	!	PRINT *,' Q NAN ',nVar
  !       PRINT *, Q
@@ -122,6 +126,8 @@ RECURSIVE SUBROUTINE PDEFluxGRMHD(F,Q)
     !
   CALL PDECons2PrimGRMHD(V,Q,iErr)
   !
+    !F(1,1) = V(1)*V(2)
+    !RETURN
 	!IF(ANY(Q(6:8).NE.0.0)) THEN
  !       PRINT *, Q(6:8)
  !       PRINT *, "I feel magnetized :-( PDEFluxGRMHD in 2"
@@ -283,6 +289,7 @@ RECURSIVE SUBROUTINE PDEFluxGRMHD(F,Q)
   !
   !
   !
+#ifdef Dim3  
   F(1,3)   = v_contr(3)*Q(1) 
   F(2,3)   = wwz*v_cov(1) - vxB_contr(3)*vxB_cov(1) - B_contr(3)*B_cov(1) 
   F(3,3)   = wwz*v_cov(2) - vxB_contr(3)*vxB_cov(2) - B_contr(3)*B_cov(2)   
@@ -303,31 +310,45 @@ RECURSIVE SUBROUTINE PDEFluxGRMHD(F,Q)
 	F(i,3) = 0.
   ENDDO
   ! 
+#endif  
   ! - - - - - - - - - 
   DO i=2,4
 	  F(i,1)   = F(i,1)*gp
 	  F(i,2)   = F(i,2)*gp
+#ifdef Dim3      
 	  F(i,3)   = F(i,3)*gp
+#endif      
   ENDDO
   ! Remember that Q(:) below contains already the factor gp, which is ok!
   
   DO i=1,5
 	  F(i,1)   = lapse*F(i,1) - shift(1)*Q(i)
 	  F(i,2)   = lapse*F(i,2) - shift(2)*Q(i)
+#ifdef Dim3      
 	  F(i,3)   = lapse*F(i,3) - shift(3)*Q(i)
+#endif      
   ENDDO 
   !
 #ifdef COVCLEAN   
   F(9,1)   = lapse*F(9,1) - shift(1)*Q(9)
-  F(9,2)   = lapse*F(9,1) - shift(2)*Q(9)
-  F(9,3)   = lapse*F(9,1) - shift(3)*Q(9)
+  F(9,2)   = lapse*F(9,2) - shift(2)*Q(9)
+#ifdef Dim3  
+  F(9,3)   = lapse*F(9,3) - shift(3)*Q(9)
 #endif 
-  !
-	!IF(ANY(F(6:8,1:3).NE.0.0)) THEN
- !       PRINT *,F(6:8,1)
- !       PRINT *,F(6:8,2)
- !       PRINT *,F(6:8,3)
- !       PRINT *, "I feel magnetized :-( PDEFluxGRMHD "
+#endif 
+  !!
+  !F(2:nVar,1:3) = 0.
+  !  IF(ANY(ABS(F(3,2:nDim)-p).gt.1e-8)) THEN
+  !      PRINT *,"F(3,2:nDim)-p", F(3,2:nDim) -p ! wwy*v_cov(2) - vxB_contr(2)*vxB_cov(2) - B_contr(2)*B_cov(2) + p + uem
+  !      PRINT *,"wwy ", wwy
+  !      PRINT *,"v_cov(2)", v_cov(2)
+  !      PRINT *,"vxB_contr(2)", vxB_contr(2)
+  !      PRINT *,"vxB_cov(2)", vxB_cov(2)
+  !      PRINT *,"B_contr(2)", B_contr(2)
+  !      PRINT *,"B_cov(2)", B_cov(2)
+  !      PRINT *,"uem", uem
+  !      PRINT *,"p", p  
+  !      PRINT *, "I feel strange :-( PDEFluxGRMHD "
  !       ERROR STOP
  !   ENDIF
     !
@@ -355,7 +376,7 @@ RECURSIVE  SUBROUTINE PDEFluxPrimGRMHD(F,V,Q)
 #endif
     ! Argument list 
     REAL, INTENT(IN)  :: Q(nVar), V(nVar)  
-    REAL, INTENT(OUT) :: F(nVar,d) 
+    REAL, INTENT(OUT) :: F(nVar,nDim) 
     ! Local variables 
     INTEGER :: iErr 
     INTEGER :: i,j,k,m 
@@ -368,6 +389,7 @@ RECURSIVE  SUBROUTINE PDEFluxPrimGRMHD(F,V,Q)
     !
     F = 0.0 
     !
+    PRINT *,"FLUX:  nVar =  ", nVar
   gamma1 = EQN%gamma/(EQN%gamma-1.0)
   rho    = V(1)
   !
@@ -507,6 +529,7 @@ RECURSIVE  SUBROUTINE PDEFluxPrimGRMHD(F,V,Q)
   !
   !
   !
+#ifdef Dim3  
   F(1,3)   = v_contr(3)*Q(1) 
   F(2,3)   = wwz*v_cov(1) - vxB_contr(3)*vxB_cov(1) - B_contr(3)*B_cov(1) 
   F(3,3)   = wwz*v_cov(2) - vxB_contr(3)*vxB_cov(2) - B_contr(3)*B_cov(2)   
@@ -527,24 +550,31 @@ RECURSIVE  SUBROUTINE PDEFluxPrimGRMHD(F,V,Q)
 	F(i,3) = 0.
   ENDDO
   ! 
+#endif  
   ! - - - - - - - - - 
   DO i=2,4
 	  F(i,1)   = F(i,1)*gp
 	  F(i,2)   = F(i,2)*gp
+#ifdef Dim3
 	  F(i,3)   = F(i,3)*gp
+#endif
   ENDDO
   ! Remember that Q(:) below contains already the factor gp, which is ok!
   
   DO i=1,5
 	  F(i,1)   = lapse*F(i,1) - shift(1)*Q(i)
 	  F(i,2)   = lapse*F(i,2) - shift(2)*Q(i)
+#ifdef Dim3
 	  F(i,3)   = lapse*F(i,3) - shift(3)*Q(i)
+#endif
   ENDDO 
   !
 #ifdef COVCLEAN   
   F(9,1)   = lapse*F(9,1) - shift(1)*Q(9)
   F(9,2)   = lapse*F(9,1) - shift(2)*Q(9)
+#ifdef Dim3
   F(9,3)   = lapse*F(9,1) - shift(3)*Q(9)
+#endif 
 #endif 
   !
   CONTINUE      
@@ -567,7 +597,7 @@ RECURSIVE SUBROUTINE PDEFluxPrimVectorGRMHD(F,V,Q)
 #endif
     ! Argument list 
     REAL(8), INTENT(IN)  :: V(VECTORLENGTH,nVar),  Q(VECTORLENGTH,nVar)
-    REAL(8), INTENT(OUT) :: F(VECTORLENGTH,nVar,d) 
+    REAL(8), INTENT(OUT) :: F(VECTORLENGTH,nVar,nDim) 
     ! Local variables 
     INTEGER :: iErr 
     INTEGER :: i,j,k,m 
@@ -747,6 +777,7 @@ RECURSIVE SUBROUTINE PDEFluxPrimVectorGRMHD(F,V,Q)
   !
   !
   !
+#ifdef Dim3
   F(:,1,3)   = v_contr(:,3)*Q(:,1) 
   F(:,2,3)   = wwz(:)*v_cov(:,1) - vxB_contr(:,3)*vxB_cov(:,1) - B_contr(:,3)*B_cov(:,1) 
   F(:,3,3)   = wwz(:)*v_cov(:,2) - vxB_contr(:,3)*vxB_cov(:,2) - B_contr(:,3)*B_cov(:,2)   
@@ -767,24 +798,31 @@ RECURSIVE SUBROUTINE PDEFluxPrimVectorGRMHD(F,V,Q)
 	F(:,i,3) = 0.
   ENDDO
   ! 
+#endif
   ! - - - - - - - - - 
   DO i=2,4
 	  F(:,i,1)   = F(:,i,1)*gp(:) 
 	  F(:,i,2)   = F(:,i,2)*gp(:) 
+#ifdef Dim3
 	  F(:,i,3)   = F(:,i,3)*gp(:) 
+#endif
   ENDDO
   ! Remember that Q(:) below contains already the factor gp, which is ok!
   
   DO i=1,5
 	  F(:,i,1)   = lapse(:)*F(:,i,1) - shift(:,1)*Q(:,i)
 	  F(:,i,2)   = lapse(:)*F(:,i,2) - shift(:,2)*Q(:,i)
+#ifdef Dim3
 	  F(:,i,3)   = lapse(:)*F(:,i,3) - shift(:,3)*Q(:,i)
+#endif
   ENDDO 
   !
 #ifdef COVCLEAN   
   F(:,9,1)   = lapse(:)*F(:,9,1) - shift(:,1)*Q(:,9)
   F(:,9,2)   = lapse(:)*F(:,9,1) - shift(:,2)*Q(:,9)
+#ifdef Dim3
   F(:,9,3)   = lapse(:)*F(:,9,1) - shift(:,3)*Q(:,9)
+#endif 
 #endif 
   !
   CONTINUE    
@@ -795,7 +833,7 @@ END SUBROUTINE PDEFluxPrimVectorGRMHD
 !
 ! Nonconservative part of the PDE ( B(Q) * gradQ ) 
 !    
-RECURSIVE SUBROUTINE PDENCPGRMHD(BgradQ,Q,gradQ)
+RECURSIVE SUBROUTINE PDENCPGRMHD(BgradQ,Q,gradQIn)
     USE Parameters, ONLY : d, EQN
     USE EOS_mod
     USE AstroMod
@@ -811,23 +849,36 @@ RECURSIVE SUBROUTINE PDENCPGRMHD(BgradQ,Q,gradQ)
 #endif
     ! Argument list 
     REAL, INTENT(OUT) :: BgradQ(nVar) 
-    REAL, INTENT(IN)  :: Q(nVar), gradQ(nVar,d)
+    REAL, INTENT(IN)  :: Q(nVar), gradQIn(nVar,nDim)
     ! Local variables 
     REAL :: p, irho
-  REAL :: rhoeps,dd,tau,s2,sm_cov(3),sm(3)
+  REAL :: rhoeps,dd,tau,s2,sm_cov(3),sm(3), gradQ(nVar,nDim)
     REAL :: Qx(nVar), Qy(nVar), Qz(nVar) 
     REAL :: e,g_cov(3,3),g_contr(3,3)
     REAL :: AQx(nVar), BQy(nVar), CQz(nVar) 
   REAL :: lapse, shift(3), gammaij(6), delta(3,3), B_cov(3), vxB_cov(3), vxb_contr(3), psi, S_contr(3), qb_contr(3), B_contr(3) 
   REAL :: v2,v_contr(3),uem,b2,e2,gp,gm,vc(nVar),lf,w,ww,gamma1,rho,v_cov(3), w_ij, wim    
     INTEGER :: i,j,k,l,m,iErr, ccount    
+    ! here we use the 3D PDE, then we should define the third component of the z-gradient also for the 2D case.
+    gradQ = gradQIn
+    !gradQ(:,2) = 0.
+    !
+    !IF(ANY(ABS(gradQ(:,2)).gt.1e-8)) THEN
+    !    PRINT *,"gradQ(:,2)", gradQ(:,2)
+    !    ERROR STOP
+    !ENDIF
+    !
     !
     !BgradQ = 0.0 
 	DO i=1,nVar
         BgradQ(i) = 0.
 		Qx(i) = gradQ(i,1) 
 		Qy(i) = gradQ(i,2)
+#ifdef Dim3        
 		Qz(i) = gradQ(i,3)
+#else
+		Qz(i) = 0.
+#endif
 		AQx(i) = 0.
 		BQy(i) = 0.
 		CQz(i) = 0.
@@ -1058,51 +1109,14 @@ RECURSIVE SUBROUTINE PDENCPGRMHD(BgradQ,Q,gradQ)
 		BgradQ(i) = AQx(i) + BQy(i) + CQz(i)  
 	ENDDO
 	!
-		!IF( ANY( ISNAN(BgradQ(:)) )) THEN
-		!	PRINT *,'gradQ, PDENCPGRMHD NAN :' 
-		!	WRITE(*,*) i
-		!	WRITE(*,*) Q(1:5)
-		!	WRITE(*,*) Q(6:10)
-		!	WRITE(*,*) Q(11:15)
-		!	WRITE(*,*) Q(16:19)
-		!	PRINT *,'--------gradQ-------' 
-		!	WRITE(*,*) gradQ(1:5,1)
-		!	WRITE(*,*) gradQ(6:10,1)
-		!	WRITE(*,*) gradQ(11:15,1)
-		!	WRITE(*,*) gradQ(16:19,1)
-		!	PRINT *,'---------------' 
-		!	WRITE(*,*) gradQ(1:5,2)
-		!	WRITE(*,*) gradQ(6:10,2)
-		!	WRITE(*,*) gradQ(11:15,2)
-		!	WRITE(*,*) gradQ(16:19,2)
-		!	PRINT *,'---------------' 
-		!	WRITE(*,*) gradQ(1:5,3)
-		!	WRITE(*,*) gradQ(6:10,3)
-		!	WRITE(*,*) gradQ(11:15,3)
-		!	WRITE(*,*) gradQ(16:19,3)
-		!	PRINT *,'--------BgradQ-------' 
-		!	WRITE(*,*) BgradQ(1:5)
-		!	WRITE(*,*) BgradQ(6:10)
-		!	WRITE(*,*) BgradQ(11:15)
-		!	WRITE(*,*) BgradQ(16:19)
-		!	PRINT *,'--------AQx-------' 
-		!	WRITE(*,*) AQx(1:5)
-		!	WRITE(*,*) AQx(6:10)
-		!	WRITE(*,*) AQx(11:15)
-		!	WRITE(*,*) AQx(16:19)
-		!	PRINT *,'--------BQy-------' 
-		!	WRITE(*,*) BQy(1:5)
-		!	WRITE(*,*) BQy(6:10)
-		!	WRITE(*,*) BQy(11:15)
-		!	WRITE(*,*) BQy(16:19)
-		!	PRINT *,'--------CQz-------' 
-		!	WRITE(*,*) CQz(1:5)
-		!	WRITE(*,*) CQz(6:10)
-		!	WRITE(*,*) CQz(11:15)
-		!	WRITE(*,*) CQz(16:19)
-		!	PRINT *,'---------------' 
-		!	STOP
-		!ENDIF 
+    
+    IF(ABS(BgradQ(2)).gt.1e-8) THEN
+        PRINT *,"BgradQ(3)", BgradQ(3)
+        PRINT *,"AQx(3)", AQx(3)
+        PRINT *,"BQy(3)", BQy(3)
+        PRINT *,"CQz(3)", CQz(3)
+        ERROR STOP
+    ENDIF
 	CONTINUE
 	!            
 END SUBROUTINE PDENCPGRMHD  
@@ -1124,7 +1138,7 @@ RECURSIVE SUBROUTINE PDENCPPrimGRMHD(BgradQ,Vc,Q,gradQ)
 	INTEGER, PARAMETER :: nVar = 19                           ! The number of variables of the PDE system 
 #endif
 	! Argument list 
-	REAL, INTENT(IN)  :: Q(nVar), Vc(nVar), gradQ(nVar,d) 
+	REAL, INTENT(IN)  :: Q(nVar), Vc(nVar), gradQ(nVar,nDim) 
 	REAL, INTENT(OUT) :: BgradQ(nVar) 
 	! Local variables 
 	REAL :: p, irho
@@ -1136,11 +1150,25 @@ RECURSIVE SUBROUTINE PDENCPPrimGRMHD(BgradQ,Vc,Q,gradQ)
 	REAL :: v2,v_contr(3),uem,b2,e2,gp,gm,lf,w,ww,gamma1,rho,v_cov(3), w_ij, wim    
 	INTEGER :: i,j,k,l,m,iErr, ccount    
 	!
+!    DO dim=1,nDim
+!	    DO i =1,nVar
+!	    	gradQ(i,dim) = TMPgradQ(i,dim) 
+!	    ENDDO
+!    ENDDO
+!#if defined(Dim2)
+!	DO i =1,nVar 
+!		gradQ(i,3) = 0.0
+!	ENDDO 
+!#endif
 	!BgradQ = 0.0 
 	DO i=1,nVar
 		Qx(i) = gradQ(i,1) 
 		Qy(i) = gradQ(i,2)
+#ifdef Dim3        
 		Qz(i) = gradQ(i,3)
+#else
+		Qz(i) = 0.0
+#endif
 		AQx(i) = 0.
 		BQy(i) = 0.
 		CQz(i) = 0.
@@ -2286,8 +2314,8 @@ RECURSIVE SUBROUTINE PDESourceGRMHD(S,Q)
 END SUBROUTINE PDESourceGRMHD
 !
 
-RECURSIVE SUBROUTINE PDEEigenvaluesGRMHD(L,Q,n)
-    USE Parameters, ONLY : d, EQN
+RECURSIVE SUBROUTINE PDEEigenvaluesGRMHD(L,Q,normal)
+    USE Parameters, ONLY : EQN
     USE EOS_mod
 	USE AstroMod
 	!USE recipies_mod
@@ -2303,14 +2331,14 @@ RECURSIVE SUBROUTINE PDEEigenvaluesGRMHD(L,Q,n)
   INTEGER, PARAMETER :: nVar = 19                           ! The number of variables of the PDE system 
 #endif
     INTEGER, PARAMETER :: nParam=0 
-    REAL, INTENT(IN)  :: Q(nVar),n(3)
+    REAL, INTENT(IN)  :: Q(nVar),normal(ndim)
     REAL, INTENT(OUT) :: L(nVar) 
     ! Local variables 
-    REAL ::  Vp(nVar), gradQ(nVar,d)
+    REAL ::  Vp(nVar),n(3)
     REAL :: p, irho
     REAL :: V(nVar),Qx(nVar), Qy(nVar), Qz(nVar) , Qp(nVar), Qm(nVar) 
     REAL :: e,g_cov(3,3),g_contr(3,3),nv(3)
-    REAL :: AQx(nVar), BQy(nVar), CQz(nVar), FFp(nVar,d), FFm(nVar,d) ,dfdQ(nVar,nVar),AA(nVar,nVar)
+    REAL :: AQx(nVar), BQy(nVar), CQz(nVar),dfdQ(nVar,nVar),AA(nVar,nVar)
     REAL :: lapse, shift(3),shift_cov(3), gammaij(6), delta(3,3), B_cov(3), vxB_cov(3), vxb_contr(3), psi, S_contr(3), qb_contr(3), B_contr(3) 
     REAL :: v2,v_contr(3),uem,b2,e2,gp,gm,vc(nVar),lf,w,ww,gamma1,rho,v_cov(3), w_ij, wim,eps,u,xg(3)
 	REAL :: b2_4,cs2,sft,VdotB,vn,den,gg,lf2m,ImLambda(nVar), rtemp(nVar) ,R(nVar,nVar), iR(nVar,nVar),fmm(nVar),gmm(nVar),hmm(nVar),fpp(nVar),gpp(nVar),hpp(nVar),gg2,sft2,vn2
@@ -2319,6 +2347,9 @@ RECURSIVE SUBROUTINE PDEEigenvaluesGRMHD(L,Q,n)
     REAL :: rhoeps,dd,tau,s2,sm_cov(3),sm(3)
     !
    !
+    n = 0.
+    n(1:nDim) = normal(1:nDim)
+    !
     xg(1) = 0.
     xg(2) = 0.
     xg(3) = 0.
@@ -2333,9 +2364,9 @@ RECURSIVE SUBROUTINE PDEEigenvaluesGRMHD(L,Q,n)
     CALL PDECons2PrimGRMHD(V,Q,iErr)
     rho    = V(1)
 	DO i=1,3
-		v_cov = V(1+i)
-		B_contr(1:3) = V(5+i)
-		shift = V(10+i)
+		v_cov(i) = V(1+i)
+		B_contr(i) = V(5+i)
+		shift(i) = V(10+i)
 	ENDDO
     p      = V(5)
     !
@@ -2407,11 +2438,18 @@ RECURSIVE SUBROUTINE PDEEigenvaluesGRMHD(L,Q,n)
     L(5)   = ( u*(1.0-cs2) + SQRT( cs2*lf2m*( (1.0-v2*cs2)*gg - u**2*(1.0-cs2) )) )*den 
 	DO i=1,5
 		L(i)   = lapse*L(i) - sft
-	ENDDO
+    ENDDO
+    !
+    IF(Q(1).LT.1e-9) THEN
+        L = 1.0
+    ENDIF
+  
     !
 	DO i=6,nVar
 		L(i)   = 0.
-	ENDDO
+    ENDDO
+    !
+    RETURN
     !
     ! SAFE MODE: define also 'covariant' eigenvalues! (we may use the remaining free slots in L, L(6:8), L(10:19)
 	!
@@ -2447,7 +2485,389 @@ RECURSIVE SUBROUTINE PDEEigenvaluesGRMHD(L,Q,n)
 	!
 END SUBROUTINE PDEEigenvaluesGRMHD
 
-RECURSIVE SUBROUTINE PDEMatrixBGRMHD(Bn,Q,nv)
+
+RECURSIVE SUBROUTINE PDEEigenvectorsGRMHD(R,L,iR,Q,normal) 
+  USE Parameters, ONLY: EQN, d 
+	USE AstroMod
+    USE EOS_mod
+  IMPLICIT NONE
+#ifdef VECTOR    
+#ifdef AVX512 
+  INTEGER, PARAMETER :: nVar = 24                           ! The number of variables of the PDE system 
+#else   
+  INTEGER, PARAMETER :: nVar = 20                           ! The number of variables of the PDE system 
+#endif 
+#else
+  INTEGER, PARAMETER :: nVar = 19                           ! The number of variables of the PDE system 
+#endif
+  ! Argument list 
+  REAL :: R(nVar,nVar), L(nVar,nVar), iR(nVar,nVar)
+  REAL :: Q(nVar), normal(nDim)
+  REAL :: nv(d)
+  ! 
+  ! LOCAL VARIABLES
+  ! Local variables
+  INTEGER :: i,j,k, zero,iErr, itemp(nVar), info     
+  REAL    :: rho,u,v,w,p,c,c2,H,v2,M,r2c,Pi,gmo,den,lf,lf2,kk,hrho
+  REAL    :: Cplus, Cminus, Aplus, Aminus, Lplus, Lminus, Delta, ftr, vs
+  REAL    :: sv(3),tv(3),Lambda(nVar)  
+  REAL    :: VPR(3),BVR(3),kappa(2),beta(2)
+  REAL    :: TM(nVar,nVar),iTM(nVar,nVar),A(nVar,nVar),RM(nVar,nVar),iRM(nVar,nVar) 
+  REAL    :: TestMatrix(nVar,nVar) 
+  REAL    :: R7(7,7), iR7(7,7)
+  REAL    :: VP(nVar), QPR(nVar),dudw(nVar,nVar),dwdu(nVar,nVar)
+  REAL    :: dfdQ(nVar,nVar), ImLambda(nVar), rtemp(nVar)    
+  REAL    :: t1,t2,t3,t4,t5,t6,t7,t8,t9,t10,t13,t19,t21,t16,t18,t30,t31,t35,t37,t43,t47,t48,t11
+  REAL    :: t12,t14,t15,t17,t20,t22,t24,t26,t27,t28,t29,t32,t33,t36,t38,t39,t40,t41,t42,t44,t46,t49,t65,t70,t23,t25,t34
+  REAL    :: t51,t53,t55,t56,t60,t61,t68,t69,t75,t76,t78,t45,t50,t52,t54,t57,t63,t64,t58,t62 
+  REAL    :: rho0, k0, uu, vv, ww, eps, dist, alpha, cp, cs, nx, ny, uv(3), lam, mu, irho, ialpha,radalpha
+  REAL    :: Qp(nVar),Qm(nVar),fpp(nVar),gpp(nVar),hpp(nVar),fmm(nVar),gmm(nVar),hmm(nVar),tempGJ(nVar,nVar), Qrot(nVar)   
+  REAL    :: dQdV(nVar,nVar), dVdQ(nVar,nVar),rhov(2), av(2), ux(2), vy(2), pv(2), alphav(2), curv, sigma, gamma1, gamma2, pi1, pi2, g    
+  REAL    :: AM(3,3), GT(3,3), devG(3,3), Id(3,3), evv, tempp(3,3), rhok, R1(nVar,nVar), L1(nVar), R2(nVar,nVar), L2(nVar)    
+  REAL    :: s1,s2,s3,s4,s5,s6,s7,s8,s9,s10,s11,s12,s13,s14,s15,s16,s17  
+  REAL    :: S(nVar),dSdQ(nVar,nVar),dQdS(nVar,nVar), dfdS(nVar,nVar), dPdS(nVar,nVar), iL1(nVar,nVar), dSdP(nVar,nVar), checkmat(nVar,nVar)    
+  REAL    :: alpham(3,3), B(nVar,nVar), HA(nVar,nVar), L1M(nVar,nVar), sqrtM(nVar,nVar), sqrtiM(nVar,nVar), param, mix, cv, AA(nVar,nVar)    
+  REAL    :: zm, q0  
+  INTEGER, PARAMETER :: LWORK=2*nVar*nVar+6*nVar+1, LIWORK=5*nVar+3
+  REAL    :: WORK(LWORK), FWORK(8*nVar) 
+  INTEGER :: IWORK(LIWORK), IWORK2(nVar)  
+  ! GRMHD
+  REAL :: Lambda_ia(nVar)
+  REAL :: reivec1(nvar),reivec2(nvar),reivec3(nvar),reivecm(nvar),reivecp(nvar)
+  REAL :: leivec1(nvar),leivec2(nvar),leivec3(nvar),leivecm(nvar),leivecp(nvar)
+  REAL :: v_cov(3),B_contr(3),B_cov(3),shift(3),v_contr(3),vn_contr(3),vn_cov(3)
+  REAL :: g_cov(3,3),g_contr(3,3)
+  REAL :: psi,lapse,gp,gm,lf2M,b2,vdotb,b2_4,vn,gg,sft,vxp,vxm,enthalpy,dpdeps,xsi,cs2,tmp2,tmp1,gam,dlt,cxx,cxy,cxz,axp,axm,kappa0
+  LOGICAL, PARAMETER :: ANALYTICAL = .TRUE.
+
+  
+  REAL, PARAMETER :: epsilon = 1e-11   
+  !
+  Pi = ACOS(-1.0)
+  R = 0. 
+  L = 0. 
+  iR = 0. 
+  ! 
+  nv = 0.
+    nv(1:nDim) = normal(1:nDim)
+    ! 
+    CALL PDECons2PrimGRMHD(VP,Q,iErr)
+    rho    = VP(1)
+	DO i=1,3
+		v_cov(i) = V(1+i)
+		B_contr(i) = V(5+i)
+		shift(i) = V(10+i)
+	ENDDO
+    p      = VP(5)
+    ! 
+    psi = VP(9)
+    lapse = VP(10)
+    !
+    g_cov(1,1) = VP(14)
+    g_cov(1,2) = VP(15)
+    g_cov(1,3) = VP(16)
+    g_cov(2,2) = VP(17)
+    g_cov(2,3) = VP(18)
+    g_cov(3,3) = VP(19)
+    g_cov(2,1) = VP(15)
+    g_cov(3,1) = VP(16)
+    g_cov(3,2) = VP(18)
+    !
+    CALL MatrixInverse3x3(g_cov,g_contr,gp)
+    gp = SQRT(gp)
+    gm = 1./gp
+    !  evaluate contr. cov. variables
+    v_contr      = MATMUL(g_contr,v_cov)
+    B_cov      = MATMUL(g_cov,B_contr)
+    !  evaluate useful quantities
+    v2     = v_contr(1)*v_cov(1) + v_contr(2)*v_cov(2) + v_contr(3)*v_cov(3)
+    lf     = 1.0/sqrt(1.0 - v2)
+    lf2m   = 1.0 - v2
+    b2     = B_contr(1)*B_cov(1) + B_contr(2)*B_cov(2) + B_contr(3)*B_cov(3)
+    VdotB     = v_contr(1)*B_cov(1) + v_contr(2)*B_cov(2) + v_contr(3)*B_cov(3)
+    b2_4 = b2*lf2m + VdotB  ! this is b^2
+    gamma1 = EQN%gamma/(EQN%gamma-1.0) 
+    w      = rho + gamma1*p + b2_4 ! this is rho*h + b^2
+    cs2    = (EQN%gamma*p + b2_4)/w
+    !
+    vn     = v_contr(1)*nv(1) + v_contr(2)*nv(2) + v_contr(3)*nv(3)
+    sft    = shift(1)*nv(1) + shift(2)*nv(2) + shift(3)*nv(3) 
+    gg     = g_contr(1,1)*ABS(nv(1)) + g_contr(2,2)*ABS(nv(2)) + g_contr(3,3)*ABS(nv(3))
+    den    = 1.0/(1.0 - v2*cs2)
+    IF(SUM(nv**2).EQ.0.) THEN  
+        u = SQRT( v2) 
+        WRITE(*,*)'Impossible error! nv:',nv
+        STOP
+    ELSE
+        u = vn 
+    ENDIF
+    !
+    Lambda(1)   = ( u*(1.0-cs2) - SQRT( cs2*lf2m*( (1.0-v2*cs2)*gg - u**2*(1.0-cs2) )) )*den 
+    Lambda(2:4) = u
+    Lambda(5)   = ( u*(1.0-cs2) + SQRT( cs2*lf2m*( (1.0-v2*cs2)*gg - u**2*(1.0-cs2) )) )*den
+    Lambda_ia(1:5)   = Lambda(1:5)
+    Lambda(1:5)   = lapse*Lambda(1:5) - sft
+    !
+    Lambda(6:) = 0.
+    ! 
+  !
+  !  sv = (/ 1., 1., 1. /) - ABS(nv)
+  !  sv = sv/SQRT(SUM(sv(:)**2))  
+  !  CALL Kreuzprodukt(tv,nv,sv)  
+  !
+  IF(ABS(ABS(nv(1))-1.0).LE.1e-14) THEN
+     sv = (/ 0., 1., 0. /) 
+     tv = (/ 0., 0., 1. /) 
+  ENDIF
+  IF(ABS(ABS(nv(2))-1.0).LE.1e-14) THEN
+     !sv = (/ 1., 0., 0. /) 
+     !tv = (/ 0., 0., 1. /) 
+     sv = (/ 0., 0., 1. /) 
+     tv = (/ 1., 0., 0. /) 
+  ENDIF
+  IF(ABS(ABS(nv(3))-1.0).LE.1e-14) THEN
+     sv = (/ 1., 0., 0. /) 
+     tv = (/ 0., 1., 0. /) 
+  ENDIF
+  !
+  TM(:,:)    = 0.
+  TM(1,1)    = 1.
+  TM(5,5)    = 1.
+  TM(2:4,2)  = nv(:)
+  TM(2:4,3)  = sv(:) 
+  TM(2:4,4)  = tv(:) 
+  !
+  !! velocity field rotated in normal direction
+  vn_contr(1)  = DOT_PRODUCT(v_contr(1:3),nv(1:3))   ! nv(1)*VP(2) + nv(2)*VP(3) + nv(3)*VP(4) )
+  vn_contr(2)  = DOT_PRODUCT(v_contr(1:3),sv(1:3))   ! sv(1)*VP(2) + sv(2)*VP(3) + sv(3)*VP(4) )
+  vn_contr(3)  = DOT_PRODUCT(v_contr(1:3),tv(1:3))   ! tv(1)*VP(2) + tv(2)*VP(3) + tv(3)*VP(4) )
+  !! 
+  vn_cov      = MATMUL(g_cov,vn_contr)
+  !  if (cs2<0) cs2=0 ! this does not modify the roe crashing problem with shocktube
+  !enthalpy = one + eps + press / rho
+  enthalpy = (w-b2_4)/rho
+  !vx_cov =  vn_cov(1)
+  !vy_cov =  vn_cov(2)
+  !vz_cov =  vn_cov(3) 
+!!$Calculate eigenvalues and put them in conventional order
+  !
+  !lam1 = vn_contr(1) - sft/lapse
+  !lam2 = vn_contr(1) - sft/lapse
+  !lam3 = vn_contr(1) - sft/lapse
+  !
+  !Lambda_ia(5) = (vn_contr(1)*(1.0-cs2) + sqrt(cs2*(1.0-v2)*&
+  !     (gg*(1.0-v2*cs2) - vn_contr(1)**2*(1.0-cs2))))/(1.0-v2*cs2)
+  !Lambda_ia(1) = (vn_contr(1)*(1.0-cs2) - sqrt(cs2*(1.0-v2)*&
+  !     (gg*(1.0-v2*cs2) - vn_contr(1)**2*(1.0-cs2))))/(1.0-v2*cs2)
+  !
+  !lamp = Lambda_ia(5) - sft/lapse
+  !lamm = Lambda_ia(1) - sft/lapse
+
+!!$  lam(1) = lamm
+!!$  lam(2) = lam1
+!!$  lam(3) = lam2
+!!$  lam(4) = lam3
+!!$  lam(5) = lamp
+ 
+!!$Compute some auxiliary quantities
+
+  axp = (gg - vn_contr(1)*vn_contr(1))/(gg - vn_contr(1)*Lambda_ia(5))
+  axm = (gg - vn_contr(1)*vn_contr(1))/(gg - vn_contr(1)*Lambda_ia(1))
+  vxp = (vn_contr(1) - Lambda_ia(5))/(gg - vn_contr(1) * Lambda_ia(5))
+  vxm = (vn_contr(1) - Lambda_ia(1))/(gg - vn_contr(1) * Lambda_ia(1))
+
+!!$Calculate associated right eigenvectors
+  dpdeps = rho*(EQN%gamma-1.0)
+  kappa0 = dpdeps / (dpdeps - rho * cs2)
+
+  reivec1(1) = kappa0 / (enthalpy * lf)
+  reivec1(2) = vn_cov(1)
+  reivec1(3) = vn_cov(2)
+  reivec1(4) = vn_cov(3)
+  reivec1(5) = 1.0 - reivec1(1)
+
+  reivec2(1) = lf * vn_cov(2)
+  reivec2(2) = enthalpy * (g_cov(1,2) + 2.0 * lf * lf * vn_cov(1) * vn_cov(2))
+  reivec2(3) = enthalpy * (g_cov(2,2) + 2.0 * lf * lf * vn_cov(2) * vn_cov(2))
+  reivec2(4) = enthalpy * (g_cov(2,3) + 2.0 * lf * lf * vn_cov(2) * vn_cov(3))
+  reivec2(5) = vn_cov(2) * lf * (2.0 * lf * enthalpy - 1.0)
+
+  reivec3(1) = lf * vn_cov(3)
+  reivec3(2) = enthalpy * (g_cov(1,3) + 2.0 * lf * lf * vn_cov(1) * vn_cov(3))
+  reivec3(3) = enthalpy * (g_cov(2,3) + 2.0 * lf * lf * vn_cov(2) * vn_cov(3))
+  reivec3(4) = enthalpy * (g_cov(3,3) + 2.0 * lf * lf * vn_cov(3) * vn_cov(3))
+  reivec3(5) = vn_cov(3) * lf * (2.0 * lf * enthalpy - 1.0)
+
+  reivecp(1) = 1.0
+  reivecp(2) = enthalpy * lf * (vn_cov(1) - vxp)
+  reivecp(3) = enthalpy * lf * vn_cov(2)
+  reivecp(4) = enthalpy * lf * vn_cov(3)
+  reivecp(5) = enthalpy * lf * axp - 1.0
+
+  reivecm(1) = 1.0
+  reivecm(2) = enthalpy * lf * (vn_cov(1) - vxm)
+  reivecm(3) = enthalpy * lf * vn_cov(2)
+  reivecm(4) = enthalpy * lf * vn_cov(3)
+  reivecm(5) = enthalpy * lf * axm - 1.0
+
+!!$Calculate associated left eigenvectors if requested
+
+ ! if (ANALYTICAL) then
+
+    cxx = g_cov(2,2) * g_cov(3,3) - g_cov(2,3) * g_cov(2,3)
+    cxy = g_cov(1,3) * g_cov(2,3) - g_cov(1,2) * g_cov(3,3)
+    cxz = g_cov(1,2) * g_cov(2,3) - g_cov(1,3) * g_cov(2,2)
+    gam = g_cov(1,1) * cxx + g_cov(1,2) * cxy + g_cov(1,3) * cxz
+    xsi = cxx - gam * vn_contr(1) * vn_contr(1)
+    dlt = enthalpy**3 * lf * (kappa0 - 1.0) * (vxm - vxp) * xsi
+
+    tmp1 = lf / (kappa0 - 1.0)
+
+    leivec1(1) = tmp1 * (enthalpy - lf)
+    leivec1(2) = tmp1 * lf * vn_contr(1)
+    leivec1(3) = tmp1 * lf * vn_contr(2)
+    leivec1(4) = tmp1 * lf * vn_contr(3)
+    leivec1(5) =-tmp1 * lf
+
+    tmp1 = 1.0 / (xsi * enthalpy)
+
+    leivec2(1) = (g_cov(2,3) * vn_cov(3) - g_cov(3,3) * vn_cov(2)) * tmp1
+    leivec2(2) = (g_cov(3,3) * vn_cov(2) - g_cov(2,3) * vn_cov(3)) * tmp1 * vn_contr(1)
+    leivec2(3) = (g_cov(3,3) * (1.0 - vn_contr(1) * vn_cov(1)) + g_cov(1,3) * vn_cov(3) * vn_contr(1)) * tmp1
+    leivec2(4) = (g_cov(2,3) * (vn_contr(1) * vn_cov(1) - 1.0) - g_cov(1,3) * vn_contr(1) * vn_cov(2)) * tmp1
+    leivec2(5) = (g_cov(2,3) * vn_cov(3) - g_cov(3,3) * vn_cov(2)) * tmp1
+
+    leivec3(1) = (g_cov(2,3) * vn_cov(2) - g_cov(2,2) * vn_cov(3)) * tmp1
+    leivec3(2) = (g_cov(2,2) * vn_cov(3) - g_cov(2,3) * vn_cov(2)) * tmp1 * vn_contr(1)
+    leivec3(3) = (g_cov(2,3) * (vn_contr(1) * vn_cov(1) - 1.0) - g_cov(1,2) * vn_contr(1) * vn_cov(3)) * tmp1
+    leivec3(4) = (g_cov(2,2) * (1.0 - vn_contr(1) * vn_cov(1)) + g_cov(1,2) * vn_contr(1) * vn_cov(2)) * tmp1
+    leivec3(5) = (g_cov(2,3) * vn_cov(2) - g_cov(2,2) * vn_cov(3)) * tmp1
+
+    tmp1 = enthalpy * enthalpy / dlt
+    tmp2 = lf * lf * xsi
+
+    leivecp(1) = - (enthalpy * lf * vxm * xsi + (1.0 - kappa0) * (vxm * &
+      (tmp2 - cxx) - gam * vn_contr(1)) - kappa0 * tmp2 * vxm) * tmp1
+    leivecp(2) = - (cxx * (1.0 - kappa0 * axm) + (2.0 * kappa0 - 1.0) * vxm * &
+      (tmp2 * vn_contr(1) - cxx * vn_contr(1))) * tmp1
+    leivecp(3) = - (cxy * (1.0 - kappa0 * axm) + (2.0 * kappa0 - 1.0) * vxm * &
+      (tmp2 * vn_contr(2) - cxy * vn_contr(1))) * tmp1
+    leivecp(4) = - (cxz * (1.0 - kappa0 * axm) + (2.0 * kappa0 - 1.0) * vxm * &
+      (tmp2 * vn_contr(3) - cxz * vn_contr(1))) * tmp1
+    leivecp(5) = - ((1.0 - kappa0) * (vxm * (tmp2 - cxx) - gam * vn_contr(1)) - &
+      kappa0 * tmp2 * vxm) * tmp1
+
+    leivecm(1) = (enthalpy * lf * vxp * xsi + (1.0 - kappa0) * (vxp * &
+      (tmp2 - cxx) - gam * vn_contr(1)) - kappa0 * tmp2 * vxp) * tmp1
+    leivecm(2) = (cxx * (1.0 - kappa0 * axp) + (2.0 * kappa0 - 1.0) * vxp * &
+      (tmp2 * vn_contr(1) - cxx * vn_contr(1))) * tmp1
+    leivecm(3) = (cxy * (1.0 - kappa0 * axp) + (2.0 * kappa0 - 1.0) * vxp * &
+      (tmp2 * vn_contr(2) - cxy * vn_contr(1))) * tmp1
+    leivecm(4) = (cxz * (1.0 - kappa0 * axp) + (2.0 * kappa0 - 1.0) * vxp * &
+      (tmp2 * vn_contr(3) - cxz * vn_contr(1))) * tmp1
+    leivecm(5) = ((1.0 - kappa0) * (vxp * (tmp2 - cxx) - gam * vn_contr(1)) - &
+      kappa0 * tmp2 * vxp) * tmp1
+!  endif
+  !
+  IF(Q(1).LT.1e-9) THEN
+      Lambda = 1.0
+  ENDIF
+  
+  ! Eigenvalues
+  L = 0.0
+  L(1,1) = Lambda(1)                      !( u*(1.0-c2)+c*SQRT( (1.0-v2)*( (1.0-v2*c2) - u**2*(1.0-c2) )) )*den 
+  L(2,2) = Lambda(2)                      !u
+  L(3,3) = Lambda(3)                      !u
+  L(4,4) = Lambda(4)                      !u
+  L(5,5) = Lambda(5)                      !( u*(1.0-c2)-c*SQRT( (1.0-v2)*( (1.0-v2*c2) - u**2*(1.0-c2) )) )*den
+  DO i=6,nVar
+    L(i,i) = 0.0    
+  ENDDO
+  !
+  !
+  RM = 0.
+  ! Right eigenvector matrix
+  RM(1:5,1)  = reivecm(1:5)   !   (/ 1.0/lf,     lf*v,                 lf*w,                1.0,              1.0                 /)
+  RM(1:5,2)  = reivec1(1:5)   ! (/ u,          2.*h*lf2*u*v,         2.*h*lf2*u*w,        h*lf*Cplus,       h*lf*Cminus         /)
+  RM(1:5,3)  = reivec2(1:5)   ! (/ v,          h*(1.0+2.0*lf2*v*v),  2.*h*lf2*v*w,        h*lf*v,           h*lf*v              /)
+  RM(1:5,4)  = reivec3(1:5)   ! (/ w,          2.*h*lf2*w*v,         h*(1.0+2.0*lf2*w*w), h*lf*w,           h*lf*w              /)
+  RM(1:5,5)  = reivecp(1:5)   ! (/ 1.0-1.0/lf, 2.*h*lf2*v-lf*v,      2.*h*lf2*w-lf*w,     h*lf*Aplus - 1.0, h*lf*Aminus - 1.0   /)
+  !
+  iRM = 0.
+  ! Left eigenvector matrix (inverse of R)
+  iRM(1,1:5)  = leivecm(1:5)   != (/ h - lf,                           lf*u,                                 lf*v,                                   lf*w,                                   -lf    /)
+  iRM(2,1:5)  = leivec1(1:5)   != (/ -v,                               u*v,                                  1.0 - u*u,                              0.0,                                    -v     /)
+  iRM(3,1:5)  = leivec2(1:5)   != (/ -w,                               u*w,                                  0.0,                                    1.0 - u*u,                              -w     /)
+  iRM(4,1:5)  = leivec3(1:5)   != (/ h*lf*(Aminus*u-Cminus) + Lminus,  1.0+ftr*(1.0-Aminus) - kk*Aminus,  lf2*v*(2*kk-1.0)*(Aminus*u-Cminus),  lf2*w*(2*kk-1.0)*(Aminus*u-Cminus),  Lminus /)
+  iRM(5,1:5)  = leivecp(1:5)   != (/ h*lf*(Aplus*u-Cplus) + Lplus,     1.0+ftr*(1.0-Aplus)  - kk*Aplus,   lf2*v*(2*kk-1.0)*(Aplus*u-Cplus),    lf2*w*(2*kk-1.0)*(Aplus*u-Cplus),    Lplus  /)
+  !
+  DO i=6,nVar
+      RM(i,i) = 1.0
+      iRM(i,i) = 1.0
+  ENDDO
+  !
+  !PRINT *,"RM"
+  ! DO i=1,nVar
+  !      PRINT *,RM(:,i)
+  ! ENDDO
+  !PRINT *,"iRM"
+  ! DO i=1,nVar
+  !      PRINT *,iRM(i,:)
+  ! ENDDO
+  
+   !CALL MatrixInverse(nVar,RM,iRM)
+   TestMatrix = MATMUL(RM,iRM) 
+   DO i=1,nVar
+       DO j=1,nVar
+            IF(i.NE.j) THEN
+                IF(ABS(TestMatrix(i,j)).GT.1e-12) THEN 
+                    WRITE(*,*) ' ERROR in ConsJacobian: Transformation matrix checksum error! ',ABS(TestMatrix(i,j))
+                    !STOP
+                ENDIF 
+            ELSE
+                IF(ABS(TestMatrix(i,j)-1.0).GT.1e-12) THEN 
+                    WRITE(*,*) ' ERROR in ConsJacobian: Transformation matrix checksum error! ',ABS(TestMatrix(i,j)-1.0)
+                    !STOP
+                ENDIF 
+            ENDIF
+            !
+       ENDDO
+   ENDDO
+   !
+   !IF( (SUM(TestMatrix).GT.(5.+epsilon)).OR.(SUM(TestMatrix).LT.(5.-epsilon)) ) THEN
+   ! WRITE(*,*) ' ERROR in ConsJacobian: Transformation matrix checksum error! '
+   ! !STOP
+   !ENDIF
+   !
+  !R = RM
+  !iR = iRM
+  !!
+        ! Final Matrices including the rotation 
+        R  = 0.
+        iR = 0. 
+        DO j = 1, 5
+           DO k = 1, 5
+              R(1:5,j) = R(1:5,j) + TM(1:5,k)*RM(k,j)
+           ENDDO
+        ENDDO
+        DO k = 1, 5
+           DO j = 1, 5
+              iR(1:5,j) = iR(1:5,j) + iRM(1:5,k)*TM(j,k)
+           ENDDO
+        ENDDO
+        DO i =6,nVar
+            R(i,i) = 1.0
+            iR(i,i) = 1.0
+        ENDDO
+         
+  !!
+  CONTINUE
+  !
+  
+END SUBROUTINE PDEEigenvectorsGRMHD
+
+
+RECURSIVE SUBROUTINE PDEMatrixBGRMHD(Bn,Q,normal)
     USE Parameters, ONLY :  d, EQN
 	USE AstroMod
     USE EOS_mod
@@ -2462,11 +2882,11 @@ RECURSIVE SUBROUTINE PDEMatrixBGRMHD(Bn,Q,nv)
   INTEGER, PARAMETER :: nVar = 19                           ! The number of variables of the PDE system 
 #endif
     ! Argument list 
-    REAL, INTENT(IN)  :: Q(nVar),nv(d)   
+    REAL, INTENT(IN)  :: Q(nVar),normal(nDim)   
     REAL, INTENT(OUT) :: Bn(nVar,nVar) 
     ! Local variables 
     INTEGER :: i 
-    REAL    :: p, irho, lam, mu, ialpha  
+    REAL    :: p, irho, lam, mu, ialpha,nv(d)  
     REAL    :: B1(nVar,nVar), B2(nVar,nVar), B3(nVar,nVar)  
     REAL    :: A(nVar,nVar), B(nVar,nVar), C(nVar,nVar)  
     REAL    :: k1, k2, fff, ggg, e, ds, cs, xi, sk, sknl, alpha, fa, k0, beta0(3), b0(3)   
@@ -2476,6 +2896,9 @@ RECURSIVE SUBROUTINE PDEMatrixBGRMHD(Bn,Q,nv)
     INTEGER :: j,k,l,m,iErr, ccount    
   REAL :: rhoeps,dd,tau,s2,sm_cov(3),sm(3)
     !
+    nv = 0.
+    nv(1:nDim)=normal(1:nDim)
+  
     Bn = 0.0
     ! 
   lapse = Q(10) 
@@ -2669,7 +3092,7 @@ RECURSIVE SUBROUTINE PDEMatrixBGRMHD(Bn,Q,nv)
     !------ 
     A(1+j,10) = + (Q(5)+Q(1))   ! Q(10) or lapse
     A(5,10) =  S_contr(j)     !  Q(10) or lapse
-
+    !
 #ifdef COVCLEAN     
 	A(9,10) = - Q(5+j)             ! D.C.
     A(9,10+j) = + Q(9)             ! D.C.   phi * d(shift^x)/dx
@@ -2813,6 +3236,12 @@ RECURSIVE SUBROUTINE PDECons2PrimGRMHD(V,Q,iErr)
     sb   = sm_cov(1)*B_contr(1) + sm_cov(2)*B_contr(2) + sm_cov(3)*B_contr(3)
 	sb2  = sb**2
 	!
+    IF(ISNAN(b2)) THEN
+        PRINT *, "B_contr", B_contr
+        PRINT *, "b2", b2 
+        continue
+    ENDIF
+    !
 	! First option [Del Zanna et al. (2007) A&A, 473, 11-30 (method 3)]
     e = tau + dd  ! Q(5) = gamma^1/2 ( U - dd )
     ! THIS IS ONLY FOR THE GRHD.
@@ -2908,13 +3337,24 @@ RECURSIVE SUBROUTINE PDECons2PrimGRMHD(V,Q,iErr)
 	x1   = 0.      ! 
     eps = 1.0e-18
     x2   = 1.0-1e-10 !tol ! 
-    tol = 1e-18
+    tol = 1e-16
 	w=0
 	!
 	CALL RTSAFE_C2P_RMHD1(v2,x1,x2,tol,gam,dd,e,s2,b2,sb2,w,FAILED) 
 	!
 	IF(FAILED) THEN
 		 ! 
+        PRINT *, "FAILED",FAILED
+        PRINT *, "v2",v2
+        PRINT *, "gam",gam
+        PRINT *, "dd",dd
+        PRINT *, "e",e
+        PRINT *, "s2",s2
+        PRINT *, "b2",b2
+        PRINT *, "sb2",sb2
+        PRINT *, "w",w
+        PRINT *, "Q",Q 
+        STOP
 		 iErr = -1
 #ifdef C2PFF
         p    = NSTOV_p_atmo
@@ -2931,6 +3371,8 @@ RECURSIVE SUBROUTINE PDECons2PrimGRMHD(V,Q,iErr)
         v_cov(3) = 0. 
 		 !
 	ELSE
+		 ! 
+         !PRINT *, "SUCCESS",FAILED
 		 den  = 1.0/(w+b2)
 		 vb   = sb/w
 		 !
@@ -2955,6 +3397,8 @@ RECURSIVE SUBROUTINE PDECons2PrimGRMHD(V,Q,iErr)
         w      = rho + rhoeps + p   ! rho*enthalpy  
 #endif
         IF(rho<NSTOV_rho_atmo*(1.0+0.02))      THEN
+            PRINT *, "NSTOV_rho_atmo*(1.0+0.02)",rho,NSTOV_rho_atmo*(1.0+0.02) 
+            
             v_cov(1)=0.0
             v_cov(2)=0.0
             v_cov(3)=0.0
@@ -2963,6 +3407,7 @@ RECURSIVE SUBROUTINE PDECons2PrimGRMHD(V,Q,iErr)
         ENDIF
         !  
         IF( rho < NSTOV_rho_atmo )  THEN
+            PRINT *, "NSTOV_rho_atmo*(1.0+0.02)",rho,NSTOV_rho_atmo 
             rho = NSTOV_rho_atmo
             p = gam*(w*(1.-v2)-rho)  
         END IF                    
@@ -2970,6 +3415,7 @@ RECURSIVE SUBROUTINE PDECons2PrimGRMHD(V,Q,iErr)
         !
         !IF(p(:)<1e-12)
         IF(p<NSTOV_p_atmo*(1.0+0.02)) THEN
+            PRINT *, "NSTOV_p_atmo*(1.0+0.02)",p,NSTOV_p_atmo*(1.0+0.02)
             v_cov(1)=0.0
             v_cov(2)=0.0
             v_cov(3)=0.0
@@ -2977,9 +3423,13 @@ RECURSIVE SUBROUTINE PDECons2PrimGRMHD(V,Q,iErr)
             p = gam*(w*(1.-v2)-rho)  
         ENDIF        
         IF(p<NSTOV_p_atmo) THEN
+            PRINT *, "NSTOV_p_atmo",p,NSTOV_p_atmo
             p   = NSTOV_p_atmo
         ENDIF      
 #else
+            PRINT *, "STOPPED!!!"
+            STOP
+            !
     IF(rho<NSTOV_rho_atmo*1.01) THEN   ! for the first successfull TOV star simulations, this stuff was computed before p. 
         v_cov(:)= 0.0
         !rho = 1e-12 
@@ -3404,7 +3854,10 @@ RECURSIVE SUBROUTINE RTSAFE_C2P_RMHD1(v2,X1,X2,XACC,gam,d,e,s2,b2,sb2,w,FAILED)
   ENDIF
 #endif 
   IF(FL*FH.GT.0.) THEN
+      PRINT *,"FL*FH.GT.0.",FL,FH
+      PRINT *,"X1,X2:",X1,X2
      FAILED = .TRUE.
+     STOP
      v2 = 0. ! assign value even if it fails
      RETURN
   ENDIF
@@ -3466,7 +3919,11 @@ RECURSIVE SUBROUTINE RTSAFE_C2P_RMHD1(v2,X1,X2,XACC,gam,d,e,s2,b2,sb2,w,FAILED)
      ENDIF
 #endif  
 11   CONTINUE
+      PRINT *,"ABS(F).GE.XACC2",F,XACC2 
+      PRINT *,"DX",DX
+      PRINT *,"DF",DF
      FAILED = .TRUE.
+     STOP
      v2 = 0. ! assign value even if it fails
      RETURN
   END SUBROUTINE RTSAFE_C2P_RMHD1
@@ -4127,12 +4584,12 @@ RECURSIVE SUBROUTINE PDEAuxVarGRMHD(aux,V,x)
   USE Parameters, ONLY : EQN, nVar, nAux, aom, d,nDim
   IMPLICIT NONE
   REAL :: aux(nAux), V(nVar) 
-  REAL :: time, x(d)
+  REAL :: time, x(nDim)
   REAL, PARAMETER :: epsilon = 1e-14  
   ! Local Variables 
   INTEGER :: i,ii,jj,kk,ll,mm,nn,qq,iErr
   INTEGER :: itemp(nDim)
-  REAL :: rho,vx,vy,vz,p,bx,by,bz,ex,ey,ez,pl
+  REAL :: rho,vx,vy,vz,p,bx,by,bz,ex,ey,ez,pl,x3D(d)
   REAL :: v2,b2,e2,lf,LF2,w,ww,wwx,wwy,wwz,uem,gamma1
   REAL :: irho,ps,pg,rho0,k0,kappa,sigma,psi,phi,falpha,cs,cl,c0
   REAL :: uu,vv,Bx2,By2,Bz2,B28P,vB,ru2,rv2,rw2,a2,pMag,hh
@@ -4167,6 +4624,8 @@ RECURSIVE SUBROUTINE PDEAuxVarGRMHD(aux,V,x)
   REAL, PARAMETER :: iPi4 = .79577471545948e-1
   REAL, PARAMETER :: iPi8 = .39788735772974e-1
   ! 
+  x3D = 0.
+  x3D(1:nDim) = x(1:nDim)
   !    f = Q  
   !    g = 0. 
   !    h = 0. 
@@ -4185,16 +4644,16 @@ RECURSIVE SUBROUTINE PDEAuxVarGRMHD(aux,V,x)
   g_cov(3,1) = V(16)
   g_cov(3,2) = V(18)
   ! 
-  CALL Curved2Cartesian(aux(1:3),x)
+  CALL Curved2Cartesian(aux(1:3),x3D)
 #ifdef SPHERICAL
-  CALL Cart2SphMatrix_cov(A,iA,x)
+  CALL Cart2SphMatrix_cov(A,iA,x3D)
 #else
-  !phi = x(3) 
-  CALL Cart2CylMatrix_cov(A,iA,x)
-  !aux(1:3) = (/ x(1)*DCOS(phi) , x(2), x(1)*DSIN(phi)  /)  
+  !phi = x3D(3) 
+  CALL Cart2CylMatrix_cov(A,iA,x3D)
+  !aux(1:3) = (/ x3D(1)*DCOS(phi) , x3D(2), x3D(1)*DSIN(phi)  /)  
 #endif
   ! 
-  IF(X(1).EQ.0) THEN    ! r=0
+  IF(x3D(1).EQ.0) THEN    ! r=0
       !
       aux(4:6) = 0.0
       aux(7:9) = 0.0
@@ -4206,7 +4665,7 @@ RECURSIVE SUBROUTINE PDEAuxVarGRMHD(aux,V,x)
       !      WRITE(*,*) A(1,1:3)
       !      WRITE(*,*) A(2,1:3)
       !      WRITE(*,*) A(3,1:3)
-      !      WRITE(*,*) x
+      !      WRITE(*,*) x3D
       !      STOP
       !ENDIF 
       !CALL MatrixInverse3x3(A,iA,detA)      ! iA = Sph2CartMatrix_cov    = Cart2SphMatrix_contr
@@ -4221,12 +4680,61 @@ RECURSIVE SUBROUTINE PDEAuxVarGRMHD(aux,V,x)
   ENDIF 
   !  
 #endif 
-
-
   !
 END SUBROUTINE PDEAuxVarGRMHD     
+ 
+	
+SUBROUTINE MatrixInverse(N,A,iA)
+  IMPLICIT NONE
+  INTEGER       :: N
+  REAL          :: A(N,N), iA(N,N)
+  !
+  INTEGER       :: i,j,flag,ml(1) 
+  REAL          :: piv
+  REAL          :: temp(2*N)
+  REAL          :: C(2*N,N)  
+  !
+  C(1:N,:)     = TRANSPOSE(A(:,:))
+  C(N+1:2*N,:) = 0. 
+  DO i = 1, N
+     C(N+i,i) = 1.
+  ENDDO
+  !    
+  ! Forward elimination and row swapping (if necessary)
+  ! 
+  DO i = 1, N
+     ! If pivot element is zero, then swap rows 
+     ml = MAXLOC(ABS(C(i,i:N))) 
+     j = i - 1 + ml(1) 
+     temp   = C(:,j) 
+     C(:,j) = C(:,i)
+     C(:,i) = temp      
+     IF(C(i,i).EQ.0.) THEN
+        PRINT *, 'ERROR. Matrix is singular!'
+        !DO j = 1, N
+        !   PRINT *, A(j,:) 
+        !ENDDO
+        STOP
+     ENDIF
+     piv    = 1./C(i,i)
+     C(:,i) = C(:,i)*piv 
+     DO j = i+1, N 
+        C(:,j) = C(:,j) - C(i,j)*C(:,i)
+     ENDDO
+  ENDDO
+  !
+  ! Back substitution
+  !
+  DO i = N,1,-1   
+     DO j = i-1,1,-1
+        C(:,j) = C(:,j) - C(i,j)*C(:,i)
+     ENDDO
+  ENDDO
+  !
+  iA = TRANSPOSE( C(N+1:2*N,:) ) 
+  !
+END SUBROUTINE MatrixInverse
 
 	
-	
-	
 END MODULE GRMHD_Mod
+

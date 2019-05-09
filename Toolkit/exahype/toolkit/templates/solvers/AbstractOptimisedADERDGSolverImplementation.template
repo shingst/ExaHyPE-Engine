@@ -11,6 +11,7 @@
 #include "{{abstractSolver}}.h"
 #include "{{optKernelPath}}/Kernels.h"
 
+#include "{{solver}}_Variables.h"
 #include "{{solver}}.h" // Have to include a proper declaration. Cannot use forward declared classes in static_cast.
 
 #include <stdio.h>
@@ -30,7 +31,7 @@ std::atomic_ulong {{project}}::{{abstractSolver}}::fusedSTPVI_t = 0;
 std::atomic_ulong {{project}}::{{abstractSolver}}::fusedSTPVI_f = 0;
 std::atomic_ulong {{project}}::{{abstractSolver}}::fusedSTPVI_c = 0;
 std::atomic_ulong {{project}}::{{abstractSolver}}::fusedSTPVI_picard = 0;
-  
+
 std::atomic_ulong {{project}}::{{abstractSolver}}::surfaceIntegral_f = 0;
 std::atomic_ulong {{project}}::{{abstractSolver}}::surfaceIntegral_t = 0;
 std::atomic_ulong {{project}}::{{abstractSolver}}::surfaceIntegral_c = 0;  
@@ -38,15 +39,15 @@ std::atomic_ulong {{project}}::{{abstractSolver}}::surfaceIntegral_c = 0;
 std::atomic_ulong {{project}}::{{abstractSolver}}::faceIntegral_f = 0;
 std::atomic_ulong {{project}}::{{abstractSolver}}::faceIntegral_t = 0;
 std::atomic_ulong {{project}}::{{abstractSolver}}::faceIntegral_c = 0;
-    
+
 std::atomic_ulong {{project}}::{{abstractSolver}}::solutionUpdate_f = 0;
 std::atomic_ulong {{project}}::{{abstractSolver}}::solutionUpdate_t = 0;
 std::atomic_ulong {{project}}::{{abstractSolver}}::solutionUpdate_c = 0;
-    
+
 std::atomic_ulong {{project}}::{{abstractSolver}}::riemannSolver_f = 0;
 std::atomic_ulong {{project}}::{{abstractSolver}}::riemannSolver_t = 0;
 std::atomic_ulong {{project}}::{{abstractSolver}}::riemannSolver_c = 0;
-    
+
 std::atomic_ulong {{project}}::{{abstractSolver}}::boundaryConditions_f = 0;
 std::atomic_ulong {{project}}::{{abstractSolver}}::boundaryConditions_t = 0;
 std::atomic_ulong {{project}}::{{abstractSolver}}::boundaryConditions_c = 0;
@@ -85,14 +86,14 @@ std::atomic_ulong {{project}}::{{abstractSolver}}::volumeUnknownsRestriction_c =
     const exahype::solvers::Solver::TimeStepping timeStepping,
     const int DMPObservables
     {% if enableProfiler %}, std::unique_ptr<exahype::profilers::Profiler> profiler{% endif %}):
-  {{abstractSolver}}::{{abstractSolver}}(
-      maximumMeshSize,
-      maximumMeshDepth,
-      haloCells,
-      regularisedFineGridLevels,
-      timeStepping,
-      DMPObservables
-      {% if enableProfiler %},std::move(profiler) {% endif %}) {}
+    {{abstractSolver}}::{{abstractSolver}}(
+        maximumMeshSize,
+        maximumMeshDepth,
+        haloCells,
+        regularisedFineGridLevels,
+        timeStepping,
+        DMPObservables
+        {% if enableProfiler %},std::move(profiler) {% endif %}) {}
 
 {{project}}::{{abstractSolver}}::{{abstractSolver}}(
     const double maximumMeshSize,
@@ -102,60 +103,58 @@ std::atomic_ulong {{project}}::{{abstractSolver}}::volumeUnknownsRestriction_c =
     const exahype::solvers::Solver::TimeStepping timeStepping,
     const int DMPObservables
     {% if enableProfiler %},std::unique_ptr<exahype::profilers::Profiler> profiler{% endif %})
-  :
-  exahype::solvers::ADERDGSolver(
-      "{{solver}}",
-      {{optNamespace}}::getNumberOfVariable(),
-      {{optNamespace}}::getNumberOfParameter(),
-      {{optNamespace}}::getNumberOfGlobalObservables(),
-      {{optNamespace}}::getBasisSize(),
-      maximumMeshSize,
-      maximumMeshDepth,
-      haloCells,
-      regularisedFineGridLevels,
-      timeStepping,
-      DMPObservables
-      {% if enableProfiler %}, std::move(profiler){% endif %}) {}
+    :
+    exahype::solvers::ADERDGSolver(
+        "{{solver}}",
+        {{optNamespace}}::getNumberOfVariable(),
+        {{optNamespace}}::getNumberOfParameter(),
+        NumberOfGlobalObservables, // optimisations do not make sense here
+        {{optNamespace}}::getBasisSize(),
+        maximumMeshSize,
+        maximumMeshDepth,
+        haloCells,
+        regularisedFineGridLevels,
+        timeStepping,
+        DMPObservables
+        {% if enableProfiler %}, std::move(profiler){% endif %}) {}
 
 void {{project}}::{{abstractSolver}}::constantsToString(std::ostream& os) {
   // This string is used in the --version output to identify compile time constants
   os << "{{project}}::{{abstractSolver}}("
-     << "nVar=" << NumberOfVariables << ", "
-     << "nParam=" << NumberOfParameters << ", "
-     << "nDim=" << Dimensions << ", "
-     << "order=" << Order
-     << ")";
+      << "nVar=" << NumberOfVariables << ", "
+      << "nParam=" << NumberOfParameters << ", "
+      << "nDim=" << Dimensions << ", "
+      << "order=" << Order
+      << ")";
 }
 
-
-
 int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(double* lduh, double* lQhbnd, double* lGradQhbnd, double* lFhbnd, double* const luh, const tarch::la::Vector<DIMENSIONS, double>& cellCentre, const tarch::la::Vector<DIMENSIONS, double>& cellSize, const double t ,const double dt,const bool addVolumeIntegralResultToUpdate) {
-{% if enableProfiler %}
+  {% if enableProfiler %}
   _profiler->start("fusedSpaceTimePredictorVolumeIntegral");
-{% endif %}
+  {% endif %}
 
-{% if countFlops %}
+  {% if countFlops %}
   const std::chrono::high_resolution_clock::time_point timeStart_over = std::chrono::high_resolution_clock::now();
   double tover = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-timeStart_over).count();
   const unsigned long tover_ul = (unsigned long) tover;
   overhead_t +=tover_ul;
   overhead_c +=1;
-  
+
   const std::chrono::high_resolution_clock::time_point timeStart = std::chrono::high_resolution_clock::now();
-{% endif %}
+  {% endif %}
 
   constexpr int totalSize = {{optNamespace}}::getFusedSTPVISize();
-{% if tempVarsOnStack %}
+  {% if tempVarsOnStack %}
   double memory[totalSize] __attribute__((aligned(ALIGNMENT)));
-{% else %}
+  {% else %}
   //const int index = exahype::DataHeap::getInstance().createData(totalSize,totalSize,exahype::DataHeap::Allocation::UseRecycledEntriesIfPossibleCreateNewEntriesIfRequired);
   //double* memory = exahype::DataHeap::getInstance().getData(index).data();
   double* memory = allocateArray(totalSize);
-{% endif %}
+  {% endif %}
 
-{% if isLinear %}
-{% if useSplitCKScalar or useSplitCKVect %}
-{% set SPTbufferSignature="lQi, lQi_next, lPi, lQhi, lFhi, gradQ, PSi" %}
+  {% if isLinear %}
+  {% if useSplitCKScalar or useSplitCKVect %}
+  {% set SPTbufferSignature="lQi, lQi_next, lPi, lQhi, lFhi, gradQ, PSi" %}
   double* lQi     = memory + {{optNamespace}}::getlQiShift();
   double* lQi_next= memory + {{optNamespace}}::getlQiNextShift();
   double* lPi     = memory + {{optNamespace}}::getlPiShift();
@@ -163,8 +162,8 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
   double* lFhi    = memory + {{optNamespace}}::getlFhiShift();
   double* gradQ   = memory + {{optNamespace}}::getgradQShift();
   double* PSi     = memory + {{optNamespace}}::getPSiShift();
-{% else %}
-{% set SPTbufferSignature="lQi, lFi, lSi, lQhi, lFhi, lShi, gradQ, PSi, PSderivatives" %}
+  {% else %}
+  {% set SPTbufferSignature="lQi, lFi, lSi, lQhi, lFhi, lShi, gradQ, PSi, PSderivatives" %}
   double* lQi = memory + {{optNamespace}}::getlQiShift();
   double* lQhi = memory + {{optNamespace}}::getlQhiShift();
   {% if useFlux %}
@@ -193,8 +192,8 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
   constexpr double* PSi = nullptr;
   constexpr double* PSderivatives = nullptr;
   {% endif %}
-{% endif %}{# useSplitCKScalar or useSplitCKVect #}
-{% else %}{# nonlinear case #}
+  {% endif %}{# useSplitCKScalar or useSplitCKVect #}
+  {% else %}{# nonlinear case #}
   double* lQi = memory + {{optNamespace}}::getlQiShift();
   double* lQhi = memory + {{optNamespace}}::getlQhiShift();
   double* rhs = memory + {{optNamespace}}::getrhsShift(); //same size as lQi
@@ -217,7 +216,7 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
   {% else %}
   constexpr double* gradQ = nullptr;
   {% endif %}
-{% endif %}
+  {% endif %}
 
   // this switch should probably moved into the fusedSpaceTimePredictorVolumeIntegral kernel
   double  tempUpdate[{{optNamespace}}::getUpdateSize()] __attribute__((aligned(ALIGNMENT))); // TODO no heap variant implemented
@@ -227,58 +226,72 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
   } else {
     update = &lduh[0];
   }
-  
-{% if isLinear %}
-{% if usePointSources %}
+
+  {% if isLinear %}
+  {% if usePointSources %}
   int picardIt = 1;
   std::vector<int>* pointSources = {{optNamespace}}::getPointSources(*static_cast<{{solver}}*>(this),&cellCentre[0],cellSize[0]);
-{% if countFlops %}
+  {% if countFlops %}
   const int psSize = pointSources != nullptr ? pointSources->size() : 0;
-{% endif %}
-  
+  {% endif %}
+
   if(pointSources != nullptr) {
     // perform pointsource
     picardIt = {{optNamespace}}::fusedSpaceTimePredictorVolumeIntegral(*static_cast<{{solver}}*>(this), update, lQhbnd, lFhbnd, {{SPTbufferSignature}}, luh, &cellCentre[0], cellSize[0], t, dt, pointSources);
   } else {
     picardIt = {{optNamespace}}::fusedSpaceTimePredictorVolumeIntegral_WithoutPS(*static_cast<{{solver}}*>(this), update, lQhbnd, lFhbnd, {{SPTbufferSignature}}, luh, &cellCentre[0], cellSize[0], t, dt, pointSources);
   }
-{% else %}
+  {% else %}
   const int picardIt = {{optNamespace}}::fusedSpaceTimePredictorVolumeIntegral(*static_cast<{{solver}}*>(this), update, lQhbnd, lFhbnd, {{SPTbufferSignature}}, luh, &cellCentre[0], cellSize[0], t, dt, nullptr);
-{% endif %}
+  {% endif %}
 
-{% else %}{# case non linear #}
+  {% else %}{# case non linear #}
   const int picardIt = {{optNamespace}}::fusedSpaceTimePredictorVolumeIntegral(*static_cast<{{solver}}*>(this), update, lQhbnd, lFhbnd, lQi, rhs, lFi, lSi, lQhi, lFhi, lShi, gradQ, luh, 1./cellSize[0] /*inverseDx*/, dt);
-{% endif %}
+  {% endif %}
 
   // this switch should probably moved into the fusedSpaceTimePredictorVolumeIntegral kernel
   if ( !addVolumeIntegralResultToUpdate ) {
     addUpdateToSolution(luh,luh,update,dt);
   }
 
-{% if not tempVarsOnStack %}
+  {% if transformRiemannData %}
+  // pre-processing done here as predictor is done cell-wisely
+  for ( int direction=0; direction<DIMENSIONS; direction++ ) {
+    for ( int orientation=0; orientation<1; orientation++ ) {
+      const int faceIndex = 2*direction + orientation;
+      static_cast<{{solver}}*>(this)->preProcessRiemannSolverInputs(
+          lQhbnd     + faceIndex * {{optNamespace}}::getBndFaceSize(),
+          lGradQhbnd + faceIndex * DIMENSIONS*{{optNamespace}}::getBndFluxSize(),
+          lFhbnd     + faceIndex * {{optNamespace}}::getBndFluxSize(),
+          direction,faceIndex);
+    }
+  }
+  {% endif %}
+  
+  {% if not tempVarsOnStack %}
   //exahype::DataHeap::getInstance().deleteData(index,true);
   freeArray(memory);
-{% endif %}
- 
-{% if enableProfiler %}
-  _profiler->stop("fusedSpaceTimePredictorVolumeIntegral");
-{% endif %}
+  {% endif %}
 
-{% if countFlops %}
+  {% if enableProfiler %}
+  _profiler->stop("fusedSpaceTimePredictorVolumeIntegral");
+  {% endif %}
+
+  {% if countFlops %}
   double time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-timeStart).count();
   const unsigned long time_ul = (unsigned long) time;
-{% if isLinear %}
+  {% if isLinear %}
   const unsigned long f = {{optNamespace}}::fusedSTPVI_flops + {{optNamespace}}::fusedSTPVI_PDE_factor * (fluxPDEFlops+ncpPDEFlops+sourcesPDEFlops+matparamPDEFlops){% if usePointSources %} + std::min(1,psSize)*({{optNamespace}}::fusedSTPVI_ps_flops + psSize*({{optNamespace}}::fusedSTPVI_ps_PDE_factor*pointsourcesFlops+{{optNamespace}}::fusedSTPVI_ps_nPS_flops)){% endif %};
-{% else %}
+  {% else %}
   const unsigned long f = picardIt*({{optNamespace}}::fusedSTPVI_picard_flops + {{optNamespace}}::fusedSTPVI_PDE_factor * (fluxPDEFlops+ncpPDEFlops+sourcesPDEFlops)) + {{optNamespace}}::fusedSTPVI_other_flops;
-{% endif %}
+  {% endif %}
   total_flops += f;
   total_time += time_ul;
   fusedSTPVI_f += f;
   fusedSTPVI_t += time_ul;
   fusedSTPVI_c += 1;
   fusedSTPVI_picard += picardIt;
-{% endif %}
+  {% endif %}
 
   return picardIt;
 }
@@ -286,14 +299,14 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
 
 
 void {{project}}::{{abstractSolver}}::addUpdateToSolution(double* const luh,const double* const luhOld,const double* const lduh,const double dt) {
-{% if enableProfiler %}
+  {% if enableProfiler %}
   _profiler->start("solutionUpdate");
-{% endif %}
-{% if countFlops  %}
+  {% endif %}
+  {% if countFlops  %}
   const std::chrono::high_resolution_clock::time_point timeStart = std::chrono::high_resolution_clock::now();
-{% endif %}
+  {% endif %}
   {{optNamespace}}::solutionUpdate( luh, luhOld, lduh, dt );
-{% if countFlops  %}
+  {% if countFlops  %}
   double time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-timeStart).count();
   const unsigned long time_ul = (unsigned long) time;
   const unsigned long f ={{optNamespace}}::solutionUpdate_flops;
@@ -302,23 +315,23 @@ void {{project}}::{{abstractSolver}}::addUpdateToSolution(double* const luh,cons
   solutionUpdate_f += f;
   solutionUpdate_t += time_ul;
   solutionUpdate_c += 1;
-{% endif %} 
-{% if enableProfiler %}
+  {% endif %} 
+  {% if enableProfiler %}
   _profiler->stop("solutionUpdate");
-{% endif %}
+  {% endif %}
 }
 
 
 
 void {{project}}::{{abstractSolver}}::surfaceIntegral(double* const lduh,const double* const lFhbnd,const tarch::la::Vector<DIMENSIONS,double>& cellSize) {
-{% if enableProfiler %}
+  {% if enableProfiler %}
   _profiler->start("surfaceIntegral");
-{% endif %}
-{% if countFlops %}
+  {% endif %}
+  {% if countFlops %}
   const std::chrono::high_resolution_clock::time_point timeStart = std::chrono::high_resolution_clock::now();
-{% endif %}
+  {% endif %}
   {{optNamespace}}::surfaceIntegral( lduh, lFhbnd, 1./cellSize[0] /*inverseDx*/ );
-{% if countFlops %}
+  {% if countFlops %}
   double time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-timeStart).count();
   const unsigned long time_ul = (unsigned long) time;
   const unsigned long f ={{optNamespace}}::surfaceIntegral_flops;
@@ -327,25 +340,32 @@ void {{project}}::{{abstractSolver}}::surfaceIntegral(double* const lduh,const d
   surfaceIntegral_f += f;
   surfaceIntegral_t += time_ul;
   surfaceIntegral_c += 1;
-{% endif %}
-{% if enableProfiler %}
+  {% endif %}
+  {% if enableProfiler %}
   _profiler->stop("surfaceIntegral");
-{% endif %}
+  {% endif %}
 }
 
 
 
-void {{project}}::{{abstractSolver}}::faceIntegral(double* const out/*may be solution or update vector*/,const double* const lFhbnd,const int direction, const int orientation,const tarch::la::Vector<DIMENSIONS-1,int>& subfaceIndex,const int levelDelta,const tarch::la::Vector<DIMENSIONS, double>& cellSize,const double dt,const bool addToUpdate) {
-{% if enableProfiler %}
+void {{project}}::{{abstractSolver}}::faceIntegral(double* const out/*may be solution or update vector*/,double* const lFhbnd,const int direction, const int orientation,const tarch::la::Vector<DIMENSIONS-1,int>& subfaceIndex,const int levelDelta,const tarch::la::Vector<DIMENSIONS, double>& cellSize,const double dt,const bool addToUpdate) {
+  {% if enableProfiler %}
   _profiler->start("faceIntegral");
-{% endif %}
-{% if countFlops %}
+  {% endif %}
+  {% if countFlops %}
   const std::chrono::high_resolution_clock::time_point timeStart = std::chrono::high_resolution_clock::now();
-{% endif %}
+  {% endif %}
+  
+  {% if transformRiemannData %}
+    // post-processing done here as face integral is done cell-wisely
+    const int fineGridFaceIndex = 2*direction + orientation;
+    static_cast<{{solver}}*>(this)->postProcessRiemannSolution(lFhbnd,direction,fineGridFaceIndex);
+  {% endif %}
+  
   if ( levelDelta > 0 ) {
     double lFhbndCoarse[{{optNamespace}}::getBndFluxSize()] __attribute__((aligned(ALIGNMENT)));
     {{optNamespace}}::faceFluxRestriction(lFhbndCoarse,lFhbnd,&subfaceIndex[0],levelDelta);
-    
+
     tarch::la::Vector<DIMENSIONS,double> coarseGridCellSize = tarch::la::aPowI(levelDelta,3) * 1.0 * cellSize;
     {{optNamespace}}::faceIntegral(out,lFhbndCoarse,direction,orientation,1./coarseGridCellSize[direction] /*inverseDxDirection*/);
   } else {
@@ -358,7 +378,7 @@ void {{project}}::{{abstractSolver}}::faceIntegral(double* const out/*may be sol
       addUpdateToSolution(out,out,update,dt); // adds update to solution out
     }
   }
-{% if countFlops %}
+  {% if countFlops %}
   double time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-timeStart).count();
   const unsigned long time_ul = (unsigned long) time;
   const unsigned long f = {{optNamespace}}::faceIntegral_flops + levelDelta*{{optNamespace}}::faceFluxRestriction_flops;
@@ -367,70 +387,70 @@ void {{project}}::{{abstractSolver}}::faceIntegral(double* const out/*may be sol
   faceIntegral_f += f;
   faceIntegral_t += time_ul;
   faceIntegral_c += 1;
-{% endif %}
-{% if enableProfiler %}
+  {% endif %}
+  {% if enableProfiler %}
   _profiler->stop("faceIntegral");
-{% endif %}
+  {% endif %}
 }
 
 
 void {{project}}::{{abstractSolver}}::riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double t,const double dt, const tarch::la::Vector<DIMENSIONS, double>& cellSize, const int direction, bool isBoundaryFace, int faceIndex) {
   assertion2(direction>=0,dt,direction);
   assertion2(direction<DIMENSIONS,dt,direction);
-{% if enableProfiler %}
+  {% if enableProfiler %}
   _profiler->start("riemannSolver");
-{% endif %}
-{% if countFlops %}
+  {% endif %}
+  {% if countFlops %}
   const std::chrono::high_resolution_clock::time_point timeStart = std::chrono::high_resolution_clock::now();
-{% endif %}
+  {% endif %}
   {{optNamespace}}::riemannSolver(*static_cast<{{solver}}*>(this), FL, FR, QL, QR, t, dt, direction);
-{% if countFlops %}
+  {% if countFlops %}
   double time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-timeStart).count();
-{% if isLinear %}
+  {% if isLinear %}
   const unsigned long f = {{optNamespace}}::riemannSolver_flops + {{optNamespace}}::riemannSolver_factor_NCP * (ncpPDEFlops + matparamPDEFlops) + {{optNamespace}}::riemannSolver_factor_Flux * (fluxPDEFlops + matparamPDEFlops) + 2*eigenvaluesFlops;
-{% else %}
+  {% else %}
   const unsigned long f = {{optNamespace}}::riemannSolver_flops + {{optNamespace}}::riemannSolver_factor * ncpPDEFlops + 2*eigenvaluesFlops;
-{% endif %}
+  {% endif %}
   const unsigned long time_ul = (unsigned long) time;
   total_flops += f;
   total_time += time_ul;
   riemannSolver_f += f;
   riemannSolver_t += time_ul;
   riemannSolver_c += 1;
-{% endif %}
-{% if enableProfiler %}
+  {% endif %}
+  {% if enableProfiler %}
   _profiler->stop("riemannSolver");
-{% endif %}
+  {% endif %}
 }
 
 
 
 void {{project}}::{{abstractSolver}}::boundaryConditions(double* const fluxIn,const double* const stateIn,const double* const gradStateIn, const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const int direction,const int orientation) {
-{% if enableProfiler %}
+  {% if enableProfiler %}
   _profiler->start("boundaryConditions");
-{% endif %}
-{% if countFlops  %}
+  {% endif %}
+  {% if countFlops  %}
   const std::chrono::high_resolution_clock::time_point timeStart = std::chrono::high_resolution_clock::now();
-{% endif %}
+  {% endif %}
 
-{% if tempVarsOnStack %}
+  {% if tempVarsOnStack %}
   double stateOut[{{optNamespace}}::getBndFaceSize()] __attribute__((aligned(ALIGNMENT)));
   double fluxOut[ {{optNamespace}}::getBndFluxSize()] __attribute__((aligned(ALIGNMENT)));
-{% else %}
+  {% else %}
   constexpr int totalSize = {{optNamespace}}::getBoundaryConditionsSize();
   //const int index = exahype::DataHeap::getInstance().createData(totalSize,totalSize,exahype::DataHeap::Allocation::UseRecycledEntriesIfPossibleCreateNewEntriesIfRequired);
   //double* memory = exahype::DataHeap::getInstance().getData(index).data();
   double* memory = allocateArray(totalSize);
   double* stateOut = memory + {{optNamespace}}::getBndFaceShift();
   double* fluxOut  = memory + {{optNamespace}}::getBndFluxShift();
-{% endif %}
+  {% endif %}
 
   const int faceIndex = 2*direction+orientation;
 
   // TODO(JMG): Pass gradient here for viscous flux.
   {{optNamespace}}::boundaryConditions(*static_cast<{{solver}}*>(this), fluxOut, stateOut, fluxIn, stateIn, &cellCentre[0], &cellSize[0], t, dt, faceIndex, direction);
 
-{% if countFlops %}
+  {% if countFlops %}
   double time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-timeStart).count();
   const unsigned long f = {{optNamespace}}::boundaryConditions_flops + {{optNamespace}}::boundaryConditions_factor * boundaryValuesFlops;
   const unsigned long time_ul = (unsigned long) time;
@@ -439,38 +459,38 @@ void {{project}}::{{abstractSolver}}::boundaryConditions(double* const fluxIn,co
   boundaryConditions_f += f;
   boundaryConditions_t += time_ul;
   boundaryConditions_c += 1;
-{% endif %}
-  
+  {% endif %}
+
   if (orientation == 0) {
     riemannSolver(fluxOut,fluxIn,stateOut,stateIn,t,dt,cellSize,direction,true,faceIndex);
   }
   else {
     riemannSolver(fluxIn,fluxOut,stateIn,stateOut,t,dt,cellSize,direction,true,faceIndex);
   }
-  
-{% if not tempVarsOnStack %}
+
+  {% if not tempVarsOnStack %}
   //exahype::DataHeap::getInstance().deleteData(index,true);
   freeArray(memory);
-{% endif %}
+  {% endif %}
 
-{% if enableProfiler %}
+  {% if enableProfiler %}
   _profiler->stop("boundaryConditions");
-{% endif %}
+  {% endif %}
 }
 
 
 
 double {{project}}::{{abstractSolver}}::stableTimeStepSize(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& cellSize) {
-{% if enableProfiler %}
+  {% if enableProfiler %}
   _profiler->start("stableTimeStepSize");
-{% endif %}
-{% if countFlops %}
+  {% endif %}
+  {% if countFlops %}
   const std::chrono::high_resolution_clock::time_point timeStart = std::chrono::high_resolution_clock::now();
-{% endif %}
+  {% endif %}
 
   double d = {{optNamespace}}::stableTimeStepSize(*static_cast<{{solver}}*>(this), luh, 1./cellSize[0] );
-  
-{% if countFlops %}
+
+  {% if countFlops %}
   double time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-timeStart).count();
   const unsigned long f = {{optNamespace}}::stableTimeStepSize_flops + {{optNamespace}}::stableTimeStepSize_factor * eigenvaluesFlops;
   const unsigned long time_ul = (unsigned long) time;
@@ -479,10 +499,10 @@ double {{project}}::{{abstractSolver}}::stableTimeStepSize(const double* const l
   stableTimeStepSize_f += f;
   stableTimeStepSize_t += time_ul;
   stableTimeStepSize_c += 1;
-{% endif %}
-{% if enableProfiler %}
+  {% endif %}
+  {% if enableProfiler %}
   _profiler->stop("stableTimeStepSize");
-{% endif %}
+  {% endif %}
   return d;
 }
 
@@ -490,15 +510,15 @@ double {{project}}::{{abstractSolver}}::stableTimeStepSize(const double* const l
 
 {% if not patchwiseAdjust %}
 void {{project}}::{{abstractSolver}}::adjustSolution(double* const luh,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,double t,double dt) {
-{% if enableProfiler %}
+  {% if enableProfiler %}
   _profiler->start("solutionAdjustment");
-{% endif %}
-{% if countFlops %}
+  {% endif %}
+  {% if countFlops %}
   const std::chrono::high_resolution_clock::time_point timeStart = std::chrono::high_resolution_clock::now();
-{% endif %}
+  {% endif %}
 
   {{optNamespace}}::solutionAdjustment(*static_cast<{{solver}}*>(this), luh, &cellCentre[0], cellSize[0], t, dt );
-{% if countFlops %}
+  {% if countFlops %}
   double time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-timeStart).count();
   const unsigned long f = {{optNamespace}}::solutionAdjustment_flops;
   const unsigned long time_ul = (unsigned long) time;
@@ -507,26 +527,26 @@ void {{project}}::{{abstractSolver}}::adjustSolution(double* const luh,const tar
   adjustSolution_f += f;
   adjustSolution_t += time_ul;
   adjustSolution_c += 1;
-{% endif %}
-{% if enableProfiler %}
+  {% endif %}
+  {% if enableProfiler %}
   _profiler->stop("solutionAdjustment");
-{% endif %}
+  {% endif %}
 }
 {% endif %}
 
 
 
 void {{project}}::{{abstractSolver}}::faceUnknownsProlongation(double* const lQhbndFine,double* const lFhbndFine,const double* const lQhbndCoarse,const double* const lFhbndCoarse,const int coarseGridLevel,const int fineGridLevel,const tarch::la::Vector<DIMENSIONS-1,int>& subfaceIndex) {
-{% if enableProfiler %}
+  {% if enableProfiler %}
   _profiler->start("faceUnknownsProlongation");
-{% endif %}
-{% if countFlops %}
+  {% endif %}
+  {% if countFlops %}
   const std::chrono::high_resolution_clock::time_point timeStart = std::chrono::high_resolution_clock::now();
-{% endif %}
+  {% endif %}
 
   {{optNamespace}}::faceUnknownsProlongation( lQhbndFine, lFhbndFine, lQhbndCoarse, lFhbndCoarse, coarseGridLevel, fineGridLevel, &subfaceIndex[0]);
-  
-{% if countFlops %}
+
+  {% if countFlops %}
   double time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-timeStart).count();
   const unsigned long f = {{optNamespace}}::faceUnknownsProlongation_flops * (fineGridLevel - coarseGridLevel);
   const unsigned long time_ul = (unsigned long) time;
@@ -535,25 +555,25 @@ void {{project}}::{{abstractSolver}}::faceUnknownsProlongation(double* const lQh
   faceUnknownsProlongation_f += f;
   faceUnknownsProlongation_t += time_ul;
   faceUnknownsProlongation_c += 1;
-{% endif %}
-{% if enableProfiler %}
+  {% endif %}
+  {% if enableProfiler %}
   _profiler->start("faceUnknownsProlongation");
-{% endif %}
+  {% endif %}
 }
 
 
 
 void {{project}}::{{abstractSolver}}::volumeUnknownsProlongation(double* const luhFine,const double* const luhCoarse,const int coarseGridLevel,const int fineGridLevel,const tarch::la::Vector<DIMENSIONS,int>& subcellIndex) {
-{% if enableProfiler %}
+  {% if enableProfiler %}
   _profiler->start("volumeUnknownsProlongation");
-{% endif %}
-{% if countFlops %}
+  {% endif %}
+  {% if countFlops %}
   const std::chrono::high_resolution_clock::time_point timeStart = std::chrono::high_resolution_clock::now();
-{% endif %}
+  {% endif %}
 
   {{optNamespace}}::volumeUnknownsProlongation( luhFine, luhCoarse, coarseGridLevel, fineGridLevel, &subcellIndex[0]);
 
-{% if countFlops %}
+  {% if countFlops %}
   double time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-timeStart).count();
   const unsigned long f = {{optNamespace}}::volumeUnknownsProlongation_flops * (fineGridLevel - coarseGridLevel);
   const unsigned long time_ul = (unsigned long) time;
@@ -562,25 +582,25 @@ void {{project}}::{{abstractSolver}}::volumeUnknownsProlongation(double* const l
   volumeUnknownsProlongation_f += f;
   volumeUnknownsProlongation_t += time_ul;
   volumeUnknownsProlongation_c += 1;
-{% endif %}
-{% if enableProfiler %}
+  {% endif %}
+  {% if enableProfiler %}
   _profiler->stop("volumeUnknownsProlongation");
-{% endif %}
+  {% endif %}
 }
 
 
 
 void {{project}}::{{abstractSolver}}::volumeUnknownsRestriction(double* const luhCoarse,const double* const luhFine,const int coarseGridLevel,const int fineGridLevel,const tarch::la::Vector<DIMENSIONS,int>& subcellIndex) {
-{% if enableProfiler %}
+  {% if enableProfiler %}
   _profiler->start("volumeUnknownsRestriction");
-{% endif %}
-{% if countFlops %}
+  {% endif %}
+  {% if countFlops %}
   const std::chrono::high_resolution_clock::time_point timeStart = std::chrono::high_resolution_clock::now();
-{% endif %}
+  {% endif %}
 
   {{optNamespace}}::volumeUnknownsRestriction( luhCoarse, luhFine, coarseGridLevel, fineGridLevel, &subcellIndex[0]);
-  
-{% if countFlops %}
+
+  {% if countFlops %}
   double time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-timeStart).count();
   const unsigned long f = {{optNamespace}}::volumeUnknownsRestriction_flops * (fineGridLevel - coarseGridLevel);
   const unsigned long time_ul = (unsigned long) time;
@@ -589,9 +609,56 @@ void {{project}}::{{abstractSolver}}::volumeUnknownsRestriction(double* const lu
   volumeUnknownsRestriction_f += f;
   volumeUnknownsRestriction_t += time_ul;
   volumeUnknownsRestriction_c += 1;
-{% endif %}
-{% if enableProfiler %}
+  {% endif %}
+  {% if enableProfiler %}
   _profiler->stop("volumeUnknownsRestriction");
+  {% endif %}
+}
+
+//--------
+
+{% if numberOfGlobalObservables > 0 %}
+{{project}}::{{abstractSolver}}::ReadOnlyGlobalObservables {{project}}::{{abstractSolver}}::getGlobalObservables() const {
+  return ReadOnlyGlobalObservables(_globalObservables.data());
+}
+{% endif %}
+
+void {{project}}::{{abstractSolver}}::resetGlobalObservables(double* const globalObservables) {
+{% if numberOfGlobalObservables > 0 %}
+  GlobalObservables wrappedGlobalObservables(globalObservables);
+  static_cast<{{solver}}*>(this)->resetGlobalObservables(wrappedGlobalObservables);
+{% endif %}
+}
+
+void {{project}}::{{abstractSolver}}::updateGlobalObservables(
+    double* const                               globalObservables,
+    const double* const                         luh,
+    const tarch::la::Vector<DIMENSIONS,double>& cellSize) {
+{% if numberOfGlobalObservables > 0 %}
+  double mappedObservables[NumberOfGlobalObservables];
+  GlobalObservables wrappedMappedObservables(mappedObservables);
+  static_cast<{{solver}}*>(this)->mapGlobalObservables(wrappedMappedObservables,luh,cellSize);
+  // reduce
+  GlobalObservables         wrappedGlobalObservables(globalObservables);
+  ReadOnlyGlobalObservables wrappedOtherObservables(mappedObservables);
+  tarch::multicore::Lock lock(_reductionSemaphore);
+  static_cast<{{solver}}*>(this)->mergeGlobalObservables(wrappedGlobalObservables,wrappedOtherObservables);
+  lock.free();
+{% endif %}
+}
+
+void {{project}}::{{abstractSolver}}::mergeGlobalObservables(double* const globalObservables,const double* const otherObservables) {
+{% if numberOfGlobalObservables > 0 %}
+  GlobalObservables         wrappedGlobalObservables(globalObservables);
+  ReadOnlyGlobalObservables wrappedOtherObservables(otherObservables);
+  static_cast<{{solver}}*>(this)->mergeGlobalObservables(wrappedGlobalObservables,wrappedOtherObservables);
+{% endif %}
+}
+
+void {{project}}::{{abstractSolver}}::wrapUpGlobalObservables(double* const globalObservables) {
+{% if numberOfGlobalObservables > 0 %}
+  GlobalObservables wrappedGlobalObservables(globalObservables);
+  static_cast<{{solver}}*>(this)->wrapUpGlobalObservables(wrappedGlobalObservables);
 {% endif %}
 }
 
@@ -612,15 +679,15 @@ void {{project}}::{{abstractSolver}}::algebraicSource(const tarch::la::Vector<DI
 }
 
 {% if isLinear %}
-    void {{project}}::{{abstractSolver}}::nonConservativeProduct(const double* const Q,const double* const * const gradQ,double** const BgradQ) {
+void {{project}}::{{abstractSolver}}::nonConservativeProduct(const double* const Q,const double* const * const gradQ,double** const BgradQ) {
 {% else %}
-    void {{project}}::{{abstractSolver}}::nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ) {
+void {{project}}::{{abstractSolver}}::nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ) {
 {% endif %}
   abortWithMsg("If this operation is entered (nonConservativeProduct), you have activated the corresponding guard. Then you have to re-implement this routine, too." );
 }
 
 void {{project}}::{{abstractSolver}}::multiplyMaterialParameterMatrix(const double* const Q, double** const rhs) {
-      abortWithMsg("multiplyMaterialParameterMatrix: If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
+  abortWithMsg("multiplyMaterialParameterMatrix: If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
 }
 
 void {{project}}::{{abstractSolver}}::pointSource(const double* const Q,const double* const x,const double t,const double dt, double* const forceVector,int n) {
@@ -628,23 +695,40 @@ void {{project}}::{{abstractSolver}}::pointSource(const double* const Q,const do
 }
 
 void {{project}}::{{abstractSolver}}::viscousFlux(const double* const Q,const double* const gradQ, double** const F) {
-      abortWithMsg("viscous flux: If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
+  abortWithMsg("viscous flux: If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
 }
 
 void {{project}}::{{abstractSolver}}::viscousEigenvalues(const double* const Q,const int direction,double* const lambda) {
-      abortWithMsg("viscous eigenvalues: If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
+  abortWithMsg("viscous eigenvalues: If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
 }
 
-std::vector<double> {{project}}::{{abstractSolver}}::mapGlobalObservables(const double* const Q, const tarch::la::Vector<DIMENSIONS, double> &cellSize) const {
-  return {};
+void {{project}}::{{abstractSolver}}::resetGlobalObservables(GlobalObservables& globalObservables) const {
+  abortWithMsg("If this operation is entered (resetGlobalObservables), you have specified global observables. Then you have to re-implement this routine, too." );
 }
 
-std::vector<double> {{project}}::{{abstractSolver}}::resetGlobalObservables() const {
-  return {};
+void {{project}}::{{abstractSolver}}::mapGlobalObservables(
+    GlobalObservables&                          globalObservables,
+    const double* const                         luh,
+    const tarch::la::Vector<DIMENSIONS,double>& cellSize) const {
+  abortWithMsg("If this operation is entered (mapGlobalObservables), you have specified global observables. Then you have to re-implement this routine, too." );
 }
 
-void {{project}}::{{abstractSolver}}::reduceGlobalObservables(
-	std::vector<double>& reducedGlobalObservables,
-	const std::vector<double>& curGlobalObservables) const {
-  // NOP
+void {{project}}::{{abstractSolver}}::mergeGlobalObservables(
+    GlobalObservables&         globalObservables,
+    ReadOnlyGlobalObservables& otherObservables) const {
+  abortWithMsg("If this operation is entered (mergeGlobalObservables), you have specified global observables. Then you have to re-implement this routine, too." );
 }
+
+void {{project}}::{{abstractSolver}}::wrapUpGlobalObservables(GlobalObservables& globalObservables) const {
+  // Please re-implement if required.
+}
+
+{% if transformRiemannData %}
+void {{project}}::{{abstractSolver}}::preProcessRiemannSolverInputs(double* const lQhbnd,double* const lGradQhbnd,double* const lFhbnd,const int direction,const int faceIndex) const {
+  abortWithMsg("If this operation is entered (preProcessRiemannSolverInputs), you have specified Riemann solver input and output transformations. Then you have to re-implement this routine, too." );
+}
+
+void {{project}}::{{abstractSolver}}::postProcessRiemannSolution(double* const lFhbnd,const int direction,const int fineGridFaceIndex) const {
+  abortWithMsg("If this operation is entered (postProcessRiemannSolution), you have specified Riemann solver input and output transformations. Then you have to re-implement this routine, too." );
+}
+{% endif %}
