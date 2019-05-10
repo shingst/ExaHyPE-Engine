@@ -5535,6 +5535,8 @@ bool exahype::solvers::ADERDGSolver::StealablePredictionJob::run() {
        handleLocalExecution();
        watch.stopTimer();
 
+       logInfo("run()","measured time per STP "<<watch.getCalendarTime());
+
        exahype::stealing::StealingAnalyser::getInstance().setTimePerSTP(watch.getCalendarTime());
      }
      else
