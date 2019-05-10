@@ -3,7 +3,7 @@
   "paths": {
     "peano_kernel_path": "./Peano",
     "exahype_path": "./ExaHyPE",
-    "output_directory": "./ApplicationExamples/TestCases/linear_flux_ncp_mm",
+    "output_directory": "./ApplicationExamples/TestCases/linear_flux_ncp_mm_stealing",
     "log_file": "mylogfile.log"
   },
   "architecture": "hsw",
