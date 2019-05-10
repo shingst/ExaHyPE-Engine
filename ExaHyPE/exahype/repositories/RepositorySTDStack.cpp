@@ -316,6 +316,9 @@ void exahype::repositories::RepositorySTDStack::iterate(int numberOfIterations, 
       break;
     }
 
+    // NOT GENERATED. Manual modification. Be careful when you rerun the PDT.
+    exahype::State::wrapUpIteration(_repositoryState,_solverState,i);
+
     #ifdef USE_ITAC
     VT_end(handle);
     #endif

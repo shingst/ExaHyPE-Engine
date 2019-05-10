@@ -1513,52 +1513,52 @@ void exahype::runners::Runner::printTimeStepInfo(int numberOfStepsRanSinceLastCa
     #if defined(Debug) || defined(Asserts)
     switch(p->getType()) {
       case exahype::solvers::Solver::Type::ADERDG:
-        logInfo("startNewTimeStep(...)",
+        logInfo("printTimeStepInfo(...)",
             "\tADER-DG:  t_pre  =" << static_cast<exahype::solvers::ADERDGSolver*>(p)->getPreviousMinTimeStamp());
-        logInfo("startNewTimeStep(...)",
+        logInfo("printTimeStepInfo(...)",
             "\tADER-DG: dt_pre  =" << static_cast<exahype::solvers::ADERDGSolver*>(p)->getPreviousMinTimeStepSize());
-        logInfo("startNewTimeStep(...)",
+        logInfo("printTimeStepInfo(...)",
              "\tADER-DG:  t_min =" << static_cast<exahype::solvers::ADERDGSolver*>(p)->getMinTimeStamp());
-        logInfo("startNewTimeStep(...)",
+        logInfo("printTimeStepInfo(...)",
              "\tADER-DG: dt_min =" << static_cast<exahype::solvers::ADERDGSolver*>(p)->getMinTimeStepSize());
-        logInfo("startNewTimeStep(...)",
+        logInfo("printTimeStepInfo(...)",
              "\tADER-DG: dt_est =" << static_cast<exahype::solvers::ADERDGSolver*>(p)->getEstimatedTimeStepSize());
-        logInfo("startNewTimeStep(...)",
+        logInfo("printTimeStepInfo(...)",
             "\tADER-DG: dt_adm =" << static_cast<exahype::solvers::ADERDGSolver*>(p)->getAdmissibleTimeStepSize());
         break;
       case exahype::solvers::Solver::Type::LimitingADERDG:
-        logInfo("startNewTimeStep(...)",
+        logInfo("printTimeStepInfo(...)",
              "\tLimiting-ADER-DG:  t_pre =" << static_cast<exahype::solvers::LimitingADERDGSolver*>(p)->getSolver()->getPreviousMinTimeStamp());
-        logInfo("startNewTimeStep(...)",
+        logInfo("printTimeStepInfo(...)",
              "\tLimiting-ADER-DG: dt_pre =" << static_cast<exahype::solvers::LimitingADERDGSolver*>(p)->getSolver()->getPreviousMinTimeStepSize());
-        logInfo("startNewTimeStep(...)",
+        logInfo("printTimeStepInfo(...)",
              "\tLimiting-ADER-DG:  t_min =" << static_cast<exahype::solvers::LimitingADERDGSolver*>(p)->getSolver()->getMinTimeStamp());
-        logInfo("startNewTimeStep(...)",
+        logInfo("printTimeStepInfo(...)",
              "\tLimiting-ADER-DG: dt_min =" << static_cast<exahype::solvers::LimitingADERDGSolver*>(p)->getSolver()->getMinTimeStepSize());
-        logInfo("startNewTimeStep(...)",
+        logInfo("printTimeStepInfo(...)",
              "\tLimiting-ADER-DG: dt_est =" << static_cast<exahype::solvers::LimitingADERDGSolver*>(p)->getSolver()->getEstimatedTimeStepSize());
-        logInfo("startNewTimeStep(...)",
+        logInfo("printTimeStepInfo(...)",
              "\tLimiting-ADER-DG: dt_adm =" << static_cast<exahype::solvers::LimitingADERDGSolver*>(p)->getSolver()->getAdmissibleTimeStepSize());
         break;
       case exahype::solvers::Solver::Type::FiniteVolumes:
-        logInfo("startNewTimeStep(...)",
+        logInfo("printTimeStepInfo(...)",
              "\tFinite-Volumes:  t_min =" << static_cast<exahype::solvers::ADERDGSolver*>(p)->getMinTimeStamp());
-        logInfo("startNewTimeStep(...)",
+        logInfo("printTimeStepInfo(...)",
              "\tFinite-Volumes: dt_min =" << static_cast<exahype::solvers::ADERDGSolver*>(p)->getMinTimeStepSize());
         break;
     }
     #endif
   }
 
-  logInfo("startNewTimeStep(...)",
+  logInfo("printTimeStepInfo(...)",
       "step " << n << "\tt_min          =" << currentMinTimeStamp);
 
-  logInfo("startNewTimeStep(...)",
+  logInfo("printTimeStepInfo(...)",
       "\tdt_min         =" << currentMinTimeStepSize);
 
   #if !defined(Parallel)
   // memory consumption on rank 0 would not make any sense
-  logInfo("startNewTimeStep(...)",
+  logInfo("printTimeStepInfo(...)",
       "\tmemoryUsage    =" << peano::utils::UserInterface::getMemoryUsageMB() << " MB");
 
   if (exahype::solvers::ADERDGSolver::CompressionAccuracy>0.0) {
@@ -1566,7 +1566,7 @@ void exahype::runners::Runner::printTimeStepInfo(int numberOfStepsRanSinceLastCa
     peano::heap::PlainCharHeap::getInstance().plotStatistics();
 
     logInfo(
-      "startNewTimeStep(...)",
+      "printTimeStepInfo(...)",
       "\tpiped-uncompressed-bytes=" << exahype::solvers::ADERDGSolver::PipedUncompressedBytes
       << "\tpiped-compressed-bytes=" << exahype::solvers::ADERDGSolver::PipedCompressedBytes
       << "\tcompression-rate=" << (exahype::solvers::ADERDGSolver::PipedCompressedBytes/exahype::solvers::ADERDGSolver::PipedUncompressedBytes)
@@ -1577,18 +1577,22 @@ void exahype::runners::Runner::printTimeStepInfo(int numberOfStepsRanSinceLastCa
   #if defined(TrackGridStatistics)
   if (repository.getState().getNumberOfInnerCells()>0 and repository.getState().getMaxLevel()>0) {
     logInfo(
-      "startNewTimeStep(...)",
+      "printTimeStepInfo(...)",
       "\tinner cells/inner unrefined cells=" << repository.getState().getNumberOfInnerCells()
       << "/" << repository.getState().getNumberOfInnerLeafCells() );
     logInfo(
-      "startNewTimeStep(...)",
+      "printTimeStepInfo(...)",
       "\tinner max/min mesh width=" << repository.getState().getMaximumMeshWidth()
       << "/" << repository.getState().getMinimumMeshWidth()
       );
     logInfo(
-      "startNewTimeStep(...)",
+      "printTimeStepInfo(...)",
       "\tmax level=" << repository.getState().getMaxLevel()
       );
+    logInfo(
+        "printTimeStepInfo(...)",
+        "\touter cells/outer unrefined cells=" << repository.getState().getNumberOfOuterCells()
+        << "/" << repository.getState().getNumberOfOuterLeafCells() );
   }
   #endif
 
