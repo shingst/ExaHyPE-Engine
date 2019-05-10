@@ -254,7 +254,7 @@ else
 			toNewest=true
 			schedulePeano=true
 			scheduleOthers=true;;
-		t)  git config submodule.Submodules/Peano.url    git://localhost:12345/gi26det/Peano.git
+		t)  git config submodule.Submodules/Peano.url    git://localhost:12345/ga25qic/Peano.git
 			git config submodule.Submodules/jinja.url       git://localhost:12345/pallets/jinja.git
 			git config submodule.Submodules/markupsafe.url  git://localhost:12345/pallets/markupsafe.git
 			git config submodule.Submodules/attrs.url       git://localhost:12345/python-attrs/attrs.git
@@ -262,7 +262,7 @@ else
 			git config submodule.Submodules/jsonschema.url  git://localhost:12345/Julian/jsonschema.git
 			git config submodule.Submodules/six.url         git://localhost:12345/benjaminp/six.git
 			git config submodule.Submodules/libxsmm.url     git://localhost:12345/hfp/libxsmm.git ;;
-		s)  git config submodule.Submodules/Peano.url       git@gitlab.lrz.de:gi26det/Peano.git
+		s)  git config submodule.Submodules/Peano.url       git@gitlab.lrz.de:ga25qic/Peano.git
 			git config submodule.Submodules/jinja.url       git@github.com:pallets/jinja.git
 			git config submodule.Submodules/markupsafe.url  git@github.com:pallets/markupsafe.git
 			git config submodule.Submodules/attrs.url       git@github.com:python-attrs/attrs.git
@@ -270,7 +270,7 @@ else
 			git config submodule.Submodules/jsonschema.url  git@github.com:Julian/jsonschema.git
 			git config submodule.Submodules/six.url         git@github.com:benjaminp/six.git
 			git config submodule.Submodules/libxsmm.url     git@github.com:hfp/libxsmm.git ;;
-		w)  git config submodule.Submodules/Peano.url       https://gitlab.lrz.de/gi26det/Peano.git
+		w)  git config submodule.Submodules/Peano.url       https://gitlab.lrz.de/ga25qic/Peano.git
 			git config submodule.Submodules/jinja.url       https://github.com/pallets/jinja.git
 			git config submodule.Submodules/markupsafe.url  https://github.com/pallets/markupsafe.git
 			git config submodule.Submodules/attrs.url       https://github.com/python-attrs/attrs.git
