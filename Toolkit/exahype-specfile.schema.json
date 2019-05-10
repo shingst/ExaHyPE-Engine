@@ -331,7 +331,7 @@
           "title" : "Maximum number of background jobs a consumer grabs from the queue in a single rush (default: maximum (signed) integer number)", 
           "minimum" : 1,
           "exclusiveMinimum" : false,
-          "default" : 2147483647
+          "default" : 2
         },
         "autotuning_strategy" : {
           "type" : "string", 
