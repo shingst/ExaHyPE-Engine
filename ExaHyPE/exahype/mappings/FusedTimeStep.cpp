@@ -146,7 +146,7 @@ void exahype::mappings::FusedTimeStep::beginIteration(
       tarch::parallel::Node::getInstance().isGlobalMaster() &&
       tarch::parallel::Node::getInstance().getNumberOfNodes()>1
   ) {
-    logInfo("beginIteration(...)","start traversal on global master (after broadcast).");
+    logDebug("beginIteration(...)","start traversal on global master (after broadcast).");
   }
 
   if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
@@ -352,7 +352,7 @@ void exahype::mappings::FusedTimeStep::prepareSendToMaster(
     const exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
   assertion( exahype::State::isLastIterationOfBatchOrNoBatch() );
-  logInfo("prepareSendToMaster(...)","reduce global data to master");
+  logDebug("prepareSendToMaster(...)","reduce global data to master");
   const int masterRank = tarch::parallel::NodePool::getInstance().getMasterRank();
   exahype::State::reduceGlobalDataToMaster(masterRank,0.0,0);
 }
@@ -374,9 +374,9 @@ void exahype::mappings::FusedTimeStep::mergeWithMaster(
       tarch::parallel::Node::getInstance().isGlobalMaster() &&
       tarch::parallel::Node::getInstance().getNumberOfNodes()>1
   ) {
-    logInfo("mergeWithMaster(...)","end traversal on global master (before reduction).");
+    logDebug("mergeWithMaster(...)","end traversal on global master (before reduction).");
   }
-  logInfo("mergeWithMaster(...)","merge with global data from worker");
+  logDebug("mergeWithMaster(...)","merge with global data from worker");
   exahype::State::mergeWithGlobalDataFromWorker(workerRank,0.0,0);
 }
 
