@@ -6410,6 +6410,7 @@ void exahype::solvers::ADERDGSolver::pullUnknownsFromByteStream(
 exahype::solvers::Solver::CellProcessingTimes exahype::solvers::ADERDGSolver::measureCellProcessingTimes(const int numberOfRuns) {
   // Setup
   const int cellDescriptionsIndex = ADERDGSolver::Heap::getInstance().createData(0,1);
+  FiniteVolumesSolver::Heap::getInstance().createDataForIndex(cellDescriptionsIndex,0,1); // needs to be done
 
   Solver::CellInfo cellInfo(cellDescriptionsIndex);
   addNewCellDescription(
@@ -6418,13 +6419,14 @@ exahype::solvers::Solver::CellProcessingTimes exahype::solvers::ADERDGSolver::me
       getCoarsestMeshSize(),
       _domainOffset);
 
-  CellDescription& cellDescription   = cellInfo._ADERDGCellDescriptions[0];
+  CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[0];
 
   ensureNecessaryMemoryIsAllocated(cellDescription);
 
   adjustSolutionDuringMeshRefinementBody(cellDescription,true);
   cellDescription.setRefinementEvent(CellDescription::RefinementEvent::None);
   updateTimeStepSize(0,cellInfo);
+  const double dt = cellDescription.getTimeStepSize();
 
   // ADER-DG specific setup ( all Riemanns have been performed, cell is surrounded by other Cell type cells )
   cellDescription.setNeighbourMergePerformed(true);
@@ -6444,11 +6446,11 @@ exahype::solvers::Solver::CellProcessingTimes exahype::solvers::ADERDGSolver::me
       numberOfPicardIterations = predictionAndVolumeIntegralBody(cellDescription,cellDescription.getTimeStamp(),cellDescription.getTimeStepSize(),false,true,true);
     }
     const double time_sec = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-timeStart).count() * 1e-9;
-    result._minTimePredictor = time_sec / numberOfRuns / numberOfPicardIterations;
+    result._minTimePredictor = time_sec / numberOfRuns / std::abs(numberOfPicardIterations);
     result._maxTimePredictor = result._minTimePredictor * getNodesPerCoordinateAxis(); // * (order+1)
   }
 
-  // measure ADER-DG cells
+  // measure ADER-DG cell update
   cellDescription.setRefinementStatus(_refineOrKeepOnFineGrid);
   cellDescription.setFacewiseRefinementStatus(_refineOrKeepOnFineGrid);
   {
@@ -6458,9 +6460,23 @@ exahype::solvers::Solver::CellProcessingTimes exahype::solvers::ADERDGSolver::me
 
       swapSolutionAndPreviousSolution(cellDescription); // assumed to be very cheap
       rollbackToPreviousTimeStep(cellDescription);
+      cellDescription.setTimeStepSize(dt);
     }
     const double time_sec = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-timeStart).count() * 1e-9;
     result._timeADERDGUpdate = time_sec / numberOfRuns;
+  }
+
+  // measure Riemann solve
+  {
+    const tarch::la::Vector<DIMENSIONS,int> pos1(0);
+    tarch::la::Vector<DIMENSIONS,int> pos2(0); pos2[0]=1;
+    Solver::InterfaceInfo face(pos1,pos2);
+    const std::chrono::high_resolution_clock::time_point timeStart = std::chrono::high_resolution_clock::now();
+    for (int it=0; it<numberOfRuns; it++) {
+      solveRiemannProblemAtInterface(cellDescription,cellDescription,face);
+    }
+    const double time_sec = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-timeStart).count() * 1e-9;
+    result._timeADERDGRiemann = time_sec / numberOfRuns;
   }
 
   // Clean up
