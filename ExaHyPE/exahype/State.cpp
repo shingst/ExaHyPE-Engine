@@ -253,7 +253,7 @@ bool exahype::State::isSecondToLastIterationOfBatchOrNoBatch()  {
   return NumberOfBatchIterations==1 || CurrentBatchIteration==NumberOfBatchIterations-2;
 }
 
-void exahype::State::kickOffIteration(exahype::records::RepositoryState::Action action,const int currentBatchIteration,const int numberOfBatchIterations) {
+void exahype::State::kickOffIteration(const exahype::records::RepositoryState::Action& action,const int currentBatchIteration,const int numberOfBatchIterations) {
   switch ( action ) {
   case exahype::records::RepositoryState::UseAdapterFinaliseMeshRefinement:
   case exahype::records::RepositoryState::UseAdapterFinaliseMeshRefinementOrLocalRollback:
@@ -289,7 +289,31 @@ void exahype::State::kickOffIteration(exahype::records::RepositoryState::Action 
   }
 }
 
-void exahype::State::kickOffIteration(exahype::records::RepositoryState& repositoryState, exahype::State& solverState,  const int currentBatchIteration) {
+bool exahype::State::startAndFinishSynchronousExchangeManually(const exahype::records::RepositoryState::Action& action,bool predictionFusedTimeStepCondition) {
+  return
+      ((action==exahype::records::RepositoryState::UseAdapterInitialPrediction            ||
+      action==exahype::records::RepositoryState::UseAdapterPrediction                     ||
+      action==exahype::records::RepositoryState::UseAdapterPredictionRerun                ||
+      action==exahype::records::RepositoryState::UseAdapterPredictionOrLocalRecomputation ||
+      action==exahype::records::RepositoryState::UseAdapterFusedTimeStep) &&
+      predictionFusedTimeStepCondition)
+      ||
+      action==exahype::records::RepositoryState::UseAdapterBroadcastAndDropNeighbourMessages;
+}
+
+bool exahype::State::startAndFinishNeighbourExchangeManually(const exahype::records::RepositoryState::Action& action,bool predictionFusedTimeStepCondition) {
+  return
+      ((action==exahype::records::RepositoryState::UseAdapterInitialPrediction            ||
+      action==exahype::records::RepositoryState::UseAdapterPrediction                     ||
+      action==exahype::records::RepositoryState::UseAdapterPredictionRerun                ||
+      action==exahype::records::RepositoryState::UseAdapterPredictionOrLocalRecomputation ||
+      action==exahype::records::RepositoryState::UseAdapterFusedTimeStep) &&
+      predictionFusedTimeStepCondition)
+      ||
+      action==exahype::records::RepositoryState::UseAdapterBroadcastAndDropNeighbourMessages;
+}
+
+void exahype::State::kickOffIteration(exahype::records::RepositoryState& repositoryState, exahype::State& solverState,const int currentBatchIteration) {
   CurrentBatchIteration   = currentBatchIteration;
   NumberOfBatchIterations = repositoryState.getNumberOfIterations();
 
@@ -299,32 +323,31 @@ void exahype::State::kickOffIteration(exahype::records::RepositoryState& reposit
   }
 
   #ifdef Parallel
-  if ( currentBatchIteration % 2 ==0 ) { // synchronises the ranks before every time step
-    // broadcast
+  const bool manualSychronousExchange = startAndFinishSynchronousExchangeManually(repositoryState.getAction(),CurrentBatchIteration == 0);
+  const bool manualNeighbourExchange  = startAndFinishNeighbourExchangeManually  (repositoryState.getAction(),CurrentBatchIteration % 2 == 0);
+
+  if ( manualNeighbourExchange ) {
+    logDebug("kickOffIteration(...)","all heaps start to send boundary data (batch iteration="<<currentBatchIteration<<")");
+    peano::heap::AbstractHeap::allHeapsStartToSendBoundaryData(solverState.isTraversalInverted());
+  }
+  if ( manualSychronousExchange ) {
+    logDebug("kickOffIteration(...)","all heaps start to send synchronous data (batch iteration="<<currentBatchIteration<<")");
+    peano::heap::AbstractHeap::allHeapsStartToSendSynchronousData();
+
     assertionEquals(tarch::parallel::Node::getGlobalMasterRank(),0);
     const int masterRank = tarch::parallel::Node::getInstance().getGlobalMasterRank();
-    switch ( repositoryState.getAction()) {
-      case exahype::records::RepositoryState::UseAdapterInitialPrediction:
-      case exahype::records::RepositoryState::UseAdapterPrediction:
-      case exahype::records::RepositoryState::UseAdapterPredictionRerun:
-      case exahype::records::RepositoryState::UseAdapterFusedTimeStep:
-      case exahype::records::RepositoryState::UseAdapterBroadcastAndDropNeighbourMessages: {
-        peano::heap::AbstractHeap::allHeapsStartToSendSynchronousData(); // can be called multiple times
-        if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) { // TODO scalability bottleneck; use tree-based approach
-            for (int workerRank=1; workerRank<tarch::parallel::Node::getInstance().getNumberOfNodes(); workerRank++) {
-              if (!(tarch::parallel::NodePool::getInstance().isIdleNode(workerRank))) { // TODO scalability bottleneck; use tree-based approach
-                exahype::State::broadcastGlobalDataToWorker(workerRank,0.0,0);
-              }
-            }
-        } else {
-          exahype::State::mergeWithGlobalDataFromMaster(masterRank,0.0,0);
+    if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) { // TODO might be scalability bottleneck for large rank numbers
+      for (int workerRank=1; workerRank<tarch::parallel::Node::getInstance().getNumberOfNodes(); workerRank++) {
+        if ( !(tarch::parallel::NodePool::getInstance().isIdleNode(workerRank)) ) {
+          exahype::State::broadcastGlobalDataToWorker(workerRank,0.0,0);
         }
-        peano::heap::AbstractHeap::allHeapsFinishedToSendSynchronousData(); // can be called multiple times
-      } break;
-      default:
-        break;
+      }
+    } else {
+      exahype::State::mergeWithGlobalDataFromMaster(masterRank,0.0,0);
     }
   }
+
+  // kick off on other ranks
   if ( !tarch::parallel::Node::getInstance().isGlobalMaster() ) {
     kickOffIteration(repositoryState.getAction(),currentBatchIteration,repositoryState.getNumberOfIterations());
   }
@@ -333,129 +356,26 @@ void exahype::State::kickOffIteration(exahype::records::RepositoryState& reposit
 
 
 void exahype::State::wrapUpIteration(exahype::records::RepositoryState& repositoryState, exahype::State& solverState, const int currentBatchIteration) {
-// old code; keep for reference
-//  if ( currentBatchIteration % 2 == 1
-//       && repositoryState.getAction() == exahype::records::RepositoryState::UseAdapterFusedTimeStep ) {
-//    peano::heap::AbstractHeap::allHeapsFinishedToSendBoundaryData( !solverState.isTraversalInverted() );
-//  }
-//  #ifdef Parallel
-//  if ( currentBatchIteration==repositoryState.getNumberOfIterations()-1  ) {
-//    // reductions
-//    assertionEquals(tarch::parallel::Node::getGlobalMasterRank(),0);
-//    const int masterRank = tarch::parallel::Node::getInstance().getGlobalMasterRank();
-//    switch ( repositoryState.getAction() ) {
-//      case exahype::records::RepositoryState::UseAdapterBroadcastAndDropNeighbourMessages: // to synchronise before writing out the end message
-//      case exahype::records::RepositoryState::UseAdapterFusedTimeStep:
-//      case exahype::records::RepositoryState::UseAdapterUpdateAndReduce:
-//      case exahype::records::RepositoryState::UseAdapterCorrection: {
-//        if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
-//          for (int workerRank=1; workerRank<tarch::parallel::Node::getInstance().getNumberOfNodes(); workerRank++) {
-//            if (!(tarch::parallel::NodePool::getInstance().isIdleNode(workerRank))) { // TODO scalability bottleneck; use tree-based approach
-//              exahype::State::mergeWithGlobalDataFromWorker(workerRank,0.0,0);
-//            }
-//          }
-//        } else {
-//          exahype::State::reduceGlobalDataToMaster(masterRank,0.0,0);
-//        }
-//      } break;
-//      case exahype::records::RepositoryState::UseAdapterFinaliseMeshRefinement:
-//      case exahype::records::RepositoryState::UseAdapterFinaliseMeshRefinementOrLocalRollback: {
-//        if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
-//          for (int workerRank=1; workerRank<tarch::parallel::Node::getInstance().getNumberOfNodes(); workerRank++) {
-//            if (!(tarch::parallel::NodePool::getInstance().isIdleNode(workerRank))) {
-//              for (auto* solver : exahype::solvers::RegisteredSolvers) {
-//                if ( solver->hasRequestedAnyMeshRefinement() ) {
-//                  solver->mergeWithWorkerData(workerRank,0.0,0);
-//                }
-//              }
-//            }
-//          }
-//        } else {
-//          for (auto* solver : exahype::solvers::RegisteredSolvers) {
-//            if ( solver->hasRequestedAnyMeshRefinement() ) {
-//              solver->sendDataToMaster(masterRank,0.0,0);
-//            }
-//          }
-//        }
-//      } break;
-//      case exahype::records::RepositoryState::UseAdapterPredictionOrLocalRecomputation: {
-//        if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
-//          for (int workerRank=1; workerRank<tarch::parallel::Node::getInstance().getNumberOfNodes(); workerRank++) {
-//            if (!(tarch::parallel::NodePool::getInstance().isIdleNode(workerRank))) {
-//              for (auto* solver : exahype::solvers::RegisteredSolvers) {
-//                if ( solver->getMeshUpdateEvent()==exahype::solvers::Solver::MeshUpdateEvent::IrregularLimiterDomainChange ) {
-//                  solver->mergeWithWorkerData(workerRank,0.0,0);
-//                }
-//              }
-//            }
-//          }
-//        } else {
-//          for (auto* solver : exahype::solvers::RegisteredSolvers) {
-//            if ( solver->getMeshUpdateEvent()==exahype::solvers::Solver::MeshUpdateEvent::IrregularLimiterDomainChange ) {
-//              solver->sendDataToMaster(masterRank,0.0,0);
-//            }
-//          }
-//        }
-//      } break;
-//      case exahype::records::RepositoryState::UseAdapterRefinementStatusSpreading: {
-//        if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
-//          for (int workerRank=1; workerRank<tarch::parallel::Node::getInstance().getNumberOfNodes(); workerRank++) {
-//            if (!(tarch::parallel::NodePool::getInstance().isIdleNode(workerRank))) {
-//              for (auto* solver : exahype::solvers::RegisteredSolvers) {
-//                if ( solver->getMeshUpdateEvent()!=exahype::solvers::Solver::MeshUpdateEvent::None ) {
-//                  solver->mergeWithWorkerMeshUpdateEvent(workerRank,0.0,0);
-//                }
-//              }
-//            }
-//          }
-//        } else {
-//          for (auto* solver : exahype::solvers::RegisteredSolvers) {
-//            if ( solver->getMeshUpdateEvent()!=exahype::solvers::Solver::MeshUpdateEvent::None ) {
-//              solver->sendMeshUpdateEventToMaster(tarch::parallel::Node::getInstance().getGlobalMasterRank(),0.0,0);
-//            }
-//          }
-//        }
-//      } break;
-//      default:
-//        break;
-//    }
-//  }
-//  #endif
-//
-//  wrapUpIteration(repositoryState.getAction(),currentBatchIteration,repositoryState.getNumberOfIterations());
-}
+  #ifdef Parallel
+  const bool manualSychronousExchange = startAndFinishSynchronousExchangeManually(repositoryState.getAction(),CurrentBatchIteration == NumberOfBatchIterations-1);
+  const bool manuaNeighbourExchange   = startAndFinishNeighbourExchangeManually  (repositoryState.getAction(),CurrentBatchIteration == NumberOfBatchIterations-1 || CurrentBatchIteration % 2 != 0);
 
-//void exahype::State::wrapUpIteration(exahype::records::RepositoryState::Action action,const int currentBatchIteration,const int numberOfIterations) {
-//  if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
-//    switch ( action ) {
-//    case exahype::records::RepositoryState::UseAdapterFinaliseMeshRefinement:
-//    case exahype::records::RepositoryState::UseAdapterFinaliseMeshRefinementOrLocalRollback:
-//      for (auto* solver : solvers::RegisteredSolvers) {
-//        if ( solver->hasRequestedAnyMeshRefinement() ) {
-//          solver->updateTimeStepSize();
-//        }
-//      }
-//      break;
-//     case exahype::records::RepositoryState::UseAdapterUpdateAndReduce:
-//     case exahype::records::RepositoryState::UseAdapterCorrection:
-//       for (auto* solver : solvers::RegisteredSolvers) {
-//         solver->wrapUpTimeStep(true,true);
-//       }
-//       break;
-//     case exahype::records::RepositoryState::UseAdapterFusedTimeStep: {
-//       const bool endOfFusedTimeStep             = exahype::solvers::Solver::PredictionSweeps==1 || (currentBatchIteration % 2 == 1);
-//       const bool endOfFirstFusedTimeStepInBatch = currentBatchIteration == exahype::solvers::Solver::PredictionSweeps - 1;
-//       if ( endOfFusedTimeStep ) {
-//         for (auto* solver : solvers::RegisteredSolvers) {
-//           solver->wrapUpTimeStep(endOfFirstFusedTimeStepInBatch,currentBatchIteration==numberOfIterations-1);
-//         }
-//       }
-//     } break;
-//    default:
-//      break;
-//    }
-//  }
-//}
+  // TODO check if the order of the calls (boundary,synchronous) makes a difference
+
+  if ( manuaNeighbourExchange ) {
+    bool isTraversalInverted = solverState.isTraversalInverted(); // is not broadcasted anymore
+    if ( CurrentBatchIteration % 2 != 0 ) {
+      isTraversalInverted = !isTraversalInverted;
+    }
+    logDebug("wrapUpIteration(...)","all heaps finish to send boundary data (batch iteration="<<currentBatchIteration<<")");
+    peano::heap::AbstractHeap::allHeapsFinishedToSendBoundaryData(isTraversalInverted);
+  }
+  if ( manualSychronousExchange ) {
+    logDebug("wrapUpIteration(...)","all heaps finish to send synchronous data (batch iteration="<<currentBatchIteration<<")");
+    peano::heap::AbstractHeap::allHeapsFinishedToSendSynchronousData();
+  }
+  #endif
+}
 
 #ifdef Parallel
 void exahype::State::broadcastGlobalDataToWorker(
