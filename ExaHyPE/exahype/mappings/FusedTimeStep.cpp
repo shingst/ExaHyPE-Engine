@@ -149,6 +149,19 @@ void exahype::mappings::FusedTimeStep::beginIteration(
     exahype::State& solverState) {
   logTraceInWith1Argument("beginIteration(State)", solverState);
 
+  static int itcount = 0;
+  itcount++;
+
+  int timestep = itcount % 2;
+
+#ifdef USE_ITAC
+  if (timestep>48 && timestep<52) {
+         VT_traceon();
+  }
+  else
+       VT_traceoff();
+#endif
+
   if (
       tarch::parallel::Node::getInstance().isGlobalMaster() &&
       tarch::parallel::Node::getInstance().getNumberOfNodes()>1

@@ -1141,6 +1141,15 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
         solvers::Solver::getMinTimeStampOfAllSolvers() < simulationEndTime         &&
         timeStep < simulationTimeSteps
     ) {
+
+#ifdef USE_ITAC
+      if(timeStep>48 && timeStep<52) {
+         VT_traceon(); // turn ITAC tracing off during mesh refinement; is switched on again in mapping Prediction
+      }
+      else 
+         VT_traceoff();
+#endif
+
       bool plot = exahype::plotters::checkWhetherPlotterBecomesActive(
           solvers::Solver::getMinTimeStampOfAllSolvers()); // has no side effects
 
