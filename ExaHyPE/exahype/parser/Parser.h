@@ -641,8 +641,7 @@ class exahype::parser::Parser {
    */
   int getMinBackgroundJobsInARush();
   /**
-   * @return Maximum number of background jobs a consumer grabs from the queue in a single rush
-   * (default: ~maximum integer number)
+   * @return Maximum number of background jobs a consumer grabs from the queue in a single rush (default: 2* minimum number)
    */
   int getMaxBackgroundJobsInARush();
 
