@@ -155,11 +155,11 @@ void exahype::mappings::FusedTimeStep::beginIteration(
   int timestep = itcount % 2;
 
 #ifdef USE_ITAC
-  if (timestep>48 && timestep<52) {
-         VT_traceon();
-  }
-  else
-       VT_traceoff();
+//  if (timestep>48 && timestep<52) {
+//         VT_traceon();
+//  }
+//  else
+//       VT_traceoff();
 #endif
 
   if (
