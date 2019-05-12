@@ -247,10 +247,6 @@ void exahype::repositories::RepositorySTDStack::iterate(int numberOfIterations, 
     assertionEquals( numberOfIterations, 1 );
     numberOfIterations = _repositoryState.getNumberOfIterations();
   }
-  
-  logInfo("iterate(...)","iteration management tag is "<<peano::parallel::SendReceiveBufferPool::getInstance().getIterationManagementTag());
-  logInfo("iterate(...)","iteration data tag is "<<peano::parallel::SendReceiveBufferPool::getInstance().getIterationDataTag());
-
   peano::parallel::SendReceiveBufferPool::getInstance().exchangeBoundaryVertices(_repositoryState.getExchangeBoundaryVertices());
 
   if ( numberOfIterations > 1 && _solverState.isInvolvedInJoinOrFork() ) {
