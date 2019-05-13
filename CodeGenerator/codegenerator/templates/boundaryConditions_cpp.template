@@ -50,10 +50,6 @@ void {{codeNamespace}}::boundaryConditions(
 {% endif %}
     for (int ii = 0; ii < {{nDof}}; ii++) {  // loop over dof
       x[d1] = cellCentre[d1] + cellSize[d1] * (nodes[ii] - 0.5); 
-#ifdef USE_IPO
-    #pragma forceinline recursive
-#endif
-
 {% if useViscousFlux %}
   // Remove padding to use the same user function as generic kernel
   double gradQ_PDE[{{nVar*nDim}}]; 
@@ -65,6 +61,9 @@ void {{codeNamespace}}::boundaryConditions(
 {% endif %}{# useNCP #}
 
     // TODO(JMG): Pass gradient here in case of viscous flux
+#ifdef USE_IPO
+    #pragma forceinline recursive
+#endif
     solver.{{solverName}}::boundaryValues(x,t,dt,faceIndex,normalNonZero,
                           &fluxIn[(jj*{{nDof3D}}+ii)*{{nVarPad}}], &stateIn[(jj*{{nDof3D}}+ii)*{{nDataPad}}],
 					  {% if useViscousFlux %}
