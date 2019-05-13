@@ -294,7 +294,7 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
     // Create a new MPI communicator for stealing related MPI communication
     exahype::stealing::StealingManager::getInstance().createMPICommunicator(); 
 
-    //peano::performanceanalysis::Analysis::getInstance().setDevice(&exahype::stealing::StealingAnalyser::getInstance());
+    peano::performanceanalysis::Analysis::getInstance().setDevice(&exahype::stealing::StealingAnalyser::getInstance());
 
 #if defined(StealingStrategyStaticHardcoded)
     exahype::stealing::StaticDistributor::getInstance().loadDistributionFromFile(_parser.getStealingInputFile());

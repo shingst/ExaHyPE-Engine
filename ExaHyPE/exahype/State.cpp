@@ -425,9 +425,9 @@ void exahype::State::reduceGlobalDataToMaster(
   for (auto* solver : exahype::solvers::RegisteredSolvers) {
     solver->sendDataToMaster(master,cellCentre,level);
   }
-//#if defined(DistributedStealing) || defined(AnalyseWaitingTimes)
-//  exahype::stealing::StealingAnalyser::getInstance().endToSendDataToMaster();
-//#endif
+#if defined(DistributedStealing) || defined(AnalyseWaitingTimes)
+  exahype::stealing::StealingAnalyser::getInstance().endToSendDataToMaster();
+#endif
 }
 
 void exahype::State::mergeWithGlobalDataFromWorker(
