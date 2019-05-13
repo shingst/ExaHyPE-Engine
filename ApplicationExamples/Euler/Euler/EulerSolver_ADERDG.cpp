@@ -589,7 +589,7 @@ bool Euler::EulerSolver_ADERDG::isPhysicallyAdmissible(
          (observablesMin[1] >= 0.0);
 }
 
-/*void Euler::EulerSolver_ADERDG::resetGlobalObservables(GlobalObservables& globalObservables) const {
+void Euler::EulerSolver_ADERDG::resetGlobalObservables(GlobalObservables& globalObservables) const {
   globalObservables.dgcells() = 0;
   globalObservables.fvcells() = 0;
 }
@@ -613,4 +613,4 @@ void Euler::EulerSolver_ADERDG::beginTimeStep(const double minTimeStamp,const bo
   ReadOnlyGlobalObservables observables = getGlobalObservables();
   logInfo("beginTimeStep(...)","observables.dgcells()="<<observables.dgcells());
   logInfo("beginTimeStep(...)","observables.fvcells()="<<observables.fvcells());
-}*/
+}
