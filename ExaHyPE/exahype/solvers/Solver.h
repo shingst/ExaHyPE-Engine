@@ -67,6 +67,7 @@
 namespace exahype {
   namespace solvers{
     class ADERDGSolver;
+    class LimitingADERDGSolver;
   }
 }
 
@@ -1168,7 +1169,19 @@ public:
   bool hasProcessed = false;
 #if defined(DistributedStealing)
   bool hasTriggeredEmergency = false;
-  exahype::solvers::ADERDGSolver* solver = static_cast<exahype::solvers::ADERDGSolver*>(const_cast<exahype::solvers::Solver*>(this));
+
+  exahype::solvers::ADERDGSolver* solver = nullptr; 
+
+  switch ( this->getType() ) {
+    case solvers::Solver::Type::ADERDG:
+       solver = static_cast<exahype::solvers::ADERDGSolver*>(const_cast<exahype::solvers::Solver*>(this));
+       break;
+    case solvers::Solver::Type::LimitingADERDG:
+       solver = static_cast<const exahype::solvers::LimitingADERDGSolver*>(this)->_solver.get();
+       break;    
+  }
+ 
+
 #if !defined(StealingUseProgressThread)
   exahype::solvers::ADERDGSolver::setMaxNumberOfIprobesInProgressStealing(1);
 #endif

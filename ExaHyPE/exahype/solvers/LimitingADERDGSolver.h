@@ -93,12 +93,13 @@ public:
   static int updateBodyHandle;
   static int mergeNeighboursHandle;
   #endif
-
-protected:
+  
   /**
    * The ADERDG solver.
    */
   std::unique_ptr<exahype::solvers::ADERDGSolver> _solver;
+
+protected:
 
   /**
    * The finite volumes solver used for the a posteriori subcell limiting.
