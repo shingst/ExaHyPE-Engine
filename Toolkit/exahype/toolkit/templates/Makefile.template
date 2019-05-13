@@ -82,7 +82,7 @@ PROJECT_CFLAGS += -DDistributedStealing -DStealingStrategyAggressive
 {% elif stealing=="aggressiveCCP_diffusive" %}
 PROJECT_CFLAGS += -DDistributedStealing -DStealingStrategyAggressiveCCP 
 {% elif stealing=="aggressiveHybrid" %}
-PROJECT_CFLAGS += -DDistributedStealing -DStealingStrategyAggressiveHybrid 
+PROJECT_CFLAGS += -DDistributedStealing -DStealingStrategyAggressiveHybrid -DPerformanceAnalysis 
 {% elif stealing=="hybrid" %}
 PROJECT_CFLAGS += -DDistributedStealing -DStealingStrategyHybrid
 {% elif stealing=="static_hardcoded" %}
