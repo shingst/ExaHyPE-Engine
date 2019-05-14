@@ -66,12 +66,12 @@ void {{codeNamespace}}::boundaryConditions(
 #endif
     solver.{{solverName}}::boundaryValues(x,t,dt,faceIndex,normalNonZero,
                           &fluxIn[(jj*{{nDof3D}}+ii)*{{nVarPad}}], &stateIn[(jj*{{nDof3D}}+ii)*{{nDataPad}}],
-					  {% if useViscousFlux %}
-					  gradQ_PDE,
-					  {% else %}
-					  nullptr
-					  {% endif %}
-                          &fluxOut[(jj*{{nDof3D}}+ii)*{{nVarPad}}],&stateOut[(jj*{{nDof3D}}+ii)*{{nDataPad}}]);   
+{% if useViscousFlux %}
+                          gradQ_PDE,
+{% else %}
+                          nullptr,
+{% endif %}
+                          &fluxOut[(jj*{{nDof3D}}+ii)*{{nVarPad}}],&stateOut[(jj*{{nDof3D}}+ii)*{{nDataPad}}]);
     }
   }
   
