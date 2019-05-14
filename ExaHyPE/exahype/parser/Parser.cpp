@@ -527,12 +527,12 @@ int exahype::parser::Parser::getOutsideCellsLeft() const {
   return result;
 }
 
-bool exahype::parser::Parser::getPlaceOneThirdOfCellsOuside() const {
-  return getBoolFromPath("/computational_domain/one_third_of_cells_outside", false, isOptional);
+int exahype::parser::Parser::getRanksPerDimensionToPutOnCoarsestGrid() const {
+  return getBoolFromPath("/computational_domain/ranks_per_dimension", true, isOptional);
 }
 
 bool exahype::parser::Parser::getScaleBoundingBox() const {
-  return getPlaceOneThirdOfCellsOuside() || getOutsideCells() > 0;
+  return getRanksPerDimensionToPutOnCoarsestGrid()>0 || getOutsideCells() > 0;
 }
 
 std::string exahype::parser::Parser::getMulticorePropertiesFile() const {

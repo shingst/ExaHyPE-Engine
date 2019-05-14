@@ -649,8 +649,9 @@ exahype::repositories::Repository* exahype::runners::Runner::createRepository() 
   if ( _parser.getScaleBoundingBox() ) {
     int  cellsOutside   = _parser.getOutsideCells();
     int cellsOutsideLeft = _parser.getOutsideCellsLeft(); // if we only cut from one side, we need less ranks on the coarsest grid.
-    if ( _parser.getPlaceOneThirdOfCellsOuside() ) {
-      cellsOutsideLeft = 1;
+    int loadBalancingLevel = 0;
+    if ( _parser.getRanksPerDimensionToPutOnCoarsestGrid()>0 ) {
+      loadBalancingLevel =static_cast<int>( std::ceil(std) );
     }
 
     const double coarsestUserMeshSpacing =
@@ -663,7 +664,7 @@ exahype::repositories::Repository* exahype::runners::Runner::createRepository() 
     int level = coarsestUserMeshLevel; // level=1 means a single cell
     while (_boundingBoxMeshSize < 0 || _boundingBoxMeshSize > coarsestUserMeshSpacing) {
       const int boundingBoxMeshCells = std::pow(3,level-1);
-      if ( _parser.getPlaceOneThirdOfCellsOuside() ) {
+      if ( _parser.getRanksPerDimensionToPutOnCoarsestGrid() ) {
         cellsOutside = boundingBoxMeshCells/3 + 2;
       }
       boundingBoxScaling                = static_cast<double>(boundingBoxMeshCells) / ( boundingBoxMeshCells - cellsOutside ); // two cells are removed on each side

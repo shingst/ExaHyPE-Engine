@@ -63,7 +63,7 @@ class PrettyPrintTool(Tool):
 
 class MeshInfoTool(Tool):
   """
-  This tool gives information about the mesh ExaHyPE will construct and suggests
+  This tool gives infomation about the mesh ExaHyPE will construct and suggests
   optimal MPI rank numbers to distribute the coarsest base grid.
   """
   def __init__(self,log=None):
@@ -74,7 +74,7 @@ class MeshInfoTool(Tool):
     return "mesh_info"
 
   def help(self):
-    return "Mesh Info - Gives information about the mesh ExaHyPE will construct and suggests optimal MPI rank numbers to distribute the coarsest base grid."
+    return "Mesh Info - Gives infomation about the mesh ExaHyPE will construct and suggests optimal MPI rank numbers to distribute the coarsest base grid."
 
   def run(self,context):
     """
@@ -89,8 +89,8 @@ class MeshInfoTool(Tool):
     userMeshSize            = mesh_info.getCoarsestMaximumMeshSizeOfAllSolvers(spec.get("solvers",[]))
     outsideCells            = specDomain.get("outside_cells",2)
     outsideCellsLeft        = specDomain.get("outside_cells_left",outsideCells/2)
-    oneThirdOfCellsOutside  = specDomain.get("one_third_of_cells_outside",False)
-    info = mesh_info.MeshInfo(domainOffset,domainSize,userMeshSize,outsideCells,outsideCellsLeft,oneThirdOfCellsOutside)
+    ranksPerDimension       = specDomain.get("ranks_per_dimension",0)
+    info = mesh_info.MeshInfo(domainOffset,domainSize,userMeshSize,outsideCells,outsideCellsLeft,ranksPerDimension)
 
     # print user specification
     self.log.info("This is the MeshInfo tool of the toolkit. It does predict what coarse grid ExaHyPE will create.")
@@ -106,7 +106,7 @@ class MeshInfoTool(Tool):
     self.log.info("---------------------------------------------------------------------------------------------")
     self.log.info("bounding box outside cells (per coordinate direction)            : %d" % info.boundingBoxOutsideCells)     
     self.log.info("bounding box outside cells (per coordinate direction, left side) : %d" % info.boundingBoxOutsideCellsLeft)
-    self.log.info("is one third of bounding box cells outside                       : %s" % str(info.oneThirdOfBoundingBoxCellsOutside))
+    self.log.info("ranks per longest edge                                           : %s" % str(info.ranksPerDimension))
    
     # run
     info.deduceCoarseGridInformation()
@@ -128,14 +128,13 @@ class MeshInfoTool(Tool):
     self.log.info("bounding box mesh cells                    (per coordinate direction) : %d" % info.boundingBoxMeshCells)
     self.log.info("bounding box outside cells                 (longest edge)             : %d" % info.boundingBoxOutsideCells)
     self.log.info("bounding box outside cells on 'left' side  (longest edge)             : %d" % info.boundingBoxOutsideCellsLeft)      
-    self.log.info("is one third of bounding box cells outside (longest edge)             : %s" % str(info.oneThirdOfBoundingBoxCellsOutside))
+    self.log.info("ranks per longest edge                                                : %s" % str(info.ranksPerDimension))
     self.log.info("---------------------------------------------------------------------------------------------")
     
     # domain decomposition recommendations
     if info.boundingBoxOutsideCells is 0 or\
        (info.boundingBoxOutsideCells is 2 and\
-       info.boundingBoxOutsideCellsLeft is 1) or\
-       info.oneThirdOfBoundingBoxCellsOutside:
+       info.boundingBoxOutsideCellsLeft is 1):
       boundingBoxCells = 3**info.boundingBoxMeshLevel
       ranks = [[] for i in range(1,info.boundingBoxMeshLevel)]
   
@@ -167,9 +166,30 @@ class MeshInfoTool(Tool):
       self.log.info("====================")
       self.log.info("Domain Decomposition")
       self.log.info("====================")
-      self.log.info("NOTE: With the following numbers of ranks, you will obtain load balance on the coarsest grid of the adaptive mesh.")
+      self.log.info("NOTE: With the following numbers of ranks, you will obtain load balance on the coarsest grid of the (adaptive) mesh.")
       self.log.info("------------------------------------------------------------------------------------------------------------------")
       self.log.info("optimal rank numbers: %s" % ( ", ".join([str(i) for i in optimalRankNumbers]) ) )
+      self.log.info("------------------------------------------------------------------------------------------------------------------")
+    elif info.ranksPerDimension > 0:
+      boundingBoxCells = 3**info.boundingBoxMeshLevel
+    
+      optimalRanksPerDimension = []
+      ranks = info.ranksPerDimension
+      multFactor = 1
+      for factor in [2,3]:
+          while ranks % factor == 0:
+              multFactor *= factor
+              optimalRanksPerDimension.append(multFactor) 
+              ranks /= factor
+
+      self.log.info("")
+      self.log.info("====================")
+      self.log.info("Domain Decomposition")
+      self.log.info("====================")      
+      self.log.info("NOTE: Currently, info is only valid for CUBIC domains!")
+      self.log.info("NOTE: With the following numbers of ranks, you will obtain load balance on the coarsest grid of the (adaptive) mesh.")
+      self.log.info("------------------------------------------------------------------------------------------------------------------")
+      self.log.info("optimal rank numbers: 1, 2, %s" % ( ", ".join([str(i**dim) for i in optimalRanksPerDimension]) ) )
       self.log.info("------------------------------------------------------------------------------------------------------------------")
 #
 # registry

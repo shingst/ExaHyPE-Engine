@@ -105,6 +105,7 @@ class SpecFile1Reader():
     def convert(self,option,value):
         integers=[\
             "dimension",\
+            "ranks_per_dimension",\
             "time_steps",\
             "ranks_per_node",\
             "buffer_size",\

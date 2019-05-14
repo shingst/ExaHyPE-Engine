@@ -276,10 +276,11 @@
           "minimum" : 0,
           "exclusiveMinimum" : false
         },
-        "one_third_of_cells_outside" : {
-          "type" : "boolean", 
-          "title" : "Places one third of the bounding box cells per coordinate direction (plus 2 cells) outside of the domain. This way we can put 2^d ranks on the coarsest grid (cubic domains). This flag overrules the outside_cells and outside_cells_left parameters.", 
-          "default" : false
+        "ranks_per_dimension" : {
+          "type" : "integer", 
+          "title" : "The maximum ranks per dimension on the coarse grid. With non-cubic domains, less ranks may be used per some directions.", 
+          "minimum" : 0,
+          "exclusiveMinimum" : true
         }
       }
     }, 
