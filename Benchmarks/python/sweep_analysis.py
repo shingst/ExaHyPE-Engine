@@ -284,6 +284,9 @@ def parseAdapterTimes(resultsFolderPath,projectName,compressTable):
                 cores               = match.group(7)
                 consumerTasks       = match.group(8)
                 run                 = match.group(9)
+
+                # derived
+                totalCores = str(int(ranks)*int(cores)) # total used CPU cores
                 
                 environmentDict,parameterDict,adapters,stats = parseResultFile(resultsFolderPath + "/" + fileName)
                 if len(environmentDict):
@@ -296,6 +299,7 @@ def parseAdapterTimes(resultsFolderPath,projectName,compressTable):
                         for parameter in sorted(parameterDict):
                             if parameter not in knownParameters:
                                 header.append(parameter)
+                        header.append("totalCores")
                         header.append("ranks")
                         header.append("nodes")
                         header.append("ranksPerNode")
@@ -339,6 +343,7 @@ def parseAdapterTimes(resultsFolderPath,projectName,compressTable):
                         for key in sorted(parameterDict):
                             if key not in knownParameters:
                                 row.append(parameterDict[key])
+                        row.append(totalCores)
                         row.append(ranks)
                         row.append(nodes)
                         row.append(ranksPerNode)
@@ -389,6 +394,7 @@ def parseAdapterTimes(resultsFolderPath,projectName,compressTable):
                         for key in sorted(parameterDict):
                             if key not in knownParameters:
                                 row.append(parameterDict[key])
+                        row.append(totalCores)
                         row.append(ranks)
                         row.append(nodes)
                         row.append(ranksPerNode)
