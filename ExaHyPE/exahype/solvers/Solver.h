@@ -1169,6 +1169,7 @@ public:
   bool hasProcessed = false;
 #if defined(DistributedStealing)
   bool hasTriggeredEmergency = false;
+  bool stealingTreatment = true;
 
   exahype::solvers::ADERDGSolver* solver = nullptr; 
 
@@ -1179,14 +1180,22 @@ public:
     case solvers::Solver::Type::LimitingADERDG:
        solver = static_cast<const exahype::solvers::LimitingADERDGSolver*>(this)->_solver.get();
        break;    
+    case solvers::Solver::Type::FiniteVolumes:
+       solver = nullptr;
+       stealingTreatment = false;
   }
  
 
 #if !defined(StealingUseProgressThread)
-  exahype::solvers::ADERDGSolver::setMaxNumberOfIprobesInProgressStealing(1);
+  if( stealingTreatment )
+  {  
+    exahype::solvers::ADERDGSolver::setMaxNumberOfIprobesInProgressStealing(1);
+  }    
 #endif
-  int responsibleRank = solver->getResponsibleRankForCellDescription((const void*) &cellDescription);
   int myRank = tarch::parallel::Node::getInstance().getRank();
+  int responsibleRank = myRank;
+  if( stealingTreatment)
+    responsibleRank = solver->getResponsibleRankForCellDescription((const void*) &cellDescription);
   bool progress = false;
   double startTime = MPI_Wtime();
 #endif
@@ -1196,7 +1205,9 @@ public:
   if ( !cellDescription.getHasCompletedLastStep() ) {
      peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
 #if defined(DistributedStealing) && !defined(StealingUseProgressThread)
-     if (this->getType()==exahype::solvers::Solver::Type::ADERDG && responsibleRank!=myRank) {
+     if (this->getType()==exahype::solvers::Solver::Type::ADERDG
+         && responsibleRank!=myRank
+         && stealingTreatment) {
        solver->pauseStealingManager();
        exahype::solvers::ADERDGSolver::tryToReceiveTaskBack(solver) ;
      }
@@ -1204,7 +1215,9 @@ public:
    }
    while ( !cellDescription.getHasCompletedLastStep() ) {
 #if defined(DistributedStealing) && !defined(StealingUseProgressThread)
-     if (this->getType()==exahype::solvers::Solver::Type::ADERDG && responsibleRank!=myRank) {
+     if (this->getType()==exahype::solvers::Solver::Type::ADERDG
+        && responsibleRank!=myRank
+        && stealingTreatment) {
        progress= exahype::solvers::ADERDGSolver::tryToReceiveTaskBack(solver);
        //solver->spawnReceiveBackJob();
      }
@@ -1244,13 +1257,15 @@ public:
          //&& tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs()==1
          && !hasTriggeredEmergency
          && !progress
-         && myRank!=responsibleRank)
+         && myRank!=responsibleRank
+         && stealingTreatment)
          //&& exahype::solvers::ADERDGSolver::NumberOfReceiveBackJobs==0)
          //&& !exahype::stealing::StealingManager::getInstance().getRunningAndReceivingBack())
 #else
        if( !cellDescription.getHasCompletedLastStep()
          && !hasTriggeredEmergency
-         && myRank!=responsibleRank)
+         && myRank!=responsibleRank
+         && stealingTreatment)
 #endif
        {
 #ifdef USE_ITAC
@@ -1267,7 +1282,9 @@ public:
      //}
    }
 #if defined(DistributedStealing) && !defined(StealingUseProgressThread)
-   if (this->getType()==exahype::solvers::Solver::Type::ADERDG && responsibleRank!=myRank) {
+   if (this->getType()==exahype::solvers::Solver::Type::ADERDG
+      && responsibleRank!=myRank
+      && stealingTreatment) {
      solver->resumeStealingManager();
    }
    exahype::solvers::ADERDGSolver::setMaxNumberOfIprobesInProgressStealing( std::numeric_limits<int>::max() );
