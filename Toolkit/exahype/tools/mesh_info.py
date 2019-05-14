@@ -13,7 +13,7 @@ def getCoarsestMaximumMeshSizeOfAllSolvers(solverSpec):
   return result
 
 class MeshInfo:
-  def __init__(self,domainOffset,domainSize,userMeshSize,outsideCells,outsideCellsLeft,ranksPerDimension):
+  def __init__(self,domainOffset,domainSize,userMeshSize,outsideCellsLeft,outsideCellsRight,ranksPerDimension):
     """
     Constructor. All arguments are required/
 
@@ -21,29 +21,26 @@ class MeshInfo:
     :param vector domainOffset:       offset of the domain   
     :param vector domainSize:         size of the domain
     :param float userMeshSize:        the mesh size the user at least wants
-    :param float outsideCells:        number of cells which should be placed outside (per dimension)
-    :param float outsideCellsLeft:    number of cells which should be placed outside left of the domain
+    :param float outsideCellsLeft:    number of cells which should be placed outside to the left of the domain
+    :param float outsideCellsRight:   number of cells which should be placed outside to the right of the domain
     :param bool  ranksPerDimension:   If the user wants to use a specific number of cells outside of the domain. 
                                       If this is a multiple of 3, the outside cells are chosen as 2.
                                       In this case, one outside cell is placed left and the other right to the domain per dimension.
                                       Overrules the other scaling options.
     """
-    # error handling
-    if outsideCellsLeft>outsideCells:
-      print("Parameter 'outside_cells_left' must not be greater than 'outside_cells'",file=sys.stderr)
-      sys.exit(1)
     self.domainOffset       = domainOffset
     self.domainSize         = domainSize
     self.unscaledDomainSize = domainSize
     self.userMeshSize       = userMeshSize
     self.dim                = len(self.domainOffset)
 
-    self.boundingBoxOutsideCells     = outsideCells           # is overwritten if ranksPerDimension is true
-    self.boundingBoxOutsideCellsLeft = outsideCellsLeft       # is overwritten if ranksPerDimension is true
-    self.ranksPerDimension           = ranksPerDimension 
+    self.boundingBoxOutsideCells      = outsideCellsLeft + outsideCellsRight # is overwritten if ranksPerDimension is true
+    self.boundingBoxOutsideCellsLeft  = outsideCellsLeft  # is overwritten if ranksPerDimension is true
+    self.boundingBoxOutsideCellsRight = outsideCellsRight # is overwritten if ranksPerDimension is true
+    self.ranksPerDimension            = ranksPerDimension 
 
     # deduced quantities
-    self.scaleBoundingBox       = outsideCells>0 or ranksPerDimension>0
+    self.scaleBoundingBox       = (outsideCellsRight+outsideCellsLeft)>0 or ranksPerDimension>0
     self.boundingBoxMeshSize    = -1
     self.boundingBoxMeshLevel   = -1
     self.boundingBoxMeshCells   = -1
@@ -101,19 +98,24 @@ class MeshInfo:
 
       self.boundingBoxInsideCells = 0
       while level <= levelLB+1 or\
-            self.boundingBoxInsideCells < self.ranksPerDimension or\
+            self.boundingBoxOutsideCellsRight < 0 or\
             self.boundingBoxMeshSize < 0 or\
             self.boundingBoxMeshSize > self.userMeshSize:
         self.boundingBoxMeshCells = 3**level;
-        if not powerOfThreeRanks: # overwrite; keep otherwise
-           newBoundingBoxOutsideCells = int(round(self.boundingBoxMeshCells * (1.0-self.ranksPerDimension/3.0**levelLB))) + self.boundingBoxOutsideCells
-        self.boundingBoxInsideCells = int(self.boundingBoxMeshCells - newBoundingBoxOutsideCells)
-        boundingBoxScaling       = float(self.boundingBoxMeshCells) / float(self.boundingBoxInsideCells)
-        self.boundingBoxSize     = boundingBoxScaling * maxDomainExtent
-        self.boundingBoxMeshSize = self.boundingBoxSize / self.boundingBoxMeshCells
+
+        self.boundingBoxOutsideCells = self.boundingBoxOutsideCellsLeft
+        if not powerOfThreeRanks:
+          self.boundingBoxOutsideCells = int(round(self.boundingBoxMeshCells * (1.0-self.ranksPerDimension/3.0**levelLB))) # must be >= left
+        else:
+          self.boundingBoxOutsideCells += self.boundingBoxOutsideCellsRight
+
+        self.boundingBoxInsideCells = int(self.boundingBoxMeshCells -self. boundingBoxOutsideCells)
+        boundingBoxScaling          = float(self.boundingBoxMeshCells) / float(self.boundingBoxInsideCells)
+        self.boundingBoxSize        = boundingBoxScaling * maxDomainExtent
+        self.boundingBoxMeshSize    = self.boundingBoxSize / self.boundingBoxMeshCells
+        self.boundingBoxOutsideCellsRight = self.boundingBoxOutsideCells - self.boundingBoxOutsideCellsLeft
         level += 1
      
-      self.boundingBoxOutsideCells = newBoundingBoxOutsideCells
       self.boundingBoxMeshLevel = level - 1; # decrement result since bounding box was computed using level-1
       for d in range(0,self.dim):
         self.boundingBoxOffset[d] -= self.boundingBoxOutsideCellsLeft*self.boundingBoxMeshSize

@@ -262,16 +262,16 @@
           "exclusiveMinimum" : false,
           "default": 400
         },
-        "outside_cells" : {
+        "outside_cells_left" : {
           "type" : "integer", 
-          "title" : "Place a certain number of bounding box cells outside of the domain (all coordinate directions). If the number is odd, one less cells is placed outside on the 'left' side than on the 'right side'", 
-          "default" : 2,
+          "title" : "Number of outside cells to be placed 'left' to the domain, per direction.", 
+          "default" : 1,
           "minimum" : 0,
           "exclusiveMinimum" : false
         },
-        "outside_cells_left" : {
+        "outside_cells_right" : {
           "type" : "integer", 
-          "title" : "Number of outside cells to be placed on the 'left' side.", 
+          "title" : "Number of outside cells to be placed 'right' to the domain, per direction.", 
           "default" : 1,
           "minimum" : 0,
           "exclusiveMinimum" : false

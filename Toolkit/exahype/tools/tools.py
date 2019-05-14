@@ -87,10 +87,10 @@ class MeshInfoTool(Tool):
     domainOffset            = list(specDomain.get("offset"))[0:dim]
     domainSize              = list(specDomain.get("width"))[0:dim]
     userMeshSize            = mesh_info.getCoarsestMaximumMeshSizeOfAllSolvers(spec.get("solvers",[]))
-    outsideCells            = specDomain.get("outside_cells",2)
-    outsideCellsLeft        = specDomain.get("outside_cells_left",outsideCells/2)
+    outsideCellsLeft        = specDomain.get("outside_cells_left",1)
+    outsideCellsRight       = specDomain.get("outside_cells_right",1)
     ranksPerDimension       = specDomain.get("ranks_per_dimension",0)
-    info = mesh_info.MeshInfo(domainOffset,domainSize,userMeshSize,outsideCells,outsideCellsLeft,ranksPerDimension)
+    info = mesh_info.MeshInfo(domainOffset,domainSize,userMeshSize,outsideCellsLeft,outsideCellsRight,ranksPerDimension)
 
     # print user specification
     self.log.info("This is the MeshInfo tool of the toolkit. It does predict what coarse grid ExaHyPE will create.")
@@ -104,8 +104,8 @@ class MeshInfoTool(Tool):
     self.log.info("domain size            : [ %s ]" % ", ".join([str(i) for i in info.domainSize]))
     self.log.info("coarsest user mesh size: %s" % str(info.userMeshSize))
     self.log.info("---------------------------------------------------------------------------------------------")
-    self.log.info("bounding box outside cells (per coordinate direction)            : %d" % info.boundingBoxOutsideCells)     
-    self.log.info("bounding box outside cells (per coordinate direction, left side) : %d" % info.boundingBoxOutsideCellsLeft)
+    self.log.info("bounding box outside cells left side (per coordinate direction)  : %d" % info.boundingBoxOutsideCellsLeft)     
+    self.log.info("bounding box outside cells right side (per coordinate direction) : %d" % info.boundingBoxOutsideCellsRight)
     self.log.info("ranks per longest edge                                           : %s" % str(info.ranksPerDimension))
    
     # run
@@ -126,21 +126,22 @@ class MeshInfoTool(Tool):
     self.log.info("bounding box offset                                                   : [ %s ]" % ", ".join([str(i) for i in info.boundingBoxOffset]))
     self.log.info("bounding box size                          (per coordinate direction) : %s" % str(info.boundingBoxSize))          
     self.log.info("bounding box mesh cells                    (per coordinate direction) : %d" % info.boundingBoxMeshCells)
-    self.log.info("bounding box outside cells                 (longest edge)             : %d" % info.boundingBoxOutsideCells)
-    self.log.info("bounding box outside cells on 'left' side  (longest edge)             : %d" % info.boundingBoxOutsideCellsLeft)      
+    self.log.info("bounding box outside cells left side (per coordinate direction)       : %d" % info.boundingBoxOutsideCellsLeft)     
+    self.log.info("bounding box outside cells right side (per coordinate direction)      : %d" % info.boundingBoxOutsideCellsRight)
     self.log.info("ranks per longest edge                                                : %s" % str(info.ranksPerDimension))
     self.log.info("---------------------------------------------------------------------------------------------")
     
     # domain decomposition recommendations
-    if info.boundingBoxOutsideCells is 0 or\
-       (info.boundingBoxOutsideCells is 2 and\
-       info.boundingBoxOutsideCellsLeft is 1):
+    if (info.boundingBoxOutsideCellsLeft is 0 and
+       info.boundingBoxOutsideCellsRight is 0) or\
+       (info.boundingBoxOutsideCellsLeft is 1 and\
+       info.boundingBoxOutsideCellsRight is 1):
       boundingBoxCells = 3**info.boundingBoxMeshLevel
       ranks = [[] for i in range(1,info.boundingBoxMeshLevel)]
   
       # count inside cells in each coordinate direction
       insideCells = []
-      padding = 0 if info.boundingBoxOutsideCells is 0 else 2
+      padding = 0 if info.boundingBoxOutsideCellsLeft is 0 else 2
       for d in range(0,dim):
         insideCells.append(int(round(info.domainSize[d]/info.boundingBoxMeshSize)))
       for i in range(1,info.boundingBoxMeshLevel):
@@ -174,13 +175,13 @@ class MeshInfoTool(Tool):
       boundingBoxCells = 3**info.boundingBoxMeshLevel
     
       optimalRanksPerDimension = []
-      ranks = info.ranksPerDimension
-      multFactor = 1
-      for factor in [2,3]:
-          while ranks % factor == 0:
-              multFactor *= factor
-              optimalRanksPerDimension.append(multFactor) 
-              ranks /= factor
+      #ranks = info.ranksPerDimension
+      #multFactor = 1
+      #for factor in [2,3]:
+      #    while ranks % factor == 0:
+      #        multFactor *= factor
+      #        optimalRanksPerDimension.append(multFactor) 
+      #        ranks /= factor
 
       self.log.info("")
       self.log.info("====================")

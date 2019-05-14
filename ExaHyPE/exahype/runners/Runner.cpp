@@ -647,11 +647,14 @@ exahype::repositories::Repository* exahype::runners::Runner::createRepository() 
 
   // scale bounding box
   if ( _parser.getScaleBoundingBox() ) {
-    int  cellsOutside   = _parser.getOutsideCells();
+    const int  ranksPerDimension = _parser.getRanksPerDimensionToPutOnCoarsestGrid();
+    bool powerOfThreeRanksPerDimension = true;
+    int cellsOutside     = _parser.getOutsideCellsLeft() + _parser.getOutsideCellsRight();
     int cellsOutsideLeft = _parser.getOutsideCellsLeft(); // if we only cut from one side, we need less ranks on the coarsest grid.
     int loadBalancingLevel = 0;
     if ( _parser.getRanksPerDimensionToPutOnCoarsestGrid()>0 ) {
-      loadBalancingLevel =static_cast<int>( std::ceil(std) );
+      loadBalancingLevel = static_cast<int>( std::ceil(std::log(ranksPerDimension)/std::log(3)-1e-9) );
+      powerOfThreeRanksPerDimension = ranksPerDimension == tarch::la::aPowI(loadBalancingLevel,3);
     }
 
     const double coarsestUserMeshSpacing =
@@ -662,10 +665,16 @@ exahype::repositories::Repository* exahype::runners::Runner::createRepository() 
     double boundingBoxScaling = 0;
     double boundingBoxExtent  = 0;
     int level = coarsestUserMeshLevel; // level=1 means a single cell
-    while (_boundingBoxMeshSize < 0 || _boundingBoxMeshSize > coarsestUserMeshSpacing) {
+    while (
+        level <= loadBalancingLevel+1 ||
+        _boundingBoxMeshSize < 0 ||
+        _boundingBoxMeshSize > coarsestUserMeshSpacing
+    ) {
       const int boundingBoxMeshCells = std::pow(3,level-1);
-      if ( _parser.getRanksPerDimensionToPutOnCoarsestGrid() ) {
-        cellsOutside = boundingBoxMeshCells/3 + 2;
+      if ( !powerOfThreeRanksPerDimension ) {
+        cellsOutside = std::round( boundingBoxMeshCells * (
+                1.0-static_cast<double>(ranksPerDimension)/tarch::la::aPowI(loadBalancingLevel,3.0)
+            )) + _parser.getOutsideCellsLeft() + _parser.getOutsideCellsRight();
       }
       boundingBoxScaling                = static_cast<double>(boundingBoxMeshCells) / ( boundingBoxMeshCells - cellsOutside ); // two cells are removed on each side
       boundingBoxExtent                 = boundingBoxScaling * maxDomainExtent;

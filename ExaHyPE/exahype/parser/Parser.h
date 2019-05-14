@@ -281,7 +281,7 @@ class exahype::parser::Parser {
    *
    * @return number of cells placed outside of the domain per coordinate axis.
    */
-  int getOutsideCells() const;
+  int getOutsideCellsRight() const;
 
   /**
    * @return number of outside cells which should be placed on the "left" side
