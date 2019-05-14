@@ -220,7 +220,7 @@ public:
       const tarch::la::Vector<DIMENSIONS,double>& dx,
       const double t) const override;
   
-  /*void resetGlobalObservables(GlobalObservables& globalObservables) const final override;
+  void resetGlobalObservables(GlobalObservables& globalObservables) const final override;
 
   void mapGlobalObservables(
       GlobalObservables&                          globalObservables,
@@ -232,7 +232,7 @@ public:
       ReadOnlyGlobalObservables& otherObservables) const final override;
   
   void beginTimeStep(const double minTimeStamp,const bool isFirstTimeStepOfBatchOrNoBatch) final override;
-*/
+
   };
 
 #endif // __EulerSolver_ADERDG_CLASS_HEADER__

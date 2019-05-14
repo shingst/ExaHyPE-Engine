@@ -482,7 +482,7 @@ void Euler::EulerSolver_FV::boundaryValues(
   }
 }
 
-/*void Euler::EulerSolver_FV::resetGlobalObservables(GlobalObservables& globalObservables) const {
+void Euler::EulerSolver_FV::resetGlobalObservables(GlobalObservables& globalObservables) const {
   globalObservables.dgcells() = 0;
   globalObservables.fvcells() = 0;
 }
@@ -500,4 +500,4 @@ void Euler::EulerSolver_FV::mergeGlobalObservables(
     ReadOnlyGlobalObservables& otherObservables) const {
   globalObservables.dgcells() += otherObservables.dgcells();
   globalObservables.fvcells() += otherObservables.fvcells();
-}*/
+}

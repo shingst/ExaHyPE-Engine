@@ -71,7 +71,28 @@ class exahype::State : public peano::grid::State<exahype::records::State> {
    * @param currentBatchIteration   the current batch iteration
    * @param numberOfBatchIterations the total number of batch iterations.
    */
-  static void kickOffIteration(exahype::records::RepositoryState::Action action,const int currentBatchIteration,const int numberOfIterations);
+  static void kickOffIteration(const exahype::records::RepositoryState::Action& action,const int currentBatchIteration,const int numberOfIterations);
+
+
+  /**
+   * @return if the adapter expects that start and end of synchronous heap communication are started manually.
+   *
+   * All other adapters and their mappings let Peano control the communication.
+   *
+   * @param action                           indicates the current algorithmic phase (Prediction, FusedTimeStep, ...)
+   * @param predictionFusedTimeStepCondition a condition derived from the current iteration or the number of iterations.
+   */
+  static bool startAndFinishSynchronousExchangeManually(const exahype::records::RepositoryState::Action& action,const bool predictionFusedTimeStepCondition);
+
+  /**
+   * @return if the adapter expects that start and end of synchronous heap communication are started manually.
+   *
+   * All other adapters and their mappings let Peano control the communication.
+   *
+   * @param action                           indicates the current algorithmic phase (Prediction, FusedTimeStep, ...)
+   * @param predictionFusedTimeStepCondition a condition derived from the current iteration or the number of iterations.
+   */
+  static bool startAndFinishNeighbourExchangeManually(const exahype::records::RepositoryState::Action& action,const bool predictionFusedTimeStepCondition);
 
   /**
    * Static callback to kick off and iteration and perform global broadcasts between working nodes.
@@ -91,15 +112,6 @@ class exahype::State : public peano::grid::State<exahype::records::State> {
    * @param currentBatchIteration   the current batch iteration.
    */
   static void kickOffIteration(exahype::records::RepositoryState& repositoryState, exahype::State& solverState, const int currentBatchIteration);
-
-// /**                                                                                                                                        //
-//  * Wrap up an iterations, i.e. make use of values that are reduced over the cells (and MPI ranks).                                         //
-//  *                                                                                                                                         //
-//  * @param action                  repository action indicating what time step (fused vs non-fused) is run                                  //
-//  * @param currentBatchIteration   the current batch iteration                                                                              //
-//  * @param numberOfBatchIterations the total number of batch iterations.                                                                    //
-//  */                                                                                                                                        //
-// static void wrapUpIteration(exahype::records::RepositoryState::Action action,const int currentBatchIteration,const int numberOfIterations);//
 
   /**
    * Static callback to wrap up an iteration.

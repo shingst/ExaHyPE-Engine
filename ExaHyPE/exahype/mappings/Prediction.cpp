@@ -51,7 +51,7 @@ peano::CommunicationSpecification
 exahype::mappings::Prediction::communicationSpecification() const {
   return peano::CommunicationSpecification(
       peano::CommunicationSpecification::ExchangeMasterWorkerData::MaskOutMasterWorkerDataAndStateExchange,
-      peano::CommunicationSpecification::ExchangeWorkerMasterData::MaskOutWorkerMasterDataAndStateExchange,true);
+      peano::CommunicationSpecification::ExchangeWorkerMasterData::MaskOutWorkerMasterDataAndStateExchange,false);
 }
 
 peano::MappingSpecification

@@ -1231,7 +1231,7 @@ bool exahype::parser::Parser::compareJobSystemWaitBehaviour(const std::string& s
 }
 
 int exahype::parser::Parser::getMaxBackgroundJobsInARush() {
-  return getIntFromPath("/shared_memory/max_background_jobs_in_one_rush",std::numeric_limits<int>::max(),isOptional);
+  return getIntFromPath("/shared_memory/max_background_jobs_in_one_rush",getMinBackgroundJobsInARush()*2,isOptional);
 }
 
 int exahype::parser::Parser::getMinBackgroundJobsInARush() {

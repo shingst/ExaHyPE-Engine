@@ -225,6 +225,16 @@ void exahype::repositories::RepositorySTDStack::iterate(int numberOfIterations, 
   tarch::timing::Watch watch( "exahype::repositories::RepositorySTDStack", "iterate(bool)", false);
  
   #ifdef Parallel
+  // Start receiving from global master
+  // Have to manually place these calls as I do
+  // not perform broadcasts along Peano's tree.
+  // Furthermore, I want to measure
+  // the time spent waiting for the kick-off message from
+  // the global master.
+  if ( !tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+    peano::performanceanalysis::Analysis::getInstance().beginToReceiveDataFromMaster(0);
+  }
+
   if (tarch::parallel::Node::getInstance().isGlobalMaster()) {
     _repositoryState.setNumberOfIterations(numberOfIterations);
     _repositoryState.setExchangeBoundaryVertices(exchangeBoundaryVertices);
@@ -237,7 +247,6 @@ void exahype::repositories::RepositorySTDStack::iterate(int numberOfIterations, 
     assertionEquals( numberOfIterations, 1 );
     numberOfIterations = _repositoryState.getNumberOfIterations();
   }
-  
   peano::parallel::SendReceiveBufferPool::getInstance().exchangeBoundaryVertices(_repositoryState.getExchangeBoundaryVertices());
 
   if ( numberOfIterations > 1 && _solverState.isInvolvedInJoinOrFork() ) {
@@ -268,6 +277,13 @@ void exahype::repositories::RepositorySTDStack::iterate(int numberOfIterations, 
 
     // NOT GENERATED. Manual modification. Be careful when you rerun the PDT.
     exahype::State::kickOffIteration(_repositoryState,_solverState,i);
+
+    #ifdef Parallel
+    if ( !tarch::parallel::Node::getInstance().isGlobalMaster() && i==0 ) { // first batch iteration
+      // Finish receiving from global master
+      peano::performanceanalysis::Analysis::getInstance().endToReceiveDataFromMaster(0);
+    }
+    #endif
 
     #ifdef USE_ITAC 
     static int handle = 0;
@@ -315,6 +331,9 @@ void exahype::repositories::RepositorySTDStack::iterate(int numberOfIterations, 
       assertionMsg( false, "not implemented yet" );
       break;
     }
+
+    // NOT GENERATED. Manual modification. Be careful when you rerun the PDT.
+    exahype::State::wrapUpIteration(_repositoryState,_solverState,i);
 
     #ifdef USE_ITAC
     VT_end(handle);

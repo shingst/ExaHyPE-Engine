@@ -197,7 +197,7 @@ class SpecFile1Reader():
         # configure
         if "configure" in distributed_memory:
             configure = distributed_memory.pop("configure").replace("{","").replace("}","")
-            required = ["ranks-per-node"]
+            required = ["ranks_per_node"]
             for token in configure.split(","):
                 token_s = token.strip()
                 m_ranks_per_node          = re.match(r"ranks-per-node:([0-9]+)",token_s) # '-' since original values; only keys have been modified
