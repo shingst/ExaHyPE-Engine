@@ -173,7 +173,7 @@ def getOptionFileHierarchy(optionsFile):
 
     if configParser.has_option("general","extends"):        
         baseFile = configParser.get("general","extends")
-        files = getBaseFiles(baseFile)
+        files = getOptionFileHierarchy(baseFile)
         files.append(optionsFile)
         return files
     else:
