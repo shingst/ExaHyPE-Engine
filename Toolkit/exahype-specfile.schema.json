@@ -262,24 +262,25 @@
           "exclusiveMinimum" : false,
           "default": 400
         },
-        "outside_cells" : {
-          "type" : "integer", 
-          "title" : "Place a certain number of bounding box cells outside of the domain (all coordinate directions). If the number is odd, one less cells is placed outside on the 'left' side than on the 'right side'", 
-          "default" : 2,
-          "minimum" : 0,
-          "exclusiveMinimum" : false
-        },
         "outside_cells_left" : {
           "type" : "integer", 
-          "title" : "Number of outside cells to be placed on the 'left' side.", 
+          "title" : "Number of outside cells to be placed 'left' to the domain, per direction.", 
           "default" : 1,
           "minimum" : 0,
           "exclusiveMinimum" : false
         },
-        "one_third_of_cells_outside" : {
-          "type" : "boolean", 
-          "title" : "Places one third of the bounding box cells per coordinate direction (plus 2 cells) outside of the domain. This way we can put 2^d ranks on the coarsest grid (cubic domains). This flag overrules the outside_cells and outside_cells_left parameters.", 
-          "default" : false
+        "outside_cells_right" : {
+          "type" : "integer", 
+          "title" : "Number of outside cells to be placed 'right' to the domain, per direction.", 
+          "default" : 1,
+          "minimum" : 0,
+          "exclusiveMinimum" : false
+        },
+        "ranks_per_dimension" : {
+          "type" : "integer", 
+          "title" : "The maximum ranks per dimension on the coarse grid. With non-cubic domains, less ranks may be used per some directions.", 
+          "minimum" : 0,
+          "exclusiveMinimum" : true
         }
       }
     }, 

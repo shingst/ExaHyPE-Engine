@@ -166,7 +166,18 @@ def parseOptionsFile(optionsFile,ignoreMetadata=False):
     configParser = configparser.ConfigParser()
     configParser.optionxform=str
     configParser.read(optionsFile)
-    
+
+    # extend a config, overwrite certain variables
+    if configParser.has_option("DEFAULT","extends"):        
+        baseFile = configParser.get("extends")
+        if os.path.exists(baseFile):
+            configParser = configparser.ConfigParser() # clears the loaded config
+            configParser.read(baseFile)                # must be loaded first
+            configParser.read(optionsFile)
+        else:
+            print("ERROR: Could not find base file (specified here: 'DEFAULT'/'extends'): %s" % baseFile,file=sys.stderr)
+            sys.exit()
+
     general          = dict(configParser["general"])
     exahypeRoot      = general["exahype_root"]
     outputPath       = general["output_path"]
