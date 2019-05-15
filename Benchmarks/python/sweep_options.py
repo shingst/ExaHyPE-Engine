@@ -162,22 +162,28 @@ def parseRanksNodesCoreCounts(jobs):
         sys.exit()
     return ranksNodesCoreCountsList
 
-def parseOptionsFile(optionsFile,ignoreMetadata=False):
+def getOptionFileHierarchy(optionsFile):
+    if not os.path.exists(optionsFile):
+        print("ERROR: Could not find base options file (specified here: 'general'/'extends'): %s" % optionsFile,file=sys.stderr)
+        sys.exit()
+
     configParser = configparser.ConfigParser()
     configParser.optionxform=str
-    configParser.read(optionsFile)
+    configParser.read(optionsFile)    
 
-    # extend a config, overwrite certain variables
     if configParser.has_option("general","extends"):        
         baseFile = configParser.get("general","extends")
-        if os.path.exists(baseFile):
-            configParser = configparser.ConfigParser() # clears the loaded config
-            configParser.optionxform=str
-            configParser.read(baseFile)                # must be loaded first
-            configParser.read(optionsFile)
-        else:
-            print("ERROR: Could not find base file (specified here: 'meta'/'extends'): %s" % baseFile,file=sys.stderr)
-            sys.exit()
+        files = getBaseFiles(baseFile)
+        files.append(optionsFile)
+        return files
+    else:
+        return [optionsFile]
+
+def parseOptionsFile(optionsFile,ignoreMetadata=False):    
+    configParser = configparser.ConfigParser()
+    configParser.optionxform=str
+    for f in getOptionFileHierarchy(optionsFile):
+        configParser.read(f)
 
     print(dict(configParser["environment"]))
 
