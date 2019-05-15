@@ -120,7 +120,7 @@ class MeshInfoTool(Tool):
     self.log.info("domain offset                                     : [ %s ]" % ", ".join([str(i) for i in info.domainOffset]))       
     self.log.info("domain size (may be scaled if non-cubic domain)   : [ %s ]" % ", ".join([str(i) for i in info.domainSize]))
     self.log.info("coarsest mesh size                                : %s"     % str(info.boundingBoxMeshSize))       
-    self.log.info("coarsest mesh level                               : %d"     % info.boundingBoxMeshLevel)       
+    self.log.info("coarsest mesh level                               : 1+%d"     % info.boundingBoxMeshLevel)       
     self.log.info("(inside) cells on coarsest grid                   : [ %s ]" % ", ".join([str(int(i/info.boundingBoxMeshSize)) for i in info.domainSize]))          
     self.log.info("---------------------------------------------------------------------------------------------")
     self.log.info("bounding box offset                                                   : [ %s ]" % ", ".join([str(i) for i in info.boundingBoxOffset]))
@@ -174,7 +174,7 @@ class MeshInfoTool(Tool):
     elif info.ranksPerDimension > 0:
       boundingBoxCells = 3**info.boundingBoxMeshLevel
     
-      optimalRanksPerDimension = []
+      optimalRankNumbers = [1+info.ranksPerDimension**dim + 1 if info.boundingBoxMeshLevel > 1 else 0]
       #ranks = info.ranksPerDimension
       #multFactor = 1
       #for factor in [2,3]:
@@ -190,7 +190,7 @@ class MeshInfoTool(Tool):
       self.log.info("NOTE: Currently, info is only valid for CUBIC domains!")
       self.log.info("NOTE: With the following numbers of ranks, you will obtain load balance on the coarsest grid of the (adaptive) mesh.")
       self.log.info("------------------------------------------------------------------------------------------------------------------")
-      self.log.info("optimal rank numbers: 1, 2, %s" % ( ", ".join([str(i**dim) for i in optimalRanksPerDimension]) ) )
+      self.log.info("optimal rank numbers: 1, 2, %s" % ( ", ".join([str(i) for i in optimalRankNumbers]) ) )
       self.log.info("------------------------------------------------------------------------------------------------------------------")
 #
 # registry

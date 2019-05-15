@@ -532,7 +532,7 @@ int exahype::parser::Parser::getOutsideCellsLeft() const {
 }
 
 int exahype::parser::Parser::getRanksPerDimensionToPutOnCoarsestGrid() const {
-  return getBoolFromPath("/computational_domain/ranks_per_dimension", true, isOptional);
+  return getIntFromPath("/computational_domain/ranks_per_dimension", true, isOptional);
 }
 
 bool exahype::parser::Parser::getScaleBoundingBox() const {

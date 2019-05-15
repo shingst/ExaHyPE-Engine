@@ -103,11 +103,9 @@ class MeshInfo:
             self.boundingBoxMeshSize > self.userMeshSize:
         self.boundingBoxMeshCells = 3**level;
 
-        self.boundingBoxOutsideCells = self.boundingBoxOutsideCellsLeft
-        if not powerOfThreeRanks:
+        self.boundingBoxOutsideCells = self.boundingBoxOutsideCellsLeft + self.boundingBoxOutsideCellsRight
+        if not powerOfThreeRanks: # overwrite
           self.boundingBoxOutsideCells = int(round(self.boundingBoxMeshCells * (1.0-self.ranksPerDimension/3.0**levelLB))) # must be >= left
-        else:
-          self.boundingBoxOutsideCells += self.boundingBoxOutsideCellsRight
 
         self.boundingBoxInsideCells = int(self.boundingBoxMeshCells -self. boundingBoxOutsideCells)
         boundingBoxScaling          = float(self.boundingBoxMeshCells) / float(self.boundingBoxInsideCells)
