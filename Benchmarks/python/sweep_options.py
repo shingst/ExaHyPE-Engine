@@ -7,7 +7,7 @@
 
 :synopsis: Generate benchmark suites for ExaHyPE.
 """
-import sys
+import os,sys
 import configparser
 import csv
 import collections
@@ -168,15 +168,18 @@ def parseOptionsFile(optionsFile,ignoreMetadata=False):
     configParser.read(optionsFile)
 
     # extend a config, overwrite certain variables
-    if configParser.has_option("DEFAULT","extends"):        
-        baseFile = configParser.get("extends")
+    if configParser.has_option("general","extends"):        
+        baseFile = configParser.get("general","extends")
         if os.path.exists(baseFile):
             configParser = configparser.ConfigParser() # clears the loaded config
+            configParser.optionxform=str
             configParser.read(baseFile)                # must be loaded first
             configParser.read(optionsFile)
         else:
-            print("ERROR: Could not find base file (specified here: 'DEFAULT'/'extends'): %s" % baseFile,file=sys.stderr)
+            print("ERROR: Could not find base file (specified here: 'meta'/'extends'): %s" % baseFile,file=sys.stderr)
             sys.exit()
+
+    print(dict(configParser["environment"]))
 
     general          = dict(configParser["general"])
     exahypeRoot      = general["exahype_root"]

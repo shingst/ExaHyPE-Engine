@@ -449,9 +449,9 @@ void Euler::EulerSolver_FV::adjustSolution(
     const double* const x,
     const double t,
     const double dt, double* const Q) {
-  if (tarch::la::equals(t,0.0)) {
-    EulerSolver_FV::referenceSolution(x,t,Q);
-  }
+  EulerSolver_FV::referenceSolution(x,t,Q);
+  //if (tarch::la::equals(t,0.0)) {
+  //}
 }
 
 void Euler::EulerSolver_FV::boundaryValues(

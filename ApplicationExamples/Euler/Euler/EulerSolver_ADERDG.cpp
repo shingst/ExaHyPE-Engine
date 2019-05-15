@@ -467,9 +467,9 @@ void Euler::EulerSolver_ADERDG::referenceSolution(const double* const x,double t
 }
 
 void Euler::EulerSolver_ADERDG::adjustPointSolution(const double* const x,const double t,const double dt, double* const Q) {
-  if (tarch::la::equals(t, 0.0)) {
-    referenceSolution(x,0.0,Q);
-  }
+  referenceSolution(x,0.0,Q);
+  //if (tarch::la::equals(t, 0.0)) {
+  //}
 }
 
 /*void Euler::EulerSolver_ADERDG::adjustSolution(double* const luh, const tarch::la::Vector<DIMENSIONS,double>& center, const tarch::la::Vector<DIMENSIONS,double>& dx,double t,double dt) {
@@ -577,7 +577,6 @@ void Euler::EulerSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(double* c
   observables[1] = p;
 }
 
-
 bool Euler::EulerSolver_ADERDG::isPhysicallyAdmissible(
       const double* const solution,
       const double* const observablesMin,const double* const observablesMax,
@@ -585,32 +584,33 @@ bool Euler::EulerSolver_ADERDG::isPhysicallyAdmissible(
       const tarch::la::Vector<DIMENSIONS,double>& center,
       const tarch::la::Vector<DIMENSIONS,double>& dx,
       const double t) const {
-  return (observablesMin[0] > 0.0) &&
-         (observablesMin[1] >= 0.0);
+  if ( tarch::la::equals(0,t) ) {
+    return (observablesMin[0] > 0.0) &&
+           (observablesMin[1] >= 0.0);
+  } else {
+    return !wasTroubledInPreviousTimeStep;
+  }
 }
 
-void Euler::EulerSolver_ADERDG::resetGlobalObservables(GlobalObservables& globalObservables) const {
-  globalObservables.dgcells() = 0;
-  globalObservables.fvcells() = 0;
-}
 
-void Euler::EulerSolver_ADERDG::mapGlobalObservables(
-    GlobalObservables&                          globalObservables,
-    const double* const                         luh,
-    const tarch::la::Vector<DIMENSIONS,double>& cellSize) const {
-  globalObservables.dgcells() = 1;
-  globalObservables.fvcells() = 0;
-}
 
-void Euler::EulerSolver_ADERDG::mergeGlobalObservables(
-    GlobalObservables&         globalObservables,
-    ReadOnlyGlobalObservables& otherObservables) const {
-  globalObservables.dgcells() += otherObservables.dgcells();
-  globalObservables.fvcells() += otherObservables.fvcells();
-}
-  
-void Euler::EulerSolver_ADERDG::beginTimeStep(const double minTimeStamp,const bool isFirstTimeStepOfBatchOrNoBatch) {
-  ReadOnlyGlobalObservables observables = getGlobalObservables();
-  logInfo("beginTimeStep(...)","observables.dgcells()="<<observables.dgcells());
-  logInfo("beginTimeStep(...)","observables.fvcells()="<<observables.fvcells());
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
