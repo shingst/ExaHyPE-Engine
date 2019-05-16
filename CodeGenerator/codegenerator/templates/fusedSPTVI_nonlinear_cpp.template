@@ -118,13 +118,13 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
     double* const lF_guess = lFi; // lF[0-2][z?][y][x][n]
     double* const K1 = lFi+{{nDim*(nDof**nDim)*nVarPad}}; // K1[z?][y][x][n]
     double* const K2 = lFi+{{(nDim+1)*(nDof**nDim)*nVarPad}}; // K2[z?][y][x][n]
-    double* const lwh = lFi+{{(nDim+2)*(nDof**nDim)*nVarPad}}; // lwh[z?][y][x][n] (nData)
+    double* const lwh = lFi+{{(nDim+2)*(nDof**nDim)*nDataPad}}; // lwh[z?][y][x][n] (nData)
     std::memset(lFi+{{nDim*(nDof**nDim)*nVarPad}}, 0, {{2*(nDof**nDim)*nVarPad}} * sizeof(double)); //K1 and K2 must be set to 0
 {% else %}{# no flux so use lSi instead, lSi total size = nVarPad*(nDof**(nDim+1)) #}
     // use lSi as temporary storage for CERK's temporary arrays
     double* const K1 = lSi; // K1[z?][y][x][n]
     double* const K2 = lSi+{{(nDof**nDim)*nVarPad}}; // K2[z?][y][x][n]
-    double* const lwh = lSi+{{2*(nDof**nDim)*nVarPad}}; // lwh[z?][y][x][n] (nData)
+    double* const lwh = lSi+{{2*(nDof**nDim)*nDataPad}}; // lwh[z?][y][x][n] (nData)
     std::memset(lSi, 0, {{2*(nDof**nDim)*nVarPad}} * sizeof(double)); //K1 and K2 must be set to 0
 {% endif %}
     //Note: temporary storage will be overwritten by user functions later, no need to reset them to 0
