@@ -1003,6 +1003,7 @@ bool exahype::runners::Runner::createMesh(exahype::repositories::Repository& rep
     logInfo( "runAsMaster(...)", "start building up uniform base mesh" );
 
     repository.switchToUniformRefinement();
+    repository.getState().setAllSolversAttainedStableState(false);
     while (
         repository.getState().continueToConstructGrid() &&
         meshSetupIterations < MaxIterations
