@@ -185,8 +185,6 @@ def parseOptionsFile(optionsFile,ignoreMetadata=False):
     for f in getOptionFileHierarchy(optionsFile):
         configParser.read(f)
 
-    print(dict(configParser["environment"]))
-
     general          = dict(configParser["general"])
     exahypeRoot      = general["exahype_root"]
     outputPath       = general["output_path"]
