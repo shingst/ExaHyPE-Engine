@@ -197,7 +197,7 @@ bool exahype::State::continueToConstructGrid() {
       exahype::solvers::Solver::getCoarsestMeshLevelOfAllSolvers();
   static const int iterationsForRefiningToConverge =
       iterationsForErasingToConverge +
-      std::max(exahype::solvers::Solver::getMaxRefinementStatus(),1);
+      std::max(exahype::solvers::Solver::getMaxRefinementStatus(),3);
 
   // convergence analysis
   if ( getAllSolversAttainedStableState() ) {
