@@ -114,8 +114,8 @@ void exahype::mappings::UniformRefinement::beginIteration( exahype::State& solve
 void exahype::mappings::UniformRefinement::endIteration(exahype::State& solverState) {
   logTraceInWith1Argument("endIteration(State)", solverState);
 
-  //solverState.setAllSolversAttainedStableState(
-  //    solverState.getMaxLevel()>=exahype::solvers::Solver::getFinestUniformMeshLevelOfAllSolvers() );
+  solverState.setAllSolversAttainedStableState(
+      solverState.getMaxLevel()>=exahype::solvers::Solver::getFinestUniformMeshLevelOfAllSolvers() );
 
   logTraceOutWith1Argument("endIteration(State)", solverState);
 }
