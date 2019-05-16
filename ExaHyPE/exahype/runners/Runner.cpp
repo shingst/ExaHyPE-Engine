@@ -89,9 +89,11 @@
 #include "VT.h"
 #endif
 
+
+#include "exahype/stealing/StealingAnalyser.h"
+
 #if defined(DistributedStealing) 
 #include "exahype/stealing/PerformanceMonitor.h"
-#include "exahype/stealing/StealingAnalyser.h"
 
 #if defined(StealingStrategyStaticHardcoded)
 #include "exahype/stealing/StaticDistributor.h"
@@ -290,11 +292,12 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
       }
     }
 
+    //always use stealing analyser
+    peano::performanceanalysis::Analysis::getInstance().setDevice(&exahype::stealing::StealingAnalyser::getInstance());
 #if defined(DistributedStealing) 
     // Create a new MPI communicator for stealing related MPI communication
     exahype::stealing::StealingManager::getInstance().createMPICommunicator(); 
 
-    peano::performanceanalysis::Analysis::getInstance().setDevice(&exahype::stealing::StealingAnalyser::getInstance());
 
 #if defined(StealingStrategyStaticHardcoded)
     exahype::stealing::StaticDistributor::getInstance().loadDistributionFromFile(_parser.getStealingInputFile());

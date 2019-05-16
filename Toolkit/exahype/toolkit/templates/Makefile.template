@@ -87,6 +87,8 @@ PROJECT_CFLAGS += -DDistributedStealing -DStealingStrategyAggressiveHybrid -DPer
 PROJECT_CFLAGS += -DDistributedStealing -DStealingStrategyHybrid
 {% elif stealing=="static_hardcoded" %}
 PROJECT_CFLAGS += -DDistributedStealing -DStealingStrategyStaticHardcoded
+{% elif stealing=="none" %}
+PROJECT_CFLAGS += -DAnalyseWaitingTimes
 {% endif %}
 {% if stealingProgress=="progress_thread" %}
 PROJECT_CFLAGS += -DStealingUseProgressThread
