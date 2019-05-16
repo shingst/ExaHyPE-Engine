@@ -996,13 +996,36 @@ void exahype::runners::Runner::printMeshSetupInfo(
 bool exahype::runners::Runner::createMesh(exahype::repositories::Repository& repository) {
   bool meshUpdate = false;
 
+  const int MaxIterations = _parser.getMaxMeshSetupIterations();
+  int meshSetupIterations=0;
+  // build initial mesh
+  if ( exahype::mappings::MeshRefinement::IsInitialMeshRefinement ) {
+    logInfo( "runAsMaster(...)", "start building up uniform base mesh" );
+
+    repository.switchToUniformRefinement();
+    while (
+        repository.getState().continueToConstructGrid() &&
+        meshSetupIterations < MaxIterations
+    ) {
+      repository.iterate(1,true);
+      meshSetupIterations++;
+
+      repository.getState().endedGridConstructionIteration( getFinestUniformGridLevelOfAllSolvers(_boundingBoxSize) );
+
+      printMeshSetupInfo(repository,meshSetupIterations);
+
+      meshUpdate = true;
+    }
+
+    logInfo( "runAsMaster(...)", "finished building up uniform base mesh" );
+  }
+
+
+  // adaptive mesh refinement
   repository.switchToMeshRefinement();
   repository.getState().setAllSolversAttainedStableState(false);
   repository.getState().setMeshRefinementIsInRefiningMode(true);
   repository.getState().setStableIterationsInARow(0);
-
-  const int MaxIterations = _parser.getMaxMeshSetupIterations();
-  int meshSetupIterations=0;
   while (
       repository.getState().continueToConstructGrid() &&
       meshSetupIterations < MaxIterations
