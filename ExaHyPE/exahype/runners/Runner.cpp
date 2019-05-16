@@ -1004,6 +1004,7 @@ bool exahype::runners::Runner::createMesh(exahype::repositories::Repository& rep
 
     repository.switchToUniformRefinement();
     repository.getState().setAllSolversAttainedStableState(false);
+    repository.getState().setMeshRefinementIsInRefiningMode(false); // must be set to false when performing uniform refinement
     while (
         repository.getState().continueToConstructGrid() &&
         meshSetupIterations < MaxIterations
