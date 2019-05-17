@@ -562,7 +562,7 @@ exahype::parser::Parser::MPILoadBalancingType exahype::parser::Parser::getMPILoa
 
 double exahype::parser::Parser::getNodePoolAnsweringTimeout() const {
   const std::string path = "/distributed_memory/node_pool_timeout";
-  const double defaultResult = 1;
+  const double defaultResult = 1e-1;
   double result = getDoubleFromPath(path, defaultResult, true);
   if(tarch::la::equals(defaultResult, result)) {
     logWarning( "getNodePoolAnsweringTimeout()", path << " not specified for MPI configuration so use default timeout of " << defaultResult );
