@@ -223,7 +223,8 @@ bool exahype::State::continueToConstructGrid() {
         ", still in refining mode=" << getMeshRefinementIsInRefiningMode() <<
         ", initial refinement=" << mappings::MeshRefinement::IsInitialMeshRefinement <<
         ", stable iterations in a row=" << getStableIterationsInARow() <<
-        ", all solvers attained stable state=" << getAllSolversAttainedStableState()
+        ", all solvers attained stable state=" << getAllSolversAttainedStableState() <<
+        ", max level="<< getMaxLevel()
     );
   }
   return !meshRefinementHasConverged;
