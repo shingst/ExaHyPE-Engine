@@ -38,9 +38,9 @@ peano::CommunicationSpecification
 exahype::mappings::UniformRefinement::communicationSpecification() const {
   return peano::CommunicationSpecification(
       peano::CommunicationSpecification::ExchangeMasterWorkerData::
-          SendDataAndStateBeforeFirstTouchVertexFirstTime,
+      MaskOutMasterWorkerDataAndStateExchange,
       peano::CommunicationSpecification::ExchangeWorkerMasterData::
-          SendDataAndStateAfterLastTouchVertexLastTime,
+      MaskOutWorkerMasterDataAndStateExchange,
       true);
 }
 
