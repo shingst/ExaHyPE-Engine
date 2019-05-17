@@ -105,6 +105,7 @@ class SpecFile1Reader():
     def convert(self,option,value):
         integers=[\
             "dimension",\
+            "ranks_per_dimension",\
             "time_steps",\
             "ranks_per_node",\
             "buffer_size",\
@@ -113,7 +114,7 @@ class SpecFile1Reader():
             "max_forks_at_once",\
             "cores",\
             "measure_cell_processing_times_iter",\
-            "outside_cells",\
+            "outside_cells_right",\
             "outside_cells_left",\
             "order",\
             "patch_size",\

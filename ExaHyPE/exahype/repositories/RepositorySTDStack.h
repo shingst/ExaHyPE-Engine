@@ -16,6 +16,7 @@
 #include "peano/stacks/VertexSTDStack.h"
 
 
+ #include "exahype/adapters/UniformRefinement.h" 
  #include "exahype/adapters/MeshRefinement.h" 
  #include "exahype/adapters/MeshRefinementAndPlotTree.h" 
  #include "exahype/adapters/FinaliseMeshRefinement.h" 
@@ -55,6 +56,7 @@ class exahype::repositories::RepositorySTDStack: public exahype::repositories::R
     peano::grid::RegularGridContainer<exahype::Vertex,exahype::Cell>  _regularGridContainer;
     peano::grid::TraversalOrderOnTopLevel                                         _traversalOrderOnTopLevel;
 
+    peano::grid::Grid<exahype::Vertex,exahype::Cell,exahype::State,VertexStack,CellStack,exahype::adapters::UniformRefinement> _gridWithUniformRefinement;
     peano::grid::Grid<exahype::Vertex,exahype::Cell,exahype::State,VertexStack,CellStack,exahype::adapters::MeshRefinement> _gridWithMeshRefinement;
     peano::grid::Grid<exahype::Vertex,exahype::Cell,exahype::State,VertexStack,CellStack,exahype::adapters::MeshRefinementAndPlotTree> _gridWithMeshRefinementAndPlotTree;
     peano::grid::Grid<exahype::Vertex,exahype::Cell,exahype::State,VertexStack,CellStack,exahype::adapters::FinaliseMeshRefinement> _gridWithFinaliseMeshRefinement;
@@ -71,8 +73,9 @@ class exahype::repositories::RepositorySTDStack: public exahype::repositories::R
     peano::grid::Grid<exahype::Vertex,exahype::Cell,exahype::State,VertexStack,CellStack,exahype::adapters::Correction> _gridWithCorrection;
 
      
-   exahype::records::RepositoryState _repositoryState;
+   exahype::records::RepositoryState               _repositoryState;
    
+    tarch::timing::Measurement _measureUniformRefinementCPUTime;
     tarch::timing::Measurement _measureMeshRefinementCPUTime;
     tarch::timing::Measurement _measureMeshRefinementAndPlotTreeCPUTime;
     tarch::timing::Measurement _measureFinaliseMeshRefinementCPUTime;
@@ -88,6 +91,7 @@ class exahype::repositories::RepositorySTDStack: public exahype::repositories::R
     tarch::timing::Measurement _measurePredictionCPUTime;
     tarch::timing::Measurement _measureCorrectionCPUTime;
 
+    tarch::timing::Measurement _measureUniformRefinementCalendarTime;
     tarch::timing::Measurement _measureMeshRefinementCalendarTime;
     tarch::timing::Measurement _measureMeshRefinementAndPlotTreeCalendarTime;
     tarch::timing::Measurement _measureFinaliseMeshRefinementCalendarTime;
@@ -141,6 +145,7 @@ class exahype::repositories::RepositorySTDStack: public exahype::repositories::R
     virtual void readCheckpoint( peano::grid::Checkpoint<exahype::Vertex, exahype::Cell> const * const checkpoint );
     virtual peano::grid::Checkpoint<exahype::Vertex, exahype::Cell>* createEmptyCheckpoint(); 
 
+    virtual void switchToUniformRefinement();    
     virtual void switchToMeshRefinement();    
     virtual void switchToMeshRefinementAndPlotTree();    
     virtual void switchToFinaliseMeshRefinement();    
@@ -156,6 +161,7 @@ class exahype::repositories::RepositorySTDStack: public exahype::repositories::R
     virtual void switchToPrediction();    
     virtual void switchToCorrection();    
 
+    virtual bool isActiveAdapterUniformRefinement() const;
     virtual bool isActiveAdapterMeshRefinement() const;
     virtual bool isActiveAdapterMeshRefinementAndPlotTree() const;
     virtual bool isActiveAdapterFinaliseMeshRefinement() const;

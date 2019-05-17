@@ -11,6 +11,7 @@
 
 #include "peano/stacks/VertexSTDStack.h"
 
+ #include "exahype/adapters/UniformRefinement.h" 
  #include "exahype/adapters/MeshRefinement.h" 
  #include "exahype/adapters/MeshRefinementAndPlotTree.h" 
  #include "exahype/adapters/FinaliseMeshRefinement.h" 

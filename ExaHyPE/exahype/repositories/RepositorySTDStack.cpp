@@ -39,6 +39,7 @@ exahype::repositories::RepositorySTDStack::RepositorySTDStack(
   _cellStack(),
   _vertexStack(),
   _solverState(),
+  _gridWithUniformRefinement(_vertexStack,_cellStack,_geometry,_solverState,domainSize,computationalDomainOffset,_regularGridContainer,_traversalOrderOnTopLevel),
   _gridWithMeshRefinement(_vertexStack,_cellStack,_geometry,_solverState,domainSize,computationalDomainOffset,_regularGridContainer,_traversalOrderOnTopLevel),
   _gridWithMeshRefinementAndPlotTree(_vertexStack,_cellStack,_geometry,_solverState,domainSize,computationalDomainOffset,_regularGridContainer,_traversalOrderOnTopLevel),
   _gridWithFinaliseMeshRefinement(_vertexStack,_cellStack,_geometry,_solverState,domainSize,computationalDomainOffset,_regularGridContainer,_traversalOrderOnTopLevel),
@@ -75,6 +76,7 @@ exahype::repositories::RepositorySTDStack::RepositorySTDStack(
   _cellStack(),
   _vertexStack(),
   _solverState(),
+  _gridWithUniformRefinement(_vertexStack,_cellStack,_geometry,_solverState,_regularGridContainer,_traversalOrderOnTopLevel),
   _gridWithMeshRefinement(_vertexStack,_cellStack,_geometry,_solverState,_regularGridContainer,_traversalOrderOnTopLevel),
   _gridWithMeshRefinementAndPlotTree(_vertexStack,_cellStack,_geometry,_solverState,_regularGridContainer,_traversalOrderOnTopLevel),
   _gridWithFinaliseMeshRefinement(_vertexStack,_cellStack,_geometry,_solverState,_regularGridContainer,_traversalOrderOnTopLevel),
@@ -127,6 +129,7 @@ void exahype::repositories::RepositorySTDStack::restart(
   _vertexStack.clear();
   _cellStack.clear();
 
+  _gridWithUniformRefinement.restart(domainSize,domainOffset,domainLevel, positionOfCentralElementWithRespectToCoarserRemoteLevel);
   _gridWithMeshRefinement.restart(domainSize,domainOffset,domainLevel, positionOfCentralElementWithRespectToCoarserRemoteLevel);
   _gridWithMeshRefinementAndPlotTree.restart(domainSize,domainOffset,domainLevel, positionOfCentralElementWithRespectToCoarserRemoteLevel);
   _gridWithFinaliseMeshRefinement.restart(domainSize,domainOffset,domainLevel, positionOfCentralElementWithRespectToCoarserRemoteLevel);
@@ -164,6 +167,7 @@ void exahype::repositories::RepositorySTDStack::terminate() {
   peano::parallel::SendReceiveBufferPool::getInstance().terminate();
   #endif
 
+  _gridWithUniformRefinement.terminate();
   _gridWithMeshRefinement.terminate();
   _gridWithMeshRefinementAndPlotTree.terminate();
   _gridWithFinaliseMeshRefinement.terminate();
@@ -193,37 +197,12 @@ const exahype::State& exahype::repositories::RepositorySTDStack::getState() cons
   return _solverState;
 }
 
-/**
- * @return if the current rank should traverse the mesh given the current iteration and
- * the current repository state.
- *
- * Essentially, we mask out the global master from performing
- * iterations.
- *
- * @param currentIteration   The current iteration.
- * @param numberOfIterations The total number of iterations.
- * @param repositoryState    The repository state.
- */
-//bool runIteration(int currentIteration,int numberOfIterations,exahype::records::RepositoryState& repositoryState) {
-//  #ifndef Parallel
-//  return true;
-//  #else
-//  return
-//      repositoryState.getExchangeBoundaryVertices() ||                     // boundary vertices are exchanged with the global master
-//      repositoryState.getAction() != exahype::records::RepositoryState::UseAdapterFusedTimeStep || // not fused time step adapter chosen
-//      tarch::parallel::Node::getInstance().getNumberOfNodes()==1 ||        // there is only the global master
-//      !tarch::parallel::Node::getInstance().isGlobalMaster() ||            // run on all except global master
-//      currentIteration == 0 ||                                             // run on global master if first or last iteration
-//      currentIteration == numberOfIterations-1 ||
-//      (numberOfIterations % 2 != 0 && currentIteration == 1);              // run on global master if number of iterations are odd and its second iteration
-//  #endif
-//}
 
 void exahype::repositories::RepositorySTDStack::iterate(int numberOfIterations, bool exchangeBoundaryVertices) {
   SCOREP_USER_REGION( (std::string("exahype::repositories::RepositorySTDStack::iterate() - ") + _repositoryState.toString( _repositoryState.getAction() )).c_str(), SCOREP_USER_REGION_TYPE_FUNCTION)
 
   tarch::timing::Watch watch( "exahype::repositories::RepositorySTDStack", "iterate(bool)", false);
- 
+
   #ifdef Parallel
   // Start receiving from global master
   // Have to manually place these calls as I do
@@ -247,10 +226,6 @@ void exahype::repositories::RepositorySTDStack::iterate(int numberOfIterations, 
     assertionEquals( numberOfIterations, 1 );
     numberOfIterations = _repositoryState.getNumberOfIterations();
   }
-  
-  logInfo("iterate(...)","iteration management tag is "<<peano::parallel::SendReceiveBufferPool::getInstance().getIterationManagementTag());
-  logInfo("iterate(...)","iteration data tag is "<<peano::parallel::SendReceiveBufferPool::getInstance().getIterationDataTag());
-
   peano::parallel::SendReceiveBufferPool::getInstance().exchangeBoundaryVertices(_repositoryState.getExchangeBoundaryVertices());
 
   if ( numberOfIterations > 1 && _solverState.isInvolvedInJoinOrFork() ) {
@@ -271,7 +246,7 @@ void exahype::repositories::RepositorySTDStack::iterate(int numberOfIterations, 
   #endif
   for (int i=0; i<numberOfIterations; i++) {
     _solverState.setBatchState(numberOfIterations, i );
- 
+
     if (
         tarch::parallel::Node::getInstance().isGlobalMaster() &&
         tarch::parallel::Node::getInstance().getNumberOfNodes()>1
@@ -289,7 +264,7 @@ void exahype::repositories::RepositorySTDStack::iterate(int numberOfIterations, 
     }
     #endif
 
-    #ifdef USE_ITAC 
+    #ifdef USE_ITAC
     static int handle = 0;
     if ( handle == 0 ) {
       int ierr=VT_funcdef("RepositorySTDStack::iterateAdapter", VT_NOCLASS, &handle ); assertion(ierr==0);
@@ -298,42 +273,37 @@ void exahype::repositories::RepositorySTDStack::iterate(int numberOfIterations, 
     #endif
 
     switch ( _repositoryState.getAction()) {
-    case exahype::records::RepositoryState::UseAdapterMeshRefinement: watch.startTimer(); _gridWithMeshRefinement.iterate(); watch.stopTimer(); _measureMeshRefinementCPUTime.setValue( watch.getCPUTime() ); _measureMeshRefinementCalendarTime.setValue( watch.getCalendarTime() ); break;
-    case exahype::records::RepositoryState::UseAdapterMeshRefinementAndPlotTree: watch.startTimer(); _gridWithMeshRefinementAndPlotTree.iterate(); watch.stopTimer(); _measureMeshRefinementAndPlotTreeCPUTime.setValue( watch.getCPUTime() ); _measureMeshRefinementAndPlotTreeCalendarTime.setValue( watch.getCalendarTime() ); break;
-    case exahype::records::RepositoryState::UseAdapterFinaliseMeshRefinement: watch.startTimer(); _gridWithFinaliseMeshRefinement.iterate(); watch.stopTimer(); _measureFinaliseMeshRefinementCPUTime.setValue( watch.getCPUTime() ); _measureFinaliseMeshRefinementCalendarTime.setValue( watch.getCalendarTime() ); break;
-    case exahype::records::RepositoryState::UseAdapterFinaliseMeshRefinementOrLocalRollback: watch.startTimer(); _gridWithFinaliseMeshRefinementOrLocalRollback.iterate(); watch.stopTimer(); _measureFinaliseMeshRefinementOrLocalRollbackCPUTime.setValue( watch.getCPUTime() ); _measureFinaliseMeshRefinementOrLocalRollbackCalendarTime.setValue( watch.getCalendarTime() ); break;
-    case exahype::records::RepositoryState::UseAdapterInitialPrediction: watch.startTimer(); _gridWithInitialPrediction.iterate(); watch.stopTimer(); _measureInitialPredictionCPUTime.setValue( watch.getCPUTime() ); _measureInitialPredictionCalendarTime.setValue( watch.getCalendarTime() ); break;
-    case exahype::records::RepositoryState::UseAdapterFusedTimeStep:
-      watch.startTimer();
-      _gridWithFusedTimeStep.iterate();
-      watch.stopTimer();
-      _measureFusedTimeStepCPUTime.setValue( watch.getCPUTime() );
-      _measureFusedTimeStepCalendarTime.setValue( watch.getCalendarTime() );
-      break;
-    case exahype::records::RepositoryState::UseAdapterPredictionRerun: watch.startTimer(); _gridWithPredictionRerun.iterate(); watch.stopTimer(); _measurePredictionRerunCPUTime.setValue( watch.getCPUTime() ); _measurePredictionRerunCalendarTime.setValue( watch.getCalendarTime() ); break;
-    case exahype::records::RepositoryState::UseAdapterBroadcastAndDropNeighbourMessages: watch.startTimer(); _gridWithBroadcastAndDropNeighbourMessages.iterate(); watch.stopTimer(); _measureBroadcastAndDropNeighbourMessagesCPUTime.setValue( watch.getCPUTime() ); _measureBroadcastAndDropNeighbourMessagesCalendarTime.setValue( watch.getCalendarTime() ); break;
-    case exahype::records::RepositoryState::UseAdapterRefinementStatusSpreading: watch.startTimer(); _gridWithRefinementStatusSpreading.iterate(); watch.stopTimer(); _measureRefinementStatusSpreadingCPUTime.setValue( watch.getCPUTime() ); _measureRefinementStatusSpreadingCalendarTime.setValue( watch.getCalendarTime() ); break;
-    case exahype::records::RepositoryState::UseAdapterPredictionOrLocalRecomputation: watch.startTimer(); _gridWithPredictionOrLocalRecomputation.iterate(); watch.stopTimer(); _measurePredictionOrLocalRecomputationCPUTime.setValue( watch.getCPUTime() ); _measurePredictionOrLocalRecomputationCalendarTime.setValue( watch.getCalendarTime() ); break;
-    case exahype::records::RepositoryState::UseAdapterMergeNeighbours: watch.startTimer(); _gridWithMergeNeighbours.iterate(); watch.stopTimer(); _measureMergeNeighboursCPUTime.setValue( watch.getCPUTime() ); _measureMergeNeighboursCalendarTime.setValue( watch.getCalendarTime() ); break;
-    case exahype::records::RepositoryState::UseAdapterUpdateAndReduce: watch.startTimer(); _gridWithUpdateAndReduce.iterate(); watch.stopTimer(); _measureUpdateAndReduceCPUTime.setValue( watch.getCPUTime() ); _measureUpdateAndReduceCalendarTime.setValue( watch.getCalendarTime() ); break;
-    case exahype::records::RepositoryState::UseAdapterPrediction: watch.startTimer(); _gridWithPrediction.iterate(); watch.stopTimer(); _measurePredictionCPUTime.setValue( watch.getCPUTime() ); _measurePredictionCalendarTime.setValue( watch.getCalendarTime() ); break;
-    case exahype::records::RepositoryState::UseAdapterCorrection: watch.startTimer(); _gridWithCorrection.iterate(); watch.stopTimer(); _measureCorrectionCPUTime.setValue( watch.getCPUTime() ); _measureCorrectionCalendarTime.setValue( watch.getCalendarTime() ); break;
+      case exahype::records::RepositoryState::UseAdapterUniformRefinement: watch.startTimer(); _gridWithUniformRefinement.iterate(); watch.stopTimer(); _measureUniformRefinementCPUTime.setValue( watch.getCPUTime() ); _measureUniformRefinementCalendarTime.setValue( watch.getCalendarTime() ); break;
+      case exahype::records::RepositoryState::UseAdapterMeshRefinement: watch.startTimer(); _gridWithMeshRefinement.iterate(); watch.stopTimer(); _measureMeshRefinementCPUTime.setValue( watch.getCPUTime() ); _measureMeshRefinementCalendarTime.setValue( watch.getCalendarTime() ); break;
+      case exahype::records::RepositoryState::UseAdapterMeshRefinementAndPlotTree: watch.startTimer(); _gridWithMeshRefinementAndPlotTree.iterate(); watch.stopTimer(); _measureMeshRefinementAndPlotTreeCPUTime.setValue( watch.getCPUTime() ); _measureMeshRefinementAndPlotTreeCalendarTime.setValue( watch.getCalendarTime() ); break;
+      case exahype::records::RepositoryState::UseAdapterFinaliseMeshRefinement: watch.startTimer(); _gridWithFinaliseMeshRefinement.iterate(); watch.stopTimer(); _measureFinaliseMeshRefinementCPUTime.setValue( watch.getCPUTime() ); _measureFinaliseMeshRefinementCalendarTime.setValue( watch.getCalendarTime() ); break;
+      case exahype::records::RepositoryState::UseAdapterFinaliseMeshRefinementOrLocalRollback: watch.startTimer(); _gridWithFinaliseMeshRefinementOrLocalRollback.iterate(); watch.stopTimer(); _measureFinaliseMeshRefinementOrLocalRollbackCPUTime.setValue( watch.getCPUTime() ); _measureFinaliseMeshRefinementOrLocalRollbackCalendarTime.setValue( watch.getCalendarTime() ); break;
+      case exahype::records::RepositoryState::UseAdapterInitialPrediction: watch.startTimer(); _gridWithInitialPrediction.iterate(); watch.stopTimer(); _measureInitialPredictionCPUTime.setValue( watch.getCPUTime() ); _measureInitialPredictionCalendarTime.setValue( watch.getCalendarTime() ); break;
+      case exahype::records::RepositoryState::UseAdapterFusedTimeStep: watch.startTimer(); _gridWithFusedTimeStep.iterate(); watch.stopTimer(); _measureFusedTimeStepCPUTime.setValue( watch.getCPUTime() ); _measureFusedTimeStepCalendarTime.setValue( watch.getCalendarTime() ); break;
+      case exahype::records::RepositoryState::UseAdapterPredictionRerun: watch.startTimer(); _gridWithPredictionRerun.iterate(); watch.stopTimer(); _measurePredictionRerunCPUTime.setValue( watch.getCPUTime() ); _measurePredictionRerunCalendarTime.setValue( watch.getCalendarTime() ); break;
+      case exahype::records::RepositoryState::UseAdapterBroadcastAndDropNeighbourMessages: watch.startTimer(); _gridWithBroadcastAndDropNeighbourMessages.iterate(); watch.stopTimer(); _measureBroadcastAndDropNeighbourMessagesCPUTime.setValue( watch.getCPUTime() ); _measureBroadcastAndDropNeighbourMessagesCalendarTime.setValue( watch.getCalendarTime() ); break;
+      case exahype::records::RepositoryState::UseAdapterRefinementStatusSpreading: watch.startTimer(); _gridWithRefinementStatusSpreading.iterate(); watch.stopTimer(); _measureRefinementStatusSpreadingCPUTime.setValue( watch.getCPUTime() ); _measureRefinementStatusSpreadingCalendarTime.setValue( watch.getCalendarTime() ); break;
+      case exahype::records::RepositoryState::UseAdapterPredictionOrLocalRecomputation: watch.startTimer(); _gridWithPredictionOrLocalRecomputation.iterate(); watch.stopTimer(); _measurePredictionOrLocalRecomputationCPUTime.setValue( watch.getCPUTime() ); _measurePredictionOrLocalRecomputationCalendarTime.setValue( watch.getCalendarTime() ); break;
+      case exahype::records::RepositoryState::UseAdapterMergeNeighbours: watch.startTimer(); _gridWithMergeNeighbours.iterate(); watch.stopTimer(); _measureMergeNeighboursCPUTime.setValue( watch.getCPUTime() ); _measureMergeNeighboursCalendarTime.setValue( watch.getCalendarTime() ); break;
+      case exahype::records::RepositoryState::UseAdapterUpdateAndReduce: watch.startTimer(); _gridWithUpdateAndReduce.iterate(); watch.stopTimer(); _measureUpdateAndReduceCPUTime.setValue( watch.getCPUTime() ); _measureUpdateAndReduceCalendarTime.setValue( watch.getCalendarTime() ); break;
+      case exahype::records::RepositoryState::UseAdapterPrediction: watch.startTimer(); _gridWithPrediction.iterate(); watch.stopTimer(); _measurePredictionCPUTime.setValue( watch.getCPUTime() ); _measurePredictionCalendarTime.setValue( watch.getCalendarTime() ); break;
+      case exahype::records::RepositoryState::UseAdapterCorrection: watch.startTimer(); _gridWithCorrection.iterate(); watch.stopTimer(); _measureCorrectionCPUTime.setValue( watch.getCPUTime() ); _measureCorrectionCalendarTime.setValue( watch.getCalendarTime() ); break;
 
-    case exahype::records::RepositoryState::Terminate:
-      assertionMsg( false, "this branch/state should never be reached" );
-      break;
-    case exahype::records::RepositoryState::NumberOfAdapters:
-      assertionMsg( false, "this branch/state should never be reached" );
-      break;
-    case exahype::records::RepositoryState::RunOnAllNodes:
-      assertionMsg( false, "this branch/state should never be reached" );
-      break;
-    case exahype::records::RepositoryState::ReadCheckpoint:
-      assertionMsg( false, "not implemented yet" );
-      break;
-    case exahype::records::RepositoryState::WriteCheckpoint:
-      assertionMsg( false, "not implemented yet" );
-      break;
+      case exahype::records::RepositoryState::Terminate:
+        assertionMsg( false, "this branch/state should never be reached" ); 
+        break;
+      case exahype::records::RepositoryState::NumberOfAdapters:
+        assertionMsg( false, "this branch/state should never be reached" ); 
+        break;
+      case exahype::records::RepositoryState::RunOnAllNodes:
+        assertionMsg( false, "this branch/state should never be reached" ); 
+        break;
+      case exahype::records::RepositoryState::ReadCheckpoint:
+        assertionMsg( false, "not implemented yet" );
+        break;
+      case exahype::records::RepositoryState::WriteCheckpoint:
+        assertionMsg( false, "not implemented yet" );
+        break;
     }
 
     // NOT GENERATED. Manual modification. Be careful when you rerun the PDT.
@@ -366,6 +336,7 @@ void exahype::repositories::RepositorySTDStack::iterate(int numberOfIterations, 
   #endif
 }
 
+ void exahype::repositories::RepositorySTDStack::switchToUniformRefinement() { _repositoryState.setAction(exahype::records::RepositoryState::UseAdapterUniformRefinement); }
  void exahype::repositories::RepositorySTDStack::switchToMeshRefinement() { _repositoryState.setAction(exahype::records::RepositoryState::UseAdapterMeshRefinement); }
  void exahype::repositories::RepositorySTDStack::switchToMeshRefinementAndPlotTree() { _repositoryState.setAction(exahype::records::RepositoryState::UseAdapterMeshRefinementAndPlotTree); }
  void exahype::repositories::RepositorySTDStack::switchToFinaliseMeshRefinement() { _repositoryState.setAction(exahype::records::RepositoryState::UseAdapterFinaliseMeshRefinement); }
@@ -383,6 +354,7 @@ void exahype::repositories::RepositorySTDStack::iterate(int numberOfIterations, 
 
 
 
+ bool exahype::repositories::RepositorySTDStack::isActiveAdapterUniformRefinement() const { return _repositoryState.getAction() == exahype::records::RepositoryState::UseAdapterUniformRefinement; }
  bool exahype::repositories::RepositorySTDStack::isActiveAdapterMeshRefinement() const { return _repositoryState.getAction() == exahype::records::RepositoryState::UseAdapterMeshRefinement; }
  bool exahype::repositories::RepositorySTDStack::isActiveAdapterMeshRefinementAndPlotTree() const { return _repositoryState.getAction() == exahype::records::RepositoryState::UseAdapterMeshRefinementAndPlotTree; }
  bool exahype::repositories::RepositorySTDStack::isActiveAdapterFinaliseMeshRefinement() const { return _repositoryState.getAction() == exahype::records::RepositoryState::UseAdapterFinaliseMeshRefinement; }
@@ -437,7 +409,7 @@ void exahype::repositories::RepositorySTDStack::runGlobalStep() {
     intermediateStateForWorkingNodes,
     peano::parallel::SendReceiveBufferPool::getInstance().getIterationManagementTag()
   );
-  tarch::parallel::NodePool::getInstance().activateIdleNodes(); // Deadlock with non-blocking communication?
+  tarch::parallel::NodePool::getInstance().activateIdleNodes();
 }
 
 
@@ -473,6 +445,7 @@ exahype::repositories::RepositorySTDStack::ContinueCommand exahype::repositories
 
 void exahype::repositories::RepositorySTDStack::logIterationStatistics(bool logAllAdapters) const {
   logInfo( "logIterationStatistics()", "|| adapter name \t || iterations \t || total CPU time [t]=s \t || average CPU time/grid sweep [t]=s \t || total real time [t]=s \t || average real time/grid sweep [t]=s  || CPU time properties  || real time properties " );  
+   if (logAllAdapters || _measureUniformRefinementCPUTime.getNumberOfMeasurements()>0) logInfo( "logIterationStatistics()", "| UniformRefinement \t |  " << _measureUniformRefinementCPUTime.getNumberOfMeasurements() << " \t |  " << _measureUniformRefinementCPUTime.getAccumulatedValue() << " \t |  " << _measureUniformRefinementCPUTime.getValue()  << " \t |  " << _measureUniformRefinementCalendarTime.getAccumulatedValue() << " \t |  " << _measureUniformRefinementCalendarTime.getValue() << " \t |  " << _measureUniformRefinementCPUTime.toString() << " \t |  " << _measureUniformRefinementCalendarTime.toString() );
    if (logAllAdapters || _measureMeshRefinementCPUTime.getNumberOfMeasurements()>0) logInfo( "logIterationStatistics()", "| MeshRefinement \t |  " << _measureMeshRefinementCPUTime.getNumberOfMeasurements() << " \t |  " << _measureMeshRefinementCPUTime.getAccumulatedValue() << " \t |  " << _measureMeshRefinementCPUTime.getValue()  << " \t |  " << _measureMeshRefinementCalendarTime.getAccumulatedValue() << " \t |  " << _measureMeshRefinementCalendarTime.getValue() << " \t |  " << _measureMeshRefinementCPUTime.toString() << " \t |  " << _measureMeshRefinementCalendarTime.toString() );
    if (logAllAdapters || _measureMeshRefinementAndPlotTreeCPUTime.getNumberOfMeasurements()>0) logInfo( "logIterationStatistics()", "| MeshRefinementAndPlotTree \t |  " << _measureMeshRefinementAndPlotTreeCPUTime.getNumberOfMeasurements() << " \t |  " << _measureMeshRefinementAndPlotTreeCPUTime.getAccumulatedValue() << " \t |  " << _measureMeshRefinementAndPlotTreeCPUTime.getValue()  << " \t |  " << _measureMeshRefinementAndPlotTreeCalendarTime.getAccumulatedValue() << " \t |  " << _measureMeshRefinementAndPlotTreeCalendarTime.getValue() << " \t |  " << _measureMeshRefinementAndPlotTreeCPUTime.toString() << " \t |  " << _measureMeshRefinementAndPlotTreeCalendarTime.toString() );
    if (logAllAdapters || _measureFinaliseMeshRefinementCPUTime.getNumberOfMeasurements()>0) logInfo( "logIterationStatistics()", "| FinaliseMeshRefinement \t |  " << _measureFinaliseMeshRefinementCPUTime.getNumberOfMeasurements() << " \t |  " << _measureFinaliseMeshRefinementCPUTime.getAccumulatedValue() << " \t |  " << _measureFinaliseMeshRefinementCPUTime.getValue()  << " \t |  " << _measureFinaliseMeshRefinementCalendarTime.getAccumulatedValue() << " \t |  " << _measureFinaliseMeshRefinementCalendarTime.getValue() << " \t |  " << _measureFinaliseMeshRefinementCPUTime.toString() << " \t |  " << _measureFinaliseMeshRefinementCalendarTime.toString() );
@@ -492,6 +465,7 @@ void exahype::repositories::RepositorySTDStack::logIterationStatistics(bool logA
 
 
 void exahype::repositories::RepositorySTDStack::clearIterationStatistics() {
+   _measureUniformRefinementCPUTime.erase();
    _measureMeshRefinementCPUTime.erase();
    _measureMeshRefinementAndPlotTreeCPUTime.erase();
    _measureFinaliseMeshRefinementCPUTime.erase();
@@ -507,6 +481,7 @@ void exahype::repositories::RepositorySTDStack::clearIterationStatistics() {
    _measurePredictionCPUTime.erase();
    _measureCorrectionCPUTime.erase();
 
+   _measureUniformRefinementCalendarTime.erase();
    _measureMeshRefinementCalendarTime.erase();
    _measureMeshRefinementAndPlotTreeCalendarTime.erase();
    _measureFinaliseMeshRefinementCalendarTime.erase();

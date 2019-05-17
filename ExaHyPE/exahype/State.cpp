@@ -201,7 +201,7 @@ bool exahype::State::continueToConstructGrid() {
       exahype::solvers::Solver::getCoarsestMeshLevelOfAllSolvers();
   static const int iterationsForRefiningToConverge =
       iterationsForErasingToConverge +
-      std::max(exahype::solvers::Solver::getMaxRefinementStatus(),1);
+      std::max(exahype::solvers::Solver::getMaxRefinementStatus(),3);
 
   // convergence analysis
   if ( getAllSolversAttainedStableState() ) {
@@ -227,7 +227,8 @@ bool exahype::State::continueToConstructGrid() {
         ", still in refining mode=" << getMeshRefinementIsInRefiningMode() <<
         ", initial refinement=" << mappings::MeshRefinement::IsInitialMeshRefinement <<
         ", stable iterations in a row=" << getStableIterationsInARow() <<
-        ", all solvers attained stable state=" << getAllSolversAttainedStableState()
+        ", all solvers attained stable state=" << getAllSolversAttainedStableState() <<
+        ", max level="<< getMaxLevel()
     );
   }
   return !meshRefinementHasConverged;

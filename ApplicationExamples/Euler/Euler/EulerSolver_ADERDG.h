@@ -220,19 +220,15 @@ public:
       const tarch::la::Vector<DIMENSIONS,double>& dx,
       const double t) const override;
   
-  /*void resetGlobalObservables(GlobalObservables& globalObservables) const final override;
-
-  void mapGlobalObservables(
-      GlobalObservables&                          globalObservables,
-      const double* const                         luh,
-      const tarch::la::Vector<DIMENSIONS,double>& cellSize) const final override;
-
-  void mergeGlobalObservables(
-      GlobalObservables&         globalObservables,
-      ReadOnlyGlobalObservables& otherObservables) const final override;
-  
-  void beginTimeStep(const double minTimeStamp,const bool isFirstTimeStepOfBatchOrNoBatch) final override;
-*/
-  };
+ bool vetoDiscreteMaximumPrincipleDecision(
+      const double* const                         solution,
+      const double* const                         localDMPObservablesMin,
+      const double* const                         localDMPObservablesMax,
+      const bool                                  wasTroubledInPreviousTimeStep,
+      const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+      const tarch::la::Vector<DIMENSIONS,double>& cellSize,
+      const double                                timeStamp) const override { 
+        return !tarch::la::equals(0,timeStamp); /* do not veto DMP*/ 
+      } 
 
 #endif // __EulerSolver_ADERDG_CLASS_HEADER__

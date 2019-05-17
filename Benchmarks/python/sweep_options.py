@@ -7,7 +7,7 @@
 
 :synopsis: Generate benchmark suites for ExaHyPE.
 """
-import sys
+import os,sys
 import configparser
 import csv
 import collections
@@ -162,11 +162,29 @@ def parseRanksNodesCoreCounts(jobs):
         sys.exit()
     return ranksNodesCoreCountsList
 
-def parseOptionsFile(optionsFile,ignoreMetadata=False):
+def getOptionFileHierarchy(optionsFile):
+    if not os.path.exists(optionsFile):
+        print("ERROR: Could not find base options file (specified here: 'general'/'extends'): %s" % optionsFile,file=sys.stderr)
+        sys.exit()
+
     configParser = configparser.ConfigParser()
     configParser.optionxform=str
-    configParser.read(optionsFile)
-    
+    configParser.read(optionsFile)    
+
+    if configParser.has_option("general","extends"):        
+        baseFile = configParser.get("general","extends")
+        files = getOptionFileHierarchy(baseFile)
+        files.append(optionsFile)
+        return files
+    else:
+        return [optionsFile]
+
+def parseOptionsFile(optionsFile,ignoreMetadata=False):    
+    configParser = configparser.ConfigParser()
+    configParser.optionxform=str
+    for f in getOptionFileHierarchy(optionsFile):
+        configParser.read(f)
+
     general          = dict(configParser["general"])
     exahypeRoot      = general["exahype_root"]
     outputPath       = general["output_path"]
