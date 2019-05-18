@@ -562,10 +562,19 @@ exahype::parser::Parser::MPILoadBalancingType exahype::parser::Parser::getMPILoa
 
 double exahype::parser::Parser::getNodePoolAnsweringTimeout() const {
   const std::string path = "/distributed_memory/node_pool_timeout";
-  const double defaultResult = 1;
+  const double defaultResult = 1e-1;
   double result = getDoubleFromPath(path, defaultResult, true);
   if(tarch::la::equals(defaultResult, result)) {
     logWarning( "getNodePoolAnsweringTimeout()", path << " not specified for MPI configuration so use default timeout of " << defaultResult );
+  }
+  if (result>defaultResult) {
+    logWarning(
+      "getNodePoolAnsweringTimeout()",
+	  "a larger node pool answering time (" << path << ") than the default of " << defaultResult <<
+	  " means that the load balancing delays any decision on rebalancing by " << result << "s. This might lead" <<
+	  " to good load balancing yet will delay in particular the grid construction where many balancing decisions" <<
+	  " have to be made."
+	);
   }
   return result;
 }
