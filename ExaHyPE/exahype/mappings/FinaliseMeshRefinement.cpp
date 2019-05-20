@@ -246,7 +246,16 @@ void exahype::mappings::FinaliseMeshRefinement::endIteration(
 #ifdef DistributedStealing
   exahype::stealing::PerformanceMonitor::getInstance().setTasksPerTimestep(_numberOfEnclaveCells + _numberOfSkeletonCells);
 
-
+    #if defined(DistributedStealing) 
+    for (auto* solver : exahype::solvers::RegisteredSolvers) {
+      if (solver->getType()==exahype::solvers::Solver::Type::ADERDG) {
+        static_cast<exahype::solvers::ADERDGSolver*>(solver)->startStealingManager();
+      }
+      if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
+        static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->startStealingManager();
+      }
+    } 
+    #endif
 #endif
 
   _backgroundJobsHaveTerminated = false;

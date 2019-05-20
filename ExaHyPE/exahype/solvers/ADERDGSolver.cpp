@@ -5059,7 +5059,6 @@ bool exahype::solvers::ADERDGSolver::ReceiveJob::run() {
        
       }
       MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, comm, &receivedTask, &stat);
-      //tarch::parallel::Node::getInstance().receiveDanglingMessages(); 
       itcount++;
   }
   logInfo("run()","terminated receive job after "<<itcount<<" iterations");
@@ -5160,7 +5159,10 @@ bool exahype::solvers::ADERDGSolver::StealingManagerJob::run() {
   switch (_state) {
     case State::Running:
     {
-     // tarch::parallel::Node::getInstance().receiveDanglingMessages();
+      tarch::multicore::RecursiveLock lock( 
+        tarch::services::Service::receiveDanglingMessagesSemaphore );
+        tarch::parallel::Node::getInstance().receiveDanglingMessages();
+      lock.free();
       exahype::solvers::ADERDGSolver::progressStealing(&_solver);
     //  logInfo("run()", "reschedule... ");
       break;
