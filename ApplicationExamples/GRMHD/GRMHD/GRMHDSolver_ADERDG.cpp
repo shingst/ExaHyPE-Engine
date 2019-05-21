@@ -211,6 +211,16 @@ bool GRMHD::GRMHDSolver_ADERDG::isPhysicallyAdmissible(
 
 }
 
+int getGeometricLoadBalancingWeight(
+        const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+        const tarch::la::Vector<DIMENSIONS,double>& cellSize) {
+  double cen = tarch::la::norm2(cellCentre);
+  double dr = std::max(0.1, tarch::la::norm2(cellSize));
+  if(cen < 8.12514+dr)
+    return 27;
+  return 1;
+}
+
 
 
 
