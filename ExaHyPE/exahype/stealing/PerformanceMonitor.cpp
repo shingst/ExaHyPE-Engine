@@ -134,7 +134,7 @@ void exahype::stealing::PerformanceMonitor::stop() {
 }
 
 void exahype::stealing::PerformanceMonitor::setCurrentTasks(int num) {
-  logInfo("performance monitor", "setting current load to "<<num);
+  //logInfo("performance monitor", "setting current load to "<<num);
   int myRank = tarch::parallel::Node::getInstance().getRank();
   tarch::multicore::Lock lock(_semaphore);
   _currentTasksSnapshot[myRank] = num;

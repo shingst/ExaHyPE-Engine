@@ -271,7 +271,7 @@ void exahype::stealing::AggressiveHybridDistributor::configure(
                    bool adaptTemperature,
                    double thresholdTempAdaptation) {
 
-  logInfo("configure", "start temp CCP: "<<startTempCCP<<
+  logDebug("configure", "start temp CCP: "<<startTempCCP<<
                        " start temp diffusion: "<<startTempDiffusion<<
                        " CCP frequency: "<<CCPFrequency<<
                        " CCP steps per phase: "<<CCPStepsPerPhase<<
@@ -293,12 +293,12 @@ void exahype::stealing::AggressiveHybridDistributor::printOffloadingStatistics()
   for(int i=0; i<nnodes; i++) {
     if(i==myRank)
       continue;
-    logInfo("printOffloadingStatistics()", "target tasks to rank "<<i<<" ntasks "<<_tasksToOffload[i]<<" not offloaded "<<_notOffloaded[i]); 
+    logDebug("printOffloadingStatistics()", "target tasks to rank "<<i<<" ntasks "<<_tasksToOffload[i]<<" not offloaded "<<_notOffloaded[i]); 
     _notOffloaded[i]=0;
   }
-  logInfo("printOffloadingStatistics()", "temperature value CCP "<<_temperatureCCP );
-  logInfo("printOffloadingStatistics()", "temperature value diffusion "<<_temperatureDiffusion );
-  logInfo("printOffloadingStatistics()", "time per STP  "<< exahype::stealing::StealingAnalyser::getInstance().getTimePerSTP());
+  logDebug("printOffloadingStatistics()", "temperature value CCP "<<_temperatureCCP );
+  logDebug("printOffloadingStatistics()", "temperature value diffusion "<<_temperatureDiffusion );
+  logDebug("printOffloadingStatistics()", "time per STP  "<< exahype::stealing::StealingAnalyser::getInstance().getTimePerSTP());
 }
 
 
@@ -316,7 +316,7 @@ void exahype::stealing::AggressiveHybridDistributor::resetRemainingTasksToOffloa
 
 void exahype::stealing::AggressiveHybridDistributor::handleEmergencyOnRank(int rank) {
   _emergenciesPerRank[rank]++;
-  logInfo("handleEmergencyOnRank()","emergencies for rank:"<<_emergenciesPerRank[rank]);
+  logDebug("handleEmergencyOnRank()","emergencies for rank:"<<_emergenciesPerRank[rank]);
 }
 
 void exahype::stealing::AggressiveHybridDistributor::updateLoadDistribution() {
@@ -400,7 +400,7 @@ void exahype::stealing::AggressiveHybridDistributor::updateLoadDistributionCCP()
     if(_idealTasksToOffload[i]>0) {
       //we have a potential victim rank
 //     if(!exahype::stealing::StealingManager::getInstance().isBlacklisted(i)) {
-      logInfo("updateLoadDistributionCCP", "offloading to "<<i<<" tasks "<<_temperatureCCP*_idealTasksToOffload[i]);
+      logDebug("updateLoadDistributionCCP", "offloading to "<<i<<" tasks "<<_temperatureCCP*_idealTasksToOffload[i]);
       _optimalTasksPerRank[i] = _idealTasksToOffload[i];
       _tasksToOffload[i] = std::ceil(std::max((1.0-_temperatureCCP), 0.0)*_tasksToOffload[i] + _temperatureCCP*_idealTasksToOffload[i]);
 #ifdef DistributedStealingDisable
@@ -445,7 +445,7 @@ void exahype::stealing::AggressiveHybridDistributor::updateLoadDistributionDiffu
       //int optimalTasksToOffload = currentLongestWaitTimeVictim/(2*exahype::stealing::StealingAnalyser::getInstance().getTimePerSTP());
       int optimalTasksToOffload = (tarch::multicore::Core::getInstance().getNumberOfThreads()-1) *
                                   currentLongestWaitTimeVictim/(2*exahype::stealing::StealingAnalyser::getInstance().getTimePerSTP());
-      logInfo("updateLoadDistributionDiffusive()", "optimal tasks to offload "<<optimalTasksToOffload);
+      logDebug("updateLoadDistributionDiffusive()", "optimal tasks to offload "<<optimalTasksToOffload);
 
       _optimalTasksPerRank[currentOptimalVictim] = optimalTasksToOffload;
       _tasksToOffload[currentOptimalVictim] = std::max((1-_temperatureDiffusion), 0.0)*_tasksToOffload[currentOptimalVictim] 
@@ -500,7 +500,7 @@ bool exahype::stealing::AggressiveHybridDistributor::selectVictimRank(int& victi
 #endif
 
   int threshold = 1+std::max(1, tarch::multicore::Core::getInstance().getNumberOfThreads()-1)*tarch::multicore::jobs::internal::_minimalNumberOfJobsPerConsumerRun;
-  logInfo("selectVictimRank", "threshold "<<threshold);
+  logDebug("selectVictimRank", "threshold "<<threshold);
   threshold = std::max(threshold, 20);
   //threshold = 0; //TODO:test
 
@@ -515,7 +515,7 @@ bool exahype::stealing::AggressiveHybridDistributor::selectVictimRank(int& victi
     victim = myRank;
   }
   //if(victim!=myRank)
-   logInfo("selectVictimRank", "chose victim "<<victim<<" _remainingTasksToOffload "<<_remainingTasksToOffload[victim]);
+   logDebug("selectVictimRank", "chose victim "<<victim<<" _remainingTasksToOffload "<<_remainingTasksToOffload[victim]);
   
   return victim != myRank;
 }

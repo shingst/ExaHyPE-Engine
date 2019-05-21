@@ -123,7 +123,7 @@ void exahype::stealing::StealingAnalyser::updateZeroTresholdAndFilteredSnapshot(
     for(int j=0; j<nnodes; j++) {
       double currentWaitingTime = currentWaitingTimesSnapshot[i*nnodes+j];
       if(currentWaitingTime>0)
-        logInfo("updateZeroTresholdAndFilteredSnapshot()","rank "<<i<<" waiting for "<<currentWaitingTime<<" for rank "<<j);
+        logDebug("updateZeroTresholdAndFilteredSnapshot()","rank "<<i<<" waiting for "<<currentWaitingTime<<" for rank "<<j);
       if(currentWaitingTime>max) {
 	 max = currentWaitingTime;
       }
@@ -141,7 +141,7 @@ void exahype::stealing::StealingAnalyser::updateZeroTresholdAndFilteredSnapshot(
   if(min < std::numeric_limits<double>::max()) {
     double newThreshold = 0.95*min+0.05*max;
     _currentZeroThreshold = newThreshold;
-    logInfo("updateZeroTresholdAndFilteredSnapshot()", " zero threshold set to "<< newThreshold);
+    logDebug("updateZeroTresholdAndFilteredSnapshot()", " zero threshold set to "<< newThreshold);
   }
 #endif
 }
@@ -167,7 +167,7 @@ void exahype::stealing::StealingAnalyser::endIteration(double numberOfInnerLeafC
  
   for(int i=0; i<_waitForOtherRank.size(); i++) {
     if(i != tarch::parallel::Node::getInstance().getRank()) {
-      logInfo("endIteration()", "wait for rank "<<i<<_waitForOtherRank[i].toString());
+      logDebug("endIteration()", "wait for rank "<<i<<_waitForOtherRank[i].toString());
       if(_waitForOtherRank[i].isAccurateValue())
        exahype::stealing::PerformanceMonitor::getInstance().submitWaitingTimeForRank(_waitForOtherRank[i].getValue(), i);
     }     
@@ -202,7 +202,7 @@ void exahype::stealing::StealingAnalyser::printWaitingTimes() {
   for(int i=0; i<nnodes; i++) {
     for(int j=0; j<nnodes; j++) {
       if(waitingTimesSnapshot[k+j]>0)
-        logInfo("printWaitingTimes()","rank "<<i<<" waiting for "<<waitingTimesSnapshot[k+j]<<" for rank "<<j);
+        logDebug("printWaitingTimes()","rank "<<i<<" waiting for "<<waitingTimesSnapshot[k+j]<<" for rank "<<j);
     }
     k+= nnodes;
   }
@@ -215,7 +215,7 @@ void exahype::stealing::StealingAnalyser::beginToReceiveDataFromWorker() {
     int pendingJobs  = tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs();
     _lateSTPJobs = 0;
     _estimatedWtimeForPendingJobs = pendingJobs * getTimePerSTP() / tarch::multicore::Core::getInstance().getNumberOfThreads();
-    logInfo("beginToReceiveDataFromWorker()","there are "<<pendingJobs<<" jobs left, estimated time "<<_estimatedWtimeForPendingJobs);
+    logDebug("beginToReceiveDataFromWorker()","there are "<<pendingJobs<<" jobs left, estimated time "<<_estimatedWtimeForPendingJobs);
 
 #ifdef USE_ITAC
     VT_begin(event_waitForWorker);
@@ -243,7 +243,7 @@ void exahype::stealing::StealingAnalyser::endToReceiveDataFromWorker( int fromRa
 
     if(elapsedTime>_currentZeroThreshold) {
       _currentAccumulatedWorkerTime += elapsedTime;
-      logInfo("endToReceiveDataFromWorker", "elapsed "<<elapsedTime<<" accumulated "<<_currentAccumulatedWorkerTime);
+      logDebug("endToReceiveDataFromWorker", "elapsed "<<elapsedTime<<" accumulated "<<_currentAccumulatedWorkerTime);
       _waitForOtherRank[fromRank].setValue(_currentAccumulatedWorkerTime);
     }
     else {
@@ -253,7 +253,7 @@ void exahype::stealing::StealingAnalyser::endToReceiveDataFromWorker( int fromRa
     double currentAvg = _waitForOtherRank[fromRank].getValue();
     
     if (tarch::la::greater(elapsedTime,0.0)) {
-      logInfo(
+      logDebug(
         "endToReceiveDataFromWorker()",
         "rank had to wait for worker " << fromRank << " for "<< elapsedTime<<
         " currentAvg "<< currentAvg << "s"
@@ -328,7 +328,7 @@ void exahype::stealing::StealingAnalyser::endToSendDataToMaster() {
 
     _estimatedWtimeForPendingJobs = pendingJobs * getTimePerSTP() / tarch::multicore::Core::getInstance().getNumberOfThreads();
     _lateSTPJobs = 0;
-    logInfo("endToSendDataToMaster()","there are "<<pendingJobs<<" left estimated time "<<_estimatedWtimeForPendingJobs); 
+    logDebug("endToSendDataToMaster()","there are "<<pendingJobs<<" left estimated time "<<_estimatedWtimeForPendingJobs); 
     _waitForMasterDataWatch.startTimer();
   }
 }
@@ -350,7 +350,7 @@ void exahype::stealing::StealingAnalyser::endToSendDataToWorker(int worker) {
     //double currentAvg = _waitForOtherRank[worker].getValue();
 
     if (tarch::la::greater(elapsedTime,0.0)) {
-      logInfo(
+      logDebug(
         "endToSendDataToWorker()",
         "rank had to wait for send to worker " << worker << " for "<< elapsedTime 
       );
@@ -373,7 +373,7 @@ void exahype::stealing::StealingAnalyser::endToReceiveDataFromGlobalMaster() {
   if (_isSwitchedOn && _waitForMasterDataWatch.isOn()) {
     _waitForMasterDataWatch.stopTimer();
     double estimatedTimeForLateSTPs = _lateSTPJobs * getTimePerSTP()/ tarch::multicore::Core::getInstance().getNumberOfThreads();
-    logInfo("endToReceiveDataFromGlobalMaster()","estimate for late STPs "<<estimatedTimeForLateSTPs<<"s  estimate for pending jobs "<<_estimatedWtimeForPendingJobs); 
+    logDebug("endToReceiveDataFromGlobalMaster()","estimate for late STPs "<<estimatedTimeForLateSTPs<<"s  estimate for pending jobs "<<_estimatedWtimeForPendingJobs); 
     const double elapsedTime = std::max(0.000001, _waitForMasterDataWatch.getCalendarTime()-_estimatedWtimeForPendingJobs
                                             -estimatedTimeForLateSTPs);
     _estimatedWtimeForPendingJobs = 0;
@@ -385,7 +385,7 @@ void exahype::stealing::StealingAnalyser::endToReceiveDataFromGlobalMaster() {
     double currentAvg = _waitForOtherRank[0].getValue();
 
     if (tarch::la::greater(elapsedTime,0.0)) {
-      logInfo(
+      logDebug(
         "endToReceiveDataFromGlobalMaster()",
         "rank had to wait for master " << myMaster << " for "<< elapsedTime <<
         " currentAvg "<< currentAvg << "s"

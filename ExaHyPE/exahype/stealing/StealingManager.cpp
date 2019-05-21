@@ -104,7 +104,7 @@ void exahype::stealing::StealingManager::destroyMPICommunicator() {
 }
 
 void exahype::stealing::StealingManager::resetPostedRequests() {
-  logInfo("resetPostedRequests","resetting posted requests statistics");
+  logDebug("resetPostedRequests","resetting posted requests statistics");
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
   std::fill(&_postedSendsPerRank[0], &_postedSendsPerRank[nnodes], 0);
   std::fill(&_postedReceivesPerRank[0], &_postedReceivesPerRank[nnodes], 0);
@@ -125,7 +125,7 @@ void exahype::stealing::StealingManager::printPostedRequests() {
          str = str + "posted receiveBacks: "+std::to_string(_postedReceiveBacksPerRank[i]);
       if(_postedSendBacksPerRank[i]>0) 
          str = str + "posted sendBacks: "+std::to_string(_postedSendBacksPerRank[i]);
-      logInfo("printPostedRequests()", str);
+      logDebug("printPostedRequests()", str);
   }
 }
 
@@ -293,7 +293,7 @@ void exahype::stealing::StealingManager::progressRequests() {
   if(lastOutputTimeStamp==0 || (MPI_Wtime()-lastOutputTimeStamp)>10) {
     lastOutputTimeStamp = MPI_Wtime();
     printPostedRequests();
-    logInfo("progressRequests()", "there are "<<getNumberOfOutstandingRequests(RequestType::send)<< " send requests remaining "
+    logDebug("progressRequests()", "there are "<<getNumberOfOutstandingRequests(RequestType::send)<< " send requests remaining "
                                  <<","<<getNumberOfOutstandingRequests(RequestType::receive)<<" receive requests remaining" 
                                  <<","<<getNumberOfOutstandingRequests(RequestType::sendBack)<<" sendBack requests remaining" 
                                 <<","<<getNumberOfOutstandingRequests(RequestType::receiveBack)<<" receiveBack requests remaining" );
@@ -387,7 +387,7 @@ bool exahype::stealing::StealingManager::progressRequestsOfType( RequestType typ
 #if defined(PerformanceAnalysisStealingDetailed)
     watch.stopTimer();
     if(watch.getCalendarTime() >= 0.0) {
-      logInfo(
+      logDebug(
           "progressStealing() ",
           "couldn't run "<<
           "time=" << std::fixed <<
@@ -587,11 +587,11 @@ void exahype::stealing::StealingManager::triggerEmergencyForRank(int rank) {
 #endif
   _emergencyHeatMap[rank]++;
   exahype::stealing::PerformanceMonitor::getInstance().submitBlacklistValueForRank(_emergencyHeatMap[rank], rank);
-  logInfo("triggerEmergencyForRank()","blacklist value for rank "<<rank<<":"<<_emergencyHeatMap[rank]);
+  logDebug("triggerEmergencyForRank()","blacklist value for rank "<<rank<<":"<<_emergencyHeatMap[rank]);
 }
 
 void exahype::stealing::StealingManager::decreaseHeat() {
-  logInfo("decreaseHeat()","decrease heat of emergency heat map");
+  logDebug("decreaseHeat()","decrease heat of emergency heat map");
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
   for(int i=0; i<nnodes;i++) {
     _emergencyHeatMap[i]*= 0.9;
@@ -615,7 +615,7 @@ void exahype::stealing::StealingManager::printBlacklist() {
 
   for(int i=0; i<nnodes; i++) {
     if(globalHeatMap[i]>0)
-      logInfo("printBlacklist", "blacklist value for rank "<<i<<":"<<globalHeatMap[i]);
+      logDebug("printBlacklist", "blacklist value for rank "<<i<<":"<<globalHeatMap[i]);
   }
 }
 
@@ -668,7 +668,7 @@ bool exahype::stealing::StealingManager::selectVictimRank(int& victim) {
 #endif
   }
   else {
-     logInfo("stealingManager", "could not select victim remaining load ratio "<<remainingLoadRatio);
+     logDebug("stealingManager", "could not select victim remaining load ratio "<<remainingLoadRatio);
     return false;
   }
 #endif
@@ -677,7 +677,7 @@ bool exahype::stealing::StealingManager::selectVictimRank(int& victim) {
 #ifdef StealingUseProgressTask
 void exahype::stealing::StealingManager::resetHasNotifiedSendCompleted() {
   _hasNotifiedSendCompleted = false;
-    logInfo("resetHasNotifiedSendCompleted","resetting flag");
+    logDebug("resetHasNotifiedSendCompleted","resetting flag");
 }
 
 void exahype::stealing::StealingManager::notifySendCompleted(int rank) {
