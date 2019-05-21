@@ -78,11 +78,11 @@ void __attribute__((optimize("O0"))) GRMHD::GRMHDSolver_ADERDG::adjustPointSolut
   using namespace tarch::la;
   if(equals(t,0.0)) {
     initialData(x, t, dt, Q); 
-    if( (x[1] > -0.1) && (x[1]  < 0.1)) {
-      if( (x[2] > -0.1) && (x[2]  < 0.1)) {
-        printf("adjusting ADERDG:  Q[0]=%.5e , x,y,z = %f,%f,%f, t= %f\n",Q[0],x[0],x[1],x[2],t);
-      }
-    }
+//    if( (x[1] > -0.1) && (x[1]  < 0.1)) {
+//      if( (x[2] > -0.1) && (x[2]  < 0.1)) {
+//        printf("adjusting ADERDG:  Q[0]=%.5e , x,y,z = %f,%f,%f, t= %f\n",Q[0],x[0],x[1],x[2],t);
+//      }
+//    }
   }
 }
 
@@ -156,7 +156,8 @@ bool isInRefinementZone(const tarch::la::Vector<DIMENSIONS,double>& center){
 	// lower left, upper right radius of cell
 	double cen = tarch::la::norm2(center);
 	double dr = 0.5;
-	return  cen  <= (radius+dr) ;
+  bool shouldRefine = (cen > (radius -dr) ) && ( cen  <= (radius+dr) ); 
+  return shouldRefine;
 }
 
 
@@ -208,6 +209,16 @@ bool GRMHD::GRMHDSolver_ADERDG::isPhysicallyAdmissible(
   // return TRUE if the cell does not need limited
 	return !shouldLimit;
 
+}
+
+int getGeometricLoadBalancingWeight(
+        const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+        const tarch::la::Vector<DIMENSIONS,double>& cellSize) {
+  double cen = tarch::la::norm2(cellCentre);
+  double dr = std::max(0.1, tarch::la::norm2(cellSize));
+  if(cen < 8.12514+dr)
+    return 27;
+  return 1;
 }
 
 
