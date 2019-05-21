@@ -105,11 +105,16 @@ class Controller:
       Run all tools selected by the user.
       """
       argDict = vars(args)
+
+      context = {}
+      context["spec"] = self.spec
+      context["specfilePath"] =  self.specfileName
+
       previousLevel = self.log.level
       self.log.setLevel(logging.INFO)
       for tool in tools.tools:
          if argDict[tool.id()]:
-            tool.run(self.spec)            
+            tool.run(context)            
       self.log.setLevel(previousLevel)
 
     def run(self):

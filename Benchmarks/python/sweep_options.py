@@ -7,7 +7,7 @@
 
 :synopsis: Generate benchmark suites for ExaHyPE.
 """
-import sys
+import os,sys
 import configparser
 import csv
 import collections
@@ -162,11 +162,29 @@ def parseRanksNodesCoreCounts(jobs):
         sys.exit()
     return ranksNodesCoreCountsList
 
-def parseOptionsFile(optionsFile,ignoreMetadata=False):
+def getOptionFileHierarchy(optionsFile):
+    if not os.path.exists(optionsFile):
+        print("ERROR: Could not find base options file (specified here: 'general'/'extends'): %s" % optionsFile,file=sys.stderr)
+        sys.exit()
+
     configParser = configparser.ConfigParser()
     configParser.optionxform=str
-    configParser.read(optionsFile)
-    
+    configParser.read(optionsFile)    
+
+    if configParser.has_option("general","extends"):        
+        baseFile = configParser.get("general","extends")
+        files = getOptionFileHierarchy(baseFile)
+        files.append(optionsFile)
+        return files
+    else:
+        return [optionsFile]
+
+def parseOptionsFile(optionsFile,ignoreMetadata=False):    
+    configParser = configparser.ConfigParser()
+    configParser.optionxform=str
+    for f in getOptionFileHierarchy(optionsFile):
+        configParser.read(f)
+
     general          = dict(configParser["general"])
     exahypeRoot      = general["exahype_root"]
     outputPath       = general["output_path"]
@@ -255,7 +273,7 @@ def printJobTemplate(machine):
 # Optional parameters are:
 # tasks, coresPerRank, mail
 
-#@ job_type     = parallel
+#@ job_type     = MPICH
 #@ class        = {{class}}
 #@ total_tasks  = {{ranks}}
 #@ node         = {{nodes}}
@@ -272,12 +290,59 @@ def printJobTemplate(machine):
 #@ queue
 . /etc/profile
 . /etc/profile.d/modules.sh
-module switch intel/18.0
-module switch tbb/2018
-module switch gcc/5
 
+module unload mpi.intel
+module unload mpi.ibm
+module load mpi.intel/2018
+module load tbb/2018
+module load gcc/5
+
+export MP_PE_AFFINITY=yes
 export OMP_NUM_THREADS={{coresPerRank}}
 export MP_TASK_AFFINITY=core:{{coresPerRank}}
+
+# use mpiexec
+
+{{body}}"""
+        print(template)
+    elif machine=="supermuc-skx":
+        template="""#!/bin/bash
+# Mandatory parameters are:
+# time, ranks, nodes,
+# job_name, output_file, error_file, 
+# body
+# 
+# Optional parameters are:
+# tasks, coresPerRank, mail
+
+# see: https://doku.lrz.de/display/PUBLIC/Job+Processing+with+SLURM+on+SuperMUC-NG
+
+#SBATCH --job-name={{job_name}}
+#SBATCH -o {{output_file}}
+#SBATCH -e {{error_file}}
+#SBATCH -t {{time}}
+#SBATCH --partition={{class}}
+#SBATCH --ntasks={{ranks}}
+#SBATCH --nodes={{nodes}}
+#SBATCH --exclusive
+#SBATCH --mem=MaxMemPerNode
+#SBATCH --mail-user={{mail}}
+#SBATCH --mail-type=END
+#SBATCH --export=NONE
+#SBATCH --account=pr48ma
+#SBATCH --chdir ./
+
+# due to the fact that SLURM performs settings of certain variables in its prologue that can cause MPI crashes, 
+# and cannot be overridden in the default module mechanism, the following module should be loaded in SLURM scripts before executing parallel programs:
+module load slurm_setup
+
+module load intel/19.0
+module load gcc/7
+module load tbb/2019
+module load mpi.intel/2019
+
+export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
+export OMP_PLACES=cores
 
 {{body}}"""
         print(template)
@@ -317,7 +382,7 @@ export I_MPI_FABRICS="tmi"
 {{body}}"""
         print(template)
     else:
-        print("ERROR: No job template found for machine {}. Available options: '{}'".format(machine,"','".join(["supermuc","hamilton"])),file=sys.stderr)
+        print("ERROR: No job template found for machine {}. Available options: '{}'".format(machine,"','".join(["supermuc","supermuc-skx","hamilton"])),file=sys.stderr)
 
 def printOptionsFileTemplate():
     template="""[general]

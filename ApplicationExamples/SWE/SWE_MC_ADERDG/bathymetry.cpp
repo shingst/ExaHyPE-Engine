@@ -34,10 +34,7 @@ double linearInterpolation_1D(double x, double dx, int idx, int nelem){
     return 0.0;
 }
 
-double SWE::linearInterpolation(double x, double y){
-    std::vector<double> a;
-    readCsv("Input/parameters.csv", &a);
-
+double SWE::linearInterpolation(double x, double y, std::vector<double>& a){
     int nelem = (int)std::pow(a.size(),0.5)-1;
     assert((nelem+1)*(nelem+1) == a.size());
     double res = 0.0;
@@ -50,22 +47,6 @@ double SWE::linearInterpolation(double x, double y){
     return res;
 }
 
-double linearInterpolationCoarse(double x, double y, std::vector<double> a){
-    double res = 0.0;
-    //loop over "basis functions"
-    for(int i=1; i < 3 + 1; i ++){
-        for(int j=1; j < 3 + 1; j ++){
-             res += 0.02*a[(3+1)*(i-1)+(j-1)]*linearInterpolation_1D(x,1.0/4,i,3)*linearInterpolation_1D(y,1.0/4,j,3);
-        }
-    }
-    return res;
-}
-
-double SWE::bathymetry(double x, double y) {
-    std::vector<double> a;
-    readCsv("Input/bathymetry.csv", &a);
-    return linearInterpolationCoarse(x,y,a);
-}
 
 
 

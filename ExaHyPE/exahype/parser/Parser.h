@@ -281,7 +281,7 @@ class exahype::parser::Parser {
    *
    * @return number of cells placed outside of the domain per coordinate axis.
    */
-  int getOutsideCells() const;
+  int getOutsideCellsRight() const;
 
   /**
    * @return number of outside cells which should be placed on the "left" side
@@ -290,15 +290,13 @@ class exahype::parser::Parser {
   int getOutsideCellsLeft() const;
 
   /**
-   * Places one third of the bounding box cells per coordinate direction (plus 2 cells)
-   * outside of the domain.
+   * @return the number of ranks the user wants to put on the coarsest grid.
    *
-   * This way we can put 2^d ranks on the coarsest grid (cubic domains).
-   * This flag overrules the 'outside_cells' and 'outside_cells_left' parameters.
-   *
-   * @return true if the feature is enabled.
+   * @note This only scales the bounding box to a certain size.
+   * The code is not run with MPI. To run the code with MPI,
+   * it must be compiled with MPI
    */
-  bool getPlaceOneThirdOfCellsOuside() const;
+  int getRanksPerDimensionToPutOnCoarsestGrid() const;
 
   /**
    * @return if the bounding box is scaled in any way.
@@ -632,12 +630,16 @@ class exahype::parser::Parser {
   bool compareBackgroundJobProcessing(const std::string& strategy) const;
 
   /**
+   * @return If the given @p strategy matches the one specified in the specification file.
+   */
+  bool compareJobSystemWaitBehaviour(const std::string& strategy) const;
+
+  /**
    * @return Minimum number of background jobs a consumer grabs from the queue in a single rush (default: 1).
    */
   int getMinBackgroundJobsInARush();
   /**
-   * @return Maximum number of background jobs a consumer grabs from the queue in a single rush
-   * (default: ~maximum integer number)
+   * @return Maximum number of background jobs a consumer grabs from the queue in a single rush (default: 2* minimum number)
    */
   int getMaxBackgroundJobsInARush();
 

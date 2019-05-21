@@ -35,17 +35,11 @@ exahype::solvers::LimitingADERDGSolver::FusedTimeStepJob::FusedTimeStepJob(
 }
 
 bool exahype::solvers::LimitingADERDGSolver::FusedTimeStepJob::run() {
-  UpdateResult result =
-      _solver.fusedTimeStepBody(
-          _solverPatch,_cellInfo,_neighbourMergePerformed,
-          _predictionTimeStamp,_predictionTimeStepSize,
-          _isFirstTimeStepOfBatch,_isLastTimeStepOfBatch,
-          _isSkeletonJob,false/*mustBeDoneImmedetially*/);
-
-  if (_isLastTimeStepOfBatch) {
-    _solver.updateMeshUpdateEvent(result._meshUpdateEvent);
-    _solver.updateAdmissibleTimeStepSize(result._timeStepSize);
-  }
+  _solver.fusedTimeStepBody(
+      _solverPatch,_cellInfo,_neighbourMergePerformed,
+      _predictionTimeStamp,_predictionTimeStepSize,
+      _isFirstTimeStepOfBatch,_isLastTimeStepOfBatch,
+      _isSkeletonJob,false/*mustBeDoneImmedetially*/);
 
   NumberOfReductionJobs.fetch_sub(1);
   assertion( NumberOfReductionJobs.load()>=0 );

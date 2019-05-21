@@ -12,6 +12,7 @@
 
 #include "kernels/aderdg/generic/Kernels.h"
 
+#include "{{solver}}_Variables.h"
 #include "{{solver}}.h" // Have to include a proper declaration. Cannot use forward declared classes in static_cast.
 
 #include <stdio.h>
@@ -129,7 +130,7 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
     kernels::aderdg::generic::c::spaceTimePredictorLinear<false, {{useSource_s}}, {{useFlux_s}}, {{useNCP_s}}, {{useMaterialParameters_s}}, {{solver}}>(*static_cast<{{solver}}*>(this),lQhbnd,lFhbnd,lQi,lFi,gradQ,PSi,PSderivatives,tmp_PSderivatives,lQhi,lFhi,luh,cellCentre,tarch::la::invertEntries(cellSize),t, dt);
   }
 {% else %}
- kernels::aderdg::generic::c::spaceTimePredictorLinear<{{usePointSources_s}}, {{useSource_s}}, {{useFlux_s}}, {{useNCP_s}}, {{useMaterialParameters_s}}, {{solver}}>(*static_cast<{{solver}}*>(this),lQhbnd,lFhbnd,lQi,lFi,gradQ,PSi,PSderivatives,tmp_PSderivatives,lQhi,lFhi,luh,cellCentre,tarch::la::invertEntries(cellSize),t, dt);
+  kernels::aderdg::generic::c::spaceTimePredictorLinear<{{usePointSources_s}}, {{useSource_s}}, {{useFlux_s}}, {{useNCP_s}}, {{useMaterialParameters_s}}, {{solver}}>(*static_cast<{{solver}}*>(this),lQhbnd,lFhbnd,lQi,lFi,gradQ,PSi,PSderivatives,tmp_PSderivatives,lQhi,lFhi,luh,cellCentre,tarch::la::invertEntries(cellSize),t, dt);
 {%   endif %}
   if ( addVolumeIntegralResultToUpdate ) {
     kernels::aderdg::generic::c::volumeIntegralLinear<{{useSource_s}}, {{useFlux_s}}, NumberOfVariables, Order+1>(lduh,lFhi,cellSize);
@@ -174,7 +175,7 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
   double* lQhi = memory; memory+=sizeLQhi;
   double* lFhi = memory; memory+=sizeLFhi;
 {%   endif %}
- const int picardIterations = kernels::aderdg::generic::c::spaceTimePredictorNonlinear<{{useSource_s}}, {{useFlux_s}}, {{useViscousFlux_s}}, {{useNCP_s}}, {{noTimeAveraging_s}}, {{solver}}>(*static_cast<{{solver}}*>(this), lQhbnd, lGradQhbnd, lFhbnd, lQi, rhs, lFi, gradQ, lQhi, lFhi, luh, cellCentre, tarch::la::invertEntries(cellSize), t, dt);
+  const int picardIterations = kernels::aderdg::generic::c::spaceTimePredictorNonlinear<{{useSource_s}}, {{useFlux_s}}, {{useViscousFlux_s}}, {{useNCP_s}}, {{noTimeAveraging_s}}, {{solver}}>(*static_cast<{{solver}}*>(this), lQhbnd, lGradQhbnd, lFhbnd, lQi, rhs, lFi, gradQ, lQhi, lFhi, luh, cellCentre, tarch::la::invertEntries(cellSize), t, dt);
  
   if ( addVolumeIntegralResultToUpdate ) {
     kernels::aderdg::generic::c::volumeIntegralNonlinear<{{ 'true' if (useSource or useNCP) else 'false' }}, {{useFlux_s}}, {{noTimeAveraging_s}}, NumberOfVariables, Order+1>(lduh,lFhi,cellSize); 
@@ -183,6 +184,21 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
     kernels::aderdg::generic::c::volumeIntegralNonlinear<{{ 'true' if (useSource or useNCP) else 'false' }}, {{useFlux_s}}, {{noTimeAveraging_s}}, NumberOfVariables, Order+1>(tempUpdate,lFhi,cellSize);
     addUpdateToSolution(luh,luh,tempUpdate,dt);
   }
+  
+{% if transformRiemannData %}
+  constexpr int faceBasisSize = spaceBasisSize / (Order+1);
+  // pre-processing done here as predictor is done cell-wisely
+  for ( int direction=0; direction<DIMENSIONS; direction++ ) {
+    for ( int orientation=0; orientation<1; orientation++ ) {
+      const int faceIndex = 2*direction + orientation;
+      static_cast<{{solver}}*>(this)->preProcessRiemannSolverInputs(
+          lQhbnd     + faceIndex*sizeLQhi/(Order+1),
+          lGradQhbnd + faceIndex*sizeGradQ/(Order+1),
+          lFhbnd     + faceIndex*sizeLFhi/(Order+1),
+          direction,faceIndex);
+    }
+  }
+{% endif %}
 
 {% endif %}
 {%if tempVarsOnStack==False %}
@@ -204,7 +220,7 @@ void {{project}}::{{abstractSolver}}::addUpdateToSolution(double* const luh,cons
 {% endif %}
 }
 
-void {{project}}::{{abstractSolver}}::faceIntegral(double* const out/*may be solution or update vector*/,const double* const lFhbnd,const int direction, const int orientation,const tarch::la::Vector<DIMENSIONS-1,int>& subfaceIndex,const int levelDelta,const tarch::la::Vector<DIMENSIONS, double>& cellSize,const double dt,const bool addToUpdate) {
+void {{project}}::{{abstractSolver}}::faceIntegral(double* const out/*may be solution or update vector*/,double* const lFhbnd,const int direction, const int orientation,const tarch::la::Vector<DIMENSIONS-1,int>& subfaceIndex,const int levelDelta,const tarch::la::Vector<DIMENSIONS, double>& cellSize,const double dt,const bool addToUpdate) {
 {% if enableProfiler %}
   _profiler->start("faceIntegral");
 {% endif %}
@@ -216,6 +232,12 @@ void {{project}}::{{abstractSolver}}::faceIntegral(double* const out/*may be sol
   constexpr int basisSize3 = basisSize2*(Order+1);
   constexpr int sizeUpdate = NumberOfVariables*basisSize3;
 
+{% if transformRiemannData %}
+  // post-processing done here as face integral is done cell-wisely
+  const int fineGridFaceIndex = 2*direction + orientation;
+  static_cast<{{solver}}*>(this)->postProcessRiemannSolution(lFhbnd,direction,fineGridFaceIndex);
+{% endif %}
+  
   if ( levelDelta > 0 ) {
     constexpr int sizeFlux = NumberOfVariables*basisSize2;
     double lFhbndCoarse[sizeFlux];
@@ -355,6 +377,55 @@ void {{project}}::{{abstractSolver}}::volumeUnknownsRestriction(double* const lu
 {% endif %}
 }
 
+//--------
+
+{% if numberOfGlobalObservables > 0 %}
+{{project}}::{{abstractSolver}}::ReadOnlyGlobalObservables {{project}}::{{abstractSolver}}::getGlobalObservables() const {
+  return ReadOnlyGlobalObservables(_globalObservables.data());
+}
+{% endif %}
+
+void {{project}}::{{abstractSolver}}::resetGlobalObservables(double* const globalObservables) {
+{% if numberOfGlobalObservables > 0 %}
+  GlobalObservables wrappedGlobalObservables(globalObservables);
+  static_cast<{{solver}}*>(this)->resetGlobalObservables(wrappedGlobalObservables);
+{% endif %}
+}
+
+void {{project}}::{{abstractSolver}}::updateGlobalObservables(
+    double* const                               globalObservables,
+    const double* const                         luh,
+    const tarch::la::Vector<DIMENSIONS,double>& cellSize) {
+{% if numberOfGlobalObservables > 0 %}
+  double mappedObservables[NumberOfGlobalObservables];
+  GlobalObservables wrappedMappedObservables(mappedObservables);
+  static_cast<{{solver}}*>(this)->mapGlobalObservables(wrappedMappedObservables,luh,cellSize);
+  // reduce
+  GlobalObservables         wrappedGlobalObservables(globalObservables);
+  ReadOnlyGlobalObservables wrappedOtherObservables(mappedObservables);
+  tarch::multicore::Lock lock(_reductionSemaphore);
+  static_cast<{{solver}}*>(this)->mergeGlobalObservables(wrappedGlobalObservables,wrappedOtherObservables);
+  lock.free();
+{% endif %}
+}
+
+void {{project}}::{{abstractSolver}}::mergeGlobalObservables(double* const globalObservables,const double* const otherObservables) {
+{% if numberOfGlobalObservables > 0 %}
+  GlobalObservables         wrappedGlobalObservables(globalObservables);
+  ReadOnlyGlobalObservables wrappedOtherObservables(otherObservables);
+  static_cast<{{solver}}*>(this)->mergeGlobalObservables(wrappedGlobalObservables,wrappedOtherObservables);
+{% endif %}
+}
+
+void {{project}}::{{abstractSolver}}::wrapUpGlobalObservables(double* const globalObservables) {
+{% if numberOfGlobalObservables > 0 %}
+  GlobalObservables wrappedGlobalObservables(globalObservables);
+  static_cast<{{solver}}*>(this)->wrapUpGlobalObservables(wrappedGlobalObservables);
+{% endif %}
+}
+
+//--------
+
 void {{project}}::{{abstractSolver}}::flux(const double* const Q,double** const F) {
       abortWithMsg("flux: If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
 }
@@ -387,21 +458,36 @@ void {{project}}::{{abstractSolver}}::pointSource(const double* const Q,const do
       abortWithMsg("pointSource: If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
 }
 
-std::vector<double> {{project}}::{{abstractSolver}}::mapGlobalObservables(const double* const Q, const tarch::la::Vector<DIMENSIONS, double> &cellSize) const {
-  return {};
+void {{project}}::{{abstractSolver}}::resetGlobalObservables(GlobalObservables& globalObservables) const {
+  abortWithMsg("If this operation is entered (resetGlobalObservables), you have specified global observables. Then you have to re-implement this routine, too." );
 }
 
-std::vector<double> {{project}}::{{abstractSolver}}::resetGlobalObservables() const {
-  return {};
+void {{project}}::{{abstractSolver}}::mapGlobalObservables(
+    GlobalObservables&                          globalObservables,
+    const double* const                         luh,
+    const tarch::la::Vector<DIMENSIONS,double>& cellSize) const {
+  abortWithMsg("If this operation is entered (mapGlobalObservables), you have specified global observables. Then you have to re-implement this routine, too." );
 }
 
-void {{project}}::{{abstractSolver}}::reduceGlobalObservables(
-	std::vector<double>& reducedGlobalObservables,
-	const std::vector<double>& curGlobalObservables) const {
-  // NOP
+void {{project}}::{{abstractSolver}}::mergeGlobalObservables(
+    GlobalObservables&         globalObservables,
+    ReadOnlyGlobalObservables& otherObservables) const {
+  abortWithMsg("If this operation is entered (mergeGlobalObservables), you have specified global observables. Then you have to re-implement this routine, too." );
 }
 
+void {{project}}::{{abstractSolver}}::wrapUpGlobalObservables(GlobalObservables& globalObservables) const {
+  // Please re-implement if required.
+}
 
+{% if transformRiemannData %}
+void {{project}}::{{abstractSolver}}::preProcessRiemannSolverInputs(double* const lQhbnd,double* const lGradQhbnd,double* const lFhbnd,const int direction,const int faceIndex) const {
+  abortWithMsg("If this operation is entered (preProcessRiemannSolverInputs), you have specified Riemann solver input and output transformations. Then you have to re-implement this routine, too." );
+}
+
+void {{project}}::{{abstractSolver}}::postProcessRiemannSolution(double* const lFhbnd,const int direction,const int fineGridFaceIndex) const {
+  abortWithMsg("If this operation is entered (postProcessRiemannSolution), you have specified Riemann solver input and output transformations. Then you have to re-implement this routine, too." );
+}
+{% endif %}
 
 /**
  * Fallback implementations of joined functions. Users can either safely ignore this

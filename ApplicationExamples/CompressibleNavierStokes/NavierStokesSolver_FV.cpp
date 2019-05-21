@@ -100,25 +100,22 @@ void NavierStokes::NavierStokesSolver_FV::boundaryValues(
                                                      posZ, scenario->getBackgroundPotentialTemperature());
     const auto T = potentialTToT(ns, pressure, scenario->getBackgroundPotentialTemperature());
     const auto rho = pressure / (ns.gasConstant * T);
-    // TODO(Lukas) What should we do in case of an advection-scenarios?
+    varsOut.rho() = rho;
 
     // TODO(Lukas) Is background state necessary here?
+    ns.setBackgroundState(stateOut, varsOut.rho(), pressure);
     auto E = -1;
     if (ns.useGravity) {
       E = ns.evaluateEnergy(rho, pressure, varsOut.j(), ns.getZ(stateIn), x[DIMENSIONS - 1]);
     } else {
       E = ns.evaluateEnergy(rho, pressure, varsOut.j(), ns.getZ(stateIn));
     }
-    varsOut.E() = varsIn.E();//E;
-    varsOut.rho() = varsIn.rho();// rho;
-    ns.setBackgroundState(stateOut, varsOut.rho(), ns.evaluatePressure(
-            varsOut.E(), varsOut.rho(), varsOut.j(), 0.0, ns.getHeight(stateOut)
-            ));
+    varsOut.E() = E;
   }
 }
 
 void NavierStokes::NavierStokesSolver_FV::viscousFlux(const double* const Q,const double* const gradQ, double** F) {
-  ns.evaluateFlux(Q, gradQ, F, true);
+  ns.evaluateFlux(Q, gradQ, F, true, false, -1, true);
 }
 
 void NavierStokes::NavierStokesSolver_FV::viscousEigenvalues(const double* const Q, const int dIndex, double* lambda) {
@@ -131,22 +128,19 @@ void NavierStokes::NavierStokesSolver_FV::algebraicSource(const tarch::la::Vecto
   scenario->source(x, t, ns, Q, S);
 }
 
-std::vector<double> NavierStokes::NavierStokesSolver_FV::mapGlobalObservables(const double *const Q,
-        const tarch::la::Vector<DIMENSIONS,double>& dx) const {
-  // TODO(Lukas): Implementation is really slow but should work.
-   return ::NavierStokes::mapGlobalObservablesFV<PatchSize, GhostLayerWidth, NumberOfVariables,
-          NumberOfParameters, NumberOfGlobalObservables>(
-          Q, dx, scenarioName, ns, amrSettings);
+void NavierStokes::NavierStokesSolver_FV::resetGlobalObservables(GlobalObservables& globalObservables) const {
+  NavierStokes::resetGlobalObservables(globalObservables);
+}
+    
+void NavierStokes::NavierStokesSolver_FV::mapGlobalObservables(
+			  GlobalObservables&                          globalObservables,
+			  const double* const                         luh,
+			  const tarch::la::Vector<DIMENSIONS,double>& cellSize) const {
+  NavierStokes::mapGlobalObservablesFV(this, globalObservables, luh, cellSize);
 }
 
-std::vector<double> NavierStokes::NavierStokesSolver_FV::resetGlobalObservables() const {
-    return ::NavierStokes::resetGlobalObservables(NumberOfGlobalObservables);
+void NavierStokes::NavierStokesSolver_FV::mergeGlobalObservables(
+    GlobalObservables&         globalObservables,
+    ReadOnlyGlobalObservables& otherObservables) const  {
+  NavierStokes::mergeGlobalObservables(globalObservables,otherObservables);
 }
-
-void NavierStokes::NavierStokesSolver_FV::reduceGlobalObservables(
-        std::vector<double> &reducedGlobalObservables,
-        const std::vector<double> &curGlobalObservables) const {
-    ::NavierStokes::reduceGlobalObservables(reducedGlobalObservables, curGlobalObservables,
-            NumberOfGlobalObservables);
-}
-

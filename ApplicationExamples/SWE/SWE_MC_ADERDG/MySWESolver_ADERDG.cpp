@@ -18,6 +18,7 @@
 using namespace kernels;
 
 double grav;
+std::vector<double> a;
 tarch::logging::Log SWE::MySWESolver_ADERDG::_log( "SWE::MySWESolver_ADERDG" );
 
 
@@ -25,7 +26,7 @@ void SWE::MySWESolver_ADERDG::init(const std::vector<std::string>& cmdlineargs,c
     grav = 9.81;
 
     //for testing csv writer/reader
-    const int nelem = 9*3;
+    /*const int nelem = 9*3;
     std::vector<double> a((nelem+1)*(nelem+1));
     std::default_random_engine generator;
     std::uniform_real_distribution<double> distribution(0.0,0.4);
@@ -45,14 +46,16 @@ void SWE::MySWESolver_ADERDG::init(const std::vector<std::string>& cmdlineargs,c
     a_measurements[1] = {0.2,0.6};
     a_measurements[2] = {0.1,0.6};
     a_measurements[3] = {0.1,0.5};
-    writeCsv("Input/measurements.csv", a_measurements);
-
+    writeCsv("Input/measurements.csv", a_measurements);*/
+        readCsv("Input/parameters.csv", &a);
 }
 
 void SWE::MySWESolver_ADERDG::adjustSolution(double* const luh, const tarch::la::Vector<DIMENSIONS,double>& center, const tarch::la::Vector<DIMENSIONS,double>& dx,double t,double dt){
   // Dimensions                        = 2
   // Number of variables + parameters  = 4 + 0
     if (tarch::la::equals(t,0.0)) {
+
+
         constexpr int basisSize = MySWESolver_ADERDG::Order+1;
         constexpr int numberOfData=MySWESolver_ADERDG::NumberOfParameters+MySWESolver_ADERDG::NumberOfVariables;
 
@@ -70,7 +73,7 @@ void SWE::MySWESolver_ADERDG::adjustSolution(double* const luh, const tarch::la:
                 double x  =  (offset_x+dx[0]*kernels::gaussLegendreNodes[basisSize-1][i]);
                 double y  =  (offset_y+dx[1]*kernels::gaussLegendreNodes[basisSize-1][j]);
 
-                double b =  SWE::bathymetry(x,y) + linearInterpolation(x,y);
+                double b =  SWE::linearInterpolation(x,y,a);
 
                 if(x < 0.5) {
                     luh[id_xyf(i,j,0)] = 2.0 - b; //h

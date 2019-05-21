@@ -384,7 +384,7 @@ endif
 ifeq ($(call tolower,$(DISTRIBUTEDMEM)),mpi)
 	COMPILER_CFLAGS += -DParallel
 	COMPILER_CFLAGS += -DnoPackedRecords -DnoPersistentRegularSubtrees 
-	COMPILER_CFLAGS += -DIprobeEveryKIterations=0 
+	COMPILER_CFLAGS += -DIprobeEveryKIterations=0 -DUsePeanosRLEBoundaryExchanger -DUsePeanosRLEBoundaryExchangerForMetaData
 endif
 
 
@@ -587,9 +587,19 @@ header:
 
 build:  $(FOBJECTS) mergeipoobjects $(COBJECTS)
 	$(LL) $(COBJECTS) $(FOBJECTS) $(SOLVERKERNELS_IPO_OBJ) $(PROJECT_LINK) $(LINK_FORTRAN) $(COMPILER_LFLAGS) $(NO_IPO_FLAG) $(SYSTEM_LFLAGS) $(PROJECT_LFLAGS) -o $(EXECUTABLE)
-	@echo
 	@echo build of ExaHyPE successful
 	@echo run code with ./$(EXECUTABLE) and pass config file as argument
+
+link_muq:   header buildinfo ffiles.mk cfiles.mk cipofiles.mk $(FOBJECTS) mergeipoobjects $(COBJECTS)
+ifeq (,$(findstring EXAHYPE_LATE_TAKEOVER,$(COMPILER_CFLAGS)))
+	@echo
+	@echo
+	$(error To use MUQ the flag EXAHYPE_LATE_TAKEOVER must be set)
+endif
+ifneq ($(FMODULEOBJECTS),)
+		$(MAKE) $(FMODULEOBJECTS)
+endif
+	@echo $(COBJECTS) $(FOBJECTS) $(SOLVERKERNELS_IPO_OBJ) $(PROJECT_LINK) $(LINK_FORTRAN) $(COMPILER_LFLAGS) $(NO_IPO_FLAG) $(SYSTEM_LFLAGS) $(PROJECT_LFLAGS) > exahype_link
 
 clean:
 	rm -f $(EXECUTABLE)

@@ -12,6 +12,8 @@
 
 #include "tarch/multicore/BooleanSemaphore.h"
 
+#include "peano/performanceanalysis/Analyser.h"
+
 #include <vector>
 #include <atomic>
 
@@ -21,7 +23,7 @@ namespace exahype {
   }
 }
 
-class exahype::stealing::StealingAnalyser {
+class exahype::stealing::StealingAnalyser : public peano::performanceanalysis::Analyser {
   private:
     static tarch::logging::Log     _log;
 
@@ -66,8 +68,7 @@ class exahype::stealing::StealingAnalyser {
     double getTimePerSTP();
 
     virtual void beginIteration();
-
-    virtual void endIteration();
+    virtual void endIteration(double numberOfInnerLeafCells, double numberOfOuterLeafCells, double numberOfInnerCells, double numberOfOuterCells, double numberOfLocalCells, double numberOfLocalVertices);
 
     virtual void enterCentralElementOfEnclosingSpacetree();
     virtual void leaveCentralElementOfEnclosingSpacetree();
@@ -88,9 +89,9 @@ class exahype::stealing::StealingAnalyser {
     virtual void beginToSendDataToMaster();
     virtual void endToSendDataToMaster();
     virtual void beginToReceiveDataFromWorker();
-    virtual void endToReceiveDataFromWorker( int fromRank );
-    virtual void beginToReceiveDataFromMaster();
-    virtual void endToReceiveDataFromMaster();
+    virtual void endToReceiveDataFromWorker(int fromRank);
+    virtual void beginToReceiveDataFromMaster(int master);
+    virtual void endToReceiveDataFromMaster(int master);
     virtual void beginToReceiveDataFromGlobalMaster();
     virtual void endToReceiveDataFromGlobalMaster();
 

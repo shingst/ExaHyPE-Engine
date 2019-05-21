@@ -1,0 +1,122 @@
+{
+  "project_name": "GRMHDb",
+  "paths": {
+    "peano_kernel_path": "./Peano",
+    "exahype_path": "./ExaHyPE",
+    "output_directory": "./ApplicationExamples/GRMHDb/GRMHDb_ADERDG_FV_2D_clean",
+    "log_file": "whatever.log"
+  },
+  "architecture": "skx",
+  "computational_domain": {
+    "dimension": 2,
+    "end_time": 0.4,
+    "offset": [
+      0.0,
+      0.0
+    ],
+    "width": [
+      1.0,
+      1.0
+    ]
+  },
+  "shared_memory": {
+    "cores": 4,
+    "properties_file": "sharedmemory.properties",
+    "thread_stack_size": 16777216,
+    "autotuning_strategy": "dummy",
+    "background_job_consumers": 2
+  },
+  "distributed_memory": {
+    "timeout": 480,
+    "load_balancing_type": "static",
+    "buffer_size": 6400,
+    "load_balancing_strategy": "hotspot",
+    "node_pool_strategy": "fair",
+    "ranks_per_node": 1
+  },
+  "optimisation": {},
+  "solvers": [
+    {
+      "type": "Limiting-ADER-DG",
+      "name": "GRMHDbSolver",
+      "order": 3,
+      "maximum_mesh_size": 0.1,
+      "maximum_mesh_depth": 0,
+      "time_stepping": "global",
+      "aderdg_kernel": {
+        "language": "C",
+        "nonlinear": true,
+        "terms": [
+          "flux",
+          "ncp"
+        ],
+        "space_time_predictor": {
+          "fix_picard_iterations": true
+        },
+        "optimised_terms": [],
+        "optimised_kernel_debugging": [],
+        "implementation": "generic"
+      },
+      "point_sources": 0,
+      "limiter": {
+        "dmp_observables": 5,
+        "dmp_relaxation_parameter": 0.0001,
+        "dmp_difference_scaling": 0.001,
+        "implementation": "generic"
+      },
+      "fv_kernel": {
+        "language": "C",
+        "terms": [
+          "flux",
+          "ncp"
+        ],
+        "scheme": "musclhancock",
+        "implementation": "generic"
+      },
+      "variables": [
+        {
+          "name": "rho",
+          "multiplicity": 1
+        },
+        {
+          "name": "vel",
+          "multiplicity": 3
+        },
+        {
+          "name": "p",
+          "multiplicity": 1
+        },
+        {
+          "name": "B",
+          "multiplicity": 3
+        },
+        {
+          "name": "psi",
+          "multiplicity": 1
+        },
+        {
+          "name": "lapse",
+          "multiplicity": 1
+        },
+        {
+          "name": "shift",
+          "multiplicity": 3
+        },
+        {
+          "name": "gamma",
+          "multiplicity": 6
+        }
+      ],
+      "plotters": [
+        {
+          "type": "user::defined",
+          "name": "TecplotWriter",
+          "time": 0.0,
+          "repeat": 0.01,
+          "output": "./output/tecplot",
+          "variables": 19
+        }
+      ]
+    }
+  ]
+}

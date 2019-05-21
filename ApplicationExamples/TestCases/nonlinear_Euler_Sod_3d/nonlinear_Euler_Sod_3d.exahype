@@ -17,10 +17,10 @@ exahype-project Euler
   architecture const      = noarch
 
   computational-domain
-    dimension const  = 2
+    dimension const  = 3
     width            = 1.0, 1.0, 1.0
     offset           = 0.0, 0.0, 0.0
-    end-time         = 0.2
+    end-time         = 0.1
   end computational-domain
   
   shared-memory
@@ -45,9 +45,10 @@ exahype-project Euler
  
   solver Limiting-ADER-DG EulerSolver
     variables const            = rho:1,j:3,E:1
+    global-observables const   = dgcells:1,fvcells:1
     order const                = 6
     maximum-mesh-size          = 0.4
-    maximum-mesh-depth         = 3
+    maximum-mesh-depth         = 0
     time-stepping              = global
     type const                 = nonlinear
     terms const                = flux

@@ -50,6 +50,9 @@ event-mapping:
   
 // GridUpdate     
 event-mapping:
+  name: UniformRefinement
+
+event-mapping:
   name: MeshRefinement
   
 event-mapping:
@@ -57,6 +60,12 @@ event-mapping:
 
 event-mapping:
   name: AugmentedAMRTreePlot2d
+  
+adapter:
+  name: UniformRefinement
+  merge-with-user-defined-mapping: UniformRefinement
+  merge-with-user-defined-mapping: LoadBalancing
+  merge-with-user-defined-mapping: LevelwiseAdjacencyBookkeeping
   
 adapter:
   name: MeshRefinement

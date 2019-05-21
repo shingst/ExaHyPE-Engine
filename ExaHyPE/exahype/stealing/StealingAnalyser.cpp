@@ -156,7 +156,7 @@ void exahype::stealing::StealingAnalyser::beginIteration() {
 }
 
 
-void exahype::stealing::StealingAnalyser::endIteration() {
+void exahype::stealing::StealingAnalyser::endIteration(double numberOfInnerLeafCells, double numberOfOuterLeafCells, double numberOfInnerCells, double numberOfOuterCells, double numberOfLocalCells, double numberOfLocalVertices) {
 #if !defined(AnalyseWaitingTimes)
   exahype::stealing::StealingManager::getInstance().printBlacklist();
   if(_iterationCounter%2 !=0) {
@@ -267,18 +267,21 @@ void exahype::stealing::StealingAnalyser::endToReceiveDataFromWorker( int fromRa
 }
 
 
-void exahype::stealing::StealingAnalyser::beginToReceiveDataFromMaster() {
-  if (_isSwitchedOn && !_waitForMasterDataWatch.isOn()) {
-    _waitForMasterDataWatch.startTimer();
-  }
+void exahype::stealing::StealingAnalyser::beginToReceiveDataFromMaster(int master) {
+  //if (_isSwitchedOn && !_waitForMasterDataWatch.isOn()) {
+  //  _waitForMasterDataWatch.startTimer();
+  //}
 }
 
 
-void exahype::stealing::StealingAnalyser::endToReceiveDataFromMaster() {
-  if (_isSwitchedOn && _waitForMasterDataWatch.isOn()) {
+void exahype::stealing::StealingAnalyser::endToReceiveDataFromMaster(int master) {
+
+  if(master==0) 
+     endToReceiveDataFromGlobalMaster();
+  /*if (_isSwitchedOn && _waitForMasterDataWatch.isOn()) {
     _waitForMasterDataWatch.stopTimer();
     const double elapsedTime = _waitForMasterDataWatch.getCalendarTime();
-    int myMaster = tarch::parallel::NodePool::getInstance().getMasterRank();
+    //int myMaster = tarch::parallel::NodePool::getInstance().getMasterRank();
     
     //_waitForOtherRank[myMaster].setValue(elapsedTime);
 
@@ -287,10 +290,11 @@ void exahype::stealing::StealingAnalyser::endToReceiveDataFromMaster() {
     if (tarch::la::greater(elapsedTime,0.0)) {
       logInfo(
         "endToReceiveDataFromMaster()",
-        "rank had to wait for master " << myMaster << " for "<< elapsedTime 
+        "rank had to wait for master " << master << " for "<< elapsedTime 
       );
     }
-  }
+  }*/
+  
 }
 
 void exahype::stealing::StealingAnalyser::beginToSendDataToMaster() {

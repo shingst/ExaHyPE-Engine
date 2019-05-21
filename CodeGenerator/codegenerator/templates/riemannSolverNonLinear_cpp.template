@@ -73,7 +73,7 @@ void {{codeNamespace}}::riemannSolver(
   for (int xy = 0; xy < {{nDof*nDof3D}}; xy++){
     #pragma omp simd aligned(tmp_bnd,QL,QR:ALIGNMENT)
     for (int n = 0; n < {{nVar}}; n++) { //skip parameters
-      tmp_bnd[xy*{{nVarPad}}+n] = smax * (QL[xy*{{nVarPad}}+n]-QR[xy*{{nVarPad}}+n]);
+      tmp_bnd[xy*{{nVarPad}}+n] = smax * (QL[xy*{{nDataPad}}+n]-QR[xy*{{nDataPad}}+n]);
     }
   }
   
@@ -143,6 +143,11 @@ void {{codeNamespace}}::riemannSolver(
        Qavg[n] = 0.5 * (QL[xy*{{nDataPad}}+n] + QR[xy*{{nDataPad}}+n]);
        gradQ[direction*{{nVar}}+n] = QR[xy*{{nDataPad}}+n] - QL[xy*{{nDataPad}}+n];
     }
+{% if nPar != 0%}
+    for (int n = {{nVar}}; n < {{nData}}; n++) { // copy parameters
+      Qavg[n] = 0.5 * (QL[xy*{{nDataPad}}+n] + QR[xy*{{nDataPad}}+n]);
+    }
+{% endif %}
 #ifdef USE_IPO
     #pragma forceinline recursive
 #endif

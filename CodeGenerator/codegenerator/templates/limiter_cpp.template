@@ -64,8 +64,8 @@ void {{codeNamespace}}::projectOnFVLimiterSpace(const double* const luh, double*
   //space out for ghostlayer (in place)
   for (int z = {{nDofLim3D-1}}; z >= 0; z--) {
     for (int y = {{nDofLim-1}}; y >= 0; y--) {
-      std::copy_n(lim+(z*{{nDofLim}}+y)*{{nDofLim*nVar}}, {{nVar*nDofLim}}, lim+(((z+{{ghostLayerWidth3D}})*{{nDofLim+2*ghostLayerWidth}}+y+{{ghostLayerWidth}})*{{nDofLim+2*ghostLayerWidth}}+{{ghostLayerWidth}})*{{nVar}}); // no overlap since we have ghostlayers at the beginning
-      std::memset(lim+(z*{{nDofLim}}+y)*{{nDofLim*nVar}}, 0, sizeof(double)*{{nVar*nDofLim}}); //delete the memory block that was moved to ensure ghostlayers are set at 0.
+      std::copy_n(lim+(z*{{nDofLim}}+y)*{{nDofLim*nData}}, {{nData*nDofLim}}, lim+(((z+{{ghostLayerWidth3D}})*{{nDofLim+2*ghostLayerWidth}}+y+{{ghostLayerWidth}})*{{nDofLim+2*ghostLayerWidth}}+{{ghostLayerWidth}})*{{nData}}); // no overlap since we have ghostlayers at the beginning
+      std::memset(lim+(z*{{nDofLim}}+y)*{{nDofLim*nData}}, 0, sizeof(double)*{{nData*nDofLim}}); //delete the memory block that was moved to ensure ghostlayers are set at 0.
     }
   }
   

@@ -28,7 +28,7 @@
 peano::CommunicationSpecification exahype::mappings::BroadcastAndDropNeighbourMessages::communicationSpecification() const {
   return peano::CommunicationSpecification(
         peano::CommunicationSpecification::ExchangeMasterWorkerData::MaskOutMasterWorkerDataAndStateExchange,
-        peano::CommunicationSpecification::ExchangeWorkerMasterData::SendDataAndStateAfterLastTouchVertexLastTime,true);
+        peano::CommunicationSpecification::ExchangeWorkerMasterData::SendDataAndStateAfterLastTouchVertexLastTime,false);
 }
 
 peano::MappingSpecification
@@ -250,17 +250,7 @@ exahype::mappings::BroadcastAndDropNeighbourMessages::BroadcastAndDropNeighbourM
 
 void exahype::mappings::BroadcastAndDropNeighbourMessages::endIteration(
     exahype::State& solverState) {
-
-/*#if defined(DistributedStealing)
-  for (auto* solver : exahype::solvers::RegisteredSolvers) {
-    if (solver->getType()==exahype::solvers::Solver::Type::ADERDG) {
-      static_cast<exahype::solvers::ADERDGSolver*>(solver)->stopStealingManager();
-    }
-    if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
-      static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->stopStealingManager();
-    }
-  }
-#endif*/
+  // do nothing
 }
 
 void exahype::mappings::BroadcastAndDropNeighbourMessages::touchVertexFirstTime(

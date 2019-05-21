@@ -38,9 +38,7 @@
     "ranks_per_node": 6
   },
   "optimisation": {
-    "fuse_algorithmic_steps": "all",
-    "fuse_algorithmic_steps_rerun_factor": 0.99,
-    "fuse_algorithmic_steps_diffusion_factor": 0.99,
+    "fuse_algorithmic_steps": true,
     "spawn_predictor_as_background_thread": true,
     "spawn_update_as_background_thread": true,
     "spawn_amr_background_threads": true,
@@ -59,7 +57,6 @@
       "time_stepping": "globalfixed",
       "fv_kernel": {
         "language": "C",
-        "slope_limiter": "mclim",
         "terms": [
           "flux",
           "ncp"
@@ -122,16 +119,8 @@
           "type": "vtu::Cartesian::vertices::ascii",
           "name": "PrimitiveWriter",
           "time": 0.0,
-          "repeat": 1.0,
+          "repeat": 0.5,
           "output": "./vtk-output/primitive",
-          "variables": 1
-        },
-        {
-          "type": "vtu::Cartesian::vertices::ascii",
-          "name": "ConservedWriter",
-          "time": 0.0,
-          "repeat": 1.0,
-          "output": "./vtk-output/conserved",
           "variables": 1
         }
       ]

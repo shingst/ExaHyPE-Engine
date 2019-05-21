@@ -18,21 +18,18 @@ namespace {{namespaceName}} {
   // Global configuration 
   constexpr int getNumberOfVariable()        {return {{nVar}};}
   constexpr int getNumberOfVariablePadded()  {return {{nVarPad}};}
-  
+                                             
   constexpr int getNumberOfParameter()       {return {{nPar}};}
   constexpr int getNumberOfParameterPadded() {return {{nParPad}};}
-
-  // TODO(JMG): Please implement.
-  constexpr int getNumberOfGlobalObservables()       {return {{0}};}
   
   constexpr int getNumberOfData()            {return {{nData}};}
   constexpr int getNumberOfDataPadded()      {return {{nDataPad}};}
-  
+                                             
   constexpr int getBasisSize()               {return {{nDof}};}
   constexpr int getBasisSizePadded()         {return {{nDofPad}};}
-  
+                                             
   constexpr int getDimension()               {return {{nDim}};}
-
+                                             
   constexpr bool isLinear()                  {return {{isLinearCText}};}
   
 {% if useLimiter %}

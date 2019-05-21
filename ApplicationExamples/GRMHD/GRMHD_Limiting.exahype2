@@ -30,12 +30,10 @@
     "background_job_consumers": 3
   },
   "distributed_memory": {
+    "ranks_per_node": 6,
     "timeout": 3600,
     "load_balancing_type": "static",
-    "buffer_size": 64000,
-    "load_balancing_strategy": "hotspot",
-    "node_pool_strategy": "fair",
-    "ranks_per_node": 6
+    "buffer_size": 64000
   },
   "optimisation": {
     "fuse_algorithmic_steps": "all",

@@ -5,7 +5,10 @@ def run(config, workspace) {
     node ('Linux-Cluster') {
 	ws(util.adjust_ws("${env.JOB_NAME}-${config.name}-run")) {
 	    unstash "exahype-${config.name}"
-	    util.slurmBatch '''
+
+	    def directory=sh(returnStdout: true,
+			     script: "dirname ${config.exahypeFile}").trim()
+	    util.slurmBatch('''
 set -x
 ulimit -s unlimited
 IFS=$'\n\t'
@@ -27,8 +30,8 @@ cd "${directory}"
 
 ls
 cat "${filename}"
-eval "./ExaHyPE-${project_name} "${filename}""
-'''
+eval "mpiexec -n ${JENKINS_MPI_RANKS} ./ExaHyPE-${project_name} "${filename}""
+''', directory)
 	    deleteDir()
 	}
     }

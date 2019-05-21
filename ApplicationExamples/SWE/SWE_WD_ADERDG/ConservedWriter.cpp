@@ -22,8 +22,10 @@ void SWE::ConservedWriter::writtenQuantitiesNames(char** name){
   name[0]="h";
   name[1]="hu";
   name[2]="hv";
-  name[3]="water level";
-  name[4]="error";
+  name[3]="b";
+  name[4]="water level";
+  name[5]="error";
+  name[6]="ex";
 }
 
 void SWE::ConservedWriter::startPlotting( double time) {
@@ -52,5 +54,6 @@ void SWE::ConservedWriter::mapQuantities(
 
   //calculate error for OscillationLake
   double omega = sqrt(0.2*grav_DG);
-  outputQuantities[5] = std::abs(Q[0] - max(0.0, 0.05 * (2 * x[0] * cos(omega * 0) + 2 * x[1] * sin(omega * 0)) + 0.075 - Q[3]));
+  outputQuantities[5] = std::abs(Q[0] - std::max(0.0, 0.05 * (2 * x[0] * std::cos(omega * timeStamp) + 2 * x[1] * std::sin(omega * timeStamp)) + 0.075 - Q[3]));
+  outputQuantities[6] = std::max(0.0, 0.05 * (2 * x[0] * std::cos(omega * timeStamp) + 2 * x[1] * std::sin(omega * timeStamp)) + 0.075 - Q[3]);
 }

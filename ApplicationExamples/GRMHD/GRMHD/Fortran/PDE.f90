@@ -526,6 +526,7 @@ RECURSIVE SUBROUTINE PDEEigenvalues(L,Q,n)
 	REAL :: b2_4,cs2,sft,VdotB,vn,den,gg,lf2m,ImLambda(nVar), rtemp(nVar) ,R(nVar,nVar), iR(nVar,nVar),fmm(nVar),gmm(nVar),hmm(nVar),fpp(nVar),gpp(nVar),hpp(nVar),gg2,sft2,vn2
     INTEGER :: i,j,k,m,iErr, ccount, itemp(nVar) 
     LOGICAL :: FLAG
+  LOGICAL:: hasNaN
   REAL :: Pi
   Pi = ACOS(-1.0)
     !
@@ -533,6 +534,7 @@ RECURSIVE SUBROUTINE PDEEigenvalues(L,Q,n)
 !    L(1) = -1.0    
 !    L(2) = +1.0    
 !    RETURN 
+
 
     xg(1) = 0.
     xg(2) = 0.
@@ -543,9 +545,9 @@ RECURSIVE SUBROUTINE PDEEigenvalues(L,Q,n)
     CALL PDECons2Prim(V,Q,iErr)
     rho    = V(1)
 	DO i=1,3
-		v_cov = V(1+i)
-		B_contr(1:3) = V(5+i)
-		shift = V(10+i)
+		v_cov(i) = V(1+i)
+		B_contr(i) = V(5+i)
+		shift(i) = V(10+i)
 	ENDDO
     p      = V(5)
     !
@@ -611,12 +613,41 @@ RECURSIVE SUBROUTINE PDEEigenvalues(L,Q,n)
     endif
   enddo
 
- 
-  ! if atmo is small, set the eigenvalues to +- 0.5
+  ! if atmo is small, set the eigenvalues to +-1 
   if(Q(1) < 1.e-9) then 
     L(1) = -1.0    
     L(2) = +1.0    
+    do i=3,nVar
+      L(i)=0.0
+    enddo     
   endif
+
+  ! check for NaNs
+  hasNaN=.FALSE.
+  do i=1,nVar
+    if (isnan(L(i))) then
+     hasNaN = .TRUE. 
+    endif 
+  enddo     
+
+  ! if there are any NaNs reset to the default
+  if (hasNaN) then
+    L(1) = -1.0    
+    L(2) = +1.0    
+    do i=3,nVar
+      L(i)=0.0
+    enddo     
+  endif
+  ! check for NaNs
+  hasNaN=.FALSE.
+  do i=1,nVar
+    if (isnan(L(i))) then
+     hasNaN = .TRUE. 
+     print *, "lambda(",i,") is a NaN = ", L(i)
+    endif 
+  enddo     
+
+ 
 
   return 
 !     !

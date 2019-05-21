@@ -54,7 +54,7 @@ peano::CommunicationSpecification
 exahype::mappings::FusedTimeStep::communicationSpecification() const {
   return peano::CommunicationSpecification(
       peano::CommunicationSpecification::ExchangeMasterWorkerData::MaskOutMasterWorkerDataAndStateExchange,
-      peano::CommunicationSpecification::ExchangeWorkerMasterData::SendDataAndStateAfterLastTouchVertexLastTime,true);
+      peano::CommunicationSpecification::ExchangeWorkerMasterData::SendDataAndStateAfterLastTouchVertexLastTime,false);
 }
 
 peano::MappingSpecification
@@ -149,11 +149,24 @@ void exahype::mappings::FusedTimeStep::beginIteration(
     exahype::State& solverState) {
   logTraceInWith1Argument("beginIteration(State)", solverState);
 
+  static int itcount = 0;
+  itcount++;
+
+  int timestep = itcount % 2;
+
+#ifdef USE_ITAC
+//  if (timestep>48 && timestep<52) {
+//         VT_traceon();
+//  }
+//  else
+//       VT_traceoff();
+#endif
+
   if (
       tarch::parallel::Node::getInstance().isGlobalMaster() &&
       tarch::parallel::Node::getInstance().getNumberOfNodes()>1
   ) {
-    logInfo("beginIteration(...)","start traversal on global master (after broadcast).");
+    logDebug("beginIteration(...)","start traversal on global master (after broadcast).");
   }
 
   if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
@@ -167,20 +180,29 @@ void exahype::mappings::FusedTimeStep::beginIteration(
     static bool isFirst = true;
     isFirst = false;
 
+    for (auto* solver : exahype::solvers::RegisteredSolvers) {
+      if (solver->getType()==exahype::solvers::Solver::Type::ADERDG) {
+        static_cast<exahype::solvers::ADERDGSolver*>(solver)->resumeStealingManager();
+      }
+    // Todo:
+    //  if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
+    //    static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->StealingManager();
+    //  }
+    } 
+
+
 #if defined(StealingStrategyStatic) || defined(StealingStrategyStaticHardcoded)
   if(issuePredictionJobsInThisIteration()) {
     exahype::stealing::StaticDistributor::getInstance().resetRemainingTasksToOffload();
   }
-  exahype::stealing::StealingAnalyser::getInstance().beginIteration();
+  //exahype::stealing::StealingAnalyser::getInstance().beginIteration();
 #elif defined(StealingStrategyAggressive) || defined(StealingStrategyAggressiveHybrid) || defined(StealingStrategyAggressiveDiffusive)
-  exahype::stealing::StealingAnalyser::getInstance().beginIteration();
+  //exahype::stealing::StealingAnalyser::getInstance().beginIteration();
 #endif 
 #endif
 
-  if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
     // ensure reductions are inititated from worker side
-    solverState.setReduceStateAndCell(true);
-  }
+  solverState.setReduceStateAndCell( exahype::State::isLastIterationOfBatchOrNoBatch() );
 
 #endif
   logTraceOutWith1Argument("beginIteration(State)", solverState);
@@ -198,20 +220,18 @@ void exahype::mappings::FusedTimeStep::endIteration(
       exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::ReductionJob);
     }
 
-    if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
-      const bool endOfFirstFusedTimeStepInBatch =
-          ( exahype::solvers::Solver::PredictionSweeps == 1 ) ?
-              state.isFirstIterationOfBatchOrNoBatch() :
-              state.isSecondIterationOfBatchOrNoBatch();
-      for (auto* solver : solvers::RegisteredSolvers) {
-        solver->wrapUpTimeStep(endOfFirstFusedTimeStepInBatch,state.isLastIterationOfBatchOrNoBatch());
-      }
+    const bool endOfFirstFusedTimeStepInBatch =
+        ( exahype::solvers::Solver::PredictionSweeps == 1 ) ?
+            state.isFirstIterationOfBatchOrNoBatch() :
+            state.isSecondIterationOfBatchOrNoBatch();
+    for (auto* solver : solvers::RegisteredSolvers) {
+      solver->wrapUpTimeStep(endOfFirstFusedTimeStepInBatch,state.isLastIterationOfBatchOrNoBatch());
     }
   }
 
 #if defined(Parallel) && defined(DistributedStealing)
 #if defined(StealingStrategyAggressive) || defined(StealingStrategyAggressiveHybrid) || defined(StealingStrategyAggressiveDiffusive) || defined(StealingStrategyStaticHardcoded)
-  exahype::stealing::StealingAnalyser::getInstance().endIteration();
+  //exahype::stealing::StealingAnalyser::getInstance().endIteration();
 #ifdef StealingUseProgressTask
   if(issuePredictionJobsInThisIteration() ) { 
     exahype::stealing::StealingManager::getInstance().notifyAllVictimsSendCompletedIfNotNotified();
@@ -219,6 +239,18 @@ void exahype::mappings::FusedTimeStep::endIteration(
   }
 #endif
 #endif 
+
+    for (auto* solver : exahype::solvers::RegisteredSolvers) {
+      if (solver->getType()==exahype::solvers::Solver::Type::ADERDG) {
+        static_cast<exahype::solvers::ADERDGSolver*>(solver)->pauseStealingManager();
+      }
+    // Todo:
+    //  if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
+    //    static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->pauseStealingManager();
+    //  }
+    } 
+
+
 #endif
 
   logTraceOutWith1Argument("endIteration(State)", state);
@@ -312,18 +344,17 @@ void exahype::mappings::FusedTimeStep::leaveCell(
       // this operates only on compute cells
       plotters::plotPatchIfAPlotterIsActive(solverNumber,cellInfo); // TODO(Dominic) potential for IO overlap?
 
-      solvers::Solver::UpdateResult result;
       switch ( solver->getType() ) {
         case solvers::Solver::Type::ADERDG:
-          result = static_cast<solvers::ADERDGSolver*>(solver)->fusedTimeStepOrRestrict(
+          static_cast<solvers::ADERDGSolver*>(solver)->fusedTimeStepOrRestrict(
               solverNumber,cellInfo,exahype::State::isFirstIterationOfBatchOrNoBatch(),isLastTimeStep,isAtRemoteBoundary);
           break;
         case solvers::Solver::Type::LimitingADERDG:
-          result = static_cast<solvers::LimitingADERDGSolver*>(solver)->fusedTimeStepOrRestrict(
+          static_cast<solvers::LimitingADERDGSolver*>(solver)->fusedTimeStepOrRestrict(
               solverNumber,cellInfo,exahype::State::isFirstIterationOfBatchOrNoBatch(),isLastTimeStep,isAtRemoteBoundary);
           break;
         case solvers::Solver::Type::FiniteVolumes:
-          result = static_cast<solvers::FiniteVolumesSolver*>(solver)->fusedTimeStepOrRestrict(
+          static_cast<solvers::FiniteVolumesSolver*>(solver)->fusedTimeStepOrRestrict(
               solverNumber,cellInfo,exahype::State::isFirstIterationOfBatchOrNoBatch(),isLastTimeStep,isAtRemoteBoundary);
           break;
         default:
@@ -331,15 +362,6 @@ void exahype::mappings::FusedTimeStep::leaveCell(
           logError("mergeWithBoundaryDataIfNotDoneYet(...)","Unrecognised solver type: "<<solvers::Solver::toString(solver->getType()));
           std::abort();
           break;
-      }
-
-      // mesh refinement events, cell sizes (for AMR), time
-      if ( isLastTimeStep && !exahype::solvers::Solver::SpawnUpdateAsBackgroundJob ) {
-        solver->updateMeshUpdateEvent(result._meshUpdateEvent);
-        solver->updateAdmissibleTimeStepSize(result._timeStepSize);
-      }
-      if (isLastTimeStep) {
-	solver->reduceGlobalObservables(solver->getGlobalObservables(), cellInfo, solverNumber);
       }
     }
 
@@ -400,10 +422,10 @@ void exahype::mappings::FusedTimeStep::prepareSendToMaster(
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
     const exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
-  if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
-    const int masterRank = tarch::parallel::NodePool::getInstance().getMasterRank();
-    exahype::State::reduceGlobalDataToMaster(masterRank,0.0,0);
-  }
+  assertion( exahype::State::isLastIterationOfBatchOrNoBatch() );
+  logDebug("prepareSendToMaster(...)","reduce global data to master");
+  const int masterRank = tarch::parallel::NodePool::getInstance().getMasterRank();
+  exahype::State::reduceGlobalDataToMaster(masterRank,0.0,0);
 }
 
 void exahype::mappings::FusedTimeStep::mergeWithMaster(
@@ -418,16 +440,15 @@ void exahype::mappings::FusedTimeStep::mergeWithMaster(
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
     int workerRank, const exahype::State& workerState,
     exahype::State& masterState) {
+  assertion( exahype::State::isLastIterationOfBatchOrNoBatch() );
   if (
       tarch::parallel::Node::getInstance().isGlobalMaster() &&
       tarch::parallel::Node::getInstance().getNumberOfNodes()>1
   ) {
-    logInfo("mergeWithMaster(...)","end traversal on global master (before reduction).");
+    logDebug("mergeWithMaster(...)","end traversal on global master (before reduction).");
   }
-
-  if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
-    exahype::State::mergeWithGlobalDataFromWorker(workerRank,0.0,0);
-  }
+  logDebug("mergeWithMaster(...)","merge with global data from worker");
+  exahype::State::mergeWithGlobalDataFromWorker(workerRank,0.0,0);
 }
 
 //

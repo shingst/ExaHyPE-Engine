@@ -91,7 +91,7 @@ void {{codeNamespace}}::riemannSolver(
 {% endif %}
   
 {% if useNCP %}
-  double ncp_vec[{{nVar*nDim}}] __attribute__((aligned(ALIGNMENT))) = {0.};
+  double ncp_vec[{{nVarPad*nDim}}] __attribute__((aligned(ALIGNMENT))) = {0.};
   double* ncp[{{nDim}}] __attribute__((aligned(ALIGNMENT))) = { ncp_vec, ncp_vec+{{nVarPad}}{{', ncp_vec+'~2*nVarPad if nDim==3 else ''}} };
   double* gradQ[{{nDim}}] __attribute__((aligned(ALIGNMENT))) = {Qdiff, Qdiff{{', Qdiff' if nDim==3 else ''}} }; //readonly, 2/3 time Qdiff
 {% endif %}
