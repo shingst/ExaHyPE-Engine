@@ -1205,18 +1205,16 @@ public:
   if ( !cellDescription.getHasCompletedLastStep() ) {
      peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
 #if defined(DistributedStealing) && !defined(StealingUseProgressThread)
-     if (this->getType()==exahype::solvers::Solver::Type::ADERDG
-         && responsibleRank!=myRank
+     if ( responsibleRank!=myRank
          && stealingTreatment) {
-       solver->pauseStealingManager();
+      // solver->pauseStealingManager();
        exahype::solvers::ADERDGSolver::tryToReceiveTaskBack(solver) ;
      }
 #endif
    }
    while ( !cellDescription.getHasCompletedLastStep() ) {
 #if defined(DistributedStealing) && !defined(StealingUseProgressThread)
-     if (this->getType()==exahype::solvers::Solver::Type::ADERDG
-        && responsibleRank!=myRank
+     if ( responsibleRank!=myRank
         && stealingTreatment) {
        progress= exahype::solvers::ADERDGSolver::tryToReceiveTaskBack(solver);
        //solver->spawnReceiveBackJob();
@@ -1282,10 +1280,9 @@ public:
      //}
    }
 #if defined(DistributedStealing) && !defined(StealingUseProgressThread)
-   if (this->getType()==exahype::solvers::Solver::Type::ADERDG
-      && responsibleRank!=myRank
+   if ( responsibleRank!=myRank
       && stealingTreatment) {
-     solver->resumeStealingManager();
+     //solver->resumeStealingManager();
    }
    exahype::solvers::ADERDGSolver::setMaxNumberOfIprobesInProgressStealing( std::numeric_limits<int>::max() );
 #endif
