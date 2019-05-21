@@ -180,6 +180,17 @@ void exahype::mappings::FusedTimeStep::beginIteration(
     static bool isFirst = true;
     isFirst = false;
 
+    for (auto* solver : exahype::solvers::RegisteredSolvers) {
+      if (solver->getType()==exahype::solvers::Solver::Type::ADERDG) {
+        static_cast<exahype::solvers::ADERDGSolver*>(solver)->resumeStealingManager();
+      }
+    // Todo:
+    //  if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
+    //    static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->StealingManager();
+    //  }
+    } 
+
+
 #if defined(StealingStrategyStatic) || defined(StealingStrategyStaticHardcoded)
   if(issuePredictionJobsInThisIteration()) {
     exahype::stealing::StaticDistributor::getInstance().resetRemainingTasksToOffload();
@@ -228,6 +239,18 @@ void exahype::mappings::FusedTimeStep::endIteration(
   }
 #endif
 #endif 
+
+    for (auto* solver : exahype::solvers::RegisteredSolvers) {
+      if (solver->getType()==exahype::solvers::Solver::Type::ADERDG) {
+        static_cast<exahype::solvers::ADERDGSolver*>(solver)->pauseStealingManager();
+      }
+    // Todo:
+    //  if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
+    //    static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->pauseStealingManager();
+    //  }
+    } 
+
+
 #endif
 
   logTraceOutWith1Argument("endIteration(State)", state);

@@ -54,6 +54,9 @@
 #include "exahype/stealing/DiffusiveDistributor.h"
 #include "exahype/stealing/StealingManager.h"
 #include "exahype/stealing/StealingAnalyser.h"
+
+#include "exahype/stealing/StealingProgressService.h"
+
 #endif
 #include "exahype/stealing/StealingProfiler.h"
 
@@ -675,6 +678,10 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
   _receivedFluctuations.resize(getBndFluxSize());
 
   _receivedUpdate.reserve(getUpdateSize());
+
+#if defined(DistributedStealing)
+  exahype::stealing::StealingProgressService::getInstance().setSolver(this);
+#endif
 
 #ifdef StealingUseProfiler
   exahype::stealing::StealingProfiler::getInstance().beginPhase();
@@ -5164,13 +5171,13 @@ bool exahype::solvers::ADERDGSolver::StealingManagerJob::run() {
   switch (_state) {
     case State::Running:
     {
-      tarch::multicore::RecursiveLock lock( 
-        tarch::services::Service::receiveDanglingMessagesSemaphore, false );
-      bool acquired = lock.try_lock();
-      if(acquired) {
-        tarch::parallel::Node::getInstance().receiveDanglingMessages();
-        lock.free();
-      }
+      //tarch::multicore::RecursiveLock lock( 
+      //  tarch::services::Service::receiveDanglingMessagesSemaphore, false );
+      //bool acquired = lock.try_lock();
+      //if(acquired) {
+      //  tarch::parallel::Node::getInstance().receiveDanglingMessages();
+      //  lock.free();
+      //}
       exahype::solvers::ADERDGSolver::progressStealing(&_solver);
     //  logInfo("run()", "reschedule... ");
       break;
@@ -5216,7 +5223,7 @@ void exahype::solvers::ADERDGSolver::StealingManagerJob::resume() {
 };
 #endif
 
-void exahype::solvers::ADERDGSolver::startStealingManager() {
+void exahype::solvers::ADERDGSolver::startStealingManager(bool spawn) {
   logInfo("startStealingManager", " starting ");
 #ifdef StealingUseProgressThread
   static tbb::task_group_context  backgroundTaskContext(tbb::task_group_context::isolated);
@@ -5226,7 +5233,8 @@ void exahype::solvers::ADERDGSolver::startStealingManager() {
   tbb::task::enqueue(*_stealingManagerJob);
 #else
   _stealingManagerJob = new StealingManagerJob(*this);
-  peano::datatraversal::TaskSet spawnedSet(_stealingManagerJob);
+  if(spawn)
+    peano::datatraversal::TaskSet spawnedSet(_stealingManagerJob);
   //peano::datatraversal::TaskSet spawnedSet(_stealingManagerJob, peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible);
 #endif
 }

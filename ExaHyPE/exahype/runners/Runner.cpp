@@ -956,10 +956,10 @@ int exahype::runners::Runner::run() {
 #if defined(DistributedStealing)
   for (auto* solver : exahype::solvers::RegisteredSolvers) {
     if (solver->getType()==exahype::solvers::Solver::Type::ADERDG) {
-      static_cast<exahype::solvers::ADERDGSolver*>(solver)->stopStealingManager();
+ //     static_cast<exahype::solvers::ADERDGSolver*>(solver)->stopStealingManager();
     }
     if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
-      static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->stopStealingManager();
+  //    static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->stopStealingManager();
     }
   }
 

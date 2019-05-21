@@ -2562,7 +2562,7 @@ public:
   /*
    * Spawns a stealing manager job and submits it as a TBB task.
    */
-  void startStealingManager();
+  void startStealingManager(bool spawn=false);
 #ifndef StealingUseProgressThread
   void pauseStealingManager();
   void resumeStealingManager();
