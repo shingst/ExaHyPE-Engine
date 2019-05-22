@@ -1199,8 +1199,8 @@ public:
   bool progress = false;
   double startTime = MPI_Wtime();
 #endif
-   //if(myRank==responsibleRank)
-   //  logInfo("waitUntilCompletedTimeStep()","called new wait for cell from "<<responsibleRank);
+   if(myRank!=responsibleRank)
+     logInfo("waitUntilCompletedTimeStep()","called new wait for cell from "<<responsibleRank);
    
   if ( !cellDescription.getHasCompletedLastStep() ) {
      peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
@@ -1258,7 +1258,7 @@ public:
        if( !cellDescription.getHasCompletedLastStep()
          //&& tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs()==1
          && !hasTriggeredEmergency
-         && !progress
+         //&& !progress
          && myRank!=responsibleRank
          && stealingTreatment)
          //&& exahype::solvers::ADERDGSolver::NumberOfReceiveBackJobs==0)
