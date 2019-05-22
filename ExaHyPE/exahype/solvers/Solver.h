@@ -1207,7 +1207,7 @@ public:
 #if defined(DistributedStealing) && !defined(StealingUseProgressThread)
      if ( responsibleRank!=myRank
          && stealingTreatment) {
-      // solver->pauseStealingManager();
+       solver->pauseStealingManager();
        exahype::solvers::ADERDGSolver::tryToReceiveTaskBack(solver) ;
      }
 #endif
@@ -1217,6 +1217,7 @@ public:
      if ( responsibleRank!=myRank
         && stealingTreatment) {
        progress= exahype::solvers::ADERDGSolver::tryToReceiveTaskBack(solver);
+       logInfo("wait","made progress "<<progress);
        //solver->spawnReceiveBackJob();
      }
 #elif defined(DistributedStealing) && defined(StealingUseProgressThread)
@@ -1224,12 +1225,16 @@ public:
 #endif
      #ifdef Parallel
      {
-       tarch::multicore::RecursiveLock lock( tarch::services::Service::receiveDanglingMessagesSemaphore );
-       tarch::parallel::Node::getInstance().receiveDanglingMessages();
-       lock.free();
+       tarch::multicore::RecursiveLock lock( tarch::services::Service::receiveDanglingMessagesSemaphore, false );
+       if(lock.try_lock()) {
+         tarch::parallel::Node::getInstance().receiveDanglingMessages();
+         lock.free();
+       }
      }
      #endif
    
+     logInfo("wait2","made progress "<<progress);
+
      switch ( JobSystemWaitBehaviour ) {
         case JobSystemWaitBehaviourType::ProcessJobsWithSamePriority:
           hasProcessed = tarch::multicore::jobs::processBackgroundJobs( 1, getTaskPriority(waitForHighPriorityJob) );
@@ -1246,6 +1251,8 @@ public:
        startTime = MPI_Wtime();
        logInfo("waitUntilCompletedTimeStep()","warning: rank waiting too long for missing task from rank "<<responsibleRank<< " outstanding jobs:"<<NumberOfRemoteJobs);
      }
+
+     logInfo("wait3", "made progress "<<progress);
 
 #if !defined(StealingUseProgressThread)
        if( !cellDescription.getHasCompletedLastStep()
@@ -1279,7 +1286,7 @@ public:
 #if defined(DistributedStealing) && !defined(StealingUseProgressThread)
    if ( responsibleRank!=myRank
       && stealingTreatment) {
-     //solver->resumeStealingManager();
+     solver->resumeStealingManager();
    }
    exahype::solvers::ADERDGSolver::setMaxNumberOfIprobesInProgressStealing( std::numeric_limits<int>::max() );
 #endif

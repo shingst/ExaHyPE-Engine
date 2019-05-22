@@ -155,11 +155,11 @@ void exahype::mappings::FusedTimeStep::beginIteration(
   int timestep = itcount % 2;
 
 #ifdef USE_ITAC
-//  if (timestep>48 && timestep<52) {
-//         VT_traceon();
-//  }
-//  else
-//       VT_traceoff();
+  if (timestep>18 && timestep<21) {
+         VT_traceon();
+  }
+  else
+       VT_traceoff();
 #endif
 
   if (
@@ -179,7 +179,10 @@ void exahype::mappings::FusedTimeStep::beginIteration(
 #ifdef DistributedStealing
     static bool isFirst = true;
     isFirst = false;
-
+    
+  if (
+      !tarch::parallel::Node::getInstance().isGlobalMaster())
+  {
     for (auto* solver : exahype::solvers::RegisteredSolvers) {
       if (solver->getType()==exahype::solvers::Solver::Type::ADERDG) {
         static_cast<exahype::solvers::ADERDGSolver*>(solver)->resumeStealingManager();
@@ -189,7 +192,7 @@ void exahype::mappings::FusedTimeStep::beginIteration(
     //    static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->StealingManager();
     //  }
     } 
-
+  }
 
 #if defined(StealingStrategyStatic) || defined(StealingStrategyStaticHardcoded)
   if(issuePredictionJobsInThisIteration()) {
@@ -240,6 +243,9 @@ void exahype::mappings::FusedTimeStep::endIteration(
 #endif
 #endif 
 
+  if (
+      !tarch::parallel::Node::getInstance().isGlobalMaster() )
+  {
     for (auto* solver : exahype::solvers::RegisteredSolvers) {
       if (solver->getType()==exahype::solvers::Solver::Type::ADERDG) {
         static_cast<exahype::solvers::ADERDGSolver*>(solver)->pauseStealingManager();
@@ -249,7 +255,7 @@ void exahype::mappings::FusedTimeStep::endIteration(
     //    static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->pauseStealingManager();
     //  }
     } 
-
+  }
 
 #endif
 

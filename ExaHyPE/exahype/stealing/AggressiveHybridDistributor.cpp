@@ -293,7 +293,8 @@ void exahype::stealing::AggressiveHybridDistributor::printOffloadingStatistics()
   for(int i=0; i<nnodes; i++) {
     if(i==myRank)
       continue;
-    logDebug("printOffloadingStatistics()", "target tasks to rank "<<i<<" ntasks "<<_tasksToOffload[i]<<" not offloaded "<<_notOffloaded[i]); 
+    if(_tasksToOffload[i]>0)
+    logInfo("printOffloadingStatistics()", "target tasks to rank "<<i<<" ntasks "<<_tasksToOffload[i]<<" not offloaded "<<_notOffloaded[i]); 
     _notOffloaded[i]=0;
   }
   logDebug("printOffloadingStatistics()", "temperature value CCP "<<_temperatureCCP );

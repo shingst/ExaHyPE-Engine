@@ -1187,11 +1187,11 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
     ) {
 
 #ifdef USE_ITAC
-     // if(timeStep>48 && timeStep<52) {
-     //    VT_traceon(); // turn ITAC tracing off during mesh refinement; is switched on again in mapping Prediction
-     // }
-     // else 
-     //    VT_traceoff();
+      if(timeStep>18 && timeStep<21) {
+         VT_traceon(); // turn ITAC tracing off during mesh refinement; is switched on again in mapping Prediction
+      }
+      else 
+         VT_traceoff();
 #endif
 
       bool plot = exahype::plotters::checkWhetherPlotterBecomesActive(

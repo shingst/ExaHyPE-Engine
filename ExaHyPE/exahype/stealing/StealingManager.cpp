@@ -587,7 +587,7 @@ void exahype::stealing::StealingManager::triggerEmergencyForRank(int rank) {
 #endif
   _emergencyHeatMap[rank]++;
   exahype::stealing::PerformanceMonitor::getInstance().submitBlacklistValueForRank(_emergencyHeatMap[rank], rank);
-  logDebug("triggerEmergencyForRank()","blacklist value for rank "<<rank<<":"<<_emergencyHeatMap[rank]);
+  logInfo("triggerEmergencyForRank()","blacklist value for rank "<<rank<<":"<<_emergencyHeatMap[rank]);
 }
 
 void exahype::stealing::StealingManager::decreaseHeat() {

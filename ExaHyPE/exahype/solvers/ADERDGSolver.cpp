@@ -4392,6 +4392,10 @@ void exahype::solvers::ADERDGSolver::mergeWithWorkerData(
   const auto messageSize = 2 + _numberOfGlobalObservables;
   DataHeap::HeapEntries message(messageSize);
 
+  tarch::multicore::RecursiveLock lock( 
+        tarch::services::Service::receiveDanglingMessagesSemaphore );
+  
+
   DataHeap::getInstance().receiveData(
       message.data(), message.size(),
       workerRank,x,level,peano::heap::MessageType::MasterWorkerCommunication);
@@ -5171,13 +5175,13 @@ bool exahype::solvers::ADERDGSolver::StealingManagerJob::run() {
   switch (_state) {
     case State::Running:
     {
-      //tarch::multicore::RecursiveLock lock( 
-      //  tarch::services::Service::receiveDanglingMessagesSemaphore, false );
-      //bool acquired = lock.try_lock();
-      //if(acquired) {
-      //  tarch::parallel::Node::getInstance().receiveDanglingMessages();
-      //  lock.free();
-      //}
+     /* tarch::multicore::RecursiveLock lock( 
+        tarch::services::Service::receiveDanglingMessagesSemaphore, false );
+      bool acquired = lock.try_lock();
+      if(acquired) {
+        tarch::parallel::Node::getInstance().receiveDanglingMessages();
+        lock.free();
+      }*/
       exahype::solvers::ADERDGSolver::progressStealing(&_solver);
     //  logInfo("run()", "reschedule... ");
       break;
