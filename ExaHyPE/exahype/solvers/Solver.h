@@ -1199,8 +1199,6 @@ public:
   bool progress = false;
   double startTime = MPI_Wtime();
 #endif
-   if(myRank!=responsibleRank)
-     logInfo("waitUntilCompletedTimeStep()","called new wait for cell from "<<responsibleRank);
    
   if ( !cellDescription.getHasCompletedLastStep() ) {
      peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
@@ -1217,7 +1215,6 @@ public:
      if ( responsibleRank!=myRank
         && stealingTreatment) {
        progress= exahype::solvers::ADERDGSolver::tryToReceiveTaskBack(solver);
-       logInfo("wait","made progress "<<progress);
        //solver->spawnReceiveBackJob();
      }
 #elif defined(DistributedStealing) && defined(StealingUseProgressThread)
@@ -1233,7 +1230,6 @@ public:
      }
      #endif
    
-     logInfo("wait2","made progress "<<progress);
 
      switch ( JobSystemWaitBehaviour ) {
         case JobSystemWaitBehaviourType::ProcessJobsWithSamePriority:
@@ -1252,7 +1248,6 @@ public:
        logInfo("waitUntilCompletedTimeStep()","warning: rank waiting too long for missing task from rank "<<responsibleRank<< " outstanding jobs:"<<NumberOfRemoteJobs);
      }
 
-     logInfo("wait3", "made progress "<<progress);
 
 #if !defined(StealingUseProgressThread)
        if( !cellDescription.getHasCompletedLastStep()

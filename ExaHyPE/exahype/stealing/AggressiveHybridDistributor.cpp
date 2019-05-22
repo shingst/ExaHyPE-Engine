@@ -294,12 +294,12 @@ void exahype::stealing::AggressiveHybridDistributor::printOffloadingStatistics()
     if(i==myRank)
       continue;
     if(_tasksToOffload[i]>0)
-    logInfo("printOffloadingStatistics()", "target tasks to rank "<<i<<" ntasks "<<_tasksToOffload[i]<<" not offloaded "<<_notOffloaded[i]); 
+    logDebug("printOffloadingStatistics()", "target tasks to rank "<<i<<" ntasks "<<_tasksToOffload[i]<<" not offloaded "<<_notOffloaded[i]); 
     _notOffloaded[i]=0;
   }
   logDebug("printOffloadingStatistics()", "temperature value CCP "<<_temperatureCCP );
-  logInfo("printOffloadingStatistics()", "temperature value diffusion "<<_temperatureDiffusion );
-  logInfo("printOffloadingStatistics()", "time per STP  "<< exahype::stealing::StealingAnalyser::getInstance().getTimePerSTP());
+  logDebug("printOffloadingStatistics()", "temperature value diffusion "<<_temperatureDiffusion );
+  logDebug("printOffloadingStatistics()", "time per STP  "<< exahype::stealing::StealingAnalyser::getInstance().getTimePerSTP());
 }
 
 
@@ -421,7 +421,7 @@ void exahype::stealing::AggressiveHybridDistributor::updateLoadDistributionDiffu
     if((_incrementCurrent*1.0f/_incrementPrevious)>_thresholdTempAdaptation)
       _temperatureDiffusion = std::min(1.1, _temperatureDiffusion*1.1);
     else 
-      _temperatureDiffusion = std::max(0.01, _temperatureDiffusion*0.9);
+      _temperatureDiffusion = std::max(0.1, _temperatureDiffusion*0.9);
   }
 
   int currentCriticalRank = determineCriticalRank();
@@ -446,7 +446,7 @@ void exahype::stealing::AggressiveHybridDistributor::updateLoadDistributionDiffu
       //int optimalTasksToOffload = currentLongestWaitTimeVictim/(2*exahype::stealing::StealingAnalyser::getInstance().getTimePerSTP());
       int optimalTasksToOffload = (tarch::multicore::Core::getInstance().getNumberOfThreads()-1) *
                                   currentLongestWaitTimeVictim/(2*exahype::stealing::StealingAnalyser::getInstance().getTimePerSTP());
-      logInfo("updateLoadDistributionDiffusive()", "optimal tasks to offload "<<optimalTasksToOffload);
+      logDebug("updateLoadDistributionDiffusive()", "optimal tasks to offload "<<optimalTasksToOffload);
 
       _optimalTasksPerRank[currentOptimalVictim] = optimalTasksToOffload;
       _tasksToOffload[currentOptimalVictim] = std::max((1-_temperatureDiffusion), 0.0)*_tasksToOffload[currentOptimalVictim] 
@@ -501,7 +501,7 @@ bool exahype::stealing::AggressiveHybridDistributor::selectVictimRank(int& victi
 #endif
 
   int threshold = 1+std::max(1, tarch::multicore::Core::getInstance().getNumberOfThreads()-1)*tarch::multicore::jobs::internal::_minimalNumberOfJobsPerConsumerRun;
-  logInfo("selectVictimRank", "threshold "<<threshold<< " there are "<<exahype::solvers::ADERDGSolver::NumberOfEnclaveJobs-exahype::solvers::ADERDGSolver::NumberOfRemoteJobs<<" jobs "<< " and "<<tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs());
+  logDebug("selectVictimRank", "threshold "<<threshold<< " there are "<<exahype::solvers::ADERDGSolver::NumberOfEnclaveJobs-exahype::solvers::ADERDGSolver::NumberOfRemoteJobs<<" jobs "<< " and "<<tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs());
   threshold = std::max(threshold, 20);
   //threshold = 0; //TODO:test
 
