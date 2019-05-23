@@ -749,6 +749,9 @@ def submitJobs():
     Submit all jobs spanned by the options.
     """
     jobSubmissionTool    = general["job_submission"].replace("\"","")
+
+    jobIdsPath       = historyFolderPath + "/" + hashSweep() + ".submitted" # TODO rename file
+    acceptedJobsPath = historyFolderPath + "/" + hashSweep() + ".accepted-jobs"
     
     cpus = jobs["num_cpus"]
     
@@ -762,9 +765,18 @@ def submitJobs():
     if not os.path.exists(resultsFolderPath):
         print("create directory "+resultsFolderPath)
         os.makedirs(resultsFolderPath)
-    
+
+    jobIds       = []
+    if os.path.exists(jobIdsPath):
+        with open(jobIdsPath, "r") as file:
+            jobIds.extend(json.loads(file.read()))
+
+    acceptedJobs = []
+    if os.path.exists(acceptedJobsPath):
+        with open(acceptedJobsPath, "r") as file:
+            acceptedJobs.extend(json.loads(file.read()))
+
     # loop over job scrips
-    jobIds = []
     for run in runNumbers:
         for configId,config in enumerate(ranksNodesCoreCounts):
             ranks = config.ranks
@@ -779,23 +791,29 @@ def submitJobs():
                                                      configId,ranks,nodes,run)
                             
                     command=jobSubmissionTool + " " + jobInfo.jobScriptFilePath
-                    print(command)
-                    process = subprocess.Popen([command], stdout=subprocess.PIPE, shell=True)
-                    (output, err) = process.communicate()
-                    process.wait()
-                    jobIds.append(extractJobId(output.decode("UTF_8")))
+                    if command not in acceptedJobs:
+                        print(command)
+                        process = subprocess.Popen([command], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+                        (output, err) = process.communicate()
+                        process.wait()
+                        if err:
+                            print(err)
+                        else:
+                            acceptedJobs.append(command)
+                            jobIds.append(extractJobId(output.decode("UTF_8")))
     
     if not os.path.exists(historyFolderPath):
         print("create directory "+historyFolderPath)
         os.makedirs(historyFolderPath)
     
-    submittedJobsPath = historyFolderPath + "/" + hashSweep() + ".submitted"
-    with open(submittedJobsPath, "w") as submittedJobsFile:
-        submittedJobsFile.write(json.dumps(jobIds))
+    with open(jobIdsPath, "w") as file:
+        file.write(json.dumps(jobIds))
+    with open(acceptedJobsPath, "w") as file:
+        file.write(json.dumps(acceptedJobs))
     
     print("submitted "+str(len(jobIds))+" jobs")
-    print("job ids are memorised in: "+submittedJobsPath)
-    command="cp "+optionsFile+" "+submittedJobsPath.replace(".submitted",".ini")
+    print("job ids are memorised in: "+jobIdsPath)
+    command="cp "+optionsFile+" "+jobIdsPath.replace(".submitted",".ini")
     print(command)
     process = subprocess.Popen([command], stdout=subprocess.PIPE, shell=True)
     (output, err) = process.communicate()
@@ -807,14 +825,15 @@ def cancelJobs():
     """
     jobCancellationTool = general["job_cancellation"].replace("\"","")
     
-    submittedJobsPath   = historyFolderPath + "/" + hashSweep() + ".submitted"
+    jobIdsPath       = historyFolderPath + "/" + hashSweep() + ".submitted" # TODO rename file
+    acceptedJobsPath = historyFolderPath + "/" + hashSweep() + ".accepted-jobs"
     
     jobIds = None
     try:
-        with open(submittedJobsPath, "r") as submittedJobsFile:
-            jobIds = json.loads(submittedJobsFile.read())
+        with open(jobIdsPath, "r") as jobIdsFile:
+            jobIds = json.loads(jobIdsFile.read())
     except IOError:
-        print("ERROR: couldn't find any submitted jobs for current sweep ('"+submittedJobsPath+"').")
+        print("ERROR: couldn't find any submitted jobs for current sweep ('"+jobIdsPath+"').")
         sys.exit()
 
     for jobId in jobIds:
@@ -823,9 +842,8 @@ def cancelJobs():
         subprocess.call(command,shell=True)
     print("cancelled "+str(len(jobIds))+" jobs")    
 
-    command = "rm "+submittedJobsPath
-    print(command)
-    subprocess.call(command,shell=True)
+    os.remove(jobIdsPath)
+    os.remove(acceptedJobsPath)
 
 if __name__ == "__main__":
     import sys,os
