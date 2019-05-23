@@ -448,7 +448,7 @@ def verifySweepAgreesWithHistoricalExperiments():
     """
     if os.path.exists(historyFolderPath):
         previousSweeps = [f for f in os.listdir(historyFolderPath) if f.endswith(".ini")]
-        print(previousSweeps)
+        #print(previousSweeps)
     
         for f in previousSweeps:
             otherOptions = sweep_options.parseOptionsFile(historyFolderPath+"/"+f)
@@ -722,10 +722,13 @@ def hashSweep():
     for value in runNumbersGrouped:
         chain += str(value)+";"  
         
+    hashes = [] # hashes must be sorted to obtain a unique hash
     for environmentDict in dictProduct(environmentSpace):
-        chain += hashDictionary(environmentDict)
+        hashes.append(hashDictionary(environmentDict))
     for parameterDict in dictProduct(parameterSpace):
-        chain += hashDictionary(parameterDict)
+        hashes.append(hashDictionary(parameterDict))
+    for el in sorted(hashes):
+        chain += el
         
     return hashlib.md5(chain.encode()).hexdigest()[0:8]
 
@@ -770,6 +773,7 @@ def submitJobs(submitAllJobs=False):
     if os.path.exists(jobIdsPath):
         with open(jobIdsPath, "r") as file:
             jobIds.extend(json.loads(file.read()))
+    initialSizeJobIds = len(jobIds)
 
     acceptedJobs = []
     if not submitAllJobs and os.path.exists(acceptedJobsPath):
@@ -811,7 +815,7 @@ def submitJobs(submitAllJobs=False):
     with open(acceptedJobsPath, "w") as file:
         file.write(json.dumps(acceptedJobs))
     
-    print("submitted "+str(len(jobIds))+" jobs")
+    print("submitted %d jobs" % (len(jobIds)-initialSizeJobIds))
     print("job ids are memorised in: "+jobIdsPath)
     print("accepted job scripts are stored in: "+acceptedJobsPath)
     command="cp "+optionsFile+" "+jobIdsPath.replace(".submitted",".ini")
