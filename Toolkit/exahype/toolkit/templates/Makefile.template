@@ -94,6 +94,8 @@ PROJECT_CFLAGS += -DAnalyseWaitingTimes
 PROJECT_CFLAGS += -DStealingUseProgressThread
 {% elif stealingProgress=="progress_task" %}
 PROJECT_CFLAGS += -DStealingUseProgressTask -DnoMPIWaitsProcessJobs
+{% elif stealingProgress=="none" %}
+PROJECT_CFLAGS += 
 {% endif %}
 
 # If using TBB only, link pthread (comment this if you want to link a specific pthread)

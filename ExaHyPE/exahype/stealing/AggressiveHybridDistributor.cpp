@@ -469,7 +469,7 @@ void exahype::stealing::AggressiveHybridDistributor::getAllVictimRanks(std::vect
   }
 }
 
-bool exahype::stealing::AggressiveHybridDistributor::selectVictimRank(int& victim) {
+bool exahype::stealing::AggressiveHybridDistributor::selectVictimRank(int& victim, bool& last) {
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
   int myRank = tarch::parallel::Node::getInstance().getRank();
   victim = myRank;
@@ -497,7 +497,8 @@ bool exahype::stealing::AggressiveHybridDistributor::selectVictimRank(int& victi
 
 #ifdef StealingUseProgressTask
   if(victim == myRank) 
-    exahype::stealing::StealingManager::getInstance().notifyAllVictimsSendCompletedIfNotNotified();
+    last = true;
+    //exahype::stealing::StealingManager::getInstance().notifyAllVictimsSendCompletedIfNotNotified();
 #endif
 
   int threshold = 1+std::max(1, tarch::multicore::Core::getInstance().getNumberOfThreads()-1)*tarch::multicore::jobs::internal::_minimalNumberOfJobsPerConsumerRun;
@@ -516,7 +517,7 @@ bool exahype::stealing::AggressiveHybridDistributor::selectVictimRank(int& victi
     victim = myRank;
   }
   //if(victim!=myRank)
-   logDebug("selectVictimRank", "chose victim "<<victim<<" _remainingTasksToOffload "<<_remainingTasksToOffload[victim]);
+   logInfo("selectVictimRank", "chose victim "<<victim<<" _remainingTasksToOffload "<<_remainingTasksToOffload[victim]);
   
   return victim != myRank;
 }

@@ -4558,7 +4558,8 @@ void exahype::solvers::ADERDGSolver::submitOrSendStealablePredictionJob(Stealabl
 //  //sends++;
 
    //if(NumberOfEnclaveJobs+NumberOfSkeletonJobs-NumberOfRemoteJobs>tarch::multicore::Core::getInstance().getNumberOfThreads()*2) {
-   exahype::stealing::StealingManager::getInstance().selectVictimRank(destRank);
+   bool lastSend = false;
+   exahype::stealing::StealingManager::getInstance().selectVictimRank(destRank, lastSend);
    //}
    //else
    //  exahype::stealing::StealingProfiler::getInstance().notifyThresholdFail();
@@ -4623,6 +4624,10 @@ void exahype::solvers::ADERDGSolver::submitOrSendStealablePredictionJob(Stealabl
      exahype::stealing::StealingProfiler::getInstance().notifyOffloadedTask(destRank);
      exahype::stealing::PerformanceMonitor::getInstance().decCurrentTasks();
 
+#ifdef StealingUseProgressTask
+     if(lastSend)
+        exahype::stealing::StealingManager::getInstance().notifyAllVictimsSendCompletedIfNotNotified();
+#endif
      delete job;
   }
   else {
@@ -4779,14 +4784,27 @@ void exahype::solvers::ADERDGSolver::progressStealing(exahype::solvers::ADERDGSo
           exahype::stealing::RequestType::receiveBack, solver, true);
     }
     MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, commMapped, &receivedTaskBack, &statMapped);
+
+    MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, comm, &receivedTask, &stat);
+
+#ifdef StealingUseProgressTask
+    if(receivedTask && stat.MPI_TAG==0) {
+       int terminatedSender = stat.MPI_SOURCE;
+       logInfo("run()","active sender "<<terminatedSender<<" has sent termination signal ");
+       exahype::stealing::StealingManager::getInstance().receiveCompleted(terminatedSender);
+       ActiveSenders.erase(terminatedSender);
+       MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, comm, &receivedTask, &stat);
+    }
+#endif
+
     if(receivedTask) {
 #ifdef StealingUseProgressTask
-       logDebug("progressStealing()","inserting active sender "<<stat.MPI_SOURCE);
+       logInfo("progressStealing()","inserting active sender "<<stat.MPI_SOURCE);
        ActiveSenders.insert(stat.MPI_SOURCE);
        if(NumberOfReceiveJobs==0) {
           NumberOfReceiveJobs++;
           assert(NumberOfReceiveJobs<=1);
-          logDebug("progressStealing()","spawning receive job, receive jobs "<<NumberOfReceiveJobs);
+          logInfo("progressStealing()","spawning receive job, receive jobs "<<NumberOfReceiveJobs);
           ReceiveJob *receiveJob = new ReceiveJob(*solver);
           peano::datatraversal::TaskSet spawnedSet(receiveJob);     
           terminateImmediately = true; // we'll receive this task but then terminate to give the receive job the opportunity to run
@@ -4863,6 +4881,7 @@ void exahype::solvers::ADERDGSolver::progressStealing(exahype::solvers::ADERDGSo
       }
    //   exahype::stealing::StealingManager::getInstance().progressRequests();
     }
+
     MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, comm, &receivedTask, &stat);
     //tarch::parallel::Node::getInstance().receiveDanglingMessages();  -> does lead to problems with lock!
   }
@@ -4982,7 +5001,7 @@ bool exahype::solvers::ADERDGSolver::ReceiveJob::run() {
   MPI_Status stat, stat2;
   MPI_Comm comm = exahype::stealing::StealingManager::getInstance().getMPICommunicator();
   //MPI_Comm commStatus = exahype::stealing::StealingManager::getInstance().getMPICommunicatorStatus();
-  int receivedTask = 1;
+  int receivedTask = -1;
   int receivedStatus = -1;
   int lastRecvTag = -1;
   int lastRecvSrc = -1; 
@@ -5010,14 +5029,14 @@ bool exahype::solvers::ADERDGSolver::ReceiveJob::run() {
      
        if(receivedTask && stat.MPI_TAG==0) {
          int terminatedSender = stat.MPI_SOURCE;
-         logDebug("run()","active sender "<<terminatedSender<<" has sent termination signal ");
+         logInfo("run()","active sender "<<terminatedSender<<" has sent termination signal ");
          exahype::stealing::StealingManager::getInstance().receiveCompleted(terminatedSender);
          ActiveSenders.erase(terminatedSender);
          MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, comm, &receivedTask, &stat);
        }
  
        if(receivedTask) {
-         logDebug("run()","adding active sender "<<stat.MPI_SOURCE<< " tag "<<stat.MPI_TAG);
+         logInfo("run()","adding active sender "<<stat.MPI_SOURCE<< " tag "<<stat.MPI_TAG);
          ActiveSenders.insert(stat.MPI_SOURCE);
          exahype::stealing::StealingManager::getInstance().triggerVictimFlag();
          int msgLen = -1;

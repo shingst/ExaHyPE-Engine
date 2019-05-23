@@ -448,7 +448,7 @@
           "type" : "string",
           "title": "Enable progress in MPI for stealing communication.",
           "enum" : ["none","progress_task","progress_thread"],
-          "default": "progress_task"
+          "default": "none"
         },
         "stealing_CCP_temperature" : {
               "type" : "number",

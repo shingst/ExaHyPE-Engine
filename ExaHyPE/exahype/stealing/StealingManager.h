@@ -207,7 +207,7 @@ class exahype::stealing::StealingManager {
      * a rank to which local work should be offloaded in order to
      * improve the load balance.
      */
-    bool selectVictimRank(int& victim);
+    bool selectVictimRank(int& victim, bool& last);
 
 #ifdef StealingUseProgressTask
     void resetHasNotifiedSendCompleted();

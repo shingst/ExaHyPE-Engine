@@ -634,7 +634,8 @@ bool exahype::stealing::StealingManager::isEmergencyTriggeredOnRank(int rank) {
 //}
 
 
-bool exahype::stealing::StealingManager::selectVictimRank(int& victim) {
+bool exahype::stealing::StealingManager::selectVictimRank(int& victim, bool& last) {
+    last = false;
 #if defined(StealingStrategyStaticHardcoded)
     return exahype::stealing::StaticDistributor::getInstance().selectVictimRank(victim);
 #elif defined(StealingStrategyDiffusive)
@@ -644,7 +645,7 @@ bool exahype::stealing::StealingManager::selectVictimRank(int& victim) {
 #elif defined(StealingStrategyAggressiveCCP)
     return exahype::stealing::AggressiveCCPDistributor::getInstance().selectVictimRank(victim);
 #elif defined(StealingStrategyAggressiveHybrid)
-    return exahype::stealing::AggressiveHybridDistributor::getInstance().selectVictimRank(victim);
+    return exahype::stealing::AggressiveHybridDistributor::getInstance().selectVictimRank(victim, last);
 #else
   double remainingLoadRatio = static_cast<double> (exahype::stealing::PerformanceMonitor::getInstance().getRemainingLocalLoad())
 		  	  	  	  	  	  /
