@@ -744,7 +744,7 @@ def extractJobId(processOutput):
             jobId = line.strip().split("\"")[1]
     return jobId
 
-def submitJobs():
+def submitJobs(submitAllJobs=False):
     """
     Submit all jobs spanned by the options.
     """
@@ -772,7 +772,7 @@ def submitJobs():
             jobIds.extend(json.loads(file.read()))
 
     acceptedJobs = []
-    if os.path.exists(acceptedJobsPath):
+    if submitAllJobs and os.path.exists(acceptedJobsPath):
         with open(acceptedJobsPath, "r") as file:
             acceptedJobs.extend(json.loads(file.read()))
 
@@ -860,7 +860,7 @@ if __name__ == "__main__":
     import sweep_options
     
     subprograms = [\
-"build","buildMissing","buildLocally","link","scripts","submit","cancel","parseAdapters",\
+"build","buildMissing","buildLocally","link","scripts","submit","submitAll","cancel","parseAdapters",\
 "parseTotalTimes","parseTimeStepTimes","parseMetrics","parseJobStatistics",\
 "cleanBuild", "cleanScripts","cleanResults","cleanHistory","cleanAll",\
 "iniTemplate","jobTemplate"]
@@ -879,7 +879,9 @@ available subprograms:
 * buildMissing          - build only missing executables
 * buildLocally          - rebuild only the local application folder (no make clean)
 * link                  - link runtime dependencies into the build folder
-* scripts               - submit the generated jobs
+* scripts               - generate specification files and job scripts
+* submit                - submit only the generated job scripts, which have not been submitted yet or have been rejected by the scheduler
+* submitAll             - submit all jobs
 * cancel                - cancel the submitted jobs
 * parseAdapters         - read the job output and parse adapter times
 * parseTotalTimes       - read the adapter times table and:
@@ -1033,7 +1035,9 @@ It must further contain at least one of the following sections:
     elif subprogram == "scripts":
         generateScripts()
     elif subprogram == "submit":
-        submitJobs()
+        submitJobs(submitAllJobs=False)
+    elif subprogram == "submitJob":
+        submitJobs(submitAllJobs=True)
     elif subprogram == "cancel":
         cancelJobs()
     elif subprogram == "parseAdapters":
