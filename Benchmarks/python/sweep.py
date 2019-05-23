@@ -813,6 +813,7 @@ def submitJobs():
     
     print("submitted "+str(len(jobIds))+" jobs")
     print("job ids are memorised in: "+jobIdsPath)
+    print("accepted job scripts are stored in: "+acceptedJobsPath)
     command="cp "+optionsFile+" "+jobIdsPath.replace(".submitted",".ini")
     print(command)
     process = subprocess.Popen([command], stdout=subprocess.PIPE, shell=True)
