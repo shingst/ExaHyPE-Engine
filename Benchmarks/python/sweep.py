@@ -1036,7 +1036,7 @@ It must further contain at least one of the following sections:
         generateScripts()
     elif subprogram == "submit":
         submitJobs(submitAllJobs=False)
-    elif subprogram == "submitJob":
+    elif subprogram == "submitAll":
         submitJobs(submitAllJobs=True)
     elif subprogram == "cancel":
         cancelJobs()
