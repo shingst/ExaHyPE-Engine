@@ -141,7 +141,7 @@ class exahype::stealing::StealingManager {
     {
       public:
         ProgressJob();
-        bool run() override;
+        bool run(bool calledFromMaster) override;
     };
 
     class ProgressSendJob

@@ -4997,7 +4997,7 @@ exahype::solvers::ADERDGSolver::ReceiveJob::ReceiveJob(ADERDGSolver& solver)
   :  tarch::multicore::jobs::Job(tarch::multicore::jobs::JobType::BackgroundTask, 0, tarch::multicore::DefaultPriority*8),
     _solver(solver) {};
 
-bool exahype::solvers::ADERDGSolver::ReceiveJob::run() {
+bool exahype::solvers::ADERDGSolver::ReceiveJob::run( bool isCalledOnMaster ) {
   MPI_Status stat, stat2;
   MPI_Comm comm = exahype::stealing::StealingManager::getInstance().getMPICommunicator();
   //MPI_Comm commStatus = exahype::stealing::StealingManager::getInstance().getMPICommunicatorStatus();
@@ -5005,6 +5005,8 @@ bool exahype::solvers::ADERDGSolver::ReceiveJob::run() {
   int receivedStatus = -1;
   int lastRecvTag = -1;
   int lastRecvSrc = -1; 
+
+  if(isCalledOnMaster) return true;
 
   tarch::multicore::Lock lock(StealingSemaphore, false);
   bool canRun = lock.try_lock();
@@ -5107,7 +5109,7 @@ exahype::solvers::ADERDGSolver::ReceiveBackJob::ReceiveBackJob(ADERDGSolver& sol
   :  tarch::multicore::jobs::Job(tarch::multicore::jobs::JobType::BackgroundTask, 0, tarch::multicore::DefaultPriority*8),
     _solver(solver) {};
 
-bool exahype::solvers::ADERDGSolver::ReceiveBackJob::run() {
+bool exahype::solvers::ADERDGSolver::ReceiveBackJob::run( bool isCalledOnMaster ) {
   tarch::multicore::Lock lock(StealingSemaphore, false);
   bool canRun = lock.try_lock();
   while(!canRun) {
@@ -5178,12 +5180,12 @@ exahype::solvers::ADERDGSolver::StealingManagerJob::~StealingManagerJob() {}
 
 #if defined(StealingUseProgressThread)  
 tbb::task* exahype::solvers::ADERDGSolver::StealingManagerJob::execute() {
-   while(run()) {};
+   while(run( false )) {};
    return nullptr;
 }
 #endif
 
-bool exahype::solvers::ADERDGSolver::StealingManagerJob::run() {
+bool exahype::solvers::ADERDGSolver::StealingManagerJob::run( bool isCalledOnMaster ) {
 // static bool terminated = false;
   bool result=true;
 #ifdef USE_ITAC
@@ -5563,7 +5565,7 @@ exahype::solvers::ADERDGSolver::StealablePredictionJob::StealablePredictionJob(
 exahype::solvers::ADERDGSolver::StealablePredictionJob::~StealablePredictionJob() {};
 
 //Caution: Compression and restriction are not supported yet!
-bool exahype::solvers::ADERDGSolver::StealablePredictionJob::run() {
+bool exahype::solvers::ADERDGSolver::StealablePredictionJob::run( bool isCalledOnMaster ) {
 
 #ifdef USE_ITAC
       VT_begin(event_stp);
@@ -5800,7 +5802,7 @@ exahype::solvers::ADERDGSolver::CompressionJob::CompressionJob(
 }
 
 
-bool exahype::solvers::ADERDGSolver::CompressionJob::run() {
+bool exahype::solvers::ADERDGSolver::CompressionJob::run( bool isCalledFromMaster ) {
   _solver.determineUnknownAverages(_cellDescription);
   _solver.computeHierarchicalTransform(_cellDescription,-1.0);
   _solver.putUnknownsIntoByteStream(_cellDescription);

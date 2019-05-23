@@ -955,7 +955,7 @@ private:
       };
 	  StealingManagerJob(ADERDGSolver& solver);
 	  ~StealingManagerJob();
-	  bool run();
+	  bool run( bool isCalledOnMaster );
 #ifdef StealingUseProgressThread
           tbb::task* execute();
 #endif
@@ -972,7 +972,7 @@ private:
   class ReceiveJob : public tarch::multicore::jobs::Job {
     public: 
         ReceiveJob(ADERDGSolver& solver);
-        bool run();
+        bool run( bool isCalledOnMaster );
     private:
         ADERDGSolver& _solver;
   };
@@ -980,7 +980,7 @@ private:
   class ReceiveBackJob : public tarch::multicore::jobs::Job {
     public: 
         ReceiveBackJob(ADERDGSolver& solver);
-        bool run();
+        bool run( bool isCalledOnMaster );
     private:
         ADERDGSolver& _solver;
   };
@@ -1095,7 +1095,7 @@ private:
 		  int tag,
 		  int rank);
 
-      bool run() override;
+      bool run(bool calledFromMaster) override;
   };
 
   /**
@@ -1254,7 +1254,7 @@ private:
         CellDescription&    cellDescription,
         const bool          isSkeletonJob);
 
-      bool run() override;
+      bool run( bool isCalledFromMaster ) override;
   };
 
   /**
@@ -1284,7 +1284,7 @@ private:
           const bool        isAtRemoteBoundary,
           const bool        addVolumeIntegralResultToUpdate);
 
-      bool run() override;
+      bool run( bool isCalledFromMaster ) override;
 
       /**
        * We prefetch the data that is subject to the prediction/updates.
@@ -1317,7 +1317,7 @@ private:
           const CellDescription&                   parentCellDescription,
           const tarch::la::Vector<DIMENSIONS,int>& subcellIndex);
 
-      bool run() override;
+      bool run( bool isCalledFromMaster ) override;
       void prefetchData() override;
   };
 
@@ -1375,7 +1375,7 @@ private:
         const bool       isLastTimeStepOfBatch,
         const bool       isSkeletonJob);
 
-      bool run() override;
+      bool run( bool isCalledFromMaster ) override;
       void prefetchData() override;
   };
 
@@ -1411,7 +1411,7 @@ private:
         CellInfo&        cellInfo,
         const bool       isAtRemoteBoundary);
 
-      bool run() override;
+      bool run( bool isCalledFromMaster ) override;
       void prefetchData() override;
   };
 
@@ -1429,7 +1429,7 @@ private:
         CellDescription& cellDescription,
         const bool       isInitialMeshRefinement);
 
-    bool run() override;
+    bool run( bool isCalledFromMaster ) override;
   };
 
 public:

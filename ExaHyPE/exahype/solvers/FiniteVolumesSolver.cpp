@@ -2067,7 +2067,7 @@ exahype::solvers::FiniteVolumesSolver::CompressionJob::CompressionJob(
 }
 
 
-bool exahype::solvers::FiniteVolumesSolver::CompressionJob::run() {
+bool exahype::solvers::FiniteVolumesSolver::CompressionJob::run( bool isCalledFromMaster ) {
   _solver.determineUnknownAverages(_cellDescription);
   _solver.computeHierarchicalTransform(_cellDescription,-1.0);
   _solver.putUnknownsIntoByteStream(_cellDescription);

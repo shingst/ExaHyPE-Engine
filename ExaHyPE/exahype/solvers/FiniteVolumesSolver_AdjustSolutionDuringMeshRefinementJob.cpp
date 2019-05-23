@@ -15,7 +15,7 @@ exahype::solvers::FiniteVolumesSolver::AdjustSolutionDuringMeshRefinementJob::Ad
   NumberOfAMRBackgroundJobs.fetch_add(1);
 }
 
-bool exahype::solvers::FiniteVolumesSolver::AdjustSolutionDuringMeshRefinementJob::run() {
+bool exahype::solvers::FiniteVolumesSolver::AdjustSolutionDuringMeshRefinementJob::run( bool isCalledFromMaster) {
   _solver.adjustSolutionDuringMeshRefinementBody(_cellDescription,_isInitialMeshRefinement);
 
   NumberOfAMRBackgroundJobs.fetch_sub(1);

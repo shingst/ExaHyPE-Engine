@@ -614,7 +614,7 @@ private:
         const bool            isLastTimeStepOfBatch,
         const bool            isSkeletonJob);
 
-    bool run() override;
+    bool run( bool isCalledFromMaster ) override;
   };
 
   /**
@@ -656,7 +656,7 @@ private:
         CellInfo&             cellInfo,
         const bool            isAtRemoteBoundary);
 
-      bool run() override;
+      bool run( bool isCalledFromMaster ) override;
       void prefetchData() override;
   };
 
@@ -701,7 +701,7 @@ private:
         const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& limiterNeighbourMergePerformed,
         const bool                                                 isAtRemoteBoundary);
 
-    bool run() override;
+    bool run( bool isCalledFromMaster ) override;
     void prefetchData() override;
   };
 
@@ -721,7 +721,7 @@ private:
         CellInfo&             cellInfo,
         const bool            isInitialMeshRefinement);
 
-    bool run() override;
+    bool run( bool isCalledFromMaster ) override;
   };
 
 public:

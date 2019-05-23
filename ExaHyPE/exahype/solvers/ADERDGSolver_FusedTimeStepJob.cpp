@@ -36,7 +36,7 @@ exahype::solvers::ADERDGSolver::FusedTimeStepJob::FusedTimeStepJob(
   }
 }
 
-bool exahype::solvers::ADERDGSolver::FusedTimeStepJob::run() {
+bool exahype::solvers::ADERDGSolver::FusedTimeStepJob::run( bool isCalledOnMaster ) {
   _solver.fusedTimeStepBody(
       _cellDescription, _cellInfo, _neighbourMergePerformed,
       _predictionTimeStamp,_predictionTimeStepSize,

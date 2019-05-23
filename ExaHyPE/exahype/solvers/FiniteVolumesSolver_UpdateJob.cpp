@@ -22,7 +22,7 @@ exahype::solvers::FiniteVolumesSolver::UpdateJob::UpdateJob(
   NumberOfReductionJobs.fetch_add(1);
 }
 
-bool exahype::solvers::FiniteVolumesSolver::UpdateJob::run() {
+bool exahype::solvers::FiniteVolumesSolver::UpdateJob::run( bool isCalledOnMaster ) {
   _solver.updateBody(
       _cellDescription,_cellInfo,_neighbourMergePerformed,
       true,true,_isAtRemoteBoundary,true);
