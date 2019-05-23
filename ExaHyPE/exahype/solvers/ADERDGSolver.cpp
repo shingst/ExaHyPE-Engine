@@ -5105,7 +5105,11 @@ exahype::solvers::Solver::CellProcessingTimes exahype::solvers::ADERDGSolver::me
     }
     const double time_sec = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-timeStart).count() * 1e-9;
     result._minTimePredictor = time_sec / numberOfRuns / std::abs(numberOfPicardIterations);
-    result._maxTimePredictor = result._minTimePredictor * getNodesPerCoordinateAxis(); // * (order+1)
+    if ( isLinear() ) {
+      result._maxTimePredictor = result._minTimePredictor;
+    } else {
+      result._maxTimePredictor = result._minTimePredictor * getNodesPerCoordinateAxis(); // * (order+1)
+    }
   }
 
   // measure ADER-DG cell update

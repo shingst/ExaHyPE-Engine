@@ -2030,8 +2030,12 @@ exahype::solvers::Solver::CellProcessingTimes exahype::solvers::LimitingADERDGSo
           solverPatch,0,dt,false,true,true);
     }
     const double time_sec = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-timeStart).count() * 1e-9;
-    result._minTimePredictor = time_sec / numberOfRuns / numberOfPicardIterations;
-    result._maxTimePredictor = result._minTimePredictor * _solver->getNodesPerCoordinateAxis(); // * (order+1)
+    result._minTimePredictor = time_sec / numberOfRuns / std::abs(numberOfPicardIterations);
+    if ( _solver->isLinear() ) {
+      result._maxTimePredictor = result._minTimePredictor;
+    } else {
+      result._maxTimePredictor = result._minTimePredictor * getNodesPerCoordinateAxis(); // * (order+1)
+    }
   }
 
   // measure ADER-DG cells
@@ -2158,6 +2162,19 @@ exahype::solvers::Solver::CellProcessingTimes exahype::solvers::LimitingADERDGSo
     }
     const double time_sec = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-timeStart).count() * 1e-9;
     result._timeFVUpdate = time_sec / numberOfRuns;
+  }
+
+  // measure Riemann solve
+  {
+    const tarch::la::Vector<DIMENSIONS,int> pos1(0);
+    tarch::la::Vector<DIMENSIONS,int> pos2(0); pos2[0]=1;
+    Solver::InterfaceInfo face(pos1,pos2);
+    const std::chrono::high_resolution_clock::time_point timeStart = std::chrono::high_resolution_clock::now();
+    for (int it=0; it<numberOfRuns; it++) {
+      _solver->solveRiemannProblemAtInterface(solverPatch,solverPatch,face);
+    }
+    const double time_sec = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-timeStart).count() * 1e-9;
+    result._timeADERDGRiemann = time_sec / numberOfRuns;
   }
 
   // Clean up
