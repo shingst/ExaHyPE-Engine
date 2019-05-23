@@ -34,7 +34,7 @@ exahype::solvers::LimitingADERDGSolver::FusedTimeStepJob::FusedTimeStepJob(
   }
 }
 
-bool exahype::solvers::LimitingADERDGSolver::FusedTimeStepJob::run() {
+bool exahype::solvers::LimitingADERDGSolver::FusedTimeStepJob::run(bool runOnMasterThread) {
   _solver.fusedTimeStepBody(
       _solverPatch,_cellInfo,_neighbourMergePerformed,
       _predictionTimeStamp,_predictionTimeStepSize,

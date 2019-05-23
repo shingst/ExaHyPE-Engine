@@ -270,7 +270,7 @@ private:
         CellDescription&           cellDescription,
         const bool                 isSkeletonJob);
 
-      bool run() override;
+      bool run(bool runOnMasterThread) override;
   };
 
   /**
@@ -320,7 +320,7 @@ private:
         const bool           isSkeletonJob
     );
 
-    bool run() override;
+    bool run(bool runOnMasterThread) override;
   };
 
   /**
@@ -355,7 +355,7 @@ private:
         CellInfo&                                                  cellInfo,
         const bool                                                 isAtRemoteBoundary);
 
-    bool run() override;
+    bool run(bool runOnMasterThread) override;
     void prefetchData() override;
   };
 
@@ -373,7 +373,7 @@ private:
         CellDescription&     cellDescription,
         const bool           isInitialMeshRefinement);
 
-    bool run() override;
+    bool run(bool runOnMasterThread) override;
   };
 
 public:

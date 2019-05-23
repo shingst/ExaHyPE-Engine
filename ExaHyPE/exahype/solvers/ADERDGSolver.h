@@ -976,7 +976,7 @@ private:
         CellDescription&    cellDescription,
         const bool          isSkeletonJob);
 
-      bool run() override;
+      bool run(bool runOnMasterThread) override;
   };
 
   /**
@@ -1006,7 +1006,7 @@ private:
           const bool        isAtRemoteBoundary,
           const bool        addVolumeIntegralResultToUpdate);
 
-      bool run() override;
+      bool run(bool runOnMasterThread) override;
 
       /**
        * We prefetch the data that is subject to the prediction/updates.
@@ -1039,7 +1039,7 @@ private:
           const CellDescription&                   parentCellDescription,
           const tarch::la::Vector<DIMENSIONS,int>& subcellIndex);
 
-      bool run() override;
+      bool run(bool runOnMasterThread) override;
       void prefetchData() override;
   };
 
@@ -1097,7 +1097,7 @@ private:
         const bool       isLastTimeStepOfBatch,
         const bool       isSkeletonJob);
 
-      bool run() override;
+      bool run(bool runOnMasterThread) override;
       void prefetchData() override;
   };
 
@@ -1133,7 +1133,7 @@ private:
         CellInfo&        cellInfo,
         const bool       isAtRemoteBoundary);
 
-      bool run() override;
+      bool run(bool runOnMasterThread) override;
       void prefetchData() override;
   };
 
@@ -1151,7 +1151,7 @@ private:
         CellDescription& cellDescription,
         const bool       isInitialMeshRefinement);
 
-    bool run() override;
+    bool run(bool runOnMasterThread) override;
   };
 
 public:
