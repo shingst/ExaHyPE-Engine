@@ -772,7 +772,7 @@ def submitJobs(submitAllJobs=False):
             jobIds.extend(json.loads(file.read()))
 
     acceptedJobs = []
-    if submitAllJobs and os.path.exists(acceptedJobsPath):
+    if not submitAllJobs and os.path.exists(acceptedJobsPath):
         with open(acceptedJobsPath, "r") as file:
             acceptedJobs.extend(json.loads(file.read()))
 
