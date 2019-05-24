@@ -826,7 +826,7 @@ def submitJobs(submitAllJobs=False):
     (output, err) = process.communicate()
     process.wait()
  
-    return len(acceptedJobs) is numberJobs
+    return len(acceptedJobs) is numberOfJobs
 
 def cancelJobs():
     """
@@ -1047,11 +1047,11 @@ It must further contain at least one of the following sections:
     elif subprogram == "submit":
         submitJobs(submitAllJobs=False)
     elif subprogram == "submitRepeatedly":
-        while !submitJobs(submitAllJobs=False):
+        while not submitJobs(submitAllJobs=False):
             print("Waiting till submit subprogram is called next ... ")
             print("Loop continues till all jobs have been accepted by scheduler.")
             print("Print press CTRL+C to abort.")
-            time.sleep(secs = 20*60)
+            time.sleep(20*60) # seconds
     elif subprogram == "submitAll":
         submitJobs(submitAllJobs=True)
     elif subprogram == "cancel":
