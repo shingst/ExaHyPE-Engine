@@ -666,7 +666,6 @@ def verifyAllJobScriptsExist():
                               ", (ungrouped)parameters="+str(ungroupedParameterDict) + \
                               ", nodes="+nodes + \
                               ", ranksPerNode="+ranksPerNode + \
-                              ", cores="+cores + \
                               ", run="+run + \
                               " does not exist! ('"+jobInfo.jobScriptFilePath+"')",file=sys.stderr)
     if not allJobScriptsExist:
