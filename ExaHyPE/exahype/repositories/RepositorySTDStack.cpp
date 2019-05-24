@@ -54,6 +54,7 @@ exahype::repositories::RepositorySTDStack::RepositorySTDStack(
   _gridWithUpdateAndReduce(_vertexStack,_cellStack,_geometry,_solverState,domainSize,computationalDomainOffset,_regularGridContainer,_traversalOrderOnTopLevel),
   _gridWithPrediction(_vertexStack,_cellStack,_geometry,_solverState,domainSize,computationalDomainOffset,_regularGridContainer,_traversalOrderOnTopLevel),
   _gridWithCorrection(_vertexStack,_cellStack,_geometry,_solverState,domainSize,computationalDomainOffset,_regularGridContainer,_traversalOrderOnTopLevel),
+  _gridWithEmpty(_vertexStack,_cellStack,_geometry,_solverState,domainSize,computationalDomainOffset,_regularGridContainer,_traversalOrderOnTopLevel),
 
   _repositoryState() {
   logTraceIn( "RepositorySTDStack(...)" );
@@ -91,6 +92,7 @@ exahype::repositories::RepositorySTDStack::RepositorySTDStack(
   _gridWithUpdateAndReduce(_vertexStack,_cellStack,_geometry,_solverState,_regularGridContainer,_traversalOrderOnTopLevel),
   _gridWithPrediction(_vertexStack,_cellStack,_geometry,_solverState,_regularGridContainer,_traversalOrderOnTopLevel),
   _gridWithCorrection(_vertexStack,_cellStack,_geometry,_solverState,_regularGridContainer,_traversalOrderOnTopLevel),
+  _gridWithEmpty(_vertexStack,_cellStack,_geometry,_solverState,_regularGridContainer,_traversalOrderOnTopLevel),
 
   _repositoryState() {
   logTraceIn( "RepositorySTDStack(Geometry&)" );
@@ -144,6 +146,7 @@ void exahype::repositories::RepositorySTDStack::restart(
   _gridWithUpdateAndReduce.restart(domainSize,domainOffset,domainLevel, positionOfCentralElementWithRespectToCoarserRemoteLevel);
   _gridWithPrediction.restart(domainSize,domainOffset,domainLevel, positionOfCentralElementWithRespectToCoarserRemoteLevel);
   _gridWithCorrection.restart(domainSize,domainOffset,domainLevel, positionOfCentralElementWithRespectToCoarserRemoteLevel);
+  _gridWithEmpty.restart(domainSize,domainOffset,domainLevel, positionOfCentralElementWithRespectToCoarserRemoteLevel);
 
 
   _solverState.restart();
@@ -182,6 +185,7 @@ void exahype::repositories::RepositorySTDStack::terminate() {
   _gridWithUpdateAndReduce.terminate();
   _gridWithPrediction.terminate();
   _gridWithCorrection.terminate();
+  _gridWithEmpty.terminate();
 
 
   logTraceOut( "terminate()" );
@@ -288,6 +292,7 @@ void exahype::repositories::RepositorySTDStack::iterate(int numberOfIterations, 
       case exahype::records::RepositoryState::UseAdapterUpdateAndReduce: watch.startTimer(); _gridWithUpdateAndReduce.iterate(); watch.stopTimer(); _measureUpdateAndReduceCPUTime.setValue( watch.getCPUTime() ); _measureUpdateAndReduceCalendarTime.setValue( watch.getCalendarTime() ); break;
       case exahype::records::RepositoryState::UseAdapterPrediction: watch.startTimer(); _gridWithPrediction.iterate(); watch.stopTimer(); _measurePredictionCPUTime.setValue( watch.getCPUTime() ); _measurePredictionCalendarTime.setValue( watch.getCalendarTime() ); break;
       case exahype::records::RepositoryState::UseAdapterCorrection: watch.startTimer(); _gridWithCorrection.iterate(); watch.stopTimer(); _measureCorrectionCPUTime.setValue( watch.getCPUTime() ); _measureCorrectionCalendarTime.setValue( watch.getCalendarTime() ); break;
+      case exahype::records::RepositoryState::UseAdapterEmpty: watch.startTimer(); _gridWithEmpty.iterate(); watch.stopTimer(); _measureEmptyCPUTime.setValue( watch.getCPUTime() ); _measureEmptyCalendarTime.setValue( watch.getCalendarTime() ); break;
 
       case exahype::records::RepositoryState::Terminate:
         assertionMsg( false, "this branch/state should never be reached" ); 
@@ -351,6 +356,7 @@ void exahype::repositories::RepositorySTDStack::iterate(int numberOfIterations, 
  void exahype::repositories::RepositorySTDStack::switchToUpdateAndReduce() { _repositoryState.setAction(exahype::records::RepositoryState::UseAdapterUpdateAndReduce); }
  void exahype::repositories::RepositorySTDStack::switchToPrediction() { _repositoryState.setAction(exahype::records::RepositoryState::UseAdapterPrediction); }
  void exahype::repositories::RepositorySTDStack::switchToCorrection() { _repositoryState.setAction(exahype::records::RepositoryState::UseAdapterCorrection); }
+ void exahype::repositories::RepositorySTDStack::switchToEmpty() { _repositoryState.setAction(exahype::records::RepositoryState::UseAdapterEmpty); }
 
 
 
@@ -369,6 +375,7 @@ void exahype::repositories::RepositorySTDStack::iterate(int numberOfIterations, 
  bool exahype::repositories::RepositorySTDStack::isActiveAdapterUpdateAndReduce() const { return _repositoryState.getAction() == exahype::records::RepositoryState::UseAdapterUpdateAndReduce; }
  bool exahype::repositories::RepositorySTDStack::isActiveAdapterPrediction() const { return _repositoryState.getAction() == exahype::records::RepositoryState::UseAdapterPrediction; }
  bool exahype::repositories::RepositorySTDStack::isActiveAdapterCorrection() const { return _repositoryState.getAction() == exahype::records::RepositoryState::UseAdapterCorrection; }
+ bool exahype::repositories::RepositorySTDStack::isActiveAdapterEmpty() const { return _repositoryState.getAction() == exahype::records::RepositoryState::UseAdapterEmpty; }
 
 
 
@@ -460,6 +467,7 @@ void exahype::repositories::RepositorySTDStack::logIterationStatistics(bool logA
    if (logAllAdapters || _measureUpdateAndReduceCPUTime.getNumberOfMeasurements()>0) logInfo( "logIterationStatistics()", "| UpdateAndReduce \t |  " << _measureUpdateAndReduceCPUTime.getNumberOfMeasurements() << " \t |  " << _measureUpdateAndReduceCPUTime.getAccumulatedValue() << " \t |  " << _measureUpdateAndReduceCPUTime.getValue()  << " \t |  " << _measureUpdateAndReduceCalendarTime.getAccumulatedValue() << " \t |  " << _measureUpdateAndReduceCalendarTime.getValue() << " \t |  " << _measureUpdateAndReduceCPUTime.toString() << " \t |  " << _measureUpdateAndReduceCalendarTime.toString() );
    if (logAllAdapters || _measurePredictionCPUTime.getNumberOfMeasurements()>0) logInfo( "logIterationStatistics()", "| Prediction \t |  " << _measurePredictionCPUTime.getNumberOfMeasurements() << " \t |  " << _measurePredictionCPUTime.getAccumulatedValue() << " \t |  " << _measurePredictionCPUTime.getValue()  << " \t |  " << _measurePredictionCalendarTime.getAccumulatedValue() << " \t |  " << _measurePredictionCalendarTime.getValue() << " \t |  " << _measurePredictionCPUTime.toString() << " \t |  " << _measurePredictionCalendarTime.toString() );
    if (logAllAdapters || _measureCorrectionCPUTime.getNumberOfMeasurements()>0) logInfo( "logIterationStatistics()", "| Correction \t |  " << _measureCorrectionCPUTime.getNumberOfMeasurements() << " \t |  " << _measureCorrectionCPUTime.getAccumulatedValue() << " \t |  " << _measureCorrectionCPUTime.getValue()  << " \t |  " << _measureCorrectionCalendarTime.getAccumulatedValue() << " \t |  " << _measureCorrectionCalendarTime.getValue() << " \t |  " << _measureCorrectionCPUTime.toString() << " \t |  " << _measureCorrectionCalendarTime.toString() );
+   if (logAllAdapters || _measureEmptyCPUTime.getNumberOfMeasurements()>0) logInfo( "logIterationStatistics()", "| Empty \t |  " << _measureEmptyCPUTime.getNumberOfMeasurements() << " \t |  " << _measureEmptyCPUTime.getAccumulatedValue() << " \t |  " << _measureEmptyCPUTime.getValue()  << " \t |  " << _measureEmptyCalendarTime.getAccumulatedValue() << " \t |  " << _measureEmptyCalendarTime.getValue() << " \t |  " << _measureEmptyCPUTime.toString() << " \t |  " << _measureEmptyCalendarTime.toString() );
 
 }
 
@@ -480,6 +488,7 @@ void exahype::repositories::RepositorySTDStack::clearIterationStatistics() {
    _measureUpdateAndReduceCPUTime.erase();
    _measurePredictionCPUTime.erase();
    _measureCorrectionCPUTime.erase();
+   _measureEmptyCPUTime.erase();
 
    _measureUniformRefinementCalendarTime.erase();
    _measureMeshRefinementCalendarTime.erase();
@@ -496,5 +505,6 @@ void exahype::repositories::RepositorySTDStack::clearIterationStatistics() {
    _measureUpdateAndReduceCalendarTime.erase();
    _measurePredictionCalendarTime.erase();
    _measureCorrectionCalendarTime.erase();
+   _measureEmptyCalendarTime.erase();
 
 }

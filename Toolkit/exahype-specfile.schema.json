@@ -145,7 +145,10 @@
           "title" : "The algorithmic phase we want to profile.", 
           "scope" : "run-time",
           "default": "whole_code",
-          "enum" : [ "whole_code", "neighbour_merge", "predictor", "update" ]
+          "enum" : [ "whole_code", "neighbour_merge", "predictor", "update", 
+                      "empty",
+                      "empty_enter_cell",  "empty_leave_cell",  "empty_touch_first",  "empty_touch_first_leave_cell",  
+                      "empty_enter_cell_reduce",  "empty_leave_cell_reduce",  "empty_touch_first_reduce",  "empty_touch_first_leave_cell_reduce" ]
         },
         "measure_cell_processing_times" : {
           "type" : "boolean", 
@@ -476,7 +479,7 @@
         "fuse_algorithmic_steps" : {
           "type" : "string", 
           "default" : "none",
-          "enum" : ["none","most","all"],
+          "enum" : ["none","most","most_do_riemann_twice","all"],
           "old_format" : { "token_after" : "fuse-algorithmic-steps" }
         }, 
         "fuse_algorithmic_steps_rerun_factor" : {

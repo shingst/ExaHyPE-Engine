@@ -32,7 +32,7 @@ class exahype::repositories::RepositoryFactory {
     virtual ~RepositoryFactory();
     
     static RepositoryFactory& getInstance();
-     
+
     /**
      * Create instance of repository. You are responsible to delete the instance 
      * in the end.

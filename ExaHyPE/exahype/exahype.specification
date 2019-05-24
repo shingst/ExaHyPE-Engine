@@ -61,6 +61,10 @@ event-mapping:
 event-mapping:
   name: AugmentedAMRTreePlot2d
   
+// Profiling
+event-mapping:
+  name: Empty
+  
 adapter:
   name: UniformRefinement
   merge-with-user-defined-mapping: UniformRefinement
@@ -138,7 +142,14 @@ adapter:
 
 // Additional adapters for 2 phase time stepping
 
+// TODO: Have Correction mapping
+
 adapter:
   name: Correction
   merge-with-user-defined-mapping: MergeNeighbours
   merge-with-user-defined-mapping: UpdateAndReduce
+  
+// Profiling Adapter
+adapter:
+  name: Empty
+  merge-with-user-defined-mapping: Empty

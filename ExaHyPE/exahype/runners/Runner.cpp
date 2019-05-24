@@ -63,6 +63,7 @@
 #endif
 #include "exahype/plotters/Plotter.h"
 
+#include "exahype/mappings/Empty.h"
 #include "exahype/mappings/MeshRefinement.h"
 #include "exahype/mappings/RefinementStatusSpreading.h"
 
@@ -773,12 +774,45 @@ void exahype::runners::Runner::initHPCEnvironment() {
 
   solvers::Solver::ProfileUpdate = _parser.getProfilingTarget()==parser::Parser::ProfilingTarget::Update;
 
+  logInfo("initHPCEnvironment()","\tTEST!");
+
+  if ( _parser.getProfileEmptyAdapter() ) {
+    mappings::Empty::PerformReductions =
+        _parser.getProfilingTarget()==parser::Parser::ProfilingTarget::EmptyEnterCellReduce ||
+        _parser.getProfilingTarget()==parser::Parser::ProfilingTarget::EmptyLeaveCellReduce ||
+        _parser.getProfilingTarget()==parser::Parser::ProfilingTarget::EmptyTouchVertexFirstTimeReduce ||
+        _parser.getProfilingTarget()==parser::Parser::ProfilingTarget::EmptyTouchVertexFirstTimeLeaveCellReduce;
+
+    mappings::Empty::UseEnterCell =
+        _parser.getProfilingTarget()==parser::Parser::ProfilingTarget::EmptyEnterCell ||
+        _parser.getProfilingTarget()==parser::Parser::ProfilingTarget::EmptyEnterCellReduce;
+
+    mappings::Empty::UseLeaveCell =
+        _parser.getProfilingTarget()==parser::Parser::ProfilingTarget::EmptyLeaveCell ||
+        _parser.getProfilingTarget()==parser::Parser::ProfilingTarget::EmptyLeaveCellReduce ||
+        _parser.getProfilingTarget()==parser::Parser::ProfilingTarget::EmptyTouchVertexFirstTimeLeaveCell ||
+        _parser.getProfilingTarget()==parser::Parser::ProfilingTarget::EmptyTouchVertexFirstTimeLeaveCellReduce;
+
+    mappings::Empty::UseTouchVertexFirstTime =
+        _parser.getProfilingTarget()==parser::Parser::ProfilingTarget::EmptyTouchVertexFirstTime ||
+        _parser.getProfilingTarget()==parser::Parser::ProfilingTarget::EmptyTouchVertexFirstTimeReduce ||
+        _parser.getProfilingTarget()==parser::Parser::ProfilingTarget::EmptyTouchVertexFirstTimeLeaveCell ||
+        _parser.getProfilingTarget()==parser::Parser::ProfilingTarget::EmptyTouchVertexFirstTimeLeaveCellReduce;
+
+    logInfo("initHPCEnvironment()","\trun iterations with Empty adapter. Use the following operations:");
+    logInfo("initHPCEnvironment()","\trun reductions="           << (mappings::Empty::PerformReductions       ? "on" : "off"));
+    logInfo("initHPCEnvironment()","\trun enterCell="            << (mappings::Empty::UseEnterCell            ? "on" : "off"));
+    logInfo("initHPCEnvironment()","\trun leaveCell="            << (mappings::Empty::UseLeaveCell            ? "on" : "off"));
+    logInfo("initHPCEnvironment()","\trun touchVertexFirstTime=" << (mappings::Empty::UseTouchVertexFirstTime ? "on" : "off"));
+  }
+
   //
   // Configure ITAC profiling
   // ================================================
   //
   #ifdef USE_ITAC
   int ierr=0;
+  ierr=VT_funcdef("Empty::iterationHandle"                                , VT_NOCLASS, &exahype::mappings::Empty::iterationHandle                              ); assertion(ierr==0);
   ierr=VT_funcdef("Solver::waitUntilCompletedLastStepHandle"              , VT_NOCLASS, &exahype::solvers::Solver::waitUntilCompletedLastStepHandle             ); assertion(ierr==0);
   ierr=VT_funcdef("Solver::ensureAllJobsHaveTerminatedHandle"             , VT_NOCLASS, &exahype::solvers::Solver::ensureAllJobsHaveTerminatedHandle            ); assertion(ierr==0);
   ierr=VT_funcdef("ADERDGSolver::adjustSolutionHandle"                    , VT_NOCLASS, &exahype::solvers::ADERDGSolver::adjustSolutionHandle                   ); assertion(ierr==0);
@@ -827,24 +861,24 @@ void exahype::runners::Runner::initOptimisations() const {
   exahype::solvers::Solver::DisableMetadataExchangeDuringTimeSteps = _parser.getDisableMetadataExchangeInBatchedTimeSteps();
 
   if ( tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getGlobalMasterRank() ) {
-    logInfo("parseOptimisations()","use the following global optimisations:");
-      logInfo("parseOptimisations()","\tfuse-algorithmic-steps                  =" << (exahype::solvers::Solver::FuseAllADERDGPhases ? "on" : "off"));
-      logInfo("parseOptimisations()","\tfuse-algorithmic-steps-rerun-actor      =" << exahype::solvers::Solver::FusedTimeSteppingRerunFactor);
-      logInfo("parseOptimisations()","\tfuse-algorithmic-steps-diffusion-factor =" << exahype::solvers::Solver::FusedTimeSteppingDiffusionFactor);
-      logInfo("parseOptimisations()","\tspawn-predictor-as-background-thread ="    << (exahype::solvers::Solver::SpawnPredictionAsBackgroundJob ? "on" : "off"));
-      logInfo("parseOptimisations()","\tspawn-prolongation-as-background-thread=" << (exahype::solvers::Solver::SpawnProlongationAsBackgroundJob ? "on" : "off"));
-      logInfo("parseOptimisations()","\tspawn-update-as-background-thread="       << (exahype::solvers::Solver::SpawnUpdateAsBackgroundJob ? "on" : "off"));
-      logInfo("parseOptimisations()","\tspawn-amr-background-threads="            << (exahype::solvers::Solver::SpawnAMRBackgroundJobs ? "on" : "off"));
-      logInfo("parseOptimisations()","\tdisable-vertex-exchange-in-time-steps="   << (exahype::solvers::Solver::DisablePeanoNeighbourExchangeInTimeSteps ? "on" : "off"));
-      logInfo("parseOptimisations()","\tbatching enabled="<<
+    logInfo("initOptimisations()","use the following global optimisations:");
+      logInfo("initOptimisations()","\tfuse-algorithmic-steps                  =" << (exahype::solvers::Solver::FuseAllADERDGPhases ? "on" : "off"));
+      logInfo("initOptimisations()","\tfuse-algorithmic-steps-rerun-actor      =" << exahype::solvers::Solver::FusedTimeSteppingRerunFactor);
+      logInfo("initOptimisations()","\tfuse-algorithmic-steps-diffusion-factor =" << exahype::solvers::Solver::FusedTimeSteppingDiffusionFactor);
+      logInfo("initOptimisations()","\tspawn-predictor-as-background-thread ="    << (exahype::solvers::Solver::SpawnPredictionAsBackgroundJob ? "on" : "off"));
+      logInfo("initOptimisations()","\tspawn-prolongation-as-background-thread=" << (exahype::solvers::Solver::SpawnProlongationAsBackgroundJob ? "on" : "off"));
+      logInfo("initOptimisations()","\tspawn-update-as-background-thread="       << (exahype::solvers::Solver::SpawnUpdateAsBackgroundJob ? "on" : "off"));
+      logInfo("initOptimisations()","\tspawn-amr-background-threads="            << (exahype::solvers::Solver::SpawnAMRBackgroundJobs ? "on" : "off"));
+      logInfo("initOptimisations()","\tdisable-vertex-exchange-in-time-steps="   << (exahype::solvers::Solver::DisablePeanoNeighbourExchangeInTimeSteps ? "on" : "off"));
+      logInfo("initOptimisations()","\tbatching enabled="<<
           ( _parser.getSkipReductionInBatchedTimeSteps() &&
               exahype::solvers::Solver::allSolversUseTimeSteppingScheme(exahype::solvers::Solver::TimeStepping::GlobalFixed)
               ? "yes" : "no" ) );
-      logInfo("parseOptimisations()","\t\ttime-step-batch-factor="<<_parser.getTimestepBatchFactor());
-      logInfo("parseOptimisations()","\t\tall solvers use 'globalfixed' time stepping="<<
+      logInfo("initOptimisations()","\t\ttime-step-batch-factor="<<_parser.getTimestepBatchFactor());
+      logInfo("initOptimisations()","\t\tall solvers use 'globalfixed' time stepping="<<
           ( exahype::solvers::Solver::allSolversUseTimeSteppingScheme(exahype::solvers::Solver::TimeStepping::GlobalFixed)
           ? "yes" : "no" ) );
-      logInfo("parseOptimisations()","\tdisable-metadata-exchange-in-batched-time-steps="<<(exahype::solvers::Solver::DisableMetadataExchangeDuringTimeSteps ? "on" : "off"));
+      logInfo("initOptimisations()","\tdisable-metadata-exchange-in-batched-time-steps="<<(exahype::solvers::Solver::DisableMetadataExchangeDuringTimeSteps ? "on" : "off"));
   }
 }
 
@@ -1087,13 +1121,15 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
     } else {
       simulationTimeSteps = _parser.getSimulationTimeSteps();
     }
-    parser::Parser::ProfilingTarget profilingTarget = _parser.getProfilingTarget();
+    const bool profileEmptyAdapter = _parser.getProfileEmptyAdapter();
+    const parser::Parser::ProfilingTarget profilingTarget = _parser.getProfilingTarget();
     if ( profilingTarget==parser::Parser::ProfilingTarget::WholeCode ) {
       printTimeStepInfo(-1,repository);
       validateInitialSolverTimeStepData(exahype::solvers::Solver::FuseAllADERDGPhases);
     }
-    const bool skipReductionInBatchedTimeSteps  = _parser.getSkipReductionInBatchedTimeSteps();
-    const bool fuseMostADERDGPhases             = _parser.getFuseMostAlgorithmicSteps();
+    const bool skipReductionInBatchedTimeSteps          = _parser.getSkipReductionInBatchedTimeSteps();
+    const bool fuseMostADERDGPhases                     = _parser.getFuseMostAlgorithmicSteps();
+    const bool fuseMostADERDGPhasesDoRiemannSolvesTwice = _parser.getFuseMostAlgorithmicStepsDoRiemannSolvesTwice();
 
     // run time stepping loop
     int timeStep = 0;
@@ -1127,6 +1163,8 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
       } else if ( profilingTarget==parser::Parser::ProfilingTarget::WholeCode ) {
         if ( fuseMostADERDGPhases ) {
           runOneTimeStepWithTwoSeparateAlgorithmicSteps(repository, plot);
+        } else if ( fuseMostADERDGPhasesDoRiemannSolvesTwice ) {
+          runOneTimeStepWithTwoSeparateAlgorithmicStepsDoRiemannSolvesTwice(repository, plot);
         } else {
           runOneTimeStepWithThreeSeparateAlgorithmicSteps(repository, plot);
         }
@@ -1145,6 +1183,11 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
         logInfo("runAsMaster(...)","step " << timeStep << "\t\trun one iteration with UpdateAndReduce adapter");
         printGridStatistics(repository);
         repository.switchToUpdateAndReduce();
+        repository.iterate(1,false);
+      } else if ( profileEmptyAdapter ) {
+        logInfo("runAsMaster(...)","step " << timeStep << "\t\trun one iteration with Empty adapter");
+        printGridStatistics(repository);
+        repository.switchToEmpty();
         repository.iterate(1,false);
       }
 
@@ -1746,6 +1789,42 @@ void exahype::runners::Runner::runOneTimeStepWithThreeSeparateAlgorithmicSteps(
 
   if ( plot ) {
     logInfo("runOneTimeStepWithThreeSeparateAlgorithmicSteps(...)","plot");
+  }
+
+  repository.switchToPrediction(); // Cell onto faces
+  repository.iterate( exahype::solvers::Solver::PredictionSweeps, communicatePeanoVertices );
+}
+
+void exahype::runners::Runner::runOneTimeStepWithTwoSeparateAlgorithmicStepsDoRiemannSolvesTwice(
+    exahype::repositories::Repository& repository, bool plot) {
+  logError("runOneTimeStepWithTwoSeparateAlgorithmicStepsDoRiemannSolvesTwice(...)","Solver functionality not implemented yet");
+  std::abort();
+
+  // Only one time step (predictor vs. corrector) is used in this case.
+
+  bool communicatePeanoVertices =
+        !exahype::solvers::Solver::DisablePeanoNeighbourExchangeInTimeSteps;
+  repository.switchToUpdateAndReduce();  // Riemann -> face2face, Face to cell + Inside cell
+  repository.iterate( 1, communicatePeanoVertices );
+
+  if (exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalRecomputation()) {
+    logInfo("runOneTimeStepWithThreeSeparateAlgorithmicSteps(...)","local recomputation requested by at least one solver");
+  }
+  if (exahype::solvers::Solver::oneSolverRequestedMeshRefinement()) {
+    logInfo("runOneTimeStepWithThreeSeparateAlgorithmicSteps(...)","mesh update requested by at least one solver");
+  }
+
+  if (exahype::solvers::Solver::oneSolverRequestedMeshRefinement() ||
+      exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalRecomputation()) {
+    updateMeshOrLimiterDomain(repository,false);
+  }
+
+  printTimeStepInfo(1,repository);
+
+  updateStatistics();
+
+  if ( plot ) {
+    logInfo("runOneTimeStepWithTwoSeparateAlgorithmicSteps(...)","plot");
   }
 
   repository.switchToPrediction(); // Cell onto faces
