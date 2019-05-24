@@ -359,6 +359,13 @@ class exahype::parser::Parser {
   bool getFuseMostAlgorithmicSteps() const;
 
   /**
+   * Similar to getFuseMostAlgorithmicSteps this fused variant uses two grid iterations. The difference is that
+   * only a single loop over the cells is employed to compute the Riemann solves; no additional loop over the vertices is used.
+   * The drawback is that the Riemann solves are run twice.
+   */
+  bool getFuseMostAlgorithmicStepsDoRiemannSolvesTwice() const;
+
+  /**
    * @return Time step size factor for the fused ADER-DG time stepping for nonlinear PDEs
    * used when a rerun is performed.
    *
@@ -577,11 +584,28 @@ class exahype::parser::Parser {
    * The profiling target.
    */
   enum class ProfilingTarget {
-    WholeCode,     //!< The whole code is profiled
-    NeigbhourMerge,//!< The neighbour merge phase is profiled
-    Prediction,    //!< The prediction phase is profiled
-    Update         //!< The update phase is profiled
+    WholeCode,                               //!< The whole code is profiled
+    NeigbhourMerge,                          //!< The neighbour merge phase is profiled
+    Prediction,                              //!< The prediction phase is profiled
+    Update,                                  //!< The update phase is profiled
+    //
+    Empty,                                   //!< The empty adapter is profiled. Everything is switched off.
+    //
+    EmptyEnterCell,                          //!< The empty adapter is profiled. enterCell, is deactivated. Reductions are deactivated.
+    EmptyLeaveCell,                          //!< The empty adapter is profiled. leaveCell is deactivated. Reductions are deactivated.
+    EmptyTouchVertexFirstTime,               //!< The empty adapter is profiled. touchVertexFirstTime is deactivated. Reductions are deactivated.
+    EmptyTouchVertexFirstTimeLeaveCell,      //!< The empty adapter is profiled. touchVertexFirstTime, leaveCell are deactivated. Reductions are deactivated.
+    EmptyEnterCellReduce,                    //!< The empty adapter is profiled. enterCell, is activated. Reductions are activated.
+    EmptyLeaveCellReduce,                    //!< The empty adapter is profiled. leaveCell is activated. Reductions are activated.
+    EmptyTouchVertexFirstTimeReduce,         //!< The empty adapter is profiled. touchVertexFirstTime is activated. Reductions are activated.
+    EmptyTouchVertexFirstTimeLeaveCellReduce //!< The empty adapter is profiled. touchVertexFirstTime, leaveCell are activated. Reductions are activated.
   };
+
+  /**
+   * @return if the profiling target is one of that uses the adapter named Empty, which is a dummy adapter that does do nothing at all. It is used to measure the cost of the grid traversal and the
+   * reduction operation.
+   */
+  bool getProfileEmptyAdapter() const;
 
   /**
    * Specify what code part you plan to run/profile.

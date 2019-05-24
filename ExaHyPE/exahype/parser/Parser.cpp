@@ -711,6 +711,10 @@ bool exahype::parser::Parser::getFuseMostAlgorithmicSteps() const {
   return getStringFromPath("/optimisation/fuse_algorithmic_steps", "none", isOptional).compare("most")==0;
 }
 
+bool exahype::parser::Parser::getFuseMostAlgorithmicStepsDoRiemannSolvesTwice() const {
+  return getStringFromPath("/optimisation/fuse_algorithmic_steps", "none", isOptional).compare("most_do_riemann_twice")==0;
+}
+
 double exahype::parser::Parser::getFuseAlgorithmicStepsRerunFactor() const {
   const double default_value = 0.99;
   double result = getDoubleFromPath("/optimisation/fuse_algorithmic_steps_rerun_factor", default_value, isOptional);
@@ -1076,14 +1080,26 @@ std::string exahype::parser::Parser::getProfilerIdentifier() const {
   return getStringFromPath("/profiling/profiler", "NoOpProfiler", isOptional);
 }
 
+
+bool exahype::parser::Parser::getProfileEmptyAdapter() const {
+  std::string option = getStringFromPath("/profiling/profiling_target", "whole_code", isOptional);
+  std::string prefix("empty");
+  return option.compare(0,prefix.length(),prefix)==0;
+}
+
 exahype::parser::Parser::ProfilingTarget exahype::parser::Parser::getProfilingTarget() const {
   std::string option = getStringFromPath("/profiling/profiling_target", "whole_code", isOptional);
 
-  if ( option.compare("whole_code")!=0 && (
+  if (
+      (option.compare("neighbour_merge")==0 ||
+      option.compare("predictor")==0)
+      &&
+      (
        #ifdef Parallel
        true ||
        #endif
-       foundSimulationEndTime())
+       foundSimulationEndTime()
+      )
   ) {
     logError("getProfilingTarget","Profiling target '"<<option<<"' can not be chosen if a simulation end time is specified or a parallel build is run. Only 'whole_code' is allowed in this case.");
     invalidate();
@@ -1098,6 +1114,27 @@ exahype::parser::Parser::ProfilingTarget exahype::parser::Parser::getProfilingTa
     return ProfilingTarget::Update;
   } else if ( option.compare("predictor")==0 ) {
     return ProfilingTarget::Prediction;
+  //
+  } else if ( option.compare("empty")==0 ) {
+      return ProfilingTarget::Empty;
+  //
+  } else if ( option.compare("empty_enter_cell")==0 ) {
+      return ProfilingTarget::EmptyEnterCell;
+  } else if ( option.compare("empty_leave_cell")==0 ) {
+      return ProfilingTarget::EmptyLeaveCell;
+  } else if ( option.compare("empty_touch_first")==0 ) {
+      return ProfilingTarget::EmptyTouchVertexFirstTime;
+  } else if ( option.compare("empty_touch_first_leave_cell")==0 ) {
+      return ProfilingTarget::EmptyTouchVertexFirstTimeLeaveCell;
+  //
+  } else if ( option.compare("empty_enter_cell_reduce")==0 ) {
+      return ProfilingTarget::EmptyEnterCellReduce;
+  } else if ( option.compare("empty_leave_cell_reduce")==0 ) {
+      return ProfilingTarget::EmptyLeaveCellReduce;
+  } else if ( option.compare("empty_touch_first_reduce")==0 ) {
+      return ProfilingTarget::EmptyTouchVertexFirstTimeReduce;
+  } else if ( option.compare("empty_touch_first_leave_cell_reduce")==0 ) {
+      return ProfilingTarget::EmptyTouchVertexFirstTimeLeaveCellReduce;
   } else {
     logError("getProfilingTarget","Unknown profiling target: "<<option);
     invalidate();

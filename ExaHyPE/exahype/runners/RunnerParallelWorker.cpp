@@ -68,7 +68,7 @@ int exahype::runners::Runner::runAsWorker(
              }
 
              lastMemoryUsageValue = peano::utils::UserInterface::getMemoryUsageMB();
-              logInfo("runAsWorker(...)",
+             logInfo("runAsWorker(...)",
                 "\tmemoryUsage    =" << lastMemoryUsageValue << " MB\t" << "(delta: " << memoryUsageDelta << ")" );
 
 //              logInfo("runAsWorker(...)",

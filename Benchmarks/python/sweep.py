@@ -888,10 +888,10 @@ available subprograms:
 * buildLocally          - rebuild only the local application folder (no make clean)
 * link                  - link runtime dependencies into the build folder
 * scripts               - generate specification files and job scripts
-* submit                - submit only the generated job scripts, which have not been submitted yet or have been rejected by the scheduler
+* submit                - submit only the generated job scripts that have not been submitted yet or have been rejected by the scheduler
 * submitRepeatedly      - calls submit in a blocking while loop that calls the submit subprogram until all jobs have been accepted by the scheduler
 * submitAll             - submit all jobs
-* cancel                - cancel the submitted jobs
+* cancel                - cancel ALL the submitted jobs
 * parseAdapters         - read the job output and parse adapter times
 * parseTotalTimes       - read the adapter times table and:
                           Per configuration, calculate the total simulation time 
