@@ -781,6 +781,7 @@ def submitJobs(submitAllJobs=False):
             acceptedJobs.extend(json.loads(file.read()))
 
     # loop over job scrips
+    numberOfJobs = 0
     for run in runNumbers:
         for configId,config in enumerate(ranksNodesCoreCounts):
             ranks = config.ranks
@@ -794,6 +795,7 @@ def submitJobs(submitAllJobs=False):
                     jobInfo = getJobNameAndFilePaths(environmentDictHash,ungroupedParameterDictHash,\
                                                      configId,ranks,nodes,run)
                             
+                    numberOfJobs += 1
                     command=jobSubmissionTool + " " + jobInfo.jobScriptFilePath
                     if command not in acceptedJobs:
                         print(command)
@@ -823,6 +825,8 @@ def submitJobs(submitAllJobs=False):
     process = subprocess.Popen([command], stdout=subprocess.PIPE, shell=True)
     (output, err) = process.communicate()
     process.wait()
+ 
+    return len(acceptedJobs) is numberJobs
 
 def cancelJobs():
     """
@@ -859,12 +863,13 @@ if __name__ == "__main__":
     import re
     import math
     import collections   
- 
+    import time 
+
     import sweep_analysis
     import sweep_options
     
     subprograms = [\
-"build","buildMissing","buildLocally","link","scripts","submit","submitAll","cancel","parseAdapters",\
+"build","buildMissing","buildLocally","link","scripts","submit","submitAll","submitRepeatedly","cancel","parseAdapters",\
 "parseTotalTimes","parseTimeStepTimes","parseMetrics","parseJobStatistics",\
 "cleanBuild", "cleanScripts","cleanResults","cleanHistory","cleanAll",\
 "iniTemplate","jobTemplate"]
@@ -885,6 +890,7 @@ available subprograms:
 * link                  - link runtime dependencies into the build folder
 * scripts               - generate specification files and job scripts
 * submit                - submit only the generated job scripts, which have not been submitted yet or have been rejected by the scheduler
+* submitRepeatedly      - calls submit in a blocking while loop that calls the submit subprogram until all jobs have been accepted by the scheduler
 * submitAll             - submit all jobs
 * cancel                - cancel the submitted jobs
 * parseAdapters         - read the job output and parse adapter times
@@ -1040,6 +1046,12 @@ It must further contain at least one of the following sections:
         generateScripts()
     elif subprogram == "submit":
         submitJobs(submitAllJobs=False)
+    elif subprogram == "submitRepeatedly":
+        while !submitJobs(submitAllJobs=False):
+            print("Waiting till submit subprogram is called next ... ")
+            print("Loop continues till all jobs have been accepted by scheduler.")
+            print("Print press CTRL+C to abort.")
+            time.sleep(secs = 20*60)
     elif subprogram == "submitAll":
         submitJobs(submitAllJobs=True)
     elif subprogram == "cancel":
