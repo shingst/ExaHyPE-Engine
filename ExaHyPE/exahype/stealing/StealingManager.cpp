@@ -587,7 +587,7 @@ void exahype::stealing::StealingManager::triggerEmergencyForRank(int rank) {
 #endif
   _emergencyHeatMap[rank]++;
   exahype::stealing::PerformanceMonitor::getInstance().submitBlacklistValueForRank(_emergencyHeatMap[rank], rank);
-  logDebug("triggerEmergencyForRank()","blacklist value for rank "<<rank<<":"<<_emergencyHeatMap[rank]);
+  logInfo("triggerEmergencyForRank()","blacklist value for rank "<<rank<<":"<<_emergencyHeatMap[rank]);
 }
 
 void exahype::stealing::StealingManager::decreaseHeat() {
@@ -606,7 +606,7 @@ void exahype::stealing::StealingManager::decreaseHeat() {
 bool exahype::stealing::StealingManager::isBlacklisted(int rank) { 
   //return _emergencyHeatMap[rank]>0.5;
   const double* globalHeatMap = exahype::stealing::PerformanceMonitor::getInstance().getBlacklistSnapshot();
-  return globalHeatMap[rank]>0.5;
+  return (globalHeatMap[rank]>0.5) || (_emergencyHeatMap[rank]>0.5);
 }
 
 void exahype::stealing::StealingManager::printBlacklist() {
@@ -614,8 +614,8 @@ void exahype::stealing::StealingManager::printBlacklist() {
   const double* globalHeatMap = exahype::stealing::PerformanceMonitor::getInstance().getBlacklistSnapshot();
 
   for(int i=0; i<nnodes; i++) {
-    if(globalHeatMap[i]>0)
-      logDebug("printBlacklist", "blacklist value for rank "<<i<<":"<<globalHeatMap[i]);
+    if(globalHeatMap[i]>0 || _emergencyHeatMap[i]>0)
+      logInfo("printBlacklist", "blacklist value for rank "<<i<<":"<<globalHeatMap[i]);
   }
 }
 
@@ -738,6 +738,9 @@ exahype::stealing::StealingManager::ProgressJob::ProgressJob() :
  {}
 
 bool exahype::stealing::StealingManager::ProgressJob::run( bool calledFromMaster ) {
+
+   if(calledFromMaster) return true;
+
    int flag;
    //logInfo("submitRequests()", "executing progress job (high priority)");
 

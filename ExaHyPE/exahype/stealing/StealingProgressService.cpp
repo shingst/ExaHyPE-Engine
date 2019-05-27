@@ -14,7 +14,9 @@ exahype::stealing::StealingProgressService::~StealingProgressService() {};
 
 void exahype::stealing::StealingProgressService::receiveDanglingMessages() {
   if(_isSet) {
+    exahype::solvers::ADERDGSolver::setMaxNumberOfIprobesInProgressStealing( 1 );
     exahype::solvers::ADERDGSolver::progressStealing(_solver);
+    exahype::solvers::ADERDGSolver::setMaxNumberOfIprobesInProgressStealing( std::numeric_limits<int>::max() );
   }
 }
 

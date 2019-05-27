@@ -40,7 +40,8 @@ class exahype::stealing::AggressiveHybridDistributor {
     // stores how many tasks still need to be offloaded in the current time step
     std::atomic<int> *_remainingTasksToOffload;
     int *_emergenciesPerRank;
-    int *_notOffloaded;
+    std::atomic<int> *_notOffloaded;
+    std::atomic<int> *_actuallyOffloaded;
 
     int _totalTasksOffloaded;
     int _oldTotalTasksOffloaded;

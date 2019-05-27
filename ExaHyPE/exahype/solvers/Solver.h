@@ -1206,6 +1206,7 @@ public:
      if ( responsibleRank!=myRank
          && stealingTreatment) {
        solver->pauseStealingManager();
+       logInfo("waitUntil", "cell missing from responsible rank: "<<responsibleRank);
        exahype::solvers::ADERDGSolver::tryToReceiveTaskBack(solver) ;
      }
 #endif
@@ -1233,10 +1234,10 @@ public:
 
      switch ( JobSystemWaitBehaviour ) {
         case JobSystemWaitBehaviourType::ProcessJobsWithSamePriority:
-          hasProcessed = tarch::multicore::jobs::processBackgroundJobs( 1, getTaskPriority(waitForHighPriorityJob) );
+          hasProcessed = tarch::multicore::jobs::processBackgroundJobs( 1, getTaskPriority(waitForHighPriorityJob), true );
           break;
         case JobSystemWaitBehaviourType::ProcessAnyJobs:
-          hasProcessed = tarch::multicore::jobs::processBackgroundJobs( 1 );
+          hasProcessed = tarch::multicore::jobs::processBackgroundJobs( 1, -1, true );
           break;
         default:
           break;
@@ -1269,7 +1270,7 @@ public:
 	 VT_begin(event_emergency);
 #endif
          hasTriggeredEmergency = true;
-         //logInfo("waitUntilCompletedTimeStep()","EMERGENCY: missing from rank "<<responsibleRank);
+         logInfo("waitUntilCompletedTimeStep()","EMERGENCY: missing from rank "<<responsibleRank);
          exahype::stealing::StealingManager::getInstance().triggerEmergencyForRank(responsibleRank);
 #ifdef USE_ITAC
 	 VT_end(event_emergency);

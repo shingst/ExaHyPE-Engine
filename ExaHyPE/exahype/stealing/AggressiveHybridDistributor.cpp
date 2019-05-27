@@ -37,7 +37,8 @@ exahype::stealing::AggressiveHybridDistributor::AggressiveHybridDistributor() :
   _optimalTasksPerRank     = new int[nnodes];
   _remainingTasksToOffload = new std::atomic<int>[nnodes];
   _emergenciesPerRank      = new int[nnodes];
-  _notOffloaded            = new int[nnodes];
+  _notOffloaded            = new std::atomic<int>[nnodes];
+  _actuallyOffloaded       = new std::atomic<int>[nnodes];
  
   std::fill( &_remainingTasksToOffload[0], &_remainingTasksToOffload[nnodes], 0);
   std::fill( &_tasksToOffload[0], &_tasksToOffload[nnodes], 0);
@@ -46,9 +47,11 @@ exahype::stealing::AggressiveHybridDistributor::AggressiveHybridDistributor() :
   std::fill( &_notOffloaded[0], &_notOffloaded[nnodes], 0);
   std::fill( &_emergenciesPerRank[0], &_emergenciesPerRank[nnodes], 0);
   std::fill( &_optimalTasksPerRank[0], &_optimalTasksPerRank[nnodes], 0);
+  std::fill( &_actuallyOffloaded[0], &_actuallyOffloaded[nnodes], 0);
 }
 
 exahype::stealing::AggressiveHybridDistributor::~AggressiveHybridDistributor() {
+  delete[] _actuallyOffloaded;
   delete[] _optimalTasksPerRank;
   delete[] _emergenciesPerRank;
   delete[] _notOffloaded;
@@ -294,8 +297,10 @@ void exahype::stealing::AggressiveHybridDistributor::printOffloadingStatistics()
     if(i==myRank)
       continue;
     if(_tasksToOffload[i]>0)
-    logDebug("printOffloadingStatistics()", "target tasks to rank "<<i<<" ntasks "<<_tasksToOffload[i]<<" not offloaded "<<_notOffloaded[i]); 
-    _notOffloaded[i]=0;
+    logInfo("printOffloadingStatistics()", "target tasks to rank "<<i<<" ntasks "<<_tasksToOffload[i]<<" not offloaded "
+                                            <<_notOffloaded[i]<<" actually offloaded "<<_actuallyOffloaded[i]); 
+    _notOffloaded[i] = 0;
+    _actuallyOffloaded[i] = 0;
   }
   logDebug("printOffloadingStatistics()", "temperature value CCP "<<_temperatureCCP );
   logDebug("printOffloadingStatistics()", "temperature value diffusion "<<_temperatureDiffusion );
@@ -516,8 +521,10 @@ bool exahype::stealing::AggressiveHybridDistributor::selectVictimRank(int& victi
     _notOffloaded[victim]++;
     victim = myRank;
   }
+  else if(victim!=myRank)
+    _actuallyOffloaded[victim]++;
   //if(victim!=myRank)
-   logInfo("selectVictimRank", "chose victim "<<victim<<" _remainingTasksToOffload "<<_remainingTasksToOffload[victim]);
+  logDebug("selectVictimRank", "chose victim "<<victim<<" _remainingTasksToOffload "<<_remainingTasksToOffload[victim]);
   
   return victim != myRank;
 }

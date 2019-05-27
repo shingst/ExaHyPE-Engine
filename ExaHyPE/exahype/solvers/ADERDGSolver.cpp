@@ -5203,7 +5203,13 @@ bool exahype::solvers::ADERDGSolver::StealingManagerJob::run( bool isCalledOnMas
         tarch::parallel::Node::getInstance().receiveDanglingMessages();
         lock.free();
       }*/
+      if( isCalledOnMaster ) {
+          return true; 
+      }
       exahype::solvers::ADERDGSolver::progressStealing(&_solver);
+      
+      //exahype::solvers::ADERDGSolver::setMaxNumberOfIprobesInProgressStealing( std::numeric_limits<int>::max() );
+
     //  logInfo("run()", "reschedule... ");
       break;
     }
@@ -5444,29 +5450,29 @@ void exahype::solvers::ADERDGSolver::irecvStealablePredictionJob(
 
   if(metadata != nullptr) {
     ierr = MPI_Irecv(metadata, 2*DIMENSIONS+2, MPI_DOUBLE, srcRank, tag, comm, &requests[i++]);
-    assertion(ierr==MPI_SUCCESS);
-    assertion(requests[i-1]!=MPI_REQUEST_NULL);
+    assert(ierr==MPI_SUCCESS);
+    assert(requests[i-1]!=MPI_REQUEST_NULL);
   }
 
-  assertion(luh!=NULL);
+  assert(luh!=NULL);
   ierr = MPI_Irecv(luh, getDataPerCell(), MPI_DOUBLE, srcRank, tag, comm, &requests[i++]);
-  assertion(ierr==MPI_SUCCESS);
-  assertion(requests[i-1]!=MPI_REQUEST_NULL);
+  assert(ierr==MPI_SUCCESS);
+  assert(requests[i-1]!=MPI_REQUEST_NULL);
 
-  assertion(lduh!=NULL);
+  assert(lduh!=NULL);
   ierr = MPI_Irecv(lduh, getUpdateSize(), MPI_DOUBLE, srcRank, tag, comm, &requests[i++]);
-  assertion(ierr==MPI_SUCCESS);
-  assertion(requests[i-1]!=MPI_REQUEST_NULL);
+  assert(ierr==MPI_SUCCESS);
+  assert(requests[i-1]!=MPI_REQUEST_NULL);
 
-  assertion(lQhbnd!=NULL);
+  assert(lQhbnd!=NULL);
   ierr = MPI_Irecv(lQhbnd, getBndTotalSize(), MPI_DOUBLE, srcRank, tag, comm, &requests[i++]);
-  assertion(ierr==MPI_SUCCESS);
-  assertion(requests[i-1]!=MPI_REQUEST_NULL);
+  assert(ierr==MPI_SUCCESS);
+  assert(requests[i-1]!=MPI_REQUEST_NULL);
 
-  assertion(lFhbnd!=NULL);
+  assert(lFhbnd!=NULL);
   ierr = MPI_Irecv(lFhbnd, getBndFluxTotalSize(), MPI_DOUBLE, srcRank, tag, comm, &requests[i++]);
-  assertion(ierr==MPI_SUCCESS);
-  assertion(requests[i-1]!=MPI_REQUEST_NULL);
+  assert(ierr==MPI_SUCCESS);
+  assert(requests[i-1]!=MPI_REQUEST_NULL);
 
 };
 
