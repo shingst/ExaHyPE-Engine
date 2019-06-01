@@ -68,6 +68,7 @@ private:
    */
   int                          _resolution = 0;
 
+
   /**
    * Temporary solution and gradient arrays used for interpolating the solution
    * onto finer grids.
@@ -155,7 +156,9 @@ public:
   void plotFiniteVolumesPatch(
       const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
       const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* u,
-      double timeStamp);
+      double timeStamp,
+      const int RefinementStatusAsInt,
+      const int previousRefinementStatusAsInt);
 
   void startPlotting( double time ) override;
   void finishPlotting() override;

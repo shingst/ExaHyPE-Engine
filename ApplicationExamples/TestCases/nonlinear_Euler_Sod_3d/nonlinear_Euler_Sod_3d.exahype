@@ -71,7 +71,7 @@ exahype-project Euler
       output          = not-available
     end plot
     
-    plot vtu::Cartesian::vertices::limited::ascii ErrorPlotter
+    plot vtu::Cartesian::cells::limited::ascii ErrorPlotter
       // absErrorL1perCell[nvar],Q[nvar],QAnalytical[nvar]
       variables const = 15 
       time            = 0.0
