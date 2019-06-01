@@ -99,7 +99,9 @@ public:
       double* const                               globalObservables,
       const double* const                         luh,
       const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
-      const tarch::la::Vector<DIMENSIONS,double>& cellSize) final override;
+      const tarch::la::Vector<DIMENSIONS,double>& cellSize,
+      const double t,
+      const double dt) final override;
   void mergeGlobalObservables(double* const globalObservables,const double* const otherObservables) final override;
   void wrapUpGlobalObservables(double* const globalObservables) final override;
 
@@ -323,7 +325,9 @@ public:
       GlobalObservables&                          globalObservables,
       const double* const                         luh,
       const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
-      const tarch::la::Vector<DIMENSIONS,double>& cellSize) const;
+      const tarch::la::Vector<DIMENSIONS,double>& cellSize,
+      const double t,
+      const double dt) const;
   /**
    * This method merges two vectors of (global) observables.
    *

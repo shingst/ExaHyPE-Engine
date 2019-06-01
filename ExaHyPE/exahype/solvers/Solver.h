@@ -2171,12 +2171,16 @@ public:
    *\param[in]    luh               The solution array.
    *\param[in]    cellCentre        The centre of a cell.
    *\param[in]    cellSize          The size of the cell.
+   *\param[in]    t                 The updated time stamp.
+   *\param[in]    dtOld             The old time step size. Can be used to go back in time.
    */
    virtual void updateGlobalObservables(
        double* const                               globalObservables,
        const double* const                         luh,
        const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
-       const tarch::la::Vector<DIMENSIONS,double>& cellSize) = 0;
+       const tarch::la::Vector<DIMENSIONS,double>& cellSize,
+       const double t,
+       const double dtOld) = 0;
 
    /**
     * This method merges two vectors of (global) observables.

@@ -491,7 +491,9 @@ void Euler::EulerSolver_FV::mapGlobalObservables(
     GlobalObservables&                          globalObservables,
     const double* const                         luh,
     const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
-    const tarch::la::Vector<DIMENSIONS,double>& cellSize) const {
+    const tarch::la::Vector<DIMENSIONS,double>& cellSize,
+    const double t,
+    const double dt) const {
   globalObservables.dgcells() = 0;
   globalObservables.fvcells() = 1;
 }
