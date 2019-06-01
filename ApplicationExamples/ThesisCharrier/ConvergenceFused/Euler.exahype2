@@ -1,0 +1,65 @@
+{
+  "project_name": "Euler",
+  "paths": {
+    "output_directory": "./ApplicationExamples/ThesisCharrier/ConvergenceFused"
+  },
+  "computational_domain": {
+    "dimension": 2,
+    "end_time": 1.0,
+    "offset": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "width": [
+      1.5,
+      1.0,
+      1.0
+    ]
+  },
+  "shared_memory": {
+    "cores": 1
+  },
+  "optimisation": {
+    "fuse_algorithmic_steps": "all",
+    "fuse_algorithmic_steps_rerun_factor": 0.99,
+    "fuse_algorithmic_steps_diffusion_factor": 0.99
+  },
+  "solvers": [
+    {
+      "type": "ADER-DG",
+      "name": "EulerSolver_ADERDG",
+      "order": 3,
+      "maximum_mesh_size": 0.05,
+      "maximum_mesh_depth": 0,
+      "time_stepping": "global",
+      "aderdg_kernel": {
+        "nonlinear": true,
+        "terms": [
+          "flux"
+        ],
+        "space_time_predictor": {},
+        "optimised_terms": [],
+        "optimised_kernel_debugging": [],
+        "implementation": "generic"
+      },
+      "point_sources": 0,
+      "variables": 4,
+      "global_observables": [
+        {
+          "name": "eL1",
+          "multiplicity": 1
+        },
+        {
+          "name": "eL2",
+          "multiplicity": 1
+        },
+        {
+          "name": "eLInf",
+          "multiplicity": 1
+        }
+      ],
+      "plotters": []
+    }
+  ]
+}
