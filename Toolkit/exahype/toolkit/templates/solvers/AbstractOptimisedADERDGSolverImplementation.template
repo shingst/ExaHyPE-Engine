@@ -633,11 +633,12 @@ void {{project}}::{{abstractSolver}}::resetGlobalObservables(double* const globa
 void {{project}}::{{abstractSolver}}::updateGlobalObservables(
     double* const                               globalObservables,
     const double* const                         luh,
+    const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
     const tarch::la::Vector<DIMENSIONS,double>& cellSize) {
 {% if numberOfGlobalObservables > 0 %}
   double mappedObservables[NumberOfGlobalObservables];
   GlobalObservables wrappedMappedObservables(mappedObservables);
-  static_cast<{{solver}}*>(this)->mapGlobalObservables(wrappedMappedObservables,luh,cellSize);
+  static_cast<{{solver}}*>(this)->mapGlobalObservables(wrappedMappedObservables,luh,cellCentre,cellSize);
   // reduce
   GlobalObservables         wrappedGlobalObservables(globalObservables);
   ReadOnlyGlobalObservables wrappedOtherObservables(mappedObservables);
@@ -709,6 +710,7 @@ void {{project}}::{{abstractSolver}}::resetGlobalObservables(GlobalObservables& 
 void {{project}}::{{abstractSolver}}::mapGlobalObservables(
     GlobalObservables&                          globalObservables,
     const double* const                         luh,
+    const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
     const tarch::la::Vector<DIMENSIONS,double>& cellSize) const {
   abortWithMsg("If this operation is entered (mapGlobalObservables), you have specified global observables. Then you have to re-implement this routine, too." );
 }

@@ -1615,6 +1615,7 @@ void updateNextGlobalObservables(
   void updateGlobalObservables(
       double* const                               globalObservables,
       const double* const                         luh,
+      const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
       const tarch::la::Vector<DIMENSIONS,double>& cellSize) final override;
 
   void mergeGlobalObservables(

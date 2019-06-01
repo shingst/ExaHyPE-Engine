@@ -597,6 +597,7 @@ void Euler::EulerSolver_ADERDG::resetGlobalObservables(GlobalObservables& global
 void Euler::EulerSolver_ADERDG::mapGlobalObservables(
     GlobalObservables&                          globalObservables,
     const double* const                         luh,
+    const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
     const tarch::la::Vector<DIMENSIONS,double>& cellSize) const {
   globalObservables.dgcells() = 1;
   globalObservables.fvcells() = 0;

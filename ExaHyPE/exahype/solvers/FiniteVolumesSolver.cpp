@@ -641,9 +641,10 @@ void exahype::solvers::FiniteVolumesSolver::updateGlobalObservables(const int so
 
     if ( _numberOfGlobalObservables > 0 ) {
       assert(cellDescription.getType()==CellDescription::Type::Cell);
-      const double* const luh         = static_cast<double*>(cellDescription.getSolution());
-      const auto& cellSize            = cellDescription.getSize();
-      updateGlobalObservables(_nextGlobalObservables.data(),luh,cellSize);
+      const double* const luh = static_cast<double*>(cellDescription.getSolution());
+      const auto cellCentre   = cellDescription.getOffset() + 0.5 * cellDescription.getSize();
+      const auto& cellSize    = cellDescription.getSize();
+      updateGlobalObservables(_nextGlobalObservables.data(),luh,cellCentre,cellSize);
     }
   }
 }
@@ -705,9 +706,10 @@ void exahype::solvers::FiniteVolumesSolver::reduce(
 
   if ( _numberOfGlobalObservables > 0 ) {
     assert(cellDescription.getType()==CellDescription::Type::Cell);
-    const double* const luh         = static_cast<double*>(cellDescription.getSolution());
-    const auto& cellSize            = cellDescription.getSize();
-    updateGlobalObservables(_nextGlobalObservables.data(),luh,cellSize);
+    const double* const luh = static_cast<double*>(cellDescription.getSolution());
+    const auto& cellSize    = cellDescription.getSize();
+    const auto cellCentre   = cellDescription.getOffset() + 0.5 * cellDescription.getSize();
+    updateGlobalObservables(_nextGlobalObservables.data(),luh,cellCentre,cellSize);
   }
 }
 

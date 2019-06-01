@@ -403,15 +403,17 @@ void exahype::solvers::LimitingADERDGSolver::updateGlobalObservables(const int s
       const int limiterElement = cellInfo.indexOfFiniteVolumesCellDescription(solverPatch.getSolverNumber());
       assertion1(limiterElement != NotFound, "Limiter element not found!");
       LimiterPatch& limiterPatch = cellInfo._FiniteVolumesCellDescriptions[limiterElement];
+      const auto cellCentre = solverPatch.getOffset() + 0.5 * solverPatch.getSize();
       _limiter->updateGlobalObservables(
           _solver->_nextGlobalObservables.data(),
           static_cast<double*>(limiterPatch.getSolution()),
-          solverPatch.getSize()); // call must be thread-safe
+          cellCentre,solverPatch.getSize()); // call must be thread-safe
     } else if ( _solver->_numberOfGlobalObservables > 0 && isCell ) {
+      const auto cellCentre = solverPatch.getOffset() + 0.5 * solverPatch.getSize();
       _solver->updateGlobalObservables(
           _solver->_nextGlobalObservables.data(),
           static_cast<double*>(solverPatch.getSolution()),
-          solverPatch.getSize()); // call must be thread-safe
+          cellCentre,solverPatch.getSize()); // call must be thread-safe
     }
   }
 }
@@ -631,6 +633,7 @@ void exahype::solvers::LimitingADERDGSolver::resetGlobalObservables(
 void exahype::solvers::LimitingADERDGSolver::updateGlobalObservables(
     double* const                               globalObservables,
     const double* const                         luh,
+    const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
     const tarch::la::Vector<DIMENSIONS,double>& cellSize) {
   logError("resetGlobalObservables(...)","routine never be called!");
   std::abort();

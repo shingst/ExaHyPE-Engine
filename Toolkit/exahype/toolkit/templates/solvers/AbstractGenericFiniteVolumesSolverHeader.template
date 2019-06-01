@@ -79,6 +79,7 @@ class {{project}}::{{abstractSolver}} : public exahype::solvers::FiniteVolumesSo
     void updateGlobalObservables(
         double* const                               globalObservables,
         const double* const                         luh,
+        const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
         const tarch::la::Vector<DIMENSIONS,double>& cellSize) final override;
     void mergeGlobalObservables(double* const globalObservables,const double* const otherObservables) final override;
     void wrapUpGlobalObservables(double* const globalObservables) final override;
@@ -217,6 +218,7 @@ class {{project}}::{{abstractSolver}} : public exahype::solvers::FiniteVolumesSo
     virtual void mapGlobalObservables(
         GlobalObservables&                          globalObservables,
         const double* const                         luh,
+        const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
         const tarch::la::Vector<DIMENSIONS,double>& cellSize) const;
 
     /**

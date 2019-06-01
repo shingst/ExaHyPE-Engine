@@ -98,6 +98,7 @@ public:
   void updateGlobalObservables(
       double* const                               globalObservables,
       const double* const                         luh,
+      const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
       const tarch::la::Vector<DIMENSIONS,double>& cellSize) final override;
   void mergeGlobalObservables(double* const globalObservables,const double* const otherObservables) final override;
   void wrapUpGlobalObservables(double* const globalObservables) final override;
@@ -321,6 +322,7 @@ public:
   virtual void mapGlobalObservables(
       GlobalObservables&                          globalObservables,
       const double* const                         luh,
+      const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
       const tarch::la::Vector<DIMENSIONS,double>& cellSize) const;
   /**
    * This method merges two vectors of (global) observables.

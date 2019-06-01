@@ -2169,11 +2169,13 @@ public:
    * @note Implementation must be thread-safe.
    *
    *\param[in]    luh               The solution array.
-   *\param[in]    cellSize          The size of a cell.
+   *\param[in]    cellCentre        The centre of a cell.
+   *\param[in]    cellSize          The size of the cell.
    */
    virtual void updateGlobalObservables(
        double* const                               globalObservables,
        const double* const                         luh,
+       const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
        const tarch::la::Vector<DIMENSIONS,double>& cellSize) = 0;
 
    /**

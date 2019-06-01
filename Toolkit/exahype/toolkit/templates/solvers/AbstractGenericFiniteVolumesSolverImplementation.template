@@ -134,11 +134,12 @@ void {{project}}::{{abstractSolver}}::resetGlobalObservables(double* const globa
 void {{project}}::{{abstractSolver}}::updateGlobalObservables(
     double* const                               globalObservables,
     const double* const                         luh,
+    const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
     const tarch::la::Vector<DIMENSIONS,double>& cellSize) {
 {% if numberOfGlobalObservables > 0 %}
   double mappedObservables[NumberOfGlobalObservables];
   GlobalObservables wrappedMappedObservables(mappedObservables);
-  static_cast<{{solver}}*>(this)->mapGlobalObservables(wrappedMappedObservables,luh,cellSize);
+  static_cast<{{solver}}*>(this)->mapGlobalObservables(wrappedMappedObservables,luh,cellCentre,cellSize);
   // reduce
   GlobalObservables         wrappedGlobalObservables(globalObservables);
   ReadOnlyGlobalObservables wrappedOtherObservables(mappedObservables);

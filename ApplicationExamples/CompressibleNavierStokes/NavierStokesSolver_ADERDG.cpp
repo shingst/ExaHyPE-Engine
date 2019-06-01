@@ -455,6 +455,7 @@ void NavierStokes::NavierStokesSolver_ADERDG::resetGlobalObservables(GlobalObser
 void NavierStokes::NavierStokesSolver_ADERDG::mapGlobalObservables(
     GlobalObservables&                          globalObservables,
     const double* const                         luh,
+    const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
     const tarch::la::Vector<DIMENSIONS,double>& cellSize) const  {
   NavierStokes::mapGlobalObservablesDG(globalObservables,
 				       luh,
