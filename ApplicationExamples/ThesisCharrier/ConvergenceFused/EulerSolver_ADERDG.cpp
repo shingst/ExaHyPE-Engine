@@ -83,7 +83,7 @@ void referenceSolution(const double* const x,const double t,double* const Q) {
   constexpr double v0    = 0.5;
   constexpr double width = 0.3;
 
-  const double distX    = x[0] - 0.5 - v0 * t;
+  const double distX    = x[0] - 0.33 - v0 * t; // Difference to other project
   const double distY    = x[1] - 0.5;
   const double distance = std::sqrt(distX*distX + distY*distY); 
   
@@ -169,12 +169,12 @@ void Euler::EulerSolver_ADERDG::mapGlobalObservables(
         eL2  += dQ*dQ;
         eLInf = std::max(eLInf,dQ);
       }
-      const double& wx =  kernels::gaussLegendreNodes[Order][ix]; 
-      const double& wy =  kernels::gaussLegendreNodes[Order][iy];
-      const double w = wx*wy;
+      const double& wx =  kernels::gaussLegendreWeights[Order][ix]; 
+      const double& wy =  kernels::gaussLegendreWeights[Order][iy];
+      const double J_w = wx*wy*cellSize[0]*cellSize[1];
 
-      globalObservables.eL1()   += eL1*w;
-      globalObservables.eL2()   += eL2*w;
+      globalObservables.eL1()   += eL1*J_w;
+      globalObservables.eL2()   += eL2*J_w;
       globalObservables.eLInf() = std::max(globalObservables.eLInf(),eLInf);
     }
   }
@@ -183,9 +183,9 @@ void Euler::EulerSolver_ADERDG::mapGlobalObservables(
 void Euler::EulerSolver_ADERDG::mergeGlobalObservables(
     GlobalObservables&         globalObservables,
     ReadOnlyGlobalObservables& otherObservables) const {
-  globalObservables.eL1() += otherObservables.eL1();
-  globalObservables.eL2() += otherObservables.eL2();
-  globalObservables.eL2()  = std::max(globalObservables.eL2(),otherObservables.eL2());
+  globalObservables.eL1()   += otherObservables.eL1();
+  globalObservables.eL2()   += otherObservables.eL2();
+  globalObservables.eLInf()  = std::max(globalObservables.eLInf(),otherObservables.eLInf());
 }
 
 void Euler::EulerSolver_ADERDG::wrapUpGlobalObservables(GlobalObservables& globalObservables) const {
@@ -194,7 +194,8 @@ void Euler::EulerSolver_ADERDG::wrapUpGlobalObservables(GlobalObservables& globa
   
 void Euler::EulerSolver_ADERDG::beginTimeStep(const double minTimeStamp,const bool isFirstTimeStepOfBatchOrNoBatch) {
   ReadOnlyGlobalObservables observables = getGlobalObservables();
-  logInfo("beginTimeStep(...)","eL1="  <<observables.eL1());
-  logInfo("beginTimeStep(...)","eL2="  <<observables.eL2());
-  logInfo("beginTimeStep(...)","eLInf="<<observables.eL2());
+  logInfo("beginTimeStep(...)","errors/time=" <<minTimeStamp);
+  logInfo("beginTimeStep(...)","errors/eL1="  <<observables.eL1());
+  logInfo("beginTimeStep(...)","errors/eL2="  <<observables.eL2());
+  logInfo("beginTimeStep(...)","errors/eLInf="<<observables.eLInf());
 }

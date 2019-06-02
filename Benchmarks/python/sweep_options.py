@@ -374,6 +374,7 @@ module load intel/xe_2018.2
 module load gcc/7.3.0
 module load python/3.6.8
 module load likwid
+module unload gcc/8.2.0
 
 export TBB_SHLIB="-L/ddn/apps/Cluster-Apps/intel/xe_2018.2/tbb/lib/intel64/gcc4.7 -ltbb"
 

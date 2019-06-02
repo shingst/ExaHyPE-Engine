@@ -3,8 +3,9 @@
   "paths": {
     "output_directory": "./ApplicationExamples/ThesisCharrier/ConvergenceFused"
   },
+  "architecture": "{{architecture}}",
   "computational_domain": {
-    "dimension": 2,
+    "dimension": {{dimension}},
     "end_time": 1.0,
     "offset": [
       0.0,
@@ -12,16 +13,19 @@
       0.0
     ],
     "width": [
-      1.5,
+      1.0,
       1.0,
       1.0
-    ]
+    ],
+    "outside_cells_left": 0,
+    "outside_cells_right": 0
   },
   "shared_memory": {
-    "cores": 1
+    "cores": {{coresPerRank}},
+    "background_job_consumers": {{consumerTasks}}
   },
   "optimisation": {
-    "fuse_algorithmic_steps": "{{order}}",
+    "fuse_algorithmic_steps": "{{fused}}",
     "fuse_algorithmic_steps_rerun_factor": {{fusedFactor}},
     "fuse_algorithmic_steps_diffusion_factor": {{fusedFactor}}
   },
