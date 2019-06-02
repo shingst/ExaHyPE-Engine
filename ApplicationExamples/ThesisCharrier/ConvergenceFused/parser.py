@@ -179,18 +179,18 @@ def parseErrors(resultsFolderPath,projectName,compressTable):
                     row.append(cores)
                     row.append(consumerTasks)
                     row.append(run)
-                    row.append(min(eL1))
-                    row.append(max(eL1))
-                    row.append(statistics.mean(eL1))
-                    row.append(statistics.stdev(eL1))
-                    row.append(min(eL2))
-                    row.append(max(eL2))
-                    row.append(statistics.mean(eL2))
-                    row.append(statistics.stdev(eL2))
-                    row.append(min(eLInf))
-                    row.append(max(eLInf))
-                    row.append(statistics.mean(eLInf))
-                    row.append(statistics.stdev(eLInf))
+                    row.append("%1.2E" % min(eL1))
+                    row.append("%1.2E" % max(eL1))
+                    row.append("%1.2E" % statistics.mean(eL1))
+                    row.append("%1.2E" % statistics.stdev(eL1))
+                    row.append("%1.2E" % min(eL2))
+                    row.append("%1.2E" % max(eL2))
+                    row.append("%1.2E" % statistics.mean(eL2))
+                    row.append("%1.2E" % statistics.stdev(eL2))
+                    row.append("%1.2E" % min(eLInf))
+                    row.append("%1.2E" % max(eLInf))
+                    row.append("%1.2E" % statistics.mean(eLInf))
+                    row.append("%1.2E" % statistics.stdev(eLInf))
                     row.append(fileName)
                     csvwriter.writerow(row)
 
@@ -233,6 +233,8 @@ def parseErrorsFromResultsFile(resultsFile):
     eLInf = []
     environmentDict = None
     parameterDict = None   
+
+    re_float=r"[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?"
  
     with open(resultsFile, 'r') as f:
         for l in f.readlines():
@@ -243,25 +245,13 @@ def parseErrorsFromResultsFile(resultsFile):
                 value = l.replace("sweep/parameters=","")
                 parameterDict=json.loads(value)
             if "errors/time=" in l:
-                ex = re.compile(r"errors/time=(\d+\.?\d+)")
-                match = ex.search(l)
-                if match:
-                    time.append(float(match.group(1)))
+                time.append(float(l.split("=")[-1]))
             if "errors/eL1=" in l:
-                ex = re.compile(r"errors/eL1=(\d+\.?\d+)")
-                match = ex.search(l)
-                if match:
-                    eL1.append(float(match.group(1)))
+                eL1.append(float(l.split("=")[-1]))
             if "errors/eL2=" in l:
-                ex = re.compile(r"errors/eL2=(\d+\.?\d+)")
-                match = ex.search(l)
-                if match:
-                    eL2.append(float(match.group(1)))
+                eL2.append(float(l.split("=")[-1]))
             if "errors/eLInf=" in l:
-                ex = re.compile(r"errors/eLInf=(\d+\.?\d+)")
-                match = ex.search(l)
-                if match:
-                    eLInf.append(float(match.group(1)))
+                eLInf.append(float(l.split("=")[-1]))
 
     if len(eL1):
         return environmentDict,parameterDict,time,eL1,eL2,eLInf
