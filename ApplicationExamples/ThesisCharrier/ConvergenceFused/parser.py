@@ -179,15 +179,15 @@ def parseErrors(resultsFolderPath,projectName,compressTable):
                     row.append(cores)
                     row.append(consumerTasks)
                     row.append(run)
-                    row.append("%1.2E" % min(eL1))
+                    row.append("%1.2E" % min([x for x in eL1 if abs(x)>1e-15]))
                     row.append("%1.2E" % max(eL1))
                     row.append("%1.2E" % statistics.mean(eL1))
                     row.append("%1.2E" % statistics.stdev(eL1))
-                    row.append("%1.2E" % min(eL2))
+                    row.append("%1.2E" % min([x for x in eL2 if abs(x)>1e-15]))
                     row.append("%1.2E" % max(eL2))
                     row.append("%1.2E" % statistics.mean(eL2))
                     row.append("%1.2E" % statistics.stdev(eL2))
-                    row.append("%1.2E" % min(eLInf))
+                    row.append("%1.2E" % min([x for x in eLInf if abs(x)>1e-15]))
                     row.append("%1.2E" % max(eLInf))
                     row.append("%1.2E" % statistics.mean(eLInf))
                     row.append("%1.2E" % statistics.stdev(eLInf))
@@ -256,7 +256,7 @@ def parseErrorsFromResultsFile(resultsFile):
     if len(eL1):
         return environmentDict,parameterDict,time,eL1,eL2,eLInf
     else:
-        return environmentDict,parameterDict,[-1],[-1],[-1],[-1]
+        return environmentDict,parameterDict,[-1,-1],[-1,-1],[-1,-1],[-1,-1]
       
 
 def parseArgs():
