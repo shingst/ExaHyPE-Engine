@@ -4748,14 +4748,16 @@ void exahype::solvers::ADERDGSolver::progressStealing(exahype::solvers::ADERDGSo
   //static std::atomic<int> postedReceives=0;
 
   MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, comm, &receivedTask, &stat);
+#if defined(StealingNoEarlyReceiveBacks)
   MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, commMapped, &receivedTaskBack, &statMapped);
-
+#endif
   double time = -MPI_Wtime();
 
   bool terminateImmediately = false;
 
   while( (receivedTask || receivedTaskBack) && iprobesCounter<MaxIprobesInStealingProgress && !terminateImmediately ) {
     iprobesCounter++;
+#if defined(StealingNoEarlyReceiveBacks)
     if(receivedTaskBack && (statMapped.MPI_TAG!=lastRecvBackTag || statMapped.MPI_SOURCE!=lastRecvBackSrc)) {
       lastRecvBackSrc = statMapped.MPI_SOURCE;
       lastRecvBackTag = statMapped.MPI_TAG;
@@ -4781,11 +4783,12 @@ void exahype::solvers::ADERDGSolver::progressStealing(exahype::solvers::ADERDGSo
           exahype::stealing::StealingManager::getInstance().submitRequests(
             recvRequests, 4, statMapped.MPI_TAG, statMapped.MPI_SOURCE,
           exahype::solvers::ADERDGSolver::StealablePredictionJob::receiveBackHandler,
-          exahype::stealing::RequestType::receiveBack, solver, true);
+          exahype::stealing::RequestType::receiveBack, solver, false);
     }
     MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, commMapped, &receivedTaskBack, &statMapped);
+#endif
 
-    MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, comm, &receivedTask, &stat);
+//    MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, comm, &receivedTask, &stat);
 
 #ifdef StealingUseProgressTask
     if(receivedTask && stat.MPI_TAG==0) {
@@ -4935,8 +4938,9 @@ bool exahype::solvers::ADERDGSolver::tryToReceiveTaskBack(exahype::solvers::ADER
     return true;
   }
 
-  exahype::stealing::StealingManager::getInstance().progressRequests();
+  return exahype::stealing::StealingManager::getInstance().progressReceiveBackRequests();
 
+#if defined(StealingNoEarlyReceiveBacks)
   int tag, srcRank, myRank;
   myRank = tarch::parallel::Node::getInstance().getRank();
   if(cellDescription==nullptr) {
@@ -4984,10 +4988,13 @@ bool exahype::solvers::ADERDGSolver::tryToReceiveTaskBack(exahype::solvers::ADER
       lock.free();
       return true;
   }
-
   // now, a different thread can progress the stealing
   lock.free();
   return false;
+#else
+  lock.free();
+  return true;
+#endif
   //return exahype::stealing::StealingManager::getInstance().hasOutstandingRequestOfType(exahype::stealing::RequestType::receiveBack);
 }
 
@@ -5789,6 +5796,31 @@ void exahype::solvers::ADERDGSolver::StealablePredictionJob::sendHandler(exahype
   a_tagToMeta.release();
   static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagToMetaData.erase(tag);
   delete[] metaData;
+
+
+#if !defined(StealingNoEarlyReceiveBacks)
+  logInfo("sendHandler","posting Irecv back early");
+  MPI_Comm commMapped = exahype::stealing::StealingManager::getInstance().getMPICommunicatorMapped();
+  tbb::concurrent_hash_map<int, CellDescription*>::accessor a_tagToCellDesc;
+  bool found = static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagToCellDesc.find(a_tagToCellDesc, tag);
+  assertion(found);
+  auto cellDescription = a_tagToCellDesc->second;
+  a_tagToCellDesc.release();
+  double *luh    = static_cast<double*>(cellDescription->getSolution());
+  double *lduh   = static_cast<double*>(cellDescription->getUpdate());
+  double *lQhbnd = static_cast<double*>(cellDescription->getExtrapolatedPredictor());
+  double *lFhbnd = static_cast<double*>(cellDescription->getFluctuation());
+
+  MPI_Request recvRequests[4];
+  static_cast<exahype::solvers::ADERDGSolver*> (solver)->irecvStealablePredictionJob(
+      luh, lduh, lQhbnd,
+      lFhbnd, remoteRank, tag, commMapped, recvRequests);
+  exahype::stealing::StealingManager::getInstance().submitRequests(
+      recvRequests, 4, tag, remoteRank,
+      exahype::solvers::ADERDGSolver::StealablePredictionJob::receiveBackHandler,
+      exahype::stealing::RequestType::receiveBack, solver, false);
+#endif
+
 }
 #endif
 

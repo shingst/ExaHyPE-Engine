@@ -1253,17 +1253,21 @@ public:
 #if !defined(StealingUseProgressThread)
        if( !cellDescription.getHasCompletedLastStep()
          //&& tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs()==1
-         && !hasTriggeredEmergency
-         //&& !progress
+         //&& !hasTriggeredEmergency
+         && !progress
          && myRank!=responsibleRank
-         && stealingTreatment)
+         && stealingTreatment
+         && ( exahype::solvers::ADERDGSolver::NumberOfEnclaveJobs 
+             -exahype::solvers::ADERDGSolver::NumberOfRemoteJobs)==0
+       )
          //&& exahype::solvers::ADERDGSolver::NumberOfReceiveBackJobs==0)
          //&& !exahype::stealing::StealingManager::getInstance().getRunningAndReceivingBack())
 #else
        if( !cellDescription.getHasCompletedLastStep()
-         && !hasTriggeredEmergency
+         //&& !hasTriggeredEmergency
          && myRank!=responsibleRank
-         && stealingTreatment)
+         && stealingTreatment
+         && !hasProcessed)
 #endif
        {
 #ifdef USE_ITAC

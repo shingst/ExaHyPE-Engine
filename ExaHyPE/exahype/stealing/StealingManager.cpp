@@ -260,14 +260,15 @@ void exahype::stealing::StealingManager::submitRequests(
 void exahype::stealing::StealingManager::createRequestArray(
     RequestType type,
     std::vector<MPI_Request> &requests,
-    std::unordered_map<int, int> &map) {
+    std::unordered_map<int, int> &map,
+    int limit) {
 
   int mapId = requestTypeToMap(type);
 
   bool gotOne = true;
   int j = 0;
 
-  while(gotOne) {
+  while(gotOne && j<limit) {
     int req_id;
     gotOne = _requests[mapId].try_pop(req_id);
     if(gotOne) {
@@ -377,6 +378,10 @@ void exahype::stealing::StealingManager::progressAnyRequests() {
   }
 }
 
+bool exahype::stealing::StealingManager::progressReceiveBackRequests() {
+  return progressRequestsOfType( RequestType::receiveBack );
+}
+
 bool exahype::stealing::StealingManager::progressRequestsOfType( RequestType type ) {
 
   // First, we ensure here that only one thread at a time progresses stealing
@@ -415,7 +420,11 @@ bool exahype::stealing::StealingManager::progressRequestsOfType( RequestType typ
   int nRequests = _currentOutstandingRequests[mapId].size();
   if(nRequests==0) {
     //logInfo("progressRequestsOfType()", "begin create req array");
-    createRequestArray( type, _currentOutstandingRequests[mapId], _currentOutstandingVecIdxToReqid[mapId] );
+    if(type==RequestType::receiveBack)
+      createRequestArray( type, _currentOutstandingRequests[mapId], _currentOutstandingVecIdxToReqid[mapId], 10 );
+    else {  
+      createRequestArray( type, _currentOutstandingRequests[mapId], _currentOutstandingVecIdxToReqid[mapId] );
+    }
     nRequests = _currentOutstandingRequests[mapId].size();
     //logInfo("progressRequestsOfType()", "end create req array");
   }
@@ -447,9 +456,9 @@ bool exahype::stealing::StealingManager::progressRequestsOfType( RequestType typ
   if(type==RequestType::receive)
      logInfo("progressRequestsOfType()", "progressing receives");
   if(type==RequestType::sendBack)
-     logInfo("progressRequestsOfType()", "progressing send back");
-  if(type==RequestType::receiveBack)
-     logInfo("progressRequestsOfType()", "progressing receive back");*/
+     logInfo("progressRequestsOfType()", "progressing send back");*/
+  //if(type==RequestType::receiveBack)
+  //   logInfo("progressRequestsOfType()", "progressing receive back "<<nRequests);
   //TODO: keine Statusse
   int ierr = MPI_Testsome(nRequests,&_currentOutstandingRequests[mapId][0], &outcount, &arrOfIndices[0], MPI_STATUSES_IGNORE);
 
@@ -556,7 +565,7 @@ bool exahype::stealing::StealingManager::progressRequestsOfType( RequestType typ
 
   lock.free();  
 
-  return true;
+  return outcount>0;
 }
 
 void exahype::stealing::StealingManager::triggerVictimFlag() {

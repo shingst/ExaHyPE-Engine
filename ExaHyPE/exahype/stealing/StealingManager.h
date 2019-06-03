@@ -109,8 +109,9 @@ class exahype::stealing::StealingManager {
      */
     void createRequestArray(
         RequestType type,
-		std::vector<MPI_Request> &requests,
-		std::unordered_map<int, int> &vecIdToReqId);
+	std::vector<MPI_Request> &requests,
+	std::unordered_map<int, int> &vecIdToReqId,
+        int limit = std::numeric_limits<int>::max());
 
     // for all stealing-related communication, a separate MPI communicator is used (needs to be created in runGlobalStep())
     MPI_Comm _stealingComm;
@@ -190,6 +191,7 @@ class exahype::stealing::StealingManager {
 		bool block=false);
     void progressRequests();
     void progressAnyRequests();
+    bool progressReceiveBackRequests();
     bool hasOutstandingRequestOfType(RequestType requestType);
 
     void createMPICommunicator();
