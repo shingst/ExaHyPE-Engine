@@ -865,11 +865,12 @@ if __name__ == "__main__":
     import time 
 
     import sweep_analysis
+    import sweep_analysis_reductions
     import sweep_options
     
     subprograms = [\
 "build","buildMissing","buildLocally","link","scripts","submit","submitAll","submitRepeatedly","cancel","parseAdapters",\
-"parseTotalTimes","parseTimeStepTimes","parseMetrics","parseJobStatistics",\
+"parseTotalTimes","parseTimeStepTimes","parseMetrics","parseJobStatistics" "parseReducedValues",\
 "cleanBuild", "cleanScripts","cleanResults","cleanHistory","cleanAll",\
 "iniTemplate","jobTemplate"]
     
@@ -902,12 +903,14 @@ available subprograms:
 * parseMetrics          - read the job output and parse likwid metrics
 * parseJobStatistics    - read background job processing stastistics. 
                           Requires that executables are built with "-DTBB_USE_THREADING_TOOLS=1".
+* parseReducedValues    - parse key-value pairs in the output file which must be written as 'sweep/reduce/<key>=<value>', where value is an int or float number.
+                          The parser then computes min,max,average and standard deviation from all values it finds for a certain key.
 * cleanAll              - remove the whole sweep benchmark suite
 * cleanBuild            - remove the build subfolder
 * cleanScripts          - remove the scripts subfolder
 * cleanResults          - remove the results subfolder
 * cleanHistory          - clean the submission history
-* iniTemplate          - print out template for ini file
+* iniTemplate           - print out template for ini file
 * jobTemplate <machine> - print out job template file for supercomputer. Supported: "supermuc", "supermuc-skx", "hamilton"
 
 2) typical workflow:
@@ -1050,7 +1053,7 @@ It must further contain at least one of the following sections:
             print("Waiting till submit subprogram is called next ... ")
             print("Loop continues till all jobs have been accepted by scheduler.")
             print("Print press CTRL+C to abort.")
-            time.sleep(20*60) # seconds
+            time.sleep(5*60) # seconds
     elif subprogram == "submitAll":
         submitJobs(submitAllJobs=True)
     elif subprogram == "cancel":
@@ -1065,3 +1068,5 @@ It must further contain at least one of the following sections:
         sweep_analysis.parseMetrics(resultsFolderPath,projectName,compressTable)
     elif subprogram == "parseJobStatistics":
         sweep_analysis.parseJobStatistics(resultsFolderPath,projectName,compressTable)
+    elif subprogram == "parseReducedValues":
+        sweep_analysis_reductions.parseReducedValues(resultsFolderPath,projectName,compressTable)
