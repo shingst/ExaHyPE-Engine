@@ -26,6 +26,9 @@ private:
   static tarch::logging::Log _log;
 
 public:
+  static void referenceSolution(const double* const x,const double t,double* const Q);
+
+
   EulerSolver_ADERDG(const double maximumMeshSize,int maximumAdaptiveMeshDepth,const int haloCells,const int regularisedFineGridLevels,const exahype::solvers::Solver::TimeStepping timeStepping,const int DMPObservables);
 
   /**

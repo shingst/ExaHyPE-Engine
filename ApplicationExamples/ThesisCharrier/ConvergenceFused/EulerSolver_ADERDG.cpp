@@ -25,6 +25,8 @@
 
 #include "kernels/KernelUtils.h"
 
+#include "kernels/DGBasisFunctions.h"
+
 #include "kernels/GaussLegendreQuadrature.h"
 
 tarch::logging::Log Euler::EulerSolver_ADERDG::_log("Euler::EulerSolver_ADERDG");
@@ -77,21 +79,17 @@ void Euler::EulerSolver_ADERDG::eigenvalues(const double* const Q,
  *
  * See also chapter 7.13.2 in "I do like CFD, VOL.1" by Katate Masatsuka.
  */
-void referenceSolution(const double* const x,const double t,double* const Q) {
+void Euler::EulerSolver_ADERDG::referenceSolution(const double* const x,const double t,double* const Q) {
   constexpr double gamma = 1.4;
   constexpr double p     = 1.0;
-  constexpr double v0    = 0.5;
+  constexpr double v[2]  = {0.25,0.25};
   constexpr double width = 0.3;
 
-  const double distX    = x[0] - 0.33 - v0 * t; // Difference to other project
-  const double distY    = x[1] - 0.5;
-  const double distance = std::sqrt(distX*distX + distY*distY); 
-  
-  Q[0] = 0.5 + 1.0 * std::exp(-distance / std::pow(width, DIMENSIONS));
-  Q[1] = Q[0] * v0;
-  Q[2] = 0;
-  // total energy = internal energy + kinetic energy
-  Q[3] = p / (gamma-1)  +  0.5*Q[0] * (v0*v0); 
+  Q[0] = 1 + 0.1 *std::sin(30*M_PI*((x[0]-v[0]*t) + (x[1]-v[1]*t))); 
+  Q[1] = Q[0] * v[0];
+  Q[2] = Q[0] * v[1];
+  //// total energy = internal energy + kinetic energy
+  Q[3] = p / (gamma-1)  +  0.5*Q[0] * (v[0]*v[0]+v[1]*v[1]); 
 }
 
 void Euler::EulerSolver_ADERDG::adjustPointSolution(const double* const x,const double t,const double dt, double* const Q) {
@@ -121,13 +119,21 @@ Euler::EulerSolver_ADERDG::refinementCriterion(
 }
 
 void Euler::EulerSolver_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int direction,const double* const fluxIn,const double* const stateIn,const double* const gradStateIn,double* const fluxOut,double* const stateOut) {
-  referenceSolution(x,t+0.5*dt,stateOut);
+  double Q[NumberOfVariables]     = {0.0};
+  double _F[3][NumberOfVariables] = {0.0};
+  double* F[3] = {_F[0],_F[1],_F[2]};
   
-  double _F[3][NumberOfVariables]={0.0};
-  double* F[3] = {_F[0], _F[1], _F[2]};
-  flux(stateOut,F);
-  for (int i=0; i<NumberOfVariables; i++) {
-    fluxOut[i] = F[direction][i];
+  // initialise
+  std::fill_n(stateOut, NumberOfVariables, 0.0);
+  std::fill_n(fluxOut,  NumberOfVariables, 0.0);
+  for (int i=0; i<Order+1; i++) {
+    const double ti = t + dt * kernels::gaussLegendreNodes[Order][i];
+    referenceSolution(x,ti,Q);
+    flux(Q,F);
+    for (int v=0; v<NumberOfVariables; v++) {
+      stateOut[v] += Q[v]            * kernels::gaussLegendreWeights[Order][i];
+      fluxOut[v]  += F[direction][v] * kernels::gaussLegendreWeights[Order][i];
+    }
   }
 }
 
@@ -144,37 +150,49 @@ void Euler::EulerSolver_ADERDG::mapGlobalObservables(
     const tarch::la::Vector<DIMENSIONS,double>& cellSize,
     const double t,
     const double dt) const {
-  for (int iy=0; iy<Order+1; iy++) { // loop over all nodes
-    for (int ix=0; ix<Order+1; ix++) { // loop over all nodes
+  constexpr int QuadOrder = 9;
+  const auto cellOffset = cellCentre - 0.5 * cellSize;
+  for (int iy=0; iy<QuadOrder+1; iy++) { // loop over all nodes
+    for (int ix=0; ix<QuadOrder+1; ix++) { // loop over all nodes
+      // quadrature values
+      int    i[DIMENSIONS] = {ix,iy};
+      double x[DIMENSIONS] = {0.0};
+      double J_w = 1.0;
+      for (int d=0; d<DIMENSIONS; d++) {
+	x[d] = cellOffset[d] + cellSize[d] * kernels::gaussLegendreNodes[QuadOrder][i[d]]; 
+        J_w *= kernels::gaussLegendreWeights[QuadOrder][i[d]] * cellSize[d];
+      } 
       // reference values
-      const double xi = (cellCentre[0] - cellSize[0]*0.5) + 
-          cellSize[0] * kernels::gaussLegendreNodes[Order][ix]; 
-      const double yi = (cellCentre[1] - cellSize[1]*0.5) + 
-          cellSize[1] * kernels::gaussLegendreNodes[Order][iy]; 
-      const double x[DIMENSIONS] = {xi,yi};
       double Qana[NumberOfVariables] = {0.0};
       referenceSolution(x,t,Qana);
       
       // solution values
-      const int i = iy*(Order+1) + ix;
-      const double*Q = luh + i*NumberOfVariables;
-
+      double Q[NumberOfVariables] = {0.0};
+      for (int v=0; v < NumberOfVariables; v++) {
+        Q[v] = kernels::interpolate(
+          cellOffset.data(),
+          cellSize.data(),
+          x,
+          NumberOfVariables,
+          v,
+          Order,
+          luh
+        );
+      }
+      
       // errors 
       double eL1   = 0;
       double eL2   = 0;
       double eLInf = 0;
       for (int v=0; v<NumberOfVariables; v++) {
         const double dQ = std::abs(Q[v]-Qana[v]);
-        eL1  += dQ;
-        eL2  += dQ*dQ;
+        eL1  += dQ*J_w;
+        eL2  += dQ*dQ*J_w;
         eLInf = std::max(eLInf,dQ);
       }
-      const double& wx =  kernels::gaussLegendreWeights[Order][ix]; 
-      const double& wy =  kernels::gaussLegendreWeights[Order][iy];
-      const double J_w = wx*wy*cellSize[0]*cellSize[1];
 
-      globalObservables.eL1()   += eL1*J_w;
-      globalObservables.eL2()   += eL2*J_w;
+      globalObservables.eL1()   += eL1;
+      globalObservables.eL2()   += eL2;
       globalObservables.eLInf() = std::max(globalObservables.eLInf(),eLInf);
     }
   }
@@ -194,8 +212,8 @@ void Euler::EulerSolver_ADERDG::wrapUpGlobalObservables(GlobalObservables& globa
   
 void Euler::EulerSolver_ADERDG::beginTimeStep(const double minTimeStamp,const bool isFirstTimeStepOfBatchOrNoBatch) {
   ReadOnlyGlobalObservables observables = getGlobalObservables();
-  logInfo("beginTimeStep(...)","errors/time=" <<minTimeStamp);
-  logInfo("beginTimeStep(...)","errors/eL1="  <<observables.eL1());
-  logInfo("beginTimeStep(...)","errors/eL2="  <<observables.eL2());
-  logInfo("beginTimeStep(...)","errors/eLInf="<<observables.eLInf());
+  logInfo("beginTimeStep(...)","sweep/reduce/time=" <<minTimeStamp);
+  logInfo("beginTimeStep(...)","sweep/reduce/eL1="  <<observables.eL1());
+  logInfo("beginTimeStep(...)","sweep/reduce/eL2="  <<observables.eL2());
+  logInfo("beginTimeStep(...)","sweep/reduce/eLInf="<<observables.eLInf());
 }
