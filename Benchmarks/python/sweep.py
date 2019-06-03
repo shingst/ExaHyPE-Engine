@@ -20,6 +20,7 @@ def haveToPrintHelpMessage(argv):
     """
     result = parseArgument(argv,2) not in subprograms or \
              parseArgument(argv,1)==None
+    
     result = result and parseArgument(argv,1) not in ["iniTemplate","jobTemplate"]
     for arg in argv:
         result = result or ( arg=="-help" or arg=="-h" )
@@ -870,7 +871,7 @@ if __name__ == "__main__":
     
     subprograms = [\
 "build","buildMissing","buildLocally","link","scripts","submit","submitAll","submitRepeatedly","cancel","parseAdapters",\
-"parseTotalTimes","parseTimeStepTimes","parseMetrics","parseJobStatistics" "parseReducedValues",\
+"parseTotalTimes","parseTimeStepTimes","parseMetrics","parseJobStatistics","parseReducedValues",\
 "cleanBuild", "cleanScripts","cleanResults","cleanHistory","cleanAll",\
 "iniTemplate","jobTemplate"]
     

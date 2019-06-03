@@ -131,7 +131,7 @@ def parseReducedValues(resultsFolderPath,projectName,compressTable):
                 environmentDict,parameterDict,reductions = \
                     parseReducedValuesFromResultsFile(resultsFolderPath + "/" + fileName)
 
-                if environmentDict!=None:
+                if environmentDict!=None and len(reductions):
                     # write header
                     if firstFile:
                         header = []
@@ -214,7 +214,7 @@ def parseReducedValues(resultsFolderPath,projectName,compressTable):
     return
 
 def parseReducedValuesFromResultsFile(resultsFile): 
-    reductions = collections.OrderedDict()
+    reductions = {} 
     environmentDict = None
     parameterDict = None   
  
@@ -230,7 +230,7 @@ def parseReducedValuesFromResultsFile(resultsFile):
                 stripped=value = l.replace("sweep/reduce/","")
                 tokens=stripped.split("=")
                 if len(tokens)==2:
-                  key   = tokens[0].strip()
+                  key   = tokens[0].split(" ")[-1].strip()
                   value = tokens[1].strip()
                   try:
                       value=float(value)
@@ -240,6 +240,11 @@ def parseReducedValuesFromResultsFile(resultsFile):
                       reductions[key].append(value)
                   else:
                       reductions[key] = [value]
+
+    # stddev computation requires at least two values
+    for key in reductions:
+        if len(reductions[key])==1:
+             reductions[key].append(reductions[key][0])
 
     return environmentDict,parameterDict,reductions
 
