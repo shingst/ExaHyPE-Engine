@@ -73,6 +73,10 @@
         "scheme": "godunov",
         "implementation": "generic"
       },
+      "global_observables": [
+        {"multiplicity": 1, "name": "dgcells"},
+        {"multiplicity": 1, "name": "fvcells"}
+      ],
       "variables": [
         {
           "name": "rho",
