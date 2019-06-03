@@ -12,7 +12,7 @@
 #SBATCH -e {{error_file}}
 #SBATCH -t {{time}}
 #SBATCH --exclusive
-#SBATCH -p par6.q
+#SBATCH -p {{class}}
 #SBATCH --mem=MaxMemPerNode
 #SBATCH --ntasks={{ranks}}
 #SBATCH --nodes={{nodes}}

@@ -7,18 +7,20 @@
     "dimension": 2,
     "end_time": 1.0,
     "offset": [
-      0.0,
-      0.0,
-      0.0
+      -1.0,
+      -1.0,
+      -1.0
     ],
     "width": [
-      1.5,
-      1.0,
-      1.0
-    ]
+      2.0,
+      2.0,
+      2.0
+    ],
+    "outside_cells_left"  : 0,
+    "outside_cells_right" : 19
   },
   "shared_memory": {
-    "cores": 1
+    "cores": 4
   },
   "optimisation": {
     "fuse_algorithmic_steps": "all",
@@ -30,7 +32,7 @@
       "type": "ADER-DG",
       "name": "EulerSolver_ADERDG",
       "order": 3,
-      "maximum_mesh_size": 0.05,
+      "maximum_mesh_size":  1.9,
       "maximum_mesh_depth": 0,
       "time_stepping": "global",
       "aderdg_kernel": {
@@ -59,7 +61,24 @@
           "multiplicity": 1
         }
       ],
-      "plotters": []
+      "plotters": [
+        {
+          "type": "user::defined",
+          "name": "ErrorWriter",
+          "time": 10.0,
+          "repeat": 0.01,
+          "output": "not-available",
+          "variables": 4
+        },
+        {
+          "type": "vtu::Cartesian::vertices::ascii",
+          "name": "Plotter",
+          "time": 0.0,
+          "repeat": 0.01,
+          "output": "./solution",
+          "variables": 4
+        }
+      ]
     }
   ]
 }

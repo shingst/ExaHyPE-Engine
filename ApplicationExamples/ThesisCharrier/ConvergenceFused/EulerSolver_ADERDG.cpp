@@ -74,18 +74,18 @@ void Euler::EulerSolver_ADERDG::eigenvalues(const double* const Q,
 /**
  * (Smooth solution)
  *
- * Entropy wave is a moving Gaussian matter distribution where it is simple
- * to give an analytic result.
+ * We run the Ma=3.5 test described in [2]. Domain is [-1,1]. 
  *
- * See also chapter 7.13.2 in "I do like CFD, VOL.1" by Katate Masatsuka.
+ * [1] F. J. Hindenlang and G. J. Gassner, On the order reduction of entropy stable DGSEM for the compressible Euler equations, arXiv:1901.05812 [math], Jan. 2019.
+ * [2] J. Chan, On discretely entropy conservative and entropy stable discontinuous Galerkin methods, Journal of Computational Physics, vol. 362, pp. 346-374, Jun. 2018.
  */
 void Euler::EulerSolver_ADERDG::referenceSolution(const double* const x,const double t,double* const Q) {
   constexpr double gamma = 1.4;
   constexpr double p     = 1.0;
-  constexpr double v[2]  = {0.25,0.25};
+  constexpr double v[2]  = {2.5,2.4}; 
   constexpr double width = 0.3;
 
-  Q[0] = 1 + 0.1 *std::sin(30*M_PI*((x[0]-v[0]*t) + (x[1]-v[1]*t))); 
+  Q[0] = 1 + 0.1 *std::sin(M_PI*((x[0]-v[0]*t) + (x[1]-v[1]*t))); 
   Q[1] = Q[0] * v[0];
   Q[2] = Q[0] * v[1];
   //// total energy = internal energy + kinetic energy
