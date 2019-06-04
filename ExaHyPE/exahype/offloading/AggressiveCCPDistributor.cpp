@@ -12,7 +12,7 @@
  **/
 
 #if  defined(SharedTBB)  && defined(Parallel) && defined(DistributedStealing)
-#include "AggressiveCCPDistributor.h"
+#include "exahype/offloading/AggressiveCCPDistributor.h"
 
 #include <algorithm>
 #include <numeric>
@@ -22,9 +22,9 @@
 #include "tarch/parallel/Node.h"
 #include "tarch/timing/Watch.h"
 
-#include "exahype/stealing/StealingProfiler.h"
-#include "exahype/stealing/PerformanceMonitor.h"
-#include "exahype/stealing/StealingAnalyser.h"
+#include "exahype/offloading/StealingProfiler.h"
+#include "exahype/offloading/PerformanceMonitor.h"
+#include "exahype/offloading/StealingAnalyser.h"
 #include "tarch/multicore/Core.h"
 #include "tarch/multicore/tbb/Jobs.h"
 
@@ -274,12 +274,12 @@ void exahype::stealing::AggressiveCCPDistributor::updateLoadDistribution() {
 
   logInfo("updateLoadDistribution()", " critical rank:"<<criticalRank);
   
-  bool isVictim = exahype::stealing::StealingManager::getInstance().isVictim();
+  bool isVictim = exahype::stealing::OffloadingManager::getInstance().isVictim();
   if(myRank == criticalRank && !isVictim) {
      for(int i=0; i<nnodes; i++) {
        if(_idealTasksToOffload[i]>0) {
          //we have a potential victim rank
-         if(!exahype::stealing::StealingManager::getInstance().isBlacklisted(i)) {
+         if(!exahype::stealing::OffloadingManager::getInstance().isBlacklisted(i)) {
           //logInfo("updateLoadDistribution", "tasks for victim "<<i<<" before recomputation:"<<_tasksToOffload[i]<< " ideal: "<<_idealTasksToOffload[i]<< " temp "<<_temperature);
           //logInfo("updateLoadDistribution", "first : "<<(1.0-_temperature)*_tasksToOffload[i]<<" second:"<<_temperature*_idealTasksToOffload[i]);
           _tasksToOffload[i] = std::ceil(std::max((1.0-_temperature), 0.0)*_tasksToOffload[i] + _temperature*_idealTasksToOffload[i]);

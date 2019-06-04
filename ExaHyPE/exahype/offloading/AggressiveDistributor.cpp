@@ -12,7 +12,7 @@
  **/
 
 #if  defined(SharedTBB)  && defined(Parallel) && defined(DistributedStealing)
-#include "AggressiveDistributor.h"
+#include "exahype/offloading/AggressiveDistributor.h"
 
 #include <algorithm>
 #include <numeric>
@@ -21,8 +21,8 @@
 #include "tarch/parallel/Node.h"
 #include "tarch/timing/Watch.h"
 
-#include "exahype/stealing/StealingProfiler.h"
-#include "exahype/stealing/PerformanceMonitor.h"
+#include "exahype/offloading/StealingProfiler.h"
+#include "exahype/offloading/PerformanceMonitor.h"
 #include "tarch/multicore/Core.h"
 #include "tarch/multicore/tbb/Jobs.h"
 
@@ -225,7 +225,7 @@ void exahype::stealing::AggressiveDistributor::updateLoadDistribution() {
     for(int j=0; j<nnodes; j++) {
       if(waitingTimesSnapshot[k+j]>0)
         logInfo("updateLoadDistribution()","rank "<<i<<" waiting for "<<waitingTimesSnapshot[k+j]<<" for rank "<<j);
-      if(waitingTimesSnapshot[k+j]>currentLongestWaitTime && !exahype::stealing::StealingManager::getInstance().isBlacklisted(i)) {
+      if(waitingTimesSnapshot[k+j]>currentLongestWaitTime && !exahype::stealing::OffloadingManager::getInstance().isBlacklisted(i)) {
         currentLongestWaitTime = waitingTimesSnapshot[k+j];
         currentOptimalVictim = i;
       }
@@ -248,7 +248,7 @@ void exahype::stealing::AggressiveDistributor::updateLoadDistribution() {
 
   logInfo("updateLoadDistribution()", "optimal victim: "<<currentOptimalVictim<<" critical rank:"<<criticalRank);
 
-  bool isVictim = exahype::stealing::StealingManager::getInstance().isVictim();
+  bool isVictim = exahype::stealing::OffloadingManager::getInstance().isVictim();
   if(myRank == criticalRank && criticalRank!=currentOptimalVictim) {
     if(!isVictim) {
       int currentTasksCritical = _initialLoadPerRank[criticalRank];
@@ -277,7 +277,7 @@ void exahype::stealing::AggressiveDistributor::updateLoadDistribution() {
 //    }
 //    else if(emergencyTriggered){
 //      //TODO: maybe step back a bit
-//      //exahype::stealing::StealingManager::getInstance().resetEmergency();
+//      //exahype::stealing::OffloadingManager::getInstance().resetEmergency();
 //    }   
 //  }
 

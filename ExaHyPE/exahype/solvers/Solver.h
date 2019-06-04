@@ -61,8 +61,8 @@
 
 #if defined(DistributedStealing)
 #include <tbb/concurrent_queue.h>
-#include "exahype/stealing/DiffusiveDistributor.h"
-#include "exahype/stealing/StealingManager.h"
+#include "exahype/offloading/DiffusiveDistributor.h"
+#include "exahype/offloading/OffloadingManager.h"
 
 namespace exahype {
   namespace solvers{
@@ -1275,7 +1275,7 @@ public:
 #endif
          hasTriggeredEmergency = true;
          logInfo("waitUntilCompletedTimeStep()","EMERGENCY: missing from rank "<<responsibleRank);
-         exahype::stealing::StealingManager::getInstance().triggerEmergencyForRank(responsibleRank);
+         exahype::stealing::OffloadingManager::getInstance().triggerEmergencyForRank(responsibleRank);
 #ifdef USE_ITAC
 	 VT_end(event_emergency);
 #endif

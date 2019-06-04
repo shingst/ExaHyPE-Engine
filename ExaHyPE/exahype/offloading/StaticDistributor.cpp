@@ -12,7 +12,7 @@
  **/
 
 #if  defined(SharedTBB)  && defined(Parallel)
-#include "StaticDistributor.h"
+#include "exahype/offloading/StaticDistributor.h"
 
 #include <algorithm>
 #include <numeric>
@@ -21,8 +21,8 @@
 #include "tarch/parallel/Node.h"
 #include "tarch/timing/Watch.h"
 
-#include "exahype/stealing/StealingProfiler.h"
-#include "exahype/stealing/PerformanceMonitor.h"
+#include "exahype/offloading/StealingProfiler.h"
+#include "exahype/offloading/PerformanceMonitor.h"
 #include "tarch/multicore/Core.h"
 #include "tarch/multicore/Jobs.h"
 

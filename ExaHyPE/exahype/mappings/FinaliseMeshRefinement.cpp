@@ -27,12 +27,12 @@
 #include "exahype/mappings/MeshRefinement.h"
 #include "exahype/mappings/RefinementStatusSpreading.h"
 
-#include "exahype/stealing/PerformanceMonitor.h"
 
 #ifdef DistributedStealing
-#include "exahype/stealing/AggressiveDistributor.h"
-#include "exahype/stealing/AggressiveCCPDistributor.h"
-#include "exahype/stealing/AggressiveHybridDistributor.h"
+#include "exahype/offloading/PerformanceMonitor.h"
+#include "exahype/offloading/AggressiveDistributor.h"
+#include "exahype/offloading/AggressiveCCPDistributor.h"
+#include "exahype/offloading/AggressiveHybridDistributor.h"
 #endif
 
 int exahype::mappings::FinaliseMeshRefinement::NumberOfEnclaveCells = 0;

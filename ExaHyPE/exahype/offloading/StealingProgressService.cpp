@@ -13,7 +13,7 @@
 
 #if defined(SharedTBB)  && defined(Parallel) && defined(DistributedStealing)
 
-#include "exahype/stealing/StealingProgressService.h"
+#include "exahype/offloading/StealingProgressService.h"
 #include "tarch/services/ServiceFactory.h"
 #include "tarch/multicore/Jobs.h"
 registerService(exahype::stealing::StealingProgressService);

@@ -28,11 +28,11 @@
 #include "exahype/Vertex.h"
 
 #if defined(DistributedStealing)
-#include "exahype/stealing/StaticDistributor.h"
-#include "exahype/stealing/AggressiveDistributor.h"
-#include "exahype/stealing/AggressiveCCPDistributor.h"
-#include "exahype/stealing/AggressiveHybridDistributor.h"
-#include "exahype/stealing/StealingManager.h"
+#include "exahype/offloading/StaticDistributor.h"
+#include "exahype/offloading/AggressiveDistributor.h"
+#include "exahype/offloading/AggressiveCCPDistributor.h"
+#include "exahype/offloading/AggressiveHybridDistributor.h"
+#include "exahype/offloading/OffloadingManager.h"
 #endif
 
 #if defined(SharedMemoryParallelisation) && defined(PerformanceAnalysis)

@@ -34,7 +34,7 @@
 #include "exahype/records/ADERDGCellDescription.h"
 
 #if defined(DistributedStealing)
-#include "exahype/stealing/StealingManager.h"
+#include "exahype/offloading/OffloadingManager.h"
 #include <tbb/concurrent_hash_map.h>
 #include <tbb/concurrent_queue.h>
 #include <tbb/task.h>

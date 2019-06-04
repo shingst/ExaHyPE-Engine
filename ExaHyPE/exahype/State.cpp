@@ -26,7 +26,7 @@
 
 
 #if defined(DistributedStealing) || defined(AnalyseWaitingTimes)
-#include "exahype/stealing/StealingAnalyser.h"
+#include "exahype/offloading/StealingAnalyser.h"
 #endif
 #include "exahype/mappings/MeshRefinement.h"
 

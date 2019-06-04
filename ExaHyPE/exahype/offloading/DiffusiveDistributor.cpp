@@ -12,7 +12,7 @@
  **/
 
 #if  defined(SharedTBB)  && defined(Parallel) && defined(DistributedStealing)
-#include "DiffusiveDistributor.h"
+#include "exahype/offloading/DiffusiveDistributor.h"
 
 #include <algorithm>
 #include <numeric>
@@ -20,8 +20,8 @@
 #include "tarch/multicore/Lock.h"
 #include "tarch/parallel/Node.h"
 
-#include "exahype/stealing/StealingProfiler.h"
-#include "exahype/stealing/PerformanceMonitor.h"
+#include "exahype/offloading/StealingProfiler.h"
+#include "exahype/offloading/PerformanceMonitor.h"
 #include "tarch/multicore/Core.h"
 #include "tarch/multicore/Jobs.h"
 
@@ -59,8 +59,8 @@ void exahype::stealing::DiffusiveDistributor::updateLoadDistribution() {
 
   //waitingTimesSnapshot[myRank] = waitingTime;
 
-  bool isVictim = exahype::stealing::StealingManager::getInstance().isVictim();
-  bool emergencyTriggered = exahype::stealing::StealingManager::getInstance().isEmergencyTriggered();
+  bool isVictim = exahype::stealing::OffloadingManager::getInstance().isVictim();
+  bool emergencyTriggered = exahype::stealing::OffloadingManager::getInstance().isEmergencyTriggered();
 
   logInfo("updateLoadDistribution()", " isVictim: "<<isVictim<<" emergency event: "<<emergencyTriggered);
 
@@ -77,7 +77,7 @@ void exahype::stealing::DiffusiveDistributor::updateLoadDistribution() {
     bool waitingForSomeone = false;
     for(int j=0; j<nnodes; j++) {
       //logInfo("updateLoadDistribution()","rank "<<i<<" waiting for "<<waitingTimesSnapshot[k+j]<<" for rank "<<j);
-      if(waitingTimesSnapshot[k+j]>currentLongestWaitTime && !exahype::stealing::StealingManager::getInstance().isBlacklisted(i)) {
+      if(waitingTimesSnapshot[k+j]>currentLongestWaitTime && !exahype::stealing::OffloadingManager::getInstance().isBlacklisted(i)) {
         currentLongestWaitTime = waitingTimesSnapshot[k+j];
         currentOptimalVictim = i;
       }
@@ -123,7 +123,7 @@ void exahype::stealing::DiffusiveDistributor::updateLoadDistribution() {
           logInfo("updateLoadDistribution()", "decrement, send "<<_tasksToOffload[i]<<" to rank "<<i );
         }
       }
-      //exahype::stealing::StealingManager::getInstance().resetEmergency();
+      //exahype::stealing::OffloadingManager::getInstance().resetEmergency();
     } */  
   }
   else if(_tasksToOffload[criticalRank]>0) {

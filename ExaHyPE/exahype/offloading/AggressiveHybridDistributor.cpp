@@ -12,7 +12,7 @@
  **/
 
 #if  defined(SharedTBB)  && defined(Parallel) && defined(DistributedStealing)
-#include "AggressiveHybridDistributor.h"
+#include "exahype/offloading/AggressiveHybridDistributor.h"
 
 #include <algorithm>
 #include <numeric>
@@ -22,9 +22,9 @@
 #include "tarch/parallel/Node.h"
 #include "tarch/timing/Watch.h"
 
-#include "exahype/stealing/StealingProfiler.h"
-#include "exahype/stealing/PerformanceMonitor.h"
-#include "exahype/stealing/StealingAnalyser.h"
+#include "exahype/offloading/StealingProfiler.h"
+#include "exahype/offloading/PerformanceMonitor.h"
+#include "exahype/offloading/StealingAnalyser.h"
 #include "exahype/solvers/ADERDGSolver.h"
 #include "tarch/multicore/Core.h"
 #include "tarch/multicore/tbb/Jobs.h"
@@ -251,7 +251,7 @@ void exahype::stealing::AggressiveHybridDistributor::determineOptimalVictim(int 
     for(int j=0; j<nnodes; j++) {
       if(waitingTimesSnapshot[k+j]> exahype::stealing::StealingAnalyser::getInstance().getZeroThreshold()) {
          if(waitingTimesSnapshot[k+j]>currentLongestWaitTimeVictim 
-           && !exahype::stealing::StealingManager::getInstance().isBlacklisted(i)
+           && !exahype::stealing::OffloadingManager::getInstance().isBlacklisted(i)
            && waitingRanks[i]==0) {
       //     && i!=0) { //exclude rank 0 as optimal victim
              currentOptimalVictim = i;
@@ -418,7 +418,7 @@ void exahype::stealing::AggressiveHybridDistributor::updateLoadDistributionCCP()
   for(int i=0; i<nnodes; i++) {
     if(_idealTasksToOffload[i]>0) {
       //we have a potential victim rank
-//     if(!exahype::stealing::StealingManager::getInstance().isBlacklisted(i)) {
+//     if(!exahype::stealing::OffloadingManager::getInstance().isBlacklisted(i)) {
       logDebug("updateLoadDistributionCCP", "offloading to "<<i<<" tasks "<<_temperatureCCP*_idealTasksToOffload[i]);
       _optimalTasksPerRank[i] = _idealTasksToOffload[i];
       _tasksToOffload[i] = std::ceil(std::max((1.0-_temperatureCCP), 0.0)*_tasksToOffload[i] + _temperatureCCP*_idealTasksToOffload[i]);
@@ -452,7 +452,7 @@ void exahype::stealing::AggressiveHybridDistributor::updateLoadDistributionDiffu
 
 #ifndef DistributedStealingDisable
 
-  bool isVictim = exahype::stealing::StealingManager::getInstance().isVictim();
+  bool isVictim = exahype::stealing::OffloadingManager::getInstance().isVictim();
   if(currentOptimalVictim>=0 && myRank == currentCriticalRank && currentCriticalRank!=currentOptimalVictim) {
     if(!isVictim) {
       int currentTasksCritical = _initialLoadPerRank[currentCriticalRank];
@@ -516,7 +516,7 @@ bool exahype::stealing::AggressiveHybridDistributor::selectVictimRank(int& victi
 #ifdef StealingUseProgressTask
   if(victim == myRank) 
     last = true;
-    //exahype::stealing::StealingManager::getInstance().notifyAllVictimsSendCompletedIfNotNotified();
+    //exahype::stealing::OffloadingManager::getInstance().notifyAllVictimsSendCompletedIfNotNotified();
 #endif
 
   int threshold = 1+std::max(1, tarch::multicore::Core::getInstance().getNumberOfThreads()-1)*tarch::multicore::jobs::internal::_minimalNumberOfJobsPerConsumerRun;

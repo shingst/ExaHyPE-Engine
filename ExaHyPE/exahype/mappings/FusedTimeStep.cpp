@@ -29,10 +29,10 @@
 #include "exahype/mappings/Prediction.h"
 
 #ifdef DistributedStealing
-#include "exahype/stealing/PerformanceMonitor.h"
-#include "exahype/stealing/StaticDistributor.h"
-#include "exahype/stealing/DiffusiveDistributor.h"
-#include "exahype/stealing/StealingAnalyser.h"
+#include "exahype/offloading/PerformanceMonitor.h"
+#include "exahype/offloading/StaticDistributor.h"
+#include "exahype/offloading/DiffusiveDistributor.h"
+#include "exahype/offloading/StealingAnalyser.h"
 #endif
 
 tarch::logging::Log exahype::mappings::FusedTimeStep::_log("exahype::mappings::FusedTimeStep");
@@ -189,7 +189,7 @@ void exahype::mappings::FusedTimeStep::beginIteration(
       }
     // Todo:
     //  if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
-    //    static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->StealingManager();
+    //    static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->OffloadingManager();
     //  }
     } 
   }
@@ -237,8 +237,8 @@ void exahype::mappings::FusedTimeStep::endIteration(
   //exahype::stealing::StealingAnalyser::getInstance().endIteration();
 #ifdef StealingUseProgressTask
   if(issuePredictionJobsInThisIteration() ) { 
-    exahype::stealing::StealingManager::getInstance().notifyAllVictimsSendCompletedIfNotNotified();
-    exahype::stealing::StealingManager::getInstance().resetHasNotifiedSendCompleted();
+    exahype::stealing::OffloadingManager::getInstance().notifyAllVictimsSendCompletedIfNotNotified();
+    exahype::stealing::OffloadingManager::getInstance().resetHasNotifiedSendCompleted();
   }
 #endif
 #endif 
@@ -252,7 +252,7 @@ void exahype::mappings::FusedTimeStep::endIteration(
       }
     // Todo:
     //  if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
-    //    static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->pauseStealingManager();
+    //    static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->pauseOffloadingManager();
     //  }
     } 
   }

@@ -51,6 +51,7 @@ class exahype::stealing::StealingProgressService : public tarch::services::Servi
    * The log device of this class.
    */
   static tarch::logging::Log _log;
+
   public:
   StealingProgressService();
   static StealingProgressService& getInstance();

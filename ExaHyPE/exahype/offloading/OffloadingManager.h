@@ -30,7 +30,7 @@
 
 namespace exahype {
   namespace stealing {
-    class StealingManager;
+    class OffloadingManager;
     /**
      * Different MPI request types for prioritizing message requests.
      */
@@ -52,13 +52,14 @@ namespace exahype {
 
 /**
  * The stealing manager manages the created asynchronous MPI requests,
- * e.g., when a task is stolen. In addition, the stealing
+ * e.g., when a task is stolen/offloaded (we use those terms
+ * interchangeably). In addition, the stealing
  * manager serves as a connecting point to the ADERDGSolver
  * for making decisions on whether a task should be stolen or not.
  * Finally it keeps track of some meta information such as the
  * number of emergency events (i.e., local blacklist).
  */
-class exahype::stealing::StealingManager {
+class exahype::stealing::OffloadingManager {
   private:
   /**
    * The logging device.
@@ -94,17 +95,17 @@ class exahype::stealing::StealingManager {
   /**
    * Request queues for each request type.
    */
-  tbb::concurrent_queue<int> _requests[4];
+  tbb::concurrent_queue<int> _outstandingRequests[4];
 
   /**
    * Maps internal integer request id to MPI_Request handle.
    */
-  tbb::concurrent_hash_map<int, MPI_Request> _idToRequest[4];
+  tbb::concurrent_hash_map<int, MPI_Request> _reqIdToReqHandle[4];
 
   /**
    * Maps internal request id to internal group id.
    */
-  tbb::concurrent_hash_map<int, int>         _requestToGroup[4];
+  tbb::concurrent_hash_map<int, int>         _reqIdToGroup[4];
 
   /**
    * Map that tracks how many outstanding requests a request group still has.
@@ -114,12 +115,12 @@ class exahype::stealing::StealingManager {
   /**
    * Maps a group id to the remote rank which its requests belong to.
    */
-  tbb::concurrent_hash_map<int, int>         _remoteRanksForGroup[4];
+  tbb::concurrent_hash_map<int, int>         _groupIdToRank[4];
 
   /**
    * Maps a group id to the MPI tag which its requests belong to.
    */
-  tbb::concurrent_hash_map<int, int>         _remoteTagsForGroup[4];
+  tbb::concurrent_hash_map<int, int>         _groupIdToTag[4];
 
   /**
    * Maps a group id to the handler function which is invoked when
@@ -142,13 +143,13 @@ class exahype::stealing::StealingManager {
    * request queue and - if possible - creates a new
    * vector of outstanding requests.
    */
-  std::vector<MPI_Request> _currentOutstandingRequests[4];
+  std::vector<MPI_Request> _activeRequests[4];
 
   /**
    * This array maps the elements in _currentOutstandingRequests
    * back to the internal request ids.
    */
-  std::unordered_map<int, int> _currentOutstandingVecIdxToReqid[4];
+  std::unordered_map<int, int> _internalIdsOfActiveRequests[4];
 
   // some counters for debugging
   std::atomic<int> *_postedSendsPerRank;
@@ -170,7 +171,7 @@ class exahype::stealing::StealingManager {
   /**
    * Local instance of blacklist.
    */
-  double *_emergencyHeatMap;
+  double *_localBlacklist;
 
   /**
    * Flag indicating whether the rank has notified
@@ -179,19 +180,21 @@ class exahype::stealing::StealingManager {
    */
   bool _hasNotifiedSendCompleted;
 
-  StealingManager();
-  /*
+  OffloadingManager();
+
+  /**
    * This method makes progress on all current requests of the given request type.
    */
   bool progressRequestsOfType(RequestType type);
-  /*
+
+  /**
    * Maps a request type to an integer that defines message queue.
    */
-  static int requestTypeToMap(RequestType requestType);
+  static int requestTypeToMsgQueueIdx(RequestType requestType);
 
-  /*
+  /**
    * This method pop's #limit current requests of a given type from the request queue and
-   * inserts them into the current array of MPI requests on which we can make progress.
+   * inserts them into the active array of MPI requests on which we can make progress.
    */
   void createRequestArray(
       RequestType type,
@@ -199,8 +202,14 @@ class exahype::stealing::StealingManager {
       std::unordered_map<int, int> &vecIdToReqId,
       int limit = std::numeric_limits<int>::max());
 
-  // for all stealing-related communication, a separate MPI communicator is used (needs to be created in runGlobalStep())
+  /**
+   * Communicator for sending/receiving offloaded tasks.
+   */
   MPI_Comm _stealingComm;
+
+  /**
+   * Communicator for sending/receiving results of offloaded tasks.
+   */
   MPI_Comm _stealingCommMapped;
 
   /*
@@ -269,7 +278,8 @@ class exahype::stealing::StealingManager {
   void printPostedRequests();
   void resetPostedRequests();
   int getStealingTag();
-  /*
+
+  /**
    * Submit a group of MPI requests with a given MPI message tag.
    * The handler call back function will be called when the MPI
    * request has been finished where tag and rank can be used to
@@ -285,21 +295,41 @@ class exahype::stealing::StealingManager {
       RequestType type,
       exahype::solvers::Solver *solver,
       bool block=false);
+
   void progressRequests();
   void progressAnyRequests();
   bool progressReceiveBackRequests();
   bool hasOutstandingRequestOfType(RequestType requestType);
 
+  /**
+   * Creates stealing MPI communicators.
+   */
   void createMPICommunicator();
+
+  /**
+   * Destroys stealing MPI communicators.
+   */
   void destroyMPICommunicator();
+
+  /**
+   * Returns MPI communicator used for
+   * distributing load information and
+   * sending/receiving tasks to/from a rank.
+   */
   MPI_Comm getMPICommunicator();
+
+  /**
+   * Return MPI communicator for sending/receiving back
+   * results of an offloaded task.
+   */
   MPI_Comm getMPICommunicatorMapped();
 
-  /*
-   * Given the current load situation and global knowledge of the load
-   * of the other ranks, this method selects a victim rank, i.e.,
+  /**
+   * Given the current load situation and global knowledge of the performance
+   * of the other ranks, this method selects a victim rank for a
+   * stealable task, i.e.,
    * a rank to which local work should be offloaded in order to
-   * improve the load balance.
+   * improve load balance.
    */
   bool selectVictimRank(int& victim, bool& last);
 
@@ -318,13 +348,12 @@ class exahype::stealing::StealingManager {
   bool isEmergencyTriggered();
   bool isEmergencyTriggeredOnRank(int rank);
   void triggerEmergencyForRank(int rank);
-  //void resetEmergency();
 
-  void decreaseHeat();
+  void recoverBlacklistedRanks();
   void printBlacklist();
 
-  static StealingManager& getInstance();
-  virtual ~StealingManager();
+  static OffloadingManager& getInstance();
+  virtual ~OffloadingManager();
 };
 
 #endif

@@ -90,18 +90,18 @@
 #endif
 
 
-#include "exahype/stealing/StealingAnalyser.h"
+#include "exahype/offloading/StealingAnalyser.h"
 
 #if defined(DistributedStealing) 
-#include "exahype/stealing/PerformanceMonitor.h"
+#include "exahype/offloading/PerformanceMonitor.h"
 
 #if defined(StealingStrategyStaticHardcoded)
-#include "exahype/stealing/StaticDistributor.h"
+#include "exahype/offloading/StaticDistributor.h"
 #elif defined(StealingStrategyAggressiveHybrid)
-#include "exahype/stealing/AggressiveHybridDistributor.h"
+#include "exahype/offloading/AggressiveHybridDistributor.h"
 #endif
 
-#include "exahype/stealing/StealingProfiler.h"
+#include "exahype/offloading/StealingProfiler.h"
 #endif
 
 tarch::logging::Log exahype::runners::Runner::_log("exahype::runners::Runner");
@@ -296,7 +296,7 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
     peano::performanceanalysis::Analysis::getInstance().setDevice(&exahype::stealing::StealingAnalyser::getInstance());
 #if defined(DistributedStealing) 
     // Create a new MPI communicator for stealing related MPI communication
-    exahype::stealing::StealingManager::getInstance().createMPICommunicator(); 
+    exahype::stealing::OffloadingManager::getInstance().createMPICommunicator(); 
 
 
 #if defined(StealingStrategyStaticHardcoded)
@@ -964,7 +964,7 @@ int exahype::runners::Runner::run() {
   }
 
   logInfo("shutdownDistributedMemoryConfiguration()","stopped stealing manager");
-  exahype::stealing::StealingManager::getInstance().destroyMPICommunicator(); 
+  exahype::stealing::OffloadingManager::getInstance().destroyMPICommunicator(); 
   logInfo("shutdownDistributedMemoryConfiguration()","destroyed MPI communicators");
 //  exahype::stealing::StealingProfiler::getInstance().endPhase();
 //  logInfo("shutdownDistributedMemoryConfiguration()","ended profiling phase");

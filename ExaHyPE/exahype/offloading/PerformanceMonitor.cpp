@@ -12,7 +12,7 @@
  **/
 
 #if  defined(SharedTBB)  && defined(Parallel) && defined(DistributedStealing)
-#include "PerformanceMonitor.h"
+#include "exahype/offloading/PerformanceMonitor.h"
 
 #include <algorithm>
 #include <numeric>
@@ -21,10 +21,10 @@
 #include "tarch/parallel/Node.h"
 #include "tarch/timing/Watch.h"
 
-#include "exahype/stealing/StealingProfiler.h"
-#include "exahype/stealing/DynamicDistributor.h"
-#include "exahype/stealing/StaticDistributor.h"
-#include "exahype/stealing/StealingManager.h"
+#include "exahype/offloading/StealingProfiler.h"
+#include "exahype/offloading/DynamicDistributor.h"
+#include "exahype/offloading/StaticDistributor.h"
+#include "exahype/offloading/OffloadingManager.h"
 
 
 #define TERMINATE_SIGNAL -1.0
@@ -452,7 +452,7 @@ void exahype::stealing::PerformanceMonitor::postFusedRequest() {
   //  logInfo("postFusedrequest()", "send buffer "<<_currentFusedDataSendBuffer[i]);
 
   int err = MPI_Iallgather(&_currentFusedDataSendBuffer[0], 2*nnodes+1, MPI_DOUBLE, &_currentFusedDataReceiveBuffer[0],
-                   2*nnodes+1, MPI_DOUBLE, exahype::stealing::StealingManager::getInstance().getMPICommunicator(),
+                   2*nnodes+1, MPI_DOUBLE, exahype::stealing::OffloadingManager::getInstance().getMPICommunicator(),
                    &_fusedGatherRequest);// assert(err==MPI_SUCCESS);
 
 }

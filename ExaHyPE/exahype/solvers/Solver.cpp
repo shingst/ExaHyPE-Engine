@@ -13,6 +13,9 @@
  * \author Dominic E. Charrier, Tobias Weinzierl
  **/
  
+#ifdef StealingUseProfiler
+#include "exahype/offloading/StealingProfiler.h"
+#endif
 #include "exahype/solvers/Solver.h"
 
 #include "exahype/Cell.h"
@@ -34,7 +37,6 @@
 
 #include "tarch/timing/Watch.h"
 
-#include "exahype/stealing/StealingProfiler.h"
 #ifdef USE_ITAC
 int exahype::solvers::Solver::waitUntilCompletedLastStepHandle  = 0;
 int exahype::solvers::Solver::ensureAllJobsHaveTerminatedHandle = 0;

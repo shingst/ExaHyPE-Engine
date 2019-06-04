@@ -13,7 +13,7 @@
 
 #if defined(SharedTBB) && defined(Parallel)
 
-#include "StealingProfiler.h"
+#include "exahype/offloading/StealingProfiler.h"
 
 #include "tarch/multicore/Core.h"
 #include "tarch/parallel/Node.h"

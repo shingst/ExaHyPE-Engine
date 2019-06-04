@@ -12,7 +12,7 @@
  **/
 
 #if  defined(SharedTBB)  && defined(Parallel)
-#include "DynamicDistributor.h"
+#include "exahype/offloading/DynamicDistributor.h"
 
 #include <algorithm>
 #include <numeric>
@@ -21,7 +21,7 @@
 #include "tarch/parallel/Node.h"
 #include "tarch/timing/Watch.h"
 
-#include "exahype/stealing/StealingProfiler.h"
+#include "exahype/offloading/StealingProfiler.h"
 #include "tarch/multicore/Core.h"
 
 tarch::logging::Log exahype::stealing::DynamicDistributor::_log( "exahype::stealing::DynamicDistributor" );

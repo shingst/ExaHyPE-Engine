@@ -12,7 +12,7 @@
  **/
 
 #if  defined(SharedTBB)  && defined(Parallel) && (defined(DistributedStealing) || defined(AnalyseWaitingTimes))
-#include "exahype/stealing/StealingAnalyser.h"
+#include "exahype/offloading/StealingAnalyser.h"
 
 #include "tarch/parallel/Node.h"
 #include "tarch/parallel/NodePool.h"
@@ -25,12 +25,12 @@
 #include <thread>
 #include <limits>
 
-#include "exahype/stealing/PerformanceMonitor.h"
-#include "exahype/stealing/DiffusiveDistributor.h"
-#include "exahype/stealing/AggressiveDistributor.h"
-#include "exahype/stealing/AggressiveCCPDistributor.h"
-#include "exahype/stealing/AggressiveHybridDistributor.h"
-#include "exahype/stealing/StealingManager.h"
+#include "exahype/offloading/PerformanceMonitor.h"
+#include "exahype/offloading/DiffusiveDistributor.h"
+#include "exahype/offloading/AggressiveDistributor.h"
+#include "exahype/offloading/AggressiveCCPDistributor.h"
+#include "exahype/offloading/AggressiveHybridDistributor.h"
+#include "exahype/offloading/OffloadingManager.h"
 
 tarch::logging::Log  exahype::stealing::StealingAnalyser::_log( "exahype::stealing::StealingAnalyser" );
 
@@ -163,15 +163,15 @@ void exahype::stealing::StealingAnalyser::beginIteration() {
 #if !defined(AnalyseWaitingTimes)
   if(_iterationCounter%2 !=0) return;
 
-  exahype::stealing::StealingManager::getInstance().resetVictimFlag(); //TODO: correct position here?
-  exahype::stealing::StealingManager::getInstance().decreaseHeat();
+  exahype::stealing::OffloadingManager::getInstance().resetVictimFlag(); //TODO: correct position here?
+  exahype::stealing::OffloadingManager::getInstance().recoverBlacklistedRanks();
 #endif
 }
 
 
 void exahype::stealing::StealingAnalyser::endIteration(double numberOfInnerLeafCells, double numberOfOuterLeafCells, double numberOfInnerCells, double numberOfOuterCells, double numberOfLocalCells, double numberOfLocalVertices) {
 #if !defined(AnalyseWaitingTimes)
-  exahype::stealing::StealingManager::getInstance().printBlacklist();
+  exahype::stealing::OffloadingManager::getInstance().printBlacklist();
   if(_iterationCounter%2 !=0) {
      _iterationCounter++; 
      return;
@@ -200,7 +200,7 @@ void exahype::stealing::StealingAnalyser::endIteration(double numberOfInnerLeafC
   exahype::stealing::AggressiveHybridDistributor::getInstance().printOffloadingStatistics();
   exahype::stealing::AggressiveHybridDistributor::getInstance().updateLoadDistribution();
 #endif
-  exahype::stealing::StealingManager::getInstance().printBlacklist();
+  exahype::stealing::OffloadingManager::getInstance().printBlacklist();
   //exahype::stealing::StealingManager::getInstance().resetPostedRequests();
 
   _iterationCounter++;
