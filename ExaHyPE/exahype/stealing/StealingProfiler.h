@@ -1,3 +1,16 @@
+/**
+ * This file is part of the ExaHyPE project.
+ * Copyright (c) 2016  http://exahype.eu
+ * All rights reserved.
+ *
+ * The project has received funding from the European Union's Horizon
+ * 2020 research and innovation programme under grant agreement
+ * No 671698. For copyrights and licensing, please consult the webpage.
+ *
+ * Released under the BSD 3 Open Source License.
+ * For the full license text, see LICENSE.txt
+ **/
+
 #if !defined(_EXAHYPE_STEALING_STEALINGPROFILER_H_)  
 #define _EXAHYPE_STEALING_STEALINGPROFILER_H_
 
@@ -16,15 +29,14 @@ namespace exahype {
   }
 }
 
-/*
- * This class can be used to measure stealing related performance
+/**
+ * This singleton can be used to measure stealing related performance
  * characteristics during an execution run of ExaHype.
  * These statistics are gathered at runtime and printed at the
  * program exit. The StealingProfiler is enabled with the compile-time
  * flag -DStealingUseProfiler.
  */
 class exahype::stealing::StealingProfiler {
-
   private:
     static tarch::logging::Log _log;
     StealingProfiler();
@@ -66,36 +78,35 @@ class exahype::stealing::StealingProfiler {
     std::atomic<unsigned long long> _accHandlingTime;
     std::atomic<unsigned long long> _accOffloadTime;
 
-    public:
-      static StealingProfiler& getInstance();
-      void beginPhase();
-      void endPhase();
+  public:
+    static StealingProfiler& getInstance();
+    void beginPhase();
+    void endPhase();
 
-      void notifyOffloadedTask(int rank);
-      void notifyTargetOffloadedTask(int ntasks, int rank);
-      void notifyReceivedTask(int rank);
-      void notifySpawnedTask();
-      void notifyPerformanceUpdate();
-      void notifyLatePerformanceUpdate();
-      void notifyStealingDecision();
-      void notifyThresholdFail();
-      void beginComputation();
-	  void endComputation(double elapsed);
+    void notifyOffloadedTask(int rank);
+    void notifyTargetOffloadedTask(int ntasks, int rank);
+    void notifyReceivedTask(int rank);
+    void notifySpawnedTask();
+    void notifyPerformanceUpdate();
+    void notifyLatePerformanceUpdate();
+    void notifyStealingDecision();
+    void notifyThresholdFail();
+    void beginComputation();
+    void endComputation(double elapsed);
 
-	  void beginCommunication();
-	  void endCommunication(bool successful, double elapsed);
+    void beginCommunication();
+    void endCommunication(bool successful, double elapsed);
 
-	  void beginHandling();
-	  void endHandling(double elapsed);
+    void beginHandling();
+    void endHandling(double elapsed);
 
-	  void beginWaitForTasks();
-	  void endWaitForTasks(double elapsed);
+    void beginWaitForTasks();
+    void endWaitForTasks(double elapsed);
 
-	  void beginOffload();
-	  void endOffload(double elapsed);
+    void beginOffload();
+    void endOffload(double elapsed);
 
-	  void printStatistics();
-
+    void printStatistics();
 };
 
 #endif

@@ -1,4 +1,17 @@
-#if  defined(SharedTBB)  && defined(Parallel)
+/**
+ * This file is part of the ExaHyPE project.
+ * Copyright (c) 2016  http://exahype.eu
+ * All rights reserved.
+ *
+ * The project has received funding from the European Union's Horizon
+ * 2020 research and innovation programme under grant agreement
+ * No 671698. For copyrights and licensing, please consult the webpage.
+ *
+ * Released under the BSD 3 Open Source License.
+ * For the full license text, see LICENSE.txt
+ **/
+
+#if defined(SharedTBB) && defined(Parallel)
 
 #include "StealingProfiler.h"
 
@@ -7,38 +20,38 @@
 
 tarch::logging::Log exahype::stealing::StealingProfiler::_log( "exahype::stealing::StealingProfiler" );
 
-exahype::stealing::StealingProfiler::StealingProfiler() :
-    _executedTasksPhase(0),
-    _executedTasks(0),
-    _accUsefulCommunicationPhaseTime(0),
-    _accIdleCommunicationPhaseTime(0),
-    _accComputationPhaseTime(0),
-    _accWaitTasksTime(0),
-    _accWaitTasksPhaseTime(0),
-    _accUsefulCommunicationTime(0),
-    _accIdleCommunicationTime(0),
-    _accComputationTime(0),
-    _accOffloadPhaseTime(0),
-    _accOffloadTime(0),
-    _performanceUpdatesPhase(0),
-    _performanceUpdates(0),
-    _latePerformanceUpdatesPhase(0),
-    _latePerformanceUpdates(0),
-    _spawnedTasks(0),
-    _spawnedTasksPhase(0),
-    _thresholdFailsPhase(0),
-    _thresholdFails(0),
-    _stealingDecisionsPhase(0),
-    _stealingDecisions(0)
+exahype::stealing::StealingProfiler::StealingProfiler():
+_executedTasksPhase(0),
+_executedTasks(0),
+_accUsefulCommunicationPhaseTime(0),
+_accIdleCommunicationPhaseTime(0),
+_accComputationPhaseTime(0),
+_accWaitTasksTime(0),
+_accWaitTasksPhaseTime(0),
+_accUsefulCommunicationTime(0),
+_accIdleCommunicationTime(0),
+_accComputationTime(0),
+_accOffloadPhaseTime(0),
+_accOffloadTime(0),
+_performanceUpdatesPhase(0),
+_performanceUpdates(0),
+_latePerformanceUpdatesPhase(0),
+_latePerformanceUpdates(0),
+_spawnedTasks(0),
+_spawnedTasksPhase(0),
+_thresholdFailsPhase(0),
+_thresholdFails(0),
+_stealingDecisionsPhase(0),
+_stealingDecisions(0)
 {
 #if defined(StealingUseProfiler)
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
-  _offloadedTasksPerRankPhase       = new std::atomic<int>[nnodes];
-  _offloadedTasksPerRank            = new std::atomic<int>[nnodes];
+  _offloadedTasksPerRankPhase = new std::atomic<int>[nnodes];
+  _offloadedTasksPerRank = new std::atomic<int>[nnodes];
   _targetOffloadedTasksPerRankPhase = new std::atomic<int>[nnodes];
-  _targetOffloadedTasksPerRank      = new std::atomic<int>[nnodes];
-  _receivedTasksPerRankPhase        = new std::atomic<int>[nnodes];
-  _receivedTasksPerRank             = new std::atomic<int>[nnodes];
+  _targetOffloadedTasksPerRank = new std::atomic<int>[nnodes];
+  _receivedTasksPerRankPhase = new std::atomic<int>[nnodes];
+  _receivedTasksPerRank = new std::atomic<int>[nnodes];
   std::fill(_offloadedTasksPerRankPhase, _offloadedTasksPerRankPhase+nnodes, 0);
   std::fill(_offloadedTasksPerRank, _offloadedTasksPerRank+nnodes, 0);
   std::fill(_targetOffloadedTasksPerRankPhase, _targetOffloadedTasksPerRankPhase+nnodes, 0);
@@ -178,9 +191,9 @@ void exahype::stealing::StealingProfiler::endCommunication(bool successful, doub
 #if defined(StealingUseProfiler)
   const unsigned long long elapsedTime = elapsed *1E6;
   if(successful)
-  _accUsefulCommunicationPhaseTime+=elapsedTime;
+    _accUsefulCommunicationPhaseTime+=elapsedTime;
   else
-  _accIdleCommunicationPhaseTime+=elapsedTime;
+    _accIdleCommunicationPhaseTime+=elapsedTime;
 #endif
 }
 

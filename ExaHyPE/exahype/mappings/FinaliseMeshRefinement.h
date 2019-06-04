@@ -63,7 +63,6 @@ class exahype::mappings::FinaliseMeshRefinement {
   int _numberOfSkeletonCells;
 
   /**
-<<<<<<< HEAD
    * A minimum time step size for each solver.
    */
   std::vector<double> _minTimeStepSizes;

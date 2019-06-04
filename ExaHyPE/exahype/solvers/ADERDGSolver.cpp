@@ -4666,7 +4666,7 @@ void exahype::solvers::ADERDGSolver::progressStealing(exahype::solvers::ADERDGSo
   //VT_begin(event_progress);
 #endif
 
-  exahype::stealing::StealingManager::getInstance().setRunningAndReceivingBack();
+//  exahype::stealing::StealingManager::getInstance().setRunningAndReceivingBack();
   // 1. send away outstanding tasks (decision to offload them has been made)
 //  OffloadEntry entry;
 //  bool gotOne = _outstandingOffloads.try_pop(entry);
@@ -4894,7 +4894,7 @@ void exahype::solvers::ADERDGSolver::progressStealing(exahype::solvers::ADERDGSo
   //  logInfo("progressStealing","Iprobe loop took "<<time<<"s");
   //}
   // now, a different thread can progress the stealing
-  exahype::stealing::StealingManager::getInstance().resetRunningAndReceivingBack();
+  //exahype::stealing::StealingManager::getInstance().resetRunningAndReceivingBack();
   lock.free();
 
 #if defined(PerformanceAnalysisStealing)
@@ -4962,7 +4962,7 @@ bool exahype::solvers::ADERDGSolver::tryToReceiveTaskBack(exahype::solvers::ADER
   MPI_Comm commMapped = exahype::stealing::StealingManager::getInstance().getMPICommunicatorMapped();
   MPI_Iprobe(srcRank, tag, commMapped, &receivedTaskBack, &statMapped);
   if(receivedTaskBack) {
-      exahype::stealing::StealingManager::getInstance().setRunningAndReceivingBack();
+      //exahype::stealing::StealingManager::getInstance().setRunningAndReceivingBack();
       tbb::concurrent_hash_map<int, CellDescription*>::accessor a_tagToCellDesc;
       bool found = solver->_mapTagToCellDesc.find(a_tagToCellDesc, statMapped.MPI_TAG);
       assertion(found);
@@ -5138,7 +5138,7 @@ bool exahype::solvers::ADERDGSolver::ReceiveBackJob::run( bool isCalledOnMaster 
     MPI_Comm commMapped = exahype::stealing::StealingManager::getInstance().getMPICommunicatorMapped();
     MPI_Iprobe(srcRank, tag, commMapped, &receivedTaskBack, &statMapped);
     if(receivedTaskBack) {
-      exahype::stealing::StealingManager::getInstance().setRunningAndReceivingBack();
+      //exahype::stealing::StealingManager::getInstance().setRunningAndReceivingBack();
       tbb::concurrent_hash_map<int, CellDescription*>::accessor a_tagToCellDesc;
       bool found = _solver._mapTagToCellDesc.find(a_tagToCellDesc, statMapped.MPI_TAG);
       assertion(found);

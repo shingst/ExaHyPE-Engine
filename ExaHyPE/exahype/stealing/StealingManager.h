@@ -1,3 +1,16 @@
+/**
+ * This file is part of the ExaHyPE project.
+ * Copyright (c) 2016  http://exahype.eu
+ * All rights reserved.
+ *
+ * The project has received funding from the European Union's Horizon
+ * 2020 research and innovation programme under grant agreement
+ * No 671698. For copyrights and licensing, please consult the webpage.
+ *
+ * Released under the BSD 3 Open Source License.
+ * For the full license text, see LICENSE.txt
+ **/
+
 #if !defined(_EXAHYPE_STEALING_STEALINGMANAGER_H_) && defined(SharedTBB)  && defined(Parallel)
 #define _EXAHYPE_STEALING_STEALINGMANAGER_H_
 
@@ -18,7 +31,7 @@
 namespace exahype {
   namespace stealing {
     class StealingManager;
-    /*
+    /**
      * Different MPI request types for prioritizing message requests.
      */
     enum class RequestType {
@@ -32,207 +45,286 @@ namespace exahype {
 
 namespace exahype {
   namespace solvers {
+    //forward declaration
     class Solver;
   }
 }
 
-/*
-* This stealing manager manages the asynchronous MPI requests
-* created e.g., when a task is stolen. In addition, the stealing
-* manager serves as a connecting point to the ADERDGSolver
-* for making decisions on whether a task should be stolen or not.
-*/
+/**
+ * The stealing manager manages the created asynchronous MPI requests,
+ * e.g., when a task is stolen. In addition, the stealing
+ * manager serves as a connecting point to the ADERDGSolver
+ * for making decisions on whether a task should be stolen or not.
+ * Finally it keeps track of some meta information such as the
+ * number of emergency events (i.e., local blacklist).
+ */
 class exahype::stealing::StealingManager {
   private:
-    static tarch::logging::Log _log;
+  /**
+   * The logging device.
+   */
+  static tarch::logging::Log _log;
 
-    tarch::multicore::BooleanSemaphore _progressSemaphore;
-    /*
-     *  MPI_Request are mapped to an internal id.
-     */
-    std::atomic<int> _nextRequestId;
-    /*
-     *  MPI_Request groups (e.g. all requests belonging to a task send) are mapped to
-     *  an internal group id.
-     */
-    std::atomic<int> _nextGroupId;
+  /**
+   * Semaphore to ensure that only one thread at a time
+   * makes progress.
+   */
+  tarch::multicore::BooleanSemaphore _progressSemaphore;
 
-    std::atomic<int> _numProgressJobs;
-    std::atomic<int> _numProgressSendJobs;
-    std::atomic<int> _numProgressReceiveJobs;
-    std::atomic<int> _numProgressReceiveBackJobs;
+  /**
+   *  MPI_Request handles are mapped to an internal id.
+   */
+  std::atomic<int> _nextRequestId;
 
-    std::atomic<bool> _runningAndReceivingBack;
+  /**
+   *  MPI_Request groups (e.g. all requests belonging to a task send) are mapped to
+   *  an internal group id. A request group is a logically belonging together collection of
+   *  requests.
+   */
+  std::atomic<int> _nextGroupId;
 
-    // queues for each message type
-    tbb::concurrent_queue<MPI_Request> _requests[4];
+  /**
+   * Counts number of running progress jobs.
+   */
+  std::atomic<int> _numProgressJobs;
+  std::atomic<int> _numProgressSendJobs;
+  std::atomic<int> _numProgressReceiveJobs;
+  std::atomic<int> _numProgressReceiveBackJobs;
 
-    tbb::concurrent_hash_map<int, MPI_Request> _idToRequest[4];
-    tbb::concurrent_hash_map<int, int> _requestToGroup[4];
-    tbb::concurrent_hash_map<int, int> _outstandingReqsForGroup[4];
-    tbb::concurrent_hash_map<int, int> _remoteRanksForGroup[4];
-    tbb::concurrent_hash_map<int, int> _remoteTagsForGroup[4];
-    tbb::concurrent_hash_map<int, std::function<void(exahype::solvers::Solver*, int , int)>> _handlers[4];
-    tbb::concurrent_hash_map<int, exahype::solvers::Solver*> _solvers[4];
-    tarch::multicore::BooleanSemaphore _semaphore;
+  /**
+   * Request queues for each request type.
+   */
+  tbb::concurrent_queue<int> _requests[4];
 
-    std::vector<MPI_Request> _currentOutstandingRequests[4];
-    std::unordered_map<int, int> _currentOutstandingVecIdxToReqid[4];
+  /**
+   * Maps internal integer request id to MPI_Request handle.
+   */
+  tbb::concurrent_hash_map<int, MPI_Request> _idToRequest[4];
 
-    std::atomic<int> *_postedSendsPerRank;
-    std::atomic<int> *_postedReceivesPerRank;
-    std::atomic<int> *_postedSendBacksPerRank;
-    std::atomic<int> *_postedReceiveBacksPerRank;
-   
+  /**
+   * Maps internal request id to internal group id.
+   */
+  tbb::concurrent_hash_map<int, int>         _requestToGroup[4];
 
-    int _zeroThreshold;
+  /**
+   * Map that tracks how many outstanding requests a request group still has.
+   */
+  tbb::concurrent_hash_map<int, int>         _outstandingReqsForGroup[4];
 
-    std::atomic<bool> _isVictim;
-    std::atomic<bool> _emergencyTriggered;
-    double  *_emergencyHeatMap;
+  /**
+   * Maps a group id to the remote rank which its requests belong to.
+   */
+  tbb::concurrent_hash_map<int, int>         _remoteRanksForGroup[4];
 
-    bool _hasNotifiedSendCompleted;
+  /**
+   * Maps a group id to the MPI tag which its requests belong to.
+   */
+  tbb::concurrent_hash_map<int, int>         _remoteTagsForGroup[4];
 
-    StealingManager();
-    /*
-     * This method makes progress on all current requests of the given request type.
-     */
-    bool progressRequestsOfType(RequestType type);
-    /*
-     * Maps a request type to an integer that defines message queue.
-     */
-    static int requestTypeToMap(RequestType requestType);
+  /**
+   * Maps a group id to the handler function which is invoked when
+   * the group's requests have been completed.
+   */
+  tbb::concurrent_hash_map<int, std::function<void(exahype::solvers::Solver*, int , int)>> _handlers[4];
 
-    /*
-     * This method pop's all current requests of a given type from the request queue and
-     * inserts them into an array on which MPI can make progress.
-     */
-    void createRequestArray(
-        RequestType type,
-	std::vector<MPI_Request> &requests,
-	std::unordered_map<int, int> &vecIdToReqId,
-        int limit = std::numeric_limits<int>::max());
+  /**
+   * Maps a group id to a pointer to the solver to which its requests
+   * logically belong to.
+   */
+  tbb::concurrent_hash_map<int, exahype::solvers::Solver*> _solvers[4];
 
-    // for all stealing-related communication, a separate MPI communicator is used (needs to be created in runGlobalStep())
-    MPI_Comm _stealingComm;
-    MPI_Comm _stealingCommMapped;
+  /**
+   * The vector of MPI_Request handles which the manager currently
+   * makes progress on.
+   *
+   * @Note: Once this vector becomes empty, the code
+   * tries to grab new outstanding requests from the
+   * request queue and - if possible - creates a new
+   * vector of outstanding requests.
+   */
+  std::vector<MPI_Request> _currentOutstandingRequests[4];
 
-    /*
-     * The request handler job aims to distribute the work that is to be done
-     * when a request group is finished evenly among the TBB worker threads.
-     */
-    class RequestHandlerJob
-    {
-      private:
-        std::function<void(exahype::solvers::Solver*, int, int)> _handleRequest;
-        exahype::solvers::Solver* _solver;
-        int _tag;
-        int _remoteRank;
-      public:
-        RequestHandlerJob(
-            std::function<void(exahype::solvers::Solver*, int, int)> handleRequest,
-            exahype::solvers::Solver* solver,
-            int tag,
-            int remoteRank);
-        bool operator()();
-    };
+  /**
+   * This array maps the elements in _currentOutstandingRequests
+   * back to the internal request ids.
+   */
+  std::unordered_map<int, int> _currentOutstandingVecIdxToReqid[4];
+
+  // some counters for debugging
+  std::atomic<int> *_postedSendsPerRank;
+  std::atomic<int> *_postedReceivesPerRank;
+  std::atomic<int> *_postedSendBacksPerRank;
+  std::atomic<int> *_postedReceiveBacksPerRank;
+
+  /**
+   * Flag is set, if this rank has become a victim rank in this
+   * time step.
+   */
+  std::atomic<bool> _isVictim;
+
+  /**
+   * Flag indicating whether this rank has triggered an emergency.
+   */
+  std::atomic<bool> _emergencyTriggered;
+
+  /**
+   * Local instance of blacklist.
+   */
+  double *_emergencyHeatMap;
+
+  /**
+   * Flag indicating whether the rank has notified
+   * all its victims that no more tasks will be
+   * offloaded in this time step.
+   */
+  bool _hasNotifiedSendCompleted;
+
+  StealingManager();
+  /*
+   * This method makes progress on all current requests of the given request type.
+   */
+  bool progressRequestsOfType(RequestType type);
+  /*
+   * Maps a request type to an integer that defines message queue.
+   */
+  static int requestTypeToMap(RequestType requestType);
+
+  /*
+   * This method pop's #limit current requests of a given type from the request queue and
+   * inserts them into the current array of MPI requests on which we can make progress.
+   */
+  void createRequestArray(
+      RequestType type,
+      std::vector<MPI_Request> &requests,
+      std::unordered_map<int, int> &vecIdToReqId,
+      int limit = std::numeric_limits<int>::max());
+
+  // for all stealing-related communication, a separate MPI communicator is used (needs to be created in runGlobalStep())
+  MPI_Comm _stealingComm;
+  MPI_Comm _stealingCommMapped;
+
+  /*
+   * The request handler job aims to distribute the work that is to be done
+   * when a request group is finished evenly among the TBB worker threads.
+   */
+  class RequestHandlerJob
+  {
+    private:
+    std::function<void(exahype::solvers::Solver*, int, int)> _handleRequest;
+    exahype::solvers::Solver* _solver;
+    int _tag;
+    int _remoteRank;
+    public:
+    RequestHandlerJob(
+        std::function<void(exahype::solvers::Solver*, int, int)> handleRequest,
+        exahype::solvers::Solver* solver,
+        int tag,
+        int remoteRank);
+    bool operator()();
+  };
 
 #ifdef StealingUseProgressTask
-    class ProgressJob : public tarch::multicore::jobs::Job
-    {
-      public:
-        ProgressJob();
-        bool run(bool calledFromMaster) override;
-    };
+  class ProgressJob : public tarch::multicore::jobs::Job
+  {
+    public:
+    ProgressJob();
+    bool run(bool calledFromMaster) override;
+  };
 
-    class ProgressSendJob
-    {
-      public:
-        ProgressSendJob();
-        bool operator()();
-    };
+  class ProgressSendJob
+  {
+    public:
+    ProgressSendJob();
+    bool operator()();
+  };
 
-    class ProgressReceiveJob
-    {
-      public:
-        ProgressReceiveJob();
-        bool operator()();
-    };
+  class ProgressReceiveJob
+  {
+    public:
+    ProgressReceiveJob();
+    bool operator()();
+  };
 
-    class ProgressReceiveBackJob
-    {
-      public:
-        ProgressReceiveBackJob();
-        bool operator()();
-    };
+  class ProgressReceiveBackJob
+  {
+    public:
+    ProgressReceiveBackJob();
+    bool operator()();
+  };
 #endif
 
-    int getNumberOfOutstandingRequests(RequestType type);
+  int getNumberOfOutstandingRequests(RequestType type);
+
+  inline int getNextRequestId() {
+    // Todo: Deal with overflow
+    return _nextRequestId++;
+  }
+
+  inline int getNextGroupId() {
+    // Todo: Deal with overflow
+    return _nextGroupId++;
+  }
 
   public:
-    void printPostedRequests();
-    void resetPostedRequests();
-    int getStealingTag();
-    /*
-     * Submit a group of MPI requests with a given MPI message tag.
-     * The handler call back function will be called when the MPI
-     * request has been finished where tag and rank can be used to
-     * keep track of the data that a finished MPI request belongs to
-     * (e.g., for clean-up of allocated heap data).
-     */
-    void submitRequests(
-    	MPI_Request *requests,
-		int nRequests,
-		int tag,
-		int remoteRank,
-        std::function<void(exahype::solvers::Solver*, int , int)> handleRequest,
-        RequestType type,
-		exahype::solvers::Solver *solver,
-		bool block=false);
-    void progressRequests();
-    void progressAnyRequests();
-    bool progressReceiveBackRequests();
-    bool hasOutstandingRequestOfType(RequestType requestType);
+  void printPostedRequests();
+  void resetPostedRequests();
+  int getStealingTag();
+  /*
+   * Submit a group of MPI requests with a given MPI message tag.
+   * The handler call back function will be called when the MPI
+   * request has been finished where tag and rank can be used to
+   * keep track of the data that a finished MPI request belongs to
+   * (e.g., for clean-up of allocated heap data).
+   */
+  void submitRequests(
+      MPI_Request *requests,
+      int nRequests,
+      int tag,
+      int remoteRank,
+      std::function<void(exahype::solvers::Solver*, int , int)> handleRequest,
+      RequestType type,
+      exahype::solvers::Solver *solver,
+      bool block=false);
+  void progressRequests();
+  void progressAnyRequests();
+  bool progressReceiveBackRequests();
+  bool hasOutstandingRequestOfType(RequestType requestType);
 
-    void createMPICommunicator();
-    void destroyMPICommunicator();
-    MPI_Comm getMPICommunicator();
-    MPI_Comm getMPICommunicatorMapped();
+  void createMPICommunicator();
+  void destroyMPICommunicator();
+  MPI_Comm getMPICommunicator();
+  MPI_Comm getMPICommunicatorMapped();
 
-    bool getRunningAndReceivingBack();
-    void setRunningAndReceivingBack();
-    void resetRunningAndReceivingBack();
-
-    /*
-     * Given the current load situation and global knowledge of the load
-     * of the other ranks, this method selects a victim rank, i.e.,
-     * a rank to which local work should be offloaded in order to
-     * improve the load balance.
-     */
-    bool selectVictimRank(int& victim, bool& last);
+  /*
+   * Given the current load situation and global knowledge of the load
+   * of the other ranks, this method selects a victim rank, i.e.,
+   * a rank to which local work should be offloaded in order to
+   * improve the load balance.
+   */
+  bool selectVictimRank(int& victim, bool& last);
 
 #ifdef StealingUseProgressTask
-    void resetHasNotifiedSendCompleted();
-    void notifySendCompleted(int rank);
-    void receiveCompleted(int rank); 
-    void notifyAllVictimsSendCompletedIfNotNotified();
+  void resetHasNotifiedSendCompleted();
+  void notifySendCompleted(int rank);
+  void receiveCompleted(int rank);
+  void notifyAllVictimsSendCompletedIfNotNotified();
 #endif
 
-    void triggerVictimFlag();
-    void resetVictimFlag();
-    bool isVictim();
+  void triggerVictimFlag();
+  void resetVictimFlag();
+  bool isVictim();
 
-    bool isBlacklisted(int rank);
-    bool isEmergencyTriggered();
-    bool isEmergencyTriggeredOnRank(int rank);
-    void triggerEmergencyForRank(int rank);
-    //void resetEmergency();
+  bool isBlacklisted(int rank);
+  bool isEmergencyTriggered();
+  bool isEmergencyTriggeredOnRank(int rank);
+  void triggerEmergencyForRank(int rank);
+  //void resetEmergency();
 
-    void decreaseHeat();
-    void printBlacklist();
+  void decreaseHeat();
+  void printBlacklist();
 
-    static StealingManager& getInstance();
-    virtual ~StealingManager();
+  static StealingManager& getInstance();
+  virtual ~StealingManager();
 };
 
 #endif

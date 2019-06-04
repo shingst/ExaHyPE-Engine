@@ -1,4 +1,17 @@
-#if  defined(SharedTBB)  && defined(Parallel) && defined(DistributedStealing)
+/**
+ * This file is part of the ExaHyPE project.
+ * Copyright (c) 2016  http://exahype.eu
+ * All rights reserved.
+ *
+ * The project has received funding from the European Union's Horizon
+ * 2020 research and innovation programme under grant agreement
+ * No 671698. For copyrights and licensing, please consult the webpage.
+ *
+ * Released under the BSD 3 Open Source License.
+ * For the full license text, see LICENSE.txt
+ **/
+
+#if defined(SharedTBB)  && defined(Parallel) && defined(DistributedStealing)
 
 #include "StealingManager.h"
 
@@ -32,17 +45,16 @@ static int event_progress_receiveBack;
 tarch::logging::Log exahype::stealing::StealingManager::_log( "exahype::stealing::stealingManager" );
 
 exahype::stealing::StealingManager::StealingManager() :
-    _nextRequestId(0),
-    _nextGroupId(0),
-    _runningAndReceivingBack(false),
-    _stealingComm(MPI_COMM_NULL),
-    _stealingCommMapped(MPI_COMM_NULL),
-    _emergencyTriggered(false),
-    _numProgressJobs(0),
-    _hasNotifiedSendCompleted(false)
-    //_numProgressSendJobs(0),
-    //_numProgressReceiveJobs(0),
-    //_numProgressReceiveBackJobs(0)
+_nextRequestId(0),
+_nextGroupId(0),
+_stealingComm(MPI_COMM_NULL),
+_stealingCommMapped(MPI_COMM_NULL),
+_emergencyTriggered(false),
+_numProgressJobs(0),
+_hasNotifiedSendCompleted(false)
+//_numProgressSendJobs(0),
+//_numProgressReceiveJobs(0),
+//_numProgressReceiveBackJobs(0)
 {
 #ifdef USE_ITAC
   static const char *event_name_handle = "handleRequest";
@@ -77,18 +89,6 @@ exahype::stealing::StealingManager::~StealingManager()
   delete[] _emergencyHeatMap;
 }
 
-bool exahype::stealing::StealingManager::getRunningAndReceivingBack() {
-	return _runningAndReceivingBack;
-}
-
-void exahype::stealing::StealingManager::setRunningAndReceivingBack() {
-	_runningAndReceivingBack = true;
-}
-
-void exahype::stealing::StealingManager::resetRunningAndReceivingBack() {
-	_runningAndReceivingBack = false;
-}
-
 void exahype::stealing::StealingManager::createMPICommunicator() {
   int ierr = MPI_Comm_dup(MPI_COMM_WORLD, &_stealingComm);
   assertion(ierr==MPI_SUCCESS);
@@ -116,23 +116,23 @@ void exahype::stealing::StealingManager::resetPostedRequests() {
 void exahype::stealing::StealingManager::printPostedRequests() {
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
   for(int i=0; i<nnodes; i++) {
-      std::string str="for rank "+std::to_string(i)+":";
-      if(_postedSendsPerRank[i]>0) 
-         str = str + "posted sends: "+std::to_string(_postedSendsPerRank[i]);
-      if(_postedReceivesPerRank[i]>0) 
-         str = str + "posted receives: "+std::to_string(_postedReceivesPerRank[i]);
-      if(_postedReceiveBacksPerRank[i]>0) 
-         str = str + "posted receiveBacks: "+std::to_string(_postedReceiveBacksPerRank[i]);
-      if(_postedSendBacksPerRank[i]>0) 
-         str = str + "posted sendBacks: "+std::to_string(_postedSendBacksPerRank[i]);
-      logDebug("printPostedRequests()", str);
+    std::string str="for rank "+std::to_string(i)+":";
+    if(_postedSendsPerRank[i]>0)
+    str = str + "posted sends: "+std::to_string(_postedSendsPerRank[i]);
+    if(_postedReceivesPerRank[i]>0)
+    str = str + "posted receives: "+std::to_string(_postedReceivesPerRank[i]);
+    if(_postedReceiveBacksPerRank[i]>0)
+    str = str + "posted receiveBacks: "+std::to_string(_postedReceiveBacksPerRank[i]);
+    if(_postedSendBacksPerRank[i]>0)
+    str = str + "posted sendBacks: "+std::to_string(_postedSendBacksPerRank[i]);
+    logDebug("printPostedRequests()", str);
   }
 }
 
 int exahype::stealing::StealingManager::getNumberOfOutstandingRequests( RequestType type ) {
-  
+
   int mapId = requestTypeToMap(type);
-  return _outstandingReqsForGroup[mapId].size() + _requests[mapId].unsafe_size(); 
+  return _outstandingReqsForGroup[mapId].size() + _requests[mapId].unsafe_size();
 }
 
 MPI_Comm exahype::stealing::StealingManager::getMPICommunicator() {
@@ -159,32 +159,32 @@ int exahype::stealing::StealingManager::getStealingTag() {
 
 void exahype::stealing::StealingManager::submitRequests(
     MPI_Request *requests,
-	int nRequests,
-	int tag,
-	int remoteRank,
+    int nRequests,
+    int tag,
+    int remoteRank,
     std::function<void(exahype::solvers::Solver*, int, int)> handler,
     RequestType type,
-	exahype::solvers::Solver *solver,
-	bool block ) {
-   
+    exahype::solvers::Solver *solver,
+    bool block ) {
+
   switch(type) {
     case RequestType::send:
-       _postedSendsPerRank[remoteRank]++; break;
+    _postedSendsPerRank[remoteRank]++; break;
     case RequestType::receive:
-       _postedReceivesPerRank[remoteRank]++; break;
+    _postedReceivesPerRank[remoteRank]++; break;
     case RequestType::sendBack:
-       _postedSendBacksPerRank[remoteRank]++; break;
+    _postedSendBacksPerRank[remoteRank]++; break;
     case RequestType::receiveBack:
-       _postedReceiveBacksPerRank[remoteRank]++; break;
-  
+    _postedReceiveBacksPerRank[remoteRank]++; break;
+
   }
- 
+
   //static std::atomic<int> submitted[4];
   int finished = -1;
   MPI_Testall(nRequests, requests, &finished, MPI_STATUSES_IGNORE);
   if(finished) {
-     handler(solver, tag, remoteRank);
-     return;
+    handler(solver, tag, remoteRank);
+    return;
   }
 
   if(block) {
@@ -194,12 +194,12 @@ void exahype::stealing::StealingManager::submitRequests(
   }
 
   int mapId = requestTypeToMap(type);
-  
+
   //submitted[mapId]++;
   //logInfo("stealingManager","submitted["<<mapId<<"]:"<<submitted[mapId]);
 
   // assign group id for this request group
-  int groupId = _nextGroupId++;
+  int groupId = getNextGroupId();
   // insert metadata into maps
   std::pair<int, std::function<void(exahype::solvers::Solver*, int, int)>> handlerElem(groupId, handler);
   std::pair<int, exahype::solvers::Solver*> solverElem(groupId, solver);
@@ -216,7 +216,7 @@ void exahype::stealing::StealingManager::submitRequests(
   // push requests into queue
   for(int i=0; i<nRequests; i++) {
     //TODO: avoid overflow!
-    int id=_nextRequestId++;
+    int id = getNextRequestId();
 
     std::pair<int, MPI_Request> reqElem(id, requests[i]);
     std::pair<int, int> reqGroupElem(id, groupId);
@@ -234,26 +234,26 @@ void exahype::stealing::StealingManager::submitRequests(
     ProgressJob *job = new ProgressJob();
     peano::datatraversal::TaskSet spawnedSet( job);
   }
- /* if(type==RequestType::send && _numProgressSendJobs==0) {
-    //logInfo("submitRequests()", "spawning progress send job (high priority)");
-    _numProgressSendJobs++;
-    ProgressSendJob *job = new ProgressSendJob();
-    peano::datatraversal::TaskSet spawnedSet( job, peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible);
-  }
-  
-  if(type==RequestType::receive && _numProgressReceiveJobs==0) {
-    logInfo("submitRequests()", "spawning progress receive job (high priority)");
-    _numProgressReceiveJobs++;
-    ProgressReceiveJob *job = new ProgressReceiveJob();
-    peano::datatraversal::TaskSet spawnedSet( job, peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible);
-  }
+  /* if(type==RequestType::send && _numProgressSendJobs==0) {
+   //logInfo("submitRequests()", "spawning progress send job (high priority)");
+   _numProgressSendJobs++;
+   ProgressSendJob *job = new ProgressSendJob();
+   peano::datatraversal::TaskSet spawnedSet( job, peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible);
+   }
 
-  if(type==RequestType::receiveBack && _numProgressReceiveBackJobs==0) {
-    logInfo("submitRequests()", "spawning progress receive back job (high priority)");
-    _numProgressReceiveBackJobs++;
-    ProgressReceiveBackJob *job = new ProgressReceiveBackJob();
-    peano::datatraversal::TaskSet spawnedSet( job, peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible);
-  }*/
+   if(type==RequestType::receive && _numProgressReceiveJobs==0) {
+   logInfo("submitRequests()", "spawning progress receive job (high priority)");
+   _numProgressReceiveJobs++;
+   ProgressReceiveJob *job = new ProgressReceiveJob();
+   peano::datatraversal::TaskSet spawnedSet( job, peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible);
+   }
+
+   if(type==RequestType::receiveBack && _numProgressReceiveBackJobs==0) {
+   logInfo("submitRequests()", "spawning progress receive back job (high priority)");
+   _numProgressReceiveBackJobs++;
+   ProgressReceiveBackJob *job = new ProgressReceiveBackJob();
+   peano::datatraversal::TaskSet spawnedSet( job, peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible);
+   }*/
 #endif
 }
 
@@ -290,15 +290,15 @@ bool exahype::stealing::StealingManager::hasOutstandingRequestOfType(RequestType
 
 void exahype::stealing::StealingManager::progressRequests() {
   static double lastOutputTimeStamp = 0;
-  
+
   if(lastOutputTimeStamp==0 || (MPI_Wtime()-lastOutputTimeStamp)>10) {
     lastOutputTimeStamp = MPI_Wtime();
     printPostedRequests();
     logDebug("progressRequests()", "there are "<<getNumberOfOutstandingRequests(RequestType::send)<< " send requests remaining "
-                                 <<","<<getNumberOfOutstandingRequests(RequestType::receive)<<" receive requests remaining" 
-                                 <<","<<getNumberOfOutstandingRequests(RequestType::sendBack)<<" sendBack requests remaining" 
-                                <<","<<getNumberOfOutstandingRequests(RequestType::receiveBack)<<" receiveBack requests remaining" );
-  } 
+        <<","<<getNumberOfOutstandingRequests(RequestType::receive)<<" receive requests remaining"
+        <<","<<getNumberOfOutstandingRequests(RequestType::sendBack)<<" sendBack requests remaining"
+        <<","<<getNumberOfOutstandingRequests(RequestType::receiveBack)<<" receiveBack requests remaining" );
+  }
 
   if(hasOutstandingRequestOfType(RequestType::send)) {
 #ifdef USE_ITAC
@@ -408,11 +408,11 @@ bool exahype::stealing::StealingManager::progressRequestsOfType( RequestType typ
   int mapId = requestTypeToMap(type);
 
   tbb::concurrent_hash_map<int, std::function<void(exahype::solvers::Solver*, int, int)>>::accessor a_handler;
-  tbb::concurrent_hash_map<int, exahype::solvers::Solver*>::accessor                                a_solver;
-  tbb::concurrent_hash_map<MPI_Request, int>::accessor                                              a_groupId;
-  tbb::concurrent_hash_map<int, int>::accessor                                                      a_outstandingGroup;
-  tbb::concurrent_hash_map<int, int>::accessor                                                      a_remoteRank;
-  tbb::concurrent_hash_map<int, int>::accessor                                                      a_remoteTag;
+  tbb::concurrent_hash_map<int, exahype::solvers::Solver*>::accessor a_solver;
+  tbb::concurrent_hash_map<MPI_Request, int>::accessor a_groupId;
+  tbb::concurrent_hash_map<int, int>::accessor a_outstandingGroup;
+  tbb::concurrent_hash_map<int, int>::accessor a_remoteRank;
+  tbb::concurrent_hash_map<int, int>::accessor a_remoteTag;
 
   //std::vector<MPI_Request>     outstandingRequests;
   //std::unordered_map<int, int> vecIdToReqId;
@@ -421,8 +421,8 @@ bool exahype::stealing::StealingManager::progressRequestsOfType( RequestType typ
   if(nRequests==0) {
     //logInfo("progressRequestsOfType()", "begin create req array");
     if(type==RequestType::receiveBack)
-      createRequestArray( type, _currentOutstandingRequests[mapId], _currentOutstandingVecIdxToReqid[mapId], 10 );
-    else {  
+    createRequestArray( type, _currentOutstandingRequests[mapId], _currentOutstandingVecIdxToReqid[mapId], 10 );
+    else {
       createRequestArray( type, _currentOutstandingRequests[mapId], _currentOutstandingVecIdxToReqid[mapId] );
     }
     nRequests = _currentOutstandingRequests[mapId].size();
@@ -435,7 +435,6 @@ bool exahype::stealing::StealingManager::progressRequestsOfType( RequestType typ
 
   double time = -MPI_Wtime();
   exahype::stealing::StealingProfiler::getInstance().beginCommunication();
-
 
 // For DEBUGGING
 //static std::atomic<int> finished_cnt[4];
@@ -452,11 +451,11 @@ bool exahype::stealing::StealingManager::progressRequestsOfType( RequestType typ
 //	 }
 // }
   /*if(type==RequestType::send)
-     logInfo("progressRequestsOfType()", "progressing sends");
-  if(type==RequestType::receive)
-     logInfo("progressRequestsOfType()", "progressing receives");
-  if(type==RequestType::sendBack)
-     logInfo("progressRequestsOfType()", "progressing send back");*/
+   logInfo("progressRequestsOfType()", "progressing sends");
+   if(type==RequestType::receive)
+   logInfo("progressRequestsOfType()", "progressing receives");
+   if(type==RequestType::sendBack)
+   logInfo("progressRequestsOfType()", "progressing send back");*/
   //if(type==RequestType::receiveBack)
   //   logInfo("progressRequestsOfType()", "progressing receive back "<<nRequests);
   //TODO: keine Statusse
@@ -480,9 +479,9 @@ bool exahype::stealing::StealingManager::progressRequestsOfType( RequestType typ
   time += MPI_Wtime();
 
   if(outcount>0)
-    exahype::stealing::StealingProfiler::getInstance().endCommunication(true, time);
+  exahype::stealing::StealingProfiler::getInstance().endCommunication(true, time);
   else
-    exahype::stealing::StealingProfiler::getInstance().endCommunication(false, time);
+  exahype::stealing::StealingProfiler::getInstance().endCommunication(false, time);
 
   time = -MPI_Wtime();
   exahype::stealing::StealingProfiler::getInstance().beginHandling();
@@ -549,11 +548,11 @@ bool exahype::stealing::StealingManager::progressRequestsOfType( RequestType typ
   //  }
   //}
   bool allFinished = true;
-  for(int i=0; i<nRequests; i++) { 
-     if(_currentOutstandingRequests[mapId][i]!=MPI_REQUEST_NULL)  {
-       allFinished = false;
-       break;
-     }
+  for(int i=0; i<nRequests; i++) {
+    if(_currentOutstandingRequests[mapId][i]!=MPI_REQUEST_NULL) {
+      allFinished = false;
+      break;
+    }
   }
   if(allFinished) {
     _currentOutstandingRequests[mapId].clear();
@@ -563,7 +562,7 @@ bool exahype::stealing::StealingManager::progressRequestsOfType( RequestType typ
   time += MPI_Wtime();
   exahype::stealing::StealingProfiler::getInstance().endHandling(time);
 
-  lock.free();  
+  lock.free();
 
   return outcount>0;
 }
@@ -605,14 +604,14 @@ void exahype::stealing::StealingManager::decreaseHeat() {
   for(int i=0; i<nnodes;i++) {
     _emergencyHeatMap[i]*= 0.9;
     if(_emergencyHeatMap[i]>0)
-      exahype::stealing::PerformanceMonitor::getInstance().submitBlacklistValueForRank(_emergencyHeatMap[i], i);
+    exahype::stealing::PerformanceMonitor::getInstance().submitBlacklistValueForRank(_emergencyHeatMap[i], i);
     //if(_emergencyHeatMap[i]>0.5) {
     //  logInfo("decreaseHeat()","blacklist value for rank "<<i<<":"<<_emergencyHeatMap[i]);
     //}
   }
-} 
+}
 
-bool exahype::stealing::StealingManager::isBlacklisted(int rank) { 
+bool exahype::stealing::StealingManager::isBlacklisted(int rank) {
   //return _emergencyHeatMap[rank]>0.5;
   const double* globalHeatMap = exahype::stealing::PerformanceMonitor::getInstance().getBlacklistSnapshot();
   return (globalHeatMap[rank]>0.5) || (_emergencyHeatMap[rank]>0.5);
@@ -624,13 +623,13 @@ void exahype::stealing::StealingManager::printBlacklist() {
 
   for(int i=0; i<nnodes; i++) {
     if(globalHeatMap[i]>0 || _emergencyHeatMap[i]>0)
-      logInfo("printBlacklist", "blacklist value for rank "<<i<<":"<<globalHeatMap[i]);
+    logInfo("printBlacklist", "blacklist value for rank "<<i<<":"<<globalHeatMap[i]);
   }
 }
 
 bool exahype::stealing::StealingManager::isEmergencyTriggered() {
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
-  return !std::all_of(&_emergencyHeatMap[0], &_emergencyHeatMap[nnodes], [](double d){return d<0.5;});
+  return !std::all_of(&_emergencyHeatMap[0], &_emergencyHeatMap[nnodes], [](double d) {return d<0.5;});
 }
 
 bool exahype::stealing::StealingManager::isEmergencyTriggeredOnRank(int rank) {
@@ -642,23 +641,22 @@ bool exahype::stealing::StealingManager::isEmergencyTriggeredOnRank(int rank) {
 //  _emergencyTriggered = false;
 //}
 
-
 bool exahype::stealing::StealingManager::selectVictimRank(int& victim, bool& last) {
-    last = false;
+  last = false;
 #if defined(StealingStrategyStaticHardcoded)
-    return exahype::stealing::StaticDistributor::getInstance().selectVictimRank(victim);
+  return exahype::stealing::StaticDistributor::getInstance().selectVictimRank(victim);
 #elif defined(StealingStrategyDiffusive)
-    return exahype::stealing::DiffusiveDistributor::getInstance().selectVictimRank(victim);
+  return exahype::stealing::DiffusiveDistributor::getInstance().selectVictimRank(victim);
 #elif defined(StealingStrategyAggressive)
-    return exahype::stealing::AggressiveDistributor::getInstance().selectVictimRank(victim);
+  return exahype::stealing::AggressiveDistributor::getInstance().selectVictimRank(victim);
 #elif defined(StealingStrategyAggressiveCCP)
-    return exahype::stealing::AggressiveCCPDistributor::getInstance().selectVictimRank(victim);
+  return exahype::stealing::AggressiveCCPDistributor::getInstance().selectVictimRank(victim);
 #elif defined(StealingStrategyAggressiveHybrid)
-    return exahype::stealing::AggressiveHybridDistributor::getInstance().selectVictimRank(victim, last);
+  return exahype::stealing::AggressiveHybridDistributor::getInstance().selectVictimRank(victim, last);
 #else
   double remainingLoadRatio = static_cast<double> (exahype::stealing::PerformanceMonitor::getInstance().getRemainingLocalLoad())
-		  	  	  	  	  	  /
-							  exahype::stealing::PerformanceMonitor::getInstance().getLocalLoadPerTimestep();
+  /
+  exahype::stealing::PerformanceMonitor::getInstance().getLocalLoadPerTimestep();
   // this is currently hardcoded: the goal is to refrain from giving tasks away if there is not enough work left
   // for overlap of communication and computation
   if(remainingLoadRatio>0.1) {
@@ -678,7 +676,7 @@ bool exahype::stealing::StealingManager::selectVictimRank(int& victim, bool& las
 #endif
   }
   else {
-     logDebug("stealingManager", "could not select victim remaining load ratio "<<remainingLoadRatio);
+    logDebug("stealingManager", "could not select victim remaining load ratio "<<remainingLoadRatio);
     return false;
   }
 #endif
@@ -687,7 +685,7 @@ bool exahype::stealing::StealingManager::selectVictimRank(int& victim, bool& las
 #ifdef StealingUseProgressTask
 void exahype::stealing::StealingManager::resetHasNotifiedSendCompleted() {
   _hasNotifiedSendCompleted = false;
-    logDebug("resetHasNotifiedSendCompleted","resetting flag");
+  logDebug("resetHasNotifiedSendCompleted","resetting flag");
 }
 
 void exahype::stealing::StealingManager::notifySendCompleted(int rank) {
@@ -712,8 +710,8 @@ void exahype::stealing::StealingManager::notifyAllVictimsSendCompletedIfNotNotif
 #elif defined(StealingStrategyStaticHardcoded)
     exahype::stealing::StaticDistributor::getInstance().getAllVictimRanks(victimRanks);
 #endif
-    for(auto victim : victimRanks) 
-      notifySendCompleted(victim);
+    for(auto victim : victimRanks)
+    notifySendCompleted(victim);
   }
 }
 #endif
@@ -723,99 +721,96 @@ exahype::stealing::StealingManager::RequestHandlerJob::RequestHandlerJob(
     exahype::solvers::Solver* solver,
     int tag,
     int remoteRank) :
-        _handleRequest(handleRequest),
-		_solver(solver),
-		_tag(tag),
-		_remoteRank(remoteRank)
+_handleRequest(handleRequest),
+_solver(solver),
+_tag(tag),
+_remoteRank(remoteRank)
 {};
 
 bool exahype::stealing::StealingManager::RequestHandlerJob::operator()() {
 #ifdef USE_ITAC
   VT_begin(event_handling);
 #endif
-    _handleRequest(_solver, _tag, _remoteRank);
+  _handleRequest(_solver, _tag, _remoteRank);
 #ifdef USE_ITAC
   VT_end(event_handling);
 #endif
   return false;
 }
 
-
 #ifdef StealingUseProgressTask
 exahype::stealing::StealingManager::ProgressJob::ProgressJob() :
-   tarch::multicore::jobs::Job(tarch::multicore::jobs::JobType::BackgroundTask, 0, tarch::multicore::DefaultPriority*8)
- {}
+tarch::multicore::jobs::Job(tarch::multicore::jobs::JobType::BackgroundTask, 0, tarch::multicore::DefaultPriority*8)
+{}
 
 bool exahype::stealing::StealingManager::ProgressJob::run( bool calledFromMaster ) {
 
-   if(calledFromMaster) return true;
+  if(calledFromMaster) return true;
 
-   int flag;
-   //logInfo("submitRequests()", "executing progress job (high priority)");
+  int flag;
+  //logInfo("submitRequests()", "executing progress job (high priority)");
 
-   int mapId = StealingManager::requestTypeToMap(RequestType::send);
+  int mapId = StealingManager::requestTypeToMap(RequestType::send);
 //   while(StealingManager::getInstance()._requests[0].unsafe_size()>0 || StealingManager::getInstance()._currentOutstandingRequests[0].size()>0
 //        || StealingManager::getInstance()._requests[1].unsafe_size()>0 || StealingManager::getInstance()._currentOutstandingRequests[1].size()>0
 //        || StealingManager::getInstance()._requests[2].unsafe_size()>0 || StealingManager::getInstance()._currentOutstandingRequests[2].size()>0
 //        || StealingManager::getInstance()._requests[3].unsafe_size()>0 || StealingManager::getInstance()._currentOutstandingRequests[3].size()>0
 //   ) 
-   while(StealingManager::getInstance()._requests[mapId].unsafe_size()>0 || StealingManager::getInstance()._currentOutstandingRequests[mapId].size()>0)
-   {
-     //getInstance().progressAnyRequests();
-     getInstance().progressRequestsOfType(RequestType::send);
-     MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, StealingManager::getInstance()._stealingComm, &flag, MPI_STATUS_IGNORE);
-     MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, StealingManager::getInstance()._stealingCommMapped, &flag, MPI_STATUS_IGNORE);
-   }
-   //logInfo("submitRequests()", "terminated progress job (high priority)");
+  while(StealingManager::getInstance()._requests[mapId].unsafe_size()>0 || StealingManager::getInstance()._currentOutstandingRequests[mapId].size()>0)
+  {
+    //getInstance().progressAnyRequests();
+    getInstance().progressRequestsOfType(RequestType::send);
+    MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, StealingManager::getInstance()._stealingComm, &flag, MPI_STATUS_IGNORE);
+    MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, StealingManager::getInstance()._stealingCommMapped, &flag, MPI_STATUS_IGNORE);
+  }
+  //logInfo("submitRequests()", "terminated progress job (high priority)");
 
-
-
-   StealingManager::getInstance()._numProgressJobs--;
-   return false;
+  StealingManager::getInstance()._numProgressJobs--;
+  return false;
 };
 
 exahype::stealing::StealingManager::ProgressSendJob::ProgressSendJob() {}
 
 bool exahype::stealing::StealingManager::ProgressSendJob::operator()() {
-   getInstance().progressRequestsOfType(RequestType::send);
-   int mapId = StealingManager::requestTypeToMap(RequestType::send);
+  getInstance().progressRequestsOfType(RequestType::send);
+  int mapId = StealingManager::requestTypeToMap(RequestType::send);
 //   bool reschedule=StealingManager::getInstance()._requests[mapId].unsafe_size()>0;
- 
-   while(StealingManager::getInstance()._requests[mapId].unsafe_size()>0 || StealingManager::getInstance()._currentOutstandingRequests[mapId].size()>0) {
-     getInstance().progressRequestsOfType(RequestType::send);
-   }
- 
+
+  while(StealingManager::getInstance()._requests[mapId].unsafe_size()>0 || StealingManager::getInstance()._currentOutstandingRequests[mapId].size()>0) {
+    getInstance().progressRequestsOfType(RequestType::send);
+  }
+
 //   if(!reschedule)
-   StealingManager::getInstance()._numProgressSendJobs--;
-   return false;
+  StealingManager::getInstance()._numProgressSendJobs--;
+  return false;
 };
 
 exahype::stealing::StealingManager::ProgressReceiveJob::ProgressReceiveJob() {}
 
 bool exahype::stealing::StealingManager::ProgressReceiveJob::operator()() {
-   getInstance().progressRequestsOfType(RequestType::receive);
-   int mapId = StealingManager::requestTypeToMap(RequestType::receive);
+  getInstance().progressRequestsOfType(RequestType::receive);
+  int mapId = StealingManager::requestTypeToMap(RequestType::receive);
 
-   while(StealingManager::getInstance()._requests[mapId].unsafe_size()>0 || StealingManager::getInstance()._currentOutstandingRequests[mapId].size()>0) {
-     getInstance().progressRequestsOfType(RequestType::receive);
-   }
+  while(StealingManager::getInstance()._requests[mapId].unsafe_size()>0 || StealingManager::getInstance()._currentOutstandingRequests[mapId].size()>0) {
+    getInstance().progressRequestsOfType(RequestType::receive);
+  }
 
-   StealingManager::getInstance()._numProgressReceiveJobs--;
-   return false;
+  StealingManager::getInstance()._numProgressReceiveJobs--;
+  return false;
 };
 
 exahype::stealing::StealingManager::ProgressReceiveBackJob::ProgressReceiveBackJob() {}
 
 bool exahype::stealing::StealingManager::ProgressReceiveBackJob::operator()() {
-   getInstance().progressRequestsOfType(RequestType::receiveBack);
-   int mapId = StealingManager::requestTypeToMap(RequestType::receiveBack);
+  getInstance().progressRequestsOfType(RequestType::receiveBack);
+  int mapId = StealingManager::requestTypeToMap(RequestType::receiveBack);
 
-   while(StealingManager::getInstance()._requests[mapId].unsafe_size()>0 || StealingManager::getInstance()._currentOutstandingRequests[mapId].size()>0) {
-     getInstance().progressRequestsOfType(RequestType::receiveBack);
-   }
+  while(StealingManager::getInstance()._requests[mapId].unsafe_size()>0 || StealingManager::getInstance()._currentOutstandingRequests[mapId].size()>0) {
+    getInstance().progressRequestsOfType(RequestType::receiveBack);
+  }
 
-   StealingManager::getInstance()._numProgressReceiveBackJobs--;
-   return false;
+  StealingManager::getInstance()._numProgressReceiveBackJobs--;
+  return false;
 };
 #endif
 
