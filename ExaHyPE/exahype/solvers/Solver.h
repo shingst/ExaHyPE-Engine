@@ -1253,7 +1253,7 @@ public:
 #if !defined(StealingUseProgressThread)
        if( !cellDescription.getHasCompletedLastStep()
          //&& tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs()==1
-         //&& !hasTriggeredEmergency
+         && !hasTriggeredEmergency
          && !progress
          && myRank!=responsibleRank
          && stealingTreatment
@@ -1264,7 +1264,7 @@ public:
          //&& !exahype::stealing::StealingManager::getInstance().getRunningAndReceivingBack())
 #else
        if( !cellDescription.getHasCompletedLastStep()
-         //&& !hasTriggeredEmergency
+         && !hasTriggeredEmergency
          && myRank!=responsibleRank
          && stealingTreatment
          && !hasProcessed)
