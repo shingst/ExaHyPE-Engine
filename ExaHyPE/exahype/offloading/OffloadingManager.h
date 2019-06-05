@@ -205,12 +205,12 @@ class exahype::offloading::OffloadingManager {
   /**
    * Communicator for sending/receiving offloaded tasks.
    */
-  MPI_Comm _stealingComm;
+  MPI_Comm _offloadingComm;
 
   /**
    * Communicator for sending/receiving results of offloaded tasks.
    */
-  MPI_Comm _stealingCommMapped;
+  MPI_Comm _offloadingCommMapped;
 
   /*
    * The request handler job aims to distribute the work that is to be done

@@ -1224,7 +1224,7 @@ public:
      #ifdef Parallel
      {
        tarch::multicore::RecursiveLock lock( tarch::services::Service::receiveDanglingMessagesSemaphore, false );
-       if(lock.try_lock()) {
+       if(lock.tryLock()) {
          tarch::parallel::Node::getInstance().receiveDanglingMessages();
          lock.free();
        }

@@ -45,17 +45,14 @@ static int event_progress_receiveBack;
 tarch::logging::Log exahype::offloading::OffloadingManager::_log( "exahype::stealing::stealingManager" );
 
 exahype::offloading::OffloadingManager::OffloadingManager() :
-_nextRequestId(0),
-_nextGroupId(0),
-_stealingComm(MPI_COMM_NULL),
-_stealingCommMapped(MPI_COMM_NULL),
-_emergencyTriggered(false),
-_numProgressJobs(0),
-_hasNotifiedSendCompleted(false)
-//_numProgressSendJobs(0),
-//_numProgressReceiveJobs(0),
-//_numProgressReceiveBackJobs(0)
-{
+    _nextRequestId(0),
+    _nextGroupId(0),
+    _offloadingComm(MPI_COMM_NULL),
+    _offloadingCommMapped(MPI_COMM_NULL),
+    _emergencyTriggered(false),
+    _numProgressJobs(0),
+    _hasNotifiedSendCompleted(false) {
+
 #ifdef USE_ITAC
   static const char *event_name_handle = "handleRequest";
   int ierr = VT_funcdef(event_name_handle, VT_NOCLASS, &event_handling); assertion(ierr==0);
@@ -84,22 +81,21 @@ _hasNotifiedSendCompleted(false)
   std::fill(&_postedReceiveBacksPerRank[0], &_postedReceiveBacksPerRank[nnodes], 0);
 }
 
-exahype::offloading::OffloadingManager::~OffloadingManager()
-{
+exahype::offloading::OffloadingManager::~OffloadingManager() {
   delete[] _localBlacklist;
 }
 
 void exahype::offloading::OffloadingManager::createMPICommunicator() {
-  int ierr = MPI_Comm_dup(MPI_COMM_WORLD, &_stealingComm);
+  int ierr = MPI_Comm_dup(MPI_COMM_WORLD, &_offloadingComm);
   assertion(ierr==MPI_SUCCESS);
-  ierr = MPI_Comm_dup(MPI_COMM_WORLD, &_stealingCommMapped);
+  ierr = MPI_Comm_dup(MPI_COMM_WORLD, &_offloadingCommMapped);
   assertion(ierr==MPI_SUCCESS);
 }
 
 void exahype::offloading::OffloadingManager::destroyMPICommunicator() {
-  int ierr = MPI_Comm_free( &_stealingComm);
+  int ierr = MPI_Comm_free( &_offloadingComm);
   assertion(ierr==MPI_SUCCESS);
-  ierr = MPI_Comm_free(&_stealingCommMapped);
+  ierr = MPI_Comm_free(&_offloadingCommMapped);
   assertion(ierr==MPI_SUCCESS);
 }
 
@@ -136,11 +132,11 @@ int exahype::offloading::OffloadingManager::getNumberOfOutstandingRequests( Requ
 }
 
 MPI_Comm exahype::offloading::OffloadingManager::getMPICommunicator() {
-  return _stealingComm;
+  return _offloadingComm;
 }
 
 MPI_Comm exahype::offloading::OffloadingManager::getMPICommunicatorMapped() {
-  return _stealingCommMapped;
+  return _offloadingCommMapped;
 }
 
 exahype::offloading::OffloadingManager& exahype::offloading::OffloadingManager::getInstance() {
@@ -387,7 +383,7 @@ bool exahype::offloading::OffloadingManager::progressRequestsOfType( RequestType
   // First, we ensure here that only one thread at a time progresses stealing
   // this attempts to avoid multithreaded MPI problems
   tarch::multicore::Lock lock(_progressSemaphore, false);
-  bool canRun = lock.try_lock();
+  bool canRun = lock.tryLock();
   if(!canRun) {
 #if defined(PerformanceAnalysisStealingDetailed)
     watch.stopTimer();
@@ -760,8 +756,8 @@ bool exahype::offloading::OffloadingManager::ProgressJob::run( bool calledFromMa
   {
     //getInstance().progressAnyRequests();
     getInstance().progressRequestsOfType(RequestType::send);
-    MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, OffloadingManager::getInstance()._stealingComm, &flag, MPI_STATUS_IGNORE);
-    MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, OffloadingManager::getInstance()._stealingCommMapped, &flag, MPI_STATUS_IGNORE);
+    MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, OffloadingManager::getInstance()._offloadingComm, &flag, MPI_STATUS_IGNORE);
+    MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, OffloadingManager::getInstance()._offloadingCommMapped, &flag, MPI_STATUS_IGNORE);
   }
   //logInfo("submitRequests()", "terminated progress job (high priority)");
 

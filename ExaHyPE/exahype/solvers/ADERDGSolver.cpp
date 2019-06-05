@@ -4645,7 +4645,7 @@ void exahype::solvers::ADERDGSolver::progressStealing(exahype::solvers::ADERDGSo
   // First, we ensure here that only one thread at a time progresses stealing
   // this attempts to avoid multithreaded MPI problems
   tarch::multicore::Lock lock(StealingSemaphore, false);
-  bool canRun = lock.try_lock();
+  bool canRun = lock.tryLock();
   if(!canRun) {
 #if defined(PerformanceAnalysisStealingDetailed)
     watch.stopTimer();
@@ -4920,7 +4920,7 @@ bool exahype::solvers::ADERDGSolver::tryToReceiveTaskBack(exahype::solvers::ADER
   // First, we ensure here that only one thread at a time progresses stealing
   // this attempts to avoid multithreaded MPI problems
   tarch::multicore::Lock lock(StealingSemaphore, false);
-  bool canRun = lock.try_lock();
+  bool canRun = lock.tryLock();
   if(!canRun) {
 #if defined(PerformanceAnalysisStealingDetailed)
     watch.stopTimer();
@@ -5016,9 +5016,9 @@ bool exahype::solvers::ADERDGSolver::ReceiveJob::run( bool isCalledOnMaster ) {
   if(isCalledOnMaster) return true;
 
   tarch::multicore::Lock lock(StealingSemaphore, false);
-  bool canRun = lock.try_lock();
+  bool canRun = lock.tryLock();
   while(!canRun) {
-     canRun = lock.try_lock();
+     canRun = lock.tryLock();
   }
   int itcount = 0;
 
@@ -5118,9 +5118,9 @@ exahype::solvers::ADERDGSolver::ReceiveBackJob::ReceiveBackJob(ADERDGSolver& sol
 
 bool exahype::solvers::ADERDGSolver::ReceiveBackJob::run( bool isCalledOnMaster ) {
   tarch::multicore::Lock lock(StealingSemaphore, false);
-  bool canRun = lock.try_lock();
+  bool canRun = lock.tryLock();
   while(!canRun) {
-     canRun = lock.try_lock();
+     canRun = lock.tryLock();
   }
 
   bool run = true;
@@ -5205,7 +5205,7 @@ bool exahype::solvers::ADERDGSolver::StealingManagerJob::run( bool isCalledOnMas
     {
      /* tarch::multicore::RecursiveLock lock( 
         tarch::services::Service::receiveDanglingMessagesSemaphore, false );
-      bool acquired = lock.try_lock();
+      bool acquired = lock.tryLock();
       if(acquired) {
         tarch::parallel::Node::getInstance().receiveDanglingMessages();
         lock.free();
