@@ -22,12 +22,12 @@
 #include <atomic>
 
 namespace exahype {
-  namespace stealing {
+  namespace offloading {
     class DiffusiveDistributor;
   }
 }
 
-class exahype::stealing::DiffusiveDistributor {
+class exahype::offloading::DiffusiveDistributor {
   private:
     static tarch::logging::Log _log;
     DiffusiveDistributor();

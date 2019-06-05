@@ -29,7 +29,7 @@
 #include <unordered_map>
 
 namespace exahype {
-  namespace stealing {
+  namespace offloading {
     class OffloadingManager;
     /**
      * Different MPI request types for prioritizing message requests.
@@ -59,7 +59,7 @@ namespace exahype {
  * Finally it keeps track of some meta information such as the
  * number of emergency events (i.e., local blacklist).
  */
-class exahype::stealing::OffloadingManager {
+class exahype::offloading::OffloadingManager {
   private:
   /**
    * The logging device.

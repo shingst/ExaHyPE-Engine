@@ -244,7 +244,7 @@ void exahype::mappings::FinaliseMeshRefinement::endIteration(
   NumberOfSkeletonCells = _numberOfSkeletonCells;
 
 #ifdef DistributedStealing
-  exahype::stealing::PerformanceMonitor::getInstance().setTasksPerTimestep(_numberOfEnclaveCells + _numberOfSkeletonCells);
+  exahype::offloading::PerformanceMonitor::getInstance().setTasksPerTimestep(_numberOfEnclaveCells + _numberOfSkeletonCells);
 
     #if defined(DistributedStealing) 
     for (auto* solver : exahype::solvers::RegisteredSolvers) {

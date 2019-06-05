@@ -22,7 +22,7 @@
 #include <vector>
 
 namespace exahype {
-  namespace stealing {
+  namespace offloading {
     class AggressiveHybridDistributor;
   }
 }
@@ -30,7 +30,7 @@ namespace exahype {
 /*
  * TODO
  */
-class exahype::stealing::AggressiveHybridDistributor {
+class exahype::offloading::AggressiveHybridDistributor {
   private:
     static tarch::logging::Log _log;
     AggressiveHybridDistributor();

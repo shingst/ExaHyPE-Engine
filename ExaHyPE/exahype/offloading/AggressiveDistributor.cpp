@@ -26,9 +26,9 @@
 #include "tarch/multicore/Core.h"
 #include "tarch/multicore/tbb/Jobs.h"
 
-tarch::logging::Log exahype::stealing::AggressiveDistributor::_log( "exahype::stealing::AggressiveDistributor" );
+tarch::logging::Log exahype::offloading::AggressiveDistributor::_log( "exahype::stealing::AggressiveDistributor" );
 
-exahype::stealing::AggressiveDistributor::AggressiveDistributor() :
+exahype::offloading::AggressiveDistributor::AggressiveDistributor() :
   _zeroThreshold(2000*10),
   _isEnabled(false) {
 
@@ -59,7 +59,7 @@ exahype::stealing::AggressiveDistributor::AggressiveDistributor() :
   std::fill( &_notOffloaded[0], &_notOffloaded[nnodes], 0);
 }
 
-exahype::stealing::AggressiveDistributor::~AggressiveDistributor() {
+exahype::offloading::AggressiveDistributor::~AggressiveDistributor() {
   delete[] _notOffloaded;
   delete[] _initialLoadPerRank;
   delete[] _newLoadDistribution;
@@ -69,15 +69,15 @@ exahype::stealing::AggressiveDistributor::~AggressiveDistributor() {
   delete[] _idealTasksToOffload;
 }
 
-void exahype::stealing::AggressiveDistributor::enable() {
+void exahype::offloading::AggressiveDistributor::enable() {
   _isEnabled = true;
 }
 
-void exahype::stealing::AggressiveDistributor::disable() {
+void exahype::offloading::AggressiveDistributor::disable() {
   _isEnabled = false;
 }
 
-void exahype::stealing::AggressiveDistributor::computeIdealLoadDistribution(int enclaveCells, int skeletonCells) {
+void exahype::offloading::AggressiveDistributor::computeIdealLoadDistribution(int enclaveCells, int skeletonCells) {
 
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
   int myRank = tarch::parallel::Node::getInstance().getRank();
@@ -128,7 +128,7 @@ void exahype::stealing::AggressiveDistributor::computeIdealLoadDistribution(int 
 
         if(input_r==myRank) {
           _idealTasksToOffload[output_r] = inc_l;
-          stealing::StealingProfiler::getInstance().notifyTargetOffloadedTask(inc_l, output_r);
+          offloading::StealingProfiler::getInstance().notifyTargetOffloadedTask(inc_l, output_r);
           //_tasksToOffload[output_r]= std::min(inc_l,1);
           //stealing::StealingProfiler::getInstance().notifyTargetOffloadedTask(std::min(inc_l,1), output_r);
         }
@@ -157,12 +157,12 @@ void exahype::stealing::AggressiveDistributor::computeIdealLoadDistribution(int 
   delete[] newLoadDist;
 }
 
-exahype::stealing::AggressiveDistributor& exahype::stealing::AggressiveDistributor::getInstance() {
+exahype::offloading::AggressiveDistributor& exahype::offloading::AggressiveDistributor::getInstance() {
   static AggressiveDistributor aggressiveDist;
   return aggressiveDist;
 }
 
-void exahype::stealing::AggressiveDistributor::printOffloadingStatistics() {
+void exahype::offloading::AggressiveDistributor::printOffloadingStatistics() {
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
   int myRank = tarch::parallel::Node::getInstance().getRank();
 
@@ -174,7 +174,7 @@ void exahype::stealing::AggressiveDistributor::printOffloadingStatistics() {
   }
 }
 
-void exahype::stealing::AggressiveDistributor::resetRemainingTasksToOffload() {
+void exahype::offloading::AggressiveDistributor::resetRemainingTasksToOffload() {
 
   //logInfo("resetRemainingTasksToOffload()", "resetting remaining tasks to offload");
 
@@ -190,13 +190,13 @@ void exahype::stealing::AggressiveDistributor::resetRemainingTasksToOffload() {
   }
 }
 
-void exahype::stealing::AggressiveDistributor::handleEmergencyOnRank(int rank) {
+void exahype::offloading::AggressiveDistributor::handleEmergencyOnRank(int rank) {
   _tasksToOffload[rank]--;
   logInfo("handleEmergencyOnRank()","decrement for rank:"<<rank<<" tasks to offload "<<_tasksToOffload[rank]);
   //_remainingTasksToOffload[rank] = _tasksToOffload[rank];
 }
 
-void exahype::stealing::AggressiveDistributor::updateLoadDistribution() {
+void exahype::offloading::AggressiveDistributor::updateLoadDistribution() {
 
   if(!_isEnabled) {
     return;
@@ -206,7 +206,7 @@ void exahype::stealing::AggressiveDistributor::updateLoadDistribution() {
   int myRank = tarch::parallel::Node::getInstance().getRank();
 
   double *waitingTimesSnapshot = new double[nnodes*nnodes];
-  const double* currentWaitingTimesSnapshot = exahype::stealing::PerformanceMonitor::getInstance().getWaitingTimesSnapshot();
+  const double* currentWaitingTimesSnapshot = exahype::offloading::PerformanceMonitor::getInstance().getWaitingTimesSnapshot();
   std::copy(&currentWaitingTimesSnapshot[0], &currentWaitingTimesSnapshot[nnodes*nnodes], waitingTimesSnapshot);
 
   //waitingTimesSnapshot[myRank] = waitingTime;
@@ -225,7 +225,7 @@ void exahype::stealing::AggressiveDistributor::updateLoadDistribution() {
     for(int j=0; j<nnodes; j++) {
       if(waitingTimesSnapshot[k+j]>0)
         logInfo("updateLoadDistribution()","rank "<<i<<" waiting for "<<waitingTimesSnapshot[k+j]<<" for rank "<<j);
-      if(waitingTimesSnapshot[k+j]>currentLongestWaitTime && !exahype::stealing::OffloadingManager::getInstance().isBlacklisted(i)) {
+      if(waitingTimesSnapshot[k+j]>currentLongestWaitTime && !exahype::offloading::OffloadingManager::getInstance().isBlacklisted(i)) {
         currentLongestWaitTime = waitingTimesSnapshot[k+j];
         currentOptimalVictim = i;
       }
@@ -248,7 +248,7 @@ void exahype::stealing::AggressiveDistributor::updateLoadDistribution() {
 
   logInfo("updateLoadDistribution()", "optimal victim: "<<currentOptimalVictim<<" critical rank:"<<criticalRank);
 
-  bool isVictim = exahype::stealing::OffloadingManager::getInstance().isVictim();
+  bool isVictim = exahype::offloading::OffloadingManager::getInstance().isVictim();
   if(myRank == criticalRank && criticalRank!=currentOptimalVictim) {
     if(!isVictim) {
       int currentTasksCritical = _initialLoadPerRank[criticalRank];
@@ -289,7 +289,7 @@ void exahype::stealing::AggressiveDistributor::updateLoadDistribution() {
 
 }
 
-bool exahype::stealing::AggressiveDistributor::selectVictimRank(int& victim) {
+bool exahype::offloading::AggressiveDistributor::selectVictimRank(int& victim) {
 
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
   int myRank = tarch::parallel::Node::getInstance().getRank();

@@ -16,16 +16,16 @@
 #include "exahype/offloading/StealingProgressService.h"
 #include "tarch/services/ServiceFactory.h"
 #include "tarch/multicore/Jobs.h"
-registerService(exahype::stealing::StealingProgressService);
+registerService(exahype::offloading::StealingProgressService);
 
-tarch::logging::Log exahype::stealing::StealingProgressService::_log("exahype::stealing::StealingProgressService");
+tarch::logging::Log exahype::offloading::StealingProgressService::_log("exahype::stealing::StealingProgressService");
 
-exahype::stealing::StealingProgressService::StealingProgressService()
+exahype::offloading::StealingProgressService::StealingProgressService()
 : _isSet(false), _solver(nullptr) {};
 
-exahype::stealing::StealingProgressService::~StealingProgressService() {};
+exahype::offloading::StealingProgressService::~StealingProgressService() {};
 
-void exahype::stealing::StealingProgressService::receiveDanglingMessages() {
+void exahype::offloading::StealingProgressService::receiveDanglingMessages() {
   if(_isSet) {
     exahype::solvers::ADERDGSolver::setMaxNumberOfIprobesInProgressStealing(1);
     exahype::solvers::ADERDGSolver::progressStealing(_solver);
@@ -33,12 +33,12 @@ void exahype::stealing::StealingProgressService::receiveDanglingMessages() {
   }
 }
 
-exahype::stealing::StealingProgressService& exahype::stealing::StealingProgressService::getInstance() {
+exahype::offloading::StealingProgressService& exahype::offloading::StealingProgressService::getInstance() {
   static StealingProgressService service;
   return service;
 }
 
-void exahype::stealing::StealingProgressService::setSolver(exahype::solvers::ADERDGSolver *solver) {
+void exahype::offloading::StealingProgressService::setSolver(exahype::solvers::ADERDGSolver *solver) {
   _solver = solver;
   _isSet = true;
 }

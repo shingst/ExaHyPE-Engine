@@ -26,9 +26,9 @@
 #include "tarch/multicore/Core.h"
 #include "tarch/multicore/Jobs.h"
 
-tarch::logging::Log exahype::stealing::StaticDistributor::_log( "exahype::stealing::StaticDistributor" );
+tarch::logging::Log exahype::offloading::StaticDistributor::_log( "exahype::stealing::StaticDistributor" );
 
-exahype::stealing::StaticDistributor::StaticDistributor() {
+exahype::offloading::StaticDistributor::StaticDistributor() {
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
 
   _tasksToOffload          = new int[nnodes];
@@ -45,14 +45,14 @@ exahype::stealing::StaticDistributor::StaticDistributor() {
   std::fill( &_tasksToOffload[0], &_tasksToOffload[nnodes], 0);
 }
 
-exahype::stealing::StaticDistributor::~StaticDistributor() {
+exahype::offloading::StaticDistributor::~StaticDistributor() {
   delete[] _tasksToOffload;
   delete[] _remainingTasksToOffload;
   delete[] _consumersPerRank;
 }
 
 #ifdef StealingStrategyStaticHardcoded
-void exahype::stealing::StaticDistributor::loadDistributionFromFile(const std::string& filename) {
+void exahype::offloading::StaticDistributor::loadDistributionFromFile(const std::string& filename) {
 
   logInfo("loadDistributionFromFile()", "loading from file "<<filename);
   int myRank = tarch::parallel::Node::getInstance().getRank();
@@ -105,7 +105,7 @@ void exahype::stealing::StaticDistributor::loadDistributionFromFile(const std::s
 }
 #endif
 
-void exahype::stealing::StaticDistributor::computeNewLoadDistribution(int enclaveCells, int skeletonCells) {
+void exahype::offloading::StaticDistributor::computeNewLoadDistribution(int enclaveCells, int skeletonCells) {
 
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
   int myRank = tarch::parallel::Node::getInstance().getRank();
@@ -156,7 +156,7 @@ void exahype::stealing::StaticDistributor::computeNewLoadDistribution(int enclav
 
         if(input_r==myRank) {
           _tasksToOffload[output_r] = inc_l;
-          stealing::StealingProfiler::getInstance().notifyTargetOffloadedTask(inc_l, output_r);
+          offloading::StealingProfiler::getInstance().notifyTargetOffloadedTask(inc_l, output_r);
           //_tasksToOffload[output_r]= std::min(inc_l,1);
           //stealing::StealingProfiler::getInstance().notifyTargetOffloadedTask(std::min(inc_l,1), output_r);
         }
@@ -188,12 +188,12 @@ void exahype::stealing::StaticDistributor::computeNewLoadDistribution(int enclav
   delete[] loadPerRank;
 }
 
-exahype::stealing::StaticDistributor& exahype::stealing::StaticDistributor::getInstance() {
+exahype::offloading::StaticDistributor& exahype::offloading::StaticDistributor::getInstance() {
   static StaticDistributor staticDist;
   return staticDist;
 }
 
-void exahype::stealing::StaticDistributor::resetRemainingTasksToOffload() {
+void exahype::offloading::StaticDistributor::resetRemainingTasksToOffload() {
 
   logInfo("resetRemainingTasksToOffload()", "resetting remaining tasks to offload");
 
@@ -205,7 +205,7 @@ void exahype::stealing::StaticDistributor::resetRemainingTasksToOffload() {
   }
 }
 
-void exahype::stealing::StaticDistributor::getAllVictimRanks(std::vector<int> &victims ) {
+void exahype::offloading::StaticDistributor::getAllVictimRanks(std::vector<int> &victims ) {
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
   for(int i=0; i<nnodes; i++) {
     if(_tasksToOffload[i]>0 ) victims.push_back(i);
@@ -213,7 +213,7 @@ void exahype::stealing::StaticDistributor::getAllVictimRanks(std::vector<int> &v
 }
 
 
-bool exahype::stealing::StaticDistributor::selectVictimRank(int& victim) {
+bool exahype::offloading::StaticDistributor::selectVictimRank(int& victim) {
 
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
   int myRank = tarch::parallel::Node::getInstance().getRank();

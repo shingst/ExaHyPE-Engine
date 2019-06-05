@@ -25,9 +25,9 @@
 #include "tarch/multicore/Core.h"
 #include "tarch/multicore/Jobs.h"
 
-tarch::logging::Log exahype::stealing::DiffusiveDistributor::_log( "exahype::stealing::DiffusiveDistributor" );
+tarch::logging::Log exahype::offloading::DiffusiveDistributor::_log( "exahype::stealing::DiffusiveDistributor" );
 
-exahype::stealing::DiffusiveDistributor::DiffusiveDistributor() :
+exahype::offloading::DiffusiveDistributor::DiffusiveDistributor() :
   _zeroThreshold(10*2000)
 {
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
@@ -39,28 +39,28 @@ exahype::stealing::DiffusiveDistributor::DiffusiveDistributor() :
   std::fill( &_tasksToOffload[0], &_tasksToOffload[nnodes], 0);
 }
 
-exahype::stealing::DiffusiveDistributor::~DiffusiveDistributor() {
+exahype::offloading::DiffusiveDistributor::~DiffusiveDistributor() {
   delete[] _tasksToOffload;
   delete[] _remainingTasksToOffload;
 }
 
-void exahype::stealing::DiffusiveDistributor::updateZeroThreshold(int threshold) {
+void exahype::offloading::DiffusiveDistributor::updateZeroThreshold(int threshold) {
   _zeroThreshold = threshold;
 }
 
-void exahype::stealing::DiffusiveDistributor::updateLoadDistribution() {
+void exahype::offloading::DiffusiveDistributor::updateLoadDistribution() {
 
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
   int myRank = tarch::parallel::Node::getInstance().getRank();
 
   double *waitingTimesSnapshot = new double[nnodes*nnodes];
-  const double* currentWaitingTimesSnapshot = exahype::stealing::PerformanceMonitor::getInstance().getWaitingTimesSnapshot();
+  const double* currentWaitingTimesSnapshot = exahype::offloading::PerformanceMonitor::getInstance().getWaitingTimesSnapshot();
   std::copy(&currentWaitingTimesSnapshot[0], &currentWaitingTimesSnapshot[nnodes*nnodes], waitingTimesSnapshot);
 
   //waitingTimesSnapshot[myRank] = waitingTime;
 
-  bool isVictim = exahype::stealing::OffloadingManager::getInstance().isVictim();
-  bool emergencyTriggered = exahype::stealing::OffloadingManager::getInstance().isEmergencyTriggered();
+  bool isVictim = exahype::offloading::OffloadingManager::getInstance().isVictim();
+  bool emergencyTriggered = exahype::offloading::OffloadingManager::getInstance().isEmergencyTriggered();
 
   logInfo("updateLoadDistribution()", " isVictim: "<<isVictim<<" emergency event: "<<emergencyTriggered);
 
@@ -77,7 +77,7 @@ void exahype::stealing::DiffusiveDistributor::updateLoadDistribution() {
     bool waitingForSomeone = false;
     for(int j=0; j<nnodes; j++) {
       //logInfo("updateLoadDistribution()","rank "<<i<<" waiting for "<<waitingTimesSnapshot[k+j]<<" for rank "<<j);
-      if(waitingTimesSnapshot[k+j]>currentLongestWaitTime && !exahype::stealing::OffloadingManager::getInstance().isBlacklisted(i)) {
+      if(waitingTimesSnapshot[k+j]>currentLongestWaitTime && !exahype::offloading::OffloadingManager::getInstance().isBlacklisted(i)) {
         currentLongestWaitTime = waitingTimesSnapshot[k+j];
         currentOptimalVictim = i;
       }
@@ -140,18 +140,18 @@ void exahype::stealing::DiffusiveDistributor::updateLoadDistribution() {
 
 }
 
-void exahype::stealing::DiffusiveDistributor::handleEmergencyOnRank(int rank) {
+void exahype::offloading::DiffusiveDistributor::handleEmergencyOnRank(int rank) {
    logInfo("handleEmergencyOnRank()", "Emergency event happened for rank "<<rank);
    _tasksToOffload[rank]--;
    logInfo("handleEmergencyOnRank()", "decrement, send "<<_tasksToOffload[rank]<<" to rank "<<rank); 
 }
 
-exahype::stealing::DiffusiveDistributor& exahype::stealing::DiffusiveDistributor::getInstance() {
+exahype::offloading::DiffusiveDistributor& exahype::offloading::DiffusiveDistributor::getInstance() {
   static DiffusiveDistributor diffusiveDist;
   return diffusiveDist;
 }
 
-bool exahype::stealing::DiffusiveDistributor::selectVictimRank(int& victim) {
+bool exahype::offloading::DiffusiveDistributor::selectVictimRank(int& victim) {
 
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
   int myRank = tarch::parallel::Node::getInstance().getRank();

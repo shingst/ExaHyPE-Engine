@@ -28,9 +28,9 @@
 #include "tarch/multicore/Core.h"
 #include "tarch/multicore/tbb/Jobs.h"
 
-tarch::logging::Log exahype::stealing::AggressiveCCPDistributor::_log( "exahype::stealing::AggressiveCCPDistributor" );
+tarch::logging::Log exahype::offloading::AggressiveCCPDistributor::_log( "exahype::stealing::AggressiveCCPDistributor" );
 
-exahype::stealing::AggressiveCCPDistributor::AggressiveCCPDistributor() :
+exahype::offloading::AggressiveCCPDistributor::AggressiveCCPDistributor() :
   _isEnabled(false),
   _temperature(0.5),
   _totalTasksOffloaded(0),
@@ -64,7 +64,7 @@ exahype::stealing::AggressiveCCPDistributor::AggressiveCCPDistributor() :
   std::fill( &_emergenciesPerRank[0], &_emergenciesPerRank[nnodes], 0);
 }
 
-exahype::stealing::AggressiveCCPDistributor::~AggressiveCCPDistributor() {
+exahype::offloading::AggressiveCCPDistributor::~AggressiveCCPDistributor() {
   delete[] _emergenciesPerRank;
   delete[] _notOffloaded;
   delete[] _initialLoadPerRank;
@@ -74,15 +74,15 @@ exahype::stealing::AggressiveCCPDistributor::~AggressiveCCPDistributor() {
   delete[] _idealTasksToOffload;
 }
 
-void exahype::stealing::AggressiveCCPDistributor::enable() {
+void exahype::offloading::AggressiveCCPDistributor::enable() {
   _isEnabled = true;
 }
 
-void exahype::stealing::AggressiveCCPDistributor::disable() {
+void exahype::offloading::AggressiveCCPDistributor::disable() {
   _isEnabled = false;
 }
 
-void exahype::stealing::AggressiveCCPDistributor::computeIdealLoadDistribution(int enclaveCells, int skeletonCells) {
+void exahype::offloading::AggressiveCCPDistributor::computeIdealLoadDistribution(int enclaveCells, int skeletonCells) {
 
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
   int myRank = tarch::parallel::Node::getInstance().getRank();
@@ -141,7 +141,7 @@ void exahype::stealing::AggressiveCCPDistributor::computeIdealLoadDistribution(i
         if(input_r==myRank) {
           logInfo("computeIdeal","inc_l="<<inc_l);
           _idealTasksToOffload[output_r] = inc_l;
-          stealing::StealingProfiler::getInstance().notifyTargetOffloadedTask(inc_l, output_r);
+          offloading::StealingProfiler::getInstance().notifyTargetOffloadedTask(inc_l, output_r);
           //_tasksToOffload[output_r]= std::min(inc_l,1);
           //stealing::StealingProfiler::getInstance().notifyTargetOffloadedTask(std::min(inc_l,1), output_r);
         }
@@ -170,12 +170,12 @@ void exahype::stealing::AggressiveCCPDistributor::computeIdealLoadDistribution(i
   delete[] newLoadDist;
 }
 
-exahype::stealing::AggressiveCCPDistributor& exahype::stealing::AggressiveCCPDistributor::getInstance() {
+exahype::offloading::AggressiveCCPDistributor& exahype::offloading::AggressiveCCPDistributor::getInstance() {
   static AggressiveCCPDistributor aggressiveDist;
   return aggressiveDist;
 }
 
-void exahype::stealing::AggressiveCCPDistributor::printOffloadingStatistics() {
+void exahype::offloading::AggressiveCCPDistributor::printOffloadingStatistics() {
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
   int myRank = tarch::parallel::Node::getInstance().getRank();
 
@@ -189,7 +189,7 @@ void exahype::stealing::AggressiveCCPDistributor::printOffloadingStatistics() {
 
 }
 
-void exahype::stealing::AggressiveCCPDistributor::resetRemainingTasksToOffload() {
+void exahype::offloading::AggressiveCCPDistributor::resetRemainingTasksToOffload() {
 
   //logInfo("resetRemainingTasksToOffload()", "resetting remaining tasks to offload");
 
@@ -205,12 +205,12 @@ void exahype::stealing::AggressiveCCPDistributor::resetRemainingTasksToOffload()
   }
 }
 
-void exahype::stealing::AggressiveCCPDistributor::handleEmergencyOnRank(int rank) {
+void exahype::offloading::AggressiveCCPDistributor::handleEmergencyOnRank(int rank) {
   _emergenciesPerRank[rank]++;
   logInfo("handleEmergencyOnRank()","emergencies for rank:"<<_emergenciesPerRank[rank]);
 }
 
-void exahype::stealing::AggressiveCCPDistributor::updateLoadDistribution() {
+void exahype::offloading::AggressiveCCPDistributor::updateLoadDistribution() {
 
   if(!_isEnabled) {
     return;
@@ -231,7 +231,7 @@ void exahype::stealing::AggressiveCCPDistributor::updateLoadDistribution() {
 
   double *waitingTimesSnapshot = new double[nnodes*nnodes];
  // const int* currentWaitingTimesSnapshot = exahype::stealing::PerformanceMonitor::getInstance().getWaitingTimesSnapshot();
-  const double* currentWaitingTimesSnapshot = exahype::stealing::StealingAnalyser::getInstance().getFilteredWaitingTimesSnapshot();
+  const double* currentWaitingTimesSnapshot = exahype::offloading::StealingAnalyser::getInstance().getFilteredWaitingTimesSnapshot();
   std::copy(&currentWaitingTimesSnapshot[0], &currentWaitingTimesSnapshot[nnodes*nnodes], waitingTimesSnapshot);
 
   //waitingTimesSnapshot[myRank] = waitingTime;
@@ -250,7 +250,7 @@ void exahype::stealing::AggressiveCCPDistributor::updateLoadDistribution() {
     for(int j=0; j<nnodes; j++) {
       if(waitingTimesSnapshot[k+j]>0)
         logInfo("updateLoadDistribution()","rank "<<i<<" waiting for "<<waitingTimesSnapshot[k+j]<<" for rank "<<j);
-      if(waitingTimesSnapshot[k+j]> exahype::stealing::StealingAnalyser::getInstance().getZeroThreshold()) {
+      if(waitingTimesSnapshot[k+j]> exahype::offloading::StealingAnalyser::getInstance().getZeroThreshold()) {
         waitingRanks[j]++;   
         waitingForSomeone = true;
       }
@@ -274,12 +274,12 @@ void exahype::stealing::AggressiveCCPDistributor::updateLoadDistribution() {
 
   logInfo("updateLoadDistribution()", " critical rank:"<<criticalRank);
   
-  bool isVictim = exahype::stealing::OffloadingManager::getInstance().isVictim();
+  bool isVictim = exahype::offloading::OffloadingManager::getInstance().isVictim();
   if(myRank == criticalRank && !isVictim) {
      for(int i=0; i<nnodes; i++) {
        if(_idealTasksToOffload[i]>0) {
          //we have a potential victim rank
-         if(!exahype::stealing::OffloadingManager::getInstance().isBlacklisted(i)) {
+         if(!exahype::offloading::OffloadingManager::getInstance().isBlacklisted(i)) {
           //logInfo("updateLoadDistribution", "tasks for victim "<<i<<" before recomputation:"<<_tasksToOffload[i]<< " ideal: "<<_idealTasksToOffload[i]<< " temp "<<_temperature);
           //logInfo("updateLoadDistribution", "first : "<<(1.0-_temperature)*_tasksToOffload[i]<<" second:"<<_temperature*_idealTasksToOffload[i]);
           _tasksToOffload[i] = std::ceil(std::max((1.0-_temperature), 0.0)*_tasksToOffload[i] + _temperature*_idealTasksToOffload[i]);
@@ -317,7 +317,7 @@ void exahype::stealing::AggressiveCCPDistributor::updateLoadDistribution() {
 
 }
 
-bool exahype::stealing::AggressiveCCPDistributor::selectVictimRank(int& victim) {
+bool exahype::offloading::AggressiveCCPDistributor::selectVictimRank(int& victim) {
 
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
   int myRank = tarch::parallel::Node::getInstance().getRank();

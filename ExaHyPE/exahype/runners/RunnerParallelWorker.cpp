@@ -134,39 +134,39 @@ void exahype::runners::Runner::runGlobalStep() {
   logInfo("runner(...)",
           "running global step "<<exahype::mappings::FinaliseMeshRefinement::NumberOfEnclaveCells<<
 		  ", "<<exahype::mappings::FinaliseMeshRefinement::NumberOfSkeletonCells );
-  exahype::stealing::StaticDistributor::getInstance().computeNewLoadDistribution(
+  exahype::offloading::StaticDistributor::getInstance().computeNewLoadDistribution(
       exahype::mappings::FinaliseMeshRefinement::NumberOfEnclaveCells,
 	  exahype::mappings::FinaliseMeshRefinement::NumberOfSkeletonCells);
 #elif defined(StealingStrategyAggressive)
   logInfo("runner(...)",
           "running global step "<<exahype::mappings::FinaliseMeshRefinement::NumberOfEnclaveCells<<
 		  ", "<<exahype::mappings::FinaliseMeshRefinement::NumberOfSkeletonCells );
-  exahype::stealing::AggressiveDistributor::getInstance().computeIdealLoadDistribution(
+  exahype::offloading::AggressiveDistributor::getInstance().computeIdealLoadDistribution(
       exahype::mappings::FinaliseMeshRefinement::NumberOfEnclaveCells,
 	  exahype::mappings::FinaliseMeshRefinement::NumberOfSkeletonCells);
 #elif defined(StealingStrategyAggressiveCCP)
   logInfo("runner(...)",
           "running global step "<<exahype::mappings::FinaliseMeshRefinement::NumberOfEnclaveCells<<
       ", "<<exahype::mappings::FinaliseMeshRefinement::NumberOfSkeletonCells );
-  exahype::stealing::AggressiveCCPDistributor::getInstance().computeIdealLoadDistribution(
+  exahype::offloading::AggressiveCCPDistributor::getInstance().computeIdealLoadDistribution(
       exahype::mappings::FinaliseMeshRefinement::NumberOfEnclaveCells,
     exahype::mappings::FinaliseMeshRefinement::NumberOfSkeletonCells);
 #elif defined(StealingStrategyAggressiveHybrid)
   logInfo("runner(...)",
           "running global step "<<exahype::mappings::FinaliseMeshRefinement::NumberOfEnclaveCells<<
       ", "<<exahype::mappings::FinaliseMeshRefinement::NumberOfSkeletonCells );
-  exahype::stealing::AggressiveHybridDistributor::getInstance().computeIdealLoadDistribution(
+  exahype::offloading::AggressiveHybridDistributor::getInstance().computeIdealLoadDistribution(
       exahype::mappings::FinaliseMeshRefinement::NumberOfEnclaveCells,
     exahype::mappings::FinaliseMeshRefinement::NumberOfSkeletonCells);
 #endif 
 
 
 #if defined(StealingStrategyAggressive)
-  exahype::stealing::AggressiveDistributor::getInstance().enable();
+  exahype::offloading::AggressiveDistributor::getInstance().enable();
 #elif defined(StealingStrategyAggressiveCCP)
-  exahype::stealing::AggressiveCCPDistributor::getInstance().enable();
+  exahype::offloading::AggressiveCCPDistributor::getInstance().enable();
 #elif defined(StealingStrategyAggressiveHybrid)
-  exahype::stealing::AggressiveHybridDistributor::getInstance().enable();
+  exahype::offloading::AggressiveHybridDistributor::getInstance().enable();
 #endif
 
 #endif

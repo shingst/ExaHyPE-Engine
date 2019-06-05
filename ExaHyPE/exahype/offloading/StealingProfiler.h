@@ -24,7 +24,7 @@
 #include "exahype/solvers/Solver.h"
 
 namespace exahype {
-  namespace stealing {
+  namespace offloading {
     class StealingProfiler;
   }
 }
@@ -36,7 +36,7 @@ namespace exahype {
  * program exit. The StealingProfiler is enabled with the compile-time
  * flag -DStealingUseProfiler.
  */
-class exahype::stealing::StealingProfiler {
+class exahype::offloading::StealingProfiler {
   private:
     static tarch::logging::Log _log;
     StealingProfiler();

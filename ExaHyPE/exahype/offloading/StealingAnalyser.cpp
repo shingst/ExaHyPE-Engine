@@ -32,7 +32,7 @@
 #include "exahype/offloading/AggressiveHybridDistributor.h"
 #include "exahype/offloading/OffloadingManager.h"
 
-tarch::logging::Log  exahype::stealing::StealingAnalyser::_log( "exahype::stealing::StealingAnalyser" );
+tarch::logging::Log  exahype::offloading::StealingAnalyser::_log( "exahype::stealing::StealingAnalyser" );
 
 #ifdef USE_ITAC
 #include "VT.h"
@@ -40,7 +40,7 @@ static int event_waitForWorker = -1;
 static const char *event_name_waitForWorker = "waitForWorker";
 #endif
 
-exahype::stealing::StealingAnalyser::StealingAnalyser():
+exahype::offloading::StealingAnalyser::StealingAnalyser():
   _isSwitchedOn(true),
   _waitForWorkerDataWatch("exahype::stealing::StealingAnalyser", "-", false,false),
   _waitForMasterDataWatch("exahype::stealing::StealingAnalyser", "-", false,false),
@@ -66,7 +66,7 @@ exahype::stealing::StealingAnalyser::StealingAnalyser():
 }
 
 
-exahype::stealing::StealingAnalyser& exahype::stealing::StealingAnalyser::getInstance() {
+exahype::offloading::StealingAnalyser& exahype::offloading::StealingAnalyser::getInstance() {
   static StealingAnalyser* analyser = nullptr;
 
   if(analyser==nullptr) {
@@ -77,35 +77,35 @@ exahype::stealing::StealingAnalyser& exahype::stealing::StealingAnalyser::getIns
   return *analyser;
 }
 
-exahype::stealing::StealingAnalyser::~StealingAnalyser() {
+exahype::offloading::StealingAnalyser::~StealingAnalyser() {
     delete[] _currentFilteredWaitingTimesSnapshot;
 }
 
 
-void exahype::stealing::StealingAnalyser::enable(bool value) {
+void exahype::offloading::StealingAnalyser::enable(bool value) {
   _isSwitchedOn=value;
 }
 
-const double* exahype::stealing::StealingAnalyser::getFilteredWaitingTimesSnapshot() {
+const double* exahype::offloading::StealingAnalyser::getFilteredWaitingTimesSnapshot() {
   return _currentFilteredWaitingTimesSnapshot;
 }
 
-double exahype::stealing::StealingAnalyser::getZeroThreshold() {
+double exahype::offloading::StealingAnalyser::getZeroThreshold() {
   return _currentZeroThreshold;
 }
 
-void exahype::stealing::StealingAnalyser::setTimePerSTP(double timePerSTP) {
+void exahype::offloading::StealingAnalyser::setTimePerSTP(double timePerSTP) {
   _timePerStealablePredictionJob.setValue(timePerSTP);
   //logInfo("setTimePerSTP()", "submitted new STP measurement, current time per stp: "<<getTimePerSTP());
 }
 
-double exahype::stealing::StealingAnalyser::getTimePerSTP() {
+double exahype::offloading::StealingAnalyser::getTimePerSTP() {
   return _timePerStealablePredictionJob.getValue();
 }
 
-void exahype::stealing::StealingAnalyser::updateZeroTresholdAndFilteredSnapshot() {
+void exahype::offloading::StealingAnalyser::updateZeroTresholdAndFilteredSnapshot() {
 #if !defined(AnalyseWaitingTimes)
-  const double* currentWaitingTimesSnapshot = exahype::stealing::PerformanceMonitor::getInstance().getWaitingTimesSnapshot();
+  const double* currentWaitingTimesSnapshot = exahype::offloading::PerformanceMonitor::getInstance().getWaitingTimesSnapshot();
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
 
   //check if valid: there is an entry>0 for every rank
@@ -159,19 +159,19 @@ void exahype::stealing::StealingAnalyser::updateZeroTresholdAndFilteredSnapshot(
 #endif
 }
 
-void exahype::stealing::StealingAnalyser::beginIteration() {
+void exahype::offloading::StealingAnalyser::beginIteration() {
 #if !defined(AnalyseWaitingTimes)
   if(_iterationCounter%2 !=0) return;
 
-  exahype::stealing::OffloadingManager::getInstance().resetVictimFlag(); //TODO: correct position here?
-  exahype::stealing::OffloadingManager::getInstance().recoverBlacklistedRanks();
+  exahype::offloading::OffloadingManager::getInstance().resetVictimFlag(); //TODO: correct position here?
+  exahype::offloading::OffloadingManager::getInstance().recoverBlacklistedRanks();
 #endif
 }
 
 
-void exahype::stealing::StealingAnalyser::endIteration(double numberOfInnerLeafCells, double numberOfOuterLeafCells, double numberOfInnerCells, double numberOfOuterCells, double numberOfLocalCells, double numberOfLocalVertices) {
+void exahype::offloading::StealingAnalyser::endIteration(double numberOfInnerLeafCells, double numberOfOuterLeafCells, double numberOfInnerCells, double numberOfOuterCells, double numberOfLocalCells, double numberOfLocalVertices) {
 #if !defined(AnalyseWaitingTimes)
-  exahype::stealing::OffloadingManager::getInstance().printBlacklist();
+  exahype::offloading::OffloadingManager::getInstance().printBlacklist();
   if(_iterationCounter%2 !=0) {
      _iterationCounter++; 
      return;
@@ -182,32 +182,32 @@ void exahype::stealing::StealingAnalyser::endIteration(double numberOfInnerLeafC
     if(i != tarch::parallel::Node::getInstance().getRank()) {
       logDebug("endIteration()", "wait for rank "<<i<<_waitForOtherRank[i].toString());
       if(_waitForOtherRank[i].isAccurateValue())
-       exahype::stealing::PerformanceMonitor::getInstance().submitWaitingTimeForRank(_waitForOtherRank[i].getValue(), i);
+       exahype::offloading::PerformanceMonitor::getInstance().submitWaitingTimeForRank(_waitForOtherRank[i].getValue(), i);
     }     
   }
 
   updateZeroTresholdAndFilteredSnapshot();
   printWaitingTimes();
 #if defined(StealingStrategyDiffusive)
-  exahype::stealing::DiffusiveDistributor::getInstance().updateLoadDistribution();
+  exahype::offloading::DiffusiveDistributor::getInstance().updateLoadDistribution();
 #elif defined(StealingStrategyAggressive)
-  exahype::stealing::AggressiveDistributor::getInstance().printOffloadingStatistics();
-  exahype::stealing::AggressiveDistributor::getInstance().updateLoadDistribution();
+  exahype::offloading::AggressiveDistributor::getInstance().printOffloadingStatistics();
+  exahype::offloading::AggressiveDistributor::getInstance().updateLoadDistribution();
 #elif defined(StealingStrategyAggressiveCCP)
-  exahype::stealing::AggressiveCCPDistributor::getInstance().printOffloadingStatistics();
-  exahype::stealing::AggressiveCCPDistributor::getInstance().updateLoadDistribution();
+  exahype::offloading::AggressiveCCPDistributor::getInstance().printOffloadingStatistics();
+  exahype::offloading::AggressiveCCPDistributor::getInstance().updateLoadDistribution();
 #elif defined(StealingStrategyAggressiveHybrid)
-  exahype::stealing::AggressiveHybridDistributor::getInstance().printOffloadingStatistics();
-  exahype::stealing::AggressiveHybridDistributor::getInstance().updateLoadDistribution();
+  exahype::offloading::AggressiveHybridDistributor::getInstance().printOffloadingStatistics();
+  exahype::offloading::AggressiveHybridDistributor::getInstance().updateLoadDistribution();
 #endif
-  exahype::stealing::OffloadingManager::getInstance().printBlacklist();
+  exahype::offloading::OffloadingManager::getInstance().printBlacklist();
   //exahype::stealing::StealingManager::getInstance().resetPostedRequests();
 
   _iterationCounter++;
 #endif
 }
 
-void exahype::stealing::StealingAnalyser::printWaitingTimes() {
+void exahype::offloading::StealingAnalyser::printWaitingTimes() {
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
 
   const double* waitingTimesSnapshot = getFilteredWaitingTimesSnapshot();
@@ -222,7 +222,7 @@ void exahype::stealing::StealingAnalyser::printWaitingTimes() {
 
 }
 
-void exahype::stealing::StealingAnalyser::beginToReceiveDataFromWorker() {
+void exahype::offloading::StealingAnalyser::beginToReceiveDataFromWorker() {
   if (_isSwitchedOn) {
     _waitForWorkerDataWatch.startTimer();
     int pendingJobs  = tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs();
@@ -237,7 +237,7 @@ void exahype::stealing::StealingAnalyser::beginToReceiveDataFromWorker() {
 }
 
 
-void exahype::stealing::StealingAnalyser::endToReceiveDataFromWorker( int fromRank ) {
+void exahype::offloading::StealingAnalyser::endToReceiveDataFromWorker( int fromRank ) {
 
   if(_iterationCounter%2 !=0) {
      _iterationCounter++; 
@@ -280,14 +280,14 @@ void exahype::stealing::StealingAnalyser::endToReceiveDataFromWorker( int fromRa
 }
 
 
-void exahype::stealing::StealingAnalyser::beginToReceiveDataFromMaster(int master) {
+void exahype::offloading::StealingAnalyser::beginToReceiveDataFromMaster(int master) {
   //if (_isSwitchedOn && !_waitForMasterDataWatch.isOn()) {
   //  _waitForMasterDataWatch.startTimer();
   //}
 }
 
 
-void exahype::stealing::StealingAnalyser::endToReceiveDataFromMaster(int master) {
+void exahype::offloading::StealingAnalyser::endToReceiveDataFromMaster(int master) {
 
   if(master==0) 
      endToReceiveDataFromGlobalMaster();
@@ -310,14 +310,14 @@ void exahype::stealing::StealingAnalyser::endToReceiveDataFromMaster(int master)
   
 }
 
-void exahype::stealing::StealingAnalyser::beginToSendDataToMaster() {
+void exahype::offloading::StealingAnalyser::beginToSendDataToMaster() {
   //if (_isSwitchedOn && !_waitForMasterDataWatch.isOn()) {
   //  _waitForMasterDataWatch.startTimer();
   //}
 }
 
 
-void exahype::stealing::StealingAnalyser::endToSendDataToMaster() {
+void exahype::offloading::StealingAnalyser::endToSendDataToMaster() {
   /*if (_isSwitchedOn && _waitForMasterDataWatch.isOn()) {
     _waitForMasterDataWatch.stopTimer();
     const double elapsedTime = _waitForMasterDataWatch.getCalendarTime();
@@ -346,14 +346,14 @@ void exahype::stealing::StealingAnalyser::endToSendDataToMaster() {
   }
 }
 
-void exahype::stealing::StealingAnalyser::beginToSendDataToWorker() {
+void exahype::offloading::StealingAnalyser::beginToSendDataToWorker() {
   if (_isSwitchedOn && !_waitForWorkerDataWatch.isOn()) {
     _waitForWorkerDataWatch.startTimer();
   }
 }
 
 
-void exahype::stealing::StealingAnalyser::endToSendDataToWorker(int worker) {
+void exahype::offloading::StealingAnalyser::endToSendDataToWorker(int worker) {
   if (_isSwitchedOn && _waitForWorkerDataWatch.isOn()) {
     _waitForWorkerDataWatch.stopTimer();
     const double elapsedTime = _waitForWorkerDataWatch.getCalendarTime();
@@ -371,18 +371,18 @@ void exahype::stealing::StealingAnalyser::endToSendDataToWorker(int worker) {
   }
 }
 
-void exahype::stealing::StealingAnalyser::notifyReceivedSTPJob() {
+void exahype::offloading::StealingAnalyser::notifyReceivedSTPJob() {
   _lateSTPJobs++;
 }
 
-void exahype::stealing::StealingAnalyser::beginToReceiveDataFromGlobalMaster() {
+void exahype::offloading::StealingAnalyser::beginToReceiveDataFromGlobalMaster() {
   //if (_isSwitchedOn && !_waitForGlobalMasterDataWatch.isOn()) {
     //_waitForGlobalMasterDataWatch.startTimer();
   //}
 }
 
 
-void exahype::stealing::StealingAnalyser::endToReceiveDataFromGlobalMaster() {
+void exahype::offloading::StealingAnalyser::endToReceiveDataFromGlobalMaster() {
   if (_isSwitchedOn && _waitForMasterDataWatch.isOn()) {
     _waitForMasterDataWatch.stopTimer();
     double estimatedTimeForLateSTPs = _lateSTPJobs * getTimePerSTP()/ tarch::multicore::Core::getInstance().getNumberOfThreads();
@@ -407,74 +407,74 @@ void exahype::stealing::StealingAnalyser::endToReceiveDataFromGlobalMaster() {
   }
 }
 
-void exahype::stealing::StealingAnalyser::dataWasNotReceivedInBackground( int fromRank, int tag, int cardinality, int pageSize ) {
+void exahype::offloading::StealingAnalyser::dataWasNotReceivedInBackground( int fromRank, int tag, int cardinality, int pageSize ) {
 }
 
 
-void exahype::stealing::StealingAnalyser::beginToReleaseSynchronousHeapData() {
+void exahype::offloading::StealingAnalyser::beginToReleaseSynchronousHeapData() {
 }
 
 
-void exahype::stealing::StealingAnalyser::endToReleaseSynchronousHeapData() {
+void exahype::offloading::StealingAnalyser::endToReleaseSynchronousHeapData() {
 }
 
 
-void exahype::stealing::StealingAnalyser::beginToPrepareAsynchronousHeapDataExchange() {
+void exahype::offloading::StealingAnalyser::beginToPrepareAsynchronousHeapDataExchange() {
 }
 
 
-void exahype::stealing::StealingAnalyser::endToPrepareAsynchronousHeapDataExchange() {
+void exahype::offloading::StealingAnalyser::endToPrepareAsynchronousHeapDataExchange() {
 }
 
 
-void exahype::stealing::StealingAnalyser::beginReleaseOfJoinData() {
+void exahype::offloading::StealingAnalyser::beginReleaseOfJoinData() {
 }
 
 
-void exahype::stealing::StealingAnalyser::endReleaseOfJoinData() {
+void exahype::offloading::StealingAnalyser::endReleaseOfJoinData() {
 }
 
 
-void exahype::stealing::StealingAnalyser::beginReleaseOfBoundaryData() {
+void exahype::offloading::StealingAnalyser::beginReleaseOfBoundaryData() {
 }
 
 
-void exahype::stealing::StealingAnalyser::endReleaseOfBoundaryData() {
+void exahype::offloading::StealingAnalyser::endReleaseOfBoundaryData() {
 }
 
 
-void exahype::stealing::StealingAnalyser::changeConcurrencyLevel(int actualChange, int maxPossibleChange) {
+void exahype::offloading::StealingAnalyser::changeConcurrencyLevel(int actualChange, int maxPossibleChange) {
 }
 
 
-void exahype::stealing::StealingAnalyser::minuteNumberOfBackgroundTasks(int taskCount) {
+void exahype::offloading::StealingAnalyser::minuteNumberOfBackgroundTasks(int taskCount) {
 }
 
 
-void exahype::stealing::StealingAnalyser::beginProcessingBackgroundJobs() {
+void exahype::offloading::StealingAnalyser::beginProcessingBackgroundJobs() {
 }
 
 
-void exahype::stealing::StealingAnalyser::endProcessingBackgroundJobs() {
+void exahype::offloading::StealingAnalyser::endProcessingBackgroundJobs() {
 }
 
 
-void exahype::stealing::StealingAnalyser::enterCentralElementOfEnclosingSpacetree() {
+void exahype::offloading::StealingAnalyser::enterCentralElementOfEnclosingSpacetree() {
 }
 
 
-void exahype::stealing::StealingAnalyser::leaveCentralElementOfEnclosingSpacetree() {
+void exahype::offloading::StealingAnalyser::leaveCentralElementOfEnclosingSpacetree() {
 }
 
 
-void exahype::stealing::StealingAnalyser::addWorker(
+void exahype::offloading::StealingAnalyser::addWorker(
   int                                 workerRank,
   int                                 level
 ) {
 }
 
 
-void exahype::stealing::StealingAnalyser::removeWorker(
+void exahype::offloading::StealingAnalyser::removeWorker(
   int                                 workerRank,
   int                                 level
 ) {

@@ -427,7 +427,7 @@ void exahype::State::reduceGlobalDataToMaster(
     solver->sendDataToMaster(master,cellCentre,level);
   }
 #if defined(DistributedStealing) || defined(AnalyseWaitingTimes)
-  exahype::stealing::StealingAnalyser::getInstance().endToSendDataToMaster();
+  exahype::offloading::StealingAnalyser::getInstance().endToSendDataToMaster();
 #endif
 }
 

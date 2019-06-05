@@ -22,7 +22,7 @@
 #include <atomic>
 
 namespace exahype {
-  namespace stealing {
+  namespace offloading {
     class StaticDistributor;
   }
 }
@@ -35,7 +35,7 @@ namespace exahype {
  * refinement has finished based on the number of cells that
  * a rank is responsible for.
  */
-class exahype::stealing::StaticDistributor {
+class exahype::offloading::StaticDistributor {
   private:
     static tarch::logging::Log _log;
     StaticDistributor();

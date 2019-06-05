@@ -293,16 +293,16 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
     }
 
     //always use stealing analyser
-    peano::performanceanalysis::Analysis::getInstance().setDevice(&exahype::stealing::StealingAnalyser::getInstance());
+    peano::performanceanalysis::Analysis::getInstance().setDevice(&exahype::offloading::StealingAnalyser::getInstance());
 #if defined(DistributedStealing) 
     // Create a new MPI communicator for stealing related MPI communication
-    exahype::stealing::OffloadingManager::getInstance().createMPICommunicator(); 
+    exahype::offloading::OffloadingManager::getInstance().createMPICommunicator(); 
 
 
 #if defined(StealingStrategyStaticHardcoded)
-    exahype::stealing::StaticDistributor::getInstance().loadDistributionFromFile(_parser.getStealingInputFile());
+    exahype::offloading::StaticDistributor::getInstance().loadDistributionFromFile(_parser.getStealingInputFile());
 #elif defined(StealingStrategyAggressiveHybrid)
-    exahype::stealing::AggressiveHybridDistributor::getInstance().configure(
+    exahype::offloading::AggressiveHybridDistributor::getInstance().configure(
        _parser.getDoubleFromPath("/distributed_memory/stealing_CCP_temperature"),
        _parser.getDoubleFromPath("/distributed_memory/stealing_diffusion_temperature"),
        _parser.getIntFromPath("/distributed_memory/stealing_CCP_frequency"),
@@ -964,7 +964,7 @@ int exahype::runners::Runner::run() {
   }
 
   logInfo("shutdownDistributedMemoryConfiguration()","stopped stealing manager");
-  exahype::stealing::OffloadingManager::getInstance().destroyMPICommunicator(); 
+  exahype::offloading::OffloadingManager::getInstance().destroyMPICommunicator(); 
   logInfo("shutdownDistributedMemoryConfiguration()","destroyed MPI communicators");
 //  exahype::stealing::StealingProfiler::getInstance().endPhase();
 //  logInfo("shutdownDistributedMemoryConfiguration()","ended profiling phase");

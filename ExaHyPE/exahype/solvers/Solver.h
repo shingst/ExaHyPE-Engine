@@ -1162,7 +1162,7 @@ public:
 #endif
 
 #ifdef StealingUseProfiler
-  exahype::stealing::StealingProfiler::getInstance().beginWaitForTasks();
+  exahype::offloading::StealingProfiler::getInstance().beginWaitForTasks();
   double time_background = -MPI_Wtime();
 #endif
 
@@ -1275,7 +1275,7 @@ public:
 #endif
          hasTriggeredEmergency = true;
          logInfo("waitUntilCompletedTimeStep()","EMERGENCY: missing from rank "<<responsibleRank);
-         exahype::stealing::OffloadingManager::getInstance().triggerEmergencyForRank(responsibleRank);
+         exahype::offloading::OffloadingManager::getInstance().triggerEmergencyForRank(responsibleRank);
 #ifdef USE_ITAC
 	 VT_end(event_emergency);
 #endif
@@ -1293,7 +1293,7 @@ public:
 
 #ifdef StealingUseProfiler
   time_background += MPI_Wtime();
-  exahype::stealing::StealingProfiler::getInstance().endWaitForTasks(time_background);
+  exahype::offloading::StealingProfiler::getInstance().endWaitForTasks(time_background);
 #endif
 
 #ifdef USE_ITAC

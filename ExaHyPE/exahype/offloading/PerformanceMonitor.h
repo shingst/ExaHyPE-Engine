@@ -21,7 +21,7 @@
 #include <atomic>
 
 namespace exahype {
-  namespace stealing {
+  namespace offloading {
     class PerformanceMonitor;
   }
 }
@@ -30,7 +30,7 @@ namespace exahype {
  * The PerformanceMonitor stores and distributes on-line live performance
  * information which can be used to make effective offloading decisions.
  */
-class exahype::stealing::PerformanceMonitor {
+class exahype::offloading::PerformanceMonitor {
   private:
     static tarch::logging::Log _log;
 

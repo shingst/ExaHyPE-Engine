@@ -18,9 +18,9 @@
 #include "tarch/multicore/Core.h"
 #include "tarch/parallel/Node.h"
 
-tarch::logging::Log exahype::stealing::StealingProfiler::_log( "exahype::stealing::StealingProfiler" );
+tarch::logging::Log exahype::offloading::StealingProfiler::_log( "exahype::offloading::StealingProfiler" );
 
-exahype::stealing::StealingProfiler::StealingProfiler():
+exahype::offloading::StealingProfiler::StealingProfiler():
 _executedTasksPhase(0),
 _executedTasks(0),
 _accUsefulCommunicationPhaseTime(0),
@@ -61,7 +61,7 @@ _stealingDecisions(0)
 #endif
 }
 
-exahype::stealing::StealingProfiler::~StealingProfiler() {
+exahype::offloading::StealingProfiler::~StealingProfiler() {
 #if defined(StealingUseProfiler)
   delete[] _offloadedTasksPerRank;
   delete[] _offloadedTasksPerRankPhase;
@@ -72,12 +72,12 @@ exahype::stealing::StealingProfiler::~StealingProfiler() {
 #endif
 }
 
-exahype::stealing::StealingProfiler& exahype::stealing::StealingProfiler::getInstance() {
-  static exahype::stealing::StealingProfiler stealingProfiler;
+exahype::offloading::StealingProfiler& exahype::offloading::StealingProfiler::getInstance() {
+  static exahype::offloading::StealingProfiler stealingProfiler;
   return stealingProfiler;
 }
 
-void exahype::stealing::StealingProfiler::beginPhase() {
+void exahype::offloading::StealingProfiler::beginPhase() {
 #if defined(StealingUseProfiler)
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
 
@@ -98,7 +98,7 @@ void exahype::stealing::StealingProfiler::beginPhase() {
 #endif
 }
 
-void exahype::stealing::StealingProfiler::endPhase() {
+void exahype::offloading::StealingProfiler::endPhase() {
 #if defined(StealingUseProfiler)
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
 
@@ -122,72 +122,72 @@ void exahype::stealing::StealingProfiler::endPhase() {
 #endif
 }
 
-void exahype::stealing::StealingProfiler::notifyOffloadedTask(int rank) {
+void exahype::offloading::StealingProfiler::notifyOffloadedTask(int rank) {
 #if defined(StealingUseProfiler)
   _offloadedTasksPerRankPhase[rank]++;
 #endif
 }
 
-void exahype::stealing::StealingProfiler::notifyTargetOffloadedTask(int ntasks, int rank) {
+void exahype::offloading::StealingProfiler::notifyTargetOffloadedTask(int ntasks, int rank) {
 #if defined(StealingUseProfiler)
   _targetOffloadedTasksPerRankPhase[rank]+=ntasks;
 #endif
 }
 
-void exahype::stealing::StealingProfiler::notifyReceivedTask(int rank) {
+void exahype::offloading::StealingProfiler::notifyReceivedTask(int rank) {
 #if defined(StealingUseProfiler)
   _receivedTasksPerRankPhase[rank]++;
 #endif
 }
 
-void exahype::stealing::StealingProfiler::notifySpawnedTask() {
+void exahype::offloading::StealingProfiler::notifySpawnedTask() {
 #if defined(StealingUseProfiler)
   _spawnedTasks++;
 #endif
 }
 
-void exahype::stealing::StealingProfiler::notifyPerformanceUpdate() {
+void exahype::offloading::StealingProfiler::notifyPerformanceUpdate() {
 #if defined(StealingUseProfiler)
   _performanceUpdatesPhase++;
 #endif
 }
 
-void exahype::stealing::StealingProfiler::notifyLatePerformanceUpdate() {
+void exahype::offloading::StealingProfiler::notifyLatePerformanceUpdate() {
 #if defined(StealingUseProfiler)
   _latePerformanceUpdatesPhase++;
 #endif
 }
 
-void exahype::stealing::StealingProfiler::notifyStealingDecision() {
+void exahype::offloading::StealingProfiler::notifyStealingDecision() {
 #if defined(StealingUseProfiler)
   _stealingDecisionsPhase++;
 #endif
 }
 
-void exahype::stealing::StealingProfiler::notifyThresholdFail() {
+void exahype::offloading::StealingProfiler::notifyThresholdFail() {
 #if defined(StealingUseProfiler)
   _thresholdFailsPhase++;
 #endif
 }
 
-void exahype::stealing::StealingProfiler::beginComputation() {
+void exahype::offloading::StealingProfiler::beginComputation() {
 #if defined(StealingUseProfiler)
 #endif
 }
 
-void exahype::stealing::StealingProfiler::endComputation(double elapsed) {
+void exahype::offloading::StealingProfiler::endComputation(double elapsed) {
 #if defined(StealingUseProfiler)
   const unsigned long long elapsedTime = elapsed*1E6;
   _accComputationPhaseTime+=elapsedTime;
 #endif
 }
 
-void exahype::stealing::StealingProfiler::beginCommunication() {
+void exahype::offloading::StealingProfiler::beginCommunication() {
 #if defined(StealingUseProfiler)
 #endif
 }
 
-void exahype::stealing::StealingProfiler::endCommunication(bool successful, double elapsed) {
+void exahype::offloading::StealingProfiler::endCommunication(bool successful, double elapsed) {
 #if defined(StealingUseProfiler)
   const unsigned long long elapsedTime = elapsed *1E6;
   if(successful)
@@ -197,23 +197,23 @@ void exahype::stealing::StealingProfiler::endCommunication(bool successful, doub
 #endif
 }
 
-void exahype::stealing::StealingProfiler::beginHandling() {
+void exahype::offloading::StealingProfiler::beginHandling() {
 #if defined(StealingUseProfiler)
 #endif
 }
 
-void exahype::stealing::StealingProfiler::endHandling(double elapsed) {
+void exahype::offloading::StealingProfiler::endHandling(double elapsed) {
 #if defined(StealingUseProfiler)
   const unsigned long long elapsedTime = elapsed*1E6;
 #endif
 }
 
-//void exahype::stealing::StealingProfiler::beginWaitForBackgroundTasks(exahype::solvers::Solver::JobType type) {
+//void exahype::offloading::StealingProfiler::beginWaitForBackgroundTasks(exahype::solvers::Solver::JobType type) {
 //#if defined(StealingUseProfiler)
 //#endif
 //}
 
-//void exahype::stealing::StealingProfiler::endWaitForBackgroundTasks(exahype::solvers::Solver::JobType type, double elapsed) {
+//void exahype::offloading::StealingProfiler::endWaitForBackgroundTasks(exahype::solvers::Solver::JobType type, double elapsed) {
 //#if defined(StealingUseProfiler)
 //  unsigned long long elapsedTime;
 //  if(type==exahype::solvers::Solver::JobType::EnclaveJob) {
@@ -228,87 +228,87 @@ void exahype::stealing::StealingProfiler::endHandling(double elapsed) {
 //#endif
 //}
 
-void exahype::stealing::StealingProfiler::beginWaitForTasks() {
+void exahype::offloading::StealingProfiler::beginWaitForTasks() {
 #if defined(StealingUseProfiler)
 #endif
 }
 
-void exahype::stealing::StealingProfiler::endWaitForTasks(double elapsed) {
+void exahype::offloading::StealingProfiler::endWaitForTasks(double elapsed) {
 #if defined(StealingUseProfiler)
   const unsigned long long elapsedTime = elapsed*1E6;
   _accWaitTasksPhaseTime+=elapsedTime;
 #endif
 }
 
-void exahype::stealing::StealingProfiler::beginOffload() {
+void exahype::offloading::StealingProfiler::beginOffload() {
 #if defined(StealingUseProfiler)
 #endif
 }
 
-void exahype::stealing::StealingProfiler::endOffload(double elapsed) {
+void exahype::offloading::StealingProfiler::endOffload(double elapsed) {
 #if defined(StealingUseProfiler)
   const unsigned long long elapsedTime = elapsed*1E6;
   _accOffloadPhaseTime+=elapsedTime;
 #endif
 }
 
-void exahype::stealing::StealingProfiler::printStatistics() {
+void exahype::offloading::StealingProfiler::printStatistics() {
 #if defined(StealingUseProfiler)
   int rank = tarch::parallel::Node::getInstance().getRank();
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
 
   std::string str="Stealing statistics for rank "+std::to_string(rank)+":\n";
-  logInfo("exahype::stealing::StealingProfiler", str);
+  logInfo("exahype::offloading::StealingProfiler", str);
   str="  spawned tasks: "+std::to_string(_spawnedTasks)+"\n";
-  logInfo("exahype::stealing::StealingProfiler", str);
+  logInfo("exahype::offloading::StealingProfiler", str);
   //str+="  executed tasks: "+std::to_string(_executedTasks)+"\n";
   str="  performance updates: "+std::to_string(_performanceUpdates)+"\n";
-  logInfo("exahype::stealing::StealingProfiler", str);
+  logInfo("exahype::offloading::StealingProfiler", str);
   //str+="  late performance updates: "+std::to_string(_latePerformanceUpdates)+"\n";
   str="  stealing decisions: "+std::to_string(_stealingDecisions)+"\n";
-  logInfo("exahype::stealing::StealingProfiler", str);
+  logInfo("exahype::offloading::StealingProfiler", str);
   str="  target offloaded tasks:\n";
-  logInfo("exahype::stealing::StealingProfiler", str);
+  logInfo("exahype::offloading::StealingProfiler", str);
   int totalTargetOffloaded=0;
   for(int i=0;i<nnodes;i++) {
     str="    to rank: "+std::to_string(i)+" : "+std::to_string(_targetOffloadedTasksPerRank[i])+"\n";
-    logInfo("exahype::stealing::StealingProfiler", str);
+    logInfo("exahype::offloading::StealingProfiler", str);
     totalTargetOffloaded+=_targetOffloadedTasksPerRank[i];
   }
   str="  total target offloaded tasks: "+std::to_string(totalTargetOffloaded)+"\n";
-  logInfo("exahype::stealing::StealingProfiler", str);
+  logInfo("exahype::offloading::StealingProfiler", str);
   str="  offloaded tasks:\n";
-  logInfo("exahype::stealing::StealingProfiler", str);
+  logInfo("exahype::offloading::StealingProfiler", str);
   int totalOffloaded=0;
   for(int i=0;i<nnodes;i++) {
     str="    to rank: "+std::to_string(i)+" : "+std::to_string(_offloadedTasksPerRank[i])+"\n";
-    logInfo("exahype::stealing::StealingProfiler", str);
+    logInfo("exahype::offloading::StealingProfiler", str);
     totalOffloaded+=_offloadedTasksPerRank[i];
   }
   str="  total offloaded tasks: "+std::to_string(totalOffloaded)+"\n";
-  logInfo("exahype::stealing::StealingProfiler", str);
+  logInfo("exahype::offloading::StealingProfiler", str);
   str="  offloadable tasks that failed threshold requirement: "+std::to_string(_thresholdFails)+"\n";
-  logInfo("exahype::stealing::StealingProfiler", str);
+  logInfo("exahype::offloading::StealingProfiler", str);
   str="  received tasks:\n";
-  logInfo("exahype::stealing::StealingProfiler", str);
+  logInfo("exahype::offloading::StealingProfiler", str);
   int totalReceived=0;
   for(int i=0;i<nnodes;i++) {
     str="    from rank: "+std::to_string(i)+" : "+std::to_string(_receivedTasksPerRank[i])+"\n";
-    logInfo("exahype::stealing::StealingProfiler", str);
+    logInfo("exahype::offloading::StealingProfiler", str);
     totalReceived+=_receivedTasksPerRank[i];
   }
   str="  total received tasks: "+std::to_string(totalReceived)+"\n";
-  logInfo("exahype::stealing::StealingProfiler", str);
+  logInfo("exahype::offloading::StealingProfiler", str);
   str="  total computation time: "+std::to_string(static_cast<double>(_accComputationTime/1E06))+"\n";
-  logInfo("exahype::stealing::StealingProfiler", str);
+  logInfo("exahype::offloading::StealingProfiler", str);
   str="  total handling time: "+std::to_string(static_cast<double>(_accHandlingTime/1E06))+"\n";
-  logInfo("exahype::stealing::StealingProfiler", str);
+  logInfo("exahype::offloading::StealingProfiler", str);
   str="  total useful communication time: "+std::to_string(static_cast<double>(_accUsefulCommunicationTime/1E06))+"\n";
-  logInfo("exahype::stealing::StealingProfiler", str);
+  logInfo("exahype::offloading::StealingProfiler", str);
   str="  total idle communication time: "+std::to_string(static_cast<double>(_accIdleCommunicationTime/1E06))+"\n";
-  logInfo("exahype::stealing::StealingProfiler", str);
+  logInfo("exahype::offloading::StealingProfiler", str);
   str="  total wait time for tasks: "+std::to_string(static_cast<double>(_accWaitTasksTime/1E06))+"\n";
-  logInfo("exahype::stealing::StealingProfiler", str);
+  logInfo("exahype::offloading::StealingProfiler", str);
 
 #endif
 }

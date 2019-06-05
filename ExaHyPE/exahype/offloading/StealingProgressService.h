@@ -20,7 +20,7 @@
 #include "exahype/solvers/ADERDGSolver.h"
 
 namespace exahype {
-  namespace stealing {
+  namespace offloading {
     class StealingProgressService;
   }
 }
@@ -36,7 +36,7 @@ namespace exahype {
  * the stealing progress method is invoked. In the future, this may
  * need to be extended to support multiple solvers.
  */
-class exahype::stealing::StealingProgressService : public tarch::services::Service {
+class exahype::offloading::StealingProgressService : public tarch::services::Service {
 
   private:
   /**

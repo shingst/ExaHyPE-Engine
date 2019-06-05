@@ -24,9 +24,9 @@
 #include "exahype/offloading/StealingProfiler.h"
 #include "tarch/multicore/Core.h"
 
-tarch::logging::Log exahype::stealing::DynamicDistributor::_log( "exahype::stealing::DynamicDistributor" );
+tarch::logging::Log exahype::offloading::DynamicDistributor::_log( "exahype::stealing::DynamicDistributor" );
 
-exahype::stealing::DynamicDistributor::DynamicDistributor() {
+exahype::offloading::DynamicDistributor::DynamicDistributor() {
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
 
   _tasksToOffload = new int[nnodes];
@@ -43,19 +43,19 @@ exahype::stealing::DynamicDistributor::DynamicDistributor() {
   std::fill( &_remainingTasksToOffload[0], &_remainingTasksToOffload[nnodes], 0);
 }
 
-exahype::stealing::DynamicDistributor& exahype::stealing::DynamicDistributor::getInstance() {
+exahype::offloading::DynamicDistributor& exahype::offloading::DynamicDistributor::getInstance() {
   static DynamicDistributor dynamicDist;
   return dynamicDist;
 }
 
-exahype::stealing::DynamicDistributor::~DynamicDistributor() {
+exahype::offloading::DynamicDistributor::~DynamicDistributor() {
   delete[] _tasksToOffload;
   delete[] _consumersPerRank;
   delete[] _remainingTasksToOffload;
 
 }
 
-void exahype::stealing::DynamicDistributor::computeNewLoadDistribution(int *currentLoadSnapshot) {
+void exahype::offloading::DynamicDistributor::computeNewLoadDistribution(int *currentLoadSnapshot) {
   int input_r=0, input_l=0;
   int output_r=0, output_l=0;
 
@@ -120,7 +120,7 @@ void exahype::stealing::DynamicDistributor::computeNewLoadDistribution(int *curr
           //_tasksToOffload[output_r]= inc_l;
           //stealing::StealingProfiler::getInstance().notifyTargetOffloadedTask(inc_l, output_r);
           _tasksToOffload[output_r]= std::min(inc_l,1);
-          stealing::StealingProfiler::getInstance().notifyTargetOffloadedTask(std::min(inc_l,1), output_r);
+          offloading::StealingProfiler::getInstance().notifyTargetOffloadedTask(std::min(inc_l,1), output_r);
         }
       }
 
@@ -151,7 +151,7 @@ void exahype::stealing::DynamicDistributor::computeNewLoadDistribution(int *curr
 //  delete[] newLoadDist;
 }
 
-bool exahype::stealing::DynamicDistributor::selectVictimRank(int& victim) {
+bool exahype::offloading::DynamicDistributor::selectVictimRank(int& victim) {
 
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
   int myRank = tarch::parallel::Node::getInstance().getRank();

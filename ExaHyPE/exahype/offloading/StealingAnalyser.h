@@ -29,12 +29,12 @@
 #include <atomic>
 
 namespace exahype {
-  namespace stealing {
+  namespace offloading {
     class StealingAnalyser;
   }
 }
 
-class exahype::stealing::StealingAnalyser : public peano::performanceanalysis::Analyser {
+class exahype::offloading::StealingAnalyser : public peano::performanceanalysis::Analyser {
   private:
     static tarch::logging::Log     _log;
 

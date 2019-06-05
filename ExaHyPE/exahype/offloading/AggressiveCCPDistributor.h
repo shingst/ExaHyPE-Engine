@@ -21,7 +21,7 @@
 #include <atomic>
 
 namespace exahype {
-  namespace stealing {
+  namespace offloading {
     class AggressiveCCPDistributor;
   }
 }
@@ -34,7 +34,7 @@ namespace exahype {
  * refinement has finished based on the number of cells that
  * a rank is responsible for.
  */
-class exahype::stealing::AggressiveCCPDistributor {
+class exahype::offloading::AggressiveCCPDistributor {
   private:
     static tarch::logging::Log _log;
     AggressiveCCPDistributor();

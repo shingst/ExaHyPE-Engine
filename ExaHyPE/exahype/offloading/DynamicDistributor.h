@@ -21,7 +21,7 @@
 #include <atomic>
 
 namespace exahype {
-  namespace stealing {
+  namespace offloading {
     class DynamicDistributor;
   }
 }
@@ -34,7 +34,7 @@ namespace exahype {
  * strategy is less aggressive as it will give away only
  * one task at a time until a new load update has been received.
  */
-class exahype::stealing::DynamicDistributor {
+class exahype::offloading::DynamicDistributor {
   private:
     static tarch::logging::Log _log;
     DynamicDistributor();
