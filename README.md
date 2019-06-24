@@ -1,6 +1,6 @@
 # This is the ExaHyPE project #
 
-This is the maing repository of the ExaHyPE project. It contains the following directories:
+This is the main repository of the ExaHyPE project*. It contains the following directories:
 
 * ApplicationExamples: A number of exemplaric application such as Euler, MHD, Seismic, etc.
 * Benchmarks: An ExaHyPE Benchmark suite for TBB and MPI (maintained by Durham)
@@ -92,4 +92,4 @@ Recommendation: create a release separate from your working copy, e.g. in a ExaH
 7) This will create a tar.gz archive containing the ExaHyPE+Peano source and your application(s)
 
 
-
+* This project has received funding from the European Union’s Horizon 2020 research and innovation programme under grant agreement No 671698.
