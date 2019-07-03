@@ -21,6 +21,7 @@ tarch::logging::Log GPRDR::GPRDRSolver_ADERDG::_log( "GPRDR::GPRDRSolver_ADERDG"
 void GPRDR::GPRDRSolver_ADERDG::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
   const int order = GPRDR::GPRDRSolver_ADERDG::Order;
   //inittecplot_(&order,&order);
+  initparameters_();
 }
 
 void GPRDR::GPRDRSolver_ADERDG::adjustPointSolution(const double* const x,const double t,const double dt,double* const Q) {
