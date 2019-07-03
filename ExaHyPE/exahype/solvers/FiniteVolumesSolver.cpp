@@ -2096,6 +2096,7 @@ bool exahype::solvers::FiniteVolumesSolver::CompressionJob::run(bool runOnMaster
 exahype::solvers::Solver::CellProcessingTimes exahype::solvers::FiniteVolumesSolver::measureCellProcessingTimes(const int numberOfRuns) {
   // Setup
   const int cellDescriptionsIndex = ADERDGSolver::Heap::getInstance().createData(0,1);
+  FiniteVolumesSolver::Heap::getInstance().createDataForIndex(cellDescriptionsIndex,0,1);
 
   Solver::CellInfo cellInfo(cellDescriptionsIndex);
   addNewCellDescription(
