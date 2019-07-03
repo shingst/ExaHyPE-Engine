@@ -118,15 +118,15 @@ RECURSIVE SUBROUTINE InitialData(xGP, tGp, Q)
         ! Rupture properties ----------------------------------------------------------------------------------------
         up(21)=0.0
 
-        !if(nDim .eq. 3) then
-        !    if(abs(xGP(1)) .le. 100.0/3.0 .and. abs(xGP(2)) .le. 100.0/3.0 .and. abs(xGP(3)) .le. 100.0/3.0) then 
-        !        up(21)=0.5    
-        !    end if            
-        !else
-        !    if(abs(xGP(1)) .le. 1000.0 .and. abs(xGP(2)) .le. 100.0/3.0 .and. abs(xGP(3)) .le. 100.0/3.0) then 
-        !        up(21)=1.0    
-        !    end if            
-        !end if
+        if(nDim .eq. 3) then
+            if(abs(xGP(1)) .le. 100.0/3.0 .and. abs(xGP(2)) .le. 100.0/3.0 .and. abs(xGP(3)) .le. 100.0/3.0) then 
+                up(21)=0.5    
+            end if            
+        else
+            if(abs(xGP(1)) .le. 1000.0 .and. abs(xGP(2)) .le. 300.0/3.0 .and. abs(xGP(3)) .le. 300.0/3.0) then 
+                up(21)=1.0    
+            end if            
+        end if
         !if(abs(xGP(1)) .le. 100.0/3.0 .and. abs(xGP(2)) .le. 100.0/3.0 .and. abs(xGP(3)) .le. 100.0/3.0) then 
         !    up(21)=0.1    
         !end if
@@ -155,9 +155,20 @@ RECURSIVE SUBROUTINE PDElimitervalue(limiter_value,xx,numberOfObservables, obser
 	real	:: rr	
 
 	limiter_value=0
-	!if(observablesMin(1).ge.1.1 .and. observablesMax(1).le. 2.6) then
-	!	limiter_value=1
-	!end if
+
+   IF((observablesMax(1)<0.999 .and. observablesMin(1)>0.001) .or. observablesMax(1)>1.001) THEN  ! was -0.001   .or. levelmin<0.001
+		limiter_value = 1 
+   ENDIF 
+   
+   IF(observablesMax(2)>1.e-5  .and. observablesMax(1)>1.e-4) THEN 
+       limiter_value = 1
+   ENDIF 
+   
+   IF(observablesMax(3)>0.5 ) THEN 
+       limiter_value = 1
+   ENDIF 
+   
+   !limiter_value = 1
 END SUBROUTINE PDElimitervalue
 
 RECURSIVE SUBROUTINE ShuVortex2D(x, t, Q)

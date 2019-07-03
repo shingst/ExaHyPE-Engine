@@ -467,6 +467,58 @@ if(V(21)>1.e-2) then
     
 END SUBROUTINE PDEAuxVar
 	
+	
+RECURSIVE SUBROUTINE PDECritialStress(CS,Q)
+    USE MainVariables, ONLY : nVar,nAux,EQN
+#if defined(EQNTYPEC99) || defined(EQNTYPED99)
+    use SpecificVarEqn99        , only : StaticLimiterEQ99,compute_l_m_mix, compute_total_stress, compute_hydrodynamic_pressure
+    use expintegrator_linalg    , only : determinant_lu,build_by_rows,trace 
+    use expintegrator_type      , only : t_ode_parameters
+    use expintegrator_ode       , only : convert_parameters
+#endif
+	implicit none
+#if defined(EQNTYPEC99) || defined(EQNTYPED99)
+  real      :: stressnorm,sigma_vec(6),dMM_gpr,dKK_gpr, Ydev,Yp
+  real      :: V0(nVar),G(3,3)
+  type(t_ode_parameters) :: ODE
+#endif
+	real :: CS,Q(nVar),x(3),time
+	REAL :: LL_gpr, MM_gpr
+	real :: detA,A(3,3), Id(3,3),GT(3,3),devG(3,3),TT(3,3)
+	integer :: iErr
+	REAL :: V(nVar)
+	! print *, "ENTERED HERE ------------------------------------------------------------------------------"
+	CS=0.
+	x=0.
+	!return
+	ID=0.
+	ID(1,1)=1.
+	ID(2,2)=1.
+	ID(3,3)=1.
+	A = build_by_rows(Q(9:17))
+	G = matmul(transpose(A), A)
+	devG  = G - trace(G)/3.0d0*ID
+	detA = determinant_lu(A)
+#ifdef EQNTYPED99
+        CALL PDECons2Prim(V0,Q,x,0.,iErr)
+        call convert_parameters(V0, ODE, EQN)
+        call compute_l_m_mix(LL_GPR, MM_GPR,V0(19),V0(20),ODE%lam1lam2ratio,ODE%mu1mu2ratio,V0(21))
+        CALL compute_total_stress(stressnorm,Ydev,Yp, LL_gpr, MM_gpr, G, devG, detA, ODE)
+        IF(stressnorm>ODE%Y0*EQN%Y0lim .and. V0(18)>1.e-4) then      ! stress>Y0/0.9 V0(25)*1.0 ! .or. V0(5)<-1.e-2
+            CS=1.
+        end if
+#else
+        CALL PDECons2Prim(V0,Q,lxb,0.,iErr)
+        call convert_parameters(V0, ODE, EQN)
+        call compute_l_m_mix(LL_GPR, MM_GPR,V0(19),V0(20),V0(23),V0(22),V0(21))
+        CALL compute_total_stress(stressnorm,Ydev,Yp, LL_gpr, MM_gpr, G, devG, detA, ODE)
+        IF(stressnorm>V0(25)*EQN%Y0lim) then      ! stress>Y0/0.9 V0(25)*1.0 ! .or. V0(5)<-1.e-2
+            CS=1.
+        end if
+#endif
+    
+END SUBROUTINE PDECritialStress
+	
 RECURSIVE SUBROUTINE PDEIntermediateFields(RL,LL,iRL,Q,nv) 
   USE MainVariables, ONLY : nVar, nDim, nLin
   USE iso_c_binding 

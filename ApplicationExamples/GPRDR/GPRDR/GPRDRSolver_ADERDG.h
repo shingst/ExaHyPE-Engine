@@ -184,12 +184,17 @@ class GPRDR::GPRDRSolver_ADERDG : public GPRDR::AbstractGPRDRSolver_ADERDG {
      */
     void nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ) final override;
     
-    bool isPhysicallyAdmissible(const double* const solution,
-                                const double* const localObservablesMin,const double* const localObservablesMax,
-                                const bool wasTroubledInPreviousTimeStep,
-                                const tarch::la::Vector<DIMENSIONS,double>& center,
-                                const tarch::la::Vector<DIMENSIONS,double>& dx,
-                                const double timeStamp);
+    bool isPhysicallyAdmissible(
+				const double* const                         solution,
+				const double* const                         localDMPObservablesMin,
+				const double* const                         localDMPObservablesMax,
+				const bool                                  wasTroubledInPreviousTimeStep,
+				const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+				const tarch::la::Vector<DIMENSIONS,double>& cellSize,
+				const double                                timeStamp) const override;
+    
+    void mapDiscreteMaximumPrincipleObservables(double* const observables,
+						const double* const Q) const override;
 
 /* pointSource() function not included, as requested in the specification file */
 

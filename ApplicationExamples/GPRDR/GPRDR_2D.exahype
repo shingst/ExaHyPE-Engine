@@ -69,9 +69,9 @@
       },
       "point_sources": 0,
       "limiter": {
-        "dmp_observables": 0,
-        "dmp_relaxation_parameter": 0.001,
-        "dmp_difference_scaling": 0.0001,
+        "dmp_observables": 3,
+        "dmp_relaxation_parameter": 1e+3,
+        "dmp_difference_scaling": 1e+4,
         "implementation": "generic"
       },
       "fv_kernel": {
