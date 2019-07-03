@@ -33,7 +33,6 @@ void kernels::freeLimiterProjectionMatrices(const std::set<int>& orders) {
   delete [] uh2lim;
   delete [] uh2lob;
   delete [] lim2uh;
-  
 }
 
 void kernels::initLimiterProjectionMatrices(const std::set<int>& orders) {
@@ -49,7 +48,7 @@ void kernels::initLimiterProjectionMatrices(const std::set<int>& orders) {
   int i,j,k;
   for (int n = 0; n < MAX_ORDER + 1; n++) {
     basisSize = n+1;
-    basisSizeLim = 2*n+1;
+    basisSizeLim = 2*n+1; // TODO Dominic, make modifiable
     uh2lim[n] = new double[basisSize*basisSizeLim]();
     uh2lob[n] = new double[basisSize*basisSize]();
     lim2uh[n] = new double[basisSizeLim*basisSize]();

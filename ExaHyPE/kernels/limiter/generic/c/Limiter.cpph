@@ -48,7 +48,7 @@ void kernels::limiter::generic::c::computeMinimumAndMaximumValueAtGaussLobattoNo
 }
 
 //Fortran (Limiter.f90): GetSubcellData
-template <int basisSize, int numberOfVariables,int ghostLayerWidth>
+template <int basisSize, int basisSizeLim, int numberOfVariables,int ghostLayerWidth>
 void kernels::limiter::generic::c::projectOnFVLimiterSpace(
     const double* const luh, 
     double* const lim) {
@@ -96,12 +96,11 @@ void kernels::limiter::generic::c::projectOnFVLimiterSpace(
 }
 
 //Fortran (Limiter.f90): PutSubcellData
-template <int basisSize, int numberOfVariables,int ghostLayerWidth>
+template <int basisSize, int basisSizeLim, int numberOfVariables,int ghostLayerWidth>
 void kernels::limiter::generic::c::projectOnDGSpace(
     const double* const lim, 
     double* const luh) {
-  constexpr int order        = basisSize-1;
-  constexpr int basisSizeLim = 2*order+1;
+  constexpr int order = basisSize-1;
   
   #if DIMENSIONS == 3
   constexpr int basisSize3D       = basisSize;

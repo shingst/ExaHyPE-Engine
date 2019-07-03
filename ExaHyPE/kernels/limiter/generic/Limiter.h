@@ -45,7 +45,7 @@ namespace c {
  * \param[in] basisSize The size of the ADER-DG basis per coordinate axis (order+1).
  * \param[in] ghostLayerWidth The ghost layer width in cells of the finite volumes patch
  */
-template <int basisSize, int numberOfVariables,int ghostLayerWidth>
+template <int basisSize, int numberOfVariables, int basisSizeLim, int ghostLayerWidth>
 void projectOnFVLimiterSpace(
     const double* const luh,
     double* const lim);
@@ -59,7 +59,7 @@ void projectOnFVLimiterSpace(
  * \param[in] basisSize The size of the ADER-DG basis per coordinate axis (order+1)
  * \param[in] ghostLayerWidth The ghost layer width in cells of the finite volumes patch.
  */
-template <int basisSize, int numberOfVariables,int ghostLayerWidth>
+template <int basisSize, int numberOfVariables,int basisSizeLim, int ghostLayerWidth>
 void projectOnDGSpace(
     const double* const lim,
     double* const luh);
@@ -74,7 +74,8 @@ template <typename SolverType, int numberOfObservables>
 void findCellLocalMinAndMax(
     const double* const luh,
     const SolverType& solver,
-    double* const localMinPerVariables, double* const localMaxPerVariables);
+    double* const localMinPerVariables,
+    double* const localMaxPerVariables);
 
 /**
  * Find the minimum and maximum per variable in the limiter solution.
@@ -88,11 +89,12 @@ void findCellLocalMinAndMax(
  * \param[in] basisSize The size of the ADER-DG basis per coordinate axis (order+1)
  * \param[in] ghostLayerWidth The ghost layer width in cells of the finite volumes patch.
  */
-template <typename SolverType, int numberOfObservables, int ghostLayerWidth>
+template <typename SolverType, int numberOfObservables, int basisSizeLim, int ghostLayerWidth>
 void findCellLocalLimiterMinAndMax(
     const double* const lim,
     const SolverType& solver,
-    double* const localMinPerVariables, double* const localMaxPerVariables);
+    double* const localMinPerVariables,
+    double* const localMaxPerVariables);
 
 /**
  * Returns true if the nodal solution degrees of freedom
@@ -142,21 +144,14 @@ void findCellLocalLimiterMinAndMax(
  *
  * See doi:10.1016/j.jcp.2014.08.009 for more details.
  */
-template <typename SolverType, int numberOfObservables, int ghostLayerWidth>
+template <typename SolverType, int numberOfObservables, int basisSizeLim, int ghostLayerWidth>
 bool discreteMaximumPrincipleAndMinAndMaxSearch(
     const double* const luh,
     const SolverType& solver,
     const double relaxationParameter,
     const double differenceScaling,
-    double* boundaryMinPerObservable, double* boundaryMaxPerObservable);
-
-//************************
-//*** Helper functions ***
-//************************
-
-inline int getBasisSizeLim(const int basisSize) {
-  return 2*(basisSize-1)+1;
-}
+    double* boundaryMinPerObservable,
+    double* boundaryMaxPerObservable);
 
 //*************************
 //*** Private functions ***

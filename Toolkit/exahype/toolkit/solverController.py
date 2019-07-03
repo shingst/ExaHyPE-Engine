@@ -5,10 +5,18 @@ from .models import *
 from .toolkitHelper import ToolkitHelper
 
 class SolverController:
-
     def __init__(self, solverSpec, baseContext):
         self.solverSpec = solverSpec
         self.baseContext = baseContext
+
+        # ADER-DG CFL factors        
+        # Up to order 4, computed via von Neumann analysis [1]; above, determined empirically by M. Dumbser)
+        # [1] M. Dumbser, D. S. Balsara, E. F. Toro, and C.-D. Munz, 
+        # ‘A unified framework for the construction of one-step finite volume and discontinuous Galerkin schemes on unstructured meshes’, Journal of Computational Physics, vol. 227, no. 18, pp. 8209–8253, Sep. 2008.
+        self.cflADER = [1.0,   0.33,  0.17, 0.1,  0.069, 0.045, 0.038, 0.03, 0.02, 0.015]
+        cflCorrectionADER = cflADER.copy()
+        for p,cfl in enumerate(cflADER):
+            self.cflCorrectionADER[p] = cfl * (2*p+1);
 
 
     def processModelOutput(self, output, contextsList, logger, silentCodeGen = False):
@@ -47,8 +55,18 @@ class SolverController:
                 fvContext["solver"]         = context["FVSolver"]
                 fvContext["solverType"]     = "Finite-Volumes"
                 fvContext["abstractSolver"] = context["FVAbstractSolver"]
-                fvContext["patchSize"]      = 2 * aderdgContext["order"] + 1
-                
+                order = aderdgContext["order"];
+                if fvContext["patchSize"] is "original":
+                    fvContext["patchSize"]      = 2 * order + 1
+                elif fvContext["patchSize"] is "max":
+                    fvContext["patchSize"]      = int( 1.0/self.cflCorrectionADER[order] * (2 * order + 1) )
+                    if context["implementation"] is "optimised":
+                        logger.error("Maximum patch size currently not supported for optimised kernels.")
+                        sys.abort()
+                else:
+                    logger.error("Freely chosen patch size for limiting ADER-DG method currently not supported.")
+                    sys.abort()
+                     
                 aderdgContext["solver"]                 = context["ADERDGSolver"]
                 aderdgContext["solverType"]             = "ADER-DG"
                 aderdgContext["abstractSolver"]         = context["ADERDGAbstractSolver"]
