@@ -5,7 +5,8 @@
 extern "C" {
 
 // FORTRAN functions called by C
-void initialdata_(const double* x, const double* const t, double* Q, int* md, double * cms, const int* const order);
+//void initialdata_(const double* x, const double* const t, double* Q, int* md, double * cms, const int* const order);
+  void initialdata_(const double* x, const double* const t, double* Q);
 void initparameters_();
 
 

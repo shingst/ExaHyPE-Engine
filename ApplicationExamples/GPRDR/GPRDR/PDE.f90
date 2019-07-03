@@ -126,6 +126,15 @@ RECURSIVE SUBROUTINE PDENCP(BgradQ,Q,gradQ)
    REAL :: u(3),VP(nVar) 
    REAL :: AQx(nVar), BQy(nVar), CQz(nVar) , Qx(nVar), Qy(nVar), Qz(nVar)
 	REAL :: alpha, ialpha
+	
+   
+	Qx = gradQ(:,1)
+	Qy = gradQ(:,2)
+	IF(nDim==3) THEN
+		Qz = gradQ(:,3)
+	ELSE
+		Qz = 0.0 
+	ENDIF 
      ! Initialize NCP ---!
     AQx=0.              !
     BQy=0.              !

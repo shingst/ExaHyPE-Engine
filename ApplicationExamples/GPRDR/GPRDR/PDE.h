@@ -16,6 +16,7 @@ void getnumericalsolution_(double* V,double* Q);
 void getexactsolution_(double* V,double* pos,double* timeStamp);
 
 void inittecplot_(const int* N_in,const int* M_in);
+void pdeauxvar_(double* aux, const double* const Q,double* x, const double* const time);
 }/* extern "C" */
 
 #endif /* __EXAHYPE_USER_PDE__ */

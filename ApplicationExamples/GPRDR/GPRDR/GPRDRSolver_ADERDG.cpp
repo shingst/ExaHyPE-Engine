@@ -8,7 +8,11 @@
 
 #include "GPRDRSolver_ADERDG.h"
 
+#include <algorithm>
+
 #include "GPRDRSolver_ADERDG_Variables.h"
+#include "kernels/GaussLegendreQuadrature.h"
+
 #include "PDE.h"
 #include "InitialData.h"
 
@@ -30,7 +34,16 @@ void GPRDR::GPRDRSolver_ADERDG::adjustPointSolution(const double* const x,const 
     double cms = exahype::solvers::Solver::getCoarsestMeshSize();
     const int order = GPRDR::GPRDRSolver_ADERDG::Order;
     std::fill_n(Q,24,0.0);
-    initialdata_(x, &t, Q,&md,&cms,&order);
+    
+    //    initialdata_(x, &ti, Qgp,&md,&cms,&order);
+    double x_3[3];
+    x_3[2]=0;
+    std::copy_n(&x[0],DIMENSIONS,&x_3[0]);
+    
+    initialdata_(x_3, &t, Q);
+    for(int i = 0; i< 24 ; i++){
+      assert(std::isfinite(Q[i]));
+    }
   }
   // Q[0] = 0.0;
   // Q[1] = 0.0;
@@ -59,86 +72,39 @@ void GPRDR::GPRDRSolver_ADERDG::adjustPointSolution(const double* const x,const 
 }
 
 void GPRDR::GPRDRSolver_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int direction,const double* const fluxIn,const double* const stateIn,const double* const gradStateIn,double* const fluxOut,double* const stateOut) {
-  // Tip: You find documentation for this method in header file "GPRDR::GPRDRSolver_ADERDG.h".
-  // Tip: See header file "GPRDR::AbstractGPRDRSolver_ADERDG.h" for toolkit generated compile-time 
-  //      constants such as Order, NumberOfVariables, and NumberOfParameters.
+  const int nVar = GPRDR::GPRDRSolver_ADERDG::NumberOfVariables;
+  const int order = GPRDR::GPRDRSolver_ADERDG::Order;
+  const int basisSize = order + 1;
+  const int nDim = DIMENSIONS;
+  double Qgp[nVar],*F[nDim], Fs[nDim][nVar];
 
-  // @todo Please implement/augment if required
-  // const int nVar = GPRDR::GPRDRSolver_ADERDG::NumberOfVariables;
-  // const int order = GPRDR::GPRDRSolver_ADERDG::Order;
-  // const int basisSize = order + 1;
-  // const int nDim = DIMENSIONS;
-  // double Qgp[nVar],*F[nDim], Fs[nDim][nVar];
+  double x_3[3];
+  x_3[2]=0;
+  std::copy_n(&x[0],DIMENSIONS,&x_3[0]);
+  
+  int md=0;
+  double cms=0;
 	
-  // int md=0;
-  // double cms=0;
+  std::memset(stateOut, 0, nVar * sizeof(double));
+  std::memset(fluxOut , 0, nVar * sizeof(double));
 	
-  // std::memset(stateOut, 0, nVar * sizeof(double));
-  // std::memset(fluxOut , 0, nVar * sizeof(double));
-	
-  // for(int dd=0; dd<nDim; dd++) F[dd] = Fs[dd];
+  for(int dd=0; dd<nDim; dd++) F[dd] = Fs[dd];
 
-  // for(int i=0; i < basisSize; i++)  { // i == time
-  //   const double weight = kernels::gaussLegendreWeights[order][i];
-  //   const double xi = kernels::gaussLegendreNodes[order][i];
-  //   double ti = t + xi * dt;
+  for(int i=0; i < basisSize; i++)  { // i == time
+    const double weight = kernels::gaussLegendreWeights[order][i];
+    const double xi = kernels::gaussLegendreNodes[order][i];
+    double ti = t + xi * dt;
 
-  //   initialdata_(x, &ti, Qgp,&md,&cms,&order);
-  //   flux(Qgp, F);
-  //   for(int m=0; m < nVar; m++) {
-  //     stateOut[m] += weight * Qgp[m];
-  //     fluxOut[m] += weight * Fs[normalNonZero][m];
-  //   }
-  // }
-  stateOut[0] = 0.0;
-  stateOut[1] = 0.0;
-  stateOut[2] = 0.0;
-  stateOut[3] = 0.0;
-  stateOut[4] = 0.0;
-  stateOut[5] = 0.0;
-  stateOut[6] = 0.0;
-  stateOut[7] = 0.0;
-  stateOut[8] = 0.0;
-  stateOut[9] = 0.0;
-  stateOut[10] = 0.0;
-  stateOut[11] = 0.0;
-  stateOut[12] = 0.0;
-  stateOut[13] = 0.0;
-  stateOut[14] = 0.0;
-  stateOut[15] = 0.0;
-  stateOut[16] = 0.0;
-  stateOut[17] = 0.0;
-  stateOut[18] = 0.0;
-  stateOut[19] = 0.0;
-  stateOut[20] = 0.0;
-  stateOut[21] = 0.0;
-  stateOut[22] = 0.0;
-  stateOut[23] = 0.0;
-
-  fluxOut[0] = 0.0;
-  fluxOut[1] = 0.0;
-  fluxOut[2] = 0.0;
-  fluxOut[3] = 0.0;
-  fluxOut[4] = 0.0;
-  fluxOut[5] = 0.0;
-  fluxOut[6] = 0.0;
-  fluxOut[7] = 0.0;
-  fluxOut[8] = 0.0;
-  fluxOut[9] = 0.0;
-  fluxOut[10] = 0.0;
-  fluxOut[11] = 0.0;
-  fluxOut[12] = 0.0;
-  fluxOut[13] = 0.0;
-  fluxOut[14] = 0.0;
-  fluxOut[15] = 0.0;
-  fluxOut[16] = 0.0;
-  fluxOut[17] = 0.0;
-  fluxOut[18] = 0.0;
-  fluxOut[19] = 0.0;
-  fluxOut[20] = 0.0;
-  fluxOut[21] = 0.0;
-  fluxOut[22] = 0.0;
-  fluxOut[23] = 0.0;
+    //    initialdata_(x, &ti, Qgp,&md,&cms,&order);
+    initialdata_(x_3, &ti, Qgp);
+    flux(Qgp, F);
+    for(int m=0; m < nVar; m++) {
+      stateOut[m] += weight * Qgp[m];
+      fluxOut[m] += weight * Fs[direction][m];
+    }
+  }
+  std::copy_n(stateIn,nVar,stateOut);
+  std::copy_n(fluxIn,nVar,fluxOut);
 }
 
 exahype::solvers::Solver::RefinementControl GPRDR::GPRDRSolver_ADERDG::refinementCriterion(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,double t,const int level) {
@@ -153,39 +119,36 @@ exahype::solvers::Solver::RefinementControl GPRDR::GPRDRSolver_ADERDG::refinemen
 
 
 void GPRDR::GPRDRSolver_ADERDG::eigenvalues(const double* const Q,const int direction,double* const lambda) {
-  // Tip: You find documentation for this method in header file "GPRDR::GPRDRSolver_ADERDG.h".
-  // Tip: See header file "GPRDR::AbstractGPRDRSolver_ADERDG.h" for toolkit generated compile-time 
-  //      constants such as Order, NumberOfVariables, and NumberOfParameters.
-  
-  // @todo Please implement/augment if required
-  // double nv[3] = {0.};
-  // nv[d] = 1;
-  // pdeeigenvalues_(lambda, Q, nv);
+  double nv[3] = {0.};
+  nv[direction] = 1;
+  pdeeigenvalues_(lambda, Q, nv);
 
-  lambda[0] = 1.0;
-  lambda[1] = 1.0;
-  lambda[2] = 1.0;
-  lambda[3] = 1.0;
-  lambda[4] = 1.0;
-  lambda[5] = 1.0;
-  lambda[6] = 1.0;
-  lambda[7] = 1.0;
-  lambda[8] = 1.0;
-  lambda[9] = 1.0;
-  lambda[10] = 1.0;
-  lambda[11] = 1.0;
-  lambda[12] = 1.0;
-  lambda[13] = 1.0;
-  lambda[14] = 1.0;
-  lambda[15] = 1.0;
-  lambda[16] = 1.0;
-  lambda[17] = 1.0;
-  lambda[18] = 1.0;
-  lambda[19] = 1.0;
-  lambda[20] = 1.0;
-  lambda[21] = 1.0;
-  lambda[22] = 1.0;
-  lambda[23] = 1.0;
+  for(int i = 0; i< 24 ; i++){
+    assert(std::isfinite(lambda[i]));
+  }
+
+  // lambda[2] = 1.0;
+  // lambda[3] = 1.0;
+  // lambda[4] = 1.0;
+  // lambda[5] = 1.0;
+  // lambda[6] = 1.0;
+  // lambda[7] = 1.0;
+  // lambda[8] = 1.0;
+  // lambda[9] = 1.0;
+  // lambda[10] = 1.0;
+  // lambda[11] = 1.0;
+  // lambda[12] = 1.0;
+  // lambda[13] = 1.0;
+  // lambda[14] = 1.0;
+  // lambda[15] = 1.0;
+  // lambda[16] = 1.0;
+  // lambda[17] = 1.0;
+  // lambda[18] = 1.0;
+  // lambda[19] = 1.0;
+  // lambda[20] = 1.0;
+  // lambda[21] = 1.0;
+  // lambda[22] = 1.0;
+  // lambda[23] = 1.0;
 }
 
 
@@ -193,135 +156,113 @@ void GPRDR::GPRDRSolver_ADERDG::eigenvalues(const double* const Q,const int dire
 
 
 void GPRDR::GPRDRSolver_ADERDG::flux(const double* const Q,double** const F) {
-  // Tip: You find documentation for this method in header file "GPRDR::GPRDRSolver_ADERDG.h".
-  // Tip: See header file "GPRDR::AbstractGPRDRSolver_ADERDG.h" for toolkit generated compile-time 
-  //      constants such as Order, NumberOfVariables, and NumberOfParameters.
+  constexpr int nVar = GPRDR::GPRDRSolver_ADERDG::NumberOfVariables;
+  if(DIMENSIONS == 2){
+    double F_3[nVar];
+    pdeflux_(F[0], F[1],F_3, Q);
+  }else{
+    pdeflux_(F[0], F[1],F[2], Q);
+  }
+
+  for(int d = 0; d< DIMENSIONS ; d++){
+    for(int i = 0; i< 24 ; i++){
+      assert(std::isfinite(F[d][i]));
+    }
+  }
+
+  // F[0][0] = 0.0;
+  // F[0][1] = 0.0;
+  // F[0][2] = 0.0;
+  // F[0][3] = 0.0;
+  // F[0][4] = 0.0;
+  // F[0][5] = 0.0;
+  // F[0][6] = 0.0;
+  // F[0][7] = 0.0;
+  // F[0][8] = 0.0;
+  // F[0][9] = 0.0;
+  // F[0][10] = 0.0;
+  // F[0][11] = 0.0;
+  // F[0][12] = 0.0;
+  // F[0][13] = 0.0;
+  // F[0][14] = 0.0;
+  // F[0][15] = 0.0;
+  // F[0][16] = 0.0;
+  // F[0][17] = 0.0;
+  // F[0][18] = 0.0;
+  // F[0][19] = 0.0;
+  // F[0][20] = 0.0;
+  // F[0][21] = 0.0;
+  // F[0][22] = 0.0;
+  // F[0][23] = 0.0;
   
-  // @todo Please implement/augment if required
-  // const int nVar = GPRDR::GPRDRSolver_ADERDG::NumberOfVariables;
-  // if(DIMENSIONS == 2){
-  //   double F_3[nVar];
-  //   pdeflux_(F[0], F[1],F_3, Q);
-  // }else{
-  //   pdeflux_(F[0], F[1],F[2], Q);
-  // }
-  F[0][0] = 0.0;
-  F[0][1] = 0.0;
-  F[0][2] = 0.0;
-  F[0][3] = 0.0;
-  F[0][4] = 0.0;
-  F[0][5] = 0.0;
-  F[0][6] = 0.0;
-  F[0][7] = 0.0;
-  F[0][8] = 0.0;
-  F[0][9] = 0.0;
-  F[0][10] = 0.0;
-  F[0][11] = 0.0;
-  F[0][12] = 0.0;
-  F[0][13] = 0.0;
-  F[0][14] = 0.0;
-  F[0][15] = 0.0;
-  F[0][16] = 0.0;
-  F[0][17] = 0.0;
-  F[0][18] = 0.0;
-  F[0][19] = 0.0;
-  F[0][20] = 0.0;
-  F[0][21] = 0.0;
-  F[0][22] = 0.0;
-  F[0][23] = 0.0;
-  
-  F[1][0] = 0.0;
-  F[1][1] = 0.0;
-  F[1][2] = 0.0;
-  F[1][3] = 0.0;
-  F[1][4] = 0.0;
-  F[1][5] = 0.0;
-  F[1][6] = 0.0;
-  F[1][7] = 0.0;
-  F[1][8] = 0.0;
-  F[1][9] = 0.0;
-  F[1][10] = 0.0;
-  F[1][11] = 0.0;
-  F[1][12] = 0.0;
-  F[1][13] = 0.0;
-  F[1][14] = 0.0;
-  F[1][15] = 0.0;
-  F[1][16] = 0.0;
-  F[1][17] = 0.0;
-  F[1][18] = 0.0;
-  F[1][19] = 0.0;
-  F[1][20] = 0.0;
-  F[1][21] = 0.0;
-  F[1][22] = 0.0;
-  F[1][23] = 0.0;
+  // F[1][0] = 0.0;
+  // F[1][1] = 0.0;
+  // F[1][2] = 0.0;
+  // F[1][3] = 0.0;
+  // F[1][4] = 0.0;
+  // F[1][5] = 0.0;
+  // F[1][6] = 0.0;
+  // F[1][7] = 0.0;
+  // F[1][8] = 0.0;
+  // F[1][9] = 0.0;
+  // F[1][10] = 0.0;
+  // F[1][11] = 0.0;
+  // F[1][12] = 0.0;
+  // F[1][13] = 0.0;
+  // F[1][14] = 0.0;
+  // F[1][15] = 0.0;
+  // F[1][16] = 0.0;
+  // F[1][17] = 0.0;
+  // F[1][18] = 0.0;
+  // F[1][19] = 0.0;
+  // F[1][20] = 0.0;
+  // F[1][21] = 0.0;
+  // F[1][22] = 0.0;
+  // F[1][23] = 0.0;
   
 }
 
 
 //You can either implement this method or modify fusedSource
 void GPRDR::GPRDRSolver_ADERDG::algebraicSource(const tarch::la::Vector<DIMENSIONS, double>& x, double t, const double *const Q, double *S) {
-  // Tip: You find documentation for this method in header file "GPRDR::GPRDRSolver_ADERDG.h".
-  // Tip: See header file "GPRDR::AbstractGPRDRSolver_ADERDG.h" for toolkit generated compile-time 
-  //      constants such as Order, NumberOfVariables, and NumberOfParameters.
-  // @todo Please implement/augment if required
-  //  pdesource_(S, Q);
-  S[0] = 0.0;
-  S[1] = 0.0;
-  S[2] = 0.0;
-  S[3] = 0.0;
-  S[4] = 0.0;
-  S[5] = 0.0;
-  S[6] = 0.0;
-  S[7] = 0.0;
-  S[8] = 0.0;
-  S[9] = 0.0;
-  S[10] = 0.0;
-  S[11] = 0.0;
-  S[12] = 0.0;
-  S[13] = 0.0;
-  S[14] = 0.0;
-  S[15] = 0.0;
-  S[16] = 0.0;
-  S[17] = 0.0;
-  S[18] = 0.0;
-  S[19] = 0.0;
-  S[20] = 0.0;
-  S[21] = 0.0;
-  S[22] = 0.0;
-  S[23] = 0.0;
+  pdesource_(S, Q);
+
+  for(int i = 0; i< 24 ; i++){
+    assert(std::isfinite(S[i]));
+  }
+
+  // S[0] = 0.0;
+  // S[1] = 0.0;
+  // S[2] = 0.0;
+  // S[3] = 0.0;
+  // S[4] = 0.0;
+  // S[5] = 0.0;
+  // S[6] = 0.0;
+  // S[7] = 0.0;
+  // S[8] = 0.0;
+  // S[9] = 0.0;
+  // S[10] = 0.0;
+  // S[11] = 0.0;
+  // S[12] = 0.0;
+  // S[13] = 0.0;
+  // S[14] = 0.0;
+  // S[15] = 0.0;
+  // S[16] = 0.0;
+  // S[17] = 0.0;
+  // S[18] = 0.0;
+  // S[19] = 0.0;
+  // S[20] = 0.0;
+  // S[21] = 0.0;
+  // S[22] = 0.0;
+  // S[23] = 0.0;
 }
 
 void GPRDR::GPRDRSolver_ADERDG::nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ) {
-  // Tip: You find documentation for this method in header file "GPRDR::GPRDRSolver_ADERDG.h".
-  // Tip: See header file "GPRDR::AbstractGPRDRSolver_ADERDG.h" for toolkit generated compile-time 
-  //      constants such as Order, NumberOfVariables, and NumberOfParameters.
-  
-  // @todo Please implement/augment if required
-  //pdencp_(BgradQ, Q, gradQ);
-  BgradQ[0] = 0.0;
-  BgradQ[1] = 0.0;
-  BgradQ[2] = 0.0;
-  BgradQ[3] = 0.0;
-  BgradQ[4] = 0.0;
-  BgradQ[5] = 0.0;
-  BgradQ[6] = 0.0;
-  BgradQ[7] = 0.0;
-  BgradQ[8] = 0.0;
-  BgradQ[9] = 0.0;
-  BgradQ[10] = 0.0;
-  BgradQ[11] = 0.0;
-  BgradQ[12] = 0.0;
-  BgradQ[13] = 0.0;
-  BgradQ[14] = 0.0;
-  BgradQ[15] = 0.0;
-  BgradQ[16] = 0.0;
-  BgradQ[17] = 0.0;
-  BgradQ[18] = 0.0;
-  BgradQ[19] = 0.0;
-  BgradQ[20] = 0.0;
-  BgradQ[21] = 0.0;
-  BgradQ[22] = 0.0;
-  BgradQ[23] = 0.0;
+  //std::fill_n(BgradQ,24,0.0);
+  pdencp_(BgradQ, Q, gradQ);
+  for(int i = 0; i< 24 ; i++){
+    assert(std::isfinite(BgradQ[i]));
+  }
 }
 
 bool GPRDR::GPRDRSolver_ADERDG::isPhysicallyAdmissible(

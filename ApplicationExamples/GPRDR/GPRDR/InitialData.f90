@@ -54,7 +54,7 @@ RECURSIVE SUBROUTINE InitialData(xGP, tGp, Q)
 #endif
 	IMPLICIT NONE 
 	! Argument list 
-	REAL, INTENT(IN)               :: xGP(nDim), tGp        ! 
+	REAL, INTENT(IN)               :: xGP(3), tGp        ! 
 	REAL, INTENT(OUT)              :: Q(nVar)        ! 
 	REAL :: up(nVar)
 	REAL :: rr,xi,LamCoeff(3),LEsigma(6), LL_GPR, MM_GPR
@@ -68,6 +68,7 @@ RECURSIVE SUBROUTINE InitialData(xGP, tGp, Q)
         rr=xGP(2)-2.0*xGP(1)-4000.0
         xi = 0.5+0.5*ERF(rr/100.0)
         up(22)=1-xi
+		!up(22)=1
         LamCoeff=getLameCoefficients(EQN%MATERIALS(1))
             up(1)     = LamCoeff(1)
             up(20)    = LamCoeff(2)
@@ -147,7 +148,7 @@ RECURSIVE SUBROUTINE PDElimitervalue(limiter_value,xx,numberOfObservables, obser
 	USE MainVariables, ONLY : nVar, nDim
 	IMPLICIT NONE 
 	! Argument list 
-	REAL, INTENT(IN)               :: xx(nDim)        ! 
+	REAL, INTENT(IN)               :: xx(3)        ! 
 	INTEGER, INTENT(IN)					:: numberOfObservables
 	INTEGER, INTENT(OUT)              :: limiter_value        !
 	REAL, INTENT(IN)					:: observablesMin(numberOfObservables), observablesMax(numberOfObservables)
