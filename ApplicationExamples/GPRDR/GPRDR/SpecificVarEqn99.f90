@@ -114,6 +114,7 @@ end subroutine computeGPRLEstressGen
         print *, ff
         print *, sum(ff(1:6))
         print *, 'Newton in sigma2A does not converge, err=',sqrt(abs(sum(ff(1:6)**2))),">eps=",eps
+		print *, 'Failure:', lambda1,mu1,rho0,s,cv,p0,EOS_mode,T0
 146     continue
         call A2sigmaAssignQA(GPRsigma2ASGEOS,unkvarsig, theta)
     end function GPRsigma2ASGEOS

@@ -29,6 +29,7 @@ void GPRDR::GPRDRSolver_ADERDG::adjustPointSolution(const double* const x,const 
     int md = exahype::solvers::Solver::getMaximumAdaptiveMeshDepth();
     double cms = exahype::solvers::Solver::getCoarsestMeshSize();
     const int order = GPRDR::GPRDRSolver_ADERDG::Order;
+    std::fill_n(Q,24,0.0);
     initialdata_(x, &t, Q,&md,&cms,&order);
   }
   // Q[0] = 0.0;

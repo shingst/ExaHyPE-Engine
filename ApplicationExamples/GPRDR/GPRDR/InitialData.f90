@@ -2,9 +2,45 @@
 
 
 RECURSIVE SUBROUTINE InitParameters() 
-	USE MainVariables, ONLY: nVar , nDim, EQN 
+	USE MainVariables, ONLY: nVar , nDim, EQN, ICType 
+#ifdef ODESOLVER
+    use expintegrator_type, only :T_odeexp_settings ,ODESETTINGS
+#endif
 	IMPLICIT NONE     
+	EQN%epsilon1 = 1.e-3
+	EQN%EOS      = 2
+	! Gravity and relaxation force, if not specified --------------------------------
+    EQN%g       = 0.0                   ! By default set g=0
+    EQN%gvec    = 0.0                   ! Same for gvec
+    EQN%tau0    = 1.e+16                ! If not specified set source of A to zero
+    EQN%tau2    = 1.e+16                ! If not specified set source of J to zero
+    ! Rupture process if not specified ----------------------------------------------
+	EQN%jacobian_mode=19!319
+    EQN%Yeq_mode= 4                     ! Mode 4 is the more general one allowing all the rupture processes  through parameters Ya,Yb,Yc,s0
+    EQN%xieps   = 1.e-16                ! Standard xi_eps
+    EQN%taumin  = 1.e-5                 ! Minimum value of tau.
+    EQN%cv      = 1.0
+	EQN%gamma	=1.0
+	EQN%p0		=0.0
+	EQN%cv		=1.0
+#ifdef ODESOLVER
+    ODESETTINGS%delta_max             = 0.1     ! delta_max      [0.2, 0.8]
+    ODESETTINGS%maxiter_accept        = 8        ! maxiter_accept  [2, 3, 10, ...]
+    ODESETTINGS%maxiter_reject        = 21        ! maxiter_reject  [8]
+    ODESETTINGS%eps_fpi               = 1.0e-6  ! eps_fpi         [1.0e-14]
+    ODESETTINGS%eps_ccc               = (/1e-3, 1e-3, 1e-3, 1e-3, 1e-3, 1e-3, 1e-3, 1e-3, 1e-3, 1e-3, 1., 1e-3, 1e-3, 1e-3/)  ! eps_ccc          [1.0e-14]
+    ODESETTINGS%increment_ccfl        = 0.8     ! increment_ccfl  [0.8, 0.85, ....]
+    ODESETTINGS%decrement_accuracy    = 0.5      ! decrement_accuracy [0.333, 0.4 0.5, ...]
+    ODESETTINGS%decrement_positivity  = 0.5      ! decrement_positivity [0.333, 0.5, ...]
+#endif
 
+	select case(ICType)
+		case('NLOPRUPTURE')
+		    EQN%nMATs=2
+			ALLOCATE(EQN%MATERIALS(EQN%nMATs))
+			EQN%MATERIALS(1)='ROCK1'
+			EQN%MATERIALS(2)='UNBREAKABLE'
+	end select
 END SUBROUTINE InitParameters
 
 RECURSIVE SUBROUTINE InitialData(xGP, tGp, Q)
@@ -27,7 +63,7 @@ RECURSIVE SUBROUTINE InitialData(xGP, tGp, Q)
 	select case(ICType)
 		case('NLOPRUPTURE')
 #if defined(EQNTYPEC99) || defined(EQNTYPED99)
-
+		up=0.
 #ifdef EQNTYPED99
         rr=xGP(2)-2.0*xGP(1)-4000.0
         xi = 0.5+0.5*ERF(rr/100.0)
