@@ -33,19 +33,20 @@ exahype-project GPR
   
   shared-memory
     identifier               = dummy
-    configure                = {background-tasks:4}
-    cores                    = 4
+    configure                = {background-tasks:1}
+    cores                    = 1
     properties-file          = sharedmemory.properties
   end shared-memory  
   
   distributed-memory
     identifier               = static_load_balancing
-    configure                = {hotspot,fair,ranks-per-node:1}
+    configure                = {hotspot,fair,ranks-per-node:4}
     buffer-size              = 6400
     timeout                  = 6000
   end distributed-memory
 
   global-optimisation
+
     fuse-algorithmic-steps          = all
     fuse-algorithmic-steps-rerun-factor   = 0.99
     fuse-algorithmic-steps-diffusion-factor   = 0.99
@@ -69,7 +70,7 @@ exahype-project GPR
 	terms const = flux,ncp,source
 	optimisation const = generic
     language const                 = C
-    limiter-type const         = musclhancock
+    limiter-type const         = godunov
     limiter-optimisation const = generic
     limiter-language const     = C
     dmp-observables const      = 1
@@ -96,8 +97,8 @@ exahype-project GPR
       repeat = 0.1
       output = ./global-integrals
     end plot
-*/
-/*
+
+
      plot user::defined ErrorWriter
        variables const = 17
        time            = 0.0
@@ -108,7 +109,7 @@ exahype-project GPR
      plot user::defined TecplotWriter
        variables const = 17
        time            = 0.0
-       repeat          = 0.05
+       repeat          = 0.01
        output          = ./output/tecplot
      end plot
 */
