@@ -1,4 +1,12 @@
+#ifndef HEADER_ODERSOLVER
+#define HEADER_ODERSOLVER
 #if defined(ODESOLVER)
+
+#include "MainVariables.f90"
+#include "expintegrator_type.f90"
+#include "expintegrator_ode.f90"
+#include "expintegrator_linalg.f90"
+
 MODULE expintegrator
     use MainVariables, only : tEquation
     use expintegrator_type, only : T_odeexp_settings,nvarode, nccc, ncc, T_ode_parameters
@@ -306,4 +314,5 @@ CONTAINS
 
 END MODULE expintegrator
     
+#endif
 #endif

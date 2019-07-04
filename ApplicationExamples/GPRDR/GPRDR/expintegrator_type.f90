@@ -1,3 +1,5 @@
+#ifndef HEADER_EXPINTEGRATOR_TYPE
+#define HEADER_EXPINTEGRATOR_TYPE
 #if defined(ODESOLVER) || defined(EQNTYPEC99) || defined(EQNTYPED99)
     module expintegrator_type
 #if defined(EQNTYPEB99)
@@ -41,3 +43,4 @@
         
     end module expintegrator_type
 #endif    
+#endif

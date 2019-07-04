@@ -1,4 +1,11 @@
+#ifndef HEADER_EXPINTEGRATOR_ODE
+#define HEADER_EXPINTEGRATOR_ODE
 #if defined(ODESOLVER) || defined(EQNTYPEC99) || defined(EQNTYPEB99) || defined(EQNTYPED99)
+#include "MainVariables.f90"
+#include "expintegrator_type.f90"
+#include "expintegrator_linalg.f90"
+#include "expintegrator_linalg_fast33.f90"
+
 MODULE expintegrator_ode
     use MainVariables, only: tEquation
     use expintegrator_type, only : T_ode_parameters,nvarode,ncc,nccc
@@ -895,4 +902,5 @@ CONTAINS
     !END SUBROUTINE compute_auxiliary_variables
 
 END MODULE expintegrator_ode
+#endif
 #endif

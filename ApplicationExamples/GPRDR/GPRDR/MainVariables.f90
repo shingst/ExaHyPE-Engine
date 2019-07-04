@@ -1,3 +1,6 @@
+#ifndef HEADER_MAINVARIABLES
+#define HEADER_MAINVARIABLES
+
 ! DIM Parameters
   
   MODULE MainVariables 
@@ -56,3 +59,4 @@
   INTEGER, PARAMETER  :: nGP3 = 3 
 
   END MODULE MainVariables  
+#endif

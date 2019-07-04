@@ -1,3 +1,12 @@
+#ifndef HEADER_ODE
+#define HEADER_ODE
+
+#include "MainVariables.f90"
+#include "expintegrator_type.f90"
+#include "expintegrator.f90" 
+#include "expintegrator_ode.f90"
+
+
 SUBROUTINE UpdateSolutionODE(Qnew,Qold,loc_dt)
   USE MainVariables, ONLY : nVar, nDim, EQN
 #ifdef ODESOLVER
@@ -85,3 +94,4 @@ SUBROUTINE UpdateSolutionODE(Qnew,Qold,loc_dt)
 	!end do
   END SUBROUTINE UpdateSolutionODE
 
+#endif

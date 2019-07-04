@@ -1,3 +1,5 @@
+#ifndef HEADER_EXPINTEGRATOR_LINALG_FAST
+#define HEADER_EXPINTEGRATOR_LINALG_FAST
 #if defined(ODESOLVER) || defined(EQNTYPEC99) || defined(EQNTYPED99)
     
 MODULE expintegrator_linalg_fast33
@@ -611,5 +613,6 @@ CONTAINS
     END SUBROUTINE fast22_pade13
 
 END MODULE expintegrator_linalg_fast33
+
 #endif
-    
+#endif

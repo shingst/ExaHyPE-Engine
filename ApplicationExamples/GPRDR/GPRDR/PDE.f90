@@ -1,3 +1,12 @@
+#ifndef HEADER_PDE
+#define HEADER_PDE
+
+#include "MainVariables.f90"
+#include "SpecificVarEqn99.f90"
+#include "expintegrator_ode.f90"
+#include "expintegrator_type.f90"
+#include "SpecificVarEqn99.f90"
+
 ! GRMHD PDE.f90
 ! Trento (EQNTYPE4)
 
@@ -1041,3 +1050,4 @@ RECURSIVE SUBROUTINE getExactSolution(V,pos, timeStamp)
 END SUBROUTINE getExactSolution
 
 
+#endif

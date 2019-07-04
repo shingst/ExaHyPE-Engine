@@ -1,3 +1,6 @@
+#ifndef HEADER_EXPINTEGRATOR_LINALG
+#define HEADER_EXPINTEGRATOR_LINALG
+
 #if defined(ODESOLVER) || defined(EQNTYPEC99) || defined(EQNTYPED99)
     
 MODULE expintegrator_linalg
@@ -661,3 +664,4 @@ CONTAINS
 END MODULE expintegrator_linalg
 #endif
     
+#endif

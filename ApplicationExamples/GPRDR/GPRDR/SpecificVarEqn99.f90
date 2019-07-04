@@ -1,3 +1,9 @@
+#ifndef __HEADER_SPECIFICVAREN__
+#define __HEADER_SPECIFICVAREN__
+#include "expintegrator_type.f90"
+#include "MainVariables.f90"
+#include "expintegrator_linalg.f90"
+
     module SpecificVarEqn99
 
         IMPLICIT NONE
@@ -2775,3 +2781,4 @@ END SUBROUTINE LinSolve
 	
 	
     end module SpecificVarEqn99
+#endif

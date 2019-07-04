@@ -1,5 +1,8 @@
 ! DIM Initial Data
-
+#ifndef HEADER_INITALDATA
+#define HEADER_INITALDATA
+#include "MainVariables.f90"
+#include "expintegrator_type.f90"
 
 RECURSIVE SUBROUTINE InitParameters() 
 	USE MainVariables, ONLY: nVar , nDim, EQN, ICType 
@@ -186,6 +189,4 @@ RECURSIVE SUBROUTINE ShuVortex2D(x, t, Q)
        CALL PDEPrim2Cons(Q,up)
     !Q=up
 END SUBROUTINE ShuVortex2D
-  
-
-
+#endif
