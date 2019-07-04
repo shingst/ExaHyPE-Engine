@@ -3,6 +3,7 @@
 #include "GPRDRSolver_FV_Variables.h"
 #include "InitialData.h"
 #include "PDE.h"
+#include "ODE.h"
 
 
 tarch::logging::Log GPRDR::GPRDRSolver_FV::_log( "GPRDR::GPRDRSolver_FV" );
@@ -82,10 +83,33 @@ void  GPRDR::GPRDRSolver_FV::nonConservativeProduct(const double* const Q,const 
 
 
 void GPRDR::GPRDRSolver_FV::solutionUpdate(double* luh,const tarch::la::Vector<DIMENSIONS,double>& cellCenter,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t, const double dt,double& maxAdmissibleDt) {
-  maxAdmissibleDt = kernels::finitevolumes::musclhancock::c::solutionUpdate<
-    true, true, true, false, false,
-    kernels::finitevolumes::commons::c::minmod,
-    GPRDRSolver_FV
-    >(*static_cast<GPRDRSolver_FV*>(this),luh,cellCenter,cellSize,t,dt);
+  GPRDR::AbstractGPRDRSolver_FV::solutionUpdate(luh, cellCenter, cellSize, t, dt, maxAdmissibleDt);
+  constexpr int patchSize          = GPRDR::GPRDRSolver_FV::PatchSize;
+  constexpr int ghostLayerWidth    = GPRDR::GPRDRSolver_FV::GhostLayerWidth;
+  constexpr int patchBegin         = ghostLayerWidth; // patchBegin cell is inside domain
+  constexpr int patchEnd           = patchBegin+patchSize; // patchEnd cell is outside domain
+#if DIMENSIONS==3
+  kernels::idx4 idx(patchEnd,patchEnd,patchEnd,NumberOfVariables);
+  for (int k = patchBegin; k < patchEnd; k++) {
+#else
+  kernels::idx3 idx(patchEnd,patchEnd,NumberOfVariables);
+#endif    
+    for (int j = patchBegin; j < patchEnd; j++) {
+      for (int i = patchBegin; i < patchEnd; i++) {
+#if DIMENSIONS==3
+	double* luh_cell = luh + idx(k,j,i,0);
+#else
+	double* luh_cell = luh + idx(j,i,0);
+#endif
+
+	double luh_cell_new[NumberOfVariables];
+	updatesolutionode_(&luh_cell_new[0],luh_cell,&dt);
+	std::copy_n(luh_cell_new,NumberOfVariables,luh_cell);
+      }
+    }
+#if DIMENSIONS==3
+  }
+#endif  
+  
 }
 

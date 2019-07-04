@@ -108,6 +108,13 @@ void GPRDR::GPRDRSolver_ADERDG::boundaryValues(const double* const x,const doubl
 }
 
 exahype::solvers::Solver::RefinementControl GPRDR::GPRDRSolver_ADERDG::refinementCriterion(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,double t,const int level) {
+  if (tarch::la::equals(t,0.0)) {
+    if(std::abs(cellCentre[0]) < 1000){
+      if(std::abs(cellCentre[1]) < 50){
+	return exahype::solvers::Solver::RefinementControl::Refine;
+      }
+    }
+  }	 
   return exahype::solvers::Solver::RefinementControl::Keep;
 }
 
