@@ -143,6 +143,8 @@ class GPRDR::GPRDRSolver_FV : public GPRDR::AbstractGPRDRSolver_FV {
     void nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ) override;
 
     void solutionUpdate(double* luh,const tarch::la::Vector<DIMENSIONS,double>& cellCenter,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t, const double dt,double& maxAdmissibleDt) override;
+
+    double riemannSolver(double* fL, double *fR, const double* qL, const double* qR, const double* gradQL, const double* gradQR, const double* cellSize, int direction) override;
     
     /* pointSource() function not included, as requested in the specification file */
 };

@@ -7,7 +7,7 @@
     "output_directory": "./ApplicationExamples/GPRDR/GPRDR",
     "log_file": "whatever.log"
   },
-  "architecture": "noarch",
+  "architecture": "skx",
   "computational_domain": {
     "dimension": 2,
     "end_time": 5.0,
@@ -21,10 +21,10 @@
     ]
   },
   "shared_memory": {
-    "cores": 1,
+    "cores": 14,
     "properties_file": "sharedmemory.properties",
     "autotuning_strategy": "dummy",
-    "background_job_consumers": 9
+    "background_job_consumers": 13
   },
   "distributed_memory": {
     "timeout": 6000,
@@ -39,6 +39,7 @@
     "fuse_algorithmic_steps_rerun_factor": 0.99,
     "fuse_algorithmic_steps_diffusion_factor": 0.99,
     "spawn_predictor_as_background_thread": true,
+    "spawn_update_as_background_thread": true,
     "spawn_amr_background_threads": true,
     "disable_vertex_exchange_in_time_steps": true,
     "time_step_batch_factor": 0.0,
@@ -52,7 +53,7 @@
       "name": "GPRDRSolver",
       "order": 3,
       "maximum_mesh_size": 500.0,
-      "maximum_mesh_depth": 0,
+      "maximum_mesh_depth": 1,
       "time_stepping": "global",
       "aderdg_kernel": {
         "language": "C",
@@ -65,7 +66,7 @@
         "space_time_predictor": {},
         "optimised_terms": [],
         "optimised_kernel_debugging": [],
-        "implementation": "generic"
+        "implementation": "optimised"
       },
       "point_sources": 0,
       "limiter": {
@@ -140,7 +141,7 @@
           "type": "vtu::Cartesian::Cells::limited::Ascii",
           "name": "ConservedWriter",
           "time": 0.0,
-          "repeat": 0.0001,
+          "repeat": 0.1,
           "output": "./conserved",
           "variables": 39
          }

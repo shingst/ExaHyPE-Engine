@@ -76,7 +76,7 @@ CONTAINS
         Vpde(21)    = Vode(1)
         Vpde(9:17)  = Vode(2:10)
         !Vpde(6:8)   = Vode(11:13)
-        Vpde(24)    = Param(2)
+        Vpde(24)    = real(Param(2),8)
 #endif
 #ifdef EQNTYPE7
 

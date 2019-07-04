@@ -49,5 +49,10 @@
     END TYPE tEquation
 	
 	TYPE(tEquation) :: EQN
+	
+  ! 3-point Gaussian quadrature 
+  REAL, PARAMETER     :: sGP3(3) = (/ 0.5-sqrt(15.)/10.,0.5,0.5+sqrt(15.)/10. /) 
+  REAL, PARAMETER     :: wGP3(3) = (/ 5./18., 8./18., 5./18. /) 
+  INTEGER, PARAMETER  :: nGP3 = 3 
 
   END MODULE MainVariables  

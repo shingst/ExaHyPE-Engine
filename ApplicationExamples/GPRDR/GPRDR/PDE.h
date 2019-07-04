@@ -18,6 +18,10 @@ void getexactsolution_(double* V,double* pos,double* timeStamp);
 void inittecplot_(const int* N_in,const int* M_in);
 void pdeauxvar_(double* aux, const double* const Q,double* x, const double* const time);
 void pdecritialstress_(double* CS, const double* const Q);
+
+void hllemfluxfv_(double* FL, double* FR, const double* const  QL, const double* const  QR, const double* const  QavL, const double* const  QavR, const int* normalNonZeroIndex);
+void hllemriemannsolver_(const int* basisSize, const int* normalNonZeroIndex, double* FL, double* FR, const double* const  QL, const double* const  QR, const double* const  QavL, const double* const  QavR);
+
 }/* extern "C" */
 
 #endif /* __EXAHYPE_USER_PDE__ */

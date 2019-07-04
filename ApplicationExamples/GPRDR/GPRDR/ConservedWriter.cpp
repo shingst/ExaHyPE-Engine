@@ -46,7 +46,6 @@ void GPRDR::ConservedWriter::mapQuantities(
   pdeauxvar_(aux,Q,x_3,&timeStamp);
 
   for (int i=writtenUnknowns; i<writtenUnknowns+15; i++){ 
-      outputQuantities[i] = aux[i-writtenUnknowns];
+    outputQuantities[i] = aux[i-writtenUnknowns];
   }
-
 }

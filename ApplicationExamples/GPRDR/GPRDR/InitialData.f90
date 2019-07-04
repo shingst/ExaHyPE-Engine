@@ -39,7 +39,7 @@ RECURSIVE SUBROUTINE InitParameters()
 		    EQN%nMATs=2
 			ALLOCATE(EQN%MATERIALS(EQN%nMATs))
 			EQN%MATERIALS(1)='ROCK1'
-			EQN%MATERIALS(2)='UNBREAKABLE'
+			EQN%MATERIALS(2)='ROCK1'
 	end select
 END SUBROUTINE InitParameters
 
@@ -123,8 +123,8 @@ RECURSIVE SUBROUTINE InitialData(xGP, tGp, Q)
                 up(21)=0.5    
             end if            
         else
-            if(abs(xGP(1)) .le. 1000.0 .and. abs(xGP(2)) .le. 300.0/3.0 .and. abs(xGP(3)) .le. 300.0/3.0) then 
-                up(21)=1.0    
+            if(abs(xGP(1)) .le. 1000.0 .and. abs(xGP(2)) .le. 100.0/3.0 .and. abs(xGP(3)) .le. 100.0/3.0) then 
+                up(21)=0.1    
             end if            
         end if
         !if(abs(xGP(1)) .le. 100.0/3.0 .and. abs(xGP(2)) .le. 100.0/3.0 .and. abs(xGP(3)) .le. 100.0/3.0) then 

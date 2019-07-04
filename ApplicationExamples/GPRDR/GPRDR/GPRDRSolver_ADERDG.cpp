@@ -41,34 +41,10 @@ void GPRDR::GPRDRSolver_ADERDG::adjustPointSolution(const double* const x,const 
     std::copy_n(&x[0],DIMENSIONS,&x_3[0]);
     
     initialdata_(x_3, &t, Q);
-    for(int i = 0; i< 24 ; i++){
-      assert(std::isfinite(Q[i]));
-    }
   }
-  // Q[0] = 0.0;
-  // Q[1] = 0.0;
-  // Q[2] = 0.0;
-  // Q[3] = 0.0;
-  // Q[4] = 0.0;
-  // Q[5] = 0.0;
-  // Q[6] = 0.0;
-  // Q[7] = 0.0;
-  // Q[8] = 0.0;
-  // Q[9] = 0.0;
-  // Q[10] = 0.0;
-  // Q[11] = 0.0;
-  // Q[12] = 0.0;
-  // Q[13] = 0.0;
-  // Q[14] = 0.0;
-  // Q[15] = 0.0;
-  // Q[16] = 0.0;
-  // Q[17] = 0.0;
-  // Q[18] = 0.0;
-  // Q[19] = 0.0;
-  // Q[20] = 0.0;
-  // Q[21] = 0.0;
-  // Q[22] = 0.0;
-  // Q[23] = 0.0;
+  for(int i = 0; i< 24 ; i++){
+    assert(std::isfinite(Q[i]));
+  }
 }
 
 void GPRDR::GPRDRSolver_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int direction,const double* const fluxIn,const double* const stateIn,const double* const gradStateIn,double* const fluxOut,double* const stateOut) {

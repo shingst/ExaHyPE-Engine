@@ -24,10 +24,10 @@ void GPRDR::GPRDRSolver_FV::adjustSolution(const double* const x,const double t,
     std::copy_n(&x[0],DIMENSIONS,&x_3[0]);
     
     initialdata_(x_3, &t, Q);
+  }
     for(int i = 0; i< 24 ; i++){
       assert(std::isfinite(Q[i]));
     }
-  }
 }
 
 void GPRDR::GPRDRSolver_FV::eigenvalues(const double* const Q, const int dIndex, double* const lambda) {
@@ -88,11 +88,12 @@ void GPRDR::GPRDRSolver_FV::solutionUpdate(double* luh,const tarch::la::Vector<D
   constexpr int ghostLayerWidth    = GPRDR::GPRDRSolver_FV::GhostLayerWidth;
   constexpr int patchBegin         = ghostLayerWidth; // patchBegin cell is inside domain
   constexpr int patchEnd           = patchBegin+patchSize; // patchEnd cell is outside domain
+  constexpr int wholePatchSize      = patchSize+2*ghostLayerWidth;
 #if DIMENSIONS==3
-  kernels::idx4 idx(patchEnd,patchEnd,patchEnd,NumberOfVariables);
+  kernels::idx4 idx(wholePatchSize,wholePatchSize,wholePatchSize,NumberOfVariables);
   for (int k = patchBegin; k < patchEnd; k++) {
 #else
-  kernels::idx3 idx(patchEnd,patchEnd,NumberOfVariables);
+    kernels::idx3 idx(wholePatchSize,wholePatchSize,NumberOfVariables);
 #endif    
     for (int j = patchBegin; j < patchEnd; j++) {
       for (int i = patchBegin; i < patchEnd; i++) {
@@ -101,7 +102,6 @@ void GPRDR::GPRDRSolver_FV::solutionUpdate(double* luh,const tarch::la::Vector<D
 #else
 	double* luh_cell = luh + idx(j,i,0);
 #endif
-
 	double luh_cell_new[NumberOfVariables];
 	updatesolutionode_(&luh_cell_new[0],luh_cell,&dt);
 	std::copy_n(luh_cell_new,NumberOfVariables,luh_cell);
@@ -113,3 +113,81 @@ void GPRDR::GPRDRSolver_FV::solutionUpdate(double* luh,const tarch::la::Vector<D
   
 }
 
+
+#include "kernels/finitevolumes/riemannsolvers/c/riemannsolvers.h"
+double GPRDR::GPRDRSolver_FV::riemannSolver(double* fL, double *fR, const double* qL, const double* qR, const double* gradQL, const double* gradQR, const double* cellSize, int direction) {
+
+
+    //return kernels::finitevolumes::riemannsolvers::c::rusanov<true, true, false, GRMHDbSolver_FV>(*static_cast<GRMHDbSolver_FV*>(this), fL,fR,qL,qR,gradQL, gradQR, cellSize, direction);
+	constexpr int numberOfVariables = AbstractGPRDRSolver_FV::NumberOfVariables;
+
+	//printf("SONO QUI IN riemannSolver");
+	/* HLLEM */
+	
+	//const int numberOfVariables = GRMHDb::AbstractGRMHDbSolver_FV::NumberOfVariables;
+	const int numberOfParameters = GPRDR::AbstractGPRDRSolver_FV::NumberOfParameters;
+	const int numberOfData = numberOfVariables + numberOfParameters;
+	const int order = 0;  // for finite volume we use one single d.o.f., i.e. the cell average.
+	const int basisSize = order + 1;
+	// Compute the average variables and parameters from the left and the right
+	double QavL[numberOfData] = { 0.0 }; // ~(numberOfVariables+numberOfParameters)
+	double QavR[numberOfData] = { 0.0 }; // ~(numberOfVariables+numberOfParameters)
+
+										 // std::cout << "opened ---------------------"<< std::endl;
+         
+        // printf("\n******* RIEMANN SOLVER FV*****************");
+
+	kernels::idx2 idx_QLR(basisSize, numberOfData);
+	for (int j = 0; j < basisSize; j++) {
+		const double weight = kernels::gaussLegendreWeights[order][j];
+
+		for (int k = 0; k < numberOfData; k++) {
+			QavL[k] += weight * qL[idx_QLR(j, k)];
+			QavR[k] += weight * qR[idx_QLR(j, k)];
+		}
+	}
+	
+        // printf("\n***DONE*****");
+
+	//	double lambda = 2.0;
+	//hllemfluxfv_(fL, fR, qL, qR, QavL, QavR, &direction);
+
+	/* OSHER */
+	//double lambda = kernels::finitevolumes::riemannsolvers::c::generalisedOsherSolomon<false, true, false, 3, EulerSolver_FV>(*static_cast<EulerSolver_FV*>(this), fL, fR, qL, qR, direction);
+	/* RUSANOV */
+	double lambda = kernels::finitevolumes::riemannsolvers::c::rusanov<true, true, false, GPRDRSolver_FV>(*static_cast<GPRDRSolver_FV*>(this), fL, fR, qL, qR, gradQL, gradQR, cellSize, direction);
+	// avoid spurious numerical diffusion (ony for Cowling approximation)
+	for (int m = 9; m < numberOfVariables; m++) {
+		fL[m] = 0.0;
+		fR[m] = 0.0;
+	}
+	return lambda; 
+}
+
+/*double GPRDR::GPRDRSolver_FV::riemannSolver(double* fL, double *fR, const double* qL, const double* qR, const double* gradQL, const double* gradQR, const double* cellSize, int direction) {
+  const int numberOfVariables  = GPRDR::AbstractGPRDRSolver_FV::NumberOfVariables;
+  const int numberOfParameters = GPRDR::AbstractGPRDRSolver_FV::NumberOfParameters;
+  const int numberOfData       = numberOfVariables+numberOfParameters;
+  const int order              = 0;
+  const int basisSize          = order+1;
+  // Compute the average variables and parameters from the left and the right
+  double QavL[numberOfData] = {0.0}; // ~(numberOfVariables+numberOfParameters)
+  double QavR[numberOfData] = {0.0}; // ~(numberOfVariables+numberOfParameters)
+  
+  // std::cout << "opened ---------------------"<< std::endl;
+  
+    kernels::idx2 idx_QLR(basisSize, numberOfData);
+    for (int j = 0; j < basisSize; j++) {
+      const double weight = kernels::gaussLegendreWeights[order][j];
+
+      for (int k = 0; k < numberOfData; k++) {
+        QavL[k] += weight * qL[idx_QLR(j, k)];
+        QavR[k] += weight * qR[idx_QLR(j, k)];
+      }
+    }
+	
+// Call the Fortran routine
+hllemriemannsolver_(&basisSize, &direction, fL,fR,qL, qR,QavL, QavR);
+//testriemannsolver_(&basisSize, &normalNonZero, fL,fR,qL, qR,QavL, QavR);
+return 6000;
+}*/
