@@ -112,7 +112,7 @@ RECURSIVE SUBROUTINE PDEEigenvalues(L,Q,n)
 	END IF
     IF(MAXVAL(ABS(n))<1.E-10) THEN
 		print *, 'Impossible error', n
-		stop
+		!stop
 	end if
    CALL PDECons2Prim(V,Q)   
    !    
@@ -135,6 +135,15 @@ RECURSIVE SUBROUTINE PDEEigenvalues(L,Q,n)
    L(6)   = vs 
    L(7:9) = 0. 
    
+   
+   if(any(isnan(L))) then
+	!print *,'Impossible error 3'
+	!print *, Q
+	!print *, V
+	!print *, c,V(5),V(1)
+	L=1
+	!stop
+   end if
    if(maxval(abs(L))<1.e-12) then
 	print *, 'Another impossible error', L,u,vs,n
    end if
@@ -276,7 +285,7 @@ RECURSIVE SUBROUTINE PDEEigenvectors(R,L,iR,Q,nv)
 
   CALL PDECons2Prim(VP,QPR) 
 
-	  ialpha = VP(6)/(VP(6)**2 + 1e-10*(1.0-VP(6))) 
+	  ialpha = VP(6)/(VP(6)**2 + 1e-12) 
 
       dQdV(1,1) = VP(6)
       dQdV(1,2) = 0

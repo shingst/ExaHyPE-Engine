@@ -20,7 +20,7 @@ RECURSIVE SUBROUTINE InitParameters()
 		EPCenter(1:nDim) =   (/ 0.0 , 0.0 /)
 		EPRadius         =   1.0   
 		ICA              =   0.2   
-		ICdelta          =   0.001 
+		ICdelta          =   0.01 
 		MHDRotomega      =   3.0   
 	END SELECT	
 	
@@ -65,16 +65,21 @@ RECURSIVE SUBROUTINE PDElimitervalue(limiter_value,xx,numberOfObservables, obser
 	real	:: rr	
 
 	limiter_value=0
-   IF((observablesMin(1)<1.e-5) then
+   IF(observablesMin(1)<1.e-2) then
       limiter_value = 1
    end if
 
+   !print *, observablesMax(6)
 	
-   IF((observablesMax(6)<0.999 .and. observablesMin(6)>0.001) .or. observablesMax(6)>1.001) THEN  ! was -0.001   .or. levelmin<0.001
+   IF((observablesMax(6)<0.985 .and. observablesMin(6)>0.015) .or. observablesMax(6)>1.005) THEN  ! was -0.001   .or. levelmin<0.001
 		limiter_value = 1 
    ENDIF 
+   !rr=sqrt(sum(xx**2))
+   !if(rr<1.8) then
+   !limiter_value = 1
+   !end if
    !
-	!limiter_value = 1
+	!limiter_value = 0
 END SUBROUTINE PDElimitervalue
 
   

@@ -76,8 +76,8 @@ void SFDI::SFDISolver_ADERDG::boundaryValues(const double* const x,const double 
       fluxOut[m] += weight * Fs[direction][m];
     }
   }
-  //std::copy_n(stateIn,nVar,stateOut);
-  //std::copy_n(fluxIn,nVar,fluxOut);
+  std::copy_n(stateIn,nVar,stateOut);
+  std::copy_n(fluxIn,nVar,fluxOut);
 }
 
 exahype::solvers::Solver::RefinementControl SFDI::SFDISolver_ADERDG::refinementCriterion(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,double t,const int level) {
@@ -124,7 +124,7 @@ void SFDI::SFDISolver_ADERDG::flux(const double* const Q,double** const F) {
 
 void SFDI::SFDISolver_ADERDG::mapDiscreteMaximumPrincipleObservables(double* const observables,
 								       const double* const Q) const {
-  observables[0] = Q[0];										   
+  observables[0] = Q[0];   
   observables[1] = Q[1];
   observables[2] = Q[2];
   observables[3] = Q[3];

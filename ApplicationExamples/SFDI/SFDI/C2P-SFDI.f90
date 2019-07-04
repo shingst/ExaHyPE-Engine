@@ -28,7 +28,7 @@ SUBROUTINE PDECons2Prim(V,Q)
   ! Local variables
   REAL :: ialpha
   
-  ialpha = Q(6)/(Q(6)**2 + 1e-10*(1.0-Q(6))) 
+  ialpha = Q(6)/(Q(6)**2 + 1e-10) 
   V(1)   = Q(1)*ialpha 
   V(2:4) = Q(2:4)*Q(1)/(Q(1)**2 + 1e-10)  
   V(5) = (EQN%gamma-1.)*( Q(5)*ialpha - 0.5*V(1)*( V(2)**2 + V(3)**2 +V(4)**2 ) ) 
