@@ -157,7 +157,7 @@ double GPRDR::GPRDRSolver_FV::riemannSolver(double* fL, double *fR, const double
 	/* RUSANOV */
 	double lambda = kernels::finitevolumes::riemannsolvers::c::rusanov<true, true, false, GPRDRSolver_FV>(*static_cast<GPRDRSolver_FV*>(this), fL, fR, qL, qR, gradQL, gradQR, cellSize, direction);
 	// avoid spurious numerical diffusion (ony for Cowling approximation)
-	for (int m = 9; m < numberOfVariables; m++) {
+	for (int m = 17; m < numberOfVariables; m++) {
 		fL[m] = 0.0;
 		fR[m] = 0.0;
 	}
