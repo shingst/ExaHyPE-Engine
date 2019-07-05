@@ -1,4 +1,5 @@
 import os
+import sys
 import copy
 
 from .models import *
@@ -14,9 +15,10 @@ class SolverController:
         # [1] M. Dumbser, D. S. Balsara, E. F. Toro, and C.-D. Munz, 
         # ‘A unified framework for the construction of one-step finite volume and discontinuous Galerkin schemes on unstructured meshes’, Journal of Computational Physics, vol. 227, no. 18, pp. 8209–8253, Sep. 2008.
         self.cflADER = [1.0,   0.33,  0.17, 0.1,  0.069, 0.045, 0.038, 0.03, 0.02, 0.015]
-        cflCorrectionADER = cflADER.copy()
-        for p,cfl in enumerate(cflADER):
+        self.cflCorrectionADER = self.cflADER.copy()
+        for p,cfl in enumerate(self.cflADER):
             self.cflCorrectionADER[p] = cfl * (2*p+1);
+        self.cflSafetyFactor = 0.9
 
 
     def processModelOutput(self, output, contextsList, logger, silentCodeGen = False):
@@ -55,18 +57,23 @@ class SolverController:
                 fvContext["solver"]         = context["FVSolver"]
                 fvContext["solverType"]     = "Finite-Volumes"
                 fvContext["abstractSolver"] = context["FVAbstractSolver"]
+                
+                # patch size vs ADER-DG CFL
                 order = aderdgContext["order"];
-                if fvContext["patchSize"] is "original":
-                    fvContext["patchSize"]      = 2 * order + 1
-                elif fvContext["patchSize"] is "max":
-                    fvContext["patchSize"]      = int( 1.0/self.cflCorrectionADER[order] * (2 * order + 1) )
+                if fvContext["patchSize"] == "original":
+                    fvContext["patchSize"] = 2 * order + 1
+                elif fvContext["patchSize"] == "max":
+                    fvContext["patchSize"] = int( 1.0/self.cflCorrectionADER[order] * (2 * order + 1) )
                     if context["implementation"] is "optimised":
-                        logger.error("Maximum patch size currently not supported for optimised kernels.")
-                        sys.abort()
+                        logger.error("{}: maximum patch size currently not supported for optimised kernels.".format(context["solver"]))
+                        sys.exit()
                 else:
-                    logger.error("Freely chosen patch size for limiting ADER-DG method currently not supported.")
-                    sys.abort()
-                     
+                    # scale the ADER-DG method's CFL safety factor according to the chosen patch size
+                    aderdgContext["CFL"] = aderdgContext["CFL"] * min(self.cflADER[order], 1.0/fvContext["patchSize"]) / self.cflADER[order];
+                    if context["implementation"] is "optimised":
+                        logger.error("{}: freely chosen patch size for Limiting-ADER-DG solver currently not supported for optimised kernels.".format(context["solver"]))
+                        sys.exit()
+
                 aderdgContext["solver"]                 = context["ADERDGSolver"]
                 aderdgContext["solverType"]             = "ADER-DG"
                 aderdgContext["abstractSolver"]         = context["ADERDGAbstractSolver"]
@@ -93,7 +100,6 @@ class SolverController:
         logger.info("Solver generation... done")
         
         return solverContextsList
-
 
     def buildBaseSolverContext(self, solver):
         context = copy.copy(self.baseContext)
@@ -172,7 +178,7 @@ class SolverController:
         context = self.buildBaseSolverContext(solver)
         context["type"] = "Finite-Volumes"
         context.update(self.buildFVKernelContext(solver["fv_kernel"]))
-        context["patchSize"] = solver.get("patch_size",-1) # overwrite if called from LimitingADERDGSolver creation
+        context["patchSize"] = solver.get("patch_size","max") # overwrite if called from LimitingADERDGSolver creation
         
         return context
 
@@ -231,7 +237,6 @@ class SolverController:
         context["useViscousFlux_s"]         = "true" if context["useViscousFlux"] else "false"
         
         return context
-
 
     def buildPlotterContext(self,solver,plotter):
         context = self.buildBaseSolverContext(solver)
