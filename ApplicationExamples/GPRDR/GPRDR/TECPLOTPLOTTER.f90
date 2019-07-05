@@ -1,7 +1,7 @@
 #ifndef HEADER_TECPLOTPLOTTERMOD
 #define HEADER_TECPLOTPLOTTERMOD
-
-#include "MainVariables.f90"
+!
+!#include "MainVariables.f90"
 MODULE TECPLOTPLOTTERmod
 
 IMPLICIT NONE

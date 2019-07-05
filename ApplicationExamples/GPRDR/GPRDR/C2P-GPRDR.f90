@@ -4,10 +4,10 @@
 ! The Con2Prim and Prim2Con routines for MHD.
 ! Should be merged with SRHD's.
 
-  #include "MainVariables.f90"
-  #include "SpecificVarEqn99.f90"
-  #include "expintegrator_ode.f90"
-  #include "expintegrator_type.f90"
+ ! #include "MainVariables.f90"
+ ! #include "SpecificVarEqn99.f90"
+ ! #include "expintegrator_ode.f90"
+ ! #include "expintegrator_type.f90"
 
 
 SUBROUTINE PDEPrim2Cons(Q,V)

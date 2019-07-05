@@ -1,6 +1,6 @@
 #ifndef HEADER_GPRMATERIALS
 #define HEADER_GPRMATERIALS
-#include "MainVariables.f90"
+!#include "MainVariables.f90"
 #if defined(EQNTYPEC99) || defined(EQNTYPEB99) || defined(EQNTYPE99) || defined(EQNTYPED99)
 ! This module contains the parameters of several materials as well as several tools in order to check the material response
 MODULE GPRmaterials

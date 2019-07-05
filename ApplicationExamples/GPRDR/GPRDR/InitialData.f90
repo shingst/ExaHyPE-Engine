@@ -1,8 +1,8 @@
 ! DIM Initial Data
 #ifndef HEADER_INITALDATA
 #define HEADER_INITALDATA
-#include "MainVariables.f90"
-#include "expintegrator_type.f90"
+!#include "MainVariables.f90"
+!#include "expintegrator_type.f90"
 
 RECURSIVE SUBROUTINE InitParameters() 
 	USE MainVariables, ONLY: nVar , nDim, EQN, ICType 
