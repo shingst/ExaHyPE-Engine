@@ -7,22 +7,52 @@
 // ========================
 
 #include "SFDISolver_ADERDG.h"
+#include "SFDISolver_FV.h"
 
 #include <algorithm>
 #include "kernels/GaussLegendreQuadrature.h"
 #include "PDE.h"
 #include "InitialData.h"
+#include "Tools.h"
 
 #include "SFDISolver_ADERDG_Variables.h"
 
+#include "SFDISolver_FV.h"
+
 #include "kernels/KernelUtils.h"
 #include "peano/utils/Loop.h"
+
+#include "tarch/multicore/BooleanSemaphore.h"
+#include "tarch/multicore/Lock.h"
+
 
 tarch::logging::Log SFDI::SFDISolver_ADERDG::_log( "SFDI::SFDISolver_ADERDG" );
 
 
 void SFDI::SFDISolver_ADERDG::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
-  initparameters_();
+	constexpr int order = SFDI::AbstractSFDISolver_ADERDG::Order;
+	constexpr int basisSize = AbstractSFDISolver_FV::PatchSize;
+	constexpr int Ghostlayers = AbstractSFDISolver_FV::GhostLayerWidth;
+	
+	static tarch::multicore::BooleanSemaphore initializationSemaphoreDG;
+	tarch::multicore::Lock lock(initializationSemaphoreDG);
+
+	
+	printf("\n******************************************************************");
+	printf("\n**************<<<  INIT TECPLOT    >>>****************************");
+	printf("\n******************************************************************");
+    inittecplot_(&order,&order,&basisSize,&Ghostlayers);
+	//inittecplot_(&order,&order);
+	printf("\n******************************************************************");
+	printf("\n**************<<<  INIT PDE SETUP  >>>****************************");
+	printf("\n******************************************************************");
+    initparameters_();
+	printf("\n******************************************************************");
+	printf("\n**************<<<       DONE       >>>****************************");
+	printf("\n******************************************************************");
+	
+	lock.free();
+
 }
 
 void SFDI::SFDISolver_ADERDG::adjustPointSolution(const double* const x,const double t,const double dt,double* const Q) {
@@ -82,6 +112,10 @@ void SFDI::SFDISolver_ADERDG::boundaryValues(const double* const x,const double 
 
 exahype::solvers::Solver::RefinementControl SFDI::SFDISolver_ADERDG::refinementCriterion(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,double t,const int level) {
   return exahype::solvers::Solver::RefinementControl::Keep;
+if ( level > getCoarsestMeshLevel() ) {
+    return exahype::solvers::Solver::RefinementControl::Erase;
+  }
+return exahype::solvers::Solver::RefinementControl::Keep;
 }
 
 //*****************************************************************************
