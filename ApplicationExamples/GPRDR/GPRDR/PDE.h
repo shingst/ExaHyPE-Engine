@@ -12,10 +12,10 @@ void pdencp_(double* BgradQ, const double* const Q, const double* const gradQ);
 void pdeeigenvalues_(double* lambda, const double* const Q, double* nv);
 void pdevarname_(char* MyNameOUT, int* ind);
 void registerinitialdata_(const char* const id_name, int* id_name_len);
-void getnumericalsolution_(double* V,double* Q);
-void getexactsolution_(double* V,double* pos,double* timeStamp);
+//void getnumericalsolution_(double* V,double* Q);
+//void getexactsolution_(double* V,double* pos,double* timeStamp);
 
-void inittecplot_(const int* N_in,const int* M_in);
+//void inittecplot_(const int* N_in,const int* M_in);
 void pdeauxvar_(double* aux, const double* const Q,double* x, const double* const time);
 void pdecritialstress_(double* CS, const double* const Q);
 

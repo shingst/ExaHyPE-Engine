@@ -1,18 +1,16 @@
-#ifndef HEADER_TECPLOTPLOTTERMOD
-#define HEADER_TECPLOTPLOTTERMOD
-!
-!#include "MainVariables.f90"
 MODULE TECPLOTPLOTTERmod
 
 IMPLICIT NONE
 ! Problem standard parameters
 INTEGER :: MC, M,N
+INTEGER :: FVbasisSize,FVGhostLayerWidth
 INTEGER :: nGPMC
 INTEGER :: nDOFm
-INTEGER :: nSubLim
-INTEGER :: nSubLimV(3)
+INTEGER :: nSubLim,nSubLim_GL,nSubLim_patch,nSub_DG,nSub_DG_node,nSubLim_node
+INTEGER :: nSubLimV(3),nSubLimV_GL(3), nSubLim_nodeV(3),nSubLim_patchV(3),nSub_DGV(3), nSub_DG_nodeV(3)
 INTEGER :: nGPM, nGPVM(3)
 INTEGER :: nFace, nVertex
+INTEGER :: nVtx,ReferenceElement(1:3,1:8)
 REAL, ALLOCATABLE 	:: xiGPM(:), wGPM(:) 
 REAL, ALLOCATABLE :: MPoly1D(:,:)
 ! 
@@ -28,7 +26,13 @@ INTEGER*4	, POINTER 	:: NData(:,:),NData_max(:,:)
 REAL(td)	, POINTER  	:: DataArray(:,:), DataArray_max(:,:)
 INTEGER, ALLOCATABLE    :: subtri(:,:)
 REAL, ALLOCATABLE       :: allsubxi(:,:)
-INTEGER :: Element_c, Element_nc 
+INTEGER, ALLOCATABLE :: idxn_lim(:,:,:)
+INTEGER, ALLOCATABLE :: subtri_lim(:,:)
+REAL, ALLOCATABLE :: allsubxi_lim(:,:),allsubxi_GL(:,:)
+INTEGER, ALLOCATABLE ::  idxn_Lim_S2U(:,:,:), idxn_Lim_U2S(:,:),subtri_lim_Exa(:,:) 
+LOGICAL, ALLOCATABLE :: Corner_Vtx(:,:)
+
+INTEGER :: Element_c, Element_nc ,Element_c_ADERDG,Element_c_FV
 INTEGER :: PlotIndex
 REAL	:: PLOT_TIME
 !
@@ -370,9 +374,10 @@ END INTERFACE
 CONTAINS
 
 SUBROUTINE InitTECPLOTPLOTTER(time_in)
-    USE MainVariables, ONLY: nDim,nVar,nAux
+    USE MainVariables, ONLY: nDim,nVar
 	IMPLICIT NONE
 	REAL, INTENT(IN) :: time_in
+	integer, parameter :: nAux=0
 	ALLOCATE(NData_max(nVertex,nSubPlotElem_max))  
 	ALLOCATE(DataArray_max(nRealNodes_max,nDim+nVar+nAux+1+1))
 	
@@ -383,29 +388,43 @@ SUBROUTINE InitTECPLOTPLOTTER(time_in)
 	nPlotElem=0
 	Element_c=0 
 	Element_nc=0
+	Element_c_FV=0 
+	Element_c_ADERDG=0
+
 	
 END SUBROUTINE InitTECPLOTPLOTTER
 
 SUBROUTINE ElementTECPLOTPLOTTER(wh,lx0,ldx,limiter)
-    USE MainVariables, ONLY: nDim,nVar,nAux
+    USE MainVariables, ONLY: nDim,nVar
 	IMPLICIT NONE
 	REAL, INTENT(IN) :: wh(nVar,nDOFm)
 	INTEGER :: nSubNodes,J
 	REAL    :: LocNode(nVar,(M+1)**nDim),xvec(3),lx0(3),ldx(3)
 	REAL	:: VN(nVar),QN(nVar)
-	integer :: limiter
+	integer :: limiter,iloc,triloc
+	integer, parameter :: nAux=0
 	
 	nPlotElem = nPlotElem + 1
-	nSubPlotElem = nSubPlotElem + M**nDim  
-	nSubNodes = (M+1)**nDim  
+	!nSubPlotElem = nSubPlotElem + M**nDim  
+	!nSubNodes = (M+1)**nDim  
+	!nRealNodes = nRealNodes + nSubNodes
+	nSubPlotElem = nSubPlotElem + nSub_DG**nDim  
+	nSubNodes = (nSub_DG+1)**nDim  
 	nRealNodes = nRealNodes + nSubNodes
+
 	
 	Element_c = Element_c + 1
+	Element_c_ADERDG = Element_c_ADERDG + 1
 
 	!print *,'Element,',nPlotElem, '->', lx0(1:nDim),'dx=',ldx(1:nDim)
+	iloc=Element_c_ADERDG*nSub_DG**nDim + Element_c_FV*nSubLim**nDim - nSub_DG**nDim
+        triloc=Element_c_ADERDG*(nSub_DG+1)**nDim + Element_c_FV*(nSubLim+1)**nDim - (nSub_DG+1)**nDim
+
+
 	
 	DO j = 1, M**nDim
-		NData_max(1:nVertex,(Element_c-1)*M**nDim+j) = (Element_c-1)*(M+1)**nDim + subtri(1:nVertex,j)
+		!NData_max(1:nVertex,(Element_c_ADERDG-1)*M**nDim+j) = (Element_c_ADERDG-1)*(M+1)**nDim + subtri(1:nVertex,j)
+		NData_max(1:nVertex,iloc+j) = triloc + subtri(1:nVertex,j)
 	END DO
 
 	LocNode = MATMUL( wh(:,1:nDOFm), SubOutputMatrix(1:nDOFm,1:(M+1)**nDim) )
@@ -414,18 +433,167 @@ SUBROUTINE ElementTECPLOTPLOTTER(wh,lx0,ldx,limiter)
 	   xvec = lx0 + allsubxi(:,j)*ldx
 	   CALL PDECons2Prim(VN,QN)
 	   !print *, 'Node of elem=',Element_c,'=', xvec(1:nDim)
-	    DataArray_max((Element_c-1)*(M+1)**nDim+j,:) = (/ xvec(1:nDim), VN, REAL(nPlotElem), REAL(limiter) /)  
+	   iloc=Element_c_ADERDG*(nSub_DG+1)**nDim + Element_c_FV*(nSubLim+1)**nDim - (nSub_DG+1)**nDim + j
+	   ! DataArray_max((Element_c-1)*(M+1)**nDim+j,:) = (/ xvec(1:nDim), VN, REAL(nPlotElem), REAL(limiter) /)  
+	    DataArray_max(iloc,:) = (/ xvec(1:nDim), VN, REAL(nPlotElem), REAL(limiter) /)  
 	   !DataArray_max(Element_c,:) = (/ xvec(1:nDim), VN /) 	   
 	END DO
 		
 	Element_nc = Element_nc + (M+1)**nDim
 END SUBROUTINE ElementTECPLOTPLOTTER
 
+RECURSIVE SUBROUTINE ElementTECPLOTPLOTTER_FV(wh,lx0,ldx,limiter)
+	USE MainVariables, ONLY: nDim,nVar
+	IMPLICIT NONE
+	integer, parameter :: nAux=0
+	REAL, INTENT(IN) :: wh(nVar,(nSubLim+2*nSubLim_GL)**nDIM)
+	INTEGER :: nSubNodes,J,i
+	REAL    :: LocNode(nVar,(nSubLim+1)**nDim),xvec(3),lx0(3),ldx(3)
+	REAL	:: VN(nVar),QN(nVar),AuxNode(nAux)
+	integer :: limiter,iErr,iloc,triloc
+ 
+        ! FV subcell TECPLOT PLOTTER:
+	    nPlotElem = nPlotElem + 1
+	    nSubPlotElem = nSubPlotElem + nSubLim**nDim  
+	    nSubNodes = (nSubLim+1)**nDim  
+	    nRealNodes = nRealNodes + nSubNodes
+	    !
+	    Element_c = Element_c + 1
+	    Element_c_FV = Element_c_FV + 1
+        
+	    !print *,'(FV) ELEMENTS tecplot:',nPlotElem, Element_c_ADERDG,Element_c_FV
+	    !print *,'Element,',nPlotElem, '->', lx0(1:nDim),'dx=',ldx(1:nDim)
+	    !print *, 'nVar = ', nVar
+	    !print *, 'nDim = ', nDim 
+        !iloc=(Element_c-1)*M**nDim
+        !triloc=(Element_c-1)*(M+1)**nDim
+        iloc=Element_c_ADERDG*nSub_DG**nDim + Element_c_FV*nSubLim**nDim - nSubLim**nDim
+        triloc=Element_c_ADERDG*(nSub_DG+1)**nDim + Element_c_FV*(nSubLim+1)**nDim - (nSubLim+1)**nDim
+
+	    DO j = 1, nSubLim**nDim
+	    	NData_max(1:nVertex,iloc+j) = triloc + subtri_lim(1:nVertex,j)
+        END DO
+	    !LocNode = MATMUL( wh(:,1:nDOFm), SubOutputMatrix(1:nDOFm,1:(M+1)**nDim) )
+	    !print *, wh(:,1)
+	    !stop
+		!LocNode=0.
+        CALL GetSubcell_wh(LocNode,wh)
+        !if(maxval(abs(wh))>0) then
+		!DO j = 1, nSubLim**nDim
+		!	print *, '-------------------------------'
+		!	print *,LocNode(:,j)
+		!	print *, '-------------------------------'
+		!	print *, '*******************************'
+		!	print *,wh(:,j)
+		!	print *, '*******************************'
+		!end do
+		!	pause
+		!end if
+           !WRITE(*,'(E16.6,E16.6,E16.6)') lx0
+           !WRITE(*,'(E16.6,E16.6,E16.6)') ldx
+        DO j = 1, (nSubLim+1)**nDim  
+	       QN(:) = LocNode(:,j)
+	       xvec = lx0 + allsubxi_lim(:,j)*ldx
+           !WRITE(*,'(i5.2,E16.6,E16.6,E16.6)') j,xvec
+	       CALL PDECons2Prim(VN,QN,iErr)
+	       !CALL PDEAuxVar(AuxNode,QN,xvec)
+	       !AuxNode=0.
+	       !print *, 'Node of elem=',Element_c,'=', xvec(1:nDim)
+	         
+           !iloc=(Element_c-1)*(M+1)**nDim+j
+            !iloc=Element_c_ADERDG*(M+1)**nDim + Element_c_FV*(nSubLim+1)**nDim - (nSubLim+1)**nDim + j
+			iloc=Element_c_ADERDG*(nSub_DG+1)**nDim + Element_c_FV*(nSubLim+1)**nDim - (nSubLim+1)**nDim + j
+			DataArray_max(iloc,:) = (/ xvec(1:nDim), VN, REAL(nPlotElem), REAL(limiter) /)  !, AuxNode
+
+            !limiter=limiter+1
+	       !DataArray_max(Element_c,:) = (/ xvec(1:nDim), VN /) 	   
+        END DO
+	    ! 
+        !STOP
+    !
+END SUBROUTINE ElementTECPLOTPLOTTER_FV
+
+RECURSIVE SUBROUTINE GetSubcell_wh(LocNode,wh)
+USE MainVariables, ONLY: nDim,nVar
+   IMPLICIT NONE 
+   integer, parameter :: nAux=0
+   ! Argument list
+   REAL, INTENT(IN) :: wh(nVar,(nSubLim+2*nSubLim_GL)**nDIM) 
+   INTEGER :: totsubel
+   REAL    :: LocNode(nVar,(nSubLim+1)**nDim) 
+   !REAL    :: LocNode(nVar,1:nSubLimV(1)+2*nSubLimV_GL(1),1:nSubLimV(2)+2*nSubLimV_GL(2),1:nSubLimV(3)+2*nSubLimV_GL(3))
+   INTEGER :: i
+   ! Local variables
+   INTEGER :: ccc, k, j, kj, ii, jj, kk, iVar, reflev, iDim, iii, jjj, kkk, lll, pp, qq, rr, aa, bb, cc, iErr,Stencil
+   REAL    :: lim(nVar,nSubLimV(1),nSubLimV(2),nSubLimV(3))
+   INTEGER :: NodeCounter((nSubLim+1)**nDim) 
+   REAL    :: subuh(nVar,(1-nSubLimV(1)):2*nSubLimV(1),(1-nSubLimV(2)):2*nSubLimV(2),(1-nSubLimV(3)):2*nSubLimV(3)) 
+   ! 
+   ! this is simply the average on the nodes of the subgrid (it is not mandatory)
+   totsubel=(nSubLim+1)**nDim
+
+   NodeCounter = 0 
+   LocNode = 0. 
+   ccc=0
+	!print *, (nSubLim+2*nSubLim_GL)**nDIM, nSubLim, nSubLim_GL, nDIM, maxval(subtri_lim_Exa)
+#ifdef Dim3
+   DO kk = 1, nSubLimV(3)+1   ! this is wrong in 2D
+#endif
+
+    DO jj = 1, nSubLimV(2)+1
+     DO ii = 1, nSubLimV(1)+1
+         ccc=ccc+1
+         DO aa = 1, nVertex  
+
+            cc = subtri_lim_Exa(aa,ccc)
+
+            IF(Corner_Vtx(aa,ccc)) THEN
+                CYCLE
+            ENDIF
+			!print *, ccc,cc, wh(:,cc) 
+            LocNode(:,ccc) = LocNode(:,ccc) + wh(:,cc) 
+            NodeCounter(ccc) = NodeCounter(ccc) + 1 
+
+         ENDDO 
+
+     ENDDO
+#ifdef Dim3
+    ENDDO
+#endif
+         !STOP
+    !STOP
+    ENDDO
+         !STOP
+	!print *, ccc,totsubel
+	!	DO j = 1, totsubel
+	!		print *, '-------------------------------'
+	!		print *,LocNode(:,j)
+	!		print *, '-------------------------------'
+	!		print *, '*******************************'
+	!		print *,wh(:,j)
+	!		print *, '*******************************'
+	!	end do
+	!		pause
+   
+   DO ccc = 1,totsubel 
+         LocNode(:,ccc) = LocNode(:,ccc)/NodeCounter(ccc)  
+   ENDDO
+   ! 
+   !print *, '-------------------------------'
+   !print *, NodeCounter
+   !print *, nSubLimV, nVtx
+   !print *, '-------------------------------'
+
+   
+END SUBROUTINE GetSubcell_wh   
+
+
 SUBROUTINE FinalizeTECPLOTPLOTTER(Myrank)
-    USE MainVariables, ONLY: nDim,nVar,nAux
+    USE MainVariables, ONLY: nDim,nVar
 	!USE teciomod
 	USE ISO_C_BINDING
 	IMPLICIT NONE
+	integer, parameter :: nAux=0
 	INTEGER, INTENT(IN) :: Myrank 	! CPU rank
 	CHARACTER(LEN=200) :: Filename,ZoneTitle,Title,ScratchDir, BaseFile ! BaseFile is the folder	where place the plots
 	CHARACTER(LEN=1000) :: VarString
@@ -464,11 +632,14 @@ SUBROUTINE FinalizeTECPLOTPLOTTER(Myrank)
 	print *, "NElem			=",nSubPlotElem/M**nDim
 	print *, "nSubPlotElem	=",nSubPlotElem
 	print *, "nRealNodes	=",nRealNodes
+	print *, "Element_c_FV	=",Element_c_FV*(nSubLim+1)**nDim
 	print *, "****************************************************"
-	
-
-	DataArray=DataArray_max(1:nRealNodes,1:(nDim+nVar+nAux+1+1))
-	
+	!stop
+	print *,'1->',nRealNodes_max,nRealNodes
+	DO I=1,nRealNodes
+		DataArray(I,:)=DataArray_max(i,1:(nDim+nVar+nAux+1+1))
+	END DO
+	print *,'2'
 	 NData=NData_max(1:nVertex,1:nSubPlotElem)
 	!do i=1,nSubPlotElem
 	!	print *, "NData=",NData_max(:,i)
@@ -499,14 +670,18 @@ SUBROUTINE FinalizeTECPLOTPLOTTER(Myrank)
 		!WRITE(VarString,'(a,a,a,a)') TRIM(VarString), ' ', TRIM(AuxName()) , ' '   
 	!ENDDO
 	WRITE(VarString,'(a,a)') TRIM(VarString), ' iE lim ' 
-
+print *,'3'
 	iret = TecIni112(TRIM(Title)//''//C_NULL_CHAR,TRIM(Varstring)//''//C_NULL_CHAR,TRIM(FileName)//''//C_NULL_CHAR,TRIM(ScratchDir)//''//C_NULL_CHAR,0,0,visdouble) 
 	loctime = PLOT_TIME 
 	ZoneTitle = Title
 	StrandID=0
+	print *, '11'
 	iRet = TecZne112(TRIM(ZoneTitle)//C_NULL_CHAR, ZoneType, nRealNodes, nSubPlotElem, 0, 0, 0, 0, loctime, StrandID, 0, 1, 0, 0, 0, 0, 0, NullPtr, NullPtr, NullPtr, 0) 
+	print *, '22'
 	iRet = TecDat112( nRealNodes*(nDim+nVar+nAux+1+1), DataArray, visdouble )	
+	print *, '33'
 	iRet = TecNod112(NData)
+	print *, '44'
 	iRet = TecEnd112()
 	!
 	
@@ -514,38 +689,124 @@ SUBROUTINE FinalizeTECPLOTPLOTTER(Myrank)
 	!stop
 END SUBROUTINE FinalizeTECPLOTPLOTTER
 
-SUBROUTINE SetMainParameters(N_in,M_in)
+SUBROUTINE SetMainParameters(N_in,M_in,basisSize,Ghostlayers)
 	USE MainVariables, ONLY: nDim
 	IMPLICIT NONE
-	INTEGER,INTENT(IN)	:: N_in,M_in
+	INTEGER,INTENT(IN)	:: N_in,M_in,basisSize,Ghostlayers
 	
 	M=M_in
 	N=N_in
 	MC = M+1
+	FVbasisSize = basisSize
+    FVGhostLayerWidth = Ghostlayers
+
+	nSub_DG=M!+1
+	nSub_DG_node=nSub_DG+1 
+	
 	nGPMC = MC + 1
 	nDOFm = (M+1)**nDim
 	nSubLim = 2*N+1
 	nGPM  = M + 1
+	!nSubLim = FVbasisSize !2*N+1
+	nSubLim_node = FVbasisSize+1
+	nSubLim_GL = FVGhostLayerWidth !2*N+1
+	nSubLim_patch=nSubLim+2*nSubLim_GL
+
 	if(nDim .eq. 3) then
 		nSubLimV(1) = nSubLim
 		nSubLimV(2) = nSubLim
 		nSubLimV(3) = nSubLim
+		nSubLimV_GL(1) = nSubLim_GL
+		nSubLimV_GL(2) = nSubLim_GL
+		nSubLimV_GL(3) = nSubLim_GL
+		nSubLim_patchV(1) = nSubLim_patch
+		nSubLim_patchV(2) = nSubLim_patch
+		nSubLim_patchV(3) = nSubLim_patch 
+		nSubLim_nodeV(1) = nSubLim_node
+		nSubLim_nodeV(2) = nSubLim_node
+		nSubLim_nodeV(3) = nSubLim_node
+
+
 		nGPVM(1)=nGPM
 		nGPVM(2)=nGPM
 		nGPVM(3)=nGPM
+		
+		nSub_DGV(1)=nSub_DG
+		nSub_DGV(2)=nSub_DG
+		nSub_DGV(3)=nSub_DG
+		nSub_DG_nodeV(1)=nSub_DG_node
+		nSub_DG_nodeV(2)=nSub_DG_node
+		nSub_DG_nodeV(3)=nSub_DG_node
+
 	else
 		nSubLimV(1) = nSubLim
 		nSubLimV(2) = nSubLim
 		nSubLimV(3) = 1
+		nSubLimV_GL(1) = nSubLim_GL
+		nSubLimV_GL(2) = nSubLim_GL
+		nSubLimV_GL(3) = 1 
+		nSubLim_patchV(1) = nSubLim_patch
+		nSubLim_patchV(2) = nSubLim_patch
+		nSubLim_patchV(3) = 1 
+		nSubLim_nodeV(1) = nSubLim_node
+		nSubLim_nodeV(2) = nSubLim_node
+		nSubLim_nodeV(3) = 1
+
+
+
 		nGPVM(1)=nGPM
 		nGPVM(2)=nGPM
 		nGPVM(3)=1
+		
+	nSub_DGV(1)=nSub_DG
+		nSub_DGV(2)=nSub_DG
+		nSub_DGV(3)=1
+		
+		nSub_DG_nodeV(1)=nSub_DG_node
+		nSub_DG_nodeV(2)=nSub_DG_node
+		nSub_DG_nodeV(3)=1
+
 	end if
+	
+
 	nFace = 2*nDim
 	nVertex = 2**nDim
 	
 	PlotIndex=0
+	
+	nVertex = 2**nDim
 
+     ReferenceElement(1,1) = 0. 
+     ReferenceElement(2,1) = 0. 
+     ReferenceElement(3,1) = 0. 
+     !
+     ReferenceElement(1,2) = 1. 
+     ReferenceElement(2,2) = 0. 
+     ReferenceElement(3,2) = 0. 
+     !
+     ReferenceElement(1,3) = 1. 
+     ReferenceElement(2,3) = 1. 
+     ReferenceElement(3,3) = 0.
+     !
+     ReferenceElement(1,4) = 0. 
+     ReferenceElement(2,4) = 1. 
+     ReferenceElement(3,4) = 0.
+     !
+     ReferenceElement(1,5) = 0. 
+     ReferenceElement(2,5) = 0. 
+     ReferenceElement(3,5) = 1.
+     !
+     ReferenceElement(1,6) = 1. 
+     ReferenceElement(2,6) = 0. 
+     ReferenceElement(3,6) = 1.
+     !
+     ReferenceElement(1,7) = 1. 
+     ReferenceElement(2,7) = 1. 
+     ReferenceElement(3,7) = 1.
+     !
+     ReferenceElement(1,8) = 0. 
+     ReferenceElement(2,8) = 1.
+     ReferenceElement(3,8) = 1.
 	
 	
 	nElem_max=100000
@@ -555,14 +816,12 @@ SUBROUTINE SetMainParameters(N_in,M_in)
 	ALLOCATE(MPoly1D(0:MC,MC+1))
 	
 	ALLOCATE(xiGPM(nGPM), wGPM(nGPM) )
-	
-	
+
 	CALL gauleg(0.,1.,xiGPM,wGPM,M+1)
-	
+
 	CALL MakeMCPoly1D()
-	
+
 	CALL ComputeOutputMatrices()
-	
 	print *, "***********************************************************"
 	print *, "************ TECPLOT INITIALIZATION ***********************"
 	PRINT *, "N,M=",N,M
@@ -579,16 +838,19 @@ SUBROUTINE ComputeOutputMatrices
 	real	:: aux(3)
 	integer, allocatable :: idxn(:,:,:)
 	
-	ALLOCATE(SubOutputMatrix((M+1)**3,(M+1)**3), SubGradOutputMatrix((M+1)**3,(M+1)**3,3)) ! First allocate the Outputmatrices
-	
+	!ALLOCATE(SubOutputMatrix((M+1)**3,(M+1)**3), SubGradOutputMatrix((M+1)**3,(M+1)**3,3)) ! First allocate the Outputmatrices
+	ALLOCATE(SubOutputMatrix(nGPM**nDim,(nSub_DG+1)**nDim), SubGradOutputMatrix(nGPM**nDim,(nSub_DG+1)**nDim,nDim)) ! First allocate the Outputmatrices
+
+
 	DO i = 1, M+1 
 		subxi(i) = REAL(i-1)/REAL(M) 
 	ENDDO
 	
 	cnt = 0
-     DO k = 1, M+1
-        DO j = 1, M+1 
-           DO i = 1, M+1  
+    DO k = 1, nSub_DG_nodeV(3)
+        DO j = 1, nSub_DG_nodeV(2)
+           DO i = 1, nSub_DG_nodeV(1)
+  
               cnt = cnt + 1 
               CALL MBaseFunc1D(psi_i,psi_xi,subxi(i))
               CALL MBaseFunc1D(psi_j,psi_xj,subxi(j))
@@ -610,10 +872,13 @@ SUBROUTINE ComputeOutputMatrices
 					   aux(2)=psi_xj(jj)
 					   aux(3)=psi_k(kk)
                        SubGradOutputMatrix(counter,cnt,2) = PRODUCT( aux(1:nDim) )
+#ifdef Dim3                       
 					   aux(1)=psi_i(ii)
 					   aux(2)=psi_j(jj)
 					   aux(3)=psi_xk(kk) 
                        SubGradOutputMatrix(counter,cnt,3) = PRODUCT( aux(1:nDim) )
+#endif
+
                     ENDDO
                  ENDDO
               ENDDO
@@ -622,37 +887,233 @@ SUBROUTINE ComputeOutputMatrices
      ENDDO
  			  
 	! Compute subtri
-	ALLOCATE( idxn(M+1,M+1,M+1),subtri(8,M**3),allsubxi(3,(M+1)**3) )
+	ALLOCATE( idxn(nSub_DG_nodeV(1),nSub_DG_nodeV(2),nSub_DG_nodeV(3)),subtri(8,nSub_DGV(1)*nSub_DGV(2)*nSub_DGV(3)),allsubxi(3,nSub_DG_nodeV(1)*nSub_DG_nodeV(2)*nSub_DG_nodeV(3))) !,allsubxi_GL(3,(M+1)**3) )
      idxn = 0 
+     !allsubxi_GL=0.
      c = 0 
-     DO k = 1, M+1
-        DO j = 1, M+1 
-           DO i = 1, M+1 
+     DO k = 1, nSub_DG_nodeV(3)
+        DO j = 1, nSub_DG_nodeV(2)
+           DO i = 1, nSub_DG_nodeV(1)
               c = c + 1 
               idxn(i,j,k) = c
-			  allsubxi(1,c) = REAL(i-1)/REAL(M)
-			  allsubxi(2,c) = REAL(j-1)/REAL(M)
-			  allsubxi(3,c) = REAL(k-1)/REAL(M)			  
+			  allsubxi(1,c) = REAL(i-1)/REAL(nSub_DG)
+			  allsubxi(2,c) = REAL(j-1)/REAL(nSub_DG)
+			  allsubxi(3,c) = REAL(k-1)/REAL(nSub_DG)		
+           ENDDO
+        ENDDO
+     ENDDO
+     
+    Print *,"nSubLim_nodeV:", nSubLim_nodeV
+	! Compute subtri
+	ALLOCATE( idxn_lim(nSubLim_nodeV(1),nSubLim_nodeV(2),nSubLim_nodeV(3)),subtri_lim(8,nSubLimV(1)*nSubLimV(2)*nSubLimV(3)),allsubxi_lim(3,nSubLim_nodeV(1)*nSubLim_nodeV(2)*nSubLim_nodeV(3)) )
+     idxn_lim = 0 
+     c = 0 
+     DO k = 1, nSubLim_nodeV(3)
+        DO j = 1, nSubLim_nodeV(2)
+           DO i = 1, nSubLim_nodeV(1)
+              c = c + 1 
+              idxn_lim(i,j,k) = c
+			  allsubxi_lim(1,c) = REAL(i-1)/REAL(nSubLim)
+			  allsubxi_lim(2,c) = REAL(j-1)/REAL(nSubLim)
+			  allsubxi_lim(3,c) = REAL(k-1)/REAL(nSubLim)			  
            ENDDO
         ENDDO
      ENDDO
 
+	 
+	 Print *,"nSub_DGV:", nSub_DGV
      c = 0 
-     DO k = 1, M 
-        DO j = 1, M
-           DO i = 1, M 
+     DO k = 1, nSub_DGV(3) 
+        DO j = 1, nSub_DGV(2) 
+           DO i = 1, nSub_DGV(1)  
+
               c = c + 1 
 			  subtri(1,c) =idxn(i,j,k)
 			  subtri(2,c) =idxn(i+1,j,k)
 			  subtri(3,c) =idxn(i+1,j+1,k)
 			  subtri(4,c) =idxn(i,j+1,k)
+#ifdef Dim3              
 			  subtri(5,c) =idxn(i,j,k+1)
 			  subtri(6,c) =idxn(i+1,j,k+1)
 			  subtri(7,c) =idxn(i+1,j+1,k+1)
-			  subtri(8,c) =idxn(i,j+1,k+1)        
+			  subtri(8,c) =idxn(i,j+1,k+1)     
+#endif   
+     
            ENDDO
         ENDDO
      ENDDO
+	 Print *,"nSubLimV:", nSubLimV
+     c = 0 
+     DO k = 1, nSubLimV(3) 
+        DO j = 1,  nSubLimV(2) 
+           DO i = 1,  nSubLimV(1) 
+
+              c = c + 1 
+			  subtri_lim(1,c) =idxn_lim(i  ,j  ,k  )
+			  subtri_lim(2,c) =idxn_lim(i+1,j  ,k  )
+			  subtri_lim(3,c) =idxn_lim(i+1,j+1,k  )
+			  subtri_lim(4,c) =idxn_lim(i  ,j+1,k  )           
+#ifdef Dim3              
+			  subtri_lim(5,c) =idxn_lim(i  ,j  ,k+1)
+			  subtri_lim(6,c) =idxn_lim(i+1,j  ,k+1)
+			  subtri_lim(7,c) =idxn_lim(i+1,j+1,k+1)
+			  subtri_lim(8,c) =idxn_lim(i  ,j+1,k+1)        
+#endif
+
+      
+           ENDDO
+        ENDDO
+     ENDDO
+     Print *,"nSubLim_patchV:", nSubLim_patchV
+ALLOCATE( idxn_Lim_S2U(nSubLim_patchV(1),nSubLim_patchV(2),nSubLim_patchV(3)))
+    ALLOCATE( idxn_Lim_U2S(3,nSubLim_patchV(1)*nSubLim_patchV(2)*nSubLim_patchV(3)),subtri_lim_Exa(8,nSubLim_nodeV(1)*nSubLim_nodeV(2)*nSubLim_nodeV(3)), Corner_Vtx(8,nSubLim_nodeV(1)*nSubLim_nodeV(2)*nSubLim_nodeV(3)) )
+
+
+   c = 0 
+     idxn_Lim_u2S=0
+     idxn_Lim_S2U=0
+     Corner_Vtx=.FALSE.
+     DO k = 1, nSubLim_patchV(3)
+        DO j = 1, nSubLim_patchV(2)
+           DO i = 1, nSubLim_patchV(1)
+              c = c + 1 
+              idxn_Lim_S2U(i,j,k) = c	
+              idxn_Lim_u2S(1,c) = i	  
+              idxn_Lim_u2S(2,c) = j  
+              idxn_Lim_u2S(3,c) = k	  
+           ENDDO
+        ENDDO
+     ENDDO
+
+    PRINT *, " matrix DEFINED: 1st block ZZZZZZZZZZZZZZZZZZZZ"
+     c = 0 
+     DO k = 1, nSubLim_nodeV(3)
+        DO j = 1, nSubLim_nodeV(2)
+           DO i = 1, nSubLim_nodeV(1)
+
+              c = c + 1 
+#ifdef Dim3              
+			  subtri_lim_Exa(1,c) =idxn_Lim_S2U(nSubLimV_GL(1)+i-1,nSubLimV_GL(2)+j-1,nSubLimV_GL(3)+k-1)
+			  subtri_lim_Exa(2,c) =idxn_Lim_S2U(nSubLimV_GL(1)+i  ,nSubLimV_GL(2)+j-1,nSubLimV_GL(3)+k-1)
+			  subtri_lim_Exa(3,c) =idxn_Lim_S2U(nSubLimV_GL(1)+i  ,nSubLimV_GL(2)+j  ,nSubLimV_GL(3)+k-1)
+			  subtri_lim_Exa(4,c) =idxn_Lim_S2U(nSubLimV_GL(1)+i-1,nSubLimV_GL(2)+j  ,nSubLimV_GL(3)+k-1)
+			  subtri_lim_Exa(5,c) =idxn_Lim_S2U(nSubLimV_GL(1)+i-1,nSubLimV_GL(2)+j-1,nSubLimV_GL(3)+k  )
+			  subtri_lim_Exa(6,c) =idxn_Lim_S2U(nSubLimV_GL(1)+i  ,nSubLimV_GL(2)+j-1,nSubLimV_GL(3)+k  )
+			  subtri_lim_Exa(7,c) =idxn_Lim_S2U(nSubLimV_GL(1)+i  ,nSubLimV_GL(2)+j  ,nSubLimV_GL(3)+k  )
+			  subtri_lim_Exa(8,c) =idxn_Lim_S2U(nSubLimV_GL(1)+i-1,nSubLimV_GL(2)+j  ,nSubLimV_GL(3)+k  )
+#else
+			  subtri_lim_Exa(1,c) =idxn_Lim_S2U(nSubLimV_GL(1)+i-1,nSubLimV_GL(2)+j-1,nSubLimV_GL(3)+k-1)
+			  subtri_lim_Exa(2,c) =idxn_Lim_S2U(nSubLimV_GL(1)+i  ,nSubLimV_GL(2)+j-1,nSubLimV_GL(3)+k-1)
+			  subtri_lim_Exa(3,c) =idxn_Lim_S2U(nSubLimV_GL(1)+i  ,nSubLimV_GL(2)+j  ,nSubLimV_GL(3)+k-1)
+			  subtri_lim_Exa(4,c) =idxn_Lim_S2U(nSubLimV_GL(1)+i-1,nSubLimV_GL(2)+j  ,nSubLimV_GL(3)+k-1) 
+			  subtri_lim_Exa(5,c) =idxn_Lim_S2U(nSubLimV_GL(1)+i-1,nSubLimV_GL(2)+j-1,nSubLimV_GL(3)+k-1)
+			  subtri_lim_Exa(6,c) =idxn_Lim_S2U(nSubLimV_GL(1)+i  ,nSubLimV_GL(2)+j-1,nSubLimV_GL(3)+k-1)
+			  subtri_lim_Exa(7,c) =idxn_Lim_S2U(nSubLimV_GL(1)+i  ,nSubLimV_GL(2)+j  ,nSubLimV_GL(3)+k-1)
+			  subtri_lim_Exa(8,c) =idxn_Lim_S2U(nSubLimV_GL(1)+i-1,nSubLimV_GL(2)+j  ,nSubLimV_GL(3)+k-1) 
+#endif
+
+           ENDDO
+        ENDDO
+     ENDDO
+	 
+   print *,'======================================'
+	!print *, nSubLim,nSubLimV_GL,(nSubLim+2*nSubLim_GL)**2, (nSubLim+2*nSubLim_GL)**3 
+	!print *, nSubLim, nSubLim_GL, nDIM, maxval(idxn_Lim_S2U), maxval(subtri_lim_Exa)
+    !PRINT *, " matrix DEFINED: 2nd block ZZZZZZZZZZZZZZZZZZZZ" 
+    i=1
+     j=1
+     DO k=1,nSubLim_nodeV(3)
+         c=idxn_lim(i,j,k)
+		 Corner_Vtx(1,c) = .TRUE. !
+		 Corner_Vtx(5,c) = .TRUE. !
+     ENDDO
+     i=nSubLim_nodeV(1)
+     j=1
+     DO k=1,nSubLim_nodeV(3)
+         c=idxn_lim(i,j,k)
+		 Corner_Vtx(2,c) = .TRUE. !
+		 Corner_Vtx(6,c) = .TRUE. !
+     ENDDO
+     !Print *,"Corner_Vtx: 1!" 
+     i=nSubLim_nodeV(1)
+     j=nSubLim_nodeV(2)
+     DO k=1,nSubLim_nodeV(3)
+         c=idxn_lim(i,j,k)
+		 Corner_Vtx(3,c) = .TRUE. !
+		 Corner_Vtx(7,c) = .TRUE. !
+     ENDDO
+     i=1
+     j=nSubLim_nodeV(2)
+     DO k=1,nSubLim_nodeV(3)
+         c=idxn_lim(i,j,k)
+            !Print *,"Corner_Vtx: 2.1:",k,c
+		 Corner_Vtx(4,c) = .TRUE. !
+		 Corner_Vtx(8,c) = .TRUE. !
+     ENDDO 
+    !Print *,"Corner_Vtx: 2!" 
+     i=1
+     j=1
+     DO k=1,nSubLim_nodeV(2)
+         c=idxn_lim(i,k,j)
+		 Corner_Vtx(1,c) = .TRUE. !
+		 Corner_Vtx(4,c) = .TRUE. !
+     ENDDO
+     i=nSubLim_nodeV(1)
+     j=1
+     DO k=1,nSubLim_nodeV(2)
+         c=idxn_lim(i,k,j)
+		 Corner_Vtx(2,c) = .TRUE. !
+		 Corner_Vtx(3,c) = .TRUE. !
+     ENDDO
+    !Print *,"Corner_Vtx: 3!" 
+     i=nSubLim_nodeV(1)
+     j=nSubLim_nodeV(3)
+     DO k=1,nSubLim_nodeV(2)
+         c=idxn_lim(i,k,j)
+		 Corner_Vtx(6,c) = .TRUE. !
+		 Corner_Vtx(7,c) = .TRUE. !
+     ENDDO
+     i=1
+     j=nSubLim_nodeV(3)
+     DO k=1,nSubLim_nodeV(2)
+         c=idxn_lim(i,k,j)
+		 Corner_Vtx(5,c) = .TRUE. !
+		 Corner_Vtx(8,c) = .TRUE. !
+     ENDDO
+      
+    !Print *,"Corner_Vtx: 4!" 
+     
+     i=1
+     j=1
+     DO k=1,nSubLim_nodeV(1)
+         c=idxn_lim(k,i,j)
+		 Corner_Vtx(1,c) = .TRUE. !
+		 Corner_Vtx(2,c) = .TRUE. !
+     ENDDO
+     i=nSubLim_nodeV(2)
+     j=1
+     DO k=1,nSubLim_nodeV(1)
+         c=idxn_lim(k,i,j)
+		 Corner_Vtx(3,c) = .TRUE. !
+		 Corner_Vtx(4,c) = .TRUE. !
+     ENDDO
+    !Print *,"Corner_Vtx: 5!" 
+     i=nSubLim_nodeV(2)
+     j=nSubLim_nodeV(3)
+     DO k=1,nSubLim_nodeV(1)
+         c=idxn_lim(k,i,j)
+		 Corner_Vtx(7,c) = .TRUE. !
+		 Corner_Vtx(8,c) = .TRUE. !
+     ENDDO
+     i=1
+     j=nSubLim_nodeV(3)
+     DO k=1,nSubLim_nodeV(1)
+         c=idxn_lim(k,i,j)
+		 Corner_Vtx(5,c) = .TRUE. !
+		 Corner_Vtx(6,c) = .TRUE. !
+     ENDDO  
+    !PRINT *, " Corner_Vtx DEFINED: ZZZZZZZZZZZZZZZZZZZZ"
+     
 
      DEALLOCATE( idxn ) 
 	 
@@ -799,4 +1260,3 @@ END SUBROUTINE gauleg
  
 
 END MODULE TECPLOTPLOTTERmod
-#endif

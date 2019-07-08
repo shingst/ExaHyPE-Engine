@@ -1026,28 +1026,28 @@ REAL              :: gradQ(nVar,3), src(nVar),flattener(nLin)
         ENDDO				
 END SUBROUTINE HLLEMRiemannSolver
 
-RECURSIVE SUBROUTINE InitTECPLOT(N_in,M_in)
-	USE TECPLOTPLOTTERmod
-	implicit none
-	INTEGER :: N_in,M_in
-	CALL SetMainParameters(N_in,M_in)
-END SUBROUTINE InitTECPLOT
-
-RECURSIVE SUBROUTINE getNumericalSolution(V,Q) 
-  USE MainVariables, ONLY: nVar  
-  IMPLICIT NONE     
-  REAL				:: V(nVar), Q(nVar)
-  CALL PDECons2Prim(V,Q)
-END SUBROUTINE getNumericalSolution
-
-RECURSIVE SUBROUTINE getExactSolution(V,pos, timeStamp) 
-  USE MainVariables, ONLY: nVar , nDim  
-  IMPLICIT NONE     
-  REAL				:: V(nVar), Q(nVar), pos(nDim), timeStamp
-  call InitialData(pos, timeStamp, Q)
-  CALL PDECons2Prim(V,Q)
-  !V(1)=pos(1)**2!*pos(2)**2
-END SUBROUTINE getExactSolution
+!RECURSIVE SUBROUTINE InitTECPLOT(N_in,M_in)
+!	USE TECPLOTPLOTTERmod
+!	implicit none
+!	INTEGER :: N_in,M_in
+!	CALL SetMainParameters(N_in,M_in)
+!END SUBROUTINE InitTECPLOT
+!
+!RECURSIVE SUBROUTINE getNumericalSolution(V,Q) 
+!  USE MainVariables, ONLY: nVar  
+!  IMPLICIT NONE     
+!  REAL				:: V(nVar), Q(nVar)
+!  CALL PDECons2Prim(V,Q)
+!END SUBROUTINE getNumericalSolution
+!
+!RECURSIVE SUBROUTINE getExactSolution(V,pos, timeStamp) 
+!  USE MainVariables, ONLY: nVar , nDim  
+!  IMPLICIT NONE     
+!  REAL				:: V(nVar), Q(nVar), pos(nDim), timeStamp
+!  call InitialData(pos, timeStamp, Q)
+!  CALL PDECons2Prim(V,Q)
+!  !V(1)=pos(1)**2!*pos(2)**2
+!END SUBROUTINE getExactSolution
 
 
 #endif

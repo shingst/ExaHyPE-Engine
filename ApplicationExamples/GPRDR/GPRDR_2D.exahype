@@ -142,9 +142,18 @@
           "name": "ConservedWriter",
           "time": 0.0,
           "repeat": 0.1,
-          "output": "./conserved",
+          "output": "./output/conserved",
           "variables": 39
-         }
+         },
+        {
+          "type": "user::defined",
+          "name": "TecplotWriter",
+          "time": 0.0,
+          "repeat": 0.1,
+          "output": "./output/tecplot",
+          "variables": 9
+        }
+
       ]
     }
   ]

@@ -7,6 +7,7 @@
 // ========================
 
 #include "GPRDRSolver_ADERDG.h"
+#include "GPRDRSolver_FV.h"
 
 #include <algorithm>
 
@@ -15,17 +16,43 @@
 
 #include "PDE.h"
 #include "InitialData.h"
+#include "Tools.h"
 
 #include "kernels/KernelUtils.h"
 #include "peano/utils/Loop.h"
+
+#include "GPRDRSolver_ADERDG_Variables.h"
+
+#include "kernels/KernelUtils.h"
+#include "peano/utils/Loop.h"
+
+#include "tarch/multicore/BooleanSemaphore.h"
+#include "tarch/multicore/Lock.h"
 
 tarch::logging::Log GPRDR::GPRDRSolver_ADERDG::_log( "GPRDR::GPRDRSolver_ADERDG" );
 
 
 void GPRDR::GPRDRSolver_ADERDG::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
   const int order = GPRDR::GPRDRSolver_ADERDG::Order;
+  	constexpr int basisSize = AbstractGPRDRSolver_FV::PatchSize;
+	constexpr int Ghostlayers = AbstractGPRDRSolver_FV::GhostLayerWidth;
+	
+	static tarch::multicore::BooleanSemaphore initializationSemaphoreDG;
   //inittecplot_(&order,&order);
-  initparameters_();
+    tarch::multicore::Lock lock(initializationSemaphoreDG);
+  	printf("\n******************************************************************");
+	printf("\n**************<<<  INIT TECPLOT    >>>****************************");
+	printf("\n******************************************************************");
+    inittecplot_(&order,&order,&basisSize,&Ghostlayers);
+	//inittecplot_(&order,&order);
+	printf("\n******************************************************************");
+	printf("\n**************<<<  INIT PDE SETUP  >>>****************************");
+	printf("\n******************************************************************");
+    initparameters_();
+	printf("\n******************************************************************");
+	printf("\n**************<<<       DONE       >>>****************************");
+	printf("\n******************************************************************");
+	lock.free();
 }
 
 void GPRDR::GPRDRSolver_ADERDG::adjustPointSolution(const double* const x,const double t,const double dt,double* const Q) {
