@@ -21,6 +21,7 @@ class CodegeneratorModel:
             "numberOfVariables"  : solverContext["numberOfVariables"],
             "numberOfParameters" : solverContext["numberOfMaterialParameters"],
             "order"              : solverContext["order"],
+            "limPatchSize"       : solverContext["patchSize"],
             "dimension"          : solverContext["dimensions"],
             "numerics"           : "linear" if solverContext["isLinear"] else "nonlinear",
             "architecture"       : solverContext["architecture"],

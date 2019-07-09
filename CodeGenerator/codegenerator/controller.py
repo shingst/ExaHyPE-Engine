@@ -70,6 +70,7 @@ class Controller:
             "nPar"                  : args["numberOfParameters"],
             "nData"                 : args["numberOfVariables"] + args["numberOfParameters"],
             "nDof"                  : (args["order"])+1,
+            "nDofLim"               : args["limPatchSize"],
             "nDim"                  : args["dimension"],
             "useFlux"               : (args["useFlux"] or args["useFluxVect"]),
             "useFluxVect"           : args["useFluxVect"],
@@ -98,13 +99,12 @@ class Controller:
             "useLibxsmm"            : Configuration.useLibxsmm,
             "runtimeDebug"          : Configuration.runtimeDebug #for debug
         }
-        
+
         self.config["useSourceOrNCP"] = self.config["useSource"] or self.config["useNCP"]
         self.validateConfig(Configuration.simdWidth.keys())
         self.config["vectSize"] = Configuration.simdWidth[self.config["architecture"]] #only initialize once architecture has been validated
         self.baseContext = self.generateBaseContext() # default context build from config
         self.gemmList = [] #list to store the name of all generated gemms (used for gemmsCPPModel)
-
 
     def validateConfig(self, validArchitectures):
         """Ensure the configuration fit some constraint, raise errors if not"""
@@ -140,7 +140,6 @@ class Controller:
         context["solverHeader"]      = context["solverName"].split("::")[1] + ".h"
         context["codeNamespaceList"] = context["codeNamespace"].split("::")
         context["guardNamespace"]    = "_".join(context["codeNamespaceList"]).upper()
-        context["nDofLim"] = 2*context["nDof"]-1 #for limiter
         context["nDofLimPad"] = self.getSizeWithPadding(context["nDofLim"])
         context["nDofLim3D"] = 1 if context["nDim"] == 2 else context["nDofLim"]
         context["ghostLayerWidth3D"] = 0 if context["nDim"] == 2 else context["ghostLayerWidth"]

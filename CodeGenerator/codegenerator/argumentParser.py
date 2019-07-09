@@ -49,6 +49,7 @@ class ArgumentParser:
         ("numberOfVariables",   ArgType.MandatoryInt,    "the number of quantities"),
         ("numberOfParameters",  ArgType.MandatoryInt,    "the number of parameters (fixed quantities)"),
         ("order",               ArgType.MandatoryInt,    "the order of the approximation polynomial"),
+        ("limPatchSize",        ArgType.MandatoryInt,    "the size of the limiter patches per coordinate direction."),
         ("dimension",           ArgType.MandatoryInt,    "the number of spatial dimensions in the simulation (2 or 3)"),
         ("numerics",            ArgType.MandatoryString, "linear or nonlinear"),
         ("architecture",        ArgType.MandatoryString, "the microarchitecture of the target device"),
