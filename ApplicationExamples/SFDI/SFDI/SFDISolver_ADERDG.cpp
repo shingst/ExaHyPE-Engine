@@ -111,7 +111,7 @@ void SFDI::SFDISolver_ADERDG::boundaryValues(const double* const x,const double 
 }
 
 exahype::solvers::Solver::RefinementControl SFDI::SFDISolver_ADERDG::refinementCriterion(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,double t,const int level) {
-  return exahype::solvers::Solver::RefinementControl::Keep;
+//  return exahype::solvers::Solver::RefinementControl::Keep;
 if ( level > getCoarsestMeshLevel() ) {
     return exahype::solvers::Solver::RefinementControl::Erase;
   }
