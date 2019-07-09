@@ -45,9 +45,10 @@ namespace c {
  * \param[in] basisSize The size of the ADER-DG basis per coordinate axis (order+1).
  * \param[in] ghostLayerWidth The ghost layer width in cells of the finite volumes patch
  */
-template <int basisSize, int numberOfVariables, int basisSizeLim, int ghostLayerWidth>
+template <int numberOfVariables, int basisSize, int basisSizeLim, int ghostLayerWidth>
 void projectOnFVLimiterSpace(
     const double* const luh,
+    const double (&dg2fv) [basisSize*basisSizeLim],
     double* const lim);
 
 /**
@@ -59,9 +60,10 @@ void projectOnFVLimiterSpace(
  * \param[in] basisSize The size of the ADER-DG basis per coordinate axis (order+1)
  * \param[in] ghostLayerWidth The ghost layer width in cells of the finite volumes patch.
  */
-template <int basisSize, int numberOfVariables,int basisSizeLim, int ghostLayerWidth>
+template <int numberOfVariables, int basisSize, int basisSizeLim, int ghostLayerWidth>
 void projectOnDGSpace(
     const double* const lim,
+    const double (&fv2dg) [basisSize*basisSizeLim],
     double* const luh);
 
 /**
@@ -70,10 +72,13 @@ void projectOnDGSpace(
  * Gauss-Legendre nodes, the Gauss-Lobatto nodes as well as at
  * the subcell limiters.
  */
-template <typename SolverType, int numberOfObservables>
+template <typename SolverType, int numberOfObservables, int basisSize, int basisSizeLim>
 void findCellLocalMinAndMax(
     const double* const luh,
     const SolverType& solver,
+    const double (&dg2fv) [basisSize*basisSizeLim],
+    const double (&fv2dg) [basisSize*basisSizeLim],
+    const double (&leg2lob) [basisSize*basisSize],
     double* const localMinPerVariables,
     double* const localMaxPerVariables);
 
@@ -89,7 +94,7 @@ void findCellLocalMinAndMax(
  * \param[in] basisSize The size of the ADER-DG basis per coordinate axis (order+1)
  * \param[in] ghostLayerWidth The ghost layer width in cells of the finite volumes patch.
  */
-template <typename SolverType, int numberOfObservables, int basisSizeLim, int ghostLayerWidth>
+template <typename SolverType, int numberOfObservables, int basisSize, int basisSizeLim, int ghostLayerWidth>
 void findCellLocalLimiterMinAndMax(
     const double* const lim,
     const SolverType& solver,
@@ -109,20 +114,21 @@ void findCellLocalLimiterMinAndMax(
  * \note[24/11/16]
  * We currently abuse the term Voronoi neighbour for direct neighbour.
  *
- * \param[in] luh                           The nodal solution degrees of freedom
- * \param[in] solver                        An ADERDG solver
- * \param[in] relaxationParameter The relaxation parameter for the discrete maximum principle (DMP).
- * \param[in] differenceScaling             The difference scaling factor for the discrete maximum principle (DMP).
- * \param[inout] boundaryMinPerVariables    An array of size \p numberOfVariables times DIMENSIONS_TIMES_TWO
- *                                          containing the minimum values per variable of the current cell
- *                                          and its neighbour at the particular face. Together these values
- *                                          can be used to compute the Voronoi maximum per variable.
- * \param[inout] boundaryMaxPerVariables    An array of size \p numberOfVariables times DIMENSIONS_TIMES_TWO
- *                                          containing the maximum values per variable of the current cell
- *                                          and its neighbour at the particular face. Together these values
- *                                          can be used to compute the Voronoi maximum per variable.
+ * \param[in]    luh                     The nodal solution degrees of freedom
+ * \param[in]    solver                  An ADERDG solver
+ * \param[in]    relaxationParameter     The relaxation parameter for the discrete maximum principle (DMP).
+ * \param[in]    differenceScaling       The difference scaling factor for the discrete maximum principle (DMP).
+ * \param[inout] boundaryMinPerVariables An array of size \p numberOfVariables times DIMENSIONS_TIMES_TWO
+ *                                       containing the minimum values per variable of the current cell
+ *                                       and its neighbour at the particular face. Together these values
+ *                                       can be used to compute the Voronoi maximum per variable.
+ * \param[inout] boundaryMaxPerVariables An array of size \p numberOfVariables times DIMENSIONS_TIMES_TWO
+ *                                       containing the maximum values per variable of the current cell
+ *                                       and its neighbour at the particular face. Together these values
+ *                                       can be used to compute the Voronoi maximum per variable.
  *
- * <h2>Background</h2>
+ * Background
+ * ----------
  * A candidate solution \f$ u^{*}_h(x,t^{n+1}) \f$ is said to satisfy
  * the discrete maximum principle if it satisfies a relaxed
  * maximum principle of the form
@@ -144,14 +150,17 @@ void findCellLocalLimiterMinAndMax(
  *
  * See doi:10.1016/j.jcp.2014.08.009 for more details.
  */
-template <typename SolverType, int numberOfObservables, int basisSizeLim, int ghostLayerWidth>
+template <typename SolverType, int numberOfObservables, int basisSize, int basisSizeLim, int ghostLayerWidth>
 bool discreteMaximumPrincipleAndMinAndMaxSearch(
     const double* const luh,
-    const SolverType& solver,
-    const double relaxationParameter,
-    const double differenceScaling,
-    double* boundaryMinPerObservable,
-    double* boundaryMaxPerObservable);
+    const SolverType&   solver,
+    const double        (&dg2fv)   [basisSize*basisSizeLim],
+    const double        (&fv2dg)   [basisSize*basisSizeLim],
+    const double        (&leg2lob) [basisSize*basisSize],
+    const double        relaxationParameter,
+    const double        differenceScaling,
+    double* const       boundaryMinPerObservable,
+    double* const       boundaryMaxPerObservable);
 
 //*************************
 //*** Private functions ***
@@ -164,10 +173,11 @@ bool discreteMaximumPrincipleAndMinAndMaxSearch(
  * The n Gauss-Lobatto nodes are the support points of
  * the maxima of the Legendre polynomial of order n-1.
  */
-template <typename SolverType, int numberOfObservables>
+template <typename SolverType, int numberOfObservables, int basisSize>
 void compareWithADERDGSolutionAtGaussLobattoNodes(
     const double* const luh,
     const SolverType& solver,
+    const double (&leg2lob) [basisSize*basisSize],
     double* min, double* max);
 
 /**
@@ -179,19 +189,21 @@ void compareWithADERDGSolutionAtGaussLobattoNodes(
  * this becomes a problem if we project the DG solution onto the FV
  * subcell.
  */
-template <typename SolverType, int numberOfObservables>
+template <typename SolverType, int numberOfObservables, int basisSize, int basisSizeLim>
 void compareWithADERDGSolutionAtFVSubcellCenters(
     const double* const luh,
     const SolverType& solver,
+    const double (&dg2fv) [basisSize*basisSizeLim],
     double* min, double* max);
 
 /**
  * Compute the minimum and maximum values of a DG solution expressed with a Gauss Legendre basis
  * at the nodes of a Lobatto quadrature using the same number of support points (basisSize).
  */
-template <int basisSize, int numberOfData>
+template <int numberOfData, int basisSize>
 void computeMinimumAndMaximumValueAtGaussLobattoNodes(
     const double* const solutionAtGaussLegendreNodes,
+    const double (&leg2lob) [basisSize*basisSize],
     double* const       minimumAtGaussLobattoNodes, 
     double* const       maximumAtGaussLobattoNodes);
 

@@ -64,15 +64,9 @@ class SolverController:
                     fvContext["patchSize"] = 2 * order + 1
                 elif fvContext["patchSize"] == "max":
                     fvContext["patchSize"] = int( 1.0/self.cflCorrectionADER[order] * (2 * order + 1) )
-                    if context["implementation"] is "optimised":
-                        logger.error("{}: maximum patch size currently not supported for optimised kernels.".format(context["solver"]))
-                        sys.exit()
                 else:
                     # scale the ADER-DG method's CFL safety factor according to the chosen patch size
                     aderdgContext["CFL"] = aderdgContext["CFL"] * min(self.cflADER[order], 1.0/fvContext["patchSize"]) / self.cflADER[order];
-                    if context["implementation"] is "optimised":
-                        logger.error("{}: freely chosen patch size for Limiting-ADER-DG solver currently not supported for optimised kernels.".format(context["solver"]))
-                        sys.exit()
 
                 aderdgContext["solver"]                 = context["ADERDGSolver"]
                 aderdgContext["solverType"]             = "ADER-DG"

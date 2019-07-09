@@ -29,6 +29,11 @@ class {{project}}::{{solver}}: public exahype::solvers::LimitingADERDGSolver {
     static constexpr int PatchSize                 = {{project}}::{{FVAbstractSolver}}::PatchSize;
     static constexpr int GhostLayerWidth           = {{project}}::{{FVAbstractSolver}}::GhostLayerWidth;
       
+    // limiter projection matrices
+    double dg2fv[(Order+1)*PatchSize];
+    double fv2dg[(Order+1)*PatchSize];
+    double leg2lob[(Order+1)*(Order+1)];
+      
     {{solver}}(
         const double maximumMeshSize,
         const int maximumMeshDepth,

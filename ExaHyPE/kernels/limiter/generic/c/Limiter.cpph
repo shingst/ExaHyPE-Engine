@@ -5,7 +5,7 @@
  * Auxilliary function to findMinMax
  * Project to GaussLobatto and modify the min/max if required
  */
-template <int basisSize, int numberOfData>
+template <int numberOfData, int basisSize>
 void kernels::limiter::generic::c::computeMinimumAndMaximumValueAtGaussLobattoNodes(
     const double* const solutionAtGaussLegendreNodes,
     double* const       minimumAtGaussLobattoNodes, 
@@ -48,13 +48,11 @@ void kernels::limiter::generic::c::computeMinimumAndMaximumValueAtGaussLobattoNo
 }
 
 //Fortran (Limiter.f90): GetSubcellData
-template <int basisSize, int basisSizeLim, int numberOfVariables,int ghostLayerWidth>
+template <int numberOfVariables, int basisSize, int basisSizeLim, int ghostLayerWidth>
 void kernels::limiter::generic::c::projectOnFVLimiterSpace(
     const double* const luh, 
-    double* const lim) {
-  constexpr int order        = basisSize-1;
-  constexpr int basisSizeLim = 2*order+1;
-  
+    const double (&dg2fv) [basisSize*basisSizeLim],
+    double* const lim) {  
   #if DIMENSIONS == 3
   constexpr int basisSize3D       = basisSize;
   constexpr int basisSizeLim3D    = basisSizeLim;
@@ -82,10 +80,10 @@ void kernels::limiter::generic::c::projectOnFVLimiterSpace(
               for(ix=0; ix<basisSize; ix++) {
                 lim[idxLim(z,y,x,v)] += luh[idxLuh(iz,iy,ix,v)] 
                                         #if DIMENSIONS == 3
-                                        * uh2lim[order][idxConv(iz,z-ghostLayerWidth3D)]
+                                        * dg2fv[idxConv(iz,z-ghostLayerWidth3D)]
                                         #endif
-                                        * uh2lim[order][idxConv(iy,y-ghostLayerWidth)]
-                                        * uh2lim[order][idxConv(ix,x-ghostLayerWidth)];
+                                        * dg2fv[idxConv(iy,y-ghostLayerWidth)]
+                                        * dg2fv[idxConv(ix,x-ghostLayerWidth)];
               }
             }
           }
@@ -96,12 +94,11 @@ void kernels::limiter::generic::c::projectOnFVLimiterSpace(
 }
 
 //Fortran (Limiter.f90): PutSubcellData
-template <int basisSize, int basisSizeLim, int numberOfVariables,int ghostLayerWidth>
+template <int numberOfVariables, int basisSize, int basisSizeLim, int ghostLayerWidth>
 void kernels::limiter::generic::c::projectOnDGSpace(
     const double* const lim, 
+    const double (&fv2dg) [basisSize*basisSizeLim],
     double* const luh) {
-  constexpr int order = basisSize-1;
-  
   #if DIMENSIONS == 3
   constexpr int basisSize3D       = basisSize;
   constexpr int basisSizeLim3D    = basisSizeLim;
@@ -129,10 +126,10 @@ void kernels::limiter::generic::c::projectOnDGSpace(
               for(ix=ghostLayerWidth; ix<basisSizeLim+ghostLayerWidth; ix++) {
                 luh[idxLuh(z,y,x,v)] += lim[idxLim(iz,iy,ix,v)] 
                                         #if DIMENSIONS == 3
-                                        * lim2uh[order][idxConv(iz-ghostLayerWidth3D,z)]
+                                        * fv2dg[idxConv(iz-ghostLayerWidth3D,z)]
                                         #endif
-                                        * lim2uh[order][idxConv(iy-ghostLayerWidth,y)]
-                                        * lim2uh[order][idxConv(ix-ghostLayerWidth,x)];
+                                        * fv2dg[idxConv(iy-ghostLayerWidth,y)]
+                                        * fv2dg[idxConv(ix-ghostLayerWidth,x)];
               }
             }
           }
@@ -142,13 +139,106 @@ void kernels::limiter::generic::c::projectOnDGSpace(
   } 
 }
 
-template <typename SolverType, int numberOfObservables, int ghostLayerWidth>
-bool kernels::limiter::generic::c::discreteMaximumPrincipleAndMinAndMaxSearch(
+
+/**
+ * localMinPerVariables, localMaxPerVariables are double[numberOfVariables]
+ */
+template <typename SolverType, int numberOfObservables, int basisSize, int basisSizeLim>
+void kernels::limiter::generic::c::findCellLocalMinAndMax(
     const double* const luh,
     const SolverType& solver,
-    const double relaxationParameter,
-    const double differenceScaling,
-    double* boundaryMinPerObservable, double* boundaryMaxPerObservable) {  
+    const double (&dg2fv) [basisSize*basisSizeLim],
+    const double (&fv2dg) [basisSize*basisSizeLim],
+    const double (&leg2lob) [basisSize*basisSize],
+    double* const localMinPerVariables, 
+    double* const localMaxPerVariables) {
+  if ( numberOfObservables>0 ) {
+    constexpr int numberOfData = SolverType::NumberOfVariables+SolverType::NumberOfParameters;
+    
+    std::fill_n(localMinPerVariables,numberOfObservables,+std::numeric_limits<double>::infinity());
+    std::fill_n(localMaxPerVariables,numberOfObservables,-std::numeric_limits<double>::infinity());
+  
+    #if DIMENSIONS == 3
+    constexpr int basisSize3D = basisSize;
+    #else
+    constexpr int basisSize3D = 1;
+    #endif
+  
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+    double observables[numberOfObservables];
+#pragma GCC diagnostic pop
+    
+    idx4 idx(basisSize3D,basisSize,basisSize,numberOfData);
+    for(int iz = 0; iz < basisSize3D; iz++) {
+      for(int iy = 0; iy < basisSize;   iy++) {
+        for(int ix = 0; ix < basisSize;   ix++) {
+          solver.mapDiscreteMaximumPrincipleObservables(observables,luh+idx(iz,iy,ix,0));
+  
+          for (int v=0; v<numberOfObservables; v++) {
+            localMinPerVariables[v] = std::min ( localMinPerVariables[v], observables[v] );
+            localMaxPerVariables[v] = std::max ( localMaxPerVariables[v], observables[v] );
+          }
+        }
+      }
+    }
+    compareWithADERDGSolutionAtGaussLobattoNodes<SolverType,numberOfObservables,basisSize>(luh, solver, leg2lob, localMinPerVariables, localMaxPerVariables);
+    compareWithADERDGSolutionAtFVSubcellCenters<SolverType,numberOfObservables,basisSize,basisSizeLim>(luh, solver, dg2fv, localMinPerVariables, localMaxPerVariables);
+  }
+}
+
+template <typename SolverType, int numberOfObservables, int basisSize, int basisSizeLim, int ghostLayerWidth>
+void kernels::limiter::generic::c::findCellLocalLimiterMinAndMax(
+    const double* const lim,
+    const SolverType& solver,
+    double* const localMinPerVariables, 
+    double* const localMaxPerVariables) {
+  if ( numberOfObservables>0 ) {
+    constexpr int numberOfData = SolverType::NumberOfVariables+SolverType::NumberOfParameters;
+    
+    std::fill_n(localMinPerVariables,numberOfObservables,+std::numeric_limits<double>::infinity());
+    std::fill_n(localMaxPerVariables,numberOfObservables,-std::numeric_limits<double>::infinity());
+  
+    #if DIMENSIONS == 3
+    constexpr int basisSizeLim3D    = basisSizeLim;
+    constexpr int ghostLayerWidth3D = ghostLayerWidth;
+    #else
+    constexpr int basisSizeLim3D    = 1;
+    constexpr int ghostLayerWidth3D = 0;
+    #endif
+  
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+    double observables[numberOfObservables];
+#pragma GCC diagnostic pop
+    
+    idx4 idxLim(basisSizeLim3D+2*ghostLayerWidth3D,basisSizeLim+2*ghostLayerWidth,basisSizeLim+2*ghostLayerWidth,numberOfData);
+    for (int iz=ghostLayerWidth3D; iz<basisSizeLim3D+ghostLayerWidth3D; ++iz) { // skip the last element
+      for (int iy=ghostLayerWidth; iy<basisSizeLim+ghostLayerWidth; ++iy) {
+        for (int ix=ghostLayerWidth; ix<basisSizeLim+ghostLayerWidth; ++ix) {
+          solver.mapDiscreteMaximumPrincipleObservables(observables,lim+idxLim(iz,iy,ix,0));
+  
+          for (int v=0; v<numberOfObservables; v++) {
+            localMinPerVariables[v] = std::min ( localMinPerVariables[v], observables[v] );
+            localMaxPerVariables[v] = std::max ( localMaxPerVariables[v], observables[v] );
+          }
+        }
+      }
+    }
+  }
+}
+
+template <typename SolverType, int numberOfObservables, int basisSize, int basisSizeLim, int ghostLayerWidth>
+bool kernels::limiter::generic::c::discreteMaximumPrincipleAndMinAndMaxSearch(
+    const double* const luh,
+    const SolverType&   solver,
+    const double        (&dg2fv)   [basisSize*basisSizeLim],
+    const double        (&fv2dg)   [basisSize*basisSizeLim],
+    const double        (&leg2lob) [basisSize*basisSize],
+    const double        relaxationParameter,
+    const double        differenceScaling,
+    double* const       boundaryMinPerObservable,
+    double* const       boundaryMaxPerObservable) {
   bool discreteMaximumPrincipleSatisfied=true;
   if ( numberOfObservables>0 ) {
 #pragma GCC diagnostic push
@@ -157,8 +247,8 @@ bool kernels::limiter::generic::c::discreteMaximumPrincipleAndMinAndMaxSearch(
     double localMaxPerObservable[numberOfObservables];
 #pragma GCC diagnostic pop
     
-    // 1. Determine the new cell-local -minimum and maximummin and max
-    findCellLocalMinAndMax<SolverType,numberOfObservables>(luh,solver,localMinPerObservable,localMaxPerObservable);
+    // 1. Determine the new cell-localminimum and maximum
+    findCellLocalMinAndMax<SolverType,numberOfObservables,basisSize,basisSizeLim>(luh,solver,dg2fv,fv2dg,leg2lob,localMinPerObservable,localMaxPerObservable);
 
     // 2. Compare to the boundary minimum and maximum
     for(int v = 0; v < numberOfObservables; v++) {
@@ -203,171 +293,22 @@ bool kernels::limiter::generic::c::discreteMaximumPrincipleAndMinAndMaxSearch(
   return discreteMaximumPrincipleSatisfied;
 }
 
-template <typename SolverType, int numberOfObservables, int ghostLayerWidth>
-void kernels::limiter::generic::c::findCellLocalLimiterMinAndMax(
-    const double* const lim,
-    const SolverType& solver,
-    double* const localMinPerVariables, double* const localMaxPerVariables) {
-  if ( numberOfObservables>0 ) {
-    constexpr int numberOfData = SolverType::NumberOfVariables+SolverType::NumberOfParameters;
-    
-    std::fill_n(localMinPerVariables,numberOfObservables,+std::numeric_limits<double>::infinity());
-    std::fill_n(localMaxPerVariables,numberOfObservables,-std::numeric_limits<double>::infinity());
-  
-    constexpr int basisSize    = SolverType::Order+1;
-    constexpr int basisSizeLim = 2*(basisSize-1)+1;
-    #if DIMENSIONS == 3
-    constexpr int basisSizeLim3D    = basisSizeLim;
-    constexpr int ghostLayerWidth3D = ghostLayerWidth;
-    #else
-    constexpr int basisSizeLim3D    = 1;
-    constexpr int ghostLayerWidth3D = 0;
-    #endif
-  
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpedantic"
-    double observables[numberOfObservables];
-#pragma GCC diagnostic pop
-    
-    idx4 idxLim(basisSizeLim3D+2*ghostLayerWidth3D,basisSizeLim+2*ghostLayerWidth,basisSizeLim+2*ghostLayerWidth,numberOfData);
-    for (int iz=ghostLayerWidth3D; iz<basisSizeLim3D+ghostLayerWidth3D; ++iz) { // skip the last element
-      for (int iy=ghostLayerWidth; iy<basisSizeLim+ghostLayerWidth; ++iy) {
-        for (int ix=ghostLayerWidth; ix<basisSizeLim+ghostLayerWidth; ++ix) {
-          solver.mapDiscreteMaximumPrincipleObservables(observables,lim+idxLim(iz,iy,ix,0));
-  
-          for (int v=0; v<numberOfObservables; v++) {
-            localMinPerVariables[v] = std::min ( localMinPerVariables[v], observables[v] );
-            localMaxPerVariables[v] = std::max ( localMaxPerVariables[v], observables[v] );
-          }
-        }
-      }
-    }
-  }
-}
-
-/**
- * localMinPerVariables, localMaxPerVariables are double[numberOfVariables]
- */
-template <typename SolverType, int numberOfObservables>
-void kernels::limiter::generic::c::findCellLocalMinAndMax(
-    const double* const luh,
-    const SolverType& solver,
-    double* const localMinPerVariables, double* const localMaxPerVariables) {
-  if ( numberOfObservables>0 ) {
-    const int basisSize = SolverType::Order+1;
-    constexpr int numberOfData = SolverType::NumberOfVariables+SolverType::NumberOfParameters;
-    
-    std::fill_n(localMinPerVariables,numberOfObservables,+std::numeric_limits<double>::infinity());
-    std::fill_n(localMaxPerVariables,numberOfObservables,-std::numeric_limits<double>::infinity());
-  
-    #if DIMENSIONS == 3
-    constexpr int basisSize3D = basisSize;
-    #else
-    constexpr int basisSize3D = 1;
-    #endif
-  
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpedantic"
-    double observables[numberOfObservables];
-#pragma GCC diagnostic pop
-    
-    idx4 idx(basisSize3D,basisSize,basisSize,numberOfData);
-    for(int iz = 0; iz < basisSize3D; iz++) {
-      for(int iy = 0; iy < basisSize;   iy++) {
-        for(int ix = 0; ix < basisSize;   ix++) {
-          solver.mapDiscreteMaximumPrincipleObservables(observables,luh+idx(iz,iy,ix,0));
-  
-          for (int v=0; v<numberOfObservables; v++) {
-            localMinPerVariables[v] = std::min ( localMinPerVariables[v], observables[v] );
-            localMaxPerVariables[v] = std::max ( localMaxPerVariables[v], observables[v] );
-          }
-        }
-      }
-    }
-    compareWithADERDGSolutionAtGaussLobattoNodes<SolverType,numberOfObservables>(luh, solver, localMinPerVariables, localMaxPerVariables);
-    compareWithADERDGSolutionAtFVSubcellCenters<SolverType,numberOfObservables>(luh, solver, localMinPerVariables, localMaxPerVariables);
-  }
-}
-
-
-
 //*************************
 //*** Private functions ***
 //*************************
-/**
- * Auxilliary function to findMinMax
- * Project to GaussLobatto and modify the min/max if required
- */
-
-template <typename SolverType, int numberOfObservables>
-void kernels::limiter::generic::c::compareWithADERDGSolutionAtGaussLobattoNodes(
-    const double* const luh,
-    const SolverType& solver,
-    double* min, double* max) {
-  if ( numberOfObservables>0 ) {
-    constexpr int numberOfData = SolverType::NumberOfVariables+SolverType::NumberOfParameters;
-    constexpr int order        = SolverType::Order;
-    constexpr int basisSize    = order+1;
-    
-    #if DIMENSIONS == 3
-    constexpr int basisSize3D = basisSize;
-    #else
-    constexpr int basisSize3D = 1;
-    #endif
-  
-    idx4 idx(basisSize3D,basisSize,basisSize,numberOfData);
-    idx2 idxConv(basisSize,basisSize);
-  
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpedantic"
-    double observables[numberOfObservables];
-    double lobValues[numberOfData];
-#pragma GCC diagnostic pop
-   
-    for(int z=0; z<basisSize3D; z++) {
-      for(int y=0; y<basisSize; y++) {
-        for(int x=0; x<basisSize; x++) {
-          for(int v=0; v<numberOfData; v++) {
-            lobValues[v] = 0.0;
-            for(int iz=0; iz<basisSize3D; iz++) {
-              for(int iy=0; iy<basisSize; iy++) {
-                for(int ix=0; ix<basisSize;ix++) {
-                  lobValues[v] += luh[idx(iz,iy,ix,v)]
-                              #if DIMENSIONS == 3
-                              * uh2lob[order][idxConv(iz,z)]
-                              #endif
-                              * uh2lob[order][idxConv(iy,y)]
-                              * uh2lob[order][idxConv(ix,x)];
-                }
-              }
-            }
-          }
-  
-          solver.mapDiscreteMaximumPrincipleObservables(observables,lobValues);
-          for (int v=0; v<numberOfObservables; v++) {
-            min[v] = std::min( min[v], observables[v] );
-            max[v] = std::max( max[v], observables[v] );
-          }
-        }
-      }
-    }
-  }
-}
 
 /**
  * Auxilliary function to findMinMax
  * Project onto FV subcell nodes and modify the min/max if required
  */
-template <typename SolverType, int numberOfObservables>
+template <typename SolverType, int numberOfObservables, int basisSize, int basisSizeLim>
 void kernels::limiter::generic::c::compareWithADERDGSolutionAtFVSubcellCenters(
     const double* const luh,
     const SolverType& solver,
+    const double (&dg2fv) [basisSize*basisSizeLim],
     double* min, double* max) {
   if ( numberOfObservables>0 ) {  
     constexpr int numberOfData = SolverType::NumberOfVariables+SolverType::NumberOfParameters;
-    constexpr int order        = SolverType::Order;
-    constexpr int basisSize    = order+1;
-    constexpr int basisSizeLim = 2*order+1;
   
     #if DIMENSIONS == 3
     constexpr int basisSize3D    = basisSize;
@@ -398,16 +339,75 @@ void kernels::limiter::generic::c::compareWithADERDGSolutionAtFVSubcellCenters(
                 for(int ix=0; ix<basisSize; ix++) {
                   limValues[v] += luh[idxLuh(iz,iy,ix,v)]
                                   #if DIMENSIONS == 3
-                                  * uh2lim[basisSize-1][idxConv(iz,z)]
+                                  * dg2fv[idxConv(iz,z)]
                                   #endif
-                                  * uh2lim[basisSize-1][idxConv(iy,y)]
-                                  * uh2lim[basisSize-1][idxConv(ix,x)];
+                                  * dg2fv[idxConv(iy,y)]
+                                  * dg2fv[idxConv(ix,x)];
                 }
               }
             }
           }
   
           solver.mapDiscreteMaximumPrincipleObservables(observables,limValues);
+          for (int v=0; v<numberOfObservables; v++) {
+            min[v] = std::min( min[v], observables[v] );
+            max[v] = std::max( max[v], observables[v] );
+          }
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Auxilliary function to findMinMax
+ * Project to GaussLobatto and modify the min/max if required
+ */
+
+template <typename SolverType, int numberOfObservables, int basisSize>
+void kernels::limiter::generic::c::compareWithADERDGSolutionAtGaussLobattoNodes(
+    const double* const luh,
+    const SolverType& solver,
+    const double (&leg2lob) [basisSize*basisSize],
+    double* min, double* max) {
+  if ( numberOfObservables>0 ) {
+    constexpr int numberOfData = SolverType::NumberOfVariables+SolverType::NumberOfParameters;
+     
+    #if DIMENSIONS == 3
+    constexpr int basisSize3D = basisSize;
+    #else
+    constexpr int basisSize3D = 1;
+    #endif
+  
+    idx4 idx(basisSize3D,basisSize,basisSize,numberOfData);
+    idx2 idxConv(basisSize,basisSize);
+  
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+    double observables[numberOfObservables];
+    double lobValues[numberOfData];
+#pragma GCC diagnostic pop
+   
+    for(int z=0; z<basisSize3D; z++) {
+      for(int y=0; y<basisSize; y++) {
+        for(int x=0; x<basisSize; x++) {
+          for(int v=0; v<numberOfData; v++) {
+            lobValues[v] = 0.0;
+            for(int iz=0; iz<basisSize3D; iz++) {
+              for(int iy=0; iy<basisSize; iy++) {
+                for(int ix=0; ix<basisSize;ix++) {
+                  lobValues[v] += luh[idx(iz,iy,ix,v)]
+                              #if DIMENSIONS == 3
+                              * leg2lob[idxConv(iz,z)]
+                              #endif
+                              * leg2lob[idxConv(iy,y)]
+                              * leg2lob[idxConv(ix,x)];
+                }
+              }
+            }
+          }
+  
+          solver.mapDiscreteMaximumPrincipleObservables(observables,lobValues);
           for (int v=0; v<numberOfObservables; v++) {
             min[v] = std::min( min[v], observables[v] );
             max[v] = std::max( max[v], observables[v] );
