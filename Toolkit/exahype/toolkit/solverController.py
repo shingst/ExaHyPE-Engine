@@ -60,7 +60,7 @@ class SolverController:
                 
                 # patch size vs ADER-DG CFL
                 order = aderdgContext["order"];
-                if fvContext["patchSize"] == "original":
+                if fvContext["patchSize"] == "default":
                     fvContext["patchSize"] = 2 * order + 1
                 elif fvContext["patchSize"] == "max":
                     fvContext["patchSize"] = int( 1.0/self.cflCorrectionADER[order] * (2 * order + 1) )
@@ -69,8 +69,7 @@ class SolverController:
                     aderdgContext["CFL"] = aderdgContext["CFL"] * min(self.cflADER[order], 1.0/fvContext["patchSize"]) / self.cflADER[order];
 
                 # forward patchSize information to JM's code generator that works with ADER-DG context
-                if context["implementation"] == "optimised": 
-                    aderdgContext["patchSize"] = fvContext["patchSize"]
+                aderdgContext["patchSize"] = fvContext["patchSize"]
 
                 aderdgContext["solver"]                 = context["ADERDGSolver"]
                 aderdgContext["solverType"]             = "ADER-DG"
@@ -176,7 +175,7 @@ class SolverController:
         context = self.buildBaseSolverContext(solver)
         context["type"] = "Finite-Volumes"
         context.update(self.buildFVKernelContext(solver["fv_kernel"]))
-        context["patchSize"] = solver.get("patch_size","max") # overwrite if called from LimitingADERDGSolver creation
+        context["patchSize"] = solver.get("patch_size","default") # overwrite if called from LimitingADERDGSolver creation
         
         return context
 

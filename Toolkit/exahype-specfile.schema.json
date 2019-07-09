@@ -869,8 +869,8 @@
               },
               { 
                 "type" : "string",
-                "title" : "Automatically choose the patch size as 2*order+1 (original) or as the maximum possible patch size (max), which might be up to three times larger than the 'original' variant's patch size.",
-                "enum" : ["original", "max" ],
+                "title" : "Automatically choose the patch size as 2*order+1 (default) or as the maximum possible patch size (max), which might be up to three times larger than the 'original' variant's patch size.",
+                "enum" : ["default", "max" ],
                 "default" : "max"
               }
             ]
