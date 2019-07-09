@@ -590,7 +590,7 @@
         "dependencies" : {
           "patch_size" : {
             "properties" : {
-              "type" : { "enum" : ["Finite-Volumes"] }
+              "type" : { "enum" : ["Finite-Volumes","Limiting-ADER-DG"] }
             }
           },
           "order" : {
@@ -853,21 +853,38 @@
           "order" : {
             "type" : "integer", 
             "title" : "Approximation order of the scheme",
-            "$comment" : "With pure FV, this value is ignored. With Limiter, this value determines the patch_size",
+            "$comment" : "With pure FV, this value is ignored. With Limiter, this value may determine the patch_size",
             "scope" : "compile-time",
             "old_format" : { "token_after" : "order" }
           }, 
           "patch_size" : {
-            "type" : "integer", 
-            "title" : "Number of subcells per coordinate direction (no ghost)",
-            "$comment" : "With pure DG, this value is ignored. With Limiter, this value is determined by the order",
-            "scope" : "compile-time"
+            "oneOf" : [
+              { 
+                "type" : "integer", 
+                "title" : "Number of subcells per coordinate direction per Finite-Volumes patch (ghost cells are excluded).",
+                "$comment" : "With pure ADER-DG, this value is ignored.",
+                "scope" : "compile-time",
+                "minimum" : 1,
+                "exclusiveMinimum" : false    
+              },
+              { 
+                "type" : "string",
+                "title" : "Automatically choose the patch size as 2*order+1 (default) or as the maximum possible patch size (max), which might be up to three times larger than the 'original' variant's patch size.",
+                "enum" : ["default", "max" ],
+                "$comment" : "With pure Finite-Volumes, this results in an error during the code generation.",
+                "default" : "max"
+              }
+            ]
           },
           "cfl" : {
             "type" : "number",
-            "title" : "Override the CFL number used. By default 0.9",
+            "title" : "Override the CFL safety factor (default: 0.9)",
             "scope" : "compile-time",
-            "default" : 0.9
+            "default" : 0.9,
+            "minimum": 0.0,
+            "maximum": 1.0,
+            "exclusiveMinimum": true,
+            "exclusiveMaximum": false
           },
           "halo_cells" : {
             "type" : "integer", 

@@ -254,12 +254,12 @@ void exahype::plotters::LimitingADERDGSubcells2CartesianVTK::finishPlotting() {
 
 			if (refinementStatus >= limitingADERDG->getSolver()->getMinRefinementStatusForTroubledCell() - 1) {
 				auto& limiterPatch = limitingADERDG->getLimiterPatch(solverPatch, cellInfo);
-
 				double* limiterSolution = static_cast<double*>(limiterPatch.getSolution());
 				plotFiniteVolumesPatch(
 					limiterPatch.getOffset(),
 					limiterPatch.getSize(), limiterSolution,
 					limiterPatch.getTimeStamp(),
+	                limitingADERDG->getLimiter().get()->getNodesPerCoordinateAxis(),
 					refinementStatus,
 					previousRefinementStatus);
 			}
@@ -269,9 +269,11 @@ void exahype::plotters::LimitingADERDGSubcells2CartesianVTK::finishPlotting() {
 	void exahype::plotters::LimitingADERDGSubcells2CartesianVTK::plotFiniteVolumesPatch(
 		const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
 		const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch,
-		const double* const u,
-		const double timeStamp,
-		const int RefinementStatus, const int previousRefinementStatus) {
+		const double* const                          u,
+		const double                                 timeStamp,
+        const int                                    numberOfCellsPerAxis,
+		const int                                    RefinementStatus,
+		const int                                    previousRefinementStatus) {
 		if (!_slicer || _slicer->isPatchActive(offsetOfPatch, sizeOfPatch)) {
 			logDebug("plotPatch(...)", "offset of patch: " << offsetOfPatch
 				<< ", size of patch: " << sizeOfPatch
@@ -280,8 +282,6 @@ void exahype::plotters::LimitingADERDGSubcells2CartesianVTK::finishPlotting() {
 			assertion(_writtenUnknowns == 0 || _patchWriter != nullptr);
 			assertion(_writtenUnknowns == 0 || _gridWriter != nullptr);
 			assertion(_writtenUnknowns == 0 || _timeStampCellDataWriter != nullptr);
-
-			const int numberOfCellsPerAxis = 2 * _order + 1;
 
 			int cellIndex = _writtenUnknowns == 0 ? -1 : _gridWriter->plotPatch(offsetOfPatch, sizeOfPatch, numberOfCellsPerAxis).second;
 

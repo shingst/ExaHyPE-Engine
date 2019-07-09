@@ -47,6 +47,22 @@
 
 
 void kernels::registerSolvers(exahype::parser::Parser& parser) {
+  std::set<int> orders;
+{% for solver in solvers %}
+{%   if solver.type in ["ADER-DG", "Limiting-ADER-DG"] %}
+  orders.insert({{solver.order}});
+{%   endif %}
+{% endfor %}
+  kernels::initGaussLegendreNodesAndWeights(orders);
+  kernels::initGaussLobattoNodesAndWeights(orders);
+  kernels::initLimiterProjectionMatrices(orders);
+  kernels::initDGMatrices(orders);
+  kernels::initBasisFunctions(orders);
+{% for codegenContext in codegeneratorContextsList %}
+  {{codegenContext.namespace}}::initQuadratureNodesAndWeights();
+  {{codegenContext.namespace}}::initDGMatrices();
+{% endfor %}
+
 {% for solver in solvers %}
 {%set solver_loop = loop %}
   // register solver '{{solver.solver}}' (type: '{{solver.type}}')
@@ -102,19 +118,6 @@ void kernels::registerSolvers(exahype::parser::Parser& parser) {
 {% endif %}
 {% endfor %}
   }
-{% endfor %}
-  std::set<int> orders;
-  for (const auto p : exahype::solvers::RegisteredSolvers) {
-    orders.insert(p->getNodesPerCoordinateAxis()-1);
-  }
-  kernels::initGaussLegendreNodesAndWeights(orders);
-  kernels::initGaussLobattoNodesAndWeights(orders);
-  kernels::initLimiterProjectionMatrices(orders);
-  kernels::initDGMatrices(orders);
-  kernels::initBasisFunctions(orders);
-{% for codegenContext in codegeneratorContextsList %}
-  {{codegenContext.namespace}}::initQuadratureNodesAndWeights();
-  {{codegenContext.namespace}}::initDGMatrices();
 {% endfor %}
 }
 

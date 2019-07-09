@@ -1,14 +1,24 @@
 import os
+import sys
 import copy
 
 from .models import *
 from .toolkitHelper import ToolkitHelper
 
 class SolverController:
-
     def __init__(self, solverSpec, baseContext):
         self.solverSpec = solverSpec
         self.baseContext = baseContext
+
+        # ADER-DG CFL factors        
+        # Up to order 4, computed via von Neumann analysis [1]; above, determined empirically by M. Dumbser)
+        # [1] M. Dumbser, D. S. Balsara, E. F. Toro, and C.-D. Munz, 
+        # ‘A unified framework for the construction of one-step finite volume and discontinuous Galerkin schemes on unstructured meshes’, Journal of Computational Physics, vol. 227, no. 18, pp. 8209–8253, Sep. 2008.
+        self.cflADER = [1.0,   0.33,  0.17, 0.1,  0.069, 0.045, 0.038, 0.03, 0.02, 0.015]
+        self.cflCorrectionADER = self.cflADER.copy()
+        for p,cfl in enumerate(self.cflADER):
+            self.cflCorrectionADER[p] = cfl * (2*p+1);
+        self.cflSafetyFactor = 0.9
 
 
     def processModelOutput(self, output, contextsList, logger, silentCodeGen = False):
@@ -37,7 +47,10 @@ class SolverController:
                 model = solverModel.SolverModel(self.buildADERDGSolverContext(solver))
                 solverContext = self.processModelOutput(model.generateCode(), solverContextsList, logger)
             elif solver["type"]=="Finite-Volumes":
-                model = solverModel.SolverModel(self.buildFVSolverContext(solver))
+                context = self.buildFVSolverContext(solver)
+                if type(fvContext["patchSize"]) != int:
+                    logger.error("{}: 'patch_size' must be an integer; it is '{}'.".format(context["solver"],context["patchSize"]))
+                model = solverModel.SolverModel()
                 solverContext = self.processModelOutput(model.generateCode(), solverContextsList, logger)
             elif solver["type"]=="Limiting-ADER-DG":
                 aderdgContext = self.buildADERDGSolverContext(solver)
@@ -47,8 +60,20 @@ class SolverController:
                 fvContext["solver"]         = context["FVSolver"]
                 fvContext["solverType"]     = "Finite-Volumes"
                 fvContext["abstractSolver"] = context["FVAbstractSolver"]
-                fvContext["patchSize"]      = 2 * aderdgContext["order"] + 1
                 
+                # patch size vs ADER-DG CFL
+                order = aderdgContext["order"];
+                if fvContext["patchSize"] == "default":
+                    fvContext["patchSize"] = 2 * order + 1
+                elif fvContext["patchSize"] == "max":
+                    fvContext["patchSize"] = int( 1.0/self.cflCorrectionADER[order] * (2 * order + 1) )
+                else:
+                    # scale the ADER-DG method's CFL safety factor according to the chosen patch size
+                    aderdgContext["CFL"] = aderdgContext["CFL"] * min(self.cflADER[order], 1.0/fvContext["patchSize"]) / self.cflADER[order];
+
+                # forward patchSize information to JM's code generator that works with ADER-DG context
+                aderdgContext["patchSize"] = fvContext["patchSize"]
+
                 aderdgContext["solver"]                 = context["ADERDGSolver"]
                 aderdgContext["solverType"]             = "ADER-DG"
                 aderdgContext["abstractSolver"]         = context["ADERDGAbstractSolver"]
@@ -75,7 +100,6 @@ class SolverController:
         logger.info("Solver generation... done")
         
         return solverContextsList
-
 
     def buildBaseSolverContext(self, solver):
         context = copy.copy(self.baseContext)
@@ -154,7 +178,7 @@ class SolverController:
         context = self.buildBaseSolverContext(solver)
         context["type"] = "Finite-Volumes"
         context.update(self.buildFVKernelContext(solver["fv_kernel"]))
-        context["patchSize"] = solver.get("patch_size",-1) # overwrite if called from LimitingADERDGSolver creation
+        context["patchSize"] = solver.get("patch_size","default") # overwrite if called from LimitingADERDGSolver creation
         
         return context
 
@@ -213,7 +237,6 @@ class SolverController:
         context["useViscousFlux_s"]         = "true" if context["useViscousFlux"] else "false"
         
         return context
-
 
     def buildPlotterContext(self,solver,plotter):
         context = self.buildBaseSolverContext(solver)
