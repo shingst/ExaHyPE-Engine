@@ -374,10 +374,9 @@ END INTERFACE
 CONTAINS
 
 SUBROUTINE InitTECPLOTPLOTTER(time_in)
-    USE MainVariables, ONLY: nDim,nVar
+    USE MainVariables, ONLY: nDim,nVar,nAux
 	IMPLICIT NONE
 	REAL, INTENT(IN) :: time_in
-	integer, parameter :: nAux=0
 	ALLOCATE(NData_max(nVertex,nSubPlotElem_max))  
 	ALLOCATE(DataArray_max(nRealNodes_max,nDim+nVar+nAux+1+1))
 	
@@ -395,14 +394,13 @@ SUBROUTINE InitTECPLOTPLOTTER(time_in)
 END SUBROUTINE InitTECPLOTPLOTTER
 
 SUBROUTINE ElementTECPLOTPLOTTER(wh,lx0,ldx,limiter)
-    USE MainVariables, ONLY: nDim,nVar
+    USE MainVariables, ONLY: nDim,nVar,nAux
 	IMPLICIT NONE
 	REAL, INTENT(IN) :: wh(nVar,nDOFm)
 	INTEGER :: nSubNodes,J
 	REAL    :: LocNode(nVar,(M+1)**nDim),xvec(3),lx0(3),ldx(3)
-	REAL	:: VN(nVar),QN(nVar)
+	REAL	:: VN(nVar),QN(nVar),AuxNode(nAux)
 	integer :: limiter,iloc,triloc
-	integer, parameter :: nAux=0
 	
 	nPlotElem = nPlotElem + 1
 	!nSubPlotElem = nSubPlotElem + M**nDim  
@@ -432,10 +430,16 @@ SUBROUTINE ElementTECPLOTPLOTTER(wh,lx0,ldx,limiter)
 	   QN(:) = LocNode(:,j)
 	   xvec = lx0 + allsubxi(:,j)*ldx
 	   CALL PDECons2Prim(VN,QN)
+	   
 	   !print *, 'Node of elem=',Element_c,'=', xvec(1:nDim)
 	   iloc=Element_c_ADERDG*(nSub_DG+1)**nDim + Element_c_FV*(nSubLim+1)**nDim - (nSub_DG+1)**nDim + j
 	   ! DataArray_max((Element_c-1)*(M+1)**nDim+j,:) = (/ xvec(1:nDim), VN, REAL(nPlotElem), REAL(limiter) /)  
+	   if(nAux>0) then
+	     CALL PDEAuxVar(AuxNode,QN,xvec,PLOT_TIME)
+	     DataArray_max(iloc,:) = (/ xvec(1:nDim), VN, AuxNode, REAL(nPlotElem), REAL(limiter) /)
+	   else
 	    DataArray_max(iloc,:) = (/ xvec(1:nDim), VN, REAL(nPlotElem), REAL(limiter) /)  
+	   end if
 	   !DataArray_max(Element_c,:) = (/ xvec(1:nDim), VN /) 	   
 	END DO
 		
@@ -443,9 +447,8 @@ SUBROUTINE ElementTECPLOTPLOTTER(wh,lx0,ldx,limiter)
 END SUBROUTINE ElementTECPLOTPLOTTER
 
 RECURSIVE SUBROUTINE ElementTECPLOTPLOTTER_FV(wh,lx0,ldx,limiter)
-	USE MainVariables, ONLY: nDim,nVar
+	USE MainVariables, ONLY: nDim,nVar,nAux
 	IMPLICIT NONE
-	integer, parameter :: nAux=0
 	REAL, INTENT(IN) :: wh(nVar,(nSubLim+2*nSubLim_GL)**nDIM)
 	INTEGER :: nSubNodes,J,i
 	REAL    :: LocNode(nVar,(nSubLim+1)**nDim),xvec(3),lx0(3),ldx(3)
@@ -503,7 +506,13 @@ RECURSIVE SUBROUTINE ElementTECPLOTPLOTTER_FV(wh,lx0,ldx,limiter)
            !iloc=(Element_c-1)*(M+1)**nDim+j
             !iloc=Element_c_ADERDG*(M+1)**nDim + Element_c_FV*(nSubLim+1)**nDim - (nSubLim+1)**nDim + j
 			iloc=Element_c_ADERDG*(nSub_DG+1)**nDim + Element_c_FV*(nSubLim+1)**nDim - (nSubLim+1)**nDim + j
-			DataArray_max(iloc,:) = (/ xvec(1:nDim), VN, REAL(nPlotElem), REAL(limiter) /)  !, AuxNode
+			
+	       if(nAux>0) then
+	         CALL PDEAuxVar(AuxNode,QN,xvec,PLOT_TIME)
+			 DataArray_max(iloc,:) = (/ xvec(1:nDim), VN,AuxNode, REAL(nPlotElem), REAL(limiter) /)  !, AuxNode
+			else
+			 DataArray_max(iloc,:) = (/ xvec(1:nDim), VN, REAL(nPlotElem), REAL(limiter) /)  !, AuxNode
+			endif
 
             !limiter=limiter+1
 	       !DataArray_max(Element_c,:) = (/ xvec(1:nDim), VN /) 	   
@@ -516,7 +525,6 @@ END SUBROUTINE ElementTECPLOTPLOTTER_FV
 RECURSIVE SUBROUTINE GetSubcell_wh(LocNode,wh)
 USE MainVariables, ONLY: nDim,nVar
    IMPLICIT NONE 
-   integer, parameter :: nAux=0
    ! Argument list
    REAL, INTENT(IN) :: wh(nVar,(nSubLim+2*nSubLim_GL)**nDIM) 
    INTEGER :: totsubel
@@ -589,11 +597,10 @@ END SUBROUTINE GetSubcell_wh
 
 
 SUBROUTINE FinalizeTECPLOTPLOTTER(Myrank)
-    USE MainVariables, ONLY: nDim,nVar
+    USE MainVariables, ONLY: nDim,nVar,nAux
 	!USE teciomod
 	USE ISO_C_BINDING
 	IMPLICIT NONE
-	integer, parameter :: nAux=0
 	INTEGER, INTENT(IN) :: Myrank 	! CPU rank
 	CHARACTER(LEN=200) :: Filename,ZoneTitle,Title,ScratchDir, BaseFile ! BaseFile is the folder	where place the plots
 	CHARACTER(LEN=1000) :: VarString
@@ -664,7 +671,11 @@ SUBROUTINE FinalizeTECPLOTPLOTTER(Myrank)
 		CALL PDEVarName(varname,i)	
 		WRITE(VarString,'(a,a,a,a)') TRIM(VarString), ' ', TRIM(varname) , ' '   
 	ENDDO
-	  
+	DO i = 0, nAux-1
+		CALL PDEAuxName(AuxName,i)	
+		WRITE(VarString,'(a,a,a,a)') TRIM(VarString), ' ', TRIM(AuxName) , ' '   
+	ENDDO	
+  
 	!DO i = 1, nAux 
 		!CALL PDEAuxName(AuxName,i)
 		!WRITE(VarString,'(a,a,a,a)') TRIM(VarString), ' ', TRIM(AuxName()) , ' '   
