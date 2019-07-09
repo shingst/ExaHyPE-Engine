@@ -96,7 +96,7 @@ exahype-project GPR
       repeat    = 5e-3
       output    = ./vtk-output-lim/dg
     end plot
-*/
+
      plot user::defined ErrorWriter
        variables const = 17
        time            = 0.0
@@ -110,6 +110,13 @@ exahype-project GPR
        repeat          = 0.05
        output          = ./output/tecplot
      end plot
+*/
+    plot vtu::Cartesian::vertices::ascii PrimitiveWriter
+      variables const = 17
+      time      = 0.0
+      repeat    = 5e-3
+      output    = ./vtk-output/primitives
+    end plot
 
   end solver
 end exahype-project
