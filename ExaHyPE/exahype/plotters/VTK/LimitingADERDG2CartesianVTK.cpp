@@ -431,13 +431,15 @@ void exahype::plotters::LimitingADERDG2CartesianVTK::plotCellData(
 
 void exahype::plotters::LimitingADERDG2CartesianVTK::plotPatch(const int solverNumber,solvers::Solver::CellInfo& cellInfo) {
   // look up ADER-DG solver
-  solvers::ADERDGSolver* aderdgSolver = nullptr;
+  solvers::ADERDGSolver*        aderdgSolver = nullptr;
+  solvers::FiniteVolumesSolver* fvSolver = nullptr;
   switch ( solvers::RegisteredSolvers[solverNumber]->getType() ) {
   case solvers::Solver::Type::ADERDG:
     aderdgSolver = static_cast<solvers::ADERDGSolver*>( solvers::RegisteredSolvers[solverNumber] );
     break;
   case solvers::Solver::Type::LimitingADERDG:
     aderdgSolver = static_cast<solvers::LimitingADERDGSolver*>( solvers::RegisteredSolvers[solverNumber] )->getSolver().get();
+    fvSolver     = static_cast<solvers::LimitingADERDGSolver*>( solvers::RegisteredSolvers[solverNumber] )->getLimiter().get();
     break;
   default:
     logError("plotPatch(...)","Encountered unexpected solver type: "<<solvers::Solver::toString(solvers::RegisteredSolvers[solverNumber]->getType()));
@@ -487,8 +489,11 @@ void exahype::plotters::LimitingADERDG2CartesianVTK::plotPatch(const int solverN
       }
     } else {
       auto& limiterPatch = cellInfo._FiniteVolumesCellDescriptions[solverNumber];
-      plotFiniteVolumesPatch(solverPatch.getOffset(),solverPatch.getSize(),
-          static_cast<double*>(limiterPatch.getSolution()),solverPatch.getTimeStamp(),
+      plotFiniteVolumesPatch
+          (solverPatch.getOffset(),solverPatch.getSize(),
+          static_cast<double*>(limiterPatch.getSolution()),
+          solverPatch.getTimeStamp(),
+          fvSolver->getNodesPerCoordinateAxis(),
           refinementStatus,previousRefinementStatus);
     }
   }
@@ -528,10 +533,12 @@ void exahype::plotters::LimitingADERDG2CartesianVTK::plotADERDGPatch(
 
 void exahype::plotters::LimitingADERDG2CartesianVTK::plotFiniteVolumesPatch(
   const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
-  const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* u,
-  double timeStamp,
-  int RefinementStatusAsInt,
-  int previousRefinementStatusAsInt) {
+  const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch,
+  double*                                      u,
+  double                                       timeStamp,
+  const int                                    numberOfCellsPerAxis,
+  int                                          RefinementStatusAsInt,
+  int                                          previousRefinementStatusAsInt) {
   if (!_slicer || _slicer->isPatchActive(offsetOfPatch, sizeOfPatch)) {
     logDebug("plotPatch(...)","offset of patch: "<<offsetOfPatch
     <<", size of patch: "<<sizeOfPatch
@@ -540,8 +547,6 @@ void exahype::plotters::LimitingADERDG2CartesianVTK::plotFiniteVolumesPatch(
     assertion( _writtenUnknowns==0 || _patchWriter!=nullptr );
     assertion( _writtenUnknowns==0 || _gridWriter!=nullptr );
     assertion( _writtenUnknowns==0 || _timeStampCellDataWriter!=nullptr );
-
-    const int numberOfCellsPerAxis = 2*_order+1;
 
     int cellIndex = _writtenUnknowns==0 ? -1 : _gridWriter->plotPatch(offsetOfPatch, sizeOfPatch, numberOfCellsPerAxis).second;
 
