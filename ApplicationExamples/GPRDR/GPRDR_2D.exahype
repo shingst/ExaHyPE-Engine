@@ -21,10 +21,10 @@
     ]
   },
   "shared_memory": {
-    "cores": 14,
+    "cores": 1,
     "properties_file": "sharedmemory.properties",
     "autotuning_strategy": "dummy",
-    "background_job_consumers": 13
+    "background_job_consumers": 1
   },
   "distributed_memory": {
     "timeout": 6000,
@@ -149,7 +149,7 @@
           "type": "user::defined",
           "name": "TecplotWriter",
           "time": 0.0,
-          "repeat": 0.1,
+          "repeat": 0.01,
           "output": "./output/tecplot",
           "variables": 9
         }

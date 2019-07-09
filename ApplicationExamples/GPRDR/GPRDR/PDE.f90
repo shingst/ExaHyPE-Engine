@@ -554,10 +554,10 @@ RECURSIVE SUBROUTINE PDEIntermediateFields(RL,LL,iRL,Q,nv)
     end do
 #elif defined(EQNTYPED99)
     CALL PDEEigenvectors(R,L,iR,Q,nv)
-    RL(:,1:6)  = R(:,18:23)
-    iRL(1:6,:) = iR(18:23,:)
+    RL(:,1:7)  = R(:,18:24)
+    iRL(1:7,:) = iR(18:24,:)
     LL = 0.
-    do i=1,6
+    do i=1,7
         LL(i,i) = L(17+i,17+i)
     end do
   !
@@ -741,7 +741,7 @@ RECURSIVE SUBROUTINE RoeMatrix(ARoe,QL,QR,nv)
   USE MainVariables, ONLY : nVar, nDim,sGP3,wGP3,nGP3
   IMPLICIT NONE
   ! Argument list 
-  REAL        :: ARoe(nVar,nVar), QL(nVar), QR(nVar), nv(nDim) 
+  REAL        :: ARoe(nVar,nVar), QL(nVar), QR(nVar), nv(3) 
   INTENT(IN)  :: QL, QR, nv  
   INTENT(OUT) :: ARoe 
   ! Local variables 
@@ -767,13 +767,199 @@ RECURSIVE SUBROUTINE RoeMatrix(ARoe,QL,QR,nv)
   ARoe = 0. 
   DO iGP = 1, nGP3  
      psi = QL + sGP3(iGP)*(QR-QL)  
-     CALL PDEMatrixB(A,psi,nv) 
+     CALL PDEJacobian(A,psi,gradQ,nv) 
      ARoe = ARoe + wGP3(iGP)*A   ! Numerical integration of the Roe-matrix  
   ENDDO
   !
 END SUBROUTINE RoeMatrix 
 
-RECURSIVE SUBROUTINE HLLEMFluxFV(FL,FR,QL,QR,QavL,QavR,NormalNonZero) 
+!!!RECURSIVE SUBROUTINE HLLEMFluxFV(FL,FR,QL,QR,QavL,QavR,NormalNonZero) 
+!!!  USE MainVariables, ONLY : nVar, nDim, nLin
+!!!  USE iso_c_binding 
+!!!  ! Local variables
+!!!  INTEGER, INTENT(IN)   :: NormalNonZero
+!!!  REAL, INTENT(IN)     :: QL(nVar)
+!!!  REAL, INTENT(IN)     :: QR(nVar)
+!!!  REAL, INTENT(INOUT)  :: FL(nVar)
+!!!  REAL, INTENT(INOUT)  :: FR(nVar)
+!!!  REAL    :: QavL(nVar), QavR(nVar)  
+!!!    ! Local variables 
+!!!  INTEGER           :: i,j,k,l, ml(1)  ,iErr
+!!!  REAL              :: smax, Qav(nVar)
+!!!  REAL              ::  nv(nDim), flattener(nLin)
+!!!  REAL    :: absA(nVar,nVar), amax  
+!!!  REAL    :: QM(nVar),LL(nVar),LR(nVar),LM(nVar)
+!!!  REAL    :: deltaL(nLin,nLin),Lam(nLin,nLin),Lap(nLin,nLin) 
+!!!  REAL    :: RL(nVar,nLin),iRL(nLin,nVar),LLin(nLin,nLin) 
+!!!  REAL    :: Aroe(nVar,nVar),Aroep(nVar,nVar), Aroem(nVar,nVar), Dm(nVar), Dp(nVar), dQ(nVar)
+!!!  REAL :: f1R(nVar), g1R(nVar), h1R(nVar) 
+!!!  REAL :: f1L(nVar), g1L(nVar), h1L(nVar) , VM(nVar) 
+!!!  
+!!!  REAL :: XX0(3),TIME0
+!!!  XX0=0.
+!!!  TIME0=0.
+!!!  !  
+!!!  nv(:)=0.
+!!!  nv(NormalNonZero+1)=1.
+!!!  !
+!!!  flattener=1.0 !0.8
+!!!  !
+!!!  CALL PDEFlux(f1L,g1L,h1L,QL)
+!!!  CALL PDEFlux(f1R,g1R,h1R,QR)
+!!!  !
+!!!  fR = f1R*nv(1)+g1R*nv(2)+h1R*nv(3)
+!!!  fL = f1L*nv(1)+g1L*nv(2)+h1L*nv(3)
+!!!  !
+!!!!IF(ANY(fR(6:8).NE.0)) THEN
+!!!!     PRINT *,"f1R",f1R
+!!!!     PRINT *,"g1R",g1R
+!!!!     PRINT *,"h1R",h1R
+!!!!     PRINT *,"f1L",f1L
+!!!!     PRINT *,"g1L",g1L
+!!!!     PRINT *,"h1L",h1L
+!!!!     PRINT *,"dQ",dQ
+!!!!     PRINT *,"QR",QR
+!!!!     PRINT *,"QL",QL
+!!!!     PRINT *,"dQ",dQ
+!!!!     PRINT *,"BEFORE: fR(6:8).NE.0",fR(6:8)
+!!!!    STOP
+!!!!ENDIF
+!!!!IF(ANY(fl(6:8).NE.0)) THEN
+!!!!     PRINT *,"QR",QR
+!!!!     PRINT *,"QL",QL
+!!!!     PRINT *,"dQ",dQ
+!!!!     PRINT *,"BEFORE: fl(6:8).NE.0",fl(6:8)
+!!!!    STOP
+!!!!ENDIF
+!!!  !USE Parameters, ONLY : d,nVar,ndim 
+!!!  QM = 0.5*(QL+QR) 
+!!!  CALL PDECons2Prim(VM,QM,XX0,TIME0,iErr)
+!!!  !CALL PDECons2PrimGRMHD(VM,QM,iErr)
+!!!  CALL PDEEigenvalues(LL,QL,nv)  
+!!!  CALL PDEEigenvalues(LR,QR,nv)  
+!!!!IF(ANY(QM(6:8).NE.0)) THEN
+!!!!    PRINT *, "HLLEMFluxFV QM(6:8)",QM(6:8)
+!!!!    STOP
+!!!!ENDIF
+!!!  CALL PDEEigenvalues(LM,QM,nv)  
+!!!  sL = MIN( 0., MINVAL(LL(:)), MINVAL(LM(:)) ) 
+!!!  sR = MAX( 0., MAXVAL(LR(:)), MAXVAL(LM(:)) ) 
+!!! ! PRINT *, "PDEIntermediateFields"
+!!!  !DO i=1,nVar
+!!!  !  WRITE(*,'(E16.6)'), QM(i)
+!!!  !ENDDO
+!!!  !print *,"*********************************************"
+!!!  !WRITE(*,'(a,f18.10,f18.10,f18.10)')    "***** nv:",nv(1),nv(2),nv(3)
+!!!  CALL PDEIntermediateFields(RL,LLin,iRL,QM,nv) 
+!!!  !PRINT *, "PDEIntermediateFields finished"
+!!!  Lam = 0.5*(LLin-ABS(LLin))
+!!!  Lap = 0.5*(LLin+ABS(LLin)) 
+!!!  deltaL = 0.0
+!!!  !print *,"*********************************************"
+!!!  !!print *,"*****LLin, QR(1),nv",QM(1),NormalNonZero
+!!!  !WRITE(*,'(a,E16.6,i9)')    "***** LLin, QR(1),nv",QM(1),NormalNonZero
+!!!  !print *,"**********************************************"
+!!!
+!!!  DO i = 1, nLin
+!!!      deltaL(i,i) = (1. - Lam(i,i)/(sL-1e-14) - Lap(i,i)/(sR+1e-14) )*flattener(i)  
+!!!      !print *,"i,DeltaL(i,i):",i,DeltaL(i,i)
+!!!      !WRITE(*,'(a,i9,E16.6,E16.6,E16.6,E16.6,E16.6)') "i,QM(i),VM(i),DeltaL(i,i),LM(i):",i,QM(i),VM(i),DeltaL(i,i),LLin(i,i),LM(i)
+!!!      !WRITE(*,'(a, i9, f18.10, f16.5, f16.5, i9)') 
+!!!  ENDDO    
+!!!  !print *,"**********************************************"
+!!!  !STOP
+!!!#ifdef VISCOUS
+!!!  CALL PDEViscEigenvalues(LL,QL,nv)  
+!!!  CALL PDEViscEigenvalues(LR,QR,nv)
+!!!  amax = 2.0*MAX( MAXVAL(ABS(LL)), MAXVAL(ABS(LR)) )/dist 
+!!!#else
+!!!  amax = 0. 
+!!!#endif 
+!!!  absA = 0. 
+!!!  DO i = 1, nVar
+!!!      absA(i,i) = sR*sL/(sR-sL)  - 0.5*amax ! regular HLL diffusion, only on the diagonal 
+!!!  ENDDO  
+!!!  !
+!!!  IF(QR(1).LT.1e-9.OR.QL(1).LT.1e-9) THEN
+!!!      deltaL = 0.
+!!!  ENDIF
+!!!  !
+!!!  !deltaL = 0.
+!!!  absA = absA - sR*sL/(sR-sL)*MATMUL( RL, MATMUL(deltaL, iRL) )  ! HLLEM anti-diffusion  
+!!!  !    
+!!!  !PRINT *, "RoeMatrix"
+!!!  CALL RoeMatrix(ARoe,QL,QR,nv)
+!!!  !PRINT *, "RoeMatrix done!"
+!!!  !
+!!!  ARoem = -sL*ARoe/(sR-sL)
+!!!  ARoep = +sR*ARoe/(sR-sL)
+!!!  ! 
+!!!  !DR = ARoep
+!!!  !DL = ARoem
+!!!  !!!!FL(:) = 0.5*( FR(:) + FL(:) ) + MATMUL(absA, QR(:) - QL(:) )    ! purely conservative flux 
+!!!  !!!!FR(:) = FL(:) - 0.5*ncp(:)                                                              ! subtract the non-conservative product 
+!!!  !!!!FL(:) = FL(:) + 0.5*ncp(:)
+!!!  !
+!!!  dQ = QR - QL
+!!!  fL = (sR*fL - sL*fR)/(sR-sL) + MATMUL( absA, dQ ) 
+!!!  !
+!!!  !Dp = -MATMUL(Aroep,dQ)
+!!!  !Dm = -MATMUL(Aroem,dQ)        ! these are the path integral of the MatrixB from QL to QR. (the NCP as a first approximation)
+!!!  !
+!!!  Dp = MATMUL(Aroep,dQ)
+!!!  Dm = MATMUL(Aroem,dQ)        ! these are the path integral of the MatrixB from QL to QR. (the NCP as a first approximation)
+!!!  !
+!!!  fR = fL - Dp
+!!!  fL = fL + Dm
+!!!  ! 
+!!!  
+!!!  ! if(QavL(21)>1.e-3) then
+!!!  !   print *,'---------------------'
+!!!  !   print *,QavL
+!!!  !   print *, '====================='
+!!!  !   print *,QavR
+!!!  !   print *, '====================='
+!!!  !   print *, fR
+!!!  !   print *, '====================='
+!!!  !   print *, fL
+!!!  !   print *,'---------------------'
+!!!  ! end if
+!!!!IF(ANY(Dp(6:8).NE.0)) THEN
+!!!!     PRINT *,"QR",QR
+!!!!     PRINT *,"QL",QL
+!!!!     PRINT *,"dQ",dQ
+!!!!     PRINT *,"Dp(6:8).NE.0",Dp(6:8)
+!!!!    STOP
+!!!!ENDIF
+!!!!IF(ANY(Dm(6:8).NE.0)) THEN
+!!!!     PRINT *,"QR",QR
+!!!!     PRINT *,"QL",QL
+!!!!     PRINT *,"dQ",dQ
+!!!!     PRINT *,"Dm(6:8).NE.0",Dm(6:8)
+!!!!    STOP
+!!!!ENDIF
+!!!!IF(ANY(fR(6:8).NE.0)) THEN
+!!!!     PRINT *,"QR",QR
+!!!!     PRINT *,"QL",QL
+!!!!     PRINT *,"dQ",dQ
+!!!!     PRINT *,"fR(6:8).NE.0",fR(6:8)
+!!!!    STOP
+!!!!ENDIF
+!!!!IF(ANY(fl(6:8).NE.0)) THEN
+!!!!     PRINT *,"QR",QR
+!!!!     PRINT *,"QL",QL
+!!!!     PRINT *,"dQ",dQ
+!!!!     PRINT *,"fl(6:8).NE.0",fl(6:8)
+!!!!    STOP
+!!!!ENDIF
+!!!!  ! REMEMBER THE FOLLOWING: we are recursively updating qh as
+!!!!  ! q_i^{n+1} = q_i^n - FL              .... i.e. F_=F_{i+1/2}_ right flux
+!!!!  ! q_{i+1}^{n+1} = q_i^n + FR             .... i.e. FR=F_{i+1/2} left flux
+!!!!  ! see musclhancock.cpph after "// 4. Solve Riemann problems"
+!!!  ! 
+!!!    END SUBROUTINE HLLEMFluxFV
+
+RECURSIVE SUBROUTINE HLLEMFluxFV(FL,FR,QL,QR,NormalNonZero) 
   USE MainVariables, ONLY : nVar, nDim, nLin
   USE iso_c_binding 
   ! Local variables
@@ -786,13 +972,13 @@ RECURSIVE SUBROUTINE HLLEMFluxFV(FL,FR,QL,QR,QavL,QavR,NormalNonZero)
     ! Local variables 
   INTEGER           :: i,j,k,l, ml(1)  ,iErr
   REAL              :: smax, Qav(nVar)
-  REAL              ::  nv(nDim), flattener(nLin)
-  REAL    :: absA(nVar,nVar), amax  
+  REAL              ::  nv(3), flattener(nLin)
+  REAL    :: absA(nVar,nVar), amax  ,gradQ(nVar,3), ncp(nVar)
   REAL    :: QM(nVar),LL(nVar),LR(nVar),LM(nVar)
   REAL    :: deltaL(nLin,nLin),Lam(nLin,nLin),Lap(nLin,nLin) 
   REAL    :: RL(nVar,nLin),iRL(nLin,nVar),LLin(nLin,nLin) 
   REAL    :: Aroe(nVar,nVar),Aroep(nVar,nVar), Aroem(nVar,nVar), Dm(nVar), Dp(nVar), dQ(nVar)
-  REAL :: f1R(nVar), g1R(nVar), h1R(nVar) 
+  REAL :: f1R(nVar), g1R(nVar), h1R(nVar) ,flux(nVar)
   REAL :: f1L(nVar), g1L(nVar), h1L(nVar) , VM(nVar) 
   
   REAL :: XX0(3),TIME0
@@ -802,89 +988,35 @@ RECURSIVE SUBROUTINE HLLEMFluxFV(FL,FR,QL,QR,QavL,QavR,NormalNonZero)
   nv(:)=0.
   nv(NormalNonZero+1)=1.
   !
-  flattener=1.0 !0.8
+  flattener=1.0!0.8
   !
-  CALL PDEFlux(f1L,g1L,h1L,QL)
-  CALL PDEFlux(f1R,g1R,h1R,QR)
-  !
-  fR = f1R*nv(1)+g1R*nv(2)+h1R*nv(3)
-  fL = f1L*nv(1)+g1L*nv(2)+h1L*nv(3)
-  !
-!IF(ANY(fR(6:8).NE.0)) THEN
-!     PRINT *,"f1R",f1R
-!     PRINT *,"g1R",g1R
-!     PRINT *,"h1R",h1R
-!     PRINT *,"f1L",f1L
-!     PRINT *,"g1L",g1L
-!     PRINT *,"h1L",h1L
-!     PRINT *,"dQ",dQ
-!     PRINT *,"QR",QR
-!     PRINT *,"QL",QL
-!     PRINT *,"dQ",dQ
-!     PRINT *,"BEFORE: fR(6:8).NE.0",fR(6:8)
-!    STOP
-!ENDIF
-!IF(ANY(fl(6:8).NE.0)) THEN
-!     PRINT *,"QR",QR
-!     PRINT *,"QL",QL
-!     PRINT *,"dQ",dQ
-!     PRINT *,"BEFORE: fl(6:8).NE.0",fl(6:8)
-!    STOP
-!ENDIF
-  !USE Parameters, ONLY : d,nVar,ndim 
-  QM = 0.5*(QL+QR) 
-  CALL PDECons2Prim(VM,QM,XX0,TIME0,iErr)
-  !CALL PDECons2PrimGRMHD(VM,QM,iErr)
-  CALL PDEEigenvalues(LL,QL,nv)  
-  CALL PDEEigenvalues(LR,QR,nv)  
-!IF(ANY(QM(6:8).NE.0)) THEN
-!    PRINT *, "HLLEMFluxFV QM(6:8)",QM(6:8)
-!    STOP
-!ENDIF
-  CALL PDEEigenvalues(LM,QM,nv)  
+CALL PDEFlux(f1L,g1L,h1L,QL)
+CALL PDEFlux(f1R,g1R,h1R,QR)
+!
+fR = f1R*nv(1)+g1R*nv(2)+h1R*nv(3)
+fL = f1L*nv(1)+g1L*nv(2)+h1L*nv(3)
+  
+  QM=0.5*(QL+QR)
+  
+   CALL PDEEigenvalues(LL,QL,nv,xg)  
+  CALL PDEEigenvalues(LR,QR,nv,xg)  
+  CALL PDEEigenvalues(LM,QM,nv,xg)  
   sL = MIN( 0., MINVAL(LL(:)), MINVAL(LM(:)) ) 
-  sR = MAX( 0., MAXVAL(LR(:)), MAXVAL(LM(:)) ) 
- ! PRINT *, "PDEIntermediateFields"
-  !DO i=1,nVar
-  !  WRITE(*,'(E16.6)'), QM(i)
-  !ENDDO
-  !print *,"*********************************************"
-  !WRITE(*,'(a,f18.10,f18.10,f18.10)')    "***** nv:",nv(1),nv(2),nv(3)
+  sR = MAX( 0., MAXVAL(LR(:)), MAXVAL(LM(:)) )  
   CALL PDEIntermediateFields(RL,LLin,iRL,QM,nv) 
-  !PRINT *, "PDEIntermediateFields finished"
   Lam = 0.5*(LLin-ABS(LLin))
   Lap = 0.5*(LLin+ABS(LLin)) 
-  deltaL = 0.0
-  !print *,"*********************************************"
-  !!print *,"*****LLin, QR(1),nv",QM(1),NormalNonZero
-  !WRITE(*,'(a,E16.6,i9)')    "***** LLin, QR(1),nv",QM(1),NormalNonZero
-  !print *,"**********************************************"
 
+  deltaL = 0.0
   DO i = 1, nLin
-      deltaL(i,i) = (1. - Lam(i,i)/(sL-1e-14) - Lap(i,i)/(sR+1e-14) )*flattener(i)  
-      !print *,"i,DeltaL(i,i):",i,DeltaL(i,i)
-      !WRITE(*,'(a,i9,E16.6,E16.6,E16.6,E16.6,E16.6)') "i,QM(i),VM(i),DeltaL(i,i),LM(i):",i,QM(i),VM(i),DeltaL(i,i),LLin(i,i),LM(i)
-      !WRITE(*,'(a, i9, f18.10, f16.5, f16.5, i9)') 
-  ENDDO    
-  !print *,"**********************************************"
-  !STOP
-#ifdef VISCOUS
-  CALL PDEViscEigenvalues(LL,QL,nv)  
-  CALL PDEViscEigenvalues(LR,QR,nv)
-  amax = 2.0*MAX( MAXVAL(ABS(LL)), MAXVAL(ABS(LR)) )/dist 
-#else
+      deltaL(i,i) = ( 1. - Lam(i,i)/(sL-1e-14) - Lap(i,i)/(sR+1e-14) )*flattener(i)  
+  ENDDO  
   amax = 0. 
-#endif 
+
   absA = 0. 
   DO i = 1, nVar
       absA(i,i) = sR*sL/(sR-sL)  - 0.5*amax ! regular HLL diffusion, only on the diagonal 
   ENDDO  
-  !
-  IF(QR(1).LT.1e-9.OR.QL(1).LT.1e-9) THEN
-      deltaL = 0.
-  ENDIF
-  !
-  !deltaL = 0.
   absA = absA - sR*sL/(sR-sL)*MATMUL( RL, MATMUL(deltaL, iRL) )  ! HLLEM anti-diffusion  
   !    
   !PRINT *, "RoeMatrix"
@@ -894,70 +1026,89 @@ RECURSIVE SUBROUTINE HLLEMFluxFV(FL,FR,QL,QR,QavL,QavR,NormalNonZero)
   ARoem = -sL*ARoe/(sR-sL)
   ARoep = +sR*ARoe/(sR-sL)
   ! 
-  !DR = ARoep
-  !DL = ARoem
-  !!!!FL(:) = 0.5*( FR(:) + FL(:) ) + MATMUL(absA, QR(:) - QL(:) )    ! purely conservative flux 
-  !!!!FR(:) = FL(:) - 0.5*ncp(:)                                                              ! subtract the non-conservative product 
-  !!!!FL(:) = FL(:) + 0.5*ncp(:)
-  !
+
   dQ = QR - QL
-  fL = (sR*fL - sL*fR)/(sR-sL) + MATMUL( absA, dQ ) 
+  flux = (sR*fL - sL*fR)/(sR-sL) + MATMUL( absA, QR - QL ) 
   !
   !Dp = -MATMUL(Aroep,dQ)
   !Dm = -MATMUL(Aroem,dQ)        ! these are the path integral of the MatrixB from QL to QR. (the NCP as a first approximation)
   !
+  gradQ=0.
+  gradQ(:,NormalNonZero+1) = QR(:) - QL(:) 
+  CALL PDENCP(ncp,QM,gradQ)
   Dp = MATMUL(Aroep,dQ)
   Dm = MATMUL(Aroem,dQ)        ! these are the path integral of the MatrixB from QL to QR. (the NCP as a first approximation)
   !
-  fR = fL - Dp
-  fL = fL + Dm
-  ! 
-!IF(ANY(Dp(6:8).NE.0)) THEN
-!     PRINT *,"QR",QR
-!     PRINT *,"QL",QL
-!     PRINT *,"dQ",dQ
-!     PRINT *,"Dp(6:8).NE.0",Dp(6:8)
-!    STOP
-!ENDIF
-!IF(ANY(Dm(6:8).NE.0)) THEN
-!     PRINT *,"QR",QR
-!     PRINT *,"QL",QL
-!     PRINT *,"dQ",dQ
-!     PRINT *,"Dm(6:8).NE.0",Dm(6:8)
-!    STOP
-!ENDIF
-!IF(ANY(fR(6:8).NE.0)) THEN
-!     PRINT *,"QR",QR
-!     PRINT *,"QL",QL
-!     PRINT *,"dQ",dQ
-!     PRINT *,"fR(6:8).NE.0",fR(6:8)
-!    STOP
-!ENDIF
-!IF(ANY(fl(6:8).NE.0)) THEN
-!     PRINT *,"QR",QR
-!     PRINT *,"QL",QL
-!     PRINT *,"dQ",dQ
-!     PRINT *,"fl(6:8).NE.0",fl(6:8)
-!    STOP
-!ENDIF
-!  ! REMEMBER THE FOLLOWING: we are recursively updating qh as
-!  ! q_i^{n+1} = q_i^n - FL              .... i.e. F_=F_{i+1/2}_ right flux
-!  ! q_{i+1}^{n+1} = q_i^n + FR             .... i.e. FR=F_{i+1/2} left flux
-!  ! see musclhancock.cpph after "// 4. Solve Riemann problems"
-  ! 
-    END SUBROUTINE HLLEMFluxFV
+  !if(flux(21)>1.e-3) then
+  !    print *, '*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*'
+	!	print *,flux
+	!	print *,'---------------------'
+	!	print *,fl
+	!	print *,'---------------------'
+	!	print *,fr
+	!			print *,'---------------------'
+	!	print *,Ql
+	!	print *,'---------------------'
+	!	print *,qr
+  ! print *, '====================='
+  ! print *, sR
+  ! print *, '====================='
+  ! print *, sL
+	! print *, '====================='
+	!	print *,'---------------------'
+	!	print *,deltaL
+	!	print *, '*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*'
+	!	pause
+  !end if
+  flux = 0.5*( fR + fL ) + MATMUL(absA, QR - QL)
+  fR = flux - Dp
+  fL = flux + Dm
+  
 
-	
+  
+ !fR(18:nVar) = 0.- 0.5*ncp(18:nVar)
+ !fL(18:nVar) = 0.+ 0.5*ncp(18:nVar) 
+  if(any(isnan(fR))) then
+	print *, 'Issue here'
+    print *,'---------------------'
+    print *,QL
+    print *, '====================='
+    print *,QR
+    print *, '====================='
+    print *, fR
+    print *, '====================='
+    print *, fL
+    print *, '====================='
+    print *, sR
+    print *, '====================='
+    print *, sL
+	 print *, '====================='
+	print *, deltaL
+    print *, '***********************'
+    print *, Lam
+    print *, '***********************'
+    print *, ncp
+	print *, '***********************'
+    !print *, Lam
+	!    print *, '***********************'
+    !print *, Lam
+    print *,'---------------------'	
+	pause
+  end if
+    END SUBROUTINE HLLEMFluxFV	
 
-RECURSIVE SUBROUTINE HLLEMRiemannSolver(basisSize,NormalNonZero,lFbndL,lFbndR,lQbndL,lQbndR,QavL,QavR) 
+RECURSIVE SUBROUTINE HLLEMRiemannSolver(basisSize,NormalNonZero,lFbndLio,lFbndRio,lQbndL,lQbndR,QavL,QavR) 
   USE MainVariables, ONLY : nVar, nDim, nLin
   USE iso_c_binding 
   ! Local variables
   INTEGER, INTENT(IN)   :: NormalNonZero, basisSize
   REAL, INTENT(IN)     :: lQbndL(nVar,basisSize,basisSize)
   REAL, INTENT(IN)     :: lQbndR(nVar,basisSize,basisSize)
-  REAL, INTENT(INOUT)  :: lFbndL(nVar,basisSize,basisSize)
-  REAL, INTENT(INOUT)  :: lFbndR(nVar,basisSize,basisSize)
+  REAL, INTENT(INOUT)  :: lFbndLio(nVar,basisSize,basisSize)
+  REAL, INTENT(INOUT)  :: lFbndRio(nVar,basisSize,basisSize)
+  
+  REAL				   :: lFbndL(nVar,basisSize,basisSize)
+  REAL				   :: lFbndR(nVar,basisSize,basisSize)
     ! Local variables 
 	REAL :: f(nVar), g(nVar), h(nVar)
 INTEGER           :: i,j,k,l, ml(1)  
@@ -969,10 +1120,14 @@ REAL              :: gradQ(nVar,3), src(nVar),flattener(nLin)
   REAL    :: QM(nVar),LL(nVar),LR(nVar),LM(nVar)
   REAL    :: deltaL(nLin,nLin),Lam(nLin,nLin),Lap(nLin,nLin) 
   REAL    :: RL(nVar,nLin),iRL(nLin,nVar),LLin(nLin,nLin) 
+  REAL :: f1R(nVar), g1R(nVar), h1R(nVar)
+  REAL :: f1L(nVar), g1L(nVar), h1L(nVar)
   
+  lFbndL=lFbndLio
+  lFbndR=lFbndRio
   nv(:)=0.
   nv(NormalNonZero+1)=1.
-  !print *, "Normal non zero in fortran=", NormalNonZero
+  !print *, "Normal non zero in fortran=" NormalNonZero
   !print *, "basisSize=", basisSize
   !print *, "NormalNonZero=", NormalNonZero
   !print *, "QavR=",QavR(1)
@@ -980,15 +1135,15 @@ REAL              :: gradQ(nVar,3), src(nVar),flattener(nLin)
   !nv(NormalNonZero)=1.;
   !FL=0.
   !FR=0.
-	flattener=0.5
-	lFbndL=0.
-	lFbndR=0.
-	CALL PDEflux(f,g,h,QavL)
-	lFbndL(:,1,1)=f*nv(1)+g*nv(2)*h*nv(3)
-
-	CALL PDEflux(f,g,h,QavR)
-	lFbndR(:,1,1)=f*nv(1)+g*nv(2)*h*nv(3)	
-
+  ! CALL PDEFlux(f1L,g1L,h1L,QL)
+  ! CALL PDEFlux(f1R,g1R,h1R,QR)
+  !!
+  !lFbndR = f1R*nv(1)+g1R*nv(2)+h1R*nv(3)
+  !lFbndL = f1L*nv(1)+g1L*nv(2)+h1L*nv(3)
+  
+	flattener=1.
+	!lFbndL=0.
+	!lFbndR=0.
     CALL PDEEigenvalues(LL,QavL,nv) 
     CALL PDEEigenvalues(LR,QavR,nv) 
     smax = MAX( MAXVAL(ABS(LL)), MAXVAL(ABS(LR)) )
@@ -1018,12 +1173,26 @@ REAL              :: gradQ(nVar,3), src(nVar),flattener(nLin)
                 Qav = 0.5*(lQbndR(:,j,k)+lQbndL(:,j,k)) 
                 gradQ(:,NormalNonZero+1) = lQbndR(:,j,k) - lQbndL(:,j,k) 
                 CALL PDENCP(ncp,Qav,gradQ)
-				lFbndL(:,j,k) = 0.5*( lFbndR(:,j,k) + lFbndL(:,j,k) ) + MATMUL(absA, lQbndR(:,j,k) - lQbndL(:,j,k) )    ! purely conservative flux 
-				!lFbndL(:,j,k) = 0.5*( lFbndR(:,j,k) + lFbndL(:,j,k) ) - 0.5*smax*( lQbndR(:,j,k) - lQbndL(:,j,k) )      ! purely conservative flux 
+				!lFbndL(:,j,k) = 0.5*( lFbndR(:,j,k) + lFbndL(:,j,k) ) + MATMUL(absA, lQbndR(:,j,k) - lQbndL(:,j,k) )    ! purely conservative flux 
+				lFbndL(:,j,k) = 0.5*( lFbndR(:,j,k) + lFbndL(:,j,k) ) - 0.5*smax*( lQbndR(:,j,k) - lQbndL(:,j,k) )      ! purely conservative flux 
 				lFbndR(:,j,k) = lFbndL(:,j,k) - 0.5*ncp(:)                                                              ! subtract the non-conservative product 
                 lFbndL(:,j,k) = lFbndL(:,j,k) + 0.5*ncp(:)
             ENDDO
-        ENDDO				
+        ENDDO			
+	lFbndLio=	lFbndL
+    lFbndRio=	lFbndR
+	
+  !if(QavL(21)>1.e-3) then
+	!  print *,'---------------------'
+	!  print *,QavL
+	!  print *, '====================='
+	!  print *,QavR
+	!  print *, '====================='
+	!  print *, lFbndR(:,1,1)
+	!  print *, '====================='
+	!  print *, lFbndL(:,1,1)
+	!  print *,'---------------------'
+  !end if
 END SUBROUTINE HLLEMRiemannSolver
 
 !RECURSIVE SUBROUTINE InitTECPLOT(N_in,M_in)

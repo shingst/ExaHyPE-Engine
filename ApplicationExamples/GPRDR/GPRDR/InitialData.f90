@@ -127,7 +127,7 @@ RECURSIVE SUBROUTINE InitialData(xGP, tGp, Q)
             end if            
         else
             if(abs(xGP(1)) .le. 1000.0 .and. abs(xGP(2)) .le. 100.0/3.0 .and. abs(xGP(3)) .le. 100.0/3.0) then 
-                up(21)=0.1    
+                up(21)=1.0    
             end if            
         end if
         !if(abs(xGP(1)) .le. 100.0/3.0 .and. abs(xGP(2)) .le. 100.0/3.0 .and. abs(xGP(3)) .le. 100.0/3.0) then 
