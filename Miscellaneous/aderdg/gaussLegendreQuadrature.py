@@ -4437,12 +4437,13 @@ mp.dps=256
 
 maxOrder = 20
 
-for p in range(1,maxOrder+1):
-    print("p=%d: " % p);
+generateCPPArrays = False
 
-    transformedNodes = []
+for p in range(1,maxOrder+1):
+    transformedNodes   = []
     transformedWeights = []
 
+    # transform
     sumWeights = mp.mpf(0) 
     sumNodes   = mp.mpf(0)
     sumTransformedWeights = mp.mpf(0) 
@@ -4459,19 +4460,27 @@ for p in range(1,maxOrder+1):
         sumTransformedWeights += wT
         sumTransformedNodes   += xT
 
-    print("sumWeights=%s " % sumWeights);
-    print("sumNodes=%s"    % sumNodes);
-    print("sumTransformedWeights=%s " % sumTransformedWeights);
-    print("sumTransformedNodes=%s"    % sumTransformedNodes);
+    #print("p=%d: " % p);
+    #print("sumWeights=%s " % sumWeights);
+    #print("sumNodes=%s"    % sumNodes);
+    #print("sumTransformedWeights=%s " % sumTransformedWeights);
+    #print("sumTransformedNodes=%s"    % sumTransformedNodes);
 
+    # sort
     sortedTransformedNodes = sorted(transformedNodes)
+    sortedTransformedWeights = []
+    for i,xs in enumerate(sortedTransformedNodes):
+        n  = transformedNodes.index(xs) 
+        ws = transformedWeights[n]
+        sortedTransformedWeights.append(ws)
 
-    for i,xs in enumerate(sortedTransformedNodes):
-        n = transformedNodes.index(xs) 
-        w = transformedWeights[n]
-        print("gaussLegendreWeights[%d][%d]=%s;"% (p,i,w))
-    for i,xs in enumerate(sortedTransformedNodes):
-        n = transformedNodes.index(xs)
-        x = transformedNodes[n]
-        print("gaussLegendreNodes[%d][%d]=%s;" % (p,i,x))
+    if generateCPPArrays:
+        for i,w in enumerate(sortedTransformedWeights):
+            print("gaussLegendreWeights[%d][%d]=%s;"% (p,i,w))
+        for i,x in enumerate(sortedTransformedNodes):
+            print("gaussLegendreNodes[%d][%d]=%s;" % (p,i,x))
+    else:
+        print("if nDOF == %s:" % (p+1))
+        print("    return [%s], [%s]" % (",".join([str(i) for i in sortedTransformedNodes]),",".join([str(i) for i in sortedTransformedWeights])))
+
     print("")
