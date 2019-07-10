@@ -70,7 +70,7 @@ class Controller:
             "nPar"                  : args["numberOfParameters"],
             "nData"                 : args["numberOfVariables"] + args["numberOfParameters"],
             "nDof"                  : (args["order"])+1,
-            "nDofLim"               : args["limPatchSize"],
+            "nDofLim"               : args["limPatchSize"] if args["limPatchSize"] >=0 else 2*args["order"]+1,
             "nDim"                  : args["dimension"],
             "useFlux"               : (args["useFlux"] or args["useFluxVect"]),
             "useFluxVect"           : args["useFluxVect"],

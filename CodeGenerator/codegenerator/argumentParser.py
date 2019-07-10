@@ -49,11 +49,10 @@ class ArgumentParser:
         ("numberOfVariables",   ArgType.MandatoryInt,    "the number of quantities"),
         ("numberOfParameters",  ArgType.MandatoryInt,    "the number of parameters (fixed quantities)"),
         ("order",               ArgType.MandatoryInt,    "the order of the approximation polynomial"),
-        ("limPatchSize",        ArgType.MandatoryInt,    "the size of the limiter patches per coordinate direction."),
         ("dimension",           ArgType.MandatoryInt,    "the number of spatial dimensions in the simulation (2 or 3)"),
         ("numerics",            ArgType.MandatoryString, "linear or nonlinear"),
         ("architecture",        ArgType.MandatoryString, "the microarchitecture of the target device"),
-        # optional arguments
+        # optional arguments       
         ("useFlux",             ArgType.OptionalBool,    "enable flux"),
         ("useFluxVect",         ArgType.OptionalBool,    "enable vectorized flux (include useFlux)"),
         ("useNCP",              ArgType.OptionalBool,    "enable non conservative product"),
@@ -70,6 +69,7 @@ class ArgumentParser:
         ("useSplitCKVect",      ArgType.OptionalBool,    "use split Cauchy–Kowalevski formulation with vect PDE (linear only)"),
         ("useGaussLobatto",     ArgType.OptionalBool,    "use Gauss Lobatto Quadrature instead of Gauss Legendre"),
         ("useLimiter",          ArgType.OptionalInt,     "enable limiter with the given number of observable", -1, "numberOfObservable"),
+        ("limPatchSize",        ArgType.OptionalInt,     "the size of the limiter patches per coordinate direction.", -1, "limPatchSize"),
         ("ghostLayerWidth",     ArgType.OptionalInt,     "use limiter with the given ghostLayerWidth, requires useLimiter option, default = 0", 0, "width"),
         ("tempVarsOnStack",     ArgType.OptionalBool,    "put the big scratch arrays on the stack instead of the heap (you can use ulimit -s to increase the stack size)"),
     ]
