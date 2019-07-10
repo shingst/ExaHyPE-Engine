@@ -542,7 +542,9 @@ RECURSIVE SUBROUTINE PDEIntermediateFields(RL,LL,iRL,Q,nv)
   INTEGER :: i,j,k, zero,iErr, minl(1), maxl(1) 
   REAL :: R(nVar,nVar), L(nVar,nVar), Lv(nVar), iR(nVar,nVar)
   !  
-  
+  RL=0.
+  LL=0.
+  iRL=0.
   CALL PDEEigenvectors(R,L,iR,Q,nv)
 #if defined(EQNTYPEC99)
     CALL PDEEigenvectors(R,L,iR,Q,nv)
@@ -554,8 +556,10 @@ RECURSIVE SUBROUTINE PDEIntermediateFields(RL,LL,iRL,Q,nv)
     end do
 #elif defined(EQNTYPED99)
     CALL PDEEigenvectors(R,L,iR,Q,nv)
-    RL(:,1:7)  = R(:,18:24)
-    iRL(1:7,:) = iR(18:24,:)
+	do i=1,nVar
+		RL(i,1:7)  = R(i,18:24)
+		iRL(1:7,i) = iR(18:24,i)
+	end do
     LL = 0.
     do i=1,7
         LL(i,i) = L(17+i,17+i)
@@ -976,7 +980,7 @@ RECURSIVE SUBROUTINE HLLEMFluxFV(FL,FR,QL,QR,NormalNonZero)
   REAL    :: absA(nVar,nVar), amax  ,gradQ(nVar,3), ncp(nVar)
   REAL    :: QM(nVar),LL(nVar),LR(nVar),LM(nVar)
   REAL    :: deltaL(nLin,nLin),Lam(nLin,nLin),Lap(nLin,nLin) 
-  REAL    :: RL(nVar,nLin),iRL(nLin,nVar),LLin(nLin,nLin) 
+  REAL    :: RL(nVar,nLin),iRL(nLin,nVar),LLin(nLin,nLin) , TMPM(nLin, nVar),TMPM2(nVar,nVar)
   REAL    :: Aroe(nVar,nVar),Aroep(nVar,nVar), Aroem(nVar,nVar), Dm(nVar), Dp(nVar), dQ(nVar)
   REAL :: f1R(nVar), g1R(nVar), h1R(nVar) ,flux(nVar)
   REAL :: f1L(nVar), g1L(nVar), h1L(nVar) , VM(nVar) 
@@ -1017,7 +1021,9 @@ fL = f1L*nv(1)+g1L*nv(2)+h1L*nv(3)
   DO i = 1, nVar
       absA(i,i) = sR*sL/(sR-sL)  - 0.5*amax ! regular HLL diffusion, only on the diagonal 
   ENDDO  
-  absA = absA - sR*sL/(sR-sL)*MATMUL( RL, MATMUL(deltaL, iRL) )  ! HLLEM anti-diffusion  
+  TMPM=MATMUL(deltaL, iRL)
+  TMPM2=MATMUL( RL,TMPM)
+  absA = absA - sR*sL/(sR-sL)*TMPM2 ! HLLEM anti-diffusion  
   !    
   !PRINT *, "RoeMatrix"
   CALL RoeMatrix(ARoe,QL,QR,nv)
@@ -1039,24 +1045,32 @@ fL = f1L*nv(1)+g1L*nv(2)+h1L*nv(3)
   Dp = MATMUL(Aroep,dQ)
   Dm = MATMUL(Aroem,dQ)        ! these are the path integral of the MatrixB from QL to QR. (the NCP as a first approximation)
   !
-  !if(flux(21)>1.e-3) then
-  !    print *, '*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*'
+  !if(abs(flux(21))>1.e-0) then
+  !   print *, '*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*'
 	!	print *,flux
 	!	print *,'---------------------'
 	!	print *,fl
 	!	print *,'---------------------'
 	!	print *,fr
-	!			print *,'---------------------'
+	!	print *,'---------------------'
 	!	print *,Ql
 	!	print *,'---------------------'
 	!	print *,qr
-  ! print *, '====================='
-  ! print *, sR
-  ! print *, '====================='
-  ! print *, sL
+  !     print *, '====================='
+  !     print *, sR
+  !     print *, '====================='
+  !     print *, sL
 	! print *, '====================='
 	!	print *,'---------------------'
 	!	print *,deltaL
+	!	print *,'---------------------'
+	!	print *, MATMUL( absA, QR - QL ) 
+	!	print *,'---------------------'
+	!	print *, sR*sL/(sR-sL)
+	!	print *,'---------------------'
+	!	print *, absA(18:nVar,:)
+	!	print *,'---------------------'
+	!	print *, absA(:,:)
 	!	print *, '*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*'
 	!	pause
   !end if

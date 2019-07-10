@@ -7,7 +7,7 @@
 !#include "expintegrator_ode.f90"
 
 
-SUBROUTINE UpdateSolutionODE(Qnew,Qold,loc_dt)
+RECURSIVE SUBROUTINE UpdateSolutionODE(Qnew,Qold,loc_dt)
   USE MainVariables, ONLY : nVar, nDim, EQN
 #ifdef ODESOLVER
     use expintegrator_type, only : ODESETTINGS, nVarODE                                     , t_ode_parameters

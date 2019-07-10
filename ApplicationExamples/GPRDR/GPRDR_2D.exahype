@@ -21,10 +21,10 @@
     ]
   },
   "shared_memory": {
-    "cores": 1,
+    "cores": 16,
     "properties_file": "sharedmemory.properties",
     "autotuning_strategy": "dummy",
-    "background_job_consumers": 1
+    "background_job_consumers": 15
   },
   "distributed_memory": {
     "timeout": 6000,
@@ -73,6 +73,7 @@
         "dmp_observables": 3,
         "dmp_relaxation_parameter": 1e+3,
         "dmp_difference_scaling": 1e+4,
+        "patch_size": "max",
         "implementation": "generic"
       },
       "fv_kernel": {
@@ -149,7 +150,7 @@
           "type": "user::defined",
           "name": "TecplotWriter",
           "time": 0.0,
-          "repeat": 0.01,
+          "repeat": 0.15,
           "output": "./output/tecplot",
           "variables": 9
         }

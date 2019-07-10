@@ -118,7 +118,12 @@ exahype::solvers::Solver::RefinementControl GPRDR::GPRDRSolver_ADERDG::refinemen
       }
     }
   }	 
-  return exahype::solvers::Solver::RefinementControl::Keep;
+  
+  //return exahype::solvers::Solver::RefinementControl::Keep;
+  if ( level > getCoarsestMeshLevel() ) {
+    return exahype::solvers::Solver::RefinementControl::Erase;
+  }
+return exahype::solvers::Solver::RefinementControl::Keep;
 }
 
 //*****************************************************************************
