@@ -602,30 +602,6 @@ const double kernels::gaussLegendreNodes20[21]={
 };
 
 const double* const kernels::gaussLegendreWeights[20+1] = {
-    gaussLegendreNodes0 ,
-    gaussLegendreNodes1 ,
-    gaussLegendreNodes2 ,
-    gaussLegendreNodes3 ,
-    gaussLegendreNodes4 ,
-    gaussLegendreNodes5 ,
-    gaussLegendreNodes6 ,
-    gaussLegendreNodes7 ,
-    gaussLegendreNodes8 ,
-    gaussLegendreNodes9 ,
-    gaussLegendreNodes10,
-    gaussLegendreNodes11,
-    gaussLegendreNodes12,
-    gaussLegendreNodes13,
-    gaussLegendreNodes14,
-    gaussLegendreNodes15,
-    gaussLegendreNodes16,
-    gaussLegendreNodes17,
-    gaussLegendreNodes18,
-    gaussLegendreNodes19,
-    gaussLegendreNodes20
-};
-
-const double* const kernels::gaussLegendreNodes[20+1] = {
     gaussLegendreWeights0 ,
     gaussLegendreWeights1 ,
     gaussLegendreWeights2 ,
@@ -647,4 +623,28 @@ const double* const kernels::gaussLegendreNodes[20+1] = {
     gaussLegendreWeights18,
     gaussLegendreWeights19,
     gaussLegendreWeights20
+};
+
+const double* const kernels::gaussLegendreNodes[20+1] = {
+    gaussLegendreNodes0 ,
+    gaussLegendreNodes1 ,
+    gaussLegendreNodes2 ,
+    gaussLegendreNodes3 ,
+    gaussLegendreNodes4 ,
+    gaussLegendreNodes5 ,
+    gaussLegendreNodes6 ,
+    gaussLegendreNodes7 ,
+    gaussLegendreNodes8 ,
+    gaussLegendreNodes9 ,
+    gaussLegendreNodes10,
+    gaussLegendreNodes11,
+    gaussLegendreNodes12,
+    gaussLegendreNodes13,
+    gaussLegendreNodes14,
+    gaussLegendreNodes15,
+    gaussLegendreNodes16,
+    gaussLegendreNodes17,
+    gaussLegendreNodes18,
+    gaussLegendreNodes19,
+    gaussLegendreNodes20
 };

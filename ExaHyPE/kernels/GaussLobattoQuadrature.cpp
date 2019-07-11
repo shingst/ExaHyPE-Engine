@@ -600,30 +600,6 @@ const double kernels::gaussLobattoNodes20[21]={
 };
 
 const double* const kernels::gaussLobattoWeights[20+1] = {
-    gaussLobattoNodes0 ,
-    gaussLobattoNodes1 ,
-    gaussLobattoNodes2 ,
-    gaussLobattoNodes3 ,
-    gaussLobattoNodes4 ,
-    gaussLobattoNodes5 ,
-    gaussLobattoNodes6 ,
-    gaussLobattoNodes7 ,
-    gaussLobattoNodes8 ,
-    gaussLobattoNodes9 ,
-    gaussLobattoNodes10,
-    gaussLobattoNodes11,
-    gaussLobattoNodes12,
-    gaussLobattoNodes13,
-    gaussLobattoNodes14,
-    gaussLobattoNodes15,
-    gaussLobattoNodes16,
-    gaussLobattoNodes17,
-    gaussLobattoNodes18,
-    gaussLobattoNodes19,
-    gaussLobattoNodes20
-};
-
-const double* const kernels::gaussLobattoNodes[20+1] = {
     gaussLobattoWeights0 ,
     gaussLobattoWeights1 ,
     gaussLobattoWeights2 ,
@@ -645,4 +621,28 @@ const double* const kernels::gaussLobattoNodes[20+1] = {
     gaussLobattoWeights18,
     gaussLobattoWeights19,
     gaussLobattoWeights20
+};
+
+const double* const kernels::gaussLobattoNodes[20+1] = {
+    gaussLobattoNodes0 ,
+    gaussLobattoNodes1 ,
+    gaussLobattoNodes2 ,
+    gaussLobattoNodes3 ,
+    gaussLobattoNodes4 ,
+    gaussLobattoNodes5 ,
+    gaussLobattoNodes6 ,
+    gaussLobattoNodes7 ,
+    gaussLobattoNodes8 ,
+    gaussLobattoNodes9 ,
+    gaussLobattoNodes10,
+    gaussLobattoNodes11,
+    gaussLobattoNodes12,
+    gaussLobattoNodes13,
+    gaussLobattoNodes14,
+    gaussLobattoNodes15,
+    gaussLobattoNodes16,
+    gaussLobattoNodes17,
+    gaussLobattoNodes18,
+    gaussLobattoNodes19,
+    gaussLobattoNodes20
 };
