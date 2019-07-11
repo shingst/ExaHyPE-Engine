@@ -190,11 +190,11 @@ def assembleDiscreteDerivativeOperator(MM,Kxi):
        dudx:
           Derivative values for debugging purposes.
     """
-    dudx = np.dot(linalg.inv(MM),np.transpose(Kxi))
+    dudx = np.dot(mp.inverse(MM).tolist(),np.transpose(Kxi))
     return dudx
 
 
-def assembleFineGridProjector1d(xGPN, j, N, dim):
+def assembleFineGridProjector1d(xGPN, j, N):
     """
     Transforms the degrees of freedom located on a coarse grid edge
     nodes to degrees of freedoms located on nodes of a fine grid edge.
@@ -212,8 +212,6 @@ def assembleFineGridProjector1d(xGPN, j, N, dim):
           Index of one the three subintervals: 0,1, or 2.
        N:
           Order of approximation corresponding to N+1 nodal basis functions.
-       dim:
-          Space dimension.
     Returns:
        equidistantGridProjector:
           The corresponding degrees of freedom located at nodes of an equidistant grid over (0,1).
@@ -291,7 +289,7 @@ def assembleEquidistantGridProjector(xGPN, N, dim):
         sys.stderr.write("Dimension not supported. equidistantGridProjector not generated.")          
     return equidistantGridProjector
 
-def assembleEquidistantGridProjector1d(xGPN, N, dim):
+def assembleEquidistantGridProjector1d(xGPN, N):
     """
     Transforms the degrees of freedom located at the non-equidistant Gauss-Legendre
     nodes to degrees of freedoms located at nodes of an equidistant grid over (0,1).
@@ -306,14 +304,12 @@ def assembleEquidistantGridProjector1d(xGPN, N, dim):
           Gauss-Legendre nodes (N nodes).
        N:
           Order of approximation corresponding to N+1 nodal basis functions.
-       dim:
-          Space dimension.
     Returns:
        equidistantGridProjector:
           The corresponding degrees of freedom located at nodes of an equidistant grid over (0,1).
     """
     equidistantGridProjector = [[mp.mpf(0) for _ in range((N+1))] for _ in range((N+1))] # 4 x 4 for N=3
-    subxi = np.linspace(mp.mpf(0.0), mp.mpf(1.0), num=(N+1))
+    subxi = mp.linspace(mp.mpf(0.0), mp.mpf(1.0), N+1)
     
     for i in range(0, N+1): # Eq. basis
         phi_i, _ = BaseFunc1d(subxi[i], xGPN, N) # comma after phi_i is important

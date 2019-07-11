@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+from mpmath import mp
+
 nodes = [
 
 [],
@@ -4447,8 +4449,8 @@ def gauleg(nNodes):
     sumNodes   = mp.mpf(0)
     sumTransformedWeights = mp.mpf(0) 
     sumTransformedNodes   = mp.mpf(0)
-    for i,w in enumerate(weights[p+1]):
-        x = nodes[p+1][i]
+    for i,w in enumerate(weights[nNodes]):
+        x = nodes[nNodes][i]
         sumWeights += mp.mpf(w)
         sumNodes   += mp.mpf(x)
 
@@ -4477,10 +4479,7 @@ def gauleg(nNodes):
 
 
 if __name__ == '__main__':
-    from mpmath import mp
-    import numpy,itertools
-
-    printPrec=64;
+    printPrec=64
     mp.dps=256
     maxOrder = 20
     generateCPPArrays = True

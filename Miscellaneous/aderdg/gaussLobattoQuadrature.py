@@ -49,7 +49,7 @@ if __name__ == '__main__':
     from mpmath import mp
     import numpy,itertools
 
-    printPrec=64;
+    printPrec=64
     mp.dps=256
     maxOrder = 20
     generateCPPArrays = True
