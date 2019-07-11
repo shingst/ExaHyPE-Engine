@@ -4480,20 +4480,19 @@ if __name__ == '__main__':
     from mpmath import mp
     import numpy,itertools
 
+    printPrec=64;
     mp.dps=256
     maxOrder = 20
-    generateCPPArrays = False
+    generateCPPArrays = True
 
     for p in range(0,maxOrder+1):
         x, w = gauleg(p+1)
 
         if generateCPPArrays:
-            for i,wi in enumerate(w):
-                print("gaussLegendreWeights[%d][%d]=%s;"% (p,i,wi))
-            for i,xi in enumerate(x):
-                print("gaussLegendreNodes[%d][%d]=%s;" % (p,i,xi))
+            print("const double kernels::gaussLegendreWeights%d[%d]={\n  %s\n};"% (p,p+1,",\n  ".join([mp.nstr(i,printPrec) for i in w])))
+            print("const double kernels::gaussLegendreNodes%d[%d]={\n  %s\n};"% (p,p+1,",\n  ".join([mp.nstr(i,printPrec) for i in x])))
         else:
             print("if nDOF == %s:" % (p+1))
-            print("    return [%s], [%s]" % (",".join([str(i) for i in x]),",".join([str(i) for i in w])))
+            print("    return [%s], [%s]" % (",".join([mp.nstr(i,printPrec) for i in x]),",".join([mp.nstr(i,printPrec) for i in w])))
 
-        print("")
+        print("\n")

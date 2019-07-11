@@ -53,8 +53,6 @@ void kernels::registerSolvers(exahype::parser::Parser& parser) {
   orders.insert({{solver.order}});
 {%   endif %}
 {% endfor %}
-  kernels::initGaussLegendreNodesAndWeights(orders);
-  kernels::initGaussLobattoNodesAndWeights(orders);
   kernels::initLimiterProjectionMatrices(orders);
   kernels::initDGMatrices(orders);
   kernels::initBasisFunctions(orders);
@@ -173,8 +171,6 @@ void kernels::finalise() {
   for (const auto p : exahype::solvers::RegisteredSolvers) {
     orders.insert(p->getNodesPerCoordinateAxis()-1);
   }
-  kernels::freeGaussLegendreNodesAndWeights(orders);
-  kernels::freeGaussLobattoNodesAndWeights(orders);
   kernels::freeLimiterProjectionMatrices(orders);
   kernels::freeDGMatrices(orders);
   kernels::freeBasisFunctions(orders);

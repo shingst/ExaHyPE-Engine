@@ -13,7 +13,7 @@ def writeVectorToFile(vector, length, vectorname, filename):
         row = "    "
         for l in range(0,length):
             value = vector[l]
-            string = "%.16e" %value
+            string = "%s" %value
             row += string
             if l < length-1:
                 row +=", \t"
@@ -40,7 +40,7 @@ def writeMatrixToFile(matrix, n, m, matrixname, alignmentFlag, namespace, filena
             row = "    {"           
             for l in range(0,m):
                 value = matrix[k][l]
-                string = "%.16e" %value
+                string = "%s" %value
                 row += string
                 if l < m-1:
                     row +=", \t"
@@ -60,7 +60,7 @@ def writeVectorLookupTableInitToFile(out, indent, vector, n, vectorname):
     text = ""
     for l in range(0,n):
         value = vector[l]
-        line = "%s%s[%d] = %.16e;\n" % (indent,vectorname,l,value)
+        line = "%s%s[%d] = %s;\n" % (indent,vectorname,l,value)
         text += line
     out.write(text)
 
@@ -72,6 +72,6 @@ def writeMatrixLookupTableInitToFile(out, indent, matrix, n, m, matrixname):
     for k in range(0,n):
         for l in range(0,m):
             value = matrix[k][l]
-            line = "%s%s[%d][%d] = %.16e;\n" % (indent,matrixname,k,l,value)
+            line = "%s%s[%d][%d] = %s;\n" % (indent,matrixname,k,l,value)
             text += line
     out.write(text)

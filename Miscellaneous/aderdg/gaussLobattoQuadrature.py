@@ -2,9 +2,9 @@
 import mpmath as mp
 
 def gaulob(xL,xR,degree):
-	mp.dps = 300
+    mp.dps = 300
 
-    eps = math.pow(10,-200)
+    eps = mp.power(10,-200)
     stop = False
     iter = 0
     diff = 0
@@ -39,9 +39,9 @@ def gaulob(xL,xR,degree):
         weight[i] = 0.5*weight[i]*(xR-xL)
         nodes[i]  = xL+0.5*(nodes[i]+1)*(xR-xL)
 
-    print("p=%d: " % p);
-    print("sumWeights=%s " % sum(weight));
-    print("sumNodes=%s"    % sum(nodes));
+    #print("p=%d: " % p);
+    #print("sumWeights=%s " % sum(weight));
+    #print("sumNodes=%s"    % sum(nodes));
     
     return nodes, weight
 
@@ -49,20 +49,19 @@ if __name__ == '__main__':
     from mpmath import mp
     import numpy,itertools
 
+    printPrec=64;
     mp.dps=256
     maxOrder = 20
-    generateCPPArrays = False
+    generateCPPArrays = True
 
     for p in range(1,maxOrder+1):
         x, w = gaulob(0,1,p+1)
 
         if generateCPPArrays:
-            for i,wi in enumerate(w):
-                print("gaussLegendreWeights[%d][%d]=%s;"% (p,i,wi))
-            for i,xi in enumerate(x):
-                print("gaussLegendreNodes[%d][%d]=%s;" % (p,i,xi))
+            print("const double kernels::gaussLobattoWeights%d[%d]={\n  %s\n};"% (p,p+1,",\n  ".join([mp.nstr(i,printPrec) for i in w])))
+            print("const double kernels::gaussLobattoNodes%d[%d]={\n  %s\n};"% (p,p+1,",\n  ".join([mp.nstr(i,printPrec) for i in x])))
         else:
             print("if nDOF == %s:" % (p+1))
-            print("    return [%s], [%s]" % (",".join([str(i) for i in x]),",".join([str(i) for i in w])))
+            print("    return [%s], [%s]" % (",".join([mp.nstr(i,printPrec) for i in x]),",".join([mp.nstr(i,printPrec) for i in w])))
 
-        print("")
+        print("\n")

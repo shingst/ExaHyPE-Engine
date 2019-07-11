@@ -7,6 +7,7 @@
 
 :synopsis: Generates lookup table initialisation code up to a specific order.
 """
+import mpmath as mp
 import numpy as np
 from os import remove
 from numpy import linalg
@@ -16,15 +17,14 @@ import errno
 
 from fileWriter import writeMatrixLookupTableInitToFile, writeVectorLookupTableInitToFile
 from aderdg import *
-import gaussLobattoQuadrature as lob
+import gaussLobattoQuadrature  as lob
+import gaussLegendreQuadrature as leg
 
 #-----------------------------------------------------------
 # main
 #-----------------------------------------------------------
-maxOrder = 9;
-minOrder = 0;
-minDim   = 2;
-maxDim   = 3;
+maxOrder = 20
+minOrder = 0
 
 # for a matrix-matrix multiplication C = A *B
 # the row count of the matrix A has to be a multiple
@@ -66,15 +66,9 @@ out3 = open("generatedCode/lobPoints.csnippet", "w")
 
 order = minOrder
 while (order <= maxOrder):    
-    dim = minDim
     out.write("// N=%d\n" % order)
     # Gauss-Legendre nodes and weights
-    x, w = np.polynomial.legendre.leggauss(order+1)
-    # map onto [0,1]
-    xGPN = 0.5*(x+1)
-    wGPN = 0.5*w
-    
-    weights = np.outer(xGPN, xGPN)
+    xGPN, wGPN = leg.gauleg(order+1)
 	
     text = ""
     for l in range(0,order+1):
@@ -193,5 +187,3 @@ while (order <= maxOrder):
     print("Done with order "+ str(order))
     order+=1
 out.close()
-
-

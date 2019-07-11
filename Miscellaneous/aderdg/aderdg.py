@@ -1,3 +1,4 @@
+import mpmath as mp
 import numpy as np
 from numpy import linalg
 
@@ -28,8 +29,8 @@ def BaseFunc1d(xi, xin, N):
        phi_xi:
           First derivatives of the basis functions.
     """
-    phi    = [1.]*(N+1) 
-    phi_xi = [0.]*(N+1)
+    phi    = [mp.mpf(1.)]*(N+1) 
+    phi_xi = [mp.mpf(0.)]*(N+1)
     for m in range(0,N+1):
         for j in range(0,N+1):
             if j == m:
@@ -66,7 +67,7 @@ def assembleStiffnessMatrix(xGPN, wGPN, N):
           The (reference) element stiffness matrix.
     """
     # init matrix with zero
-    Kxi = [[0 for _ in range(N+1)] for _ in range(N+1)]
+    Kxi = [[mp.mpf(0) for _ in range(N+1)] for _ in range(N+1)]
      
     for i in range(0,N+1):
         phi, phi_xi = BaseFunc1d(xGPN[i], xGPN, N)
@@ -93,7 +94,7 @@ def assembleStiffnessMatrixShorter(xGPN, wGPN, N):
           The (reference) element stiffness matrix.
     """
     # init matrix with zero
-    Kxi = [[0 for _ in range(N+1)] for _ in range(N+1)]
+    Kxi = [[mp.mpf(0) for _ in range(N+1)] for _ in range(N+1)]
      
     for i in range(0,N+1):
         phi, phi_xi = BaseFunc1d(xGPN[i], xGPN, N)
@@ -120,7 +121,7 @@ def assembleMassMatrix(xGPN, wGPN, N):
           The (reference) element mass matrix.
     """
     # init matrix with zeros
-    MM = [[0 for _ in range(N+1)] for _ in range(N+1)]
+    MM = [[mp.mpf(0) for _ in range(N+1)] for _ in range(N+1)]
     
     for i in range(0,N+1):
         phi, _ = BaseFunc1d(xGPN[i], xGPN, N)
@@ -148,7 +149,7 @@ def assembleK1(Kxi, xGPN, N):
           <unknown>
     """
     phi1, _ = BaseFunc1d(1.0, xGPN, N)
-    FRm = [[0 for _ in range(N+1)] for _ in range(N+1)]
+    FRm = [[mp.mpf(0) for _ in range(N+1)] for _ in range(N+1)]
     
     for k in range(0, N+1):
         for l in range(0, N+1):
@@ -170,7 +171,7 @@ def assembleTimeFluxMatrixF0(xGPN, N):
        phi:
           The reference basis functions evaluated at point xi=0.0.
     """
-    phi, _ = BaseFunc1d(0.0, xGPN, N)
+    phi, _ = BaseFunc1d(mp.mpf(0.0), xGPN, N)
     return phi         
         
 def assembleDiscreteDerivativeOperator(MM,Kxi):
@@ -311,8 +312,8 @@ def assembleEquidistantGridProjector1d(xGPN, N, dim):
        equidistantGridProjector:
           The corresponding degrees of freedom located at nodes of an equidistant grid over (0,1).
     """
-    equidistantGridProjector = [[0 for _ in range((N+1))] for _ in range((N+1))] # 4 x 4 for N=3
-    subxi = np.linspace(0.0, 1.0, num=(N+1))
+    equidistantGridProjector = [[mp.mpf(0) for _ in range((N+1))] for _ in range((N+1))] # 4 x 4 for N=3
+    subxi = np.linspace(mp.mpf(0.0), mp.mpf(1.0), num=(N+1))
     
     for i in range(0, N+1): # Eq. basis
         phi_i, _ = BaseFunc1d(subxi[i], xGPN, N) # comma after phi_i is important
