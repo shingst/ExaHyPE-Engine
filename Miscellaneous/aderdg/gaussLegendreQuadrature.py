@@ -4430,18 +4430,17 @@ weights = [
 # High precision weights and nodes (256 digits) obtained from:
 # https://pomax.github.io/bezierinfo/legendre-gauss.html
 
-from mpmath import mp
-import numpy,itertools
 
-mp.dps=256
-
-maxOrder = 20
-
-generateCPPArrays = False
-
-for p in range(1,maxOrder+1):
+def gauleg(nNodes):
+    """
+    :return: Gauss-Legendre nodes and weights for the given number of nodes mapped
+             to the interval [0,1];
+    :param:  nNodes The number of nodes.
+    """
     transformedNodes   = []
     transformedWeights = []
+
+    mp.dps = 300
 
     # transform
     sumWeights = mp.mpf(0) 
@@ -4460,12 +4459,6 @@ for p in range(1,maxOrder+1):
         sumTransformedWeights += wT
         sumTransformedNodes   += xT
 
-    #print("p=%d: " % p);
-    #print("sumWeights=%s " % sumWeights);
-    #print("sumNodes=%s"    % sumNodes);
-    #print("sumTransformedWeights=%s " % sumTransformedWeights);
-    #print("sumTransformedNodes=%s"    % sumTransformedNodes);
-
     # sort
     sortedTransformedNodes = sorted(transformedNodes)
     sortedTransformedWeights = []
@@ -4474,13 +4467,33 @@ for p in range(1,maxOrder+1):
         ws = transformedWeights[n]
         sortedTransformedWeights.append(ws)
 
-    if generateCPPArrays:
-        for i,w in enumerate(sortedTransformedWeights):
-            print("gaussLegendreWeights[%d][%d]=%s;"% (p,i,w))
-        for i,x in enumerate(sortedTransformedNodes):
-            print("gaussLegendreNodes[%d][%d]=%s;" % (p,i,x))
-    else:
-        print("if nDOF == %s:" % (p+1))
-        print("    return [%s], [%s]" % (",".join([str(i) for i in sortedTransformedNodes]),",".join([str(i) for i in sortedTransformedWeights])))
+    #print("p=%d: " % p);
+    #print("sumWeights=%s " % sumWeights);
+    #print("sumNodes=%s"    % sumNodes);
+    #print("sumTransformedWeights=%s " % sumTransformedWeights);
+    #print("sumTransformedNodes=%s"    % sumTransformedNodes);
 
-    print("")
+    return sortedTransformedNodes, sortedTransformedWeights
+
+
+if __name__ == '__main__':
+    from mpmath import mp
+    import numpy,itertools
+
+    mp.dps=256
+    maxOrder = 20
+    generateCPPArrays = False
+
+    for p in range(0,maxOrder+1):
+        x, w = gauleg(p+1)
+
+        if generateCPPArrays:
+            for i,wi in enumerate(w):
+                print("gaussLegendreWeights[%d][%d]=%s;"% (p,i,wi))
+            for i,xi in enumerate(x):
+                print("gaussLegendreNodes[%d][%d]=%s;" % (p,i,xi))
+        else:
+            print("if nDOF == %s:" % (p+1))
+            print("    return [%s], [%s]" % (",".join([str(i) for i in x]),",".join([str(i) for i in w])))
+
+        print("")
