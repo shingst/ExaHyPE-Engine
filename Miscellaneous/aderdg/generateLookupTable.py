@@ -22,7 +22,7 @@ import gaussLegendreQuadrature as leg
 #-----------------------------------------------------------
 # main
 #-----------------------------------------------------------
-maxOrder  = 5
+maxOrder  = 20
 printPrec = 64
 
 outputDirectory = "generatedCode"
@@ -60,6 +60,8 @@ for rule, outfile in { "legendre" : gaulegHeader, "lobatto" : gaulobHeader }.ite
         outfile.write("extern const double** const %s[%d+1];" % (label,maxOrder))
         outfile.write(suffix)
     
+    outfile.write("namespace kernels {\n")
+    outfile.write("namespace gauss%s {\n" % rule)
     writeVector("weights")
     writeVector("nodes")
     writeMatrix("Kxi")
@@ -71,6 +73,8 @@ for rule, outfile in { "legendre" : gaulegHeader, "lobatto" : gaulobHeader }.ite
     writeVector("FCoeff_0",suffix="\n")
     writeVector("FCoeff_1",suffix="\n")
     outfile.write("extern const double** const FCoeff[%d+1];\n\n" % (maxOrder))
+    outfile.write("\n};");
+    outfile.write("\n};");
     
     for p in range(0,maxOrder+1):
         writeMatrix("fineGridProjector_0_%d" % p,suffix="\n")
