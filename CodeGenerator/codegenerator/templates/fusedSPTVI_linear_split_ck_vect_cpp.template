@@ -201,7 +201,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
     
     //call ncp in x
     for (int yz = 0; yz < {{nDof*nDof3D}}; yz++) {
-      solver.Elastic::ElasticWaveSolver::nonConservativeProduct_x_vect(lQi+yz*{{nVar*nDofPad}}, {% if nPar != 0 %}lPi+yz*{{nPar*nDofPad}}{% else %}nullptr{%endif%}, gradQ+yz*{{nVar*nDofPad}}, tmpArray, {{nDofPad}});
+      solver.{{solverName}}::nonConservativeProduct_x_vect(lQi+yz*{{nVar*nDofPad}}, {% if nPar != 0 %}lPi+yz*{{nPar*nDofPad}}{% else %}nullptr{%endif%}, gradQ+yz*{{nVar*nDofPad}}, tmpArray, {{nDofPad}});
       #pragma omp simd aligned(lQi_next,tmpArray:ALIGNMENT)
       for (int nx = 0; nx < {{nVar*nDofPad}}; nx++) {
         lQi_next[yz*{{nVar*nDofPad}}+nx] -= tmpArray[nx]; 
@@ -216,7 +216,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
     
     //call ncp in y
     for (int yz = 0; yz < {{nDof*nDof3D}}; yz++) {
-      solver.Elastic::ElasticWaveSolver::nonConservativeProduct_y_vect(lQi+yz*{{nVar*nDofPad}}, {% if nPar != 0 %}lPi+yz*{{nPar*nDofPad}}{% else %}nullptr{%endif%}, gradQ+yz*{{nVar*nDofPad}}, tmpArray, {{nDofPad}});
+      solver.{{solverName}}::nonConservativeProduct_y_vect(lQi+yz*{{nVar*nDofPad}}, {% if nPar != 0 %}lPi+yz*{{nPar*nDofPad}}{% else %}nullptr{%endif%}, gradQ+yz*{{nVar*nDofPad}}, tmpArray, {{nDofPad}});
       #pragma omp simd aligned(lQi_next,tmpArray:ALIGNMENT)
       for (int nx = 0; nx < {{nVar*nDofPad}}; nx++) {
         lQi_next[yz*{{nVar*nDofPad}}+nx] -= tmpArray[nx]; 
@@ -231,7 +231,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
     
     //call ncp in z
     for (int yz = 0; yz < {{nDof*nDof3D}}; yz++) {
-      solver.Elastic::ElasticWaveSolver::nonConservativeProduct_z_vect(lQi+yz*{{nVar*nDofPad}}, {% if nPar != 0 %}lPi+yz*{{nPar*nDofPad}}{% else %}nullptr{%endif%}, gradQ+yz*{{nVar*nDofPad}}, tmpArray, {{nDofPad}});
+      solver.{{solverName}}::nonConservativeProduct_z_vect(lQi+yz*{{nVar*nDofPad}}, {% if nPar != 0 %}lPi+yz*{{nPar*nDofPad}}{% else %}nullptr{%endif%}, gradQ+yz*{{nVar*nDofPad}}, tmpArray, {{nDofPad}});
       #pragma omp simd aligned(lQi_next,tmpArray:ALIGNMENT)
       for (int nx = 0; nx < {{nVar*nDofPad}}; nx++) {
         lQi_next[yz*{{nVar*nDofPad}}+nx] -= tmpArray[nx]; 
@@ -407,7 +407,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
   for (int yz = 0; yz < {{nDof3D*nDof}}; yz++) {
     //include flux here
     //std::memset(lFhi+xyz*{{nVarPad}}, 0, {{nVarPad}}*sizeof(double)); // TODO JMG flux ersatzt
-    solver.Elastic::ElasticWaveSolver::nonConservativeProduct_x_vect(lQhi+yz*{{nVar*nDofPad}}, {% if nPar != 0 %}lPi+yz*{{nPar*nDofPad}}{% else %}nullptr{%endif%}, gradQ+yz*{{nVar*nDofPad}}, tmpArray, {{nDofPad}});
+    solver.{{solverName}}::nonConservativeProduct_x_vect(lQhi+yz*{{nVar*nDofPad}}, {% if nPar != 0 %}lPi+yz*{{nPar*nDofPad}}{% else %}nullptr{%endif%}, gradQ+yz*{{nVar*nDofPad}}, tmpArray, {{nDofPad}});
     #pragma omp simd aligned(lFhi,tmpArray:ALIGNMENT)
     for (int nx = 0; nx < {{nVar*nDofPad}}; nx++) {
       lFhi[yz*{{nVar*nDofPad}}+nx] += tmpArray[nx];
@@ -443,7 +443,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
   for (int yz = 0; yz < {{nDof*nDof3D}}; yz++) {
     //include flux here
     //std::memset(lFhi+xyz*{{nVarPad}}+{{nVarPad*(nDof**nDim)}}, 0, {{nVarPad}}*sizeof(double)); // TODO JMG flux ersatzt
-    solver.Elastic::ElasticWaveSolver::nonConservativeProduct_y_vect(lQhi+yz*{{nVar*nDofPad}}, {% if nPar != 0 %}lPi+yz*{{nPar*nDofPad}}{% else %}nullptr{%endif%}, gradQ+yz*{{nVar*nDofPad}}, tmpArray, {{nDofPad}});
+    solver.{{solverName}}::nonConservativeProduct_y_vect(lQhi+yz*{{nVar*nDofPad}}, {% if nPar != 0 %}lPi+yz*{{nPar*nDofPad}}{% else %}nullptr{%endif%}, gradQ+yz*{{nVar*nDofPad}}, tmpArray, {{nDofPad}});
     #pragma omp simd aligned(lFhi,tmpArray:ALIGNMENT)
     for (int nx = 0; nx < {{nVar*nDofPad}}; nx++) {
       lFhi[yz*{{nVar*nDofPad}}+nx] += tmpArray[nx];
@@ -479,7 +479,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
   for (int yz = 0; yz < {{nDof*nDof3D}}; yz++) {
     //include flux here
     //std::memset(lFhi+xyz*{{nVarPad}}+{{nVarPad*(nDof**nDim)}}, 0, {{nVarPad}}*sizeof(double)); // TODO JMG flux ersatzt
-    solver.Elastic::ElasticWaveSolver::nonConservativeProduct_z_vect(lQhi+yz*{{nVar*nDofPad}}, {% if nPar != 0 %}lPi+yz*{{nPar*nDofPad}}{% else %}nullptr{%endif%}, gradQ+yz*{{nVar*nDofPad}}, tmpArray, {{nDofPad}});
+    solver.{{solverName}}::nonConservativeProduct_z_vect(lQhi+yz*{{nVar*nDofPad}}, {% if nPar != 0 %}lPi+yz*{{nPar*nDofPad}}{% else %}nullptr{%endif%}, gradQ+yz*{{nVar*nDofPad}}, tmpArray, {{nDofPad}});
     #pragma omp simd aligned(lFhi,tmpArray:ALIGNMENT)
     for (int nx = 0; nx < {{nVar*nDofPad}}; nx++) {
       lFhi[yz*{{nVar*nDofPad}}+nx] += tmpArray[nx];
