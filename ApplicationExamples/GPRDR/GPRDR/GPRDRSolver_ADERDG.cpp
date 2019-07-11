@@ -38,8 +38,15 @@ void GPRDR::GPRDRSolver_ADERDG::init(const std::vector<std::string>& cmdlineargs
 	constexpr int Ghostlayers = AbstractGPRDRSolver_FV::GhostLayerWidth;
 	
 	static tarch::multicore::BooleanSemaphore initializationSemaphoreDG;
+  
+  
+    tarch::multicore::Lock lock(initializationSemaphoreDG);	
+	
   //inittecplot_(&order,&order);
-    tarch::multicore::Lock lock(initializationSemaphoreDG);
+  if (constants.isValueValidString("reference")) {
+    std::string reference = constants.getValueAsString("reference");
+	const int length=reference.length();
+	logInfo("init(...)","Reference setup:"<<reference);
   	printf("\n******************************************************************");
 	printf("\n**************<<<  INIT TECPLOT    >>>****************************");
 	printf("\n******************************************************************");
@@ -47,12 +54,19 @@ void GPRDR::GPRDRSolver_ADERDG::init(const std::vector<std::string>& cmdlineargs
 	//inittecplot_(&order,&order);
 	printf("\n******************************************************************");
 	printf("\n**************<<<  INIT PDE SETUP  >>>****************************");
-	printf("\n******************************************************************");
-    initparameters_();
+	printf("\n******************************************************************\n");
+    initparameters_(&length,&reference[0]);
 	printf("\n******************************************************************");
 	printf("\n**************<<<       DONE       >>>****************************");
 	printf("\n******************************************************************");
+  } else {
+    logInfo("init(...)","Not recognized setup.");
+	std::abort();
+  }	
+	
 	lock.free();
+	
+	
 }
 
 void GPRDR::GPRDRSolver_ADERDG::adjustPointSolution(const double* const x,const double t,const double dt,double* const Q) {
@@ -112,11 +126,22 @@ void GPRDR::GPRDRSolver_ADERDG::boundaryValues(const double* const x,const doubl
 
 exahype::solvers::Solver::RefinementControl GPRDR::GPRDRSolver_ADERDG::refinementCriterion(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,double t,const int level) {
   if (tarch::la::equals(t,0.0)) {
+  if(DIMENSIONS == 2){
     if(std::abs(cellCentre[0]) < 1000){
       if(std::abs(cellCentre[1]) < 50){
 	return exahype::solvers::Solver::RefinementControl::Refine;
       }
     }
+  }else{
+    if(std::abs(cellCentre[0]) < 50){
+      if(std::abs(cellCentre[1]) < 50){
+		  if(std::abs(cellCentre[2]) < 50){
+			return exahype::solvers::Solver::RefinementControl::Refine;
+		  }
+      }
+    }	  
+	  
+  };
   }	 
   
   //return exahype::solvers::Solver::RefinementControl::Keep;

@@ -4,12 +4,21 @@
 !#include "MainVariables.f90"
 !#include "expintegrator_type.f90"
 
-RECURSIVE SUBROUTINE InitParameters() 
+RECURSIVE SUBROUTINE InitParameters(STRLEN,PARSETUP) 
 	USE MainVariables, ONLY: nVar , nDim, EQN, ICType 
 #ifdef ODESOLVER
     use expintegrator_type, only :T_odeexp_settings ,ODESETTINGS
 #endif
-	IMPLICIT NONE     
+	IMPLICIT NONE  
+	integer          :: STRLEN
+	character(len=STRLEN) :: PARSETUP
+	
+	!print *,"setup=",parsetup, STRLEN
+	ICType=trim(parsetup)
+	print *, "****************************************************************"
+	print *, 'Chosen setup: 	',ICType
+	print *, "****************************************************************"
+	!stop
 	EQN%epsilon1 = 1.e-3
 	EQN%EOS      = 2
 	! Gravity and relaxation force, if not specified --------------------------------
@@ -41,8 +50,10 @@ RECURSIVE SUBROUTINE InitParameters()
 		case('NLOPRUPTURE')
 		    EQN%nMATs=2
 			ALLOCATE(EQN%MATERIALS(EQN%nMATs))
-			EQN%MATERIALS(1)='ROCK1'
-			EQN%MATERIALS(2)='ROCK1'
+			!EQN%MATERIALS(1)='ROCK1'
+			!EQN%MATERIALS(2)='UNBREAKABLE'
+			EQN%MATERIALS(1)='ROCK5'
+			EQN%MATERIALS(2)='UNBREAKABLE'
 	end select
 END SUBROUTINE InitParameters
 
@@ -69,7 +80,7 @@ RECURSIVE SUBROUTINE InitialData(xGP, tGp, Q)
 		up=0.
 #ifdef EQNTYPED99
         rr=xGP(2)-2.0*xGP(1)-4000.0
-        xi = 0.5+0.5*ERF(rr/100.0)
+        xi = 0.5+0.5*ERF(rr/200.0)
         up(22)=1-xi
 		!up(22)=1
         LamCoeff=getLameCoefficients(EQN%MATERIALS(1))
@@ -122,7 +133,7 @@ RECURSIVE SUBROUTINE InitialData(xGP, tGp, Q)
         up(21)=0.0
 
         if(nDim .eq. 3) then
-            if(abs(xGP(1)) .le. 100.0/3.0 .and. abs(xGP(2)) .le. 100.0/3.0 .and. abs(xGP(3)) .le. 100.0/3.0) then 
+            if(abs(xGP(1)) .le. 100.0/1.0 .and. abs(xGP(2)) .le. 100.0/1.0 .and. abs(xGP(3)) .le. 100.0/1.0) then 
                 up(21)=0.5    
             end if            
         else
@@ -141,7 +152,9 @@ RECURSIVE SUBROUTINE InitialData(xGP, tGp, Q)
         
 
 #endif		
-
+	CASE DEFAULT
+		PRINT *, 'NOT IMPLEMENTED'
+		STOP
 	END SELECT
 	CALL PDEPrim2Cons(Q,up)
 END SUBROUTINE InitialData
