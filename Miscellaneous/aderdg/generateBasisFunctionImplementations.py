@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 """
 .. module:: main
   :platform: Unix, Windows, Mac
@@ -6,60 +6,46 @@
 
 :synopsis: Generates reference basis functions and their first and second derivatives up to a specific N.
 """
-from lagrangeinterp import *
-import numpy as np
+from lagrangeInterpolation import *
+import mpmath as mp
 import sympy
-from sympy.printing import print_ccode
 import re
 
-max_order = 9
+def generateBasisFunctionDefinitions(outfile,rule,order,x,printPrec):
+    mp2 = mp.mp.clone()
+    mp2.dps=64
+    x2 = x.copy();
 
-print "// Basis functions in interval (0,1)."
-for N in range(0,max_order+1):
-    # Gauss-Legendre nodes and weights.
-    s, w = np.polynomial.legendre.leggauss(N+1)
-    # Map onto (0,1).
-    sGPN = 0.5*(s+1)
-    wGPN = 0.5*w
-    for m in range(0,N+1):
+    for i,xi in enumerate(x2): 
+        x2[i] = mp2.mpf(xi)
+    
+    for m in range(0,order+1):
         s=sympy.symbols('s')
-        print("double basisFunction_%d_%d(const double s) {" % (N,m))
-        refphi = LagrangBasisPoly(s,N,m,sGPN.tolist())
+        outfile.write("double kernels::gauss::%s::basisFunction_%d_%d(const double s) {" % (rule,order,m))
+        refphi = LagrangBasisPoly(s,order,m,x2)
+
+
         ret = "  return %s;" % sympy.simplify(refphi)
         ret = re.sub(r"s\*\*([0-9]+)", r"std::pow(s, \1)", ret)
-        print ret
-        print("}\n")
+        outfile.write(ret)
+        outfile.write("}\n")
 
-print "\n\n// First derivative of basis functions in interval (0,1)."
-for N in range(0,max_order+1):
-    # Gauss-Legendre nodes and weights.
-    s, w = np.polynomial.legendre.leggauss(N+1)
-    # Map onto (0,1).
-    sGPN = 0.5*(s+1)
-    wGPN = 0.5*w
-    for m in range(0,N+1):
+    for m in range(0,order+1):
         s=sympy.symbols('s')
-        refphi     = LagrangBasisPoly(s,N,m,sGPN.tolist())
+        refphi     = LagrangBasisPoly(s,order,m,x2)
         dds_refphi = sympy.diff(refphi, s)
-        print("double basisFunctionFirstDerivative_%d_%d(const double s) {" % (N,m))
+        outfile.write("double kernels::gauss::%s::basisFunctionFirstDerivative_%d_%d(const double s) {" % (rule,order,m))
         ret = "  return %s;" % sympy.simplify(dds_refphi)
         ret = re.sub(r"s\*\*([0-9]+)", r"std::pow(s, \1)", ret)
-        print ret
-        print("}\n")
+        outfile.write(ret)
+        outfile.write("}\n")
 
-print "\n\n// Second derivative of basis functions in interval (0,1)."
-for N in range(0,max_order+1):
-    # Gauss-Legendre nodes and weights.
-    s, w = np.polynomial.legendre.leggauss(N+1)
-    # Map onto (0,1).
-    sGPN = 0.5*(s+1)
-    wGPN = 0.5*w
-    for m in range(0,N+1):
+    for m in range(0,order+1):
         s=sympy.symbols('s')
-        refphi       = LagrangBasisPoly(s,N,m,sGPN.tolist())
+        refphi       = LagrangBasisPoly(s,order,m,x2)
         d2ds2_refphi = sympy.simplify(sympy.diff(refphi, s, s))
-        print("double basisFunctionSecondDerivative_%d_%d(const double s) {" % (N,m))
+        outfile.write("double kernels::gauss::%s::basisFunctionSecondDerivative_%d_%d(const double s) {" % (rule,order,m))
         ret = "  return %s;" % sympy.simplify(d2ds2_refphi)
         ret = re.sub(r"s\*\*([0-9]+)", r"std::pow(s, \1)", ret)
-        print ret
-        print("}\n")
+        outfile.write(ret)
+        outfile.write("}\n")

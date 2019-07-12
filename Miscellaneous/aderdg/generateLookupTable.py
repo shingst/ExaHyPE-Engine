@@ -16,13 +16,14 @@ import os
 import errno
 
 from aderdg import *
+from generateBasisFunctionImplementations import *
 import gaussLobattoQuadrature  as lob
 import gaussLegendreQuadrature as leg
 
 #-----------------------------------------------------------
 # main
 #-----------------------------------------------------------
-maxOrder  = 20
+maxOrder  = 9
 printPrec = 64
 
 outputDirectory = "generatedCode"
@@ -75,12 +76,29 @@ for rule, outfile in { "legendre" : gaulegHeader, "lobatto" : gaulobHeader }.ite
     outfile.write("extern const double** const FCoeff[%d+1];\n\n" % (maxOrder))
     outfile.write("\n};");
     outfile.write("\n};");
-    
+
+    outfile.write("\n")    
     for p in range(0,maxOrder+1):
         writeMatrix("fineGridProjector_0_%d" % p,suffix="\n")
         writeMatrix("fineGridProjector_1_%d" % p,suffix="\n")
         writeMatrix("fineGridProjector_2_%d" % p,suffix="\n")
     outfile.write("extern const double*** const fineGridProjector[%d+1];\n\n" % (maxOrder))
+
+    # basis functions    
+    outfile.write("\n")
+    for p in range(0,maxOrder+1):
+        for i in range(0,p+1):
+            outfile.write(                "double basisFunction_%d_%d(const double& s);\n" % (p,i))    
+            outfile.write( "double basisFunctionFirstDerivative_%d_%d(const double& s);\n" % (p,i))    
+            outfile.write("double basisFunctionSecondDerivative_%d_%d(const double& s);\n" % (p,i))    
+    outfile.write("typedef double (* UnivariateFunction) (const double s);")
+    for p in range(0,maxOrder+1):
+        outfile.write("extern const UnivariateFunction basisFunctions_%d[%d+1];\n"                 % (p,p))
+        outfile.write("extern const UnivariateFunction basisFunctionFirstDerivatives_%d[%d+1];\n"  % (p,p))
+        outfile.write("extern const UnivariateFunction basisFunctionSecondDerivatives_%d[%d+1];\n" % (p,p))
+    outfile.write("extern const UnivariateFunction* basisFunctions[%d+1];\n"                 % (maxOrder))
+    outfile.write("extern const UnivariateFunction* basisFunctionFirstDerivatives[%d+1];\n"  % (maxOrder))
+    outfile.write("extern const UnivariateFunction* basisFunctionSecondDerivatives[%d+1];\n" % (maxOrder))
 
 # source
 def quadNodes(order,rule):
@@ -101,10 +119,10 @@ for rule, outfile in { "legendre" : gaulegImpl, "lobatto" : gaulobImpl }.items()
         
         def writeMatrix(matrix,label):
             for r in range(0,order+1):
-                outfile.write("const double kernels::gauss::%s::%s_%d_%d[%d]={\n  %s\n};\n"   % (rule,label,order,r,order+1,
+                outfile.write("const double kernels::gauss::%s::%s_%d_%d[%d+1]={\n  %s\n};\n"   % (rule,label,order,r,order,
                     ",\n  ".join([mp.nstr(i,printPrec) for i in matrix[r]])))
-            outfile.write("const double* const kernels::gauss::%s::%s_%d[%d]={\n  %s\n};\n"  % (rule,label,order,order+1,
-                ",\n  ".join(["gauss::%s::%s_%d_%d" % (rule,label,order,i) for i in range(0,order+1)])))
+            outfile.write("const double* const kernels::gauss::%s::%s_%d[%d+1]={\n  %s\n};\n"  % (rule,label,order,order,
+                ",\n  ".join(["%s_%d_%d" % (label,order,i) for i in range(0,order+1)])))
 
         # quad nodes
         x,w = quadNodes(order,rule)
@@ -138,8 +156,6 @@ for rule, outfile in { "legendre" : gaulegImpl, "lobatto" : gaulobImpl }.items()
         writeVector(FLCoeff,"FCoeff_0")
         writeVector(FLCoeff,"FCoeff_1")
         outfile.write("const double** kernels::gauss::%s::FCoeff_%d[2]={FCoeff_0_%d,FCoeff_1_%d};\n" % (rule,order,order,order))
-        
-        # TODO F0 = FCoeff[0], FL=FCoeff[0],FR=FCoeff[1]
 
         # fine grid projectors
         fineGridProjector1d0 = assembleFineGridProjector1d(x, 0, order)
@@ -149,28 +165,50 @@ for rule, outfile in { "legendre" : gaulegImpl, "lobatto" : gaulobImpl }.items()
         writeMatrix(fineGridProjector1d1,"fineGridProjector_1")
         writeMatrix(fineGridProjector1d2,"fineGridProjector_2")
         outfile.write("const double*** kernels::gauss::%s::fineGridProjector_%d[3]={fineGridProjector_0_%d,fineGridProjector_1_%d,fineGridProjector_2_%d};\n" % (rule,order,order,order,order))
-        print("Done with order "+ str(order))
+
+        # basis functions
+        outfile.write("\n")
+        generateBasisFunctionDefinitions(outfile,rule,order,x,printPrec)
+
+        def writeBasisFunctionArray(label):
+            outfile.write("const UnivariateFunction* kernels::gauss::%ss::%s_%d[%d+1]={\n  %s\n};\n" % (rule,label,order,order+1,
+                ",\n  ".join(["%s_%d_%d" % (label,order,i) for i in range(0,order+1)])))
+
+        writeBasisFunctionArray("basisFunction")
+        writeBasisFunctionArray("basisFunctionFirstDerivative")
+        writeBasisFunctionArray("basisFunctionSecondDerivative")
+
+        print("Done with operators for order "+ str(order))
 
     # collect the arrays per order
     outfile.write("\n")
     # weights,nodes
     for array in ["weights","nodes"]:
         outfile.write("const double** const kernels::gauss%s::%s[%d+1] = {\n  %s\n};\n" % (rule,array,maxOrder,
-        ",\n  ".join(["kernels::gauss%s::%s_%d" % (rule,array,i) for i in range(0,maxOrder+1)])))
+        ",\n  ".join(["%s_%d" % (array,i) for i in range(0,maxOrder+1)])))
     # Kxi,MM,iK1,dudx,equidistantGridProjector1d
     for array in ["Kxi","MM","iK1","dudx","equidistantGridProjector1d"]:
         outfile.write("const double*** const kernels::gauss%s::%s[%d+1] = {\n  %s\n};\n" % (rule,array,maxOrder,
-            ",\n  ".join(["kernels::gauss%s::%s_%d" % (rule,array,i) for i in range(0,maxOrder+1)])))
+            ",\n  ".join(["%s_%d" % (array,i) for i in range(0,maxOrder+1)])))
     
     # FCoeff
     array="FCoeff"
     outfile.write("const double*** const kernels::gauss%s::%s[%d+1] = {\n  %s\n};\n" % (rule,array,maxOrder,
-        ",\n  ".join(["kernels::gauss%s::%s_%d" % (rule,array,i) for i in range(0,maxOrder+1)])))
+        ",\n  ".join(["%s_%d" % (array,i) for i  in range(0,maxOrder+1)])))
     
     # fineGridProjector1d
     array="fineGridProjector"
     outfile.write("const double**** const kernels::gauss%s::%s[%d+1] = {\n  %s\n};\n" % (rule,array,maxOrder,
-        ",\n  ".join(["kernels::gauss%s::%s_%d" % (rule,array,i) for i in range(0,maxOrder+1)])))
+        ",\n  ".join(["%s_%d" % (array,i) for i in range(0,maxOrder+1)])))
+
+    # basis functions
+    def writeBasisFunctionArray(label):
+        outfile.write("const UnivariateFunction** kernels::gauss::%ss::%s[%d+1]={\n  %s\n};\n" % (rule,label,order+1,
+            ",\n  ".join(["%s_%d" % (label,order,i) for i in range(0,order+1)])))
+
+        writeBasisFunctionArray("basisFunction")
+        writeBasisFunctionArray("basisFunctionFirstDerivative")
+        writeBasisFunctionArray("basisFunctionSecondDerivative")
     
 
 gaulegHeader.close()
