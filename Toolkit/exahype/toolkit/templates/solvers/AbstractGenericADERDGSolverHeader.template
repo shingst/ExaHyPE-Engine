@@ -46,7 +46,7 @@ public:
   static double*** const dudx;
   static double*** const iK1;
   static double*** const equidistantGridProjector;
-  static double*** const FCoff;
+  static double*** const FCoeff;
   static double**** const fineGridProjector;
   static UnivariateFunction** const basisFunction;
   static UnivariateFunction** const basisFunctionFirstDerivative;

@@ -18,17 +18,17 @@
 #include <stdio.h>
 
 // quadrature weights and operators
-double**   {{project}}::{{abstractSolver}}::weights                                  = kernels::{{basis}}::weights;
-double**   {{project}}::{{abstractSolver}}::nodes                                    = kernels::{{basis}}::nodes;
-double***  {{project}}::{{abstractSolver}}::Kxi                                      = kernels::{{basis}}::Kxi;
-double***  {{project}}::{{abstractSolver}}::dudx                                     = kernels::{{basis}}::dudx;
-double***  {{project}}::{{abstractSolver}}::iK1                                      = kernels::{{basis}}::iK1;
-double***  {{project}}::{{abstractSolver}}::equidistantGridProjector                 = kernels::{{basis}}::equidistantGridProjector;
-double***  {{project}}::{{abstractSolver}}::FCoff                                    = kernels::{{basis}}::FCoff;
-double**** {{project}}::{{abstractSolver}}::fineGridProjector                        = kernels::{{basis}}::fineGridProjector;
-UnivariateFunction** {{project}}::{{abstractSolver}}::basisFunctions                 = kernels::{{basis}}::basisFunctions;
-UnivariateFunction** {{project}}::{{abstractSolver}}::basisFunctionFirstDerivatives  = kernels::{{basis}}::basisFunctionFirstDerivatives;
-UnivariateFunction** {{project}}::{{abstractSolver}}::basisFunctionSecondDerivatives = kernels::{{basis}}::basisFunctionSecondDerivatives;
+double**   {{project}}::{{abstractSolver}}::weights                                 = kernels::{{basis}}::weights;
+double**   {{project}}::{{abstractSolver}}::nodes                                   = kernels::{{basis}}::nodes;
+double***  {{project}}::{{abstractSolver}}::Kxi                                     = kernels::{{basis}}::Kxi;
+double***  {{project}}::{{abstractSolver}}::dudx                                    = kernels::{{basis}}::dudx;
+double***  {{project}}::{{abstractSolver}}::iK1                                     = kernels::{{basis}}::iK1;
+double***  {{project}}::{{abstractSolver}}::equidistantGridProjector                = kernels::{{basis}}::equidistantGridProjector;
+double***  {{project}}::{{abstractSolver}}::FCoeff                                  = kernels::{{basis}}::FCoeff;
+double**** {{project}}::{{abstractSolver}}::fineGridProjector                       = kernels::{{basis}}::fineGridProjector;
+UnivariateFunction** {{project}}::{{abstractSolver}}::basisFunction                 = kernels::{{basis}}::basisFunction;
+UnivariateFunction** {{project}}::{{abstractSolver}}::basisFunctionFirstDerivative  = kernels::{{basis}}::basisFunctionFirstDerivative;
+UnivariateFunction** {{project}}::{{abstractSolver}}::basisFunctionSecondDerivative = kernels::{{basis}}::basisFunctionSecondDerivative;
 
 // We define the constructor of the actual solver here in order to regenerate it easily.
 {{project}}::{{solver}}::{{solver}}(

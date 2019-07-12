@@ -42,6 +42,18 @@ namespace exahype {
 namespace tests {
 namespace c {
 
+const double**   const GenericEulerKernelTest::weights                                  = kernels::legendre::weights;
+const double**   const GenericEulerKernelTest::nodes                                    = kernels::legendre::nodes;
+const double***  const GenericEulerKernelTest::Kxi                                      = kernels::legendre::Kxi;
+const double***  const GenericEulerKernelTest::dudx                                     = kernels::legendre::dudx;
+const double***  const GenericEulerKernelTest::iK1                                      = kernels::legendre::iK1;
+const double***  const GenericEulerKernelTest::equidistantGridProjector                 = kernels::legendre::equidistantGridProjector;
+const double***  const GenericEulerKernelTest::FCoeff                                   = kernels::legendre::FCoeff;
+const double**** const GenericEulerKernelTest::fineGridProjector                        = kernels::legendre::fineGridProjector;
+const kernels::UnivariateFunction** const GenericEulerKernelTest::basisFunction                 = kernels::legendre::basisFunction;
+const kernels::UnivariateFunction** const GenericEulerKernelTest::basisFunctionFirstDerivative  = kernels::legendre::basisFunctionFirstDerivative;
+const kernels::UnivariateFunction** const GenericEulerKernelTest::basisFunctionSecondDerivative = kernels::legendre::basisFunctionSecondDerivative;
+
 
 GenericEulerKernelTest::GenericEulerKernelTest()
 : tarch::tests::TestCase("exahype::tests::c::GenericEulerKernelTest") {}

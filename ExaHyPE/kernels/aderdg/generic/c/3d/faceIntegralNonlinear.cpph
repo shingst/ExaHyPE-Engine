@@ -47,7 +47,7 @@ void kernels::aderdg::generic::c::faceIntegralNonlinear(
             for (int l = 0; l < numberOfVariables; l++) {
               lduh[idx_lduh(i, j, k, l)] -=
                   scaledWeight *
-                  kernels::FCoeff[order][orientation][k] *
+                  SolverType::FCoeff[order][orientation][k] *
                   lFhbnd[idx_lFhbnd(i, j, l)];
             }
           }
@@ -67,7 +67,7 @@ void kernels::aderdg::generic::c::faceIntegralNonlinear(
             for (int l = 0; l < numberOfVariables; l++) {
               lduh[idx_lduh(i, j, k, l)] -=
                       scaledWeight *
-                      kernels::FCoeff[order][orientation][j] *
+                      SolverType::FCoeff[order][orientation][j] *
                       lFhbnd[idx_lFhbnd(i, k, l)];
             }
           }
@@ -87,7 +87,7 @@ void kernels::aderdg::generic::c::faceIntegralNonlinear(
             for (int l = 0; l < numberOfVariables; l++) {
               lduh[idx_lduh(i, j, k, l)] -=
                   scaledWeight *
-                  kernels::FCoeff[order][orientation][i] *
+                  SolverType::FCoeff[order][orientation][i] *
                   lFhbnd[idx_lFhbnd(j, k, l)];
             }
           }

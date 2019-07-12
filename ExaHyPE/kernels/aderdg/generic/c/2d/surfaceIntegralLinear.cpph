@@ -45,8 +45,8 @@ void surfaceIntegralLinear(double *lduh, const double *const lFhbnd,
       // left flux minus right flux
       for (int l = 0; l < numberOfVariables; l++) {
         lduh[idx_lduh(j, k, l)] -=
-            (lFhbnd[idx_lFhbnd(1, j, l)] * kernels::FRCoeff[order][k] +
-             lFhbnd[idx_lFhbnd(0, j, l)] * kernels::FLCoeff[order][k]) *
+            (lFhbnd[idx_lFhbnd(1, j, l)] * SolverType::FCoeff[order][1][order][k] +
+             lFhbnd[idx_lFhbnd(0, j, l)] * SolverType::FCoeff[order][0][order][k]) *
             updateSize;
       }
     }
@@ -67,8 +67,8 @@ void surfaceIntegralLinear(double *lduh, const double *const lFhbnd,
       // back flux minus front flux
       for (int l = 0; l < numberOfVariables; l++) {
         lduh[idx_lduh(j, k, l)] -=
-            (lFhbnd[idx_lFhbnd(3, k, l)] * kernels::FRCoeff[order][j] +
-             lFhbnd[idx_lFhbnd(2, k, l)] * kernels::FLCoeff[order][j]) *
+            (lFhbnd[idx_lFhbnd(3, k, l)] * SolverType::FCoeff[order][1][order][j] +
+             lFhbnd[idx_lFhbnd(2, k, l)] * SolverType::FCoeff[order][0][order][j]) *
             updateSize;
       }
     }

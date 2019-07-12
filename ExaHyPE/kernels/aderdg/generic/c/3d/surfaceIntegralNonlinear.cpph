@@ -42,8 +42,8 @@ void kernels::aderdg::generic::c::surfaceIntegralNonlinear(double *lduh, const d
         // left flux minus right flux
         for (int l = 0; l < numberOfVariables; l++) {
           lduh[idx_lduh(i, j, k, l)] -=
-              (lFhbnd[idx_lFhbnd(1, i, j, l)] * kernels::FRCoeff[order][k] -
-               lFhbnd[idx_lFhbnd(0, i, j, l)] * kernels::FLCoeff[order][k]) *
+              (lFhbnd[idx_lFhbnd(1, i, j, l)] * SolverType::FCoeff[order][1][order][k] -
+               lFhbnd[idx_lFhbnd(0, i, j, l)] * SolverType::FCoeff[order][0][order][k]) *
               updateSize;
         }
       }
@@ -61,8 +61,8 @@ void kernels::aderdg::generic::c::surfaceIntegralNonlinear(double *lduh, const d
         // back flux minus front flux
         for (int l = 0; l < numberOfVariables; l++) {
           lduh[idx_lduh(i, j, k, l)] -=
-              (lFhbnd[idx_lFhbnd(3, i, k, l)] * kernels::FRCoeff[order][j] -
-               lFhbnd[idx_lFhbnd(2, i, k, l)] * kernels::FLCoeff[order][j]) *
+              (lFhbnd[idx_lFhbnd(3, i, k, l)] * SolverType::FCoeff[order][1][order][j] -
+               lFhbnd[idx_lFhbnd(2, i, k, l)] * SolverType::FCoeff[order][0][order][j]) *
               updateSize;
         }
       }
@@ -80,8 +80,8 @@ void kernels::aderdg::generic::c::surfaceIntegralNonlinear(double *lduh, const d
         // bottom flux minus top flux
         for (int l = 0; l < numberOfVariables; l++) {
           lduh[idx_lduh(i, j, k, l)] -=
-              (lFhbnd[idx_lFhbnd(5, j, k, l)] * kernels::FRCoeff[order][i] -
-               lFhbnd[idx_lFhbnd(4, j, k, l)] * kernels::FLCoeff[order][i]) *
+              (lFhbnd[idx_lFhbnd(5, j, k, l)] * SolverType::FCoeff[order][1][order][i] -
+               lFhbnd[idx_lFhbnd(4, j, k, l)] * SolverType::FCoeff[order][0][order][i]) *
               updateSize;
         }
       }

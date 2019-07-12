@@ -56,9 +56,9 @@ void generalisedOsherSolomon(
   double QavL[numberOfData] = {0.0};
   double QavR[numberOfData] = {0.0};
   kernels::riemannsolvers::util::averageRiemannInputs<basisSize,numberOfData>(
-      QL,kernels::gaussLegendreWeights,QavL);
+      QL,SolverType::weights,QavL);
   kernels::riemannsolvers::util::averageRiemannInputs<basisSize,numberOfData>(
-      QR,kernels::gaussLegendreWeights,QavR);
+      QR,SolverType::weights,QavR);
   
   double osherMatrix[numberOfVariables][numberOfVariables] = {0.0}; // fill with zeroes
   double osherNCP[numberOfVariables] = {0.0};                       // fill with zeroes

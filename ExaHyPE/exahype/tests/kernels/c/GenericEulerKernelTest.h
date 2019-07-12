@@ -20,6 +20,8 @@
 #include "tarch/tests/TestCase.h"
 #include "tarch/la/Vector.h"
 
+#include "kernels/KernelUtils.h"
+
 namespace exahype {
 namespace tests {
 namespace c {
@@ -34,6 +36,20 @@ class GenericEulerKernelTest : public tarch::tests::TestCase {
   static constexpr bool UseMaxPicardIterations = false;
 
   static constexpr double CFL             = 0.9;
+
+  static constexpr bool UseLobattoBasis = false;
+  static const double** const weights;
+  static const double** const nodes;
+  static const double*** const Kxi;
+  static const double*** const dudx;
+  static const double*** const iK1;
+  static const double*** const equidistantGridProjector;
+  static const double*** const FCoeff;
+  static const double**** const fineGridProjector;
+  static const kernels::UnivariateFunction** const basisFunction;
+  static const kernels::UnivariateFunction** const basisFunctionFirstDerivative;
+  static const kernels::UnivariateFunction** const basisFunctionSecondDerivative;
+
 
   GenericEulerKernelTest();
   virtual ~GenericEulerKernelTest();

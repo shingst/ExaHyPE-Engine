@@ -54,8 +54,8 @@ void integrateBoundaryConditions(
 
   // Integrate solution in gauss points (Qgp) in time
   for(int i=0; i < basisSize; i++)  { // i == time
-     const double weight = kernels::gaussLegendreWeights[order][i];
-     const double xi = kernels::gaussLegendreNodes[order][i];
+     const double weight = SolverType::weights[order][i];
+     const double xi = SolverType::nodes[order][i];
      double ti = t + xi * dt;
 
      solver.boundaryValueContributions(x, Qgp, &ti);
