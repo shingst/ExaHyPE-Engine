@@ -23,7 +23,7 @@ namespace aderdg {
 namespace generic {
 namespace c {
 
-template <int numberOfVariables, int basisSize>
+template <typename SolverType, typename SolverType,int numberOfVariables, int basisSize>
 void surfaceIntegralLinear(double *lduh, const double *const lFhbnd,
                            const tarch::la::Vector<DIMENSIONS, double> &dx) {
   constexpr int order = basisSize - 1;
@@ -33,11 +33,12 @@ void surfaceIntegralLinear(double *lduh, const double *const lFhbnd,
 
   // x faces
   for (int j = 0; j < basisSize; j++) {
-#if defined(_GLL)
-    const double weight = kernels::gaussLobattoWeights[order][j];
-#else
-    const double weight = kernels::gaussLegendreWeights[order][j];
-#endif    
+//#if defined(_GLL)
+//    const double weight = kernels::gaussLobattoWeights[order][j];
+//#else
+//    const double weight = kernels::gaussLegendreWeights[order][j];
+//#endif
+    const double weight = SolverType::weights[order][j];
     const double updateSize = weight / dx[0];
 
     for (int k = 0; k < basisSize; k++) {
@@ -54,12 +55,12 @@ void surfaceIntegralLinear(double *lduh, const double *const lFhbnd,
   // y faces
   for (int j = 0; j < basisSize; j++) {
     for (int k = 0; k < basisSize; k++) {
-#if defined(_GLL)
-      const double weight = kernels::gaussLobattoWeights[order][k];
-#else
-      const double weight = kernels::gaussLegendreWeights[order][k];
-#endif
-
+//#if defined(_GLL)
+//      const double weight = kernels::gaussLobattoWeights[order][k];
+//#else
+//      const double weight = kernels::gaussLegendreWeights[order][k];
+//#endif
+      const double weight = kernels::weights[order][k];
       
       const double updateSize = weight / dx[1];
 

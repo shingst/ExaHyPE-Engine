@@ -18,7 +18,7 @@
 
 #if DIMENSIONS == 3
 
-template <int numberOfVariables, int basisSize>
+template <typename SolverType, int numberOfVariables, int basisSize>
 void kernels::aderdg::generic::c::faceIntegralNonlinear(
                               double *lduh, const double *const lFhbnd,
                               const int direction, const int orientation,
@@ -39,8 +39,8 @@ void kernels::aderdg::generic::c::faceIntegralNonlinear(
         for (int j = 0; j < basisSize; j++) { // y
           for (int k = 0; k < basisSize; k++) { // x
             const double scaledWeight =
-                kernels::gaussLegendreWeights[order][i] *
-                kernels::gaussLegendreWeights[order][j] *
+                SolverType::weights[order][i] *
+                SolverType::weights[order][j] *
                 scaling;
 
             // left flux minus right flux
@@ -59,8 +59,8 @@ void kernels::aderdg::generic::c::faceIntegralNonlinear(
         for (int j = 0; j < basisSize; j++) { // y
           for (int k = 0; k < basisSize; k++) { // x
             const double scaledWeight =
-                kernels::gaussLegendreWeights[order][i] *
-                kernels::gaussLegendreWeights[order][k] *
+                SolverType::weights[order][i] *
+                SolverType::weights[order][k] *
                 scaling;
 
             // back flux minus front flux
@@ -79,8 +79,8 @@ void kernels::aderdg::generic::c::faceIntegralNonlinear(
         for (int j = 0; j < basisSize; j++) { // y
           for (int k = 0; k < basisSize; k++) { // x
             const double scaledWeight =
-                kernels::gaussLegendreWeights[order][j] *
-                kernels::gaussLegendreWeights[order][k] *
+                SolverType::weights[order][j] *
+                SolverType::weights[order][k] *
                 scaling;
 
             // bottom flux minus top flux

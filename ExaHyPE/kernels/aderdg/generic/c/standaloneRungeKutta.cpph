@@ -16,8 +16,7 @@
 
 #include <algorithm>
 
-#include "kernels/DGMatrices.h"
-#include "kernels/GaussLegendreQuadrature.h"
+#include "kernels/GaussLegendreBasis.h"
 #include "kernels/KernelUtils.h"
 #include "kernels/aderdg/generic/c/computeGradients.cpph"
 

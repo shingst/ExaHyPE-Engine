@@ -5,7 +5,7 @@
 
 #if DIMENSIONS == 2
 
-template <int numberOfVariables, int basisSize>
+template <typename SolverType, int numberOfVariables, int basisSize>
 void kernels::aderdg::generic::c::faceIntegralLinear(double* const lduh, const double *const lFhbnd,
                                                      const int direction, const int orientation,
                                                      const tarch::la::Vector<DIMENSIONS, double>& dx) {
@@ -20,7 +20,7 @@ void kernels::aderdg::generic::c::faceIntegralLinear(double* const lduh, const d
   if( direction == 0 ){   // x-face
     for (int j = 0; j < basisSize; j++) { // y
       const double scaledWeight = 
-          kernels::gaussLegendreWeights[order][j] *
+          SolverType::weights[order][j] *
           scaling;
 
       for (int k = 0; k < basisSize; k++) { // x
@@ -36,7 +36,7 @@ void kernels::aderdg::generic::c::faceIntegralLinear(double* const lduh, const d
     for (int j = 0; j < basisSize; j++) { // y
       for (int k = 0; k < basisSize; k++) { // x
         const double scaledWeight =
-            kernels::gaussLegendreWeights[order][k] *
+            SolverType::weights[order][k] *
             scaling;
 
         for (int l = 0; l < numberOfVariables; l++) {

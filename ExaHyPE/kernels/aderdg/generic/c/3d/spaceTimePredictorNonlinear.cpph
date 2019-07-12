@@ -17,9 +17,8 @@
 #include "tarch/multicore/Loop.h"
 #include "peano/datatraversal/autotuning/Oracle.h"
 
-#include "../../../../DGMatrices.h"
-#include "../../../../GaussLegendreQuadrature.h"
-#include "../../../../KernelUtils.h"
+#include "kernels/GaussLegendreBasis.h"
+#include "kernels/KernelUtils.h"
 
 #if DIMENSIONS == 3
 
@@ -123,7 +122,7 @@ int aderPicardLoopNonlinear(SolverType& solver, const double* luh,
                 for (int n = 0; n < basisSize; n++) {
                   const auto idx = idx_gradQ(j, k, l, /*x*/ 0, m);
                   const auto t = 1.0 * invDx[0] * lQi[idx_lQi(j, k, n, i, m)] *
-                                 kernels::dudx[order][l][n];
+                                 SolverType::dudx[order][l][n];
                   gradQCur[idx] += t;
                   if (useViscousFlux) {
                     gradQ[idx] += t * kernels::gaussLegendreWeights[order][i];
@@ -143,7 +142,7 @@ int aderPicardLoopNonlinear(SolverType& solver, const double* luh,
                 for (int n = 0; n < basisSize; n++) {
                   const auto idx = idx_gradQ(j, l, k, /*y*/ 1, m);
                   const auto t = 1.0 * invDx[1] * lQi[idx_lQi(j, n, k, i, m)] *
-                                 kernels::dudx[order][l][n];
+                                 SolverType::dudx[order][l][n];
                   gradQCur[idx] += t;
                   if (useViscousFlux) {
                     gradQ[idx] += t * kernels::gaussLegendreWeights[order][i];
@@ -163,7 +162,7 @@ int aderPicardLoopNonlinear(SolverType& solver, const double* luh,
                 for (int n = 0; n < basisSize; n++) {
                   const auto idx = idx_gradQ(l, j, k, /*z*/ 2, m);
                   const auto t = 1.0 * invDx[2] * lQi[idx_lQi(n, j, k, i, m)] *
-                                 kernels::dudx[order][l][n];
+                                 SolverType::dudx[order][l][n];
                   gradQCur[idx] += t;
                   if (useViscousFlux) {
                     gradQ[idx] += t * kernels::gaussLegendreWeights[order][i];
@@ -261,7 +260,7 @@ int aderPicardLoopNonlinear(SolverType& solver, const double* luh,
                 if (useFlux) {
                   rhs[idx_rhs(i, j, k, l, m)] -=
                       updateSize * lFi[idx_lFi(i, j, k, n, 0, m)] *
-                      kernels::Kxi[order][n][l];
+                      SolverType::Kxi[order][n][l];
                   assertion3(std::isfinite(rhs[idx_rhs(i, j, k, l, m)]),
                              rhs[idx_rhs(i, j, k, l, m)], dt, invDx);
                 }
@@ -286,7 +285,7 @@ int aderPicardLoopNonlinear(SolverType& solver, const double* luh,
                 if (useFlux) {
                   rhs[idx_rhs(i, j, l, k, m)] -=
                       updateSize * lFi[idx_lFi(i, j, n, k, 1, m)] *
-                      kernels::Kxi[order][n][l];
+                      SolverType::Kxi[order][n][l];
                   assertion3(std::isfinite(rhs[idx_rhs(i, j, l, k, m)]),
                              rhs[idx_rhs(i, j, l, k, m)], dt, invDx);
                 }
@@ -311,7 +310,7 @@ int aderPicardLoopNonlinear(SolverType& solver, const double* luh,
                 if (useFlux) {
                   rhs[idx_rhs(i, l, j, k, m)] -=
                       updateSize * lFi[idx_lFi(i, n, j, k, 2, m)] *
-                      kernels::Kxi[order][n][l];
+                      SolverType::Kxi[order][n][l];
                   assertion3(std::isfinite(rhs[idx_rhs(i, l, j, k, m)]),
                              rhs[idx_rhs(i, l, j, k, m)], dt, invDx);
                 }
@@ -386,7 +385,7 @@ int aderPicardLoopNonlinear(SolverType& solver, const double* luh,
               for (int n = 0; n < basisSize; n++) {  // time
                 lQi_new +=
                     iweight * rhs[idx_rhs(n, i, j, k, m)] *
-                    kernels::iK1[order][l][n];  // note: iK1 is already the
+                    SolverType::iK1[order][l][n];  // note: iK1 is already the
                                                 // transposed inverse of K1
 
                 assertion3(std::isfinite(rhs[idx_rhs(n, i, j, k, m)]),

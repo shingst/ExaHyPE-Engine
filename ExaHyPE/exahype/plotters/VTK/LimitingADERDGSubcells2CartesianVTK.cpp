@@ -18,7 +18,7 @@
  // Should thus be placed in kernel module or the solver
  // should provide a function that computes solution values
  // at equidistant grid points
-#include "kernels/DGMatrices.h"
+#include "kernels/GaussLegendreBasis.h"
 #include "peano/utils/Loop.h"
 
 
@@ -26,8 +26,6 @@
 #include "tarch/plotter/griddata/unstructured/vtk/VTKBinaryFileWriter.h"
 #include "tarch/plotter/griddata/unstructured/vtk/VTUTextFileWriter.h"
 #include "tarch/plotter/griddata/unstructured/vtk/VTUBinaryFileWriter.h"
-
-#include "kernels/DGBasisFunctions.h"
 
 #include "exahype/solvers/LimitingADERDGSolver.h"
 

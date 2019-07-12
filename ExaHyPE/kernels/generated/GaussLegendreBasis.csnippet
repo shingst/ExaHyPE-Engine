@@ -1,0 +1,104 @@
+// order 0
+double kernels::legendre::weights_0[1]={
+  1.0
+};
+double kernels::legendre::nodes_0[1]={
+  0.5
+};
+double kernels::legendre::Kxi_0_0[0+1]={
+  0.0
+};
+double* kernels::legendre::Kxi_0[0+1]={
+  Kxi_0_0
+};
+double kernels::legendre::iK1_0_0[0+1]={
+  1.0
+};
+double* kernels::legendre::iK1_0[0+1]={
+  iK1_0_0
+};
+double kernels::legendre::dudx_0_0[0+1]={
+  0.0
+};
+double* kernels::legendre::dudx_0[0+1]={
+  dudx_0_0
+};
+double kernels::legendre::equidistantGridProjector_0_0[0+1]={
+  1.0
+};
+double* kernels::legendre::equidistantGridProjector_0[0+1]={
+  equidistantGridProjector_0_0
+};
+double kernels::legendre::FCoeff_0_0[1]={
+  1.0
+};
+double kernels::legendre::FCoeff_1_0[1]={
+  1.0
+};
+double* kernels::legendre::FCoeff_0[2]={FCoeff_0_0,FCoeff_1_0};
+double kernels::legendre::fineGridProjector_0_0_0[0+1]={
+  1.0
+};
+double* kernels::legendre::fineGridProjector_0_0[0+1]={
+  fineGridProjector_0_0_0
+};
+double kernels::legendre::fineGridProjector_1_0_0[0+1]={
+  1.0
+};
+double* kernels::legendre::fineGridProjector_1_0[0+1]={
+  fineGridProjector_1_0_0
+};
+double kernels::legendre::fineGridProjector_2_0_0[0+1]={
+  1.0
+};
+double* kernels::legendre::fineGridProjector_2_0[0+1]={
+  fineGridProjector_2_0_0
+};
+double** kernels::legendre::fineGridProjector_0[3]={fineGridProjector_0_0,fineGridProjector_1_0,fineGridProjector_2_0};
+
+double kernels::legendre::basisFunction_0_0(const double& s) {  return 1;}
+double kernels::legendre::basisFunctionFirstDerivative_0_0(const double& s) {  return 0;}
+double kernels::legendre::basisFunctionSecondDerivative_0_0(const double& s) {  return 0;}
+kernels::UnivariateFunction kernels::legendre::basisFunction_0[0+1]={
+  basisFunction_0_0
+};
+kernels::UnivariateFunction kernels::legendre::basisFunctionFirstDerivative_0[0+1]={
+  basisFunctionFirstDerivative_0_0
+};
+kernels::UnivariateFunction kernels::legendre::basisFunctionSecondDerivative_0[0+1]={
+  basisFunctionSecondDerivative_0_0
+};
+
+double* kernels::legendre::weights[0+1] = {
+  weights_0
+};
+double* kernels::legendre::nodes[0+1] = {
+  nodes_0
+};
+double** kernels::legendre::Kxi[0+1] = {
+  Kxi_0
+};
+double** kernels::legendre::iK1[0+1] = {
+  iK1_0
+};
+double** kernels::legendre::dudx[0+1] = {
+  dudx_0
+};
+double** kernels::legendre::equidistantGridProjector[0+1] = {
+  equidistantGridProjector_0
+};
+double** kernels::legendre::FCoeff[0+1] = {
+  FCoeff_0
+};
+double*** kernels::legendre::fineGridProjector[0+1] = {
+  fineGridProjector_0
+};
+kernels::UnivariateFunction* kernels::legendre::basisFunction[0+1]={
+  basisFunction_0
+};
+kernels::UnivariateFunction* kernels::legendre::basisFunctionFirstDerivative[0+1]={
+  basisFunctionFirstDerivative_0
+};
+kernels::UnivariateFunction* kernels::legendre::basisFunctionSecondDerivative[0+1]={
+  basisFunctionSecondDerivative_0
+};

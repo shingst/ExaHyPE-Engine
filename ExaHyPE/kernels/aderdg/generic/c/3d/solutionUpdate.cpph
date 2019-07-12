@@ -10,14 +10,13 @@
  * Released under the BSD 3 Open Source License.
  * For the full license text, see LICENSE.txt
  **/
-//#include "../../../../GaussLegendreQuadrature.h"
-#if defined(_GLL)
-#include "../../../../GaussLobattoQuadrature.h"
-#else
-#include "../../../../GaussLegendreQuadrature.h"
+//#if defined(_GLL)
+//#include "kernels/GaussLobattoBasis.h"
+//#else
+//#include "kernels/GaussLegendreBasis.h"
 
 #endif    
-#include "../../../../KernelUtils.h"
+#include "kernels/KernelUtils.h"
 
 namespace kernels {
 namespace aderdg {
@@ -44,15 +43,18 @@ void solutionUpdate(
   for (int i = 0; i < basisSize; i++) {
     for (int j = 0; j < basisSize; j++) {
       for (int k = 0; k < basisSize; k++) {
-      #if defined(_GLL)
-      const double weight = kernels::gaussLobattoWeights[order][i] *
-                            kernels::gaussLobattoWeights[order][j] *
-                            kernels::gaussLobattoWeights[order][k];
-      #else
-      const double weight = kernels::gaussLegendreWeights[order][i] *
-                            kernels::gaussLegendreWeights[order][j] *
-                            kernels::gaussLegendreWeights[order][k];
-      #endif
+        //#if defined(_GLL)
+        //const double weight = kernels::gaussLobattoWeights[order][i] *
+        //                      kernels::gaussLobattoWeights[order][j] *
+        //                      kernels::gaussLobattoWeights[order][k];
+        //#else
+        //const double weight = kernels::gaussLegendreWeights[order][i] *
+        //                      kernels::gaussLegendreWeights[order][j] *
+        //                      kernels::gaussLegendreWeights[order][k];
+        //#endif
+        const double weight = SolverType::weights[order][i] *
+                              SolverType::weights[order][j] *
+                              SolverType::weights[order][k];
         
         const double updateSize = dt / weight;
 

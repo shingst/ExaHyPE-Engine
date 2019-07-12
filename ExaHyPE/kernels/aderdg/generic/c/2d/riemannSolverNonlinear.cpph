@@ -18,7 +18,7 @@
 #include <cmath>
 #include <cstring>
 
-#include "../../../../KernelUtils.h"
+#include "kernels/KernelUtils.h"
 
 namespace kernels {
 namespace aderdg {

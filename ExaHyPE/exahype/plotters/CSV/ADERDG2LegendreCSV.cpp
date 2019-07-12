@@ -14,9 +14,7 @@
 #include "ADERDG2LegendreCSV.h"
 #include "tarch/parallel/Node.h"
 
-#include "kernels/DGMatrices.h"
-#include "kernels/GaussLegendreQuadrature.h"
-#include "kernels/DGBasisFunctions.h"
+#include "kernels/GaussLegendreBasis.h"
 #include "kernels/KernelUtils.h"
 
 #include "peano/utils/Loop.h"

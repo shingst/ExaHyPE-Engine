@@ -1,0 +1,51 @@
+namespace kernels {
+namespace lobatto {
+extern double weights_0[0+1];
+extern double* weights[0+1];
+
+extern double nodes_0[0+1];
+extern double* nodes[0+1];
+
+extern double Kxi_0_0[0+1];
+extern double* Kxi_0[0+1];
+extern double** Kxi[0+1];
+
+extern double iK1_0_0[0+1];
+extern double* iK1_0[0+1];
+extern double** iK1[0+1];
+
+extern double dudx_0_0[0+1];
+extern double* dudx_0[0+1];
+extern double** dudx[0+1];
+
+extern double equidistantGridProjector_0_0[0+1];
+extern double* equidistantGridProjector_0[0+1];
+extern double** equidistantGridProjector[0+1];
+
+extern double FCoeff_0_0[0+1];
+extern double FCoeff_1_0[0+1];
+extern double* FCoeff_0[2];
+extern double** FCoeff[0+1];
+
+
+extern double fineGridProjector_0_0_0[0+1];
+extern double* fineGridProjector_0_0[0+1];
+extern double fineGridProjector_1_0_0[0+1];
+extern double* fineGridProjector_1_0[0+1];
+extern double fineGridProjector_2_0_0[0+1];
+extern double* fineGridProjector_2_0[0+1];
+extern double** fineGridProjector_0[3];
+extern double*** fineGridProjector[0+1];
+
+
+double basisFunction_0_0(const double& s);
+double basisFunctionFirstDerivative_0_0(const double& s);
+double basisFunctionSecondDerivative_0_0(const double& s);
+extern UnivariateFunction basisFunction_0[0+1];
+extern UnivariateFunction basisFunctionFirstDerivative_0[0+1];
+extern UnivariateFunction basisFunctionSecondDerivative_0[0+1];
+extern UnivariateFunction* basisFunction[0+1];
+extern UnivariateFunction* basisFunctionFirstDerivative[0+1];
+extern UnivariateFunction* basisFunctionSecondDerivative[0+1];
+}
+}

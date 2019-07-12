@@ -10,24 +10,9 @@
  * Released under the BSD 3 Open Source License.
  * For the full license text, see LICENSE.txt
  **/
-#include "string.h"
-
-#include "tarch/la/Scalar.h"
-#include "tarch/la/ScalarOperations.h"
-
+ 
 #include "kernels/GaussLegendreBasis.h"
-#include "../../../../KernelUtils.h"
 
-using std::endl;
-using std::cout;
+// Snippet generated with ExaHyPE-Engine/Miscellaneous/aderdg/generateLookupTable.py
 
-extern "C" {
-void elementupdate_(double *luh, const double *const lduh, const double *dt);
-}
-
-template <typename SolverType>
-void kernels::aderdg::generic::fortran::solutionUpdate(
-    SolverType& solver,double *luh, const double *const lduh, const double dt) {
-
-  elementupdate_(luh, lduh, &dt);
-}
+#include "kernels/generated/GaussLegendreBasis.csnippet"

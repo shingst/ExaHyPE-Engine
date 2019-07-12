@@ -21,7 +21,7 @@ def generateBasisFunctionDefinitions(outfile,rule,order,x,printPrec):
     
     for m in range(0,order+1):
         s=sympy.symbols('s')
-        outfile.write("double kernels::gauss::%s::basisFunction_%d_%d(const double s) {" % (rule,order,m))
+        outfile.write("double kernels::%s::basisFunction_%d_%d(const double& s) {" % (rule,order,m))
         refphi = LagrangBasisPoly(s,order,m,x2)
 
 
@@ -34,7 +34,7 @@ def generateBasisFunctionDefinitions(outfile,rule,order,x,printPrec):
         s=sympy.symbols('s')
         refphi     = LagrangBasisPoly(s,order,m,x2)
         dds_refphi = sympy.diff(refphi, s)
-        outfile.write("double kernels::gauss::%s::basisFunctionFirstDerivative_%d_%d(const double s) {" % (rule,order,m))
+        outfile.write("double kernels::%s::basisFunctionFirstDerivative_%d_%d(const double& s) {" % (rule,order,m))
         ret = "  return %s;" % sympy.simplify(dds_refphi)
         ret = re.sub(r"s\*\*([0-9]+)", r"std::pow(s, \1)", ret)
         outfile.write(ret)
@@ -44,7 +44,7 @@ def generateBasisFunctionDefinitions(outfile,rule,order,x,printPrec):
         s=sympy.symbols('s')
         refphi       = LagrangBasisPoly(s,order,m,x2)
         d2ds2_refphi = sympy.simplify(sympy.diff(refphi, s, s))
-        outfile.write("double kernels::gauss::%s::basisFunctionSecondDerivative_%d_%d(const double s) {" % (rule,order,m))
+        outfile.write("double kernels::%s::basisFunctionSecondDerivative_%d_%d(const double& s) {" % (rule,order,m))
         ret = "  return %s;" % sympy.simplify(d2ds2_refphi)
         ret = re.sub(r"s\*\*([0-9]+)", r"std::pow(s, \1)", ret)
         outfile.write(ret)

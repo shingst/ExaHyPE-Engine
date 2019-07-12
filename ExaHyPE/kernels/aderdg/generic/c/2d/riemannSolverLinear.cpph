@@ -13,8 +13,8 @@
 
 #include <algorithm>
 
-#include "../../../../KernelUtils.h"
-#include "../../../../RiemannSolverUtils.h"
+#include "kernels/KernelUtils.h"
+#include "kernels/RiemannSolverUtils.h"
 
 namespace kernels {
 namespace aderdg {

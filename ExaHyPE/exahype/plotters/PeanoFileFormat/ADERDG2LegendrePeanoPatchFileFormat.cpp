@@ -17,9 +17,7 @@
 #include "peano/utils/Loop.h"
 
 #include "kernels/KernelUtils.h"
-#include "kernels/DGMatrices.h"
-#include "kernels/GaussLegendreQuadrature.h"
-#include "kernels/DGBasisFunctions.h"
+#include "kernels/GaussLegendreBasis.h"
 
 #include "exahype/solvers/ADERDGSolver.h"
 
@@ -32,8 +30,6 @@
 #include "tarch/plotter/griddata/blockstructured/PeanoTextPatchFileWriter.h"
 #include "tarch/plotter/griddata/blockstructured/PeanoHDF5PatchFileWriter.h"
 
-
-#include "kernels/DGBasisFunctions.h"
 #include "kernels/aderdg/generic/c/computeGradients.cpph" // derivatives
 
 #include "exahype/plotters/slicing/Slicer.h"

@@ -17,9 +17,8 @@
 #include "tarch/multicore/Loop.h"
 #include "peano/datatraversal/autotuning/Oracle.h"
 
-#include "../../../../DGMatrices.h"
-#include "../../../../GaussLegendreQuadrature.h"
-#include "../../../../KernelUtils.h"
+#include "kernels/GaussLegendreBasis.h"
+#include "kernels/KernelUtils.h"
 
 #if DIMENSIONS == 2
 
@@ -108,7 +107,7 @@ int aderPicardLoopNonlinear(SolverType& solver,
             for (int m = 0; m < numberOfVariables; m++) {
               for (int n = 0; n < basisSize; n++) { // n == matmul x
                 const auto idx = idx_gradQ(k,l, /*x*/0,m);
-                const auto t = 1.0 * invDx[0] * lQi[idx_lQi(k,n,i,m)] * kernels::dudx[order][l][n];
+                const auto t = 1.0 * invDx[0] * lQi[idx_lQi(k,n,i,m)] * SolverType::dudx[order][l][n];
                 gradQCur[idx] += t;
                 if (useViscousFlux) {
                   gradQ[idx] += t * kernels::gaussLegendreWeights[order][i];
@@ -127,7 +126,7 @@ int aderPicardLoopNonlinear(SolverType& solver,
           for (int m = 0; m < numberOfVariables; m++) {
             for (int n = 0; n < basisSize; n++) { // n = matmul y
               const auto idx = idx_gradQ(l, k, /*y*/1, m);
-              const auto t = 1.0 * invDx[1] * lQi[idx_lQi(n, k, i, m)] * kernels::dudx[order][l][n]; /* l,n: transpose */
+              const auto t = 1.0 * invDx[1] * lQi[idx_lQi(n, k, i, m)] * SolverType::dudx[order][l][n]; /* l,n: transpose */
               gradQCur[idx] += t;
               if (useViscousFlux) {
                 gradQ[idx] += t * kernels::gaussLegendreWeights[order][i];
@@ -183,7 +182,7 @@ int aderPicardLoopNonlinear(SolverType& solver,
             for (int n = 0; n < basisSize; n++) { // n == matmul x
               if (useFlux) {
                 rhs[idx_rhs(i, k, l, m)] -= updateSize * lFi[idx_lFi(i, k, n, 0, m)] *
-                                            kernels::Kxi[order][n][l];
+                                            SolverType::Kxi[order][n][l];
               }
             }
           }
@@ -202,7 +201,7 @@ int aderPicardLoopNonlinear(SolverType& solver,
             for (int n = 0; n < basisSize; n++) { // n = matmul y
               if (useFlux) {
                 rhs[idx_rhs(i, l, k, m)] -= updateSize * lFi[idx_lFi(i, n, k, 1, m)] *
-                    kernels::Kxi[order][n][l];
+                    SolverType::Kxi[order][n][l];
               }
             }
           }
@@ -263,7 +262,7 @@ int aderPicardLoopNonlinear(SolverType& solver,
             double lQi_new = 0;
             for (int n = 0; n < basisSize; n++) { // matmul time
               lQi_new += iweight * rhs[idx_rhs(n, j, k, m)] *
-                  kernels::iK1[order][l][n]; // note: iK1 is already the transposed inverse of K1
+                  SolverType::iK1[order][l][n]; // note: iK1 is already the transposed inverse of K1
             }
             sq_res += (lQi_new - lQi[idx_lQi(j, k, l, m)]) * (lQi_new - lQi[idx_lQi(j, k, l, m)]);
             assertion3( !std::isnan(lQi[idx_lQi(j, k, l, m)]), idx_lQi(j, k, l, m), dt, invDx );
@@ -289,7 +288,7 @@ int aderPicardLoopNonlinear(SolverType& solver,
           for (int m = 0; m < numberOfVariables; m++) {
             for (int n = 0; n < basisSize; n++) { // t == n
               lQt[idx_lQt(l, m)] += 1./dt * lQi[idx_lQi(j, k, n, m)] *
-                                          kernels::dudx[order][l][n];
+                                          SolverType::dudx[order][l][n];
             }
             printf("Qt[%d,%d] = %f\n", l, m, lQt[idx_lQt(l,m)]);
           }

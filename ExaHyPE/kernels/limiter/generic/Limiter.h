@@ -18,9 +18,9 @@
 #include <stdexcept>
 #include <stdlib.h>
 
-#include "../../LimiterProjectionMatrices.h"
-#include "../../GaussLegendreQuadrature.h"
-#include "../../KernelUtils.h"
+#include "kernels/LimiterProjectionMatrices.h"
+#include "kernels/GaussLegendreBasis.h"
+#include "kernels/KernelUtils.h"
 
 #include "peano/utils/Globals.h"
 

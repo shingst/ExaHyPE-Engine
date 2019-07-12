@@ -17,7 +17,7 @@
 #include "tarch/tests/TestCaseFactory.h"
 
 #include "peano/utils/Loop.h"
-#include "kernels/DGBasisFunctions.h"
+#include "kernels/GaussLegendreBasis.h"
 
 #include "kernels/aderdg/generic/Kernels.h"
 
@@ -112,10 +112,10 @@ void GenericEulerKernelTest::testEquidistantGridProjection() {
       double value = 0.0;
       dfor(ii,order+1) { // Gauss-Legendre node indices
         int iGauss = peano::utils::dLinearisedWithoutLookup(ii,order + 1);
-        value +=  kernels::equidistantGridProjector1d[order][ii(0)][i(0)] *
-            kernels::equidistantGridProjector1d[order][ii(1)][i(1)] *
+        value +=  kernels::legendre::equidistantGridProjector[order][ii(0)][i(0)] *
+            kernels::legendre::equidistantGridProjector[order][ii(1)][i(1)] *
             #ifdef Dim3
-            kernels::equidistantGridProjector1d[order][ii(2)][i(2)] *
+            kernels::legendre::equidistantGridProjector[order][ii(2)][i(2)] *
             #endif
             u[iGauss * numberOfVariables + unknown];
       }

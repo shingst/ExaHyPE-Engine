@@ -16,36 +16,36 @@
 #include <set>
 
 //TODO remove when generated
-#include "kernels/GaussLegendreQuadrature.h"
-#include "kernels/GaussLobattoQuadrature.h"
 #include "kernels/KernelUtils.h"
 #include <stdlib.h>
 
 #include "tarch/Assertions.h"
+#include "GaussLegendreBasis.h"
+#include "GaussLobattoBasis.h"
 
 namespace kernels {
 
 // TODO Dominic: Old functions still needed?
 
-/**
- * Initialises the lookup tables \p luh2lim, \p luh2lob
- * and \p lim2luh for the specified \p orders.
- *
- * \todo default implementation!
- *
- * \see freeLimiterProjectionMatrices
- */
-void initLimiterProjectionMatrices(const std::set<int>& orders);
-
-/**
- * Frees the memory that was allocated for the lookup tables \p luh2lim, \p luh2lob
- * and \p lim2luh for the specified \p orders.
- *
- * \todo default implementation!
- *
- * \see initLimiterProjectionMatrices
- */
-void freeLimiterProjectionMatrices(const std::set<int>& orders);
+///**
+// * Initialises the lookup tables \p luh2lim, \p luh2lob
+// * and \p lim2luh for the specified \p orders.
+// *
+// * \todo default implementation!
+// *
+// * \see freeLimiterProjectionMatrices
+// */
+//void initLimiterProjectionMatrices(const std::set<int>& orders);
+//
+///**
+// * Frees the memory that was allocated for the lookup tables \p luh2lim, \p luh2lob
+// * and \p lim2luh for the specified \p orders.
+// *
+// * \todo default implementation!
+// *
+// * \see initLimiterProjectionMatrices
+// */
+//void freeLimiterProjectionMatrices(const std::set<int>& orders);
 
 extern double** uh2lim;
 extern double** uh2lob;
@@ -146,7 +146,7 @@ void gaussLegendreBasisFunctions(double (&phi) [order+1], double xi) {
       if(j == m)
         continue;
       else
-        phi[m] = phi[m]*(xi - kernels::gaussLegendreNodes[order][j])/(kernels::gaussLegendreNodes[order][m]-kernels::gaussLegendreNodes[order][j]);
+        phi[m] = phi[m]*(xi - kernels::legendre::nodes[order][j])/(kernels::legendre::nodes[order][m]-kernels::legendre::nodes[order][j]);
     }
   }
 }
@@ -176,10 +176,10 @@ void computeDG2FVProjector(double (&dg2fv) [(order+1)*patchSize]) {
     for(int i=0; i<basisSizeLim; i++) {
       const double xLeft = i*dxi;
       for(int j=0; j<basisSize; j++) {
-        const double xi = xLeft + dxi*kernels::gaussLegendreNodes[order][j];
+        const double xi = xLeft + dxi*kernels::legendre::nodes[order][j];
         gaussLegendreBasisFunctions<order>(phi, xi);
         for(int k=0; k<basisSize; k++) { //
-          dg2fv[idx(k,i)] += gaussLegendreWeights[order][j] * phi[k];
+          dg2fv[idx(k,i)] += kernels::legendre::weights[order][j] * phi[k];
         }
       }
     }
@@ -235,10 +235,10 @@ void computeFV2DGProjector(double (&fv2dg) [(order+1)*patchSize],const double (&
         lsqm[idxLSQM(i,j)] += 2* dg2fv[idxDG2FV(i,k)] * dg2fv[idxDG2FV(j,k)];
       }
     }
-    lsqm[idxLSQM(i,basisSize)] = gaussLegendreWeights[basisSize-1][i];
+    lsqm[idxLSQM(i,basisSize)] = kernels::legendre::weights[basisSize-1][i];
   }
   for(int i=0; i<basisSize; i++) {
-    lsqm[idxLSQM(basisSize,i)] = -gaussLegendreWeights[basisSize-1][i];
+    lsqm[idxLSQM(basisSize,i)] = -kernels::legendre::weights[basisSize-1][i];
   }
   lsqm[idxLSQM(basisSize,basisSize)] = 0.;
 
@@ -275,7 +275,7 @@ void computeLegendre2LobattoProjector(double (&leg2log) [(order+1)*(order+1)]) {
   idx2 idx(basisSize, basisSize);
 
   for(int i=0; i<basisSize; i++) {
-    gaussLegendreBasisFunctions<order>(phi, gaussLobattoNodes[order][i]);
+    gaussLegendreBasisFunctions<order>(phi, kernels::lobatto::nodes[order][i]);
     for(int j=0; j<basisSize; j++) {
       leg2log[idx(j,i)] = phi[j]; //Fortran: uh2lob(ii,:) = phi(:)
     }

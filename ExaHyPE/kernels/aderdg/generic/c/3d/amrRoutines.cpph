@@ -13,8 +13,7 @@
 #include "tarch/la/Scalar.h"
 #include "tarch/la/ScalarOperations.h"
 
-#include "kernels/GaussLegendreQuadrature.h"
-#include "kernels/DGMatrices.h"
+#include "kernels/GaussLegendreBasis.h"
 #include "kernels/KernelUtils.h"
 
 #include "string.h"
@@ -37,8 +36,8 @@ void singleLevelFaceUnknownsProlongation(
           for (int n1 = 0; n1 < basisSize; ++n1) {
             lQhbndFine[idx(m2,m1,ivar)] +=
                 lQhbndCoarse[idx(n2,n1,ivar)] *
-                kernels::fineGridProjector1d[order][subfaceIndex[0]][n1][m1] *
-                kernels::fineGridProjector1d[order][subfaceIndex[1]][n2][m2];
+                SolverType::fineGridProjector[order][subfaceIndex[0]][n1][m1] *
+                SolverType::fineGridProjector[order][subfaceIndex[1]][n2][m2];
           }
         }
       }
@@ -46,7 +45,7 @@ void singleLevelFaceUnknownsProlongation(
   }
 }
 
-template <int numberOfVariables,int numberOfParameters,int basisSize>
+template <typename SolverType, int numberOfVariables,int numberOfParameters,int basisSize>
 void kernels::aderdg::generic::c::faceUnknownsProlongation(
     double* lQhbndFine,
     double* lFhbndFine,
@@ -105,22 +104,22 @@ void kernels::aderdg::generic::c::faceUnknownsProlongation(
     // Apply the single level prolongation operator.
     // Use the coarse level unknowns as input in the first iteration.
     if (l==1) {
-      singleLevelFaceUnknownsProlongation<numberOfData,basisSize>(
+      singleLevelFaceUnknownsProlongation<SolverType,numberOfData,basisSize>(
           pointerQhbnd1,
           lQhbndCoarse,
           subintervalIndex);
 
-      singleLevelFaceUnknownsProlongation<numberOfVariables,basisSize>(
+      singleLevelFaceUnknownsProlongation<SolverType,numberOfVariables,basisSize>(
           pointerFhbnd1,
           lFhbndCoarse,
           subintervalIndex);
     } else {
-      singleLevelFaceUnknownsProlongation<numberOfData,basisSize>(
+      singleLevelFaceUnknownsProlongation<SolverType,numberOfData,basisSize>(
           pointerQhbnd1,
           pointerQhbnd2,
           subintervalIndex);
 
-      singleLevelFaceUnknownsProlongation<numberOfVariables,basisSize>(
+      singleLevelFaceUnknownsProlongation<SolverType,numberOfVariables,basisSize>(
           pointerFhbnd1,
           pointerFhbnd2,
           subintervalIndex);
@@ -143,7 +142,7 @@ void kernels::aderdg::generic::c::faceUnknownsProlongation(
   }
 }
 
-template <int numberOfVariables, int basisSize>
+template <typename SolverType, int numberOfVariables, int basisSize>
 void singleLevelFaceUnknownsRestriction(
     double* lQhbndCoarse,
     const double* lQhbndFine,
@@ -161,13 +160,13 @@ void singleLevelFaceUnknownsRestriction(
           for (int n1 = 0; n1 < basisSize; ++n1) {
             
             lQhbndCoarse[idx(m2,m1,ivar)] +=
-                             kernels::gaussLegendreWeights[order][n1] *
-                             kernels::gaussLegendreWeights[order][n2] *
-                             kernels::fineGridProjector1d[order][subfaceIndex[0]][m1][n1] *
-                             kernels::fineGridProjector1d[order][subfaceIndex[1]][m2][n2] *
+                             SolverType::weights[order][n1] *
+                             SolverType::weights[order][n2] *
+                             SolverType::fineGridProjector[order][subfaceIndex[0]][m1][n1] *
+                             SolverType::fineGridProjector[order][subfaceIndex[1]][m2][n2] *
                              lQhbndFine[idx(n2,n1,ivar)] /
-                             kernels::gaussLegendreWeights[order][m1] /
-                             kernels::gaussLegendreWeights[order][m2] / 9.0;
+                             SolverType::weights[order][m1] /
+                             SolverType::weights[order][m2] / 9.0;
           }
         }
       }
@@ -184,7 +183,7 @@ void accumulate(
   }
 }
 
-template <int numberOfVariables,int basisSize>
+template <typename SolverType, int numberOfVariables,int basisSize>
 void kernels::aderdg::generic::c::faceUnknownsRestriction(
                              double* const       lFhbndCoarse,
                              const double* const lFhbndFine,
@@ -223,12 +222,12 @@ void kernels::aderdg::generic::c::faceUnknownsRestriction(
     // Apply the single level restriction operator.
     // Use the fine level unknowns as input in the first iteration.
     if (l==1) {
-      singleLevelFaceUnknownsRestriction<numberOfVariables,basisSize>(
+      singleLevelFaceUnknownsRestriction<SolverType,numberOfVariables,basisSize>(
           pointerFhbnd1,
           lFhbndFine,
           subintervalIndex);
     } else {
-      singleLevelFaceUnknownsRestriction<numberOfVariables,basisSize>(
+      singleLevelFaceUnknownsRestriction<SolverType,numberOfVariables,basisSize>(
           pointerFhbnd1,
           pointerFhbnd2,
           subintervalIndex);
@@ -246,7 +245,7 @@ void kernels::aderdg::generic::c::faceUnknownsRestriction(
   std::copy_n(pointerFhbnd2,basisSize2*numberOfVariables,lFhbndCoarse);
 }
 
-template <int numberOfVariables,int numberOfParameters,int basisSize>
+template <typename SolverType, int numberOfVariables,int numberOfParameters,int basisSize>
 void kernels::aderdg::generic::c::faceUnknownsRestriction(double* lQhbndCoarse,
                                                           double* lFhbndCoarse,
                                                           const double* lQhbndFine,
@@ -296,22 +295,22 @@ void kernels::aderdg::generic::c::faceUnknownsRestriction(double* lQhbndCoarse,
     // Apply the single level restriction operator.
     // Use the fine level unknowns as input in the first iteration.
     if (l==1) {
-      singleLevelFaceUnknownsRestriction<numberOfData,basisSize>(
+      singleLevelFaceUnknownsRestriction<SolverType,numberOfData,basisSize>(
           pointerQhbnd1,
           lQhbndFine,
           subintervalIndex);
 
-      singleLevelFaceUnknownsRestriction<numberOfVariables,basisSize>(
+      singleLevelFaceUnknownsRestriction<SolverType,numberOfVariables,basisSize>(
           pointerFhbnd1,
           lFhbndFine,
           subintervalIndex);
     } else {
-      singleLevelFaceUnknownsRestriction<numberOfData,basisSize>(
+      singleLevelFaceUnknownsRestriction<SolverType,numberOfData,basisSize>(
           pointerQhbnd1,
           pointerQhbnd2,
           subintervalIndex);
 
-      singleLevelFaceUnknownsRestriction<numberOfVariables,basisSize>(
+      singleLevelFaceUnknownsRestriction<SolverType,numberOfVariables,basisSize>(
           pointerFhbnd1,
           pointerFhbnd2,
           subintervalIndex);
@@ -335,7 +334,7 @@ void kernels::aderdg::generic::c::faceUnknownsRestriction(double* lQhbndCoarse,
   accumulate<basisSize2*numberOfVariables>(lFhbndCoarse, pointerFhbnd2);
 }
 
-template <int numberOfVariables, int basisSize>
+template <typename SolverType, int numberOfVariables, int basisSize>
 void singleLevelVolumeUnknownsProlongation(
     double* luhFine,
     const double* luhCoarse,
@@ -355,9 +354,9 @@ void singleLevelVolumeUnknownsProlongation(
               for (int n1 = 0; n1 < basisSize; ++n1) {
                 luhFine[idx(m3,m2,m1,ivar)]
                         += luhCoarse[idx(n3,n2,n1,ivar)] *
-                        kernels::fineGridProjector1d[order][subcellIndex[0]][n1][m1] *
-                        kernels::fineGridProjector1d[order][subcellIndex[1]][n2][m2] *
-                        kernels::fineGridProjector1d[order][subcellIndex[2]][n3][m3];
+                        SolverType::fineGridProjector[order][subcellIndex[0]][n1][m1] *
+                        SolverType::fineGridProjector[order][subcellIndex[1]][n2][m2] *
+                        SolverType::fineGridProjector[order][subcellIndex[2]][n3][m3];
               }
             }
           }
@@ -367,7 +366,7 @@ void singleLevelVolumeUnknownsProlongation(
   }
 }
 
-template <int numberOfVariables,int numberOfParameters,int basisSize>
+template <typename SolverType, int numberOfVariables,int numberOfParameters,int basisSize>
 void kernels::aderdg::generic::c::volumeUnknownsProlongation(double* luhFine,
                                                              const double* luhCoarse,
                                                              const int coarseGridLevel,
@@ -419,12 +418,12 @@ void kernels::aderdg::generic::c::volumeUnknownsProlongation(double* luhFine,
     // Apply the single level prolongation operator.
     // Use the coarse level unknowns as input in the first iteration.
     if (l==1) {
-      singleLevelVolumeUnknownsProlongation<numberOfData,basisSize>(
+      singleLevelVolumeUnknownsProlongation<SolverType,numberOfData,basisSize>(
           pointerUh1,
           luhCoarse,
           subintervalIndex);
     } else {
-      singleLevelVolumeUnknownsProlongation<numberOfData,basisSize>(
+      singleLevelVolumeUnknownsProlongation<SolverType,numberOfData,basisSize>(
           pointerUh1,
           pointerUh2,
           subintervalIndex);
@@ -444,7 +443,7 @@ void kernels::aderdg::generic::c::volumeUnknownsProlongation(double* luhFine,
   }
 }
 
-template <int numberOfVariables, int basisSize>
+template <typename SolverType, int numberOfVariables, int basisSize>
 void singleLevelVolumeUnknownsRestriction(
     double* luhCoarse,
     const double* luhFine,
@@ -463,16 +462,16 @@ void singleLevelVolumeUnknownsRestriction(
             for (int n2 = 0; n2 < basisSize; ++n2) {
               for (int n1 = 0; n1 < basisSize; ++n1) {
                 luhCoarse[idx(m3,m2,m1,ivar)] +=
-                    kernels::gaussLegendreWeights[order][n1] *
-                    kernels::gaussLegendreWeights[order][n2] *
-                    kernels::gaussLegendreWeights[order][n3] *
-                    kernels::fineGridProjector1d[order][subcellIndex[0]][m1][n1] *
-                    kernels::fineGridProjector1d[order][subcellIndex[1]][m2][n2] *
-                    kernels::fineGridProjector1d[order][subcellIndex[2]][m3][n3] *
+                    SolverType::weights[order][n1] *
+                    SolverType::weights[order][n2] *
+                    SolverType::weights[order][n3] *
+                    SolverType::fineGridProjector[order][subcellIndex[0]][m1][n1] *
+                    SolverType::fineGridProjector[order][subcellIndex[1]][m2][n2] *
+                    SolverType::fineGridProjector[order][subcellIndex[2]][m3][n3] *
                     luhFine[idx(n3,n2,n1,ivar)] /
-                    kernels::gaussLegendreWeights[order][m1] /
-                    kernels::gaussLegendreWeights[order][m2] /
-                    kernels::gaussLegendreWeights[order][m3] / 27.0;
+                    SolverType::weights[order][m1] /
+                    SolverType::weights[order][m2] /
+                    SolverType::weights[order][m3] / 27.0;
               }
             }
           }
@@ -482,7 +481,7 @@ void singleLevelVolumeUnknownsRestriction(
   }
 }
 
-template <int numberOfVariables, int numberOfParameters, int basisSize>
+template <typename SolverType, int numberOfVariables, int numberOfParameters, int basisSize>
 void kernels::aderdg::generic::c::volumeUnknownsRestriction(
     double* luhCoarse,
     const double* luhFine,
@@ -527,12 +526,12 @@ void kernels::aderdg::generic::c::volumeUnknownsRestriction(
     // Apply the single level restriction operator.
     // Use the fine level unknowns as input in the first iteration.
     if (l==1) {
-      singleLevelVolumeUnknownsRestriction<numberOfData,basisSize>(
+      singleLevelVolumeUnknownsRestriction<SolverType,numberOfData,basisSize>(
           pointerUh1,
           luhFine,
           subintervalIndex);
     } else {
-      singleLevelVolumeUnknownsRestriction<numberOfData,basisSize>(
+      singleLevelVolumeUnknownsRestriction<SolverType,numberOfData,basisSize>(
           pointerUh1,
           pointerUh2,
           subintervalIndex);

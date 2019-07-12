@@ -26,11 +26,12 @@ void kernels::aderdg::generic::c::solutionAdjustment(
   
   double x[2];
   for (int i = 0; i < basisSize; i++) {  // loop over dof (Major)
-#if defined(_GLL)
-    const double qi = kernels::gaussLobattoNodes[order][basisSize-1-i];
-#else	    
-    const double qi = kernels::gaussLegendreNodes[order][i];
-#endif    
+//#if defined(_GLL)
+//    const double qi = kernels::gaussLobattoNodes[order][basisSize-1-i];
+//#else	    
+//    const double qi = kernels::gaussLegendreNodes[order][i];
+//#endif    
+    const double qi = SolverType::nodes[order][i];
 
     for (int j = 0; j < basisSize; j++) { // (Minor)
 #if defined(_GLL)

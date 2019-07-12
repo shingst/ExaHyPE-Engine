@@ -23,7 +23,7 @@ namespace aderdg {
 namespace generic {
 namespace c {
 
-template <int numberOfVariables, int basisSize>
+template <typename SolverType, int numberOfVariables, int basisSize>
 void surfaceIntegralNonlinear(double *lduh, const double *const lFhbnd,
                               const tarch::la::Vector<DIMENSIONS, double> &dx) {
   constexpr int order = basisSize - 1;
@@ -35,7 +35,7 @@ void surfaceIntegralNonlinear(double *lduh, const double *const lFhbnd,
 
   // x faces
   for (int j = 0; j < basisSize; j++) {
-    const double weight = kernels::gaussLegendreWeights[order][j];
+    const double weight = SolverType::weights[order][j];
     const double updateSize = weight * invDx[0];
 
     for (int k = 0; k < basisSize; k++) {
@@ -52,7 +52,7 @@ void surfaceIntegralNonlinear(double *lduh, const double *const lFhbnd,
   // y faces
   for (int j = 0; j < basisSize; j++) {
     for (int k = 0; k < basisSize; k++) {
-      const double weight = kernels::gaussLegendreWeights[order][k];
+      const double weight = SolverType::weights[order][k];
       const double updateSize = weight * invDx[1];
 
       // back flux minus front flux

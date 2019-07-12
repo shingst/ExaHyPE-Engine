@@ -10,9 +10,8 @@
 
 #include "kernels/KernelUtils.h" // indexing
 #include "peano/utils/Loop.h" // dfor
-#include "kernels/DGMatrices.h"
+#include "kernels/GaussLegendreBasis.h"
 #include "exahype/solvers/ADERDGSolver.h"
-#include "kernels/DGBasisFunctions.h"
 #include "tarch/logging/Log.h"
 #include <sstream>
 
@@ -109,10 +108,10 @@ void exahype::plotters::ADERDG2Carpet::interpolateCartesianPatch(const dvec& off
       dfor(ii,basisSize) { // Gauss-Legendre node indices
         int iGauss = peano::utils::dLinearisedWithoutLookup(ii,order + 1);
         interpoland[unknown] +=
-		kernels::equidistantGridProjector1d[order][ii(0)][i(0)] *
-		kernels::equidistantGridProjector1d[order][ii(1)][i(1)] *
+		kernels::legendre::equidistantGridProjector[order][ii(0)][i(0)] *
+		kernels::legendre::equidistantGridProjector[order][ii(1)][i(1)] *
 		#if DIMENSIONS==3
-		kernels::equidistantGridProjector1d[order][ii(2)][i(2)] *
+		kernels::legendre::equidistantGridProjector[order][ii(2)][i(2)] *
 		#endif
 		u[iGauss * solverUnknowns + unknown];
         assertion3(interpoland[unknown] == interpoland[unknown], offsetOfPatch, sizeOfPatch, iGauss);

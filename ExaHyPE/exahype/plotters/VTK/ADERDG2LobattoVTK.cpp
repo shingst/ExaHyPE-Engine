@@ -14,11 +14,9 @@
 #include "ADERDG2LobattoVTK.h"
 #include "tarch/parallel/Node.h"
 
-#include "kernels/DGMatrices.h"
+#include "kernels/GaussLegendreBasis.h"
 
-#include "kernels/GaussLobattoQuadrature.h"
-
-#include "kernels/DGBasisFunctions.h"
+#include "kernels/GaussLegendreBasis.h"
 
 #include "peano/utils/Loop.h"
 
@@ -27,6 +25,7 @@
 #include "tarch/plotter/griddata/unstructured/vtk/VTUTextFileWriter.h"
 #include "tarch/plotter/griddata/unstructured/vtk/VTUBinaryFileWriter.h"
 
+#include "../../../kernels/GaussLobattoBasis.h"
 #include "exahype/plotters/slicing/Slicer.h"
 #include "exahype/solvers/ADERDGSolver.h"
 

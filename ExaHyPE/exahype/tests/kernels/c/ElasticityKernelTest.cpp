@@ -16,7 +16,7 @@
 #include "tarch/compiler/CompilerSpecificSettings.h"
 #include "tarch/tests/TestCaseFactory.h"
 
-#include "kernels/DGBasisFunctions.h"
+#include "kernels/GaussLegendreBasis.h"
 #include "peano/utils/Loop.h"
 
 #include "kernels/aderdg/generic/Kernels.h"

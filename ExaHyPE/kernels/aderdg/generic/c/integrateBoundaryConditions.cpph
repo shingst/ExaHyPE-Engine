@@ -12,7 +12,7 @@
  **/
 
 #include <cstring> // memset
-#include "kernels/GaussLegendreQuadrature.h"
+#include "kernels/GaussLegendreBasis.h"
 #include "kernels/KernelUtils.h"
 
 

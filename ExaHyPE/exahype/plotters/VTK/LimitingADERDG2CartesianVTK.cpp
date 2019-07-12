@@ -18,7 +18,7 @@
 // Should thus be placed in kernel module or the solver
 // should provide a function that computes solution values
 // at equidistant grid points
-#include "kernels/DGMatrices.h"
+#include "kernels/GaussLegendreBasis.h"
 #include "peano/utils/Loop.h"
 
 
@@ -26,8 +26,6 @@
 #include "tarch/plotter/griddata/unstructured/vtk/VTKBinaryFileWriter.h"
 #include "tarch/plotter/griddata/unstructured/vtk/VTUTextFileWriter.h"
 #include "tarch/plotter/griddata/unstructured/vtk/VTUBinaryFileWriter.h"
-
-#include "kernels/DGBasisFunctions.h"
 
 #include "exahype/solvers/LimitingADERDGSolver.h"
 
@@ -337,10 +335,10 @@ void exahype::plotters::LimitingADERDG2CartesianVTK::plotVertexData(
       interpoland[unknown] = 0.0;
       dfor(ii,_order+1) { // Gauss-Legendre node indices
         int iGauss = peano::utils::dLinearisedWithoutLookup(ii,_order + 1);
-        interpoland[unknown] += kernels::equidistantGridProjector1d[_order][ii(1)][i(1)] *
-                 kernels::equidistantGridProjector1d[_order][ii(0)][i(0)] *
+        interpoland[unknown] += kernels::legendre::equidistantGridProjector[_order][ii(1)][i(1)] *
+                 kernels::legendre::equidistantGridProjector[_order][ii(0)][i(0)] *
                  #if DIMENSIONS==3
-                 kernels::equidistantGridProjector1d[_order][ii(2)][i(2)] *
+                 kernels::legendre::equidistantGridProjector[_order][ii(2)][i(2)] *
                  #endif
                  u[iGauss * _solverUnknowns + unknown];
         assertion3(interpoland[unknown] == interpoland[unknown], offsetOfPatch, sizeOfPatch, iGauss);

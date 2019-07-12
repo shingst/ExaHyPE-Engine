@@ -20,119 +20,119 @@ double** kernels::uh2lim;
 double** kernels::uh2lob;
 double** kernels::lim2uh;
 
-void kernels::freeLimiterProjectionMatrices(const std::set<int>& orders) {
-  // @todo The argument is not used yet.
-  constexpr int MAX_ORDER=9;
-
-  for (int i = 0; i < MAX_ORDER + 1; i++) {
-    delete [] uh2lim[i];
-    delete [] uh2lob[i];
-    delete [] lim2uh[i];
-  }
-
-  delete [] uh2lim;
-  delete [] uh2lob;
-  delete [] lim2uh;
-}
-
-void kernels::initLimiterProjectionMatrices(const std::set<int>& orders) {
-  // @todo The argument is not used yet.
-  constexpr int MAX_ORDER=9;
-
-  uh2lim = new double* [MAX_ORDER + 1];
-  uh2lob = new double* [MAX_ORDER + 1];
-  lim2uh = new double* [MAX_ORDER + 1];
-
-  //TODO JMG, use generated values
-  int basisSize, basisSizeLim;
-  int i,j,k;
-  for (int n = 0; n < MAX_ORDER + 1; n++) {
-    basisSize = n+1;
-    basisSizeLim = 2*n+1; // TODO Dominic, make modifiable
-    uh2lim[n] = new double[basisSize*basisSizeLim]();
-    uh2lob[n] = new double[basisSize*basisSize]();
-    lim2uh[n] = new double[basisSizeLim*basisSize]();
-  
-    double* phi = new double[basisSize]();
-    
-    {
-      idx2 idx(basisSize, basisSizeLim);
-      
-      const double dxi = 1. / basisSizeLim;
-      double xLeft, xi;
-      for(i=0; i<basisSizeLim; i++) {
-        xLeft = i*dxi;
-        for(j=0; j<basisSize; j++) {
-          xi = xLeft + dxi*gaussLegendreNodes[basisSize-1][j];
-          BaseFunc1D(phi, xi, basisSize);
-          for(k=0; k<basisSize; k++) { //
-            uh2lim[n][idx(k,i)] += gaussLegendreWeights[basisSize-1][j]*phi[k];
-          }
-        }
-      }
-    }
-    
-    {
-      idx2 idx(basisSize, basisSize);
-      
-      for(i=0; i<basisSize; i++) {
-        BaseFunc1D(phi, gaussLobattoNodes[basisSize-1][i], basisSize);
-        for(j=0; j<basisSize; j++) {
-          uh2lob[n][idx(j,i)] = phi[j]; //Fortran: uh2lob(ii,:) = phi(:) 
-        }
-      }
-    }
-    
-    {
-      idx2 idx(basisSizeLim, basisSize);
-      
-      double* lsqm = new double[(basisSize+1)*(basisSize+1)];
-      double* lsqrhs = new double[basisSizeLim*(basisSize+1)];
-      idx2 idxLSQM((basisSize+1),(basisSize+1));
-      idx2 idxLSQrhs(basisSizeLim,(basisSize+1));
-      idx2 idxUh2Lim(basisSize, basisSizeLim);
-      const double dxi = 1.0 / basisSizeLim;
-      for(i=0; i<basisSize; i++) {
-        for(j=0; j<basisSize; j++) {
-          lsqm[idxLSQM(i,j)] = 0.;
-          for(k=0; k<basisSizeLim; k++) {
-            lsqm[idxLSQM(i,j)] += 2* uh2lim[n][idxUh2Lim(i,k)] * uh2lim[n][idxUh2Lim(j,k)];
-          }
-        }
-        lsqm[idxLSQM(i,basisSize)] = gaussLegendreWeights[basisSize-1][i];
-      }
-      for(i=0; i<basisSize; i++) {
-        lsqm[idxLSQM(basisSize,i)] = -gaussLegendreWeights[basisSize-1][i];
-      }
-      lsqm[idxLSQM(basisSize,basisSize)] = 0.;
-      
-      double* ilsqm = matrixInverse(basisSize+1, lsqm);   
-      
-      for(i=0; i<basisSizeLim; i++) {
-        for(j=0; j<basisSize; j++) {
-          lsqrhs[idxLSQrhs(i,j)] = 2*uh2lim[n][idxUh2Lim(j,i)];
-        }
-        lsqrhs[idxLSQrhs(i,basisSize)] = dxi;
-      }
-      
-      for(i=0; i<basisSizeLim; i++) {
-        for(j=0; j<basisSize; j++) {
-          lim2uh[n][idx(i,j)] = 0.;
-          for(k=0; k<basisSize+1; k++) {
-            lim2uh[n][idx(i,j)] += ilsqm[idxLSQM(k,j)] * lsqrhs[idxLSQrhs(i,k)];
-          }
-        }
-      }
-      
-      delete[] lsqm;
-      delete[] ilsqm;
-      delete[] lsqrhs;
-    }
-    
-    delete[] phi;
-
-  }
-}
+//void kernels::freeLimiterProjectionMatrices(const std::set<int>& orders) {
+//  // @todo The argument is not used yet.
+//  constexpr int MAX_ORDER=9;
+//
+//  for (int i = 0; i < MAX_ORDER + 1; i++) {
+//    delete [] uh2lim[i];
+//    delete [] uh2lob[i];
+//    delete [] lim2uh[i];
+//  }
+//
+//  delete [] uh2lim;
+//  delete [] uh2lob;
+//  delete [] lim2uh;
+//}
+//
+//void kernels::initLimiterProjectionMatrices(const std::set<int>& orders) {
+//  // @todo The argument is not used yet.
+//  constexpr int MAX_ORDER=9;
+//
+//  uh2lim = new double* [MAX_ORDER + 1];
+//  uh2lob = new double* [MAX_ORDER + 1];
+//  lim2uh = new double* [MAX_ORDER + 1];
+//
+//  //TODO JMG, use generated values
+//  int basisSize, basisSizeLim;
+//  int i,j,k;
+//  for (int n = 0; n < MAX_ORDER + 1; n++) {
+//    basisSize = n+1;
+//    basisSizeLim = 2*n+1; // TODO Dominic, make modifiable
+//    uh2lim[n] = new double[basisSize*basisSizeLim]();
+//    uh2lob[n] = new double[basisSize*basisSize]();
+//    lim2uh[n] = new double[basisSizeLim*basisSize]();
+//
+//    double* phi = new double[basisSize]();
+//
+//    {
+//      idx2 idx(basisSize, basisSizeLim);
+//
+//      const double dxi = 1. / basisSizeLim;
+//      double xLeft, xi;
+//      for(i=0; i<basisSizeLim; i++) {
+//        xLeft = i*dxi;
+//        for(j=0; j<basisSize; j++) {
+//          xi = xLeft + dxi*kernels::legendre::nodes[basisSize-1][j];
+//          BaseFunc1D(phi, xi, basisSize);
+//          for(k=0; k<basisSize; k++) { //
+//            uh2lim[n][idx(k,i)] += kernels::legendre::weights[basisSize-1][j]*phi[k];
+//          }
+//        }
+//      }
+//    }
+//
+//    {
+//      idx2 idx(basisSize, basisSize);
+//
+//      for(i=0; i<basisSize; i++) {
+//        BaseFunc1D(phi, kernels::lobatto::nodes[basisSize-1][i], basisSize);
+//        for(j=0; j<basisSize; j++) {
+//          uh2lob[n][idx(j,i)] = phi[j]; //Fortran: uh2lob(ii,:) = phi(:)
+//        }
+//      }
+//    }
+//
+//    {
+//      idx2 idx(basisSizeLim, basisSize);
+//
+//      double* lsqm = new double[(basisSize+1)*(basisSize+1)];
+//      double* lsqrhs = new double[basisSizeLim*(basisSize+1)];
+//      idx2 idxLSQM((basisSize+1),(basisSize+1));
+//      idx2 idxLSQrhs(basisSizeLim,(basisSize+1));
+//      idx2 idxUh2Lim(basisSize, basisSizeLim);
+//      const double dxi = 1.0 / basisSizeLim;
+//      for(i=0; i<basisSize; i++) {
+//        for(j=0; j<basisSize; j++) {
+//          lsqm[idxLSQM(i,j)] = 0.;
+//          for(k=0; k<basisSizeLim; k++) {
+//            lsqm[idxLSQM(i,j)] += 2* uh2lim[n][idxUh2Lim(i,k)] * uh2lim[n][idxUh2Lim(j,k)];
+//          }
+//        }
+//        lsqm[idxLSQM(i,basisSize)] = kernels::legendre::weights[basisSize-1][i];
+//      }
+//      for(i=0; i<basisSize; i++) {
+//        lsqm[idxLSQM(basisSize,i)] = -kernels::legendre::weights[basisSize-1][i];
+//      }
+//      lsqm[idxLSQM(basisSize,basisSize)] = 0.;
+//
+//      double* ilsqm = matrixInverse(basisSize+1, lsqm);
+//
+//      for(i=0; i<basisSizeLim; i++) {
+//        for(j=0; j<basisSize; j++) {
+//          lsqrhs[idxLSQrhs(i,j)] = 2*uh2lim[n][idxUh2Lim(j,i)];
+//        }
+//        lsqrhs[idxLSQrhs(i,basisSize)] = dxi;
+//      }
+//
+//      for(i=0; i<basisSizeLim; i++) {
+//        for(j=0; j<basisSize; j++) {
+//          lim2uh[n][idx(i,j)] = 0.;
+//          for(k=0; k<basisSize+1; k++) {
+//            lim2uh[n][idx(i,j)] += ilsqm[idxLSQM(k,j)] * lsqrhs[idxLSQrhs(i,k)];
+//          }
+//        }
+//      }
+//
+//      delete[] lsqm;
+//      delete[] ilsqm;
+//      delete[] lsqrhs;
+//    }
+//
+//    delete[] phi;
+//
+//  }
+//}
 
 //TODO JMG remove when generated value
 void kernels::BaseFunc1D(double* phi, double xi, const int basisSize) {
@@ -143,7 +143,7 @@ void kernels::BaseFunc1D(double* phi, double xi, const int basisSize) {
   for(m=0; m<basisSize; m++) {
     for(j=0; j<basisSize; j++) {
       if(j == m) continue;
-      phi[m] = phi[m]*(xi- gaussLegendreNodes[basisSize-1][j])/(gaussLegendreNodes[basisSize-1][m]-gaussLegendreNodes[basisSize-1][j]);
+      phi[m] = phi[m]*(xi- kernels::legendre::nodes[basisSize-1][j])/(kernels::legendre::nodes[basisSize-1][m]-kernels::legendre::nodes[basisSize-1][j]);
     }
   }
 }

@@ -27,9 +27,6 @@
 
 #include "kernels/GaussLegendreQuadrature.h"
 #include "kernels/GaussLobattoQuadrature.h"
-#include "kernels/LimiterProjectionMatrices.h"
-#include "kernels/DGMatrices.h"
-#include "kernels/DGBasisFunctions.h"
 #include "buildinfo.h"
 
 {% for codegenContext in codegeneratorContextsList %}

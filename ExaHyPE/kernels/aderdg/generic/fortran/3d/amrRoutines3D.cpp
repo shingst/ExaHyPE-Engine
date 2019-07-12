@@ -16,8 +16,7 @@
 #include "tarch/la/Scalar.h"
 #include "tarch/la/ScalarOperations.h"
 
-#include "kernels/GaussLegendreQuadrature.h"
-#include "kernels/DGMatrices.h"
+#include "kernels/GaussLegendreBasis.h"
 
 #if DIMENSIONS == 3
 void kernels::aderdg::generic::fortran::faceUnknownsProlongation(double* lQhbndFine,

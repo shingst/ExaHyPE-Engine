@@ -21,14 +21,12 @@
 #include "peano/utils/Loop.h"
 
 #include "kernels/aderdg/generic/Kernels.h"
-#include "kernels/DGBasisFunctions.h"
-#include "kernels/DGMatrices.h"
 
-#if defined(_GLL)
-#include "kernels/GaussLobattoQuadrature.h"
-#else
-#include "kernels/GaussLegendreQuadrature.h"
-#endif
+//#if defined(_GLL)
+//#include "kernels/GaussLobattoBasis.h"
+//#else
+//#include "kernels/GaussLegendreBasis.h"
+//#endif
 
 #if DIMENSIONS == 2
 
@@ -81,16 +79,23 @@ void kernels::aderdg::generic::c::deltaDistribution(
 
   idx4 idx_PSi(basisSize + 1, basisSize, basisSize, numberOfVariables);
   idx3 idx_luh(basisSize, basisSize, numberOfData);
-
-#if defined(_GLL)
-  const double* quad_weights=&gaussLobattoWeights[basisSize-1][0];
-  const double* quad_nodes  =&gaussLobattoNodes  [basisSize-1][0];
-  const auto index_nodes= [basisSize](int i){return basisSize-1-i; }; //GLL nodes are reverted
-#else
-  const double* quad_weights=&gaussLegendreWeights[basisSize-1][0];
-  const double* quad_nodes  =&gaussLegendreNodes  [basisSize-1][0];
-  const auto index_nodes= [basisSize](int i){return i; };
-#endif  
+  
+  auto index_nodes= [basisSize](int i){return i; };
+  if (SolverType::UseLobattoBasis) { 
+    index_nodes= [basisSize](int i){return basisSize-1-i; }; //GLL nodes are reverted  
+  }
+  const double* const quad_weights= weights[basisSize-1];
+  const double* const quad_nodes  = nodes  [basisSize-1];
+  
+//#if defined(_GLL)
+//  const double* quad_weights=&gaussLobattoWeights[basisSize-1][0];
+//  const double* quad_nodes  =&gaussLobattoNodes  [basisSize-1][0];
+//  const auto index_nodes= [basisSize](int i){return basisSize-1-i; }; //GLL nodes are reverted
+//#else
+//  const double* quad_weights=&gaussLegendreWeights[basisSize-1][0];
+//  const double* quad_nodes  =&gaussLegendreNodes  [basisSize-1][0];
+//  const auto index_nodes= [basisSize](int i){return i; };
+//#endif  
 
   double tn;
   double quad_node_on_element[DIMENSIONS];

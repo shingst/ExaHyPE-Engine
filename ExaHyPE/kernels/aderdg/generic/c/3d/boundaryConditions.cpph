@@ -15,14 +15,12 @@
 
 #include <algorithm>
 
-//#include "kernels/GaussLegendreQuadrature.h"
 #if defined(_GLL)
-#include "kernels/GaussLobattoQuadrature.h"
+#include "kernels/GaussLobattoBasis.h"
 #else
-#include "kernels/GaussLegendreQuadrature.h"
+#include "kernels/GaussLegendreBasis.h"
 #endif      
 
-#include "kernels/DGMatrices.h"
 #include "kernels/KernelUtils.h"
 #include "kernels/aderdg/generic/c/computeGradients.cpph"
 
@@ -80,11 +78,12 @@ void kernels::aderdg::generic::c::boundaryConditions(
   double x[DIMENSIONS];
   x[normalNonZero] = cellCentre[normalNonZero] + (-0.5 + f)*cellSize[normalNonZero];
   for (int i = 0; i < basisSize; i++) {  // loop over dof
-  #if defined(_GLL)
-    const double node = kernels::gaussLobattoNodes[basisSize-1][basisSize-1-i];
-#else      
-    const double node = kernels::gaussLegendreNodes[basisSize-1][i];
-#endif  
+//#if defined(_GLL)
+//    const double node = kernels::gaussLobattoNodes[basisSize-1][basisSize-1-i];
+//#else      
+//    const double node = kernels::gaussLegendreNodes[basisSize-1][i];
+//#endif
+    const double node = SolverType::nodes[basisSize-1][i];
     x[d2] = cellCentre[d2] + cellSize[d2] * (node - 0.5);  
     for (int j = 0; j < basisSize; j++) {  // loop over dof
     #if defined(_GLL)

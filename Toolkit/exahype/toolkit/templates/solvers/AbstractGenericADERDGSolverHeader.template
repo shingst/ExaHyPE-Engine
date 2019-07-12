@@ -37,6 +37,21 @@ public:
   static constexpr int MaxPicardIterations       = Order+1;
   static constexpr bool UseMaxPicardIterations   = {{"true" if useMaxPicardIterations else "false"}};
   static constexpr double CFL                    = {{CFL}};
+  
+  // quadrature weights and operators
+  static constexpr bool UseLobattoBasis = {{"true" if basis == "lobatto" else "false"}};
+  static double** const weights;
+  static double** const nodes;
+  static double*** const Kxi;
+  static double*** const dudx;
+  static double*** const iK1;
+  static double*** const equidistantGridProjector;
+  static double*** const FCoff;
+  static double**** const fineGridProjector;
+  static UnivariateFunction** const basisFunction;
+  static UnivariateFunction** const basisFunctionFirstDerivative;
+  static UnivariateFunction** const basisFunctionSecondDerivative;
+  
   {% if usePointSources %}
   static constexpr int NumberOfPointSources = {{numberOfPointSources}};
   double pointSourceLocation[NumberOfPointSources][DIMENSIONS];

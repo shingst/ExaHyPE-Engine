@@ -5,7 +5,7 @@
 
 #include "peano/utils/Loop.h"
 
-#include "kernels/DGBasisFunctions.h"
+#include "kernels/GaussLegendreBasis.h"
 
 #include "exahype/solvers/ADERDGSolver.h"
 

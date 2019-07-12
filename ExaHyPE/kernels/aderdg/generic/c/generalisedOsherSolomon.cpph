@@ -19,7 +19,7 @@
 #include <cstring>
 
 #include "kernels/KernelUtils.h"
-#include "kernels/GaussLegendreQuadrature.h"
+#include "kernels/GaussLegendreBasis.h"
 #include "kernels/RiemannSolverUtils.h"
 
 namespace kernels {

@@ -14,7 +14,7 @@
 #include "ADERDG2CartesianPeanoPatchFileFormat.h"
 #include "tarch/parallel/Node.h"
 
-#include "kernels/DGMatrices.h"
+#include "kernels/GaussLegendreBasis.h"
 #include "peano/utils/Loop.h"
 
 #include "exahype/solvers/ADERDGSolver.h"
@@ -27,9 +27,6 @@
 
 #include "tarch/plotter/griddata/blockstructured/PeanoTextPatchFileWriter.h"
 #include "tarch/plotter/griddata/blockstructured/PeanoHDF5PatchFileWriter.h"
-
-
-#include "kernels/DGBasisFunctions.h"
 
 tarch::logging::Log exahype::plotters::ADERDG2CartesianPeanoFileFormat::_log("exahype::plotters::ADERDG2CartesianPeanoFileFormat");
 
@@ -238,10 +235,10 @@ void exahype::plotters::ADERDG2CartesianPeanoFileFormat::plotVertexData(
       interpoland[unknown] = 0.0;
       dfor(ii,_order+1) { // Gauss-Legendre node indices
         int iGauss = peano::utils::dLinearisedWithoutLookup(ii,_order + 1);
-        interpoland[unknown] += kernels::equidistantGridProjector1d[_order][ii(1)][i(1)] *
-                 kernels::equidistantGridProjector1d[_order][ii(0)][i(0)] *
+        interpoland[unknown] += kernels::legendre::equidistantGridProjector[_order][ii(1)][i(1)] *
+                 kernels::legendre::equidistantGridProjector[_order][ii(0)][i(0)] *
                  #if DIMENSIONS==3
-                 kernels::equidistantGridProjector1d[_order][ii(2)][i(2)] *
+                 kernels::legendre::equidistantGridProjector[_order][ii(2)][i(2)] *
                  #endif
                  u[iGauss * _solverUnknowns + unknown];
         assertion3(interpoland[unknown] == interpoland[unknown], offsetOfPatch, sizeOfPatch, iGauss);

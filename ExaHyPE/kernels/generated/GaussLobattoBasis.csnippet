@@ -1,0 +1,104 @@
+// order 0
+double kernels::lobatto::weights_0[1]={
+  1
+};
+double kernels::lobatto::nodes_0[1]={
+  0.5
+};
+double kernels::lobatto::Kxi_0_0[0+1]={
+  0.0
+};
+double* kernels::lobatto::Kxi_0[0+1]={
+  Kxi_0_0
+};
+double kernels::lobatto::iK1_0_0[0+1]={
+  1.0
+};
+double* kernels::lobatto::iK1_0[0+1]={
+  iK1_0_0
+};
+double kernels::lobatto::dudx_0_0[0+1]={
+  0.0
+};
+double* kernels::lobatto::dudx_0[0+1]={
+  dudx_0_0
+};
+double kernels::lobatto::equidistantGridProjector_0_0[0+1]={
+  1.0
+};
+double* kernels::lobatto::equidistantGridProjector_0[0+1]={
+  equidistantGridProjector_0_0
+};
+double kernels::lobatto::FCoeff_0_0[1]={
+  1.0
+};
+double kernels::lobatto::FCoeff_1_0[1]={
+  1.0
+};
+double* kernels::lobatto::FCoeff_0[2]={FCoeff_0_0,FCoeff_1_0};
+double kernels::lobatto::fineGridProjector_0_0_0[0+1]={
+  1.0
+};
+double* kernels::lobatto::fineGridProjector_0_0[0+1]={
+  fineGridProjector_0_0_0
+};
+double kernels::lobatto::fineGridProjector_1_0_0[0+1]={
+  1.0
+};
+double* kernels::lobatto::fineGridProjector_1_0[0+1]={
+  fineGridProjector_1_0_0
+};
+double kernels::lobatto::fineGridProjector_2_0_0[0+1]={
+  1.0
+};
+double* kernels::lobatto::fineGridProjector_2_0[0+1]={
+  fineGridProjector_2_0_0
+};
+double** kernels::lobatto::fineGridProjector_0[3]={fineGridProjector_0_0,fineGridProjector_1_0,fineGridProjector_2_0};
+
+double kernels::lobatto::basisFunction_0_0(const double& s) {  return 1;}
+double kernels::lobatto::basisFunctionFirstDerivative_0_0(const double& s) {  return 0;}
+double kernels::lobatto::basisFunctionSecondDerivative_0_0(const double& s) {  return 0;}
+kernels::UnivariateFunction kernels::lobatto::basisFunction_0[0+1]={
+  basisFunction_0_0
+};
+kernels::UnivariateFunction kernels::lobatto::basisFunctionFirstDerivative_0[0+1]={
+  basisFunctionFirstDerivative_0_0
+};
+kernels::UnivariateFunction kernels::lobatto::basisFunctionSecondDerivative_0[0+1]={
+  basisFunctionSecondDerivative_0_0
+};
+
+double* kernels::lobatto::weights[0+1] = {
+  weights_0
+};
+double* kernels::lobatto::nodes[0+1] = {
+  nodes_0
+};
+double** kernels::lobatto::Kxi[0+1] = {
+  Kxi_0
+};
+double** kernels::lobatto::iK1[0+1] = {
+  iK1_0
+};
+double** kernels::lobatto::dudx[0+1] = {
+  dudx_0
+};
+double** kernels::lobatto::equidistantGridProjector[0+1] = {
+  equidistantGridProjector_0
+};
+double** kernels::lobatto::FCoeff[0+1] = {
+  FCoeff_0
+};
+double*** kernels::lobatto::fineGridProjector[0+1] = {
+  fineGridProjector_0
+};
+kernels::UnivariateFunction* kernels::lobatto::basisFunction[0+1]={
+  basisFunction_0
+};
+kernels::UnivariateFunction* kernels::lobatto::basisFunctionFirstDerivative[0+1]={
+  basisFunctionFirstDerivative_0
+};
+kernels::UnivariateFunction* kernels::lobatto::basisFunctionSecondDerivative[0+1]={
+  basisFunctionSecondDerivative_0
+};

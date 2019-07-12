@@ -23,6 +23,14 @@
 namespace kernels {
 
 /**
+ * Univariate function.
+ *
+ * @param s a parameter.
+ * @return value of the function at point @p.
+ */
+typedef double (* UnivariateFunction) (const double& s);
+
+/**
  * This is a single successor class for the idx2, idx3, idx4, idx5, idx6 classes.
  * It works basically like idx6. If you work with less than 6 dimensions, nothing
  * will change and the compiler optimizes away the unused variables.
