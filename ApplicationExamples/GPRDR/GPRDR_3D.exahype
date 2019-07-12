@@ -23,10 +23,10 @@
     ]
   },
   "shared_memory": {
-    "cores": 10,
+    "cores": 16,
     "properties_file": "sharedmemory.properties",
     "autotuning_strategy": "dummy",
-    "background_job_consumers": 9
+    "background_job_consumers": 15
   },
   "distributed_memory": {
     "timeout": 6000,
@@ -53,9 +53,9 @@
     {
       "type": "Limiting-ADER-DG",
       "name": "GPRDRSolver",
-      "order": 3,
-      "maximum_mesh_size": 2000.0,
-      "maximum_mesh_depth": 2,
+      "order": 2,
+      "maximum_mesh_size": 1000.0,
+      "maximum_mesh_depth": 1,
       "time_stepping": "global",
       "aderdg_kernel": {
         "language": "C",
@@ -75,7 +75,7 @@
         "dmp_observables": 3,
         "dmp_relaxation_parameter": 1e+3,
         "dmp_difference_scaling": 1e+4,
-        "patch_size": "7",
+        "patch_size": "5",
         "implementation": "generic"
       },
       "fv_kernel": {

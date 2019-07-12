@@ -52,8 +52,8 @@
       "type": "Limiting-ADER-DG",
       "name": "GPRDRSolver",
       "order": 3,
-      "maximum_mesh_size": 500.0,
-      "maximum_mesh_depth": 1,
+      "maximum_mesh_size": 1000.0,
+      "maximum_mesh_depth": 2,
       "time_stepping": "global",
       "aderdg_kernel": {
         "language": "C",
@@ -137,6 +137,11 @@
           "multiplicity": 1
         }
       ],
+    "parameters": {
+        "reference": "NLOPRUPTURE"
+      },
+
+
     "plotters": [
          {
           "type": "vtu::Cartesian::Cells::limited::Ascii",

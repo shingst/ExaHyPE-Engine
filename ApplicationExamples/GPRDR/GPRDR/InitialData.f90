@@ -65,6 +65,7 @@ RECURSIVE SUBROUTINE InitialData(xGP, tGp, Q)
 #ifdef EQNTYPED99
     use expintegrator_ode       , only : convert_parameters
     use expintegrator_type      , only : t_ode_parameters
+	use GPRmaterials
 #endif
 	IMPLICIT NONE 
 	! Argument list 
@@ -73,6 +74,7 @@ RECURSIVE SUBROUTINE InitialData(xGP, tGp, Q)
 	REAL :: up(nVar)
 	REAL :: rr,xi,LamCoeff(3),LEsigma(6), LL_GPR, MM_GPR
 	type(t_ode_parameters) :: ODE
+	REAL(8), DIMENSION(14)                  :: RUPTURE_PARAMS
 	
 	select case(ICType)
 		case('NLOPRUPTURE')
@@ -127,6 +129,15 @@ RECURSIVE SUBROUTINE InitialData(xGP, tGp, Q)
         call compute_l_m_mix(LL_GPR, MM_GPR,up(19),up(20),up(23),up(22),up(21))
 #endif
         up(9:17)= GPRsigma2ASGEOS(LEsigma,0.0,LL_GPR,MM_GPR,up(1),EQN%gamma,up(5),EQN%cv,EQN%p0,1.e-3,EQN%EOS,EQN%T0)
+		!if(any(isnan(up(9:17)))) then
+		!	print *, '------------------------------------------------------'
+		!	print*, up(19),up(20),ODE%lam1lam2ratio,ODE%mu1mu2ratio,up(21)
+		!	print *, EQN%MATERIALS,up(22),EQN%nMATs
+		!	call AssignMaterialPropertiesMixD(RUPTURE_PARAMS,EQN%MATERIALS,(/up(22), 1.-up(22)/),EQN%nMATs,.TRUE.)
+		!	print *,'*******************'
+		!	print *, RUPTURE_PARAMS
+		!	print *, '------------------------------------------------------'
+		!end if
         !up(9:17)= (/0.999623180012770, 0.0, 0.0, -2.177843294032983D-003, 1.00149401820627,0.0,0.0,0.0,0.999627936634102/)
         ! -----------------------------------------------------------------------------------------------------------
         ! Rupture properties ----------------------------------------------------------------------------------------
