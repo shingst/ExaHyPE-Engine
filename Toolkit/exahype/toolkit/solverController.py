@@ -15,6 +15,12 @@ class SolverController:
         # [1] M. Dumbser, D. S. Balsara, E. F. Toro, and C.-D. Munz, 
         # ‘A unified framework for the construction of one-step finite volume and discontinuous Galerkin schemes on unstructured meshes’, Journal of Computational Physics, vol. 227, no. 18, pp. 8209–8253, Sep. 2008.
         self.cflADER = [1.0,   0.33,  0.17, 0.1,  0.069, 0.045, 0.038, 0.03, 0.02, 0.015]
+        # Values for orders > 9 are found experimentally, too.
+        p = 10
+        #for cflCorrection in [0.1995, 0.13965,  0.097755, 0.0684285, 0.04789995, 0.033529965]:
+        for cflCorrection in [0.18525, 0.1204125, 0.078268125, 0.05087428125, 0.0330682828125, 0.021494383828125]:
+            self.cflADER.append(cflCorrection / (2*p+1))
+            p += 1
         self.cflCorrectionADER = self.cflADER.copy()
         for p,cfl in enumerate(self.cflADER):
             self.cflCorrectionADER[p] = cfl * (2*p+1);
@@ -44,7 +50,7 @@ class SolverController:
         for i,solver in enumerate(self.solverSpec):
             logger.info("Generating solver[%d] = %s..." % (i, solver["name"]))
             if solver["type"]=="ADER-DG": 
-                model = solverModel.SolverModel(self.buildADERDGSolverContext(solver))
+                model = solverModel.SolverModel(self.buildADERDGSolverContext(solver,logger))
                 solverContext = self.processModelOutput(model.generateCode(), solverContextsList, logger)
             elif solver["type"]=="Finite-Volumes":
                 context = self.buildFVSolverContext(solver)
@@ -53,7 +59,7 @@ class SolverController:
                 model = solverModel.SolverModel()
                 solverContext = self.processModelOutput(model.generateCode(), solverContextsList, logger)
             elif solver["type"]=="Limiting-ADER-DG":
-                aderdgContext = self.buildADERDGSolverContext(solver)
+                aderdgContext = self.buildADERDGSolverContext(solver, logger)
                 fvContext     = self.buildFVSolverContext(solver)
                 context       = self.buildLimitingADERDGSolverContext(solver)
                 # modifications
@@ -147,7 +153,7 @@ class SolverController:
         return context
 
 
-    def buildADERDGSolverContext(self, solver):
+    def buildADERDGSolverContext(self, solver, logger):
         context = self.buildBaseSolverContext(solver)
         context["type"] = "ADER-DG"
         context.update(self.buildADERDGKernelContext(solver["aderdg_kernel"]))
@@ -155,8 +161,12 @@ class SolverController:
         self.addCodegeneratorPathAndNamespace(context)
         
         context["order"]                  = solver["order"]
+        if int(context["order"]) > 9:
+            logger.warning("Support for orders greater than 9 is currently only experimental!")
+
+        context["PNPM"]                   = self.cflADER[int(solver["order"])]
         context["numberOfDMPObservables"] = 0 # overwrite if called from LimitingADERDGSolver creation
-        
+
         return context
 
 

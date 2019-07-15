@@ -26,13 +26,11 @@
 
 #include "kernels/KernelCalls.h"
 
-#include "kernels/GaussLegendreQuadrature.h"
-#include "kernels/DGMatrices.h"
-
 #include <vector>
 #include <cstdlib> // getenv, exit
 #include <iostream>
 #include <cstdio>
+#include "../kernels/GaussLegendreBasis.h"
 
 #ifndef EXAHYPE_LATE_TAKEOVER
 
@@ -140,6 +138,7 @@ int exahype::main(int argc, char** argv) {
       return -2;
     }
     else {
+      logInfo("main()", "all unit tests completed successfully.");
       return EXIT_SUCCESS;
     }
   }

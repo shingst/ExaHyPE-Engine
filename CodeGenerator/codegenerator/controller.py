@@ -118,8 +118,8 @@ class Controller:
            raise ValueError("Number of parameters must be >= 0")
         if self.config["nDim"] < 2 or self.config["nDim"] > 3:
            raise ValueError("Number of dimensions must be 2 or 3")
-        if self.config["nDof"] < 1 or self.config["nDof"] > 10: #nDof = order+1
-           raise ValueError("Order has to be between 0 and 9")
+        if self.config["nDof"] < 1 or self.config["nDof"] > 15+1: #nDof = order+1
+           raise ValueError("Order has to be between 0 and 15 (inclusive)")
         #if (self.config["useSource"] and not self.config["useSourceVect"] and self.config["useNCPVect"]) or (self.config["useNCP"] and not self.config["useNCPVect"] and self.config["useSourceVect"]) :
         #    raise ValueError("If using source and NCP, both or neither must be vectorized")
 

@@ -39,6 +39,7 @@ public:
   static constexpr int MaxPicardIterations       = Order+1;
   static constexpr bool UseMaxPicardIterations   = {{"true" if useMaxPicardIterations else "false"}};
   static constexpr double CFL                    = {{CFL}};
+  static constexpr double PNPM                   = {{PNPM}};
   
   // quadrature weights and operators
   static constexpr bool UseLobattoBasis = {{"true" if basis == "lobatto" else "false"}};

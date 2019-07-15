@@ -38,18 +38,17 @@ class GenericEulerKernelTest : public tarch::tests::TestCase {
   static constexpr double CFL             = 0.9;
 
   static constexpr bool UseLobattoBasis = false;
-  static const double** const weights;
-  static const double** const nodes;
-  static const double*** const Kxi;
-  static const double*** const dudx;
-  static const double*** const iK1;
-  static const double*** const equidistantGridProjector;
-  static const double*** const FCoeff;
-  static const double**** const fineGridProjector;
-  static const kernels::UnivariateFunction** const basisFunction;
-  static const kernels::UnivariateFunction** const basisFunctionFirstDerivative;
-  static const kernels::UnivariateFunction** const basisFunctionSecondDerivative;
-
+  static double**   weights;
+  static double**   nodes;
+  static double***  Kxi;
+  static double***  dudx;
+  static double***  iK1;
+  static double***  equidistantGridProjector;
+  static double***  FCoeff;
+  static double**** fineGridProjector;
+  static kernels::UnivariateFunction** basisFunction;
+  static kernels::UnivariateFunction** basisFunctionFirstDerivative;
+  static kernels::UnivariateFunction** basisFunctionSecondDerivative;
 
   GenericEulerKernelTest();
   virtual ~GenericEulerKernelTest();
