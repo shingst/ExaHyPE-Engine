@@ -85,8 +85,8 @@ void kernels::aderdg::generic::c::deltaDistribution(
   if (SolverType::UseLobattoBasis) { 
     index_nodes= [basisSize](int i){return basisSize-1-i; }; //GLL nodes are reverted  
   }
-  const double* const quad_weights= weights[basisSize-1];
-  const double* const quad_nodes  = nodes  [basisSize-1];
+  const double* const quad_weights= SolverType::weights[basisSize-1];
+  const double* const quad_nodes  = SolverType::nodes  [basisSize-1];
   
 //#if defined(_GLL)
 //  const double* quad_weights=&gaussLobattoWeights[basisSize-1][0];
@@ -125,9 +125,9 @@ void kernels::aderdg::generic::c::deltaDistribution(
             x_ref[1] = (x_ps[1] - center[1]) / dx[1] + 0.5;
             x_ref[2] = (x_ps[2] - center[2]) / dx[2] + 0.5;
             
-            double basis_at_ps = kernels::basisFunctions[order][k](x_ref[0])
-                               * kernels::basisFunctions[order][j](x_ref[1])
-                                     * kernels::basisFunctions[order][i](x_ref[2]);
+            double basis_at_ps = SolverType::basisFunction[order][k](x_ref[0])
+                               * SolverType::basisFunction[order][j](x_ref[1])
+                               * SolverType::basisFunction[order][i](x_ref[2]);
             
             double quad_weight_on_vol_inv = 1.0 / ( quad_weights[k] * dx[0]
                                                   * quad_weights[j] * dx[1]

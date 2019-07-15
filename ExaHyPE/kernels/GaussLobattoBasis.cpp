@@ -12,7 +12,45 @@
  **/
  
 #include "kernels/GaussLobattoBasis.h"
+#include "peano/utils/Loop.h"
 
 // Snippet generated with ExaHyPE-Engine/Miscellaneous/aderdg/generateLookupTable.py
 
 #include "kernels/generated/GaussLobattoBasis.csnippet"
+
+double kernels::lobatto::interpolate(
+    const double* offsetOfPatch,
+    const double* sizeOfPatch,
+    const double* x,
+    int           numberOfUnknowns,
+    int           unknown,
+    int           order,
+    const double* u
+) {
+  double result = 0.0;
+
+  double xRef[DIMENSIONS];
+  xRef[0] =  (x[0] - offsetOfPatch[0]) / sizeOfPatch[0];
+  xRef[1] =  (x[1] - offsetOfPatch[1]) / sizeOfPatch[1];
+  #if DIMENSIONS==3
+  xRef[2] =  (x[2] - offsetOfPatch[2]) / sizeOfPatch[2];
+  #endif
+
+
+
+  // The code below evaluates the basis functions at the reference coordinates
+  // and multiplies them with their respective coefficient.
+  dfor(ii,order+1) { // Gauss-Legendre node indices
+    int iGauss = peano::utils::dLinearisedWithoutLookup(ii,order + 1);
+    result += kernels::lobatto::basisFunction[order][ii(0)](xRef[0]) *
+              kernels::lobatto::basisFunction[order][ii(1)](xRef[1]) *
+              #if DIMENSIONS==3
+              kernels::lobatto::basisFunction[order][ii(2)](xRef[2]) *
+              #endif
+               u[iGauss * numberOfUnknowns + unknown];
+    assertion6(std::isfinite(result), result, unknown, iGauss, numberOfUnknowns, offsetOfPatch[0], sizeOfPatch[0]);
+  }
+
+  return result;
+}
+

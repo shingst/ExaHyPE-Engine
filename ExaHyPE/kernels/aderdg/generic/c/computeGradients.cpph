@@ -64,7 +64,8 @@ inline constexpr int basisSizeD(int basisSize) {
  * 
  * @TODO: This should not be an inline function. Make up a seperate cpp file.
  **/
-inline void computeGradQ(double* gradQ, const double* const u, const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, const int numberOfVariables, const int order) {
+
+inline void computeGradQ(double* gradQ, const double* const u, double*** dudx, const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, const int numberOfVariables, const int order) {
       const int basisSize = order + 1;
 
       const int basisX = basisSize;
@@ -84,7 +85,7 @@ inline void computeGradQ(double* gradQ, const double* const u, const tarch::la::
             for (int m = 0; m < numberOfVariables; m++) {
               for (int n = 0; n < basisSize; n++) { // matmul x
                 gradQ[idx_gradQ(j, k, l, /*x*/0, m)] += 1.0 / sizeOfPatch[0] *
-                        u[idx_u(j, k, n, m)] * SolverType::dudx[order][l][n];
+                        u[idx_u(j, k, n, m)] * dudx[order][l][n];
               }
             }
           }
@@ -99,7 +100,7 @@ inline void computeGradQ(double* gradQ, const double* const u, const tarch::la::
             for (int m = 0; m < numberOfVariables; m++) {
               for (int n = 0; n < basisSize; n++) { // matmul y
                 gradQ[idx_gradQ(j, l, k, /*y*/1, m)] += 1.0 / sizeOfPatch[1] *
-                        u[idx_u(j, n, k, m)] * SolverType::dudx[order][l][n];
+                        u[idx_u(j, n, k, m)] * dudx[order][l][n];
               }
             }
           }
@@ -115,7 +116,7 @@ inline void computeGradQ(double* gradQ, const double* const u, const tarch::la::
               for (int m = 0; m < numberOfVariables; m++) {
                 for (int n = 0; n < basisSize; n++) { // matmul z
                   gradQ[idx_gradQ(l, j, k, /*z*/2, m)] += 1.0 / sizeOfPatch[2] *
-                          u[idx_u(n, j, k, m)] * SolverType::dudx[order][l][n];
+                          u[idx_u(n, j, k, m)] * dudx[order][l][n];
                 }
               }
             }
@@ -135,7 +136,8 @@ inline void computeGradQ(double* gradQ, const double* const u, const tarch::la::
  * 
  * For the shapes of the variables, see the idx functions.
  **/
-inline void computeGradQi(double* gradQi, const double* const u, const int requestedDirection, const int requestedVariableIndex, const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, const int numberOfVariables, const int order) {
+template <typename SolverType>
+inline void computeGradQi(double* gradQi, const double* const u, double*** dudx, const int requestedDirection, const int requestedVariableIndex, const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, const int numberOfVariables, const int order) {
       const int basisSize = order + 1;
       const int basisX = basisSize;
       const int basisY = basisSize;
@@ -201,7 +203,7 @@ template <typename SolverType>
 void computeGradQ(double* gradQ, const double* const u, const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch) {
 	const int numberOfVariables = SolverType::NumberOfVariables;
 	const int order = SolverType::Order;
-	computeGradQ(gradQ, u, sizeOfPatch, numberOfVariables, order);
+	computeGradQ(gradQ, u, SolverType::dudx, sizeOfPatch, numberOfVariables, order);
 }
 
 /// Convenience also for computeGradQi
@@ -209,7 +211,7 @@ template <typename SolverType>
 void computeGradQi(double* gradQi, const double* const u, const int requestedDirection, const int requestedVariableIndex, const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch) {
 	const int numberOfVariables = SolverType::NumberOfVariables;
 	const int order = SolverType::Order;
-	computeGradQi(gradQi, u, requestedDirection, requestedVariableIndex, sizeOfPatch, numberOfVariables, order);
+	computeGradQi(gradQi, u, SolverType::dudx, requestedDirection, requestedVariableIndex, sizeOfPatch, numberOfVariables, order);
 }
 
 

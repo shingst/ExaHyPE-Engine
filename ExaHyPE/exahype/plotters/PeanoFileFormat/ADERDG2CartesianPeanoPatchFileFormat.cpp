@@ -282,7 +282,7 @@ void exahype::plotters::ADERDG2CartesianPeanoFileFormat::plotCellData(
 
   dfor(i,_order) {
     for (int unknown=0; unknown < _solverUnknowns; unknown++) {
-      interpoland[unknown] = kernels::interpolate(
+      interpoland[unknown] = kernels::legendre::interpolate(
         offsetOfPatch.data(),
         sizeOfPatch.data(),
         (offsetOfPatch + (i.convertScalar<double>()+0.5)* (sizeOfPatch(0)/(_order))).data(),

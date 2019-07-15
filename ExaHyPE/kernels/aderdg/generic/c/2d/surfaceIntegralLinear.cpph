@@ -23,7 +23,7 @@ namespace aderdg {
 namespace generic {
 namespace c {
 
-template <typename SolverType, typename SolverType,int numberOfVariables, int basisSize>
+template <typename SolverType,int numberOfVariables, int basisSize>
 void surfaceIntegralLinear(double *lduh, const double *const lFhbnd,
                            const tarch::la::Vector<DIMENSIONS, double> &dx) {
   constexpr int order = basisSize - 1;
@@ -45,8 +45,8 @@ void surfaceIntegralLinear(double *lduh, const double *const lFhbnd,
       // left flux minus right flux
       for (int l = 0; l < numberOfVariables; l++) {
         lduh[idx_lduh(j, k, l)] -=
-            (lFhbnd[idx_lFhbnd(1, j, l)] * SolverType::FCoeff[order][1][order][k] +
-             lFhbnd[idx_lFhbnd(0, j, l)] * SolverType::FCoeff[order][0][order][k]) *
+            (lFhbnd[idx_lFhbnd(1, j, l)] * SolverType::FCoeff[order][1][k] +
+             lFhbnd[idx_lFhbnd(0, j, l)] * SolverType::FCoeff[order][0][k]) *
             updateSize;
       }
     }
@@ -60,15 +60,15 @@ void surfaceIntegralLinear(double *lduh, const double *const lFhbnd,
 //#else
 //      const double weight = kernels::gaussLegendreWeights[order][k];
 //#endif
-      const double weight = kernels::weights[order][k];
+      const double weight = SolverType::weights[order][k];
       
       const double updateSize = weight / dx[1];
 
       // back flux minus front flux
       for (int l = 0; l < numberOfVariables; l++) {
         lduh[idx_lduh(j, k, l)] -=
-            (lFhbnd[idx_lFhbnd(3, k, l)] * SolverType::FCoeff[order][1][order][j] +
-             lFhbnd[idx_lFhbnd(2, k, l)] * SolverType::FCoeff[order][0][order][j]) *
+            (lFhbnd[idx_lFhbnd(3, k, l)] * SolverType::FCoeff[order][1][j] +
+             lFhbnd[idx_lFhbnd(2, k, l)] * SolverType::FCoeff[order][0][j]) *
             updateSize;
       }
     }

@@ -220,7 +220,7 @@ void exahype::plotters::ADERDG2FlashHDF5::interpolateCartesianSlicedPatch(const 
 		dvec pos = plane + slicer.project(i).convertScalar<double>() * (sizeOfPatch(0)/(order));
 		
 		for (int unknown=0; unknown < solverUnknowns; unknown++) {
-			interpoland[unknown] = kernels::interpolate(
+			interpoland[unknown] = kernels::legendre::interpolate(
 				offsetOfPatch.data(),
 				sizeOfPatch.data(),
 				pos.data(),
@@ -259,7 +259,7 @@ void exahype::plotters::ADERDG2FlashHDF5::interpolateCartesianSlicedPatch(const 
 		dvec pos = line + (i.convertScalar<double>())* (sizeOfPatch(0)/(order));
 		
 		for (int unknown=0; unknown < solverUnknowns; unknown++) {
-			interpoland[unknown] = kernels::interpolate(
+			interpoland[unknown] = kernels::legendre::interpolate(
 				offsetOfPatch.data(),
 				sizeOfPatch.data(),
 				pos.data(),

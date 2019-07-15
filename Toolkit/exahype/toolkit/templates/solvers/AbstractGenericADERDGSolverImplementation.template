@@ -12,6 +12,9 @@
 
 #include "kernels/aderdg/generic/Kernels.h"
 
+#include "kernels/GaussLegendreBasis.h"
+#include "kernels/GaussLobattoBasis.h"
+
 #include "{{solver}}_Variables.h"
 #include "{{solver}}.h" // Have to include a proper declaration. Cannot use forward declared classes in static_cast.
 
@@ -26,9 +29,9 @@ double***  {{project}}::{{abstractSolver}}::iK1                                 
 double***  {{project}}::{{abstractSolver}}::equidistantGridProjector                = kernels::{{basis}}::equidistantGridProjector;
 double***  {{project}}::{{abstractSolver}}::FCoeff                                  = kernels::{{basis}}::FCoeff;
 double**** {{project}}::{{abstractSolver}}::fineGridProjector                       = kernels::{{basis}}::fineGridProjector;
-UnivariateFunction** {{project}}::{{abstractSolver}}::basisFunction                 = kernels::{{basis}}::basisFunction;
-UnivariateFunction** {{project}}::{{abstractSolver}}::basisFunctionFirstDerivative  = kernels::{{basis}}::basisFunctionFirstDerivative;
-UnivariateFunction** {{project}}::{{abstractSolver}}::basisFunctionSecondDerivative = kernels::{{basis}}::basisFunctionSecondDerivative;
+kernels::UnivariateFunction** {{project}}::{{abstractSolver}}::basisFunction                 = kernels::{{basis}}::basisFunction;
+kernels::UnivariateFunction** {{project}}::{{abstractSolver}}::basisFunctionFirstDerivative  = kernels::{{basis}}::basisFunctionFirstDerivative;
+kernels::UnivariateFunction** {{project}}::{{abstractSolver}}::basisFunctionSecondDerivative = kernels::{{basis}}::basisFunctionSecondDerivative;
 
 // We define the constructor of the actual solver here in order to regenerate it easily.
 {{project}}::{{solver}}::{{solver}}(

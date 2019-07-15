@@ -293,7 +293,7 @@ std::pair<int,int> exahype::plotters::ADERDG2LegendreVTK::plotLegendrePatch(
       //p = offsetOfPatch + tarch::la::multiplyComponents( i.convertScalar<double>(), sizeOfPatch) * (1.0/_order);
 
       for (int d=0; d<DIMENSIONS; d++) {
-        p(d) = offsetOfPatch(d) + kernels::gaussLegendreNodes[_order][i(d)] * sizeOfPatch(d);
+        p(d) = offsetOfPatch(d) + kernels::legendre::nodes[_order][i(d)] * sizeOfPatch(d);
       }
 
       const int newVertexNumber = _vertexWriter->plotVertex(p);
@@ -352,7 +352,7 @@ void exahype::plotters::ADERDG2LegendreVTK::plotVertexData(
   dfor(i,_order+1) {
     tarch::la::Vector<DIMENSIONS, double> p;
     for (int d=0; d<DIMENSIONS; d++) {
-      p(d) = offsetOfPatch(d) + kernels::gaussLegendreNodes[_order][i(d)] * sizeOfPatch(d);
+      p(d) = offsetOfPatch(d) + kernels::legendre::nodes[_order][i(d)] * sizeOfPatch(d);
     }
 
     if(_postProcessing->mapWithDerivatives()) {
@@ -424,10 +424,10 @@ void exahype::plotters::ADERDG2LegendreVTK::plotCellData(
     // This is inefficient but works. We could look it up directly from the arrays
     tarch::la::Vector<DIMENSIONS, double> p;
     for (int d=0; d<DIMENSIONS; d++) {
-      p(d) = offsetOfPatch(d) + (kernels::gaussLegendreNodes[_order][i(d)]+kernels::gaussLegendreNodes[_order][i(d)+1]) * sizeOfPatch(d)/2.0;
+      p(d) = offsetOfPatch(d) + (kernels::legendre::nodes[_order][i(d)]+kernels::legendre::nodes[_order][i(d)+1]) * sizeOfPatch(d)/2.0;
     }
     for (int unknown=0; unknown < _solverUnknowns; unknown++) {
-      interpoland[unknown] = kernels::interpolate(
+      interpoland[unknown] = kernels::legendre::interpolate(
         offsetOfPatch.data(),
         sizeOfPatch.data(),
         p.data(), // das ist die Position
@@ -443,7 +443,7 @@ void exahype::plotters::ADERDG2LegendreVTK::plotCellData(
       // `numberOfUnknowns` with the value `nDim*nVar` in order to circumvent the gradU data ordering.
       for (int d=0; d < DIMENSIONS; d++) {
         for (int unknown=0; unknown < _solverUnknowns; unknown++) {
-          inter_gradQ[idx_inter_gradU(d,unknown)] = kernels::interpolate(
+          inter_gradQ[idx_inter_gradU(d,unknown)] = kernels::legendre::interpolate(
             offsetOfPatch.data(),
             sizeOfPatch.data(),
             p.data(),
@@ -550,7 +550,7 @@ void exahype::plotters::ADERDG2LegendreVTK::plotPatch(
     double *gradU = nullptr;
     if(_postProcessing->mapWithDerivatives()) {
       gradU = _tempGradient.data();
-      kernels::aderdg::generic::c::computeGradQ(gradU, u, sizeOfPatch, _solverUnknowns, _order);
+      kernels::aderdg::generic::c::computeGradQ(gradU, u, kernels::legendre::dudx, sizeOfPatch, _solverUnknowns, _order);
     }
 
     if (_plotCells) {

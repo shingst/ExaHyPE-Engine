@@ -157,7 +157,7 @@ void exahype::plotters::ADERDG2Carpet::interpolateCartesianSlicedPatch(const dve
 		dvec pos = plane + slicer.project(i).convertScalar<double>() * (sizeOfPatch(0)/(order));
 		
 		for (int unknown=0; unknown < solverUnknowns; unknown++) {
-			interpoland[unknown] = kernels::interpolate(
+			interpoland[unknown] = kernels::legendre::interpolate(
 				offsetOfPatch.data(),
 				sizeOfPatch.data(),
 				pos.data(),
@@ -196,7 +196,7 @@ void exahype::plotters::ADERDG2Carpet::interpolateCartesianSlicedPatch(const dve
 		dvec pos = line + slicer.project(i).convertScalar<double>() * (sizeOfPatch(0)/(order));
 		
 		for (int unknown=0; unknown < solverUnknowns; unknown++) {
-			interpoland[unknown] = kernels::interpolate(
+			interpoland[unknown] = kernels::legendre::interpolate(
 				offsetOfPatch.data(),
 				sizeOfPatch.data(),
 				pos.data(),

@@ -164,7 +164,7 @@ int aderPicardLoopNonlinear(SolverType& solver,
               SolverType::weights[order][k] *
               SolverType::weights[order][l];
           for (int m = 0; m < numberOfVariables; m++) {
-            rhs[idx_rhs(i, k, l, m)] = weight * SolverType::FCoeff[order][0][order][i] * luh[idx_luh(k, l, m)]; //FLCoeff == F0
+            rhs[idx_rhs(i, k, l, m)] = weight * SolverType::FCoeff[order][0][i] * luh[idx_luh(k, l, m)]; //FLCoeff == F0
           }
         }
       }
@@ -329,7 +329,7 @@ int aderPicardLoopNonlinear(SolverType& solver,
  *  We have to consider that we store parameters in lQi
  *  and lQhi, and have to adjust the index accordingly.
  */
-template <bool useSource, bool useFlux, bool useNCP, int numberOfVariables, int numberOfParameters, int basisSize>
+template <typename SolverType,bool useSource, bool useFlux, bool useNCP, int numberOfVariables, int numberOfParameters, int basisSize>
 void aderPredictorNonlinear(const double* lQi, const double* lFi,double* lQhi,
     double* lFhi_x, double* lFhi_y, double* lShi) {
   constexpr int basisSize2 = basisSize * basisSize;
@@ -388,7 +388,7 @@ void aderPredictorNonlinear(const double* lQi, const double* lFi,double* lQhi,
   }
 }
 
-template<bool useFlux,bool useViscousFlux,int numberOfVariables,int numberOfParameters,int basisSize>
+template<typename SolverType,bool useFlux,bool useViscousFlux,int numberOfVariables,int numberOfParameters,int basisSize>
 void aderExtrapolatorNonlinear(const double* lQhi, const double* lGradQi, const double* lFhi_x,
     const double* lFhi_y, double* lQhbnd, double* lGradQhbnd, double* lFhbnd) {
   // Compute the boundary-extrapolated values for Q and F*n
@@ -419,11 +419,11 @@ void aderExtrapolatorNonlinear(const double* lQhi, const double* lGradQi, const 
         for (int l = 0; l < basisSize; l++) { // x
           // Fortran: lFhbnd(:,j,1) = lFhi_x(:,:,j) * FLCoeff(:)
           lFhbnd[idx_lFhbnd(0, j, k)] +=
-              lFhi_x[idx_lFhi(j, l, k)] * SolverType::FCoeff[order][0][order][l];
+              lFhi_x[idx_lFhi(j, l, k)] * SolverType::FCoeff[order][0][l];
 
           // Fortran: lFhbnd(:,j,2) = lFhi_x(:,:,j) * FRCoeff(:)
           lFhbnd[idx_lFhbnd(1, j, k)] +=
-              lFhi_x[idx_lFhi(j, l, k)] * SolverType::FCoeff[order][1][order][l];
+              lFhi_x[idx_lFhi(j, l, k)] * SolverType::FCoeff[order][1][l];
         }
       } 
     }
@@ -433,11 +433,11 @@ void aderExtrapolatorNonlinear(const double* lQhi, const double* lGradQi, const 
       for (int l = 0; l < basisSize; l++) { // x
         // Fortran: lQhbnd(:,j,1) = lQhi(:,:,j) * FLCoeff(:)
         lQhbnd[idx_lQhbnd(0, j, k)] +=
-            lQhi[idx_lQhi(j, l, k)] * SolverType::FCoeff[order][0][order][l];
+            lQhi[idx_lQhi(j, l, k)] * SolverType::FCoeff[order][0][l];
 
         // Fortran: lQhbnd(:,j,2) = lQhi(:,:,j) * FRCoeff(:)
         lQhbnd[idx_lQhbnd(1, j, k)] +=
-            lQhi[idx_lQhi(j, l, k)] * SolverType::FCoeff[order][1][order][l];
+            lQhi[idx_lQhi(j, l, k)] * SolverType::FCoeff[order][1][l];
       }
     }
     if (useViscousFlux) {
@@ -445,10 +445,10 @@ void aderExtrapolatorNonlinear(const double* lQhi, const double* lGradQi, const 
         for (int l = 0; l < basisSize; l++) { // x
           for (int dim = 0; dim < DIMENSIONS; dim++) {
             lGradQhbnd[idx_lGradQhbnd(0, j, dim, k)] +=
-                    lGradQi[idx_lGradQi(j, l, dim, k)] * SolverType::FCoeff[order][0][order][l];
+                    lGradQi[idx_lGradQi(j, l, dim, k)] * SolverType::FCoeff[order][0][l];
 
             lGradQhbnd[idx_lGradQhbnd(1, j, dim, k)] +=
-                    lGradQi[idx_lGradQi(j, l, dim, k)] * SolverType::FCoeff[order][1][order][l];
+                    lGradQi[idx_lGradQi(j, l, dim, k)] * SolverType::FCoeff[order][1][l];
           }
         }
       }
@@ -464,11 +464,11 @@ void aderExtrapolatorNonlinear(const double* lQhi, const double* lGradQi, const 
         for (int l = 0; l < basisSize; l++) {
           // Fortran: lFhbnd(:,j,3) = lFhi_y(:,:,j) * FLCoeff(:)
           lFhbnd[idx_lFhbnd(2, j, k)] +=
-              lFhi_y[idx_lFhi(j, l, k)] * SolverType::FCoeff[order][0][order][l];
+              lFhi_y[idx_lFhi(j, l, k)] * SolverType::FCoeff[order][0][l];
 
           // Fortran: lFhbnd(:,j,4) = lFhi_y(:,:,j) * FRCoeff(:)
           lFhbnd[idx_lFhbnd(3, j, k)] +=
-              lFhi_y[idx_lFhi(j, l, k)] * SolverType::FCoeff[order][1][order][l];
+              lFhi_y[idx_lFhi(j, l, k)] * SolverType::FCoeff[order][1][l];
         }
       } 
     }
@@ -478,11 +478,11 @@ void aderExtrapolatorNonlinear(const double* lQhi, const double* lGradQi, const 
       for (int l = 0; l < basisSize; l++) {
         // Fortran: lQhbnd(:,j,3) = lQhi(:,j,:) * FLCoeff(:)
         lQhbnd[idx_lQhbnd(2, j, k)] +=
-            lQhi[idx_lQhi(l, j, k)] * SolverType::FCoeff[order][0][order][l];
+            lQhi[idx_lQhi(l, j, k)] * SolverType::FCoeff[order][0][l];
 
         // Fortran: lQhbnd(:,j,4) = lQhi(:,j,:) * FRCoeff(:)
         lQhbnd[idx_lQhbnd(3, j, k)] +=
-            lQhi[idx_lQhi(l, j, k)] * SolverType::FCoeff[order][1][order][l];
+            lQhi[idx_lQhi(l, j, k)] * SolverType::FCoeff[order][1][l];
       }
     }
     if (useViscousFlux) {
@@ -490,10 +490,10 @@ void aderExtrapolatorNonlinear(const double* lQhi, const double* lGradQi, const 
         for (int l = 0; l < basisSize; l++) { // x
           for (int dim = 0; dim < DIMENSIONS; dim++) {
             lGradQhbnd[idx_lGradQhbnd(2, j, dim, k)] +=
-                    lGradQi[idx_lGradQi(l, j, dim, k)] * SolverType::FCoeff[order][0][order][l];
+                    lGradQi[idx_lGradQi(l, j, dim, k)] * SolverType::FCoeff[order][0][l];
 
             lGradQhbnd[idx_lGradQhbnd(3, j, dim, k)] +=
-                    lGradQi[idx_lGradQi(l, j, dim, k)] * SolverType::FCoeff[order][1][order][l];
+                    lGradQi[idx_lGradQi(l, j, dim, k)] * SolverType::FCoeff[order][1][l];
           }
         }
       }
@@ -501,15 +501,7 @@ void aderExtrapolatorNonlinear(const double* lQhi, const double* lGradQi, const 
   }
 }
 
-// TODO(Dominic): Untested
-//template<int numberOfVariables,int numberOfParameters,int basisSize>
-//void aderSpaceTimeExtrapolatorNonlinear(const double* lQi, 
-//                               const double* lFi_x,const double* lFi_y, 
-//                               double* lQbnd, double* lFbnd) {
-//  ...
-//}
-
-template <bool useFlux,int numberOfVariables,int numberOfParameters,int basisSize>
+template <typename SolverType,bool useFlux,int numberOfVariables,int numberOfParameters,int basisSize>
 void aderTimeAveragingExtrapolatorNonlinear(
     const double* lQi, const double* lFi,
     double* lQhbnd, double* lFhbnd) {
@@ -537,12 +529,12 @@ void aderTimeAveragingExtrapolatorNonlinear(
           for (int l = 0; l < basisSize; l++) { // x
             // Fortran: lFhbnd(:,j,1) = lFhi_x(:,:,j) * FLCoeff(:) TODO edit
             lFhbnd[idx_lFhbnd(0, j, k)] +=
-                lFi[idx_lFi(i, j, l, 0, k)] * SolverType::FCoeff[order][0][order][l]
+                lFi[idx_lFi(i, j, l, 0, k)] * SolverType::FCoeff[order][0][l]
                                                                       * SolverType::weights[order][i];
 
             // Fortran: lFhbnd(:,j,2) = lFhi_x(:,:,j) * FRCoeff(:) TODO edit
             lFhbnd[idx_lFhbnd(1, j, k)] +=
-                lFi[idx_lFi(i, j, l, 0, k)] * SolverType::FCoeff[order][1][order][l]
+                lFi[idx_lFi(i, j, l, 0, k)] * SolverType::FCoeff[order][1][l]
                                                                       * SolverType::weights[order][i];
           }
         }
@@ -552,12 +544,12 @@ void aderTimeAveragingExtrapolatorNonlinear(
         for (int l = 0; l < basisSize; l++) { // x
           // Fortran: lQhbnd(:,j,1) = lQhi(:,:,j) * FLCoeff(:) TODO edit
           lQhbnd[idx_lQhbnd(0, j, k)] +=
-              lQi[idx_lQi(j, l, i, k)] * SolverType::FCoeff[order][0][order][l]
+              lQi[idx_lQi(j, l, i, k)] * SolverType::FCoeff[order][0][l]
                                        * SolverType::weights[order][i];
 
           // Fortran: lQhbnd(:,j,2) = lQhi(:,:,j) * FRCoeff(:) TODO edit
           lQhbnd[idx_lQhbnd(1, j, k)] +=
-              lQi[idx_lQi(j, l, i, k)] * SolverType::FCoeff[order][1][order][l]
+              lQi[idx_lQi(j, l, i, k)] * SolverType::FCoeff[order][1][l]
                                        * SolverType::weights[order][i];
         }
       }
@@ -571,12 +563,12 @@ void aderTimeAveragingExtrapolatorNonlinear(
           for (int l = 0; l < basisSize; l++) { // y
             // Fortran: lFhbnd(:,j,3) = lFhi_y(:,:,j) * FLCoeff(:) TODO edit
             lFhbnd[idx_lFhbnd(2, j, k)] +=
-                lFi[idx_lFi(i, l, j, 1, k)] * SolverType::FCoeff[order][0][order][l]
+                lFi[idx_lFi(i, l, j, 1, k)] * SolverType::FCoeff[order][0][l]
                                             * SolverType::weights[order][i];
 
             // Fortran: lFhbnd(:,j,4) = lFhi_y(:,:,j) * FRCoeff(:) TODO edit
             lFhbnd[idx_lFhbnd(3, j, k)] +=
-                lFi[idx_lFi(i, l, j, 1, k)] * SolverType::FCoeff[order][1][order][l]
+                lFi[idx_lFi(i, l, j, 1, k)] * SolverType::FCoeff[order][1][l]
                                             * SolverType::weights[order][i];
           }
         }
@@ -586,12 +578,12 @@ void aderTimeAveragingExtrapolatorNonlinear(
         for (int l = 0; l < basisSize; l++) { // y
           // Fortran: lQhbnd(:,j,3) = lQhi(:,j,:) * FLCoeff(:) TODO edit
           lQhbnd[idx_lQhbnd(2, j, k)] +=
-              lQi[idx_lQi(l, j, i, k)] * SolverType::FCoeff[order][0][order][l]
+              lQi[idx_lQi(l, j, i, k)] * SolverType::FCoeff[order][0][l]
                                        * SolverType::weights[order][i];
 
           // Fortran: lQhbnd(:,j,4) = lQhi(:,j,:) * FRCoeff(:)
           lQhbnd[idx_lQhbnd(3, j, k)] +=
-              lQi[idx_lQi(l, j, i, k)] * SolverType::FCoeff[order][1][order][l]
+              lQi[idx_lQi(l, j, i, k)] * SolverType::FCoeff[order][1][l]
                                        * SolverType::weights[order][i];
         }
       }
@@ -621,7 +613,7 @@ int spaceTimePredictorNonlinear(
   
   if(noTimeAveraging) {
     // TODO(Lukas) what shall we do for this case?
-    aderTimeAveragingExtrapolatorNonlinear<useFlux,numberOfVariables,numberOfParameters, basisSize>(
+    aderTimeAveragingExtrapolatorNonlinear<SolverType,useFlux,numberOfVariables,numberOfParameters, basisSize>(
         lQi,
         lFi,
         lQhbnd, lFhbnd);
@@ -629,13 +621,13 @@ int spaceTimePredictorNonlinear(
     constexpr int basisSize2 = basisSize * basisSize;
 
     // Note: gradQ is already time-averaged!
-    aderPredictorNonlinear<useSource, useFlux, useNCP, numberOfVariables, numberOfParameters, basisSize>(
+    aderPredictorNonlinear<SolverType,useSource, useFlux, useNCP, numberOfVariables, numberOfParameters, basisSize>(
         lQi, lFi, lQhi,
         &lFhi[0 * basisSize2 * numberOfVariables],  // lFhi_x
         &lFhi[1 * basisSize2 * numberOfVariables],  // lFhi_y
         &lFhi[2 * basisSize2 * numberOfVariables]   // lShi
     );
-    aderExtrapolatorNonlinear<useFlux,useViscousFlux, numberOfVariables,numberOfParameters, basisSize>(
+    aderExtrapolatorNonlinear<SolverType,useFlux,useViscousFlux, numberOfVariables,numberOfParameters, basisSize>(
         lQhi, gradQ,
         &lFhi[0 * basisSize2 * numberOfVariables],  // lFhi_x
         &lFhi[1 * basisSize2 * numberOfVariables],  // lFhi_y

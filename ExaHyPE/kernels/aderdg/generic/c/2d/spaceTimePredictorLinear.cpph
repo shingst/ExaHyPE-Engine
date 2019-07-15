@@ -156,7 +156,7 @@ void spaceTimePredictorLinear(SolverType& solver,
         for (int k = 0; k < basisSize; k++) {
           for (int n = 0; n < numberOfVariables; n++) { //skip parameters
             for(int t = 0; t < basisSize; t ++ ){
-              lQi[idx_lQi(i, j, k, n)] += tmp_PSderivatives[idx_PSderivatives(t, j, k, n)]*SolverType::FCoeff[order][0][order][t];
+              lQi[idx_lQi(i, j, k, n)] += tmp_PSderivatives[idx_PSderivatives(t, j, k, n)]*SolverType::FCoeff[order][0][t];
             } //t
           } //n
         } //k
@@ -437,9 +437,9 @@ void spaceTimePredictorLinear(SolverType& solver,
     for (int k = 0; k < numberOfData; k++) {
       for (int l = 0; l < basisSize; l++) {
         // left
-        lQbnd[idx_lQbnd(0, i, k)] += lQhi[idx_lQhi(i, l, k)] * SolverType::FCoeff[order][0][order][l];
+        lQbnd[idx_lQbnd(0, i, k)] += lQhi[idx_lQhi(i, l, k)] * SolverType::FCoeff[order][0][l];
         // right
-        lQbnd[idx_lQbnd(1, i, k)] += lQhi[idx_lQhi(i, l, k)] * SolverType::FCoeff[order][1][order][l];
+        lQbnd[idx_lQbnd(1, i, k)] += lQhi[idx_lQhi(i, l, k)] * SolverType::FCoeff[order][1][l];
       }
     }
     // lFbnd(:,j,i,1) = lFhi(:,:,j,i,1) * FLCoeff(:)
@@ -447,9 +447,9 @@ void spaceTimePredictorLinear(SolverType& solver,
     for (int k = 0; k < numberOfVariables; k++) {
       for (int l = 0; l < basisSize; l++) {
         // left
-        lFbnd[idx_lFbnd(0, i, k)] += lFhi[idx_lFhi(0, i, l, k)] * SolverType::FCoeff[order][0][order][l];
+        lFbnd[idx_lFbnd(0, i, k)] += lFhi[idx_lFhi(0, i, l, k)] * SolverType::FCoeff[order][0][l];
         // right
-        lFbnd[idx_lFbnd(1, i, k)] += lFhi[idx_lFhi(0, i, l, k)] * SolverType::FCoeff[order][1][order][l];
+        lFbnd[idx_lFbnd(1, i, k)] += lFhi[idx_lFhi(0, i, l, k)] * SolverType::FCoeff[order][1][l];
       }
     }
   }
@@ -462,9 +462,9 @@ void spaceTimePredictorLinear(SolverType& solver,
     for (int k = 0; k < numberOfData; k++) {
       for (int l = 0; l < basisSize; l++) {
         // left
-        lQbnd[idx_lQbnd(2, i, k)] += lQhi[idx_lQhi(l, i, k)] * SolverType::FCoeff[order][0][order][l];
+        lQbnd[idx_lQbnd(2, i, k)] += lQhi[idx_lQhi(l, i, k)] * SolverType::FCoeff[order][0][l];
         // right
-        lQbnd[idx_lQbnd(3, i, k)] += lQhi[idx_lQhi(l, i, k)] * SolverType::FCoeff[order][1][order][l];
+        lQbnd[idx_lQbnd(3, i, k)] += lQhi[idx_lQhi(l, i, k)] * SolverType::FCoeff[order][1][l];
       }
     }
     // lFbnd(:,i,3) = lFhi(:,:,i,2) * FLCoeff(:)
@@ -472,9 +472,9 @@ void spaceTimePredictorLinear(SolverType& solver,
     for (int k = 0; k < numberOfVariables; k++) {
       for (int l = 0; l < basisSize; l++) {
       // left
-        lFbnd[idx_lFbnd(2, i, k)] += lFhi[idx_lFhi(1, l, i, k)] * SolverType::FCoeff[order][0][order][l];
+        lFbnd[idx_lFbnd(2, i, k)] += lFhi[idx_lFhi(1, l, i, k)] * SolverType::FCoeff[order][0][l];
         // right
-        lFbnd[idx_lFbnd(3, i, k)] += lFhi[idx_lFhi(1, l, i, k)] * SolverType::FCoeff[order][1][order][l];
+        lFbnd[idx_lFbnd(3, i, k)] += lFhi[idx_lFhi(1, l, i, k)] * SolverType::FCoeff[order][1][l];
       }
     }
   }
@@ -491,19 +491,19 @@ void spaceTimePredictorLinear(SolverType& solver,
       for (int l = 0; l < basisSize; l++) {
         // left
         lQbnd[idx_lQbnd(t+1, 0, j, k)] +=
-	  lQi[idx_lQi(t,j, l, k)] * SolverType::FCoeff[order][0][order][l];
+	  lQi[idx_lQi(t,j, l, k)] * SolverType::FCoeff[order][0][l];
 
         // right
         lQbnd[idx_lQbnd(t+1, 1, j, k)] +=
-	  lQi[idx_lQi(t,j, l, k)] * SolverType::FCoeff[order][1][order][l];
+	  lQi[idx_lQi(t,j, l, k)] * SolverType::FCoeff[order][1][l];
 	
 	// top
         lQbnd[idx_lQbnd(t+1, 2, j, k)] +=
-	  lQi[idx_lQi(t,l, j, k)] * SolverType::FCoeff[order][0][order][l];
+	  lQi[idx_lQi(t,l, j, k)] * SolverType::FCoeff[order][0][l];
 	
         // bottom
         lQbnd[idx_lQbnd(t+1, 3, j, k)] +=
-	  lQi[idx_lQi(t,l, j, k)] * SolverType::FCoeff[order][1][order][l];
+	  lQi[idx_lQi(t,l, j, k)] * SolverType::FCoeff[order][1][l];
 
       }
     }

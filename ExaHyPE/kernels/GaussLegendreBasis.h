@@ -19,4 +19,38 @@
 
 #include "kernels/generated/GaussLegendreBasis.hsnippet"
 
+namespace kernels {
+namespace legendre {
+
+/**
+ * Returns the exact (point-wise) interpoland for position for x
+ *
+ * If you interpolate onto a equidistant grid, you can alternatively use the
+ * array equidistantGridProjector1d that holds all mapping quantities in a
+ * precomputed table and thus is faster.
+ *
+ * @param offsetOfPatch Array of doubles of size DIMENSIONS. If you use
+ *          Peano's tarch::la::Vector class, apply its data() function to
+ *          get hold of a pointer to be passed into this function
+ * @param x Position where to evaluate the function. This has to be a point
+ *          within the patch
+ * @param numberOfUnknowns Number of unknowns held per grid point withint the
+ *          patch
+ * @param unknown Which unknown to evaluate
+ * @param order   Which order is used
+ * @param u       Pointer to unknowns
+ */
+double interpolate(
+    const double* offsetOfPatch,
+    const double* sizeOfPatch,
+    const double* x,
+    int           numberOfUnknowns,
+    int           unknown,
+    int           order,
+    const double* u
+);
+
+}
+}
+
 #endif

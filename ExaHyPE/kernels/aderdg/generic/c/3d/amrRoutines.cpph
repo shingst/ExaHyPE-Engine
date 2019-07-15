@@ -20,7 +20,7 @@
 
 #if DIMENSIONS == 3
 
-template<int numberOfVariables, int basisSize>
+template<typename SolverType,int numberOfVariables, int basisSize>
 void singleLevelFaceUnknownsProlongation(
     double* lQhbndFine,
     const double* lQhbndCoarse,

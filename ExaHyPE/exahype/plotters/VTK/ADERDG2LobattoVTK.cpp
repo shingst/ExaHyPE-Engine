@@ -290,7 +290,7 @@ std::pair<int,int> exahype::plotters::ADERDG2LobattoVTK::plotLobattoPatch(
 
       //p = offsetOfPatch + tarch::la::multiplyComponents( i.convertScalar<double>(), sizeOfPatch) * (1.0/_order);
       for (int d=0; d<DIMENSIONS; d++) {
-        p(d) = offsetOfPatch(d) + kernels::gaussLobattoNodes[_order][_order-i(d)] * sizeOfPatch(d);
+        p(d) = offsetOfPatch(d) + kernels::lobatto::nodes[_order][_order-i(d)] * sizeOfPatch(d);
       }
 
 
@@ -350,7 +350,7 @@ void exahype::plotters::ADERDG2LobattoVTK::plotVertexData(
   dfor(i,_order+1) {
     tarch::la::Vector<DIMENSIONS, double> p;
       for (int d=0; d<DIMENSIONS; d++) {
-        p(d) = offsetOfPatch(d) + kernels::gaussLobattoNodes[_order][_order-i(d)] * sizeOfPatch(d);
+        p(d) = offsetOfPatch(d) + kernels::lobatto::nodes[_order][_order-i(d)] * sizeOfPatch(d);
       }
 
     if(_postProcessing->mapWithDerivatives()) {
@@ -423,11 +423,11 @@ void exahype::plotters::ADERDG2LobattoVTK::plotCellData(
     tarch::la::Vector<DIMENSIONS, double> p;
 
     for (int d=0; d<DIMENSIONS; d++) {
-      p(d) = offsetOfPatch(d) + (kernels::gaussLobattoNodes[_order][_order-i(d)]+kernels::gaussLobattoNodes[_order][_order-(i(d)+1)]) * sizeOfPatch(d)/2.0;
+      p(d) = offsetOfPatch(d) + (kernels::lobatto::nodes[_order][_order-i(d)]+kernels::lobatto::nodes[_order][_order-(i(d)+1)]) * sizeOfPatch(d)/2.0;
     }
     
     for (int unknown=0; unknown < _solverUnknowns; unknown++) {
-      interpoland[unknown] = kernels::interpolate(
+      interpoland[unknown] = kernels::legendre::interpolate(
         offsetOfPatch.data(),
         sizeOfPatch.data(),
         p.data(), // das ist die Position
@@ -443,7 +443,7 @@ void exahype::plotters::ADERDG2LobattoVTK::plotCellData(
       // `numberOfUnknowns` with the value `nDim*nVar` in order to circumvent the gradU data ordering.
       for (int d=0; d < DIMENSIONS; d++) {
         for (int unknown=0; unknown < _solverUnknowns; unknown++) {
-          inter_gradQ[idx_inter_gradU(d,unknown)] = kernels::interpolate(
+          inter_gradQ[idx_inter_gradU(d,unknown)] = kernels::legendre::interpolate(
             offsetOfPatch.data(),
             sizeOfPatch.data(),
             p.data(),
@@ -526,7 +526,7 @@ void exahype::plotters::ADERDG2LobattoVTK::plotPatch(
     double *gradU = nullptr;
     if(_postProcessing->mapWithDerivatives()) {
       gradU = new double[basisZ*basisY*basisX * DIMENSIONS * _solverUnknowns];
-      kernels::aderdg::generic::c::computeGradQ(gradU, u, sizeOfPatch, _solverUnknowns, _order);
+      kernels::aderdg::generic::c::computeGradQ(gradU, u, kernels::lobatto::dudx, sizeOfPatch, _solverUnknowns, _order);
     }
 
     if (_plotCells) {

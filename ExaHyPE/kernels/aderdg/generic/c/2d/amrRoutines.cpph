@@ -150,7 +150,7 @@ void singleLevelFaceUnknownsRestriction(
             SolverType::weights[order][n1] *
             SolverType::fineGridProjector[order][subfaceIndex[0]][m1][n1] *
             lQhbndFine[idx(n1,ivar)] /
-            SolverType::weight[order][m1] / 3.0;
+            SolverType::weights[order][m1] / 3.0;
       }
     }
   }
@@ -341,7 +341,7 @@ void singleLevelVolumeUnknownsProlongation(
   }
 }
 
-template <int numberOfVariables,int numberOfParameters,int basisSize>
+template <typename SolverType,int numberOfVariables,int numberOfParameters,int basisSize>
 void kernels::aderdg::generic::c::volumeUnknownsProlongation(double* luhFine,
                                 const double* luhCoarse,
                                 const int coarseGridLevel,
@@ -445,7 +445,7 @@ void singleLevelVolumeUnknownsRestriction(
   }
 }
 
-template <int numberOfVariables, int numberOfParameters, int basisSize>
+template <typename SolverType, int numberOfVariables, int numberOfParameters, int basisSize>
 void kernels::aderdg::generic::c::volumeUnknownsRestriction(double* luhCoarse,
                                const double* luhFine,
                                const int coarseGridLevel,
