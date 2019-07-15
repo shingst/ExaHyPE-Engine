@@ -23,7 +23,7 @@ import gaussLegendreQuadrature as leg
 #-----------------------------------------------------------
 # main
 #-----------------------------------------------------------
-maxOrder  = 0
+maxOrder  = 15
 printPrec = 64
 #outputDirectory = "generatedCode"
 outputDirectory="/home/dominic/Documents/dev/ExaHyPE/ExaHyPE-Engine/ExaHyPE/kernels/generated"
