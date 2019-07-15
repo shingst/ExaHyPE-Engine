@@ -74,8 +74,10 @@ void kernels::aderdg::generic::c::boundaryConditions(
 //#else      
 //    const double node = kernels::gaussLegendreNodes[basisSize-1][i];
 //#endif     
-    
-    const double node = SolverType::nodes[basisSize-1][basisSize-1-i];
+    double node = SolverType::nodes[basisSize-1][i];
+    if (SolverType::UseLobattoBasis) {
+      node = SolverType::nodes[basisSize-1][basisSize-1-i]; 
+    }
     
     x[d1] = cellCentre[d1] + cellSize[d1] * (node - 0.5);
 

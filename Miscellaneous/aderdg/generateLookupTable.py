@@ -55,8 +55,8 @@ for rule, outfile in { "legendre" : gaulegHeader, "lobatto" : gaulobHeader }.ite
     
     def writeMatrix(label,suffix="\n\n"):
         for r in range(0,maxOrder+1):
-            outfile.write("\n".join(["extern double %s_%d_%d[%d+1];" % (label,r,i,i) for i in range(0,maxOrder+1)]))
-            outfile.write("\nextern double* %s_%d[%d+1];" % (label,r,maxOrder))
+            outfile.write("\n".join(["extern double %s_%d_%d[%d+1];" % (label,r,i,r) for i in range(0,r+1)]))
+            outfile.write("\nextern double* %s_%d[%d+1];" % (label,r,r))
             outfile.write("\n")
         outfile.write("extern double** %s[%d+1];" % (label,maxOrder))
         outfile.write(suffix)
