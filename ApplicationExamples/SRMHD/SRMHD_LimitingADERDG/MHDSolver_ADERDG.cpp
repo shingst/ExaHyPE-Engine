@@ -8,7 +8,7 @@
 #include <memory>
 #include <cstring>
 #include <stdio.h>
-#include "kernels/GaussLegendreQuadrature.h"
+#include "kernels/GaussLegendreBasis.h"
 #include "kernels/KernelUtils.h" // matrix indexing
 
 // storage

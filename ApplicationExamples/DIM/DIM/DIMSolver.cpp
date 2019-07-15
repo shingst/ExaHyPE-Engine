@@ -8,7 +8,7 @@
 
 #include <cstring> // memset
 #include "kernels/KernelUtils.h" // matrix indexing
-#include "kernels/GaussLegendreQuadrature.h"
+#include "kernels/GaussLegendreBasis.h"
 
 tarch::logging::Log DIM::DIMSolver::_log( "DIM::DIMSolver" );
 
@@ -129,8 +129,8 @@ void  __attribute__((optimize("O0"))) DIM::DIMSolver::boundaryValues(const doubl
   std::memset(fluxOut, 0, nVar * sizeof(double));
   
   for(int i=0; i < basisSize; i++)  { // i == time
-     const double weight = kernels::gaussLegendreWeights[order][i];
-     const double xi = kernels::gaussLegendreNodes[order][i];
+     const double weight = kernels::legendre::weights[order][i];
+     const double xi = kernels::legendre::nodes[order][i];
      double ti = t + xi * dt;
 
      initialdata_(x, &ti, Qgp);

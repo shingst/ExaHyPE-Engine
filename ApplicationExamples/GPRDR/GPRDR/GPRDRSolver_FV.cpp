@@ -140,7 +140,7 @@ double GPRDR::GPRDRSolver_FV::riemannSolver(double* fL, double *fR, const double
 
 	//kernels::idx2 idx_QLR(basisSize, numberOfData);
 	//for (int j = 0; j < basisSize; j++) {
-	//	const double weight = kernels::gaussLegendreWeights[order][j];
+	//	const double weight = kernels::legendre::weights[order][j];
     //
 	//	for (int k = 0; k < numberOfData; k++) {
 	//		QavL[k] += weight * qL[idx_QLR(j, k)];
@@ -183,7 +183,7 @@ double GPRDR::GPRDRSolver_FV::riemannSolver(double* fL, double *fR, const double
 //  
 //    kernels::idx2 idx_QLR(basisSize, numberOfData);
 //    for (int j = 0; j < basisSize; j++) {
-//      const double weight = kernels::gaussLegendreWeights[order][j];
+//      const double weight = kernels::legendre::weights[order][j];
 //
 //      for (int k = 0; k < numberOfData; k++) {
 //        QavL[k] += weight * qL[idx_QLR(j, k)];

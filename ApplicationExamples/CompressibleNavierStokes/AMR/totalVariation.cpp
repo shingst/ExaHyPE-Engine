@@ -13,7 +13,7 @@ double totalVariation(const double* Q, int order, int numberOfVariables,
       kernels::idx4(basisSize, basisSize, basisSize, numberOfData);
 #endif
 
-  const auto& quadratureWeights = kernels::gaussLegendreWeights[order];
+  const auto& quadratureWeights = kernels::legendre::weights[order];
   double tv = 0.0;
 #if DIMENSIONS == 2
   // x direction (independent from the y derivatives)

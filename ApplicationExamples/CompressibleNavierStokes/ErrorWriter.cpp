@@ -8,9 +8,8 @@
 // ========================
 
 #include "ErrorWriter.h"
-#include "kernels/GaussLegendreQuadrature.h"
+#include "kernels/GaussLegendreBasis.h"
 #include "kernels/KernelUtils.h"
-#include "kernels/DGBasisFunctions.h"
 
 #include "peano/utils/Loop.h"
 
@@ -47,8 +46,8 @@ void NavierStokes::ErrorWriter::plotPatch(
   constexpr int numberOfQuadPoints = quadOrder + 1;//basisSize;
   constexpr int gradSize = DIMENSIONS * numberOfVariables;
 
-  const auto& quadratureNodes = kernels::gaussLegendreNodes[quadOrder];
-  const auto& quadratureWeights = kernels::gaussLegendreWeights[quadOrder];
+  const auto& quadratureNodes = kernels::legendre::nodes[quadOrder];
+  const auto& quadratureWeights = kernels::legendre::weights[quadOrder];
 
   assertionEqualsMsg(DIMENSIONS, 2, "ErrorWriter is only supported for 2D!");
   double x[2] = {0.0, 0.0};
@@ -73,7 +72,7 @@ void NavierStokes::ErrorWriter::plotPatch(
     for (int v = 0; v < numberOfVariables; v++) {
       const auto curAna = uAna[v];
       // TODO(Lukas) Correct interpolation?
-      const auto curNum = kernels::interpolate(offsetOfPatch.data(),
+      const auto curNum = kernels::legendre::interpolate(offsetOfPatch.data(),
               sizeOfPatch.data(),
               x,
               numberOfData,

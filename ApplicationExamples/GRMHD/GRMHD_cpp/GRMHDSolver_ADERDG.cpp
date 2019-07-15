@@ -5,7 +5,7 @@
 #include <cstring> // memset
 
 #include "kernels/KernelUtils.h" // matrix indexing
-#include "kernels/GaussLegendreQuadrature.h"
+#include "kernels/GaussLegendreBasis.h"
 #include "peano/utils/Dimensions.h" // Defines DIMENSIONS
 
 //namespace GRMHD { constexpr int nVar = GRMHDSolver_FV::NumberOfVariables; } // ensure this is 19 or so
@@ -194,8 +194,8 @@ void GRMHD::GRMHDSolver_ADERDG::boundaryValues(const double* const x,const doubl
 		fluxOut[m] = 0;
 	}
 	for(int i=0; i < basisSize; i++)  { // i == time
-		const double weight = kernels::gaussLegendreWeights[order][i];
-		const double xi = kernels::gaussLegendreNodes[order][i];
+		const double weight = kernels::legendre::weights[order][i];
+		const double xi = kernels::legendre::nodes[order][i];
 		double ti = t + xi * dt;
 
 		InitialData(x, ti, Qgp);

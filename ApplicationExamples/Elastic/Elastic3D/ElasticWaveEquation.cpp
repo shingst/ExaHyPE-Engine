@@ -3,7 +3,6 @@
 #include "ElasticWaveEquation_Variables.h"
 
 #include "../../../ExaHyPE/kernels/KernelUtils.h"
-#include "../../../ExaHyPE/kernels/DGMatrices.h"
 
 #ifdef OPT_KERNELS
 #include kernels/ElasticWaveEquation/converter.h

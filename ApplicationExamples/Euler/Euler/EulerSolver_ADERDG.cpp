@@ -21,7 +21,7 @@
 
 #include <math.h>
 
-#include "kernels/GaussLegendreQuadrature.h"
+#include "kernels/GaussLegendreBasis.h"
 
 #include "kernels/aderdg/generic/Kernels.h"
 
@@ -487,7 +487,7 @@ void Euler::EulerSolver_ADERDG::adjustPointSolution(const double* const x,const 
         double offset_y=center[1]-0.5*dx[1];
 
             for (int j=0; j< basisSize; j++){
-                double x = center[0] + dx[0] * (kernels::gaussLegendreNodes[basisSize-1][j] - 0.5);
+                double x = center[0] + dx[0] * (kernels::legendre::nodes[basisSize-1][j] - 0.5);
                 double point[2]= {x,0.0};
 
                 for (int i=0; i< basisSize; i++)
@@ -528,12 +528,12 @@ void Euler::EulerSolver_ADERDG::boundaryValues(const double* const x,const doubl
     std::fill_n(stateOut, NumberOfVariables, 0.0);
     std::fill_n(fluxOut,  NumberOfVariables, 0.0);
     for (int i=0; i<Order+1; i++) {
-      const double ti = t + dt * kernels::gaussLegendreNodes[Order][i];
+      const double ti = t + dt * kernels::legendre::nodes[Order][i];
       referenceSolution(x,ti,Q);
       flux(Q,F);
       for (int v=0; v<NumberOfVariables; v++) {
-        stateOut[v] += Q[v]            * kernels::gaussLegendreWeights[Order][i];
-        fluxOut[v]  += F[direction][v] * kernels::gaussLegendreWeights[Order][i];
+        stateOut[v] += Q[v]            * kernels::legendre::weights[Order][i];
+        fluxOut[v]  += F[direction][v] * kernels::legendre::weights[Order][i];
       }
     }
   } break;
@@ -547,12 +547,12 @@ void Euler::EulerSolver_ADERDG::boundaryValues(const double* const x,const doubl
       std::fill_n(stateOut, NumberOfVariables, 0.0);
       std::fill_n(fluxOut,  NumberOfVariables, 0.0);
       for (int i=0; i<Order+1; i++) {
-        const double ti = t + dt * kernels::gaussLegendreNodes[Order][i];
+        const double ti = t + dt * kernels::legendre::nodes[Order][i];
         referenceSolution(x,ti,Q);
         flux(Q,F);
         for (int v=0; v<NumberOfVariables; v++) {
-          stateOut[v] += Q[v]            * kernels::gaussLegendreWeights[Order][i];
-          fluxOut[v]  += F[direction][v] * kernels::gaussLegendreWeights[Order][i];
+          stateOut[v] += Q[v]            * kernels::legendre::weights[Order][i];
+          fluxOut[v]  += F[direction][v] * kernels::legendre::weights[Order][i];
         }
       }
     } else { // wall boundary conditions 

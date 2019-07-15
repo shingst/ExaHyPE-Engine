@@ -10,7 +10,7 @@
 #include "SFDISolver_FV.h"
 
 #include <algorithm>
-#include "kernels/GaussLegendreQuadrature.h"
+#include "kernels/GaussLegendreBasis.h"
 #include "PDE.h"
 #include "InitialData.h"
 #include "Tools.h"
@@ -94,8 +94,8 @@ void SFDI::SFDISolver_ADERDG::boundaryValues(const double* const x,const double 
   for(int dd=0; dd<nDim; dd++) F[dd] = Fs[dd];
 
   for(int i=0; i < basisSize; i++)  { // i == time
-    const double weight = kernels::gaussLegendreWeights[order][i];
-    const double xi = kernels::gaussLegendreNodes[order][i];
+    const double weight = kernels::legendre::weights[order][i];
+    const double xi = kernels::legendre::nodes[order][i];
     double ti = t + xi * dt;
 
     //    initialdata_(x, &ti, Qgp,&md,&cms,&order);

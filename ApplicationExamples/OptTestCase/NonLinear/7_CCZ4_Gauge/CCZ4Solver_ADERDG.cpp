@@ -2,7 +2,7 @@
 
 #include "CCZ4Solver_ADERDG_Variables.h"
 
-#include "kernels/GaussLegendreQuadrature.h"
+#include "kernels/GaussLegendreBasis.h"
 #include "kernels/KernelUtils.h" // matrix indexing
 #include <cstring> // memset
 #include "Fortran/PDE.h"
@@ -78,8 +78,8 @@ void CCZ4::CCZ4Solver_ADERDG::boundaryValues(const double* const x,const double 
 
 	// Integrate solution in gauss points (Qgp) in time
 	for(int i=0; i < basisSize; i++)  { // i == time
-	const double weight = kernels::gaussLegendreWeights[order][i];
-	const double xi = kernels::gaussLegendreNodes[order][i];
+	const double weight = kernels::legendre::weights[order][i];
+	const double xi = kernels::legendre::nodes[order][i];
 	double ti = t + xi * dt;
 
 	InitialData(x,ti,Qgp);

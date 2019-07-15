@@ -252,8 +252,8 @@ public:
 		}
 		// Time integrate exact BC
 		for(int i=0; i < basisSize; i++)  { // i == time
-			const double weight = kernels::gaussLegendreWeights[order][i];
-			const double xi = kernels::gaussLegendreNodes[order][i];
+			const double weight = kernels::legendre::weights[order][i];
+			const double xi = kernels::legendre::nodes[order][i];
 			double ti = t + xi * dt;
 
 			solver->adjustPointSolution(x, ti, dt, Qgp);

@@ -15,7 +15,7 @@
 #include "SFDISolver_FV.h"
 #include "SFDISolver_ADERDG.h"
 
-#include "kernels/GaussLegendreQuadrature.h"
+#include "kernels/GaussLegendreBasis.h"
 #include "kernels/KernelUtils.h"
 
 #include "peano/utils/Loop.h"
