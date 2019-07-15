@@ -813,7 +813,7 @@ void aderTimeAveragingExtrapolatorNonlinear(const double* lQi,
 
 }  // namespace
 
-template <typename SolverType,bool useSource, bool useFlux, bool useViscousFlux, bool useNCP,
+template <bool useSource, bool useFlux, bool useViscousFlux, bool useNCP,
           bool noTimeAveraging, typename SolverType>
 int spaceTimePredictorNonlinear(
     SolverType& solver, double* lQhbnd, double* lGradQhbnd, double* lFhbnd,
@@ -826,7 +826,7 @@ int spaceTimePredictorNonlinear(
   constexpr int basisSize = SolverType::Order + 1;
 
   const int iterations =
-      aderPicardLoopNonlinear<SolverType,useSource, useFlux, useViscousFlux, useNCP, SolverType>(
+      aderPicardLoopNonlinear<useSource, useFlux, useViscousFlux, useNCP, SolverType>(
               solver, luh, t, dt, cellCenter, invDx, lQi, rhs, lFi, gradQ);
 
   idx5 idx_gradQ(basisSize, basisSize, basisSize, DIMENSIONS,

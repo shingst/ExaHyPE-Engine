@@ -14,8 +14,8 @@
 //#include "kernels/GaussLobattoBasis.h"
 //#else
 //#include "kernels/GaussLegendreBasis.h"
+//#endif    
 
-#endif    
 #include "kernels/KernelUtils.h"
 
 namespace kernels {

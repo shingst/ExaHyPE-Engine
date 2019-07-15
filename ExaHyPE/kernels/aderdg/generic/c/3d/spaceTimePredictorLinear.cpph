@@ -487,11 +487,12 @@ void spaceTimePredictorLinear(SolverType& solver,
             for (int n = 0; n < numberOfVariables/* skip parameters */; n++) {
               double sum = 0.0;
               for (int n0 = 1; n0 <  basisSize+1; n0++) {
-#if defined(_GLL)
-                const double weight = gaussLobattoWeights[order][n0-1];
-#else      
-                const double weight = gaussLegendreWeights[order][n0-1];
-#endif      
+                //#if defined(_GLL)
+                //const double weight = gaussLobattoWeights[order][n0-1];
+                //#else      
+                //const double weight = gaussLegendreWeights[order][n0-1];
+                //#endif
+                const double weight = SolverType::weights[order][n0-1];
                 sum += weight*PSi[idx_PSi(n0, k, l, m, n)];
               }
               lFhi[idx_lFhi(j, k, l, m, n)] += sum/DIMENSIONS;
