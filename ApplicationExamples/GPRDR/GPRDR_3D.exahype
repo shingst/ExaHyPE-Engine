@@ -9,15 +9,17 @@
   },
   "architecture": "skx",
   "computational_domain": {
-    "dimension": 2,
-    "end_time": 5.0,
+    "dimension": 3,
+    "end_time": 10.0,
     "offset": [
-      -8000.0,
-      -8000.0
+      -5000.0,
+      -5000.0,
+      -5000.0
     ],
     "width": [
-      16000.0,
-      16000.0
+      10000.0,
+      10000.0,
+      10000.0
     ]
   },
   "shared_memory": {
@@ -51,9 +53,9 @@
     {
       "type": "Limiting-ADER-DG",
       "name": "GPRDRSolver",
-      "order": 3,
+      "order": 2,
       "maximum_mesh_size": 1000.0,
-      "maximum_mesh_depth": 2,
+      "maximum_mesh_depth": 1,
       "time_stepping": "global",
       "aderdg_kernel": {
         "language": "C",
@@ -73,7 +75,7 @@
         "dmp_observables": 3,
         "dmp_relaxation_parameter": 1e+3,
         "dmp_difference_scaling": 1e+4,
-        "patch_size": "max",
+        "patch_size": "5",
         "implementation": "generic"
       },
       "fv_kernel": {
@@ -141,21 +143,12 @@
         "reference": "NLOPRUPTURE"
       },
 
-
     "plotters": [
-         {
-          "type": "vtu::Cartesian::Cells::limited::Ascii",
-          "name": "ConservedWriter",
-          "time": 0.0,
-          "repeat": 0.1,
-          "output": "./output/conserved",
-          "variables": 39
-         },
         {
           "type": "user::defined",
           "name": "TecplotWriter",
           "time": 0.0,
-          "repeat": 0.15,
+          "repeat": 0.05,
           "output": "./output/tecplot",
           "variables": 9
         }

@@ -605,7 +605,7 @@ SUBROUTINE FinalizeTECPLOTPLOTTER(Myrank)
 	CHARACTER(LEN=200) :: Filename,ZoneTitle,Title,ScratchDir, BaseFile ! BaseFile is the folder	where place the plots
 	CHARACTER(LEN=1000) :: VarString
 	CHARACTER(LEN=10)  :: cmyrank,varname , AuxName
-	INTEGER				:: ZoneType, iRet, StrandID,visdouble,i
+	INTEGER				:: ZoneType, iRet, StrandID,visdouble,i,j
 	REAL				:: loctime
 	REAL(td)           :: Test
 	!POINTER(NullPtr,Null)
@@ -643,11 +643,18 @@ SUBROUTINE FinalizeTECPLOTPLOTTER(Myrank)
 	print *, "****************************************************"
 	!stop
 	print *,'1->',nRealNodes_max,nRealNodes
-	DO I=1,nRealNodes
-		DataArray(I,:)=DataArray_max(i,1:(nDim+nVar+nAux+1+1))
+	DO J=1,(nDim+nVar+nAux+1+1)
+		DO I=1,nRealNodes
+			DataArray(I,J)=DataArray_max(i,j)
+		END DO
 	END DO
 	print *,'2'
-	 NData=NData_max(1:nVertex,1:nSubPlotElem)
+	DO J=1,nSubPlotElem
+		DO I=1,nVertex
+			NData(I,J)=NData_max(I,J)
+		END DO
+	END DO 
+	 print *,'2-1'
 	!do i=1,nSubPlotElem
 	!	print *, "NData=",NData_max(:,i)
 	!end do

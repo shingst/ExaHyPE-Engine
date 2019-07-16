@@ -175,7 +175,8 @@ CONTAINS
 #endif
 #ifdef EQNTYPED99
         call AssignMaterialPropertiesMix(RUPTURE_PARAMS,EQN%MATERIALS,(/Q0(22), 1.-Q0(22)/),EQN%nMATs,.TRUE.)
-        ODE%F0J    = EQN%F0J
+        ODE%F0J    = 0.! EQN%F0J
+		ODE%F0    = 0.!EQN%F0J
         ODE%mu1    = Q0(20)
         ODE%lam1   = Q0(19)
 
