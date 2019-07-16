@@ -26,7 +26,7 @@ def generateBasisFunctionDefinitions(outfile,rule,order,x,printPrec):
 
 
         ret = "  return %s;" % sympy.simplify(refphi)
-        ret = re.sub(r"s\*\*([0-9]+)", r"std::pow(s, \1)", ret)
+        ret = re.sub(r"s\*\*([0-9]+)", r"pow\1(s)", ret)
         outfile.write(ret)
         outfile.write("}\n")
 
@@ -36,7 +36,7 @@ def generateBasisFunctionDefinitions(outfile,rule,order,x,printPrec):
         dds_refphi = sympy.diff(refphi, s)
         outfile.write("double kernels::%s::basisFunctionFirstDerivative_%d_%d(const double& s) {" % (rule,order,m))
         ret = "  return %s;" % sympy.simplify(dds_refphi)
-        ret = re.sub(r"s\*\*([0-9]+)", r"std::pow(s, \1)", ret)
+        ret = re.sub(r"s\*\*([0-9]+)", r"pow\1(s)", ret)
         outfile.write(ret)
         outfile.write("}\n")
 
@@ -46,6 +46,6 @@ def generateBasisFunctionDefinitions(outfile,rule,order,x,printPrec):
         d2ds2_refphi = sympy.simplify(sympy.diff(refphi, s, s))
         outfile.write("double kernels::%s::basisFunctionSecondDerivative_%d_%d(const double& s) {" % (rule,order,m))
         ret = "  return %s;" % sympy.simplify(d2ds2_refphi)
-        ret = re.sub(r"s\*\*([0-9]+)", r"std::pow(s, \1)", ret)
+        ret = re.sub(r"s\*\*([0-9]+)", r"pow\1(s)", ret)
         outfile.write(ret)
         outfile.write("}\n")
