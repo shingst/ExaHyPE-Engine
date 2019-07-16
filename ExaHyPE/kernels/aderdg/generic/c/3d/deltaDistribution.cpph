@@ -57,7 +57,10 @@ std::vector<int>* kernels::aderdg::generic::c::getPointSources(
 }
 					       
 
-					       
+template <int basisSize, bool useLobatto>
+int index_nodes(int i) {
+  return useLobatto ? (basisSize-1-i) : i;
+}
 
 template <typename SolverType>
 void kernels::aderdg::generic::c::deltaDistribution(
@@ -81,10 +84,6 @@ void kernels::aderdg::generic::c::deltaDistribution(
   idx5 idx_PSi(basisSize + 1, basisSize, basisSize, basisSize, numberOfVariables);
   idx4 idx_luh(basisSize, basisSize, basisSize, numberOfData);
 
-  auto index_nodes = [basisSize](int i){return i; };
-  if (SolverType::UseLobattoBasis) { 
-    index_nodes= [basisSize](int i){return basisSize-1-i; }; //GLL nodes are reverted  
-  }
   const double* const quad_weights= SolverType::weights[basisSize-1];
   const double* const quad_nodes  = SolverType::nodes  [basisSize-1];
   
@@ -104,13 +103,13 @@ void kernels::aderdg::generic::c::deltaDistribution(
   double forceVectorSource[numberOfVariables];
   //loop over all quadrature points
   for (int n = 0; n < basisSize+1; n++) { // time loop
-    n == 0 ? tn = t : tn = dt * quad_nodes[index_nodes(n-1)] + t; //First Point in time is current time, then use GL nodes in time
+    n == 0 ? tn = t : tn = dt * quad_nodes[index_nodes<basisSize,SolverType::UseLobattoBasis>(n-1)] + t; //First Point in time is current time, then use GL nodes in time
     for (int i = 0; i < basisSize; i++) {   //z loop
-      quad_node_on_element[2] = center[2]+dx[2] * (quad_nodes[index_nodes(i)] - 0.5); //transform onto element
+      quad_node_on_element[2] = center[2]+dx[2] * (quad_nodes[index_nodes<basisSize,SolverType::UseLobattoBasis>(i)] - 0.5); //transform onto element
       for (int j = 0; j < basisSize; j++) {  //y loop
-        quad_node_on_element[1] = center[1] + dx[1] * (quad_nodes[index_nodes(j)] - 0.5); //transform onto element
+        quad_node_on_element[1] = center[1] + dx[1] * (quad_nodes[index_nodes<basisSize,SolverType::UseLobattoBasis>(j)] - 0.5); //transform onto element
         for (int k = 0; k < basisSize; k++) {  //x loop
-          quad_node_on_element[0] = center[0] + dx[0] * (quad_nodes[index_nodes(k)] - 0.5); //transform onto element
+          quad_node_on_element[0] = center[0] + dx[0] * (quad_nodes[index_nodes<basisSize,SolverType::UseLobattoBasis>(k)] - 0.5); //transform onto element
           //loop over all point sources  
           for (int m : *pointSources) {
             // get the source vector located at quadrature node x at time tn

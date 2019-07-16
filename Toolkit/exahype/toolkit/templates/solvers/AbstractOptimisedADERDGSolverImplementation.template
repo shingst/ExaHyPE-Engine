@@ -77,6 +77,10 @@ std::atomic_ulong {{project}}::{{abstractSolver}}::volumeUnknownsRestriction_t =
 std::atomic_ulong {{project}}::{{abstractSolver}}::volumeUnknownsRestriction_c = 0;
 {% endif %}
 
+kernels::UnivariateFunction** {{project}}::{{abstractSolver}}::basisFunction                 = kernels::{{basis}}::basisFunction;
+kernels::UnivariateFunction** {{project}}::{{abstractSolver}}::basisFunctionFirstDerivative  = kernels::{{basis}}::basisFunctionFirstDerivative;
+kernels::UnivariateFunction** {{project}}::{{abstractSolver}}::basisFunctionSecondDerivative = kernels::{{basis}}::basisFunctionSecondDerivative;
+
 // We define the constructor of the actual solver here in order to regenerate it easily.
 {{project}}::{{solver}}::{{solver}}(
     const double maximumMeshSize,

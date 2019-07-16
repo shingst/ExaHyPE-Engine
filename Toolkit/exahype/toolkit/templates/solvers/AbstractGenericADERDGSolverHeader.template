@@ -43,14 +43,19 @@ public:
   
   // quadrature weights and operators
   static constexpr bool UseLobattoBasis = {{"true" if basis == "lobatto" else "false"}};
+  // [order][node i]
   static double** weights;
   static double** nodes;
+  // [order][node i][node j]
   static double*** Kxi;
   static double*** dudx;
   static double*** iK1;
   static double*** equidistantGridProjector;
+  // [order][ 0("left") or 1("right") ][node i]
   static double*** FCoeff;
+  // [order][ subinterval ][fine grid node i][coarse grid node j]
   static double**** fineGridProjector;
+  // [order][node i]
   static kernels::UnivariateFunction** basisFunction;
   static kernels::UnivariateFunction** basisFunctionFirstDerivative;
   static kernels::UnivariateFunction** basisFunctionSecondDerivative;
