@@ -14,6 +14,9 @@
 #include "{{solver}}_Variables.h"
 #include "{{solver}}.h" // Have to include a proper declaration. Cannot use forward declared classes in static_cast.
 
+#include "kernels/GaussLegendreBasis.h"
+#include "kernels/GaussLobattoBasis.h"
+
 #include <stdio.h>
 {% if countFlops  %}
 #include <chrono>
