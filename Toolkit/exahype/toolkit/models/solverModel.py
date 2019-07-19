@@ -111,6 +111,9 @@ class SolverModel(AbstractModelBaseClass):
             raise
         
         paths = [] # path is None if nothing was generated
+        if implementation == "optimised":
+            codegenModel = CodegeneratorModel()
+            _ , self.context["codegeneratorContext"] = codegenModel.generateCode(self.context) #call codegenerator and store context used
         for filePath,template in abstractSolverTemplates.get(implementation,[]):
             paths.append(self.render(template,filePath)[0])
         

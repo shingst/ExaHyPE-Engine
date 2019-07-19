@@ -14,14 +14,16 @@
 #include "{{pathToOptKernel}}/gemmsCPP.h"
 #include "{{pathToOptKernel}}/Kernels.h" //for the libxsmm flop counter
 
+#define NDEBUG // remove the libxsmm_num_total_flops counter
 {% if useLibxsmm %}
+{% if not useLimiter %}
 // amrRoutines gemms
 #include "{{pathToOptKernel}}/asm_amrRoutines.c"
 
 
 // fusedSpaceTimePredictorVolumeIntegral gemms
 #include "{{pathToOptKernel}}/asm_fstpvi.c"
-
+{% endif %}
 {% if useLimiter %}
 // Limiter gemms
 #include "{{pathToOptKernel}}/asm_limiter.c"

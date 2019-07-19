@@ -30,4 +30,7 @@ class KernelsHeaderModel(AbstractModelBaseClass):
         self.context["solverNamespace"] = self.context["solverName"].split("::")[0]
         self.context["solverClass"] = self.context["solverName"].split("::")[1]
         
-        self.render("Kernels_h.template", "Kernels.h")
+        if self.context["kernelType"] == "aderdg":
+            self.render("Kernels_aderdg_h.template", "Kernels.h")
+        elif self.context["kernelType"] == "limiter":
+            self.render("Kernels_limiter_h.template", "Kernels.h")
