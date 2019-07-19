@@ -54,9 +54,9 @@ class SolverModel(AbstractModelBaseClass):
             codegenModel = CodegeneratorModel()
             _ , self.context["codegeneratorContext"] = codegenModel.generateCode(self.context) #call codegenerator and store context used
         for filePath,template in solverTemplates.get(implementation,[]):
-          paths.append(self.render(template,filePath,overwrite=False)[0])
+            paths.append(self.render(template,filePath,overwrite=False)[0])
         for filePath,template in abstractSolverTemplates.get(implementation,[]):
-          paths.append(self.render(template,filePath)[0])
+            paths.append(self.render(template,filePath)[0])
         
         if implementation != "user":
             paths.append(self.render("variables/VariablesHeader.template",self.context["solver"]+"_Variables.h")[0])
@@ -85,9 +85,9 @@ class SolverModel(AbstractModelBaseClass):
             
         paths = [] # path is None if nothing was generated
         for filePath,template in solverTemplates.get(implementation,[]):
-          paths.append(self.render(template,filePath,overwrite=False)[0])
+            paths.append(self.render(template,filePath,overwrite=False)[0])
         for filePath,template in abstractSolverTemplates.get(implementation,[]):
-          paths.append(self.render(template,filePath)[0])
+            paths.append(self.render(template,filePath)[0])
         
         if implementation != "user":
             paths.append(self.render("variables/VariablesHeader.template",self.context["solver"]+"_Variables.h")[0])
@@ -112,7 +112,7 @@ class SolverModel(AbstractModelBaseClass):
         
         paths = [] # path is None if nothing was generated
         for filePath,template in abstractSolverTemplates.get(implementation,[]):
-          paths.append(self.render(template,filePath)[0])
+            paths.append(self.render(template,filePath)[0])
         
         return paths, self.context
 
@@ -123,5 +123,4 @@ class SolverModel(AbstractModelBaseClass):
           "Finite-Volumes"   : self.generateFiniteVolumesSolverFiles,
           "Limiting-ADER-DG" : self.generateLimitingADERDGSolverFiles
         }
-       
         return generators[self.context["solverType"]]() # (paths, context)

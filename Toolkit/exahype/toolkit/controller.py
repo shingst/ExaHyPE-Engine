@@ -27,9 +27,9 @@ class Controller:
             "year": str(datetime.datetime.now().year)
         }
         try:
-           info["gittag"] = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD']).strip().decode('ascii')
+            info["gittag"] = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD']).strip().decode('ascii')
         except:
-           info["gittag"]="N/A"
+            info["gittag"]="N/A"
 
         return """
     ______           __  __      ____  ______    
@@ -101,21 +101,21 @@ class Controller:
         self.runTools(args)
         
     def runTools(self,args):
-      """
-      Run all tools selected by the user.
-      """
-      argDict = vars(args)
+        """
+        Run all tools selected by the user.
+        """
+        argDict = vars(args)
 
-      context = {}
-      context["spec"] = self.spec
-      context["specfilePath"] =  self.specfileName
+        context = {}
+        context["spec"] = self.spec
+        context["specfilePath"] =  self.specfileName
 
-      previousLevel = self.log.level
-      self.log.setLevel(logging.INFO)
-      for tool in tools.tools:
-         if argDict[tool.id()]:
-            tool.run(context)            
-      self.log.setLevel(previousLevel)
+        previousLevel = self.log.level
+        self.log.setLevel(logging.INFO)
+        for tool in tools.tools:
+            if argDict[tool.id()]:
+                tool.run(context)
+        self.log.setLevel(previousLevel)
 
     def run(self):
         try:
@@ -207,7 +207,7 @@ class Controller:
         # add tools
         utils = parser.add_argument_group("Additional tools")
         for tool in tools.tools:
-          utils.add_argument("--%s" % tool.id(),help=tool.help(),action="store_true")
+            utils.add_argument("--%s" % tool.id(),help=tool.help(),action="store_true")
 
         parser.add_argument('specfile',
             type=argparse.FileType('r'),
@@ -224,7 +224,7 @@ class Controller:
             self.log.error("Could not read specification file '%s': %s" % (self.specfileName, str(e)))
             self.log.error("In order to fix this problem, please fix the format of your file with the command line flag --format=XXX where XXX is a supported specification file format.")
             if self.debug:
-               self.log.exception(e)
+                self.log.exception(e)
             sys.exit(-3)
 
         # I find this is more a debugging feature...

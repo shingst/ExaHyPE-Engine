@@ -54,9 +54,10 @@ class SolverController:
                 solverContext = self.processModelOutput(model.generateCode(), solverContextsList, logger)
             elif solver["type"]=="Finite-Volumes":
                 context = self.buildFVSolverContext(solver)
-                if type(fvContext["patchSize"]) != int:
+                if type(context["patchSize"]) != int: # TODO move to proper validate
                     logger.error("{}: 'patch_size' must be an integer; it is '{}'.".format(context["solver"],context["patchSize"]))
-                model = solverModel.SolverModel()
+                    raise ValueError("'patch_size' must be an integer")
+                model = solverModel.SolverModel(context)
                 solverContext = self.processModelOutput(model.generateCode(), solverContextsList, logger)
             elif solver["type"]=="Limiting-ADER-DG":
                 aderdgContext = self.buildADERDGSolverContext(solver, logger)
