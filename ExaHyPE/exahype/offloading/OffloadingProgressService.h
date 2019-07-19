@@ -11,7 +11,7 @@
  * For the full license text, see LICENSE.txt
  **/
 
-#if !defined(_EXAHYPE_STEALINGPROGRESSSERVICE_H_) && defined(SharedTBB) && defined(Parallel) && defined(DistributedStealing)
+#if !defined(_EXAHYPE_STEALINGPROGRESSSERVICE_H_) && defined(SharedTBB) && defined(Parallel) && defined(DistributedOffloading)
 #define _EXAHYPE_STEALINGPROGRESSSERVICE_H_
 
 #include "tarch/logging/Log.h"
@@ -21,26 +21,26 @@
 
 namespace exahype {
   namespace offloading {
-    class StealingProgressService;
+    class OffloadingProgressService;
   }
 }
 
 /**
- * A peano service to make progress on outstanding stealing-related
+ * A peano service to make progress on outstanding offloading-related
  * communication.
  *
- * This service make progress on outstanding stealing communication
+ * This service make progress on outstanding offloading communication
  * whenever the master thread calls receiveDangling().
- * This ensures that task stealing communication actually progresses in
+ * This ensures that task offloading communication actually progresses in
  * the background. A single solver is attached for now, on which
- * the stealing progress method is invoked. In the future, this may
+ * the offloading progress method is invoked. In the future, this may
  * need to be extended to support multiple solvers.
  */
-class exahype::offloading::StealingProgressService : public tarch::services::Service {
+class exahype::offloading::OffloadingProgressService : public tarch::services::Service {
 
   private:
   /**
-   *  Solver on which to make stealing progress.
+   *  Solver on which to make offloading progress.
    */
   exahype::solvers::ADERDGSolver* _solver;
   /**
@@ -53,15 +53,15 @@ class exahype::offloading::StealingProgressService : public tarch::services::Ser
   static tarch::logging::Log _log;
 
   public:
-  StealingProgressService();
-  static StealingProgressService& getInstance();
-  virtual ~StealingProgressService();
+  OffloadingProgressService();
+  static OffloadingProgressService& getInstance();
+  virtual ~OffloadingProgressService();
   /**
    *  Progress method invoked by Peano
    */
   virtual void receiveDanglingMessages();
   /**
-   * Registers a solver on which stealing progress is made.
+   * Registers a solver on which offloading progress is made.
    */
   void setSolver(exahype::solvers::ADERDGSolver *solver);
 };

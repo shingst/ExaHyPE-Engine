@@ -1580,9 +1580,9 @@ void updateNextGlobalObservables(
       const int                                    level) final override;
 
 
-#if defined DistributedStealing
-   void startStealingManager();
-   void stopStealingManager();
+#if defined DistributedOffloading
+   void startOffloadingManager();
+   void stopOffloadingManager();
 #endif
 
 #endif

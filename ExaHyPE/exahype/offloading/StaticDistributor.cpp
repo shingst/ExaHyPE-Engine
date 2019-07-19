@@ -21,12 +21,12 @@
 #include "tarch/parallel/Node.h"
 #include "tarch/timing/Watch.h"
 
-#include "exahype/offloading/StealingProfiler.h"
+#include "exahype/offloading/OffloadingProfiler.h"
 #include "exahype/offloading/PerformanceMonitor.h"
 #include "tarch/multicore/Core.h"
 #include "tarch/multicore/Jobs.h"
 
-tarch::logging::Log exahype::offloading::StaticDistributor::_log( "exahype::stealing::StaticDistributor" );
+tarch::logging::Log exahype::offloading::StaticDistributor::_log( "exahype::offloading::StaticDistributor" );
 
 exahype::offloading::StaticDistributor::StaticDistributor() {
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
@@ -51,7 +51,7 @@ exahype::offloading::StaticDistributor::~StaticDistributor() {
   delete[] _consumersPerRank;
 }
 
-#ifdef StealingStrategyStaticHardcoded
+#ifdef OffloadingStrategyStaticHardcoded
 void exahype::offloading::StaticDistributor::loadDistributionFromFile(const std::string& filename) {
 
   logInfo("loadDistributionFromFile()", "loading from file "<<filename);
@@ -82,7 +82,7 @@ void exahype::offloading::StaticDistributor::loadDistributionFromFile(const std:
       //logInfo("loadDistributionFromFile()", "found rule "<<i_source_rank<< ","<<i_dest_rank<<","<<i_num_tasks);
 
       if(i_num_tasks<0 || i_source_rank<0 || i_source_rank>= nnodes || i_dest_rank<0 || i_dest_rank>= nnodes) {
-        logError("loadDistributionFromFile()", "found flawed stealing rule "
+        logError("loadDistributionFromFile()", "found flawed offloading rule "
         										<<i_source_rank<< ","
 												<<i_dest_rank<<","
 												<<i_num_tasks);
@@ -96,7 +96,7 @@ void exahype::offloading::StaticDistributor::loadDistributionFromFile(const std:
     }
     catch(std::out_of_range& exception) {
       logError("loadDistributionFromFile    ()", 
-               "failed to parse hardcoded stealing distribution file" << filename
+               "failed to parse hardcoded offloading distribution file" << filename
 			   << " with error in " << exception.what());
       logError("loadDistributionFromFile()",
                "flawed string: " <<str);
@@ -156,9 +156,9 @@ void exahype::offloading::StaticDistributor::computeNewLoadDistribution(int encl
 
         if(input_r==myRank) {
           _tasksToOffload[output_r] = inc_l;
-          offloading::StealingProfiler::getInstance().notifyTargetOffloadedTask(inc_l, output_r);
+          offloading::OffloadingProfiler::getInstance().notifyTargetOffloadedTask(inc_l, output_r);
           //_tasksToOffload[output_r]= std::min(inc_l,1);
-          //stealing::StealingProfiler::getInstance().notifyTargetOffloadedTask(std::min(inc_l,1), output_r);
+          //offloading::OffloadingProfiler::getInstance().notifyTargetOffloadedTask(std::min(inc_l,1), output_r);
         }
       }
 

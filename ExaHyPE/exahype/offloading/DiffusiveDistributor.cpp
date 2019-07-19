@@ -11,7 +11,7 @@
  * For the full license text, see LICENSE.txt
  **/
 
-#if  defined(SharedTBB)  && defined(Parallel) && defined(DistributedStealing)
+#if  defined(SharedTBB)  && defined(Parallel) && defined(DistributedOffloading)
 #include "exahype/offloading/DiffusiveDistributor.h"
 
 #include <algorithm>
@@ -20,12 +20,12 @@
 #include "tarch/multicore/Lock.h"
 #include "tarch/parallel/Node.h"
 
-#include "exahype/offloading/StealingProfiler.h"
+#include "exahype/offloading/OffloadingProfiler.h"
 #include "exahype/offloading/PerformanceMonitor.h"
 #include "tarch/multicore/Core.h"
 #include "tarch/multicore/Jobs.h"
 
-tarch::logging::Log exahype::offloading::DiffusiveDistributor::_log( "exahype::stealing::DiffusiveDistributor" );
+tarch::logging::Log exahype::offloading::DiffusiveDistributor::_log( "exahype::offloading::DiffusiveDistributor" );
 
 exahype::offloading::DiffusiveDistributor::DiffusiveDistributor() :
   _zeroThreshold(10*2000)
@@ -123,7 +123,7 @@ void exahype::offloading::DiffusiveDistributor::updateLoadDistribution() {
           logInfo("updateLoadDistribution()", "decrement, send "<<_tasksToOffload[i]<<" to rank "<<i );
         }
       }
-      //exahype::stealing::OffloadingManager::getInstance().resetEmergency();
+      //exahype::offloading::OffloadingManager::getInstance().resetEmergency();
     } */  
   }
   else if(_tasksToOffload[criticalRank]>0) {

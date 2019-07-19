@@ -663,7 +663,7 @@ class exahype::parser::Parser {
 
   TBBInvadeStrategy getTBBInvadeStrategy() const;
 
-  std::string getStealingInputFile() const;
+  std::string getOffloadingInputFile() const;
 };
 
 #endif

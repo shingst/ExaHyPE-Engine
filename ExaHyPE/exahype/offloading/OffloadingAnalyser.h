@@ -30,11 +30,11 @@
 
 namespace exahype {
   namespace offloading {
-    class StealingAnalyser;
+    class OffloadingAnalyser;
   }
 }
 
-class exahype::offloading::StealingAnalyser : public peano::performanceanalysis::Analyser {
+class exahype::offloading::OffloadingAnalyser : public peano::performanceanalysis::Analyser {
   private:
     static tarch::logging::Log     _log;
 
@@ -62,8 +62,8 @@ class exahype::offloading::StealingAnalyser : public peano::performanceanalysis:
     void updateZeroTresholdAndFilteredSnapshot();
 
   public:
-    StealingAnalyser();
-    virtual ~StealingAnalyser();
+    OffloadingAnalyser();
+    virtual ~OffloadingAnalyser();
 
     const double* getFilteredWaitingTimesSnapshot();
 
@@ -71,7 +71,7 @@ class exahype::offloading::StealingAnalyser : public peano::performanceanalysis:
 
     void printWaitingTimes();
 
-    static StealingAnalyser& getInstance();
+    static OffloadingAnalyser& getInstance();
 
     double getZeroThreshold();
 

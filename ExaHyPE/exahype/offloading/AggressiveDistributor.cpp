@@ -11,7 +11,7 @@
  * For the full license text, see LICENSE.txt
  **/
 
-#if  defined(SharedTBB)  && defined(Parallel) && defined(DistributedStealing)
+#if  defined(SharedTBB)  && defined(Parallel) && defined(DistributedOffloading)
 #include "exahype/offloading/AggressiveDistributor.h"
 
 #include <algorithm>
@@ -21,12 +21,12 @@
 #include "tarch/parallel/Node.h"
 #include "tarch/timing/Watch.h"
 
-#include "exahype/offloading/StealingProfiler.h"
+#include "exahype/offloading/OffloadingProfiler.h"
 #include "exahype/offloading/PerformanceMonitor.h"
 #include "tarch/multicore/Core.h"
 #include "tarch/multicore/tbb/Jobs.h"
 
-tarch::logging::Log exahype::offloading::AggressiveDistributor::_log( "exahype::stealing::AggressiveDistributor" );
+tarch::logging::Log exahype::offloading::AggressiveDistributor::_log( "exahype::offloading::AggressiveDistributor" );
 
 exahype::offloading::AggressiveDistributor::AggressiveDistributor() :
   _zeroThreshold(2000*10),
@@ -128,9 +128,9 @@ void exahype::offloading::AggressiveDistributor::computeIdealLoadDistribution(in
 
         if(input_r==myRank) {
           _idealTasksToOffload[output_r] = inc_l;
-          offloading::StealingProfiler::getInstance().notifyTargetOffloadedTask(inc_l, output_r);
+          offloading::OffloadingProfiler::getInstance().notifyTargetOffloadedTask(inc_l, output_r);
           //_tasksToOffload[output_r]= std::min(inc_l,1);
-          //stealing::StealingProfiler::getInstance().notifyTargetOffloadedTask(std::min(inc_l,1), output_r);
+          //offloading::OffloadingProfiler::getInstance().notifyTargetOffloadedTask(std::min(inc_l,1), output_r);
         }
       }
 
@@ -277,7 +277,7 @@ void exahype::offloading::AggressiveDistributor::updateLoadDistribution() {
 //    }
 //    else if(emergencyTriggered){
 //      //TODO: maybe step back a bit
-//      //exahype::stealing::OffloadingManager::getInstance().resetEmergency();
+//      //exahype::offloading::OffloadingManager::getInstance().resetEmergency();
 //    }   
 //  }
 

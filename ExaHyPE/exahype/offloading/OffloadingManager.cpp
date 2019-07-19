@@ -11,7 +11,7 @@
  * For the full license text, see LICENSE.txt
  **/
 
-#if defined(SharedTBB)  && defined(Parallel) && defined(DistributedStealing)
+#if defined(SharedTBB)  && defined(Parallel) && defined(DistributedOffloading)
 
 #include "exahype/offloading/OffloadingManager.h"
 
@@ -23,7 +23,7 @@
 #include "tarch/multicore/Lock.h"
 #include "tarch/parallel/Node.h"
 
-#include "exahype/offloading/StealingProfiler.h"
+#include "exahype/offloading/OffloadingProfiler.h"
 #include "exahype/offloading/StaticDistributor.h"
 #include "exahype/offloading/DynamicDistributor.h"
 #include "exahype/offloading/DiffusiveDistributor.h"
@@ -42,7 +42,7 @@ static int event_progress_sendBack;
 static int event_progress_receiveBack;
 #endif
 
-tarch::logging::Log exahype::offloading::OffloadingManager::_log( "exahype::stealing::stealingManager" );
+tarch::logging::Log exahype::offloading::OffloadingManager::_log( "exahype::offloading::OffloadingManager" );
 
 exahype::offloading::OffloadingManager::OffloadingManager() :
     _nextRequestId(0),
@@ -140,15 +140,15 @@ MPI_Comm exahype::offloading::OffloadingManager::getMPICommunicatorMapped() {
 }
 
 exahype::offloading::OffloadingManager& exahype::offloading::OffloadingManager::getInstance() {
-  static OffloadingManager stealingManager;
-  return stealingManager;
+  static OffloadingManager offloadingManager;
+  return offloadingManager;
 }
 
 int exahype::offloading::OffloadingManager::requestTypeToMsgQueueIdx( RequestType requestType ) {
   return static_cast<int> (requestType);
 }
 
-int exahype::offloading::OffloadingManager::getStealingTag() {
+int exahype::offloading::OffloadingManager::getOffloadingTag() {
   static std::atomic<int> counter = 1; //0 is reserved for status
   return counter.fetch_add(1);
 }
@@ -192,7 +192,7 @@ void exahype::offloading::OffloadingManager::submitRequests(
   int mapId = requestTypeToMsgQueueIdx(type);
 
   //submitted[mapId]++;
-  //logInfo("stealingManager","submitted["<<mapId<<"]:"<<submitted[mapId]);
+  //logInfo("offloadingManager","submitted["<<mapId<<"]:"<<submitted[mapId]);
 
   // assign group id for this request group
   int groupId = getNextGroupId();
@@ -216,14 +216,14 @@ void exahype::offloading::OffloadingManager::submitRequests(
 
     std::pair<int, MPI_Request> reqElem(id, requests[i]);
     std::pair<int, int> reqGroupElem(id, groupId);
-    //logInfo("stealingManager", "inserted groupid "<<groupId<<" for req "<<id);
+    //logInfo("offloadingManager", "inserted groupid "<<groupId<<" for req "<<id);
 
     _reqIdToReqHandle[mapId].insert(reqElem);
     _reqIdToGroup[mapId].insert(reqGroupElem);
     _outstandingRequests[mapId].push(id);
   }
 
-#ifdef StealingUseProgressTask
+#ifdef OffloadingUseProgressTask
   if(_numProgressJobs==0 && type==RequestType::send) {
     //logInfo("submitRequests()", "spawning progress job (high priority)");
     _numProgressJobs++;
@@ -380,16 +380,16 @@ bool exahype::offloading::OffloadingManager::progressReceiveBackRequests() {
 
 bool exahype::offloading::OffloadingManager::progressRequestsOfType( RequestType type ) {
 
-  // First, we ensure here that only one thread at a time progresses stealing
+  // First, we ensure here that only one thread at a time progresses offloading
   // this attempts to avoid multithreaded MPI problems
   tarch::multicore::Lock lock(_progressSemaphore, false);
   bool canRun = lock.tryLock();
   if(!canRun) {
-#if defined(PerformanceAnalysisStealingDetailed)
+#if defined(PerformanceAnalysisOffloadingDetailed)
     watch.stopTimer();
     if(watch.getCalendarTime() >= 0.0) {
       logDebug(
-          "progressStealing() ",
+          "progressOffloading() ",
           "couldn't run "<<
           "time=" << std::fixed <<
           watch.getCalendarTime() <<
@@ -430,18 +430,18 @@ bool exahype::offloading::OffloadingManager::progressRequestsOfType( RequestType
   int outcount = 0;
 
   double time = -MPI_Wtime();
-  exahype::offloading::StealingProfiler::getInstance().beginCommunication();
+  exahype::offloading::OffloadingProfiler::getInstance().beginCommunication();
 
 // For DEBUGGING
 //static std::atomic<int> finished_cnt[4];
-//  logInfo("stealingManager", "testsome of "<<nRequests<< " of type "<<mapId);
+//  logInfo("offloadingManager", "testsome of "<<nRequests<< " of type "<<mapId);
 //  std::vector<MPI_Request> copyRequests(outstandingRequests);
 
 //	for(int i=0;i<nRequests;i++) {
 //	  MPI_Request search = copyRequests[i];
 //	  for(int j=0;j<nRequests;j++) {
 //      if(i!=j && copyRequests[j]==search && search!=MPI_REQUEST_NULL) {
-//        logInfo("stealingManager", "found duplicate request: i "<<i<<" j "<<j<<" request i: "<<copyRequests[i]<<" request j: "<<copyRequests[j]);
+//        logInfo("offloadingManager", "found duplicate request: i "<<i<<" j "<<j<<" request i: "<<copyRequests[i]<<" request j: "<<copyRequests[j]);
 //        assertion(false);
 //  	}
 //	 }
@@ -461,7 +461,7 @@ bool exahype::offloading::OffloadingManager::progressRequestsOfType( RequestType
 //    for(int i=0;i<nRequests;i++) {
 //      int ierrstatus = stats[i].MPI_ERROR;
 //      if(ierrstatus!=MPI_SUCCESS) {
-//        logInfo("stealingManager", "error "<<ierrstatus<<" for request "<<vecIdToReqId[i]<< " source "<<stats[i].MPI_SOURCE<<" tag "<<stats[i].MPI_TAG);
+//        logInfo("offloadingManager", "error "<<ierrstatus<<" for request "<<vecIdToReqId[i]<< " source "<<stats[i].MPI_SOURCE<<" tag "<<stats[i].MPI_TAG);
 //      }
 //      char err_buffer[MPI_MAX_ERROR_STRING];
 //      int resultlen = 0;
@@ -475,12 +475,12 @@ bool exahype::offloading::OffloadingManager::progressRequestsOfType( RequestType
   time += MPI_Wtime();
 
   if(outcount>0)
-  exahype::offloading::StealingProfiler::getInstance().endCommunication(true, time);
+  exahype::offloading::OffloadingProfiler::getInstance().endCommunication(true, time);
   else
-  exahype::offloading::StealingProfiler::getInstance().endCommunication(false, time);
+  exahype::offloading::OffloadingProfiler::getInstance().endCommunication(false, time);
 
   time = -MPI_Wtime();
-  exahype::offloading::StealingProfiler::getInstance().beginHandling();
+  exahype::offloading::OffloadingProfiler::getInstance().beginHandling();
   bool found=false;
   //handle finished requests
   for(int i=0; i<outcount; i++) {
@@ -556,7 +556,7 @@ bool exahype::offloading::OffloadingManager::progressRequestsOfType( RequestType
   }
 
   time += MPI_Wtime();
-  exahype::offloading::StealingProfiler::getInstance().endHandling(time);
+  exahype::offloading::OffloadingProfiler::getInstance().endHandling(time);
 
   lock.free();
 
@@ -580,13 +580,13 @@ void exahype::offloading::OffloadingManager::triggerEmergencyForRank(int rank) {
 //    logInfo("triggerEmergency()","emergency event triggered");
 //    _emergencyTriggered = true;
 //  }
-#ifdef StealingStrategyAggressive
+#ifdef OffloadingStrategyAggressive
   exahype::offloading::AggressiveDistributor::getInstance().handleEmergencyOnRank(rank);
-#elif StealingStrategyAggressiveCCP
+#elif OffloadingStrategyAggressiveCCP
   exahype::offloading::AggressiveCCPDistributor::getInstance().handleEmergencyOnRank(rank);
-#elif StealingStrategyAggressiveHybrid
+#elif OffloadingStrategyAggressiveHybrid
   exahype::offloading::AggressiveHybridDistributor::getInstance().handleEmergencyOnRank(rank);
-#elif StealingStrategyDiffusive
+#elif OffloadingStrategyDiffusive
   exahype::offloading::DiffusiveDistributor::getInstance().handleEmergencyOnRank(rank);
 #endif
   _localBlacklist[rank]++;
@@ -632,22 +632,22 @@ bool exahype::offloading::OffloadingManager::isEmergencyTriggeredOnRank(int rank
   return !_localBlacklist[rank]<0.5;
 }
 
-//void exahype::stealing::StealingManager::resetEmergency() {
+//void exahype::offloading::OffloadingManager::resetEmergency() {
 //  logInfo("resetEmergency()","emergency flag reset");
 //  _emergencyTriggered = false;
 //}
 
 bool exahype::offloading::OffloadingManager::selectVictimRank(int& victim, bool& last) {
   last = false;
-#if defined(StealingStrategyStaticHardcoded)
+#if defined(OffloadingStrategyStaticHardcoded)
   return exahype::offloading::StaticDistributor::getInstance().selectVictimRank(victim);
-#elif defined(StealingStrategyDiffusive)
+#elif defined(OffloadingStrategyDiffusive)
   return exahype::offloading::DiffusiveDistributor::getInstance().selectVictimRank(victim);
-#elif defined(StealingStrategyAggressive)
+#elif defined(OffloadingStrategyAggressive)
   return exahype::offloading::AggressiveDistributor::getInstance().selectVictimRank(victim);
-#elif defined(StealingStrategyAggressiveCCP)
+#elif defined(OffloadingStrategyAggressiveCCP)
   return exahype::offloading::AggressiveCCPDistributor::getInstance().selectVictimRank(victim);
-#elif defined(StealingStrategyAggressiveHybrid)
+#elif defined(OffloadingStrategyAggressiveHybrid)
   return exahype::offloading::AggressiveHybridDistributor::getInstance().selectVictimRank(victim, last);
 #else
   double remainingLoadRatio = static_cast<double> (exahype::offloading::PerformanceMonitor::getInstance().getRemainingLocalLoad())
@@ -656,11 +656,11 @@ bool exahype::offloading::OffloadingManager::selectVictimRank(int& victim, bool&
   // this is currently hardcoded: the goal is to refrain from giving tasks away if there is not enough work left
   // for overlap of communication and computation
   if(remainingLoadRatio>0.1) {
-#if defined(StealingStrategyStatic) 
+#if defined(OffloadingStrategyStatic)
     return exahype::offloading::StaticDistributor::getInstance().selectVictimRank(victim);
-#elif defined(StealingStrategyDynamic)
+#elif defined(OffloadingStrategyDynamic)
     return exahype::offloading::DynamicDistributor::getInstance().selectVictimRank(victim);
-#elif defined(StealingStrategyHybrid)
+#elif defined(OffloadingStrategyHybrid)
     bool staticDistribution = exahype::offloading::StaticDistributor::getInstance().selectVictimRank(victim);
     if(staticDistribution) return true;
     else {
@@ -668,17 +668,17 @@ bool exahype::offloading::OffloadingManager::selectVictimRank(int& victim, bool&
     }
     return false;
 #else
-# error "Wrong stealing strategy specified!"
+# error "Wrong offloading strategy specified!"
 #endif
   }
   else {
-    logDebug("stealingManager", "could not select victim remaining load ratio "<<remainingLoadRatio);
+    logDebug("offloadingManager", "could not select victim remaining load ratio "<<remainingLoadRatio);
     return false;
   }
 #endif
 }
 
-#ifdef StealingUseProgressTask
+#ifdef OffloadingUseProgressTask
 void exahype::offloading::OffloadingManager::resetHasNotifiedSendCompleted() {
   _hasNotifiedSendCompleted = false;
   logDebug("resetHasNotifiedSendCompleted","resetting flag");
@@ -701,9 +701,9 @@ void exahype::offloading::OffloadingManager::notifyAllVictimsSendCompletedIfNotN
     logInfo("notifyAllVictimsSendCompleted","notifying that last job was sent to victims");
     _hasNotifiedSendCompleted = true;
     std::vector<int> victimRanks;
-#if defined(StealingStrategyAggressiveHybrid) 
+#if defined(OffloadingStrategyAggressiveHybrid)
     exahype::offloading::AggressiveHybridDistributor::getInstance().getAllVictimRanks(victimRanks);
-#elif defined(StealingStrategyStaticHardcoded)
+#elif defined(OffloadingStrategyStaticHardcoded)
     exahype::offloading::StaticDistributor::getInstance().getAllVictimRanks(victimRanks);
 #endif
     for(auto victim : victimRanks)
@@ -734,7 +734,7 @@ bool exahype::offloading::OffloadingManager::RequestHandlerJob::operator()() {
   return false;
 }
 
-#ifdef StealingUseProgressTask
+#ifdef OffloadingUseProgressTask
 exahype::offloading::OffloadingManager::ProgressJob::ProgressJob() :
 tarch::multicore::jobs::Job(tarch::multicore::jobs::JobType::BackgroundTask, 0, tarch::multicore::DefaultPriority*8)
 {}
@@ -747,10 +747,10 @@ bool exahype::offloading::OffloadingManager::ProgressJob::run( bool calledFromMa
   //logInfo("submitRequests()", "executing progress job (high priority)");
 
   int mapId = OffloadingManager::requestTypeToMsgQueueIdx(RequestType::send);
-//   while(StealingManager::getInstance()._requests[0].unsafe_size()>0 || StealingManager::getInstance()._currentOutstandingRequests[0].size()>0
-//        || StealingManager::getInstance()._requests[1].unsafe_size()>0 || StealingManager::getInstance()._currentOutstandingRequests[1].size()>0
-//        || StealingManager::getInstance()._requests[2].unsafe_size()>0 || StealingManager::getInstance()._currentOutstandingRequests[2].size()>0
-//        || StealingManager::getInstance()._requests[3].unsafe_size()>0 || StealingManager::getInstance()._currentOutstandingRequests[3].size()>0
+//   while(OffloadingManager::getInstance()._requests[0].unsafe_size()>0 || OffloadingManager::getInstance()._currentOutstandingRequests[0].size()>0
+//        || OffloadingManager::getInstance()._requests[1].unsafe_size()>0 || OffloadingManager::getInstance()._currentOutstandingRequests[1].size()>0
+//        || OffloadingManager::getInstance()._requests[2].unsafe_size()>0 || OffloadingManager::getInstance()._currentOutstandingRequests[2].size()>0
+//        || OffloadingManager::getInstance()._requests[3].unsafe_size()>0 || OffloadingManager::getInstance()._currentOutstandingRequests[3].size()>0
 //   ) 
   while(OffloadingManager::getInstance()._outstandingRequests[mapId].unsafe_size()>0 || OffloadingManager::getInstance()._activeRequests[mapId].size()>0)
   {
@@ -770,7 +770,7 @@ exahype::offloading::OffloadingManager::ProgressSendJob::ProgressSendJob() {}
 bool exahype::offloading::OffloadingManager::ProgressSendJob::operator()() {
   getInstance().progressRequestsOfType(RequestType::send);
   int mapId = OffloadingManager::requestTypeToMsgQueueIdx(RequestType::send);
-//   bool reschedule=StealingManager::getInstance()._requests[mapId].unsafe_size()>0;
+//   bool reschedule=OffloadingManager::getInstance()._requests[mapId].unsafe_size()>0;
 
   while(OffloadingManager::getInstance()._outstandingRequests[mapId].unsafe_size()>0 || OffloadingManager::getInstance()._activeRequests[mapId].size()>0) {
     getInstance().progressRequestsOfType(RequestType::send);

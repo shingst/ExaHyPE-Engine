@@ -11,7 +11,7 @@
  * For the full license text, see LICENSE.txt
  **/
 
-#if  defined(SharedTBB)  && defined(Parallel) && defined(DistributedStealing)
+#if  defined(SharedTBB)  && defined(Parallel) && defined(DistributedOffloading)
 #include "exahype/offloading/AggressiveHybridDistributor.h"
 
 #include <algorithm>
@@ -22,14 +22,14 @@
 #include "tarch/parallel/Node.h"
 #include "tarch/timing/Watch.h"
 
-#include "exahype/offloading/StealingProfiler.h"
+#include "exahype/offloading/OffloadingProfiler.h"
 #include "exahype/offloading/PerformanceMonitor.h"
-#include "exahype/offloading/StealingAnalyser.h"
+#include "exahype/offloading/OffloadingAnalyser.h"
 #include "exahype/solvers/ADERDGSolver.h"
 #include "tarch/multicore/Core.h"
 #include "tarch/multicore/tbb/Jobs.h"
 
-tarch::logging::Log exahype::offloading::AggressiveHybridDistributor::_log( "exahype::stealing::AggressiveHybridDistributor" );
+tarch::logging::Log exahype::offloading::AggressiveHybridDistributor::_log( "exahype::offloading::AggressiveHybridDistributor" );
 
 exahype::offloading::AggressiveHybridDistributor::AggressiveHybridDistributor() :
   _isEnabled(false),
@@ -96,7 +96,7 @@ void exahype::offloading::AggressiveHybridDistributor::computeIdealLoadDistribut
   int totalCells   = enclaveCells + skeletonCells;
   MPI_Allgather(&totalCells, 1, MPI_INTEGER, _initialLoadPerRank, 1, MPI_INTEGER, MPI_COMM_WORLD);
 
-#if defined(StealingUseMaster)
+#if defined(OffloadingUseMaster)
   int input_r=0, input_l=0;
   int output_r=0, output_l=0;
 #else
@@ -107,7 +107,7 @@ void exahype::offloading::AggressiveHybridDistributor::computeIdealLoadDistribut
   int total_l=0;
   total_l = std::accumulate(&_initialLoadPerRank[0], &_initialLoadPerRank[nnodes], total_l);
 
-#if defined(StealingUseMaster)
+#if defined(OffloadingUseMaster)
   int avg_l = total_l / nnodes;
 #else
   int avg_l = total_l / (nnodes-1);
@@ -144,9 +144,9 @@ void exahype::offloading::AggressiveHybridDistributor::computeIdealLoadDistribut
         if(input_r==myRank) {
           logInfo("computeIdeal","inc_l="<<inc_l);
           _idealTasksToOffload[output_r] = inc_l;
-          offloading::StealingProfiler::getInstance().notifyTargetOffloadedTask(inc_l, output_r);
+          offloading::OffloadingProfiler::getInstance().notifyTargetOffloadedTask(inc_l, output_r);
           //_tasksToOffload[output_r]= std::min(inc_l,1);
-          //stealing::StealingProfiler::getInstance().notifyTargetOffloadedTask(std::min(inc_l,1), output_r);
+          //offloading::OffloadingProfiler::getInstance().notifyTargetOffloadedTask(std::min(inc_l,1), output_r);
         }
       }
 
@@ -177,7 +177,7 @@ int exahype::offloading::AggressiveHybridDistributor::determineCriticalRank() {
 
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();  
 
-  const double* waitingTimesSnapshot = exahype::offloading::StealingAnalyser::getInstance().getFilteredWaitingTimesSnapshot();
+  const double* waitingTimesSnapshot = exahype::offloading::OffloadingAnalyser::getInstance().getFilteredWaitingTimesSnapshot();
  
   int *waitingRanks = new int[nnodes];
   bool *isWaitingForSomeone = new bool[nnodes];
@@ -190,7 +190,7 @@ int exahype::offloading::AggressiveHybridDistributor::determineCriticalRank() {
   for(int i=0; i<nnodes; i++) {
     bool waitingForSomeone = false;
     for(int j=0; j<nnodes; j++) {
-      if(waitingTimesSnapshot[k+j]> exahype::offloading::StealingAnalyser::getInstance().getZeroThreshold()) {
+      if(waitingTimesSnapshot[k+j]> exahype::offloading::OffloadingAnalyser::getInstance().getZeroThreshold()) {
         waitingRanks[j]++;   
         waitingForSomeone = true;
       }
@@ -202,7 +202,7 @@ int exahype::offloading::AggressiveHybridDistributor::determineCriticalRank() {
   k = 0;
   for(int i=0; i<nnodes; i++) {
     for(int j=0; j<nnodes; j++) {
-      if(waitingTimesSnapshot[k+j]> exahype::offloading::StealingAnalyser::getInstance().getZeroThreshold()) {
+      if(waitingTimesSnapshot[k+j]> exahype::offloading::OffloadingAnalyser::getInstance().getZeroThreshold()) {
          if(waitingTimesSnapshot[k+j]>currentLongestWaitTimeCritical
            && !isWaitingForSomeone[j]
            && waitingRanks[j]>0) {
@@ -224,7 +224,7 @@ void exahype::offloading::AggressiveHybridDistributor::determineOptimalVictim(in
   
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();  
 
-  const double* waitingTimesSnapshot = exahype::offloading::StealingAnalyser::getInstance().getFilteredWaitingTimesSnapshot();
+  const double* waitingTimesSnapshot = exahype::offloading::OffloadingAnalyser::getInstance().getFilteredWaitingTimesSnapshot();
 
   int *waitingRanks = new int[nnodes];
   bool *isWaitingForSomeone = new bool[nnodes];
@@ -237,7 +237,7 @@ void exahype::offloading::AggressiveHybridDistributor::determineOptimalVictim(in
   for(int i=0; i<nnodes; i++) {
     bool waitingForSomeone = false;
     for(int j=0; j<nnodes; j++) {
-      if(waitingTimesSnapshot[k+j]> exahype::offloading::StealingAnalyser::getInstance().getZeroThreshold()) {
+      if(waitingTimesSnapshot[k+j]> exahype::offloading::OffloadingAnalyser::getInstance().getZeroThreshold()) {
         waitingRanks[j]++;   
         waitingForSomeone = true;
       }
@@ -249,7 +249,7 @@ void exahype::offloading::AggressiveHybridDistributor::determineOptimalVictim(in
   k = 0;
   for(int i=0; i<nnodes; i++) {
     for(int j=0; j<nnodes; j++) {
-      if(waitingTimesSnapshot[k+j]> exahype::offloading::StealingAnalyser::getInstance().getZeroThreshold()) {
+      if(waitingTimesSnapshot[k+j]> exahype::offloading::OffloadingAnalyser::getInstance().getZeroThreshold()) {
          if(waitingTimesSnapshot[k+j]>currentLongestWaitTimeVictim 
            && !exahype::offloading::OffloadingManager::getInstance().isBlacklisted(i)
            && waitingRanks[i]==0) {
@@ -262,12 +262,12 @@ void exahype::offloading::AggressiveHybridDistributor::determineOptimalVictim(in
     k+= nnodes;
   }
 
-#ifndef StealingUseMaster
+#ifndef OffloadingUseMaster
   if(currentOptimalVictim!=0) {
 #endif
   optimalVictim = currentOptimalVictim;
   waitingTimeOptimalVictim = currentLongestWaitTimeVictim;
-#ifndef StealingUseMaster
+#ifndef OffloadingUseMaster
   }
 #endif
 
@@ -317,7 +317,7 @@ void exahype::offloading::AggressiveHybridDistributor::printOffloadingStatistics
   }
   logDebug("printOffloadingStatistics()", "temperature value CCP "<<_temperatureCCP );
   logDebug("printOffloadingStatistics()", "temperature value diffusion "<<_temperatureDiffusion );
-  logDebug("printOffloadingStatistics()", "time per STP  "<< exahype::offloading::StealingAnalyser::getInstance().getTimePerSTP());
+  logDebug("printOffloadingStatistics()", "time per STP  "<< exahype::offloading::OffloadingAnalyser::getInstance().getTimePerSTP());
 }
 
 
@@ -418,11 +418,11 @@ void exahype::offloading::AggressiveHybridDistributor::updateLoadDistributionCCP
   for(int i=0; i<nnodes; i++) {
     if(_idealTasksToOffload[i]>0) {
       //we have a potential victim rank
-//     if(!exahype::stealing::OffloadingManager::getInstance().isBlacklisted(i)) {
+//     if(!exahype::offloading::OffloadingManager::getInstance().isBlacklisted(i)) {
       logDebug("updateLoadDistributionCCP", "offloading to "<<i<<" tasks "<<_temperatureCCP*_idealTasksToOffload[i]);
       _optimalTasksPerRank[i] = _idealTasksToOffload[i];
       _tasksToOffload[i] = std::ceil(std::max((1.0-_temperatureCCP), 0.0)*_tasksToOffload[i] + _temperatureCCP*_idealTasksToOffload[i]);
-#ifdef DistributedStealingDisable
+#ifdef DistributedOffloadingDisable
        _tasksToOffload[i] = 0;
 #endif
 //       }
@@ -450,7 +450,7 @@ void exahype::offloading::AggressiveHybridDistributor::updateLoadDistributionDif
 
   logInfo("updateLoadDistributionDiffusive()", "optimal victim: "<<currentOptimalVictim<<" critical rank:"<<currentCriticalRank);
 
-#ifndef DistributedStealingDisable
+#ifndef DistributedOffloadingDisable
 
   bool isVictim = exahype::offloading::OffloadingManager::getInstance().isVictim();
   if(currentOptimalVictim>=0 && myRank == currentCriticalRank && currentCriticalRank!=currentOptimalVictim) {
@@ -461,9 +461,9 @@ void exahype::offloading::AggressiveHybridDistributor::updateLoadDistributionDif
       }
       int currentTasksOptimal = _initialLoadPerRank[currentOptimalVictim]+_tasksToOffload[currentOptimalVictim];
 
-      //int optimalTasksToOffload = currentLongestWaitTimeVictim/(2*exahype::stealing::StealingAnalyser::getInstance().getTimePerSTP());
+      //int optimalTasksToOffload = currentLongestWaitTimeVictim/(2*exahype::offloading::OffloadingAnalyser::getInstance().getTimePerSTP());
       int optimalTasksToOffload = (tarch::multicore::Core::getInstance().getNumberOfThreads()-1) *
-                                  currentLongestWaitTimeVictim/(2*exahype::offloading::StealingAnalyser::getInstance().getTimePerSTP());
+                                  currentLongestWaitTimeVictim/(2*exahype::offloading::OffloadingAnalyser::getInstance().getTimePerSTP());
       logDebug("updateLoadDistributionDiffusive()", "optimal tasks to offload "<<optimalTasksToOffload);
 
       _optimalTasksPerRank[currentOptimalVictim] = optimalTasksToOffload;
@@ -513,10 +513,10 @@ bool exahype::offloading::AggressiveHybridDistributor::selectVictimRank(int& vic
   }
   rank_cnt=l_rank;
 
-#ifdef StealingUseProgressTask
+#ifdef OffloadingUseProgressTask
   if(victim == myRank) 
     last = true;
-    //exahype::stealing::OffloadingManager::getInstance().notifyAllVictimsSendCompletedIfNotNotified();
+    //exahype::offloading::OffloadingManager::getInstance().notifyAllVictimsSendCompletedIfNotNotified();
 #endif
 
   int threshold = 1+std::max(1, tarch::multicore::Core::getInstance().getNumberOfThreads()-1)*tarch::multicore::jobs::internal::_minimalNumberOfJobsPerConsumerRun;

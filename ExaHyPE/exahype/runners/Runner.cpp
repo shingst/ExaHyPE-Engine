@@ -90,18 +90,18 @@
 #endif
 
 
-#include "exahype/offloading/StealingAnalyser.h"
+#include "exahype/offloading/OffloadingAnalyser.h"
 
-#if defined(DistributedStealing) 
+#if defined(DistributedOffloading)
 #include "exahype/offloading/PerformanceMonitor.h"
 
-#if defined(StealingStrategyStaticHardcoded)
+#if defined(OffloadingStrategyStaticHardcoded)
 #include "exahype/offloading/StaticDistributor.h"
-#elif defined(StealingStrategyAggressiveHybrid)
+#elif defined(OffloadingStrategyAggressiveHybrid)
 #include "exahype/offloading/AggressiveHybridDistributor.h"
 #endif
 
-#include "exahype/offloading/StealingProfiler.h"
+#include "exahype/offloading/OffloadingProfiler.h"
 #endif
 
 tarch::logging::Log exahype::runners::Runner::_log("exahype::runners::Runner");
@@ -292,16 +292,16 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
       }
     }
 
-    //always use stealing analyser
-    peano::performanceanalysis::Analysis::getInstance().setDevice(&exahype::offloading::StealingAnalyser::getInstance());
-#if defined(DistributedStealing) 
-    // Create a new MPI communicator for stealing related MPI communication
+    //always use offloading analyser
+    peano::performanceanalysis::Analysis::getInstance().setDevice(&exahype::offloading::OffloadingAnalyser::getInstance());
+#if defined(DistributedOffloading)
+    // Create a new MPI communicator for offloading related MPI communication
     exahype::offloading::OffloadingManager::getInstance().createMPICommunicator(); 
 
 
-#if defined(StealingStrategyStaticHardcoded)
-    exahype::offloading::StaticDistributor::getInstance().loadDistributionFromFile(_parser.getStealingInputFile());
-#elif defined(StealingStrategyAggressiveHybrid)
+#if defined(OffloadingStrategyStaticHardcoded)
+    exahype::offloading::StaticDistributor::getInstance().loadDistributionFromFile(_parser.getOffloadingInputFile());
+#elif defined(OffloadingStrategyAggressiveHybrid)
     exahype::offloading::AggressiveHybridDistributor::getInstance().configure(
        _parser.getDoubleFromPath("/distributed_memory/stealing_CCP_temperature"),
        _parser.getDoubleFromPath("/distributed_memory/stealing_diffusion_temperature"),
@@ -571,8 +571,8 @@ void exahype::runners::Runner::initDataCompression() {
 void exahype::runners::Runner::shutdownSharedMemoryConfiguration() {
   #ifdef SharedMemoryParallelisation
 
-#ifdef DistributedStealing
- // while(!exahype::stealing::PerformanceMonitor::getInstance().isGloballyTerminated()) {
+#ifdef DistributedOffloading
+ // while(!exahype::offloading::PerformanceMonitor::getInstance().isGloballyTerminated()) {
  //   tarch::multicore::jobs::finishToProcessBackgroundJobs();
  // }
 #endif
@@ -915,13 +915,13 @@ int exahype::runners::Runner::run() {
     if ( _parser.isValid() )
       initSharedMemoryConfiguration();
 
-/*    #if defined(DistributedStealing) 
+/*    #if defined(DistributedOffloading)
     for (auto* solver : exahype::solvers::RegisteredSolvers) {
       if (solver->getType()==exahype::solvers::Solver::Type::ADERDG) {
-        static_cast<exahype::solvers::ADERDGSolver*>(solver)->startStealingManager();
+        static_cast<exahype::solvers::ADERDGSolver*>(solver)->startOffloadingManager();
       }
       if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
-        static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->startStealingManager();
+        static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->startOffloadingManager();
       }
     } 
     #endif
@@ -953,22 +953,22 @@ int exahype::runners::Runner::run() {
     if ( _parser.isValid() )
       shutdownDistributedMemoryConfiguration();
       
-#if defined(DistributedStealing)
+#if defined(DistributedOffloading)
   for (auto* solver : exahype::solvers::RegisteredSolvers) {
     if (solver->getType()==exahype::solvers::Solver::Type::ADERDG) {
- //     static_cast<exahype::solvers::ADERDGSolver*>(solver)->stopStealingManager();
+ //     static_cast<exahype::solvers::ADERDGSolver*>(solver)->stopOffloadingManager();
     }
     if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
-  //    static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->stopStealingManager();
+  //    static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->stopOffloadingManager();
     }
   }
 
-  logInfo("shutdownDistributedMemoryConfiguration()","stopped stealing manager");
+  logInfo("shutdownDistributedMemoryConfiguration()","stopped offloading manager");
   exahype::offloading::OffloadingManager::getInstance().destroyMPICommunicator(); 
   logInfo("shutdownDistributedMemoryConfiguration()","destroyed MPI communicators");
-//  exahype::stealing::StealingProfiler::getInstance().endPhase();
+//  exahype::offloading::OffloadingProfiler::getInstance().endPhase();
 //  logInfo("shutdownDistributedMemoryConfiguration()","ended profiling phase");
-//  exahype::stealing::StealingProfiler::getInstance().printStatistics();
+//  exahype::offloading::OffloadingProfiler::getInstance().printStatistics();
 //  logInfo("shutdownDistributedMemoryConfiguration()","printed stats");
 #endif
 
@@ -1575,7 +1575,7 @@ void exahype::runners::Runner::initialiseMesh(exahype::repositories::Repository&
   repository.switchToFinaliseMeshRefinement();
   repository.iterate();
 
-#if defined(DistributedStealing) && defined(Parallel)
+#if defined(DistributedOffloading) && defined(Parallel)
   repository.runGlobalStep();
   exahype::runners::Runner::runGlobalStep();
 #endif

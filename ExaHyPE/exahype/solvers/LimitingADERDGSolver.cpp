@@ -1975,13 +1975,13 @@ void exahype::solvers::LimitingADERDGSolver::mergeWithMasterData(
   _solver->mergeWithMasterData(masterRank,x,level);
 }
 
-#if defined(DistributedStealing)
-void exahype::solvers::LimitingADERDGSolver::startStealingManager() {
-  _solver->startStealingManager();
+#if defined(DistributedOffloading)
+void exahype::solvers::LimitingADERDGSolver::startOffloadingManager() {
+  _solver->startOffloadingManager();
 }
 
-void exahype::solvers::LimitingADERDGSolver::stopStealingManager() {
-  _solver->stopStealingManager();
+void exahype::solvers::LimitingADERDGSolver::stopOffloadingManager() {
+  _solver->stopOffloadingManager();
 }
 #endif
 

@@ -66,7 +66,7 @@ class exahype::offloading::StaticDistributor {
     // return next victim rank
     bool selectVictimRank(int& victim);
 
-#ifdef StealingStrategyStaticHardcoded
+#ifdef OffloadingStrategyStaticHardcoded
     void loadDistributionFromFile(const std::string& filename);
 #endif
 };

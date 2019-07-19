@@ -25,22 +25,22 @@
 
 namespace exahype {
   namespace offloading {
-    class StealingProfiler;
+    class OffloadingProfiler;
   }
 }
 
 /**
- * This singleton can be used to measure stealing related performance
+ * This singleton can be used to measure offloading related performance
  * characteristics during an execution run of ExaHype.
  * These statistics are gathered at runtime and printed at the
- * program exit. The StealingProfiler is enabled with the compile-time
- * flag -DStealingUseProfiler.
+ * program exit. The OffloadingProfiler is enabled with the compile-time
+ * flag -DOffloadingUseProfiler.
  */
-class exahype::offloading::StealingProfiler {
+class exahype::offloading::OffloadingProfiler {
   private:
     static tarch::logging::Log _log;
-    StealingProfiler();
-    virtual ~StealingProfiler();
+    OffloadingProfiler();
+    virtual ~OffloadingProfiler();
 
     //counters
     std::atomic<int> *_offloadedTasksPerRankPhase;
@@ -59,8 +59,8 @@ class exahype::offloading::StealingProfiler {
     std::atomic<int> _performanceUpdates;
     std::atomic<int> _latePerformanceUpdatesPhase;
     std::atomic<int> _latePerformanceUpdates;
-    std::atomic<int> _stealingDecisionsPhase;
-    std::atomic<int> _stealingDecisions;
+    std::atomic<int> _offloadingDecisionsPhase;
+    std::atomic<int> _offloadingDecisions;
 
     //times per phase
     std::atomic<unsigned long long> _accWaitTasksPhaseTime;
@@ -79,7 +79,7 @@ class exahype::offloading::StealingProfiler {
     std::atomic<unsigned long long> _accOffloadTime;
 
   public:
-    static StealingProfiler& getInstance();
+    static OffloadingProfiler& getInstance();
     void beginPhase();
     void endPhase();
 
@@ -89,7 +89,7 @@ class exahype::offloading::StealingProfiler {
     void notifySpawnedTask();
     void notifyPerformanceUpdate();
     void notifyLatePerformanceUpdate();
-    void notifyStealingDecision();
+    void notifyOffloadingDecision();
     void notifyThresholdFail();
     void beginComputation();
     void endComputation(double elapsed);

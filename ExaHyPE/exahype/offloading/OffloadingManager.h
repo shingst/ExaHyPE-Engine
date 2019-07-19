@@ -51,9 +51,9 @@ namespace exahype {
 }
 
 /**
- * The stealing manager manages the created asynchronous MPI requests,
+ * The offloading manager manages the created asynchronous MPI requests,
  * e.g., when a task is stolen/offloaded (we use those terms
- * interchangeably). In addition, the stealing
+ * interchangeably). In addition, the offloading
  * manager serves as a connecting point to the ADERDGSolver
  * for making decisions on whether a task should be stolen or not.
  * Finally it keeps track of some meta information such as the
@@ -232,7 +232,7 @@ class exahype::offloading::OffloadingManager {
     bool operator()();
   };
 
-#ifdef StealingUseProgressTask
+#ifdef OffloadingUseProgressTask
   class ProgressJob : public tarch::multicore::jobs::Job
   {
     public:
@@ -277,7 +277,7 @@ class exahype::offloading::OffloadingManager {
   public:
   void printPostedRequests();
   void resetPostedRequests();
-  int getStealingTag();
+  int getOffloadingTag();
 
   /**
    * Submit a group of MPI requests with a given MPI message tag.
@@ -302,12 +302,12 @@ class exahype::offloading::OffloadingManager {
   bool hasOutstandingRequestOfType(RequestType requestType);
 
   /**
-   * Creates stealing MPI communicators.
+   * Creates offloading MPI communicators.
    */
   void createMPICommunicator();
 
   /**
-   * Destroys stealing MPI communicators.
+   * Destroys offloading MPI communicators.
    */
   void destroyMPICommunicator();
 
@@ -333,7 +333,7 @@ class exahype::offloading::OffloadingManager {
    */
   bool selectVictimRank(int& victim, bool& last);
 
-#ifdef StealingUseProgressTask
+#ifdef OffloadingUseProgressTask
   void resetHasNotifiedSendCompleted();
   void notifySendCompleted(int rank);
   void receiveCompleted(int rank);

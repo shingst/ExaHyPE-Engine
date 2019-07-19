@@ -59,7 +59,7 @@
 #include <tbb/cache_aligned_allocator.h> // prevents false sharing
 #endif
 
-#if defined(DistributedStealing)
+#if defined(DistributedOffloading)
 #include <tbb/concurrent_queue.h>
 #include "exahype/offloading/DiffusiveDistributor.h"
 #include "exahype/offloading/OffloadingManager.h"
@@ -74,8 +74,8 @@ namespace exahype {
 //#include "tarch/multicore/Core.h"
 #endif
 
-#ifdef StealingUseProfiler
-#include "exahype/stealing/StealingProfiler.h"
+#ifdef OffloadingUseProfiler
+#include "exahype/offloading/OffloadingProfiler.h"
 #endif
 
 #if defined(USE_ITAC_ALL) and !defined(USE_ITAC)
@@ -1161,15 +1161,15 @@ public:
   int ierr=VT_funcdef(event_name_emergency, VT_NOCLASS, &event_emergency ); assert(ierr==0);
 #endif
 
-#ifdef StealingUseProfiler
-  exahype::offloading::StealingProfiler::getInstance().beginWaitForTasks();
+#ifdef OffloadingUseProfiler
+  exahype::offloading::OffloadingProfiler::getInstance().beginWaitForTasks();
   double time_background = -MPI_Wtime();
 #endif
 
   bool hasProcessed = false;
-#if defined(DistributedStealing)
+#if defined(DistributedOffloading)
   bool hasTriggeredEmergency = false;
-  bool stealingTreatment = true;
+  bool offloadingTreatment = true;
 
   exahype::solvers::ADERDGSolver* solver = nullptr; 
 
@@ -1182,19 +1182,19 @@ public:
        break;    
     case solvers::Solver::Type::FiniteVolumes:
        solver = nullptr;
-       stealingTreatment = false;
+       offloadingTreatment = false;
   }
  
 
-#if !defined(StealingUseProgressThread)
-  if( stealingTreatment )
+#if !defined(OffloadingUseProgressThread)
+  if( offloadingTreatment )
   {  
-    exahype::solvers::ADERDGSolver::setMaxNumberOfIprobesInProgressStealing(1);
+    exahype::solvers::ADERDGSolver::setMaxNumberOfIprobesInProgressOffloading(1);
   }    
 #endif
   int myRank = tarch::parallel::Node::getInstance().getRank();
   int responsibleRank = myRank;
-  if( stealingTreatment)
+  if( offloadingTreatment)
     responsibleRank = solver->getResponsibleRankForCellDescription((const void*) &cellDescription);
   bool progress = false;
   double startTime = MPI_Wtime();
@@ -1202,23 +1202,23 @@ public:
    
   if ( !cellDescription.getHasCompletedLastStep() ) {
      peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
-#if defined(DistributedStealing) && !defined(StealingUseProgressThread)
+#if defined(DistributedOffloading) && !defined(OffloadingUseProgressThread)
      if ( responsibleRank!=myRank
-         && stealingTreatment) {
-       solver->pauseStealingManager();
+         && offloadingTreatment) {
+       solver->pauseOffloadingManager();
        logInfo("waitUntil", "cell missing from responsible rank: "<<responsibleRank);
        exahype::solvers::ADERDGSolver::tryToReceiveTaskBack(solver) ;
      }
 #endif
    }
    while ( !cellDescription.getHasCompletedLastStep() ) {
-#if defined(DistributedStealing) && !defined(StealingUseProgressThread)
+#if defined(DistributedOffloading) && !defined(OffloadingUseProgressThread)
      if ( responsibleRank!=myRank
-        && stealingTreatment) {
+        && offloadingTreatment) {
        progress= exahype::solvers::ADERDGSolver::tryToReceiveTaskBack(solver);
        //solver->spawnReceiveBackJob();
      }
-#elif defined(DistributedStealing) && defined(StealingUseProgressThread)
+#elif defined(DistributedOffloading) && defined(OffloadingUseProgressThread)
      progress = false;
 #endif
      #ifdef Parallel
@@ -1243,30 +1243,30 @@ public:
           break;
      }
 
-#if defined(DistributedStealing) 
+#if defined(DistributedOffloading)
      if((MPI_Wtime()-startTime)>10.0 && responsibleRank!=myRank) {
        startTime = MPI_Wtime();
        logInfo("waitUntilCompletedTimeStep()","warning: rank waiting too long for missing task from rank "<<responsibleRank<< " outstanding jobs:"<<NumberOfRemoteJobs);
      }
 
 
-#if !defined(StealingUseProgressThread)
+#if !defined(OffloadingUseProgressThread)
        if( !cellDescription.getHasCompletedLastStep()
          //&& tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs()==1
          && !hasTriggeredEmergency
          && !progress
          && myRank!=responsibleRank
-         && stealingTreatment
+         && offloadingTreatment
          && ( exahype::solvers::ADERDGSolver::NumberOfEnclaveJobs 
              -exahype::solvers::ADERDGSolver::NumberOfRemoteJobs)==0
        )
          //&& exahype::solvers::ADERDGSolver::NumberOfReceiveBackJobs==0)
-         //&& !exahype::stealing::StealingManager::getInstance().getRunningAndReceivingBack())
+         //&& !exahype::offloading::OffloadingManager::getInstance().getRunningAndReceivingBack())
 #else
        if( !cellDescription.getHasCompletedLastStep()
          && !hasTriggeredEmergency
          && myRank!=responsibleRank
-         && stealingTreatment
+         && offloadingTreatment
          && !hasProcessed)
 #endif
        {
@@ -1283,17 +1283,17 @@ public:
 #endif
      //}
    }
-#if defined(DistributedStealing) && !defined(StealingUseProgressThread)
+#if defined(DistributedOffloading) && !defined(OffloadingUseProgressThread)
    if ( responsibleRank!=myRank
-      && stealingTreatment) {
-     solver->resumeStealingManager();
+      && offloadingTreatment) {
+     solver->resumeOffloadingManager();
    }
-   exahype::solvers::ADERDGSolver::setMaxNumberOfIprobesInProgressStealing( std::numeric_limits<int>::max() );
+   exahype::solvers::ADERDGSolver::setMaxNumberOfIprobesInProgressOffloading( std::numeric_limits<int>::max() );
 #endif
 
-#ifdef StealingUseProfiler
+#ifdef OffloadingUseProfiler
   time_background += MPI_Wtime();
-  exahype::offloading::StealingProfiler::getInstance().endWaitForTasks(time_background);
+  exahype::offloading::OffloadingProfiler::getInstance().endWaitForTasks(time_background);
 #endif
 
 #ifdef USE_ITAC

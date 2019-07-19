@@ -1275,9 +1275,9 @@ exahype::parser::Parser::TBBInvadeStrategy exahype::parser::Parser::getTBBInvade
 }
 
 
-std::string exahype::parser::Parser::getStealingInputFile() const {
+std::string exahype::parser::Parser::getOffloadingInputFile() const {
   std::string result = getStringFromPath("/distributed_memory/stealing_input_file","",isOptional);
-  logDebug("getStealingInputFile()", "found " << result);
+  logDebug("getOffloadingInputFile()", "found " << result);
   return result;
 }
 

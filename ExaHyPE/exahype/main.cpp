@@ -34,8 +34,8 @@
 #include <iostream>
 #include <cstdio>
 
-#ifdef StealingUseProfiler
-#include "exahype/stealing/StealingProfiler.h"
+#ifdef OffloadingUseProfiler
+#include "exahype/offloading/OffloadingProfiler.h"
 #endif
 
 #ifndef EXAHYPE_LATE_TAKEOVER
@@ -246,9 +246,9 @@ int exahype::main(int argc, char** argv) {
     logInfo("main()", "quit with error code " << programExitCode);
   }
   peano::shutdownSharedMemoryEnvironment();
-#if !defined(DistributedStealing) &&  defined(StealingUseProfiler)
-  exahype::stealing::StealingProfiler::getInstance().endPhase();
-  exahype::stealing::StealingProfiler::getInstance().printStatistics();
+#if !defined(DistributedOffloading) &&  defined(OffloadingUseProfiler)
+  exahype::offloading::OffloadingProfiler::getInstance().endPhase();
+  exahype::offloading::OffloadingProfiler::getInstance().printStatistics();
 #endif
   peano::shutdownParallelEnvironment();
 

@@ -11,7 +11,7 @@
  * For the full license text, see LICENSE.txt
  **/
 
-#if  defined(SharedTBB)  && defined(Parallel) && defined(DistributedStealing)
+#if  defined(SharedTBB)  && defined(Parallel) && defined(DistributedOffloading)
 #include "exahype/offloading/AggressiveCCPDistributor.h"
 
 #include <algorithm>
@@ -22,13 +22,13 @@
 #include "tarch/parallel/Node.h"
 #include "tarch/timing/Watch.h"
 
-#include "exahype/offloading/StealingProfiler.h"
+#include "exahype/offloading/OffloadingProfiler.h"
 #include "exahype/offloading/PerformanceMonitor.h"
-#include "exahype/offloading/StealingAnalyser.h"
+#include "exahype/offloading/OffloadingAnalyser.h"
 #include "tarch/multicore/Core.h"
 #include "tarch/multicore/tbb/Jobs.h"
 
-tarch::logging::Log exahype::offloading::AggressiveCCPDistributor::_log( "exahype::stealing::AggressiveCCPDistributor" );
+tarch::logging::Log exahype::offloading::AggressiveCCPDistributor::_log( "exahype::offloading::AggressiveCCPDistributor" );
 
 exahype::offloading::AggressiveCCPDistributor::AggressiveCCPDistributor() :
   _isEnabled(false),
@@ -141,9 +141,9 @@ void exahype::offloading::AggressiveCCPDistributor::computeIdealLoadDistribution
         if(input_r==myRank) {
           logInfo("computeIdeal","inc_l="<<inc_l);
           _idealTasksToOffload[output_r] = inc_l;
-          offloading::StealingProfiler::getInstance().notifyTargetOffloadedTask(inc_l, output_r);
+          offloading::OffloadingProfiler::getInstance().notifyTargetOffloadedTask(inc_l, output_r);
           //_tasksToOffload[output_r]= std::min(inc_l,1);
-          //stealing::StealingProfiler::getInstance().notifyTargetOffloadedTask(std::min(inc_l,1), output_r);
+          //offloading::OffloadingProfiler::getInstance().notifyTargetOffloadedTask(std::min(inc_l,1), output_r);
         }
       }
 
@@ -230,8 +230,8 @@ void exahype::offloading::AggressiveCCPDistributor::updateLoadDistribution() {
   int myRank = tarch::parallel::Node::getInstance().getRank();
 
   double *waitingTimesSnapshot = new double[nnodes*nnodes];
- // const int* currentWaitingTimesSnapshot = exahype::stealing::PerformanceMonitor::getInstance().getWaitingTimesSnapshot();
-  const double* currentWaitingTimesSnapshot = exahype::offloading::StealingAnalyser::getInstance().getFilteredWaitingTimesSnapshot();
+ // const int* currentWaitingTimesSnapshot = exahype::offloading::PerformanceMonitor::getInstance().getWaitingTimesSnapshot();
+  const double* currentWaitingTimesSnapshot = exahype::offloading::OffloadingAnalyser::getInstance().getFilteredWaitingTimesSnapshot();
   std::copy(&currentWaitingTimesSnapshot[0], &currentWaitingTimesSnapshot[nnodes*nnodes], waitingTimesSnapshot);
 
   //waitingTimesSnapshot[myRank] = waitingTime;
@@ -250,7 +250,7 @@ void exahype::offloading::AggressiveCCPDistributor::updateLoadDistribution() {
     for(int j=0; j<nnodes; j++) {
       if(waitingTimesSnapshot[k+j]>0)
         logInfo("updateLoadDistribution()","rank "<<i<<" waiting for "<<waitingTimesSnapshot[k+j]<<" for rank "<<j);
-      if(waitingTimesSnapshot[k+j]> exahype::offloading::StealingAnalyser::getInstance().getZeroThreshold()) {
+      if(waitingTimesSnapshot[k+j]> exahype::offloading::OffloadingAnalyser::getInstance().getZeroThreshold()) {
         waitingRanks[j]++;   
         waitingForSomeone = true;
       }
@@ -283,7 +283,7 @@ void exahype::offloading::AggressiveCCPDistributor::updateLoadDistribution() {
           //logInfo("updateLoadDistribution", "tasks for victim "<<i<<" before recomputation:"<<_tasksToOffload[i]<< " ideal: "<<_idealTasksToOffload[i]<< " temp "<<_temperature);
           //logInfo("updateLoadDistribution", "first : "<<(1.0-_temperature)*_tasksToOffload[i]<<" second:"<<_temperature*_idealTasksToOffload[i]);
           _tasksToOffload[i] = std::ceil(std::max((1.0-_temperature), 0.0)*_tasksToOffload[i] + _temperature*_idealTasksToOffload[i]);
-#ifdef DistributedStealingDisable
+#ifdef DistributedOffloadingDisable
           _tasksToOffload[i] = 0;
 #endif
           //logInfo("updateLoadDistribution", "tasks for victim "<<i<<" after recomputation:"<<_tasksToOffload[i]);
@@ -297,14 +297,14 @@ void exahype::offloading::AggressiveCCPDistributor::updateLoadDistribution() {
 
   _totalTasksOffloaded = 0;
   for(int i=0; i<nnodes; i++) {
-#ifdef DistributedStealingDisable
+#ifdef DistributedOffloadingDisable
           assert(_tasksToOffload[i]==0);
 #endif
     _tasksToOffload[i] = _tasksToOffload[i]-_emergenciesPerRank[i];
     _emergenciesPerRank[i] = 0;
     _totalTasksOffloaded += _tasksToOffload[i];
 
-#ifdef DistributedStealingDisable
+#ifdef DistributedOffloadingDisable
           assert(_tasksToOffload[i]==0);
 #endif
   }

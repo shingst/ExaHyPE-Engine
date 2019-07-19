@@ -33,7 +33,7 @@
 #include "exahype/profilers/simple/NoOpProfiler.h"
 #include "exahype/records/ADERDGCellDescription.h"
 
-#if defined(DistributedStealing)
+#if defined(DistributedOffloading)
 #include "exahype/offloading/OffloadingManager.h"
 #include <tbb/concurrent_hash_map.h>
 #include <tbb/concurrent_queue.h>
@@ -185,12 +185,12 @@ public:
    */
   static tarch::multicore::BooleanSemaphore CoarseGridSemaphore;
 
-#if defined (DistributedStealing)
+#if defined (DistributedOffloading)
   /**
    * Semaphore that is used to guarantee mutual exclusion for
-   * stealing progress.
+   * offloading progress.
    */
-  static tarch::multicore::BooleanSemaphore StealingSemaphore;
+  static tarch::multicore::BooleanSemaphore OffloadingSemaphore;
 
   static std::atomic<int> NumberOfReceiveJobs;
   static std::atomic<int> NumberOfReceiveBackJobs;
@@ -925,26 +925,26 @@ private:
    */
   void deduceChildCellErasingEvents(CellDescription& cellDescription) const;
 
-#if defined(DistributedStealing)
-#ifdef StealingUseProgressTask
+#if defined(DistributedOffloading)
+#ifdef OffloadingUseProgressTask
   static std::unordered_set<int> ActiveSenders; //only to be modified with lock on 
-                                                //stealing semaphore!
+                                                //offloading semaphore!
 #endif
 
 
   /**
-   * A helper job that should run on every rank in the background while stealing
-   * is active. There should be exactly one single StealingManagerJob per rank.
-   * The stealing manager job is started and stopped in the FusedTimeStep and
+   * A helper job that should run on every rank in the background while offloading
+   * is active. There should be exactly one single OffloadingManagerJob per rank.
+   * The offloading manager job is started and stopped in the FusedTimeStep and
    * BroadcastAndDropNeighbourMessages mappings. It will terminate itself once
-   * all ranks have stopped their StealingManagerJob. The StealingManagerJob is
+   * all ranks have stopped their OffloadingManagerJob. The OffloadingManagerJob is
    * required in order to dynamically receive tasks and make progress on MPI
    * communication.
    */
-#ifdef StealingUseProgressThread
-  class StealingManagerJob : public tbb::task{
+#ifdef OffloadingUseProgressThread
+  class OffloadingManagerJob : public tbb::task{
 #else
-  class StealingManagerJob : public tarch::multicore::jobs::Job {
+  class OffloadingManagerJob : public tarch::multicore::jobs::Job {
 #endif
     public:
       enum class State {
@@ -953,13 +953,13 @@ private:
         Paused,
 	 Terminate
       };
-	  StealingManagerJob(ADERDGSolver& solver);
-	  ~StealingManagerJob();
+	  OffloadingManagerJob(ADERDGSolver& solver);
+	  ~OffloadingManagerJob();
 	  bool run( bool isCalledOnMaster );
-#ifdef StealingUseProgressThread
+#ifdef OffloadingUseProgressThread
           tbb::task* execute();
 #endif
-#ifndef StealingUseProgressThread
+#ifndef OffloadingUseProgressThread
          void pause();
          void resume();
 #endif
@@ -1100,7 +1100,7 @@ private:
 
   /**
    * If a task decides to send itself away, an offload entry is generated and submitted into
-   * a concurrent TBB queue. The stealing manager will take care of sending away
+   * a concurrent TBB queue. The offloading manager will take care of sending away
    * the tasks in the concurrent TBB queue.
    */
   struct OffloadEntry {
@@ -1175,11 +1175,11 @@ private:
    */
   void submitOrSendStealablePredictionJob(StealablePredictionJob *job);
 
-  // stealing manager job associated to the solver
-  StealingManagerJob *_stealingManagerJob;
+  // offloading manager job associated to the solver
+  OffloadingManagerJob *_offloadingManagerJob;
 
-  // limit the maximum number of iprobes in progressStealing()
-  static std::atomic<int> MaxIprobesInStealingProgress;
+  // limit the maximum number of iprobes in progressOffloading()
+  static std::atomic<int> MaxIprobesInOffloadingProgress;
 #endif
 
 #endif
@@ -2550,29 +2550,29 @@ public:
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level) override;
 
-#ifdef DistributedStealing
+#ifdef DistributedOffloading
   /*
-   * Makes progress on all stealing-related MPI communication.
+   * Makes progress on all offloading-related MPI communication.
    */
-  static void progressStealing(exahype::solvers::ADERDGSolver* solver);
+  static void progressOffloading(exahype::solvers::ADERDGSolver* solver);
 
-  static void setMaxNumberOfIprobesInProgressStealing(int maxNumIprobes);
+  static void setMaxNumberOfIprobesInProgressOffloading(int maxNumIprobes);
 
   static bool tryToReceiveTaskBack(exahype::solvers::ADERDGSolver* solver, const void* cellDescription = nullptr);
   /*
-   * Spawns a stealing manager job and submits it as a TBB task.
+   * Spawns a offloading manager job and submits it as a TBB task.
    */
-  void startStealingManager(bool spawn=false);
-#ifndef StealingUseProgressThread
-  void pauseStealingManager();
-  void resumeStealingManager();
+  void startOffloadingManager(bool spawn=false);
+#ifndef OffloadingUseProgressThread
+  void pauseOffloadingManager();
+  void resumeOffloadingManager();
 #endif
   /*
-   * Tells the stealing manager job that it's time for termination.
+   * Tells the offloading manager job that it's time for termination.
    */
-  void stopStealingManager();
+  void stopOffloadingManager();
 
-#ifdef StealingUseProgressTask
+#ifdef OffloadingUseProgressTask
   void spawnReceiveBackJob();
 #endif
 

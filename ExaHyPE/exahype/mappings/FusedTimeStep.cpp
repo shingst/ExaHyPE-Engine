@@ -28,11 +28,11 @@
 
 #include "exahype/mappings/Prediction.h"
 
-#ifdef DistributedStealing
+#ifdef DistributedOffloading
 #include "exahype/offloading/PerformanceMonitor.h"
 #include "exahype/offloading/StaticDistributor.h"
 #include "exahype/offloading/DiffusiveDistributor.h"
-#include "exahype/offloading/StealingAnalyser.h"
+#include "exahype/offloading/OffloadingAnalyser.h"
 #endif
 
 tarch::logging::Log exahype::mappings::FusedTimeStep::_log("exahype::mappings::FusedTimeStep");
@@ -176,7 +176,7 @@ void exahype::mappings::FusedTimeStep::beginIteration(
 
 #ifdef Parallel
 
-#ifdef DistributedStealing
+#ifdef DistributedOffloading
     static bool isFirst = true;
     isFirst = false;
     
@@ -185,7 +185,7 @@ void exahype::mappings::FusedTimeStep::beginIteration(
   {
     for (auto* solver : exahype::solvers::RegisteredSolvers) {
       if (solver->getType()==exahype::solvers::Solver::Type::ADERDG) {
-        static_cast<exahype::solvers::ADERDGSolver*>(solver)->resumeStealingManager();
+        static_cast<exahype::solvers::ADERDGSolver*>(solver)->resumeOffloadingManager();
       }
     // Todo:
     //  if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
@@ -194,13 +194,13 @@ void exahype::mappings::FusedTimeStep::beginIteration(
     } 
   }
 
-#if defined(StealingStrategyStatic) || defined(StealingStrategyStaticHardcoded)
+#if defined(OffloadingStrategyStatic) || defined(OffloadingStrategyStaticHardcoded)
   if(issuePredictionJobsInThisIteration()) {
     exahype::offloading::StaticDistributor::getInstance().resetRemainingTasksToOffload();
   }
-  //exahype::offloading::StealingAnalyser::getInstance().beginIteration();
-#elif defined(StealingStrategyAggressive) || defined(StealingStrategyAggressiveHybrid) || defined(StealingStrategyAggressiveDiffusive)
-  //exahype::offloading::StealingAnalyser::getInstance().beginIteration();
+  //exahype::offloading::OffloadingAnalyser::getInstance().beginIteration();
+#elif defined(OffloadingStrategyAggressive) || defined(OffloadingStrategyAggressiveHybrid) || defined(OffloadingStrategyAggressiveDiffusive)
+  //exahype::offloading::OffloadingAnalyser::getInstance().beginIteration();
 #endif 
 #endif
 
@@ -232,10 +232,10 @@ void exahype::mappings::FusedTimeStep::endIteration(
     }
   }
 
-#if defined(Parallel) && defined(DistributedStealing)
-#if defined(StealingStrategyAggressive) || defined(StealingStrategyAggressiveHybrid) || defined(StealingStrategyAggressiveDiffusive) || defined(StealingStrategyStaticHardcoded)
-  //exahype::offloading::StealingAnalyser::getInstance().endIteration();
-#ifdef StealingUseProgressTask
+#if defined(Parallel) && defined(DistributedOffloading)
+#if defined(OffloadingStrategyAggressive) || defined(OffloadingStrategyAggressiveHybrid) || defined(OffloadingStrategyAggressiveDiffusive) || defined(OffloadingStrategyStaticHardcoded)
+  //exahype::offloading::OffloadingAnalyser::getInstance().endIteration();
+#ifdef OffloadingUseProgressTask
   if(issuePredictionJobsInThisIteration() ) { 
     exahype::offloading::OffloadingManager::getInstance().notifyAllVictimsSendCompletedIfNotNotified();
     exahype::offloading::OffloadingManager::getInstance().resetHasNotifiedSendCompleted();
@@ -248,7 +248,7 @@ void exahype::mappings::FusedTimeStep::endIteration(
   {
     for (auto* solver : exahype::solvers::RegisteredSolvers) {
       if (solver->getType()==exahype::solvers::Solver::Type::ADERDG) {
-        static_cast<exahype::solvers::ADERDGSolver*>(solver)->pauseStealingManager();
+        static_cast<exahype::solvers::ADERDGSolver*>(solver)->pauseOffloadingManager();
       }
     // Todo:
     //  if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {

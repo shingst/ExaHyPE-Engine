@@ -17,7 +17,7 @@
 #include "tarch/la/Vector.h"
 #include "tarch/logging/Log.h"
 
-#if defined(DistributedStealing) && defined(StealingStrategyDiffusive)
+#if defined(DistributedOffloading) && defined(OffloadingStrategyDiffusive)
 #include "tarch/timing/Watch.h"
 #endif
 

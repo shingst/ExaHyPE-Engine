@@ -72,28 +72,28 @@ ifeq ($(DISTRIBUTEDMEM),)
 {% endif %}
 endif
 {% if stealing=="static" %}
-PROJECT_CFLAGS += -DDistributedStealing -DStealingStrategyStatic
+PROJECT_CFLAGS += -DDistributedOffloading -DOffloadingStrategyStatic
 {% elif stealing=="dynamic" %}
-PROJECT_CFLAGS += -DDistributedStealing -DStealingStrategyDynamic
+PROJECT_CFLAGS += -DDistributedOffloading -DOffloadingStrategyDynamic
 {% elif stealing=="dynamic_diffusive" %}
-PROJECT_CFLAGS += -DDistributedStealing -DStealingStrategyDiffusive 
+PROJECT_CFLAGS += -DDistributedOffloading -DOffloadingStrategyDiffusive 
 {% elif stealing=="aggressive_diffusive" %}
-PROJECT_CFLAGS += -DDistributedStealing -DStealingStrategyAggressive 
+PROJECT_CFLAGS += -DDistributedOffloading -DOffloadingStrategyAggressive 
 {% elif stealing=="aggressiveCCP_diffusive" %}
-PROJECT_CFLAGS += -DDistributedStealing -DStealingStrategyAggressiveCCP 
+PROJECT_CFLAGS += -DDistributedOffloading -DOffloadingStrategyAggressiveCCP 
 {% elif stealing=="aggressiveHybrid" %}
-PROJECT_CFLAGS += -DDistributedStealing -DStealingStrategyAggressiveHybrid -DPerformanceAnalysis 
+PROJECT_CFLAGS += -DDistributedOffloading -DOffloadingStrategyAggressiveHybrid -DPerformanceAnalysis 
 {% elif stealing=="hybrid" %}
-PROJECT_CFLAGS += -DDistributedStealing -DStealingStrategyHybrid
+PROJECT_CFLAGS += -DDistributedOffloading -DOffloadingStrategyHybrid
 {% elif stealing=="static_hardcoded" %}
-PROJECT_CFLAGS += -DDistributedStealing -DStealingStrategyStaticHardcoded
+PROJECT_CFLAGS += -DDistributedOffloading -DOffloadingStrategyStaticHardcoded
 {% elif stealing=="none" %}
 PROJECT_CFLAGS += -DAnalyseWaitingTimes
 {% endif %}
 {% if stealingProgress=="progress_thread" %}
-PROJECT_CFLAGS += -DStealingUseProgressThread
+PROJECT_CFLAGS += -DOffloadingUseProgressThread
 {% elif stealingProgress=="progress_task" %}
-PROJECT_CFLAGS += -DStealingUseProgressTask -DnoMPIWaitsProcessJobs
+PROJECT_CFLAGS += -DOffloadingUseProgressTask -DnoMPIWaitsProcessJobs
 {% elif stealingProgress=="none" %}
 PROJECT_CFLAGS += 
 {% endif %}

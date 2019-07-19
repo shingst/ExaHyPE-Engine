@@ -48,24 +48,24 @@
 #include <immintrin.h>
 #endif
 
-#if defined(DistributedStealing)
+#if defined(DistributedOffloading)
 #include "exahype/offloading/PerformanceMonitor.h"
 #include "exahype/offloading/StaticDistributor.h"
 #include "exahype/offloading/DiffusiveDistributor.h"
 #include "exahype/offloading/OffloadingManager.h"
-#include "exahype/offloading/StealingAnalyser.h"
+#include "exahype/offloading/OffloadingAnalyser.h"
 
-#include "exahype/offloading/StealingProgressService.h"
+#include "exahype/offloading/OffloadingProgressService.h"
 
 #endif
-#include "exahype/offloading/StealingProfiler.h"
+#include "exahype/offloading/OffloadingProfiler.h"
 
 #include "tarch/timing/Watch.h"
 
 #ifdef USE_ITAC
 #include "VT.h"
 static int event_stp = -1;
-static int event_stealingManager = -1;
+static int event_offloadingManager = -1;
 static int event_spawn = -1;
 static int event_initial = -1;
 static int event_memory = -1;
@@ -128,10 +128,10 @@ tarch::multicore::BooleanSemaphore exahype::solvers::ADERDGSolver::RestrictionSe
 
 tarch::multicore::BooleanSemaphore exahype::solvers::ADERDGSolver::CoarseGridSemaphore;
 
-#if defined(DistributedStealing)
-tarch::multicore::BooleanSemaphore exahype::solvers::ADERDGSolver::StealingSemaphore;
+#if defined(DistributedOffloading)
+tarch::multicore::BooleanSemaphore exahype::solvers::ADERDGSolver::OffloadingSemaphore;
 
-std::atomic<int> exahype::solvers::ADERDGSolver::MaxIprobesInStealingProgress = std::numeric_limits<int>::max();
+std::atomic<int> exahype::solvers::ADERDGSolver::MaxIprobesInOffloadingProgress = std::numeric_limits<int>::max();
 
 std::atomic<int> exahype::solvers::ADERDGSolver::StealablePredictionJob::JobCounter = 0;
 
@@ -139,7 +139,7 @@ std::atomic<int> exahype::solvers::ADERDGSolver::NumberOfReceiveJobs = 0;
 
 std::atomic<int> exahype::solvers::ADERDGSolver::NumberOfReceiveBackJobs = 0;
 
-#ifdef StealingUseProgressTask
+#ifdef OffloadingUseProgressTask
 std::unordered_set<int> exahype::solvers::ADERDGSolver::ActiveSenders;
 #endif
 #endif
@@ -657,10 +657,10 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
      _minRefinementStatusForTroubledCell(_refineOrKeepOnFineGrid+3),
      _checkForNaNs(true),
      _meshUpdateEvent(MeshUpdateEvent::None) 
-#if defined(DistributedStealing)
+#if defined(DistributedOffloading)
         ,_lastReceiveTag(tarch::parallel::Node::getInstance().getNumberOfNodes()),
          _lastReceiveBackTag(tarch::parallel::Node::getInstance().getNumberOfNodes()),
-        _stealingManagerJob(nullptr)
+        _offloadingManagerJob(nullptr)
 #endif
 {
   // register tags with profiler
@@ -679,17 +679,17 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
 
   _receivedUpdate.reserve(getUpdateSize());
 
-#if defined(DistributedStealing)
-  exahype::offloading::StealingProgressService::getInstance().setSolver(this);
+#if defined(DistributedOffloading)
+  exahype::offloading::OffloadingProgressService::getInstance().setSolver(this);
 #endif
 
-#ifdef StealingUseProfiler
-  exahype::offloading::StealingProfiler::getInstance().beginPhase();
+#ifdef OffloadingUseProfiler
+  exahype::offloading::OffloadingProfiler::getInstance().beginPhase();
 #endif
 
 #ifdef USE_ITAC
   static const char *event_name_stp = "computeSTP";
-  static const char *event_name_stealingManager = "stealingManager";
+  static const char *event_name_offloadingManager = "offloadingManager";
   static const char *event_name_spawn = "spawnSTP";
   static const char *event_name_initial = "initialSTP";
   static const char *event_name_lock = "lock";
@@ -698,7 +698,7 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
   static const char *event_name_progress = "progress";
   static const char *event_name_offload = "offload";
   int ierr=VT_funcdef(event_name_stp, VT_NOCLASS, &event_stp ); assertion(ierr==0);
-  ierr=VT_funcdef(event_name_stealingManager, VT_NOCLASS, &event_stealingManager ); assertion(ierr==0);
+  ierr=VT_funcdef(event_name_offloadingManager, VT_NOCLASS, &event_offloadingManager ); assertion(ierr==0);
   ierr=VT_funcdef(event_name_spawn, VT_NOCLASS, &event_spawn ); assertion(ierr==0);
   ierr=VT_funcdef(event_name_initial, VT_NOCLASS, &event_initial ); assertion(ierr==0);
   ierr=VT_funcdef(event_name_lock, VT_NOCLASS, &event_lock ); assertion(ierr==0);
@@ -2157,21 +2157,21 @@ void exahype::solvers::ADERDGSolver::fusedTimeStepBody(
   if (
       SpawnPredictionAsBackgroundJob &&
       !mustBeDoneImmediately 
-#ifndef DistributedStealing
+#ifndef DistributedOffloading
       &&
       isLastTimeStepOfBatch // only spawned in last iteration if a FusedTimeStepJob was spawned before
 #endif
   ) {
     const int element = cellInfo.indexOfADERDGCellDescription(cellDescription.getSolverNumber());
-#ifdef DistributedStealing 
-    //skeleton cells are not considered for stealing
+#ifdef DistributedOffloading
+    //skeleton cells are not considered for offloading
     if (isSkeletonCell) {
       peano::datatraversal::TaskSet( new PredictionJob(
         *this, cellDescription, cellInfo._cellDescriptionsIndex, element,
         predictionTimeStamp,  // corrector time step data is correct; see docu
         predictionTimeStepSize,
         false/*is uncompressed*/, isSkeletonCell, isLastTimeStepOfBatch ));
-      exahype::offloading::StealingProfiler::getInstance().notifySpawnedTask();
+      exahype::offloading::OffloadingProfiler::getInstance().notifySpawnedTask();
     }
     else {
 #ifdef USE_ITAC
@@ -2184,7 +2184,7 @@ void exahype::solvers::ADERDGSolver::fusedTimeStepBody(
       submitOrSendStealablePredictionJob(stealablePredictionJob);
 
       //peano::datatraversal::TaskSet spawnedSet( stealablePredictionJob, peano::datatraversal::TaskSet::TaskType::Background );
-      exahype::offloading::StealingProfiler::getInstance().notifySpawnedTask();
+      exahype::offloading::OffloadingProfiler::getInstance().notifySpawnedTask();
 #ifdef USE_ITAC
       //VT_end(event_spawn);
 #endif
@@ -2231,7 +2231,7 @@ void exahype::solvers::ADERDGSolver::fusedTimeStepOrRestrict(
       if (
           (SpawnUpdateAsBackgroundJob || (SpawnPredictionAsBackgroundJob && !isLastTimeStepOfBatch)) &&
           !mustBeDoneImmediately
-#if defined(DistributedStealing)
+#if defined(DistributedOffloading)
           && false
 #endif
       ) {
@@ -2440,8 +2440,8 @@ void exahype::solvers::ADERDGSolver::predictionAndVolumeIntegral(
     const bool mustBeDoneImmediately = isSkeletonCell && PredictionSweeps==1;
 
     if ( SpawnPredictionAsBackgroundJob && !mustBeDoneImmediately ) {
-#ifdef DistributedStealing
-      //skeleton cells are not considered for stealing
+#ifdef DistributedOffloading
+      //skeleton cells are not considered for offloading
       if (isSkeletonCell) {
         peano::datatraversal::TaskSet( new PredictionJob(
               *this, cellDescription, cellInfo._cellDescriptionsIndex, element,
@@ -2457,7 +2457,7 @@ void exahype::solvers::ADERDGSolver::predictionAndVolumeIntegral(
           predictorTimeStamp,
           predictorTimeStepSize);
         submitOrSendStealablePredictionJob(stealablePredictionJob);
-        exahype::offloading::StealingProfiler::getInstance().notifySpawnedTask();
+        exahype::offloading::OffloadingProfiler::getInstance().notifySpawnedTask();
 #ifdef USE_ITAC
      // VT_end(event_spawn);
 #endif
@@ -4546,7 +4546,7 @@ void exahype::solvers::ADERDGSolver::toString (std::ostream& out) const {
   out <<  ")";
 }
 
-#if defined(DistributedStealing)
+#if defined(DistributedOffloading)
 void exahype::solvers::ADERDGSolver::submitOrSendStealablePredictionJob(StealablePredictionJob* job) {
    //return; 
 
@@ -4562,7 +4562,7 @@ void exahype::solvers::ADERDGSolver::submitOrSendStealablePredictionJob(Stealabl
    exahype::offloading::OffloadingManager::getInstance().selectVictimRank(destRank, lastSend);
    //}
    //else
-   //  exahype::offloading::StealingProfiler::getInstance().notifyThresholdFail();
+   //  exahype::offloading::OffloadingProfiler::getInstance().notifyThresholdFail();
 
    if(myRank!=destRank) {
 //    sends++;
@@ -4577,7 +4577,7 @@ void exahype::solvers::ADERDGSolver::submitOrSendStealablePredictionJob(Stealabl
      double *lFhbnd = static_cast<double*>(cellDescription.getFluctuation());
 
      MPI_Request sendRequests[5];
-     int tag = exahype::offloading::OffloadingManager::getInstance().getStealingTag();
+     int tag = exahype::offloading::OffloadingManager::getInstance().getOffloadingTag();
      double *metadata = new double[2*DIMENSIONS+2];
      packMetadataToBuffer(entry, metadata);
      // we need this info when the task comes back...
@@ -4614,17 +4614,17 @@ void exahype::solvers::ADERDGSolver::submitOrSendStealablePredictionJob(Stealabl
 //        luh, lduh, lQhbnd,
 //	    lFhbnd, destRank, tag, recvRequests);
 //
-//     exahype::offloading::StealingManager::getInstance().submitRequests(
+//     exahype::offloading::OffloadingManager::getInstance().submitRequests(
 //         recvRequests, 4, tag, destRank,
 //         exahype::solvers::ADERDGSolver::StealablePredictionJob::receiveBackHandler,
 //	    exahype::offloading::RequestType::receiveBack, this);
 
      NumberOfRemoteJobs++;
 
-     exahype::offloading::StealingProfiler::getInstance().notifyOffloadedTask(destRank);
+     exahype::offloading::OffloadingProfiler::getInstance().notifyOffloadedTask(destRank);
      exahype::offloading::PerformanceMonitor::getInstance().decCurrentTasks();
 
-#ifdef StealingUseProgressTask
+#ifdef OffloadingUseProgressTask
      if(lastSend)
         exahype::offloading::OffloadingManager::getInstance().notifyAllVictimsSendCompletedIfNotNotified();
 #endif
@@ -4635,23 +4635,23 @@ void exahype::solvers::ADERDGSolver::submitOrSendStealablePredictionJob(Stealabl
   }
 }
 
-void exahype::solvers::ADERDGSolver::setMaxNumberOfIprobesInProgressStealing(int maxIprobes) {
-  MaxIprobesInStealingProgress = maxIprobes;
+void exahype::solvers::ADERDGSolver::setMaxNumberOfIprobesInProgressOffloading(int maxIprobes) {
+  MaxIprobesInOffloadingProgress = maxIprobes;
 }
 
-void exahype::solvers::ADERDGSolver::progressStealing(exahype::solvers::ADERDGSolver* solver) {
+void exahype::solvers::ADERDGSolver::progressOffloading(exahype::solvers::ADERDGSolver* solver) {
   //static bool spawnedReceiveJob = false;
   
-  // First, we ensure here that only one thread at a time progresses stealing
+  // First, we ensure here that only one thread at a time progresses offloading
   // this attempts to avoid multithreaded MPI problems
-  tarch::multicore::Lock lock(StealingSemaphore, false);
+  tarch::multicore::Lock lock(OffloadingSemaphore, false);
   bool canRun = lock.tryLock();
   if(!canRun) {
-#if defined(PerformanceAnalysisStealingDetailed)
+#if defined(PerformanceAnalysisOffloadingDetailed)
     watch.stopTimer();
     if(watch.getCalendarTime() >= 0.0) {
       logInfo(
-          "progressStealing() ",
+          "progressOffloading() ",
           "couldn't run "<<
           "time=" << std::fixed <<
           watch.getCalendarTime() <<
@@ -4666,7 +4666,7 @@ void exahype::solvers::ADERDGSolver::progressStealing(exahype::solvers::ADERDGSo
   //VT_begin(event_progress);
 #endif
 
-//  exahype::offloading::StealingManager::getInstance().setRunningAndReceivingBack();
+//  exahype::offloading::OffloadingManager::getInstance().setRunningAndReceivingBack();
   // 1. send away outstanding tasks (decision to offload them has been made)
 //  OffloadEntry entry;
 //  bool gotOne = _outstandingOffloads.try_pop(entry);
@@ -4683,7 +4683,7 @@ void exahype::solvers::ADERDGSolver::progressStealing(exahype::solvers::ADERDGSo
 //    double *lFhbnd = static_cast<double*>(cellDescription.getFluctuation());
 
 //    MPI_Request sendRequests[5];
-//    int tag = getStealingTag();
+//    int tag = getOffloadingTag();
 //    double *metadata = new double[2*DIMENSIONS+2];
 //    packMetadataToBuffer(entry, metadata);
 //    // we need this info when the task comes back...
@@ -4702,7 +4702,7 @@ void exahype::solvers::ADERDGSolver::progressStealing(exahype::solvers::ADERDGSo
 //		sendRequests,
 //		metadata);
 
-//    exahype::offloading::StealingManager::getInstance().submitRequests(
+//    exahype::offloading::OffloadingManager::getInstance().submitRequests(
 //        sendRequests, 5, tag, destRank,
 //        exahype::solvers::ADERDGSolver::StealablePredictionJob::sendHandler,
 //		exahype::offloading::RequestType::send, this);
@@ -4713,7 +4713,7 @@ void exahype::solvers::ADERDGSolver::progressStealing(exahype::solvers::ADERDGSo
 //        luh, lduh, lQhbnd,
 //	    lFhbnd, destRank, tag, recvRequests);
 
-//    exahype::offloading::StealingManager::getInstance().submitRequests(
+//    exahype::offloading::OffloadingManager::getInstance().submitRequests(
 //        recvRequests, 4, tag, destRank,
 //        exahype::solvers::ADERDGSolver::StealablePredictionJob::receiveBackHandler,
 //	    exahype::offloading::RequestType::receiveBack, this);
@@ -4748,16 +4748,16 @@ void exahype::solvers::ADERDGSolver::progressStealing(exahype::solvers::ADERDGSo
   //static std::atomic<int> postedReceives=0;
 
   MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, comm, &receivedTask, &stat);
-#if defined(StealingNoEarlyReceiveBacks)
+#if defined(OffloadingNoEarlyReceiveBacks)
   MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, commMapped, &receivedTaskBack, &statMapped);
 #endif
   double time = -MPI_Wtime();
 
   bool terminateImmediately = false;
 
-  while( (receivedTask || receivedTaskBack) && iprobesCounter<MaxIprobesInStealingProgress && !terminateImmediately ) {
+  while( (receivedTask || receivedTaskBack) && iprobesCounter<MaxIprobesInOffloadingProgress && !terminateImmediately ) {
     iprobesCounter++;
-#if defined(StealingNoEarlyReceiveBacks)
+#if defined(OffloadingNoEarlyReceiveBacks)
     if(receivedTaskBack && (statMapped.MPI_TAG!=lastRecvBackTag || statMapped.MPI_SOURCE!=lastRecvBackSrc)) {
       lastRecvBackSrc = statMapped.MPI_SOURCE;
       lastRecvBackTag = statMapped.MPI_TAG;
@@ -4790,7 +4790,7 @@ void exahype::solvers::ADERDGSolver::progressStealing(exahype::solvers::ADERDGSo
 
 //    MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, comm, &receivedTask, &stat);
 
-#ifdef StealingUseProgressTask
+#ifdef OffloadingUseProgressTask
     if(receivedTask && stat.MPI_TAG==0) {
        int terminatedSender = stat.MPI_SOURCE;
        logInfo("run()","active sender "<<terminatedSender<<" has sent termination signal ");
@@ -4801,13 +4801,13 @@ void exahype::solvers::ADERDGSolver::progressStealing(exahype::solvers::ADERDGSo
 #endif
 
     if(receivedTask) {
-#ifdef StealingUseProgressTask
-       logInfo("progressStealing()","inserting active sender "<<stat.MPI_SOURCE);
+#ifdef OffloadingUseProgressTask
+       logInfo("progressOffloading()","inserting active sender "<<stat.MPI_SOURCE);
        ActiveSenders.insert(stat.MPI_SOURCE);
        if(NumberOfReceiveJobs==0) {
           NumberOfReceiveJobs++;
           assert(NumberOfReceiveJobs<=1);
-          logInfo("progressStealing()","spawning receive job, receive jobs "<<NumberOfReceiveJobs);
+          logInfo("progressOffloading()","spawning receive job, receive jobs "<<NumberOfReceiveJobs);
           ReceiveJob *receiveJob = new ReceiveJob(*solver);
           peano::datatraversal::TaskSet spawnedSet(receiveJob);     
           terminateImmediately = true; // we'll receive this task but then terminate to give the receive job the opportunity to run
@@ -4848,13 +4848,13 @@ void exahype::solvers::ADERDGSolver::progressStealing(exahype::solvers::ADERDGSo
 //             data->_lFhbnd.data(),
 //             stat.MPI_SOURCE,
 //             stat.MPI_TAG,
-//             exahype::offloading::StealingManager::getInstance().getMPICommunicator(),
+//             exahype::offloading::OffloadingManager::getInstance().getMPICommunicator(),
 //             &(data->_metadata[0]));
         if(canComplete)
           StealablePredictionJob::receiveHandler(solver, stat.MPI_TAG, stat.MPI_SOURCE);
         else {
           if(tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs()<=1) {
-             //logInfo("progressStealing()","running out of tasks and could not receive stolen task so we just block!");
+             //logInfo("progressOffloading()","running out of tasks and could not receive stolen task so we just block!");
              double wtime = -MPI_Wtime();
              exahype::offloading::OffloadingManager::getInstance().submitRequests(
                              receiveRequests,
@@ -4867,7 +4867,7 @@ void exahype::solvers::ADERDGSolver::progressStealing(exahype::solvers::ADERDGSo
 			     true);
              wtime+= MPI_Wtime();
              if(wtime>0.01)
-               logInfo("progressStealing()","blocking for stolen task took too long:"<<wtime<<"s"); 
+               logInfo("progressOffloading()","blocking for stolen task took too long:"<<wtime<<"s");
            }
           else {
              exahype::offloading::OffloadingManager::getInstance().submitRequests(
@@ -4882,7 +4882,7 @@ void exahype::solvers::ADERDGSolver::progressStealing(exahype::solvers::ADERDGSo
            }
         }
       }
-   //   exahype::offloading::StealingManager::getInstance().progressRequests();
+   //   exahype::offloading::OffloadingManager::getInstance().progressRequests();
     }
 
     MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, comm, &receivedTask, &stat);
@@ -4891,17 +4891,17 @@ void exahype::solvers::ADERDGSolver::progressStealing(exahype::solvers::ADERDGSo
   time+= MPI_Wtime();
  
   //if(time>0.01) {
-  //  logInfo("progressStealing","Iprobe loop took "<<time<<"s");
+  //  logInfo("progressOffloading","Iprobe loop took "<<time<<"s");
   //}
-  // now, a different thread can progress the stealing
-  //exahype::offloading::StealingManager::getInstance().resetRunningAndReceivingBack();
+  // now, a different thread can progress the offloading
+  //exahype::offloading::OffloadingManager::getInstance().resetRunningAndReceivingBack();
   lock.free();
 
-#if defined(PerformanceAnalysisStealing)
+#if defined(PerformanceAnalysisOffloading)
   watch.stopTimer();
   if(watch.getCalendarTime() >= 0.0) {
     logInfo(
-        "endStealingManager()",
+        "endOffloadingManager()",
         "time=" << std::fixed <<
         watch.getCalendarTime() <<
         ", cpu time=" <<
@@ -4917,16 +4917,16 @@ void exahype::solvers::ADERDGSolver::progressStealing(exahype::solvers::ADERDGSo
 
 bool exahype::solvers::ADERDGSolver::tryToReceiveTaskBack(exahype::solvers::ADERDGSolver* solver, const void* cellDescription) {
 
-  // First, we ensure here that only one thread at a time progresses stealing
+  // First, we ensure here that only one thread at a time progresses offloading
   // this attempts to avoid multithreaded MPI problems
-  tarch::multicore::Lock lock(StealingSemaphore, false);
+  tarch::multicore::Lock lock(OffloadingSemaphore, false);
   bool canRun = lock.tryLock();
   if(!canRun) {
-#if defined(PerformanceAnalysisStealingDetailed)
+#if defined(PerformanceAnalysisOffloadingDetailed)
     watch.stopTimer();
     if(watch.getCalendarTime() >= 0.0) {
       logInfo(
-          "progressStealing() ",
+          "progressOffloading() ",
           "couldn't run "<<
           "time=" << std::fixed <<
           watch.getCalendarTime() <<
@@ -4940,7 +4940,7 @@ bool exahype::solvers::ADERDGSolver::tryToReceiveTaskBack(exahype::solvers::ADER
 
   return exahype::offloading::OffloadingManager::getInstance().progressReceiveBackRequests();
 
-#if defined(StealingNoEarlyReceiveBacks)
+#if defined(OffloadingNoEarlyReceiveBacks)
   int tag, srcRank, myRank;
   myRank = tarch::parallel::Node::getInstance().getRank();
   if(cellDescription==nullptr) {
@@ -4962,7 +4962,7 @@ bool exahype::solvers::ADERDGSolver::tryToReceiveTaskBack(exahype::solvers::ADER
   MPI_Comm commMapped = exahype::offloading::OffloadingManager::getInstance().getMPICommunicatorMapped();
   MPI_Iprobe(srcRank, tag, commMapped, &receivedTaskBack, &statMapped);
   if(receivedTaskBack) {
-      //exahype::offloading::StealingManager::getInstance().setRunningAndReceivingBack();
+      //exahype::offloading::OffloadingManager::getInstance().setRunningAndReceivingBack();
       tbb::concurrent_hash_map<int, CellDescription*>::accessor a_tagToCellDesc;
       bool found = solver->_mapTagToCellDesc.find(a_tagToCellDesc, statMapped.MPI_TAG);
       assertion(found);
@@ -4988,17 +4988,17 @@ bool exahype::solvers::ADERDGSolver::tryToReceiveTaskBack(exahype::solvers::ADER
       lock.free();
       return true;
   }
-  // now, a different thread can progress the stealing
+  // now, a different thread can progress the offloading
   lock.free();
   return false;
 #else
   lock.free();
   return true;
 #endif
-  //return exahype::offloading::StealingManager::getInstance().hasOutstandingRequestOfType(exahype::offloading::RequestType::receiveBack);
+  //return exahype::offloading::OffloadingManager::getInstance().hasOutstandingRequestOfType(exahype::offloading::RequestType::receiveBack);
 }
 
-#ifdef StealingUseProgressTask
+#ifdef OffloadingUseProgressTask
 //TODO: may not be needed but left for now
 exahype::solvers::ADERDGSolver::ReceiveJob::ReceiveJob(ADERDGSolver& solver)
   :  tarch::multicore::jobs::Job(tarch::multicore::jobs::JobType::BackgroundTask, 0, tarch::multicore::DefaultPriority*8),
@@ -5007,7 +5007,7 @@ exahype::solvers::ADERDGSolver::ReceiveJob::ReceiveJob(ADERDGSolver& solver)
 bool exahype::solvers::ADERDGSolver::ReceiveJob::run( bool isCalledOnMaster ) {
   MPI_Status stat, stat2;
   MPI_Comm comm = exahype::offloading::OffloadingManager::getInstance().getMPICommunicator();
-  //MPI_Comm commStatus = exahype::offloading::StealingManager::getInstance().getMPICommunicatorStatus();
+  //MPI_Comm commStatus = exahype::offloading::OffloadingManager::getInstance().getMPICommunicatorStatus();
   int receivedTask = -1;
   int receivedStatus = -1;
   int lastRecvTag = -1;
@@ -5015,7 +5015,7 @@ bool exahype::solvers::ADERDGSolver::ReceiveJob::run( bool isCalledOnMaster ) {
 
   if(isCalledOnMaster) return true;
 
-  tarch::multicore::Lock lock(StealingSemaphore, false);
+  tarch::multicore::Lock lock(OffloadingSemaphore, false);
   bool canRun = lock.tryLock();
   while(!canRun) {
      canRun = lock.tryLock();
@@ -5030,7 +5030,7 @@ bool exahype::solvers::ADERDGSolver::ReceiveJob::run( bool isCalledOnMaster ) {
        if(receivedStatus) {
          int terminatedSender = stat2.MPI_SOURCE;
          logInfo("run()","active sender "<<terminatedSender<<" has sent termination signal ");
-         exahype::offloading::StealingManager::getInstance().receiveCompleted(terminatedSender);
+         exahype::offloading::OffloadingManager::getInstance().receiveCompleted(terminatedSender);
          ActiveSenders.erase(terminatedSender);
        }*/
 
@@ -5073,7 +5073,7 @@ bool exahype::solvers::ADERDGSolver::ReceiveJob::run( bool isCalledOnMaster ) {
 			 &(data->_metadata[0]));
        
            if(tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs()<=1) {
-             //logInfo("progressStealing()","running out of tasks and could not receive stolen task so we just block!");
+             //logInfo("progressOffloading()","running out of tasks and could not receive stolen task so we just block!");
              double wtime = -MPI_Wtime();
              exahype::offloading::OffloadingManager::getInstance().submitRequests(
                            receiveRequests,
@@ -5086,7 +5086,7 @@ bool exahype::solvers::ADERDGSolver::ReceiveJob::run( bool isCalledOnMaster ) {
 			   true);
              wtime+= MPI_Wtime();
              if(wtime>0.01)
-               logInfo("progressStealing()","blocking for stolen task took too long:"<<wtime<<"s"); 
+               logInfo("progressOffloading()","blocking for stolen task took too long:"<<wtime<<"s");
            }
            else {
              exahype::offloading::OffloadingManager::getInstance().submitRequests(
@@ -5117,7 +5117,7 @@ exahype::solvers::ADERDGSolver::ReceiveBackJob::ReceiveBackJob(ADERDGSolver& sol
     _solver(solver) {};
 
 bool exahype::solvers::ADERDGSolver::ReceiveBackJob::run( bool isCalledOnMaster ) {
-  tarch::multicore::Lock lock(StealingSemaphore, false);
+  tarch::multicore::Lock lock(OffloadingSemaphore, false);
   bool canRun = lock.tryLock();
   while(!canRun) {
      canRun = lock.tryLock();
@@ -5138,7 +5138,7 @@ bool exahype::solvers::ADERDGSolver::ReceiveBackJob::run( bool isCalledOnMaster 
     MPI_Comm commMapped = exahype::offloading::OffloadingManager::getInstance().getMPICommunicatorMapped();
     MPI_Iprobe(srcRank, tag, commMapped, &receivedTaskBack, &statMapped);
     if(receivedTaskBack) {
-      //exahype::offloading::StealingManager::getInstance().setRunningAndReceivingBack();
+      //exahype::offloading::OffloadingManager::getInstance().setRunningAndReceivingBack();
       tbb::concurrent_hash_map<int, CellDescription*>::accessor a_tagToCellDesc;
       bool found = _solver._mapTagToCellDesc.find(a_tagToCellDesc, statMapped.MPI_TAG);
       assertion(found);
@@ -5171,32 +5171,32 @@ bool exahype::solvers::ADERDGSolver::ReceiveBackJob::run( bool isCalledOnMaster 
 }
 #endif
 
-exahype::solvers::ADERDGSolver::StealingManagerJob::StealingManagerJob(ADERDGSolver& solver) :
-#ifndef StealingUseProgressThread  
+exahype::solvers::ADERDGSolver::OffloadingManagerJob::OffloadingManagerJob(ADERDGSolver& solver) :
+#ifndef OffloadingUseProgressThread
  tarch::multicore::jobs::Job(tarch::multicore::jobs::JobType::BackgroundTask, 0, tarch::multicore::DefaultPriority),
 #endif
   _solver(solver),
   _state(State::Running) {}
 
-exahype::solvers::ADERDGSolver::StealingManagerJob::~StealingManagerJob() {}
+exahype::solvers::ADERDGSolver::OffloadingManagerJob::~OffloadingManagerJob() {}
 
-/*bool exahype::solvers::ADERDGSolver::StealingManagerJob::operator()() {
+/*bool exahype::solvers::ADERDGSolver::OffloadingManagerJob::operator()() {
   return run();
   //return true;
 }*/
 
-#if defined(StealingUseProgressThread)  
-tbb::task* exahype::solvers::ADERDGSolver::StealingManagerJob::execute() {
+#if defined(OffloadingUseProgressThread)
+tbb::task* exahype::solvers::ADERDGSolver::OffloadingManagerJob::execute() {
    while(run( false )) {};
    return nullptr;
 }
 #endif
 
-bool exahype::solvers::ADERDGSolver::StealingManagerJob::run( bool isCalledOnMaster ) {
+bool exahype::solvers::ADERDGSolver::OffloadingManagerJob::run( bool isCalledOnMaster ) {
 // static bool terminated = false;
   bool result=true;
 #ifdef USE_ITAC
-//  VT_begin(event_stealingManager);
+//  VT_begin(event_offloadingManager);
 #endif
   //logInfo("run()", "starting... ");
 
@@ -5213,97 +5213,97 @@ bool exahype::solvers::ADERDGSolver::StealingManagerJob::run( bool isCalledOnMas
       if( isCalledOnMaster ) {
           return true; 
       }
-      exahype::solvers::ADERDGSolver::progressStealing(&_solver);
+      exahype::solvers::ADERDGSolver::progressOffloading(&_solver);
       
-      //exahype::solvers::ADERDGSolver::setMaxNumberOfIprobesInProgressStealing( std::numeric_limits<int>::max() );
+      //exahype::solvers::ADERDGSolver::setMaxNumberOfIprobesInProgressOffloading( std::numeric_limits<int>::max() );
 
     //  logInfo("run()", "reschedule... ");
       break;
     }
     case State::Resume:
-      //logInfo("stealingManager", " resumed ");
+      //logInfo("offloadingManager", " resumed ");
       _state = State::Running;
       break;
     case State::Paused:
-      //logInfo("stealingManager", " paused ");
+      //logInfo("offloadingManager", " paused ");
       result = false;
       break;
     case State::Terminate:
     {
       exahype::offloading::PerformanceMonitor::getInstance().stop();
       if(!exahype::offloading::PerformanceMonitor::getInstance().isGloballyTerminated()) {
-        exahype::solvers::ADERDGSolver::progressStealing(&_solver);
+        exahype::solvers::ADERDGSolver::progressOffloading(&_solver);
         return true;
       }
-      logInfo("stealingManager", " terminated ");
+      logInfo("offloadingManager", " terminated ");
       result = false;
 
       break;
     }
   }
 #ifdef USE_ITAC
-//  VT_end(event_stealingManager);
+//  VT_end(event_offloadingManager);
 #endif
   return result;
 };
 
-void exahype::solvers::ADERDGSolver::StealingManagerJob::terminate() {
+void exahype::solvers::ADERDGSolver::OffloadingManagerJob::terminate() {
   _state = State::Terminate;
 };
 
-#ifndef StealingUseProgressThread
-void exahype::solvers::ADERDGSolver::StealingManagerJob::pause() {
+#ifndef OffloadingUseProgressThread
+void exahype::solvers::ADERDGSolver::OffloadingManagerJob::pause() {
   _state = State::Paused;
 };
 
-void exahype::solvers::ADERDGSolver::StealingManagerJob::resume() {
+void exahype::solvers::ADERDGSolver::OffloadingManagerJob::resume() {
   _state = State::Resume;
 };
 #endif
 
-void exahype::solvers::ADERDGSolver::startStealingManager(bool spawn) {
-  logInfo("startStealingManager", " starting ");
-#ifdef StealingUseProgressThread
+void exahype::solvers::ADERDGSolver::startOffloadingManager(bool spawn) {
+  logInfo("startOffloadingManager", " starting ");
+#ifdef OffloadingUseProgressThread
   static tbb::task_group_context  backgroundTaskContext(tbb::task_group_context::isolated);
-  _stealingManagerJob = new( backgroundTaskContext ) StealingManagerJob(*this);
-  //_stealingManagerJob = new StealingManagerJob(*this);
-  //assertion(_stealingManagerJob!=nullptr);
-  tbb::task::enqueue(*_stealingManagerJob);
+  _offloadingManagerJob = new( backgroundTaskContext ) OffloadingManagerJob(*this);
+  //_offloadingManagerJob = new OffloadingManagerJob(*this);
+  //assertion(_offloadingManagerJob!=nullptr);
+  tbb::task::enqueue(*_offloadingManagerJob);
 #else
-  _stealingManagerJob = new StealingManagerJob(*this);
+  _offloadingManagerJob = new OffloadingManagerJob(*this);
   if(spawn)
-    peano::datatraversal::TaskSet spawnedSet(_stealingManagerJob);
-  //peano::datatraversal::TaskSet spawnedSet(_stealingManagerJob, peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible);
+    peano::datatraversal::TaskSet spawnedSet(_offloadingManagerJob);
+  //peano::datatraversal::TaskSet spawnedSet(_offloadingManagerJob, peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible);
 #endif
 }
 
-#ifndef StealingUseProgressThread
-void exahype::solvers::ADERDGSolver::pauseStealingManager() {
-  //logInfo("pauseStealingManager", "pausing ");
-  _stealingManagerJob->pause();
+#ifndef OffloadingUseProgressThread
+void exahype::solvers::ADERDGSolver::pauseOffloadingManager() {
+  //logInfo("pauseOffloadingManager", "pausing ");
+  _offloadingManagerJob->pause();
 }
 
-void exahype::solvers::ADERDGSolver::resumeStealingManager() {
-  //logInfo("resumeStealingManager", "resuming ");
+void exahype::solvers::ADERDGSolver::resumeOffloadingManager() {
+  //logInfo("resumeOffloadingManager", "resuming ");
   //old job will be deleted so we create a new one here
-  _stealingManagerJob = new StealingManagerJob(*this);
-  _stealingManagerJob->resume();
-  peano::datatraversal::TaskSet spawnedSet(_stealingManagerJob);
+  _offloadingManagerJob = new OffloadingManagerJob(*this);
+  _offloadingManagerJob->resume();
+  peano::datatraversal::TaskSet spawnedSet(_offloadingManagerJob);
 }
 #endif
 
-void exahype::solvers::ADERDGSolver::stopStealingManager() {
-  logInfo("stopStealingManager", " stopping ");
-  //assert(_stealingManagerJob != nullptr);
-  _stealingManagerJob->terminate();
+void exahype::solvers::ADERDGSolver::stopOffloadingManager() {
+  logInfo("stopOffloadingManager", " stopping ");
+  //assert(_offloadingManagerJob != nullptr);
+  _offloadingManagerJob->terminate();
   while(!exahype::offloading::PerformanceMonitor::getInstance().isGloballyTerminated()) {tarch::multicore::jobs::finishToProcessBackgroundJobs(); };
   //while(tarch::multicore::jobs::finishToProcessBackgroundJobs()) {};
 
-  //assert(_stealingManagerJob != nullptr);
-  //delete _stealingManagerJob;
+  //assert(_offloadingManagerJob != nullptr);
+  //delete _offloadingManagerJob;
 }
 
-#ifdef StealingUseProgressTask
+#ifdef OffloadingUseProgressTask
 void exahype::solvers::ADERDGSolver::spawnReceiveBackJob() {
   if(NumberOfReceiveBackJobs==0) {
     NumberOfReceiveBackJobs++;
@@ -5411,7 +5411,7 @@ void exahype::solvers::ADERDGSolver::isendStealablePredictionJob(
 
   int i = 0;
   int ierr;
-  //MPI_Comm comm = exahype::offloading::StealingManager::getInstance().getMPICommunicator();
+  //MPI_Comm comm = exahype::offloading::OffloadingManager::getInstance().getMPICommunicator();
 
   if(metadata != nullptr) {
     ierr = MPI_Isend(metadata, 2*DIMENSIONS+2, MPI_DOUBLE, dest, tag, comm, &requests[i++]);
@@ -5452,7 +5452,7 @@ void exahype::solvers::ADERDGSolver::irecvStealablePredictionJob(
 	MPI_Request *requests,
 	double *metadata ) {
   int ierr;
-  //MPI_Comm comm = exahype::offloading::StealingManager::getInstance().getMPICommunicator();
+  //MPI_Comm comm = exahype::offloading::OffloadingManager::getInstance().getMPICommunicator();
   int i = 0;
 
   if(metadata != nullptr) {
@@ -5493,7 +5493,7 @@ void exahype::solvers::ADERDGSolver::recvStealablePredictionJob(
   MPI_Comm comm,
   double *metadata ) {
   int ierr;
-  //MPI_Comm comm = exahype::offloading::StealingManager::getInstance().getMPICommunicator();
+  //MPI_Comm comm = exahype::offloading::OffloadingManager::getInstance().getMPICommunicator();
 
   if(metadata != nullptr) {
     ierr = MPI_Recv(metadata, 2*DIMENSIONS+2, MPI_DOUBLE, srcRank, tag, comm, MPI_STATUS_IGNORE);
@@ -5593,7 +5593,7 @@ bool exahype::solvers::ADERDGSolver::StealablePredictionJob::run( bool isCalledO
 
        logDebug("run()","measured time per STP "<<watch.getCalendarTime());
 
-       exahype::offloading::StealingAnalyser::getInstance().setTimePerSTP(watch.getCalendarTime());
+       exahype::offloading::OffloadingAnalyser::getInstance().setTimePerSTP(watch.getCalendarTime());
      }
      else
        handleLocalExecution();
@@ -5608,12 +5608,12 @@ bool exahype::solvers::ADERDGSolver::StealablePredictionJob::handleLocalExecutio
   int myRank = tarch::parallel::Node::getInstance().getRank();
   bool result = false;
 
-#if defined(PerformanceAnalysisStealing)
+#if defined(PerformanceAnalysisOffloading)
   tarch::timing::Watch watch("exahype::offloading::", "-", false,false);
   watch.startTimer();
 #endif
-#if defined(StealingUseProfiler)
-  exahype::offloading::StealingProfiler::getInstance().beginComputation();
+#if defined(OffloadingUseProfiler)
+  exahype::offloading::OffloadingProfiler::getInstance().beginComputation();
   double time = -MPI_Wtime();
 #endif 
 
@@ -5650,11 +5650,11 @@ bool exahype::solvers::ADERDGSolver::StealablePredictionJob::handleLocalExecutio
        true);
   }
   exahype::offloading::PerformanceMonitor::getInstance().decCurrentTasks();
-#if defined(StealingUseProfiler)
+#if defined(OffloadingUseProfiler)
   time += MPI_Wtime();
-  exahype::offloading::StealingProfiler::getInstance().endComputation(time);
+  exahype::offloading::OffloadingProfiler::getInstance().endComputation(time);
 #endif
-#if defined(PerformanceAnalysisStealing)
+#if defined(PerformanceAnalysisOffloading)
   watch.stopTimer();
   if(watch.getCalendarTime() >= 0.0) {
     logInfo(
@@ -5669,7 +5669,7 @@ bool exahype::solvers::ADERDGSolver::StealablePredictionJob::handleLocalExecutio
 #endif
 
   if(_originRank!=myRank) {
-#if defined(PerformanceAnalysisStealing)
+#if defined(PerformanceAnalysisOffloading)
     watch.startTimer();
 #endif
     MPI_Request sendBackRequests[4];
@@ -5684,7 +5684,7 @@ bool exahype::solvers::ADERDGSolver::StealablePredictionJob::handleLocalExecutio
 					sendBackRequests);
     exahype::offloading::OffloadingManager::getInstance().submitRequests(sendBackRequests, 4, _tag, _originRank, sendBackHandler, exahype::offloading::RequestType::sendBack, &_solver);
 
-#if defined(PerformanceAnalysisStealing)
+#if defined(PerformanceAnalysisOffloading)
     watch.stopTimer();
     if(watch.getCalendarTime() >= 0.0) {
       logInfo(
@@ -5698,7 +5698,7 @@ bool exahype::solvers::ADERDGSolver::StealablePredictionJob::handleLocalExecutio
 #endif
   }
   else {
-#if defined(PerformanceAnalysisStealing)
+#if defined(PerformanceAnalysisOffloading)
     watch.startTimer();
 #endif
     NumberOfEnclaveJobs--;
@@ -5708,7 +5708,7 @@ bool exahype::solvers::ADERDGSolver::StealablePredictionJob::handleLocalExecutio
 }
 
 void exahype::solvers::ADERDGSolver::StealablePredictionJob::receiveHandler(exahype::solvers::Solver* solver, int tag, int remoteRank) {
-#if defined(PerformanceAnalysisStealingDetailed)
+#if defined(PerformanceAnalysisOffloadingDetailed)
   logInfo("receiveHandler","successful receive request");
 #endif
   //logInfo("receiveHandler","successful receive request");
@@ -5719,15 +5719,15 @@ void exahype::solvers::ADERDGSolver::StealablePredictionJob::receiveHandler(exah
   data = a_tagRankToData->second;
   a_tagRankToData.release();
 
-  exahype::offloading::StealingAnalyser::getInstance().notifyReceivedSTPJob();
+  exahype::offloading::OffloadingAnalyser::getInstance().notifyReceivedSTPJob();
   StealablePredictionJob *job= static_cast<exahype::solvers::ADERDGSolver*> (solver)->createFromData(data, remoteRank, tag);
   peano::datatraversal::TaskSet spawnedSet(job);
 
-  exahype::offloading::StealingProfiler::getInstance().notifyReceivedTask(remoteRank);
+  exahype::offloading::OffloadingProfiler::getInstance().notifyReceivedTask(remoteRank);
 }
 
 void exahype::solvers::ADERDGSolver::StealablePredictionJob::receiveBackHandler(exahype::solvers::Solver* solver, int tag, int remoteRank) {
-#if defined(PerformanceAnalysisStealingDetailed)
+#if defined(PerformanceAnalysisOffloadingDetailed)
   static std::atomic<int> cnt=0;
   cnt++;
   logInfo("receiveBackHandler","successful receiveBack request, cnt "<<cnt);
@@ -5765,7 +5765,7 @@ void exahype::solvers::ADERDGSolver::StealablePredictionJob::receiveBackHandler(
 }
 
 void exahype::solvers::ADERDGSolver::StealablePredictionJob::sendBackHandler(exahype::solvers::Solver* solver, int tag, int remoteRank) {
-#if defined(PerformanceAnalysisStealingDetailed)
+#if defined(PerformanceAnalysisOffloadingDetailed)
   logInfo("sendBackHandler","successful sendBack request");
 #endif
   //logInfo("sendBackHandler","successful sendBack request");
@@ -5784,7 +5784,7 @@ void exahype::solvers::ADERDGSolver::StealablePredictionJob::sendBackHandler(exa
 }
 
 void exahype::solvers::ADERDGSolver::StealablePredictionJob::sendHandler(exahype::solvers::Solver* solver, int tag, int remoteRank) {
-#if defined(PerformanceAnalysisStealingDetailed)
+#if defined(PerformanceAnalysisOffloadingDetailed)
   static std::atomic<int> cnt=0;
   cnt++;
 #endif
@@ -5798,7 +5798,7 @@ void exahype::solvers::ADERDGSolver::StealablePredictionJob::sendHandler(exahype
   delete[] metaData;
 
 
-#if !defined(StealingNoEarlyReceiveBacks)
+#if !defined(OffloadingNoEarlyReceiveBacks)
   logInfo("sendHandler","posting Irecv back early");
   MPI_Comm commMapped = exahype::offloading::OffloadingManager::getInstance().getMPICommunicatorMapped();
   tbb::concurrent_hash_map<int, CellDescription*>::accessor a_tagToCellDesc;

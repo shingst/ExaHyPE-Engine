@@ -11,7 +11,7 @@
  * For the full license text, see LICENSE.txt
  **/
 
-#if  defined(SharedTBB)  && defined(Parallel) && defined(DistributedStealing)
+#if  defined(SharedTBB)  && defined(Parallel) && defined(DistributedOffloading)
 #include "exahype/offloading/PerformanceMonitor.h"
 
 #include <algorithm>
@@ -21,7 +21,7 @@
 #include "tarch/parallel/Node.h"
 #include "tarch/timing/Watch.h"
 
-#include "exahype/offloading/StealingProfiler.h"
+#include "exahype/offloading/OffloadingProfiler.h"
 #include "exahype/offloading/DynamicDistributor.h"
 #include "exahype/offloading/StaticDistributor.h"
 #include "exahype/offloading/OffloadingManager.h"
@@ -29,7 +29,7 @@
 
 #define TERMINATE_SIGNAL -1.0
 
-tarch::logging::Log exahype::offloading::PerformanceMonitor::_log( "exahype::stealing::PerformanceMonitor" );
+tarch::logging::Log exahype::offloading::PerformanceMonitor::_log( "exahype::offloading::PerformanceMonitor" );
 
 exahype::offloading::PerformanceMonitor::PerformanceMonitor() :
     _isStarted(true),
@@ -156,21 +156,21 @@ void exahype::offloading::PerformanceMonitor::setCurrentTasks(int num) {
 }
 
 void exahype::offloading::PerformanceMonitor::incCurrentTasks() {
-#ifndef StealingStrategyDiffusive
+#ifndef OffloadingStrategyDiffusive
   assertion(_currentTasks>=0);
   _currentTasks++;
 #endif
 }
 
 void exahype::offloading::PerformanceMonitor::decCurrentTasks() {
-#ifndef StealingStrategyDiffusive
+#ifndef OffloadingStrategyDiffusive
   _currentTasks--;
   assertion(_currentTasks>=0);
 #endif
 }
 
 void exahype::offloading::PerformanceMonitor::decRemainingTasks() {
-#ifndef StealingStrategyDiffusive
+#ifndef OffloadingStrategyDiffusive
   tarch::multicore::Lock lock(_semaphore);
   _remainingTasks--;
   if(_remainingTasks==0) {
@@ -194,13 +194,13 @@ void exahype::offloading::PerformanceMonitor::progressGather() {
   //int completed_blacklist = 0;
 
   int completed_fused = 0;
-//#if defined(PerformanceAnalysisStealing)
+//#if defined(PerformanceAnalysisOffloading)
 //  double timeSinceLastGather=0;
 //  static std::atomic<double> lastGather = 0;
 //  static std::atomic<int> unsuccessful  = 0;
 //  static std::atomic<int> successful    = 0;
 
-//  tarch::timing::Watch watch("exahype::stealing::", "-", false,false);
+//  tarch::timing::Watch watch("exahype::offloading::", "-", false,false);
 //  watch.startTimer();
 
 //  timeSinceLastGather = lastGather + MPI_Wtime();
@@ -210,7 +210,7 @@ void exahype::offloading::PerformanceMonitor::progressGather() {
 
 //  if( !isGloballyTerminated() && _gatherTasksRequest!=MPI_REQUEST_NULL) {
 //	double time = - MPI_Wtime();
-//    exahype::stealing::StealingProfiler::getInstance().beginCommunication();
+//    exahype::offloading::OffloadingProfiler::getInstance().beginCommunication();
 //    int err = MPI_Test(&_gatherTasksRequest, &completed_tasks, MPI_STATUS_IGNORE); //assert(err==MPI_SUCCESS);
 //    time += MPI_Wtime();
 
@@ -220,13 +220,13 @@ void exahype::offloading::PerformanceMonitor::progressGather() {
 //    //logInfo("performance monitor", "progressing "<<_gatherTasksRequest);
 //    
 
-//#if defined(PerformanceAnalysisStealing)
+//#if defined(PerformanceAnalysisOffloading)
 //    if(completed) {
-//      exahype::stealing::StealingProfiler::getInstance().endCommunication(true, time);
+//      exahype::offloading::OffloadingProfiler::getInstance().endCommunication(true, time);
 //      successful++;
 //    }
 //    else {
-//      exahype::stealing::StealingProfiler::getInstance().endCommunication(false, time);
+//      exahype::offloading::OffloadingProfiler::getInstance().endCommunication(false, time);
 //      unsuccessful++;
 //    }
 //    if(successful%1000==0 || unsuccessful%10000==0) {
@@ -237,7 +237,7 @@ void exahype::offloading::PerformanceMonitor::progressGather() {
 
 //  if( !isGloballyTerminated() && _gatherWaitingTimesRequest!=MPI_REQUEST_NULL) {
 ////    double time = - MPI_Wtime();
-////    exahype::stealing::StealingProfiler::getInstance().beginCommunication();
+////    exahype::offloading::OffloadingProfiler::getInstance().beginCommunication();
 //    //logInfo("performance monitoŕ()","progressing waiting times");
 //    int err= MPI_Test(&_gatherWaitingTimesRequest, &completed_waiting_times, MPI_STATUS_IGNORE);
 //   //assert(err==MPI_SUCCESS);
@@ -249,7 +249,7 @@ void exahype::offloading::PerformanceMonitor::progressGather() {
 //     int err= MPI_Test(&_allreduceBlacklistRequest, &completed_blacklist, MPI_STATUS_IGNORE);
 //  }
 
-//#if defined(PerformanceAnalysisStealing)
+//#if defined(PerformanceAnalysisOffloading)
 //  watch.stopTimer();
 //  if(watch.getCalendarTime() >= 0.00001) {
 //    logInfo(
@@ -266,7 +266,7 @@ void exahype::offloading::PerformanceMonitor::progressGather() {
 
 //  if(completed_tasks) {
 //  //  logInfo("progressGather","collected new tasks snapshot");
-//    stealing::StealingProfiler::getInstance().notifyPerformanceUpdate();
+//    offloading::OffloadingProfiler::getInstance().notifyPerformanceUpdate();
 //    std::copy(&_currentTasksReceiveBuffer[0], &_currentTasksReceiveBuffer[nnodes], &_currentTasksSnapshot[0]);
 // 
 //    //std::string str;
@@ -274,19 +274,19 @@ void exahype::offloading::PerformanceMonitor::progressGather() {
 //    //str+="\n";
 //    //logInfo("performance monitor", str);
 
-//#if defined(PerformanceAnalysisStealing)
+//#if defined(PerformanceAnalysisOffloading)
 //    std::string str="received new update, current load "+std::to_string(_currentTasks.load());
 ////    if(timeSinceLastGather>0.001) {
 ////      str=str+ " took too long: "+std::to_string(timeSinceLastGather);
-////      stealing::StealingProfiler::getInstance().notifyLatePerformanceUpdate();
+////      offloading::OffloadingProfiler::getInstance().notifyLatePerformanceUpdate();
 ////    }
 
 //#endif
 //    if(_currentTasks.load()>0 && std::all_of(&_currentTasksSnapshot[0], &_currentTasksSnapshot[nnodes], [](int i) {return i>=0;})) {
-//      exahype::stealing::DynamicDistributor::getInstance().computeNewLoadDistribution(_currentTasksSnapshot);
-//      stealing::StealingProfiler::getInstance().notifyStealingDecision();
+//      exahype::offloading::DynamicDistributor::getInstance().computeNewLoadDistribution(_currentTasksSnapshot);
+//      offloading::OffloadingProfiler::getInstance().notifyOffloadingDecision();
 //    }
-//#if defined(PerformanceAnalysisStealing)
+//#if defined(PerformanceAnalysisOffloading)
 //    watch.stopTimer();
 //    if(watch.getCalendarTime() >= 0.00001) {
 //      logInfo(
@@ -325,7 +325,7 @@ void exahype::offloading::PerformanceMonitor::progressGather() {
 //  if(_gatherTasksRequest==MPI_REQUEST_NULL && !isGloballyTerminated()) {
 //    //logInfo("progressGather","post gather tasks");
 //    //postGatherTasks();
-//#if defined(PerformanceAnalysisStealing)
+//#if defined(PerformanceAnalysisOffloading)
 //    lastGather=-MPI_Wtime();
 //    watch.stopTimer();
 //    if(watch.getCalendarTime() >= 0.00001) {
@@ -379,7 +379,7 @@ void exahype::offloading::PerformanceMonitor::progressGather() {
     }
     _terminatedGlobally = newGlobalTerminationStatus;
     if(_terminatedGlobally)
-     logInfo("progressStealing", "received terminated"<<_terminatedGlobally);
+     logInfo("progressOffloading", "received terminated"<<_terminatedGlobally);
 
  
     for(int j=0; j<nnodes; j++) {
@@ -399,7 +399,7 @@ void exahype::offloading::PerformanceMonitor::progressGather() {
   lock.free();
 }
 
-//void exahype::stealing::PerformanceMonitor::postGatherTasks() {
+//void exahype::offloading::PerformanceMonitor::postGatherTasks() {
 //  int myRank = tarch::parallel::Node::getInstance().getRank();
 
 //  _currentTasksSendBuffer = _isStarted ? _currentTasks.load() : TERMINATE_SIGNAL;
@@ -408,10 +408,10 @@ void exahype::offloading::PerformanceMonitor::progressGather() {
 //  //  logInfo("postGatherTasks","posted terminate signal");
 
 //  assert(_gatherTasksRequest==MPI_REQUEST_NULL);
-//  int err = MPI_Iallgather(&_currentTasksSendBuffer, 1, MPI_INTEGER, _currentTasksReceiveBuffer, 1, MPI_INTEGER, exahype::stealing::StealingManager::getInstance().getMPICommunicator(), &_gatherTasksRequest); //assert(err==MPI_SUCCESS);
+//  int err = MPI_Iallgather(&_currentTasksSendBuffer, 1, MPI_INTEGER, _currentTasksReceiveBuffer, 1, MPI_INTEGER, exahype::offloading::OffloadingManager::getInstance().getMPICommunicator(), &_gatherTasksRequest); //assert(err==MPI_SUCCESS);
 //}
 
-//void exahype::stealing::PerformanceMonitor::postGatherWaitingTimes() {
+//void exahype::offloading::PerformanceMonitor::postGatherWaitingTimes() {
 //  int nnodes    = tarch::parallel::Node::getInstance().getNumberOfNodes();
 //  std::copy(&_currentWaitingTimes[0], &_currentWaitingTimes[nnodes], &_currentWaitingTimesSendBuffer[0]);
 
@@ -423,20 +423,20 @@ void exahype::offloading::PerformanceMonitor::progressGather() {
 //  //}
 //  assert(_gatherWaitingTimesRequest==MPI_REQUEST_NULL);
 //  int err = MPI_Iallgather(&_currentWaitingTimesSendBuffer[0], nnodes, MPI_INTEGER, &_currentWaitingTimesReceiveBuffer[0],
-//                   nnodes, MPI_INTEGER, exahype::stealing::StealingManager::getInstance().getMPICommunicator(),
+//                   nnodes, MPI_INTEGER, exahype::offloading::OffloadingManager::getInstance().getMPICommunicator(),
 //                   &_gatherWaitingTimesRequest);// assert(err==MPI_SUCCESS);
 
 //  //nposted++;
 //  //logInfo("postGatherWaitingTimes", "nposted "<<nposted<< " request "<<_gatherWaitingTimesRequest);
 //}
 
-//void exahype::stealing::PerformanceMonitor::postAllreduceBlacklist() {
+//void exahype::offloading::PerformanceMonitor::postAllreduceBlacklist() {
 //  int nnodes  = tarch::parallel::Node::getInstance().getNumberOfNodes();
 //  std::copy(&_currentBlacklist[0], &_currentBlacklist[nnodes], &_currentBlacklistSendBuffer[0]);
 
 //  assert(_allreduceBlacklistRequest==MPI_REQUEST_NULL);
 //  int err = MPI_Iallreduce(&_currentBlacklistSendBuffer[0], &_currentBlacklistReceiveBuffer[0], nnodes, MPI_DOUBLE, MPI_SUM,
-//             exahype::stealing::StealingManager::getInstance().getMPICommunicator(), &_allreduceBlacklistRequest);
+//             exahype::offloading::OffloadingManager::getInstance().getMPICommunicator(), &_allreduceBlacklistRequest);
 //}
 
 void exahype::offloading::PerformanceMonitor::postFusedRequest() {

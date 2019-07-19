@@ -28,7 +28,7 @@
 #include "exahype/mappings/RefinementStatusSpreading.h"
 
 
-#ifdef DistributedStealing
+#ifdef DistributedOffloading
 #include "exahype/offloading/PerformanceMonitor.h"
 #include "exahype/offloading/AggressiveDistributor.h"
 #include "exahype/offloading/AggressiveCCPDistributor.h"
@@ -243,16 +243,16 @@ void exahype::mappings::FinaliseMeshRefinement::endIteration(
   NumberOfEnclaveCells = _numberOfEnclaveCells;
   NumberOfSkeletonCells = _numberOfSkeletonCells;
 
-#ifdef DistributedStealing
+#ifdef DistributedOffloading
   exahype::offloading::PerformanceMonitor::getInstance().setTasksPerTimestep(_numberOfEnclaveCells + _numberOfSkeletonCells);
 
-    #if defined(DistributedStealing) 
+    #if defined(DistributedOffloading)
     for (auto* solver : exahype::solvers::RegisteredSolvers) {
       if (solver->getType()==exahype::solvers::Solver::Type::ADERDG) {
-        static_cast<exahype::solvers::ADERDGSolver*>(solver)->startStealingManager();
+        static_cast<exahype::solvers::ADERDGSolver*>(solver)->startOffloadingManager();
       }
       if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
-        static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->startStealingManager();
+        static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->startOffloadingManager();
       }
     } 
     #endif

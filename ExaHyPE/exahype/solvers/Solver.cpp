@@ -13,8 +13,8 @@
  * \author Dominic E. Charrier, Tobias Weinzierl
  **/
  
-#ifdef StealingUseProfiler
-#include "exahype/offloading/StealingProfiler.h"
+#ifdef OffloadingUseProfiler
+#include "exahype/offloading/OffloadingProfiler.h"
 #endif
 #include "exahype/solvers/Solver.h"
 

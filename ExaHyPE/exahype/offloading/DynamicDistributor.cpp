@@ -21,10 +21,10 @@
 #include "tarch/parallel/Node.h"
 #include "tarch/timing/Watch.h"
 
-#include "exahype/offloading/StealingProfiler.h"
+#include "exahype/offloading/OffloadingProfiler.h"
 #include "tarch/multicore/Core.h"
 
-tarch::logging::Log exahype::offloading::DynamicDistributor::_log( "exahype::stealing::DynamicDistributor" );
+tarch::logging::Log exahype::offloading::DynamicDistributor::_log( "exahype::offloading::DynamicDistributor" );
 
 exahype::offloading::DynamicDistributor::DynamicDistributor() {
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
@@ -118,9 +118,9 @@ void exahype::offloading::DynamicDistributor::computeNewLoadDistribution(int *cu
 
         if(input_r==myRank) {
           //_tasksToOffload[output_r]= inc_l;
-          //stealing::StealingProfiler::getInstance().notifyTargetOffloadedTask(inc_l, output_r);
+          //offloading::OffloadingProfiler::getInstance().notifyTargetOffloadedTask(inc_l, output_r);
           _tasksToOffload[output_r]= std::min(inc_l,1);
-          offloading::StealingProfiler::getInstance().notifyTargetOffloadedTask(std::min(inc_l,1), output_r);
+          offloading::OffloadingProfiler::getInstance().notifyTargetOffloadedTask(std::min(inc_l,1), output_r);
         }
       }
 
