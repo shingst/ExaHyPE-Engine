@@ -17,9 +17,8 @@
 
 #include <tarch/la/Vector.h>
 
-#include "../../../../DGMatrices.h"
-#include "../../../../GaussLegendreQuadrature.h"
-#include "../../../../KernelUtils.h"
+#include "kernels/GaussLegendreBasis.h"
+#include "kernels/KernelUtils.h"
 
 namespace kernels {
 namespace aderdg {
@@ -32,7 +31,7 @@ namespace c {
  * Depending on the template parameter noTimeAveraging, lFi
  * is either a space-time volume flux (false) or a time-averaged flux (true). 
  */
-template <bool useSourceOrNCP, bool useFlux, bool noTimeAveraging, const int numberOfVariables, int basisSize>
+template <typename SolverType, bool useSourceOrNCP, bool useFlux, bool noTimeAveraging, const int numberOfVariables, int basisSize>
 void volumeIntegralNonlinear(double* lduh, const double* const lFi,
                              const tarch::la::Vector<DIMENSIONS, double>& dx) {
   const int order = basisSize - 1;
@@ -53,8 +52,8 @@ void volumeIntegralNonlinear(double* lduh, const double* const lFi,
         // x-direction
         for (int j = 0; j < basisSize; j++) {
           const double weight =
-              kernels::gaussLegendreWeights[order][i] *
-              kernels::gaussLegendreWeights[order][j];
+              SolverType::weights[order][i] *
+              SolverType::weights[order][j];
           const double updateSize = weight * invDx[0];
 
           // Matrix product: (l, m) * (m, k) = (l, k)
@@ -62,7 +61,7 @@ void volumeIntegralNonlinear(double* lduh, const double* const lFi,
             for (int l = 0; l < numberOfVariables; l++) {
               for (int m = 0; m < basisSize; m++) {
                 lduh[idx(j, k, l)] += 
-                    kernels::Kxi[order][k][m] *
+                    SolverType::Kxi[order][k][m] *
                     lFi[idx_lFi(i, j, m, 0, l)] * updateSize;
               }
             }
@@ -72,8 +71,8 @@ void volumeIntegralNonlinear(double* lduh, const double* const lFi,
         // y-direction
         for (int k = 0; k < basisSize; k++) {
           const double weight =
-              kernels::gaussLegendreWeights[order][i] *
-              kernels::gaussLegendreWeights[order][k];
+              SolverType::weights[order][i] *
+              SolverType::weights[order][k];
           const double updateSize = weight * invDx[1];
 
           // Matrix product: (l, m) * (m, k) = (l, k)
@@ -81,7 +80,7 @@ void volumeIntegralNonlinear(double* lduh, const double* const lFi,
             for (int l = 0; l < numberOfVariables; l++) {
               for (int m = 0; m < basisSize; m++) {
                 lduh[idx(j, k, l)] += 
-                    kernels::Kxi[order][j][m] * 
+                    SolverType::Kxi[order][j][m] * 
                     lFi[idx_lFi(i, m, k, 1, l)] * updateSize;
               }
             }
@@ -99,9 +98,9 @@ void volumeIntegralNonlinear(double* lduh, const double* const lFi,
         for (int j = 0; j < basisSize; j++) {
           for (int k = 0; k < basisSize; k++) {
             const double weight =
-                kernels::gaussLegendreWeights[order][i] *
-                kernels::gaussLegendreWeights[order][j] *
-                kernels::gaussLegendreWeights[order][k];
+                SolverType::weights[order][i] *
+                SolverType::weights[order][j] *
+                SolverType::weights[order][k];
 
             for (int l = 0; l < numberOfVariables; l++) {
               lduh[idx(j, k, l)] += weight * lFi[idx_lFi(i, j, k, 2, l)];
@@ -119,7 +118,7 @@ void volumeIntegralNonlinear(double* lduh, const double* const lFi,
       // x-direction
       const int x_offset = 0 * basisSize2 * numberOfVariables;
       for (int j = 0; j < basisSize; j++) {
-        const double weight = kernels::gaussLegendreWeights[order][j];
+        const double weight = SolverType::weights[order][j];
         const double updateSize = weight * invDx[0];
 
         // Fortran: lduh(l, k, j) += lFi_x(l, m, j) * Kxi(m, k)
@@ -127,7 +126,7 @@ void volumeIntegralNonlinear(double* lduh, const double* const lFi,
         for (int k = 0; k < basisSize; k++) {
           for (int l = 0; l < numberOfVariables; l++) {
             for (int m = 0; m < basisSize; m++) {
-              lduh[idx(j, k, l)] += kernels::Kxi[order][k][m] *
+              lduh[idx(j, k, l)] += SolverType::Kxi[order][k][m] *
                   lFi[x_offset + idx(j, m, l)] * updateSize;
             }
           }
@@ -137,7 +136,7 @@ void volumeIntegralNonlinear(double* lduh, const double* const lFi,
       // y-direction
       const int y_offset = 1 * basisSize2 * numberOfVariables;
       for (int j = 0; j < basisSize; j++) {
-        const double weight = kernels::gaussLegendreWeights[order][j];
+        const double weight = SolverType::weights[order][j];
         const double updateSize = weight * invDx[1];
 
         // Fortran: lduh(l, j, k) += lFi_y(l, m, j) * Kxi(m, k)
@@ -145,7 +144,7 @@ void volumeIntegralNonlinear(double* lduh, const double* const lFi,
         for (int k = 0; k < basisSize; k++) {
           for (int l = 0; l < numberOfVariables; l++) {
             for (int m = 0; m < basisSize; m++) {
-              lduh[idx(k, j, l)] += kernels::Kxi[order][k][m] *
+              lduh[idx(k, j, l)] += SolverType::Kxi[order][k][m] *
                   lFi[y_offset + idx(j, m, l)] * updateSize;
             }
           }
@@ -159,8 +158,8 @@ void volumeIntegralNonlinear(double* lduh, const double* const lFi,
       const int s_offset = 2 * basisSize2 * numberOfVariables;
       for (int j = 0; j < basisSize; j++) {
         for (int k = 0; k < basisSize; k++) {
-          const double weight = kernels::gaussLegendreWeights[order][j] *
-                                kernels::gaussLegendreWeights[order][k];
+          const double weight = SolverType::weights[order][j] *
+                                SolverType::weights[order][k];
 
           // Fortran: lduh(:,k,j) += w * lShi(:,k,j)
           for (int l = 0; l < numberOfVariables; l++) {

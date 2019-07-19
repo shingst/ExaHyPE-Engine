@@ -20,15 +20,12 @@
 #include "peano/utils/Globals.h"
 #include "tarch/la/Vector.h"
 
-#include "kernels/GaussLobattoQuadrature.h"
-#include "kernels/GaussLegendreQuadrature.h"
-
-#include "kernels/DGMatrices.h"
-
 #include "tarch/la/Scalar.h"
 #include "tarch/la/ScalarOperations.h"
 
 #include "tarch/logging/Log.h"
+#include "kernels/GaussLegendreBasis.h"
+#include "kernels/GaussLobattoBasis.h"
 
 #define MbasisSize 4
 #define Mvar 5
@@ -89,21 +86,21 @@ int spaceTimePredictorNonlinear(
 template <typename SolverType>
 void solutionUpdate(SolverType& solver, double* luh, const double* const luhOld, const double* const lduh, const double dt);
 
-template <bool useSourceOrNCP, bool useFlux, int numberOfVariables, int basisSize>
+template <typename SolverType, bool useSourceOrNCP, bool useFlux, int numberOfVariables, int basisSize>
 void volumeIntegralLinear(double* lduh, const double* const lFhi,
                           const tarch::la::Vector<DIMENSIONS, double>& dx);
 
-template <bool useSourceOrNCP, bool useFlux, bool noTimeAveraging, int numberOfVariables, int basisSize>
+template <typename SolverType, bool useSourceOrNCP, bool useFlux, bool noTimeAveraging, int numberOfVariables, int basisSize>
 void volumeIntegralNonlinear(double* lduh, const double* const lFi,
                              const tarch::la::Vector<DIMENSIONS, double>& dx);
 
-template <int numberOfVariables, int basisSize>
+template <typename SolverType, int numberOfVariables, int basisSize>
 void faceIntegralNonlinear(
     double *lduh, const double *const lFhbnd,
     const int direction, const int orientation,
     const tarch::la::Vector<DIMENSIONS, double> &dx);
 
-template <int numberOfVariables, int basisSize>
+template <typename SolverType, int numberOfVariables, int basisSize>
 void faceIntegralLinear(
     double *lduh, const double *const lFhbnd,
     const int direction, const int orientation,
@@ -112,11 +109,11 @@ void faceIntegralLinear(
 
 // todo 10/02/16: Dominic
 // Keep only one surfaceIntegral.
-template <int numberOfVariables, int basisSize>
+template <typename SolverType,int numberOfVariables, int basisSize>
 void surfaceIntegralNonlinear(double* lduh, const double* const lFbnd,
                               const tarch::la::Vector<DIMENSIONS, double>& dx);
 
-template <int numberOfVariables, int basisSize>
+template <typename SolverType,int numberOfVariables, int basisSize>
 void surfaceIntegralLinear(double* lduh, const double* const lFbnd,
                            const tarch::la::Vector<DIMENSIONS, double>& dx);
 
@@ -218,7 +215,7 @@ double stableTimeStepSize(SolverType& solver, const double* const luh,
  * \note We need to consider material parameters in
  * lQhbndFine and lQhbndCoarse.
  */
-template <int numberOfVariables,int numberOfParameters,int basisSize>
+template <typename SolverType,int numberOfVariables,int numberOfParameters,int basisSize>
 void faceUnknownsProlongation(
     double* lQhbndFine, double* lFhbndFine, const double* lQhbndCoarse,
     const double* lFhbndCoarse, const int coarseGridLevel,
@@ -226,7 +223,7 @@ void faceUnknownsProlongation(
     const tarch::la::Vector<DIMENSIONS - 1, int>& subfaceIndex);
 
 
-template <int numberOfVariables,int basisSize>
+template <typename SolverType,int numberOfVariables,int basisSize>
 void faceUnknownsRestriction(
     double* const       lFhbndCoarse,
     const double* const lFhbndFine,
@@ -239,7 +236,7 @@ void faceUnknownsRestriction(
  *
  * @\deprecated
  */
-template <int numberOfVariables,int numberOfParameters,int basisSize>
+template <typename SolverType,int numberOfVariables,int numberOfParameters,int basisSize>
 void faceUnknownsRestriction(
     double* lQhbndCoarse, double* lFhbndCoarse, const double* lQhbndFine,
     const double* lFhbndFine, const int coarseGridLevel,
@@ -250,7 +247,7 @@ void faceUnknownsRestriction(
  * \note We need to consider material parameters in
  * luhCoarse and luhFine.
  */
-template <int numberOfVariables,int numberOfParameters,int basisSize>
+template <typename SolverType,int numberOfVariables,int numberOfParameters,int basisSize>
 void volumeUnknownsProlongation(
     double* luhFine, const double* luhCoarse, const int coarseGridLevel,
     const int fineGridLevel,
@@ -260,7 +257,7 @@ void volumeUnknownsProlongation(
  * \note We need to consider material parameters in
  * luhCoarse and luhFine.
  */
-template <int numberOfVariables,int numberOfParameters,int basisSize>
+template <typename SolverType,int numberOfVariables,int numberOfParameters,int basisSize>
 void volumeUnknownsRestriction(
     double* luhCoarse, const double* luhFine, const int coarseGridLevel,
     const int fineGridLevel,

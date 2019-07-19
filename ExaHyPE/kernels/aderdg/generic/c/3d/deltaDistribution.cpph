@@ -21,14 +21,12 @@
 #include "peano/utils/Loop.h"
 
 #include "kernels/aderdg/generic/Kernels.h"
-#include "kernels/DGBasisFunctions.h"
-#include "kernels/DGMatrices.h"
 
-#if defined(_GLL)
-#include "kernels/GaussLobattoQuadrature.h"
-#else
-#include "kernels/GaussLegendreQuadrature.h"
-#endif
+//#if defined(_GLL)
+//#include "kernels/GaussLobattoBasis.h"
+//#else
+//#include "kernels/GaussLegendreBasis.h"
+//#endif
 
 #if DIMENSIONS == 3
 
@@ -59,7 +57,10 @@ std::vector<int>* kernels::aderdg::generic::c::getPointSources(
 }
 					       
 
-					       
+template <int basisSize, bool useLobatto>
+int index_nodes(int i) {
+  return useLobatto ? (basisSize-1-i) : i;
+}
 
 template <typename SolverType>
 void kernels::aderdg::generic::c::deltaDistribution(
@@ -83,15 +84,18 @@ void kernels::aderdg::generic::c::deltaDistribution(
   idx5 idx_PSi(basisSize + 1, basisSize, basisSize, basisSize, numberOfVariables);
   idx4 idx_luh(basisSize, basisSize, basisSize, numberOfData);
 
-#if defined(_GLL)
-  const double* quad_weights=&gaussLobattoWeights[basisSize-1][0];
-  const double* quad_nodes  =&gaussLobattoNodes  [basisSize-1][0];
-  const auto index_nodes= [basisSize](int i){return basisSize-1-i; }; //GLL nodes are reverted
-#else
-  const double* quad_weights=&gaussLegendreWeights[basisSize-1][0];
-  const double* quad_nodes  =&gaussLegendreNodes  [basisSize-1][0];
-  const auto index_nodes= [basisSize](int i){return i; };
-#endif  
+  const double* const quad_weights= SolverType::weights[basisSize-1];
+  const double* const quad_nodes  = SolverType::nodes  [basisSize-1];
+  
+//#if defined(_GLL)
+//  const double* quad_weights=&gaussLobattoWeights[basisSize-1][0];
+//  const double* quad_nodes  =&gaussLobattoNodes  [basisSize-1][0];
+//  const auto index_nodes= [basisSize](int i){return basisSize-1-i; }; //GLL nodes are reverted
+//#else
+//  const double* quad_weights=&gaussLegendreWeights[basisSize-1][0];
+//  const double* quad_nodes  =&gaussLegendreNodes  [basisSize-1][0];
+//  const auto index_nodes= [basisSize](int i){return i; };
+//#endif  
 
   double tn;
   double quad_node_on_element[DIMENSIONS];
@@ -99,13 +103,13 @@ void kernels::aderdg::generic::c::deltaDistribution(
   double forceVectorSource[numberOfVariables];
   //loop over all quadrature points
   for (int n = 0; n < basisSize+1; n++) { // time loop
-    n == 0 ? tn = t : tn = dt * quad_nodes[index_nodes(n-1)] + t; //First Point in time is current time, then use GL nodes in time
+    n == 0 ? tn = t : tn = dt * quad_nodes[index_nodes<basisSize,SolverType::UseLobattoBasis>(n-1)] + t; //First Point in time is current time, then use GL nodes in time
     for (int i = 0; i < basisSize; i++) {   //z loop
-      quad_node_on_element[2] = center[2]+dx[2] * (quad_nodes[index_nodes(i)] - 0.5); //transform onto element
+      quad_node_on_element[2] = center[2]+dx[2] * (quad_nodes[index_nodes<basisSize,SolverType::UseLobattoBasis>(i)] - 0.5); //transform onto element
       for (int j = 0; j < basisSize; j++) {  //y loop
-        quad_node_on_element[1] = center[1] + dx[1] * (quad_nodes[index_nodes(j)] - 0.5); //transform onto element
+        quad_node_on_element[1] = center[1] + dx[1] * (quad_nodes[index_nodes<basisSize,SolverType::UseLobattoBasis>(j)] - 0.5); //transform onto element
         for (int k = 0; k < basisSize; k++) {  //x loop
-          quad_node_on_element[0] = center[0] + dx[0] * (quad_nodes[index_nodes(k)] - 0.5); //transform onto element
+          quad_node_on_element[0] = center[0] + dx[0] * (quad_nodes[index_nodes<basisSize,SolverType::UseLobattoBasis>(k)] - 0.5); //transform onto element
           //loop over all point sources  
           for (int m : *pointSources) {
             // get the source vector located at quadrature node x at time tn
@@ -120,9 +124,9 @@ void kernels::aderdg::generic::c::deltaDistribution(
             x_ref[1] = (x_ps[1] - center[1]) / dx[1] + 0.5;
             x_ref[2] = (x_ps[2] - center[2]) / dx[2] + 0.5;
             
-            double basis_at_ps = kernels::basisFunctions[order][k](x_ref[0])
-                               * kernels::basisFunctions[order][j](x_ref[1])
-                                     * kernels::basisFunctions[order][i](x_ref[2]);
+            double basis_at_ps = SolverType::basisFunction[order][k](x_ref[0])
+                               * SolverType::basisFunction[order][j](x_ref[1])
+                               * SolverType::basisFunction[order][i](x_ref[2]);
             
             double quad_weight_on_vol_inv = 1.0 / ( quad_weights[k] * dx[0]
                                                   * quad_weights[j] * dx[1]

@@ -3,13 +3,12 @@
 #include "ElasticWaveEquation_Variables.h"
 
 #include "../../../ExaHyPE/kernels/KernelUtils.h"
-#include "../../../ExaHyPE/kernels/DGMatrices.h"
 
 #if !defined(_USE_NETCDF)
 #if !defined(_GLL)
-#include "kernels/GaussLegendreQuadrature.h"
+#include "kernels/GaussLegendreBasis.h"
 #else
-#include "kernels/GaussLobattoQuadrature.h"
+#include "kernels/GaussLobattoBasis.h"
 #endif //_GLL
 #endif //_USE_NETCDF
 
@@ -119,13 +118,13 @@ void ElasticWaveEquation3D::ElasticWaveEquation::adjustSolution(double *luh, con
 	double z= gl_vals_z[id_3(k,j,i)];
 #else
 #if !defined(_GLL)	
-	double x= offset_x + kernels::gaussLegendreNodes[Order][i]*dx[0];
-	double y= offset_y + kernels::gaussLegendreNodes[Order][j]*dx[1];
-	double z= offset_z + kernels::gaussLegendreNodes[Order][k]*dx[2];
+	double x= offset_x + kernels::legendre::nodes[Order][i]*dx[0];
+	double y= offset_y + kernels::legendre::nodes[Order][j]*dx[1];
+	double z= offset_z + kernels::legendre::nodes[Order][k]*dx[2];
 #else
-	double x= offset_x + kernels::gaussLobattoNodes[Order][num_nodes-1-i]*dx[0];
-	double y= offset_y + kernels::gaussLobattoNodes[Order][num_nodes-1-j]*dx[1];
-	double z= offset_z + kernels::gaussLobattoNodes[Order][num_nodes-1-k]*dx[2];
+	double x= offset_x + kernels::lobatto::nodes[Order][num_nodes-1-i]*dx[0];
+	double y= offset_y + kernels::lobatto::nodes[Order][num_nodes-1-j]*dx[1];
+	double z= offset_z + kernels::lobatto::nodes[Order][num_nodes-1-k]*dx[2];
 #endif //_GLL	
 	jacobian[id_3(k,j,i)]=1.;
 	q_x[id_3(k,j,i)]=1.;

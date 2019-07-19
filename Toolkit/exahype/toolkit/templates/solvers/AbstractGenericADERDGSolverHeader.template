@@ -16,6 +16,8 @@
 #include "exahype/profilers/Profiler.h"
 {% endif %}
 
+#include "kernels/KernelUtils.h"
+
 /**
  * We include Peano's assertion collection here.
  */
@@ -37,6 +39,27 @@ public:
   static constexpr int MaxPicardIterations       = Order+1;
   static constexpr bool UseMaxPicardIterations   = {{"true" if useMaxPicardIterations else "false"}};
   static constexpr double CFL                    = {{CFL}};
+  static constexpr double PNPM                   = {{PNPM}};
+  
+  // quadrature weights and operators
+  static constexpr bool UseLobattoBasis = {{"true" if basis == "lobatto" else "false"}};
+  // [order][node i]
+  static double** weights;
+  static double** nodes;
+  // [order][node i][node j]
+  static double*** Kxi;
+  static double*** dudx;
+  static double*** iK1;
+  static double*** equidistantGridProjector;
+  // [order][ 0("left") or 1("right") ][node i]
+  static double*** FCoeff;
+  // [order][ subinterval ][fine grid node i][coarse grid node j]
+  static double**** fineGridProjector;
+  // [order][node i]
+  static kernels::UnivariateFunction** basisFunction;
+  static kernels::UnivariateFunction** basisFunctionFirstDerivative;
+  static kernels::UnivariateFunction** basisFunctionSecondDerivative;
+  
   {% if usePointSources %}
   static constexpr int NumberOfPointSources = {{numberOfPointSources}};
   double pointSourceLocation[NumberOfPointSources][DIMENSIONS];
@@ -98,7 +121,10 @@ public:
   void updateGlobalObservables(
       double* const                               globalObservables,
       const double* const                         luh,
-      const tarch::la::Vector<DIMENSIONS,double>& cellSize) final override;
+      const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+      const tarch::la::Vector<DIMENSIONS,double>& cellSize,
+      const double t,
+      const double dt) final override;
   void mergeGlobalObservables(double* const globalObservables,const double* const otherObservables) final override;
   void wrapUpGlobalObservables(double* const globalObservables) final override;
 
@@ -321,7 +347,10 @@ public:
   virtual void mapGlobalObservables(
       GlobalObservables&                          globalObservables,
       const double* const                         luh,
-      const tarch::la::Vector<DIMENSIONS,double>& cellSize) const;
+      const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+      const tarch::la::Vector<DIMENSIONS,double>& cellSize,
+      const double t,
+      const double dt) const;
   /**
    * This method merges two vectors of (global) observables.
    *

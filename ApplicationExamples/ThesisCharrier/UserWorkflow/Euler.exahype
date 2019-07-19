@@ -13,7 +13,7 @@ exahype-project Euler
   end computational-domain
 
   solver ADER-DG EulerSolver_ADERDG
-    variables const     = rho:1,j:2,E:1
+    variables const     = 4
     order const         = 3
     maximum-mesh-size   = 0.12
     maximum-mesh-depth  = 0

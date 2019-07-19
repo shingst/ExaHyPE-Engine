@@ -22,7 +22,7 @@ exahype::solvers::ADERDGSolver::UpdateJob::UpdateJob(
   NumberOfReductionJobs.fetch_add(1);
 }
 
-bool exahype::solvers::ADERDGSolver::UpdateJob::run( bool isCalledOnMaster ) {
+bool exahype::solvers::ADERDGSolver::UpdateJob::run(bool runOnMasterThread) {
   _solver.updateBody(_cellDescription,_cellInfo,_neighbourMergePerformed,_isAtRemoteBoundary);
 
   NumberOfReductionJobs.fetch_sub(1);

@@ -9,7 +9,7 @@
 #include "InitialData/InitialData.h"
 using SVEC::GRMHD::Cons2Prim;
 
-#include "kernels/GaussLegendreQuadrature.h"
+#include "kernels/GaussLegendreBasis.h"
 #include <cmath>
 
 #include "kernels/aderdg/generic/c/sizes.cpph"

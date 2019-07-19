@@ -20,7 +20,7 @@ def LagrangBasisPoly(x,order,i,xi=None):
        Symbolic variable.
     order : number
        Order of the Lagrange basis polynomial.
-    i : number
+    xi : number
        The node the basis polynomial should pass through
     i : number
        The node we are interested in.
@@ -32,7 +32,7 @@ def LagrangBasisPoly(x,order,i,xi=None):
     if xi==None:
         print("Please specify some quadrature nodes")
         raise 
-    index = range(order+1)
+    index = list(range(order+1))
     index.pop(i)
     symbolic_function=sympy.prod([(x-xi[j])/(xi[i]-xi[j]) for j in index])
     return symbolic_function
@@ -58,7 +58,7 @@ def LagrangePoly(x,Lx, Ly):
        The Lagrange interpolation polynomial as symbolic expression.
     """
     if  len(Lx)!= len(Ly):
-        print "ERROR"
+        print("ERROR")
         return 1
     symbolic_function=0
     for k in range ( len(Lx) ):

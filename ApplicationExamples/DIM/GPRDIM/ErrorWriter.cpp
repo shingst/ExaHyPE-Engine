@@ -7,7 +7,7 @@
 // ========================
 #include "ErrorWriter.h"
 #include "PDE.h"
-#include "kernels/GaussLegendreQuadrature.h"
+#include "kernels/GaussLegendreBasis.h"
 #include <cmath>
 
 #include "kernels/aderdg/generic/c/sizes.cpph"
@@ -48,15 +48,15 @@ void GPRDIM::ErrorWriter::plotPatch(
 	double pos[DIMENSIONS] = {0.};
 	
 	for(int i = 0; i < basisSize; i++){
-		w_x= kernels::gaussLegendreWeights[order][i];
-		pos[0] = kernels::gaussLegendreNodes[order][i]*sizeOfPatch[0]+offsetOfPatch[0];
+		w_x= kernels::legendre::weights[order][i];
+		pos[0] = kernels::legendre::nodes[order][i]*sizeOfPatch[0]+offsetOfPatch[0];
 		for(int j = 0; j <basisSize ; j++){
-			w_y = kernels::gaussLegendreWeights[order][j];
-			pos[1] = kernels::gaussLegendreNodes[order][j]*sizeOfPatch[1]+offsetOfPatch[1];
+			w_y = kernels::legendre::weights[order][j];
+			pos[1] = kernels::legendre::nodes[order][j]*sizeOfPatch[1]+offsetOfPatch[1];
 #if DIMENSIONS==3	
 			for(int k = 0; k <basisSize ; k++){
-				w_z = kernels::gaussLegendreWeights[order][k];
-				pos[2] = kernels::gaussLegendreNodes[order][k]*sizeOfPatch[2]+offsetOfPatch[2];
+				w_z = kernels::legendre::weights[order][k];
+				pos[2] = kernels::legendre::nodes[order][k]*sizeOfPatch[2]+offsetOfPatch[2];
 #endif	
 				double numerical[nVar];
 #if DIMENSIONS==3

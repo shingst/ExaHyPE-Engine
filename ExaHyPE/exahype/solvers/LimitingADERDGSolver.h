@@ -93,7 +93,6 @@ public:
   static int updateBodyHandle;
   static int mergeNeighboursHandle;
   #endif
-  
   /**
    * The ADERDG solver.
    */
@@ -614,7 +613,7 @@ private:
         const bool            isLastTimeStepOfBatch,
         const bool            isSkeletonJob);
 
-    bool run( bool isCalledFromMaster ) override;
+    bool run() override;
   };
 
   /**
@@ -656,7 +655,7 @@ private:
         CellInfo&             cellInfo,
         const bool            isAtRemoteBoundary);
 
-      bool run( bool isCalledFromMaster ) override;
+      bool run() override;
       void prefetchData() override;
   };
 
@@ -701,7 +700,7 @@ private:
         const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& limiterNeighbourMergePerformed,
         const bool                                                 isAtRemoteBoundary);
 
-    bool run( bool isCalledFromMaster ) override;
+    bool run() override;
     void prefetchData() override;
   };
 
@@ -721,7 +720,7 @@ private:
         CellInfo&             cellInfo,
         const bool            isInitialMeshRefinement);
 
-    bool run( bool isCalledFromMaster ) override;
+    bool run() override;
   };
 
 public:
@@ -1578,12 +1577,6 @@ void updateNextGlobalObservables(
       const                                        int masterRank,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level) final override;
-
-
-#if defined DistributedStealing
-   void startStealingManager();
-   void stopStealingManager();
-#endif
 
 #endif
 

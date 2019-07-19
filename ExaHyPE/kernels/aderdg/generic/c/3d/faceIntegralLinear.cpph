@@ -5,7 +5,7 @@
 
 #if DIMENSIONS == 3
 
-template <int numberOfVariables, int basisSize>
+template <typename SolverType,int numberOfVariables, int basisSize>
 void kernels::aderdg::generic::c::faceIntegralLinear(double* const lduh, const double *const lFhbnd,
                  const int direction, const int orientation,
                  const tarch::la::Vector<DIMENSIONS, double>& dx) { 
@@ -21,25 +21,22 @@ void kernels::aderdg::generic::c::faceIntegralLinear(double* const lduh, const d
     for (int i = 0; i < basisSize; i++) { // z
       for (int j = 0; j < basisSize; j++) { // y
 
-      	#if defined(_GLL)
-           const double scaledWeight = kernels::gaussLobattoWeights[order][i] *
-                                 kernels::gaussLobattoWeights[order][j]*scaling;
-       #else
-           const double scaledWeight = kernels::gaussLegendreWeights[order][i] *
-                                 kernels::gaussLegendreWeights[order][j]*scaling;
-
-       #endif
-       
-        //const double scaledWeight = 
-        //     kernels::gaussLegendreWeights[order][i] *
-        //     kernels::gaussLegendreWeights[order][j] *
-        //     scaling;
+//      	#if defined(_GLL)
+//           const double scaledWeight = kernels::gaussLobattoWeights[order][i] *
+//                                 kernels::gaussLobattoWeights[order][j]*scaling;
+//       #else
+//           const double scaledWeight = kernels::gaussLegendreWeights[order][i] *
+//                                       kernels::gaussLegendreWeights[order][j]*scaling;
+//       #endif
+        
+        const double scaledWeight = SolverType::weights[order][i] *
+                                    SolverType::weights[order][j]*scaling;
 
         for (int k = 0; k < basisSize; k++) { // x
           for (int l = 0; l < numberOfVariables; l++) {
             lduh[idx_lduh(i, j, k, l)] -= 
                 scaledWeight *
-                kernels::FCoeff[order][orientation][k] *
+                SolverType::FCoeff[order][orientation][k] *
                 lFhbnd[idx_lFhbnd(i, j, l)];
           }
         }
@@ -50,14 +47,15 @@ void kernels::aderdg::generic::c::faceIntegralLinear(double* const lduh, const d
       for (int j = 0; j < basisSize; j++) { // y
         for (int k = 0; k < basisSize; k++) { // x
 
-	#if defined(_GLL)
-           const double scaledWeight = kernels::gaussLobattoWeights[order][i] *
-                                 kernels::gaussLobattoWeights[order][k]*scaling;
-       #else
-           const double scaledWeight = kernels::gaussLegendreWeights[order][i] *
-                                 kernels::gaussLegendreWeights[order][k]*scaling;
-
-       #endif
+//#if defined(_GLL)
+//          const double scaledWeight = kernels::gaussLobattoWeights[order][i] *
+//              kernels::gaussLobattoWeights[order][k]*scaling;
+//#else
+//          const double scaledWeight = kernels::gaussLegendreWeights[order][i] *
+//              kernels::gaussLegendreWeights[order][k]*scaling;
+//#endif
+          const double scaledWeight = SolverType::weights[order][i] *
+                                      SolverType::weights[order][k]*scaling;
        
           //const double scaledWeight = 
           //     kernels::gaussLegendreWeights[order][i] *
@@ -67,7 +65,7 @@ void kernels::aderdg::generic::c::faceIntegralLinear(double* const lduh, const d
           for (int l = 0; l < numberOfVariables; l++) {
             lduh[idx_lduh(i, j, k, l)] -=
                 scaledWeight * 
-                kernels::FCoeff[order][orientation][j] *
+                SolverType::FCoeff[order][orientation][j] *
                 lFhbnd[idx_lFhbnd(i, k, l)];  
           }
         }
@@ -78,24 +76,20 @@ void kernels::aderdg::generic::c::faceIntegralLinear(double* const lduh, const d
       for (int j = 0; j < basisSize; j++) { // y
         for (int k = 0; k < basisSize; k++) { // x
 
-	#if defined(_GLL)
-           const double scaledWeight = kernels::gaussLobattoWeights[order][j] *
-                                 kernels::gaussLobattoWeights[order][k]*scaling;
-       #else
-           const double scaledWeight = kernels::gaussLegendreWeights[order][j] *
-                                 kernels::gaussLegendreWeights[order][k]*scaling;
-
-       #endif
-       
-          //    const double scaledWeight = 
-          //     kernels::gaussLegendreWeights[order][j] *
-          //     kernels::gaussLegendreWeights[order][k] *
-          //     scaling;
+//#if defined(_GLL)
+//          const double scaledWeight = kernels::gaussLobattoWeights[order][j] *
+//              kernels::gaussLobattoWeights[order][k]*scaling;
+//#else
+//          const double scaledWeight = kernels::gaussLegendreWeights[order][j] *
+//              kernels::gaussLegendreWeights[order][k]*scaling;
+//#endif
+          const double scaledWeight = SolverType::weights[order][j] *
+                                      SolverType::weights[order][k]*scaling;
 
           for (int l = 0; l < numberOfVariables; l++) {
               lduh[idx_lduh(i, j, k, l)] -=
                   scaledWeight * 
-                  kernels::FCoeff[order][orientation][i] *
+                  SolverType::FCoeff[order][orientation][i] *
                   lFhbnd[idx_lFhbnd(j, k, l)]; 
           }
         }

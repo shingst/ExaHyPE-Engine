@@ -70,6 +70,7 @@ class Controller:
             "nPar"                  : args["numberOfParameters"],
             "nData"                 : args["numberOfVariables"] + args["numberOfParameters"],
             "nDof"                  : (args["order"])+1,
+            "nDofLim"               : args["limPatchSize"] if args["limPatchSize"] >=0 else 2*args["order"]+1,
             "nDim"                  : args["dimension"],
             "useFlux"               : (args["useFlux"] or args["useFluxVect"]),
             "useFluxVect"           : args["useFluxVect"],
@@ -98,13 +99,12 @@ class Controller:
             "useLibxsmm"            : Configuration.useLibxsmm,
             "runtimeDebug"          : Configuration.runtimeDebug #for debug
         }
-        
+
         self.config["useSourceOrNCP"] = self.config["useSource"] or self.config["useNCP"]
         self.validateConfig(Configuration.simdWidth.keys())
         self.config["vectSize"] = Configuration.simdWidth[self.config["architecture"]] #only initialize once architecture has been validated
         self.baseContext = self.generateBaseContext() # default context build from config
         self.gemmList = [] #list to store the name of all generated gemms (used for gemmsCPPModel)
-
 
     def validateConfig(self, validArchitectures):
         """Ensure the configuration fit some constraint, raise errors if not"""
@@ -118,8 +118,8 @@ class Controller:
            raise ValueError("Number of parameters must be >= 0")
         if self.config["nDim"] < 2 or self.config["nDim"] > 3:
            raise ValueError("Number of dimensions must be 2 or 3")
-        if self.config["nDof"] < 1 or self.config["nDof"] > 10: #nDof = order+1
-           raise ValueError("Order has to be between 0 and 9")
+        if self.config["nDof"] < 1 or self.config["nDof"] > 15+1: #nDof = order+1
+           raise ValueError("Order has to be between 0 and 15 (inclusive)")
         #if (self.config["useSource"] and not self.config["useSourceVect"] and self.config["useNCPVect"]) or (self.config["useNCP"] and not self.config["useNCPVect"] and self.config["useSourceVect"]) :
         #    raise ValueError("If using source and NCP, both or neither must be vectorized")
 
@@ -140,7 +140,6 @@ class Controller:
         context["solverHeader"]      = context["solverName"].split("::")[1] + ".h"
         context["codeNamespaceList"] = context["codeNamespace"].split("::")
         context["guardNamespace"]    = "_".join(context["codeNamespaceList"]).upper()
-        context["nDofLim"] = 2*context["nDof"]-1 #for limiter
         context["nDofLimPad"] = self.getSizeWithPadding(context["nDofLim"])
         context["nDofLim3D"] = 1 if context["nDim"] == 2 else context["nDofLim"]
         context["ghostLayerWidth3D"] = 0 if context["nDim"] == 2 else context["ghostLayerWidth"]

@@ -18,7 +18,7 @@
 
 #if DIMENSIONS == 2
 
-template <int numberOfVariables, int basisSize>
+template <typename SolverType, int numberOfVariables, int basisSize>
 void kernels::aderdg::generic::c::faceIntegralNonlinear(
                               double *lduh, const double *const lFhbnd,
                               const int direction, const int orientation,
@@ -34,14 +34,14 @@ void kernels::aderdg::generic::c::faceIntegralNonlinear(
     case 0:
       for (int j = 0; j < basisSize; j++) { // y
         const double scaledWeight =
-             kernels::gaussLegendreWeights[order][j] *
+             SolverType::weights[order][j] *
              scaling;
 
         for (int k = 0; k < basisSize; k++) { // x
           for (int l = 0; l < numberOfVariables; l++) {
             lduh[idx_lduh(j, k, l)] -=
                 scaledWeight *
-                kernels::FCoeff[order][orientation][k] *
+                SolverType::FCoeff[order][orientation][k] *
                 lFhbnd[idx_lFhbnd(j, l)];
           }
         }
@@ -50,14 +50,14 @@ void kernels::aderdg::generic::c::faceIntegralNonlinear(
     case 1:
       for (int k = 0; k < basisSize; k++) { // x
         const double scaledWeight =
-             kernels::gaussLegendreWeights[order][k] *
+             SolverType::weights[order][k] *
              scaling;
 
         for (int j = 0; j < basisSize; j++) { // y
           for (int l = 0; l < numberOfVariables; l++) {
             lduh[idx_lduh(j, k, l)] -=
                 scaledWeight *
-                kernels::FCoeff[order][orientation][j] *
+                SolverType::FCoeff[order][orientation][j] *
                 lFhbnd[idx_lFhbnd(k, l)];
           }
         }

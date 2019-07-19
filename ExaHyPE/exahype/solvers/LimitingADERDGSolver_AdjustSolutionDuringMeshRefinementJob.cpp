@@ -17,7 +17,7 @@ exahype::solvers::LimitingADERDGSolver::AdjustSolutionDuringMeshRefinementJob::A
   NumberOfAMRBackgroundJobs.fetch_add(1);
 }
 
-bool exahype::solvers::LimitingADERDGSolver::AdjustSolutionDuringMeshRefinementJob::run( bool isCalledFromMaster ) {
+bool exahype::solvers::LimitingADERDGSolver::AdjustSolutionDuringMeshRefinementJob::run(bool runOnMasterThread) {
   _solver._solver->ensureNecessaryMemoryIsAllocated(_solverPatch);
   _solver.adjustSolutionDuringMeshRefinementBody(_solverPatch,_cellInfo,_isInitialMeshRefinement);
 

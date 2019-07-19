@@ -86,11 +86,13 @@ public:
 	 * Plot a finite volumes solution.
 	 */
 	void plotFiniteVolumesPatch(
-		const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
-		const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch,
-		const double* const u,
-		const double timeStamp,
-		const int RefinementStatus, const int previousRefinementStatus);
+        const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
+        const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch,
+        const double* const                          u,
+        const double                                 timeStamp,
+        const int                                    numberOfCellsPerAxis,
+        const int                                    RefinementStatus,
+        const int                                    previousRefinementStatus);
 
 	void startPlotting(double time) override;
 	void finishPlotting() override;

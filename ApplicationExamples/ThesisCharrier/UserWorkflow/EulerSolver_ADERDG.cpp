@@ -25,7 +25,7 @@
 
 #include "kernels/KernelUtils.h"
 
-#include "kernels/GaussLegendreQuadrature.h"
+#include "kernels/GaussLegendreBasis.h"
 
 tarch::logging::Log Euler::EulerSolver_ADERDG::_log("Euler::EulerSolver_ADERDG");
 

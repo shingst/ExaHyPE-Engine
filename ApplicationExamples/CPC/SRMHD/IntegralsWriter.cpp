@@ -10,7 +10,7 @@
 #include "C2P-MHD.h"
 #include "InitialDataAdapter.h"
 
-#include "kernels/GaussLegendreQuadrature.h"
+#include "kernels/GaussLegendreBasis.h"
 #include <cmath>
 
 MHD::IntegralsWriter::IntegralsWriter(MHD::MHDSolver& solver) :
@@ -92,11 +92,11 @@ void MHD::IntegralsWriter::mapQuantities(
 	//const double NumberOfUnknownsPerGridPoint = nVar;
 	
 	// Gauss-Legendre weights from pos argument
-	double wx = kernels::gaussLegendreWeights[MHD::AbstractMHDSolver::Order][pos[0]];
-	double wy = kernels::gaussLegendreWeights[MHD::AbstractMHDSolver::Order][pos[1]];
+	double wx = kernels::legendre::weights[MHD::AbstractMHDSolver::Order][pos[0]];
+	double wy = kernels::legendre::weights[MHD::AbstractMHDSolver::Order][pos[1]];
 	double wz = 1;
 	#ifdef Dim3
-	wz = kernels::gaussLegendreWeights[MHD::AbstractMHDSolver::Order][pos[2]];
+	wz = kernels::legendre::weights[MHD::AbstractMHDSolver::Order][pos[2]];
 	#endif
 
 	// volume form for integration

@@ -23,7 +23,7 @@ exahype::solvers::LimitingADERDGSolver::LocalRecomputationJob::LocalRecomputatio
   NumberOfReductionJobs.fetch_add(1);
 }
 
-bool exahype::solvers::LimitingADERDGSolver::LocalRecomputationJob::run( bool isCalledFromMaster ) {
+bool exahype::solvers::LimitingADERDGSolver::LocalRecomputationJob::run(bool runOnMasterThread) {
   double admissibleTimeStepSize =
       _solver.localRecomputationBody(_solverPatch,_cellInfo,_limiterNeighbourMergePerformed,_isAtRemoteBoundary);
 

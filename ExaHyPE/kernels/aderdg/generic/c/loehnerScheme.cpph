@@ -12,8 +12,6 @@
  **/
 
 #include <algorithm> // fill_n
-//#include "kernels/DGMatrices.h"
-//#include "kernels/GaussLegendreQuadrature.h"
 #include "kernels/KernelUtils.h"
 #include "kernels/computeGradients.cpph"
 

@@ -52,13 +52,14 @@ std::string exahype::records::RepositoryState::toString(const Action& param) {
       case UseAdapterUpdateAndReduce: return "UseAdapterUpdateAndReduce";
       case UseAdapterPrediction: return "UseAdapterPrediction";
       case UseAdapterCorrection: return "UseAdapterCorrection";
+      case UseAdapterEmpty: return "UseAdapterEmpty";
       case NumberOfAdapters: return "NumberOfAdapters";
    }
    return "undefined";
 }
 
 std::string exahype::records::RepositoryState::getActionMapping() {
-   return "Action(WriteCheckpoint=0,ReadCheckpoint=1,Terminate=2,RunOnAllNodes=3,UseAdapterUniformRefinement=4,UseAdapterMeshRefinement=5,UseAdapterMeshRefinementAndPlotTree=6,UseAdapterFinaliseMeshRefinement=7,UseAdapterFinaliseMeshRefinementOrLocalRollback=8,UseAdapterInitialPrediction=9,UseAdapterFusedTimeStep=10,UseAdapterPredictionRerun=11,UseAdapterBroadcastAndDropNeighbourMessages=12,UseAdapterRefinementStatusSpreading=13,UseAdapterPredictionOrLocalRecomputation=14,UseAdapterMergeNeighbours=15,UseAdapterUpdateAndReduce=16,UseAdapterPrediction=17,UseAdapterCorrection=18,NumberOfAdapters=19)";
+   return "Action(WriteCheckpoint=0,ReadCheckpoint=1,Terminate=2,RunOnAllNodes=3,UseAdapterUniformRefinement=4,UseAdapterMeshRefinement=5,UseAdapterMeshRefinementAndPlotTree=6,UseAdapterFinaliseMeshRefinement=7,UseAdapterFinaliseMeshRefinementOrLocalRollback=8,UseAdapterInitialPrediction=9,UseAdapterFusedTimeStep=10,UseAdapterPredictionRerun=11,UseAdapterBroadcastAndDropNeighbourMessages=12,UseAdapterRefinementStatusSpreading=13,UseAdapterPredictionOrLocalRecomputation=14,UseAdapterMergeNeighbours=15,UseAdapterUpdateAndReduce=16,UseAdapterPrediction=17,UseAdapterCorrection=18,UseAdapterEmpty=19,NumberOfAdapters=20)";
 }
 
 

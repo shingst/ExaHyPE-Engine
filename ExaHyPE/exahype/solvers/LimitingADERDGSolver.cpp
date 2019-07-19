@@ -403,15 +403,21 @@ void exahype::solvers::LimitingADERDGSolver::updateGlobalObservables(const int s
       const int limiterElement = cellInfo.indexOfFiniteVolumesCellDescription(solverPatch.getSolverNumber());
       assertion1(limiterElement != NotFound, "Limiter element not found!");
       LimiterPatch& limiterPatch = cellInfo._FiniteVolumesCellDescriptions[limiterElement];
+      const auto cellCentre = solverPatch.getOffset() + 0.5 * solverPatch.getSize();
+      const auto& t  = solverPatch.getTimeStamp();
+      const auto& dt = solverPatch.getTimeStepSize();
       _limiter->updateGlobalObservables(
           _solver->_nextGlobalObservables.data(),
           static_cast<double*>(limiterPatch.getSolution()),
-          solverPatch.getSize()); // call must be thread-safe
+          cellCentre,solverPatch.getSize(),t,dt); // call must be thread-safe
     } else if ( _solver->_numberOfGlobalObservables > 0 && isCell ) {
+      const auto cellCentre = solverPatch.getOffset() + 0.5 * solverPatch.getSize();
+      const auto& t  = solverPatch.getTimeStamp();
+      const auto& dt = solverPatch.getTimeStepSize();
       _solver->updateGlobalObservables(
           _solver->_nextGlobalObservables.data(),
           static_cast<double*>(solverPatch.getSolution()),
-          solverPatch.getSize()); // call must be thread-safe
+          cellCentre,solverPatch.getSize(),t,dt); // call must be thread-safe
     }
   }
 }
@@ -631,7 +637,10 @@ void exahype::solvers::LimitingADERDGSolver::resetGlobalObservables(
 void exahype::solvers::LimitingADERDGSolver::updateGlobalObservables(
     double* const                               globalObservables,
     const double* const                         luh,
-    const tarch::la::Vector<DIMENSIONS,double>& cellSize) {
+    const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+    const tarch::la::Vector<DIMENSIONS,double>& cellSize,
+    const double t,
+    const double dt) {
   logError("resetGlobalObservables(...)","routine never be called!");
   std::abort();
 }
@@ -2041,8 +2050,12 @@ exahype::solvers::Solver::CellProcessingTimes exahype::solvers::LimitingADERDGSo
           solverPatch,0,dt,false,true,true);
     }
     const double time_sec = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-timeStart).count() * 1e-9;
-    result._minTimePredictor = time_sec / numberOfRuns / numberOfPicardIterations;
-    result._maxTimePredictor = result._minTimePredictor * _solver->getNodesPerCoordinateAxis(); // * (order+1)
+    result._minTimePredictor = time_sec / numberOfRuns / std::abs(numberOfPicardIterations);
+    if ( _solver->isLinear() ) {
+      result._maxTimePredictor = result._minTimePredictor;
+    } else {
+      result._maxTimePredictor = result._minTimePredictor * getNodesPerCoordinateAxis(); // * (order+1)
+    }
   }
 
   // measure ADER-DG cells
@@ -2169,6 +2182,19 @@ exahype::solvers::Solver::CellProcessingTimes exahype::solvers::LimitingADERDGSo
     }
     const double time_sec = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-timeStart).count() * 1e-9;
     result._timeFVUpdate = time_sec / numberOfRuns;
+  }
+
+  // measure Riemann solve
+  {
+    const tarch::la::Vector<DIMENSIONS,int> pos1(0);
+    tarch::la::Vector<DIMENSIONS,int> pos2(0); pos2[0]=1;
+    Solver::InterfaceInfo face(pos1,pos2);
+    const std::chrono::high_resolution_clock::time_point timeStart = std::chrono::high_resolution_clock::now();
+    for (int it=0; it<numberOfRuns; it++) {
+      _solver->solveRiemannProblemAtInterface(solverPatch,solverPatch,face);
+    }
+    const double time_sec = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-timeStart).count() * 1e-9;
+    result._timeADERDGRiemann = time_sec / numberOfRuns;
   }
 
   // Clean up

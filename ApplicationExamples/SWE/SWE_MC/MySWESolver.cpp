@@ -10,7 +10,7 @@
 #include "bathymetry.h"
 #include "MySWESolver_Variables.h"
 #include "kernels/KernelUtils.h"
-#include "kernels/GaussLegendreQuadrature.h"
+#include "kernels/GaussLegendreBasis.h"
 #include "readCsv.h"
 
 double grav;
@@ -62,8 +62,8 @@ void SWE::MySWESolver::adjustSolution(double* const luh, const tarch::la::Vector
         for (int i=0; i< num_nodes; i++){
             for (int j=0; j< num_nodes; j++){
 
-                double x  =  (offset_x+dx[0]*kernels::gaussLegendreNodes[basisSize-1][i]);
-                double y  =  (offset_y+dx[1]*kernels::gaussLegendreNodes[basisSize-1][j]);
+                double x  =  (offset_x+dx[0]*kernels::legendre::nodes[basisSize-1][i]);
+                double y  =  (offset_y+dx[1]*kernels::legendre::nodes[basisSize-1][j]);
 
                 double b =  SWE::bathymetry(x,y) + linearInterpolation(x,y);
 

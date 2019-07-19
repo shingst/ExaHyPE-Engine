@@ -84,6 +84,7 @@ class exahype::repositories::Repository {
     virtual void switchToUpdateAndReduce() = 0;    
     virtual void switchToPrediction() = 0;    
     virtual void switchToCorrection() = 0;    
+    virtual void switchToEmpty() = 0;    
 
     virtual bool isActiveAdapterUniformRefinement() const = 0;
     virtual bool isActiveAdapterMeshRefinement() const = 0;
@@ -100,6 +101,7 @@ class exahype::repositories::Repository {
     virtual bool isActiveAdapterUpdateAndReduce() const = 0;
     virtual bool isActiveAdapterPrediction() const = 0;
     virtual bool isActiveAdapterCorrection() const = 0;
+    virtual bool isActiveAdapterEmpty() const = 0;
 
 
     /**

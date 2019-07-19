@@ -44,6 +44,7 @@ class CodegeneratorModel:
             "tempVarsOnStack"    : solverContext["tempVarsOnStack"],
             "useLimiter"         : solverContext.get("numberOfDMPObservables", -1), #not set if not limiterSolver
             "ghostLayerWidth"    : solverContext.get("ghostLayerWidth", 0), #not set if not limiterSolver
+            "limPatchSize"       : solverContext.get("patchSize",-1)
         }
         
         # call the codegenerator with the given context

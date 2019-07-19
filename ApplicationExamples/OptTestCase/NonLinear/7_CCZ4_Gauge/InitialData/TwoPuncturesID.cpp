@@ -11,7 +11,7 @@
 typedef CCZ4::AbstractCCZ4Solver_ADERDG::Variables Variables;
 
 #include "kernels/KernelUtils.h" // idx classes
-#include "kernels/GaussLegendreQuadrature.h" // gaussLegendreNodes
+#include "kernels/GaussLegendreBasis.h" // gaussLegendreNodes
 using namespace kernels;
 
 #include "tarch/la/Vector.h"
@@ -224,11 +224,11 @@ void ImportedTwoPunctures::adjustPatchSolution(
 	
 	// First, set the incomplete ID on all DOF
 	for(int iz = 0; iz < basisSize; iz++) {
-		q[2] = kernels::gaussLegendreNodes[order][iz];
+		q[2] = kernels::legendre::nodes[order][iz];
 		for(int iy = 0; iy < basisSize; iy++) {
-			q[1] = kernels::gaussLegendreNodes[order][iy];
+			q[1] = kernels::legendre::nodes[order][iy];
 			for(int ix = 0; ix < basisSize; ix++) {	
-				q[0] = kernels::gaussLegendreNodes[order][ix];
+				q[0] = kernels::legendre::nodes[order][ix];
 				
 				r  = center + dx * ( q - 0.5 );
 				Q  = &luh[idx_luh(iz,iy,ix,0)];
@@ -243,11 +243,11 @@ void ImportedTwoPunctures::adjustPatchSolution(
 	
 	// Third, compute the gradients
 	for(int iz = 0; iz < basisSize; iz++) {
-		q[2] = kernels::gaussLegendreNodes[order][iz];
+		q[2] = kernels::legendre::nodes[order][iz];
 		for(int iy = 0; iy < basisSize; iy++) {
-			q[1] = kernels::gaussLegendreNodes[order][iy];
+			q[1] = kernels::legendre::nodes[order][iy];
 			for(int ix = 0; ix < basisSize; ix++) {
-				q[0] = kernels::gaussLegendreNodes[order][ix];
+				q[0] = kernels::legendre::nodes[order][ix];
 				
 				r  = center + dx * ( q - 0.5 );
 				Q  = &luh[idx_luh(iz,iy,ix,0)];
