@@ -27,7 +27,7 @@ exahype::solvers::FiniteVolumesSolver::FusedTimeStepJob::FusedTimeStepJob(
   }
 }
 
-bool exahype::solvers::FiniteVolumesSolver::FusedTimeStepJob::run( bool isCalledOnMaster ) {
+bool exahype::solvers::FiniteVolumesSolver::FusedTimeStepJob::run(bool runOnMasterThread) {
   _solver.updateBody(
       _cellDescription,_cellInfo,_neighbourMergePerformed,
       _isFirstTimeStepOfBatch,_isLastTimeStepOfBatch,

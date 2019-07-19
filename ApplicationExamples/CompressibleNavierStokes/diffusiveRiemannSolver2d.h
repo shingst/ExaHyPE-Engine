@@ -21,7 +21,7 @@
 #include <cmath>
 #include <cstring>
 
-#include "kernels/GaussLegendreQuadrature.h"
+#include "kernels/GaussLegendreBasis.h"
 #include "kernels/KernelUtils.h"
 
 /**

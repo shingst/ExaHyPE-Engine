@@ -20,6 +20,7 @@ def haveToPrintHelpMessage(argv):
     """
     result = parseArgument(argv,2) not in subprograms or \
              parseArgument(argv,1)==None
+    
     result = result and parseArgument(argv,1) not in ["iniTemplate","jobTemplate"]
     for arg in argv:
         result = result or ( arg=="-help" or arg=="-h" )
@@ -454,7 +455,7 @@ def verifySweepAgreesWithHistoricalExperiments():
     """
     if os.path.exists(historyFolderPath):
         previousSweeps = [f for f in os.listdir(historyFolderPath) if f.endswith(".ini")]
-        print(previousSweeps)
+        #print(previousSweeps)
     
         for f in previousSweeps:
             otherOptions = sweep_options.parseOptionsFile(historyFolderPath+"/"+f)
@@ -672,7 +673,6 @@ def verifyAllJobScriptsExist():
                               ", (ungrouped)parameters="+str(ungroupedParameterDict) + \
                               ", nodes="+nodes + \
                               ", ranksPerNode="+ranksPerNode + \
-                              ", cores="+cores + \
                               ", run="+run + \
                               " does not exist! ('"+jobInfo.jobScriptFilePath+"')",file=sys.stderr)
     if not allJobScriptsExist:
@@ -728,10 +728,13 @@ def hashSweep():
     for value in runNumbersGrouped:
         chain += str(value)+";"  
         
+    hashes = [] # hashes must be sorted to obtain a unique hash
     for environmentDict in dictProduct(environmentSpace):
-        chain += hashDictionary(environmentDict)
+        hashes.append(hashDictionary(environmentDict))
     for parameterDict in dictProduct(parameterSpace):
-        chain += hashDictionary(parameterDict)
+        hashes.append(hashDictionary(parameterDict))
+    for el in sorted(hashes):
+        chain += el
         
     return hashlib.md5(chain.encode()).hexdigest()[0:8]
 
@@ -750,11 +753,14 @@ def extractJobId(processOutput):
             jobId = line.strip().split("\"")[1]
     return jobId
 
-def submitJobs():
+def submitJobs(submitAllJobs=False):
     """
     Submit all jobs spanned by the options.
     """
     jobSubmissionTool    = general["job_submission"].replace("\"","")
+
+    jobIdsPath       = historyFolderPath + "/" + hashSweep() + ".submitted" # TODO rename file
+    acceptedJobsPath = historyFolderPath + "/" + hashSweep() + ".accepted-jobs"
     
     cpus = jobs["num_cpus"]
     
@@ -768,9 +774,20 @@ def submitJobs():
     if not os.path.exists(resultsFolderPath):
         print("create directory "+resultsFolderPath)
         os.makedirs(resultsFolderPath)
-    
+
+    jobIds       = []
+    if os.path.exists(jobIdsPath):
+        with open(jobIdsPath, "r") as file:
+            jobIds.extend(json.loads(file.read()))
+    initialSizeJobIds = len(jobIds)
+
+    acceptedJobs = []
+    if not submitAllJobs and os.path.exists(acceptedJobsPath):
+        with open(acceptedJobsPath, "r") as file:
+            acceptedJobs.extend(json.loads(file.read()))
+
     # loop over job scrips
-    jobIds = []
+    numberOfJobs = 0
     for run in runNumbers:
         for configId,config in enumerate(ranksNodesCoreCounts):
             ranks = config.ranks
@@ -784,28 +801,38 @@ def submitJobs():
                     jobInfo = getJobNameAndFilePaths(environmentDictHash,ungroupedParameterDictHash,\
                                                      configId,ranks,nodes,run)
                             
+                    numberOfJobs += 1
                     command=jobSubmissionTool + " " + jobInfo.jobScriptFilePath
-                    print(command)
-                    process = subprocess.Popen([command], stdout=subprocess.PIPE, shell=True)
-                    (output, err) = process.communicate()
-                    process.wait()
-                    jobIds.append(extractJobId(output.decode("UTF_8")))
+                    if command not in acceptedJobs:
+                        print(command)
+                        process = subprocess.Popen([command], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+                        (output, err) = process.communicate()
+                        process.wait()
+                        if err:
+                            print(err)
+                        else:
+                            acceptedJobs.append(command)
+                            jobIds.append(extractJobId(output.decode("UTF_8")))
     
     if not os.path.exists(historyFolderPath):
         print("create directory "+historyFolderPath)
         os.makedirs(historyFolderPath)
     
-    submittedJobsPath = historyFolderPath + "/" + hashSweep() + ".submitted"
-    with open(submittedJobsPath, "w") as submittedJobsFile:
-        submittedJobsFile.write(json.dumps(jobIds))
+    with open(jobIdsPath, "w") as file:
+        file.write(json.dumps(jobIds))
+    with open(acceptedJobsPath, "w") as file:
+        file.write(json.dumps(acceptedJobs))
     
-    print("submitted "+str(len(jobIds))+" jobs")
-    print("job ids are memorised in: "+submittedJobsPath)
-    command="cp "+optionsFile+" "+submittedJobsPath.replace(".submitted",".ini")
+    print("submitted %d jobs" % (len(jobIds)-initialSizeJobIds))
+    print("job ids are memorised in: "+jobIdsPath)
+    print("accepted job scripts are stored in: "+acceptedJobsPath)
+    command="cp "+optionsFile+" "+jobIdsPath.replace(".submitted",".ini")
     print(command)
     process = subprocess.Popen([command], stdout=subprocess.PIPE, shell=True)
     (output, err) = process.communicate()
     process.wait()
+ 
+    return len(acceptedJobs) is numberOfJobs
 
 def cancelJobs():
     """
@@ -813,14 +840,15 @@ def cancelJobs():
     """
     jobCancellationTool = general["job_cancellation"].replace("\"","")
     
-    submittedJobsPath   = historyFolderPath + "/" + hashSweep() + ".submitted"
+    jobIdsPath       = historyFolderPath + "/" + hashSweep() + ".submitted" # TODO rename file
+    acceptedJobsPath = historyFolderPath + "/" + hashSweep() + ".accepted-jobs"
     
     jobIds = None
     try:
-        with open(submittedJobsPath, "r") as submittedJobsFile:
-            jobIds = json.loads(submittedJobsFile.read())
+        with open(jobIdsPath, "r") as jobIdsFile:
+            jobIds = json.loads(jobIdsFile.read())
     except IOError:
-        print("ERROR: couldn't find any submitted jobs for current sweep ('"+submittedJobsPath+"').")
+        print("ERROR: couldn't find any submitted jobs for current sweep ('"+jobIdsPath+"').")
         sys.exit()
 
     for jobId in jobIds:
@@ -829,9 +857,8 @@ def cancelJobs():
         subprocess.call(command,shell=True)
     print("cancelled "+str(len(jobIds))+" jobs")    
 
-    command = "rm "+submittedJobsPath
-    print(command)
-    subprocess.call(command,shell=True)
+    os.remove(jobIdsPath)
+    os.remove(acceptedJobsPath)
 
 if __name__ == "__main__":
     import sys,os
@@ -842,13 +869,15 @@ if __name__ == "__main__":
     import re
     import math
     import collections   
- 
+    import time 
+
     import sweep_analysis
+    import sweep_analysis_reductions
     import sweep_options
     
     subprograms = [\
-"build","buildMissing","buildLocally","link","scripts","submit","cancel","parseAdapters",\
-"parseTotalTimes","parseTimeStepTimes","parseMetrics","parseJobStatistics",\
+"build","buildMissing","buildLocally","link","scripts","submit","submitAll","submitRepeatedly","cancel","parseAdapters",\
+"parseTotalTimes","parseTimeStepTimes","parseMetrics","parseJobStatistics","parseReducedValues",\
 "cleanBuild", "cleanScripts","cleanResults","cleanHistory","cleanAll",\
 "iniTemplate","jobTemplate"]
     
@@ -866,8 +895,11 @@ available subprograms:
 * buildMissing          - build only missing executables
 * buildLocally          - rebuild only the local application folder (no make clean)
 * link                  - link runtime dependencies into the build folder
-* scripts               - submit the generated jobs
-* cancel                - cancel the submitted jobs
+* scripts               - generate specification files and job scripts
+* submit                - submit only the generated job scripts that have not been submitted yet or have been rejected by the scheduler
+* submitRepeatedly      - calls submit in a blocking while loop that calls the submit subprogram until all jobs have been accepted by the scheduler
+* submitAll             - submit all jobs
+* cancel                - cancel ALL the submitted jobs
 * parseAdapters         - read the job output and parse adapter times
 * parseTotalTimes       - read the adapter times table and:
                           Per configuration, calculate the total simulation time 
@@ -878,12 +910,14 @@ available subprograms:
 * parseMetrics          - read the job output and parse likwid metrics
 * parseJobStatistics    - read background job processing stastistics. 
                           Requires that executables are built with "-DTBB_USE_THREADING_TOOLS=1".
+* parseReducedValues    - parse key-value pairs in the output file which must be written as 'sweep/reduce/<key>=<value>', where value is an int or float number.
+                          The parser then computes min,max,average and standard deviation from all values it finds for a certain key.
 * cleanAll              - remove the whole sweep benchmark suite
 * cleanBuild            - remove the build subfolder
 * cleanScripts          - remove the scripts subfolder
 * cleanResults          - remove the results subfolder
 * cleanHistory          - clean the submission history
-* iniTemplate          - print out template for ini file
+* iniTemplate           - print out template for ini file
 * jobTemplate <machine> - print out job template file for supercomputer. Supported: "supermuc", "supermuc-skx", "hamilton"
 
 2) typical workflow:
@@ -1022,7 +1056,15 @@ It must further contain at least one of the following sections:
     elif subprogram == "scripts":
         generateScripts()
     elif subprogram == "submit":
-        submitJobs()
+        submitJobs(submitAllJobs=False)
+    elif subprogram == "submitRepeatedly":
+        while not submitJobs(submitAllJobs=False):
+            print("Waiting till submit subprogram is called next ... ")
+            print("Loop continues till all jobs have been accepted by scheduler.")
+            print("Print press CTRL+C to abort.")
+            time.sleep(5*60) # seconds
+    elif subprogram == "submitAll":
+        submitJobs(submitAllJobs=True)
     elif subprogram == "cancel":
         cancelJobs()
     elif subprogram == "parseAdapters":
@@ -1035,3 +1077,5 @@ It must further contain at least one of the following sections:
         sweep_analysis.parseMetrics(resultsFolderPath,projectName,compressTable)
     elif subprogram == "parseJobStatistics":
         sweep_analysis.parseJobStatistics(resultsFolderPath,projectName,compressTable)
+    elif subprogram == "parseReducedValues":
+        sweep_analysis_reductions.parseReducedValues(resultsFolderPath,projectName,compressTable)

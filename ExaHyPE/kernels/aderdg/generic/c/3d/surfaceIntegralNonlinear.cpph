@@ -18,7 +18,7 @@
 
 #if DIMENSIONS == 3
 
-template <int numberOfVariables, int basisSize>
+template <typename SolverType, int numberOfVariables, int basisSize>
 void kernels::aderdg::generic::c::surfaceIntegralNonlinear(double *lduh, const double *const lFhbnd,
                               const tarch::la::Vector<DIMENSIONS, double> &dx) {
   constexpr int order = basisSize - 1;
@@ -34,16 +34,16 @@ void kernels::aderdg::generic::c::surfaceIntegralNonlinear(double *lduh, const d
   // x faces
   for (int i = 0; i < basisSize; i++) { // z
     for (int j = 0; j < basisSize; j++) { // y
-      const double weight = kernels::gaussLegendreWeights[order][i] *
-                            kernels::gaussLegendreWeights[order][j];
+      const double weight = SolverType::weights[order][i] *
+                            SolverType::weights[order][j];
       const double updateSize = weight * invDx[0];
 
       for (int k = 0; k < basisSize; k++) { // x
         // left flux minus right flux
         for (int l = 0; l < numberOfVariables; l++) {
           lduh[idx_lduh(i, j, k, l)] -=
-              (lFhbnd[idx_lFhbnd(1, i, j, l)] * kernels::FRCoeff[order][k] -
-               lFhbnd[idx_lFhbnd(0, i, j, l)] * kernels::FLCoeff[order][k]) *
+              (lFhbnd[idx_lFhbnd(1, i, j, l)] * SolverType::FCoeff[order][1][k] -
+               lFhbnd[idx_lFhbnd(0, i, j, l)] * SolverType::FCoeff[order][0][k]) *
               updateSize;
         }
       }
@@ -54,15 +54,15 @@ void kernels::aderdg::generic::c::surfaceIntegralNonlinear(double *lduh, const d
   for (int i = 0; i < basisSize; i++) { // z
     for (int j = 0; j < basisSize; j++) { // y
       for (int k = 0; k < basisSize; k++) { // x
-        const double weight = kernels::gaussLegendreWeights[order][i] *
-                              kernels::gaussLegendreWeights[order][k];
+        const double weight = SolverType::weights[order][i] *
+                              SolverType::weights[order][k];
         const double updateSize = weight * invDx[1];
 
         // back flux minus front flux
         for (int l = 0; l < numberOfVariables; l++) {
           lduh[idx_lduh(i, j, k, l)] -=
-              (lFhbnd[idx_lFhbnd(3, i, k, l)] * kernels::FRCoeff[order][j] -
-               lFhbnd[idx_lFhbnd(2, i, k, l)] * kernels::FLCoeff[order][j]) *
+              (lFhbnd[idx_lFhbnd(3, i, k, l)] * SolverType::FCoeff[order][1][j] -
+               lFhbnd[idx_lFhbnd(2, i, k, l)] * SolverType::FCoeff[order][0][j]) *
               updateSize;
         }
       }
@@ -73,15 +73,15 @@ void kernels::aderdg::generic::c::surfaceIntegralNonlinear(double *lduh, const d
   for (int i = 0; i < basisSize; i++) { // z 
     for (int j = 0; j < basisSize; j++) { // y
       for (int k = 0; k < basisSize; k++) { // x
-        const double weight = kernels::gaussLegendreWeights[order][j] *
-                              kernels::gaussLegendreWeights[order][k];
+        const double weight = SolverType::weights[order][j] *
+                              SolverType::weights[order][k];
         const double updateSize = weight * invDx[2];
 
         // bottom flux minus top flux
         for (int l = 0; l < numberOfVariables; l++) {
           lduh[idx_lduh(i, j, k, l)] -=
-              (lFhbnd[idx_lFhbnd(5, j, k, l)] * kernels::FRCoeff[order][i] -
-               lFhbnd[idx_lFhbnd(4, j, k, l)] * kernels::FLCoeff[order][i]) *
+              (lFhbnd[idx_lFhbnd(5, j, k, l)] * SolverType::FCoeff[order][1][i] -
+               lFhbnd[idx_lFhbnd(4, j, k, l)] * SolverType::FCoeff[order][0][i]) *
               updateSize;
         }
       }

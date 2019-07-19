@@ -9,7 +9,7 @@
 
 #include <cstring> // memset
 #include "kernels/KernelUtils.h" // matrix indexing
-#include "kernels/GaussLegendreQuadrature.h"
+#include "kernels/GaussLegendreBasis.h"
 
 tarch::logging::Log DIM::DIMSolver_FV::_log( "DIM::DIMSolver_FV" );
 
@@ -112,7 +112,7 @@ double DIM::DIMSolver_FV::riemannSolver(double* fL, double *fR, const double* qL
   
     kernels::idx2 idx_QLR(basisSize, numberOfData);
     for (int j = 0; j < basisSize; j++) {
-      const double weight = kernels::gaussLegendreWeights[order][j];
+      const double weight = kernels::legendre::weights[order][j];
 
       for (int k = 0; k < numberOfData; k++) {
         QavL[k] += weight * qL[idx_QLR(j, k)];

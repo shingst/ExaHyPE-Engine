@@ -1,10 +1,9 @@
 #include "kernels/KernelUtils.h"
-#include "kernels/DGMatrices.h"
 
 #if defined(_GLL)
-#include "kernels/GaussLobattoQuadrature.h"
+#include "kernels/GaussLobattoBasis.h"
 #else
-#include "kernels/GaussLegendreQuadrature.h"
+#include "kernels/GaussLegendreBasis.h"
 #endif
 #include <cmath>
 #include <string>
@@ -96,10 +95,10 @@ class MeshReader{
       for (int j = 0 ; j< num_nodes ; j ++){
 #if defined(_GLL)
 	lagrange_basis_at_nodes[id_xy(j,i)]
-	  =lagrangeBasis(kernels::gaussLobattoNodes[num_nodes-1][num_nodes-j-1],i,num_nodes);
+	  =lagrangeBasis(kernels::lobatto::nodes[num_nodes-1][num_nodes-j-1],i,num_nodes);
 #else
 	lagrange_basis_at_nodes[id_xy(j,i)]
-	  =lagrangeBasis(kernels::gaussLegendreNodes[num_nodes-1][j],i,num_nodes);
+	  =lagrangeBasis(kernels::legendre::nodes[num_nodes-1][j],i,num_nodes);
 #endif
       }
     }

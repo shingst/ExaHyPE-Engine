@@ -6,7 +6,7 @@
 #include "tarch/la/Vector.h"
 
 #include "PDE.h"
-#include "kernels/GaussLegendreQuadrature.h"
+#include "kernels/GaussLegendreBasis.h"
 #include "kernels/KernelUtils.h"
 #include "kernels/aderdg/generic/Kernels.h"
 

@@ -26,6 +26,7 @@
  #include "exahype/adapters/UpdateAndReduce.h" 
  #include "exahype/adapters/Prediction.h" 
  #include "exahype/adapters/Correction.h" 
+ #include "exahype/adapters/Empty.h" 
 
 
 namespace peano {

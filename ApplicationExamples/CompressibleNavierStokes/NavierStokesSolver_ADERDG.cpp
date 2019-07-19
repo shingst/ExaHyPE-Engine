@@ -100,8 +100,8 @@ void NavierStokes::NavierStokesSolver_ADERDG::boundaryValues(const double* const
       std::fill(curStateOut.begin(), curStateOut.end(), 0.0);
       std::fill(gradStateOut.begin(), gradStateOut.end(), 0.0);
 
-      const double weight = kernels::gaussLegendreWeights[Order][i];
-      const double xi = kernels::gaussLegendreNodes[Order][i];
+      const double weight = kernels::legendre::weights[Order][i];
+      const double xi = kernels::legendre::nodes[Order][i];
       const double ti = t + xi * dt;
 
       scenario->analyticalSolution(x, ti, ns, curVarsOut, gradStateOut.data());
@@ -256,7 +256,7 @@ bool NavierStokes::NavierStokesSolver_ADERDG::isPhysicallyAdmissible(
   // Now also check if TV is too high!
   double data[NumberOfGlobalObservables];
   GlobalObservables curObs(data);
-  mapGlobalObservables(curObs,solution, dx);
+  mapGlobalObservables(curObs,solution, 0,dx,0,0);
   const auto *curObsRaw = curObs.data();
   
   const auto curTv = curObsRaw[0];
@@ -328,7 +328,7 @@ exahype::solvers::Solver::RefinementControl NavierStokes::NavierStokesSolver_ADE
 
   double data[NumberOfGlobalObservables];
   GlobalObservables curObs(data);
-  mapGlobalObservables(curObs,luh, dx);
+  mapGlobalObservables(curObs,luh,0,dx,0,0);
   const auto *curObsRaw = curObs.data();
   
   const auto curTv = curObsRaw[0];
@@ -455,7 +455,10 @@ void NavierStokes::NavierStokesSolver_ADERDG::resetGlobalObservables(GlobalObser
 void NavierStokes::NavierStokesSolver_ADERDG::mapGlobalObservables(
     GlobalObservables&                          globalObservables,
     const double* const                         luh,
-    const tarch::la::Vector<DIMENSIONS,double>& cellSize) const  {
+    const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+    const tarch::la::Vector<DIMENSIONS,double>& cellSize,
+    const double t,
+    const double dt) const  {
   NavierStokes::mapGlobalObservablesDG(globalObservables,
 				       luh,
 				       cellSize,

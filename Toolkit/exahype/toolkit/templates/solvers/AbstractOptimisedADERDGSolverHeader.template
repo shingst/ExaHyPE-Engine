@@ -28,6 +28,8 @@
 #include "tarch/Assertions.h"
 #include "tarch/la/Vector.h"
 
+#include "kernels/KernelUtils.h"
+
 namespace {{project}}{
   class {{solver}};
   class {{abstractSolver}};
@@ -45,6 +47,13 @@ public:
   static constexpr int MaxPicardIterations       = Order+1;
   static constexpr bool UseMaxPicardIterations   = {{"true" if useMaxPicardIterations else "false"}};
   static constexpr double CFL                    = {{CFL}};
+  static constexpr double PNPM                   = {{PNPM}};
+  
+  // [order][node i]
+  static kernels::UnivariateFunction** basisFunction;
+  static kernels::UnivariateFunction** basisFunctionFirstDerivative;
+  static kernels::UnivariateFunction** basisFunctionSecondDerivative;
+  
   {% if usePointSources %}
   static constexpr int NumberOfPointSources      = {{numberOfPointSources}};
   double pointSourceLocation[NumberOfPointSources][DIMENSIONS];
@@ -274,7 +283,10 @@ public:
   void updateGlobalObservables(
       double* const                               globalObservables,
       const double* const                         luh,
-      const tarch::la::Vector<DIMENSIONS,double>& cellSize) final override;
+      const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+      const tarch::la::Vector<DIMENSIONS,double>& cellSize,
+      const double t,
+      const double dt) final override;
   void mergeGlobalObservables(double* const globalObservables,const double* const otherObservables) final override;
   void wrapUpGlobalObservables(double* const globalObservables) final override;
 
@@ -452,7 +464,10 @@ public:
   virtual void mapGlobalObservables(
       GlobalObservables&                          globalObservables,
       const double* const                         luh,
-      const tarch::la::Vector<DIMENSIONS,double>& cellSize) const;
+      const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+      const tarch::la::Vector<DIMENSIONS,double>& cellSize,
+      const double t,
+      const double dt) const;
 
   /**
    * This method merges two vectors of (global) observables.

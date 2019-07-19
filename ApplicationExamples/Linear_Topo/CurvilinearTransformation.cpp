@@ -1,7 +1,6 @@
 #include "CurvilinearTransformation.h"
 
 #include "kernels/KernelUtils.h"
-#include "kernels/DGMatrices.h"
 
 
 // void Linear::CurvilinearTransformation::test(){
@@ -349,7 +348,7 @@ void getValuesAtQuadNodes(double* orig_mesh_x , double* orig_mesh_y, double* des
 
   for (int j = 0 ; j< num_nodes ; j ++){
     for (int i = 0 ; i< num_nodes ; i ++){
-      interpolate(kernels::gaussLegendreNodes[num_nodes-1][i],kernels::gaussLegendreNodes[num_nodes-1][j],orig_mesh_x,orig_mesh_y,dest_mesh,num_nodes,results[id_xy(j,i)]);
+      interpolate(kernels::legendre::nodes[num_nodes-1][i],kernels::legendre::nodes[num_nodes-1][j],orig_mesh_x,orig_mesh_y,dest_mesh,num_nodes,results[id_xy(j,i)]);
     }
   }
 }

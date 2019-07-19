@@ -17,9 +17,8 @@
 #include "tarch/multicore/Loop.h"
 #include "peano/datatraversal/autotuning/Oracle.h"
 
-#include "../../../../DGMatrices.h"
-#include "../../../../GaussLegendreQuadrature.h"
-#include "../../../../KernelUtils.h"
+#include "kernels/GaussLegendreBasis.h"
+#include "kernels/KernelUtils.h"
 
 #if DIMENSIONS == 3
 
@@ -123,10 +122,10 @@ int aderPicardLoopNonlinear(SolverType& solver, const double* luh,
                 for (int n = 0; n < basisSize; n++) {
                   const auto idx = idx_gradQ(j, k, l, /*x*/ 0, m);
                   const auto t = 1.0 * invDx[0] * lQi[idx_lQi(j, k, n, i, m)] *
-                                 kernels::dudx[order][l][n];
+                                 SolverType::dudx[order][l][n];
                   gradQCur[idx] += t;
                   if (useViscousFlux) {
-                    gradQ[idx] += t * kernels::gaussLegendreWeights[order][i];
+                    gradQ[idx] += t * SolverType::weights[order][i];
                   }
                 }
               }
@@ -143,10 +142,10 @@ int aderPicardLoopNonlinear(SolverType& solver, const double* luh,
                 for (int n = 0; n < basisSize; n++) {
                   const auto idx = idx_gradQ(j, l, k, /*y*/ 1, m);
                   const auto t = 1.0 * invDx[1] * lQi[idx_lQi(j, n, k, i, m)] *
-                                 kernels::dudx[order][l][n];
+                                 SolverType::dudx[order][l][n];
                   gradQCur[idx] += t;
                   if (useViscousFlux) {
-                    gradQ[idx] += t * kernels::gaussLegendreWeights[order][i];
+                    gradQ[idx] += t * SolverType::weights[order][i];
                   }
                 }
               }
@@ -163,10 +162,10 @@ int aderPicardLoopNonlinear(SolverType& solver, const double* luh,
                 for (int n = 0; n < basisSize; n++) {
                   const auto idx = idx_gradQ(l, j, k, /*z*/ 2, m);
                   const auto t = 1.0 * invDx[2] * lQi[idx_lQi(n, j, k, i, m)] *
-                                 kernels::dudx[order][l][n];
+                                 SolverType::dudx[order][l][n];
                   gradQCur[idx] += t;
                   if (useViscousFlux) {
-                    gradQ[idx] += t * kernels::gaussLegendreWeights[order][i];
+                    gradQ[idx] += t * SolverType::weights[order][i];
                   }
                 }
               }
@@ -232,12 +231,12 @@ int aderPicardLoopNonlinear(SolverType& solver, const double* luh,
       for (int j = 0; j < basisSize; j++) {      // z
         for (int k = 0; k < basisSize; k++) {    // y
           for (int l = 0; l < basisSize; l++) {  // x
-            const double weight = kernels::gaussLegendreWeights[order][j] *
-                                  kernels::gaussLegendreWeights[order][k] *
-                                  kernels::gaussLegendreWeights[order][l];
+            const double weight = SolverType::weights[order][j] *
+                                  SolverType::weights[order][k] *
+                                  SolverType::weights[order][l];
             for (int m = 0; m < numberOfVariables; m++) {
               rhs[idx_rhs(i, j, k, l, m)] =
-                  weight * kernels::FLCoeff[order][i] *
+                  weight * SolverType::FCoeff[order][0][i] *
                   luh[idx_luh(j, k, l, m)];  // FLCoeff == F0
               assertion3(std::isfinite(rhs[idx_rhs(i, j, k, l, m)]),
                          rhs[idx_rhs(i, j, k, l, m)], dt, invDx);
@@ -249,9 +248,9 @@ int aderPicardLoopNonlinear(SolverType& solver, const double* luh,
       // x direction (independent from the y and z derivatives)
       for (int j = 0; j < basisSize; j++) {    // z
         for (int k = 0; k < basisSize; k++) {  // y
-          const double weight = kernels::gaussLegendreWeights[order][i] *
-                                kernels::gaussLegendreWeights[order][j] *
-                                kernels::gaussLegendreWeights[order][k];
+          const double weight = SolverType::weights[order][i] *
+                                SolverType::weights[order][j] *
+                                SolverType::weights[order][k];
           const double updateSize = weight * dt * invDx[0];
 
           // Matrix operation
@@ -261,7 +260,7 @@ int aderPicardLoopNonlinear(SolverType& solver, const double* luh,
                 if (useFlux) {
                   rhs[idx_rhs(i, j, k, l, m)] -=
                       updateSize * lFi[idx_lFi(i, j, k, n, 0, m)] *
-                      kernels::Kxi[order][n][l];
+                      SolverType::Kxi[order][n][l];
                   assertion3(std::isfinite(rhs[idx_rhs(i, j, k, l, m)]),
                              rhs[idx_rhs(i, j, k, l, m)], dt, invDx);
                 }
@@ -274,9 +273,9 @@ int aderPicardLoopNonlinear(SolverType& solver, const double* luh,
       // y direction (independent from the x and z derivatives)
       for (int j = 0; j < basisSize; j++) {    // z
         for (int k = 0; k < basisSize; k++) {  // x
-          const double weight = kernels::gaussLegendreWeights[order][i] *
-                                kernels::gaussLegendreWeights[order][j] *
-                                kernels::gaussLegendreWeights[order][k];
+          const double weight = SolverType::weights[order][i] *
+                                SolverType::weights[order][j] *
+                                SolverType::weights[order][k];
           const double updateSize = weight * dt * invDx[1];
 
           // Matrix operation
@@ -286,7 +285,7 @@ int aderPicardLoopNonlinear(SolverType& solver, const double* luh,
                 if (useFlux) {
                   rhs[idx_rhs(i, j, l, k, m)] -=
                       updateSize * lFi[idx_lFi(i, j, n, k, 1, m)] *
-                      kernels::Kxi[order][n][l];
+                      SolverType::Kxi[order][n][l];
                   assertion3(std::isfinite(rhs[idx_rhs(i, j, l, k, m)]),
                              rhs[idx_rhs(i, j, l, k, m)], dt, invDx);
                 }
@@ -299,9 +298,9 @@ int aderPicardLoopNonlinear(SolverType& solver, const double* luh,
       // z direction (independent from the x and y derivatives)
       for (int j = 0; j < basisSize; j++) {    // y
         for (int k = 0; k < basisSize; k++) {  // x
-          const double weight = kernels::gaussLegendreWeights[order][i] *
-                                kernels::gaussLegendreWeights[order][j] *
-                                kernels::gaussLegendreWeights[order][k];
+          const double weight = SolverType::weights[order][i] *
+                                SolverType::weights[order][j] *
+                                SolverType::weights[order][k];
           const double updateSize = weight * dt * invDx[2];
 
           // Matrix operation
@@ -311,7 +310,7 @@ int aderPicardLoopNonlinear(SolverType& solver, const double* luh,
                 if (useFlux) {
                   rhs[idx_rhs(i, l, j, k, m)] -=
                       updateSize * lFi[idx_lFi(i, n, j, k, 2, m)] *
-                      kernels::Kxi[order][n][l];
+                      SolverType::Kxi[order][n][l];
                   assertion3(std::isfinite(rhs[idx_rhs(i, l, j, k, m)]),
                              rhs[idx_rhs(i, l, j, k, m)], dt, invDx);
                 }
@@ -326,10 +325,10 @@ int aderPicardLoopNonlinear(SolverType& solver, const double* luh,
         for (int j = 0; j < basisSize; j++) {      // z
           for (int k = 0; k < basisSize; k++) {    // y
             for (int l = 0; l < basisSize; l++) {  // x
-              const double weight = kernels::gaussLegendreWeights[order][i] *
-                                    kernels::gaussLegendreWeights[order][j] *
-                                    kernels::gaussLegendreWeights[order][k] *
-                                    kernels::gaussLegendreWeights[order][l];
+              const double weight = SolverType::weights[order][i] *
+                                    SolverType::weights[order][j] *
+                                    SolverType::weights[order][k] *
+                                    SolverType::weights[order][l];
               const double updateSize = weight * dt;
               double* S = lFi + idx_lFi(i, j, k, l, 3, 0);
 
@@ -338,10 +337,10 @@ int aderPicardLoopNonlinear(SolverType& solver, const double* luh,
               // Old code (for reference): solver.fusedSource(&lQi[idx_lQi(j, k,
               // l, i, 0)], &gradQCur[idx_gradQ(j, k, l, i, 0, 0)], S);
               if (useSource) {
-                const double ti = t + kernels::gaussLegendreNodes[order][i] * dt;
-                const double x = cellCenter[0] + (1./invDx[0]) * (kernels::gaussLegendreNodes[order][l] - 0.5);
-                const double y = cellCenter[1] + (1./invDx[1]) * (kernels::gaussLegendreNodes[order][k] - 0.5);
-                const double z = cellCenter[2] + (1./invDx[2]) * (kernels::gaussLegendreNodes[order][j] - 0.5);
+                const double ti = t + SolverType::nodes[order][i] * dt;
+                const double x = cellCenter[0] + (1./invDx[0]) * (SolverType::nodes[order][l] - 0.5);
+                const double y = cellCenter[1] + (1./invDx[1]) * (SolverType::nodes[order][k] - 0.5);
+                const double z = cellCenter[2] + (1./invDx[2]) * (SolverType::nodes[order][j] - 0.5);
                 tarch::la::Vector<DIMENSIONS, double> coords = {x, y, z};
                 solver.algebraicSource(coords, ti, lQi+idx_lQi(j, k, l, i, 0), S);
               } else {
@@ -374,9 +373,9 @@ int aderPicardLoopNonlinear(SolverType& solver, const double* luh,
     for (int i = 0; i < basisSize; i++) {
       for (int j = 0; j < basisSize; j++) {
         for (int k = 0; k < basisSize; k++) {
-          const double weight = kernels::gaussLegendreWeights[order][i] *
-                                kernels::gaussLegendreWeights[order][j] *
-                                kernels::gaussLegendreWeights[order][k];
+          const double weight = SolverType::weights[order][i] *
+                                SolverType::weights[order][j] *
+                                SolverType::weights[order][k];
           const double iweight = 1.0 / weight;
 
           // Matrix operation
@@ -386,7 +385,7 @@ int aderPicardLoopNonlinear(SolverType& solver, const double* luh,
               for (int n = 0; n < basisSize; n++) {  // time
                 lQi_new +=
                     iweight * rhs[idx_rhs(n, i, j, k, m)] *
-                    kernels::iK1[order][l][n];  // note: iK1 is already the
+                    SolverType::iK1[order][l][n];  // note: iK1 is already the
                                                 // transposed inverse of K1
 
                 assertion3(std::isfinite(rhs[idx_rhs(n, i, j, k, m)]),
@@ -439,7 +438,7 @@ int aderPicardLoopNonlinear(SolverType& solver, const double* luh,
  *  We have to consider that we store parameters in lQi
  *  and lQhi, and have to adjust the index accordingly.
  */
-template <bool useSource, bool useFlux, bool useNCP, int numberOfVariables,
+template <typename SolverType,bool useSource, bool useFlux, bool useNCP, int numberOfVariables,
           int numberOfParameters, int basisSize>
 void aderPredictorNonlinear(const double* lQi, const double* lFi, double* lQhi,
                             double* lFhi_x, double* lFhi_y, double* lFhi_z,
@@ -481,23 +480,23 @@ void aderPredictorNonlinear(const double* lQi, const double* lFi, double* lQhi,
               // Fortran: lFhi_x(:,k,j,i) = lFh(:,1,k,j,i,:) * wGPN(:)
               lFhi_x[idx_lFhi(i, j, k, l)] +=
                   lFi[idx_lFi(m, i, j, k, 0, l)] *
-                  kernels::gaussLegendreWeights[order][m];
+                  SolverType::weights[order][m];
 
               // Fortran: lFhi_y(:,j,k,i) = lFh(:,2,:k,j,i,:) * wGPN(:)
               lFhi_y[idx_lFhi(i, k, j, l)] +=
                   lFi[idx_lFi(m, i, j, k, 1, l)] *
-                  kernels::gaussLegendreWeights[order][m];
+                  SolverType::weights[order][m];
 
               // Fortran: lFhi_z(:,i,k,j) = lFh(:,3,k,j,i,:) * wGPN(:)
               lFhi_z[idx_lFhi(j, k, i, l)] +=
                   lFi[idx_lFi(m, i, j, k, 2, l)] *
-                  kernels::gaussLegendreWeights[order][m];
+                  SolverType::weights[order][m];
             }
             if (useSource || useNCP) {
               // Fortran: lShi(:,k,j,i) = lSh(:,k,j,i,:) * wGPN(:)
               lShi[idx_lShi(i, j, k, l)] +=
                   lFi[idx_lFi(m, i, j, k, 3, l)] *
-                  kernels::gaussLegendreWeights[order][m];
+                  SolverType::weights[order][m];
             }
           }
         }
@@ -507,7 +506,7 @@ void aderPredictorNonlinear(const double* lQi, const double* lFi, double* lQhi,
             // Fortran: lQhi(:,k,j,i) = lQi(:,:,k,j,i) * wGPN(:)
             lQhi[idx_lQhi(i, j, k, l)] +=
                 lQi[idx_lQi(i, j, k, m, l)] *
-                kernels::gaussLegendreWeights[order][m];
+                SolverType::weights[order][m];
           }
         }
       }
@@ -515,7 +514,7 @@ void aderPredictorNonlinear(const double* lQi, const double* lFi, double* lQhi,
   }
 }
 
-template <bool useFlux, bool useViscousFlux, int numberOfVariables,
+template <typename SolverType,bool useFlux, bool useViscousFlux, int numberOfVariables,
           int numberOfParameters, int basisSize>
 void aderExtrapolatorNonlinear(const double* lQhi, const double* lGradQi,
                                const double* lFhi_x, const double* lFhi_y,
@@ -557,11 +556,11 @@ void aderExtrapolatorNonlinear(const double* lQhi, const double* lGradQi,
           for (int l = 0; l < basisSize; l++) {
             // Fortran: lFhbnd(:,j,i,1) = lFhi_x(:,:,j,i) * FLCoeff(:)
             lFhbnd[idx_lFhbnd(0, i, j, k)] +=
-                lFhi_x[idx_lFhi(i, j, l, k)] * kernels::FLCoeff[order][l];
+                lFhi_x[idx_lFhi(i, j, l, k)] * SolverType::FCoeff[order][0][l];
 
             // Fortran: lFhbnd(:,j,i,2) = lFhi_x(:,:,j,i) * FRCoeff(:)
             lFhbnd[idx_lFhbnd(1, i, j, k)] +=
-                lFhi_x[idx_lFhi(i, j, l, k)] * kernels::FRCoeff[order][l];
+                lFhi_x[idx_lFhi(i, j, l, k)] * SolverType::FCoeff[order][1][l];
           }
         }
       }
@@ -569,11 +568,11 @@ void aderExtrapolatorNonlinear(const double* lQhi, const double* lGradQi,
         for (int l = 0; l < basisSize; l++) {
           // Fortran: lQhbnd(:,j,i,1) = lQhi(:,:,j,i) * FLCoeff(:)
           lQhbnd[idx_lQhbnd(0, i, j, k)] +=
-              lQhi[idx_lQhi(i, j, l, k)] * kernels::FLCoeff[order][l];
+              lQhi[idx_lQhi(i, j, l, k)] * SolverType::FCoeff[order][0][l];
 
           // Fortran: lQhbnd(:,j,i,2) = lQhi(:,:,j,i) * FRCoeff(:)
           lQhbnd[idx_lQhbnd(1, i, j, k)] +=
-              lQhi[idx_lQhi(i, j, l, k)] * kernels::FRCoeff[order][l];
+              lQhi[idx_lQhi(i, j, l, k)] * SolverType::FCoeff[order][1][l];
         }
       }
       if (useViscousFlux) {
@@ -582,11 +581,11 @@ void aderExtrapolatorNonlinear(const double* lQhi, const double* lGradQi,
             for (int dim = 0; dim < DIMENSIONS; dim++) {
               lGradQhbnd[idx_lGradQhbnd(0, i, j, dim, k)] +=
                   lGradQi[idx_lGradQi(i, j, l, dim, k)] *
-                  kernels::FLCoeff[order][l];
+                  SolverType::FCoeff[order][0][l];
 
               lGradQhbnd[idx_lGradQhbnd(1, i, j, dim, k)] +=
                   lGradQi[idx_lGradQi(i, j, l, dim, k)] *
-                  kernels::FRCoeff[order][l];
+                  SolverType::FCoeff[order][1][l];
             }
           }
         }
@@ -602,11 +601,11 @@ void aderExtrapolatorNonlinear(const double* lQhi, const double* lGradQi,
           for (int l = 0; l < basisSize; l++) {
             // Fortran: lFhbnd(:,j,i,3) = lFhi_y(:,:,j,i) * FLCoeff(:)
             lFhbnd[idx_lFhbnd(2, i, j, k)] +=
-                lFhi_y[idx_lFhi(i, j, l, k)] * kernels::FLCoeff[order][l];
+                lFhi_y[idx_lFhi(i, j, l, k)] * SolverType::FCoeff[order][0][l];
 
             // Fortran: lFhbnd(:,j,i,4) = lFhi_y(:,:,j,i) * FRCoeff(:)
             lFhbnd[idx_lFhbnd(3, i, j, k)] +=
-                lFhi_y[idx_lFhi(i, j, l, k)] * kernels::FRCoeff[order][l];
+                lFhi_y[idx_lFhi(i, j, l, k)] * SolverType::FCoeff[order][1][l];
           }
         }
       }
@@ -615,11 +614,11 @@ void aderExtrapolatorNonlinear(const double* lQhi, const double* lGradQi,
         for (int l = 0; l < basisSize; l++) {
           // Fortran: lQhbnd(:,j,i,3) = lQhi(:,j,:,i) * FLCoeff(:)
           lQhbnd[idx_lQhbnd(2, i, j, k)] +=
-              lQhi[idx_lQhi(i, l, j, k)] * kernels::FLCoeff[order][l];
+              lQhi[idx_lQhi(i, l, j, k)] * SolverType::FCoeff[order][0][l];
 
           // Fortran: lQhbnd(:,j,i,4) = lQhi(:,j,:,i) * FRCoeff(:)
           lQhbnd[idx_lQhbnd(3, i, j, k)] +=
-              lQhi[idx_lQhi(i, l, j, k)] * kernels::FRCoeff[order][l];
+              lQhi[idx_lQhi(i, l, j, k)] * SolverType::FCoeff[order][1][l];
         }
       }
       if (useViscousFlux) {
@@ -628,11 +627,11 @@ void aderExtrapolatorNonlinear(const double* lQhi, const double* lGradQi,
             for (int dim = 0; dim < DIMENSIONS; dim++) {
               lGradQhbnd[idx_lGradQhbnd(2, i, j, dim, k)] +=
                   lGradQi[idx_lGradQi(i, l, j, dim, k)] *
-                  kernels::FLCoeff[order][l];
+                  SolverType::FCoeff[order][0][l];
 
               lGradQhbnd[idx_lGradQhbnd(3, i, j, dim, k)] +=
                   lGradQi[idx_lGradQi(i, l, j, dim, k)] *
-                  kernels::FRCoeff[order][l];
+                  SolverType::FCoeff[order][1][l];
             }
           }
         }
@@ -648,11 +647,11 @@ void aderExtrapolatorNonlinear(const double* lQhi, const double* lGradQi,
           for (int l = 0; l < basisSize; l++) {
             // Fortran: lFhbnd(:,j,i,5) = lFhi_z(:,:,j,i) * FLCoeff(:)
             lFhbnd[idx_lFhbnd(4, i, j, k)] +=
-                lFhi_z[idx_lFhi(i, j, l, k)] * kernels::FLCoeff[order][l];
+                lFhi_z[idx_lFhi(i, j, l, k)] * SolverType::FCoeff[order][0][l];
 
             // Fortran: lFhbnd(:,j,i,6) = lFhi_z(:,:,j,i) * FRCoeff(:)
             lFhbnd[idx_lFhbnd(5, i, j, k)] +=
-                lFhi_z[idx_lFhi(i, j, l, k)] * kernels::FRCoeff[order][l];
+                lFhi_z[idx_lFhi(i, j, l, k)] * SolverType::FCoeff[order][1][l];
           }
         }
       }
@@ -661,11 +660,11 @@ void aderExtrapolatorNonlinear(const double* lQhi, const double* lGradQi,
         for (int l = 0; l < basisSize; l++) {
           // Fortran: lQhbnd(:,j,i,5) = lQhi(:,j,i,:) * FLCoeff(:)
           lQhbnd[idx_lQhbnd(4, i, j, k)] +=
-              lQhi[idx_lQhi(l, i, j, k)] * kernels::FLCoeff[order][l];
+              lQhi[idx_lQhi(l, i, j, k)] * SolverType::FCoeff[order][0][l];
 
           // Fortran: lQhbnd(:,j,i,6) = lQhi(:,j,i,:) * FRCoeff(:)
           lQhbnd[idx_lQhbnd(5, i, j, k)] +=
-              lQhi[idx_lQhi(l, i, j, k)] * kernels::FRCoeff[order][l];
+              lQhi[idx_lQhi(l, i, j, k)] * SolverType::FCoeff[order][1][l];
         }
       }
       if (useViscousFlux) {
@@ -674,11 +673,11 @@ void aderExtrapolatorNonlinear(const double* lQhi, const double* lGradQi,
             for (int dim = 0; dim < DIMENSIONS; dim++) {
               lGradQhbnd[idx_lGradQhbnd(4, i, j, dim, k)] +=
                   lGradQi[idx_lGradQi(l, i, j, dim, k)] *
-                  kernels::FLCoeff[order][l];
+                  SolverType::FCoeff[order][0][l];
 
               lGradQhbnd[idx_lGradQhbnd(5, i, j, dim, k)] +=
                   lGradQi[idx_lGradQi(l, i, j, dim, k)] *
-                  kernels::FRCoeff[order][l];
+                  SolverType::FCoeff[order][1][l];
             }
           }
         }
@@ -687,7 +686,7 @@ void aderExtrapolatorNonlinear(const double* lQhi, const double* lGradQi,
   }
 }
 
-template <bool useFlux, int numberOfVariables, int numberOfParameters,
+template <typename SolverType,bool useFlux, int numberOfVariables, int numberOfParameters,
 	  int basisSize>
 void aderTimeAveragingExtrapolatorNonlinear(const double* lQi,
 					    const double* lFi, double* lQhbnd,
@@ -722,12 +721,12 @@ void aderTimeAveragingExtrapolatorNonlinear(const double* lQi,
           for (int l = 0; l < numberOfVariables; l++) {
             for (int n = 0; n < basisSize; n++) {  // x
               lFhbnd[idx_lFhbnd(0, j, k, l)] +=
-                  lFi[idx_lFi(i, j, k, n, 0, l)] * kernels::FLCoeff[order][n] *
-                  kernels::gaussLegendreWeights[order][i];
+                  lFi[idx_lFi(i, j, k, n, 0, l)] * SolverType::FCoeff[order][0][n] *
+                  SolverType::weights[order][i];
 
               lFhbnd[idx_lFhbnd(1, j, k, l)] +=
-                  lFi[idx_lFi(i, j, k, n, 0, l)] * kernels::FRCoeff[order][n] *
-                  kernels::gaussLegendreWeights[order][i];
+                  lFi[idx_lFi(i, j, k, n, 0, l)] * SolverType::FCoeff[order][1][n] *
+                  SolverType::weights[order][i];
             }
           }
         }
@@ -735,12 +734,12 @@ void aderTimeAveragingExtrapolatorNonlinear(const double* lQi,
         for (int l = 0; l < numberOfData; l++) {
           for (int n = 0; n < basisSize; n++) {  // x
             lQhbnd[idx_lQhbnd(0, j, k, l)] +=
-                lQi[idx_lQi(j, k, n, i, l)] * kernels::FLCoeff[order][n] *
-                kernels::gaussLegendreWeights[order][i];
+                lQi[idx_lQi(j, k, n, i, l)] * SolverType::FCoeff[order][0][n] *
+                SolverType::weights[order][i];
 
             lQhbnd[idx_lQhbnd(1, j, k, l)] +=
-                lQi[idx_lQi(j, k, n, i, l)] * kernels::FRCoeff[order][n] *
-                kernels::gaussLegendreWeights[order][i];
+                lQi[idx_lQi(j, k, n, i, l)] * SolverType::FCoeff[order][1][n] *
+                SolverType::weights[order][i];
           }
         }
       }
@@ -754,12 +753,12 @@ void aderTimeAveragingExtrapolatorNonlinear(const double* lQi,
           for (int l = 0; l < numberOfVariables; l++) {
             for (int n = 0; n < basisSize; n++) {  // y
               lFhbnd[idx_lFhbnd(2, j, k, l)] +=
-                  lFi[idx_lFi(i, j, n, k, 1, l)] * kernels::FLCoeff[order][n] *
-                  kernels::gaussLegendreWeights[order][i];
+                  lFi[idx_lFi(i, j, n, k, 1, l)] * SolverType::FCoeff[order][0][n] *
+                  SolverType::weights[order][i];
 
               lFhbnd[idx_lFhbnd(3, j, k, l)] +=
-                  lFi[idx_lFi(i, j, n, k, 1, l)] * kernels::FRCoeff[order][n] *
-                  kernels::gaussLegendreWeights[order][i];
+                  lFi[idx_lFi(i, j, n, k, 1, l)] * SolverType::FCoeff[order][1][n] *
+                  SolverType::weights[order][i];
             }
           }
         }
@@ -767,12 +766,12 @@ void aderTimeAveragingExtrapolatorNonlinear(const double* lQi,
         for (int l = 0; l < numberOfData; l++) {
           for (int n = 0; n < basisSize; n++) {  // y
             lQhbnd[idx_lQhbnd(2, j, k, l)] +=
-                lQi[idx_lQi(j, n, k, i, l)] * kernels::FLCoeff[order][n] *
-                kernels::gaussLegendreWeights[order][i];
+                lQi[idx_lQi(j, n, k, i, l)] * SolverType::FCoeff[order][0][n] *
+                SolverType::weights[order][i];
 
             lQhbnd[idx_lQhbnd(3, j, k, l)] +=
-                lQi[idx_lQi(j, n, k, i, l)] * kernels::FRCoeff[order][n] *
-                kernels::gaussLegendreWeights[order][i];
+                lQi[idx_lQi(j, n, k, i, l)] * SolverType::FCoeff[order][1][n] *
+                SolverType::weights[order][i];
           }
         }
       }
@@ -786,12 +785,12 @@ void aderTimeAveragingExtrapolatorNonlinear(const double* lQi,
           for (int l = 0; l < numberOfVariables; l++) {
             for (int n = 0; n < basisSize; n++) {  // z
               lFhbnd[idx_lFhbnd(4, j, k, l)] +=
-                  lFi[idx_lFi(i, n, j, k, 2, l)] * kernels::FLCoeff[order][n] *
-                  kernels::gaussLegendreWeights[order][i];
+                  lFi[idx_lFi(i, n, j, k, 2, l)] * SolverType::FCoeff[order][0][n] *
+                  SolverType::weights[order][i];
 
               lFhbnd[idx_lFhbnd(5, j, k, l)] +=
-                  lFi[idx_lFi(i, n, j, k, 2, l)] * kernels::FRCoeff[order][n] *
-                  kernels::gaussLegendreWeights[order][i];
+                  lFi[idx_lFi(i, n, j, k, 2, l)] * SolverType::FCoeff[order][1][n] *
+                  SolverType::weights[order][i];
             }
           }
         }
@@ -799,12 +798,12 @@ void aderTimeAveragingExtrapolatorNonlinear(const double* lQi,
         for (int l = 0; l < numberOfData; l++) {
           for (int n = 0; n < basisSize; n++) {  // z
             lQhbnd[idx_lQhbnd(4, j, k, l)] +=
-                lQi[idx_lQi(n, j, k, i, l)] * kernels::FLCoeff[order][n] *
-                kernels::gaussLegendreWeights[order][i];
+                lQi[idx_lQi(n, j, k, i, l)] * SolverType::FCoeff[order][0][n] *
+                SolverType::weights[order][i];
 
             lQhbnd[idx_lQhbnd(5, j, k, l)] +=
-                lQi[idx_lQi(n, j, k, i, l)] * kernels::FRCoeff[order][n] *
-                kernels::gaussLegendreWeights[order][i];
+                lQi[idx_lQi(n, j, k, i, l)] * SolverType::FCoeff[order][1][n] *
+                SolverType::weights[order][i];
           }
         }
       }
@@ -836,14 +835,14 @@ int spaceTimePredictorNonlinear(
   if (noTimeAveraging) {
     // TODO(Lukas) what shall we do for this case?
     assert(false);
-    aderTimeAveragingExtrapolatorNonlinear<useFlux, numberOfVariables, numberOfParameters, basisSize>(
+    aderTimeAveragingExtrapolatorNonlinear<SolverType,useFlux, numberOfVariables, numberOfParameters, basisSize>(
         lQi, lFi, lQhbnd, lFhbnd);
   } else {
     constexpr int basisSize2 = basisSize * basisSize;
     constexpr int basisSize3 = basisSize2 * basisSize;
 
     // Note: gradQ is already time-averaged!
-    aderPredictorNonlinear<useSource, useFlux, useNCP, numberOfVariables, numberOfParameters, basisSize>(
+    aderPredictorNonlinear<SolverType,useSource, useFlux, useNCP, numberOfVariables, numberOfParameters, basisSize>(
         lQi, lFi, lQhi,
         &lFhi[0 * basisSize3 * numberOfVariables],  // lFhi_x
         &lFhi[1 * basisSize3 * numberOfVariables],  // lFhi_y
@@ -851,7 +850,7 @@ int spaceTimePredictorNonlinear(
         &lFhi[3 * basisSize3 * numberOfVariables]   // lShi
     );
 
-    aderExtrapolatorNonlinear<useFlux, useViscousFlux, numberOfVariables,
+    aderExtrapolatorNonlinear<SolverType,useFlux, useViscousFlux, numberOfVariables,
                               numberOfParameters, basisSize>(
         lQhi, gradQ,
         &lFhi[0 * basisSize3 * numberOfVariables],  // lFhi_x

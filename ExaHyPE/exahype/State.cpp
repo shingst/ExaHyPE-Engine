@@ -196,11 +196,14 @@ exahype::State::RefinementAnswer exahype::State::mayRefine(bool isCreationalEven
 
 
 bool exahype::State::continueToConstructGrid() {
+  const int levelDelta =
+      (exahype::solvers::Solver::getMaximumAdaptiveMeshLevelOfAllSolvers() -
+      exahype::solvers::Solver::getCoarsestMeshLevelOfAllSolvers());
   static const int iterationsForErasingToConverge =
-      exahype::solvers::Solver::getMaximumAdaptiveMeshLevelOfAllSolvers() -
-      exahype::solvers::Solver::getCoarsestMeshLevelOfAllSolvers();
+      3*levelDelta  +
+      std::max(exahype::solvers::Solver::getMaxRefinementStatus(),3);
   static const int iterationsForRefiningToConverge =
-      iterationsForErasingToConverge +
+      2*levelDelta +
       std::max(exahype::solvers::Solver::getMaxRefinementStatus(),3);
 
   // convergence analysis

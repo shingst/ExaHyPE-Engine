@@ -31,6 +31,7 @@
  #include "exahype/adapters/UpdateAndReduce.h" 
  #include "exahype/adapters/Prediction.h" 
  #include "exahype/adapters/Correction.h" 
+ #include "exahype/adapters/Empty.h" 
 
 
 
@@ -71,6 +72,7 @@ class exahype::repositories::RepositorySTDStack: public exahype::repositories::R
     peano::grid::Grid<exahype::Vertex,exahype::Cell,exahype::State,VertexStack,CellStack,exahype::adapters::UpdateAndReduce> _gridWithUpdateAndReduce;
     peano::grid::Grid<exahype::Vertex,exahype::Cell,exahype::State,VertexStack,CellStack,exahype::adapters::Prediction> _gridWithPrediction;
     peano::grid::Grid<exahype::Vertex,exahype::Cell,exahype::State,VertexStack,CellStack,exahype::adapters::Correction> _gridWithCorrection;
+    peano::grid::Grid<exahype::Vertex,exahype::Cell,exahype::State,VertexStack,CellStack,exahype::adapters::Empty> _gridWithEmpty;
 
      
    exahype::records::RepositoryState               _repositoryState;
@@ -90,6 +92,7 @@ class exahype::repositories::RepositorySTDStack: public exahype::repositories::R
     tarch::timing::Measurement _measureUpdateAndReduceCPUTime;
     tarch::timing::Measurement _measurePredictionCPUTime;
     tarch::timing::Measurement _measureCorrectionCPUTime;
+    tarch::timing::Measurement _measureEmptyCPUTime;
 
     tarch::timing::Measurement _measureUniformRefinementCalendarTime;
     tarch::timing::Measurement _measureMeshRefinementCalendarTime;
@@ -106,6 +109,7 @@ class exahype::repositories::RepositorySTDStack: public exahype::repositories::R
     tarch::timing::Measurement _measureUpdateAndReduceCalendarTime;
     tarch::timing::Measurement _measurePredictionCalendarTime;
     tarch::timing::Measurement _measureCorrectionCalendarTime;
+    tarch::timing::Measurement _measureEmptyCalendarTime;
 
    
   public:
@@ -160,6 +164,7 @@ class exahype::repositories::RepositorySTDStack: public exahype::repositories::R
     virtual void switchToUpdateAndReduce();    
     virtual void switchToPrediction();    
     virtual void switchToCorrection();    
+    virtual void switchToEmpty();    
 
     virtual bool isActiveAdapterUniformRefinement() const;
     virtual bool isActiveAdapterMeshRefinement() const;
@@ -176,6 +181,7 @@ class exahype::repositories::RepositorySTDStack: public exahype::repositories::R
     virtual bool isActiveAdapterUpdateAndReduce() const;
     virtual bool isActiveAdapterPrediction() const;
     virtual bool isActiveAdapterCorrection() const;
+    virtual bool isActiveAdapterEmpty() const;
 
    
     #ifdef Parallel

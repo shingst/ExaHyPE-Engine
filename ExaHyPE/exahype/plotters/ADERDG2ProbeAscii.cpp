@@ -5,7 +5,7 @@
 
 #include "peano/utils/Loop.h"
 
-#include "kernels/DGBasisFunctions.h"
+#include "kernels/GaussLegendreBasis.h"
 
 #include "exahype/solvers/ADERDGSolver.h"
 
@@ -146,7 +146,7 @@ void exahype::plotters::ADERDG2ProbeAscii::plotPatch(
     double* value       = _writtenUnknowns==0 ? nullptr : new double[_writtenUnknowns];
 
     for (int unknown=0; unknown < _solverUnknowns; unknown++) {
-      interpoland[unknown] = kernels::interpolate(
+      interpoland[unknown] = kernels::legendre::interpolate(
         offsetOfPatch.data(),
         sizeOfPatch.data(),
         _x.data(),

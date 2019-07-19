@@ -185,7 +185,7 @@ void GenericEulerKernelTest::testVolumeIntegralLinear() {
     lFhi_z[i + 3] = 3.;
   }
 
-  kernels::aderdg::generic::c::volumeIntegralLinear<false,false,NumberOfVariables,Order+1>(
+  kernels::aderdg::generic::c::volumeIntegralLinear<GenericEulerKernelTest,false,false,NumberOfVariables,Order+1>(
       lduh, lFhi, dx);
 
   for (int i = 0; i < 320; i++) {
@@ -263,7 +263,7 @@ void GenericEulerKernelTest::testSurfaceIntegralLinear() {
   }
 
   // lFhbnd = [ FLeft | FRight | FFront | FBack | FBottom | FTop ]
-  kernels::aderdg::generic::c::surfaceIntegralLinear<NumberOfVariables,Order+1>(
+  kernels::aderdg::generic::c::surfaceIntegralLinear<GenericEulerKernelTest, NumberOfVariables,Order+1>(
       lduh, lFhbnd, dx[0]);
 
   for (int i = 0; i < 320; i++) {
@@ -307,7 +307,7 @@ void GenericEulerKernelTest::testSurfaceIntegralNonlinear() {
   }
 
   // lFhbnd = [ FLeft | FRight | FFront | FBack | FBottom | FTop ]
-  kernels::aderdg::generic::c::surfaceIntegralNonlinear<NumberOfVariables,Order+1>(
+  kernels::aderdg::generic::c::surfaceIntegralNonlinear<GenericEulerKernelTest,NumberOfVariables,Order+1>(
       lduh, lFhbnd, dx[0]);
 
   for (int i = 0; i < 320; i++) {
@@ -748,7 +748,7 @@ void GenericEulerKernelTest::testFaceUnknownsProjection() {
           subfaceIndex[1] = i2;
 
           // Prolongate.
-          kernels::aderdg::generic::c::faceUnknownsProlongation<NumberOfVariables,NumberOfParameters,Order+1>(
+          kernels::aderdg::generic::c::faceUnknownsProlongation<GenericEulerKernelTest,NumberOfVariables,NumberOfParameters,Order+1>(
               lQhbndFineOut, lFhbndFineOut, lQhbndCoarseIn, lFhbndCoarseIn,
               levelCoarse, levelCoarse + levelDelta, subfaceIndex);
 
@@ -761,7 +761,7 @@ void GenericEulerKernelTest::testFaceUnknownsProjection() {
           }
 
           // Restrict.
-          kernels::aderdg::generic::c::faceUnknownsRestriction<NumberOfVariables,NumberOfParameters,Order+1>(
+          kernels::aderdg::generic::c::faceUnknownsRestriction<GenericEulerKernelTest,NumberOfVariables,NumberOfParameters,Order+1>(
               lQhbndCoarseOut, lFhbndCoarseOut, lQhbndFineIn, lFhbndFineIn,
               levelCoarse, levelCoarse + levelDelta, subfaceIndex);
         }
@@ -822,7 +822,7 @@ void GenericEulerKernelTest::testVolumeUnknownsProjection() {
             subcellIndex[2] = i3;
 
             // Prolongate.
-            kernels::aderdg::generic::c::volumeUnknownsProlongation<nVar,nPar,basisSize>(
+            kernels::aderdg::generic::c::volumeUnknownsProlongation<GenericEulerKernelTest, nVar,nPar,basisSize>(
                 luhFineOut, luhCoarseIn, levelCoarse, levelCoarse + levelDelta,
                 subcellIndex);
 
@@ -834,7 +834,7 @@ void GenericEulerKernelTest::testVolumeUnknownsProjection() {
 
 
             // Restrict.
-            kernels::aderdg::generic::c::volumeUnknownsRestriction<nVar,nPar,basisSize>(
+            kernels::aderdg::generic::c::volumeUnknownsRestriction<GenericEulerKernelTest, nVar,nPar,basisSize>(
                 luhCoarseOut, luhFineIn, levelCoarse, levelCoarse + levelDelta,
                 subcellIndex);
           }

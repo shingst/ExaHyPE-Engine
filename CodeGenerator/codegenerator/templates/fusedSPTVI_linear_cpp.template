@@ -22,8 +22,6 @@
 #include "{{pathToOptKernel}}/gemmsCPP.h"
 {% endif %}
 
-#include "kernels/DGBasisFunctions.h"
-
 #include "{{solverHeader}}"
 
 //NOTE lFi/gradQ swap nDim to lowest coordinate compared to generic
@@ -130,10 +128,10 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
 
               // Map point source location onto reference element
               const double* const x_ps = solver.pointSourceLocation[p];
-              const double update =   kernels::basisFunctions[{{nDof-1}}][x]((x_ps[0] - center[0]) * invDx + 0.5)
-                                    * kernels::basisFunctions[{{nDof-1}}][y]((x_ps[1] - center[1]) * invDx + 0.5)
+              const double update =   solver.basisFunction[{{nDof-1}}][x]((x_ps[0] - center[0]) * invDx + 0.5)
+                                    * solver.basisFunction[{{nDof-1}}][y]((x_ps[1] - center[1]) * invDx + 0.5)
 {% if nDim == 3 %}
-                                    * kernels::basisFunctions[{{nDof-1}}][z]((x_ps[2] - center[2]) * invDx + 0.5)
+                                    * solver.basisFunction[{{nDof-1}}][z]((x_ps[2] - center[2]) * invDx + 0.5)
 {% endif %}
                                     * iweights3[(z*{{nDof3D}}+y)*{{nDof}}+x] * ivolume ; //division by weights product and volume
 
@@ -456,7 +454,8 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
 #ifdef USE_IPO
       #pragma forceinline recursive
 #endif
-      solver.{{solverName}}::algebraicSource(lQi+(i*{{nDof**nDim}}+xyz)*{{nDataPad}}, lSi+(i*{{nDof**nDim}}+xyz)*{{nVarPad}});
+      // TODO(JMG): Pass correct x here
+      solver.{{solverName}}::algebraicSource(center[0],tStep,lQi+(i*{{nDof**nDim}}+xyz)*{{nDataPad}}, lSi+(i*{{nDof**nDim}}+xyz)*{{nVarPad}});
     }
 {% endif %}{# useSource #}
 

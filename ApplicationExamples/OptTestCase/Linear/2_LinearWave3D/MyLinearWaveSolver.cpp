@@ -57,9 +57,9 @@ void Linear::MyLinearWaveSolver::adjustSolution(double* const luh, const tarch::
       for (int j=0; j< basisSize; j++){
 	for (int i=0; i< basisSize; i++){
      
-	  double x  =  (offset_x+width_x*kernels::gaussLegendreNodes[basisSize-1][i]);
-	  double y  =  (offset_y+width_y*kernels::gaussLegendreNodes[basisSize-1][j]);
-	  double z  =  (offset_z+width_z*kernels::gaussLegendreNodes[basisSize-1][k]);
+	  double x  =  (offset_x+width_x*kernels::legendre::nodes[basisSize-1][i]);
+	  double y  =  (offset_y+width_y*kernels::legendre::nodes[basisSize-1][j]);
+	  double z  =  (offset_z+width_z*kernels::legendre::nodes[basisSize-1][k]);
 
 	   
 	  //Pressure

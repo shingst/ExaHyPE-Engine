@@ -9,7 +9,7 @@
 #include "MaxwellSolver.h"
 
 #include "MaxwellSolver_Variables.h"
-#include "kernels/GaussLegendreQuadrature.h"
+#include "kernels/GaussLegendreBasis.h"
 #include <cstring> // memset
 #include "kernels/KernelUtils.h" // matrix indexing
 
@@ -61,8 +61,8 @@ void Maxwell::MaxwellSolver::boundaryValues(const double* const x,const double t
   for (int i=0;i<nDim;i++) F[i]=new double[nVar];
 
   for(int i=0; i < basisSize; i++)  { // i == time
-     const double weight = kernels::gaussLegendreWeights[order][i];
-     const double xi = kernels::gaussLegendreNodes[order][i];
+     const double weight = kernels::legendre::weights[order][i];
+     const double xi = kernels::legendre::nodes[order][i];
      const double ti = t + xi * dt;
 
      cavityProblem(Qgp, x, ti);

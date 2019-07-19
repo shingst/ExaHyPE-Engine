@@ -33,8 +33,7 @@
 
 #include "kernels/KernelCalls.h"
 
-#include "kernels/GaussLegendreQuadrature.h"
-#include "kernels/DGMatrices.h"
+#include "kernels/GaussLegendreBasis.h"
 
 #include <vector>
 #include <cstdlib> // getenv, exit

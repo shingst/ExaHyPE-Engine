@@ -507,14 +507,12 @@ def parseSummedTimes(resultsFolderPath,projectName,timePerTimeStep=False):
             nonlocal fused
         
             fusedAdapters        = ["FusedTimeStep"]
-            firstFusedAdapter    = fusedAdapters[0] # alphabetically
-            nonfusedAdapters     = ["MergeNeighbours","Prediction","UpdateAndReduce"]
-            firstNonfusedAdapter = nonfusedAdapters[0] # alphabetically 
+            nonfusedAdapters     = ["Correction","MergeNeighbours","Prediction","UpdateAndReduce"]
             
             adapter = line[adapterColumn]
-            if adapter==firstFusedAdapter:
+            if adapter in fusedAdapters:
               fused = True
-            elif adapter==firstNonfusedAdapter:
+            elif adapter in ["Correction", "MergeNeighbours"]:
               fused = False
             
             if timePerTimeStep and (fused and adapter in fusedAdapters) or (not fused and adapter in nonfusedAdapters):

@@ -4,7 +4,7 @@
 
 #include "InitialDataAdapter.h"
 #include "PDE.h"
-#include "kernels/GaussLegendreQuadrature.h"
+#include "kernels/GaussLegendreBasis.h"
 #include "kernels/KernelUtils.h" // matrix indexing
 #include <cstring> // memset
 
@@ -50,8 +50,8 @@ void MHDSolver::MHDSolver::boundaryValues(const double* const x,const double t,c
 
   // Integrate solution in gauss points (Qgp) in time
   for(int i=0; i < basisSize; i++)  { // i == time
-     const double weight = kernels::gaussLegendreWeights[order][i];
-     const double xi = kernels::gaussLegendreNodes[order][i];
+     const double weight = kernels::legendre::weights[order][i];
+     const double xi = kernels::legendre::nodes[order][i];
      double ti = t + xi * dt;
 
      alfenwave_(x, Qgp, &ti);

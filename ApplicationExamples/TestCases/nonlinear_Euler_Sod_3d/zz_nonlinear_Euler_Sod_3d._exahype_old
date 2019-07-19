@@ -1,0 +1,83 @@
+/* 
+ * This file is part of the ExaHyPE project.
+ * Copyright (c) 2016  http://exahype.eu
+ * All rights reserved.
+ *
+ * The project has received funding from the European Union's Horizon 
+ * 2020 research and innovation programme under grant agreement
+ * No 671698. For copyrights and licensing, please consult the webpage.
+ *
+ * Released under the BSD 3 Open Source License.
+ * For the full license text, see LICENSE.txt
+ */
+exahype-project Euler
+  peano-kernel-path const = ./Peano
+  exahype-path const      = ./ExaHyPE
+  output-directory const  = ./ApplicationExamples/TestCases/nonlinear_Euler_Sod_3d 
+  architecture const      = noarch
+
+  computational-domain
+    dimension const  = 3
+    width            = 1.0, 1.0, 1.0
+    offset           = 0.0, 0.0, 0.0
+    end-time         = 0.1
+  end computational-domain
+  
+  shared-memory
+    identifier      = dummy
+    configure       = {}
+    cores           = 4
+    properties-file = sharedmemory.properties
+  end shared-memory  
+  
+  global-optimisation
+    fuse-algorithmic-steps                          = all
+    fuse-algorithmic-steps-rerun-factor             = 0.99
+    fuse-algorithmic-steps-diffusion-factor         = 0.99
+    spawn-predictor-as-background-thread            = off
+    spawn-amr-background-threads                    = off
+    disable-vertex-exchange-in-time-steps           = on
+    time-step-batch-factor                          = 0.8
+    disable-metadata-exchange-in-batched-time-steps = off
+    double-compression                              = 0.0
+    spawn-double-compression-as-background-thread   = off
+  end global-optimisation
+ 
+  solver Limiting-ADER-DG EulerSolver
+    variables const            = rho:1,j:3,E:1
+    global-observables const   = dgcells:1,fvcells:1
+    order const                = 6
+    maximum-mesh-size          = 0.4
+    maximum-mesh-depth         = 0
+    time-stepping              = global
+    type const                 = nonlinear
+    terms const                = flux
+    optimisation const         = generic 
+    language const             = C
+    limiter-type const         = robustmusclhancock
+    limiter-optimisation const = generic
+    limiter-language const     = C
+    dmp-observables  const     = 2
+    dmp-relaxation-parameter   = 1e-2
+    dmp-difference-scaling     = 1e-2
+    // reference either: sod,entropywave,explosion,rarefactionwave
+    constants                  = reference:sod
+    
+    // works only properly for single-node runs
+    plot user::defined ErrorWriter
+      variables const = 5
+      time            = 0.0
+      repeat          = 1e-2
+      output          = not-available
+    end plot
+    
+    plot vtu::Cartesian::cells::limited::ascii ErrorPlotter
+      // absErrorL1perCell[nvar],Q[nvar],QAnalytical[nvar]
+      variables const = 15 
+      time            = 0.0
+      repeat          = 1e-2
+      output          = ./errors
+    end plot
+
+  end solver
+end exahype-project

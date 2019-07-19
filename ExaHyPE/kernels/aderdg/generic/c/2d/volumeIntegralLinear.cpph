@@ -23,7 +23,7 @@ namespace c {
 
 #if DIMENSIONS == 2
 
-template <bool useSource, bool useFlux, int numberOfVariables, int basisSize>
+template <typename SolverType,bool useSource, bool useFlux, int numberOfVariables, int basisSize>
 void volumeIntegralLinear(double* lduh, const double* const lFhi,
                           const tarch::la::Vector<DIMENSIONS, double>& dx) {
   // for linear non-conservative PDE, the volume integral is trivial, since it
@@ -39,13 +39,15 @@ void volumeIntegralLinear(double* lduh, const double* const lFhi,
 
   for (int j = 0; j < basisSize; j++) {
     for (int k = 0; k < basisSize; k++) {
-#if defined(_GLL)
-      double weight = kernels::gaussLobattoWeights[order][j] *
-	              kernels::gaussLobattoWeights[order][k];
-#else      
-      double weight = kernels::gaussLegendreWeights[order][j] *
-                      kernels::gaussLegendreWeights[order][k];
-#endif      
+//#if defined(_GLL)
+//      double weight = kernels::gaussLobattoWeights[order][j] *
+//	              kernels::gaussLobattoWeights[order][k];
+//#else      
+//      double weight = kernels::gaussLegendreWeights[order][j] *
+//                      kernels::gaussLegendreWeights[order][k];
+//#endif
+      double weight = SolverType::weights[order][j] *
+                      SolverType::weights[order][k];
 
       // Fortran: lduh(:,k,j) = -SUM(lFhi(:,k,j,1:nDim), dim = 4) * weight
       for (int l = 0; l < numberOfVariables; l++) {
@@ -67,8 +69,8 @@ void volumeIntegralLinear(double* lduh, const double* const lFhi,
   //   const int s_offset = 2 * basisSize2 * numberOfVariables;
   //   for (int j = 0; j < basisSize; j++) {
   //     for (int k = 0; k < basisSize; k++) {
-  //       const double weight = kernels::gaussLegendreWeights[order][j] *
-  //                             kernels::gaussLegendreWeights[order][k];
+  //       const double weight = SolverType::weights[order][j] *
+  //                             SolverType::weights[order][k];
 
   //       // Fortran: lduh(:,k,j) += w * lShi(:,k,j)
   //       for (int l = 0; l < numberOfVariables; l++) {

@@ -20,7 +20,7 @@ exahype::solvers::ADERDGSolver::ProlongationJob::ProlongationJob(
   NumberOfEnclaveJobs.fetch_add(1); // TODO(Dominic): Not sure yet which queue is optimal
 }
 
-bool exahype::solvers::ADERDGSolver::ProlongationJob::run( bool isCalledFromMaster ) {
+bool exahype::solvers::ADERDGSolver::ProlongationJob::run(bool runOnMasterThread) {
   _solver.prolongateFaceDataToDescendant(
       _cellDescription,_parentCellDescription,_subcellIndex);
 

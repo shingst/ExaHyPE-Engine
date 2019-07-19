@@ -6,7 +6,7 @@
 
 #include <cstring> // memset
 #include "kernels/KernelUtils.h" // matrix indexing
-#include "kernels/GaussLegendreQuadrature.h"
+#include "kernels/GaussLegendreBasis.h"
 
 
 constexpr int nVar = GRMHD::AbstractGRMHDSolver_ADERDG::NumberOfVariables;
@@ -45,8 +45,8 @@ void GRMHD::GRMHDSolver_ADERDG::boundaryValues(const double* const x,const doubl
   double F[nDim][nVar];
 
   for(int i=0; i < basisSize; i++)  { // i == time
-     const double weight = kernels::gaussLegendreWeights[order][i];
-     const double xi = kernels::gaussLegendreNodes[order][i];
+     const double weight = kernels::legendre::weights[order][i];
+     const double xi = kernels::legendre::nodes[order][i];
      double ti = t + xi * dt;
 
      initialdata_(x,&ti, Qgp);

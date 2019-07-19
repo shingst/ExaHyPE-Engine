@@ -2269,9 +2269,12 @@ void exahype::solvers::ADERDGSolver::reduce(
 
   if ( _numberOfGlobalObservables > 0 ) {
     assert(cellDescription.getType()==CellDescription::Type::Cell);
-    const double* const luh         = static_cast<double*>(cellDescription.getSolution());
-    const auto& cellSize            = cellDescription.getSize();
-    updateGlobalObservables(_nextGlobalObservables.data(),luh,cellSize);
+    const double* const luh = static_cast<double*>(cellDescription.getSolution());
+    const auto cellCentre   = cellDescription.getOffset() + 0.5 * cellDescription.getSize();
+    const auto& cellSize    = cellDescription.getSize();
+    const auto t             = cellDescription.getTimeStamp();
+    const auto dt            = cellDescription.getTimeStepSize();
+    updateGlobalObservables(_nextGlobalObservables.data(),luh,cellCentre,cellSize,t,dt);
   }
 }
 
@@ -2371,13 +2374,6 @@ int exahype::solvers::ADERDGSolver::predictionAndVolumeIntegralBody(
   double* lQhbnd = static_cast<double*>(cellDescription.getExtrapolatedPredictor());
   double* lGradQhbnd = static_cast<double*>(cellDescription.getExtrapolatedPredictorGradient());
   double* lFhbnd = static_cast<double*>(cellDescription.getFluctuation());
-
-
-  #ifdef Asserts
-  for (int i=0; i<getDataPerCell(); i++) {
-    assertion3(tarch::la::equals(cellDescription.getTimeStepSize(),0.0) || std::isfinite(luh[i]),cellDescription.toString(),"performPredictionAndVolumeIntegral(...)",i);
-  }
-  #endif
 
   #if !defined(SharedMemoryParallelisation) && !defined(Parallel) && defined(Asserts)
   static int counter = 0;
@@ -2565,9 +2561,12 @@ void exahype::solvers::ADERDGSolver::updateGlobalObservables(const int solverNum
     CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[element];
 
     if ( _numberOfGlobalObservables > 0 && cellDescription.getType() == CellDescription::Type::Cell ) {
-      const double* const luh         = static_cast<double*>(cellDescription.getSolution());
-      const auto& cellSize            = cellDescription.getSize();
-      updateGlobalObservables(_nextGlobalObservables.data(),luh,cellSize);
+      const double* const luh  = static_cast<double*>(cellDescription.getSolution());
+      const auto cellCentre    = cellDescription.getOffset() + 0.5 * cellDescription.getSize();
+      const auto& cellSize     = cellDescription.getSize();
+      const auto t             = cellDescription.getTimeStamp();
+      const auto dt            = cellDescription.getTimeStepSize();
+      updateGlobalObservables(_nextGlobalObservables.data(),luh,cellCentre,cellSize,t,dt);
     }
   }
 }
@@ -5840,7 +5839,7 @@ exahype::solvers::ADERDGSolver::CompressionJob::CompressionJob(
 }
 
 
-bool exahype::solvers::ADERDGSolver::CompressionJob::run( bool isCalledFromMaster ) {
+bool exahype::solvers::ADERDGSolver::CompressionJob::run(bool runOnMasterThread) {
   _solver.determineUnknownAverages(_cellDescription);
   _solver.computeHierarchicalTransform(_cellDescription,-1.0);
   _solver.putUnknownsIntoByteStream(_cellDescription);
@@ -6528,7 +6527,11 @@ exahype::solvers::Solver::CellProcessingTimes exahype::solvers::ADERDGSolver::me
     }
     const double time_sec = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-timeStart).count() * 1e-9;
     result._minTimePredictor = time_sec / numberOfRuns / std::abs(numberOfPicardIterations);
-    result._maxTimePredictor = result._minTimePredictor * getNodesPerCoordinateAxis(); // * (order+1)
+    if ( isLinear() ) {
+      result._maxTimePredictor = result._minTimePredictor;
+    } else {
+      result._maxTimePredictor = result._minTimePredictor * getNodesPerCoordinateAxis(); // * (order+1)
+    }
   }
 
   // measure ADER-DG cell update

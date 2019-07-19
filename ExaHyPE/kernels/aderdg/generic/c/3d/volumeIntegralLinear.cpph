@@ -18,7 +18,7 @@
 
 #if DIMENSIONS == 3
 
-template <bool useSource, bool useFlux, int numberOfVariables, int basisSize>
+template <typename SolverType, bool useSource, bool useFlux, int numberOfVariables, int basisSize>
 void kernels::aderdg::generic::c::volumeIntegralLinear(double* lduh, const double* const lFhi,
     const tarch::la::Vector<DIMENSIONS, double>& dx) {
   // for linear non-conservative PDE, the volume integral is trivial, since it
@@ -36,15 +36,18 @@ void kernels::aderdg::generic::c::volumeIntegralLinear(double* lduh, const doubl
   for (int i = 0; i < basisSize; i++) {
     for (int j = 0; j < basisSize; j++) {
       for (int k = 0; k < basisSize; k++) {
-      #if defined(_GLL)
-      double weight = kernels::gaussLobattoWeights[order][i] *
-            kernels::gaussLobattoWeights[order][j] *
-            kernels::gaussLobattoWeights[order][k];
-      #else 
-        double weight = kernels::gaussLegendreWeights[order][i] *
-            kernels::gaussLegendreWeights[order][j] *
-            kernels::gaussLegendreWeights[order][k];
-     #endif	    
+        //#if defined(_GLL)
+        //double weight = kernels::gaussLobattoWeights[order][i] *
+        //      kernels::gaussLobattoWeights[order][j] *
+        //      kernels::gaussLobattoWeights[order][k];
+        //#else 
+        //double weight = kernels::gaussLegendreWeights[order][i] *
+        //      kernels::gaussLegendreWeights[order][j] *
+        //      kernels::gaussLegendreWeights[order][k];
+        //#endif
+        double weight = SolverType::weights[order][i] *
+                        SolverType::weights[order][j] *
+                        SolverType::weights[order][k];
 
         // Fortran: lduh(:,k,j,i) = -SUM(lFhi(:,k,j,i,1:nDim), dim = 5) * weight
         for (int l = 0; l < numberOfVariables; l++) {

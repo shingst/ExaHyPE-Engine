@@ -18,8 +18,8 @@
 // #include "tarch/la/Scalar.h"
 // #include "tarch/la/ScalarOperations.h"
 
-// #include "kernels/GaussLegendreQuadrature.h"
-// #include "kernels/DGMatrices.h"
+// #include "kernels/GaussLegendreBasis.h"
+// #include "kernels/GaussLegendreBasis.h"
 
 // #define EXAHYPE_CFL_FACTOR 0.9
 

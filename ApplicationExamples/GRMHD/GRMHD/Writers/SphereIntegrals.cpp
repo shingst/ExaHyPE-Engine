@@ -8,7 +8,7 @@
 #include "SphereIntegrals.h"
 
 #include "AbstractGRMHDSolver_ADERDG.h"
-#include "kernels/DGBasisFunctions.h" // kernels::interpolate
+#include "kernels/GaussLegendreBasis.h" // kernels::legendre::interpolate
 #include <cmath> // std::sin, std::cos, std::sqrt
 #include "peano/utils/Loop.h" // dfor; not yet used
 using namespace tarch::la;
@@ -69,7 +69,7 @@ void GRMHD::SphereIntegrals::plotPatch(const dvec& offsetOfPatch, const dvec& si
 				// for the time being, interpolate all quantities
 				double intp[nVar];
 				for(int k=0; k<nVar; k++) {
-					intp[k] = kernels::interpolate(offsetOfPatch.data(), sizeOfPatch.data(), ip.data(), nVar, k, order, u);
+					intp[k] = kernels::legendre::interpolate(offsetOfPatch.data(), sizeOfPatch.data(), ip.data(), nVar, k, order, u);
 				}
 
 				// map the interpolated values to something

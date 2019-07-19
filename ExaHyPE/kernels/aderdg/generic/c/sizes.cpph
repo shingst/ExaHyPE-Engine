@@ -1,7 +1,7 @@
 #ifndef __KERNELS_SIZES_SVEN__
 #define __KERNELS_SIZES_SVEN__
 
-#include "kernels/GaussLegendreQuadrature.h" // for gaussLegendreWeights
+#include "kernels/GaussLegendreBasis.h" // for gaussLegendreWeights
 #include "peano/utils/Globals.h" // DIMENSIONS
 #include "tarch/la/Vector.h"
 

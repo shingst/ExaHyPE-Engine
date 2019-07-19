@@ -641,9 +641,12 @@ void exahype::solvers::FiniteVolumesSolver::updateGlobalObservables(const int so
 
     if ( _numberOfGlobalObservables > 0 ) {
       assert(cellDescription.getType()==CellDescription::Type::Cell);
-      const double* const luh         = static_cast<double*>(cellDescription.getSolution());
-      const auto& cellSize            = cellDescription.getSize();
-      updateGlobalObservables(_nextGlobalObservables.data(),luh,cellSize);
+      const double* const luh = static_cast<double*>(cellDescription.getSolution());
+      const auto cellCentre   = cellDescription.getOffset() + 0.5 * cellDescription.getSize();
+      const auto& cellSize    = cellDescription.getSize();
+      const auto t             = cellDescription.getTimeStamp();
+      const auto dt            = cellDescription.getTimeStepSize();
+      updateGlobalObservables(_nextGlobalObservables.data(),luh,cellCentre,cellSize,t,dt);
     }
   }
 }
@@ -705,9 +708,12 @@ void exahype::solvers::FiniteVolumesSolver::reduce(
 
   if ( _numberOfGlobalObservables > 0 ) {
     assert(cellDescription.getType()==CellDescription::Type::Cell);
-    const double* const luh         = static_cast<double*>(cellDescription.getSolution());
-    const auto& cellSize            = cellDescription.getSize();
-    updateGlobalObservables(_nextGlobalObservables.data(),luh,cellSize);
+    const double* const luh = static_cast<double*>(cellDescription.getSolution());
+    const auto& cellSize    = cellDescription.getSize();
+    const auto cellCentre   = cellDescription.getOffset() + 0.5 * cellDescription.getSize();
+    const auto t             = cellDescription.getTimeStamp();
+    const auto dt            = cellDescription.getTimeStepSize();
+    updateGlobalObservables(_nextGlobalObservables.data(),luh,cellCentre,cellSize,t,dt);
   }
 }
 
@@ -2067,7 +2073,7 @@ exahype::solvers::FiniteVolumesSolver::CompressionJob::CompressionJob(
 }
 
 
-bool exahype::solvers::FiniteVolumesSolver::CompressionJob::run( bool isCalledFromMaster ) {
+bool exahype::solvers::FiniteVolumesSolver::CompressionJob::run(bool runOnMasterThread) {
   _solver.determineUnknownAverages(_cellDescription);
   _solver.computeHierarchicalTransform(_cellDescription,-1.0);
   _solver.putUnknownsIntoByteStream(_cellDescription);
@@ -2090,6 +2096,7 @@ bool exahype::solvers::FiniteVolumesSolver::CompressionJob::run( bool isCalledFr
 exahype::solvers::Solver::CellProcessingTimes exahype::solvers::FiniteVolumesSolver::measureCellProcessingTimes(const int numberOfRuns) {
   // Setup
   const int cellDescriptionsIndex = ADERDGSolver::Heap::getInstance().createData(0,1);
+  FiniteVolumesSolver::Heap::getInstance().createDataForIndex(cellDescriptionsIndex,0,1);
 
   Solver::CellInfo cellInfo(cellDescriptionsIndex);
   addNewCellDescription(

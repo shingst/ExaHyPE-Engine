@@ -35,7 +35,7 @@ exahype::solvers::ADERDGSolver::PredictionJob::PredictionJob(
 }
 
 
-bool exahype::solvers::ADERDGSolver::PredictionJob::run( bool isCalledFromMaster ) {
+bool exahype::solvers::ADERDGSolver::PredictionJob::run(bool runOnMasterThread) {
   _solver.predictionAndVolumeIntegralBody(
       _cellDescription,_predictorTimeStamp,_predictorTimeStepSize,
       _uncompressBefore,_isSkeletonJob,_addVolumeIntegralResultToUpdate); // ignore return value

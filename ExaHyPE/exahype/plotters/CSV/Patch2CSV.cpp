@@ -20,7 +20,7 @@
 
 #include "exahype/plotters/ascii/CSVWriter.h"
 
-#include "kernels/DGMatrices.h"
+#include "kernels/GaussLegendreBasis.h"
 #include "kernels/KernelUtils.h" // index functions
 #include "peano/utils/Loop.h"
 
