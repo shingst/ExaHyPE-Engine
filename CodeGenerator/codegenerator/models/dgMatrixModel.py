@@ -31,8 +31,16 @@ import time #for runtime measurements debug print if context["runtimeDebug"]
 class DGMatrixModel(AbstractModelBaseClass):
 
     def generateCode(self):
-        #get GL nodes
-        wGPN, xGPN = MathsUtils.getGaussLegendre(self.context["nDof"])
+        if self.context["quadratureType"] == "Gauss-Legendre":
+            #get GL nodes
+            wGPN, xGPN = MathsUtils.getGaussLegendre(self.context["nDof"])
+        elif self.context["quadratureType"] == "Gauss-Lobatto":
+            #get GLL nodes
+            wGPN, xGPN = MathsUtils.getGaussLobatto(self.context["nDof"])
+            xGPN = xGPN[::-1]
+        else:
+            raise ValueError("Quadrature type "+self.context["quadratureType"]+" not supported." )
+
     
         padSize = self.context["nDofPad"] - self.context["nDof"]
         self.context["nDofPad_seq"] = range(self.context["nDofPad"])
