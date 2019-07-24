@@ -21,30 +21,30 @@
 tarch::logging::Log exahype::offloading::OffloadingProfiler::_log( "exahype::offloading::OffloadingProfiler" );
 
 exahype::offloading::OffloadingProfiler::OffloadingProfiler():
-_executedTasksPhase(0),
-_executedTasks(0),
-_accUsefulCommunicationPhaseTime(0),
-_accIdleCommunicationPhaseTime(0),
-_accComputationPhaseTime(0),
-_accWaitTasksTime(0),
-_accWaitTasksPhaseTime(0),
-_accUsefulCommunicationTime(0),
-_accIdleCommunicationTime(0),
-_accComputationTime(0),
-_accOffloadPhaseTime(0),
-_accOffloadTime(0),
-_performanceUpdatesPhase(0),
-_performanceUpdates(0),
-_latePerformanceUpdatesPhase(0),
-_latePerformanceUpdates(0),
-_spawnedTasks(0),
-_spawnedTasksPhase(0),
-_thresholdFailsPhase(0),
-_thresholdFails(0),
-_offloadingDecisionsPhase(0),
-_offloadingDecisions(0)
+  _executedTasksPhase(0),
+  _executedTasks(0),
+  _accUsefulCommunicationPhaseTime(0),
+  _accIdleCommunicationPhaseTime(0),
+  _accComputationPhaseTime(0),
+  _accWaitTasksTime(0),
+  _accWaitTasksPhaseTime(0),
+  _accUsefulCommunicationTime(0),
+  _accIdleCommunicationTime(0),
+  _accComputationTime(0),
+  _accOffloadPhaseTime(0),
+  _accOffloadTime(0),
+  _performanceUpdatesPhase(0),
+  _performanceUpdates(0),
+  _latePerformanceUpdatesPhase(0),
+  _latePerformanceUpdates(0),
+  _spawnedTasks(0),
+  _spawnedTasksPhase(0),
+  _thresholdFailsPhase(0),
+  _thresholdFails(0),
+  _offloadingDecisionsPhase(0),
+  _offloadingDecisions(0)
 {
-#if defined(OffloadingUseProfiler)
+//#if defined(OffloadingUseProfiler)
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
   _offloadedTasksPerRankPhase = new std::atomic<int>[nnodes];
   _offloadedTasksPerRank = new std::atomic<int>[nnodes];
@@ -58,18 +58,18 @@ _offloadingDecisions(0)
   std::fill(_targetOffloadedTasksPerRank, _targetOffloadedTasksPerRank+nnodes, 0);
   std::fill(_receivedTasksPerRankPhase, _receivedTasksPerRankPhase+nnodes, 0);
   std::fill(_receivedTasksPerRank, _receivedTasksPerRank+nnodes, 0);
-#endif
+//#endif
 }
 
 exahype::offloading::OffloadingProfiler::~OffloadingProfiler() {
-#if defined(OffloadingUseProfiler)
+//#if defined(OffloadingUseProfiler)
   delete[] _offloadedTasksPerRank;
   delete[] _offloadedTasksPerRankPhase;
   delete[] _targetOffloadedTasksPerRank;
   delete[] _targetOffloadedTasksPerRankPhase;
   delete[] _receivedTasksPerRank;
   delete[] _receivedTasksPerRankPhase;
-#endif
+//#endif
 }
 
 exahype::offloading::OffloadingProfiler& exahype::offloading::OffloadingProfiler::getInstance() {

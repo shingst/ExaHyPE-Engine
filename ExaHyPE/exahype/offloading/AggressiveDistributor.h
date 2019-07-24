@@ -36,6 +36,7 @@ namespace exahype {
  */
 class exahype::offloading::AggressiveDistributor {
   private:
+
     static tarch::logging::Log _log;
     AggressiveDistributor();
 

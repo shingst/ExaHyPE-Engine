@@ -26,7 +26,7 @@ namespace exahype {
   }
 }
 
-/*
+/**
  * The PerformanceMonitor stores and distributes on-line live performance
  * information which can be used to make effective offloading decisions.
  */
@@ -35,7 +35,9 @@ class exahype::offloading::PerformanceMonitor {
     static tarch::logging::Log _log;
 
     PerformanceMonitor();
-    // status flag, if false then a rank has terminated locally
+    /**
+     * status flag, if false then a rank has terminated locally
+     */
     bool _isStarted;
 
     bool _terminatedGlobally;

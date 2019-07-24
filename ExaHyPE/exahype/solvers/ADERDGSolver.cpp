@@ -10,7 +10,7 @@
  * Released under the BSD 3 Open Source License.
  * For the full license text, see LICENSE.txt
  *
- * \author Dominic E. Charrier, Tobias Weinzierl, Jean-Matthieu Gallard, Fabian Gra, Leonhard Rannabauer
+ * \author Dominic E. Charrier, Tobias Weinzierl, Jean-Matthieu Gallard, Fabian Gra, Leonhard Rannabauer, Philipp Samfass
  **/
 #include "exahype/solvers/ADERDGSolver.h"
 
@@ -4634,6 +4634,7 @@ void exahype::solvers::ADERDGSolver::submitOrSendStealablePredictionJob(Stealabl
   }
 }
 
+//Todo (Philipp) : Is this still needed if we pass this number directly to the progress routine?
 void exahype::solvers::ADERDGSolver::setMaxNumberOfIprobesInProgressOffloading(int maxIprobes) {
   MaxIprobesInOffloadingProgress = maxIprobes;
 }
