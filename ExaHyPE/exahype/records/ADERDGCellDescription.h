@@ -16,6 +16,9 @@
 #include <complex>
 #include <string>
 #include <iostream>
+#include <atomic>
+
+#include "exahype/util/CopyableAtomic.h"
 
 namespace exahype {
    namespace records {
@@ -38,7 +41,26 @@ namespace exahype {
    class exahype::records::ADERDGCellDescription { 
       
       public:
-         
+
+         // MANUALLY ADDED
+         /**
+          * Indicates if the last operation was completed for this cell description
+          * and its data can be used for the next operations.
+          *
+          * At the moment, the traversal threads read and reset this flag
+          * and the consumer threads set it.
+          */
+         util::CopyableAtomic<bool> _hasCompletedLastStep{true};
+
+         bool getHasCompletedLastStep() const {
+           return _hasCompletedLastStep.load();
+         }
+
+         void setHasCompletedLastStep(bool state) {
+           _hasCompletedLastStep.store(state);
+         }
+         // MANUALLY ADDED
+
          typedef exahype::records::ADERDGCellDescriptionPacked Packed;
          
          enum CompressionState {
@@ -7186,7 +7208,27 @@ namespace exahype {
       class exahype::records::ADERDGCellDescription { 
          
          public:
-            
+
+          // MANUALLY ADDED
+          /**
+           * Indicates if the last operation was completed for this cell description
+           * and its data can be used for the next operations.
+           *
+           * At the moment, the traversal threads read and reset this flag
+           * and the consumer threads set it.
+           */
+          util::CopyableAtomic<bool> _hasCompletedLastStep{true};
+
+          bool getHasCompletedLastStep() const {
+            return _hasCompletedLastStep.load();
+          }
+
+          void setHasCompletedLastStep(bool state) {
+            _hasCompletedLastStep.store(state);
+          }
+          // MANUALLY ADDED
+
+
             typedef exahype::records::ADERDGCellDescriptionPacked Packed;
             
             enum CompressionState {
