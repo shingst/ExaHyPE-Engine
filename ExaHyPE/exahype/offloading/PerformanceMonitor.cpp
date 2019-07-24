@@ -33,45 +33,31 @@ tarch::logging::Log exahype::offloading::PerformanceMonitor::_log( "exahype::off
 
 exahype::offloading::PerformanceMonitor::PerformanceMonitor() :
     _isStarted(true),
-    _gatherTasksRequest(MPI_REQUEST_NULL),
-    _gatherWaitingTimesRequest(MPI_REQUEST_NULL),
-    _allreduceBlacklistRequest(MPI_REQUEST_NULL),
     _fusedGatherRequest(MPI_REQUEST_NULL),
-    _currentTasks(0),
-    _currentTasksSendBuffer(0),
+    _currentTasksLocal(0),
     _remainingTasks(0),
     _tasksPerTimestep(0),
     _terminatedGlobally(false) {
 
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
 
-  //_currentTasksSnapshot = new int[nnodes];
-  //_currentTasksReceiveBuffer   = new int[nnodes];
+  _currentTasksSnapshot = new int[nnodes];
 
-  _currentWaitingTimesSnapshot = new double[nnodes*nnodes];
-  //_currentWaitingTimesReceiveBuffer = new int[nnodes*nnodes];
-  //_currentWaitingTimesSendBuffer = new int[nnodes];
   _currentWaitingTimes = new double[nnodes];
+  _currentWaitingTimesSnapshot = new double[nnodes*nnodes];
 
-  _currentBlacklistSnapshot = new double[nnodes];
-  //_currentBlacklistReceiveBuffer = new double[nnodes*nnodes];
-  //_currentBlacklistSendBuffer = new double[nnodes];
   _currentBlacklist = new double[nnodes];
+  _currentBlacklistSnapshot = new double[nnodes];
 
-  _currentFusedDataSendBuffer = new double[nnodes+nnodes+1];
-  _currentFusedDataReceiveBuffer = new double[nnodes*(nnodes+nnodes+1)];
+  _currentFusedDataSendBuffer = new double[2*nnodes+2];
+  _currentFusedDataReceiveBuffer = new double[nnodes*(2*nnodes+2)];
 
-  //std::fill(_currentTasksSnapshot, _currentTasksSnapshot+nnodes, 0);
-  //std::fill(_currentTasksReceiveBuffer, _currentTasksReceiveBuffer+nnodes, 0);
+  std::fill(_currentTasksSnapshot, _currentTasksSnapshot+nnodes, 0);
 
   std::fill(_currentWaitingTimesSnapshot, _currentWaitingTimesSnapshot+nnodes*nnodes, 0);
-  //std::fill(_currentWaitingTimesReceiveBuffer, _currentWaitingTimesReceiveBuffer+nnodes*nnodes, 0);
-  //std::fill(_currentWaitingTimesSendBuffer, _currentWaitingTimesSendBuffer+nnodes, 0);
   std::fill(_currentWaitingTimes, _currentWaitingTimes+nnodes, 0);
 
   std::fill(_currentBlacklistSnapshot, _currentBlacklistSnapshot+nnodes, 0);
-  //std::fill(_currentBlacklistReceiveBuffer, _currentBlacklistReceiveBuffer+nnodes, 0);
-  //std::fill(_currentBlacklistSendBuffer, _currentBlacklistSendBuffer+nnodes, 0);
   std::fill(_currentBlacklist, _currentBlacklist+nnodes, 0);
 
   std::fill(_currentFusedDataSendBuffer, _currentFusedDataSendBuffer+nnodes+nnodes+1, 0);
@@ -79,19 +65,17 @@ exahype::offloading::PerformanceMonitor::PerformanceMonitor() :
 }
 
 exahype::offloading::PerformanceMonitor::~PerformanceMonitor() {
-  //delete[] _currentWaitingTimesSendBuffer;
-  //delete[] _currentWaitingTimesReceiveBuffer;
+
   delete[] _currentWaitingTimesSnapshot;
   delete[] _currentWaitingTimes;
 
-  delete[] _currentBlacklist;
-  delete[] _currentBlacklistSnapshot;
-
   delete[] _currentFusedDataSendBuffer;
   delete[] _currentFusedDataReceiveBuffer;
+
+  delete[] _currentBlacklist;
+  delete[] _currentBlacklistSnapshot;
  
-  //delete[] _currentTasksSnapshot;
-  //delete[] _currentTasksReceiveBuffer;
+  delete[] _currentTasksSnapshot;
 }
 
 void exahype::offloading::PerformanceMonitor::submitWaitingTimeForRank(double waitingTime, int rank) {
@@ -105,7 +89,6 @@ const double *exahype::offloading::PerformanceMonitor::getWaitingTimesSnapshot()
 }
 
 void exahype::offloading::PerformanceMonitor::submitBlacklistValueForRank(double bval, int rank) {
-
   //logInfo("submitBlacklistValue", "new value "<<bval<<" for "<<rank);
   _currentBlacklist[rank] = bval;
 }
@@ -120,7 +103,7 @@ const double *exahype::offloading::PerformanceMonitor::getBlacklistSnapshot() {
 }
 
 void exahype::offloading::PerformanceMonitor::setTasksPerTimestep(int load) {
-  logInfo("setLocalLoadPerTimestep", "setting local load per timestep to "<<load);
+  //logInfo("setLocalLoadPerTimestep", "setting local load per timestep to "<<load);
   _tasksPerTimestep = load;
   _remainingTasks = _tasksPerTimestep;
 }
@@ -143,34 +126,29 @@ exahype::offloading::PerformanceMonitor& exahype::offloading::PerformanceMonitor
 }
 
 void exahype::offloading::PerformanceMonitor::stop() {
-    _isStarted=false;
+  _isStarted=false;
 }
 
 void exahype::offloading::PerformanceMonitor::setCurrentTasks(int num) {
   //logInfo("performance monitor", "setting current load to "<<num);
   int myRank = tarch::parallel::Node::getInstance().getRank();
   tarch::multicore::Lock lock(_semaphore);
-  _currentTasksSnapshot[myRank] = num;
-  _currentTasks = num;
+  //_currentTasks[myRank] = num;
+  _currentTasksLocal = num;
   lock.free();
 }
 
 void exahype::offloading::PerformanceMonitor::incCurrentTasks() {
-#ifndef OffloadingStrategyDiffusive
-  assertion(_currentTasks>=0);
-  _currentTasks++;
-#endif
+  assertion(_currentTasksLocal>=0);
+  _currentTasksLocal++;
 }
 
 void exahype::offloading::PerformanceMonitor::decCurrentTasks() {
-#ifndef OffloadingStrategyDiffusive
-  _currentTasks--;
-  assertion(_currentTasks>=0);
-#endif
+  _currentTasksLocal--;
+  assertion(_currentTasksLocal>=0);
 }
 
 void exahype::offloading::PerformanceMonitor::decRemainingTasks() {
-#ifndef OffloadingStrategyDiffusive
   tarch::multicore::Lock lock(_semaphore);
   _remainingTasks--;
   if(_remainingTasks==0) {
@@ -178,7 +156,6 @@ void exahype::offloading::PerformanceMonitor::decRemainingTasks() {
   }
   lock.free();
   assertion(_remainingTasks>=0);
-#endif
 }
 
 void exahype::offloading::PerformanceMonitor::run() {
@@ -189,168 +166,9 @@ void exahype::offloading::PerformanceMonitor::progressGather() {
   int myRank    = tarch::parallel::Node::getInstance().getRank();
   int nnodes    = tarch::parallel::Node::getInstance().getNumberOfNodes();
 
-  //int completed_tasks = 0;
-  //int completed_waiting_times = 0;
-  //int completed_blacklist = 0;
-
   int completed_fused = 0;
-//#if defined(PerformanceAnalysisOffloading)
-//  double timeSinceLastGather=0;
-//  static std::atomic<double> lastGather = 0;
-//  static std::atomic<int> unsuccessful  = 0;
-//  static std::atomic<int> successful    = 0;
-
-//  tarch::timing::Watch watch("exahype::offloading::", "-", false,false);
-//  watch.startTimer();
-
-//  timeSinceLastGather = lastGather + MPI_Wtime();
-//#endif
 
   tarch::multicore::Lock lock(_semaphore);
-
-//  if( !isGloballyTerminated() && _gatherTasksRequest!=MPI_REQUEST_NULL) {
-//	double time = - MPI_Wtime();
-//    exahype::offloading::OffloadingProfiler::getInstance().beginCommunication();
-//    int err = MPI_Test(&_gatherTasksRequest, &completed_tasks, MPI_STATUS_IGNORE); //assert(err==MPI_SUCCESS);
-//    time += MPI_Wtime();
-
-//    //std::string str;
-//    //for(int i=0;i<nnodes;i++) str=str+" , "+std::to_string(_currentTasksReceiveBuffer[i]);
-//    //str+="\n";
-//    //logInfo("performance monitor", "progressing "<<_gatherTasksRequest);
-//    
-
-//#if defined(PerformanceAnalysisOffloading)
-//    if(completed) {
-//      exahype::offloading::OffloadingProfiler::getInstance().endCommunication(true, time);
-//      successful++;
-//    }
-//    else {
-//      exahype::offloading::OffloadingProfiler::getInstance().endCommunication(false, time);
-//      unsuccessful++;
-//    }
-//    if(successful%1000==0 || unsuccessful%10000==0) {
-//      logInfo("performance monitor", " successful "<<successful<<" unsuccessful "<<unsuccessful<<" ratio "<<1.0f*successful/unsuccessful);
-//    }
-//#endif
-//  }
-
-//  if( !isGloballyTerminated() && _gatherWaitingTimesRequest!=MPI_REQUEST_NULL) {
-////    double time = - MPI_Wtime();
-////    exahype::offloading::OffloadingProfiler::getInstance().beginCommunication();
-//    //logInfo("performance monitoŕ()","progressing waiting times");
-//    int err= MPI_Test(&_gatherWaitingTimesRequest, &completed_waiting_times, MPI_STATUS_IGNORE);
-//   //assert(err==MPI_SUCCESS);
-////    time += MPI_Wtime();_currentTasksSendBuffer
-// 
-//  }
-
-//  if( !isGloballyTerminated() && _allreduceBlacklistRequest!=MPI_REQUEST_NULL) {
-//     int err= MPI_Test(&_allreduceBlacklistRequest, &completed_blacklist, MPI_STATUS_IGNORE);
-//  }
-
-//#if defined(PerformanceAnalysisOffloading)
-//  watch.stopTimer();
-//  if(watch.getCalendarTime() >= 0.00001) {
-//    logInfo(
-//        "performance monitor()",
-//        "MPI " <<
-//        "time=" << std::fixed <<
-//        watch.getCalendarTime() <<
-//        ", cpu time=" <<
-//        watch.getCPUTime()
-//    );
-//  }
-//  watch.startTimer();
-//#endif
-
-//  if(completed_tasks) {
-//  //  logInfo("progressGather","collected new tasks snapshot");
-//    offloading::OffloadingProfiler::getInstance().notifyPerformanceUpdate();
-//    std::copy(&_currentTasksReceiveBuffer[0], &_currentTasksReceiveBuffer[nnodes], &_currentTasksSnapshot[0]);
-// 
-//    //std::string str;
-//    //for(int i=0;i<nnodes;i++) str=str+" , "+std::to_string(_currentTasksSnapshot[i]);
-//    //str+="\n";
-//    //logInfo("performance monitor", str);
-
-//#if defined(PerformanceAnalysisOffloading)
-//    std::string str="received new update, current load "+std::to_string(_currentTasks.load());
-////    if(timeSinceLastGather>0.001) {
-////      str=str+ " took too long: "+std::to_string(timeSinceLastGather);
-////      offloading::OffloadingProfiler::getInstance().notifyLatePerformanceUpdate();
-////    }
-
-//#endif
-//    if(_currentTasks.load()>0 && std::all_of(&_currentTasksSnapshot[0], &_currentTasksSnapshot[nnodes], [](int i) {return i>=0;})) {
-//      exahype::offloading::DynamicDistributor::getInstance().computeNewLoadDistribution(_currentTasksSnapshot);
-//      offloading::OffloadingProfiler::getInstance().notifyOffloadingDecision();
-//    }
-//#if defined(PerformanceAnalysisOffloading)
-//    watch.stopTimer();
-//    if(watch.getCalendarTime() >= 0.00001) {
-//      logInfo(
-//          "performance monitor()",
-//          "completion" <<
-//          "time=" << std::fixed <<
-//          watch.getCalendarTime() <<
-//          ", cpu time=" <<
-//          watch.getCPUTime()
-//      );
-//    }
-//    watch.startTimer();
-//#endif
-//    _gatherTasksRequest = MPI_REQUEST_NULL;
-//  }
-
-//  if(completed_waiting_times) {
-//    //logInfo("progressGather","collected new waiting times snapshot, request"<< _gatherWaitingTimesRequest);
-//    std::copy(&_currentWaitingTimesReceiveBuffer[0], &_currentWaitingTimesReceiveBuffer[nnodes*nnodes], &_currentWaitingTimesSnapshot[0]);
-//    _gatherWaitingTimesRequest = MPI_REQUEST_NULL;
-//      
-//    //int k = 0;
-//    //for(int i=0; i<nnodes; i++) {
-//    //  for(int j=0; j<nnodes; j++) {
-//    //    logInfo("progressGather()","rank "<<i<<" waiting for "<<_currentWaitingTimesSnapshot[k+j]<<" for rank "<<j);
-//    //  }
-//    //  k+= nnodes;
-//    //}
-//  }
-
-//  if(_gatherWaitingTimesRequest==MPI_REQUEST_NULL && !isGloballyTerminated()) {
-//    //logInfo("progressGather","post gather waiting times");
-//    postGatherWaitingTimes();
-//  }
-
-//  if(_gatherTasksRequest==MPI_REQUEST_NULL && !isGloballyTerminated()) {
-//    //logInfo("progressGather","post gather tasks");
-//    //postGatherTasks();
-//#if defined(PerformanceAnalysisOffloading)
-//    lastGather=-MPI_Wtime();
-//    watch.stopTimer();
-//    if(watch.getCalendarTime() >= 0.00001) {
-//      logInfo(
-//          "performance monitor()",
-//          "post gather" <<
-//          "time=" << std::fixed <<
-//          watch.getCalendarTime() <<
-//          ", cpu time=" <<
-//          watch.getCPUTime()
-//      );
-//    }
-//    watch.startTimer();
-//#endif
-//  }
-
-//  if(completed_blacklist) {
-//    std::copy(&_currentBlacklistReceiveBuffer[0], &_currentBlacklistReceiveBuffer[nnodes], &_currentBlacklistSnapshot[0]);
-//    _allreduceBlacklistRequest = MPI_REQUEST_NULL;
-//      
-//  }
-
-//  if(_allreduceBlacklistRequest==MPI_REQUEST_NULL && !isGloballyTerminated()) {
-//    postAllreduceBlacklist();
-//  }
 
   if( !isGloballyTerminated() && _fusedGatherRequest!=MPI_REQUEST_NULL) {
     int err = MPI_Test(&_fusedGatherRequest, &completed_fused, MPI_STATUS_IGNORE);
@@ -362,35 +180,34 @@ void exahype::offloading::PerformanceMonitor::progressGather() {
     std::fill(&newSnapshot[0], &newSnapshot[nnodes], 0);
     //logInfo("progressGather", " got new fused result" );
     for(int i=0; i<nnodes; i++) {
-       //copy waiting times
-       int offsetWaitingTimes = i*(nnodes+nnodes+1);
-       std::copy(&_currentFusedDataReceiveBuffer[offsetWaitingTimes], &_currentFusedDataReceiveBuffer[offsetWaitingTimes+nnodes], &_currentWaitingTimesSnapshot[i*nnodes]);
-       int offsetBlacklistValues = i*(nnodes+nnodes+1)+nnodes;
+      //copy waiting times
+      int offsetWaitingTimes = i*(nnodes+nnodes+2);
+      std::copy(&_currentFusedDataReceiveBuffer[offsetWaitingTimes], &_currentFusedDataReceiveBuffer[offsetWaitingTimes+nnodes], &_currentWaitingTimesSnapshot[i*nnodes]);
+      int offsetBlacklistValues = i*(nnodes+nnodes+2)+nnodes;
 
-       //reduce blacklist values
-       for(int j=0; j<nnodes; j++) {
+      //reduce blacklist values using a sum reduction
+      for(int j=0; j<nnodes; j++) {
       //   if(_currentFusedDataReceiveBuffer[offsetBlacklistValues+j]>0)
       //     logInfo("reduceBVal()"," val "<<_currentFusedDataReceiveBuffer[offsetBlacklistValues+j]<< " for "<< j);
-         newSnapshot[j] += _currentFusedDataReceiveBuffer[offsetBlacklistValues+j];
-       }
+        newSnapshot[j] += _currentFusedDataReceiveBuffer[offsetBlacklistValues+j];
+      }
 
-       //reduce termination status
-       newGlobalTerminationStatus &= (_currentFusedDataReceiveBuffer[offsetBlacklistValues+nnodes]==TERMINATE_SIGNAL);
+      _currentTasksSnapshot[i] = _currentFusedDataReceiveBuffer[offsetBlacklistValues+nnodes];
+      //reduce termination status
+      newGlobalTerminationStatus &= (_currentFusedDataReceiveBuffer[offsetBlacklistValues+nnodes+1]==TERMINATE_SIGNAL);
     }
     _terminatedGlobally = newGlobalTerminationStatus;
     if(_terminatedGlobally)
-     logInfo("progressOffloading", "received terminated"<<_terminatedGlobally);
+      logInfo("progressOffloading", "received terminated"<<_terminatedGlobally);
 
- 
     for(int j=0; j<nnodes; j++) {
-       _currentBlacklistSnapshot[j] = newSnapshot[j];
-       //logInfo("afterReduction()"," val "<<_currentBlacklistSnapshot[j]<< " for "<< j);
+      _currentBlacklistSnapshot[j] = newSnapshot[j];
+      //logInfo("afterReduction()"," val "<<_currentBlacklistSnapshot[j]<< " for "<< j);
     }
 
     _fusedGatherRequest = MPI_REQUEST_NULL;
     delete[] newSnapshot;
   }
-
 
   if(_fusedGatherRequest==MPI_REQUEST_NULL && !isGloballyTerminated()) {
     postFusedRequest();
@@ -399,74 +216,28 @@ void exahype::offloading::PerformanceMonitor::progressGather() {
   lock.free();
 }
 
-//void exahype::offloading::PerformanceMonitor::postGatherTasks() {
-//  int myRank = tarch::parallel::Node::getInstance().getRank();
-
-//  _currentTasksSendBuffer = _isStarted ? _currentTasks.load() : TERMINATE_SIGNAL;
-//  
-//  //if(!_isStarted)
-//  //  logInfo("postGatherTasks","posted terminate signal");
-
-//  assert(_gatherTasksRequest==MPI_REQUEST_NULL);
-//  int err = MPI_Iallgather(&_currentTasksSendBuffer, 1, MPI_INTEGER, _currentTasksReceiveBuffer, 1, MPI_INTEGER, exahype::offloading::OffloadingManager::getInstance().getMPICommunicator(), &_gatherTasksRequest); //assert(err==MPI_SUCCESS);
-//}
-
-//void exahype::offloading::PerformanceMonitor::postGatherWaitingTimes() {
-//  int nnodes    = tarch::parallel::Node::getInstance().getNumberOfNodes();
-//  std::copy(&_currentWaitingTimes[0], &_currentWaitingTimes[nnodes], &_currentWaitingTimesSendBuffer[0]);
-
-
-// // static int nposted = 0;
-//  //logInfo("postGatherWaitingTimes","posting gather for waiting times");
-//  //for(int i=0; i<nnodes; i++) {
-//  //  logInfo("postGatherWaitingTimes","_currentWaitingTimesSendBuffer["<<i<<"]: "<<_currentWaitingTimesSendBuffer[i]);
-//  //}
-//  assert(_gatherWaitingTimesRequest==MPI_REQUEST_NULL);
-//  int err = MPI_Iallgather(&_currentWaitingTimesSendBuffer[0], nnodes, MPI_INTEGER, &_currentWaitingTimesReceiveBuffer[0],
-//                   nnodes, MPI_INTEGER, exahype::offloading::OffloadingManager::getInstance().getMPICommunicator(),
-//                   &_gatherWaitingTimesRequest);// assert(err==MPI_SUCCESS);
-
-//  //nposted++;
-//  //logInfo("postGatherWaitingTimes", "nposted "<<nposted<< " request "<<_gatherWaitingTimesRequest);
-//}
-
-//void exahype::offloading::PerformanceMonitor::postAllreduceBlacklist() {
-//  int nnodes  = tarch::parallel::Node::getInstance().getNumberOfNodes();
-//  std::copy(&_currentBlacklist[0], &_currentBlacklist[nnodes], &_currentBlacklistSendBuffer[0]);
-
-//  assert(_allreduceBlacklistRequest==MPI_REQUEST_NULL);
-//  int err = MPI_Iallreduce(&_currentBlacklistSendBuffer[0], &_currentBlacklistReceiveBuffer[0], nnodes, MPI_DOUBLE, MPI_SUM,
-//             exahype::offloading::OffloadingManager::getInstance().getMPICommunicator(), &_allreduceBlacklistRequest);
-//}
-
 void exahype::offloading::PerformanceMonitor::postFusedRequest() {
-  //logInfo("postFusedRequest()", "performance monitor posted fused request");
+  logDebug("postFusedRequest()", "performance monitor posted fused request");
+
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
+
   std::copy(&_currentWaitingTimes[0], &_currentWaitingTimes[nnodes], &_currentFusedDataSendBuffer[0]);
   std::copy(&_currentBlacklist[0], &_currentBlacklist[nnodes], &_currentFusedDataSendBuffer[nnodes]);
-  _currentFusedDataSendBuffer[2*nnodes]= !_isStarted ? TERMINATE_SIGNAL : 0; //0 means running   
+  _currentFusedDataSendBuffer[2*nnodes]= static_cast<double> (_currentTasksLocal.load());
+  _currentFusedDataSendBuffer[2*nnodes+1]= !_isStarted ? TERMINATE_SIGNAL : 0; //0 means running
 
-  assert(_fusedGatherRequest==MPI_REQUEST_NULL);
+  assertion(_fusedGatherRequest==MPI_REQUEST_NULL);
  
   //for(int i=0; i< nnodes*2;i++)
   //  logInfo("postFusedrequest()", "send buffer "<<_currentFusedDataSendBuffer[i]);
 
-  int err = MPI_Iallgather(&_currentFusedDataSendBuffer[0], 2*nnodes+1, MPI_DOUBLE, &_currentFusedDataReceiveBuffer[0],
-                   2*nnodes+1, MPI_DOUBLE, exahype::offloading::OffloadingManager::getInstance().getMPICommunicator(),
-                   &_fusedGatherRequest);// assert(err==MPI_SUCCESS);
+  int err = MPI_Iallgather(&_currentFusedDataSendBuffer[0], 2*nnodes+2, MPI_DOUBLE, &_currentFusedDataReceiveBuffer[0],
+                   2*nnodes+2, MPI_DOUBLE, exahype::offloading::OffloadingManager::getInstance().getMPICommunicator(),
+                   &_fusedGatherRequest); assertion(err==MPI_SUCCESS);
 
 }
 
 bool exahype::offloading::PerformanceMonitor::isGloballyTerminated() {
-/*  static bool globalTermination=false;
-  if(globalTermination) return true;
-  if(_isStarted) return false;
-
-  bool result=true;
-  for(int i=0; i<tarch::parallel::Node::getInstance().getNumberOfNodes(); i++)
-    result &= _currentTasksReceiveBuffer[i]==TERMINATE_SIGNAL;
-
-  globalTermination=result; */
   return _terminatedGlobally;
 }
 

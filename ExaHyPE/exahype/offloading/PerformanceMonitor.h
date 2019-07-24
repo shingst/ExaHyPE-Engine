@@ -35,102 +35,148 @@ class exahype::offloading::PerformanceMonitor {
     static tarch::logging::Log _log;
 
     PerformanceMonitor();
+
     /**
-     * status flag, if false then a rank has terminated locally
+     * Status flag, if false then a rank has stopped
+     * the PerformanceMonitor locally.
      */
     bool _isStarted;
 
+    /**
+     * Indicates if all ranks have terminated.
+     */
     bool _terminatedGlobally;
 
     double *_currentWaitingTimesSnapshot; //length nranks*nranks
-    //int *_currentWaitingTimesReceiveBuffer; //length nrank*nranks
-    //int *_currentWaitingTimesSendBuffer; //length nranks
     double *_currentWaitingTimes; //lenght nranks
 
     double *_currentBlacklistSnapshot;
-    //double *_currentBlacklistReceiveBuffer;
-    //double *_currentBlacklistSendBuffer;
     double *_currentBlacklist;
+
+    int *_currentTasksSnapshot;
 
     double *_currentFusedDataReceiveBuffer;
     double *_currentFusedDataSendBuffer;
 
-    // here, current global view on the load information is stored
-    int *_currentTasksSnapshot;
-    /*
-     *  A double buffering scheme is used: The buffer stores intermediate
-     *  "in-flight" values (for non-blocking MPI).
-     */
-    int *_currentTasksReceiveBuffer;
-    /*
+    /**
      *  local load counter of a rank, represents current load (i.e. number of tasks
      *  in queue)
      */
-    std::atomic<int> _currentTasks;
-    /*
+    std::atomic<int> _currentTasksLocal;
+
+    /**
      * remaining load uses the additional information of how many tasks will be
      * spawned in a time step, i.e. it tells us how many tasks will still need
      * to be processed before a time step can be completed
      */
     std::atomic<int> _remainingTasks;
 
-    // stores total number of tasks spawned in every time step
+    /**
+     * stores total number of tasks spawned in every time step
+     */
     int _tasksPerTimestep;
-    // send buffer for repeated MPIIallgather
-    int _currentTasksSendBuffer;
 
-    // the current gather requests
-    MPI_Request _gatherTasksRequest;
-    MPI_Request _gatherWaitingTimesRequest;
-    MPI_Request _allreduceBlacklistRequest;
+    /**
+     * The current gather request
+     */
     MPI_Request _fusedGatherRequest;
 
     tarch::multicore::BooleanSemaphore _semaphore;
 
     // make progress on current gather requests
     void progressGather();
-    // posts a new gather request
-    void postGatherTasks();
-
-    void postGatherWaitingTimes();
-
-    void postAllreduceBlacklist();
 
     void postFusedRequest();
 
   public:
-    // signals that a rank has finished computing any local work
+    /**
+     * Signals that a rank has finished computing any local work
+     */
     void stop();
 
+    /**
+     * Submits waiting time for a rank.
+     * @param waitingTime
+     * @param rank
+     */
     void submitWaitingTimeForRank(double waitingTime, int rank);
+
+    /**
+     * Returns pointer to the current waiting times snapshot.
+     * @return
+     */
     const double *getWaitingTimesSnapshot();
 
+    /**
+     * Submits a new blacklist value for a given rank.
+     * @param bval
+     * @param rank
+     */
     void submitBlacklistValueForRank(double bval, int rank);
+
+    /**
+     * Returns current blacklist snapshot.
+     * @return Current global blacklist snapshot.
+     */
     const double *getBlacklistSnapshot();
 
+    /**
+     * Sets the current number of tasks to a given
+     * value.
+     * @param numTasks
+     */
     void setCurrentTasks(int numTasks);
-    // increases the current load, to be called when a new task
-    // is created
+
+    /**
+     * increases the current load, to be called when a new task
+     */
     void incCurrentTasks();
-    // decreases the current load
+
+    /**
+     * decreases the current load
+     */
     void decCurrentTasks();
 
-    // sets the local load per time step (needs to be called again after
-    // mesh refinement)
+    /**
+     * sets the local load per time step (needs to be called again after
+     * mesh refinement
+     */
     void setTasksPerTimestep(int numTasks);
-    // getter for remaining load for the current time step
+
+    /**
+     * getter for remaining load for the current time step
+     */
     int getRemainingTasks();
-    // getter for local load per time step
+
+    /**
+     * getter for local load per time step
+     */
     int getTasksPerTimestep();
-    // getter for current load snapshot
+
+    /**getter for current number of tasks snapshot
+     *
+     * @return Snapshot containing the current number of
+     * tasks on every MPI rank.
+     */
     const int *getCurrentTasksSnapshot();
 
-    // decreases remaining load for current time step
+    /**
+     * decrease remaining load for current time step
+     */
     void decRemainingTasks();
 
-    // returns true, if every rank has finished computing during
-    // an ExahyPE run
+    /**
+     * returns true, if every rank has finished computing during
+     * an ExahyPE run
+     */
     bool isGloballyTerminated();
+
+    /**
+     * Entry routine for the performance monitor.
+     * This routine makes progress and ensures
+     * that performance information is distributed
+     * through the system.
+     */
     void run();
 
     static PerformanceMonitor& getInstance();
