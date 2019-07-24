@@ -49,7 +49,22 @@ void GPRDR::GPRDRSolver_FV::boundaryValues(
     const double* const stateInside,
     double* const stateOutside) {
   const int nVar = GPRDR::GPRDRSolver_FV::NumberOfVariables;
-  std::copy_n(stateInside,nVar,stateOutside);
+ 
+	double Qgp[nVar];
+
+	double ti = t + 0.5 * dt;
+	// Compute the outer state according to the initial condition
+    double x_3[3];
+    x_3[2]=0;
+    std::copy_n(&x[0],DIMENSIONS,&x_3[0]);
+    
+    initialdata_(x_3, &t, Qgp);
+	// Assign the proper outer state
+	for(int m=0; m < nVar; m++) {
+        stateOutside[m] = Qgp[m];
+	}
+	 std::copy_n(stateInside,nVar,stateOutside);
+
 }
 
 //***********************************************************

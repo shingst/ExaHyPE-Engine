@@ -5,7 +5,7 @@
 !#include "expintegrator_type.f90"
 
 RECURSIVE SUBROUTINE InitParameters(STRLEN,PARSETUP) 
-	USE MainVariables, ONLY: nVar , nDim, EQN, ICType 
+	USE MainVariables, ONLY: nVar , nDim, EQN, ICType , USECG
 #ifdef ODESOLVER
     use expintegrator_type, only :T_odeexp_settings ,ODESETTINGS
 #endif
@@ -45,9 +45,16 @@ RECURSIVE SUBROUTINE InitParameters(STRLEN,PARSETUP)
     ODESETTINGS%decrement_accuracy    = 0.5      ! decrement_accuracy [0.333, 0.4 0.5, ...]
     ODESETTINGS%decrement_positivity  = 0.5      ! decrement_positivity [0.333, 0.5, ...]
 #endif
-
+	USECG=.false.
 	select case(ICType)
 		case('NLOPRUPTURE')
+		    EQN%nMATs=2
+			ALLOCATE(EQN%MATERIALS(EQN%nMATs))
+			!EQN%MATERIALS(1)='ROCK1'
+			!EQN%MATERIALS(2)='UNBREAKABLE'
+			EQN%MATERIALS(1)='ROCK1'
+			EQN%MATERIALS(2)='UNBREAKABLE'
+		case('NLOPRUPTURECG')
 		    EQN%nMATs=2
 			ALLOCATE(EQN%MATERIALS(EQN%nMATs))
 			!EQN%MATERIALS(1)='ROCK1'
@@ -59,9 +66,10 @@ END SUBROUTINE InitParameters
 
 RECURSIVE SUBROUTINE InitialData(xGP, tGp, Q)
 	USE, INTRINSIC :: ISO_C_BINDING
-	USE MainVariables, ONLY : nVar, nDim, EQN, ICType
+	USE MainVariables, ONLY : nVar, nDim, EQN, ICType, USECG
     USE SpecificVarEqn99
     USE GPRmaterials
+	USE ComplexGeometry, only : DistanceFromSurfaceCG
 #ifdef EQNTYPED99
     use expintegrator_ode       , only : convert_parameters
     use expintegrator_type      , only : t_ode_parameters
@@ -82,7 +90,7 @@ RECURSIVE SUBROUTINE InitialData(xGP, tGp, Q)
 		up=0.
 #ifdef EQNTYPED99
         rr=xGP(2)-2.0*xGP(1)-4000.0
-        xi = 0.5+0.5*ERF(rr/200.0)
+        xi = 0.5+0.5*ERF(rr/300.0)
         up(22)=1-xi
 		!up(22)=1
         LamCoeff=getLameCoefficients(EQN%MATERIALS(1))
@@ -115,7 +123,8 @@ RECURSIVE SUBROUTINE InitialData(xGP, tGp, Q)
         ! -----------------------------------------------------------------------------------------------
         ! Compute the initial stress --------------------------------------------------------------------------------
          LEsigma=0.
-        LEsigma(2)=-120.0*1.e+6
+        !LEsigma(2)=-120.0*1.e+6
+		LEsigma(1)=-120.0*1.e+6
         if(abs(xGP(1)) .le. 5000.0 .and. abs(xGP(2)) .le. 300.0/3.0 .and. abs(xGP(3)) .le. 1500.0) then 
             LEsigma(4)=70.0*1e+6
         else
@@ -160,9 +169,122 @@ RECURSIVE SUBROUTINE InitialData(xGP, tGp, Q)
         up(18)=1     ! alpha
         up(5)=0     ! alpha
         ! -----------------------------------------------------------------------------------------------------------
-        
+        if(USECG) then
+			rr = DistanceFromSurfaceCG(xGP(1),xGP(2),xGP(3),100.0)
+			up(18)=SmoothInterface(rr,100.0,0.0,1.0)
+			if(rr>0) then
+			!print *,rr
+			end if
+		end if
 
 #endif		
+	case('NLOPRUPTURECG')
+#if defined(EQNTYPEC99) || defined(EQNTYPED99)
+		up=0.
+#ifdef EQNTYPED99
+        rr=xGP(2)-0.2*xGP(1)+3000.0
+		rr=xGP(2)+600
+        xi = 0.5+0.5*ERF(rr/1.0)
+        up(22)=xi
+		if( abs(xGP(1))>12600 .or. abs(xGP(3))>12600) then
+		up(22)=0.
+		end if
+        LamCoeff=getLameCoefficients(EQN%MATERIALS(1))
+            up(1)     = LamCoeff(1)
+            up(20)    = LamCoeff(2)
+            up(19)    = LamCoeff(3)
+#else
+        call AssignMaterialProperties(up,ICtype2)  ! Assign the material properties as from the parfile
+        rr=xGP(2)-2.0*xGP(1)-4000.0
+        xi = 0.5+0.5*ERF(rr/300.0)
+        call AssignMaterialPropertiesMix(up,(/'ROCK1' ,  'ROCK3'  /),(/1-xi, xi/),2,.TRUE.) 
+#endif
+        ! Initial velocity vector ----- !
+        up(2) = 0.0                     !
+        up(3) = 0.0                     ! 
+        up(4) = 0.0                     !
+        ! ----------------------------- !
+        ! ------------ Limiter properties ----------------------
+        EQN%Y0lim=1.0  ! 99% of the illness stress Y0
+        ! ------------------------------------------------------
+        ! Thermal properties of the material ------------------------------------------------------------
+        EQN%T0    = 0.0
+        EQN%ch    = 0.!0.1!1.0e-4
+        EQN%tau2  = 1.e+22!1.e+5
+        EQN%cv    = 1.0
+        EQN%gamma = 2.0
+        EQN%p0    = 0.0
+        EQN%tau0  = 1.e-6
+        EQN%Yeq_mode =1
+        ! -----------------------------------------------------------------------------------------------
+        ! Compute the initial stress --------------------------------------------------------------------------------
+         LEsigma=0.
+		 !if(xGP(2)<1800) then
+               LEsigma(1)=-120.0*1.e+6
+               !if(xGP(2)<-1800 .and. xGP(2)>-42000 .and. abs(xGP(1))<18000 .and. abs(xGP(3))<18000) then
+             
+                   LEsigma(4)=70.*1.e+6!140.0*1e+6
+	   !rr=-(xGP(2)-2000)
+		!xi = 0.5+0.5*ERF(rr/500.0)
+		!LEsigma=0.0*LEsigma 
+            !end if
+        !end if
+        !LEsigma(2)=-120.0*1.e+6
+		!LEsigma(1)=-120.0*1.e+6
+        !if(abs(xGP(1)) .le. 5000.0 .and. abs(xGP(2)) .le. 300.0/3.0 .and. abs(xGP(3)) .le. 1500.0) then 
+        !    LEsigma(4)=70.0*1e+6
+        !else
+        !    LEsigma(4)=70.0*1e+6
+        !end if
+        !LEsigma=0.
+#ifdef EQNTYPED99
+        call convert_parameters(up, ODE, EQN)
+        call compute_l_m_mix(LL_GPR, MM_GPR,up(19),up(20),ODE%lam1lam2ratio,ODE%mu1mu2ratio,up(21))
+#else
+        call compute_l_m_mix(LL_GPR, MM_GPR,up(19),up(20),up(23),up(22),up(21))
+#endif
+        up(9:17)= GPRsigma2ASGEOS(LEsigma,0.0,LL_GPR,MM_GPR,up(1),EQN%gamma,up(5),EQN%cv,EQN%p0,1.e-3,EQN%EOS,EQN%T0)
+		!if(any(isnan(up(9:17)))) then
+		!	print *, '------------------------------------------------------'
+		!	print*, up(19),up(20),ODE%lam1lam2ratio,ODE%mu1mu2ratio,up(21)
+		!	print *, EQN%MATERIALS,up(22),EQN%nMATs
+		!	call AssignMaterialPropertiesMixD(RUPTURE_PARAMS,EQN%MATERIALS,(/up(22), 1.-up(22)/),EQN%nMATs,.TRUE.)
+		!	print *,'*******************'
+		!	print *, RUPTURE_PARAMS
+		!	print *, '------------------------------------------------------'
+		!end if
+        !up(9:17)= (/0.999623180012770, 0.0, 0.0, -2.177843294032983D-003, 1.00149401820627,0.0,0.0,0.0,0.999627936634102/)
+        ! -----------------------------------------------------------------------------------------------------------
+        ! Rupture properties ----------------------------------------------------------------------------------------
+        up(21)=0.0
+
+        if(nDim .eq. 3) then
+            if(abs(xGP(1)) .le. 100.0/1.0 .and. abs(xGP(2)) .le. 100.0/1.0 .and. abs(xGP(3)) .le. 100.0/1.0) then 
+                up(21)=0.5    
+            end if            
+        else
+            if(abs(xGP(1)) .le. 1000.0 .and. abs(xGP(2)) .le. 100.0/3.0 .and. abs(xGP(3)) .le. 100.0/3.0) then 
+                up(21)=1.0    
+            end if            
+        end if
+        !if(abs(xGP(1)) .le. 100.0/3.0 .and. abs(xGP(2)) .le. 100.0/3.0 .and. abs(xGP(3)) .le. 100.0/3.0) then 
+        !    up(21)=0.1    
+        !end if
+        ! -----------------------------------------------------------------------------------------------------------
+        ! Complex geometry ------------------------------------------------------------------------------------------
+        up(18)=1     ! alpha
+        up(5)=0     ! alpha
+        ! -----------------------------------------------------------------------------------------------------------
+        if(USECG) then
+			rr = DistanceFromSurfaceCG(xGP(1),xGP(3),xGP(2)-4000.0,400.0)
+			up(18)=SmoothInterface(rr,400.0,0.0,1.0)
+			if(rr>0) then
+			!print *,rr
+			end if
+		end if
+		up(9:17)=up(9:17)*up(18)
+        up(18)=1     ! alpha
+#endif
 	CASE DEFAULT
 		PRINT *, 'NOT IMPLEMENTED'
 		STOP

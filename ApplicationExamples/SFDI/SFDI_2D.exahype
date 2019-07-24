@@ -51,7 +51,8 @@
     {
       "type": "Limiting-ADER-DG",
       "name": "SFDISolver",
-      "order": 3,
+      "order": 4,
+      "patch_size": 9,
       "maximum_mesh_size": 0.1,
       "maximum_mesh_depth": 1,
       "time_stepping": "global",
@@ -109,14 +110,6 @@
         }
        ],
     "plotters": [
-         {
-          "type": "vtu::Cartesian::Cells::limited::Ascii",
-          "name": "ConservedWriter",
-          "time": 0.0,
-          "repeat": 0.01,
-          "output": "./output/conserved",
-          "variables": 9
-         },
         {
           "type": "user::defined",
           "name": "TecplotWriter",

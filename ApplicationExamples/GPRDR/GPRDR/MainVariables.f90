@@ -28,6 +28,7 @@
     INTEGER, PARAMETER 				:: nLin = 7
     !CHARACTER(LEN=20), PARAMETER	:: ICType='NLOPRUPTURE'
 	CHARACTER(LEN=20)				:: ICType
+	LOGICAL							:: USECG
     TYPE tEquation 
         ! COnsistency variables
         REAL    :: PI, LAMBDA, MU,C0,cv2,gamma2,k1,k2, phi, Cf, Cr, theta , g, ch
