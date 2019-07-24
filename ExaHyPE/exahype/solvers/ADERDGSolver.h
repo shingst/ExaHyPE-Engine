@@ -10,7 +10,7 @@
  * Released under the BSD 3 Open Source License.
  * For the full license text, see LICENSE.txt
  *
- * \author Dominic E. Charrier, Tobias Weinzierl, Jean-Matthieu Gallard, Fabian Güra
+ * \author Dominic E. Charrier, Tobias Weinzierl, Jean-Matthieu Gallard, Fabian Güra, Philipp Samfass
  **/
 
 #ifndef _EXAHYPE_SOLVERS_ADERDG_SOLVER_H_
@@ -926,7 +926,11 @@ private:
   void deduceChildCellErasingEvents(CellDescription& cellDescription) const;
 
 #if defined(DistributedOffloading)
+
 #ifdef OffloadingUseProgressTask
+  /**
+   * Used to track sending ranks from which my rank currently receives tasks.
+   */
   static std::unordered_set<int> ActiveSenders; //only to be modified with lock on 
                                                 //offloading semaphore!
 #endif
@@ -935,7 +939,7 @@ private:
   /**
    * A helper job that should run on every rank in the background while offloading
    * is active. There should be exactly one single OffloadingManagerJob per rank.
-   * The offloading manager job is started and stopped in the FusedTimeStep and
+   * The OffloadingManagerJob is started and stopped in the FusedTimeStep and
    * BroadcastAndDropNeighbourMessages mappings. It will terminate itself once
    * all ranks have stopped their OffloadingManagerJob. The OffloadingManagerJob is
    * required in order to dynamically receive tasks and make progress on MPI
@@ -951,7 +955,7 @@ private:
         Running,
         Resume,
         Paused,
-	 Terminate
+	    Terminate
       };
 	  OffloadingManagerJob(ADERDGSolver& solver);
 	  ~OffloadingManagerJob();
@@ -960,8 +964,8 @@ private:
           tbb::task* execute();
 #endif
 #ifndef OffloadingUseProgressThread
-         void pause();
-         void resume();
+      void pause();
+      void resume();
 #endif
 	  void terminate();
     private:
@@ -1019,12 +1023,19 @@ private:
   // Used in order to time offloaded tasks.
   tbb::concurrent_hash_map<int, double> _mapTagToOffloadTime;
   
+  /**
+   * These vectors are used to avoid duplicate
+   * receives that may be induced by MPI_Iprobe.
+   */
   std::vector<int> _lastReceiveTag;
+  /**
+   * See doc on _lastReceiveTag
+   */
   std::vector<int> _lastReceiveBackTag;
 
   /**
-   * A StealablePredictionJob represent a PredictionJob that can be
-   * executed remotely on a different rank than the one were it
+   * A StealablePredictionJob represents a PredictionJob that can be
+   * executed remotely on a different rank than the one where it
    * was spawned.
    */
   class StealablePredictionJob : public tarch::multicore::jobs::Job {

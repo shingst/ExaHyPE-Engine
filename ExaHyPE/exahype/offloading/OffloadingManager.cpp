@@ -126,7 +126,6 @@ void exahype::offloading::OffloadingManager::printPostedRequests() {
 }
 
 int exahype::offloading::OffloadingManager::getNumberOfOutstandingRequests( RequestType type ) {
-
   int mapId = requestTypeToMsgQueueIdx(type);
   return _outstandingReqsForGroup[mapId].size() + _outstandingRequests[mapId].unsafe_size();
 }
@@ -172,10 +171,8 @@ void exahype::offloading::OffloadingManager::submitRequests(
     _postedSendBacksPerRank[remoteRank]++; break;
     case RequestType::receiveBack:
     _postedReceiveBacksPerRank[remoteRank]++; break;
-
   }
 
-  //static std::atomic<int> submitted[4];
   int finished = -1;
   MPI_Testall(nRequests, requests, &finished, MPI_STATUSES_IGNORE);
   if(finished) {
@@ -230,26 +227,6 @@ void exahype::offloading::OffloadingManager::submitRequests(
     ProgressJob *job = new ProgressJob();
     peano::datatraversal::TaskSet spawnedSet( job);
   }
-  /* if(type==RequestType::send && _numProgressSendJobs==0) {
-   //logInfo("submitRequests()", "spawning progress send job (high priority)");
-   _numProgressSendJobs++;
-   ProgressSendJob *job = new ProgressSendJob();
-   peano::datatraversal::TaskSet spawnedSet( job, peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible);
-   }
-
-   if(type==RequestType::receive && _numProgressReceiveJobs==0) {
-   logInfo("submitRequests()", "spawning progress receive job (high priority)");
-   _numProgressReceiveJobs++;
-   ProgressReceiveJob *job = new ProgressReceiveJob();
-   peano::datatraversal::TaskSet spawnedSet( job, peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible);
-   }
-
-   if(type==RequestType::receiveBack && _numProgressReceiveBackJobs==0) {
-   logInfo("submitRequests()", "spawning progress receive back job (high priority)");
-   _numProgressReceiveBackJobs++;
-   ProgressReceiveBackJob *job = new ProgressReceiveBackJob();
-   peano::datatraversal::TaskSet spawnedSet( job, peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible);
-   }*/
 #endif
 }
 
@@ -379,7 +356,6 @@ bool exahype::offloading::OffloadingManager::progressReceiveBackRequests() {
 }
 
 bool exahype::offloading::OffloadingManager::progressRequestsOfType( RequestType type ) {
-
   // First, we ensure here that only one thread at a time progresses offloading
   // this attempts to avoid multithreaded MPI problems
   tarch::multicore::Lock lock(_progressSemaphore, false);
@@ -432,29 +408,6 @@ bool exahype::offloading::OffloadingManager::progressRequestsOfType( RequestType
   double time = -MPI_Wtime();
   exahype::offloading::OffloadingProfiler::getInstance().beginCommunication();
 
-// For DEBUGGING
-//static std::atomic<int> finished_cnt[4];
-//  logInfo("offloadingManager", "testsome of "<<nRequests<< " of type "<<mapId);
-//  std::vector<MPI_Request> copyRequests(outstandingRequests);
-
-//	for(int i=0;i<nRequests;i++) {
-//	  MPI_Request search = copyRequests[i];
-//	  for(int j=0;j<nRequests;j++) {
-//      if(i!=j && copyRequests[j]==search && search!=MPI_REQUEST_NULL) {
-//        logInfo("offloadingManager", "found duplicate request: i "<<i<<" j "<<j<<" request i: "<<copyRequests[i]<<" request j: "<<copyRequests[j]);
-//        assertion(false);
-//  	}
-//	 }
-// }
-  /*if(type==RequestType::send)
-   logInfo("progressRequestsOfType()", "progressing sends");
-   if(type==RequestType::receive)
-   logInfo("progressRequestsOfType()", "progressing receives");
-   if(type==RequestType::sendBack)
-   logInfo("progressRequestsOfType()", "progressing send back");*/
-  //if(type==RequestType::receiveBack)
-  //   logInfo("progressRequestsOfType()", "progressing receive back "<<nRequests);
-  //TODO: keine Statusse
   int ierr = MPI_Testsome(nRequests,&_activeRequests[mapId][0], &outcount, &arrOfIndices[0], MPI_STATUSES_IGNORE);
 
 //  if(ierr != MPI_SUCCESS) {
@@ -475,9 +428,9 @@ bool exahype::offloading::OffloadingManager::progressRequestsOfType( RequestType
   time += MPI_Wtime();
 
   if(outcount>0)
-  exahype::offloading::OffloadingProfiler::getInstance().endCommunication(true, time);
+    exahype::offloading::OffloadingProfiler::getInstance().endCommunication(true, time);
   else
-  exahype::offloading::OffloadingProfiler::getInstance().endCommunication(false, time);
+    exahype::offloading::OffloadingProfiler::getInstance().endCommunication(false, time);
 
   time = -MPI_Wtime();
   exahype::offloading::OffloadingProfiler::getInstance().beginHandling();
@@ -537,12 +490,6 @@ bool exahype::offloading::OffloadingManager::progressRequestsOfType( RequestType
     }
   }
 
-  // push back all unfinished requests
-  //for(int i=0; i<nRequests; i++) {
-  //  if(outstandingRequests[i]!=MPI_REQUEST_NULL) {
-  //    _requests[mapId].push(vecIdToReqId[i]);
-  //  }
-  //}
   bool allFinished = true;
   for(int i=0; i<nRequests; i++) {
     if(_activeRequests[mapId][i]!=MPI_REQUEST_NULL) {
@@ -632,11 +579,6 @@ bool exahype::offloading::OffloadingManager::isEmergencyTriggeredOnRank(int rank
   return !_localBlacklist[rank]<0.5;
 }
 
-//void exahype::offloading::OffloadingManager::resetEmergency() {
-//  logInfo("resetEmergency()","emergency flag reset");
-//  _emergencyTriggered = false;
-//}
-
 bool exahype::offloading::OffloadingManager::selectVictimRank(int& victim, bool& last) {
   last = false;
 #if defined(OffloadingStrategyStaticHardcoded)
@@ -717,10 +659,10 @@ exahype::offloading::OffloadingManager::RequestHandlerJob::RequestHandlerJob(
     exahype::solvers::Solver* solver,
     int tag,
     int remoteRank) :
-_handleRequest(handleRequest),
-_solver(solver),
-_tag(tag),
-_remoteRank(remoteRank)
+  _handleRequest(handleRequest),
+  _solver(solver),
+  _tag(tag),
+  _remoteRank(remoteRank)
 {};
 
 bool exahype::offloading::OffloadingManager::RequestHandlerJob::operator()() {
