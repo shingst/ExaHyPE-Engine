@@ -90,6 +90,14 @@ public:
   /**
    * Nop.
    */
+  void mergeWithNeighbour(
+      exahype::Vertex& vertex, const exahype::Vertex& neighbour, int fromRank,
+      const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
+      const tarch::la::Vector<DIMENSIONS, double>& fineGridH, int level);
+
+  /**
+   * Nop.
+   */
   void receiveDataFromMaster(
       exahype::Cell& receivedCell, exahype::Vertex* receivedVertices,
       const peano::grid::VertexEnumerator& receivedVerticesEnumerator,
