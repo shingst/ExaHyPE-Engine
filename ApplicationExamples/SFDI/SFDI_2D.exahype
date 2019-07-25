@@ -53,8 +53,8 @@
       "name": "SFDISolver",
       "order": 4,
       "patch_size": 9,
-      "maximum_mesh_size": 0.1,
-      "maximum_mesh_depth": 1,
+      "maximum_mesh_size": 0.9,
+      "maximum_mesh_depth": 3,
       "time_stepping": "global",
       "aderdg_kernel": {
         "language": "C",

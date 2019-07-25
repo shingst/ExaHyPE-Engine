@@ -142,6 +142,9 @@ class SFDI::SFDISolver_FV : public SFDI::AbstractSFDISolver_FV {
      */
     void nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ) override;
     
+	double riemannSolver(double* fL, double *fR, const double* qL, const double* qR, const double* gradQL, const double* gradQR, const double* cellSize, int direction) override;
+
+	
     /* pointSource() function not included, as requested in the specification file */
 };
 

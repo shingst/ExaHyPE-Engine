@@ -702,7 +702,7 @@ SUBROUTINE SetMainParameters(N_in,M_in,basisSize,Ghostlayers)
 	nDOFm = (M+1)**nDim
 	nSubLim = 2*N+1
 	nGPM  = M + 1
-	!nSubLim = FVbasisSize !2*N+1
+	nSubLim = FVbasisSize !2*N+1
 	nSubLim_node = FVbasisSize+1
 	nSubLim_GL = FVGhostLayerWidth !2*N+1
 	nSubLim_patch=nSubLim+2*nSubLim_GL

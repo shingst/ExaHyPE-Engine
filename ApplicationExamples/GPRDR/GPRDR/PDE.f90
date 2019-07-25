@@ -1074,7 +1074,7 @@ fL = f1L*nv(1)+g1L*nv(2)+h1L*nv(3)
 	!	print *, '*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*'
 	!	pause
   !end if
-  flux = 0.5*( fR + fL ) + MATMUL(absA, QR - QL)
+  !flux = 0.5*( fR + fL ) + MATMUL(absA, QR - QL)
   fR = flux - Dp
   fL = flux + Dm
   

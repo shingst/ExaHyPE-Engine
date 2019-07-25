@@ -88,3 +88,28 @@ void  SFDI::SFDISolver_FV::nonConservativeProduct(const double* const Q,const do
     assertion2(std::isfinite(BgradQ[i]),i,BgradQ[i]);
   }
 }
+
+double SFDI::SFDISolver_FV::riemannSolver(double* fL, double *fR, const double* qL, const double* qR, const double* gradQL, const double* gradQR, const double* cellSize, int direction) {
+
+
+    //return kernels::finitevolumes::riemannsolvers::c::rusanov<true, true, false, GRMHDbSolver_FV>(*static_cast<GRMHDbSolver_FV*>(this), fL,fR,qL,qR,gradQL, gradQR, cellSize, direction);
+	constexpr int numberOfVariables = AbstractSFDISolver_FV::NumberOfVariables;
+
+	//printf("SONO QUI IN riemannSolver");
+	/* HLLEM */
+	
+	//const int numberOfVariables = GRMHDb::AbstractGRMHDbSolver_FV::NumberOfVariables;
+	const int numberOfParameters = SFDI::AbstractSFDISolver_FV::NumberOfParameters;
+	const int numberOfData = numberOfVariables + numberOfParameters;
+	const int order = 0;  // for finite volume we use one single d.o.f., i.e. the cell average.
+	const int basisSize = order + 1;
+	// Compute the average variables and parameters from the left and the right
+	double QavL[numberOfData] = { 0.0 }; // ~(numberOfVariables+numberOfParameters)
+	double QavR[numberOfData] = { 0.0 }; // ~(numberOfVariables+numberOfParameters)
+    //double lambda = kernels::finitevolumes::riemannsolvers::c::rusanov<true, true, false, SFDISolver_FV>(*static_cast<SFDISolver_FV*>(this), fL, fR, qL, qR, gradQL, gradQR, cellSize, direction);
+    double lambda;
+	hllemfluxfv_(&lambda, fL, fR, qL, qR, &direction);
+	//std::cout << lambda << std::endl;
+	//double1 lambda = 10.0;
+	return lambda; 
+}
