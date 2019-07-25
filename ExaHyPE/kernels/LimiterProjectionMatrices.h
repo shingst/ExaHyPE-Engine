@@ -58,7 +58,7 @@ double* matrixInverse(int n, double* a);
 // NEW
 
 template <int n>
-double matrixInverse(double (&ia) [n*n],const double (&a) [n*n]) {
+void matrixInverse(double (&ia) [n*n],const double (&a) [n*n]) {
   //TODO JMG remove when generated value
   std::fill_n(std::begin(ia),n*n,0.0);
   double c[n*n*2] = {0.0};
@@ -97,7 +97,6 @@ double matrixInverse(double (&ia) [n*n],const double (&a) [n*n]) {
     }
     if(c[idxC(i,i)] == 0) {
       //logError("matrixInverse()", "Matrix is singular" );
-      return nullptr;
     }
     piv = 1. / c[idxC(i,i)];
     for(int k=0; k<2*n; k++) {
