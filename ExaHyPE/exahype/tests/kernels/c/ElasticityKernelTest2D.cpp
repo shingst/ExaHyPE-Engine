@@ -453,7 +453,7 @@ void ElasticityKernelTest::testVolumeIntegralLinear() {
                                                  35.7142857142857);
 
   // Execute kernel
-  kernels::aderdg::generic::c::volumeIntegralLinear<true,false,nVar, basisSize>(lduh, lFhi, dx);
+  kernels::aderdg::generic::c::volumeIntegralLinear<ElasticityKernelTest,true,false,nVar, basisSize>(lduh, lFhi, dx);
 
   // Compare
   for (int i = 0; i < basisSize; i++) {
@@ -489,7 +489,7 @@ void ElasticityKernelTest::testSurfaceIntegralLinear() {
   const tarch::la::Vector<DIMENSIONS, double> dx(38.4615384615385,
                                                  35.7142857142857);
   // Execute kernel
-  kernels::aderdg::generic::c::surfaceIntegralLinear<nVar, basisSize>(lduh, lFbnd, dx);
+  kernels::aderdg::generic::c::surfaceIntegralLinear<ElasticityKernelTest,nVar, basisSize>(lduh, lFbnd, dx);
 
   // Compare
   kernels::idx3 idx_lduh(basisSize, basisSize, nVar);

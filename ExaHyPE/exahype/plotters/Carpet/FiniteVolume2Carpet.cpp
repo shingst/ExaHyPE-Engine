@@ -24,9 +24,8 @@
 #include "exahype/plotters/Carpet/CarpetHDF5Writer.h"
 #include "kernels/KernelUtils.h" // indexing
 #include "peano/utils/Loop.h" // dfor
-#include "kernels/DGMatrices.h"
+#include "kernels/GaussLegendreBasis.h"
 #include "exahype/solvers/ADERDGSolver.h"
-#include "kernels/DGBasisFunctions.h"
 #include "tarch/logging/Log.h"
 #include <sstream>
 

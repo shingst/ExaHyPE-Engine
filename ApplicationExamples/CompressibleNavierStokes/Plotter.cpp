@@ -6,7 +6,7 @@
 //   www.exahype.eu
 // ========================
 #include "Plotter.h"
-#include <kernels/GaussLegendreQuadrature.h>
+#include <kernels/GaussLegendreBasis.h>
 #include "NavierStokesSolver_ADERDG.h"
 #include "NavierStokesSolver_ADERDG_Variables.h"
 #include "PDE.h"

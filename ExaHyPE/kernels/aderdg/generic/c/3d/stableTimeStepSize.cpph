@@ -10,13 +10,6 @@
  * Released under the BSD 3 Open Source License.
  * For the full license text, see LICENSE.txt
  **/
-#include "../../../../KernelUtils.h"
-
-#include <algorithm>
-#include <cmath>
-#include <limits>
-
-#include "tarch/la/Vector.h" 
 
 template <typename SolverType, bool useViscousFlux>
 double kernels::aderdg::generic::c::stableTimeStepSize(
@@ -29,9 +22,7 @@ double kernels::aderdg::generic::c::stableTimeStepSize(
   constexpr int order              = SolverType::Order;
   constexpr int basisSize          = order+1;
   constexpr double cflFactor       = SolverType::CFL;
-  
-  constexpr double PNPM[10]  = {1.0,   0.33,  0.17, 0.1,  0.069,
-      0.045, 0.038, 0.03, 0.02, 0.015};
+  constexpr double PNPM            = SolverType::PNPM;
 
   const double invDx[3] = { 1.0/dx[0], 1.0/dx[1], 1.0/dx[2] };
 
@@ -57,13 +48,12 @@ double kernels::aderdg::generic::c::stableTimeStepSize(
                       for (int ivar = 0; ivar < numberOfVariables; ivar++) {
                           maxEigenvalueV = std::max(fabs(lambda[ivar]), maxEigenvalueV);
                       }
-                      maxEigenvalue += maxEigenvalueV * (2.0/PNPM[order]) * invDx[d];
+                      maxEigenvalue += maxEigenvalueV * (2.0/PNPM) * invDx[d];
                   }
                   denominator += maxEigenvalue * invDx[d];
               }
 
-              dt = std::min(dt, cflFactor * PNPM[order] / 
-                      denominator);
+              dt = std::min(dt, cflFactor * PNPM / denominator);
           }
       }
   }

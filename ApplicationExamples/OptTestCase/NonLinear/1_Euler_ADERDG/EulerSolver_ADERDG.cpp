@@ -25,7 +25,7 @@
 
 #include "kernels/KernelUtils.h"
 
-#include "kernels/GaussLegendreQuadrature.h"
+#include "kernels/GaussLegendreBasis.h"
 
 tarch::logging::Log Euler::EulerSolver_ADERDG::_log("Euler::EulerSolver_ADERDG");
 
@@ -308,12 +308,12 @@ void Euler::EulerSolver_ADERDG::boundaryValues(const double* const x,const doubl
     std::fill_n(stateOut, NumberOfVariables, 0.0);
     std::fill_n(fluxOut,  NumberOfVariables, 0.0);
     for (int i=0; i<Order+1; i++) {
-      const double ti = t + dt * kernels::gaussLegendreNodes[Order][i];
+      const double ti = t + dt * kernels::legendre::nodes[Order][i];
       referenceSolution(x,ti,Q);
       flux(Q,F);
       for (int v=0; v<NumberOfVariables; v++) {
-        stateOut[v] += Q[v]            * kernels::gaussLegendreWeights[Order][i];
-        fluxOut[v]  += F[direction][v] * kernels::gaussLegendreWeights[Order][i];
+        stateOut[v] += Q[v]            * kernels::legendre::weights[Order][i];
+        fluxOut[v]  += F[direction][v] * kernels::legendre::weights[Order][i];
       }
     }
   

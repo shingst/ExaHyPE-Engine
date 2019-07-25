@@ -20,7 +20,7 @@
 
 #include <sstream>
 
-#include "kernels/GaussLegendreQuadrature.h"
+#include "GaussLegendreBasis.h"
 
 namespace kernels {
 namespace riemannsolvers {
@@ -83,7 +83,7 @@ double computeOsherMatrix(
   // integrate matrix |A| := Rs * |L| * iRs matrix over phase space (QL -> QR)
   double s_max = -1.0;
   for(int i=0; i<numQuadPoints; i++) {
-    const double& si  = kernels::gaussLegendreNodes[numQuadPoints-1][i];
+    const double& si  = kernels::legendre::nodes[numQuadPoints-1][i];
     double Qs[numberOfData];
     for(int j=0; j < numberOfData; j++) {
       Qs[j] = qL[j] + si * (qR[j] - qL[j]);
@@ -116,7 +116,7 @@ double computeOsherMatrix(
 
       // compute Osher matrix
       // scale column vectors: (|L1|*col1,|L2|*col2,...)
-      const double& wi = kernels::gaussLegendreWeights[numQuadPoints-1][i];
+      const double& wi = kernels::legendre::weights[numQuadPoints-1][i];
       for(int j=0; j < numberOfVariables; j++) {
         for(int k=0; k < numberOfVariables; k++) {
           for(int a=0; a < numberOfVariables; a++) {
@@ -127,7 +127,7 @@ double computeOsherMatrix(
     }
 
     if (useNCP) { // we directly compute the nonconservative product instead of computing the jacobian matrix
-      const double& wi = kernels::gaussLegendreWeights[numQuadPoints-1][i];
+      const double& wi = kernels::legendre::weights[numQuadPoints-1][i];
       double gradQs[DIMENSIONS][numberOfData] = {0.0};
       for(int j=0; j < numberOfData; j++) {
         gradQs[DIMENSIONS][j] = qR[j] - qL[j];

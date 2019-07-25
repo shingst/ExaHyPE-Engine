@@ -9,7 +9,7 @@
 #include "peano/utils/Loop.h"
 #include <cstring> // memset
 #include "kernels/KernelUtils.h" // matrix indexing
-#include "kernels/GaussLegendreQuadrature.h"
+#include "kernels/GaussLegendreBasis.h"
 #include "peano/utils/Loop.h"
 tarch::logging::Log DIM::DIMSolver_ADERDG::_log( "DIM::DIMSolver_ADERDG" );
 
@@ -45,8 +45,8 @@ void DIM::DIMSolver_ADERDG::boundaryValues(const double* const x,const double t,
   std::memset(fluxOut, 0, nVar * sizeof(double));
   
   for(int i=0; i < basisSize; i++)  { // i == time
-     const double weight = kernels::gaussLegendreWeights[order][i];
-     const double xi = kernels::gaussLegendreNodes[order][i];
+     const double weight = kernels::legendre::weights[order][i];
+     const double xi = kernels::legendre::nodes[order][i];
      double ti = t + xi * dt;
 
      initialdata_(x, &ti, Qgp);

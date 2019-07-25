@@ -6,7 +6,7 @@
 //   www.exahype.eu
 // ========================
 #include "Plotter_FV.h"
-#include <kernels/GaussLegendreQuadrature.h>
+#include <kernels/GaussLegendreBasis.h>
 #include "NavierStokesSolver_FV.h"
 #include "NavierStokesSolver_FV_Variables.h"
 #include "PDE.h"

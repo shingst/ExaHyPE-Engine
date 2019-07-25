@@ -123,7 +123,7 @@ void Elastic::MyElasticWaveSolver::adjustSolution(double* const luh, const tarch
 
 	    
 	    // x-cartesian
-	    xx  =  (offset_x+dx[0]*kernels::gaussLegendreNodes[basisSize-1][i]);
+	    xx  =  (offset_x+dx[0]*kernels::legendre::nodes[basisSize-1][i]);
 	    luh[id_xyzf(k,j,i,numberOfVariables+4)] = xx;
 	    
 	    // q_x, q_y, q_z

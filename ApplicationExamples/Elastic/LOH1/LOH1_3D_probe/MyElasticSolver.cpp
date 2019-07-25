@@ -2,8 +2,7 @@
 
 #include <memory>
 
-#include "kernels/DGBasisFunctions.h"
-#include "kernels/GaussLegendreQuadrature.h"
+#include "kernels/GaussLegendreBasis.h"
 #include "peano/utils/Loop.h"
 
 #include "kernels/aderdg/generic/Kernels.h"
@@ -319,10 +318,10 @@ void Elastic::MyElasticSolver::pointSources(
                   kernels::basisFunctions[_order][ii(2)](xRef(2)) *
 #endif
                   sourceInt;
-          value /= kernels::gaussLegendreWeights[_order][ii(0)] *
-                   kernels::gaussLegendreWeights[_order][ii(1)] *
+          value /= kernels::legendre::weights[_order][ii(0)] *
+                   kernels::legendre::weights[_order][ii(1)] *
 #ifdef Dim3
-                   kernels::gaussLegendreWeights[_order][ii(2)] *
+                   kernels::legendre::weights[_order][ii(2)] *
 #endif
                    1.0;
           luh[iGauss] += value;

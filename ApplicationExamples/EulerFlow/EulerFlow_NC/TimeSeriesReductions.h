@@ -19,7 +19,7 @@
 #endif
 
 #include "tarch/logging/Log.h"
-#include "kernels/GaussLegendreQuadrature.h" // for gaussLegendreWeights
+#include "kernels/GaussLegendreBasis.h" // for gaussLegendreWeights
 
 namespace reductions {
 
@@ -32,11 +32,11 @@ namespace reductions {
  **/
 inline double ADERDGVolume(const int order, const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, const tarch::la::Vector<DIMENSIONS, int>& pos) {
 	// Gauss-Legendre weights from pos argument
-	double wx = kernels::gaussLegendreWeights[order][pos[0]];
-	double wy = kernels::gaussLegendreWeights[order][pos[1]];
+	double wx = kernels::legendre::weights[order][pos[0]];
+	double wy = kernels::legendre::weights[order][pos[1]];
 	double wz = 1;
 	#ifdef Dim3
-	wz = kernels::gaussLegendreWeights[order][pos[2]];
+	wz = kernels::legendre::weights[order][pos[2]];
 	#endif
 
 	// volume form for integration

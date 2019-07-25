@@ -6,7 +6,7 @@
 // ========================
 #include "OutputWriter.h"
 #include "AbstractMySWESolver.h"
-#include "kernels/GaussLegendreQuadrature.h"
+#include "kernels/GaussLegendreBasis.h"
 #include "kernels/aderdg/generic/c/sizes.cpph"
 #include <cmath>
 

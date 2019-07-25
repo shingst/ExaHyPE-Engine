@@ -2,7 +2,7 @@
 #include "Primitives.h"
 #include "InitialData.h"
 
-#include "kernels/GaussLegendreQuadrature.h"
+#include "kernels/GaussLegendreBasis.h"
 
 Euler::ComputeGlobalIntegralsLegendre::ComputeGlobalIntegralsLegendre(MyEulerSolver&  solver) :
 	conserved("output/conserved-"),
@@ -72,11 +72,11 @@ void Euler::ComputeGlobalIntegralsLegendre::mapQuantities(
 	statistics.addValue(scaling, 1);
 
 	// Gauss-Legendre weights from pos argument
-	double wx = kernels::gaussLegendreWeights[Euler::MyEulerSolver::Order][pos[0]];
-	double wy = kernels::gaussLegendreWeights[Euler::MyEulerSolver::Order][pos[1]];
+	double wx = kernels::legendre::weights[Euler::MyEulerSolver::Order][pos[0]];
+	double wy = kernels::legendre::weights[Euler::MyEulerSolver::Order][pos[1]];
 	double wz = 1;
 	#ifdef Dim3
-	wz = kernels::gaussLegendreWeights[Euler::MyEulerSolver::Order][pos[2]];
+	wz = kernels::legendre::weights[Euler::MyEulerSolver::Order][pos[2]];
 	#endif
 	scaling *= wx*wy*wz;
 

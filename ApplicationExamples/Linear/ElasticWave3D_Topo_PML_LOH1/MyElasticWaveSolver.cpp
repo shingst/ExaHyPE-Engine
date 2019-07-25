@@ -168,13 +168,13 @@ void Elastic::MyElasticWaveSolver::adjustSolution(double* const luh, const tarch
 
 
 	    if( level <= getCoarsestMeshLevel()){ 
-	      //double xx  =  (offset_x+width_x*kernels::gaussLegendreNodes[basisSize-1][i]);
-	      // double yy  =  (offset_y+width_y*kernels::gaussLegendreNodes[basisSize-1][j]);
-	      // double zz  =  (offset_z+width_z*kernels::gaussLegendreNodes[basisSize-1][k]);
+	      //double xx  =  (offset_x+width_x*kernels::legendre::nodes[basisSize-1][i]);
+	      // double yy  =  (offset_y+width_y*kernels::legendre::nodes[basisSize-1][j]);
+	      // double zz  =  (offset_z+width_z*kernels::legendre::nodes[basisSize-1][k]);
 
-	      double xx  =  (offset_x+width_x*kernels::gaussLobattoNodes[basisSize-1][basisSize-1-i]);
-	      double yy  =  (offset_y+width_y*kernels::gaussLobattoNodes[basisSize-1][basisSize-1-j]);
-	      double zz  =  (offset_z+width_z*kernels::gaussLobattoNodes[basisSize-1][basisSize-1-k]);
+	      double xx  =  (offset_x+width_x*kernels::lobatto::nodes[basisSize-1][basisSize-1-i]);
+	      double yy  =  (offset_y+width_y*kernels::lobatto::nodes[basisSize-1][basisSize-1-j]);
+	      double zz  =  (offset_z+width_z*kernels::lobatto::nodes[basisSize-1][basisSize-1-k]);
 
 
 	      double x= gl_vals_x[id_xyz(k,j,i)];

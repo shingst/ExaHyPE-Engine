@@ -16,7 +16,7 @@
 #include <memory>
 #include <cstring>
 #include <stdio.h>
-#include "kernels/GaussLegendreQuadrature.h"
+#include "kernels/GaussLegendreBasis.h"
 #include "kernels/KernelUtils.h" // matrix indexing
 
 tarch::logging::Log MHD::MHDSolver::_log( "MHD::MHDSolver" );
@@ -54,8 +54,8 @@ void MHD::MHDSolver::boundaryValues(const double* const x,const double t,const d
 
   // Integrate solution in gauss points (Qgp) in time
   for(int i=0; i < basisSize; i++)  { // i == time
-     const double weight = kernels::gaussLegendreWeights[order][i];
-     const double xi = kernels::gaussLegendreNodes[order][i];
+     const double weight = kernels::legendre::weights[order][i];
+     const double xi = kernels::legendre::nodes[order][i];
      double ti = t + xi * dt;
 
      alfenwave_(x, Qgp, &ti);

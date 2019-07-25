@@ -25,7 +25,7 @@
 // Should thus be placed in kernel module or the solver
 // should provide a function that computes solution values
 // at equidistant grid points
-#include "kernels/DGMatrices.h"
+#include "kernels/GaussLegendreBasis.h"
 #include "kernels/KernelUtils.h" // index functions
 #include "peano/utils/Loop.h"
 

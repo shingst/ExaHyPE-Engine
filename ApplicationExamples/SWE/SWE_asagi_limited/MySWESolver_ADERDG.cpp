@@ -13,7 +13,7 @@
 //#include "kernels/aderdg/generic/Kernels.h"
 #include "kernels/KernelUtils.h"
 
-#include "../../../ExaHyPE/kernels/GaussLegendreQuadrature.h"
+#include "../../../ExaHyPE/kernels/GaussLegendreBasis.h"
 
 using namespace kernels;
 
@@ -241,7 +241,7 @@ void SWE::MySWESolver_ADERDG::riemannSolver(double* const FL,double* const FR,co
   {
     idx2 idx_QLR(basisSize, numberOfData);
     for (int j = 0; j < basisSize; j++) {
-      const double weight = kernels::gaussLegendreWeights[order][j];
+      const double weight = kernels::legendre::weights[order][j];
 
       for (int k = 0; k < numberOfData; k++) {
         QavL[k] += weight * QL[idx_QLR(j, k)];

@@ -31,7 +31,7 @@
 #include "peano/utils/Loop.h"
 
 #include "kernels/KernelUtils.h" // matrix indexing
-#include "kernels/GaussLegendreQuadrature.h"
+#include "kernels/GaussLegendreBasis.h"
 
 
 #include "tarch/multicore/BooleanSemaphore.h"
@@ -221,8 +221,8 @@ void GRMHDb::GRMHDbSolver_ADERDG::boundaryValues(const double* const x, const do
  for(int dd=0; dd<nDim; dd++) F[dd] = Fs[dd];
 
  for(int i=0; i < basisSize; i++)  { // i == time
-	  const double weight = kernels::gaussLegendreWeights[order][i];
-	  const double xi = kernels::gaussLegendreNodes[order][i];
+	  const double weight = kernels::legendre::weights[order][i];
+	  const double xi = kernels::legendre::nodes[order][i];
 	  double ti = t + xi * dt;
 
 	  initialdata_(x, &ti, Qgp);
@@ -241,8 +241,8 @@ void GRMHDb::GRMHDbSolver_ADERDG::boundaryValues(const double* const x, const do
 	  for (int dd = 0; dd < nDim; dd++) F[dd] = Fs[dd];
 
 	  for (int i = 0; i < basisSize; i++) { // i == time
-		  const double weight = kernels::gaussLegendreWeights[order][i];
-		  const double xi = kernels::gaussLegendreNodes[order][i];
+		  const double weight = kernels::legendre::weights[order][i];
+		  const double xi = kernels::legendre::nodes[order][i];
 		  double ti = t + xi * dt;
 
 		  initialdata_(x, &ti, Qgp);

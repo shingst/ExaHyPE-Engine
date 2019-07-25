@@ -157,6 +157,7 @@ public:
       const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
       const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* u,
       double timeStamp,
+      const int numberOfCellsPerAxis,
       const int RefinementStatusAsInt,
       const int previousRefinementStatusAsInt);
 

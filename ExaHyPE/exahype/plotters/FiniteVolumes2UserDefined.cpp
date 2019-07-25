@@ -14,13 +14,10 @@
 #include "FiniteVolumes2UserDefined.h"
 #include "tarch/parallel/Node.h"
 
-#include "kernels/DGMatrices.h"
+#include "kernels/GaussLegendreBasis.h"
 #include "peano/utils/Loop.h"
 
 #include "exahype/solvers/FiniteVolumesSolver.h"
-
-#include "kernels/DGBasisFunctions.h"
-
 
 std::string exahype::plotters::FiniteVolumes2UserDefined::getIdentifier() {
   return "user::defined";

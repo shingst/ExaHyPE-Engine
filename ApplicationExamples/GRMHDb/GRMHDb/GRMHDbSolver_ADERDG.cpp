@@ -28,7 +28,7 @@
 #include "peano/utils/Loop.h"
 
 #include "kernels/KernelUtils.h" // matrix indexing
-#include "kernels/GaussLegendreQuadrature.h"
+#include "kernels/GaussLegendreBasis.h"
 
 tarch::logging::Log GRMHDb::GRMHDbSolver_ADERDG::_log( "GRMHDb::GRMHDbSolver_ADERDG" );
 
@@ -137,8 +137,8 @@ void GRMHDb::GRMHDbSolver_ADERDG::boundaryValues(const double* const x,const dou
 	for(int dd=0; dd<nDim; dd++) F[dd] = Fs[dd];
 
 	for(int i=0; i < basisSize; i++)  { // i == time
-		const double weight = kernels::gaussLegendreWeights[order][i];
-		const double xi = kernels::gaussLegendreNodes[order][i];
+		const double weight = kernels::legendre::weights[order][i];
+		const double xi = kernels::legendre::nodes[order][i];
 		double ti = t + xi * dt;
 
 		initialdata_(x, &ti, Qgp);

@@ -1,11 +1,10 @@
 #include "CurvilinearTransformation.h"
 
 #include "kernels/KernelUtils.h"
-#include "kernels/DGMatrices.h"
 #if defined(_GLL)
-#include "kernels/GaussLobattoQuadrature.h"
+#include "kernels/GaussLobattoBasis.h"
 #else
-#include "kernels/GaussLegendreQuadrature.h"
+#include "kernels/GaussLegendreBasis.h"
 #endif
 
 
@@ -451,9 +450,9 @@ void getValuesAtQuadNodes(double* orig_mesh_x , double* orig_mesh_y, double* des
     for (int i = 0 ; i< num_nodes ; i ++){
 
 #if defined(_GLL)
-      interpolate(kernels::gaussLobattoNodes[num_nodes-1][num_nodes-1-i],kernels::gaussLobattoNodes[num_nodes-1][num_nodes-1-j],orig_mesh_x,orig_mesh_y,dest_mesh,num_nodes,results[id_xy(j,i)]);
+      interpolate(kernels::lobatto::nodes[num_nodes-1][num_nodes-1-i],kernels::lobatto::nodes[num_nodes-1][num_nodes-1-j],orig_mesh_x,orig_mesh_y,dest_mesh,num_nodes,results[id_xy(j,i)]);
 #else      
-      interpolate(kernels::gaussLegendreNodes[num_nodes-1][i],kernels::gaussLegendreNodes[num_nodes-1][j],orig_mesh_x,orig_mesh_y,dest_mesh,num_nodes,results[id_xy(j,i)]);
+      interpolate(kernels::legendre::nodes[num_nodes-1][i],kernels::legendre::nodes[num_nodes-1][j],orig_mesh_x,orig_mesh_y,dest_mesh,num_nodes,results[id_xy(j,i)]);
 #endif      
     }
   }

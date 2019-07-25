@@ -13,8 +13,8 @@
 
 #include <algorithm>
 
-#include "../../../../KernelUtils.h"
-#include "../../../../RiemannSolverUtils.h"
+#include "kernels/KernelUtils.h"
+#include "kernels/RiemannSolverUtils.h"
 
 namespace kernels {
 namespace aderdg {
@@ -49,9 +49,9 @@ void riemannSolverLinear(SolverType& solver, double* FL, double* FR,
   double QavL[numberOfData] = {0.0}; // size: numberOfVariables+numberOfParameters
   double QavR[numberOfData] = {0.0}; // size: numberOfVariables+numberOfParameters
   kernels::riemannsolvers::util::averageRiemannInputs<basisSize,numberOfData>(
-      QL,kernels::gaussLegendreWeights,QavL);
+      QL,SolverType::weights,QavL);
   kernels::riemannsolvers::util::averageRiemannInputs<basisSize,numberOfData>(
-      QR,kernels::gaussLegendreWeights,QavR);
+      QR,SolverType::weights,QavR);
 
   //get abs max eigenvalue
   double LL[numberOfVariables] = {0.0}; 

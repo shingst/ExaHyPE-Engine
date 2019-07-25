@@ -11,7 +11,7 @@
 #include "peano/utils/Loop.h"
 #include "kernels/KernelUtils.h"
 
-#include "kernels/GaussLegendreQuadrature.h"
+#include "kernels/GaussLegendreBasis.h"
 #include "readCsv.h"
 #include "bathymetry.h"
 
@@ -70,8 +70,8 @@ void SWE::MySWESolver_ADERDG::adjustSolution(double* const luh, const tarch::la:
         for (int i=0; i< num_nodes; i++){
             for (int j=0; j< num_nodes; j++){
 
-                double x  =  (offset_x+dx[0]*kernels::gaussLegendreNodes[basisSize-1][i]);
-                double y  =  (offset_y+dx[1]*kernels::gaussLegendreNodes[basisSize-1][j]);
+                double x  =  (offset_x+dx[0]*kernels::legendre::nodes[basisSize-1][i]);
+                double y  =  (offset_y+dx[1]*kernels::legendre::nodes[basisSize-1][j]);
 
                 double b =  SWE::linearInterpolation(x,y,a);
 

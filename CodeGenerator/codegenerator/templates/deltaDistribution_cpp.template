@@ -20,8 +20,6 @@
 
 #include "{{solverHeader}}"
 
-#include "kernels/DGBasisFunctions.h"
-
 std::vector<int>* {{codeNamespace}}::getPointSources(
   {{solverName}}& solver,
   const double* const center,

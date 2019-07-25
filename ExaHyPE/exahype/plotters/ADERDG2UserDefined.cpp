@@ -14,12 +14,10 @@
 #include "ADERDG2UserDefined.h"
 #include "tarch/parallel/Node.h"
 
-#include "kernels/DGMatrices.h"
+#include "kernels/GaussLegendreBasis.h"
 #include "peano/utils/Loop.h"
 
 #include "exahype/solvers/ADERDGSolver.h"
-
-#include "kernels/DGBasisFunctions.h"
 
 
 std::string exahype::plotters::ADERDG2UserDefined::getIdentifier() {

@@ -10,7 +10,7 @@
 #include "PDE.h"
 //#include "GRMHDbSolver_ADERDG.h"
 #include "GRMHDbSolver_FV.h"
-#include "kernels/GaussLegendreQuadrature.h"
+#include "kernels/GaussLegendreBasis.h"
 #include "kernels/KernelUtils.h"
 #include <cmath>
 
@@ -58,8 +58,8 @@ void GRMHDb::ErrorWriter::plotADERDGPatch(
   dfor(i,basisSize) {
 	 double w_dV = 1.0;
      for (int d=0; d<DIMENSIONS; d++) {
-       x[d]  = offsetOfPatch[d] + sizeOfPatch[d] * kernels::gaussLegendreNodes[order][i(d)];
-       w_dV *= sizeOfPatch[d] * kernels::gaussLegendreWeights[order][i(d)];
+       x[d]  = offsetOfPatch[d] + sizeOfPatch[d] * kernels::legendre::nodes[order][i(d)];
+       w_dV *= sizeOfPatch[d] * kernels::legendre::weights[order][i(d)];
      }
 
 	 double uAna[numberOfData];

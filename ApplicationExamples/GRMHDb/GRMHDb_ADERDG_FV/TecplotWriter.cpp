@@ -14,7 +14,7 @@
 #include "GRMHDbSolver_FV.h"
 #include "GRMHDbSolver_ADERDG.h"
 
-#include "kernels/GaussLegendreQuadrature.h"
+#include "kernels/GaussLegendreBasis.h"
 #include "kernels/KernelUtils.h"
 
 #include "peano/utils/Loop.h"

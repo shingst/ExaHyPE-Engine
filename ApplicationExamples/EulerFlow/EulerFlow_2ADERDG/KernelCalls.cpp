@@ -13,11 +13,9 @@
 #include "exahype/solvers/Solver.h"
 #include "kernels/KernelCalls.h"
 
-#include "kernels/GaussLegendreQuadrature.h"
-#include "kernels/GaussLobattoQuadrature.h"
+#include "kernels/GaussLegendreBasis.h"
+#include "kernels/GaussLobattoBasis.h"
 #include "kernels/LimiterProjectionMatrices.h"
-#include "kernels/DGMatrices.h"
-#include "kernels/DGBasisFunctions.h"
 
 #include "FirstEulerSolver.h"
 #include "FirstEulerSolver_Plotter0.h"

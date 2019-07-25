@@ -14,6 +14,9 @@
 #include "{{solver}}_Variables.h"
 #include "{{solver}}.h" // Have to include a proper declaration. Cannot use forward declared classes in static_cast.
 
+#include "kernels/GaussLegendreBasis.h"
+#include "kernels/GaussLobattoBasis.h"
+
 #include <stdio.h>
 {% if countFlops  %}
 #include <chrono>
@@ -76,6 +79,10 @@ std::atomic_ulong {{project}}::{{abstractSolver}}::volumeUnknownsRestriction_f =
 std::atomic_ulong {{project}}::{{abstractSolver}}::volumeUnknownsRestriction_t = 0;
 std::atomic_ulong {{project}}::{{abstractSolver}}::volumeUnknownsRestriction_c = 0;
 {% endif %}
+
+kernels::UnivariateFunction** {{project}}::{{abstractSolver}}::basisFunction                 = kernels::{{basis}}::basisFunction;
+kernels::UnivariateFunction** {{project}}::{{abstractSolver}}::basisFunctionFirstDerivative  = kernels::{{basis}}::basisFunctionFirstDerivative;
+kernels::UnivariateFunction** {{project}}::{{abstractSolver}}::basisFunctionSecondDerivative = kernels::{{basis}}::basisFunctionSecondDerivative;
 
 // We define the constructor of the actual solver here in order to regenerate it easily.
 {{project}}::{{solver}}::{{solver}}(

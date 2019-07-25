@@ -100,8 +100,8 @@ void NavierStokes::NavierStokesSolver_ADERDG::boundaryValues(const double* const
       std::fill(curStateOut.begin(), curStateOut.end(), 0.0);
       std::fill(gradStateOut.begin(), gradStateOut.end(), 0.0);
 
-      const double weight = kernels::gaussLegendreWeights[Order][i];
-      const double xi = kernels::gaussLegendreNodes[Order][i];
+      const double weight = kernels::legendre::weights[Order][i];
+      const double xi = kernels::legendre::nodes[Order][i];
       const double ti = t + xi * dt;
 
       scenario->analyticalSolution(x, ti, ns, curVarsOut, gradStateOut.data());

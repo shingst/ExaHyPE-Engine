@@ -7,25 +7,87 @@
 // ========================
 
 #include "GPRDRSolver_ADERDG.h"
+#include "GPRDRSolver_FV.h"
 
 #include <algorithm>
 
 #include "GPRDRSolver_ADERDG_Variables.h"
-#include "kernels/GaussLegendreQuadrature.h"
+#include "kernels/GaussLegendreBasis.h"
 
 #include "PDE.h"
 #include "InitialData.h"
+#include "Tools.h"
+#include "Tools.h"
+#include "CGinterface.h"
 
 #include "kernels/KernelUtils.h"
 #include "peano/utils/Loop.h"
+
+#include "GPRDRSolver_ADERDG_Variables.h"
+
+#include "kernels/KernelUtils.h"
+#include "peano/utils/Loop.h"
+
+#include "tarch/multicore/BooleanSemaphore.h"
+#include "tarch/multicore/Lock.h"
 
 tarch::logging::Log GPRDR::GPRDRSolver_ADERDG::_log( "GPRDR::GPRDRSolver_ADERDG" );
 
 
 void GPRDR::GPRDRSolver_ADERDG::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
   const int order = GPRDR::GPRDRSolver_ADERDG::Order;
+  	constexpr int basisSize = AbstractGPRDRSolver_FV::PatchSize;
+	constexpr int Ghostlayers = AbstractGPRDRSolver_FV::GhostLayerWidth;
+	
+	static tarch::multicore::BooleanSemaphore initializationSemaphoreDG;
+  
+  
+    tarch::multicore::Lock lock(initializationSemaphoreDG);	
+	
   //inittecplot_(&order,&order);
-  initparameters_();
+  if (constants.isValueValidString("reference")) {
+    std::string reference = constants.getValueAsString("reference");
+	const int length=reference.length();
+	logInfo("init(...)","Reference setup:"<<reference);
+  	printf("\n******************************************************************");
+	printf("\n**************<<<  INIT TECPLOT    >>>****************************");
+	printf("\n******************************************************************");
+    inittecplot_(&order,&order,&basisSize,&Ghostlayers);
+	//inittecplot_(&order,&order);
+	printf("\n******************************************************************");
+	printf("\n**************<<<  INIT PDE SETUP  >>>****************************");
+	printf("\n******************************************************************\n");
+    initparameters_(&length,&reference[0]);
+	printf("\n******************************************************************");
+	printf("\n**************<<<       DONE       >>>****************************");
+	printf("\n******************************************************************");
+	if (constants.isValueValidString("cgfile")) {
+		std::string cgfile = constants.getValueAsString("cgfile");
+		if (constants.isValueValidDouble("cx") && constants.isValueValidDouble("cy") && constants.isValueValidInt("isbinary") ) {
+			const double cx = constants.getValueAsDouble("cx");
+			const double cy = constants.getValueAsDouble("cy");
+			const int isbinary = constants.getValueAsInt("isbinary");
+			const int lengthcg=cgfile.length();
+			
+			logInfo("init(...)","CG File:"<<cgfile);
+			logInfo("init(...)","CG center:("<<cx<<","<<cy<<")");
+			logInfo("init(...)","CG binary:"<<isbinary);
+			std::cout << cgfile << std::endl;
+			//loadcgfile_(&_domainOffset[0],&_domainSize[0],&lengthcg,&cgfile[0],&cx,&cy,&isbinary);
+			loadcgfile_(&_domainOffset[0],&_domainSize[0],&cx,&cy,&isbinary);
+		}else{
+			logInfo("init(...)","CG data CX is not correct.");
+			std::abort();
+		}
+	}
+  } else {
+    logInfo("init(...)","Not recognized setup.");
+	std::abort();
+  }	
+	
+	lock.free();
+	
+	
 }
 
 void GPRDR::GPRDRSolver_ADERDG::adjustPointSolution(const double* const x,const double t,const double dt,double* const Q) {
@@ -67,8 +129,8 @@ void GPRDR::GPRDRSolver_ADERDG::boundaryValues(const double* const x,const doubl
   for(int dd=0; dd<nDim; dd++) F[dd] = Fs[dd];
 
   for(int i=0; i < basisSize; i++)  { // i == time
-    const double weight = kernels::gaussLegendreWeights[order][i];
-    const double xi = kernels::gaussLegendreNodes[order][i];
+    const double weight = kernels::legendre::weights[order][i];
+    const double xi = kernels::legendre::nodes[order][i];
     double ti = t + xi * dt;
 
     //    initialdata_(x, &ti, Qgp,&md,&cms,&order);
@@ -85,13 +147,29 @@ void GPRDR::GPRDRSolver_ADERDG::boundaryValues(const double* const x,const doubl
 
 exahype::solvers::Solver::RefinementControl GPRDR::GPRDRSolver_ADERDG::refinementCriterion(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,double t,const int level) {
   if (tarch::la::equals(t,0.0)) {
+  if(DIMENSIONS == 2){
     if(std::abs(cellCentre[0]) < 1000){
       if(std::abs(cellCentre[1]) < 50){
 	return exahype::solvers::Solver::RefinementControl::Refine;
       }
     }
+  }else{
+    if(std::abs(cellCentre[0]) < 50){
+      if(std::abs(cellCentre[1]) < 50){
+		  if(std::abs(cellCentre[2]) < 50){
+			return exahype::solvers::Solver::RefinementControl::Refine;
+		  }
+      }
+    }	  
+	  
+  };
   }	 
-  return exahype::solvers::Solver::RefinementControl::Keep;
+  
+  //return exahype::solvers::Solver::RefinementControl::Keep;
+  if ( level > getCoarsestMeshLevel() ) {
+    return exahype::solvers::Solver::RefinementControl::Erase;
+  }
+return exahype::solvers::Solver::RefinementControl::Keep;
 }
 
 //*****************************************************************************

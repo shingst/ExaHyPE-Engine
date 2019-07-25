@@ -16,8 +16,7 @@
 
 #include <algorithm>
 
-#include "kernels/DGMatrices.h"
-#include "kernels/GaussLegendreQuadrature.h"
+#include "kernels/GaussLegendreBasis.h"
 #include "kernels/KernelUtils.h"
 #include "kernels/aderdg/generic/c/computeGradients.cpph"
 
@@ -73,7 +72,7 @@ struct RungeKuttaIntegrator {
 		: solver(solver), offsetOfPatch(offsetOfPatch), sizeOfPatch(sizeOfPatch), cfl_number(cfl_number) {}
 
 	void coordinate(double* const pos, const int i) const {
-		pos[i] = offsetOfPatch[i] + sizeOfPatch[i] * (kernels::gaussLegendreNodes[order][i] - 0.5);
+		pos[i] = offsetOfPatch[i] + sizeOfPatch[i] * (SolverType::nodes[order][i] - 0.5);
 	}
 		
 	// Determine the RHS of the equation partial_t Q = S. We used to call this
@@ -129,7 +128,7 @@ struct RungeKuttaIntegrator {
 		
 		for (int d = 0; d < DIMENSIONS; d++)
 		for (int i = 0; i < basisSize; i++) {
-			double dx = sizeOfPatch[d] * kernels::gaussLegendreNodes[order][i];
+			double dx = sizeOfPatch[d] * SolverType::nodes[order][i];
 			if(dx > Largest) Largest = dx;
 		}
 		

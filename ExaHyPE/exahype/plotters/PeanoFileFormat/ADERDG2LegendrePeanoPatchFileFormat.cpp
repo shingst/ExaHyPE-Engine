@@ -17,9 +17,7 @@
 #include "peano/utils/Loop.h"
 
 #include "kernels/KernelUtils.h"
-#include "kernels/DGMatrices.h"
-#include "kernels/GaussLegendreQuadrature.h"
-#include "kernels/DGBasisFunctions.h"
+#include "kernels/GaussLegendreBasis.h"
 
 #include "exahype/solvers/ADERDGSolver.h"
 
@@ -32,8 +30,6 @@
 #include "tarch/plotter/griddata/blockstructured/PeanoTextPatchFileWriter.h"
 #include "tarch/plotter/griddata/blockstructured/PeanoHDF5PatchFileWriter.h"
 
-
-#include "kernels/DGBasisFunctions.h"
 #include "kernels/aderdg/generic/c/computeGradients.cpph" // derivatives
 
 #include "exahype/plotters/slicing/Slicer.h"
@@ -135,7 +131,7 @@ std::vector<double> exahype::plotters::ADERDG2LegendrePeanoPatchFileFormat::getM
   std::vector<double> result;
   dfor(i,_order+1) {
     for (int d=0; d<DIMENSIONS; d++) {
-      const double x = kernels::gaussLegendreNodes[_order][i(d)];
+      const double x = kernels::legendre::nodes[_order][i(d)];
       result.push_back(x);
     }
   }
@@ -265,7 +261,7 @@ void exahype::plotters::ADERDG2LegendrePeanoPatchFileFormat::plotVertexData(
   dfor(i,_order+1) {
     tarch::la::Vector<DIMENSIONS, double> p;
     for (int d=0; d<DIMENSIONS; d++) {
-      p(d) = offsetOfPatch(d) + kernels::gaussLegendreNodes[_order][i(d)] * sizeOfPatch(d);
+      p(d) = offsetOfPatch(d) + kernels::legendre::nodes[_order][i(d)] * sizeOfPatch(d);
     }
 
     if(_postProcessing->mapWithDerivatives()) {
@@ -334,10 +330,10 @@ void exahype::plotters::ADERDG2LegendrePeanoPatchFileFormat::plotCellData(
     // This is inefficient but works. We could look it up directly from the arrays
     tarch::la::Vector<DIMENSIONS, double> p;
     for (int d=0; d<DIMENSIONS; d++) {
-      p(d) = offsetOfPatch(d) + (kernels::gaussLegendreNodes[_order][i(d)]+kernels::gaussLegendreNodes[_order][i(d)+1]) * sizeOfPatch(d)/2.0;
+      p(d) = offsetOfPatch(d) + (kernels::legendre::nodes[_order][i(d)]+kernels::legendre::nodes[_order][i(d)+1]) * sizeOfPatch(d)/2.0;
     }
     for (int unknown=0; unknown < _solverUnknowns; unknown++) {
-      interpoland[unknown] = kernels::interpolate(
+      interpoland[unknown] = kernels::legendre::interpolate(
         offsetOfPatch.data(),
         sizeOfPatch.data(),
         p.data(), // das ist die Position
@@ -353,7 +349,7 @@ void exahype::plotters::ADERDG2LegendrePeanoPatchFileFormat::plotCellData(
       // `numberOfUnknowns` with the value `nDim*nVar` in order to circumvent the gradU data ordering.
       for (int d=0; d < DIMENSIONS; d++) {
         for (int unknown=0; unknown < _solverUnknowns; unknown++) {
-          inter_gradQ[idx_inter_gradU(d,unknown)] = kernels::interpolate(
+          inter_gradQ[idx_inter_gradU(d,unknown)] = kernels::legendre::interpolate(
             offsetOfPatch.data(),
             sizeOfPatch.data(),
             p.data(),
@@ -435,7 +431,7 @@ void exahype::plotters::ADERDG2LegendrePeanoPatchFileFormat::plotPatch(
     double *gradU = nullptr;
     if(_postProcessing->mapWithDerivatives()) {
       gradU = new double[basisZ*basisY*basisX * DIMENSIONS * _solverUnknowns];
-      kernels::aderdg::generic::c::computeGradQ(gradU, u, sizeOfPatch, _solverUnknowns, _order);
+      kernels::aderdg::generic::c::computeGradQ(gradU, u, kernels::legendre::dudx, sizeOfPatch, _solverUnknowns, _order);
     }
 
     if (_plotCells) {

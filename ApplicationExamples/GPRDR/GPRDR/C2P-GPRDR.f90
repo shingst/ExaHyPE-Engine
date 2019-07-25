@@ -10,7 +10,7 @@
  ! #include "expintegrator_type.f90"
 
 
-SUBROUTINE PDEPrim2Cons(Q,V)
+RECURSIVE SUBROUTINE PDEPrim2Cons(Q,V)
   USE MainVariables, ONLY: nVar, nDim, EQN
 #if defined(EQNTYPEC99) || defined(EQNTYPED99)
     USE SpecificVarEqn99, only : compute_l_m_mix
@@ -70,7 +70,7 @@ SUBROUTINE PDEPrim2Cons(Q,V)
     Q(5)   = rhoeh + 0.5*V(1)*( V(2)**2+V(3)**2+V(4)**2 ) + 0.5*V(1)*EQN%ch**2*( V(6)**2 + V(7)**2 + V(8)**2 ) + rhoevv
 END SUBROUTINE PDEPrim2Cons
 
-SUBROUTINE PDECons2Prim(V,Q)
+RECURSIVE SUBROUTINE PDECons2Prim(V,Q)
   USE MainVariables, ONLY: nVar, nDim, EQN
 #if defined(EQNTYPEC99) || defined(EQNTYPED99)
     USE SpecificVarEqn99, only : compute_l_m_mix

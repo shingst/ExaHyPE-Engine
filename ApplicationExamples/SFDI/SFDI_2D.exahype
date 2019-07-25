@@ -21,10 +21,10 @@
     ]
   },
   "shared_memory": {
-    "cores": 1,
+    "cores": 16,
     "properties_file": "sharedmemory.properties",
     "autotuning_strategy": "dummy",
-    "background_job_consumers": 1
+    "background_job_consumers": 15
   },
   "distributed_memory": {
     "timeout": 6000,
@@ -51,9 +51,10 @@
     {
       "type": "Limiting-ADER-DG",
       "name": "SFDISolver",
-      "order": 3,
+      "order": 4,
+      "patch_size": 9,
       "maximum_mesh_size": 0.1,
-      "maximum_mesh_depth": 0,
+      "maximum_mesh_depth": 1,
       "time_stepping": "global",
       "aderdg_kernel": {
         "language": "C",
@@ -109,14 +110,15 @@
         }
        ],
     "plotters": [
-         {
-          "type": "vtu::Cartesian::Cells::limited::Ascii",
-          "name": "ConservedWriter",
+        {
+          "type": "user::defined",
+          "name": "TecplotWriter",
           "time": 0.0,
           "repeat": 0.01,
-          "output": "./output/conserved",
+          "output": "./output/tecplot",
           "variables": 9
-         }
+        }
+
       ]
     }
   ]

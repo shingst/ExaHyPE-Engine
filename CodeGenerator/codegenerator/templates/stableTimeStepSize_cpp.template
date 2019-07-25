@@ -22,9 +22,8 @@ double {{codeNamespace}}::stableTimeStepSize(
     const double* restrict const luh,
     const double inverseDx //Assume dx[0] == dx[1] == dx[2]
 ) {
-  constexpr double cflFactor       = {{solverName}}::CFL;
-  constexpr double PNPM[10]        = {1.0,   0.33,  0.17, 0.1,  0.069,
-                                      0.045, 0.038, 0.03, 0.02, 0.015};
+  constexpr double cflFactor = {{solverName}}::CFL;
+  constexpr double PNPM      = {{solverName}}::PNPM;
   
   double lambda[{{nVar}}] __attribute__((aligned(ALIGNMENT))) = {0.0};
   double dt = std::numeric_limits<double>::max();
@@ -44,7 +43,7 @@ double {{codeNamespace}}::stableTimeStepSize(
       denominator += maxEigenvalue * inverseDx; //Assume dx[0] == dx[1] == dx[2]
     }
 
-    dt = std::min(dt, cflFactor * PNPM[{{nDof-1}}] / denominator);  // order = nDof-1
+    dt = std::min(dt, cflFactor * PNPM / denominator);  // order = nDof-1
 
   }
 

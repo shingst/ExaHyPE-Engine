@@ -7,22 +7,52 @@
 // ========================
 
 #include "SFDISolver_ADERDG.h"
+#include "SFDISolver_FV.h"
 
 #include <algorithm>
-#include "kernels/GaussLegendreQuadrature.h"
+#include "kernels/GaussLegendreBasis.h"
 #include "PDE.h"
 #include "InitialData.h"
+#include "Tools.h"
 
 #include "SFDISolver_ADERDG_Variables.h"
 
+#include "SFDISolver_FV.h"
+
 #include "kernels/KernelUtils.h"
 #include "peano/utils/Loop.h"
+
+#include "tarch/multicore/BooleanSemaphore.h"
+#include "tarch/multicore/Lock.h"
+
+#include <cstring>
 
 tarch::logging::Log SFDI::SFDISolver_ADERDG::_log( "SFDI::SFDISolver_ADERDG" );
 
 
 void SFDI::SFDISolver_ADERDG::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
+  constexpr int order = SFDI::AbstractSFDISolver_ADERDG::Order;
+  constexpr int basisSize = AbstractSFDISolver_FV::PatchSize;
+  constexpr int Ghostlayers = AbstractSFDISolver_FV::GhostLayerWidth;
+  
+  static tarch::multicore::BooleanSemaphore initializationSemaphoreDG;
+  tarch::multicore::Lock lock(initializationSemaphoreDG);
+
+  printf("\n******************************************************************");
+  printf("\n**************<<<  INIT TECPLOT    >>>****************************");
+  printf("\n******************************************************************");
+  inittecplot_(&order,&order,&basisSize,&Ghostlayers);
+  //inittecplot_(&order,&order);
+  printf("\n******************************************************************");
+  printf("\n**************<<<  INIT PDE SETUP  >>>****************************");
+  printf("\n******************************************************************");
   initparameters_();
+  printf("\n******************************************************************");
+  printf("\n**************<<<       DONE       >>>****************************");
+  printf("\n******************************************************************");
+  
+  lock.free();
+
 }
 
 void SFDI::SFDISolver_ADERDG::adjustPointSolution(const double* const x,const double t,const double dt,double* const Q) {
@@ -57,15 +87,15 @@ void SFDI::SFDISolver_ADERDG::boundaryValues(const double* const x,const double 
   
   int md=0;
   double cms=0;
-	
+  
   std::memset(stateOut, 0, nVar * sizeof(double));
   std::memset(fluxOut , 0, nVar * sizeof(double));
-	
+  
   for(int dd=0; dd<nDim; dd++) F[dd] = Fs[dd];
 
   for(int i=0; i < basisSize; i++)  { // i == time
-    const double weight = kernels::gaussLegendreWeights[order][i];
-    const double xi = kernels::gaussLegendreNodes[order][i];
+    const double weight = kernels::legendre::weights[order][i];
+    const double xi = kernels::legendre::nodes[order][i];
     double ti = t + xi * dt;
 
     //    initialdata_(x, &ti, Qgp,&md,&cms,&order);
@@ -81,7 +111,11 @@ void SFDI::SFDISolver_ADERDG::boundaryValues(const double* const x,const double 
 }
 
 exahype::solvers::Solver::RefinementControl SFDI::SFDISolver_ADERDG::refinementCriterion(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,double t,const int level) {
-  return exahype::solvers::Solver::RefinementControl::Keep;
+//  return exahype::solvers::Solver::RefinementControl::Keep;
+if ( level > getCoarsestMeshLevel() ) {
+    return exahype::solvers::Solver::RefinementControl::Erase;
+  }
+return exahype::solvers::Solver::RefinementControl::Keep;
 }
 
 //*****************************************************************************
@@ -123,7 +157,7 @@ void SFDI::SFDISolver_ADERDG::flux(const double* const Q,double** const F) {
 
 
 void SFDI::SFDISolver_ADERDG::mapDiscreteMaximumPrincipleObservables(double* const observables,
-								       const double* const Q) const {
+                       const double* const Q) const {
   observables[0] = Q[0];   
   observables[1] = Q[1];
   observables[2] = Q[2];
@@ -141,10 +175,10 @@ bool SFDI::SFDISolver_ADERDG::isPhysicallyAdmissible(
       const tarch::la::Vector<DIMENSIONS,double>& cellSize,
       const double                                timeStamp) const
 {
-  		  
   int limvalue;
    
-  pdelimitervalue_(&limvalue,&cellCentre[0],&NumberOfDMPObservables, localDMPObservablesMin, localDMPObservablesMax);
+  const int nObs = NumberOfDMPObservables;
+  pdelimitervalue_(&limvalue,&cellCentre[0],&nObs, localDMPObservablesMin, localDMPObservablesMax);
   bool ret_value;
   limvalue > 0 ? ret_value=false : ret_value=true;
   return ret_value;

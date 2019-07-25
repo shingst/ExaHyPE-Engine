@@ -49,6 +49,7 @@ RECURSIVE SUBROUTINE InitialData(xGP, tGp, Q)
 			up(7)   =  MHDRotomega/EPRadius*xGP(2) 
 			up(8)   = -MHDRotomega/EPRadius*xGP(1) 
 			up(9)   = 0.0 
+			!up(6)   = 1.0
 	END SELECT
 	CALL PDEPrim2Cons(Q,up)
 END SUBROUTINE InitialData

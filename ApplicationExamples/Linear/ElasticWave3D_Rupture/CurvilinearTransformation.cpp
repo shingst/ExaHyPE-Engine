@@ -1,11 +1,10 @@
 #include "CurvilinearTransformation.h"
 
 #include "kernels/KernelUtils.h"
-#include "kernels/DGMatrices.h"
 #if defined(_GLL)
-#include "kernels/GaussLobattoQuadrature.h"
+#include "kernels/GaussLobattoBasis.h"
 #else
-#include "kernels/GaussLegendreQuadrature.h"
+#include "kernels/GaussLegendreBasis.h"
 #endif
 
 
@@ -1627,9 +1626,9 @@ void getValuesAtQuadNodes3D(double* orig_mesh_x , double* orig_mesh_y, double* o
     for (int j = 0 ; j< num_nodes ; j ++){
       for (int i = 0 ; i< num_nodes ; i ++){
 #if defined(_GLL)
-	interpolate3D(kernels::gaussLobattoNodes[num_nodes-1][num_nodes-1-i],kernels::gaussLobattoNodes[num_nodes-1][num_nodes-1-j],kernels::gaussLobattoNodes[num_nodes-1][num_nodes-1-k],orig_mesh_x,orig_mesh_y,orig_mesh_z,dest_mesh,num_nodes,results[id_xyz(k,j,i)]);
+	interpolate3D(kernels::lobatto::nodes[num_nodes-1][num_nodes-1-i],kernels::lobatto::nodes[num_nodes-1][num_nodes-1-j],kernels::lobatto::nodes[num_nodes-1][num_nodes-1-k],orig_mesh_x,orig_mesh_y,orig_mesh_z,dest_mesh,num_nodes,results[id_xyz(k,j,i)]);
 	#else
-	interpolate3D(kernels::gaussLegendreNodes[num_nodes-1][i],kernels::gaussLegendreNodes[num_nodes-1][j],kernels::gaussLegendreNodes[num_nodes-1][k],orig_mesh_x,orig_mesh_y,orig_mesh_z,dest_mesh,num_nodes,results[id_xyz(k,j,i)]);
+	interpolate3D(kernels::legendre::nodes[num_nodes-1][i],kernels::legendre::nodes[num_nodes-1][j],kernels::legendre::nodes[num_nodes-1][k],orig_mesh_x,orig_mesh_y,orig_mesh_z,dest_mesh,num_nodes,results[id_xyz(k,j,i)]);
 	#endif
       }
     }
@@ -1645,9 +1644,9 @@ void getValuesAtQuadNodes(double* orig_mesh_x , double* orig_mesh_y, double* des
   for (int j = 0 ; j< num_nodes ; j ++){
     for (int i = 0 ; i< num_nodes ; i ++){
 #if defined(_GLL)
-      interpolate(kernels::gaussLobattoNodes[num_nodes-1][num_nodes-1-i],kernels::gaussLobattoNodes[num_nodes-1][num_nodes-1-j],orig_mesh_x,orig_mesh_y,dest_mesh,num_nodes,results[id_xy(j,i)]);
+      interpolate(kernels::lobatto::nodes[num_nodes-1][num_nodes-1-i],kernels::lobatto::nodes[num_nodes-1][num_nodes-1-j],orig_mesh_x,orig_mesh_y,dest_mesh,num_nodes,results[id_xy(j,i)]);
       #else
-      interpolate(kernels::gaussLegendreNodes[num_nodes-1][i],kernels::gaussLegendreNodes[num_nodes-1][j],orig_mesh_x,orig_mesh_y,dest_mesh,num_nodes,results[id_xy(j,i)]);
+      interpolate(kernels::legendre::nodes[num_nodes-1][i],kernels::legendre::nodes[num_nodes-1][j],orig_mesh_x,orig_mesh_y,dest_mesh,num_nodes,results[id_xy(j,i)]);
 #endif
     }
   }
