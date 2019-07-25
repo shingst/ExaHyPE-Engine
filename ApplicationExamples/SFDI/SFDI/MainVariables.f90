@@ -23,7 +23,8 @@
 	INTEGER, PARAMETER             	:: nAux = 0					  ! Number of auxilliary variables                         !
     INTEGER, PARAMETER             	:: nVar = 9                   ! The number of variables of the PDE system              !
     INTEGER, PARAMETER 				:: nLin = 7					                                                           !
-    CHARACTER(LEN=20), PARAMETER	:: ICType='NBodies'			  ! Initial condition setup                                !
+    !CHARACTER(LEN=20), PARAMETER	:: ICType='NBodies'			  ! Initial condition setup                                !
+	CHARACTER(LEN=20)            	:: ICType
 	! ---------------------------------------------------------------------------------------------------------------------!
 	
 	! Types and variables for the initial condition ----------------------------------------------------------------------------------
@@ -43,8 +44,11 @@
 	END TYPE tEquation
 	
 	TYPE(tEquation) :: EQN
-	REAL :: ICuL(nVar), EPCenter(1:nDim), EPRadius, ICA, ICdelta, MHDRotomega
+	REAL :: ICuL(nVar), EPCenter(1:nDim), EPRadius, ICA, ICdelta, MHDRotomega, RotOmegaV(1:3)
 	INTEGER :: ICrot
+	INTEGER :: NACA(1:4),nBlades
+	REAL    :: pitcha
+	
 	! ----------------------------------------------------------------------------------------------------------------------------------
 	
 	! Parameters for the HLLEM solver ---------------------------------------------------!

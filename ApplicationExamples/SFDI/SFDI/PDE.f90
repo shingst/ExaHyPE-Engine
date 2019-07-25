@@ -853,7 +853,10 @@ RECURSIVE SUBROUTINE HLLEMFluxFV(smax,FL,FR,QL,QR,NormalNonZero)
   nv(:)=0.
   nv(NormalNonZero+1)=1.
   !
-  flattener=0.8
+  flattener=1.!0.8
+  if(min(QL(6),QR(6))<0.02) then
+	flattener(6)=0.5
+  end if
   !
 CALL PDEFlux(f1L,g1L,h1L,QL)
 CALL PDEFlux(f1R,g1R,h1R,QR)
@@ -871,10 +874,10 @@ fL = f1L*nv(1)+g1L*nv(2)+h1L*nv(3)
   maxLR=MAXVAL(LR(:))
   maxLM=MAXVAL(LM(:))  
   smax = MAX( MAXVAL(ABS(LL)), MAXVAL(ABS(LR)) ) 
-  !sL = -smax
-  !sR = +smax 
-  sL = MIN( 0., minLL , minLM ) 
-  sR = MAX( 0., maxLR , maxLM )  
+  sL = -smax
+  sR = +smax 
+  !sL = MIN( 0., minLL , minLM ) 
+  !sR = MAX( 0., maxLR , maxLM )  
   !LAMBDA = smax ! max(abs(sL),abs(sR))
   CALL PDEIntermediateFields(RL,LLin,iRL,QM,nv) 
   Lam = 0.5*(LLin-ABS(LLin))

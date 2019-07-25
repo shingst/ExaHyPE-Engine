@@ -38,19 +38,27 @@ void SFDI::SFDISolver_ADERDG::init(const std::vector<std::string>& cmdlineargs,c
   static tarch::multicore::BooleanSemaphore initializationSemaphoreDG;
   tarch::multicore::Lock lock(initializationSemaphoreDG);
 
-  printf("\n******************************************************************");
-  printf("\n**************<<<  INIT TECPLOT    >>>****************************");
-  printf("\n******************************************************************");
-  inittecplot_(&order,&order,&basisSize,&Ghostlayers);
-  //inittecplot_(&order,&order);
-  printf("\n******************************************************************");
-  printf("\n**************<<<  INIT PDE SETUP  >>>****************************");
-  printf("\n******************************************************************");
-  initparameters_();
-  printf("\n******************************************************************");
-  printf("\n**************<<<       DONE       >>>****************************");
-  printf("\n******************************************************************");
+  if (constants.isValueValidString("reference")) {
+    std::string reference = constants.getValueAsString("reference");
+	const int length=reference.length();
+	logInfo("init(...)","Reference setup:"<<reference);
   
+    printf("\n******************************************************************");
+    printf("\n**************<<<  INIT TECPLOT    >>>****************************");
+    printf("\n******************************************************************");
+    inittecplot_(&order,&order,&basisSize,&Ghostlayers);
+    //inittecplot_(&order,&order);
+    printf("\n******************************************************************");
+    printf("\n**************<<<  INIT PDE SETUP  >>>****************************");
+    printf("\n******************************************************************");
+    initparameters_(&length,&reference[0]);
+    printf("\n******************************************************************");
+    printf("\n**************<<<       DONE       >>>****************************");
+    printf("\n******************************************************************");
+  } else {
+    logInfo("init(...)","Not recognized setup.");
+	std::abort();
+  }	 
   lock.free();
 
 }

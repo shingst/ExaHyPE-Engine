@@ -109,6 +109,8 @@ double SFDI::SFDISolver_FV::riemannSolver(double* fL, double *fR, const double* 
     //double lambda = kernels::finitevolumes::riemannsolvers::c::rusanov<true, true, false, SFDISolver_FV>(*static_cast<SFDISolver_FV*>(this), fL, fR, qL, qR, gradQL, gradQR, cellSize, direction);
     double lambda;
 	hllemfluxfv_(&lambda, fL, fR, qL, qR, &direction);
+	
+	
 	//std::cout << lambda << std::endl;
 	//double1 lambda = 10.0;
 	return lambda; 
