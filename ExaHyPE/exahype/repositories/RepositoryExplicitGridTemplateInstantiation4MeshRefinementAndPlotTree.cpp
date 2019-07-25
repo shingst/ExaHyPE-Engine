@@ -19,6 +19,7 @@
  #include "exahype/adapters/InitialPrediction.h" 
  #include "exahype/adapters/FusedTimeStep.h" 
  #include "exahype/adapters/PredictionRerun.h" 
+ #include "exahype/adapters/Broadcast.h" 
  #include "exahype/adapters/BroadcastAndDropNeighbourMessages.h" 
  #include "exahype/adapters/RefinementStatusSpreading.h" 
  #include "exahype/adapters/PredictionOrLocalRecomputation.h" 

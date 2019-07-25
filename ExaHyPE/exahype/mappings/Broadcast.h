@@ -13,8 +13,8 @@
  * @author Dominic E. Charrier, Tobias Weinzierl
  **/
 
-#ifndef EXAHYPE_MAPPINGS_BroadcastAndDropNeighbourMessages_H_
-#define EXAHYPE_MAPPINGS_BroadcastAndDropNeighbourMessages_H_
+#ifndef EXAHYPE_MAPPINGS_Broadcast_H_
+#define EXAHYPE_MAPPINGS_Broadcast_H_
 
 #include "tarch/la/Vector.h"
 #include "tarch/logging/Log.h"
@@ -31,7 +31,7 @@
 
 namespace exahype {
   namespace mappings {
-    class BroadcastAndDropNeighbourMessages;
+    class Broadcast;
   }
 }
 
@@ -41,7 +41,7 @@ namespace exahype {
  *
  * @author Dominic E. Charrier and Tobias Weinzierl
  */
-class exahype::mappings::BroadcastAndDropNeighbourMessages {
+class exahype::mappings::Broadcast {
 private:
 
   /**
@@ -80,25 +80,10 @@ public:
    */
   void beginIteration(exahype::State& solverState);
 
-  /**
-   * Reset the neighbour merge flags
-   * and MPI neighbour exchange counters.
-   *
-   * Wait for the completion of spawned background jobs.
-   */
-  void enterCell(
-      exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
-      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-      exahype::Vertex* const coarseGridVertices,
-      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      exahype::Cell& coarseGridCell,
-      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
-
 #ifdef Parallel
 
   /**
-   * Receive data and metadata from a neighbour but do not merge it with the solvers.
-   * Just drop it.
+   * Nop.
    */
   void mergeWithNeighbour(
       exahype::Vertex& vertex,
@@ -223,12 +208,12 @@ public:
   /**
    * Nop.
    */
-  BroadcastAndDropNeighbourMessages(const BroadcastAndDropNeighbourMessages& masterThread);
+  Broadcast(const Broadcast& masterThread);
 
   /**
    * Nop.
    */
-  void mergeWithWorkerThread(const BroadcastAndDropNeighbourMessages& workerThread);
+  void mergeWithWorkerThread(const Broadcast& workerThread);
   #endif
 
   /**
@@ -239,12 +224,12 @@ public:
   /**
    * Nop.
    */
-  BroadcastAndDropNeighbourMessages();
+  Broadcast();
 
   /**
    * Nop.
    */
-  virtual ~BroadcastAndDropNeighbourMessages();
+  virtual ~Broadcast();
 
   /**
    * Nop.

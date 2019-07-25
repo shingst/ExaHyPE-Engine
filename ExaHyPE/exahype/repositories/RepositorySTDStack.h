@@ -24,6 +24,7 @@
  #include "exahype/adapters/InitialPrediction.h" 
  #include "exahype/adapters/FusedTimeStep.h" 
  #include "exahype/adapters/PredictionRerun.h" 
+ #include "exahype/adapters/Broadcast.h" 
  #include "exahype/adapters/BroadcastAndDropNeighbourMessages.h" 
  #include "exahype/adapters/RefinementStatusSpreading.h" 
  #include "exahype/adapters/PredictionOrLocalRecomputation.h" 
@@ -65,6 +66,7 @@ class exahype::repositories::RepositorySTDStack: public exahype::repositories::R
     peano::grid::Grid<exahype::Vertex,exahype::Cell,exahype::State,VertexStack,CellStack,exahype::adapters::InitialPrediction> _gridWithInitialPrediction;
     peano::grid::Grid<exahype::Vertex,exahype::Cell,exahype::State,VertexStack,CellStack,exahype::adapters::FusedTimeStep> _gridWithFusedTimeStep;
     peano::grid::Grid<exahype::Vertex,exahype::Cell,exahype::State,VertexStack,CellStack,exahype::adapters::PredictionRerun> _gridWithPredictionRerun;
+    peano::grid::Grid<exahype::Vertex,exahype::Cell,exahype::State,VertexStack,CellStack,exahype::adapters::Broadcast> _gridWithBroadcast;
     peano::grid::Grid<exahype::Vertex,exahype::Cell,exahype::State,VertexStack,CellStack,exahype::adapters::BroadcastAndDropNeighbourMessages> _gridWithBroadcastAndDropNeighbourMessages;
     peano::grid::Grid<exahype::Vertex,exahype::Cell,exahype::State,VertexStack,CellStack,exahype::adapters::RefinementStatusSpreading> _gridWithRefinementStatusSpreading;
     peano::grid::Grid<exahype::Vertex,exahype::Cell,exahype::State,VertexStack,CellStack,exahype::adapters::PredictionOrLocalRecomputation> _gridWithPredictionOrLocalRecomputation;
@@ -85,6 +87,7 @@ class exahype::repositories::RepositorySTDStack: public exahype::repositories::R
     tarch::timing::Measurement _measureInitialPredictionCPUTime;
     tarch::timing::Measurement _measureFusedTimeStepCPUTime;
     tarch::timing::Measurement _measurePredictionRerunCPUTime;
+    tarch::timing::Measurement _measureBroadcastCPUTime;
     tarch::timing::Measurement _measureBroadcastAndDropNeighbourMessagesCPUTime;
     tarch::timing::Measurement _measureRefinementStatusSpreadingCPUTime;
     tarch::timing::Measurement _measurePredictionOrLocalRecomputationCPUTime;
@@ -102,6 +105,7 @@ class exahype::repositories::RepositorySTDStack: public exahype::repositories::R
     tarch::timing::Measurement _measureInitialPredictionCalendarTime;
     tarch::timing::Measurement _measureFusedTimeStepCalendarTime;
     tarch::timing::Measurement _measurePredictionRerunCalendarTime;
+    tarch::timing::Measurement _measureBroadcastCalendarTime;
     tarch::timing::Measurement _measureBroadcastAndDropNeighbourMessagesCalendarTime;
     tarch::timing::Measurement _measureRefinementStatusSpreadingCalendarTime;
     tarch::timing::Measurement _measurePredictionOrLocalRecomputationCalendarTime;
@@ -157,6 +161,7 @@ class exahype::repositories::RepositorySTDStack: public exahype::repositories::R
     virtual void switchToInitialPrediction();    
     virtual void switchToFusedTimeStep();    
     virtual void switchToPredictionRerun();    
+    virtual void switchToBroadcast();    
     virtual void switchToBroadcastAndDropNeighbourMessages();    
     virtual void switchToRefinementStatusSpreading();    
     virtual void switchToPredictionOrLocalRecomputation();    
@@ -174,6 +179,7 @@ class exahype::repositories::RepositorySTDStack: public exahype::repositories::R
     virtual bool isActiveAdapterInitialPrediction() const;
     virtual bool isActiveAdapterFusedTimeStep() const;
     virtual bool isActiveAdapterPredictionRerun() const;
+    virtual bool isActiveAdapterBroadcast() const;
     virtual bool isActiveAdapterBroadcastAndDropNeighbourMessages() const;
     virtual bool isActiveAdapterRefinementStatusSpreading() const;
     virtual bool isActiveAdapterPredictionOrLocalRecomputation() const;
