@@ -8,7 +8,7 @@
  *
  * Released under the BSD 3 Open Source License.
  * For the full license text, see LICENSE.txt
- **/
+ */
  
 #include "exahype/mappings/Broadcast.h"
 
@@ -69,9 +69,6 @@ exahype::mappings::Broadcast::descendSpecification(int level) const {
       peano::MappingSpecification::Nop,
       peano::MappingSpecification::AvoidCoarseGridRaces,false);
 }
-
-tarch::logging::Log exahype::mappings::Broadcast::_log(
-    "exahype::mappings::Broadcast");
 
 void exahype::mappings::Broadcast::beginIteration(
     exahype::State& solverState) {

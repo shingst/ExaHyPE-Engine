@@ -36,39 +36,27 @@ namespace exahype {
 }
 
 /**
- * Merge global data from the master with the worker ranks
- * and drop incoming MPI messages from neighbouring ranks.
+ * This mapping simply serves as a barrier.
+ * Despite its name, it only performs a reduction.
+ * The actual broadcast is conducted in
+ * exahype::State::kickOffIteration(...) before
+ * the mapping is used.
  *
- * @author Dominic E. Charrier and Tobias Weinzierl
+ * @author Dominic E. Charrier
  */
 class exahype::mappings::Broadcast {
-private:
 
-  /**
-   * Logging device for the trace macros.
-   */
-  static tarch::logging::Log _log;
 public:
 
   /**
-   * Receive the State from the master before the first vertex first
-   * time.
-   *
-   * We perform a reduction to ensure that the adapter timings are correct.
-   *
-   * TODO(Dominic): Can potentially be relaxed since we
-   * do not need to wait for the broadcast.
+   * We perform a reduction to synchronise the ranks.
    */
   peano::CommunicationSpecification communicationSpecification() const;
 
   /**
-   * Run through whole tree. Run concurrently on fine grid cells.
-   */
-  peano::MappingSpecification enterCellSpecification(int level) const;
-
-  /**
    * Nop.
    */
+  peano::MappingSpecification enterCellSpecification(int level) const;
   peano::MappingSpecification touchVertexFirstTimeSpecification(int level) const;
   peano::MappingSpecification touchVertexLastTimeSpecification(int level) const;
   peano::MappingSpecification leaveCellSpecification(int level) const;
@@ -76,29 +64,14 @@ public:
   peano::MappingSpecification descendSpecification(int level) const;
 
   /**
-   * Validates that Peano's join buffers are empty.
+   * Enforce that the workers participate in the reduction.
    */
   void beginIteration(exahype::State& solverState);
 
 #ifdef Parallel
 
   /**
-   * Nop.
-   */
-  void mergeWithNeighbour(
-      exahype::Vertex& vertex,
-      const exahype::Vertex& neighbour, int fromRank,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const tarch::la::Vector<DIMENSIONS, double>& h,
-      int level);
-
-  //
-  // Below all methods are nop.
-  //
-  //===================================
-
-  /**
-   * Nop.
+   * Enforce that the workers participate in the reduction.
    */
   bool prepareSendToWorker(
       exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
@@ -108,6 +81,11 @@ public:
       exahype::Cell& coarseGridCell,
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
       int worker);
+
+  //
+  // Below all methods are nop.
+  //
+  //===================================
 
   /**
    * Nop.
