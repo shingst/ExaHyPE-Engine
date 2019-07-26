@@ -99,6 +99,30 @@ class ArgumentParser:
         ("tempVarsOnStack",     ArgType.OptionalBool,    "put the big scratch arrays on the stack instead of the heap (you can use ulimit -s to increase the stack size)")
     ]
     
+    # FV args
+    fvArgs = [
+        # mandatory arguments
+        ("kernelType",          ArgType.MandatoryString, "fv"),
+        ("pathToApplication",   ArgType.MandatoryString, "path to the application as given by the ExaHyPE specification file (application directory as root)"),
+        ("pathToOptKernel",     ArgType.MandatoryString, "desired relative path to the generated code (application directory as root)"),
+        ("namespace",           ArgType.MandatoryString, "desired namespace for the generated code"),
+        ("solverName",          ArgType.MandatoryString, "name of the user-solver"),
+        ("numberOfVariables",   ArgType.MandatoryInt,    "the number of quantities"),
+        ("numberOfParameters",  ArgType.MandatoryInt,    "the number of parameters (fixed quantities)"),
+        ("patchSize",           ArgType.MandatoryInt,    "the size of a patch"),
+        ("dimension",           ArgType.MandatoryInt,    "the number of spatial dimensions in the simulation (2 or 3)"),
+        ("finiteVolumesType",   ArgType.MandatoryString, "linear or nonlinear"),
+        ("architecture",        ArgType.MandatoryString, "the microarchitecture of the target device"),
+        # optional arguments       
+        ("useFlux",             ArgType.OptionalBool,    "enable flux"),
+        ("useNCP",              ArgType.OptionalBool,    "enable non conservative product"),
+        ("useSource",           ArgType.OptionalBool,    "enable source terms"),
+        ("useFusedSource",      ArgType.OptionalBool,    "enable fused source terms (include useSource)"),
+        ("useMaterialParam",    ArgType.OptionalBool,    "enable material parameters"),
+        ("usePointSources",     ArgType.OptionalInt ,    "enable numberOfPointSources point sources", -1, "numberOfPointSources"),
+        ("tempVarsOnStack",     ArgType.OptionalBool,    "put the big scratch arrays on the stack instead of the heap (you can use ulimit -s to increase the stack size)")
+    ]
+    
     @staticmethod
     def parseArgs():
         """Process the command line arguments"""
@@ -139,6 +163,11 @@ class ArgumentParser:
             elif type == ArgumentParser.ArgType.MandatoryInt:
                 if key not in inputConfig or not isinstance(inputConfig[key], int):
                     raise ValueError("Invalid codegenerator configuration, argument "+key+" missing or of wrong type (int expected)")
+            elif type == ArgumentParser.ArgType.MandatoryChoice:
+                if key not in inputConfig or not isinstance(inputConfig[key], str):
+                    raise ValueError("Invalid codegenerator configuration, argument "+key+" missing or of wrong type (int expected)")
+                if inputConfig[key] not in arg[3]: #possible values
+                    raise ValueError("Invalid codegenerator configuration, argument "+key+" value not allowed, must be one of "+str(arg[3]))
             #check optional and set it to default if not set
             elif type == ArgumentParser.ArgType.OptionalBool:
                 if key not in inputConfig:
@@ -181,4 +210,6 @@ class ArgumentParser:
             return ArgumentParser.aderdgArgs
         elif kernelType == "limiter":
             return ArgumentParser.limiterArgs
+        elif kernelType == "fv":
+            return ArgumentParser.fvArgs
         raise ValueError("Cannot validate codegenerator input, kernelType '"+kernelType+"' not recognized, use -h or --help")

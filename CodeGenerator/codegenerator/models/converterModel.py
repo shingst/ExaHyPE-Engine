@@ -29,5 +29,5 @@ class ConverterModel(AbstractModelBaseClass):
     def generateCode(self):
         self.context["noVarPadding"] = self.context["nVarPad"] == self.context["nVar"]
         
-        self.render("converter_h.template",   "converter.h")
-        self.render("converter_cpp.template", "converter.cpp")
+        self.render(("aderdg", "converter_h.template"),   "converter.h")
+        self.render(("aderdg", "converter_cpp.template"), "converter.cpp")

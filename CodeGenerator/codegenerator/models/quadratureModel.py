@@ -100,5 +100,5 @@ class QuadratureModel(AbstractModelBaseClass):
             self.context["fv2dgSize"] = len(self.context["fv2dg"])
             self.context["fv2dg_seq"] = range(self.context["fv2dgSize"])
 
-        self.render("Quadrature_h.template",   "Quadrature.h")
-        self.render("Quadrature_cpp.template", "Quadrature.cpp")
+        self.render(("common", "Quadrature_h.template"),   "Quadrature.h")
+        self.render(("common", "Quadrature_cpp.template"), "Quadrature.cpp")

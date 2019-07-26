@@ -115,6 +115,22 @@ class Controller:
                 "ghostLayerWidth"       : args["ghostLayerWidth"],
                 "quadratureType"        : ("Gauss-Lobatto" if args["useGaussLobatto"] else "Gauss-Legendre")
             })
+        elif self.config["kernelType"] == "fv":
+            self.config.update( {
+                "nVar"                  : args["numberOfVariables"],
+                "nPar"                  : args["numberOfParameters"],
+                "nData"                 : args["numberOfVariables"] + args["numberOfParameters"],
+                "nDof"                  : args["patchSize"],
+                "nDim"                  : args["dimension"],
+                "useFlux"               : args["useFlux"],
+                "useNCP"                : args["useNCP"],
+                "useSource"             : args["useSource"] or args["useFusedSource"],
+                "useFusedSource"        : args["useFusedSource"],
+                "nPointSources"         : args["usePointSources"],
+                "usePointSources"       : args["usePointSources"] >= 0,
+                "useMaterialParam"      : args["useMaterialParam"],
+                "finiteVolumesType"     : args["finiteVolumesType"]
+            })
             
         self.validateConfig(Configuration.simdWidth.keys())
         self.config["vectSize"] = Configuration.simdWidth[self.config["architecture"]] #only initialize once architecture has been validated
@@ -136,6 +152,9 @@ class Controller:
                raise ValueError("Number of dimensions must be 2 or 3")
             if self.config["nDof"] < 1 or self.config["nDof"] > 15+1: #nDof = order+1
                raise ValueError("Order has to be between 0 and 15 (inclusive)")
+        if self.config["kernelType"] == "fv":
+            if self.config["finiteVolumesType"] != "musclhancock":
+               raise ValueError("Only musclhancock scheme is supported")
         #if (self.config["useSource"] and not self.config["useSourceVect"] and self.config["useNCPVect"]) or (self.config["useNCP"] and not self.config["useNCPVect"] and self.config["useSourceVect"]) :
         #    raise ValueError("If using source and NCP, both or neither must be vectorized")
 
@@ -199,10 +218,11 @@ class Controller:
         kernelsHeader.generateCode()
         runtimes["kernelsHeader"] = time.perf_counter() - start
         
-        start = time.perf_counter()
-        quadrature = quadratureModel.QuadratureModel(self.baseContext, self)
-        quadrature.generateCode()
-        runtimes["quadrature"] = time.perf_counter() - start
+        if self.config["kernelType"] in ["aderdg", "limiter"]:
+            start = time.perf_counter()
+            quadrature = quadratureModel.QuadratureModel(self.baseContext, self)
+            quadrature.generateCode()
+            runtimes["quadrature"] = time.perf_counter() - start
         
         if self.config["kernelType"] == "aderdg":
         
@@ -283,6 +303,8 @@ class Controller:
             limiter.generateCode()
             runtimes["limiter"] = time.perf_counter() - start
         
+        if self.config["kernelType"] == "fv":
+            pass #TODO JMG
         
         # must be run only after all gemm have been generated
         start = time.perf_counter()

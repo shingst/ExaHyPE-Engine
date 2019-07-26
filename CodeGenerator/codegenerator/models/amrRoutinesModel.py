@@ -29,7 +29,7 @@ from ..utils import MatmulConfig
 class AMRRoutinesModel(AbstractModelBaseClass):    
     
     def generateCode(self):
-        self.render("amrRoutines_cpp.template", "amrRoutines.cpp")
+        self.render(("aderdg", "amrRoutines_cpp.template"), "amrRoutines.cpp")
         # generates gemms
         if(self.context["useLibxsmm"]):
             self.controller.generateGemms("asm_amrRoutines.c", self.context["matmulConfigs"].values())

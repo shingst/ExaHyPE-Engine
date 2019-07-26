@@ -30,4 +30,4 @@ from .abstractModelBaseClass import AbstractModelBaseClass
 class AdjustSolutionModel(AbstractModelBaseClass):
 
     def generateCode(self):
-        self.render("solutionAdjustment_cpp.template", "solutionAdjustment.cpp")
+        self.render(("aderdg", "solutionAdjustment_cpp.template"), "solutionAdjustment.cpp")

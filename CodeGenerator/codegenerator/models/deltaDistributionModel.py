@@ -30,4 +30,4 @@ class DeltaDistributionModel(AbstractModelBaseClass):
 
     def generateCode(self):
         if(self.context['usePointSources']):
-            self.render("deltaDistribution_cpp.template", "deltaDistribution.cpp")
+            self.render(("aderdg", "deltaDistribution_cpp.template"), "deltaDistribution.cpp")

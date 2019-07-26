@@ -29,6 +29,6 @@ class RiemannModel(AbstractModelBaseClass):
 
     def generateCode(self):
         if(self.context["isLinear"]):
-            self.render("riemannSolverLinear_cpp.template", "riemannSolver.cpp")
+            self.render(("aderdg", "riemannSolverLinear_cpp.template"),    "riemannSolver.cpp")
         else:            
-            self.render("riemannSolverNonLinear_cpp.template", "riemannSolver.cpp")
+            self.render(("aderdg", "riemannSolverNonLinear_cpp.template"), "riemannSolver.cpp")

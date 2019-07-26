@@ -66,6 +66,30 @@ class CodegeneratorModel:
                 # Optional int parameters (may set redundant flags)
                 "tempVarsOnStack"    : solverContext["tempVarsOnStack"]
             }
+        elif solverContext["kernelType"] == "fv":
+            codegeneratorContext = {
+                # Mandatory parameters
+                "kernelType"         : "fv",
+                "pathToApplication"  : solverContext["outputPath"],
+                "pathToOptKernel"    : solverContext["optKernelPath"],
+                "namespace"          : solverContext["optNamespace"],
+                "solverName"         : solverContext["project"] + "::" + solverContext["solver"],
+                "numberOfVariables"  : solverContext["numberOfVariables"],
+                "numberOfParameters" : solverContext["numberOfMaterialParameters"],
+                "patchSize"          : solverContext["patchSize"],
+                "dimension"          : solverContext["dimensions"],
+                "finiteVolumesType"  : solverContext["finiteVolumesType"],
+                "architecture"       : solverContext["architecture"],
+                # Optional bool parameters (may set redundant flags and default false flag)
+                "useFlux"            : solverContext["useFlux"],
+                "useNCP"             : solverContext["useNCP"],
+                "useSource"          : solverContext["useSource"],
+                "useFusedSource"     : solverContext["useFusedSource"],
+                "useMaterialParam"   : solverContext["useMaterialParameters"],
+                # Optional int parameters (may set redundant flags)
+                "usePointSources"    : solverContext["numberOfPointSources"] if solverContext["numberOfPointSources"] > 0 else -1,
+                "tempVarsOnStack"    : solverContext["tempVarsOnStack"]
+            }
         else:
             raise ValueError("KernelType '"+context["kernelType"]+"' not supported by the codegenerator")
         # call the codegenerator with the given context

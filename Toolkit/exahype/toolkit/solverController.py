@@ -86,7 +86,9 @@ class SolverController:
                 aderdgContext["abstractSolver"]         = context["ADERDGAbstractSolver"]
                 aderdgContext["numberOfDMPObservables"] = context["numberOfDMPObservables"]
                 aderdgContext["ghostLayerWidth"]        = fvContext["ghostLayerWidth"]
+                
                 self.addCodegeneratorPathAndNamespace(aderdgContext) # refresh path and namespace
+                self.addCodegeneratorPathAndNamespace(fvContext) # refresh path and namespace
                 
                 # generate all solver files
                 model = solverModel.SolverModel(fvContext)
@@ -193,7 +195,9 @@ class SolverController:
         context = self.buildBaseSolverContext(solver)
         context["type"] = "Finite-Volumes"
         context.update(self.buildFVKernelContext(solver["fv_kernel"]))
+        context.update(self.buildKernelOptimizationContext(solver["fv_kernel"], context))
         context["patchSize"] = solver.get("patch_size","default") # overwrite if called from LimitingADERDGSolver creation
+        self.addCodegeneratorPathAndNamespace(context)
         
         return context
 

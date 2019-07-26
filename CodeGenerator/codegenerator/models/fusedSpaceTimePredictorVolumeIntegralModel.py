@@ -40,44 +40,44 @@ class FusedSpaceTimePredictorVolumeIntegralModel(AbstractModelBaseClass):
 
             if(self.context["useSplitCKScalar"]):
 
-                self.render("fusedSPTVI_linear_split_ck_cpp.template", "fusedSpaceTimePredictorVolumeIntegral.cpp")
+                self.render(("aderdg", "fusedSPTVI_linear_split_ck_cpp.template"), "fusedSpaceTimePredictorVolumeIntegral.cpp")
                 
                 if(self.context["usePointSources"]):
                     localContext = copy.copy(self.context)
                     localContext["usePointSources"] = False
                     localContext["nameSuffix"] = "_WithoutPS"
                     
-                    self.render("fusedSPTVI_linear_split_ck_cpp.template", "fusedSpaceTimePredictorVolumeIntegral_WithoutPS.cpp", localContext)
+                    self.render(("aderdg", "fusedSPTVI_linear_split_ck_cpp.template"), "fusedSpaceTimePredictorVolumeIntegral_WithoutPS.cpp", localContext)
             elif(self.context["useSplitCKVect"]):
 
-                self.render("fusedSPTVI_linear_split_ck_vect_cpp.template", "fusedSpaceTimePredictorVolumeIntegral.cpp")
+                self.render(("aderdg", "fusedSPTVI_linear_split_ck_vect_cpp.template"), "fusedSpaceTimePredictorVolumeIntegral.cpp")
                 
                 if(self.context["usePointSources"]):
                     localContext = copy.copy(self.context)
                     localContext["usePointSources"] = False
                     localContext["nameSuffix"] = "_WithoutPS"
                     
-                    self.render("fusedSPTVI_linear_split_ck_vect_cpp.template", "fusedSpaceTimePredictorVolumeIntegral_WithoutPS.cpp", localContext)
+                    self.render(("aderdg", "fusedSPTVI_linear_split_ck_vect_cpp.template"), "fusedSpaceTimePredictorVolumeIntegral_WithoutPS.cpp", localContext)
             else:
                 # size of the tmpArray
                 self.context["tmpArraySize"] = max((self.context["nDof"]*self.context["nVarPad"] if self.context["useFlux"]          else 0), \
                                                    (self.context["nDim"]*self.context["nVarPad"] if self.context["useNCP"]           else 0))
                 
-                self.render("fusedSPTVI_linear_cpp.template", "fusedSpaceTimePredictorVolumeIntegral.cpp")
+                self.render(("aderdg", "fusedSPTVI_linear_cpp.template"), "fusedSpaceTimePredictorVolumeIntegral.cpp")
                 
                 if(self.context["usePointSources"]):
                     localContext = copy.copy(self.context)
                     localContext["usePointSources"] = False
                     localContext["nameSuffix"] = "_WithoutPS"
                     
-                    self.render("fusedSPTVI_linear_cpp.template", "fusedSpaceTimePredictorVolumeIntegral_WithoutPS.cpp", localContext)
+                    self.render(("aderdg", "fusedSPTVI_linear_cpp.template"), "fusedSpaceTimePredictorVolumeIntegral_WithoutPS.cpp", localContext)
                 
         else:
             self.context["nDof_seq"] = range(0,self.context["nDof"])
             self.context["i_seq"] = range(0,self.context["nDof"])
             self.context["j_seq"] = range(0,self.context["nDof"]) if (self.context["nDim"] >= 3) else [0]
             
-            self.render("fusedSPTVI_nonlinear_cpp.template", "fusedSpaceTimePredictorVolumeIntegral.cpp")
+            self.render(("aderdg", "fusedSPTVI_nonlinear_cpp.template"), "fusedSpaceTimePredictorVolumeIntegral.cpp")
        
         # generates gemms
         if(self.context["useLibxsmm"]):

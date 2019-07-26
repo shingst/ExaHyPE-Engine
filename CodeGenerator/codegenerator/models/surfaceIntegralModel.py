@@ -28,4 +28,4 @@ class SurfaceIntegralModel(AbstractModelBaseClass):
 
     def generateCode(self):
         self.context["bndFaceSize"] = self.context["nVarPad"] * self.context["nDof"] * self.context["nDof3D"]  
-        self.render("surfaceIntegral_cpp.template", "surfaceIntegral.cpp")
+        self.render(("aderdg", "surfaceIntegral_cpp.template"), "surfaceIntegral.cpp")

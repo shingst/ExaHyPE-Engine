@@ -112,4 +112,4 @@ class ConfigurationParametersModel(AbstractModelBaseClass):
         self.context["BndFluxTotalSize"] = 2*nDim*nVarPad*self.context["BndFluxSize"]
 
         
-        self.render("configurationParameters_cpph.template", "ConfigurationParameters.cpph")
+        self.render(("aderdg", "configurationParameters_cpph.template"), "ConfigurationParameters.cpph")

@@ -106,5 +106,5 @@ class DGMatrixModel(AbstractModelBaseClass):
             print("fineGrid: "+str(time.perf_counter()-start))
         
         #generate files         
-        self.render("DGMatrices_h.template",   "DGMatrices.h")
-        self.render("DGMatrices_cpp.template", "DGMatrices.cpp")
+        self.render(("common", "DGMatrices_h.template"),   "DGMatrices.h")
+        self.render(("common", "DGMatrices_cpp.template"), "DGMatrices.cpp")
