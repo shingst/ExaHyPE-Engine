@@ -24,12 +24,6 @@ class exahype::records::FiniteVolumesCellDescription {
    * Bitsets cannot be modified by multiple threads simultaneously.
    */
   parallelise persistent signed char neighbourMergePerformed[DIMENSIONS_TIMES_TWO];
-  
-  /**
-     * Flag indicating if the last operation was completed for this cell description
-     * and its data can be used for the next operations.
-     */
-    persistent packed bool hasCompletedLastStep;
 
   /**
   * The time step size this cell description is working with.

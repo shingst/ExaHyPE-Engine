@@ -1,7 +1,7 @@
 // This file is part of the Peano project. For conditions of distribution and 
 // use, please see the copyright notice at www.peano-framework.org
-#ifndef EXAHYPE_ADAPTERS_BroadcastAndDropNeighbourMessages_H_
-#define EXAHYPE_ADAPTERS_BroadcastAndDropNeighbourMessages_H_
+#ifndef EXAHYPE_ADAPTERS_Broadcast_H_
+#define EXAHYPE_ADAPTERS_Broadcast_H_
 
 
 #include "tarch/logging/Log.h"
@@ -19,13 +19,12 @@
 
 
  #include "exahype/mappings/Broadcast.h"
- #include "exahype/mappings/DropNeighbourMessages.h"
 
 
 
 namespace exahype {
       namespace adapters {
-        class BroadcastAndDropNeighbourMessages;
+        class Broadcast;
       } 
 }
 
@@ -37,13 +36,11 @@ namespace exahype {
  * @author Peano Development Toolkit (PDT) by  Tobias Weinzierl
  * @version $Revision: 1.10 $
  */
-class exahype::adapters::BroadcastAndDropNeighbourMessages {
+class exahype::adapters::Broadcast {
   private:
     typedef mappings::Broadcast Mapping0;
-    typedef mappings::DropNeighbourMessages Mapping1;
 
      Mapping0  _map2Broadcast;
-     Mapping1  _map2DropNeighbourMessages;
 
 
   public:
@@ -55,16 +52,16 @@ class exahype::adapters::BroadcastAndDropNeighbourMessages {
     peano::MappingSpecification         descendSpecification(int level) const;
     peano::CommunicationSpecification   communicationSpecification() const;
 
-    BroadcastAndDropNeighbourMessages();
+    Broadcast();
 
     #if defined(SharedMemoryParallelisation)
-    BroadcastAndDropNeighbourMessages(const BroadcastAndDropNeighbourMessages& masterThread);
+    Broadcast(const Broadcast& masterThread);
     #endif
 
-    virtual ~BroadcastAndDropNeighbourMessages();
+    virtual ~Broadcast();
   
     #if defined(SharedMemoryParallelisation)
-    void mergeWithWorkerThread(const BroadcastAndDropNeighbourMessages& workerThread);
+    void mergeWithWorkerThread(const Broadcast& workerThread);
     #endif
 
     void createInnerVertex(

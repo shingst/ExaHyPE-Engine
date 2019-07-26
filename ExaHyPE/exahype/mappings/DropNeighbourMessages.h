@@ -13,8 +13,8 @@
  * @author Dominic E. Charrier, Tobias Weinzierl
  **/
 
-#ifndef EXAHYPE_MAPPINGS_BroadcastAndDropNeighbourMessages_H_
-#define EXAHYPE_MAPPINGS_BroadcastAndDropNeighbourMessages_H_
+#ifndef EXAHYPE_MAPPINGS_DropNeighbourMessages_H_
+#define EXAHYPE_MAPPINGS_DropNeighbourMessages_H_
 
 #include "tarch/la/Vector.h"
 #include "tarch/logging/Log.h"
@@ -31,7 +31,7 @@
 
 namespace exahype {
   namespace mappings {
-    class BroadcastAndDropNeighbourMessages;
+    class DropNeighbourMessages;
   }
 }
 
@@ -41,23 +41,18 @@ namespace exahype {
  *
  * @author Dominic E. Charrier and Tobias Weinzierl
  */
-class exahype::mappings::BroadcastAndDropNeighbourMessages {
+class exahype::mappings::DropNeighbourMessages {
 private:
 
   /**
    * Logging device for the trace macros.
    */
   static tarch::logging::Log _log;
+
 public:
 
   /**
-   * Receive the State from the master before the first vertex first
-   * time.
-   *
-   * We perform a reduction to ensure that the adapter timings are correct.
-   *
-   * TODO(Dominic): Can potentially be relaxed since we
-   * do not need to wait for the broadcast.
+   * Mask out all communication.
    */
   peano::CommunicationSpecification communicationSpecification() const;
 
@@ -223,12 +218,12 @@ public:
   /**
    * Nop.
    */
-  BroadcastAndDropNeighbourMessages(const BroadcastAndDropNeighbourMessages& masterThread);
+  DropNeighbourMessages(const DropNeighbourMessages& masterThread);
 
   /**
    * Nop.
    */
-  void mergeWithWorkerThread(const BroadcastAndDropNeighbourMessages& workerThread);
+  void mergeWithWorkerThread(const DropNeighbourMessages& workerThread);
   #endif
 
   /**
@@ -239,12 +234,12 @@ public:
   /**
    * Nop.
    */
-  BroadcastAndDropNeighbourMessages();
+  DropNeighbourMessages();
 
   /**
    * Nop.
    */
-  virtual ~BroadcastAndDropNeighbourMessages();
+  virtual ~DropNeighbourMessages();
 
   /**
    * Nop.
