@@ -17,6 +17,8 @@
 
 #include "exahype/solvers/ADERDGSolver.h"
 
+#include "exahype/solvers/LimitingADERDGSolver.h"
+
 #include "exahype/amr/AdaptiveMeshRefinement.h"
 
 // Allocate / deallocate
@@ -387,15 +389,11 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInEnterCell(
     CellDescription& coarseGridCellDescription = getCellDescription(
         coarseGridCell.getCellDescriptionsIndex(),coarseGridElement);
 
-    alterErasingRequestsIfNecessary(
-        coarseGridCellDescription,
-        fineGridCell.getCellDescriptionsIndex());
-
     addNewVirtualCellIfVirtualRefiningRequested(
             fineGridCell,fineGridVertices,fineGridVerticesEnumerator,
             coarseGridCellDescription,coarseGridCell.getCellDescriptionsIndex());
     newComputeCell |=
-        addNewCellIfRefinementRequested(
+        addNewLeafIfRefinementRequested(
             fineGridCell,fineGridVertices,fineGridVerticesEnumerator,
             coarseGridCellDescription,coarseGridCell.getCellDescriptionsIndex());
   }
@@ -490,44 +488,6 @@ void exahype::solvers::ADERDGSolver::decideOnRefinement(
     }
     lock.free();
   }
-}
-
-void exahype::solvers::ADERDGSolver::alterErasingRequestsIfNecessary(
-    CellDescription& coarseGridCellDescription,
-    const int fineGridCellDescriptionsIndex) const {
-  const int fineGridElement = tryGetElement(
-      fineGridCellDescriptionsIndex,coarseGridCellDescription.getSolverNumber());
-  if ( fineGridElement!=exahype::solvers::Solver::NotFound ) {
-    CellDescription& fineGridCellDescription =
-       getCellDescription(fineGridCellDescriptionsIndex,fineGridElement);
-    if (
-        fineGridCellDescription.getHasVirtualChildren()
-        || fineGridCellDescription.getRefinementEvent()==CellDescription::RefinementEvent::VirtualRefining
-        || fineGridCellDescription.getRefinementEvent()==CellDescription::RefinementEvent::VirtualRefiningRequested
-    ) {
-      tarch::multicore::Lock lock(CoarseGridSemaphore);
-      switch (coarseGridCellDescription.getRefinementEvent()) {
-        case CellDescription::RefinementEvent::ErasingVirtualChildrenRequested: {
-          assertion1(coarseGridCellDescription.getType()==CellDescription::Type::Leaf ||
-                     coarseGridCellDescription.getType()==CellDescription::Type::Virtual,
-                     coarseGridCellDescription.toString());
-
-          coarseGridCellDescription.setRefinementEvent(CellDescription::None);
-        }  break;
-        case CellDescription::RefinementEvent::ErasingChildrenRequested: {
-          assertion1(coarseGridCellDescription.getType()==CellDescription::Type::Leaf,
-              coarseGridCellDescription.toString());
-
-          coarseGridCellDescription.setRefinementEvent(
-              CellDescription::RefinementEvent::ChangeChildrenToVirtualChildrenRequested);
-        } break;
-        default:
-          break;
-      }
-      lock.free();
-    }
-  }
-  // TODO(Dominic): No states are used for virtual refinement anymore
 }
 
 void exahype::solvers::ADERDGSolver::addNewCell(
@@ -877,39 +837,22 @@ exahype::solvers::ADERDGSolver::eraseOrRefineAdjacentVertices(
         ) {
           bool refineAdjacentVertices =
               cellDescription.getType()==CellDescription::Type::Parent ||
+              cellDescription.getType()==CellDescription::Type::LeafRefineInitiated ||
+              cellDescription.getType()==CellDescription::Type::LeafRefine ||
               cellDescription.getHasVirtualChildren() ||
-              // TODO(Dominic): Refactor
-              //cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::ChangeChildrenToVirtualChildrenRequested ||
-              //cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::ChangeChildrenToVirtualChildren ||
-              //cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::VirtualRefiningRequested ||
-              cellDescription.getType()==CellDescription::Type::LeafRefiningInitiated ||
-              cellDescription.getType()==CellDescription::Type::LeafRefining;
-              // || cellDescription.getType()==CellDescription::Type::LeafVirtualRefining;
-
-            // TODO(Dominic): Can be removed
-//          #ifdef Asserts
-//          assertion1(
-//              cellDescription.getRefinementEvent()!=CellDescription::RefinementEvent::RefiningRequested ||
-//              cellDescription.getType()==CellDescription::Type::Leaf,
-//              cellDescription.toString());
-//          assertion1(
-//              cellDescription.getRefinementEvent()!=CellDescription::RefinementEvent::VirtualRefiningRequested ||
-//              cellDescription.getType()==CellDescription::Type::Leaf ||
-//              cellDescription.getType()==CellDescription::Type::Virtual,
-//              cellDescription.toString());
-//          #endif
+              cellDescription.getAugmentationStatus() > 0 ||
+              cellDescription.getRefinementStatus() > 0;
 
           bool eraseAdjacentVertices =
-                  (cellDescription.getType()==CellDescription::Type::LeafKeep ||
-                  cellDescription.getType()==CellDescription::Type::Virtual)
-                  //&&
-                  //cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::None
-                  &&
-                  !cellDescription.getHasVirtualChildren()
-                  &&
-                  cellDescription.getAugmentationStatus()==0 // TODO(Dominic): Probably can tune here. This is chosen to large
-                  &&
-                  cellDescription.getRefinementStatus()==0;
+              (cellDescription.getType()==CellDescription::Type::LeafKeep ||
+              cellDescription.getType()==CellDescription::Type::Virtual)
+              &&
+              !cellDescription.getHasVirtualChildren()
+              &&
+              cellDescription.getAugmentationStatus()==0 // TODO(Dominic): Probably can tune here. This is chosen to large
+              &&
+              cellDescription.getRefinementStatus()==0 &&
+              cellDescription.getPreviousRefinementStatus()==0;
 
           if (refineAdjacentVertices) {
             return RefinementControl::Refine;
@@ -940,10 +883,12 @@ void exahype::solvers::ADERDGSolver::prepareVolumeDataRestriction(
   std::fill_n(previousSolution,getDataPerCell(),0.0);
 }
 
-void exahype::solvers::ADERDGSolver::changeCellToAncestor(CellDescription& cellDescription) {
-  assertion1(cellDescription.getType()==CellDescription::Type::Leaf,
-             cellDescription.toString());
-  cellDescription.setType(CellDescription::Type::Parent); // TODO(Dominic): Keep?
+void exahype::solvers::ADERDGSolver::changeLeafToParent(CellDescription& cellDescription) {
+  assertion1(
+      cellDescription.getType()==CellDescription::Type::LeafRefine ||
+      cellDescription.getType()==CellDescription::Type::ParentCoarseningRequested
+      ,cellDescription.toString());
+  cellDescription.setType(CellDescription::Type::ParentKeep); // TODO(Dominic): Keep?
   cellDescription.setAugmentationStatus(MaximumAugmentationStatus);
   cellDescription.setHasVirtualChildren(false); // since we might replace descendants with cells
   cellDescription.setRefinementStatus(Keep);
@@ -956,27 +901,13 @@ void exahype::solvers::ADERDGSolver::changeCellToAncestor(CellDescription& cellD
 
 void exahype::solvers::ADERDGSolver::progressCollectiveRefinementOperationsInEnterCell(
      CellDescription& fineGridCellDescription) {
-  fineGridCellDescription.setVetoErasingChildren(false);
-
-  switch (fineGridCellDescription.getType()) {
-    case CellDescription::Type::LeafRefining:
-      changeCellToAncestor(fineGridCellDescription);
-      break;
-    // TODO(Dominic): Still necessary?
-    //case CellDescription::TypeVirtualRefining:
-    //  fineGridCellDescription.setHasVirtualChildren(true);
-    //  fineGridCellDescription.setRefinementEvent(CellDescription::None);
-    //  break;
-    default:
-      break;
+  if (fineGridCellDescription.getType() == CellDescription::Type::LeafRefine ) {
+    changeLeafToParent(fineGridCellDescription);
   }
 }
 
 bool exahype::solvers::ADERDGSolver::markPreviousAncestorForRefinement(CellDescription& cellDescription) {
-  //assertion1(cellDescription.getType()==CellDescription::Type::Leaf &&
-  //           (cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::ErasingChildrenRequested ||
-  //           cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::ChangeChildrenToVirtualChildrenRequested),
-  //           cellDescription.toString());
+  assertion1(cellDescription.getType()==CellDescription::Type::ParentCoarsening,cellDescription.toString());
     double* solution = static_cast<double*>(cellDescription.getSolution());
     adjustSolution(solution,
           cellDescription.getOffset()+0.5*cellDescription.getSize(),
@@ -991,6 +922,7 @@ bool exahype::solvers::ADERDGSolver::markPreviousAncestorForRefinement(CellDescr
           cellDescription.getPreviousTimeStamp(),
           cellDescription.getPreviousTimeStepSize());
 
+    // TODO(Dominic): Probably not a good idea to overwrite these values
     cellDescription.setRefinementStatus( evaluateRefinementCriterion(
             cellDescription,solution,cellDescription.getTimeStamp())
     );
@@ -1005,37 +937,18 @@ bool exahype::solvers::ADERDGSolver::markPreviousAncestorForRefinement(CellDescr
 void exahype::solvers::ADERDGSolver::progressCollectiveRefinementOperationsInLeaveCell(
      CellDescription& fineGridCellDescription,
      const bool inRefiningMode) {
-  switch ( fineGridCellDescription.getRefinementEvent() ) {
-    case CellDescription::RefinementEvent::ErasingChildrenRequested:
+  switch ( fineGridCellDescription.getType() ) {
+    case CellDescription::Type::ParentCoarseningRequested:
       // evaluate refinement criterion now that fine grid cells have restricted their data
       if ( markPreviousAncestorForRefinement(fineGridCellDescription) ) {
-        fineGridCellDescription.setRefinementEvent(CellDescription::RefinementEvent::ErasingChildren);
+        fineGridCellDescription.setType(CellDescription::Type::ParentCoarsening);
       } else { // veto erasing request
-        changeCellToAncestor(fineGridCellDescription);
+        changeLeafToParent(fineGridCellDescription);
       }
       break;
-    case CellDescription::RefinementEvent::ErasingChildren:
+    case CellDescription::Type::ParentCoarsening:
       //logInfo("progressCollectiveRefinementOperationsInLeaveCell(...)","ErasingChildren done");
-      fineGridCellDescription.setRefinementEvent(CellDescription::RefinementEvent::None);
-      break;
-    case CellDescription::RefinementEvent::ChangeChildrenToVirtualChildrenRequested:
-      // evaluate refinement criterion now that fine grid cells have restricted their data
-      if ( markPreviousAncestorForRefinement(fineGridCellDescription) ) {
-        fineGridCellDescription.setRefinementEvent(CellDescription::RefinementEvent::ChangeChildrenToVirtualChildren);
-      } else { // veto erasing request
-        changeCellToAncestor(fineGridCellDescription);
-      }
-      break;
-    case CellDescription::ChangeChildrenToVirtualChildren:
-      fineGridCellDescription.setHasVirtualChildren(true);
-      fineGridCellDescription.setRefinementEvent(CellDescription::RefinementEvent::None);
-      break;
-    case CellDescription::RefinementEvent::ErasingVirtualChildrenRequested:
-      fineGridCellDescription.setRefinementEvent(CellDescription::RefinementEvent::ErasingVirtualChildren);
-      break;
-    case CellDescription::RefinementEvent::ErasingVirtualChildren:
-      fineGridCellDescription.setHasVirtualChildren(false);
-      fineGridCellDescription.setRefinementEvent(CellDescription::RefinementEvent::None);
+      fineGridCellDescription.setType(CellDescription::Type::Leaf);
       break;
     default:
       break;
@@ -1043,8 +956,7 @@ void exahype::solvers::ADERDGSolver::progressCollectiveRefinementOperationsInLea
 
   if (  // The children of this cell description have all flagged themselves and their parent (this cell) with Erase
       !inRefiningMode &&
-      fineGridCellDescription.getType()==CellDescription::Type::Parent &&
-      fineGridCellDescription.getRefinementEvent()==CellDescription::RefinementEvent::None &&
+      fineGridCellDescription.getType()==CellDescription::Type::ParentCoarseningRequested &&
       fineGridCellDescription.getVetoErasingChildren()==false &&
       fineGridCellDescription.getRefinementStatus()==Erase &&
       fineGridCellDescription.getPreviousRefinementStatus()==Erase
@@ -1057,7 +969,7 @@ void exahype::solvers::ADERDGSolver::progressCollectiveRefinementOperationsInLea
     fineGridCellDescription.setFacewiseCommunicationStatus(CellCommunicationStatus); // implicit conversion
     ensureNecessaryMemoryIsAllocated(fineGridCellDescription);
     prepareVolumeDataRestriction(fineGridCellDescription);
-    fineGridCellDescription.setRefinementEvent(CellDescription::RefinementEvent::ErasingChildrenRequested);
+    fineGridCellDescription.setType(CellDescription::Type::ErasingChildrenRequested);
   }
 }
 
@@ -1397,6 +1309,366 @@ void exahype::solvers::ADERDGSolver::dropCellDescriptions(
     const tarch::la::Vector<DIMENSIONS, double>&  x,
     const int                                     level) {
   Heap::getInstance().receiveData(fromRank,x,level,messageType);
+}
+
+////////////////////////////////////
+// MASTER <=> WORKER
+////////////////////////////////////
+void
+exahype::solvers::ADERDGSolver::appendMasterWorkerCommunicationMetadata(
+    MetadataHeap::HeapEntries& metadata,
+    const int cellDescriptionsIndex,
+    const int solverNumber) const {
+  const int element = tryGetElement(cellDescriptionsIndex,solverNumber);
+
+  if (element!=exahype::solvers::Solver::NotFound)  {
+    CellDescription& cellDescription =
+        getCellDescription(cellDescriptionsIndex,element);
+    metadata.push_back(static_cast<int>(cellDescription.getType()));
+    metadata.push_back(cellDescription.getAugmentationStatus()); // TODO(Dominic): Add to docu: Might be merged multiple times!
+    metadata.push_back(cellDescription.getCommunicationStatus());
+    metadata.push_back(cellDescription.getRefinementStatus());
+    metadata.push_back( (cellDescription.getHasVirtualChildren()) ? 1 : 0 );
+  } else {
+    for (int i = 0; i < exahype::MasterWorkerCommunicationMetadataPerSolver; ++i) {
+      metadata.push_back(exahype::InvalidMetadataEntry); // implicit conversion
+    }
+  }
+}
+
+void exahype::solvers::ADERDGSolver::deduceChildCellErasingEvents(CellDescription& cellDescription) const {
+  const int coarseGridElement = tryGetElement(cellDescription.getParentIndex(),cellDescription.getSolverNumber());
+  if ( coarseGridElement!=exahype::solvers::Solver::NotFound ) {
+    CellDescription& coarseGridCellDescription =
+        getCellDescription(cellDescription.getParentIndex(),coarseGridElement);
+
+    tarch::multicore::Lock lock(CoarseGridSemaphore);
+    switch (coarseGridCellDescription.getType()) {
+    case CellDescription::Type::ParentCoarseningRequested: {
+      assertion1(coarseGridCellDescription.getType()==CellDescription::Type::Parent,
+          coarseGridCellDescription.toString());
+      cellDescription.setType(CellDescription::Type::LeafParentRequestedCoarsening); // TODO(Dominic): Introduce these states
+    } break;
+    case CellDescription::Type::ParentCoarsening: {
+      assertion1(coarseGridCellDescription.getType()==CellDescription::Type::Parent,
+          coarseGridCellDescription.toString());
+      cellDescription.setType(CellDescription::Type::LeafParentRequestedCoarsening); // TODO(Dominic): Introduce these states
+    } break;
+    //
+    lock.free();
+    }
+  }
+}
+
+void exahype::solvers::ADERDGSolver::progressMeshRefinementInPrepareSendToWorker(
+    const int workerRank,
+    exahype::Cell& fineGridCell,
+    exahype::Vertex* const fineGridVertices,
+    const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
+    exahype::Cell& coarseGridCell,
+    const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
+    const int solverNumber) {
+  // coarse grid based operations
+  const int coarseGridCellDescriptionsIndex = coarseGridCell.getCellDescriptionsIndex();
+  const int coarseGridCellElement = tryGetElement(coarseGridCellDescriptionsIndex,solverNumber);
+  if (coarseGridCellElement!=exahype::solvers::Solver::NotFound) {
+    CellDescription& coarseGridCellDescription = getCellDescription(
+        coarseGridCell.getCellDescriptionsIndex(),coarseGridCellElement);
+
+    addNewVirtualCellIfVirtualRefiningRequested(
+        fineGridCell,fineGridVertices,fineGridVerticesEnumerator,
+        coarseGridCellDescription,coarseGridCell.getCellDescriptionsIndex());
+
+    bool addedNewCell =
+        addNewLeafIfRefinementRequested(
+            fineGridCell,fineGridVertices,fineGridVerticesEnumerator,
+            coarseGridCellDescription,coarseGridCell.getCellDescriptionsIndex());
+
+    const int cellDescriptionsIndex = fineGridCell.getCellDescriptionsIndex();
+    const int element = tryGetElement(cellDescriptionsIndex,solverNumber);
+
+    if ( element!=exahype::solvers::Solver::NotFound ) {
+      CellDescription& fineGridCellDescription = getCellDescription(cellDescriptionsIndex,element);
+      if (
+        fineGridCellDescription.getType()==CellDescription::Type::Virtual &&
+        fineGridCellDescription.getHasVirtualChildren()
+      ) {
+        Solver::SubcellPosition subcellPosition =  amr::computeSubcellPositionOfVirtualCell<CellDescription,Heap>(fineGridCellDescription);
+        CellDescription& topMostParentCellDescription =
+            getCellDescription(subcellPosition.parentCellDescriptionsIndex,subcellPosition.parentElement);
+        if ( topMostParentCellDescription.getType()==CellDescription::Type::Leaf ) {
+           logDebug( "progressMeshRefinementInPrepareSendToWorker(...)"," try to refine parent " << topMostParentCellDescription.toString());
+           topMostParentCellDescription.setRefinementStatus(_refineOrKeepOnFineGrid);
+        }
+      }
+    }
+
+    if ( addedNewCell ) {
+      CellDescription& fineGridCellDescription = getCellDescription(cellDescriptionsIndex,element);
+      prolongateVolumeData(fineGridCellDescription,getMeshUpdateEvent()==MeshUpdateEvent::InitialRefinementRequested);
+      assertion1( fineGridCellDescription.getType()==CellDescription::Type::LeafProlongating,fineGridCellDescription.toString());
+    }
+  }
+}
+
+void exahype::solvers::ADERDGSolver::sendDataToWorkerIfProlongating(
+    const int                                     workerRank,
+    const int                                     cellDescriptionsIndex,
+    const int                                     element,
+    const tarch::la::Vector<DIMENSIONS, double>&  x,
+    const int                                     level) const {
+  CellDescription& fineGridCellDescription = getCellDescription(cellDescriptionsIndex,element);
+
+  // send out the data
+  if ( fineGridCellDescription.getType()==CellDescription::Type::LeafProlongating ) {
+    logDebug( "sendDataToWorkerIfProlongating(...)","send prolongated solution to rank "<<workerRank<< " at x="<<x.toString()<< ",level="<<level << " cell="<<fineGridCellDescription.toString());
+
+    sendDataToWorkerOrMasterDueToForkOrJoin(workerRank,cellDescriptionsIndex,element,
+        peano::heap::MessageType::MasterWorkerCommunication,x,level);
+  }
+}
+
+void exahype::solvers::ADERDGSolver::receiveDataFromMasterIfProlongating(
+  const int masterRank,
+    const int receivedCellDescriptionsIndex,
+  const int receivedElement,
+  const tarch::la::Vector<DIMENSIONS,double>& x,
+  const int level) const {
+  CellDescription& receivedCellDescription = getCellDescription(receivedCellDescriptionsIndex,receivedElement);
+
+  if ( receivedCellDescription.getType()==CellDescription::Type::LeafProlongating ) {
+    logDebug( "receiveDataFromMasterIfProlongating(...)","receiving prolongated solution from rank "<<masterRank<< " at x="<<x.toString()<< ",level="<<level);
+
+    mergeWithWorkerOrMasterDataDueToForkOrJoin(
+      masterRank,receivedCellDescriptionsIndex,receivedElement,
+      peano::heap::MessageType::MasterWorkerCommunication,x,level);
+  }
+}
+
+bool exahype::solvers::ADERDGSolver::progressMeshRefinementInMergeWithWorker(
+    const int localCellDescriptionsIndex,
+    const int receivedCellDescriptionsIndex, const int receivedElement) {
+  auto& receivedCellDescriptions = getCellDescriptions(receivedCellDescriptionsIndex);
+  assertion1( isValidCellDescriptionIndex(localCellDescriptionsIndex), localCellDescriptionsIndex );
+  auto& localCellDescriptions = getCellDescriptions(localCellDescriptionsIndex);
+
+  int localElement = NotFound;
+  for (unsigned int element = 0; element < localCellDescriptions.size(); ++element) {
+    if ( localCellDescriptions[element].getSolverNumber()==receivedCellDescriptions[receivedElement].getSolverNumber() ) {
+      localElement = element;
+    }
+    element++;
+  }
+  if ( localElement==NotFound ) { // We have already received data and allocated all memory in this case
+    CellDescription& receivedCellDescription = receivedCellDescriptions[receivedElement];
+    localCellDescriptions.push_back(receivedCellDescription);
+    assertion1(receivedCellDescription.getType()==CellDescription::Type::Virtual,receivedCellDescription.toString());
+    receivedCellDescriptions.erase(receivedCellDescriptions.begin()+receivedElement);
+    return false;
+  } else {
+    CellDescription& receivedCellDescription = receivedCellDescriptions[receivedElement];
+    if ( receivedCellDescriptions[receivedElement].getType()==CellDescription::Type::LeafProlongating ) {
+      CellDescription& localCellDescription = localCellDescriptions[localElement];
+
+      logDebug( "progressMeshRefinementInMergeWithWorker(...)","merging prolongated solution");
+
+      assertion( localCellDescription.getType()==CellDescription::Type::Leaf ||
+          localCellDescription.getType()==CellDescription::Type::Virtual);
+      assertion(receivedCellDescription.getType()==CellDescription::Type::Leaf);
+      assertion(DataHeap::getInstance().isValidIndex(receivedCellDescription.getSolutionIndex()));
+      assertion(DataHeap::getInstance().isValidIndex(receivedCellDescription.getPreviousSolutionIndex()));
+
+      // we know we have received data in this case
+      localCellDescription.setType(CellDescription::Type::LeafProlongating);
+      localCellDescription.setPreviousRefinementStatus(Pending);
+      localCellDescription.setCommunicationStatus(CellCommunicationStatus);
+      localCellDescription.setFacewiseCommunicationStatus(0); // implicit conversion
+
+      ensureNecessaryMemoryIsAllocated(localCellDescription); // copy indices
+      localCellDescription.setSolution(receivedCellDescription.getSolution());
+      localCellDescription.setPreviousSolution(receivedCellDescription.getPreviousSolution());
+      receivedCellDescription.setSolutionIndex(-1);
+      receivedCellDescription.setPreviousSolutionIndex(-1);
+      receivedCellDescription.setSolution(nullptr);
+      receivedCellDescription.setPreviousSolution(nullptr);
+
+      // adjust solution
+      // TODO(Dominic): do not understand this part
+      localCellDescription.setType(CellDescription::Type::Leaf);
+      return true;
+    } else {
+      return false;
+    }
+  }
+}
+
+void exahype::solvers::ADERDGSolver::progressMeshRefinementInPrepareSendToMaster(
+    const int masterRank,
+    const int cellDescriptionsIndex, const int element,
+    const tarch::la::Vector<DIMENSIONS,double>& x,
+    const int level) const {
+  CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
+
+  // send out data
+  if (
+      cellDescription.getType()==CellDescription::Type::LeafParentCoarseningRequested
+  ) {
+    sendDataToWorkerOrMasterDueToForkOrJoin(masterRank,cellDescriptionsIndex,element,
+        peano::heap::MessageType::MasterWorkerCommunication,x,level); // assumes blocking/copy
+  }
+
+  // erase or change type of cell descriptions
+  if ( cellDescription.getType()==CellDescription::Type::LeafParentCoarsening ) {
+    cellDescription.setType(CellDescription::Type::Erased);
+    ensureNoUnnecessaryMemoryIsAllocated(cellDescription);
+    getCellDescriptions(cellDescriptionsIndex).erase(
+        getCellDescriptions(cellDescriptionsIndex).begin()+element);
+  }
+}
+
+bool exahype::solvers::ADERDGSolver::progressMeshRefinementInMergeWithMaster(
+    const int worker,
+    const int localCellDescriptionsIndex,
+    const int localElement,
+    const int coarseGridCellDescriptionsIndex,
+    const tarch::la::Vector<DIMENSIONS, double>& x,
+    const int                                    level,
+    const bool                                   stillInRefiningMode) {
+  CellDescription& cellDescription = getCellDescription(localCellDescriptionsIndex,localElement);
+  ensureFineGridCoarseGridConsistency(cellDescription,coarseGridCellDescriptionsIndex);
+  #ifdef Asserts
+  cellDescription.setCreation(CellDescription::Creation::ReceivedFromWorker);
+  #endif
+
+  const int coarseGridElement = tryGetElement(
+      cellDescription.getParentIndex(),cellDescription.getSolverNumber());
+  if ( // receive restricted data
+      cellDescription.getType()==CellDescription::Type::LeafParentRequestedCoarsening
+  ) {
+    assertion1(coarseGridElement!=exahype::solvers::Solver::NotFound,cellDescription.toString());
+    mergeWithWorkerOrMasterDataDueToForkOrJoin(worker,localCellDescriptionsIndex,localElement,
+        peano::heap::MessageType::MasterWorkerCommunication,x,level); // assumes blocking/copy
+
+    // use the received data
+    CellDescription& coarseGridCellDescription =
+        getCellDescription(cellDescription.getParentIndex(),coarseGridElement); // TODO(Dominic): Have helper function for that
+
+    restrictVolumeDataIfErasingRequested(cellDescription,coarseGridCellDescription);
+  }
+
+  // work with the data
+  if ( cellDescription.getType()==CellDescription::Type::LeafParentCoarsens ) {
+    CellDescription& coarseGridCellDescription =
+        getCellDescription(cellDescription.getParentIndex(),coarseGridElement); // TODO(Dominic): Have helper function for that
+    assertion2( coarseGridCellDescription.getType()==CellDescription::Type::ParentCoarsening,
+        cellDescription.toString(),coarseGridCellDescription.toString());
+
+    eraseCellDescriptionIfNecessary(localCellDescriptionsIndex,localElement,coarseGridCellDescription);
+  }
+
+  // potentially veto
+  if ( coarseGridElement != exahype::solvers::Solver::NotFound ) {
+    CellDescription& coarseGridCellDescription = getCellDescription(
+        cellDescription.getParentIndex(),coarseGridElement);
+    updateCoarseGridAncestorRefinementStatus(cellDescription,coarseGridCellDescription);
+
+    if (
+      coarseGridCellDescription.getType()==CellDescription::Type::ParentCoarseningRequested &&
+      cellDescription.getHasVirtualChildren()
+    ) {            // no lock required; serial context
+       coarseGridCellDescription.setType(CellDescription::Type::ParentKeep);
+    }
+  }
+
+  progressCollectiveRefinementOperationsInLeaveCell(cellDescription,stillInRefiningMode);
+  // ignore return value as responsibiliy is still on fine grid.
+
+  // check if any cell description requires vertical communication
+  bool solverRequiresVerticalCommunication = false;
+
+  // block erasing request of coarse grid cell description if deployed cell
+  // does not want to be erased
+  decideOnRefinement(cellDescription,stillInRefiningMode);
+
+  return solverRequiresVerticalCommunication;
+}
+
+///////////////////////////////////
+// FORK OR JOIN
+///////////////////////////////////
+
+void exahype::solvers::ADERDGSolver::sendDataToWorkerOrMasterDueToForkOrJoin(
+    const int                                     toRank,
+    const int                                     cellDescriptionsIndex,
+    const int                                     element,
+    const peano::heap::MessageType&               messageType,
+    const tarch::la::Vector<DIMENSIONS, double>&  x,
+    const int                                     level) const {
+  assertion1(Heap::getInstance().isValidIndex(cellDescriptionsIndex),cellDescriptionsIndex);
+  assertion1(element>=0,element);
+  assertion2(static_cast<unsigned int>(element)<Heap::getInstance().getData(cellDescriptionsIndex).size(),
+             element,Heap::getInstance().getData(cellDescriptionsIndex).size());
+  CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
+
+  #ifdef Asserts
+  const tarch::la::Vector<DIMENSIONS,double> center = cellDescription.getOffset()+0.5*cellDescription.getSize();
+  #endif
+  assertion5(Vertex::equalUpToRelativeTolerance(x,center),x,center,level,cellDescription.getLevel(),tarch::parallel::Node::getInstance().getRank());
+  assertion2(cellDescription.getLevel()==level,cellDescription.getLevel(),level);
+
+  if ( cellDescription.getType()==CellDescription::Type::Leaf ) {
+    logDebug("sendDataToWorkerOrMasterDueToForkOrJoin(...)",""
+            "solution of solver " << cellDescription.getSolverNumber() << " sent to rank "<<toRank<<
+                 ", cell: "<< x << ", level: " << level);
+
+    assertion2(DataHeap::getInstance().isValidIndex(cellDescription.getSolutionIndex()),
+        cellDescriptionsIndex,cellDescription.toString());
+    assertion2(DataHeap::getInstance().isValidIndex(cellDescription.getPreviousSolutionIndex()),
+            cellDescriptionsIndex,cellDescription.toString());
+    DataHeap::getInstance().sendData(
+        static_cast<double*>(cellDescription.getSolution()),
+        getDataPerCell(), toRank, x, level,messageType);
+    DataHeap::getInstance().sendData(
+        static_cast<double*>(cellDescription.getPreviousSolution()),
+        getDataPerCell(), toRank, x, level,messageType);
+  }
+}
+
+void exahype::solvers::ADERDGSolver::mergeWithWorkerOrMasterDataDueToForkOrJoin(
+    const int                                     fromRank,
+    const int                                     cellDescriptionsIndex,
+    const int                                     element,
+    const peano::heap::MessageType&               messageType,
+    const tarch::la::Vector<DIMENSIONS, double>&  x,
+    const int                                     level) const {
+  CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
+  #ifdef Asserts
+  const tarch::la::Vector<DIMENSIONS,double> center = cellDescription.getOffset()+0.5*cellDescription.getSize();
+  #endif
+  assertion5(Vertex::equalUpToRelativeTolerance(x,center),x,center,level,cellDescription.getLevel(),tarch::parallel::Node::getInstance().getRank());
+  assertion2(cellDescription.getLevel()==level,cellDescription.getLevel(),level);
+
+  // allocate memory
+  if ( messageType==peano::heap::MessageType::ForkOrJoinCommunication ) {
+    ensureNecessaryMemoryIsAllocated(cellDescription);
+    ensureNoUnnecessaryMemoryIsAllocated(cellDescription);
+  } else if ( cellDescription.getType()==CellDescription::Type::Leaf ) {
+    ensureNecessaryMemoryIsAllocated(cellDescription);
+    ensureNoUnnecessaryMemoryIsAllocated(cellDescription);
+  }
+
+  // receive data
+  if ( cellDescription.getType()==CellDescription::Type::Leaf ) {
+    logDebug("mergeWithRemoteDataDueToForkOrJoin(...)","[solution] receive from rank "<<fromRank<<
+             ", cell: "<< x << ", level: " << level);
+
+    getDataHeapEntries(cellDescription.getSolutionIndex()).clear();
+    getDataHeapEntries(cellDescription.getPreviousSolutionIndex()).clear();
+    DataHeap::getInstance().receiveData(cellDescription.getSolutionIndex(),
+        fromRank,x,level,messageType);
+    DataHeap::getInstance().receiveData(cellDescription.getPreviousSolutionIndex(),
+        fromRank,x,level,messageType);
+  }
 }
 
 #endif

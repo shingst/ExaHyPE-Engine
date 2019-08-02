@@ -603,6 +603,8 @@ void exahype::mappings::MeshRefinement::receiveDataFromMaster(
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
   logTraceIn( "receiveDataFromMaster(...)" );
 
+  // TODO(Dominic): Here, I have to chance to read the coarse grid cell's state.
+
   receivedCell.setCellDescriptionsIndex(
       multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
   if (

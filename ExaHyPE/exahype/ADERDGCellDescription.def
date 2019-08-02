@@ -46,13 +46,6 @@ class exahype::records::ADERDGCellDescription {
    * this ADERDGCellDescription or "-1" if no parent is specified.
    */
   persistent int parentIndex;
-  
-  
-  /**
-   * Flag indicating that a cell description is a 
-   * parent of virtual subcells.
-   */
-  parallelise persistent bool hasVirtualChildren;
  
   /**
    * Type of a cell description.
@@ -71,18 +64,17 @@ class exahype::records::ADERDGCellDescription {
    * Cell.
    */
   enum Type {
-    Leaf,                      //! During the time stepping iterations, a leaf cell
-    LeafKeep,                  //! During the mesh refinement iterations, a leaf cell where the refinement criterion returned keep.
-    LeafCoarsen,               //! During the mesh refinement iterations, a leaf cell that requested coarsening.
-    LeafRefineInitiated,       //! During the mesh refinement iterations, a leaf cell that requested refinement.
-    LeafRefine,                //! During the mesh refinement iterations, a leaf cell that started refining.
-    LeafProlongating,          //! During the mesh refinement iterations, a cell that still has to prolongate volume data. (Necessary if we use background jobs).
-    Parent,                    //! During the time stepping iterations, a leaf cell.
-    ParentKeep,                //! During the mesh refinement iterations, a parent cell where the coarsening was vetoed.
-    ParentCoarseningRequested, //! During the mesh refinement iterations, a parent cell that requested coarsening.
-    ParentCoarsening,          //! During the mesh refinement iterations, a parent cell that is coarsening.
-    Virtual,                   //! A virtual cell.
-    Erased                     //! An erased cell. Indicates that memory can be deallocated for this cell.
+    Leaf,                     //! During the time stepping iterations, a leaf cell
+    LeafKeeps,                //! During the mesh refinement iterations, a leaf cell where the refinement criterion returned keep.
+    LeafInitiatesRefining,    //! During the mesh refinement iterations, a leaf cell that requested refinement.
+    LeafRefines,              //! During the mesh refinement iterations, a leaf cell that started refining.
+    LeafProlongates,          //! During the mesh refinement iterations, a cell that still has to prolongate volume data. (Necessary if we use background jobs).  
+    Parent,                   //! During the time stepping iterations, a leaf cell.
+    ParentKeeps,              //! During the mesh refinement iterations, a parent cell where the coarsening was vetoed.
+    ParentRequestsCoarsening, //! During the mesh refinement iterations, a parent cell that requested coarsening.
+    ParentCoarsens,           //! During the mesh refinement iterations, a parent cell that is coarsening.
+    Virtual,                  //! A virtual cell.
+    Erased                    //! An erased cell. Indicates that memory can be deallocated for this cell.
   };
  
   /**
@@ -90,6 +82,15 @@ class exahype::records::ADERDGCellDescription {
    * more details.
    */
   parallelise persistent packed Type type;
+  
+  /**
+   * We use this state to memorise the type of a coarse grid cell description
+   * in parallel mesh refinement iterations, i.e.
+   * this state is set in receiveDataFromMaster(...) and read
+   * in mergeWithWorker(...). Outside of these two routines,
+   * this state doesn't play any role at all.
+   */
+  parallelise persistent packed Type parentType;
   
   // While the above definitions are mainly flags and states, below we find the actual data.
   
@@ -257,7 +258,7 @@ class exahype::records::ADERDGCellDescription {
 
   /**
    * Another diffused status flag that controls how many
-   * cell descriptions of type Cell in vicinity of
+   * cell descriptions of type Leaf in vicinity of
    * a helper cell description of type Ancestor are
    * augmented with Descendant cells.
    */
@@ -272,13 +273,13 @@ class exahype::records::ADERDGCellDescription {
    * Status of a helper cell description (Descendant,Ancestor)
    * which is diffused similarly to the limiter status.
    * 
-   * Cell description of type Cell write the maximum value 
+   * Cell description of type Leaf write the maximum value 
    * on the boundary. Descendant and Ancestor cell descriptions
    * will merge and diffuse the value and allocate 
    * or deallocate memory according the converged value.
    * 
    * Usually, the cell descriptions which are direct
-   * neighbours to a cell description of type Cell
+   * neighbours to a cell description of type Leaf
    * allocate memory and the others don't.
    * 
    * We write the maximum value of the facewiseCommunicationStatus flags
@@ -340,12 +341,6 @@ class exahype::records::ADERDGCellDescription {
   parallelise persistent bool refinementFlag;
   
   /**
-   * A flag for vetoing the erasing of child cells
-   * during the mesh refinement iterations.
-   */
-  parallelise persistent bool vetoErasingChildren;
-  
-  /**
    * A counter holding the number of iterations to
    * cure a troubled cell.
    * This counter will be initialised to a certain
@@ -381,10 +376,9 @@ class exahype::records::ADERDGCellDescription {
   parallelise persistent packed int bytesPerDoFInExtrapolatedPredictor from 1 to 7;
   parallelise persistent packed int bytesPerDoFInFluctuation           from 1 to 7;
   
-  #ifdef Asserts
   /** 
    * Some debug information indicating how a cell
-   * description of type Cell ended up on a MPI rank.
+   * description of type Leaf ended up on a MPI rank.
    */
   enum Creation {
     NotSpecified,
@@ -395,5 +389,4 @@ class exahype::records::ADERDGCellDescription {
     ReceivedFromWorker
   };
   persistent Creation creation;
-  #endif
 };

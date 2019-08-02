@@ -111,7 +111,7 @@ namespace amr {
    */
   template <class CellDescription,class CellDescriptionHeap>
   exahype::solvers::Solver::SubcellPosition
-  computeSubcellPositionOfDescendant(const CellDescription& pChild);
+  computeSubcellPositionOfVirtualCell(const CellDescription& pChild);
 }  // namespace amr
 }  // namespace exahype
 

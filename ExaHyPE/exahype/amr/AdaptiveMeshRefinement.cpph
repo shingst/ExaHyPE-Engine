@@ -1,7 +1,6 @@
-
 template <class CellDescription,class CellDescriptionHeap>
 exahype::solvers::Solver::SubcellPosition
-exahype::amr::computeSubcellPositionOfVirtual(const CellDescription& pChild) {
+exahype::amr::computeSubcellPositionOfVirtualCell(const CellDescription& pChild) {
   assertion1(pChild.getType()==CellDescription::Type::Virtual,pChild.toString());
   assertion1(CellDescriptionHeap::getInstance().isValidIndex(
       pChild.getParentIndex()),pChild.getParentIndex());
