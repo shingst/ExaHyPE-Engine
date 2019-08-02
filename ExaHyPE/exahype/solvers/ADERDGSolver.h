@@ -1188,11 +1188,10 @@ public:
    */
   static bool isLeaf(const CellDescription& cellDescription) {
     return cellDescription.getType()==CellDescription::Type::Leaf ||
-           cellDescription.getType()==CellDescription::Type::LeafKeep ||
-           cellDescription.getType()==CellDescription::Type::LeafCoarsen ||
-           cellDescription.getType()==CellDescription::Type::LeafRefine ||
-           cellDescription.getType()==CellDescription::Type::LeafRefineInitiated ||
-           cellDescription.getType()==CellDescription::Type::ParentCoarsening;
+           cellDescription.getType()==CellDescription::Type::LeafKeeps ||
+           cellDescription.getType()==CellDescription::Type::LeafRefines ||
+           cellDescription.getType()==CellDescription::Type::LeafInitiatesRefining ||
+           cellDescription.getType()==CellDescription::Type::ParentCoarsens;
   }
 
   /**
@@ -1201,8 +1200,8 @@ public:
    */
   static bool isParent(const CellDescription& cellDescription) {
     return cellDescription.getType()==CellDescription::Type::Parent ||
-           cellDescription.getType()==CellDescription::Type::ParentKeep ||
-           cellDescription.getType()==CellDescription::Type::ParentCoarseningRequested;
+           cellDescription.getType()==CellDescription::Type::ParentKeeps ||
+           cellDescription.getType()==CellDescription::Type::ParentRequestsCoarsening;
   }
 
   /**

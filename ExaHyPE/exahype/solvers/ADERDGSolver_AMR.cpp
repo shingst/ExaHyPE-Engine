@@ -1511,14 +1511,14 @@ void exahype::solvers::ADERDGSolver::progressMeshRefinementInPrepareSendToMaster
 
   // send out data
   if (
-      cellDescription.getType()==CellDescription::Type::LeafParentCoarseningRequested
+      cellDescription.getParentType()==CellDescription::Type::ParentRequestsCoarsening
   ) {
     sendDataToWorkerOrMasterDueToForkOrJoin(masterRank,cellDescriptionsIndex,element,
         peano::heap::MessageType::MasterWorkerCommunication,x,level); // assumes blocking/copy
   }
 
   // erase or change type of cell descriptions
-  if ( cellDescription.getType()==CellDescription::Type::LeafParentCoarsening ) {
+  if ( cellDescription.getParentType()==CellDescription::Type::ParentCoarsens ) {
     cellDescription.setType(CellDescription::Type::Erased);
     ensureNoUnnecessaryMemoryIsAllocated(cellDescription);
     getCellDescriptions(cellDescriptionsIndex).erase(
@@ -1543,7 +1543,7 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInMergeWithMaster(
   const int coarseGridElement = tryGetElement(
       cellDescription.getParentIndex(),cellDescription.getSolverNumber());
   if ( // receive restricted data
-      cellDescription.getType()==CellDescription::Type::LeafParentRequestedCoarsening
+      cellDescription.getParentType()==CellDescription::Type::ParentRequestsCoarsening
   ) {
     assertion1(coarseGridElement!=exahype::solvers::Solver::NotFound,cellDescription.toString());
     mergeWithWorkerOrMasterDataDueToForkOrJoin(worker,localCellDescriptionsIndex,localElement,
@@ -1557,10 +1557,10 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInMergeWithMaster(
   }
 
   // work with the data
-  if ( cellDescription.getType()==CellDescription::Type::LeafParentCoarsens ) {
+  if ( cellDescription.getParentType()==CellDescription::Type::ParentCoarsens ) {
     CellDescription& coarseGridCellDescription =
         getCellDescription(cellDescription.getParentIndex(),coarseGridElement); // TODO(Dominic): Have helper function for that
-    assertion2( coarseGridCellDescription.getType()==CellDescription::Type::ParentCoarsening,
+    assertion2( coarseGridCellDescription.getType()==CellDescription::Type::ParentCoarsens,
         cellDescription.toString(),coarseGridCellDescription.toString());
 
     eraseCellDescriptionIfNecessary(localCellDescriptionsIndex,localElement,coarseGridCellDescription);
@@ -1573,10 +1573,10 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInMergeWithMaster(
     updateCoarseGridAncestorRefinementStatus(cellDescription,coarseGridCellDescription);
 
     if (
-      coarseGridCellDescription.getType()==CellDescription::Type::ParentCoarseningRequested &&
-      cellDescription.getHasVirtualChildren()
+      coarseGridCellDescription.getType()==CellDescription::Type::ParentRequestsCoarsening &&
+      cellDescription.getAugmentationStatus()>0 // TODO(Dominic): Take a look at this again
     ) {            // no lock required; serial context
-       coarseGridCellDescription.setType(CellDescription::Type::ParentKeep);
+       coarseGridCellDescription.setType(CellDescription::Type::ParentKeeps);
     }
   }
 
