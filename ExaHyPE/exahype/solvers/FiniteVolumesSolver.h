@@ -409,7 +409,6 @@ public:
     * @param solverNumber    identification number of this solver
     * @param cellInfo        references to the cell descriptions associated with a mesh cell.
     * @param cellType        the cell type the new cell description should become
-    * @param refinementEvent the initial refinement event the new cell description should get
     * @param level           the mesh level the new cell description is associated with
     * @param parentIndex     the cell descriptions index of a parent cell
     * @param cellSize        the size of the mesh cell the new cell description is associated with
@@ -419,7 +418,6 @@ public:
        const int solverNumber,
        CellInfo& cellInfo,
        const CellDescription::Type cellType,
-       const CellDescription::RefinementEvent refinementEvent,
        const int level,
        const int parentIndex,
        const tarch::la::Vector<DIMENSIONS, double>&  cellSize,

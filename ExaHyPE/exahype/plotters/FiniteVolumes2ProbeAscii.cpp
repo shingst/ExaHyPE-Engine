@@ -121,7 +121,7 @@ void exahype::plotters::FiniteVolumes2ProbeAscii::plotPatch(const int solverNumb
   const int element = cellInfo.indexOfFiniteVolumesCellDescription(solverNumber);
   auto& cellDescription = cellInfo._FiniteVolumesCellDescriptions[element];
 
-  if (cellDescription.getType()==exahype::solvers::FiniteVolumesSolver::CellDescription::Type::Cell) {
+  if (cellDescription.getType()==exahype::solvers::FiniteVolumesSolver::CellDescription::Type::Leaf) {
     double* solution = static_cast<double*>(cellDescription.getSolution());
 
     plotPatch(

@@ -5,6 +5,7 @@
 /// Version: 13/11/15
 /////////////////////////////////////////////////
 #include "peano/utils/Globals.h"
+#include "exahype/util/CopyableAtomic.h"
 
 Packed-Type: int hint-size 32;
 
@@ -57,7 +58,7 @@ class exahype::records::ADERDGCellDescription {
    * Type of a cell description.
    * Cell descriptions of type \p Cell hold cell and face data,
    * while the ones of type \p Ancestor hold only face data.
-   * Both belong to the original spacetree that
+   * Both belong to the original spacetree that 
    * is constructed according to solver-based refinement criteria.
    * Helper cells of type Descendant also hold face data 
    * but belong to the virtual part of the augmented spacetree that
@@ -70,10 +71,18 @@ class exahype::records::ADERDGCellDescription {
    * Cell.
    */
   enum Type {
-    Erased,
-    Ancestor,
-    Cell,
-    Descendant
+    Leaf,                      //! During the time stepping iterations, a leaf cell
+    LeafKeep,                  //! During the mesh refinement iterations, a leaf cell where the refinement criterion returned keep.
+    LeafCoarsen,               //! During the mesh refinement iterations, a leaf cell that requested coarsening.
+    LeafRefineInitiated,       //! During the mesh refinement iterations, a leaf cell that requested refinement.
+    LeafRefine,                //! During the mesh refinement iterations, a leaf cell that started refining.
+    LeafProlongating,          //! During the mesh refinement iterations, a cell that still has to prolongate volume data. (Necessary if we use background jobs).
+    Parent,                    //! During the time stepping iterations, a leaf cell.
+    ParentKeep,                //! During the mesh refinement iterations, a parent cell where the coarsening was vetoed.
+    ParentCoarseningRequested, //! During the mesh refinement iterations, a parent cell that requested coarsening.
+    ParentCoarsening,          //! During the mesh refinement iterations, a parent cell that is coarsening.
+    Virtual,                   //! A virtual cell.
+    Erased                     //! An erased cell. Indicates that memory can be deallocated for this cell.
   };
  
   /**
@@ -81,119 +90,6 @@ class exahype::records::ADERDGCellDescription {
    * more details.
    */
   parallelise persistent packed Type type;
-  
-  enum RefinementEvent {
-    /**
-     * In this state, the cell description is ready to
-     * perform operations of the ADER-DG method, e.g.,
-     * the Riemann solve, the solution update etc.
-     */
-    None,
-    /**
-     * If this refinement event is set, 
-     * the parent Ancestor asks its
-     * children if they want to be erased. If not so,
-     * the children change the RefinementEvent 
-     * of the parent to None. If so,
-     * they leave the parent's RefinementEvent
-     * unchanged. 
-     */
-    ErasingChildrenRequested,
-    /**
-     * After all children of a parent left
-     * the parent's refinement event ErasingChildrenRequested
-     * unchanged, the parent changes its state
-     * to this event. In the next iteration
-     * the parent's children need to restrict their
-     * solution up to the parent and
-     * the child cell descriptions need to be
-     * removed from the grid.
-     */
-    ErasingChildren,   
-    /**
-     * Change children to descendants.
-     * An Ancestor cell description can adopt 
-     * this status if its children can be erased 
-     * w.r.t. the physics based refinement criterion
-     * however one of the children is parent itself
-     * to children of type Descendant.
-     * In this case, we do not erase the children
-     * of the Ancestor but change their type to (Empty)Descendant.
-     */
-    ChangeChildrenToVirtualChildrenRequested,
-    /**
-     * Change children to descendants.
-     * An Ancestor cell description can adopt 
-     * this status if its children can be erased 
-     * w.r.t. the physics based refinement criterion
-     * however one of the children is parent itself
-     * to children of type Descendant.
-     * In this case, we do not erase the children
-     * of the Ancestor but change their type to (Empty)Descendant.
-     */
-    ChangeChildrenToVirtualChildren,
-    
-    /**
-     * If this refinement event is set, 
-     * a cell asks to be refined.
-     */
-    RefiningRequested,           
-    
-    /**
-     * If this refinement event is set, 
-     * the grid is ready to host the children
-     * of the current cell. 
-     * This event is set by the children.
-     */
-    Refining,
-    
-    /**
-     * This event notifies a child cell that it needs
-     * to prolongate data down from the parent.
-     */
-    Prolongating,
-    
-    /**
-     * If this refinement event is set, 
-     * the parent Descendant or Cell asks its
-     * children if they want to be deaugmented. If not so,
-     * the children change the RefinementEvent 
-     * of the parent to None. If so,
-     * they leave the parent's RefinementEvent
-     * unchanged. 
-     */
-    ErasingVirtualChildrenRequested,
-    /**
-     * After all children of a parent left
-     * the parent's refinement event ErasingVirtualChildrenRequested
-     * unchanged, the parent changes its state
-     * to this event. In the next iteration
-     * the parent's children need to restrict their
-     * solution up to the parent and
-     * the child cell descriptions need to be
-     * removed from the grid.
-     */
-    ErasingVirtualChildren, 
-    
-    VirtualRefiningRequested,         
-    VirtualRefining,  
-    
-    /**
-     * Additional events for notifying a deployed child cell about an erasing
-     * decision made by the master.
-     */
-    ErasingRequested,
-    Erasing,
-    ChangeToVirtualCellRequested,
-    ChangeToVirtualCell,
-    ErasingVirtualCell
-  };
-
-  /**
-   * Returns the refinement event.
-   */
-  parallelise persistent packed RefinementEvent refinementEvent;
-  ///@}
   
   // While the above definitions are mainly flags and states, below we find the actual data.
   

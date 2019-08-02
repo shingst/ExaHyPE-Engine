@@ -469,7 +469,7 @@ private:
    */
   bool isInvolvedInLocalRecomputation(const SolverPatch& solverPatch) const {
     return
-        solverPatch.getType()==SolverPatch::Type::Cell &&
+        solverPatch.getType()==SolverPatch::Type::Leaf &&
         solverPatch.getLevel()==getMaximumAdaptiveMeshLevel() &&
         solverPatch.getRefinementStatus()>=_solver->_minRefinementStatusForTroubledCell-2;
   }

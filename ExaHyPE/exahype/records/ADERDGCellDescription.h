@@ -1,6 +1,7 @@
 #ifndef _EXAHYPE_RECORDS_ADERDGCELLDESCRIPTION_H
 #define _EXAHYPE_RECORDS_ADERDGCELLDESCRIPTION_H
 
+#include "exahype/util/CopyableAtomic.h"
 #include "peano/utils/Globals.h"
 #include "tarch/compiler/CompilerSpecificSettings.h"
 #include "peano/utils/PeanoOptimisations.h"
@@ -16,9 +17,6 @@
 #include <complex>
 #include <string>
 #include <iostream>
-#include <atomic>
-
-#include "exahype/util/CopyableAtomic.h"
 
 namespace exahype {
    namespace records {
@@ -36,7 +34,7 @@ namespace exahype {
     *
     * 		   build date: 09-02-2014 14:40
     *
-    * @date   23/07/2019 10:06
+    * @date   29/07/2019 11:48
     */
    class exahype::records::ADERDGCellDescription { 
       
@@ -60,7 +58,7 @@ namespace exahype {
            _hasCompletedLastStep.store(state);
          }
          // MANUALLY ADDED
-
+         
          typedef exahype::records::ADERDGCellDescriptionPacked Packed;
          
          enum CompressionState {
@@ -71,12 +69,8 @@ namespace exahype {
             NotSpecified = 0, UniformRefinement = 1, AdaptiveRefinement = 2, AdaptiveCoarsening = 3, ReceivedDueToForkOrJoin = 4, ReceivedFromWorker = 5
          };
          
-         enum RefinementEvent {
-            None = 0, ErasingChildrenRequested = 1, ErasingChildren = 2, ChangeChildrenToVirtualChildrenRequested = 3, ChangeChildrenToVirtualChildren = 4, RefiningRequested = 5, Refining = 6, Prolongating = 7, ErasingVirtualChildrenRequested = 8, ErasingVirtualChildren = 9, VirtualRefiningRequested = 10, VirtualRefining = 11, ErasingRequested = 12, Erasing = 13, ChangeToVirtualCellRequested = 14, ChangeToVirtualCell = 15, ErasingVirtualCell = 16
-         };
-         
          enum Type {
-            Erased = 0, Ancestor = 1, Cell = 2, Descendant = 3
+            Leaf = 0, LeafKeep = 1, LeafCoarsen = 2, LeafRefineInitiated = 3, LeafRefine = 4, LeafProlongating = 5, Parent = 6, ParentKeep = 7, ParentCoarseningRequested = 8, ParentCoarsening = 9, Virtual = 10, Erased = 11
          };
          
          struct PersistentRecords {
@@ -89,7 +83,6 @@ namespace exahype {
             int _parentIndex;
             bool _hasVirtualChildren;
             Type _type;
-            RefinementEvent _refinementEvent;
             int _level;
             #ifdef UseManualAlignment
             tarch::la::Vector<DIMENSIONS,double> _offset __attribute__((aligned(VectorisationAlignment)));
@@ -178,7 +171,7 @@ namespace exahype {
             /**
              * Generated
              */
-            PersistentRecords(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousTimeStamp, const double& previousTimeStepSize, const double& timeStepSize, const double& timeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& updateIndex, const int& updateAveragesIndex, const int& updateCompressedIndex, void* update, void* updateAverages, void* updateCompressed, const int& extrapolatedPredictorIndex, const int& extrapolatedPredictorAveragesIndex, const int& extrapolatedPredictorCompressedIndex, void* extrapolatedPredictor, void* extrapolatedPredictorAverages, void* extrapolatedPredictorCompressed, const int& extrapolatedPredictorGradientIndex, void* extrapolatedPredictorGradient, const int& fluctuationIndex, const int& fluctuationAveragesIndex, const int& fluctuationCompressedIndex, void* fluctuation, void* fluctuationAverages, void* fluctuationCompressed, const int& solutionMinIndex, const int& solutionMaxIndex, void* solutionMin, void* solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation, const Creation& creation);
+            PersistentRecords(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousTimeStamp, const double& previousTimeStepSize, const double& timeStepSize, const double& timeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& updateIndex, const int& updateAveragesIndex, const int& updateCompressedIndex, void* update, void* updateAverages, void* updateCompressed, const int& extrapolatedPredictorIndex, const int& extrapolatedPredictorAveragesIndex, const int& extrapolatedPredictorCompressedIndex, void* extrapolatedPredictor, void* extrapolatedPredictorAverages, void* extrapolatedPredictorCompressed, const int& extrapolatedPredictorGradientIndex, void* extrapolatedPredictorGradient, const int& fluctuationIndex, const int& fluctuationAveragesIndex, const int& fluctuationCompressedIndex, void* fluctuation, void* fluctuationAverages, void* fluctuationCompressed, const int& solutionMinIndex, const int& solutionMaxIndex, void* solutionMin, void* solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation, const Creation& creation);
             
             
             inline int getSolverNumber() const 
@@ -315,26 +308,6 @@ namespace exahype {
  #endif 
  {
                _type = type;
-            }
-            
-            
-            
-            inline RefinementEvent getRefinementEvent() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               return _refinementEvent;
-            }
-            
-            
-            
-            inline void setRefinementEvent(const RefinementEvent& refinementEvent) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               _refinementEvent = refinementEvent;
             }
             
             
@@ -1747,7 +1720,7 @@ namespace exahype {
             /**
              * Generated
              */
-            ADERDGCellDescription(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousTimeStamp, const double& previousTimeStepSize, const double& timeStepSize, const double& timeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& updateIndex, const int& updateAveragesIndex, const int& updateCompressedIndex, void* update, void* updateAverages, void* updateCompressed, const int& extrapolatedPredictorIndex, const int& extrapolatedPredictorAveragesIndex, const int& extrapolatedPredictorCompressedIndex, void* extrapolatedPredictor, void* extrapolatedPredictorAverages, void* extrapolatedPredictorCompressed, const int& extrapolatedPredictorGradientIndex, void* extrapolatedPredictorGradient, const int& fluctuationIndex, const int& fluctuationAveragesIndex, const int& fluctuationCompressedIndex, void* fluctuation, void* fluctuationAverages, void* fluctuationCompressed, const int& solutionMinIndex, const int& solutionMaxIndex, void* solutionMin, void* solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation, const Creation& creation);
+            ADERDGCellDescription(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousTimeStamp, const double& previousTimeStepSize, const double& timeStepSize, const double& timeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& updateIndex, const int& updateAveragesIndex, const int& updateCompressedIndex, void* update, void* updateAverages, void* updateCompressed, const int& extrapolatedPredictorIndex, const int& extrapolatedPredictorAveragesIndex, const int& extrapolatedPredictorCompressedIndex, void* extrapolatedPredictor, void* extrapolatedPredictorAverages, void* extrapolatedPredictorCompressed, const int& extrapolatedPredictorGradientIndex, void* extrapolatedPredictorGradient, const int& fluctuationIndex, const int& fluctuationAveragesIndex, const int& fluctuationCompressedIndex, void* fluctuation, void* fluctuationAverages, void* fluctuationCompressed, const int& solutionMinIndex, const int& solutionMaxIndex, void* solutionMin, void* solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation, const Creation& creation);
             
             /**
              * Generated
@@ -1915,26 +1888,6 @@ namespace exahype {
  #endif 
  {
                _persistentRecords._type = type;
-            }
-            
-            
-            
-            inline RefinementEvent getRefinementEvent() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               return _persistentRecords._refinementEvent;
-            }
-            
-            
-            
-            inline void setRefinementEvent(const RefinementEvent& refinementEvent) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               _persistentRecords._refinementEvent = refinementEvent;
             }
             
             
@@ -3481,16 +3434,6 @@ namespace exahype {
             /**
              * Generated
              */
-            static std::string toString(const RefinementEvent& param);
-            
-            /**
-             * Generated
-             */
-            static std::string getRefinementEventMapping();
-            
-            /**
-             * Generated
-             */
             static std::string toString(const Type& param);
             
             /**
@@ -3568,15 +3511,13 @@ namespace exahype {
     *
     * 		   build date: 09-02-2014 14:40
     *
-    * @date   23/07/2019 10:06
+    * @date   29/07/2019 11:48
     */
    class exahype::records::ADERDGCellDescriptionPacked { 
       
       public:
          
          typedef exahype::records::ADERDGCellDescription::Type Type;
-         
-         typedef exahype::records::ADERDGCellDescription::RefinementEvent RefinementEvent;
          
          typedef exahype::records::ADERDGCellDescription::CompressionState CompressionState;
          
@@ -3644,14 +3585,13 @@ namespace exahype {
             
             /** mapping of records:
             || Member 	|| startbit 	|| length
-             |  type	| startbit 0	| #bits 2
-             |  refinementEvent	| startbit 2	| #bits 5
-             |  compressionState	| startbit 7	| #bits 2
-             |  bytesPerDoFInPreviousSolution	| startbit 9	| #bits 3
-             |  bytesPerDoFInSolution	| startbit 12	| #bits 3
-             |  bytesPerDoFInUpdate	| startbit 15	| #bits 3
-             |  bytesPerDoFInExtrapolatedPredictor	| startbit 18	| #bits 3
-             |  bytesPerDoFInFluctuation	| startbit 21	| #bits 3
+             |  type	| startbit 0	| #bits 4
+             |  compressionState	| startbit 4	| #bits 2
+             |  bytesPerDoFInPreviousSolution	| startbit 6	| #bits 3
+             |  bytesPerDoFInSolution	| startbit 9	| #bits 3
+             |  bytesPerDoFInUpdate	| startbit 12	| #bits 3
+             |  bytesPerDoFInExtrapolatedPredictor	| startbit 15	| #bits 3
+             |  bytesPerDoFInFluctuation	| startbit 18	| #bits 3
              */
             int _packedRecords0;
             
@@ -3663,7 +3603,7 @@ namespace exahype {
             /**
              * Generated
              */
-            PersistentRecords(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousTimeStamp, const double& previousTimeStepSize, const double& timeStepSize, const double& timeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& updateIndex, const int& updateAveragesIndex, const int& updateCompressedIndex, void* update, void* updateAverages, void* updateCompressed, const int& extrapolatedPredictorIndex, const int& extrapolatedPredictorAveragesIndex, const int& extrapolatedPredictorCompressedIndex, void* extrapolatedPredictor, void* extrapolatedPredictorAverages, void* extrapolatedPredictorCompressed, const int& extrapolatedPredictorGradientIndex, void* extrapolatedPredictorGradient, const int& fluctuationIndex, const int& fluctuationAveragesIndex, const int& fluctuationCompressedIndex, void* fluctuation, void* fluctuationAverages, void* fluctuationCompressed, const int& solutionMinIndex, const int& solutionMaxIndex, void* solutionMin, void* solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation, const Creation& creation);
+            PersistentRecords(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousTimeStamp, const double& previousTimeStepSize, const double& timeStepSize, const double& timeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& updateIndex, const int& updateAveragesIndex, const int& updateCompressedIndex, void* update, void* updateAverages, void* updateCompressed, const int& extrapolatedPredictorIndex, const int& extrapolatedPredictorAveragesIndex, const int& extrapolatedPredictorCompressedIndex, void* extrapolatedPredictor, void* extrapolatedPredictorAverages, void* extrapolatedPredictorCompressed, const int& extrapolatedPredictorGradientIndex, void* extrapolatedPredictorGradient, const int& fluctuationIndex, const int& fluctuationAveragesIndex, const int& fluctuationCompressedIndex, void* fluctuation, void* fluctuationAverages, void* fluctuationCompressed, const int& solutionMinIndex, const int& solutionMaxIndex, void* solutionMin, void* solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation, const Creation& creation);
             
             
             inline int getSolverNumber() const 
@@ -3789,11 +3729,11 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-               int mask =  (1 << (2)) - 1;
+               int mask =  (1 << (4)) - 1;
    mask = static_cast<int>(mask << (0));
    int tmp = static_cast<int>(_packedRecords0 & mask);
    tmp = static_cast<int>(tmp >> (0));
-   assertion(( tmp >= 0 &&  tmp <= 3));
+   assertion(( tmp >= 0 &&  tmp <= 11));
    return (Type) tmp;
             }
             
@@ -3804,40 +3744,11 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-               assertion((type >= 0 && type <= 3));
-   int mask =  (1 << (2)) - 1;
+               assertion((type >= 0 && type <= 11));
+   int mask =  (1 << (4)) - 1;
    mask = static_cast<int>(mask << (0));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
    _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(type) << (0));
-            }
-            
-            
-            
-            inline RefinementEvent getRefinementEvent() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               int mask =  (1 << (5)) - 1;
-   mask = static_cast<int>(mask << (2));
-   int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (2));
-   assertion(( tmp >= 0 &&  tmp <= 16));
-   return (RefinementEvent) tmp;
-            }
-            
-            
-            
-            inline void setRefinementEvent(const RefinementEvent& refinementEvent) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               assertion((refinementEvent >= 0 && refinementEvent <= 16));
-   int mask =  (1 << (5)) - 1;
-   mask = static_cast<int>(mask << (2));
-   _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(refinementEvent) << (2));
             }
             
             
@@ -5098,9 +5009,9 @@ namespace exahype {
  #endif 
  {
                int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (7));
+   mask = static_cast<int>(mask << (4));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (7));
+   tmp = static_cast<int>(tmp >> (4));
    assertion(( tmp >= 0 &&  tmp <= 2));
    return (CompressionState) tmp;
             }
@@ -5114,14 +5025,44 @@ namespace exahype {
  {
                assertion((compressionState >= 0 && compressionState <= 2));
    int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (7));
+   mask = static_cast<int>(mask << (4));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(compressionState) << (7));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(compressionState) << (4));
             }
             
             
             
             inline int getBytesPerDoFInPreviousSolution() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               int mask =  (1 << (3)) - 1;
+   mask = static_cast<int>(mask << (6));
+   int tmp = static_cast<int>(_packedRecords0 & mask);
+   tmp = static_cast<int>(tmp >> (6));
+   tmp = tmp + 1;
+   assertion(( tmp >= 1 &&  tmp <= 7));
+   return (int) tmp;
+            }
+            
+            
+            
+            inline void setBytesPerDoFInPreviousSolution(const int& bytesPerDoFInPreviousSolution) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               assertion((bytesPerDoFInPreviousSolution >= 1 && bytesPerDoFInPreviousSolution <= 7));
+   int mask =  (1 << (3)) - 1;
+   mask = static_cast<int>(mask << (6));
+   _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
+   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInPreviousSolution) - 1) << (6));
+            }
+            
+            
+            
+            inline int getBytesPerDoFInSolution() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -5137,21 +5078,21 @@ namespace exahype {
             
             
             
-            inline void setBytesPerDoFInPreviousSolution(const int& bytesPerDoFInPreviousSolution) 
+            inline void setBytesPerDoFInSolution(const int& bytesPerDoFInSolution) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               assertion((bytesPerDoFInPreviousSolution >= 1 && bytesPerDoFInPreviousSolution <= 7));
+               assertion((bytesPerDoFInSolution >= 1 && bytesPerDoFInSolution <= 7));
    int mask =  (1 << (3)) - 1;
    mask = static_cast<int>(mask << (9));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInPreviousSolution) - 1) << (9));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInSolution) - 1) << (9));
             }
             
             
             
-            inline int getBytesPerDoFInSolution() const 
+            inline int getBytesPerDoFInUpdate() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -5167,21 +5108,21 @@ namespace exahype {
             
             
             
-            inline void setBytesPerDoFInSolution(const int& bytesPerDoFInSolution) 
+            inline void setBytesPerDoFInUpdate(const int& bytesPerDoFInUpdate) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               assertion((bytesPerDoFInSolution >= 1 && bytesPerDoFInSolution <= 7));
+               assertion((bytesPerDoFInUpdate >= 1 && bytesPerDoFInUpdate <= 7));
    int mask =  (1 << (3)) - 1;
    mask = static_cast<int>(mask << (12));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInSolution) - 1) << (12));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInUpdate) - 1) << (12));
             }
             
             
             
-            inline int getBytesPerDoFInUpdate() const 
+            inline int getBytesPerDoFInExtrapolatedPredictor() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -5197,21 +5138,21 @@ namespace exahype {
             
             
             
-            inline void setBytesPerDoFInUpdate(const int& bytesPerDoFInUpdate) 
+            inline void setBytesPerDoFInExtrapolatedPredictor(const int& bytesPerDoFInExtrapolatedPredictor) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               assertion((bytesPerDoFInUpdate >= 1 && bytesPerDoFInUpdate <= 7));
+               assertion((bytesPerDoFInExtrapolatedPredictor >= 1 && bytesPerDoFInExtrapolatedPredictor <= 7));
    int mask =  (1 << (3)) - 1;
    mask = static_cast<int>(mask << (15));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInUpdate) - 1) << (15));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInExtrapolatedPredictor) - 1) << (15));
             }
             
             
             
-            inline int getBytesPerDoFInExtrapolatedPredictor() const 
+            inline int getBytesPerDoFInFluctuation() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -5227,36 +5168,6 @@ namespace exahype {
             
             
             
-            inline void setBytesPerDoFInExtrapolatedPredictor(const int& bytesPerDoFInExtrapolatedPredictor) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               assertion((bytesPerDoFInExtrapolatedPredictor >= 1 && bytesPerDoFInExtrapolatedPredictor <= 7));
-   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (18));
-   _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInExtrapolatedPredictor) - 1) << (18));
-            }
-            
-            
-            
-            inline int getBytesPerDoFInFluctuation() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (21));
-   int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (21));
-   tmp = tmp + 1;
-   assertion(( tmp >= 1 &&  tmp <= 7));
-   return (int) tmp;
-            }
-            
-            
-            
             inline void setBytesPerDoFInFluctuation(const int& bytesPerDoFInFluctuation) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
@@ -5264,9 +5175,9 @@ namespace exahype {
  {
                assertion((bytesPerDoFInFluctuation >= 1 && bytesPerDoFInFluctuation <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (21));
+   mask = static_cast<int>(mask << (18));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInFluctuation) - 1) << (21));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInFluctuation) - 1) << (18));
             }
             
             
@@ -5309,7 +5220,7 @@ namespace exahype {
             /**
              * Generated
              */
-            ADERDGCellDescriptionPacked(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousTimeStamp, const double& previousTimeStepSize, const double& timeStepSize, const double& timeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& updateIndex, const int& updateAveragesIndex, const int& updateCompressedIndex, void* update, void* updateAverages, void* updateCompressed, const int& extrapolatedPredictorIndex, const int& extrapolatedPredictorAveragesIndex, const int& extrapolatedPredictorCompressedIndex, void* extrapolatedPredictor, void* extrapolatedPredictorAverages, void* extrapolatedPredictorCompressed, const int& extrapolatedPredictorGradientIndex, void* extrapolatedPredictorGradient, const int& fluctuationIndex, const int& fluctuationAveragesIndex, const int& fluctuationCompressedIndex, void* fluctuation, void* fluctuationAverages, void* fluctuationCompressed, const int& solutionMinIndex, const int& solutionMaxIndex, void* solutionMin, void* solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation, const Creation& creation);
+            ADERDGCellDescriptionPacked(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousTimeStamp, const double& previousTimeStepSize, const double& timeStepSize, const double& timeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& updateIndex, const int& updateAveragesIndex, const int& updateCompressedIndex, void* update, void* updateAverages, void* updateCompressed, const int& extrapolatedPredictorIndex, const int& extrapolatedPredictorAveragesIndex, const int& extrapolatedPredictorCompressedIndex, void* extrapolatedPredictor, void* extrapolatedPredictorAverages, void* extrapolatedPredictorCompressed, const int& extrapolatedPredictorGradientIndex, void* extrapolatedPredictorGradient, const int& fluctuationIndex, const int& fluctuationAveragesIndex, const int& fluctuationCompressedIndex, void* fluctuation, void* fluctuationAverages, void* fluctuationCompressed, const int& solutionMinIndex, const int& solutionMaxIndex, void* solutionMin, void* solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation, const Creation& creation);
             
             /**
              * Generated
@@ -5466,11 +5377,11 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-               int mask =  (1 << (2)) - 1;
+               int mask =  (1 << (4)) - 1;
    mask = static_cast<int>(mask << (0));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
    tmp = static_cast<int>(tmp >> (0));
-   assertion(( tmp >= 0 &&  tmp <= 3));
+   assertion(( tmp >= 0 &&  tmp <= 11));
    return (Type) tmp;
             }
             
@@ -5481,40 +5392,11 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-               assertion((type >= 0 && type <= 3));
-   int mask =  (1 << (2)) - 1;
+               assertion((type >= 0 && type <= 11));
+   int mask =  (1 << (4)) - 1;
    mask = static_cast<int>(mask << (0));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(type) << (0));
-            }
-            
-            
-            
-            inline RefinementEvent getRefinementEvent() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               int mask =  (1 << (5)) - 1;
-   mask = static_cast<int>(mask << (2));
-   int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (2));
-   assertion(( tmp >= 0 &&  tmp <= 16));
-   return (RefinementEvent) tmp;
-            }
-            
-            
-            
-            inline void setRefinementEvent(const RefinementEvent& refinementEvent) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               assertion((refinementEvent >= 0 && refinementEvent <= 16));
-   int mask =  (1 << (5)) - 1;
-   mask = static_cast<int>(mask << (2));
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(refinementEvent) << (2));
             }
             
             
@@ -6905,9 +6787,9 @@ namespace exahype {
  #endif 
  {
                int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (7));
+   mask = static_cast<int>(mask << (4));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (7));
+   tmp = static_cast<int>(tmp >> (4));
    assertion(( tmp >= 0 &&  tmp <= 2));
    return (CompressionState) tmp;
             }
@@ -6921,14 +6803,44 @@ namespace exahype {
  {
                assertion((compressionState >= 0 && compressionState <= 2));
    int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (7));
+   mask = static_cast<int>(mask << (4));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(compressionState) << (7));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(compressionState) << (4));
             }
             
             
             
             inline int getBytesPerDoFInPreviousSolution() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               int mask =  (1 << (3)) - 1;
+   mask = static_cast<int>(mask << (6));
+   int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
+   tmp = static_cast<int>(tmp >> (6));
+   tmp = tmp + 1;
+   assertion(( tmp >= 1 &&  tmp <= 7));
+   return (int) tmp;
+            }
+            
+            
+            
+            inline void setBytesPerDoFInPreviousSolution(const int& bytesPerDoFInPreviousSolution) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               assertion((bytesPerDoFInPreviousSolution >= 1 && bytesPerDoFInPreviousSolution <= 7));
+   int mask =  (1 << (3)) - 1;
+   mask = static_cast<int>(mask << (6));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInPreviousSolution) - 1) << (6));
+            }
+            
+            
+            
+            inline int getBytesPerDoFInSolution() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -6944,21 +6856,21 @@ namespace exahype {
             
             
             
-            inline void setBytesPerDoFInPreviousSolution(const int& bytesPerDoFInPreviousSolution) 
+            inline void setBytesPerDoFInSolution(const int& bytesPerDoFInSolution) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               assertion((bytesPerDoFInPreviousSolution >= 1 && bytesPerDoFInPreviousSolution <= 7));
+               assertion((bytesPerDoFInSolution >= 1 && bytesPerDoFInSolution <= 7));
    int mask =  (1 << (3)) - 1;
    mask = static_cast<int>(mask << (9));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInPreviousSolution) - 1) << (9));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInSolution) - 1) << (9));
             }
             
             
             
-            inline int getBytesPerDoFInSolution() const 
+            inline int getBytesPerDoFInUpdate() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -6974,21 +6886,21 @@ namespace exahype {
             
             
             
-            inline void setBytesPerDoFInSolution(const int& bytesPerDoFInSolution) 
+            inline void setBytesPerDoFInUpdate(const int& bytesPerDoFInUpdate) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               assertion((bytesPerDoFInSolution >= 1 && bytesPerDoFInSolution <= 7));
+               assertion((bytesPerDoFInUpdate >= 1 && bytesPerDoFInUpdate <= 7));
    int mask =  (1 << (3)) - 1;
    mask = static_cast<int>(mask << (12));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInSolution) - 1) << (12));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInUpdate) - 1) << (12));
             }
             
             
             
-            inline int getBytesPerDoFInUpdate() const 
+            inline int getBytesPerDoFInExtrapolatedPredictor() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -7004,21 +6916,21 @@ namespace exahype {
             
             
             
-            inline void setBytesPerDoFInUpdate(const int& bytesPerDoFInUpdate) 
+            inline void setBytesPerDoFInExtrapolatedPredictor(const int& bytesPerDoFInExtrapolatedPredictor) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               assertion((bytesPerDoFInUpdate >= 1 && bytesPerDoFInUpdate <= 7));
+               assertion((bytesPerDoFInExtrapolatedPredictor >= 1 && bytesPerDoFInExtrapolatedPredictor <= 7));
    int mask =  (1 << (3)) - 1;
    mask = static_cast<int>(mask << (15));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInUpdate) - 1) << (15));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInExtrapolatedPredictor) - 1) << (15));
             }
             
             
             
-            inline int getBytesPerDoFInExtrapolatedPredictor() const 
+            inline int getBytesPerDoFInFluctuation() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -7034,36 +6946,6 @@ namespace exahype {
             
             
             
-            inline void setBytesPerDoFInExtrapolatedPredictor(const int& bytesPerDoFInExtrapolatedPredictor) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               assertion((bytesPerDoFInExtrapolatedPredictor >= 1 && bytesPerDoFInExtrapolatedPredictor <= 7));
-   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (18));
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInExtrapolatedPredictor) - 1) << (18));
-            }
-            
-            
-            
-            inline int getBytesPerDoFInFluctuation() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (21));
-   int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (21));
-   tmp = tmp + 1;
-   assertion(( tmp >= 1 &&  tmp <= 7));
-   return (int) tmp;
-            }
-            
-            
-            
             inline void setBytesPerDoFInFluctuation(const int& bytesPerDoFInFluctuation) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
@@ -7071,9 +6953,9 @@ namespace exahype {
  {
                assertion((bytesPerDoFInFluctuation >= 1 && bytesPerDoFInFluctuation <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (21));
+   mask = static_cast<int>(mask << (18));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInFluctuation) - 1) << (21));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInFluctuation) - 1) << (18));
             }
             
             
@@ -7106,16 +6988,6 @@ namespace exahype {
              * Generated
              */
             static std::string getTypeMapping();
-            
-            /**
-             * Generated
-             */
-            static std::string toString(const RefinementEvent& param);
-            
-            /**
-             * Generated
-             */
-            static std::string getRefinementEventMapping();
             
             /**
              * Generated
@@ -7203,44 +7075,39 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   23/07/2019 10:06
+       * @date   29/07/2019 11:48
        */
       class exahype::records::ADERDGCellDescription { 
          
          public:
 
-          // MANUALLY ADDED
-          /**
-           * Indicates if the last operation was completed for this cell description
-           * and its data can be used for the next operations.
-           *
-           * At the moment, the traversal threads read and reset this flag
-           * and the consumer threads set it.
-           */
-          util::CopyableAtomic<bool> _hasCompletedLastStep{true};
+            // MANUALLY ADDED
+            /**
+             * Indicates if the last operation was completed for this cell description
+             * and its data can be used for the next operations.
+             *
+             * At the moment, the traversal threads read and reset this flag
+             * and the consumer threads set it.
+             */
+            util::CopyableAtomic<bool> _hasCompletedLastStep{true};
 
-          bool getHasCompletedLastStep() const {
-            return _hasCompletedLastStep.load();
-          }
+            bool getHasCompletedLastStep() const {
+              return _hasCompletedLastStep.load();
+            }
 
-          void setHasCompletedLastStep(bool state) {
-            _hasCompletedLastStep.store(state);
-          }
-          // MANUALLY ADDED
-
-
+            void setHasCompletedLastStep(bool state) {
+              _hasCompletedLastStep.store(state);
+            }
+            // MANUALLY ADDED
+            
             typedef exahype::records::ADERDGCellDescriptionPacked Packed;
             
             enum CompressionState {
                Uncompressed = 0, CurrentlyProcessed = 1, Compressed = 2
             };
             
-            enum RefinementEvent {
-               None = 0, ErasingChildrenRequested = 1, ErasingChildren = 2, ChangeChildrenToVirtualChildrenRequested = 3, ChangeChildrenToVirtualChildren = 4, RefiningRequested = 5, Refining = 6, Prolongating = 7, ErasingVirtualChildrenRequested = 8, ErasingVirtualChildren = 9, VirtualRefiningRequested = 10, VirtualRefining = 11, ErasingRequested = 12, Erasing = 13, ChangeToVirtualCellRequested = 14, ChangeToVirtualCell = 15, ErasingVirtualCell = 16
-            };
-            
             enum Type {
-               Erased = 0, Ancestor = 1, Cell = 2, Descendant = 3
+               Leaf = 0, LeafKeep = 1, LeafCoarsen = 2, LeafRefineInitiated = 3, LeafRefine = 4, LeafProlongating = 5, Parent = 6, ParentKeep = 7, ParentCoarseningRequested = 8, ParentCoarsening = 9, Virtual = 10, Erased = 11
             };
             
             struct PersistentRecords {
@@ -7253,7 +7120,6 @@ namespace exahype {
                int _parentIndex;
                bool _hasVirtualChildren;
                Type _type;
-               RefinementEvent _refinementEvent;
                int _level;
                #ifdef UseManualAlignment
                tarch::la::Vector<DIMENSIONS,double> _offset __attribute__((aligned(VectorisationAlignment)));
@@ -7341,7 +7207,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousTimeStamp, const double& previousTimeStepSize, const double& timeStepSize, const double& timeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& updateIndex, const int& updateAveragesIndex, const int& updateCompressedIndex, void* update, void* updateAverages, void* updateCompressed, const int& extrapolatedPredictorIndex, const int& extrapolatedPredictorAveragesIndex, const int& extrapolatedPredictorCompressedIndex, void* extrapolatedPredictor, void* extrapolatedPredictorAverages, void* extrapolatedPredictorCompressed, const int& extrapolatedPredictorGradientIndex, void* extrapolatedPredictorGradient, const int& fluctuationIndex, const int& fluctuationAveragesIndex, const int& fluctuationCompressedIndex, void* fluctuation, void* fluctuationAverages, void* fluctuationCompressed, const int& solutionMinIndex, const int& solutionMaxIndex, void* solutionMin, void* solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
+               PersistentRecords(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousTimeStamp, const double& previousTimeStepSize, const double& timeStepSize, const double& timeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& updateIndex, const int& updateAveragesIndex, const int& updateCompressedIndex, void* update, void* updateAverages, void* updateCompressed, const int& extrapolatedPredictorIndex, const int& extrapolatedPredictorAveragesIndex, const int& extrapolatedPredictorCompressedIndex, void* extrapolatedPredictor, void* extrapolatedPredictorAverages, void* extrapolatedPredictorCompressed, const int& extrapolatedPredictorGradientIndex, void* extrapolatedPredictorGradient, const int& fluctuationIndex, const int& fluctuationAveragesIndex, const int& fluctuationCompressedIndex, void* fluctuation, void* fluctuationAverages, void* fluctuationCompressed, const int& solutionMinIndex, const int& solutionMaxIndex, void* solutionMin, void* solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
                
                
                inline int getSolverNumber() const 
@@ -7478,26 +7344,6 @@ namespace exahype {
  #endif 
  {
                   _type = type;
-               }
-               
-               
-               
-               inline RefinementEvent getRefinementEvent() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _refinementEvent;
-               }
-               
-               
-               
-               inline void setRefinementEvent(const RefinementEvent& refinementEvent) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _refinementEvent = refinementEvent;
                }
                
                
@@ -8890,7 +8736,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               ADERDGCellDescription(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousTimeStamp, const double& previousTimeStepSize, const double& timeStepSize, const double& timeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& updateIndex, const int& updateAveragesIndex, const int& updateCompressedIndex, void* update, void* updateAverages, void* updateCompressed, const int& extrapolatedPredictorIndex, const int& extrapolatedPredictorAveragesIndex, const int& extrapolatedPredictorCompressedIndex, void* extrapolatedPredictor, void* extrapolatedPredictorAverages, void* extrapolatedPredictorCompressed, const int& extrapolatedPredictorGradientIndex, void* extrapolatedPredictorGradient, const int& fluctuationIndex, const int& fluctuationAveragesIndex, const int& fluctuationCompressedIndex, void* fluctuation, void* fluctuationAverages, void* fluctuationCompressed, const int& solutionMinIndex, const int& solutionMaxIndex, void* solutionMin, void* solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
+               ADERDGCellDescription(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousTimeStamp, const double& previousTimeStepSize, const double& timeStepSize, const double& timeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& updateIndex, const int& updateAveragesIndex, const int& updateCompressedIndex, void* update, void* updateAverages, void* updateCompressed, const int& extrapolatedPredictorIndex, const int& extrapolatedPredictorAveragesIndex, const int& extrapolatedPredictorCompressedIndex, void* extrapolatedPredictor, void* extrapolatedPredictorAverages, void* extrapolatedPredictorCompressed, const int& extrapolatedPredictorGradientIndex, void* extrapolatedPredictorGradient, const int& fluctuationIndex, const int& fluctuationAveragesIndex, const int& fluctuationCompressedIndex, void* fluctuation, void* fluctuationAverages, void* fluctuationCompressed, const int& solutionMinIndex, const int& solutionMaxIndex, void* solutionMin, void* solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
                
                /**
                 * Generated
@@ -9058,26 +8904,6 @@ namespace exahype {
  #endif 
  {
                   _persistentRecords._type = type;
-               }
-               
-               
-               
-               inline RefinementEvent getRefinementEvent() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._refinementEvent;
-               }
-               
-               
-               
-               inline void setRefinementEvent(const RefinementEvent& refinementEvent) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._refinementEvent = refinementEvent;
                }
                
                
@@ -10594,16 +10420,6 @@ namespace exahype {
                /**
                 * Generated
                 */
-               static std::string toString(const RefinementEvent& param);
-               
-               /**
-                * Generated
-                */
-               static std::string getRefinementEventMapping();
-               
-               /**
-                * Generated
-                */
                static std::string toString(const Type& param);
                
                /**
@@ -10681,15 +10497,13 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   23/07/2019 10:06
+       * @date   29/07/2019 11:48
        */
       class exahype::records::ADERDGCellDescriptionPacked { 
          
          public:
             
             typedef exahype::records::ADERDGCellDescription::Type Type;
-            
-            typedef exahype::records::ADERDGCellDescription::RefinementEvent RefinementEvent;
             
             typedef exahype::records::ADERDGCellDescription::CompressionState CompressionState;
             
@@ -10754,14 +10568,13 @@ namespace exahype {
                
                /** mapping of records:
                || Member 	|| startbit 	|| length
-                |  type	| startbit 0	| #bits 2
-                |  refinementEvent	| startbit 2	| #bits 5
-                |  compressionState	| startbit 7	| #bits 2
-                |  bytesPerDoFInPreviousSolution	| startbit 9	| #bits 3
-                |  bytesPerDoFInSolution	| startbit 12	| #bits 3
-                |  bytesPerDoFInUpdate	| startbit 15	| #bits 3
-                |  bytesPerDoFInExtrapolatedPredictor	| startbit 18	| #bits 3
-                |  bytesPerDoFInFluctuation	| startbit 21	| #bits 3
+                |  type	| startbit 0	| #bits 4
+                |  compressionState	| startbit 4	| #bits 2
+                |  bytesPerDoFInPreviousSolution	| startbit 6	| #bits 3
+                |  bytesPerDoFInSolution	| startbit 9	| #bits 3
+                |  bytesPerDoFInUpdate	| startbit 12	| #bits 3
+                |  bytesPerDoFInExtrapolatedPredictor	| startbit 15	| #bits 3
+                |  bytesPerDoFInFluctuation	| startbit 18	| #bits 3
                 */
                int _packedRecords0;
                
@@ -10773,7 +10586,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousTimeStamp, const double& previousTimeStepSize, const double& timeStepSize, const double& timeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& updateIndex, const int& updateAveragesIndex, const int& updateCompressedIndex, void* update, void* updateAverages, void* updateCompressed, const int& extrapolatedPredictorIndex, const int& extrapolatedPredictorAveragesIndex, const int& extrapolatedPredictorCompressedIndex, void* extrapolatedPredictor, void* extrapolatedPredictorAverages, void* extrapolatedPredictorCompressed, const int& extrapolatedPredictorGradientIndex, void* extrapolatedPredictorGradient, const int& fluctuationIndex, const int& fluctuationAveragesIndex, const int& fluctuationCompressedIndex, void* fluctuation, void* fluctuationAverages, void* fluctuationCompressed, const int& solutionMinIndex, const int& solutionMaxIndex, void* solutionMin, void* solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
+               PersistentRecords(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousTimeStamp, const double& previousTimeStepSize, const double& timeStepSize, const double& timeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& updateIndex, const int& updateAveragesIndex, const int& updateCompressedIndex, void* update, void* updateAverages, void* updateCompressed, const int& extrapolatedPredictorIndex, const int& extrapolatedPredictorAveragesIndex, const int& extrapolatedPredictorCompressedIndex, void* extrapolatedPredictor, void* extrapolatedPredictorAverages, void* extrapolatedPredictorCompressed, const int& extrapolatedPredictorGradientIndex, void* extrapolatedPredictorGradient, const int& fluctuationIndex, const int& fluctuationAveragesIndex, const int& fluctuationCompressedIndex, void* fluctuation, void* fluctuationAverages, void* fluctuationCompressed, const int& solutionMinIndex, const int& solutionMaxIndex, void* solutionMin, void* solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
                
                
                inline int getSolverNumber() const 
@@ -10899,11 +10712,11 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-                  int mask =  (1 << (2)) - 1;
+                  int mask =  (1 << (4)) - 1;
    mask = static_cast<int>(mask << (0));
    int tmp = static_cast<int>(_packedRecords0 & mask);
    tmp = static_cast<int>(tmp >> (0));
-   assertion(( tmp >= 0 &&  tmp <= 3));
+   assertion(( tmp >= 0 &&  tmp <= 11));
    return (Type) tmp;
                }
                
@@ -10914,40 +10727,11 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-                  assertion((type >= 0 && type <= 3));
-   int mask =  (1 << (2)) - 1;
+                  assertion((type >= 0 && type <= 11));
+   int mask =  (1 << (4)) - 1;
    mask = static_cast<int>(mask << (0));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
    _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(type) << (0));
-               }
-               
-               
-               
-               inline RefinementEvent getRefinementEvent() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  int mask =  (1 << (5)) - 1;
-   mask = static_cast<int>(mask << (2));
-   int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (2));
-   assertion(( tmp >= 0 &&  tmp <= 16));
-   return (RefinementEvent) tmp;
-               }
-               
-               
-               
-               inline void setRefinementEvent(const RefinementEvent& refinementEvent) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion((refinementEvent >= 0 && refinementEvent <= 16));
-   int mask =  (1 << (5)) - 1;
-   mask = static_cast<int>(mask << (2));
-   _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(refinementEvent) << (2));
                }
                
                
@@ -12208,9 +11992,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (7));
+   mask = static_cast<int>(mask << (4));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (7));
+   tmp = static_cast<int>(tmp >> (4));
    assertion(( tmp >= 0 &&  tmp <= 2));
    return (CompressionState) tmp;
                }
@@ -12224,14 +12008,44 @@ namespace exahype {
  {
                   assertion((compressionState >= 0 && compressionState <= 2));
    int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (7));
+   mask = static_cast<int>(mask << (4));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(compressionState) << (7));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(compressionState) << (4));
                }
                
                
                
                inline int getBytesPerDoFInPreviousSolution() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  int mask =  (1 << (3)) - 1;
+   mask = static_cast<int>(mask << (6));
+   int tmp = static_cast<int>(_packedRecords0 & mask);
+   tmp = static_cast<int>(tmp >> (6));
+   tmp = tmp + 1;
+   assertion(( tmp >= 1 &&  tmp <= 7));
+   return (int) tmp;
+               }
+               
+               
+               
+               inline void setBytesPerDoFInPreviousSolution(const int& bytesPerDoFInPreviousSolution) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion((bytesPerDoFInPreviousSolution >= 1 && bytesPerDoFInPreviousSolution <= 7));
+   int mask =  (1 << (3)) - 1;
+   mask = static_cast<int>(mask << (6));
+   _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
+   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInPreviousSolution) - 1) << (6));
+               }
+               
+               
+               
+               inline int getBytesPerDoFInSolution() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -12247,21 +12061,21 @@ namespace exahype {
                
                
                
-               inline void setBytesPerDoFInPreviousSolution(const int& bytesPerDoFInPreviousSolution) 
+               inline void setBytesPerDoFInSolution(const int& bytesPerDoFInSolution) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  assertion((bytesPerDoFInPreviousSolution >= 1 && bytesPerDoFInPreviousSolution <= 7));
+                  assertion((bytesPerDoFInSolution >= 1 && bytesPerDoFInSolution <= 7));
    int mask =  (1 << (3)) - 1;
    mask = static_cast<int>(mask << (9));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInPreviousSolution) - 1) << (9));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInSolution) - 1) << (9));
                }
                
                
                
-               inline int getBytesPerDoFInSolution() const 
+               inline int getBytesPerDoFInUpdate() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -12277,21 +12091,21 @@ namespace exahype {
                
                
                
-               inline void setBytesPerDoFInSolution(const int& bytesPerDoFInSolution) 
+               inline void setBytesPerDoFInUpdate(const int& bytesPerDoFInUpdate) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  assertion((bytesPerDoFInSolution >= 1 && bytesPerDoFInSolution <= 7));
+                  assertion((bytesPerDoFInUpdate >= 1 && bytesPerDoFInUpdate <= 7));
    int mask =  (1 << (3)) - 1;
    mask = static_cast<int>(mask << (12));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInSolution) - 1) << (12));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInUpdate) - 1) << (12));
                }
                
                
                
-               inline int getBytesPerDoFInUpdate() const 
+               inline int getBytesPerDoFInExtrapolatedPredictor() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -12307,21 +12121,21 @@ namespace exahype {
                
                
                
-               inline void setBytesPerDoFInUpdate(const int& bytesPerDoFInUpdate) 
+               inline void setBytesPerDoFInExtrapolatedPredictor(const int& bytesPerDoFInExtrapolatedPredictor) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  assertion((bytesPerDoFInUpdate >= 1 && bytesPerDoFInUpdate <= 7));
+                  assertion((bytesPerDoFInExtrapolatedPredictor >= 1 && bytesPerDoFInExtrapolatedPredictor <= 7));
    int mask =  (1 << (3)) - 1;
    mask = static_cast<int>(mask << (15));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInUpdate) - 1) << (15));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInExtrapolatedPredictor) - 1) << (15));
                }
                
                
                
-               inline int getBytesPerDoFInExtrapolatedPredictor() const 
+               inline int getBytesPerDoFInFluctuation() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -12337,36 +12151,6 @@ namespace exahype {
                
                
                
-               inline void setBytesPerDoFInExtrapolatedPredictor(const int& bytesPerDoFInExtrapolatedPredictor) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion((bytesPerDoFInExtrapolatedPredictor >= 1 && bytesPerDoFInExtrapolatedPredictor <= 7));
-   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (18));
-   _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInExtrapolatedPredictor) - 1) << (18));
-               }
-               
-               
-               
-               inline int getBytesPerDoFInFluctuation() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (21));
-   int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (21));
-   tmp = tmp + 1;
-   assertion(( tmp >= 1 &&  tmp <= 7));
-   return (int) tmp;
-               }
-               
-               
-               
                inline void setBytesPerDoFInFluctuation(const int& bytesPerDoFInFluctuation) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
@@ -12374,9 +12158,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInFluctuation >= 1 && bytesPerDoFInFluctuation <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (21));
+   mask = static_cast<int>(mask << (18));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInFluctuation) - 1) << (21));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInFluctuation) - 1) << (18));
                }
                
                
@@ -12399,7 +12183,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               ADERDGCellDescriptionPacked(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousTimeStamp, const double& previousTimeStepSize, const double& timeStepSize, const double& timeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& updateIndex, const int& updateAveragesIndex, const int& updateCompressedIndex, void* update, void* updateAverages, void* updateCompressed, const int& extrapolatedPredictorIndex, const int& extrapolatedPredictorAveragesIndex, const int& extrapolatedPredictorCompressedIndex, void* extrapolatedPredictor, void* extrapolatedPredictorAverages, void* extrapolatedPredictorCompressed, const int& extrapolatedPredictorGradientIndex, void* extrapolatedPredictorGradient, const int& fluctuationIndex, const int& fluctuationAveragesIndex, const int& fluctuationCompressedIndex, void* fluctuation, void* fluctuationAverages, void* fluctuationCompressed, const int& solutionMinIndex, const int& solutionMaxIndex, void* solutionMin, void* solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
+               ADERDGCellDescriptionPacked(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousTimeStamp, const double& previousTimeStepSize, const double& timeStepSize, const double& timeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& updateIndex, const int& updateAveragesIndex, const int& updateCompressedIndex, void* update, void* updateAverages, void* updateCompressed, const int& extrapolatedPredictorIndex, const int& extrapolatedPredictorAveragesIndex, const int& extrapolatedPredictorCompressedIndex, void* extrapolatedPredictor, void* extrapolatedPredictorAverages, void* extrapolatedPredictorCompressed, const int& extrapolatedPredictorGradientIndex, void* extrapolatedPredictorGradient, const int& fluctuationIndex, const int& fluctuationAveragesIndex, const int& fluctuationCompressedIndex, void* fluctuation, void* fluctuationAverages, void* fluctuationCompressed, const int& solutionMinIndex, const int& solutionMaxIndex, void* solutionMin, void* solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const bool& refinementFlag, const bool& vetoErasingChildren, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
                
                /**
                 * Generated
@@ -12556,11 +12340,11 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-                  int mask =  (1 << (2)) - 1;
+                  int mask =  (1 << (4)) - 1;
    mask = static_cast<int>(mask << (0));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
    tmp = static_cast<int>(tmp >> (0));
-   assertion(( tmp >= 0 &&  tmp <= 3));
+   assertion(( tmp >= 0 &&  tmp <= 11));
    return (Type) tmp;
                }
                
@@ -12571,40 +12355,11 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-                  assertion((type >= 0 && type <= 3));
-   int mask =  (1 << (2)) - 1;
+                  assertion((type >= 0 && type <= 11));
+   int mask =  (1 << (4)) - 1;
    mask = static_cast<int>(mask << (0));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(type) << (0));
-               }
-               
-               
-               
-               inline RefinementEvent getRefinementEvent() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  int mask =  (1 << (5)) - 1;
-   mask = static_cast<int>(mask << (2));
-   int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (2));
-   assertion(( tmp >= 0 &&  tmp <= 16));
-   return (RefinementEvent) tmp;
-               }
-               
-               
-               
-               inline void setRefinementEvent(const RefinementEvent& refinementEvent) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion((refinementEvent >= 0 && refinementEvent <= 16));
-   int mask =  (1 << (5)) - 1;
-   mask = static_cast<int>(mask << (2));
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(refinementEvent) << (2));
                }
                
                
@@ -13995,9 +13750,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (7));
+   mask = static_cast<int>(mask << (4));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (7));
+   tmp = static_cast<int>(tmp >> (4));
    assertion(( tmp >= 0 &&  tmp <= 2));
    return (CompressionState) tmp;
                }
@@ -14011,14 +13766,44 @@ namespace exahype {
  {
                   assertion((compressionState >= 0 && compressionState <= 2));
    int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (7));
+   mask = static_cast<int>(mask << (4));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(compressionState) << (7));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(compressionState) << (4));
                }
                
                
                
                inline int getBytesPerDoFInPreviousSolution() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  int mask =  (1 << (3)) - 1;
+   mask = static_cast<int>(mask << (6));
+   int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
+   tmp = static_cast<int>(tmp >> (6));
+   tmp = tmp + 1;
+   assertion(( tmp >= 1 &&  tmp <= 7));
+   return (int) tmp;
+               }
+               
+               
+               
+               inline void setBytesPerDoFInPreviousSolution(const int& bytesPerDoFInPreviousSolution) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion((bytesPerDoFInPreviousSolution >= 1 && bytesPerDoFInPreviousSolution <= 7));
+   int mask =  (1 << (3)) - 1;
+   mask = static_cast<int>(mask << (6));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInPreviousSolution) - 1) << (6));
+               }
+               
+               
+               
+               inline int getBytesPerDoFInSolution() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -14034,21 +13819,21 @@ namespace exahype {
                
                
                
-               inline void setBytesPerDoFInPreviousSolution(const int& bytesPerDoFInPreviousSolution) 
+               inline void setBytesPerDoFInSolution(const int& bytesPerDoFInSolution) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  assertion((bytesPerDoFInPreviousSolution >= 1 && bytesPerDoFInPreviousSolution <= 7));
+                  assertion((bytesPerDoFInSolution >= 1 && bytesPerDoFInSolution <= 7));
    int mask =  (1 << (3)) - 1;
    mask = static_cast<int>(mask << (9));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInPreviousSolution) - 1) << (9));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInSolution) - 1) << (9));
                }
                
                
                
-               inline int getBytesPerDoFInSolution() const 
+               inline int getBytesPerDoFInUpdate() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -14064,21 +13849,21 @@ namespace exahype {
                
                
                
-               inline void setBytesPerDoFInSolution(const int& bytesPerDoFInSolution) 
+               inline void setBytesPerDoFInUpdate(const int& bytesPerDoFInUpdate) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  assertion((bytesPerDoFInSolution >= 1 && bytesPerDoFInSolution <= 7));
+                  assertion((bytesPerDoFInUpdate >= 1 && bytesPerDoFInUpdate <= 7));
    int mask =  (1 << (3)) - 1;
    mask = static_cast<int>(mask << (12));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInSolution) - 1) << (12));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInUpdate) - 1) << (12));
                }
                
                
                
-               inline int getBytesPerDoFInUpdate() const 
+               inline int getBytesPerDoFInExtrapolatedPredictor() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -14094,21 +13879,21 @@ namespace exahype {
                
                
                
-               inline void setBytesPerDoFInUpdate(const int& bytesPerDoFInUpdate) 
+               inline void setBytesPerDoFInExtrapolatedPredictor(const int& bytesPerDoFInExtrapolatedPredictor) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  assertion((bytesPerDoFInUpdate >= 1 && bytesPerDoFInUpdate <= 7));
+                  assertion((bytesPerDoFInExtrapolatedPredictor >= 1 && bytesPerDoFInExtrapolatedPredictor <= 7));
    int mask =  (1 << (3)) - 1;
    mask = static_cast<int>(mask << (15));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInUpdate) - 1) << (15));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInExtrapolatedPredictor) - 1) << (15));
                }
                
                
                
-               inline int getBytesPerDoFInExtrapolatedPredictor() const 
+               inline int getBytesPerDoFInFluctuation() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -14124,36 +13909,6 @@ namespace exahype {
                
                
                
-               inline void setBytesPerDoFInExtrapolatedPredictor(const int& bytesPerDoFInExtrapolatedPredictor) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion((bytesPerDoFInExtrapolatedPredictor >= 1 && bytesPerDoFInExtrapolatedPredictor <= 7));
-   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (18));
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInExtrapolatedPredictor) - 1) << (18));
-               }
-               
-               
-               
-               inline int getBytesPerDoFInFluctuation() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (21));
-   int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (21));
-   tmp = tmp + 1;
-   assertion(( tmp >= 1 &&  tmp <= 7));
-   return (int) tmp;
-               }
-               
-               
-               
                inline void setBytesPerDoFInFluctuation(const int& bytesPerDoFInFluctuation) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
@@ -14161,9 +13916,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInFluctuation >= 1 && bytesPerDoFInFluctuation <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (21));
+   mask = static_cast<int>(mask << (18));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInFluctuation) - 1) << (21));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInFluctuation) - 1) << (18));
                }
                
                
@@ -14176,16 +13931,6 @@ namespace exahype {
                 * Generated
                 */
                static std::string getTypeMapping();
-               
-               /**
-                * Generated
-                */
-               static std::string toString(const RefinementEvent& param);
-               
-               /**
-                * Generated
-                */
-               static std::string getRefinementEventMapping();
                
                /**
                 * Generated

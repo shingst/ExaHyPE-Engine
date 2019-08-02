@@ -94,7 +94,6 @@ exahype::mappings::AugmentedAMRTreePlot2d::AugmentedAMRTreePlot2d()
       _cellNumberWriter(nullptr),
       _cellTypeWriter(nullptr),
       _cellDescriptionIndexWriter(nullptr),
-      _refinementEventWriter(nullptr),
       _cellDataWriter(nullptr),
       _augmentationStatusWriter(nullptr),
       _communicationStatusWriter(nullptr),
@@ -114,7 +113,6 @@ exahype::mappings::AugmentedAMRTreePlot2d::AugmentedAMRTreePlot2d(
       _cellNumberWriter(masterThread._cellNumberWriter),
       _cellTypeWriter(masterThread._cellTypeWriter),
       _cellDescriptionIndexWriter(masterThread._cellDescriptionIndexWriter),
-      _refinementEventWriter(masterThread._refinementEventWriter),
       _cellDataWriter(masterThread._cellDataWriter),
       _augmentationStatusWriter(masterThread._augmentationStatusWriter),
       _communicationStatusWriter(masterThread._communicationStatusWriter),
@@ -377,7 +375,6 @@ void exahype::mappings::AugmentedAMRTreePlot2d::enterCell(
                fineGridCell.getCellDescriptionsIndex())) {
         if (pFine.getSolverNumber() == solverNumber) {
           _cellTypeWriter->plotCell(              cellIndex, static_cast<int>(pFine.getType()));
-          _refinementEventWriter->plotCell(       cellIndex, static_cast<int>(pFine.getRefinementEvent()));
           _cellDataWriter->plotCell(              cellIndex, 2 * static_cast<int>(pFine.getSolutionIndex() > -1) +
                                                                  static_cast<int>(pFine.getExtrapolatedPredictorIndex() > -1));
           _augmentationStatusWriter->plotCell(    cellIndex, pFine.getAugmentationStatus());
@@ -391,7 +388,6 @@ void exahype::mappings::AugmentedAMRTreePlot2d::enterCell(
 
       if (!solverFound) {
         _cellTypeWriter->plotCell(             cellIndex, -1);
-        _refinementEventWriter->plotCell(      cellIndex, -1);
         _cellDataWriter->plotCell(             cellIndex,  0);
         _augmentationStatusWriter->plotCell(   cellIndex, -1);
         _communicationStatusWriter->plotCell(  cellIndex, -1);
@@ -402,7 +398,6 @@ void exahype::mappings::AugmentedAMRTreePlot2d::enterCell(
 
     } else {
       _cellTypeWriter->plotCell(             cellIndex, static_cast<int>(fineGridCell.getCellDescriptionsIndex()));
-      _refinementEventWriter->plotCell(      cellIndex, -1);
       _cellDataWriter->plotCell(             cellIndex,  0);
       _augmentationStatusWriter->plotCell(   cellIndex, -1);
       _communicationStatusWriter->plotCell(         cellIndex, -1);
@@ -441,9 +436,6 @@ void exahype::mappings::AugmentedAMRTreePlot2d::beginIteration(
       1);
   _cellDescriptionIndexWriter =
       _vtkWriter->createCellDataWriter("NoPatch=-1,ValidPatch>=0", 1);
-  _refinementEventWriter = _vtkWriter->createCellDataWriter(
-      "refinement-event(NoPatch=-1,None=0,ErasChildrenReq=1,ErasChild=2,ChildToVirtReq=3,ChildToVirt=4,RefReq=5,Ref=6,Prol=7,ErasVirtReq=8.ErasVirt=9,VirtRefReq=10,VirtRef=11,ErasReq1=12,Eras1=13,ChildToVirtReq1=14,ChildToVirt1=15,ErasVirt1=16)",
-      1);
   _cellDataWriter = _vtkWriter->createCellDataWriter(
       "Data-on-Patch(None=0,OnlyFaceData=1,VolumeAndFaceData=3)", 1);
   _augmentationStatusWriter = _vtkWriter->createCellDataWriter(
@@ -464,7 +456,6 @@ void exahype::mappings::AugmentedAMRTreePlot2d::endIteration(
 
   _cellTypeWriter->close();
   _cellDescriptionIndexWriter->close();
-  _refinementEventWriter->close();
   _cellDataWriter->close();
   _augmentationStatusWriter->close();
   _communicationStatusWriter->close();
@@ -478,7 +469,6 @@ void exahype::mappings::AugmentedAMRTreePlot2d::endIteration(
 
   delete _cellTypeWriter;
   delete _cellDescriptionIndexWriter;
-  delete _refinementEventWriter;
   delete _cellNumberWriter;
   delete _cellDataWriter;
   delete _augmentationStatusWriter;
@@ -493,7 +483,6 @@ void exahype::mappings::AugmentedAMRTreePlot2d::endIteration(
   _cellNumberWriter            = nullptr;
   _cellTypeWriter              = nullptr;
   _cellDescriptionIndexWriter  = nullptr;
-  _refinementEventWriter       = nullptr;
   _cellDataWriter              = nullptr;
   _augmentationStatusWriter    = nullptr;
   _communicationStatusWriter   = nullptr;

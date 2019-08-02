@@ -53,7 +53,7 @@ void exahype::plotters::LimitingADERDG2UserDefined::plotPatch(const int solverNu
   const int element = cellInfo.indexOfADERDGCellDescription(solverNumber);
   auto& solverPatch  = cellInfo._ADERDGCellDescriptions[element];
 
-  if (solverPatch.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Cell) {
+  if (solverPatch.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Leaf) {
     assertion(exahype::solvers::RegisteredSolvers[solverPatch.getSolverNumber()]->getType()==
         exahype::solvers::Solver::Type::LimitingADERDG);
     auto* limitingADERDG =

@@ -113,7 +113,7 @@ void exahype::plotters::ExaHyPE2Tecplot::plotPatch(const int solverNumber,solver
   
   // this if allows you to understand whether you have an ADERDG cell or
   // a limiting cell or whatever.
-  if (aderdgCellDescription.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Cell) {
+  if (aderdgCellDescription.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Leaf) {
     // The internal cell structure is (order,order,order,nVar) in C and 3D.
     double* solverSolution = static_cast<double*>(aderdgCellDescription.getSolution());
 

@@ -327,6 +327,8 @@ private:
    * Evaluate the refinement criterion and convert the user
    * input to an integer representation, the refinement status.
    *
+   * @note Has no side effects.
+   *
    * @param cellDescription   a cell description
    * @param solutionHeapIndex solution array heap index. Externalised in order to use the method for current and previous solution.
    * @param timeStamp         time stamp matching the solution array.
@@ -510,7 +512,7 @@ private:
    *
    * @note This operations is not thread-safe
    */
-  void addNewDescendantIfVirtualRefiningRequested(
+  void addNewVirtualCellIfVirtualRefiningRequested(
       exahype::Cell& fineGridCell,
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
@@ -535,7 +537,7 @@ private:
    *
    * @note This operations is not thread-safe
    */
-  bool addNewCellIfRefinementRequested(
+  bool addNewLeafIfRefinementRequested(
       exahype::Cell& fineGridCell,
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
@@ -1180,7 +1182,6 @@ public:
       const int                                    solverNumber,
       CellInfo&                                    cellInfo,
       const CellDescription::Type                  cellType,
-      const CellDescription::RefinementEvent       refinementEvent,
       const int                                    level,
       const int                                    parentIndex,
       const tarch::la::Vector<DIMENSIONS, double>& cellSize,
@@ -1207,6 +1208,45 @@ public:
    * @param cellDescription a cell description.
    */
   static bool holdsFaceData(const CellDescription& cellDescription);
+
+  /**
+   * @param cellDescription a cell description
+   * @return if the cell description is a leaf cell.
+   */
+  static bool isLeaf(const CellDescription& cellDescription) {
+    return cellDescription.getType()==CellDescription::Type::Leaf ||
+           cellDescription.getType()==CellDescription::Type::LeafKeep ||
+           cellDescription.getType()==CellDescription::Type::LeafCoarsen ||
+           cellDescription.getType()==CellDescription::Type::LeafRefine ||
+           cellDescription.getType()==CellDescription::Type::LeafRefineInitiated;
+  }
+
+  /**
+   * @param cellDescription a cell description
+   * @return if the cell description is a parent cell.
+   */
+  static bool isParent(const CellDescription& cellDescription) {
+    return cellDescription.getType()==CellDescription::Type::Parent ||
+           cellDescription.getType()==CellDescription::Type::ParentKeep ||
+           cellDescription.getType()==CellDescription::Type::ParentCoarseningRequested ||
+           cellDescription.getType()==CellDescription::Type::ParentCoarsening;
+  }
+
+  /**
+   * @param cellDescription a cell description
+   * @return if the cell description is a parent cell.
+   */
+  static bool isVirtual(const CellDescription& cellDescription) {
+    return cellDescription.getType()==CellDescription::Type::Virtual;
+  }
+
+  /**
+   * @param cellDescription a cell description
+   * @return if the cell is of a certain type.
+   */
+  static bool isOfType(const CellDescription& cellDescription,const CellDescription::Type type) {
+    return cellDescription.getType()==type;
+  }
 
   /**
    * \return if communication with a (remote) neighbour is necessary.

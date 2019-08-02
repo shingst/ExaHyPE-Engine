@@ -52,7 +52,7 @@ void exahype::plotters::FiniteVolumes2UserDefined::plotPatch(const int solverNum
   const int element = cellInfo.indexOfFiniteVolumesCellDescription(solverNumber);
   auto& finiteVolumesCellDescription  = cellInfo._FiniteVolumesCellDescriptions[element];
 
-  if (finiteVolumesCellDescription.getType()==exahype::solvers::FiniteVolumesSolver::CellDescription::Type::Cell) {
+  if (finiteVolumesCellDescription.getType()==exahype::solvers::FiniteVolumesSolver::CellDescription::Type::Leaf) {
     double* solverSolution = static_cast<double*>(finiteVolumesCellDescription.getSolution());
 
     plotPatch(

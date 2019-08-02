@@ -494,7 +494,7 @@ void exahype::plotters::ADERDG2LobattoVTK::plotPatch(const int solverNumber,solv
   assertion( element!=solvers::Solver::NotFound );
   auto& aderdgCellDescription = cellInfo._ADERDGCellDescriptions[element];
 
-  if (aderdgCellDescription.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Cell) {
+  if (aderdgCellDescription.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Leaf) {
     double* solverSolution = static_cast<double*>(aderdgCellDescription.getSolution());
 
     plotPatch(

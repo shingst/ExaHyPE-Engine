@@ -360,7 +360,7 @@ void exahype::plotters::Patch2VTK::plotPatch(const int solverNumber,solvers::Sol
 		case exahype::solvers::Solver::Type::ADERDG: { // scope for variables
 			element = cellInfo.indexOfADERDGCellDescription(solverNumber);
 			auto& solverPatch  = cellInfo._ADERDGCellDescriptions[element];
-			if(solverPatch.getType()!=exahype::solvers::ADERDGSolver::CellDescription::Type::Cell)
+			if(solverPatch.getType()!=exahype::solvers::ADERDGSolver::CellDescription::Type::Leaf)
 				return; // plot only cells
 			solution = static_cast<double*>(solverPatch.getSolution());
 			timeStamp = solverPatch.getTimeStamp();
@@ -387,7 +387,7 @@ void exahype::plotters::Patch2VTK::plotPatch(const int solverNumber,solvers::Sol
 		case exahype::solvers::Solver::Type::FiniteVolumes: {
 			element = cellInfo.indexOfFiniteVolumesCellDescription(solverNumber);
 			auto& solverPatch  = cellInfo._FiniteVolumesCellDescriptions[element];
-			if(solverPatch.getType()!=exahype::solvers::FiniteVolumesSolver::CellDescription::Type::Cell)
+			if(solverPatch.getType()!=exahype::solvers::FiniteVolumesSolver::CellDescription::Type::Leaf)
 				return; // plot only cells
 			solution = static_cast<double*>(solverPatch.getSolution());
 			timeStamp = solverPatch.getTimeStamp();

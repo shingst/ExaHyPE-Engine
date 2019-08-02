@@ -228,8 +228,8 @@ void exahype::Vertex::validateNeighbourhood(
   // ADER-DG
   for (auto& p : cellInfo._ADERDGCellDescriptions) {
     if (
-        (p.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Cell ||
-         p.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Ancestor)
+        (p.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Leaf ||
+         p.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Parent)
         &&
         cellDescriptionsIndex2==multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex
     ) {
@@ -240,7 +240,7 @@ void exahype::Vertex::validateNeighbourhood(
   // FV
   for (auto& p : cellInfo._FiniteVolumesCellDescriptions) {
     if (
-        p.getType()==exahype::solvers::FiniteVolumesSolver::CellDescription::Type::Cell
+        p.getType()==exahype::solvers::FiniteVolumesSolver::CellDescription::Type::Leaf
         &&
         cellDescriptionsIndex2==multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex
     ) {
