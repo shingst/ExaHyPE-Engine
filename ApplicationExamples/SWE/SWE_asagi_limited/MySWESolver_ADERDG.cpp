@@ -228,7 +228,7 @@ bool SWE::MySWESolver_ADERDG::isPhysicallyAdmissible(
 
 }
 
-void SWE::MySWESolver_ADERDG::riemannSolver(double* const FL,double* const FR,const double* const QL,const double* const QR,const double dt,const int direction,bool isBoundaryFace, int faceIndex) {
+void SWE::MySWESolver_ADERDG::riemannSolver(double* const FL,double* const FR,const double* const QL,const double* const QR,const double* gradQL, const double* gradQR, const double dt,const int direction,bool isBoundaryFace, int faceIndex) {
   constexpr int numberOfVariables  = NumberOfVariables;
   constexpr int numberOfData       = numberOfVariables;
   constexpr int order              = Order;
