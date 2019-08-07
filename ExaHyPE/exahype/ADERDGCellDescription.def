@@ -32,12 +32,6 @@ class exahype::records::ADERDGCellDescription {
    */
   persistent packed signed char neighbourMergePerformed[DIMENSIONS_TIMES_TWO];
   ///@}
-  
-  /**
-   * Flag indicating if the last operation was completed for this cell description
-   * and its data can be used for the next operations.
-   */
-  persistent packed bool hasCompletedLastStep;
 
   /**
    * @defgroup AMRInfo AMR information

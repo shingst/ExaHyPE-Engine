@@ -47,6 +47,7 @@ exahype::repositories::RepositorySTDStack::RepositorySTDStack(
   _gridWithInitialPrediction(_vertexStack,_cellStack,_geometry,_solverState,domainSize,computationalDomainOffset,_regularGridContainer,_traversalOrderOnTopLevel),
   _gridWithFusedTimeStep(_vertexStack,_cellStack,_geometry,_solverState,domainSize,computationalDomainOffset,_regularGridContainer,_traversalOrderOnTopLevel),
   _gridWithPredictionRerun(_vertexStack,_cellStack,_geometry,_solverState,domainSize,computationalDomainOffset,_regularGridContainer,_traversalOrderOnTopLevel),
+  _gridWithBroadcast(_vertexStack,_cellStack,_geometry,_solverState,domainSize,computationalDomainOffset,_regularGridContainer,_traversalOrderOnTopLevel),
   _gridWithBroadcastAndDropNeighbourMessages(_vertexStack,_cellStack,_geometry,_solverState,domainSize,computationalDomainOffset,_regularGridContainer,_traversalOrderOnTopLevel),
   _gridWithRefinementStatusSpreading(_vertexStack,_cellStack,_geometry,_solverState,domainSize,computationalDomainOffset,_regularGridContainer,_traversalOrderOnTopLevel),
   _gridWithPredictionOrLocalRecomputation(_vertexStack,_cellStack,_geometry,_solverState,domainSize,computationalDomainOffset,_regularGridContainer,_traversalOrderOnTopLevel),
@@ -85,6 +86,7 @@ exahype::repositories::RepositorySTDStack::RepositorySTDStack(
   _gridWithInitialPrediction(_vertexStack,_cellStack,_geometry,_solverState,_regularGridContainer,_traversalOrderOnTopLevel),
   _gridWithFusedTimeStep(_vertexStack,_cellStack,_geometry,_solverState,_regularGridContainer,_traversalOrderOnTopLevel),
   _gridWithPredictionRerun(_vertexStack,_cellStack,_geometry,_solverState,_regularGridContainer,_traversalOrderOnTopLevel),
+  _gridWithBroadcast(_vertexStack,_cellStack,_geometry,_solverState,_regularGridContainer,_traversalOrderOnTopLevel),
   _gridWithBroadcastAndDropNeighbourMessages(_vertexStack,_cellStack,_geometry,_solverState,_regularGridContainer,_traversalOrderOnTopLevel),
   _gridWithRefinementStatusSpreading(_vertexStack,_cellStack,_geometry,_solverState,_regularGridContainer,_traversalOrderOnTopLevel),
   _gridWithPredictionOrLocalRecomputation(_vertexStack,_cellStack,_geometry,_solverState,_regularGridContainer,_traversalOrderOnTopLevel),
@@ -139,6 +141,7 @@ void exahype::repositories::RepositorySTDStack::restart(
   _gridWithInitialPrediction.restart(domainSize,domainOffset,domainLevel, positionOfCentralElementWithRespectToCoarserRemoteLevel);
   _gridWithFusedTimeStep.restart(domainSize,domainOffset,domainLevel, positionOfCentralElementWithRespectToCoarserRemoteLevel);
   _gridWithPredictionRerun.restart(domainSize,domainOffset,domainLevel, positionOfCentralElementWithRespectToCoarserRemoteLevel);
+  _gridWithBroadcast.restart(domainSize,domainOffset,domainLevel, positionOfCentralElementWithRespectToCoarserRemoteLevel);
   _gridWithBroadcastAndDropNeighbourMessages.restart(domainSize,domainOffset,domainLevel, positionOfCentralElementWithRespectToCoarserRemoteLevel);
   _gridWithRefinementStatusSpreading.restart(domainSize,domainOffset,domainLevel, positionOfCentralElementWithRespectToCoarserRemoteLevel);
   _gridWithPredictionOrLocalRecomputation.restart(domainSize,domainOffset,domainLevel, positionOfCentralElementWithRespectToCoarserRemoteLevel);
@@ -178,6 +181,7 @@ void exahype::repositories::RepositorySTDStack::terminate() {
   _gridWithInitialPrediction.terminate();
   _gridWithFusedTimeStep.terminate();
   _gridWithPredictionRerun.terminate();
+  _gridWithBroadcast.terminate();
   _gridWithBroadcastAndDropNeighbourMessages.terminate();
   _gridWithRefinementStatusSpreading.terminate();
   _gridWithPredictionOrLocalRecomputation.terminate();
@@ -230,6 +234,7 @@ void exahype::repositories::RepositorySTDStack::iterate(int numberOfIterations, 
     assertionEquals( numberOfIterations, 1 );
     numberOfIterations = _repositoryState.getNumberOfIterations();
   }
+  
   peano::parallel::SendReceiveBufferPool::getInstance().exchangeBoundaryVertices(_repositoryState.getExchangeBoundaryVertices());
 
   if ( numberOfIterations > 1 && _solverState.isInvolvedInJoinOrFork() ) {
@@ -248,6 +253,7 @@ void exahype::repositories::RepositorySTDStack::iterate(int numberOfIterations, 
   _repositoryState.setNumberOfIterations(numberOfIterations);
   peano::datatraversal::autotuning::Oracle::getInstance().switchToOracle(_repositoryState.getAction());
   #endif
+  
   for (int i=0; i<numberOfIterations; i++) {
     _solverState.setBatchState(numberOfIterations, i );
 
@@ -285,6 +291,7 @@ void exahype::repositories::RepositorySTDStack::iterate(int numberOfIterations, 
       case exahype::records::RepositoryState::UseAdapterInitialPrediction: watch.startTimer(); _gridWithInitialPrediction.iterate(); watch.stopTimer(); _measureInitialPredictionCPUTime.setValue( watch.getCPUTime() ); _measureInitialPredictionCalendarTime.setValue( watch.getCalendarTime() ); break;
       case exahype::records::RepositoryState::UseAdapterFusedTimeStep: watch.startTimer(); _gridWithFusedTimeStep.iterate(); watch.stopTimer(); _measureFusedTimeStepCPUTime.setValue( watch.getCPUTime() ); _measureFusedTimeStepCalendarTime.setValue( watch.getCalendarTime() ); break;
       case exahype::records::RepositoryState::UseAdapterPredictionRerun: watch.startTimer(); _gridWithPredictionRerun.iterate(); watch.stopTimer(); _measurePredictionRerunCPUTime.setValue( watch.getCPUTime() ); _measurePredictionRerunCalendarTime.setValue( watch.getCalendarTime() ); break;
+      case exahype::records::RepositoryState::UseAdapterBroadcast: watch.startTimer(); _gridWithBroadcast.iterate(); watch.stopTimer(); _measureBroadcastCPUTime.setValue( watch.getCPUTime() ); _measureBroadcastCalendarTime.setValue( watch.getCalendarTime() ); break;
       case exahype::records::RepositoryState::UseAdapterBroadcastAndDropNeighbourMessages: watch.startTimer(); _gridWithBroadcastAndDropNeighbourMessages.iterate(); watch.stopTimer(); _measureBroadcastAndDropNeighbourMessagesCPUTime.setValue( watch.getCPUTime() ); _measureBroadcastAndDropNeighbourMessagesCalendarTime.setValue( watch.getCalendarTime() ); break;
       case exahype::records::RepositoryState::UseAdapterRefinementStatusSpreading: watch.startTimer(); _gridWithRefinementStatusSpreading.iterate(); watch.stopTimer(); _measureRefinementStatusSpreadingCPUTime.setValue( watch.getCPUTime() ); _measureRefinementStatusSpreadingCalendarTime.setValue( watch.getCalendarTime() ); break;
       case exahype::records::RepositoryState::UseAdapterPredictionOrLocalRecomputation: watch.startTimer(); _gridWithPredictionOrLocalRecomputation.iterate(); watch.stopTimer(); _measurePredictionOrLocalRecomputationCPUTime.setValue( watch.getCPUTime() ); _measurePredictionOrLocalRecomputationCalendarTime.setValue( watch.getCalendarTime() ); break;
@@ -333,7 +340,7 @@ void exahype::repositories::RepositorySTDStack::iterate(int numberOfIterations, 
     }
     #endif
   }
-  
+    
   #ifdef Parallel
   if (_solverState.isJoiningWithMaster()) {
     _repositoryState.setAction( exahype::records::RepositoryState::Terminate );
@@ -349,6 +356,7 @@ void exahype::repositories::RepositorySTDStack::iterate(int numberOfIterations, 
  void exahype::repositories::RepositorySTDStack::switchToInitialPrediction() { _repositoryState.setAction(exahype::records::RepositoryState::UseAdapterInitialPrediction); }
  void exahype::repositories::RepositorySTDStack::switchToFusedTimeStep() { _repositoryState.setAction(exahype::records::RepositoryState::UseAdapterFusedTimeStep); }
  void exahype::repositories::RepositorySTDStack::switchToPredictionRerun() { _repositoryState.setAction(exahype::records::RepositoryState::UseAdapterPredictionRerun); }
+ void exahype::repositories::RepositorySTDStack::switchToBroadcast() { _repositoryState.setAction(exahype::records::RepositoryState::UseAdapterBroadcast); }
  void exahype::repositories::RepositorySTDStack::switchToBroadcastAndDropNeighbourMessages() { _repositoryState.setAction(exahype::records::RepositoryState::UseAdapterBroadcastAndDropNeighbourMessages); }
  void exahype::repositories::RepositorySTDStack::switchToRefinementStatusSpreading() { _repositoryState.setAction(exahype::records::RepositoryState::UseAdapterRefinementStatusSpreading); }
  void exahype::repositories::RepositorySTDStack::switchToPredictionOrLocalRecomputation() { _repositoryState.setAction(exahype::records::RepositoryState::UseAdapterPredictionOrLocalRecomputation); }
@@ -368,6 +376,7 @@ void exahype::repositories::RepositorySTDStack::iterate(int numberOfIterations, 
  bool exahype::repositories::RepositorySTDStack::isActiveAdapterInitialPrediction() const { return _repositoryState.getAction() == exahype::records::RepositoryState::UseAdapterInitialPrediction; }
  bool exahype::repositories::RepositorySTDStack::isActiveAdapterFusedTimeStep() const { return _repositoryState.getAction() == exahype::records::RepositoryState::UseAdapterFusedTimeStep; }
  bool exahype::repositories::RepositorySTDStack::isActiveAdapterPredictionRerun() const { return _repositoryState.getAction() == exahype::records::RepositoryState::UseAdapterPredictionRerun; }
+ bool exahype::repositories::RepositorySTDStack::isActiveAdapterBroadcast() const { return _repositoryState.getAction() == exahype::records::RepositoryState::UseAdapterBroadcast; }
  bool exahype::repositories::RepositorySTDStack::isActiveAdapterBroadcastAndDropNeighbourMessages() const { return _repositoryState.getAction() == exahype::records::RepositoryState::UseAdapterBroadcastAndDropNeighbourMessages; }
  bool exahype::repositories::RepositorySTDStack::isActiveAdapterRefinementStatusSpreading() const { return _repositoryState.getAction() == exahype::records::RepositoryState::UseAdapterRefinementStatusSpreading; }
  bool exahype::repositories::RepositorySTDStack::isActiveAdapterPredictionOrLocalRecomputation() const { return _repositoryState.getAction() == exahype::records::RepositoryState::UseAdapterPredictionOrLocalRecomputation; }
@@ -460,6 +469,7 @@ void exahype::repositories::RepositorySTDStack::logIterationStatistics(bool logA
    if (logAllAdapters || _measureInitialPredictionCPUTime.getNumberOfMeasurements()>0) logInfo( "logIterationStatistics()", "| InitialPrediction \t |  " << _measureInitialPredictionCPUTime.getNumberOfMeasurements() << " \t |  " << _measureInitialPredictionCPUTime.getAccumulatedValue() << " \t |  " << _measureInitialPredictionCPUTime.getValue()  << " \t |  " << _measureInitialPredictionCalendarTime.getAccumulatedValue() << " \t |  " << _measureInitialPredictionCalendarTime.getValue() << " \t |  " << _measureInitialPredictionCPUTime.toString() << " \t |  " << _measureInitialPredictionCalendarTime.toString() );
    if (logAllAdapters || _measureFusedTimeStepCPUTime.getNumberOfMeasurements()>0) logInfo( "logIterationStatistics()", "| FusedTimeStep \t |  " << _measureFusedTimeStepCPUTime.getNumberOfMeasurements() << " \t |  " << _measureFusedTimeStepCPUTime.getAccumulatedValue() << " \t |  " << _measureFusedTimeStepCPUTime.getValue()  << " \t |  " << _measureFusedTimeStepCalendarTime.getAccumulatedValue() << " \t |  " << _measureFusedTimeStepCalendarTime.getValue() << " \t |  " << _measureFusedTimeStepCPUTime.toString() << " \t |  " << _measureFusedTimeStepCalendarTime.toString() );
    if (logAllAdapters || _measurePredictionRerunCPUTime.getNumberOfMeasurements()>0) logInfo( "logIterationStatistics()", "| PredictionRerun \t |  " << _measurePredictionRerunCPUTime.getNumberOfMeasurements() << " \t |  " << _measurePredictionRerunCPUTime.getAccumulatedValue() << " \t |  " << _measurePredictionRerunCPUTime.getValue()  << " \t |  " << _measurePredictionRerunCalendarTime.getAccumulatedValue() << " \t |  " << _measurePredictionRerunCalendarTime.getValue() << " \t |  " << _measurePredictionRerunCPUTime.toString() << " \t |  " << _measurePredictionRerunCalendarTime.toString() );
+   if (logAllAdapters || _measureBroadcastCPUTime.getNumberOfMeasurements()>0) logInfo( "logIterationStatistics()", "| Broadcast \t |  " << _measureBroadcastCPUTime.getNumberOfMeasurements() << " \t |  " << _measureBroadcastCPUTime.getAccumulatedValue() << " \t |  " << _measureBroadcastCPUTime.getValue()  << " \t |  " << _measureBroadcastCalendarTime.getAccumulatedValue() << " \t |  " << _measureBroadcastCalendarTime.getValue() << " \t |  " << _measureBroadcastCPUTime.toString() << " \t |  " << _measureBroadcastCalendarTime.toString() );
    if (logAllAdapters || _measureBroadcastAndDropNeighbourMessagesCPUTime.getNumberOfMeasurements()>0) logInfo( "logIterationStatistics()", "| BroadcastAndDropNeighbourMessages \t |  " << _measureBroadcastAndDropNeighbourMessagesCPUTime.getNumberOfMeasurements() << " \t |  " << _measureBroadcastAndDropNeighbourMessagesCPUTime.getAccumulatedValue() << " \t |  " << _measureBroadcastAndDropNeighbourMessagesCPUTime.getValue()  << " \t |  " << _measureBroadcastAndDropNeighbourMessagesCalendarTime.getAccumulatedValue() << " \t |  " << _measureBroadcastAndDropNeighbourMessagesCalendarTime.getValue() << " \t |  " << _measureBroadcastAndDropNeighbourMessagesCPUTime.toString() << " \t |  " << _measureBroadcastAndDropNeighbourMessagesCalendarTime.toString() );
    if (logAllAdapters || _measureRefinementStatusSpreadingCPUTime.getNumberOfMeasurements()>0) logInfo( "logIterationStatistics()", "| RefinementStatusSpreading \t |  " << _measureRefinementStatusSpreadingCPUTime.getNumberOfMeasurements() << " \t |  " << _measureRefinementStatusSpreadingCPUTime.getAccumulatedValue() << " \t |  " << _measureRefinementStatusSpreadingCPUTime.getValue()  << " \t |  " << _measureRefinementStatusSpreadingCalendarTime.getAccumulatedValue() << " \t |  " << _measureRefinementStatusSpreadingCalendarTime.getValue() << " \t |  " << _measureRefinementStatusSpreadingCPUTime.toString() << " \t |  " << _measureRefinementStatusSpreadingCalendarTime.toString() );
    if (logAllAdapters || _measurePredictionOrLocalRecomputationCPUTime.getNumberOfMeasurements()>0) logInfo( "logIterationStatistics()", "| PredictionOrLocalRecomputation \t |  " << _measurePredictionOrLocalRecomputationCPUTime.getNumberOfMeasurements() << " \t |  " << _measurePredictionOrLocalRecomputationCPUTime.getAccumulatedValue() << " \t |  " << _measurePredictionOrLocalRecomputationCPUTime.getValue()  << " \t |  " << _measurePredictionOrLocalRecomputationCalendarTime.getAccumulatedValue() << " \t |  " << _measurePredictionOrLocalRecomputationCalendarTime.getValue() << " \t |  " << _measurePredictionOrLocalRecomputationCPUTime.toString() << " \t |  " << _measurePredictionOrLocalRecomputationCalendarTime.toString() );
@@ -481,6 +491,7 @@ void exahype::repositories::RepositorySTDStack::clearIterationStatistics() {
    _measureInitialPredictionCPUTime.erase();
    _measureFusedTimeStepCPUTime.erase();
    _measurePredictionRerunCPUTime.erase();
+   _measureBroadcastCPUTime.erase();
    _measureBroadcastAndDropNeighbourMessagesCPUTime.erase();
    _measureRefinementStatusSpreadingCPUTime.erase();
    _measurePredictionOrLocalRecomputationCPUTime.erase();
@@ -498,6 +509,7 @@ void exahype::repositories::RepositorySTDStack::clearIterationStatistics() {
    _measureInitialPredictionCalendarTime.erase();
    _measureFusedTimeStepCalendarTime.erase();
    _measurePredictionRerunCalendarTime.erase();
+   _measureBroadcastCalendarTime.erase();
    _measureBroadcastAndDropNeighbourMessagesCalendarTime.erase();
    _measureRefinementStatusSpreadingCalendarTime.erase();
    _measurePredictionOrLocalRecomputationCalendarTime.erase();

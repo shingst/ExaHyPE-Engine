@@ -5,9 +5,9 @@
     "exahype_path": "./ExaHyPE",
     "output_directory": "./ApplicationExamples/Euler/Euler"
   },
-  "architecture": "hsw",
+  "architecture": "snb",
   "computational_domain": {
-    "dimension": 3,
+    "dimension": 2,
     "end_time": 0.21,
     "offset": [
       0.0,
@@ -50,9 +50,9 @@
     {
       "type": "Limiting-ADER-DG",
       "name": "EulerSolver",
-      "order": 9,
-      "maximum_mesh_size": 0.4,
-      "maximum_mesh_depth": 2,
+      "order": 3,
+      "maximum_mesh_size": 0.05,
+      "maximum_mesh_depth": 0,
       "time_stepping": "global",
       "aderdg_kernel": {
         "language": "C",
@@ -106,7 +106,7 @@
         }
       ],
       "parameters": {
-        "reference": "explosion"
+        "reference": "sod"
       },
       "plotters": [
         {

@@ -298,6 +298,7 @@ bool exahype::State::startAndFinishSynchronousExchangeManually(const exahype::re
       action==exahype::records::RepositoryState::UseAdapterFusedTimeStep) &&
       predictionFusedTimeStepCondition)
       ||
+      action==exahype::records::RepositoryState::UseAdapterBroadcast ||
       action==exahype::records::RepositoryState::UseAdapterBroadcastAndDropNeighbourMessages;
 }
 
@@ -310,6 +311,7 @@ bool exahype::State::startAndFinishNeighbourExchangeManually(const exahype::reco
       action==exahype::records::RepositoryState::UseAdapterFusedTimeStep) &&
       predictionFusedTimeStepCondition)
       ||
+      action==exahype::records::RepositoryState::UseAdapterBroadcast ||
       action==exahype::records::RepositoryState::UseAdapterBroadcastAndDropNeighbourMessages;
 }
 

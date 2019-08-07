@@ -1543,6 +1543,11 @@ void exahype::runners::Runner::updateMeshOrLimiterDomain(
         exahype::solvers::Solver::getMaxRefinementStatus()+1,false);
   }
 
+  // 2.1 A broadcast is necessary to communicate if the refinement event has
+  // changed from local recomputation to mesh refinement.
+  repository.switchToBroadcast();
+  repository.iterate(1,false);
+
   // 3. Perform a grid update for those solvers that requested refinement
   if ( exahype::solvers::Solver::oneSolverRequestedMeshRefinement() ) {
     logInfo("updateMeshAndSubdomains(...)","perform mesh refinement");

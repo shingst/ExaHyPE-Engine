@@ -9,16 +9,20 @@
   },
   "architecture": "skx",
   "computational_domain": {
-    "dimension": 2,
+    "dimension": 3,
     "end_time": 5.0,
     "offset": [
-      -2.0,
-      -2.0
+      -2.5,
+      -2.5,
+      -2.5
     ],
     "width": [
-      4.0,
-      4.0
-    ]
+      5.0,
+      5.0,
+      5.0
+    ],
+    "outside_cells_left":0,
+    "outside_cells_right":41
   },
   "shared_memory": {
     "cores": 16,
@@ -51,10 +55,10 @@
     {
       "type": "Limiting-ADER-DG",
       "name": "SFDISolver",
-      "order": 4,
-      "patch_size": 9,
-      "maximum_mesh_size": 0.9,
-      "maximum_mesh_depth": 3,
+      "order": 3,
+      "patch_size": 7,
+      "maximum_mesh_size": 4.9,
+      "maximum_mesh_depth": 0,
       "time_stepping": "global",
       "aderdg_kernel": {
         "language": "C",
@@ -110,7 +114,7 @@
         }
        ],
     "parameters": {
-        "reference": "NBodies"
+        "reference": "DoubleRotor3D"
       },
 
     "plotters": [
@@ -118,7 +122,7 @@
           "type": "user::defined",
           "name": "TecplotWriter",
           "time": 0.0,
-          "repeat": 0.01,
+          "repeat": 0.02,
           "output": "./output/tecplot",
           "variables": 9
         }

@@ -45,6 +45,7 @@ std::string exahype::records::RepositoryState::toString(const Action& param) {
       case UseAdapterInitialPrediction: return "UseAdapterInitialPrediction";
       case UseAdapterFusedTimeStep: return "UseAdapterFusedTimeStep";
       case UseAdapterPredictionRerun: return "UseAdapterPredictionRerun";
+      case UseAdapterBroadcast: return "UseAdapterBroadcast";
       case UseAdapterBroadcastAndDropNeighbourMessages: return "UseAdapterBroadcastAndDropNeighbourMessages";
       case UseAdapterRefinementStatusSpreading: return "UseAdapterRefinementStatusSpreading";
       case UseAdapterPredictionOrLocalRecomputation: return "UseAdapterPredictionOrLocalRecomputation";
@@ -59,7 +60,7 @@ std::string exahype::records::RepositoryState::toString(const Action& param) {
 }
 
 std::string exahype::records::RepositoryState::getActionMapping() {
-   return "Action(WriteCheckpoint=0,ReadCheckpoint=1,Terminate=2,RunOnAllNodes=3,UseAdapterUniformRefinement=4,UseAdapterMeshRefinement=5,UseAdapterMeshRefinementAndPlotTree=6,UseAdapterFinaliseMeshRefinement=7,UseAdapterFinaliseMeshRefinementOrLocalRollback=8,UseAdapterInitialPrediction=9,UseAdapterFusedTimeStep=10,UseAdapterPredictionRerun=11,UseAdapterBroadcastAndDropNeighbourMessages=12,UseAdapterRefinementStatusSpreading=13,UseAdapterPredictionOrLocalRecomputation=14,UseAdapterMergeNeighbours=15,UseAdapterUpdateAndReduce=16,UseAdapterPrediction=17,UseAdapterCorrection=18,UseAdapterEmpty=19,NumberOfAdapters=20)";
+   return "Action(WriteCheckpoint=0,ReadCheckpoint=1,Terminate=2,RunOnAllNodes=3,UseAdapterUniformRefinement=4,UseAdapterMeshRefinement=5,UseAdapterMeshRefinementAndPlotTree=6,UseAdapterFinaliseMeshRefinement=7,UseAdapterFinaliseMeshRefinementOrLocalRollback=8,UseAdapterInitialPrediction=9,UseAdapterFusedTimeStep=10,UseAdapterPredictionRerun=11,UseAdapterBroadcast=12,UseAdapterBroadcastAndDropNeighbourMessages=13,UseAdapterRefinementStatusSpreading=14,UseAdapterPredictionOrLocalRecomputation=15,UseAdapterMergeNeighbours=16,UseAdapterUpdateAndReduce=17,UseAdapterPrediction=18,UseAdapterCorrection=19,UseAdapterEmpty=20,NumberOfAdapters=21)";
 }
 
 
